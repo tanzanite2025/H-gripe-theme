@@ -59,6 +59,8 @@ class TZ_CS_Database {
             auto_reply_count int DEFAULT 0,
             needs_human tinyint(1) DEFAULT 0,
             last_welcome_sent datetime DEFAULT NULL,
+            transferred_from varchar(50) DEFAULT '',
+            transferred_at datetime DEFAULT NULL,
             created_at datetime NOT NULL,
             updated_at datetime NOT NULL,
             PRIMARY KEY  (id),
@@ -126,22 +128,125 @@ class TZ_CS_Database {
             KEY expires_at (expires_at)
         ) $charset_collate;";
         
+        // 转接历史记录表
+        $table_transfers = $wpdb->prefix . 'tz_cs_transfers';
+        $sql_transfers = "CREATE TABLE $table_transfers (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            conversation_id varchar(100) NOT NULL,
+            from_agent_id varchar(50) NOT NULL,
+            from_agent_name varchar(100) NOT NULL,
+            to_agent_id varchar(50) NOT NULL,
+            to_agent_name varchar(100) NOT NULL,
+            reason text,
+            created_at datetime NOT NULL,
+            PRIMARY KEY  (id),
+            KEY conversation_id (conversation_id),
+            KEY from_agent_id (from_agent_id),
+            KEY to_agent_id (to_agent_id),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+        
+        // 通知表
+        $table_notifications = $wpdb->prefix . 'tz_cs_notifications';
+        $sql_notifications = "CREATE TABLE $table_notifications (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            agent_id varchar(50) NOT NULL,
+            type varchar(50) NOT NULL,
+            title varchar(255) NOT NULL,
+            message text NOT NULL,
+            data text,
+            is_read tinyint(1) NOT NULL DEFAULT 0,
+            created_at datetime NOT NULL,
+            read_at datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY agent_id (agent_id),
+            KEY type (type),
+            KEY is_read (is_read),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+        
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         
-        // 先尝试用 dbDelta 创建旧表
+        // 创建或更新旧表
         $result_messages = dbDelta( $sql_messages );
         $result_conversations = dbDelta( $sql_conversations );
         $result_auto_replies = dbDelta( $sql_auto_replies );
         
-        // 对于新表，直接用原生 SQL 创建（避免 dbDelta 的问题）
-        $wpdb->query( "DROP TABLE IF EXISTS $table_agents" );
-        $wpdb->query( $sql_agents );
+        // 检查客服表是否存在
+        $agents_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$table_agents'" ) === $table_agents;
         
-        $wpdb->query( "DROP TABLE IF EXISTS $table_tokens" );
-        $wpdb->query( $sql_tokens );
+        // 如果客服表存在，检查并添加状态字段
+        if ( $agents_table_exists ) {
+            // 检查 status 字段是否存在
+            $status_column_exists = $wpdb->get_results( 
+                "SHOW COLUMNS FROM $table_agents LIKE 'status'" 
+            );
+            
+            if ( empty( $status_column_exists ) ) {
+                $wpdb->query( 
+                    "ALTER TABLE $table_agents ADD COLUMN status VARCHAR(20) DEFAULT 'offline' AFTER role" 
+                );
+            }
+            
+            // 检查 last_active_at 字段是否存在
+            $last_active_column_exists = $wpdb->get_results( 
+                "SHOW COLUMNS FROM $table_agents LIKE 'last_active_at'" 
+            );
+            
+            if ( empty( $last_active_column_exists ) ) {
+                $wpdb->query( 
+                    "ALTER TABLE $table_agents ADD COLUMN last_active_at DATETIME DEFAULT NULL AFTER status" 
+                );
+            }
+        }
         
-        $result_agents = [ 'created' => $table_agents ];
-        $result_tokens = [ 'created' => $table_tokens ];
+        if ( ! $agents_table_exists ) {
+            // 表不存在，创建新表
+            $wpdb->query( $sql_agents );
+            $result_agents = [ 'created' => $table_agents ];
+        } else {
+            // 表已存在，检查并添加缺失的字段
+            $columns = $wpdb->get_col( "DESCRIBE $table_agents", 0 );
+            
+            if ( ! in_array( 'whatsapp', $columns ) ) {
+                $wpdb->query( "ALTER TABLE $table_agents ADD COLUMN whatsapp varchar(50) DEFAULT '' AFTER avatar" );
+            }
+            
+            $result_agents = [ 'updated' => $table_agents ];
+        }
+        
+        // 检查 Token 表是否存在
+        $tokens_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$table_tokens'" ) === $table_tokens;
+        
+        if ( ! $tokens_table_exists ) {
+            // 表不存在，创建新表
+            $wpdb->query( $sql_tokens );
+            $result_tokens = [ 'created' => $table_tokens ];
+        } else {
+            $result_tokens = [ 'exists' => $table_tokens ];
+        }
+        
+        // 检查转接历史表是否存在
+        $transfers_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$table_transfers'" ) === $table_transfers;
+        
+        if ( ! $transfers_table_exists ) {
+            // 表不存在，创建新表
+            $wpdb->query( $sql_transfers );
+            $result_transfers = [ 'created' => $table_transfers ];
+        } else {
+            $result_transfers = [ 'exists' => $table_transfers ];
+        }
+        
+        // 检查通知表是否存在
+        $notifications_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$table_notifications'" ) === $table_notifications;
+        
+        if ( ! $notifications_table_exists ) {
+            // 表不存在，创建新表
+            $wpdb->query( $sql_notifications );
+            $result_notifications = [ 'created' => $table_notifications ];
+        } else {
+            $result_notifications = [ 'exists' => $table_notifications ];
+        }
         
         // 记录创建结果用于调试
         update_option( 'tz_cs_db_creation_result', [
@@ -152,7 +257,7 @@ class TZ_CS_Database {
         ] );
         
         // 记录版本号
-        update_option( 'tz_cs_db_version', '1.1.0' );
+        update_option( 'tz_cs_db_version', '1.2.0' );
     }
     
     /**

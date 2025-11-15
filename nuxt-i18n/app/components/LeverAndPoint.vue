@@ -282,6 +282,7 @@
               </div>
             </div>
           </div>
+          </div>
           <div v-show="mobileTab === 'levels' || !isMobile" class="flex flex-col overflow-hidden w-full">
             <!-- Levels & Points -->
             <div class="flex-1 w-full py-2 px-3 box-border overflow-y-auto">

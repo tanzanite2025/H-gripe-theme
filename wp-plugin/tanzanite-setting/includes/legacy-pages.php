@@ -6832,7 +6832,7 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
          */
         public function filter_admin_body_class( string $classes ): string {
             $screen = get_current_screen();
-            if ( $screen && false !== strpos( $screen->id, 'tanzanite-settings' ) ) {
+            if ( $screen && ( false !== strpos( $screen->id, 'tanzanite-settings' ) || false !== strpos( $screen->id, 'tanzanite-cart' ) ) ) {
                 $classes .= ' tz-settings-admin';
             }
 

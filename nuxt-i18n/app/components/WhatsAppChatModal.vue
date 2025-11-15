@@ -140,6 +140,19 @@
                   <span>WhatsApp</span>
                 </a>
                 
+                <!-- 转接按钮 -->
+                <button
+                  v-if="selectedAgent && conversation"
+                  @click="showTransferModal = true"
+                  class="hidden md:flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                  title="转接会话"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                  </svg>
+                  <span>转接</span>
+                </button>
+                
                 <button
                   @click="handleClose"
                   class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
@@ -380,6 +393,72 @@
         </Transition>
       </div>
     </Transition>
+    
+    <!-- 转接弹窗 -->
+    <Transition name="fade">
+      <div
+        v-if="showTransferModal"
+        class="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4"
+        @click.self="showTransferModal = false"
+      >
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <h3 class="text-xl font-bold text-gray-900 mb-4">转接会话</h3>
+          
+          <div class="space-y-4">
+            <!-- 选择客服 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                选择目标客服 *
+              </label>
+              <select
+                v-model="transferToAgent"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">请选择客服</option>
+                <option
+                  v-for="agent in agents.filter(a => a.id !== selectedAgent?.id)"
+                  :key="agent.id"
+                  :value="agent.id"
+                >
+                  {{ agent.name }} ({{ agent.email }})
+                </option>
+              </select>
+            </div>
+            
+            <!-- 转接备注 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                转接备注（可选）
+              </label>
+              <textarea
+                v-model="transferNote"
+                rows="3"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="例如：客户需要技术支持..."
+              ></textarea>
+            </div>
+          </div>
+          
+          <!-- 按钮 -->
+          <div class="flex gap-3 mt-6">
+            <button
+              @click="showTransferModal = false"
+              :disabled="isTransferring"
+              class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              取消
+            </button>
+            <button
+              @click="handleTransfer"
+              :disabled="isTransferring || !transferToAgent"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isTransferring ? '转接中...' : '确认转接' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -411,6 +490,12 @@ const activeTab = ref<'chat' | 'share' | 'orders'>('chat')
 const newMessage = ref('')
 const isSending = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
+
+// 转接功能
+const showTransferModal = ref(false)
+const transferToAgent = ref('')
+const transferNote = ref('')
+const isTransferring = ref(false)
 
 // 图片上传
 const imageInput = ref<HTMLInputElement | null>(null)
@@ -852,7 +937,54 @@ const getInitials = (name: string) => {
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase()
   }
-  return name.substring(0, 2).toUpperCase()
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
+// 转接会话
+async function handleTransfer() {
+  if (!transferToAgent.value) {
+    alert('请选择要转接的客服')
+    return
+  }
+  
+  if (transferToAgent.value === selectedAgent.value?.id) {
+    alert('不能转接给当前客服')
+    return
+  }
+  
+  isTransferring.value = true
+  
+  try {
+    const response = await fetch(`${config.public.apiBase}/wp-json/tanzanite/v1/agent/conversations/${conversationId.value}/transfer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to_agent_id: transferToAgent.value,
+        note: transferNote.value,
+      }),
+    })
+    
+    const data = await response.json()
+    
+    if (data.success) {
+      alert(`转接成功！会话已转接给 ${data.data.to_agent}`)
+      showTransferModal.value = false
+      transferToAgent.value = ''
+      transferNote.value = ''
+      
+      // 刷新消息列表以显示系统消息
+      loadMessagesFromStorage()
+    } else {
+      alert(data.message || '转接失败')
+    }
+  } catch (error) {
+    console.error('转接失败:', error)
+    alert('转接失败，请稍后重试')
+  } finally {
+    isTransferring.value = false
+  }
 }
 
 // 监听标签切换，自动加载订单
@@ -862,6 +994,7 @@ watch(activeTab, (newTab) => {
   }
 })
 
+// ...
 // 图片上传处理
 const handleImageUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement

@@ -3,7 +3,7 @@
  * Plugin Name: Tanzanite Customer Service
  * Plugin URI: https://tanzanite.site
  * Description: 客服管理插件 - 管理客服信息并提供 REST API
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Tanzanite
  * Text Domain: tanzanite-cs
  * Domain Path: /languages
@@ -16,8 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // 定义插件常量
-define( 'TZ_CS_VERSION', '1.1.0' );
-define( 'TZ_CS_DB_VERSION', '1.1.0' );
+define( 'TZ_CS_VERSION', '1.2.0' );
+define( 'TZ_CS_DB_VERSION', '1.2.0' );
 define( 'TZ_CS_PLUGIN_FILE', __FILE__ );
 define( 'TZ_CS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TZ_CS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

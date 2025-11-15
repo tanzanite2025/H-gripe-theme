@@ -414,6 +414,16 @@ class Tanzanite_Plugin {
 			array( $this, 'render_loyalty_settings' )
 		);
 
+		// 购物车管理
+		add_submenu_page(
+			$root_slug,
+			__( 'Cart Management', 'tanzanite-settings' ),
+			__( '🛒 Cart & Orders', 'tanzanite-settings' ),
+			$root_capability,
+			'tanzanite-cart-list',
+			array( $this, 'render_cart_list' )
+		);
+
 		// 审计日志
 		add_submenu_page(
 			$root_slug,
@@ -549,14 +559,6 @@ class Tanzanite_Plugin {
 		$this->call_legacy_method( 'render_add_product' );
 	}
 
-	/**
-	 * 渲染订单列表页面
-	 *
-	 * @since 0.2.0
-	 */
-	public function render_orders_list() {
-		$this->call_legacy_method( 'render_orders_list' );
-	}
 
 	/**
 	 * 渲染订单批量操作页面
@@ -710,6 +712,25 @@ class Tanzanite_Plugin {
 		// 调用 legacy plugin 的方法
 		if ( $this->legacy_plugin && method_exists( $this->legacy_plugin, 'render_markdown_templates_page' ) ) {
 			$this->legacy_plugin->render_markdown_templates_page();
+		}
+	}
+
+	/**
+	 * 渲染购物车列表页面
+	 *
+	 * @since 0.2.0
+	 */
+	public function render_cart_list() {
+		// 手动加载类文件
+		$class_file = TANZANITE_PLUGIN_DIR . 'includes/admin/class-cart-admin.php';
+		if ( file_exists( $class_file ) ) {
+			require_once $class_file;
+		}
+		
+		if ( class_exists( 'Tanzanite_Cart_Admin' ) ) {
+			Tanzanite_Cart_Admin::render_cart_list();
+		} else {
+			echo '<div class="wrap"><h1>错误</h1><p>Tanzanite_Cart_Admin 类未找到</p></div>';
 		}
 	}
 
