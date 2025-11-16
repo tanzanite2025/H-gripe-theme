@@ -24,18 +24,8 @@
       </button>
     </div>
     
-    <!-- Second circle: Share toggle -->
     <button 
-      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-12 h-12 max-md:w-12 max-md:h-12 rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
-      @click.stop="toggleShare()" 
-      :aria-expanded="shareOpen" 
-      aria-haspopup="dialog" 
-      aria-label="Open share panel"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
-    </button>
-    <button 
-      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] min-h-[52px] h-[52px] max-md:h-12 max-md:min-h-12 w-[200px] px-3.5 rounded-full font-semibold tracking-wider text-white uppercase bg-[#0b1020] shadow-none hover:shadow-none focus-visible:shadow-none inline-flex items-center justify-between border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
+      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] min-h-[52px] h-[52px] max-md:h-12 max-md:min-h-12 w-[250px] px-3.5 rounded-full font-semibold tracking-wider text-white uppercase bg-[#0b1020] shadow-none hover:shadow-none focus-visible:shadow-none inline-flex items-center justify-between border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
       type="button" 
       @click="openCartDrawer" 
       :aria-label="ctaLabel"
@@ -70,24 +60,7 @@
     </button>
     
   </div>
-  <!-- Share -> open LeverAndPoint modal with backdrop -->
-  <teleport to="body">
-    <transition
-      enter-active-class="transition-opacity duration-300 ease-out"
-      leave-active-class="transition-opacity duration-200 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div v-if="shareOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="shareOpen = false">
-        <!-- 不透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black"></div>
-        <!-- 弹窗内容 -->
-        <div class="relative w-[min(95vw,1650px)] max-h-[90vh] overflow-auto" aria-modal="true" role="dialog" aria-label="Membership">
-          <LeverAndPoint @close="shareOpen = false" />
-        </div>
-      </div>
-    </transition>
-  </teleport>
+  
   <!-- Quick Buy Modal from Dock -->
   <QuickBuyModal v-if="quickOpen" :config="props.config || null" @close="quickOpen = false" />
   
@@ -103,34 +76,22 @@
 import { ref, computed, onMounted, watch, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n, useRuntimeConfig } from '#imports'
 import QuickBuyModal from '@/components/QuickBuy.vue'
-import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 
 // floating submenu state
 const isOpen = ref(false)
 const quickOpen = ref(false)
-const shareOpen = ref(false)
 const currentConversation = ref<any>(null)
 
 // mutually exclusive open helpers
 const closeAll = () => {
   isOpen.value = false
-  shareOpen.value = false
   quickOpen.value = false
 }
 
 // 关闭聊天窗口
 const handleCloseChat = () => {
   currentConversation.value = null
-}
-
-const toggleShare = () => {
-  const next = !shareOpen.value
-  closeAll()
-  shareOpen.value = next
-  if (next && typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'dock-share' } }))
-  }
 }
 
 const openQuick = () => {
@@ -284,14 +245,9 @@ onMounted(() => {
       const id = e?.detail?.id as string | undefined
       if (!id) return
       if (id === 'dock-fab') {
-        shareOpen.value = false
-        quickOpen.value = false
-      } else if (id === 'dock-share') {
-        isOpen.value = false
         quickOpen.value = false
       } else if (id === 'dock-quick') {
         isOpen.value = false
-        shareOpen.value = false
       } else {
         // opened by other components (e.g., language switcher) -> close all dock popups
         closeAll()
@@ -309,22 +265,15 @@ onBeforeUnmount(() => {
 
 // defensive: ensure mutual exclusivity if any state is toggled externally
 watchEffect(() => {
-  const openCount = [isOpen.value, shareOpen.value, quickOpen.value].filter(Boolean).length
+  const openCount = [isOpen.value, quickOpen.value].filter(Boolean).length
   if (openCount > 1) {
-    // prefer the most recently opened by simple priority: quick > share > fab
+    // prefer the most recently opened by simple priority: quick > fab
     if (quickOpen.value) {
       isOpen.value = false
-      shareOpen.value = false
-    } else if (shareOpen.value) {
-      isOpen.value = false
-      quickOpen.value = false
     } else if (isOpen.value) {
-      shareOpen.value = false
       quickOpen.value = false
     }
   }
 })
-
-// share now handled inside LeverAndPoint
 </script>
 

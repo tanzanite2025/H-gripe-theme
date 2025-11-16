@@ -17,10 +17,22 @@
       </nav>
       
       <!-- 右侧：语言切换器 -->
-      <div class="justify-self-end">
+      <div class="justify-self-end flex items-center gap-3">
+        <!-- 分享按钮（会员积分） - 复制自 GradientDockMenu -->
+        <button 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[115px] h-12 rounded-full inline-flex items-center justify-center bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          @click.stop="toggleShare()" 
+          :aria-expanded="shareOpen" 
+          aria-haspopup="dialog" 
+          aria-label="Open membership panel"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
+        </button>
+        
+        <!-- 翻译转换器 -->
         <div class="relative">
         <button 
-          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[250px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-[#4079ff11] border-2 border-[#40ffaa]" 
           @click.stop="toggleDropdown"
           @keydown="onButtonKeydown"
           :id="buttonId"
@@ -86,11 +98,23 @@
         </h1>
       </div>
       
-      <!-- 第二排：语言切换器 -->
-      <div class="flex justify-center items-center">
+      <!-- 第二排：分享按钮 + 翻译转换器 -->
+      <div class="flex justify-center items-center gap-2">
+        <!-- 分享按钮 -->
+        <button 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[125px] h-[37px] rounded-full inline-flex items-center justify-center bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          @click.stop="toggleShare()" 
+          :aria-expanded="shareOpen" 
+          aria-haspopup="dialog" 
+          aria-label="Open membership panel"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
+        </button>
+        
+        <!-- 翻译转换器 -->
         <div class="relative min-w-[140px]">
         <button 
-          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[42px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-[37px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-[#4079ff11] border-2 border-[#40ffaa]" 
           @click.stop="toggleDropdown"
           @keydown="onButtonKeydown"
           :id="buttonId"
@@ -118,11 +142,31 @@
       </nav>
     </div>
   </div>
+  
+  <!-- LeverAndPoint 弹窗 -->
+  <teleport to="body">
+    <transition
+      enter-active-class="transition-opacity duration-300 ease-out"
+      leave-active-class="transition-opacity duration-200 ease-in"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="shareOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="shareOpen = false">
+        <!-- 不透明背景遮罩 -->
+        <div class="absolute inset-0 bg-black"></div>
+        <!-- 弹窗内容 -->
+        <div class="relative w-[min(95vw,1650px)] max-h-[90vh] overflow-auto" aria-modal="true" role="dialog" aria-label="Membership">
+          <LeverAndPoint @close="shareOpen = false" />
+        </div>
+      </div>
+    </transition>
+  </teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useSiteTitle } from '~/composables/useSiteTitle'
+import LeverAndPoint from '~/components/LeverAndPoint.vue'
 
 // Site Title
 const props = defineProps<{ title?: string }>()
@@ -131,6 +175,16 @@ const titleText = computed(() => {
   const fromProp = (props.title ?? '').toString().trim()
   return fromProp.length ? fromProp : siteTitle.value
 })
+
+// Share button (Membership panel)
+const shareOpen = ref(false)
+
+const toggleShare = () => {
+  shareOpen.value = !shareOpen.value
+  if (shareOpen.value && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-share' } }))
+  }
+}
 
 // Language Switcher
 const { locale, locales, setLocale } = useI18n()

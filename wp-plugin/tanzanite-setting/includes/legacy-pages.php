@@ -538,7 +538,7 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
                 coupon_discount DECIMAL(18,2) NOT NULL DEFAULT 0,
                 giftcard_discount DECIMAL(18,2) NOT NULL DEFAULT 0,
                 points_used INT NOT NULL DEFAULT 0,
-                currency CHAR(3) NOT NULL DEFAULT 'CNY',
+                currency CHAR(3) NOT NULL DEFAULT 'USD',
                 tracking_provider VARCHAR(60) DEFAULT NULL,
                 tracking_number VARCHAR(120) DEFAULT NULL,
                 tracking_synced_at DATETIME NULL,
@@ -836,7 +836,7 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
                 card_code VARCHAR(64) NOT NULL,
                 balance DECIMAL(12,2) NOT NULL DEFAULT 0,
                 original_value DECIMAL(12,2) NOT NULL DEFAULT 0,
-                currency VARCHAR(16) NOT NULL DEFAULT 'CNY',
+                currency VARCHAR(16) NOT NULL DEFAULT 'USD',
                 owner_user_id BIGINT UNSIGNED NULL,
                 purchaser_user_id BIGINT UNSIGNED NULL,
                 points_spent INT UNSIGNED NOT NULL DEFAULT 0,
@@ -8541,14 +8541,15 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
             echo '          <div style="overflow:auto;">';
             echo '              <table class="widefat fixed striped" id="tz-coupon-table">';
             echo '                  <thead><tr>';
-            echo '                      <th style="width:80px;">' . esc_html__( 'ID', 'tanzanite-settings' ) . '</th>';
+            echo '                      <th style="width:60px;">' . esc_html__( 'ID', 'tanzanite-settings' ) . '</th>';
             echo '                      <th style="width:120px;">' . esc_html__( '代码', 'tanzanite-settings' ) . '</th>';
             echo '                      <th>' . esc_html__( '标题', 'tanzanite-settings' ) . '</th>';
-            echo '                      <th style="width:100px;">' . esc_html__( '折扣', 'tanzanite-settings' ) . '</th>';
-            echo '                      <th style="width:100px;">' . esc_html__( '积分', 'tanzanite-settings' ) . '</th>';
+            echo '                      <th style="width:100px;">' . esc_html__( '折扣类型', 'tanzanite-settings' ) . '</th>';
+            echo '                      <th style="width:80px;">' . esc_html__( '折扣', 'tanzanite-settings' ) . '</th>';
             echo '                      <th style="width:100px;">' . esc_html__( '使用次数', 'tanzanite-settings' ) . '</th>';
-            echo '                      <th style="width:100px;">' . esc_html__( '状态', 'tanzanite-settings' ) . '</th>';
-            echo '                      <th style="width:140px;">' . esc_html__( '操作', 'tanzanite-settings' ) . '</th>';
+            echo '                      <th style="width:160px;">' . esc_html__( '过期时间', 'tanzanite-settings' ) . '</th>';
+            echo '                      <th style="width:80px;">' . esc_html__( '状态', 'tanzanite-settings' ) . '</th>';
+            echo '                      <th style="width:160px;">' . esc_html__( '操作', 'tanzanite-settings' ) . '</th>';
             echo '                  </tr></thead>';
             echo '                  <tbody></tbody>';
             echo '              </table>';

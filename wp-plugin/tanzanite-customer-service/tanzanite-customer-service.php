@@ -316,6 +316,16 @@ class Tanzanite_Customer_Service_Plugin {
             'tanzanite-cs-auto-reply',
             [ $this, 'render_auto_reply_page' ]
         );
+        
+        // 添加子菜单：邮箱设置
+        add_submenu_page(
+            'tanzanite-customer-service',
+            __( 'Email Settings', 'tanzanite-cs' ),
+            __( '邮箱设置', 'tanzanite-cs' ),
+            'manage_options',
+            'tanzanite-cs-email-settings',
+            [ $this, 'render_email_settings_page' ]
+        );
     }
     
     /**
@@ -378,9 +388,17 @@ class Tanzanite_Customer_Service_Plugin {
             'whatsapp' => $agent->whatsapp,
         ], $agents );
         
+        // 获取全局邮箱设置
+        $preSalesEmail = get_option( 'tz_cs_pre_sales_email', '' );
+        $afterSalesEmail = get_option( 'tz_cs_after_sales_email', '' );
+        
         return new \WP_REST_Response( [
             'success' => true,
             'data'    => $formatted,
+            'emailSettings' => [
+                'preSalesEmail'   => $preSalesEmail,
+                'afterSalesEmail' => $afterSalesEmail,
+            ],
         ], 200 );
     }
     
@@ -592,6 +610,8 @@ class Tanzanite_Customer_Service_Plugin {
             $password = $_POST['password'];
             $avatar   = esc_url_raw( $_POST['avatar'] );
             $whatsapp = sanitize_text_field( $_POST['whatsapp'] );
+            $pre_sales_email = sanitize_email( $_POST['pre_sales_email'] ?? '' );
+            $after_sales_email = sanitize_email( $_POST['after_sales_email'] ?? '' );
             
             // 检查工号是否已存在
             $exists = $wpdb->get_var( $wpdb->prepare(
@@ -606,16 +626,18 @@ class Tanzanite_Customer_Service_Plugin {
                 $result = $wpdb->insert(
                     $table,
                     [
-                        'agent_id'   => $agent_id,
-                        'name'       => $name,
-                        'email'      => $email,
-                        'password'   => password_hash( $password, PASSWORD_BCRYPT ),
-                        'avatar'     => $avatar,
-                        'whatsapp'   => $whatsapp,
-                        'status'     => 'active',
-                        'created_at' => current_time( 'mysql' ),
+                        'agent_id'          => $agent_id,
+                        'name'              => $name,
+                        'email'             => $email,
+                        'password'          => password_hash( $password, PASSWORD_BCRYPT ),
+                        'avatar'            => $avatar,
+                        'whatsapp'          => $whatsapp,
+                        'pre_sales_email'   => $pre_sales_email,
+                        'after_sales_email' => $after_sales_email,
+                        'status'            => 'active',
+                        'created_at'        => current_time( 'mysql' ),
                     ],
-                    [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+                    [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
                 );
                 
                 if ( $result ) {
@@ -643,6 +665,70 @@ class Tanzanite_Customer_Service_Plugin {
             );
             
             echo '<div class="notice notice-success"><p>客服状态已更新！</p></div>';
+        }
+        
+        // 处理删除客服
+        if ( isset( $_POST['tz_cs_delete_agent'] ) && check_admin_referer( 'tz_cs_delete_agent' ) ) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'tz_cs_agents';
+            
+            $agent_id = sanitize_text_field( $_POST['agent_id'] );
+            
+            $result = $wpdb->delete(
+                $table,
+                [ 'agent_id' => $agent_id ],
+                [ '%s' ]
+            );
+            
+            if ( $result ) {
+                echo '<div class="notice notice-success"><p>客服已删除！</p></div>';
+            } else {
+                echo '<div class="notice notice-error"><p>删除失败！</p></div>';
+            }
+        }
+        
+        // 处理编辑客服
+        if ( isset( $_POST['tz_cs_edit_agent'] ) && check_admin_referer( 'tz_cs_edit_agent' ) ) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'tz_cs_agents';
+            
+            $agent_id = sanitize_text_field( $_POST['agent_id'] );
+            $name     = sanitize_text_field( $_POST['name'] );
+            $email    = sanitize_email( $_POST['email'] );
+            $avatar   = esc_url_raw( $_POST['avatar'] );
+            $whatsapp = sanitize_text_field( $_POST['whatsapp'] );
+            $pre_sales_email = sanitize_email( $_POST['pre_sales_email'] ?? '' );
+            $after_sales_email = sanitize_email( $_POST['after_sales_email'] ?? '' );
+            $status   = sanitize_text_field( $_POST['status'] );
+            
+            $update_data = [
+                'name'              => $name,
+                'email'             => $email,
+                'avatar'            => $avatar,
+                'whatsapp'          => $whatsapp,
+                'pre_sales_email'   => $pre_sales_email,
+                'after_sales_email' => $after_sales_email,
+                'status'            => $status,
+            ];
+            
+            // 如果提供了新密码，则更新密码
+            if ( ! empty( $_POST['password'] ) ) {
+                $update_data['password'] = password_hash( $_POST['password'], PASSWORD_BCRYPT );
+            }
+            
+            $result = $wpdb->update(
+                $table,
+                $update_data,
+                [ 'agent_id' => $agent_id ],
+                array_fill( 0, count( $update_data ), '%s' ),
+                [ '%s' ]
+            );
+            
+            if ( $result !== false ) {
+                echo '<div class="notice notice-success"><p>客服信息已更新！</p></div>';
+            } else {
+                echo '<div class="notice notice-error"><p>更新失败！</p></div>';
+            }
         }
         
         // 处理重置密码
@@ -731,6 +817,20 @@ class Tanzanite_Customer_Service_Plugin {
                                 </td>
                             </tr>
                             <tr>
+                                <th><label for="pre_sales_email">售前咨询邮箱</label></th>
+                                <td>
+                                    <input type="email" name="pre_sales_email" id="pre_sales_email" class="regular-text" placeholder="presales@example.com">
+                                    <p class="description">用于前端显示售前咨询邮箱按钮</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><label for="after_sales_email">售后支持邮箱</label></th>
+                                <td>
+                                    <input type="email" name="after_sales_email" id="after_sales_email" class="regular-text" placeholder="support@example.com">
+                                    <p class="description">用于前端显示售后支持邮箱按钮</p>
+                                </td>
+                            </tr>
+                            <tr>
                                 <th><label for="avatar">头像 URL</label></th>
                                 <td>
                                     <input type="url" name="avatar" id="avatar" class="regular-text" placeholder="https://...">
@@ -798,13 +898,11 @@ class Tanzanite_Customer_Service_Plugin {
                                     <td><?php echo $agent->last_login ? esc_html( $agent->last_login ) : '<span style="color: #9ca3af;">从未登录</span>'; ?></td>
                                     <td><?php echo esc_html( $agent->created_at ); ?></td>
                                     <td>
-                                        <form method="post" style="display: inline-block; margin-right: 8px;">
-                                            <?php wp_nonce_field( 'tz_cs_update_status' ); ?>
+                                        <button type="button" class="button button-small edit-agent-btn" data-agent='<?php echo json_encode( $agent ); ?>'>编辑</button>
+                                        <form method="post" style="display: inline-block; margin: 0 8px;">
+                                            <?php wp_nonce_field( 'tz_cs_delete_agent' ); ?>
                                             <input type="hidden" name="agent_id" value="<?php echo esc_attr( $agent->agent_id ); ?>">
-                                            <input type="hidden" name="status" value="<?php echo $agent->status === 'active' ? 'inactive' : 'active'; ?>">
-                                            <button type="submit" name="tz_cs_update_status" class="button button-small">
-                                                <?php echo $agent->status === 'active' ? '禁用' : '启用'; ?>
-                                            </button>
+                                            <button type="submit" name="tz_cs_delete_agent" class="button button-small" style="color: #dc2626;" onclick="return confirm('确定要删除客服「<?php echo esc_js( $agent->name ); ?>」吗？此操作不可恢复！')">删除</button>
                                         </form>
                                         <button type="button" class="button button-small reset-password-btn" data-agent-id="<?php echo esc_attr( $agent->agent_id ); ?>" data-agent-name="<?php echo esc_attr( $agent->name ); ?>">重置密码</button>
                                     </td>
@@ -858,8 +956,129 @@ class Tanzanite_Customer_Service_Plugin {
                     alert('密码至少需要 8 位！');
                 }
             });
+            
+            // 编辑客服
+            $('.edit-agent-btn').on('click', function() {
+                const agent = $(this).data('agent');
+                
+                // 填充表单
+                $('#edit-agent-id').val(agent.agent_id);
+                $('#edit-name').val(agent.name);
+                $('#edit-email').val(agent.email);
+                $('#edit-whatsapp').val(agent.whatsapp);
+                $('#edit-pre-sales-email').val(agent.pre_sales_email || '');
+                $('#edit-after-sales-email').val(agent.after_sales_email || '');
+                $('#edit-avatar').val(agent.avatar);
+                $('#edit-status').val(agent.status);
+                $('#edit-password').val('');
+                
+                // 显示模态框
+                $('#edit-agent-modal').fadeIn(200);
+            });
+            
+            // 关闭编辑模态框
+            $('#close-edit-modal, #cancel-edit').on('click', function() {
+                $('#edit-agent-modal').fadeOut(200);
+            });
+            
+            // 点击背景关闭
+            $('#edit-agent-modal').on('click', function(e) {
+                if (e.target === this) {
+                    $(this).fadeOut(200);
+                }
+            });
+            
+            // 头像上传（编辑表单）
+            $('#upload-edit-avatar-btn').on('click', function(e) {
+                e.preventDefault();
+                
+                const mediaUploader = wp.media({
+                    title: '选择头像',
+                    button: { text: '使用此图片' },
+                    multiple: false,
+                    library: { type: 'image' }
+                });
+                
+                mediaUploader.on('select', function() {
+                    const attachment = mediaUploader.state().get('selection').first().toJSON();
+                    $('#edit-avatar').val(attachment.url);
+                });
+                
+                mediaUploader.open();
+            });
         });
         </script>
+        
+        <!-- 编辑客服模态框 -->
+        <div id="edit-agent-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100000; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 8px; padding: 24px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <h2 style="margin-top: 0;">编辑客服</h2>
+                <form method="post" id="edit-agent-form">
+                    <?php wp_nonce_field( 'tz_cs_edit_agent' ); ?>
+                    <input type="hidden" id="edit-agent-id" name="agent_id" value="">
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th><label for="edit-name">客服名称 *</label></th>
+                            <td><input type="text" id="edit-name" name="name" class="regular-text" required></td>
+                        </tr>
+                        <tr>
+                            <th><label for="edit-email">邮箱 *</label></th>
+                            <td><input type="email" id="edit-email" name="email" class="regular-text" required></td>
+                        </tr>
+                        <tr>
+                            <th><label for="edit-password">新密码</label></th>
+                            <td>
+                                <input type="password" id="edit-password" name="password" class="regular-text" placeholder="留空则不修改密码">
+                                <p class="description">至少 8 位，留空则不修改密码</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="edit-whatsapp">WhatsApp 号码</label></th>
+                            <td>
+                                <input type="text" id="edit-whatsapp" name="whatsapp" class="regular-text" placeholder="例如：+8613800138000">
+                                <p class="description">用于前端显示 WhatsApp 联系按钮，格式：+国家代码+号码（如 +8613800138000）</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="edit-pre-sales-email">售前咨询邮箱</label></th>
+                            <td>
+                                <input type="email" id="edit-pre-sales-email" name="pre_sales_email" class="regular-text" placeholder="presales@example.com">
+                                <p class="description">用于前端显示售前咨询邮箱按钮</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="edit-after-sales-email">售后支持邮箱</label></th>
+                            <td>
+                                <input type="email" id="edit-after-sales-email" name="after_sales_email" class="regular-text" placeholder="support@example.com">
+                                <p class="description">用于前端显示售后支持邮箱按钮</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="edit-avatar">头像 URL</label></th>
+                            <td>
+                                <input type="url" id="edit-avatar" name="avatar" class="regular-text" placeholder="https://...">
+                                <button type="button" id="upload-edit-avatar-btn" class="button" style="margin-left: 8px;">上传头像</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="edit-status">状态</label></th>
+                            <td>
+                                <select id="edit-status" name="status">
+                                    <option value="active">启用</option>
+                                    <option value="inactive">禁用</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" id="cancel-edit" class="button">取消</button>
+                        <button type="submit" name="tz_cs_edit_agent" class="button button-primary">保存修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
         <?php
     }
     
@@ -1164,6 +1383,91 @@ class Tanzanite_Customer_Service_Plugin {
                     <?php else : ?>
                         <p style="text-align: center; color: #9ca3af; padding: 24px;">暂无关键词规则</p>
                     <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * 渲染邮箱设置页面
+     */
+    public function render_email_settings_page(): void {
+        // 处理表单提交
+        if ( isset( $_POST['tz_cs_save_email_settings'] ) && check_admin_referer( 'tz_cs_email_settings' ) ) {
+            $pre_sales_email = sanitize_email( $_POST['pre_sales_email'] ?? '' );
+            $after_sales_email = sanitize_email( $_POST['after_sales_email'] ?? '' );
+            
+            update_option( 'tz_cs_pre_sales_email', $pre_sales_email );
+            update_option( 'tz_cs_after_sales_email', $after_sales_email );
+            
+            echo '<div class="notice notice-success"><p>邮箱设置已保存！</p></div>';
+        }
+        
+        // 获取当前设置
+        $pre_sales_email = get_option( 'tz_cs_pre_sales_email', '' );
+        $after_sales_email = get_option( 'tz_cs_after_sales_email', '' );
+        ?>
+        <div class="wrap tz-cs-admin">
+            <div class="tz-settings-wrapper">
+                <div class="tz-settings-header">
+                    <h1><?php _e( '邮箱设置', 'tanzanite-cs' ); ?></h1>
+                    <p><?php _e( '设置全局的售前咨询和售后支持邮箱地址，这些邮箱将显示在前端聊天窗口中。', 'tanzanite-cs' ); ?></p>
+                </div>
+                
+                <!-- 邮箱设置表单 -->
+                <div class="tz-settings-section" style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                    <h2 style="margin-top: 0;">邮箱配置</h2>
+                    <form method="post">
+                        <?php wp_nonce_field( 'tz_cs_email_settings' ); ?>
+                        
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">
+                                    <label for="pre_sales_email">售前咨询邮箱</label>
+                                </th>
+                                <td>
+                                    <input type="email" 
+                                           name="pre_sales_email" 
+                                           id="pre_sales_email" 
+                                           class="regular-text" 
+                                           value="<?php echo esc_attr( $pre_sales_email ); ?>"
+                                           placeholder="presales@example.com">
+                                    <p class="description">用于前端显示售前咨询邮箱按钮</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="after_sales_email">售后支持邮箱</label>
+                                </th>
+                                <td>
+                                    <input type="email" 
+                                           name="after_sales_email" 
+                                           id="after_sales_email" 
+                                           class="regular-text" 
+                                           value="<?php echo esc_attr( $after_sales_email ); ?>"
+                                           placeholder="support@example.com">
+                                    <p class="description">用于前端显示售后支持邮箱按钮</p>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <p class="submit">
+                            <button type="submit" name="tz_cs_save_email_settings" class="button button-primary">保存设置</button>
+                        </p>
+                    </form>
+                </div>
+                
+                <!-- 使用说明 -->
+                <div class="tz-settings-section" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+                    <h2 style="margin-top: 0;">📖 使用说明</h2>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                        <li>这些邮箱地址将在前端聊天窗口中显示为按钮</li>
+                        <li>客户点击按钮后会自动打开邮件客户端</li>
+                        <li>如果不填写邮箱，对应的按钮将显示为禁用状态</li>
+                        <li>邮箱地址格式：example@domain.com</li>
+                        <li>建议使用企业邮箱以提升专业形象</li>
+                    </ul>
                 </div>
             </div>
         </div>

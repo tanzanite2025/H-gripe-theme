@@ -104,21 +104,33 @@
               </div>
             </div>
           </div>
+
+          <!-- 浏览历史组件 -->
+          <div class="mt-6">
+            <BrowsingHistoryDark />
+          </div>
         </div>
 
         <!-- 空购物车 -->
-        <div v-else class="flex-1 flex flex-col items-center justify-center px-6 py-12">
-          <svg class="w-24 h-24 text-white/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-          </svg>
-          <p class="text-white/70 text-lg font-medium mb-2">Your cart is empty</p>
-          <p class="text-white/50 text-sm mb-6">Add some products to get started!</p>
-          <button
-            @click="closeCart"
-            class="px-6 py-2 bg-[#6b73ff] text-white rounded-lg hover:bg-[#5d65e8] transition-colors"
-          >
-            Continue Shopping
-          </button>
+        <div v-else class="flex-1 overflow-y-auto px-6 py-4">
+          <div class="flex flex-col items-center justify-center py-12">
+            <svg class="w-24 h-24 text-white/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <p class="text-white/70 text-lg font-medium mb-2">Your cart is empty</p>
+            <p class="text-white/50 text-sm mb-6">Add some products to get started!</p>
+            <button
+              @click="closeCart"
+              class="px-6 py-2 bg-[#6b73ff] text-white rounded-lg hover:bg-[#5d65e8] transition-colors"
+            >
+              Continue Shopping
+            </button>
+          </div>
+
+          <!-- 浏览历史组件 -->
+          <div class="mt-6">
+            <BrowsingHistoryDark />
+          </div>
         </div>
 
         <!-- 底部汇总 -->

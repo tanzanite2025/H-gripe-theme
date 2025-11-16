@@ -11,10 +11,11 @@
         <Transition name="slide-up">
           <div
             v-if="conversation"
-            class="bg-black border border-[#6e6ee9] rounded-2xl max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden shadow-2xl flex flex-row"
+            class="border border-[#6e6ee9] rounded-2xl max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden shadow-2xl flex flex-row transition-colors duration-300"
+            :style="{ backgroundColor: selectedAgent ? getAgentBgColorValue(selectedAgent.id) : '#000000' }"
           >
             <!-- 左侧：客服列表(窄栏 200px) - 移动端隐藏 -->
-            <div class="hidden md:flex w-[200px] min-w-[200px] max-w-[200px] border-r border-white/10 flex-col bg-black">
+            <div class="hidden md:flex w-[200px] min-w-[200px] max-w-[200px] border-r border-white/10 flex-col" style="background-color: rgba(0, 0, 0, 0.5) !important;">
               <!-- 客服列表标题 -->
               <div class="px-4 py-4 border-b border-white/10">
                 <h3 class="font-semibold text-sm bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] bg-clip-text text-transparent">Agents</h3>
@@ -66,102 +67,231 @@
                   No agents available
                 </div>
               </div>
+              
+              <!-- 邮箱按钮区域 - 固定在底部 -->
+              <div class="border-t border-white/10 p-3 space-y-2">
+                <!-- Pre-sales 邮箱按钮 -->
+                <a
+                  :href="emailSettings.preSalesEmail ? `mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry` : 'javascript:void(0)'"
+                  :class="[
+                    'w-full px-3 py-2 rounded-lg text-xs transition-all inline-flex items-center justify-center gap-2',
+                    emailSettings.preSalesEmail 
+                      ? 'text-white cursor-pointer shadow-lg' 
+                      : 'text-gray-400 cursor-not-allowed opacity-50'
+                  ]"
+                  :style="emailSettings.preSalesEmail ? 'background: linear-gradient(to right, #60D5FF, #4A90E2) !important;' : 'background-color: #4b5563 !important;'"
+                  :title="emailSettings.preSalesEmail ? 'Pre-sales Email' : 'No email configured'"
+                  @click="!emailSettings.preSalesEmail && $event.preventDefault()"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  <span>Pre-sales</span>
+                </a>
+                
+                <!-- After-sales 邮箱按钮 -->
+                <a
+                  :href="emailSettings.afterSalesEmail ? `mailto:${emailSettings.afterSalesEmail}?subject=After-sales Support` : 'javascript:void(0)'"
+                  :class="[
+                    'w-full px-3 py-2 rounded-lg text-xs transition-all inline-flex items-center justify-center gap-2',
+                    emailSettings.afterSalesEmail 
+                      ? 'text-white cursor-pointer shadow-lg' 
+                      : 'text-gray-400 cursor-not-allowed opacity-50'
+                  ]"
+                  :style="emailSettings.afterSalesEmail ? 'background: linear-gradient(to right, #C77DFF, #9B59B6) !important;' : 'background-color: #4b5563 !important;'"
+                  :title="emailSettings.afterSalesEmail ? 'After-sales Email' : 'No email configured'"
+                  @click="!emailSettings.afterSalesEmail && $event.preventDefault()"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  <span>After-sales</span>
+                </a>
+              </div>
             </div>
 
             <!-- 中间：聊天区域(主栏) -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-              <!-- 头部 -->
-              <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-white/10">
-                <div class="flex items-center gap-3 flex-1 min-w-0">
-                  <!-- 移动端：客服选择下拉菜单 -->
-                  <div v-if="selectedAgent" class="md:hidden flex-1 min-w-0 flex items-center gap-2">
-                    <select
-                      v-model="selectedAgent.id"
-                      @change="handleAgentChange"
-                      class="flex-1 px-3 py-2 bg-white/[0.08] text-white border border-white/20 rounded-lg text-sm focus:outline-none focus:border-[#6b73ff]"
-                    >
-                      <option v-for="agent in agents" :key="agent.id" :value="agent.id" class="bg-black">
-                        {{ agent.name }}
-                      </option>
-                    </select>
-                    
-                    <!-- 移动端 WhatsApp 按钮 -->
+              <!-- 头部 - 固定高度避免跳动 -->
+              <div class="border-b border-white/10">
+                <!-- 移动端：邮箱按钮和关闭按钮同一行 -->
+                <div class="md:hidden flex items-center justify-between px-2 pt-3 gap-2">
+                  <!-- 左侧：邮箱按钮 -->
+                  <div class="flex gap-1.5 flex-1">
+                    <!-- Pre-sales 邮箱按钮 -->
                     <a
-                      v-if="selectedAgent?.whatsapp"
-                      :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
-                      target="_blank"
-                      class="flex items-center justify-center w-10 h-10 bg-[#25D366] hover:bg-[#20BA5A] text-white rounded-lg transition-colors flex-shrink-0"
-                      title="WhatsApp"
+                      :href="emailSettings.preSalesEmail ? `mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry` : 'javascript:void(0)'"
+                      :class="[
+                        'px-3 py-1.5 rounded-full text-xs transition-all inline-flex items-center justify-center gap-1.5 flex-1',
+                        emailSettings.preSalesEmail 
+                          ? 'text-white cursor-pointer shadow-lg' 
+                          : 'text-gray-400 cursor-not-allowed opacity-50'
+                      ]"
+                      :style="emailSettings.preSalesEmail ? 'background: linear-gradient(to right, #60D5FF, #4A90E2) !important;' : 'background-color: #4b5563 !important;'"
+                      :title="emailSettings.preSalesEmail ? 'Pre-sales Email' : 'No email configured'"
+                      @click="!emailSettings.preSalesEmail && $event.preventDefault()"
                     >
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                       </svg>
+                      <span>Pre-sales</span>
+                    </a>
+                    
+                    <!-- After-sales 邮箱按钮 -->
+                    <a
+                      :href="emailSettings.afterSalesEmail ? `mailto:${emailSettings.afterSalesEmail}?subject=After-sales Support` : 'javascript:void(0)'"
+                      :class="[
+                        'px-3 py-1.5 rounded-full text-xs transition-all inline-flex items-center justify-center gap-1.5 flex-1',
+                        emailSettings.afterSalesEmail 
+                          ? 'text-white cursor-pointer shadow-lg' 
+                          : 'text-gray-400 cursor-not-allowed opacity-50'
+                      ]"
+                      :style="emailSettings.afterSalesEmail ? 'background: linear-gradient(to right, #C77DFF, #9B59B6) !important;' : 'background-color: #4b5563 !important;'"
+                      :title="emailSettings.afterSalesEmail ? 'After-sales Email' : 'No email configured'"
+                      @click="!emailSettings.afterSalesEmail && $event.preventDefault()"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      </svg>
+                      <span>After-sales</span>
                     </a>
                   </div>
                   
-                  <!-- 桌面端：当前选中的客服信息 -->
-                  <div v-if="selectedAgent" class="hidden md:flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-white font-semibold">
-                      <img
-                        v-if="selectedAgent.avatar"
-                        :src="selectedAgent.avatar"
-                        :alt="selectedAgent.name"
-                        class="w-full h-full rounded-full object-cover"
-                      />
-                      <span v-else>{{ getInitials(selectedAgent.name) }}</span>
+                  <!-- 右侧：关闭按钮 -->
+                  <button
+                    @click="handleClose"
+                    class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
+                    aria-label="Close"
+                  >
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <!-- 移动端：客服选择按钮 - 固定高度容器 -->
+                <div v-if="selectedAgent" class="md:hidden pb-3 border-b border-white/10">
+                  <div class="flex flex-col gap-3">
+                    <!-- 客服选择按钮 - 圆形头像样式 -->
+                    <div class="flex gap-3 justify-center px-4 py-2">
+                      <button
+                        v-for="agent in agents"
+                        :key="agent.id"
+                        @click="selectAgent(agent)"
+                        class="flex flex-col items-center gap-1.5 transition-all flex-1"
+                      >
+                        <!-- 圆形头像 -->
+                        <div 
+                          class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all"
+                          :class="selectedAgent?.id === agent.id
+                            ? 'ring-4 ring-[#ff6b6b] ring-offset-2 ring-offset-black scale-110'
+                            : 'ring-2 ring-white/20'"
+                          :style="selectedAgent?.id === agent.id
+                            ? 'background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);'
+                            : 'background: linear-gradient(135deg, #40ffaa 0%, #6b73ff 100%);'"
+                        >
+                          {{ agent.name.charAt(0).toUpperCase() }}
+                        </div>
+                        <!-- 客服名称 -->
+                        <span 
+                          class="text-xs font-medium transition-colors"
+                          :class="selectedAgent?.id === agent.id ? 'text-[#ff6b6b]' : 'text-white/70'"
+                        >
+                          {{ agent.name }}
+                        </span>
+                      </button>
                     </div>
                     
-                    <div>
-                      <h2 class="text-lg font-bold text-white">
-                        {{ selectedAgent.name }}
-                      </h2>
-                      <p class="text-xs text-white/70">
-                        {{ selectedAgent.email }}
-                      </p>
+                    <!-- WhatsApp 按钮 -->
+                    <div class="flex gap-1.5 justify-center px-2">
+                      <a
+                        :href="selectedAgent?.whatsapp ? `https://wa.me/${selectedAgent.whatsapp.replace('+', '')}` : '#'"
+                        :target="selectedAgent?.whatsapp ? '_blank' : '_self'"
+                        :class="[
+                          'px-4 py-2 rounded-full text-xs transition-all flex-1 inline-flex items-center justify-center gap-1.5',
+                          selectedAgent?.whatsapp 
+                            ? 'bg-[#25D366] hover:bg-[#20BA5A] text-white cursor-pointer shadow-lg' 
+                            : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                        ]"
+                        :title="selectedAgent?.whatsapp ? 'WhatsApp' : 'No WhatsApp configured'"
+                        @click.prevent="selectedAgent?.whatsapp && window.open(`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`, '_blank')"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        <span>WhatsApp</span>
+                      </a>
                     </div>
-                  </div>
-                  
-                  <div v-else class="text-white/50 text-sm">
-                    Select an agent to start chat
                   </div>
                 </div>
                 
-                <!-- WhatsApp 按钮 -->
-                <a
-                  v-if="selectedAgent?.whatsapp"
-                  :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
-                  target="_blank"
-                  class="hidden md:flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#20BA5A] text-white rounded-lg transition-colors text-sm font-medium"
-                  title="通过 WhatsApp 联系此客服"
-                >
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                  <span>WhatsApp</span>
-                </a>
-                
-                <!-- 转接按钮 -->
-                <button
-                  v-if="selectedAgent && conversation"
-                  @click="showTransferModal = true"
-                  class="hidden md:flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-                  title="转接会话"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                  </svg>
-                  <span>转接</span>
-                </button>
-                
-                <button
-                  @click="handleClose"
-                  class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
-                  aria-label="Close"
-                >
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <!-- 桌面端：客服信息 + 关闭按钮 -->
+                <div class="hidden md:flex items-center justify-between px-6 py-4">
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <!-- 桌面端：当前选中的客服信息 -->
+                    <div v-if="selectedAgent" class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-white font-semibold">
+                        <img
+                          v-if="selectedAgent.avatar"
+                          :src="selectedAgent.avatar"
+                          :alt="selectedAgent.name"
+                          class="w-full h-full rounded-full object-cover"
+                        />
+                        <span v-else>{{ getInitials(selectedAgent.name) }}</span>
+                      </div>
+                      
+                      <div>
+                        <h2 class="text-lg font-bold text-white">
+                          {{ selectedAgent.name }}
+                        </h2>
+                        <p class="text-xs text-white/70">
+                          {{ selectedAgent.email }}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div v-else class="text-white/50 text-sm">
+                      Select an agent to start chat
+                    </div>
+                  </div>
+                  
+                  <!-- WhatsApp 按钮 -->
+                  <a
+                    v-if="selectedAgent?.whatsapp"
+                    :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
+                    target="_blank"
+                    class="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#20BA5A] text-white rounded-lg transition-colors text-sm font-medium"
+                    title="通过 WhatsApp 联系此客服"
+                  >
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    <span>WhatsApp</span>
+                  </a>
+                  
+                  <!-- 转接按钮 -->
+                  <button
+                    v-if="selectedAgent && conversation"
+                    @click="showTransferModal = true"
+                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                    title="转接会话"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                    <span>转接</span>
+                  </button>
+                  
+                  <button
+                    @click="handleClose"
+                    class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+                    aria-label="Close"
+                  >
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <!-- 标签切换 -->
@@ -265,48 +395,56 @@
               </div>
 
               <!-- 商品分享标签 -->
-              <div v-if="activeTab === 'share'" class="flex-1 overflow-y-auto p-3 md:p-6">
-                <!-- 搜索框 -->
-                <div class="flex gap-2 mb-4 items-center">
-                  <input
-                    v-model="searchQuery"
-                    type="text"
-                    placeholder="Search products..."
-                    class="flex-1 h-[42px] px-3 rounded-lg bg-white/[0.06] text-white border border-white/[0.18] focus:outline-none focus:border-[#6b73ff] transition-colors text-sm"
-                    @keydown.enter.prevent="searchProducts"
-                  />
-                  <button
-                    @click="searchProducts"
-                    :disabled="isSearching"
-                    class="h-[42px] px-3 md:px-4 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/20 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
-                  >
-                    {{ isSearching ? 'Searching...' : 'Search' }}
-                  </button>
-                </div>
-
-                <!-- 商品列表 -->
-                <div v-if="searchResults.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div
-                    v-for="product in searchResults"
-                    :key="product.id"
-                    @click="shareProductToChat(product)"
-                    class="border border-white/10 rounded-lg p-3 hover:bg-white/[0.05] cursor-pointer transition-colors"
-                  >
-                    <img
-                      v-if="product.thumbnail"
-                      :src="product.thumbnail"
-                      alt="商品图片"
-                      class="w-full h-32 object-cover rounded-lg mb-2"
+              <div v-if="activeTab === 'share'" class="flex-1 flex flex-col overflow-hidden">
+                <!-- 搜索和商品列表区域 - 可滚动 -->
+                <div class="flex-1 overflow-y-auto p-3 md:p-6">
+                  <!-- 搜索框 -->
+                  <div class="flex gap-2 mb-4 items-center">
+                    <input
+                      v-model="searchQuery"
+                      type="text"
+                      placeholder="Search products..."
+                      class="flex-1 h-[42px] px-3 rounded-lg bg-white/[0.06] text-white border border-white/[0.18] focus:outline-none focus:border-[#6b73ff] transition-colors text-sm"
+                      @keydown.enter.prevent="searchProducts"
                     />
-                    <h4 class="text-white text-sm font-medium truncate">{{ product.title }}</h4>
-                    <p v-if="product.price" class="text-white/70 text-xs mt-1">{{ product.price }}</p>
+                    <button
+                      @click="searchProducts"
+                      :disabled="isSearching"
+                      class="h-[42px] px-3 md:px-4 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/20 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
+                    >
+                      {{ isSearching ? 'Searching...' : 'Search' }}
+                    </button>
+                  </div>
+
+                  <!-- 商品列表 -->
+                  <div v-if="searchResults.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div
+                      v-for="product in searchResults"
+                      :key="product.id"
+                      @click="shareProductToChat(product)"
+                      class="border border-white/10 rounded-lg p-3 hover:bg-white/[0.05] cursor-pointer transition-colors"
+                    >
+                      <img
+                        v-if="product.thumbnail"
+                        :src="product.thumbnail"
+                        alt="商品图片"
+                        class="w-full h-32 object-cover rounded-lg mb-2"
+                      />
+                      <h4 class="text-white text-sm font-medium truncate">{{ product.title }}</h4>
+                      <p v-if="product.price" class="text-white/70 text-xs mt-1">{{ product.price }}</p>
+                    </div>
+                  </div>
+                  <div v-else-if="!isSearching && searchQuery" class="text-center text-white/50 py-12">
+                    No products found
+                  </div>
+                  <div v-else-if="!isSearching" class="text-center text-white/50 py-12">
+                    Search products to share in chat
                   </div>
                 </div>
-                <div v-else-if="!isSearching && searchQuery" class="text-center text-white/50 py-12">
-                  No products found
-                </div>
-                <div v-else-if="!isSearching" class="text-center text-white/50 py-12">
-                  Search products to share in chat
+                
+                <!-- 浏览历史组件 - 固定在底部 -->
+                <div class="border-t border-white/10 p-3 md:p-4 bg-black/20">
+                  <BrowsingHistoryDark @share-to-chat="handleShareProductFromHistory" />
                 </div>
               </div>
 
@@ -486,6 +624,12 @@ const agents = ref<any[]>([])
 const selectedAgent = ref<any>(null)
 const isLoadingAgents = ref(false)
 
+// 全局邮箱设置
+const emailSettings = ref({
+  preSalesEmail: '',
+  afterSalesEmail: ''
+})
+
 const activeTab = ref<'chat' | 'share' | 'orders'>('chat')
 const newMessage = ref('')
 const isSending = ref(false)
@@ -518,8 +662,11 @@ const conversationId = computed(() => {
 // 消息列表
 const messages = ref<any[]>([])
 
-// LocalStorage 键名
-const STORAGE_KEY = computed(() => `tz_chat_${conversationId.value}`)
+// LocalStorage 键名（包含客服ID，确保每个客服的聊天记录独立）
+const STORAGE_KEY = computed(() => {
+  const agentId = selectedAgent.value?.id || 'default'
+  return `tz_chat_${conversationId.value}_agent_${agentId}`
+})
 const STORAGE_EXPIRY_DAYS = 5
 
 // 商品搜索
@@ -803,6 +950,43 @@ const shareProductToChat = async (product: any) => {
   }
 }
 
+// 从浏览历史分享商品到聊天
+const handleShareProductFromHistory = async (product: any) => {
+  if (!props.conversation || isSending.value) return
+  
+  isSending.value = true
+  
+  const messageData = {
+    id: Date.now(),
+    conversation_id: conversationId.value,
+    sender_id: user.value?.id || 0,
+    sender_name: user.value?.display_name || '访客',
+    sender_email: user.value?.email || '',
+    message: product.title || '商品',
+    message_type: 'product',
+    metadata: {
+      title: product.title,
+      url: product.url,
+      thumbnail: product.thumbnail,
+      price: product.price
+    },
+    created_at: new Date().toISOString(),
+    is_agent: false
+  }
+  
+  try {
+    messages.value.push(messageData)
+    saveMessagesToStorage()
+    await sendMessageToAPI(messageData)
+    activeTab.value = 'chat'
+    scrollToBottom()
+  } catch (error) {
+    console.error('从浏览历史分享商品失败:', error)
+  } finally {
+    isSending.value = false
+  }
+}
+
 // 加载订单列表
 const loadOrders = async () => {
   isLoadingOrders.value = true
@@ -866,6 +1050,12 @@ const fetchAgents = async () => {
     const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agents')
     if (response.success && response.data) {
       agents.value = response.data
+      
+      // 保存全局邮箱设置
+      if (response.emailSettings) {
+        emailSettings.value = response.emailSettings
+      }
+      
       // 默认选择第一个客服
       if (agents.value.length > 0 && !selectedAgent.value) {
         selectedAgent.value = agents.value[0]
@@ -921,13 +1111,30 @@ const selectAgent = (agent: any) => {
   scrollToBottom()
 }
 
-// 处理移动端下拉菜单切换客服
-const handleAgentChange = (event: Event) => {
-  const agentId = parseInt((event.target as HTMLSelectElement).value)
-  const agent = agents.value.find(a => a.id === agentId)
-  if (agent) {
-    selectAgent(agent)
-  }
+// 根据客服ID获取背景颜色值（深色系）
+const getAgentBgColorValue = (agentId: number) => {
+  const colors = [
+    '#0a0a0a',      // 深黑（默认）
+    '#0d1117',      // 深蓝黑
+    '#0f0a14',      // 深紫黑
+    '#0a1410',      // 深绿黑
+    '#14100a',      // 深橙黑
+    '#100a14',      // 深紫红黑
+  ]
+  return colors[agentId % colors.length] || colors[0]
+}
+
+// 根据客服ID获取背景颜色类名（深色系）- 保留用于其他地方
+const getAgentBgColor = (agentId: number) => {
+  const colors = [
+    'bg-[#0a0a0a]',      // 深黑（默认）
+    'bg-[#0d1117]',      // 深蓝黑
+    'bg-[#0f0a14]',      // 深紫黑
+    'bg-[#0a1410]',      // 深绿黑
+    'bg-[#14100a]',      // 深橙黑
+    'bg-[#100a14]',      // 深紫红黑
+  ]
+  return colors[agentId % colors.length] || colors[0]
 }
 
 // 获取首字母

@@ -103,6 +103,8 @@ class TZ_CS_Database {
             password varchar(255) NOT NULL,
             avatar varchar(500) DEFAULT '',
             whatsapp varchar(50) DEFAULT '',
+            pre_sales_email varchar(100) DEFAULT '',
+            after_sales_email varchar(100) DEFAULT '',
             status varchar(20) DEFAULT 'active',
             last_login datetime,
             created_at datetime NOT NULL,
@@ -210,6 +212,14 @@ class TZ_CS_Database {
             
             if ( ! in_array( 'whatsapp', $columns ) ) {
                 $wpdb->query( "ALTER TABLE $table_agents ADD COLUMN whatsapp varchar(50) DEFAULT '' AFTER avatar" );
+            }
+            
+            if ( ! in_array( 'pre_sales_email', $columns ) ) {
+                $wpdb->query( "ALTER TABLE $table_agents ADD COLUMN pre_sales_email varchar(100) DEFAULT '' AFTER whatsapp" );
+            }
+            
+            if ( ! in_array( 'after_sales_email', $columns ) ) {
+                $wpdb->query( "ALTER TABLE $table_agents ADD COLUMN after_sales_email varchar(100) DEFAULT '' AFTER pre_sales_email" );
             }
             
             $result_agents = [ 'updated' => $table_agents ];

@@ -56,9 +56,20 @@
             if (!code) return;
             const title = prompt('输入标题:');
             if (!title) return;
-            const amount = parseFloat(prompt('输入金额:') || '0');
+            const discountType = prompt('折扣类型 (输入 1=固定金额, 2=百分比):', '1');
+            const amount = parseFloat(prompt('输入折扣金额' + (discountType === '2' ? ' (百分比，如输入 20 表示 20%)' : ' (固定金额)') + ':') || '0');
+            const usageLimit = parseInt(prompt('使用次数限制 (默认 1):', '1') || '1');
+            const expiresAt = prompt('过期时间 (格式: YYYY-MM-DD HH:MM:SS，留空表示永久有效)\n例如: 2025-12-31 23:59:59');
             
-            createCoupon({ code, title, amount, status: 'active' });
+            createCoupon({ 
+                code, 
+                title, 
+                discount_type: discountType === '2' ? 'percentage' : 'fixed_amount',
+                amount, 
+                usage_limit: usageLimit,
+                expires_at: expiresAt || null,
+                status: 'active' 
+            });
         });
 
         async function loadCoupons() {
@@ -87,24 +98,34 @@
             if (!tbody) return;
 
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;">' + (i18n.noData || 'No data') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;">' + (i18n.noData || 'No data') + '</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = items.map(item => `
+            tbody.innerHTML = items.map(item => {
+                const discountTypeText = item.discount_type === 'percentage' ? '百分比' : '固定金额';
+                const discountValue = item.discount_type === 'percentage' ? item.amount + '%' : '$' + item.amount;
+                const expiresAt = item.expires_at || '永久有效';
+                const isExpired = item.expires_at && new Date(item.expires_at) < new Date();
+                const expiresStyle = isExpired ? 'color:red;font-weight:bold;' : '';
+                
+                return `
                 <tr>
                     <td>${item.id}</td>
-                    <td>${escapeHtml(item.code)}</td>
+                    <td><strong>${escapeHtml(item.code)}</strong></td>
                     <td>${escapeHtml(item.title)}</td>
-                    <td>${item.amount}</td>
-                    <td>${item.points_required || 0}</td>
+                    <td>${discountTypeText}</td>
+                    <td><strong>${discountValue}</strong></td>
                     <td>${item.usage_count || 0}/${item.usage_limit || 1}</td>
-                    <td>${escapeHtml(item.status)}</td>
+                    <td style="${expiresStyle}">${expiresAt}${isExpired ? ' (已过期)' : ''}</td>
+                    <td><span class="status-badge status-${item.status}">${escapeHtml(item.status)}</span></td>
                     <td>
+                        <button class="button button-small" onclick="window.tzEditCoupon(${item.id})">编辑</button>
                         <button class="button button-small" onclick="window.tzDeleteCoupon(${item.id})">删除</button>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         async function createCoupon(data) {
@@ -122,6 +143,91 @@
                 showRewardsNotice(i18n.saveFailed || 'Failed', 'error');
             }
         }
+
+        window.tzEditCoupon = async function(id) {
+            try {
+                console.log('Fetching coupon ID:', id);
+                console.log('Request URL:', config.couponsSingleUrl + id);
+                
+                // 获取当前优惠券信息
+                const response = await apiRequest(config.couponsSingleUrl + id);
+                console.log('Get coupon response:', response);
+                console.log('Response status:', response.status);
+                console.log('Response data:', response.data);
+                
+                if (!response.ok) {
+                    console.error('Load coupon failed:', response);
+                    console.error('Error details:', {
+                        status: response.status,
+                        data: response.data,
+                        message: response.data?.message,
+                        code: response.data?.code
+                    });
+                    
+                    // 如果是 HTML 错误页面，显示简化的错误信息
+                    let errorMsg = 'Load failed';
+                    if (response.data && typeof response.data === 'object') {
+                        errorMsg = response.data.message || response.data.code || 'Server error';
+                    } else if (typeof response.data === 'string' && response.data.includes('critical error')) {
+                        errorMsg = 'PHP Fatal Error - Check WordPress error logs';
+                    }
+                    
+                    throw new Error(errorMsg);
+                }
+                
+                let coupon;
+                if (typeof response.json === 'function') {
+                    coupon = await response.json();
+                } else {
+                    coupon = response.data || response;
+                }
+                
+                console.log('Current coupon:', coupon);
+                
+                // 显示编辑表单
+                const newTitle = prompt('标题:', coupon.title);
+                if (newTitle === null) return; // 用户取消
+                
+                const discountType = prompt('折扣类型 (输入 1=固定金额, 2=百分比):', coupon.discount_type === 'percentage' ? '2' : '1');
+                if (discountType === null) return;
+                
+                const newAmount = parseFloat(prompt('折扣金额:', coupon.amount) || coupon.amount);
+                const newUsageLimit = parseInt(prompt('使用次数限制:', coupon.usage_limit) || coupon.usage_limit);
+                const newExpiresAt = prompt('过期时间 (格式: YYYY-MM-DD HH:MM:SS，留空表示永久有效):', coupon.expires_at || '');
+                const newStatus = prompt('状态 (active/inactive/draft):', coupon.status);
+                
+                const updateData = {
+                    title: newTitle,
+                    discount_type: discountType === '2' ? 'percentage' : 'fixed_amount',
+                    amount: newAmount,
+                    usage_limit: newUsageLimit,
+                    expires_at: newExpiresAt && newExpiresAt.trim() !== '' ? newExpiresAt.trim() : null,
+                    status: newStatus
+                };
+                
+                console.log('Update data:', updateData);
+                
+                // 更新优惠券
+                const updateResponse = await apiRequest(config.couponsSingleUrl + id, {
+                    method: 'PUT',
+                    body: JSON.stringify(updateData)
+                });
+                
+                console.log('Update response:', updateResponse);
+                
+                if (!updateResponse.ok) {
+                    const errorData = updateResponse.data || updateResponse;
+                    console.error('Update failed:', errorData);
+                    throw new Error(errorData.message || 'Update failed');
+                }
+                
+                showRewardsNotice('更新成功', 'success');
+                loadCoupons();
+            } catch (error) {
+                console.error('Edit coupon error:', error);
+                showRewardsNotice('更新失败: ' + (error.message || error), 'error');
+            }
+        };
 
         window.tzDeleteCoupon = async function(id) {
             if (!confirm(i18n.deleteConfirm || 'Delete?')) return;

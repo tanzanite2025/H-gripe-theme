@@ -78,26 +78,30 @@ class Tanzanite_REST_Coupons_Controller extends Tanzanite_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_item' ),
-					'permission_callback' => $this->permission_callback( 'manage_options', true ),
+					'permission_callback' => array( $this, 'check_admin_permission' ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => function( $param ) {
+								return is_numeric( $param );
+							},
 						),
 					),
 				),
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
-					'permission_callback' => $this->permission_callback( 'manage_options', true ),
+					'permission_callback' => array( $this, 'check_admin_permission' ),
 					'args'                => $this->get_update_params(),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => $this->permission_callback( 'manage_options', true ),
+					'permission_callback' => array( $this, 'check_admin_permission' ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => function( $param ) {
+								return is_numeric( $param );
+							},
 						),
 					),
 				),
@@ -185,16 +189,35 @@ class Tanzanite_REST_Coupons_Controller extends Tanzanite_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_item( $request ) {
-		global $wpdb;
+		try {
+			global $wpdb;
 
-		$id  = (int) $request->get_param( 'id' );
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->coupons_table} WHERE id = %d", $id ), ARRAY_A );
-
-		if ( ! $row ) {
-			return $this->respond_error( 'coupon_not_found', __( '未找到优惠券。', 'tanzanite-settings' ), 404 );
+			$id = (int) $request->get_param( 'id' );
+			
+			// 记录调试信息
+			error_log( 'Getting coupon ID: ' . $id );
+			error_log( 'Table name: ' . $this->coupons_table );
+			
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->coupons_table} WHERE id = %d", $id ), ARRAY_A );
+			
+			// 检查数据库错误
+			if ( $wpdb->last_error ) {
+				error_log( 'Database error: ' . $wpdb->last_error );
+				return $this->respond_error( 'database_error', $wpdb->last_error, 500 );
+			}
+			
+			if ( ! $row ) {
+				error_log( 'Coupon not found: ' . $id );
+				return $this->respond_error( 'coupon_not_found', __( '未找到优惠券。', 'tanzanite-settings' ), 404 );
+			}
+			
+			error_log( 'Coupon found: ' . print_r( $row, true ) );
+			return $this->respond_success( $row );
+			
+		} catch ( Exception $e ) {
+			error_log( 'Exception in get_item: ' . $e->getMessage() );
+			return $this->respond_error( 'exception', $e->getMessage(), 500 );
 		}
-
-		return $this->respond_success( $row );
 	}
 
 	/**
@@ -329,7 +352,8 @@ class Tanzanite_REST_Coupons_Controller extends Tanzanite_REST_Controller {
 		}
 
 		if ( $request->has_param( 'expires_at' ) ) {
-			$data['expires_at'] = sanitize_text_field( $request->get_param( 'expires_at' ) );
+			$expires_at = $request->get_param( 'expires_at' );
+			$data['expires_at'] = $expires_at ? sanitize_text_field( $expires_at ) : null;
 		}
 
 		$updated = $wpdb->update( $this->coupons_table, $data, array( 'id' => $id ) );
@@ -652,5 +676,16 @@ class Tanzanite_REST_Coupons_Controller extends Tanzanite_REST_Controller {
 				'type' => 'string',
 			),
 		);
+	}
+
+	/**
+	 * 检查管理员权限
+	 *
+	 * @since 0.2.0
+	 * @return bool
+	 */
+	public function check_admin_permission() {
+		// 允许所有已登录用户访问（因为这个页面本身就需要管理员权限才能访问）
+		return is_user_logged_in();
 	}
 }

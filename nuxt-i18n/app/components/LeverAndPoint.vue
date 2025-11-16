@@ -339,9 +339,11 @@
         </div>
       </div>
       <div class="flex flex-col items-center justify-center py-3 pb-4 pointer-events-auto gap-3">
-        <div class="flex gap-3 items-center">
-          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleSelectProducts">To select products</button>
-          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">View cart</button>
+        <div class="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
+          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleSelectProducts">Products</button>
+          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">Cart</button>
+          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleFAQ">FAQ</button>
+          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handlePayment">Payment</button>
         </div>
       </div>
     </div>
@@ -352,9 +354,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
+import { useCart } from '~/composables/useCart'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
 
 const emit = defineEmits(['close'])
+const cart = useCart()
 const { t: $t } = useI18n()
 const auth = useAuth()
 
@@ -654,13 +658,13 @@ const handleCopyLink = async () => {
     inviteLoading.value = true
     inviteMsg.value = ''
     const base = window.location.origin
-    const res = await fetch(`${base}/wp-json/mytheme/v1/referral/token`, {
+    const res = await fetch(`${base}/wp-json/tanzanite/v1/loyalty/referral/generate`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }
     })
     const data = await res.json()
-    if (!res.ok) throw new Error((data && data.message) || 'Build failed')
+    if (!res.ok) throw new Error((data && data.message) || 'Failed to generate referral link')
     const url = String(data && data.url)
     if (navigator.share) {
       try { await navigator.share({ url }) } catch {}
@@ -668,28 +672,40 @@ const handleCopyLink = async () => {
     await navigator.clipboard.writeText(url)
     inviteMsg.value = 'Invitation link copied'
   } catch (e) {
-    inviteMsg.value = String(e instanceof Error ? e.message : 'Build failed')
+    inviteMsg.value = String(e instanceof Error ? e.message : 'Failed to generate referral link')
   } finally {
     inviteLoading.value = false
-    setTimeout(() => { inviteMsg.value = '' }, 2000)
+    setTimeout(() => { inviteMsg.value = '' }, 15000)
   }
 }
 
-// To select products (placeholder for future logic)
+// Products - 选择商品 (placeholder for future logic)
 const handleSelectProducts = () => {
   // TODO: 实现选择商品逻辑
-  console.log('To select products clicked')
+  console.log('Products clicked')
 }
 
-// View cart - 打开购物车弹窗
+// Cart - 打开购物车弹窗
 const handleViewCart = () => {
   // 关闭当前弹窗
   emit('close')
   
-  // 打开购物车弹窗
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'cart-drawer' } }))
-  }
+  // 打开购物车
+  cart.openCart()
+}
+
+// FAQ - 常见问题
+const handleFAQ = () => {
+  // TODO: 实现 FAQ 逻辑
+  console.log('FAQ clicked')
+  // 可以跳转到 FAQ 页面或打开 FAQ 弹窗
+}
+
+// Payment - 支付方式
+const handlePayment = () => {
+  // TODO: 实现支付方式逻辑
+  console.log('Payment clicked')
+  // 可以跳转到支付方式页面或打开支付方式弹窗
 }
 </script>
 

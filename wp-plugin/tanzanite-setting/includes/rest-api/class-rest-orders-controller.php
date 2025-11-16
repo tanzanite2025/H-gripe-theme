@@ -369,7 +369,7 @@ class Tanzanite_REST_Orders_Controller extends Tanzanite_REST_Controller {
 			'discount_total'    => (float) $request->get_param( 'discount_total' ),
 			'shipping_total'    => (float) $request->get_param( 'shipping_total' ),
 			'points_used'       => 0,
-			'currency'          => 'CNY',
+			'currency'          => 'USD',
 			'tracking_provider' => $tracking_provider ? sanitize_key( $tracking_provider ) : '',
 			'tracking_number'   => $tracking_number ? sanitize_text_field( $tracking_number ) : '',
 			'meta'              => wp_json_encode( array( 'stage' => 'placeholder' ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
