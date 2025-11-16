@@ -28,6 +28,9 @@ const isCheckoutOpen = ref(false)
 const shippingAddress = ref<ShippingAddress | null>(null)
 const selectedPaymentMethod = ref<string>('')
 
+// 全局事件监听器标志，确保只添加一次
+let eventListenersAdded = false
+
 export const useCart = () => {
   // 从 localStorage 加载购物车
   if (import.meta.client) {
@@ -38,6 +41,24 @@ export const useCart = () => {
       } catch (e) {
         console.error('Failed to load cart from localStorage', e)
       }
+    }
+    
+    // 只添加一次全局事件监听器
+    if (!eventListenersAdded) {
+      eventListenersAdded = true
+      
+      // 监听全局事件打开购物车
+      const handleOpenCart = () => {
+        isCartOpen.value = true
+      }
+      window.addEventListener('open-cart-drawer', handleOpenCart)
+      
+      // 监听全局事件打开结账页面
+      const handleOpenCheckout = () => {
+        isCartOpen.value = false
+        isCheckoutOpen.value = true
+      }
+      window.addEventListener('open-checkout-modal', handleOpenCheckout)
     }
   }
 

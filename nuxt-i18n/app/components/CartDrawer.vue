@@ -34,10 +34,10 @@
             <div
               v-for="item in cartItems"
               :key="item.id"
-              class="flex gap-4 p-4 bg-white/[0.06] border border-white/[0.18] rounded-2xl"
+              class="flex gap-4 p-4 bg-white/[0.06] border border-white rounded-2xl"
             >
               <!-- 商品图片 -->
-              <div class="w-20 h-20 flex-shrink-0 bg-white/[0.06] rounded-lg overflow-hidden border border-white/[0.18]">
+              <div class="w-20 h-20 flex-shrink-0 bg-white/[0.06] rounded-lg overflow-hidden border border-white">
                 <img
                   v-if="item.thumbnail"
                   :src="item.thumbnail"
@@ -79,14 +79,14 @@
                     type="number"
                     :value="item.quantity"
                     @input="updateQuantity(item.id, parseInt(($event.target as HTMLInputElement).value) || 1)"
-                    class="w-12 h-7 text-center border border-white/[0.18] rounded bg-white/[0.06] text-white focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
+                    class="w-12 h-7 text-center border border-white rounded bg-white/[0.06] text-white focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
                     min="1"
                     :max="item.maxStock"
                   />
                   
                   <button
                     @click="incrementQuantity(item.id)"
-                    class="w-7 h-7 flex items-center justify-center rounded border border-white/[0.18] hover:bg-white/10 transition-colors text-white"
+                    class="w-7 h-7 flex items-center justify-center rounded border border-white hover:bg-white/10 transition-colors text-white"
                     :disabled="item.maxStock ? item.quantity >= item.maxStock : false"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,7 +159,7 @@
           <div class="flex gap-3">
             <button
               @click="closeCart"
-              class="flex-1 px-4 py-3 border border-white/[0.18] text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
+              class="flex-1 px-4 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
             >
               Continue Shopping
             </button>

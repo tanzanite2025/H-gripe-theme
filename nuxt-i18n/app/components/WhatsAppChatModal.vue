@@ -170,10 +170,10 @@
                 </div>
                 
                 <!-- 移动端：客服选择按钮 - 固定高度容器 -->
-                <div v-if="selectedAgent" class="md:hidden pb-3 border-b border-white/10">
-                  <div class="flex flex-col gap-3">
+                <div v-if="selectedAgent" class="md:hidden pb-2 border-b border-white/10">
+                  <div class="flex flex-col gap-2">
                     <!-- 客服选择按钮 - 圆形头像样式 -->
-                    <div class="flex gap-3 justify-center px-4 py-2">
+                    <div class="flex gap-2 justify-center px-4 pt-2 pb-1">
                       <button
                         v-for="agent in agents"
                         :key="agent.id"
@@ -182,19 +182,27 @@
                       >
                         <!-- 圆形头像 -->
                         <div 
-                          class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all"
+                          class="w-[35px] h-[35px] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all overflow-hidden"
                           :class="selectedAgent?.id === agent.id
                             ? 'ring-4 ring-[#ff6b6b] ring-offset-2 ring-offset-black scale-110'
                             : 'ring-2 ring-white/20'"
-                          :style="selectedAgent?.id === agent.id
-                            ? 'background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);'
-                            : 'background: linear-gradient(135deg, #40ffaa 0%, #6b73ff 100%);'"
+                          :style="agent.avatar 
+                            ? '' 
+                            : (selectedAgent?.id === agent.id
+                              ? 'background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);'
+                              : 'background: linear-gradient(135deg, #40ffaa 0%, #6b73ff 100%);')"
                         >
-                          {{ agent.name.charAt(0).toUpperCase() }}
+                          <img 
+                            v-if="agent.avatar" 
+                            :src="agent.avatar" 
+                            :alt="agent.name"
+                            class="w-full h-full object-cover"
+                          />
+                          <span v-else>{{ agent.name.charAt(0).toUpperCase() }}</span>
                         </div>
                         <!-- 客服名称 -->
                         <span 
-                          class="text-xs font-medium transition-colors"
+                          class="text-[10px] font-medium transition-colors"
                           :class="selectedAgent?.id === agent.id ? 'text-[#ff6b6b]' : 'text-white/70'"
                         >
                           {{ agent.name }}
@@ -301,7 +309,7 @@
                 class="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm transition-all flex-1 md:flex-none"
                 :class="activeTab === 'chat' 
                   ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-                  : 'bg-white/[0.08] text-white/70 border border-white/20 hover:bg-white/[0.15]'"
+                  : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
               >
                 Chat
               </button>
@@ -310,7 +318,7 @@
                 class="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm transition-all flex-1 md:flex-none whitespace-nowrap"
                 :class="activeTab === 'share' 
                   ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-                  : 'bg-white/[0.08] text-white/70 border border-white/20 hover:bg-white/[0.15]'"
+                  : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
               >
                 <span class="hidden md:inline">Share Products</span>
                 <span class="md:hidden">Products</span>
@@ -320,7 +328,7 @@
                 class="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm transition-all flex-1 md:flex-none whitespace-nowrap"
                 :class="activeTab === 'orders' 
                   ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-                  : 'bg-white/[0.08] text-white/70 border border-white/20 hover:bg-white/[0.15]'"
+                  : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
               >
                 <span class="hidden md:inline">My Orders</span>
                 <span class="md:hidden">Orders</span>
@@ -362,10 +370,10 @@
                 <!-- 普通文本消息 -->
                 <div
                   v-else
-                  class="max-w-[70%] rounded-xl px-3 py-2 text-white"
+                  class="max-w-[70%] rounded-xl px-3 py-2 text-white shadow-lg"
                   :class="message.is_agent 
-                    ? 'bg-[rgba(64,255,170,0.2)] border border-[rgba(64,255,170,0.4)]' 
-                    : 'bg-[rgba(64,122,255,0.2)] border border-[rgba(64,122,255,0.4)]'"
+                    ? 'bg-[rgba(64,255,170,0.35)] border border-[rgba(64,255,170,0.6)]' 
+                    : 'bg-[rgba(64,122,255,0.35)] border border-[rgba(64,122,255,0.6)]'"
                 >
                   <!-- 发送者名称 -->
                   <div class="text-xs mb-1 opacity-70">
@@ -404,13 +412,13 @@
                       v-model="searchQuery"
                       type="text"
                       placeholder="Search products..."
-                      class="flex-1 h-[42px] px-3 rounded-lg bg-white/[0.06] text-white border border-white/[0.18] focus:outline-none focus:border-[#6b73ff] transition-colors text-sm"
+                      class="flex-1 h-[42px] px-3 rounded-lg bg-white/[0.06] text-white border border-white focus:outline-none focus:border-[#6b73ff] transition-colors text-sm"
                       @keydown.enter.prevent="searchProducts"
                     />
                     <button
                       @click="searchProducts"
                       :disabled="isSearching"
-                      class="h-[42px] px-3 md:px-4 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/20 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
+                      class="h-[42px] px-3 md:px-4 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
                     >
                       {{ isSearching ? 'Searching...' : 'Search' }}
                     </button>
@@ -482,7 +490,7 @@
                     v-model="newMessage"
                     type="text"
                     placeholder="Type a message..."
-                    class="flex-1 px-3 py-2 md:py-2.5 bg-white/[0.06] text-white border border-white/[0.18] rounded-lg focus:outline-none focus:border-[#6b73ff] transition-colors text-sm md:text-base"
+                    class="flex-1 px-3 py-2 md:py-2.5 bg-white/[0.06] text-white border border-white rounded-lg focus:outline-none focus:border-[#6b73ff] transition-colors text-sm md:text-base"
                     :disabled="isSending"
                   />
                   
@@ -498,7 +506,7 @@
                     type="button"
                     @click="imageInput?.click()"
                     :disabled="isUploadingImage"
-                    class="px-2.5 py-2 md:px-3 md:py-2.5 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/20 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
+                    class="px-2.5 py-2 md:px-3 md:py-2.5 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
                     title="Upload image"
                   >
                     <svg v-if="!isUploadingImage" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -2,7 +2,7 @@
   <ul class="flex gap-3 list-none m-0 p-0 max-md:hidden" v-if="itemsToShow.length">
     <li v-for="(item, idx) in itemsToShow" :key="idx">
       <a 
-        class="inline-flex w-8 h-8 rounded-full items-center justify-center bg-white/30 text-white transition-[background,transform] duration-200 ease-in-out hover:bg-white/50 hover:-translate-y-px focus-visible:bg-white/50 focus-visible:-translate-y-px" 
+        class="inline-flex w-8 h-8 rounded-full items-center justify-center bg-white/10 text-white transition-[background,transform] duration-200 ease-in-out hover:bg-white/20 hover:-translate-y-px focus-visible:bg-white/20 focus-visible:-translate-y-px border border-white" 
         :href="item.url" 
         :aria-label="item.label" 
         target="_blank" 

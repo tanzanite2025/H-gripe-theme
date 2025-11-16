@@ -1,11 +1,19 @@
 <template>
   <!-- 弹窗模态框 (由 GradientDockMenu 触发) -->
   <teleport to="body">
+    <!-- 遮罩层 -->
+    <Transition name="fade">
       <div
-        class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-screen max-w-[1600px] max-md:w-[85vw] h-[600px] max-md:h-[65vh] min-[1024px]:aspect-[21/9]:min-w-[1024px] min-[1024px]:aspect-[21/9]:h-[60vh] bg-black border border-[#6e6ee9] rounded-2xl box-border flex flex-col z-[1300]"
-        role="dialog"
-        aria-modal="true"
+        class="fixed inset-0 bg-black z-[9999] flex items-center justify-center p-4"
+        @click.self="handleClose"
       >
+        <!-- 弹窗内容 -->
+        <Transition name="slide-up">
+          <div
+            class="md:max-w-[1600px] w-full h-[90vh] md:h-[600px] max-h-[85vh] bg-black border border-[#6e6ee9] rounded-2xl box-border flex flex-col"
+            role="dialog"
+            aria-modal="true"
+          >
         <!-- 头部 -->
         <header class="flex items-center justify-between px-3.5 max-md:px-2 py-2.5 max-md:py-2 border-b border-white/10 rounded-t-2xl overflow-hidden max-md:gap-1.5">
           <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" aria-label="quick-buy-steps">
@@ -46,7 +54,7 @@
               v-model.trim="query"
               type="text"
               placeholder="Search products... (Enter or pause to search)"
-              class="w-full px-3 py-2.5 rounded-lg bg-white/[0.06] text-white border border-white/[0.18] box-border max-w-full focus:outline-none focus:border-[#6b73ff] transition-colors"
+              class="w-full px-3 py-2.5 rounded-lg bg-white/[0.06] text-white border border-white box-border max-w-full focus:outline-none focus:border-[#6b73ff] transition-colors"
               @keydown.enter.prevent="triggerSearch"
               @input="scheduleSearch"
             />
@@ -59,7 +67,7 @@
               <li 
                 v-for="product in products" 
                 :key="product.id" 
-                class="flex gap-2.5 p-2 border border-white/[0.18] rounded-[10px] bg-white/[0.06] cursor-pointer hover:bg-white/[0.12] transition-colors"
+                class="flex gap-2.5 p-2 border border-white rounded-[10px] bg-white/[0.06] cursor-pointer hover:bg-white/[0.12] transition-colors"
                 @click="selectProduct(product)"
               >
                 <img
@@ -93,32 +101,35 @@
           </div>
           <div class="inline-flex gap-2 justify-center flex-wrap max-md:order-4 max-md:mt-1">
             <button 
-              class="appearance-none border border-white/20 bg-white/[0.08] text-white px-3.5 py-2 rounded-full cursor-pointer hover:bg-white/[0.15] disabled:opacity-60 disabled:cursor-not-allowed transition-colors" 
+              class="appearance-none border border-white bg-white/[0.08] text-white px-3.5 py-2 rounded-full cursor-pointer hover:bg-white/[0.15] disabled:opacity-60 disabled:cursor-not-allowed transition-colors" 
               type="button" 
               :disabled="step <= 1" 
               @click="prev"
             >Prev</button>
             <button 
               v-if="step < 5" 
-              class="appearance-none border border-[#6b73ff] bg-gradient-to-r from-[#6b73ff] to-[#000dff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:opacity-90 transition-opacity" 
+              class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
               type="button" 
               @click="next"
             >Next</button>
             <template v-else>
               <button 
-                class="appearance-none border border-[#6b73ff] bg-gradient-to-r from-[#6b73ff] to-[#000dff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:opacity-90 transition-opacity" 
+                class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
                 type="button" 
                 @click="goToCart"
               >To cart</button>
               <button 
-                class="appearance-none border border-[#6b73ff] bg-gradient-to-r from-[#6b73ff] to-[#000dff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:opacity-90 transition-opacity" 
+                class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
                 type="button" 
                 @click="goToCheckout"
               >Payment</button>
             </template>
           </div>
         </footer>
+          </div>
+        </Transition>
       </div>
+    </Transition>
   </teleport>
 </template>
 
@@ -293,11 +304,21 @@ const handleClose = () => {
 }
 
 const goToCart = () => {
-  window.location.href = cartUrl.value
+  // 触发全局事件打开购物车弹窗
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('open-cart-drawer'))
+  }
+  // 关闭 QuickBuy 弹窗
+  emit('close')
 }
 
 const goToCheckout = () => {
-  window.location.href = checkoutUrl.value
+  // 触发全局事件打开结账弹窗
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('open-checkout-modal'))
+  }
+  // 关闭 QuickBuy 弹窗
+  emit('close')
 }
 
 const selectProduct = (product: WooProduct) => {
@@ -352,3 +373,35 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+/* 遮罩层淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 弹窗滑入滑出动画 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@media (max-width: 768px) {
+  .slide-up-enter-from,
+  .slide-up-leave-to {
+    transform: translateY(100%);
+  }
+}
+</style>

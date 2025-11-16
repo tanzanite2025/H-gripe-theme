@@ -9,7 +9,7 @@
           class="px-4 py-1.5 rounded-full text-xs transition-all flex-1"
           :class="mobileTab === 'info' 
             ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-            : 'bg-white/[0.08] text-white/70 border border-white/20'"
+            : 'bg-white/[0.08] text-white/70 border border-white'"
         >
           My Info
         </button>
@@ -18,7 +18,7 @@
           class="px-4 py-1.5 rounded-full text-xs transition-all flex-1"
           :class="mobileTab === 'levels' 
             ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-            : 'bg-white/[0.08] text-white/70 border border-white/20'"
+            : 'bg-white/[0.08] text-white/70 border border-white'"
         >
           Levels & Points
         </button>
@@ -51,11 +51,11 @@
                   <form @submit.prevent="handleLogin" class="space-y-3">
                     <div>
                       <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.email', 'Email') }}</label>
-                      <input type="text" v-model="loginForm.username" required class="w-full h-10 px-3 bg-white/5 border border-white/20 rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
+                      <input type="text" v-model="loginForm.username" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.password', 'Password') }}</label>
-                      <input type="password" v-model="loginForm.password" required class="w-full h-10 px-3 bg-white/5 border border-white/20 rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
+                      <input type="password" v-model="loginForm.password" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
                     </div>
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" v-model="loginForm.remember" class="w-4 h-4" />
@@ -79,15 +79,15 @@
                   <form @submit.prevent="handleRegister" class="space-y-3">
                     <div>
                       <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.username', 'Username') }}</label>
-                      <input type="text" v-model="registerForm.username" required class="w-full h-10 px-3 bg-white/5 border border-white/20 rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
+                      <input type="text" v-model="registerForm.username" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.email', 'Email') }}</label>
-                      <input type="email" v-model="registerForm.email" required class="w-full h-10 px-3 bg-white/5 border border-white/20 rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
+                      <input type="email" v-model="registerForm.email" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.password', 'Password') }}</label>
-                      <input type="password" v-model="registerForm.password" required class="w-full h-10 px-3 bg-white/5 border border-white/20 rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
+                      <input type="password" v-model="registerForm.password" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
                     </div>
                     <button type="submit" :disabled="registerForm.loading" class="w-full h-10 bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] hover:brightness-110 text-white font-semibold rounded-lg transition-all disabled:opacity-50">
                       {{ registerForm.loading ? $t('auth.signingUp', 'Signing up...') : $t('auth.signUp', 'Sign up') }}
@@ -340,10 +340,10 @@
       </div>
       <div class="flex flex-col items-center justify-center py-3 pb-4 pointer-events-auto gap-3">
         <div class="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
-          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleSelectProducts">Products</button>
-          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">Cart</button>
-          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleFAQ">FAQ</button>
-          <button class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handlePayment">Payment</button>
+          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleSelectProducts">Products</button>
+          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">Cart</button>
+          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleFAQ">FAQ</button>
+          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handlePayment">Payment</button>
         </div>
       </div>
     </div>

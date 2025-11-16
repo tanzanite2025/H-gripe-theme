@@ -20,7 +20,7 @@
       <div class="justify-self-end flex items-center gap-3">
         <!-- 分享按钮（会员积分） - 复制自 GradientDockMenu -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[115px] h-12 rounded-full inline-flex items-center justify-center bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[115px] h-12 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleShare()" 
           :aria-expanded="shareOpen" 
           aria-haspopup="dialog" 
@@ -32,7 +32,7 @@
         <!-- 翻译转换器 -->
         <div class="relative">
         <button 
-          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleDropdown"
           @keydown="onButtonKeydown"
           :id="buttonId"
@@ -90,7 +90,7 @@
     </div>
     
     <!-- 移动端：三排垂直布局 -->
-    <div class="md:hidden grid gap-1.5 justify-items-center">
+    <div class="md:hidden grid gap-0.5 justify-items-center">
       <!-- 第一排：站点标题 -->
       <div class="flex justify-center items-center">
         <h1 class="m-0 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)]">
@@ -102,7 +102,7 @@
       <div class="flex justify-center items-center gap-2">
         <!-- 分享按钮 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[125px] h-[37px] rounded-full inline-flex items-center justify-center bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[125px] h-[37px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleShare()" 
           :aria-expanded="shareOpen" 
           aria-haspopup="dialog" 
@@ -114,7 +114,7 @@
         <!-- 翻译转换器 -->
         <div class="relative min-w-[140px]">
         <button 
-          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-[37px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-[#4079ff11] border-2 border-[#40ffaa]" 
+          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-[37px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleDropdown"
           @keydown="onButtonKeydown"
           :id="buttonId"

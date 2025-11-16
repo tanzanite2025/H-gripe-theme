@@ -1,5 +1,5 @@
 <template>
-  <section class="w-full max-w-[1600px] mx-auto mt-[160px] max-md:w-[85vw] max-md:mt-[135px] min-[1024px]:aspect-[21/9]:h-[45vh]">
+  <section class="carousel-section w-full max-w-[1600px] mx-auto min-[1024px]:aspect-[21/9]:h-[45vh]">
     <div class="relative min-[1024px]:aspect-[21/9]:h-full">
       <div
         ref="track"
@@ -9,7 +9,7 @@
           v-for="(card, i) in extendedItems"
           :key="i"
           :class="[
-            'flex-none w-[calc((100%-48px)/3)] max-md:w-full h-[300px] max-md:h-[25vh] min-[1024px]:aspect-[21/9]:h-[calc(45vh-60px)] rounded-3xl max-md:rounded-2xl overflow-hidden bg-[rgba(17,17,17,0.85)] border border-white/10 snap-center transition-[transform,opacity,box-shadow] duration-[350ms] ease-in-out',
+            'flex-none w-[calc((100%-48px)/3)] max-md:w-full h-[300px] max-md:h-[25vh] min-[1024px]:aspect-[21/9]:h-[calc(45vh-60px)] rounded-3xl max-md:rounded-2xl overflow-hidden bg-[#111111] border border-white snap-center transition-[transform,opacity,box-shadow] duration-[350ms] ease-in-out',
             i === activeIndex 
               ? 'scale-100 opacity-100 shadow-[0_20px_45px_rgba(0,0,0,0.45)]' 
               : 'scale-[0.88] opacity-65'
@@ -20,9 +20,9 @@
       </div>
 
       <!-- 按钮容器 -->
-      <div class="flex items-center justify-center gap-2 max-md:gap-1.5 mt-4 max-md:mt-3">
+      <div class="button-container flex items-center justify-center gap-2 max-md:gap-1.5">
         <button
-          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-transparent text-white border border-white/20 inline-flex items-center justify-center leading-none p-0 hover:bg-white/10 transition-colors"
+          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-white/10 text-white border border-white inline-flex items-center justify-center leading-none p-0 hover:bg-white/20 transition-colors"
           type="button"
           @click="scrollPrev"
         >
@@ -30,7 +30,7 @@
           <svg viewBox="0 0 24 24" class="w-[18px] h-[18px] max-md:w-4 max-md:h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <button
-          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-transparent text-white border border-white/20 inline-flex items-center justify-center leading-none p-0 hover:bg-white/10 transition-colors"
+          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-white/10 text-white border border-white inline-flex items-center justify-center leading-none p-0 hover:bg-white/20 transition-colors"
           type="button"
           @click="scrollNext"
         >
@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 // Keep placeholder items; you can later replace the slot content by injecting images/content
 const items = ref<Record<string, unknown>[]>([{}, {}, {}, {}])
@@ -168,3 +168,27 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+/* 轮播组件上边距 - 使用CSS媒体查询避免SSR跳动 */
+.carousel-section {
+  margin-top: 80px;
+}
+
+@media (max-width: 768px) {
+  .carousel-section {
+    margin-top: 125px;
+  }
+}
+
+/* 按钮容器上边距 */
+.button-container {
+  margin-top: 1px;
+}
+
+@media (max-width: 768px) {
+  .button-container {
+    margin-top: -3px;
+  }
+}
+</style>
