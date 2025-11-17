@@ -9,9 +9,9 @@
           v-for="(card, i) in extendedItems"
           :key="i"
           :class="[
-            'flex-none w-[calc((100%-48px)/3)] max-md:w-full h-[300px] max-md:h-[25vh] min-[1024px]:aspect-[21/9]:h-[calc(45vh-60px)] rounded-3xl max-md:rounded-2xl overflow-hidden bg-[#111111] border border-white snap-center transition-[transform,opacity,box-shadow] duration-[350ms] ease-in-out',
+            'flex-none w-[calc((100%-48px)/3)] max-md:w-full h-[300px] max-md:h-[25vh] min-[1024px]:aspect-[21/9]:h-[calc(45vh-60px)] rounded-3xl max-md:rounded-2xl overflow-hidden bg-[#111111] border-2 border-[#6b73ff] snap-center transition-[transform,opacity,box-shadow] duration-[350ms] ease-in-out',
             i === activeIndex 
-              ? 'scale-100 opacity-100 shadow-[0_20px_45px_rgba(0,0,0,0.45)]' 
+              ? 'scale-100 opacity-100 shadow-[0_0_30px_rgba(107,115,255,0.3)]' 
               : 'scale-[0.88] opacity-65'
           ]"
         >
@@ -22,7 +22,7 @@
       <!-- 按钮容器 -->
       <div class="button-container flex items-center justify-center gap-2 max-md:gap-1.5">
         <button
-          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-white/10 text-white border border-white inline-flex items-center justify-center leading-none p-0 hover:bg-white/20 transition-colors"
+          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-white/10 text-white border-2 border-[#6b73ff] shadow-[0_0_15px_rgba(107,115,255,0.3)] inline-flex items-center justify-center leading-none p-0 hover:bg-white/20 transition-colors"
           type="button"
           @click="scrollPrev"
         >
@@ -30,7 +30,7 @@
           <svg viewBox="0 0 24 24" class="w-[18px] h-[18px] max-md:w-4 max-md:h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <button
-          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-white/10 text-white border border-white inline-flex items-center justify-center leading-none p-0 hover:bg-white/20 transition-colors"
+          class="w-[72px] max-md:w-[52px] h-[35px] max-md:h-[30px] rounded-full bg-white/10 text-white border-2 border-[#6b73ff] shadow-[0_0_15px_rgba(107,115,255,0.3)] inline-flex items-center justify-center leading-none p-0 hover:bg-white/20 transition-colors"
           type="button"
           @click="scrollNext"
         >

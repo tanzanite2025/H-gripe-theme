@@ -2,11 +2,11 @@
   <teleport to="body">
     <!-- 左侧面板 (Sidebar) -->
     <aside 
-      class="fixed left-0 top-1/2 -translate-y-1/2 pointer-events-none z-[120]"
+      class="fixed left-0 top-1/2 -translate-y-1/2 pointer-events-none z-[9999]"
       aria-label="Sidebar"
     >
       <section
-        class="relative w-[78vw] max-md:w-[80vw] h-[800px] max-md:h-[80vh] min-[1024px]:aspect-[21/9]:h-[75vh] flex justify-center border-2 border-[#6e6ee9] rounded-2xl bg-black pointer-events-auto transition-transform duration-[280ms] ease-in-out"
+        class="relative w-[78vw] max-md:w-[80vw] h-[95vh] max-md:h-[90vh] flex justify-center border-2 border-[#6b73ff] rounded-2xl bg-black shadow-[0_0_30px_rgba(107,115,255,0.3)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
         :class="{
           'translate-x-0': leftOpen,
           '-translate-x-full': !leftOpen,
@@ -15,7 +15,7 @@
       >
         <!-- 左侧关闭按钮 -->
         <button 
-          class="absolute top-2 right-2 w-7 h-7 inline-flex items-center justify-center border border-[rgba(124,117,255,0.6)] rounded-md bg-[rgba(30,27,75,0.6)] text-[#e8e9ff] cursor-pointer hover:brightness-110 transition-all" 
+          class="absolute top-2 right-2 w-7 h-7 inline-flex items-center justify-center border border-[rgba(124,117,255,0.6)] rounded-md bg-[rgba(30,27,75,0.6)] text-[#e8e9ff] cursor-pointer hover:brightness-110 transition-all z-10 pointer-events-auto" 
           type="button" 
           @click="closeLeft" 
           aria-label="Close sidebar"
@@ -32,7 +32,7 @@
         </button>
         
         <!-- 左侧内容 -->
-        <div class="w-[650px] max-w-[650px] max-md:w-[calc(80vw-32px)] max-md:max-w-[calc(80vw-32px)] max-md:max-h-[calc(80vh-32px)] max-md:p-4 box-border m-0 relative overflow-y-auto bg-black">
+        <div class="w-full h-full box-border m-0 relative overflow-y-auto bg-black p-4 rounded-2xl">
           <slot name="left" />
         </div>
       </section>
@@ -40,7 +40,7 @@
 
     <!-- 右侧面板 (RightBar/Member) -->
     <div 
-      class="fixed right-0 top-1/2 -translate-y-1/2 w-[80vw] max-md:w-[80vw] h-[800px] max-md:h-[80vh] min-[1024px]:aspect-[21/9]:h-[75vh] bg-black border-2 border-[#6e6ee9] rounded-2xl shadow-[-4px_0_20px_rgba(0,0,0,0.5)] overflow-y-auto flex flex-col items-stretch pointer-events-none transition-transform duration-[280ms] ease-in-out z-[120]"
+      class="fixed right-0 top-1/2 -translate-y-1/2 w-[80vw] max-md:w-[80vw] h-[95vh] max-md:h-[90vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] overflow-y-auto flex flex-col items-stretch pointer-events-none transition-transform duration-[280ms] ease-in-out z-[9999]"
       :class="{
         'translate-x-0': rightOpen,
         'translate-x-full': !rightOpen,
@@ -64,7 +64,7 @@
       </button>
       
       <!-- 右侧内容 -->
-      <div class="w-full box-border m-0 relative px-5 py-4 max-md:px-[15px] max-md:py-[15px] overflow-y-auto h-full flex flex-col pb-5 pointer-events-auto max-md:w-[calc(90vw-32px)] max-md:max-w-[calc(90vw-32px)] max-md:max-h-[calc(80vh-32px)] bg-black">
+      <div class="w-full box-border m-0 relative px-5 py-4 max-md:px-[15px] max-md:py-[15px] overflow-y-auto h-full flex flex-col pb-5 pointer-events-auto max-md:w-[calc(90vw-32px)] max-md:max-w-[calc(90vw-32px)] max-md:max-h-[calc(80vh-32px)] bg-black rounded-2xl">
         <div class="flex-1 grid grid-cols-1 auto-rows-max gap-4 items-start">
           <slot name="right" />
         </div>

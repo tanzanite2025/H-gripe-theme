@@ -584,6 +584,7 @@ if (!class_exists('MyTheme_SEO_Plugin')) {
                         'products'          => true,
                         'categories'        => true,
                         'product_categories'=> true,
+                        'faq'               => true,
                     ],
                     'pingOnRebuild' => true,
                     'externalUrls'  => [],
@@ -597,6 +598,11 @@ if (!class_exists('MyTheme_SEO_Plugin')) {
                         'availabilityInStock' => 'https://schema.org/InStock',
                         'availabilityOutOfStock' => 'https://schema.org/OutOfStock',
                         'mappings'     => [],
+                    ],
+                    'faq' => [
+                        'enabled'           => true,
+                        'organizationName'  => 'Tanzanite',
+                        'organizationUrl'   => '',
                     ],
                 ],
             ];
@@ -1602,6 +1608,22 @@ if (!class_exists('MyTheme_SEO_Plugin')) {
           // Be conservative: only attempt to append if it's an XML element
           if ($sitemap_index instanceof \SimpleXMLElement) {
             $settings = $this->get_settings();
+            
+            // Add FAQ pages to sitemap if enabled
+            $types = isset($settings['sitemaps']['types']) ? $settings['sitemaps']['types'] : [];
+            if (!empty($types['faq'])) {
+              $languages = $this->get_languages();
+              foreach ($languages as $lang) {
+                $faq_url = home_url("/{$lang}/faq");
+                $sm = $sitemap_index->addChild('sitemap');
+                if ($sm) {
+                  $sm->addChild('loc', esc_url($faq_url));
+                  $sm->addChild('lastmod', gmdate('c'));
+                }
+              }
+            }
+            
+            // Add external URLs
             $urls = isset($settings['sitemaps']['externalUrls']) && is_array($settings['sitemaps']['externalUrls'])
               ? $settings['sitemaps']['externalUrls']
               : [];

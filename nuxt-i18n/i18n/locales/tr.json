@@ -34,33 +34,57 @@
     "shop": {
       "label": "Mağaza",
       "items": {
-        "0": { "label": "Mağaza Kategorisi A" },
-        "1": { "label": "Mağaza Kategorisi B" },
-        "2": { "label": "Mağaza Kategorisi C" }
+        "0": {
+          "label": "Mağaza Kategorisi A"
+        },
+        "1": {
+          "label": "Mağaza Kategorisi B"
+        },
+        "2": {
+          "label": "Mağaza Kategorisi C"
+        }
       }
     },
     "support": {
       "label": "Destek",
       "items": {
-        "0": { "label": "SSS" },
-        "1": { "label": "Bize Ulaşın" },
-        "2": { "label": "Garanti" }
+        "0": {
+          "label": "SSS"
+        },
+        "1": {
+          "label": "Bize Ulaşın"
+        },
+        "2": {
+          "label": "Garanti"
+        }
       }
     },
     "about": {
       "label": "Hakkımızda",
       "items": {
-        "0": { "label": "Hikayemiz" },
-        "1": { "label": "Ekip" },
-        "2": { "label": "Kariyer" }
+        "0": {
+          "label": "Hikayemiz"
+        },
+        "1": {
+          "label": "Ekip"
+        },
+        "2": {
+          "label": "Kariyer"
+        }
       }
     },
     "member": {
       "label": "Üye",
       "items": {
-        "0": { "label": "Üyelik Planları" },
-        "1": { "label": "Puanlar ve Ödüller" },
-        "2": { "label": "Özel Teklifler" }
+        "0": {
+          "label": "Üyelik Planları"
+        },
+        "1": {
+          "label": "Puanlar ve Ödüller"
+        },
+        "2": {
+          "label": "Özel Teklifler"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Puan indirim oranı:",
       "canBeStacked": "Birleştirilebilir"
     },
-    "common": { "yes": "Evet", "no": "Hayır" },
+    "common": {
+      "yes": "Evet",
+      "no": "Hayır"
+    },
     "levels": {
       "title": "Üyelik seviyeleri",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "1 puan (30 gün geçerli)"
     }
   },
-  "promo": { "memberCta": "Üyelere özel %50'ye varan indirim" }
+  "promo": {
+    "memberCta": "Üyelere özel %50'ye varan indirim"
+  },
+  "filter": {
+    "title": "Gelişmiş Filtreler",
+    "priceRange": "Fiyat Aralığı",
+    "stockStatus": "Stok Durumu",
+    "sortBy": "Sırala",
+    "rating": "Değerlendirme",
+    "inStock": "Stokta",
+    "preOrder": "Ön Sipariş",
+    "andUp": "ve Üzeri",
+    "reset": "Filtreleri Sıfırla",
+    "sort": {
+      "newest": "En Yeni",
+      "priceLowToHigh": "Fiyat: Düşükten Yükseğe",
+      "priceHighToLow": "Fiyat: Yüksekten Düşüğe",
+      "popular": "En Popüler",
+      "rating": "En İyi Değerlendirme"
+    }
+  },
+  "sidebar": {
+    "page1": "Kategori Gezinme",
+    "page2": "Filtre ve Daha Fazlası",
+    "staticPages": "Sayfalar",
+    "categories": "Ürün Kategorileri",
+    "categoriesPlaceholder": "Ürün Kategori Ağacı (uygulanacak)",
+    "quickSearch": "Hızlı Arama",
+    "productSearch": "Ürün Arama",
+    "searchProductPlaceholder": "Ürün adını girin...",
+    "searchProducts": "Ürün Ara"
+  },
+  "products": {
+    "searchResults": "Arama Sonuçları",
+    "searchFor": "Ara",
+    "allProducts": "Tüm Ürünler",
+    "loading": "Yükleniyor...",
+    "noResults": "Ürün bulunamadı",
+    "tryAdjustFilters": "Filtreleri ayarlamayı deneyin",
+    "loadMore": "Daha Fazla Yükle",
+    "items": "ürün"
+  }
 }

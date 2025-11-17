@@ -40,33 +40,57 @@
     "shop": {
       "label": "Kauppa",
       "items": {
-        "0": { "label": "Kategoria A" },
-        "1": { "label": "Kategoria B" },
-        "2": { "label": "Kategoria C" }
+        "0": {
+          "label": "Kategoria A"
+        },
+        "1": {
+          "label": "Kategoria B"
+        },
+        "2": {
+          "label": "Kategoria C"
+        }
       }
     },
     "support": {
       "label": "Tuki",
       "items": {
-        "0": { "label": "UKK" },
-        "1": { "label": "Ota yhteyttä" },
-        "2": { "label": "Takuu" }
+        "0": {
+          "label": "UKK"
+        },
+        "1": {
+          "label": "Ota yhteyttä"
+        },
+        "2": {
+          "label": "Takuu"
+        }
       }
     },
     "about": {
       "label": "Tietoa meistä",
       "items": {
-        "0": { "label": "Tarinmme" },
-        "1": { "label": "Tiimi" },
-        "2": { "label": "Urat" }
+        "0": {
+          "label": "Tarinmme"
+        },
+        "1": {
+          "label": "Tiimi"
+        },
+        "2": {
+          "label": "Urat"
+        }
       }
     },
     "member": {
       "label": "Jäsen",
       "items": {
-        "0": { "label": "Jäsensuunnitelmat" },
-        "1": { "label": "Pisteet ja palkinnot" },
-        "2": { "label": "Eksklusiiviset tarjoukset" }
+        "0": {
+          "label": "Jäsensuunnitelmat"
+        },
+        "1": {
+          "label": "Pisteet ja palkinnot"
+        },
+        "2": {
+          "label": "Eksklusiiviset tarjoukset"
+        }
       }
     }
   },
@@ -77,7 +101,10 @@
       "pointsDiscountRate": "Pistealennusprosentti:",
       "canBeStacked": "Yhdistettävissä"
     },
-    "common": { "yes": "Kyllä", "no": "Ei" },
+    "common": {
+      "yes": "Kyllä",
+      "no": "Ei"
+    },
     "levels": {
       "title": "Jäsenyystasot",
       "header": {
@@ -104,5 +131,46 @@
       "dailyDesc": "1 piste (voimassa 30 päivää)"
     }
   },
-  "promo": { "memberCta": "Jopa 50 % alennus jäsenille" }
+  "promo": {
+    "memberCta": "Jopa 50 % alennus jäsenille"
+  },
+  "filter": {
+    "title": "Lisäsuodattimet",
+    "priceRange": "Hintahaarukka",
+    "stockStatus": "Varastotilanne",
+    "sortBy": "Lajittele",
+    "rating": "Arvostelu",
+    "inStock": "Varastossa",
+    "preOrder": "Ennakkotilaus",
+    "andUp": "ja ylöspäin",
+    "reset": "Nollaa suodattimet",
+    "sort": {
+      "newest": "Uusin",
+      "priceLowToHigh": "Hinta: Matala - Korkea",
+      "priceHighToLow": "Hinta: Korkea - Matala",
+      "popular": "Suosituin",
+      "rating": "Paras arvostelu"
+    }
+  },
+  "sidebar": {
+    "page1": "Luokkanavigointi",
+    "page2": "Suodatin ja lisää",
+    "staticPages": "Sivut",
+    "categories": "Tuoteluokat",
+    "categoriesPlaceholder": "Tuoteluokkapuu (toteutetaan)",
+    "quickSearch": "Pikahaku",
+    "productSearch": "Tuotehaku",
+    "searchProductPlaceholder": "Syötä tuotteen nimi...",
+    "searchProducts": "Hae tuotteita"
+  },
+  "products": {
+    "searchResults": "Hakutulokset",
+    "searchFor": "Hae",
+    "allProducts": "Kaikki tuotteet",
+    "loading": "Ladataan...",
+    "noResults": "Tuotteita ei löytynyt",
+    "tryAdjustFilters": "Yritä säätää suodattimia",
+    "loadMore": "Lataa lisää",
+    "items": "kpl"
+  }
 }

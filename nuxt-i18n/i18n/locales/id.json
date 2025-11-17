@@ -34,33 +34,57 @@
     "shop": {
       "label": "Toko",
       "items": {
-        "0": { "label": "Kategori Toko A" },
-        "1": { "label": "Kategori Toko B" },
-        "2": { "label": "Kategori Toko C" }
+        "0": {
+          "label": "Kategori Toko A"
+        },
+        "1": {
+          "label": "Kategori Toko B"
+        },
+        "2": {
+          "label": "Kategori Toko C"
+        }
       }
     },
     "support": {
       "label": "Dukungan",
       "items": {
-        "0": { "label": "FAQ" },
-        "1": { "label": "Hubungi Kami" },
-        "2": { "label": "Garansi" }
+        "0": {
+          "label": "FAQ"
+        },
+        "1": {
+          "label": "Hubungi Kami"
+        },
+        "2": {
+          "label": "Garansi"
+        }
       }
     },
     "about": {
       "label": "Tentang Kami",
       "items": {
-        "0": { "label": "Kisah Kami" },
-        "1": { "label": "Tim" },
-        "2": { "label": "Karir" }
+        "0": {
+          "label": "Kisah Kami"
+        },
+        "1": {
+          "label": "Tim"
+        },
+        "2": {
+          "label": "Karir"
+        }
       }
     },
     "member": {
       "label": "Anggota",
       "items": {
-        "0": { "label": "Paket Keanggotaan" },
-        "1": { "label": "Poin & Hadiah" },
-        "2": { "label": "Penawaran Eksklusif" }
+        "0": {
+          "label": "Paket Keanggotaan"
+        },
+        "1": {
+          "label": "Poin & Hadiah"
+        },
+        "2": {
+          "label": "Penawaran Eksklusif"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Tarif diskon poin:",
       "canBeStacked": "Dapat ditumpuk"
     },
-    "common": { "yes": "Ya", "no": "Tidak" },
+    "common": {
+      "yes": "Ya",
+      "no": "Tidak"
+    },
     "levels": {
       "title": "Tingkat keanggotaan",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "1 poin (berlaku 30 hari)"
     }
   },
-  "promo": { "memberCta": "Diskon hingga 50% untuk anggota" }
+  "promo": {
+    "memberCta": "Diskon hingga 50% untuk anggota"
+  },
+  "filter": {
+    "title": "Filter Lanjutan",
+    "priceRange": "Rentang Harga",
+    "stockStatus": "Status Stok",
+    "sortBy": "Urutkan Berdasarkan",
+    "rating": "Penilaian",
+    "inStock": "Tersedia",
+    "preOrder": "Pre-order",
+    "andUp": "& Ke Atas",
+    "reset": "Reset Filter",
+    "sort": {
+      "newest": "Terbaru",
+      "priceLowToHigh": "Harga: Rendah ke Tinggi",
+      "priceHighToLow": "Harga: Tinggi ke Rendah",
+      "popular": "Paling Populer",
+      "rating": "Penilaian Terbaik"
+    }
+  },
+  "sidebar": {
+    "page1": "Navigasi Kategori",
+    "page2": "Filter & Lainnya",
+    "staticPages": "Halaman",
+    "categories": "Kategori Produk",
+    "categoriesPlaceholder": "Pohon Kategori Produk (Akan diimplementasikan)",
+    "quickSearch": "Pencarian Cepat",
+    "productSearch": "Pencarian Produk",
+    "searchProductPlaceholder": "Masukkan nama produk...",
+    "searchProducts": "Cari Produk"
+  },
+  "products": {
+    "searchResults": "Hasil Pencarian",
+    "searchFor": "Cari",
+    "allProducts": "Semua Produk",
+    "loading": "Memuat...",
+    "noResults": "Tidak ada produk ditemukan",
+    "tryAdjustFilters": "Coba sesuaikan filter",
+    "loadMore": "Muat Lebih Banyak",
+    "items": "item"
+  }
 }

@@ -40,33 +40,57 @@
     "shop": {
       "label": "쇼핑",
       "items": {
-        "0": { "label": "카테고리 A" },
-        "1": { "label": "카테고리 B" },
-        "2": { "label": "카테고리 C" }
+        "0": {
+          "label": "카테고리 A"
+        },
+        "1": {
+          "label": "카테고리 B"
+        },
+        "2": {
+          "label": "카테고리 C"
+        }
       }
     },
     "support": {
       "label": "지원",
       "items": {
-        "0": { "label": "자주 묻는 질문" },
-        "1": { "label": "문의하기" },
-        "2": { "label": "보증" }
+        "0": {
+          "label": "자주 묻는 질문"
+        },
+        "1": {
+          "label": "문의하기"
+        },
+        "2": {
+          "label": "보증"
+        }
       }
     },
     "about": {
       "label": "회사 소개",
       "items": {
-        "0": { "label": "우리의 이야기" },
-        "1": { "label": "팀" },
-        "2": { "label": "채용" }
+        "0": {
+          "label": "우리의 이야기"
+        },
+        "1": {
+          "label": "팀"
+        },
+        "2": {
+          "label": "채용"
+        }
       }
     },
     "member": {
       "label": "회원",
       "items": {
-        "0": { "label": "회원 플랜" },
-        "1": { "label": "포인트 및 리워드" },
-        "2": { "label": "독점 혜택" }
+        "0": {
+          "label": "회원 플랜"
+        },
+        "1": {
+          "label": "포인트 및 리워드"
+        },
+        "2": {
+          "label": "독점 혜택"
+        }
       }
     }
   },
@@ -107,5 +131,46 @@
       "dailyDesc": "1 포인트 (유효기간 30일)"
     }
   },
-  "promo": { "memberCta": "회원 대상 최대 50% 할인" }
+  "promo": {
+    "memberCta": "회원 대상 최대 50% 할인"
+  },
+  "filter": {
+    "title": "고급 필터",
+    "priceRange": "가격 범위",
+    "stockStatus": "재고 상태",
+    "sortBy": "정렬 기준",
+    "rating": "평점",
+    "inStock": "재고 있음",
+    "preOrder": "예약 주문",
+    "andUp": "이상",
+    "reset": "필터 초기화",
+    "sort": {
+      "newest": "최신순",
+      "priceLowToHigh": "가격: 낮은순",
+      "priceHighToLow": "가격: 높은순",
+      "popular": "인기순",
+      "rating": "평점순"
+    }
+  },
+  "sidebar": {
+    "page1": "카테고리 탐색",
+    "page2": "필터 및 더보기",
+    "staticPages": "페이지",
+    "categories": "제품 카테고리",
+    "categoriesPlaceholder": "제품 카테고리 트리 (구현 예정)",
+    "quickSearch": "빠른 검색",
+    "productSearch": "제품 검색",
+    "searchProductPlaceholder": "제품명 입력...",
+    "searchProducts": "제품 검색"
+  },
+  "products": {
+    "searchResults": "검색 결과",
+    "searchFor": "검색",
+    "allProducts": "모든 제품",
+    "loading": "로딩 중...",
+    "noResults": "제품을 찾을 수 없습니다",
+    "tryAdjustFilters": "필터를 조정해 보세요",
+    "loadMore": "더 보기",
+    "items": "개"
+  }
 }

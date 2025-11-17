@@ -4,14 +4,16 @@
     <Transition name="fade">
       <div
         v-if="conversation"
-        class="fixed inset-0 bg-black z-[9999] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
         @click.self="handleClose"
       >
+        <!-- 半透明背景遮罩 -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 聊天窗口 - 三栏布局 -->
         <Transition name="slide-up">
           <div
             v-if="conversation"
-            class="border border-[#6e6ee9] rounded-2xl max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden shadow-2xl flex flex-row transition-colors duration-300"
+            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden flex flex-row transition-colors duration-300"
             :style="{ backgroundColor: selectedAgent ? getAgentBgColorValue(selectedAgent.id) : '#000000' }"
           >
             <!-- 左侧：客服列表(窄栏 200px) - 移动端隐藏 -->

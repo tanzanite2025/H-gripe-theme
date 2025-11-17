@@ -110,15 +110,9 @@ if (!function_exists('mytheme_vue_register_rest_routes')) {
         $namespaces = array('mytheme/v1', 'tanzanite/v1');
 
         foreach ($namespaces as $namespace) {
-            register_rest_route($namespace, '/settings', array(
+            register_rest_route($namespace, '/settings/site', array(
                 'methods'  => 'GET',
                 'callback' => 'mytheme_vue_rest_get_site_settings',
-                'permission_callback' => '__return_true',
-            ));
-
-            register_rest_route($namespace, '/settings/support', array(
-                'methods'  => 'GET',
-                'callback' => 'mytheme_vue_rest_get_support_settings',
                 'permission_callback' => '__return_true',
             ));
 

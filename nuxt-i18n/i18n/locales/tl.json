@@ -34,33 +34,57 @@
     "shop": {
       "label": "Tindahan",
       "items": {
-        "0": { "label": "Kategorya ng Tindahan A" },
-        "1": { "label": "Kategorya ng Tindahan B" },
-        "2": { "label": "Kategorya ng Tindahan C" }
+        "0": {
+          "label": "Kategorya ng Tindahan A"
+        },
+        "1": {
+          "label": "Kategorya ng Tindahan B"
+        },
+        "2": {
+          "label": "Kategorya ng Tindahan C"
+        }
       }
     },
     "support": {
       "label": "Suporta",
       "items": {
-        "0": { "label": "Mga Madalas Itanong" },
-        "1": { "label": "Makipag-ugnayan sa Amin" },
-        "2": { "label": "Warranty" }
+        "0": {
+          "label": "Mga Madalas Itanong"
+        },
+        "1": {
+          "label": "Makipag-ugnayan sa Amin"
+        },
+        "2": {
+          "label": "Warranty"
+        }
       }
     },
     "about": {
       "label": "Tungkol sa Amin",
       "items": {
-        "0": { "label": "Ang Aming Kuwento" },
-        "1": { "label": "Koponan" },
-        "2": { "label": "Mga Karera" }
+        "0": {
+          "label": "Ang Aming Kuwento"
+        },
+        "1": {
+          "label": "Koponan"
+        },
+        "2": {
+          "label": "Mga Karera"
+        }
       }
     },
     "member": {
       "label": "Miyembro",
       "items": {
-        "0": { "label": "Mga Plano sa Membership" },
-        "1": { "label": "Mga Puntos at Gantimpala" },
-        "2": { "label": "Mga Eksklusibong Alok" }
+        "0": {
+          "label": "Mga Plano sa Membership"
+        },
+        "1": {
+          "label": "Mga Puntos at Gantimpala"
+        },
+        "2": {
+          "label": "Mga Eksklusibong Alok"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Rate ng diskwento sa puntos:",
       "canBeStacked": "Maaaring ipagsama"
     },
-    "common": { "yes": "Oo", "no": "Hindi" },
+    "common": {
+      "yes": "Oo",
+      "no": "Hindi"
+    },
     "levels": {
       "title": "Mga antas ng pagiging miyembro",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "1 Punto (balido ng 30 araw)"
     }
   },
-  "promo": { "memberCta": "Hanggang 50% diskwento para sa mga miyembro" }
+  "promo": {
+    "memberCta": "Hanggang 50% diskwento para sa mga miyembro"
+  },
+  "filter": {
+    "title": "Mga Advanced na Filter",
+    "priceRange": "Saklaw ng Presyo",
+    "stockStatus": "Katayuan ng Stock",
+    "sortBy": "Pagbukud-bukurin Ayon sa",
+    "rating": "Rating",
+    "inStock": "May Stock",
+    "preOrder": "Pre-order",
+    "andUp": "at Pataas",
+    "reset": "I-reset ang Mga Filter",
+    "sort": {
+      "newest": "Pinakabago",
+      "priceLowToHigh": "Presyo: Mababa hanggang Mataas",
+      "priceHighToLow": "Presyo: Mataas hanggang Mababa",
+      "popular": "Pinakasikat",
+      "rating": "Pinakamahusay na Rating"
+    }
+  },
+  "sidebar": {
+    "page1": "Pag-navigate sa Kategorya",
+    "page2": "Filter at Higit Pa",
+    "staticPages": "Mga Pahina",
+    "categories": "Mga Kategorya ng Produkto",
+    "categoriesPlaceholder": "Puno ng Kategorya ng Produkto (Isasagawa)",
+    "quickSearch": "Mabilis na Paghahanap",
+    "productSearch": "Paghahanap ng Produkto",
+    "searchProductPlaceholder": "Ilagay ang pangalan ng produkto...",
+    "searchProducts": "Maghanap ng Produkto"
+  },
+  "products": {
+    "searchResults": "Mga Resulta ng Paghahanap",
+    "searchFor": "Maghanap para sa",
+    "allProducts": "Lahat ng Produkto",
+    "loading": "Naglo-load...",
+    "noResults": "Walang nahanap na produkto",
+    "tryAdjustFilters": "Subukang ayusin ang mga filter",
+    "loadMore": "Mag-load ng Higit Pa",
+    "items": "piraso"
+  }
 }

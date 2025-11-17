@@ -24,6 +24,24 @@
     "placeholder": "Search...",
     "button": "Search"
   },
+  "filter": {
+    "title": "Advanced Filters",
+    "priceRange": "Price Range",
+    "stockStatus": "Stock Status",
+    "sortBy": "Sort By",
+    "rating": "Rating",
+    "inStock": "In Stock",
+    "preOrder": "Pre-order",
+    "andUp": "& Up",
+    "reset": "Reset Filters",
+    "sort": {
+      "newest": "Newest",
+      "priceLowToHigh": "Price: Low to High",
+      "priceHighToLow": "Price: High to Low",
+      "popular": "Most Popular",
+      "rating": "Best Rating"
+    }
+  },
   "nav": {
     "home": "Home",
     "shop": "Shop",
@@ -34,34 +52,79 @@
     "shop": {
       "label": "Shop",
       "items": {
-        "0": { "label": "Shop Category A" },
-        "1": { "label": "Shop Category B" },
-        "2": { "label": "Shop Category C" }
+        "0": {
+          "label": "Shop Category A"
+        },
+        "1": {
+          "label": "Shop Category B"
+        },
+        "2": {
+          "label": "Shop Category C"
+        }
       }
     },
     "support": {
       "label": "Support",
       "items": {
-        "0": { "label": "FAQ" },
-        "1": { "label": "Contact Us" },
-        "2": { "label": "Warranty" }
+        "0": {
+          "label": "FAQ"
+        },
+        "1": {
+          "label": "Contact Us"
+        },
+        "2": {
+          "label": "Warranty"
+        }
       }
     },
     "about": {
       "label": "About US",
       "items": {
-        "0": { "label": "Our Story" },
-        "1": { "label": "Team" },
-        "2": { "label": "Careers" }
+        "0": {
+          "label": "Our Story"
+        },
+        "1": {
+          "label": "Team"
+        },
+        "2": {
+          "label": "Careers"
+        }
       }
     },
     "member": {
       "label": "Member",
       "items": {
-        "0": { "label": "Membership Plans" },
-        "1": { "label": "Points & Rewards" },
-        "2": { "label": "Exclusive Offers" }
+        "0": {
+          "label": "Membership Plans"
+        },
+        "1": {
+          "label": "Points & Rewards"
+        },
+        "2": {
+          "label": "Exclusive Offers"
+        }
       }
     }
+  },
+  "sidebar": {
+    "page1": "Category Navigation",
+    "page2": "Filter & More",
+    "staticPages": "Pages",
+    "categories": "Product Categories",
+    "categoriesPlaceholder": "Product Category Tree (To be implemented)",
+    "quickSearch": "Quick Search",
+    "productSearch": "Product Search",
+    "searchProductPlaceholder": "Enter product name...",
+    "searchProducts": "Search Products"
+  },
+  "products": {
+    "searchResults": "Search Results",
+    "searchFor": "Search for",
+    "allProducts": "All Products",
+    "loading": "Loading...",
+    "noResults": "No products found",
+    "tryAdjustFilters": "Try adjusting filters",
+    "loadMore": "Load More",
+    "items": "items"
   }
 }

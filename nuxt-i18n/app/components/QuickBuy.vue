@@ -4,13 +4,15 @@
     <!-- 遮罩层 -->
     <Transition name="fade">
       <div
-        class="fixed inset-0 bg-black z-[9999] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
         @click.self="handleClose"
       >
+        <!-- 半透明背景遮罩 -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->
         <Transition name="slide-up">
           <div
-            class="md:max-w-[1600px] w-full h-[90vh] md:h-[600px] max-h-[85vh] bg-black border border-[#6e6ee9] rounded-2xl box-border flex flex-col"
+            class="relative md:max-w-[1600px] w-full h-[90vh] md:h-[600px] max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] box-border flex flex-col"
             role="dialog"
             aria-modal="true"
           >

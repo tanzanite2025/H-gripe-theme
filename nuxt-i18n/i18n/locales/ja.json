@@ -40,37 +40,63 @@
     "shop": {
       "label": "ショップ",
       "items": {
-        "0": { "label": "カテゴリー A" },
-        "1": { "label": "カテゴリー B" },
-        "2": { "label": "カテゴリー C" }
+        "0": {
+          "label": "カテゴリー A"
+        },
+        "1": {
+          "label": "カテゴリー B"
+        },
+        "2": {
+          "label": "カテゴリー C"
+        }
       }
     },
     "support": {
       "label": "サポート",
       "items": {
-        "0": { "label": "よくある質問" },
-        "1": { "label": "お問い合わせ" },
-        "2": { "label": "保証" }
+        "0": {
+          "label": "よくある質問"
+        },
+        "1": {
+          "label": "お問い合わせ"
+        },
+        "2": {
+          "label": "保証"
+        }
       }
     },
     "about": {
       "label": "会社概要",
       "items": {
-        "0": { "label": "私たちの物語" },
-        "1": { "label": "チーム" },
-        "2": { "label": "採用情報" }
+        "0": {
+          "label": "私たちの物語"
+        },
+        "1": {
+          "label": "チーム"
+        },
+        "2": {
+          "label": "採用情報"
+        }
       }
     },
     "member": {
       "label": "会員",
       "items": {
-        "0": { "label": "会員プラン" },
-        "1": { "label": "ポイント＆特典" },
-        "2": { "label": "限定オファー" }
+        "0": {
+          "label": "会員プラン"
+        },
+        "1": {
+          "label": "ポイント＆特典"
+        },
+        "2": {
+          "label": "限定オファー"
+        }
       }
     }
   },
-  "promo": { "memberCta": "会員なら最大50%オフ" },
+  "promo": {
+    "memberCta": "会員なら最大50%オフ"
+  },
   "cart": "カート",
   "summary": "サマリー",
   "opencart": "カートを開く",
@@ -111,7 +137,6 @@
       "dailyDesc": "1ポイント（有効期限30日）"
     }
   },
-  
   "profile": {
     "fullName": "氏名",
     "company": "会社",
@@ -121,5 +146,47 @@
     "marketingOptInLabel": "マーケティング配信を受け取る",
     "notes": "備考"
   },
-  "common": { "yes": "はい", "no": "いいえ" }
+  "common": {
+    "yes": "はい",
+    "no": "いいえ"
+  },
+  "filter": {
+    "title": "詳細フィルター",
+    "priceRange": "価格帯",
+    "stockStatus": "在庫状況",
+    "sortBy": "並び替え",
+    "rating": "評価",
+    "inStock": "在庫あり",
+    "preOrder": "予約注文",
+    "andUp": "以上",
+    "reset": "フィルターをリセット",
+    "sort": {
+      "newest": "新着順",
+      "priceLowToHigh": "価格: 安い順",
+      "priceHighToLow": "価格: 高い順",
+      "popular": "人気順",
+      "rating": "評価順"
+    }
+  },
+  "sidebar": {
+    "page1": "カテゴリーナビゲーション",
+    "page2": "フィルターとその他",
+    "staticPages": "ページ",
+    "categories": "商品カテゴリー",
+    "categoriesPlaceholder": "商品カテゴリーツリー（実装予定）",
+    "quickSearch": "クイック検索",
+    "productSearch": "商品検索",
+    "searchProductPlaceholder": "商品名を入力...",
+    "searchProducts": "商品を検索"
+  },
+  "products": {
+    "searchResults": "検索結果",
+    "searchFor": "検索",
+    "allProducts": "すべての商品",
+    "loading": "読み込み中...",
+    "noResults": "商品が見つかりません",
+    "tryAdjustFilters": "フィルターを調整してください",
+    "loadMore": "もっと読み込む",
+    "items": "件"
+  }
 }

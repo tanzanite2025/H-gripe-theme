@@ -471,6 +471,25 @@
       }
     }
 
+    const checkExternalUrls = async () => {
+      setBusy(true)
+      const urls = (cfg.externalUrls || []).filter(Boolean)
+      const newStatus = {}
+      
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' })
+          // Note: no-cors mode doesn't give us status, so we just mark as checked
+          newStatus[url] = 'OK'
+        } catch (e) {
+          newStatus[url] = 'FAIL'
+        }
+      }
+      
+      setExtStatus(newStatus)
+      setBusy(false)
+    }
+
     const setType = (k, v) => setCfg((c) => ({ ...c, types: { ...(c.types || {}), [k]: v } }))
 
     const siteOrigin = (typeof window !== 'undefined' ? window.location.origin : '')

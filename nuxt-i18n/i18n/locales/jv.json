@@ -34,33 +34,57 @@
     "shop": {
       "label": "Toko",
       "items": {
-        "0": { "label": "Kategori Toko A" },
-        "1": { "label": "Kategori Toko B" },
-        "2": { "label": "Kategori Toko C" }
+        "0": {
+          "label": "Kategori Toko A"
+        },
+        "1": {
+          "label": "Kategori Toko B"
+        },
+        "2": {
+          "label": "Kategori Toko C"
+        }
       }
     },
     "support": {
       "label": "Dhukungan",
       "items": {
-        "0": { "label": "Pitakon sing Kerep Ditakoni" },
-        "1": { "label": "Hubungi Kita" },
-        "2": { "label": "Garansi" }
+        "0": {
+          "label": "Pitakon sing Kerep Ditakoni"
+        },
+        "1": {
+          "label": "Hubungi Kita"
+        },
+        "2": {
+          "label": "Garansi"
+        }
       }
     },
     "about": {
       "label": "Babagan Kita",
       "items": {
-        "0": { "label": "Crita Kita" },
-        "1": { "label": "Tim" },
-        "2": { "label": "Karir" }
+        "0": {
+          "label": "Crita Kita"
+        },
+        "1": {
+          "label": "Tim"
+        },
+        "2": {
+          "label": "Karir"
+        }
       }
     },
     "member": {
       "label": "Anggota",
       "items": {
-        "0": { "label": "Rencana Keanggotaan" },
-        "1": { "label": "Poin & Hadiah" },
-        "2": { "label": "Penawaran Eksklusif" }
+        "0": {
+          "label": "Rencana Keanggotaan"
+        },
+        "1": {
+          "label": "Poin & Hadiah"
+        },
+        "2": {
+          "label": "Penawaran Eksklusif"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Tingkat diskon poin:",
       "canBeStacked": "Iso ditumpuk"
     },
-    "common": { "yes": "Ya", "no": "Ora" },
+    "common": {
+      "yes": "Ya",
+      "no": "Ora"
+    },
     "levels": {
       "title": "Tingkat keanggotaan",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "1 Poin (valid 30 dina)"
     }
   },
-  "promo": { "memberCta": "Up to 50% Off for Members" }
+  "promo": {
+    "memberCta": "Up to 50% Off for Members"
+  },
+  "filter": {
+    "title": "Filter Lanjut",
+    "priceRange": "Rentang Rega",
+    "stockStatus": "Status Stok",
+    "sortBy": "Urutake Miturut",
+    "rating": "Rating",
+    "inStock": "Ana Stok",
+    "preOrder": "Pre-order",
+    "andUp": "lan Munggah",
+    "reset": "Reset Filter",
+    "sort": {
+      "newest": "Paling Anyar",
+      "priceLowToHigh": "Rega: Murah menyang Larang",
+      "priceHighToLow": "Rega: Larang menyang Murah",
+      "popular": "Paling Populer",
+      "rating": "Rating Paling Apik"
+    }
+  },
+  "sidebar": {
+    "page1": "Navigasi Kategori",
+    "page2": "Filter & Liyane",
+    "staticPages": "Kaca",
+    "categories": "Kategori Produk",
+    "categoriesPlaceholder": "Wit Kategori Produk (Bakal dileksanakake)",
+    "quickSearch": "Panelusuran Cepet",
+    "productSearch": "Panelusuran Produk",
+    "searchProductPlaceholder": "Lebokake jeneng produk...",
+    "searchProducts": "Goleki Produk"
+  },
+  "products": {
+    "searchResults": "Asil Panelusuran",
+    "searchFor": "Goleki",
+    "allProducts": "Kabeh Produk",
+    "loading": "Lagi dimuat...",
+    "noResults": "Ora ana produk ketemu",
+    "tryAdjustFilters": "Coba atur filter",
+    "loadMore": "Muat Luwih Akeh",
+    "items": "barang"
+  }
 }

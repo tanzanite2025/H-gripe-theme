@@ -16,17 +16,32 @@
         </div>
       </nav>
       
-      <!-- 右侧：语言切换器 -->
+      <!-- 右侧：FAQ + 分享 + 语言切换器 -->
       <div class="justify-self-end flex items-center gap-3">
-        <!-- 分享按钮（会员积分） - 复制自 GradientDockMenu -->
+        <!-- FAQ 按钮 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[115px] h-12 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-12 h-12 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          @click.stop="toggleFaq()" 
+          :aria-expanded="faqOpen" 
+          aria-haspopup="dialog" 
+          aria-label="Open FAQ"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </button>
+        
+        <!-- 分享按钮（会员积分） - 改为圆形 -->
+        <button 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-12 h-12 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleShare()" 
           :aria-expanded="shareOpen" 
           aria-haspopup="dialog" 
           aria-label="Open membership panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
         </button>
         
         <!-- 翻译转换器 -->
@@ -98,17 +113,32 @@
         </h1>
       </div>
       
-      <!-- 第二排：分享按钮 + 翻译转换器 -->
+      <!-- 第二排：FAQ + 分享 + 翻译转换器 -->
       <div class="flex justify-center items-center gap-2">
-        <!-- 分享按钮 -->
+        <!-- FAQ 按钮 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[125px] h-[37px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[37px] h-[37px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          @click.stop="toggleFaq()" 
+          :aria-expanded="faqOpen" 
+          aria-haspopup="dialog" 
+          aria-label="Open FAQ"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </button>
+        
+        <!-- 分享按钮 - 改为圆形 -->
+        <button 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[37px] h-[37px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleShare()" 
           :aria-expanded="shareOpen" 
           aria-haspopup="dialog" 
           aria-label="Open membership panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
         </button>
         
         <!-- 翻译转换器 -->
@@ -143,6 +173,44 @@
     </div>
   </div>
   
+  <!-- FAQ 弹窗 -->
+  <teleport to="body">
+    <transition
+      enter-active-class="transition-opacity duration-300 ease-out"
+      leave-active-class="transition-opacity duration-200 ease-in"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="faqOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="faqOpen = false">
+        <!-- 半透明背景遮罩 -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <!-- 弹窗内容 -->
+        <div class="relative w-[min(95vw,900px)] h-[85vh] max-h-[800px]" aria-modal="true" role="dialog" aria-label="FAQ">
+          <FaqModal @close="faqOpen = false" @openWhatsApp="handleOpenWhatsApp" />
+        </div>
+      </div>
+    </transition>
+  </teleport>
+  
+  <!-- WhatsApp Chat 弹窗 -->
+  <teleport to="body">
+    <transition
+      enter-active-class="transition-opacity duration-300 ease-out"
+      leave-active-class="transition-opacity duration-200 ease-in"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="whatsappOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="whatsappOpen = false">
+        <!-- 半透明背景遮罩 -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <!-- 弹窗内容 -->
+        <div class="relative w-[min(95vw,1200px)] max-h-[90vh] overflow-auto" aria-modal="true" role="dialog" aria-label="WhatsApp Chat">
+          <WhatsAppChatModal @close="whatsappOpen = false" />
+        </div>
+      </div>
+    </transition>
+  </teleport>
+  
   <!-- LeverAndPoint 弹窗 -->
   <teleport to="body">
     <transition
@@ -167,6 +235,8 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
+import FaqModal from '~/components/FaqModal.vue'
+import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 
 // Site Title
 const props = defineProps<{ title?: string }>()
@@ -175,6 +245,26 @@ const titleText = computed(() => {
   const fromProp = (props.title ?? '').toString().trim()
   return fromProp.length ? fromProp : siteTitle.value
 })
+
+// FAQ button
+const faqOpen = ref(false)
+
+const toggleFaq = () => {
+  faqOpen.value = !faqOpen.value
+  if (faqOpen.value && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-faq' } }))
+  }
+}
+
+// WhatsApp Chat Modal
+const whatsappOpen = ref(false)
+
+const handleOpenWhatsApp = () => {
+  whatsappOpen.value = true
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
+  }
+}
 
 // Share button (Membership panel)
 const shareOpen = ref(false)

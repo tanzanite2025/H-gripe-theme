@@ -34,33 +34,57 @@
     "shop": {
       "label": "Kedai",
       "items": {
-        "0": { "label": "Kategori Kedai A" },
-        "1": { "label": "Kategori Kedai B" },
-        "2": { "label": "Kategori Kedai C" }
+        "0": {
+          "label": "Kategori Kedai A"
+        },
+        "1": {
+          "label": "Kategori Kedai B"
+        },
+        "2": {
+          "label": "Kategori Kedai C"
+        }
       }
     },
     "support": {
       "label": "Sokongan",
       "items": {
-        "0": { "label": "Soalan Lazim" },
-        "1": { "label": "Hubungi Kami" },
-        "2": { "label": "Waranti" }
+        "0": {
+          "label": "Soalan Lazim"
+        },
+        "1": {
+          "label": "Hubungi Kami"
+        },
+        "2": {
+          "label": "Waranti"
+        }
       }
     },
     "about": {
       "label": "Tentang Kami",
       "items": {
-        "0": { "label": "Kisah Kami" },
-        "1": { "label": "Pasukan" },
-        "2": { "label": "Kerjaya" }
+        "0": {
+          "label": "Kisah Kami"
+        },
+        "1": {
+          "label": "Pasukan"
+        },
+        "2": {
+          "label": "Kerjaya"
+        }
       }
     },
     "member": {
       "label": "Ahli",
       "items": {
-        "0": { "label": "Pelan Keahlian" },
-        "1": { "label": "Mata & Ganjaran" },
-        "2": { "label": "Tawaran Eksklusif" }
+        "0": {
+          "label": "Pelan Keahlian"
+        },
+        "1": {
+          "label": "Mata & Ganjaran"
+        },
+        "2": {
+          "label": "Tawaran Eksklusif"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Kadar diskaun mata:",
       "canBeStacked": "Boleh digabung"
     },
-    "common": { "yes": "Ya", "no": "Tidak" },
+    "common": {
+      "yes": "Ya",
+      "no": "Tidak"
+    },
     "levels": {
       "title": "Tahap keahlian",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "1 mata (sah 30 hari)"
     }
   },
-  "promo": { "memberCta": "Diskaun sehingga 50% untuk ahli" }
+  "promo": {
+    "memberCta": "Diskaun sehingga 50% untuk ahli"
+  },
+  "filter": {
+    "title": "Penapis Lanjutan",
+    "priceRange": "Julat Harga",
+    "stockStatus": "Status Stok",
+    "sortBy": "Isih Mengikut",
+    "rating": "Penilaian",
+    "inStock": "Ada Stok",
+    "preOrder": "Pra-tempahan",
+    "andUp": "& Ke Atas",
+    "reset": "Set Semula Penapis",
+    "sort": {
+      "newest": "Terbaru",
+      "priceLowToHigh": "Harga: Rendah ke Tinggi",
+      "priceHighToLow": "Harga: Tinggi ke Rendah",
+      "popular": "Paling Popular",
+      "rating": "Penilaian Terbaik"
+    }
+  },
+  "sidebar": {
+    "page1": "Navigasi Kategori",
+    "page2": "Penapis & Lagi",
+    "staticPages": "Halaman",
+    "categories": "Kategori Produk",
+    "categoriesPlaceholder": "Pokok Kategori Produk (Akan dilaksanakan)",
+    "quickSearch": "Carian Pantas",
+    "productSearch": "Carian Produk",
+    "searchProductPlaceholder": "Masukkan nama produk...",
+    "searchProducts": "Cari Produk"
+  },
+  "products": {
+    "searchResults": "Hasil Carian",
+    "searchFor": "Cari",
+    "allProducts": "Semua Produk",
+    "loading": "Memuatkan...",
+    "noResults": "Tiada produk dijumpai",
+    "tryAdjustFilters": "Cuba laraskan penapis",
+    "loadMore": "Muat Lebih Banyak",
+    "items": "item"
+  }
 }

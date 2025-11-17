@@ -34,33 +34,57 @@
     "shop": {
       "label": "Shago",
       "items": {
-        "0": { "label": "Nau'in Shago A" },
-        "1": { "label": "Nau'in Shago B" },
-        "2": { "label": "Nau'in Shago C" }
+        "0": {
+          "label": "Nau'in Shago A"
+        },
+        "1": {
+          "label": "Nau'in Shago B"
+        },
+        "2": {
+          "label": "Nau'in Shago C"
+        }
       }
     },
     "support": {
       "label": "Tallafi",
       "items": {
-        "0": { "label": "Tambayoyin da ake yawan yi" },
-        "1": { "label": "Tuntube Mu" },
-        "2": { "label": "Garanti" }
+        "0": {
+          "label": "Tambayoyin da ake yawan yi"
+        },
+        "1": {
+          "label": "Tuntube Mu"
+        },
+        "2": {
+          "label": "Garanti"
+        }
       }
     },
     "about": {
       "label": "Game da Mu",
       "items": {
-        "0": { "label": "Labarin Mu" },
-        "1": { "label": "Kungiya" },
-        "2": { "label": "Ayyukan Yi" }
+        "0": {
+          "label": "Labarin Mu"
+        },
+        "1": {
+          "label": "Kungiya"
+        },
+        "2": {
+          "label": "Ayyukan Yi"
+        }
       }
     },
     "member": {
       "label": "Memba",
       "items": {
-        "0": { "label": "Shirye-shiryen Memba" },
-        "1": { "label": "Maki da Kyautuka" },
-        "2": { "label": "Tayin Musamman" }
+        "0": {
+          "label": "Shirye-shiryen Memba"
+        },
+        "1": {
+          "label": "Maki da Kyautuka"
+        },
+        "2": {
+          "label": "Tayin Musamman"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Ragin maki:",
       "canBeStacked": "Ana iya hade su"
     },
-    "common": { "yes": "I", "no": "A'a" },
+    "common": {
+      "yes": "I",
+      "no": "A'a"
+    },
     "levels": {
       "title": "Matsayin memba",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "Maki 1 (yana aiki na kwanaki 30)"
     }
   },
-  "promo": { "memberCta": "Rangwame har zuwa 50% ga mambobi" }
+  "promo": {
+    "memberCta": "Rangwame har zuwa 50% ga mambobi"
+  },
+  "filter": {
+    "title": "Matattara Matattara",
+    "priceRange": "Kewayon Farashi",
+    "stockStatus": "Matsayin Kaya",
+    "sortBy": "Tsara Ta",
+    "rating": "Kimanta",
+    "inStock": "A Cikin Kaya",
+    "preOrder": "Oda Ta Gaba",
+    "andUp": "da Sama",
+    "reset": "Sake Saita Matattara",
+    "sort": {
+      "newest": "Sabuwa",
+      "priceLowToHigh": "Farashi: Ƙasa zuwa Sama",
+      "priceHighToLow": "Farashi: Sama zuwa Ƙasa",
+      "popular": "Mafi Shahara",
+      "rating": "Mafi Kyawun Kimanta"
+    }
+  },
+  "sidebar": {
+    "page1": "Kewayawa Rukuni",
+    "page2": "Matattara da Kari",
+    "staticPages": "Shafuka",
+    "categories": "Rukunin Kayayyaki",
+    "categoriesPlaceholder": "Bishiyar Rukunin Kayayyaki (Za a aiwatar)",
+    "quickSearch": "Bincike Mai Sauri",
+    "productSearch": "Binciken Kayayyaki",
+    "searchProductPlaceholder": "Shigar da sunan kayayyaki...",
+    "searchProducts": "Bincika Kayayyaki"
+  },
+  "products": {
+    "searchResults": "Sakamakon Bincike",
+    "searchFor": "Bincika",
+    "allProducts": "Duk Kayayyaki",
+    "loading": "Ana loda...",
+    "noResults": "Ba a sami kayayyaki ba",
+    "tryAdjustFilters": "Gwada daidaita matattara",
+    "loadMore": "Loda Kari",
+    "items": "kaya"
+  }
 }

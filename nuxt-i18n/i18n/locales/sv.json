@@ -34,33 +34,57 @@
     "shop": {
       "label": "Butik",
       "items": {
-        "0": { "label": "Butikskategori A" },
-        "1": { "label": "Butikskategori B" },
-        "2": { "label": "Butikskategori C" }
+        "0": {
+          "label": "Butikskategori A"
+        },
+        "1": {
+          "label": "Butikskategori B"
+        },
+        "2": {
+          "label": "Butikskategori C"
+        }
       }
     },
     "support": {
       "label": "Support",
       "items": {
-        "0": { "label": "Vanliga frågor" },
-        "1": { "label": "Kontakta oss" },
-        "2": { "label": "Garanti" }
+        "0": {
+          "label": "Vanliga frågor"
+        },
+        "1": {
+          "label": "Kontakta oss"
+        },
+        "2": {
+          "label": "Garanti"
+        }
       }
     },
     "about": {
       "label": "Om oss",
       "items": {
-        "0": { "label": "Vår historia" },
-        "1": { "label": "Team" },
-        "2": { "label": "Karriär" }
+        "0": {
+          "label": "Vår historia"
+        },
+        "1": {
+          "label": "Team"
+        },
+        "2": {
+          "label": "Karriär"
+        }
       }
     },
     "member": {
       "label": "Medlem",
       "items": {
-        "0": { "label": "Medlemsplaner" },
-        "1": { "label": "Poäng & belöningar" },
-        "2": { "label": "Exklusiva erbjudanden" }
+        "0": {
+          "label": "Medlemsplaner"
+        },
+        "1": {
+          "label": "Poäng & belöningar"
+        },
+        "2": {
+          "label": "Exklusiva erbjudanden"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Poängrabatt:",
       "canBeStacked": "Kan kombineras"
     },
-    "common": { "yes": "Ja", "no": "Nej" },
+    "common": {
+      "yes": "Ja",
+      "no": "Nej"
+    },
     "levels": {
       "title": "Medlemsnivåer",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "1 poäng (giltigt i 30 dagar)"
     }
   },
-  "promo": { "memberCta": "Upp till 50% rabatt för medlemmar" }
+  "promo": {
+    "memberCta": "Upp till 50% rabatt för medlemmar"
+  },
+  "filter": {
+    "title": "Avancerade filter",
+    "priceRange": "Prisintervall",
+    "stockStatus": "Lagerstatus",
+    "sortBy": "Sortera efter",
+    "rating": "Betyg",
+    "inStock": "I lager",
+    "preOrder": "Förbeställning",
+    "andUp": "och uppåt",
+    "reset": "Återställ filter",
+    "sort": {
+      "newest": "Nyaste",
+      "priceLowToHigh": "Pris: Låg till Hög",
+      "priceHighToLow": "Pris: Hög till Låg",
+      "popular": "Mest populära",
+      "rating": "Bästa betyg"
+    }
+  },
+  "sidebar": {
+    "page1": "Kategorinavigering",
+    "page2": "Filter & Mer",
+    "staticPages": "Sidor",
+    "categories": "Produktkategorier",
+    "categoriesPlaceholder": "Produktkategoriträd (att implementeras)",
+    "quickSearch": "Snabbsökning",
+    "productSearch": "Produktsökning",
+    "searchProductPlaceholder": "Ange produktnamn...",
+    "searchProducts": "Sök produkter"
+  },
+  "products": {
+    "searchResults": "Sökresultat",
+    "searchFor": "Sök efter",
+    "allProducts": "Alla produkter",
+    "loading": "Laddar...",
+    "noResults": "Inga produkter hittades",
+    "tryAdjustFilters": "Försök justera filter",
+    "loadMore": "Ladda mer",
+    "items": "artiklar"
+  }
 }

@@ -40,33 +40,57 @@
     "shop": {
       "label": "Boutique",
       "items": {
-        "0": { "label": "Catégorie A" },
-        "1": { "label": "Catégorie B" },
-        "2": { "label": "Catégorie C" }
+        "0": {
+          "label": "Catégorie A"
+        },
+        "1": {
+          "label": "Catégorie B"
+        },
+        "2": {
+          "label": "Catégorie C"
+        }
       }
     },
     "support": {
       "label": "Support",
       "items": {
-        "0": { "label": "FAQ" },
-        "1": { "label": "Contactez-nous" },
-        "2": { "label": "Garantie" }
+        "0": {
+          "label": "FAQ"
+        },
+        "1": {
+          "label": "Contactez-nous"
+        },
+        "2": {
+          "label": "Garantie"
+        }
       }
     },
     "about": {
       "label": "À Propos",
       "items": {
-        "0": { "label": "Notre Histoire" },
-        "1": { "label": "Équipe" },
-        "2": { "label": "Carrières" }
+        "0": {
+          "label": "Notre Histoire"
+        },
+        "1": {
+          "label": "Équipe"
+        },
+        "2": {
+          "label": "Carrières"
+        }
       }
     },
     "member": {
       "label": "Membre",
       "items": {
-        "0": { "label": "Plans d'Adhésion" },
-        "1": { "label": "Points et Récompenses" },
-        "2": { "label": "Offres Exclusives" }
+        "0": {
+          "label": "Plans d'Adhésion"
+        },
+        "1": {
+          "label": "Points et Récompenses"
+        },
+        "2": {
+          "label": "Offres Exclusives"
+        }
       }
     }
   },
@@ -109,5 +133,44 @@
   },
   "promo": {
     "memberCta": "Jusqu'à -50% pour les membres"
+  },
+  "filter": {
+    "title": "Filtres avancés",
+    "priceRange": "Gamme de prix",
+    "stockStatus": "État du stock",
+    "sortBy": "Trier par",
+    "rating": "Évaluation",
+    "inStock": "En stock",
+    "preOrder": "Précommande",
+    "andUp": "et plus",
+    "reset": "Réinitialiser les filtres",
+    "sort": {
+      "newest": "Plus récent",
+      "priceLowToHigh": "Prix: Bas à Élevé",
+      "priceHighToLow": "Prix: Élevé à Bas",
+      "popular": "Plus populaire",
+      "rating": "Meilleure évaluation"
+    }
+  },
+  "sidebar": {
+    "page1": "Navigation par catégorie",
+    "page2": "Filtre et plus",
+    "staticPages": "Pages",
+    "categories": "Catégories de produits",
+    "categoriesPlaceholder": "Arbre des catégories de produits (à implémenter)",
+    "quickSearch": "Recherche rapide",
+    "productSearch": "Recherche de produits",
+    "searchProductPlaceholder": "Entrez le nom du produit...",
+    "searchProducts": "Rechercher des produits"
+  },
+  "products": {
+    "searchResults": "Résultats de recherche",
+    "searchFor": "Rechercher",
+    "allProducts": "Tous les produits",
+    "loading": "Chargement...",
+    "noResults": "Aucun produit trouvé",
+    "tryAdjustFilters": "Essayez d'ajuster les filtres",
+    "loadMore": "Charger plus",
+    "items": "articles"
   }
 }

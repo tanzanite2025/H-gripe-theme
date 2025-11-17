@@ -34,33 +34,57 @@
     "shop": {
       "label": "Duka",
       "items": {
-        "0": { "label": "Aina ya Duka A" },
-        "1": { "label": "Aina ya Duka B" },
-        "2": { "label": "Aina ya Duka C" }
+        "0": {
+          "label": "Aina ya Duka A"
+        },
+        "1": {
+          "label": "Aina ya Duka B"
+        },
+        "2": {
+          "label": "Aina ya Duka C"
+        }
       }
     },
     "support": {
       "label": "Msaada",
       "items": {
-        "0": { "label": "Maswali Yanayoulizwa Mara kwa Mara" },
-        "1": { "label": "Wasiliana Nasi" },
-        "2": { "label": "Dhamana" }
+        "0": {
+          "label": "Maswali Yanayoulizwa Mara kwa Mara"
+        },
+        "1": {
+          "label": "Wasiliana Nasi"
+        },
+        "2": {
+          "label": "Dhamana"
+        }
       }
     },
     "about": {
       "label": "Kuhusu Sisi",
       "items": {
-        "0": { "label": "Hadithi Yetu" },
-        "1": { "label": "Timu" },
-        "2": { "label": "Kazi" }
+        "0": {
+          "label": "Hadithi Yetu"
+        },
+        "1": {
+          "label": "Timu"
+        },
+        "2": {
+          "label": "Kazi"
+        }
       }
     },
     "member": {
       "label": "Mwanachama",
       "items": {
-        "0": { "label": "Mipango ya Uanachama" },
-        "1": { "label": "Pointi na Zawadi" },
-        "2": { "label": "Ofa Maalum" }
+        "0": {
+          "label": "Mipango ya Uanachama"
+        },
+        "1": {
+          "label": "Pointi na Zawadi"
+        },
+        "2": {
+          "label": "Ofa Maalum"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Kiwango cha punguzo la pointi:",
       "canBeStacked": "Inaweza kuunganishwa"
     },
-    "common": { "yes": "Ndiyo", "no": "Hapana" },
+    "common": {
+      "yes": "Ndiyo",
+      "no": "Hapana"
+    },
     "levels": {
       "title": "Viwango vya uanachama",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "Pointi 1 (inatumika kwa siku 30)"
     }
   },
-  "promo": { "memberCta": "Hadi punguzo la 50% kwa wanachama" }
+  "promo": {
+    "memberCta": "Hadi punguzo la 50% kwa wanachama"
+  },
+  "filter": {
+    "title": "Vichujio vya Juu",
+    "priceRange": "Kiwango cha Bei",
+    "stockStatus": "Hali ya Hifadhi",
+    "sortBy": "Panga Kwa",
+    "rating": "Ukadiriaji",
+    "inStock": "Ipo Hifadhini",
+    "preOrder": "Agiza Mapema",
+    "andUp": "na Zaidi",
+    "reset": "Weka Upya Vichujio",
+    "sort": {
+      "newest": "Mpya Zaidi",
+      "priceLowToHigh": "Bei: Chini hadi Juu",
+      "priceHighToLow": "Bei: Juu hadi Chini",
+      "popular": "Maarufu Zaidi",
+      "rating": "Ukadiriaji Bora"
+    }
+  },
+  "sidebar": {
+    "page1": "Urambazaji wa Kategoria",
+    "page2": "Chuja na Zaidi",
+    "staticPages": "Kurasa",
+    "categories": "Kategoria za Bidhaa",
+    "categoriesPlaceholder": "Mti wa Kategoria za Bidhaa (Utatekelezwa)",
+    "quickSearch": "Utafutaji wa Haraka",
+    "productSearch": "Utafutaji wa Bidhaa",
+    "searchProductPlaceholder": "Weka jina la bidhaa...",
+    "searchProducts": "Tafuta Bidhaa"
+  },
+  "products": {
+    "searchResults": "Matokeo ya Utafutaji",
+    "searchFor": "Tafuta",
+    "allProducts": "Bidhaa Zote",
+    "loading": "Inapakia...",
+    "noResults": "Hakuna bidhaa zilizopatikana",
+    "tryAdjustFilters": "Jaribu kurekebisha vichujio",
+    "loadMore": "Pakia Zaidi",
+    "items": "vitu"
+  }
 }

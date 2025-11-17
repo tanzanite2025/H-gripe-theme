@@ -34,33 +34,57 @@
     "shop": {
       "label": "Winkel",
       "items": {
-        "0": { "label": "Winkelcategorie A" },
-        "1": { "label": "Winkelcategorie B" },
-        "2": { "label": "Winkelcategorie C" }
+        "0": {
+          "label": "Winkelcategorie A"
+        },
+        "1": {
+          "label": "Winkelcategorie B"
+        },
+        "2": {
+          "label": "Winkelcategorie C"
+        }
       }
     },
     "support": {
       "label": "Ondersteuning",
       "items": {
-        "0": { "label": "Veelgestelde vragen" },
-        "1": { "label": "Neem contact op" },
-        "2": { "label": "Garantie" }
+        "0": {
+          "label": "Veelgestelde vragen"
+        },
+        "1": {
+          "label": "Neem contact op"
+        },
+        "2": {
+          "label": "Garantie"
+        }
       }
     },
     "about": {
       "label": "Over ons",
       "items": {
-        "0": { "label": "Ons verhaal" },
-        "1": { "label": "Team" },
-        "2": { "label": "Carrière" }
+        "0": {
+          "label": "Ons verhaal"
+        },
+        "1": {
+          "label": "Team"
+        },
+        "2": {
+          "label": "Carrière"
+        }
       }
     },
     "member": {
       "label": "Lid",
       "items": {
-        "0": { "label": "Lidmaatschapsplannen" },
-        "1": { "label": "Punten en beloningen" },
-        "2": { "label": "Exclusieve aanbiedingen" }
+        "0": {
+          "label": "Lidmaatschapsplannen"
+        },
+        "1": {
+          "label": "Punten en beloningen"
+        },
+        "2": {
+          "label": "Exclusieve aanbiedingen"
+        }
       }
     }
   },
@@ -71,7 +95,10 @@
       "pointsDiscountRate": "Puntenkortingspercentage:",
       "canBeStacked": "Combineerbaar"
     },
-    "common": { "yes": "Ja", "no": "Nee" },
+    "common": {
+      "yes": "Ja",
+      "no": "Nee"
+    },
     "levels": {
       "title": "Lidmaatschapsniveaus",
       "header": {
@@ -98,5 +125,46 @@
       "dailyDesc": "1 punt (30 dagen geldig)"
     }
   },
-  "promo": { "memberCta": "Tot 50% korting voor leden" }
+  "promo": {
+    "memberCta": "Tot 50% korting voor leden"
+  },
+  "filter": {
+    "title": "Geavanceerde filters",
+    "priceRange": "Prijsbereik",
+    "stockStatus": "Voorraadstatus",
+    "sortBy": "Sorteer op",
+    "rating": "Beoordeling",
+    "inStock": "Op voorraad",
+    "preOrder": "Voorbestelling",
+    "andUp": "en hoger",
+    "reset": "Filters resetten",
+    "sort": {
+      "newest": "Nieuwste",
+      "priceLowToHigh": "Prijs: Laag naar Hoog",
+      "priceHighToLow": "Prijs: Hoog naar Laag",
+      "popular": "Meest populair",
+      "rating": "Beste beoordeling"
+    }
+  },
+  "sidebar": {
+    "page1": "Categorienavigatie",
+    "page2": "Filter & Meer",
+    "staticPages": "Pagina's",
+    "categories": "Productcategorieën",
+    "categoriesPlaceholder": "Productcategorieboom (te implementeren)",
+    "quickSearch": "Snel zoeken",
+    "productSearch": "Producten zoeken",
+    "searchProductPlaceholder": "Voer productnaam in...",
+    "searchProducts": "Zoek producten"
+  },
+  "products": {
+    "searchResults": "Zoekresultaten",
+    "searchFor": "Zoeken naar",
+    "allProducts": "Alle producten",
+    "loading": "Laden...",
+    "noResults": "Geen producten gevonden",
+    "tryAdjustFilters": "Probeer filters aan te passen",
+    "loadMore": "Meer laden",
+    "items": "items"
+  }
 }

@@ -40,33 +40,57 @@
     "shop": {
       "label": "Butik",
       "items": {
-        "0": { "label": "Kategori A" },
-        "1": { "label": "Kategori B" },
-        "2": { "label": "Kategori C" }
+        "0": {
+          "label": "Kategori A"
+        },
+        "1": {
+          "label": "Kategori B"
+        },
+        "2": {
+          "label": "Kategori C"
+        }
       }
     },
     "support": {
       "label": "Support",
       "items": {
-        "0": { "label": "FAQ" },
-        "1": { "label": "Kontakt os" },
-        "2": { "label": "Garanti" }
+        "0": {
+          "label": "FAQ"
+        },
+        "1": {
+          "label": "Kontakt os"
+        },
+        "2": {
+          "label": "Garanti"
+        }
       }
     },
     "about": {
       "label": "Om os",
       "items": {
-        "0": { "label": "Vores historie" },
-        "1": { "label": "Team" },
-        "2": { "label": "Karriere" }
+        "0": {
+          "label": "Vores historie"
+        },
+        "1": {
+          "label": "Team"
+        },
+        "2": {
+          "label": "Karriere"
+        }
       }
     },
     "member": {
       "label": "Medlem",
       "items": {
-        "0": { "label": "Medlemsplaner" },
-        "1": { "label": "Point og belønninger" },
-        "2": { "label": "Eksklusive Tilbud" }
+        "0": {
+          "label": "Medlemsplaner"
+        },
+        "1": {
+          "label": "Point og belønninger"
+        },
+        "2": {
+          "label": "Eksklusive Tilbud"
+        }
       }
     }
   },
@@ -77,7 +101,10 @@
       "pointsDiscountRate": "Point-rabatsats:",
       "canBeStacked": "Kan stables"
     },
-    "common": { "yes": "Ja", "no": "Nej" },
+    "common": {
+      "yes": "Ja",
+      "no": "Nej"
+    },
     "levels": {
       "title": "Medlemsniveauer",
       "header": {
@@ -104,5 +131,46 @@
       "dailyDesc": "1 point (gyldig i 30 dage)"
     }
   },
-  "promo": { "memberCta": "Op til 50% rabat for medlemmer" }
+  "promo": {
+    "memberCta": "Op til 50% rabat for medlemmer"
+  },
+  "filter": {
+    "title": "Avancerede filtre",
+    "priceRange": "Prisinterval",
+    "stockStatus": "Lagerstatus",
+    "sortBy": "Sortér efter",
+    "rating": "Bedømmelse",
+    "inStock": "På lager",
+    "preOrder": "Forudbestilling",
+    "andUp": "og op",
+    "reset": "Nulstil filtre",
+    "sort": {
+      "newest": "Nyeste",
+      "priceLowToHigh": "Pris: Lav til høj",
+      "priceHighToLow": "Pris: Høj til lav",
+      "popular": "Mest populære",
+      "rating": "Bedste bedømmelse"
+    }
+  },
+  "sidebar": {
+    "page1": "Kategori Navigation",
+    "page2": "Filter & Mere",
+    "staticPages": "Sider",
+    "categories": "Produktkategorier",
+    "categoriesPlaceholder": "Produktkategoritræ (implementeres)",
+    "quickSearch": "Hurtig søgning",
+    "productSearch": "Produktsøgning",
+    "searchProductPlaceholder": "Indtast produktnavn...",
+    "searchProducts": "Søg produkter"
+  },
+  "products": {
+    "searchResults": "Søgeresultater",
+    "searchFor": "Søg efter",
+    "allProducts": "Alle produkter",
+    "loading": "Indlæser...",
+    "noResults": "Ingen produkter fundet",
+    "tryAdjustFilters": "Prøv at justere filtre",
+    "loadMore": "Indlæs mere",
+    "items": "stk"
+  }
 }

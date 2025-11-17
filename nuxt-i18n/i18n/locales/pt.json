@@ -40,33 +40,57 @@
     "shop": {
       "label": "Loja",
       "items": {
-        "0": { "label": "Categoria A" },
-        "1": { "label": "Categoria B" },
-        "2": { "label": "Categoria C" }
+        "0": {
+          "label": "Categoria A"
+        },
+        "1": {
+          "label": "Categoria B"
+        },
+        "2": {
+          "label": "Categoria C"
+        }
       }
     },
     "support": {
       "label": "Suporte",
       "items": {
-        "0": { "label": "Perguntas Frequentes" },
-        "1": { "label": "Entre em Contato" },
-        "2": { "label": "Garantia" }
+        "0": {
+          "label": "Perguntas Frequentes"
+        },
+        "1": {
+          "label": "Entre em Contato"
+        },
+        "2": {
+          "label": "Garantia"
+        }
       }
     },
     "about": {
       "label": "Sobre Nós",
       "items": {
-        "0": { "label": "Nossa História" },
-        "1": { "label": "Equipe" },
-        "2": { "label": "Carreiras" }
+        "0": {
+          "label": "Nossa História"
+        },
+        "1": {
+          "label": "Equipe"
+        },
+        "2": {
+          "label": "Carreiras"
+        }
       }
     },
     "member": {
       "label": "Membro",
       "items": {
-        "0": { "label": "Planos de Associação" },
-        "1": { "label": "Pontos e Recompensas" },
-        "2": { "label": "Ofertas Exclusivas" }
+        "0": {
+          "label": "Planos de Associação"
+        },
+        "1": {
+          "label": "Pontos e Recompensas"
+        },
+        "2": {
+          "label": "Ofertas Exclusivas"
+        }
       }
     }
   },
@@ -77,7 +101,10 @@
       "pointsDiscountRate": "Taxa de desconto de pontos:",
       "canBeStacked": "Acumulável"
     },
-    "common": { "yes": "Sim", "no": "Não" },
+    "common": {
+      "yes": "Sim",
+      "no": "Não"
+    },
     "levels": {
       "title": "Níveis de associação",
       "header": {
@@ -104,5 +131,46 @@
       "dailyDesc": "1 ponto (validade de 30 dias)"
     }
   },
-  "promo": { "memberCta": "Até 50% de desconto para membros" }
+  "promo": {
+    "memberCta": "Até 50% de desconto para membros"
+  },
+  "filter": {
+    "title": "Filtros avançados",
+    "priceRange": "Faixa de preço",
+    "stockStatus": "Status do estoque",
+    "sortBy": "Ordenar por",
+    "rating": "Avaliação",
+    "inStock": "Em estoque",
+    "preOrder": "Pré-venda",
+    "andUp": "e acima",
+    "reset": "Redefinir filtros",
+    "sort": {
+      "newest": "Mais recente",
+      "priceLowToHigh": "Preço: Baixo para Alto",
+      "priceHighToLow": "Preço: Alto para Baixo",
+      "popular": "Mais popular",
+      "rating": "Melhor avaliação"
+    }
+  },
+  "sidebar": {
+    "page1": "Navegação de categorias",
+    "page2": "Filtro e mais",
+    "staticPages": "Páginas",
+    "categories": "Categorias de produtos",
+    "categoriesPlaceholder": "Árvore de categorias de produtos (a ser implementado)",
+    "quickSearch": "Pesquisa rápida",
+    "productSearch": "Pesquisa de produtos",
+    "searchProductPlaceholder": "Digite o nome do produto...",
+    "searchProducts": "Pesquisar produtos"
+  },
+  "products": {
+    "searchResults": "Resultados da pesquisa",
+    "searchFor": "Pesquisar",
+    "allProducts": "Todos os produtos",
+    "loading": "Carregando...",
+    "noResults": "Nenhum produto encontrado",
+    "tryAdjustFilters": "Tente ajustar os filtros",
+    "loadMore": "Carregar mais",
+    "items": "itens"
+  }
 }

@@ -8,10 +8,10 @@
       leave-to-class="opacity-0"
     >
       <div v-if="isCartOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="closeCart">
-        <!-- 不透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black"></div>
+        <!-- 半透明背景遮罩 -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->
-        <div class="relative w-[min(95vw,1650px)] max-h-[90vh] bg-black border-2 border-[#6e6ee9] rounded-2xl shadow-2xl flex flex-col overflow-hidden" aria-modal="true" role="dialog" aria-label="Shopping Cart">
+        <div class="relative w-[min(95vw,1650px)] max-h-[90vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] flex flex-col overflow-hidden" aria-modal="true" role="dialog" aria-label="Shopping Cart">
         <!-- 头部 -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 class="text-xl font-semibold text-white">

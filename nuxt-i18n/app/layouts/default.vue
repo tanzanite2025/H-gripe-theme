@@ -266,47 +266,6 @@ const { data: quickBuyResponse } = await useAsyncData<QuickBuyConfigProp | null>
 
 const quickBuyConfig = computed<QuickBuyConfigProp | null>(() => quickBuyResponse.value)
 
-const { data: supportResponse } = await useAsyncData<SupportConfigProp>(
-  'mytheme-support',
-  async () => {
-    const base = wpApiBase.value
-    if (!base) {
-      return null as SupportConfigProp
-    }
-    const endpoint = `${base}/mytheme/v1/settings/support`
-    try {
-      const result = await $fetch(endpoint, { headers: { accept: 'application/json' } })
-      if (result && typeof result === 'object') {
-        return result as SupportConfigProp
-      }
-    } catch (error) {
-      console.warn('Failed to load support config:', error)
-    }
-    return null as SupportConfigProp
-  },
-  {
-    server: false,
-    default: () => null as SupportConfigProp
-  }
-)
-
-const whatsappConfig = computed<SupportConfigProp>(() => {
-  const base = supportResponse.value
-  if (!base) {
-    return null as SupportConfigProp
-  }
-
-  const user = authUser.value
-  const loyalty = (user as { loyalty?: Record<string, unknown> | null } | null)?.loyalty ?? null
-
-  return {
-    ...base,
-    isLoggedIn: Boolean(user),
-    loyalty,
-    user
-  } as SupportConfigProp
-})
-
 const route = useRoute()
 const { locales, defaultLocale, locale } = useI18n()
 const switchLocalePath = useSwitchLocalePath()

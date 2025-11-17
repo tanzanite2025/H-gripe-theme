@@ -4,14 +4,16 @@
     <Transition name="fade">
       <div
         v-if="isCheckoutOpen"
-        class="fixed inset-0 bg-black z-[9998] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9998] flex items-center justify-center p-4"
         @click.self="closeCheckout"
       >
+        <!-- 半透明背景遮罩 -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 结账弹窗 -->
         <Transition name="scale">
           <div
             v-if="isCheckoutOpen"
-            class="bg-black border-2 border-[#6e6ee9] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+            class="relative bg-black border-2 border-[#6b73ff] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-[0_0_30px_rgba(107,115,255,0.3)]"
           >
             <!-- 头部 -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">

@@ -40,33 +40,57 @@
     "shop": {
       "label": "Shop",
       "items": {
-        "0": { "label": "Kategorie A" },
-        "1": { "label": "Kategorie B" },
-        "2": { "label": "Kategorie C" }
+        "0": {
+          "label": "Kategorie A"
+        },
+        "1": {
+          "label": "Kategorie B"
+        },
+        "2": {
+          "label": "Kategorie C"
+        }
       }
     },
     "support": {
       "label": "Support",
       "items": {
-        "0": { "label": "FAQ" },
-        "1": { "label": "Kontaktieren Sie uns" },
-        "2": { "label": "Garantie" }
+        "0": {
+          "label": "FAQ"
+        },
+        "1": {
+          "label": "Kontaktieren Sie uns"
+        },
+        "2": {
+          "label": "Garantie"
+        }
       }
     },
     "about": {
       "label": "Über Uns",
       "items": {
-        "0": { "label": "Unsere Geschichte" },
-        "1": { "label": "Team" },
-        "2": { "label": "Karriere" }
+        "0": {
+          "label": "Unsere Geschichte"
+        },
+        "1": {
+          "label": "Team"
+        },
+        "2": {
+          "label": "Karriere"
+        }
       }
     },
     "member": {
       "label": "Mitglied",
       "items": {
-        "0": { "label": "Mitgliedschaftspläne" },
-        "1": { "label": "Punkte & Belohnungen" },
-        "2": { "label": "Exklusive Angebote" }
+        "0": {
+          "label": "Mitgliedschaftspläne"
+        },
+        "1": {
+          "label": "Punkte & Belohnungen"
+        },
+        "2": {
+          "label": "Exklusive Angebote"
+        }
       }
     }
   },
@@ -109,5 +133,44 @@
   },
   "promo": {
     "memberCta": "Bis zu 50% Rabatt für Mitglieder"
+  },
+  "filter": {
+    "title": "Erweiterte Filter",
+    "priceRange": "Preisspanne",
+    "stockStatus": "Lagerstatus",
+    "sortBy": "Sortieren nach",
+    "rating": "Bewertung",
+    "inStock": "Auf Lager",
+    "preOrder": "Vorbestellung",
+    "andUp": "und höher",
+    "reset": "Filter zurücksetzen",
+    "sort": {
+      "newest": "Neueste",
+      "priceLowToHigh": "Preis: Niedrig bis Hoch",
+      "priceHighToLow": "Preis: Hoch bis Niedrig",
+      "popular": "Am beliebtesten",
+      "rating": "Beste Bewertung"
+    }
+  },
+  "sidebar": {
+    "page1": "Kategorienavigation",
+    "page2": "Filter & Mehr",
+    "staticPages": "Seiten",
+    "categories": "Produktkategorien",
+    "categoriesPlaceholder": "Produktkategoriebaum (in Entwicklung)",
+    "quickSearch": "Schnellsuche",
+    "productSearch": "Produktsuche",
+    "searchProductPlaceholder": "Produktname eingeben...",
+    "searchProducts": "Produkte suchen"
+  },
+  "products": {
+    "searchResults": "Suchergebnisse",
+    "searchFor": "Suche nach",
+    "allProducts": "Alle Produkte",
+    "loading": "Lädt...",
+    "noResults": "Keine Produkte gefunden",
+    "tryAdjustFilters": "Versuchen Sie, Filter anzupassen",
+    "loadMore": "Mehr laden",
+    "items": "Stück"
   }
 }
