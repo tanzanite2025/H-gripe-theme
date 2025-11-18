@@ -29,22 +29,22 @@
       </div>
 
       <!-- 商品网格 -->
-      <div v-else-if="products.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-else-if="products.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <!-- 商品卡片占位 -->
         <div 
           v-for="product in products" 
           :key="product.id"
-          class="product-card p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+          class="product-card p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
         >
-          <div class="aspect-square bg-white/5 rounded-lg mb-3 flex items-center justify-center">
-            <span class="text-4xl">📦</span>
+          <div class="aspect-square bg-white/5 rounded-lg mb-2 flex items-center justify-center">
+            <span class="text-2xl">📦</span>
           </div>
-          <h3 class="text-sm font-semibold text-white mb-1">{{ product.name }}</h3>
-          <p class="text-xs text-white/60 mb-2">{{ product.description }}</p>
-          <div class="flex items-center justify-between">
-            <span class="text-lg font-bold text-[#40ffaa]">${{ product.price }}</span>
-            <span v-if="product.inStock" class="text-xs text-green-400">{{ $t('filter.inStock') }}</span>
-            <span v-else class="text-xs text-orange-400">{{ $t('filter.preOrder') }}</span>
+          <h3 class="text-xs font-semibold text-white mb-1 truncate">{{ product.name }}</h3>
+          <p class="text-[10px] text-white/60 mb-2 line-clamp-2">{{ product.description }}</p>
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-sm font-bold text-[#40ffaa]">${{ product.price }}</span>
+            <span v-if="product.inStock" class="text-[10px] text-green-400">{{ $t('filter.inStock') }}</span>
+            <span v-else class="text-[10px] text-orange-400">{{ $t('filter.preOrder') }}</span>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ const props = defineProps({
 
 // 商品数据（模拟）
 const products = ref([])
-const loading = ref(false)
+const loading = ref(true) // 初始状态为加载中
 const hasMore = ref(true)
 
 // 加载商品
@@ -107,8 +107,8 @@ const loadProducts = async () => {
   // 模拟商品数据
   const mockProducts = Array.from({ length: 6 }, (_, i) => ({
     id: i + 1,
-    name: `商品 ${i + 1}`,
-    description: '这是一个商品描述',
+    name: `Product ${i + 1}`,
+    description: 'This is a product description',
     price: Math.floor(Math.random() * (props.filters.priceRange[1] - props.filters.priceRange[0]) + props.filters.priceRange[0]),
     inStock: Math.random() > 0.3
   }))
@@ -124,8 +124,8 @@ const loadMore = async () => {
   
   const moreProducts = Array.from({ length: 4 }, (_, i) => ({
     id: products.value.length + i + 1,
-    name: `商品 ${products.value.length + i + 1}`,
-    description: '这是一个商品描述',
+    name: `Product ${products.value.length + i + 1}`,
+    description: 'This is a product description',
     price: Math.floor(Math.random() * (props.filters.priceRange[1] - props.filters.priceRange[0]) + props.filters.priceRange[0]),
     inStock: Math.random() > 0.3
   }))

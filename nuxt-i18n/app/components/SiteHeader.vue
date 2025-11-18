@@ -181,35 +181,17 @@
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div v-if="faqOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="faqOpen = false">
+      <div v-if="faqOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" @click.self="faqOpen = false">
         <!-- 半透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm -z-10"></div>
         <!-- 弹窗内容 -->
-        <div class="relative w-[min(95vw,900px)] h-[85vh] max-h-[800px]" aria-modal="true" role="dialog" aria-label="FAQ">
-          <FaqModal @close="faqOpen = false" @openWhatsApp="handleOpenWhatsApp" />
-        </div>
+        <FaqModal @close="faqOpen = false" @openWhatsApp="handleOpenWhatsApp" class="relative z-10" />
       </div>
     </transition>
   </teleport>
   
   <!-- WhatsApp Chat 弹窗 -->
-  <teleport to="body">
-    <transition
-      enter-active-class="transition-opacity duration-300 ease-out"
-      leave-active-class="transition-opacity duration-200 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div v-if="whatsappOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="whatsappOpen = false">
-        <!-- 半透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
-        <!-- 弹窗内容 -->
-        <div class="relative w-[min(95vw,1200px)] max-h-[90vh] overflow-auto" aria-modal="true" role="dialog" aria-label="WhatsApp Chat">
-          <WhatsAppChatModal @close="whatsappOpen = false" />
-        </div>
-      </div>
-    </transition>
-  </teleport>
+  <WhatsAppChatModal v-if="whatsappOpen" :conversation="{ showAgentList: true }" @close="whatsappOpen = false" />
   
   <!-- LeverAndPoint 弹窗 -->
   <teleport to="body">
@@ -260,6 +242,9 @@ const toggleFaq = () => {
 const whatsappOpen = ref(false)
 
 const handleOpenWhatsApp = () => {
+  // 先关闭 FAQ 弹窗
+  faqOpen.value = false
+  // 打开 WhatsApp 弹窗
   whatsappOpen.value = true
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))

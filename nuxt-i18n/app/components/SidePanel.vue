@@ -1,5 +1,19 @@
 <template>
   <teleport to="body">
+    <!-- 背景蒙版 -->
+    <transition
+      enter-active-class="transition-opacity duration-300 ease-out"
+      leave-active-class="transition-opacity duration-200 ease-in"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="leftOpen || rightOpen"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+        @click="handleBackdropClick"
+      ></div>
+    </transition>
+
     <!-- 左侧面板 (Sidebar) -->
     <aside 
       class="fixed left-0 top-1/2 -translate-y-1/2 pointer-events-none z-[9999]"
@@ -150,6 +164,13 @@ const closeLeft = () => {
 
 // 关闭右侧
 const closeRight = () => {
+  rightOpen.value = false
+}
+
+// 点击蒙版关闭侧边栏
+const handleBackdropClick = () => {
+  // 关闭所有打开的面板
+  leftOpen.value = false
   rightOpen.value = false
 }
 

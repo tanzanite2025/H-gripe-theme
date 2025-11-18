@@ -6,7 +6,7 @@
         <SidebarContent />
       </template>
       <template #right>
-        <!-- 会员中心内容将在这里 -->
+        <ProductSearchResults />
       </template>
     </SidePanel>
   </NuxtLayout>
@@ -19,5 +19,6 @@
 <script setup>
 import SidePanel from './components/SidePanel.vue'
 import SidebarContent from './components/SidebarContent.vue'
+import ProductSearchResults from './components/ProductSearchResults.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 </script>

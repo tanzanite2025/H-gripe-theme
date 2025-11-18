@@ -473,8 +473,8 @@ class TZ_FAQ_Editor
                                 wp_editor($answer, 'answer_' . $lang, [
                                     'textarea_name' => "answer[{$lang}]",
                                     'textarea_rows' => 8,
-                                    'media_buttons' => false,
-                                    'teeny' => true,
+                                    'media_buttons' => true,
+                                    'teeny' => false,
                                 ]); 
                                 ?>
                             </div>

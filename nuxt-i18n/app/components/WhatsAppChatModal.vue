@@ -13,8 +13,7 @@
         <Transition name="slide-up">
           <div
             v-if="conversation"
-            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden flex flex-row transition-colors duration-300"
-            :style="{ backgroundColor: selectedAgent ? getAgentBgColorValue(selectedAgent.id) : '#000000' }"
+            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden flex flex-row transition-colors duration-300 bg-black"
           >
             <!-- 左侧：客服列表(窄栏 200px) - 移动端隐藏 -->
             <div class="hidden md:flex w-[200px] min-w-[200px] max-w-[200px] border-r border-white/10 flex-col" style="background-color: rgba(0, 0, 0, 0.5) !important;">
@@ -116,122 +115,117 @@
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
               <!-- 头部 - 固定高度避免跳动 -->
               <div class="border-b border-white/10">
-                <!-- 移动端：邮箱按钮和关闭按钮同一行 -->
-                <div class="md:hidden flex items-center justify-between px-2 pt-3 gap-2">
-                  <!-- 左侧：邮箱按钮 -->
-                  <div class="flex gap-1.5 flex-1">
-                    <!-- Pre-sales 邮箱按钮 -->
-                    <a
-                      :href="emailSettings.preSalesEmail ? `mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry` : 'javascript:void(0)'"
-                      :class="[
-                        'px-3 py-1.5 rounded-full text-xs transition-all inline-flex items-center justify-center gap-1.5 flex-1',
-                        emailSettings.preSalesEmail 
-                          ? 'text-white cursor-pointer shadow-lg' 
-                          : 'text-gray-400 cursor-not-allowed opacity-50'
-                      ]"
-                      :style="emailSettings.preSalesEmail ? 'background: linear-gradient(to right, #60D5FF, #4A90E2) !important;' : 'background-color: #4b5563 !important;'"
-                      :title="emailSettings.preSalesEmail ? 'Pre-sales Email' : 'No email configured'"
-                      @click="!emailSettings.preSalesEmail && $event.preventDefault()"
+                <!-- 移动端：关闭按钮和标签页 -->
+                <div class="md:hidden border-b border-white/10 bg-black/60 backdrop-blur-md shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
+                  <div class="grid grid-cols-3 gap-1.5 px-3 pt-1.5 pb-1.5">
+                    <!-- 第一行：关闭按钮 + Chat + Products -->
+                    <button
+                      @click="handleClose"
+                      class="rounded-full px-2.5 py-1.5 flex items-center justify-center bg-red-500/20 border-2 border-red-500 hover:bg-red-500/30 transition-all h-[35px]"
+                      aria-label="Close"
                     >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                      <span>Pre-sales</span>
-                    </a>
+                    </button>
+                    <button
+                      @click="activeTab = 'chat'"
+                      class="rounded-full px-2.5 py-1.5 text-sm transition-all font-medium h-[35px] relative"
+                      :class="activeTab === 'chat' 
+                        ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-lg' 
+                        : 'gradient-border-btn'"
+                    >
+                      <span :class="activeTab === 'chat' ? '' : 'gradient-text'">Chat</span>
+                    </button>
+                    <button
+                      @click="activeTab = 'share'"
+                      class="rounded-full px-2.5 py-1.5 text-sm transition-all font-medium whitespace-nowrap h-[35px] relative"
+                      :class="activeTab === 'share' 
+                        ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-lg' 
+                        : 'gradient-border-btn'"
+                    >
+                      <span :class="activeTab === 'share' ? '' : 'gradient-text'">Products</span>
+                    </button>
                     
-                    <!-- After-sales 邮箱按钮 -->
-                    <a
-                      :href="emailSettings.afterSalesEmail ? `mailto:${emailSettings.afterSalesEmail}?subject=After-sales Support` : 'javascript:void(0)'"
-                      :class="[
-                        'px-3 py-1.5 rounded-full text-xs transition-all inline-flex items-center justify-center gap-1.5 flex-1',
-                        emailSettings.afterSalesEmail 
-                          ? 'text-white cursor-pointer shadow-lg' 
-                          : 'text-gray-400 cursor-not-allowed opacity-50'
-                      ]"
-                      :style="emailSettings.afterSalesEmail ? 'background: linear-gradient(to right, #C77DFF, #9B59B6) !important;' : 'background-color: #4b5563 !important;'"
-                      :title="emailSettings.afterSalesEmail ? 'After-sales Email' : 'No email configured'"
-                      @click="!emailSettings.afterSalesEmail && $event.preventDefault()"
+                    <!-- 第二行：Orders + FAQ + 空位 -->
+                    <button
+                      @click="activeTab = 'orders'"
+                      class="rounded-full px-2.5 py-1.5 text-sm transition-all font-medium whitespace-nowrap h-[35px] relative"
+                      :class="activeTab === 'orders' 
+                        ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-lg' 
+                        : 'gradient-border-btn'"
                     >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                      </svg>
-                      <span>After-sales</span>
-                    </a>
+                      <span :class="activeTab === 'orders' ? '' : 'gradient-text'">Orders</span>
+                    </button>
+                    <button
+                      @click="showFAQ = true"
+                      class="rounded-full px-2.5 py-1.5 text-sm transition-all font-medium whitespace-nowrap h-[35px] relative"
+                      :class="showFAQ
+                        ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-lg' 
+                        : 'gradient-border-btn'"
+                    >
+                      <span :class="showFAQ ? '' : 'gradient-text'">FAQ</span>
+                    </button>
+                    <div></div><!-- 空位占位 -->
                   </div>
-                  
-                  <!-- 右侧：关闭按钮 -->
-                  <button
-                    @click="handleClose"
-                    class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
-                    aria-label="Close"
-                  >
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 </div>
                 
-                <!-- 移动端：客服选择按钮 - 固定高度容器 -->
-                <div v-if="selectedAgent" class="md:hidden pb-2 border-b border-white/10">
-                  <div class="flex flex-col gap-2">
-                    <!-- 客服选择按钮 - 圆形头像样式 -->
-                    <div class="flex gap-2 justify-center px-4 pt-2 pb-1">
-                      <button
-                        v-for="agent in agents"
-                        :key="agent.id"
-                        @click="selectAgent(agent)"
-                        class="flex flex-col items-center gap-1.5 transition-all flex-1"
+                <!-- 移动端：客服选择 - 2列2行横向椭圆容器 -->
+                <div v-if="selectedAgent" class="md:hidden pb-2 border-b border-white">
+                  <!-- 提示文字 -->
+                  <p class="gradient-text text-center text-sm font-medium px-3 pt-2 pb-1">
+                    Please select customer service
+                  </p>
+                  <div class="grid grid-cols-2 gap-1.5 px-3 pt-1.5">
+                    <button
+                      v-for="agent in agents"
+                      :key="agent.id"
+                      @click="selectAgent(agent)"
+                      class="rounded-full px-2.5 py-1 flex items-center gap-1.5 transition-all h-[35px]"
+                      :class="selectedAgent?.id === agent.id
+                        ? 'bg-[#6b73ff] border-2 border-[#6b73ff] shadow-[0_0_15px_rgba(107,115,255,0.4)]'
+                        : 'bg-white/5 border-2 border-white hover:bg-white/8'"
+                    >
+                      <!-- 客服头像 -->
+                      <div 
+                        class="w-[30px] h-[30px] rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden"
+                        :style="agent.avatar 
+                          ? '' 
+                          : 'background: linear-gradient(135deg, #40ffaa 0%, #6b73ff 100%);'"
                       >
-                        <!-- 圆形头像 -->
-                        <div 
-                          class="w-[35px] h-[35px] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all overflow-hidden"
-                          :class="selectedAgent?.id === agent.id
-                            ? 'ring-4 ring-[#ff6b6b] ring-offset-2 ring-offset-black scale-110'
-                            : 'ring-2 ring-white/20'"
-                          :style="agent.avatar 
-                            ? '' 
-                            : (selectedAgent?.id === agent.id
-                              ? 'background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);'
-                              : 'background: linear-gradient(135deg, #40ffaa 0%, #6b73ff 100%);')"
-                        >
-                          <img 
-                            v-if="agent.avatar" 
-                            :src="agent.avatar" 
-                            :alt="agent.name"
-                            class="w-full h-full object-cover"
-                          />
-                          <span v-else>{{ agent.name.charAt(0).toUpperCase() }}</span>
-                        </div>
-                        <!-- 客服名称 -->
-                        <span 
-                          class="text-[10px] font-medium transition-colors"
-                          :class="selectedAgent?.id === agent.id ? 'text-[#ff6b6b]' : 'text-white/70'"
-                        >
-                          {{ agent.name }}
-                        </span>
-                      </button>
-                    </div>
-                    
-                    <!-- WhatsApp 按钮 -->
-                    <div class="flex gap-1.5 justify-center px-2">
-                      <a
-                        :href="selectedAgent?.whatsapp ? `https://wa.me/${selectedAgent.whatsapp.replace('+', '')}` : '#'"
-                        :target="selectedAgent?.whatsapp ? '_blank' : '_self'"
-                        :class="[
-                          'px-4 py-2 rounded-full text-xs transition-all flex-1 inline-flex items-center justify-center gap-1.5',
-                          selectedAgent?.whatsapp 
-                            ? 'bg-[#25D366] hover:bg-[#20BA5A] text-white cursor-pointer shadow-lg' 
-                            : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
-                        ]"
-                        :title="selectedAgent?.whatsapp ? 'WhatsApp' : 'No WhatsApp configured'"
-                        @click.prevent="selectedAgent?.whatsapp && window.open(`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`, '_blank')"
+                        <img 
+                          v-if="agent.avatar" 
+                          :src="agent.avatar" 
+                          :alt="agent.name"
+                          class="w-full h-full object-cover"
+                        />
+                        <span v-else>{{ agent.name.charAt(0).toUpperCase() }}</span>
+                      </div>
+                      
+                      <!-- WhatsApp 按钮 -->
+                      <div
+                        @touchstart="handleWhatsAppTouchStart(agent)"
+                        @touchend="handleWhatsAppTouchEnd"
+                        @touchcancel="handleWhatsAppTouchEnd"
+                        @click.stop="handleWhatsAppClick(agent)"
+                        class="w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
+                        :class="agent.whatsapp 
+                          ? 'bg-[#25D366] hover:bg-[#20BA5A] cursor-pointer' 
+                          : 'bg-gray-600 cursor-not-allowed opacity-50'"
+                        :title="agent.whatsapp ? 'Long press to open WhatsApp' : 'No WhatsApp'"
                       >
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                         </svg>
-                        <span>WhatsApp</span>
-                      </a>
-                    </div>
+                      </div>
+                      
+                      <!-- 客服名称（缩写） -->
+                      <span 
+                        class="text-sm font-medium truncate flex-1 text-white/80"
+                      >
+                        {{ agent.name.split(' ')[0].substring(0, 4) }}
+                      </span>
+                    </button>
                   </div>
                 </div>
                 
@@ -304,8 +298,8 @@
                 </div>
               </div>
 
-              <!-- 标签切换 -->
-              <div class="flex gap-1.5 md:gap-2 justify-center py-2 md:py-3 border-b border-white/10 px-2">
+              <!-- 标签切换 - 桌面端在顶部 -->
+              <div class="hidden md:flex gap-1.5 md:gap-2 justify-center py-2 md:py-3 border-b border-white/10 px-2">
               <button
                 @click="activeTab = 'chat'"
                 class="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm transition-all flex-1 md:flex-none"
@@ -334,6 +328,15 @@
               >
                 <span class="hidden md:inline">My Orders</span>
                 <span class="md:hidden">Orders</span>
+              </button>
+              <button
+                @click="showFAQ = true"
+                class="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm transition-all flex-1 md:flex-none whitespace-nowrap"
+                :class="showFAQ
+                  ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
+                  : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
+              >
+                FAQ
               </button>
               </div>
 
@@ -382,9 +385,14 @@
                     {{ message.is_agent ? 'Agent' : message.sender_name }}
                   </div>
                   
-                  <!-- 消息内容 -->
-                  <div class="text-sm whitespace-pre-wrap break-words">
-                    {{ message.message }}
+                  <!-- 消息内容和时间 -->
+                  <div class="flex items-end gap-2">
+                    <div class="text-sm whitespace-pre-wrap break-words flex-1">
+                      {{ message.message }}
+                    </div>
+                    <div class="text-[10px] opacity-60 whitespace-nowrap flex-shrink-0">
+                      {{ formatMessageTime(message.created_at) }}
+                    </div>
                   </div>
                   
                   <!-- 附件 -->
@@ -394,11 +402,6 @@
                       alt="附件"
                       class="max-w-full rounded-lg"
                     />
-                  </div>
-                  
-                  <!-- 时间 -->
-                  <div class="text-xs mt-1 opacity-60">
-                    {{ formatMessageTime(message.created_at) }}
                   </div>
                 </div>
               </div>
@@ -486,13 +489,13 @@
               </div>
 
               <!-- 输入框（仅在聊天标签显示）-->
-              <div v-if="activeTab === 'chat'" class="border-t border-white/10 p-2 md:p-4">
+              <div v-if="activeTab === 'chat'" class="border-t border-white p-2 md:p-4">
                 <form @submit.prevent="handleSendMessage" class="flex gap-1.5 md:gap-2">
                   <input
                     v-model="newMessage"
                     type="text"
                     placeholder="Type a message..."
-                    class="flex-1 px-3 py-2 md:py-2.5 bg-white/[0.06] text-white border border-white rounded-lg focus:outline-none focus:border-[#6b73ff] transition-colors text-sm md:text-base"
+                    class="flex-1 px-3 py-2 md:py-2.5 bg-white/[0.06] text-white border border-white rounded-full focus:outline-none focus:border-[#6b73ff] transition-colors text-sm md:text-base"
                     :disabled="isSending"
                   />
                   
@@ -508,7 +511,7 @@
                     type="button"
                     @click="imageInput?.click()"
                     :disabled="isUploadingImage"
-                    class="px-2.5 py-2 md:px-3 md:py-2.5 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
+                    class="w-10 h-10 md:w-11 md:h-11 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-full transition-colors disabled:opacity-50 flex-shrink-0 flex items-center justify-center"
                     title="Upload image"
                   >
                     <svg v-if="!isUploadingImage" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -523,7 +526,7 @@
                   <button
                     type="submit"
                     :disabled="!newMessage.trim() || isSending"
-                    class="px-3 py-2 md:px-6 md:py-2.5 bg-[#6b73ff] hover:bg-[#5d65e8] text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base flex-shrink-0"
+                    class="px-3 py-2 md:px-6 md:py-2.5 bg-[#6b73ff] hover:bg-[#5d65e8] text-white rounded-full transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base flex-shrink-0"
                   >
                     <span v-if="!isSending">Send</span>
                     <span v-else class="flex items-center gap-2">
@@ -535,6 +538,47 @@
                     </span>
                   </button>
                 </form>
+                
+                <!-- 邮箱按钮 - 移动端在输入框下方 -->
+                <div class="md:hidden mt-2">
+                  <div class="flex gap-2">
+                    <!-- Pre-sales 邮箱按钮 -->
+                    <a
+                      :href="emailSettings.preSalesEmail ? `mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry` : 'javascript:void(0)'"
+                      :class="[
+                        'px-4 py-2.5 rounded-full text-sm transition-all inline-flex items-center justify-center gap-2 flex-1 font-medium',
+                        emailSettings.preSalesEmail 
+                          ? 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700' 
+                          : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                      ]"
+                      :title="emailSettings.preSalesEmail ? 'Pre-sales Email' : 'No email configured'"
+                      @click="!emailSettings.preSalesEmail && $event.preventDefault()"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      </svg>
+                      <span>Pre-sales</span>
+                    </a>
+                    
+                    <!-- After-sales 邮箱按钮 -->
+                    <a
+                      :href="emailSettings.afterSalesEmail ? `mailto:${emailSettings.afterSalesEmail}?subject=After-sales Support` : 'javascript:void(0)'"
+                      :class="[
+                        'px-4 py-2.5 rounded-full text-sm transition-all inline-flex items-center justify-center gap-2 flex-1 font-medium',
+                        emailSettings.afterSalesEmail 
+                          ? 'bg-purple-600 text-white cursor-pointer hover:bg-purple-700' 
+                          : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                      ]"
+                      :title="emailSettings.afterSalesEmail ? 'After-sales Email' : 'No email configured'"
+                      @click="!emailSettings.afterSalesEmail && $event.preventDefault()"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      </svg>
+                      <span>After-sales</span>
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -607,12 +651,32 @@
         </div>
       </div>
     </Transition>
+    <!-- Toast 提示 -->
+    <Transition name="fade">
+      <div
+        v-if="showToast"
+        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[10001] px-4 py-2 bg-black/90 text-white text-sm rounded-lg shadow-lg backdrop-blur-sm"
+      >
+        {{ toastMessage }}
+      </div>
+    </Transition>
+    
+    <!-- FAQ 弹窗 - 移动端从底部滑出，桌面端居中 -->
+    <Transition name="slide-up">
+      <div
+        v-if="showFAQ"
+        class="fixed inset-0 z-[10001] flex items-end md:items-center justify-center p-0 md:p-4"
+      >
+        <FaqModal @close="showFAQ = false" />
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import FaqModal from '~/components/FaqModal.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -688,6 +752,19 @@ const searchResults = ref<any[]>([])
 const isLoadingOrders = ref(false)
 const ordersList = ref<any[]>([])
 
+// Toast 提示
+const showToast = ref(false)
+const toastMessage = ref('')
+let toastTimer: number | null = null
+
+// WhatsApp 长按相关
+let longPressTimer: number | null = null
+const longPressDuration = 500 // 长按时长（毫秒）
+let isLongPress = ref(false)
+
+// FAQ 弹窗
+const showFAQ = ref(false)
+
 // 是否显示"我的订单"标签
 // 访客不显示，已登录用户显示
 const shouldShowOrders = computed(() => {
@@ -697,6 +774,53 @@ const shouldShowOrders = computed(() => {
 // 关闭弹窗
 const handleClose = () => {
   emit('close')
+}
+
+// 显示 Toast 提示
+const displayToast = (message: string, duration = 2000) => {
+  toastMessage.value = message
+  showToast.value = true
+  
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    showToast.value = false
+  }, duration)
+}
+
+// WhatsApp 触摸开始（长按检测）
+const handleWhatsAppTouchStart = (agent: any) => {
+  if (!agent.whatsapp) return
+  
+  isLongPress.value = false
+  longPressTimer = setTimeout(() => {
+    isLongPress.value = true
+    // 长按触发，打开 WhatsApp
+    if (confirm(`Open WhatsApp to contact ${agent.name}?`)) {
+      window.open(`https://wa.me/${agent.whatsapp.replace('+', '')}`, '_blank')
+    }
+  }, longPressDuration)
+}
+
+// WhatsApp 触摸结束
+const handleWhatsAppTouchEnd = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+// WhatsApp 点击（桌面端或短按）
+const handleWhatsAppClick = (agent: any) => {
+  if (!agent.whatsapp) return
+  
+  // 如果是长按触发的，不执行点击逻辑
+  if (isLongPress.value) {
+    isLongPress.value = false
+    return
+  }
+  
+  // 短按显示提示
+  displayToast('Long press to open WhatsApp', 2000)
 }
 
 // WhatsApp 链接
@@ -736,10 +860,12 @@ watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
 
-// 组件挂载时加载消息
-onMounted(() => {
-  loadMessagesFromStorage()
-  scrollToBottom()
+// 监听客服切换，加载对应的聊天记录
+watch(() => selectedAgent.value?.id, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    loadMessagesFromStorage()
+    scrollToBottom()
+  }
 })
 
 // 从 localStorage 加载消息
@@ -1053,10 +1179,39 @@ const shareOrderToChat = async (order: any) => {
   }
 }
 
-// 获取客服列表
+// 获取客服列表（带缓存）
 const fetchAgents = async () => {
   isLoadingAgents.value = true
   try {
+    // 1. 先尝试从 localStorage 读取缓存
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('whatsapp_agents_cache')
+      if (cached) {
+        try {
+          const { data, timestamp } = JSON.parse(cached)
+          // 缓存有效期：30分钟
+          if (Date.now() - timestamp < 30 * 60 * 1000) {
+            agents.value = data.agents
+            if (data.emailSettings) {
+              emailSettings.value = data.emailSettings
+            }
+            
+            // 默认选择第一个客服
+            if (agents.value.length > 0 && !selectedAgent.value) {
+              selectedAgent.value = agents.value[0]
+              await sendWelcomeMessage()
+            }
+            
+            isLoadingAgents.value = false
+            return // 使用缓存，直接返回
+          }
+        } catch (e) {
+          // 缓存解析失败，继续请求
+        }
+      }
+    }
+    
+    // 2. 缓存不存在或过期，从 API 获取
     const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agents')
     if (response.success && response.data) {
       agents.value = response.data
@@ -1066,11 +1221,21 @@ const fetchAgents = async () => {
         emailSettings.value = response.emailSettings
       }
       
+      // 3. 保存到 localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('whatsapp_agents_cache', JSON.stringify({
+          data: {
+            agents: response.data,
+            emailSettings: response.emailSettings
+          },
+          timestamp: Date.now()
+        }))
+      }
+      
       // 默认选择第一个客服
       if (agents.value.length > 0 && !selectedAgent.value) {
         selectedAgent.value = agents.value[0]
-        // 加载该客服的聊天记录
-        loadMessagesFromStorage()
+        // watch 会自动触发 loadMessagesFromStorage
         // 发送欢迎语
         await sendWelcomeMessage()
       }
@@ -1116,9 +1281,7 @@ const sendWelcomeMessage = async () => {
 // 选择客服
 const selectAgent = (agent: any) => {
   selectedAgent.value = agent
-  // 切换客服时加载对应的聊天记录
-  loadMessagesFromStorage()
-  scrollToBottom()
+  // watch 会自动触发 loadMessagesFromStorage 和 scrollToBottom
 }
 
 // 根据客服ID获取背景颜色值（深色系）
@@ -1293,16 +1456,30 @@ onMounted(() => {
   opacity: 0;
 }
 
-/* 滑入动画 */
+/* 滑入动画 - FAQ 从底部滑上来 */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .slide-up-enter-from,
 .slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(100%);
+}
+
+/* 渐变边框按钮 */
+.gradient-border-btn {
+  background: linear-gradient(black, black) padding-box,
+              linear-gradient(to right, #40ffaa, #6b73ff) border-box;
+  border: 2px solid transparent;
+}
+
+/* 渐变文字 */
+.gradient-text {
+  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* 自定义滚动条 */

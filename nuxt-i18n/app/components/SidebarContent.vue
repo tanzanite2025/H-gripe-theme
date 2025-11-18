@@ -2,9 +2,16 @@
   <div class="flex gap-4 h-full w-full justify-center items-stretch overflow-hidden max-md:flex-col max-md:gap-0">
     <!-- 桌面端：第一栏 - 分类导航 -->
     <div class="flex-1 h-full min-w-0 max-w-full flex flex-col border-r border-white/[0.08] p-4 max-md:hidden">
-      <!-- 第一栏内容（待添加分类树） -->
-      <div class="text-sm text-white/50 text-center p-4">
-        {{ $t('sidebar.categoriesPlaceholder', '商品分类树（待实现）') }}
+      <!-- 社交图标 - 固定在顶部 -->
+      <div class="mb-4 pb-4 border-b border-white/10">
+        <SocialIcons :items="demoSocialLinks" />
+      </div>
+      
+      <!-- 第一栏内容（待添加分类树） - 可滚动区域 -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="text-sm text-white text-center p-4">
+          {{ $t('sidebar.categoriesPlaceholder', '商品分类树（待实现）') }}
+        </div>
       </div>
     </div>
     
@@ -12,7 +19,7 @@
     <div class="sidebar-column-2 flex-1 h-full min-w-0 max-w-full flex flex-col items-center justify-start gap-3 overflow-y-auto p-4 max-md:hidden">
       <!-- 商品搜索 -->
       <div class="w-full">
-        <h3 class="text-sm font-semibold text-white/40 mb-3">{{ $t('sidebar.productSearch', '商品搜索') }}</h3>
+        <h3 class="text-sm font-semibold text-white mb-3">{{ $t('sidebar.productSearch', '商品搜索') }}</h3>
         <div class="flex flex-col gap-2">
           <!-- 商品名称搜索 -->
           <input 
@@ -37,7 +44,7 @@
 
       <!-- 高级筛选器 -->
       <div class="w-full">
-        <h3 class="text-sm font-semibold text-white/40 mb-3">{{ $t('filter.title', 'Advanced Filters') }}</h3>
+        <h3 class="text-sm font-semibold text-white mb-3">{{ $t('filter.title', 'Advanced Filters') }}</h3>
         <AdvancedFilter
           v-model:filters="filters"
           :options="{
@@ -54,56 +61,25 @@
         />
       </div>
 
-      <!-- 快捷链接 -->
-      <div class="flex flex-col gap-1.5 w-full">
-        <NuxtLink 
-          to="/" 
-          class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-        >
-          <span class="text-lg w-6 text-center">🏠</span>
-          <span class="text-sm font-medium">{{ $t('nav.home') }}</span>
-        </NuxtLink>
-        <NuxtLink 
-          to="/shop" 
-          class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-        >
-          <span class="text-lg w-6 text-center">🛍️</span>
-          <span class="text-sm font-medium">{{ $t('nav.shop') }}</span>
-        </NuxtLink>
-        <NuxtLink 
-          to="/about" 
-          class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-        >
-          <span class="text-lg w-6 text-center">ℹ️</span>
-          <span class="text-sm font-medium">{{ $t('nav.about') }}</span>
-        </NuxtLink>
-        <NuxtLink 
-          to="/contact" 
-          class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-        >
-          <span class="text-lg w-6 text-center">📧</span>
-          <span class="text-sm font-medium">{{ $t('nav.contact') }}</span>
-        </NuxtLink>
-      </div>
     </div>
 
     <!-- 移动端：分页显示 -->
     <div class="hidden min-w-0 max-w-full overflow-hidden max-md:flex max-md:flex-col max-md:w-full max-md:h-full">
       <!-- 分页标签 -->
-      <div class="page-tabs flex border-b border-white/10 flex-shrink-0">
+      <div class="page-tabs flex gap-2 p-2 flex-shrink-0">
         <button
           @click="currentPage = 1"
-          class="flex-1 py-3 text-sm font-medium transition-all relative bg-transparent border-none cursor-pointer outline-none active:scale-[0.98]"
-          :class="currentPage === 1 ? 'text-white border-b-2 border-[#6b73ff]' : 'text-white/40'"
+          class="flex-1 py-2.5 px-4 text-sm font-semibold transition-all rounded-lg border-none cursor-pointer outline-none"
+          :class="currentPage === 1 ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-[0_0_15px_rgba(107,115,255,0.4)]' : 'bg-white/5 text-white hover:bg-white/10'"
         >
-          {{ $t('sidebar.page1', '分类导航') }}
+          {{ $t('sidebar.page1', 'Category') }}
         </button>
         <button
           @click="currentPage = 2"
-          class="flex-1 py-3 text-sm font-medium transition-all relative bg-transparent border-none cursor-pointer outline-none active:scale-[0.98]"
-          :class="currentPage === 2 ? 'text-white border-b-2 border-[#6b73ff]' : 'text-white/40'"
+          class="flex-1 py-2.5 px-4 text-sm font-semibold transition-all rounded-lg border-none cursor-pointer outline-none"
+          :class="currentPage === 2 ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-[0_0_15px_rgba(107,115,255,0.4)]' : 'bg-white/5 text-white hover:bg-white/10'"
         >
-          {{ $t('sidebar.page2', '筛选 & 更多') }}
+          {{ $t('sidebar.page2', 'Filter & More') }}
         </button>
       </div>
 
@@ -112,45 +88,15 @@
         <!-- 第 1 页：分类导航 -->
         <div v-show="currentPage === 1" class="p-4 h-full min-w-0 max-w-full">
           <div class="flex flex-col gap-4 h-full">
-            <!-- 静态页面 -->
-            <div class="static-pages">
-              <h3 class="text-xs font-semibold text-white/40 mb-2 uppercase tracking-wide">{{ $t('sidebar.staticPages', '页面') }}</h3>
-              <div class="flex flex-col gap-1.5">
-                <NuxtLink 
-                  to="/" 
-                  class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-                >
-                  <span class="text-lg w-6 text-center">🏠</span>
-                  <span class="text-sm font-medium">{{ $t('nav.home') }}</span>
-                </NuxtLink>
-                <NuxtLink 
-                  to="/shop" 
-                  class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-                >
-                  <span class="text-lg w-6 text-center">🛍️</span>
-                  <span class="text-sm font-medium">{{ $t('nav.shop') }}</span>
-                </NuxtLink>
-                <NuxtLink 
-                  to="/about" 
-                  class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-                >
-                  <span class="text-lg w-6 text-center">ℹ️</span>
-                  <span class="text-sm font-medium">{{ $t('nav.about') }}</span>
-                </NuxtLink>
-                <NuxtLink 
-                  to="/contact" 
-                  class="flex items-center gap-2.5 px-3.5 py-2 h-9 rounded-lg bg-white/[0.05] text-white no-underline box-border transition-all duration-200 hover:bg-white/10 hover:translate-x-1"
-                >
-                  <span class="text-lg w-6 text-center">📧</span>
-                  <span class="text-sm font-medium">{{ $t('nav.contact') }}</span>
-                </NuxtLink>
-              </div>
+            <!-- 社交图标 -->
+            <div class="social-icons-section">
+              <SocialIcons :items="demoSocialLinks" />
             </div>
-
+            
             <!-- 商品分类（占位，后续实现） -->
             <div class="product-categories">
-              <h3 class="text-xs font-semibold text-white/40 mb-2 uppercase tracking-wide">{{ $t('sidebar.categories', '商品分类') }}</h3>
-              <div class="text-sm text-white/50 p-4 text-center border border-white/10 rounded-lg">
+              <h3 class="text-xs font-semibold text-white mb-2 uppercase tracking-wide">{{ $t('sidebar.categories', 'PRODUCT CATEGORIES') }}</h3>
+              <div class="text-sm text-white p-4 text-center border border-white/10 rounded-lg">
                 {{ $t('sidebar.categoriesPlaceholder', '商品分类树（待实现）') }}
               </div>
             </div>
@@ -162,7 +108,7 @@
           <div class="flex flex-col gap-4">
             <!-- 商品搜索 -->
             <div class="product-search-section">
-              <h3 class="text-sm font-semibold text-white/40 mb-3">{{ $t('sidebar.productSearch', '商品搜索') }}</h3>
+              <h3 class="text-sm font-semibold text-white mb-3">{{ $t('sidebar.productSearch', 'Product Search') }}</h3>
               <div class="flex flex-col gap-2">
                 <!-- 商品名称搜索 -->
                 <input 
@@ -213,9 +159,20 @@
 
 <script setup>
 import { ref, inject } from 'vue'
+import SocialIcons from './SocialIcons.vue'
 
 const productSearchQuery = ref('')
 const router = useRouter()
+
+// 演示社交链接数据（即使没有 URL 也显示图标）
+const demoSocialLinks = ref([
+  { url: '#', label: 'Facebook', network: 'facebook' },
+  { url: '#', label: 'Instagram', network: 'instagram' },
+  { url: '#', label: 'X', network: 'x' },
+  { url: '#', label: 'Reddit', network: 'reddit' },
+  { url: '#', label: 'YouTube', network: 'youtube' },
+  { url: '#', label: 'Pinterest', network: 'pinterest' }
+])
 
 // 移动端分页状态
 const currentPage = ref(1)
