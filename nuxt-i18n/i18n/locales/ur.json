@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "ممبر سینٹر",
     "register": "رجسٹر کریں",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "زمرہ نیویگیشن",
+    "page1": "Category",
     "page2": "فلٹر اور مزید",
     "staticPages": "صفحات",
     "categories": "مصنوعات کی اقسام",

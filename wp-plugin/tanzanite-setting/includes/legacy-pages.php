@@ -1873,9 +1873,9 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
             echo '          <div class="tz-settings-section">';
             echo '              <div class="tz-section-title">' . esc_html__( '价格与活动', 'tanzanite-settings' ) . '</div>';
             echo '              <div class="tz-section-body" style="display:grid;gap:12px;">';
-            echo '                  <label>' . esc_html__( '原价', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-price-regular" class="regular-text" /></label>';
-            echo '                  <label>' . esc_html__( '现价', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-price-sale" class="regular-text" /></label>';
-            echo '                  <label>' . esc_html__( '会员价', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-price-member" class="regular-text" /></label>';
+            echo '                  <label>' . esc_html__( '原价 (USD)', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-price-regular" class="regular-text" placeholder="0.00" /></label>';
+            echo '                  <label>' . esc_html__( '现价 (USD)', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-price-sale" class="regular-text" placeholder="0.00" /></label>';
+            echo '                  <label>' . esc_html__( '会员价 (USD)', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-price-member" class="regular-text" placeholder="0.00" /></label>';
             echo '                  <label>' . esc_html__( '限购数量', 'tanzanite-settings' ) . '<input type="number" id="tz-product-limit" class="regular-text" /></label>';
             echo '                  <label>' . esc_html__( '起购数量', 'tanzanite-settings' ) . '<input type="number" id="tz-product-min-purchase" class="regular-text" /></label>';
             echo '                  <div class="tz-tier-pricing" style="display:flex;flex-direction:column;gap:12px;">';
@@ -1957,11 +1957,11 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
             echo '                          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">';
             echo '                              <label>' . esc_html__( 'SKU 编码', 'tanzanite-settings' ) . '<input type="text" id="tz-product-sku-form-code" class="regular-text" required /></label>';
             echo '                              <label>' . esc_html__( '属性组合', 'tanzanite-settings' ) . '<input type="text" id="tz-product-sku-form-attrs" class="regular-text" placeholder="颜色=蓝;尺寸=16" /></label>';
-            echo '                              <label>' . esc_html__( '原价', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-sku-form-price-regular" class="regular-text" /></label>';
-            echo '                              <label>' . esc_html__( '现价', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-sku-form-price-sale" class="regular-text" /></label>';
+            echo '                              <label>' . esc_html__( '原价 (USD)', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-sku-form-price-regular" class="regular-text" placeholder="0.00" /></label>';
+            echo '                              <label>' . esc_html__( '现价 (USD)', 'tanzanite-settings' ) . '<input type="number" step="0.01" id="tz-product-sku-form-price-sale" class="regular-text" placeholder="0.00" /></label>';
             echo '                              <label>' . esc_html__( '库存', 'tanzanite-settings' ) . '<input type="number" id="tz-product-sku-form-stock" class="regular-text" /></label>';
             echo '                              <label>' . esc_html__( '条码', 'tanzanite-settings' ) . '<input type="text" id="tz-product-sku-form-barcode" class="regular-text" /></label>';
-            echo '                              <label>' . esc_html__( '重量(kg)', 'tanzanite-settings' ) . '<input type="number" step="0.001" id="tz-product-sku-form-weight" class="regular-text" /></label>';
+            echo '                              <label>' . esc_html__( '重量 (kg)', 'tanzanite-settings' ) . '<input type="number" step="0.001" id="tz-product-sku-form-weight" class="regular-text" placeholder="0.000" /></label>';
             echo '                          </div>';
             echo '                          <div style="display:flex;gap:8px;flex-wrap:wrap;">';
             echo '                              <button type="button" class="button button-primary" id="tz-product-sku-form-submit">' . esc_html__( '保存 / 新增 SKU', 'tanzanite-settings' ) . '</button>';

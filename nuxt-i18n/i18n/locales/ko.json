@@ -1,4 +1,4 @@
-{
+﻿{
   "welcome": "환영합니다",
   "home": "홈",
   "category": "카테고리",
@@ -153,7 +153,7 @@
     }
   },
   "sidebar": {
-    "page1": "카테고리 탐색",
+    "page1": "Category",
     "page2": "필터 및 더보기",
     "staticPages": "페이지",
     "categories": "제품 카테고리",

@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "Member Center",
     "register": "Register",
@@ -107,7 +107,7 @@
     }
   },
   "sidebar": {
-    "page1": "Category Navigation",
+    "page1": "Category",
     "page2": "Filter & More",
     "staticPages": "Pages",
     "categories": "Product Categories",

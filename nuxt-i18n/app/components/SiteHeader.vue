@@ -10,9 +10,9 @@
       </div>
       
       <!-- 中间：面包屑导航 -->
-      <nav class="justify-self-center w-full max-w-[600px] h-10 rounded-full bg-black border border-black pointer-events-none" aria-label="Breadcrumbs">
+      <nav class="justify-self-center w-full max-w-[600px] h-10 rounded-full bg-transparent border border-transparent pointer-events-none" aria-label="Breadcrumbs">
         <div class="w-full h-full flex items-center justify-center px-4">
-          <span class="text-white/60 font-semibold text-[13px]">Breadcrumbs</span>
+          <span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
         </div>
       </nav>
       
@@ -45,7 +45,7 @@
         </button>
         
         <!-- 翻译转换器 -->
-        <div class="relative">
+        <div class="relative" data-lang-wrapper>
         <button 
           class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleDropdown"
@@ -142,7 +142,7 @@
         </button>
         
         <!-- 翻译转换器 -->
-        <div class="relative min-w-[140px]">
+        <div class="relative min-w-[140px]" data-lang-wrapper>
         <button 
           class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-[37px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleDropdown"
@@ -165,9 +165,9 @@
       </div>
       
       <!-- 第三排：面包屑导航 -->
-      <nav class="w-[85vw] max-w-[600px] h-[30px] rounded-[30px] bg-black border border-black pointer-events-none" aria-label="Breadcrumbs">
+      <nav class="w-[85vw] max-w-[600px] h-[30px] rounded-[30px] bg-transparent border border-transparent pointer-events-none" aria-label="Breadcrumbs">
         <div class="w-full h-full flex items-center justify-center px-3">
-          <span class="text-white/60 font-semibold text-[13px]">Breadcrumbs</span>
+          <span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
         </div>
       </nav>
     </div>
@@ -201,11 +201,11 @@
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div v-if="shareOpen" class="fixed inset-0 z-[9999] flex items-center justify-center" @click.self="shareOpen = false">
+      <div v-if="shareOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" @click.self="shareOpen = false">
         <!-- 不透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black"></div>
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->
-        <div class="relative w-[min(95vw,1650px)] max-h-[90vh] overflow-auto" aria-modal="true" role="dialog" aria-label="Membership">
+        <div class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex" aria-modal="true" role="dialog" aria-label="Membership">
           <LeverAndPoint @close="shareOpen = false" />
         </div>
       </div>
@@ -214,11 +214,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type ComponentPublicInstance } from 'vue'
+import { useLocalePath } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import FaqModal from '~/components/FaqModal.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
+import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 
 // Site Title
 const props = defineProps<{ title?: string }>()
@@ -237,6 +239,16 @@ const toggleFaq = () => {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-faq' } }))
   }
 }
+
+const SIDEBAR_TOKEN_HEADER_FAQ = 'header-faq'
+
+watch(faqOpen, (open) => {
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_HEADER_FAQ, open)
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_HEADER_FAQ, false)
+})
 
 // WhatsApp Chat Modal
 const whatsappOpen = ref(false)
@@ -263,21 +275,57 @@ const toggleShare = () => {
 
 // Language Switcher
 const { locale, locales, setLocale } = useI18n()
-const switchLocalePath = useSwitchLocalePath()
+const localePath = useLocalePath()
 const router = useRouter()
+
+const switchLocalePath = (targetLocale: string) => {
+  const currentFullPath = router.currentRoute.value?.fullPath || '/'
+  return localePath({ path: currentFullPath }, targetLocale)
+}
 
 const isOpen = ref(false)
 
-const currentLocale = computed(() => locales.value.find(l => l.code === locale.value) || locales.value[0])
-const availableLocales = computed(() => locales.value.filter(l => l.code !== locale.value))
+type LocaleOption = { code: string; name?: string; iso?: string }
+
+const normalizedLocales = computed<LocaleOption[]>(() => {
+  const list = locales.value
+  if (Array.isArray(list)) {
+    return list.map((entry: any) => ({
+      code: entry.code,
+      name: entry.name,
+      iso: entry.iso,
+    }))
+  }
+  return []
+})
+
+type LocaleCode = typeof locale.value
+const isLocaleCode = (value: string): value is LocaleCode => {
+  return normalizedLocales.value.some(item => item.code === value)
+}
+
+const currentLocale = computed<LocaleOption>(() => {
+  return (
+    normalizedLocales.value.find(l => l.code === locale.value) ||
+    normalizedLocales.value[0] ||
+    { code: locale.value }
+  )
+})
+
+const availableLocales = computed<LocaleOption[]>(() => {
+  return normalizedLocales.value.filter(l => l.code !== locale.value)
+})
 
 const buttonId = 'lang-switcher-button'
 const dropdownId = 'lang-switcher-dropdown'
 
-const optionRefs = ref([])
-const setOptionRef = (el, index) => {
-  if (!el) return
-  optionRefs.value[index] = el
+const optionRefs = ref<HTMLElement[]>([])
+const setOptionRef = (el: Element | ComponentPublicInstance | null, index: number) => {
+  const target = (el && '$el' in el)
+    ? ((el as ComponentPublicInstance).$el as HTMLElement | null)
+    : (el as HTMLElement | null)
+  if (!target) return
+  optionRefs.value[index] = target
 }
 
 const toggleDropdown = () => {
@@ -287,7 +335,7 @@ const toggleDropdown = () => {
   }
 }
 
-const onButtonKeydown = (e) => {
+const onButtonKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault()
     isOpen.value = !isOpen.value
@@ -299,31 +347,31 @@ const onButtonKeydown = (e) => {
   }
 }
 
-const onListKeydown = (e) => {
+const onListKeydown = (e: KeyboardEvent) => {
   const refs = optionRefs.value
   if (!Array.isArray(refs) || !refs.length) return
   const idx = refs.findIndex(el => el === document.activeElement)
   if (e.key === 'ArrowDown') {
     e.preventDefault()
-    const n = refs[(idx + 1 + refs.length) % refs.length]
-    n?.focus()
+    const nextIndex = idx >= 0 ? (idx + 1) % refs.length : 0
+    refs[nextIndex]?.focus()
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
-    const n = refs[(idx - 1 + refs.length) % refs.length]
-    n?.focus()
+    const prevIndex = idx >= 0 ? (idx - 1 + refs.length) % refs.length : refs.length - 1
+    refs[prevIndex]?.focus()
   } else if (e.key === 'Escape') {
     isOpen.value = false
     document.getElementById(buttonId)?.focus()
   }
 }
 
-const switchLanguage = async (code) => {
+const switchLanguage = async (code: string) => {
   try {
-    if (!code || code === locale.value) { isOpen.value = false; return }
+    if (!code || !isLocaleCode(code) || code === locale.value) { isOpen.value = false; return }
     locale.value = code
     await nextTick()
     try { await setLocale(code) } catch {}
-    const targetPath = switchLocalePath(code)
+    const targetPath = switchLocalePath(code as Parameters<typeof switchLocalePath>[0])
     const current = router.currentRoute.value?.fullPath || ''
     if (targetPath && targetPath !== current) {
       try {
@@ -337,26 +385,28 @@ const switchLanguage = async (code) => {
   }
 }
 
-const handleClickOutside = (event) => {
-  if (!(event.target instanceof Element)) return
-  if (!event.target.closest('.relative.min-w-\\[140px\\]') && !event.target.closest('#' + dropdownId)) {
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target
+  if (!(target instanceof Element)) return
+  if (!target.closest('[data-lang-wrapper]') && !target.closest('#' + dropdownId)) {
     isOpen.value = false
   }
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-  const onGlobalPopup = (e) => {
+  const onGlobalPopup = (event: Event) => {
     try {
-      const id = e?.detail?.id
+      const custom = event as CustomEvent<{ id?: string }>
+      const id = custom?.detail?.id
       if (id !== 'language') {
         isOpen.value = false
       }
     } catch {}
   }
-  window.addEventListener('ui:popup-open', onGlobalPopup)
+  window.addEventListener('ui:popup-open', onGlobalPopup as EventListener)
   onBeforeUnmount(() => {
-    window.removeEventListener('ui:popup-open', onGlobalPopup)
+    window.removeEventListener('ui:popup-open', onGlobalPopup as EventListener)
   })
 })
 
@@ -364,7 +414,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-const flagFilenameFromISO = (entry) => {
+const flagFilenameFromISO = (entry: LocaleOption | null | undefined) => {
   try {
     const iso = (entry && entry.iso) ? String(entry.iso) : ''
     const cc = (iso.split('-')[1] || '').toUpperCase()
@@ -379,7 +429,7 @@ const flagFilenameFromISO = (entry) => {
   }
 }
 
-const flagSrc = (entry) => {
+const flagSrc = (entry: LocaleOption | null | undefined) => {
   const file = flagFilenameFromISO(entry)
   if (!file) return ''
   return `/twemoji/svg/${file}`

@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "सदस्य केंद्र",
     "register": "नोंदणी करा",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "श्रेणी नेव्हिगेशन",
+    "page1": "Category",
     "page2": "फिल्टर आणि अधिक",
     "staticPages": "पृष्ठे",
     "categories": "उत्पादन श्रेणी",

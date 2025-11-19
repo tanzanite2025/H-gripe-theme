@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "Ledencentrum",
     "register": "Registreren",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "Categorienavigatie",
+    "page1": "Category",
     "page2": "Filter & Meer",
     "staticPages": "Pagina's",
     "categories": "Productcategorieën",

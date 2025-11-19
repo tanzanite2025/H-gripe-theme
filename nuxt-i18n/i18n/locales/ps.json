@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "د غړي مرکز",
     "register": "راجستر کړئ",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "د کټګورۍ نیویګیشن",
+    "page1": "Category",
     "page2": "فلټر او نور",
     "staticPages": "پاڼې",
     "categories": "د محصول کټګورۍ",

@@ -15,27 +15,13 @@
             v-if="conversation"
             class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden flex flex-row transition-colors duration-300 bg-black"
           >
-            <!-- 左侧：客服列表(桌面 400px) - 移动端隐藏 -->
-            <div class="hidden md:flex w-[400px] min-w-[400px] max-w-[400px] border-r border-white/10 flex-col" style="background-color: rgba(0, 0, 0, 0.5) !important;">
+            <!-- 左侧：客服列表(窄栏 200px) - 移动端隐藏 -->
+            <div class="hidden md:flex w-[200px] min-w-[200px] max-w-[200px] border-r border-white/10 flex-col" style="background-color: rgba(0, 0, 0, 0.5) !important;">
               <!-- 客服列表标题 -->
               <div class="px-4 py-4 border-b border-white/10">
                 <h3 class="font-semibold text-sm bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] bg-clip-text text-transparent">Agents</h3>
               </div>
-
-              <!-- 桌面搜索框 -->
-              <div class="px-4 pt-3 pb-4 border-b border-white/5 bg-white/5">
-                <div class="relative">
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 text-sm">🔍</span>
-                  <input
-                    v-model="desktopSearchQuery"
-                    type="text"
-                    placeholder="Search chats..."
-                    class="w-full h-10 pl-9 pr-3 rounded-full bg-black/50 text-white text-sm border border-white/20 focus:outline-none focus:border-[#6b73ff] placeholder:text-white/40"
-                  />
-                </div>
-                <p class="text-[11px] text-white/40 mt-2">Search results will appear here (UI only).</p>
-              </div>
-
+              
               <!-- 客服列表 -->
               <div class="flex-1 overflow-y-auto">
                 <div v-if="isLoadingAgents" class="flex items-center justify-center py-8">
@@ -76,46 +62,15 @@
                       </div>
                     </div>
                   </div>
-                  <div v-if="selectedAgent?.id === agent.id" class="mt-3 flex flex-col gap-2">
-                    <div class="flex gap-2">
-                      <a
-                        v-if="agent.whatsapp"
-                        :href="`https://wa.me/${agent.whatsapp.replace('+', '')}`"
-                        target="_blank"
-                        class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-black bg-[#25D366] hover:bg-[#20BA5A] transition-colors"
-                        @click.stop
-                      >
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884" />
-                        </svg>
-                        WhatsApp
-                      </a>
-                      <button
-                        v-if="conversation"
-                        @click.stop="showTransferModal = true"
-                        class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                        转接
-                      </button>
-                    </div>
-                  </div>
                 </div>
+                
                 <div v-if="!isLoadingAgents && agents.length === 0" class="text-center text-white/50 py-8 text-sm">
                   No agents available
                 </div>
               </div>
               
-              <!-- FAQ + 邮箱按钮区域 - 固定在底部 -->
+              <!-- 邮箱按钮区域 - 固定在底部 -->
               <div class="border-t border-white/10 p-3 space-y-2">
-                <button
-                  @click="showFAQ = true"
-                  class="w-full px-3 py-2 rounded-lg text-xs font-semibold border border-white/20 text-white hover:bg-white/10 transition-colors"
-                >
-                  FAQ
-                </button>
                 <!-- Pre-sales 邮箱按钮 -->
                 <a
                   :href="emailSettings.preSalesEmail ? `mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry` : 'javascript:void(0)'"
@@ -160,52 +115,51 @@
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
               <!-- 头部 - 固定高度避免跳动 -->
               <div class="border-b border-white/10">
-                <!-- 移动端：操作按钮 + 客服标签 -->
+                <!-- 移动端：固定操作栏 + 客服标签 -->
                 <div class="md:hidden bg-black/70 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.35)]">
-                  <!-- 第一排：邮箱图标 + FAQ + 关闭 -->
+                  <!-- 第一排：关闭 + 邮箱 + FAQ -->
                   <div class="px-3 pt-2 pb-2 border-b border-white/10">
-                    <div class="flex items-center gap-1.5 h-[42px]">
-                      <div class="flex-1 flex gap-1.5 h-full">
-                        <a
-                          v-if="emailSettings.preSalesEmail"
-                          :href="`mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry`"
-                          class="flex-1 h-full rounded-full flex items-center justify-center shadow-sm transition-all"
-                          style="background: linear-gradient(120deg, #60D5FF, #4A90E2);"
-                          aria-label="Pre-sales email"
-                        >
-                          <svg class="w-[70%] h-[70%]" fill="none" stroke="black" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                        </a>
-                        <a
-                          v-if="emailSettings.afterSalesEmail"
-                          :href="`mailto:${emailSettings.afterSalesEmail}?subject=After-sales Support`"
-                          class="flex-1 h-full rounded-full flex items-center justify-center shadow-sm transition-all"
-                          style="background: linear-gradient(120deg, #C77DFF, #9B59B6);"
-                          aria-label="After-sales email"
-                        >
-                          <svg class="w-4.5 h-4.5" fill="none" stroke="black" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                        </a>
-                        <button
-                          class="flex-1 h-full rounded-full bg-white/15 text-white flex items-center justify-center transition-colors hover:bg-white/25"
-                          @click="showFAQ = true"
-                          aria-label="Open FAQ"
-                        >
-                          <svg class="w-[70%] h-[70%]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.01 4h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8z" />
-                          </svg>
-                        </button>
-                      </div>
+                    <div class="grid grid-cols-4 gap-1.5 h-[42px]">
                       <button
                         @click="handleClose"
-                        class="w-[42px] h-[42px] rounded-full border-2 border-red-500 text-red-400 flex items-center justify-center hover:bg-red-500/15 transition-colors"
+                        class="flex items-center justify-center rounded-full border-2 border-red-500 text-red-500 hover:bg-red-500/20 transition-colors"
                         aria-label="Close"
                       >
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
+                      </button>
+                      <a
+                        :href="emailSettings.preSalesEmail ? `mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry` : 'javascript:void(0)'"
+                        :class="[
+                          'flex items-center justify-center rounded-full text-xs font-semibold transition-colors shadow-sm',
+                          emailSettings.preSalesEmail
+                            ? 'bg-[#60D5FF] text-black'
+                            : 'bg-white/10 text-white/40 cursor-not-allowed'
+                        ]"
+                        :title="emailSettings.preSalesEmail ? 'Pre-sales Email' : 'No email configured'"
+                        @click="!emailSettings.preSalesEmail && $event.preventDefault()"
+                      >
+                        Pre-sales
+                      </a>
+                      <a
+                        :href="emailSettings.afterSalesEmail ? `mailto:${emailSettings.afterSalesEmail}?subject=After-sales Support` : 'javascript:void(0)'"
+                        :class="[
+                          'flex items-center justify-center rounded-full text-xs font-semibold transition-colors shadow-sm',
+                          emailSettings.afterSalesEmail
+                            ? 'bg-[#C77DFF] text-black'
+                            : 'bg-white/10 text-white/40 cursor-not-allowed'
+                        ]"
+                        :title="emailSettings.afterSalesEmail ? 'After-sales Email' : 'No email configured'"
+                        @click="!emailSettings.afterSalesEmail && $event.preventDefault()"
+                      >
+                        After-sales
+                      </a>
+                      <button
+                        @click="showFAQ = true"
+                        class="flex items-center justify-center rounded-full text-xs font-semibold bg-white/[0.12] text-white hover:bg-white/[0.2] transition-colors"
+                      >
+                        FAQ
                       </button>
                     </div>
                   </div>
@@ -233,12 +187,64 @@
                     </div>
                   </div>
                 </div>
-
-                <!-- 桌面端：仅保留提示 + 关闭按钮 -->
-                <div class="hidden md:flex items-center justify-end px-6 py-4">
-                  <div class="text-white/50 text-sm mr-auto" v-if="!selectedAgent">
-                    Select an agent to start chat
+                
+                <!-- 桌面端：客服信息 + 关闭按钮 -->
+                <div class="hidden md:flex items-center justify-between px-6 py-4">
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <!-- 桌面端：当前选中的客服信息 -->
+                    <div v-if="selectedAgent" class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-white font-semibold">
+                        <img
+                          v-if="selectedAgent.avatar"
+                          :src="selectedAgent.avatar"
+                          :alt="selectedAgent.name"
+                          class="w-full h-full rounded-full object-cover"
+                        />
+                        <span v-else>{{ getInitials(selectedAgent.name) }}</span>
+                      </div>
+                      
+                      <div>
+                        <h2 class="text-lg font-bold text-white">
+                          {{ selectedAgent.name }}
+                        </h2>
+                        <p class="text-xs text-white/70">
+                          {{ selectedAgent.email }}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div v-else class="text-white/50 text-sm">
+                      Select an agent to start chat
+                    </div>
                   </div>
+                  
+                  <!-- WhatsApp 按钮 -->
+                  <a
+                    v-if="selectedAgent?.whatsapp"
+                    :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
+                    target="_blank"
+                    class="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#20BA5A] text-white rounded-lg transition-colors text-sm font-medium"
+                    title="通过 WhatsApp 联系此客服"
+                  >
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    <span>WhatsApp</span>
+                  </a>
+                  
+                  <!-- 转接按钮 -->
+                  <button
+                    v-if="selectedAgent && conversation"
+                    @click="showTransferModal = true"
+                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                    title="转接会话"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                    <span>转接</span>
+                  </button>
+                  
                   <button
                     @click="handleClose"
                     class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
@@ -518,6 +524,15 @@
                       : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
                   >
                     My Orders
+                  </button>
+                  <button
+                    @click="showFAQ = true"
+                    class="px-4 py-1.5 rounded-full text-sm transition-all whitespace-nowrap"
+                    :class="showFAQ
+                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
+                      : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
+                  >
+                    FAQ
                   </button>
                 </div>
 
@@ -818,9 +833,6 @@ const emit = defineEmits<{
 
 const { user } = useAuth()
 const config = useRuntimeConfig()
-
-// Desktop-only搜索占位
-const desktopSearchQuery = ref('')
 
 // 客服列表和选中状态
 const agents = ref<any[]>([])

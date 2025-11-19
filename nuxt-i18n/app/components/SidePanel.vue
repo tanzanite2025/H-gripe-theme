@@ -37,7 +37,7 @@
         
         <!-- 左侧把手按钮 -->
         <button 
-          class="w-[26px] h-[120px] rounded-r-[26px] box-border inline-flex items-center justify-center absolute -right-[26px] top-1/2 -translate-y-1/2 bg-gradient-to-br from-purple-500 to-indigo-500 border-2 border-[rgba(124,117,255,0.85)] shadow-[0_0_0_3px_rgba(124,117,255,0.18)] text-[#e8e9ff] cursor-pointer pointer-events-auto hover:brightness-110 hover:shadow-[0_0_0_4px_rgba(124,117,255,0.22),0_8px_22px_rgba(0,0,0,0.42)] focus-visible:brightness-110 focus-visible:shadow-[0_0_0_4px_rgba(124,117,255,0.22),0_8px_22px_rgba(0,0,0,0.42)] transition-all" 
+          class="sidebar-handle sidebar-handle--left w-[26px] h-[120px] rounded-r-[26px] box-border inline-flex items-center justify-center absolute -right-[26px] top-1/2 -translate-y-1/2 bg-gradient-to-br from-purple-500 to-indigo-500 border-2 border-[rgba(124,117,255,0.85)] shadow-[0_0_0_3px_rgba(124,117,255,0.18)] text-[#e8e9ff] cursor-pointer pointer-events-auto hover:brightness-110 hover:shadow-[0_0_0_4px_rgba(124,117,255,0.22),0_8px_22px_rgba(0,0,0,0.42)] focus-visible:brightness-110 focus-visible:shadow-[0_0_0_4px_rgba(124,117,255,0.22),0_8px_22px_rgba(0,0,0,0.42)] transition-all" 
           type="button" 
           @click="toggleLeft" 
           :aria-expanded="leftOpen"
@@ -69,7 +69,7 @@
       
       <!-- 右侧把手按钮 -->
       <button 
-        class="absolute left-0 top-1/2 -translate-y-1/2 w-[26px] h-[120px] max-md:h-[100px] rounded-r-[26px] box-border inline-flex items-center justify-center bg-gradient-to-br from-[#8b5cf6] to-[#6366f1] border-2 border-[rgba(124,117,255,0.85)] shadow-[0_0_0_3px_rgba(124,117,255,0.18)] text-[#e8e9ff] cursor-pointer p-0 z-[999] pointer-events-auto hover:brightness-110 transition-all" 
+        class="sidebar-handle sidebar-handle--right absolute left-0 top-1/2 -translate-y-1/2 w-[26px] h-[120px] max-md:h-[100px] rounded-r-[26px] box-border inline-flex items-center justify-center bg-gradient-to-br from-[#8b5cf6] to-[#6366f1] border-2 border-[rgba(124,117,255,0.85)] shadow-[0_0_0_3px_rgba(124,117,255,0.18)] text-[#e8e9ff] cursor-pointer p-0 z-[999] pointer-events-auto hover:brightness-110 transition-all" 
         type="button" 
         :aria-label="rightArrow === '◀' ? 'expand member center' : 'retract member center'" 
         @click="toggleRight"
@@ -205,3 +205,11 @@ defineExpose({
   toggleRight
 })
 </script>
+
+<style>
+body.hide-sidebar-handles .sidebar-handle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+</style>

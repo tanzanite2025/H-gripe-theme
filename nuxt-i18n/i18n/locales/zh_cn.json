@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "会员中心",
     "register": "注册",
@@ -147,7 +147,7 @@
     "memberCta": "会员最高享受 50% 折扣"
   },
   "sidebar": {
-    "page1": "分类导航",
+    "page1": "Category",
     "page2": "筛选 & 更多",
     "staticPages": "页面",
     "categories": "商品分类",

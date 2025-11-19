@@ -1,24 +1,24 @@
 <template>
   <div class="flex justify-center pt-0 pb-0 w-full">
-    <div class="w-full max-w-[1600px] h-[600px] max-md:h-[65vh] min-[1024px]:aspect-[21/9]:h-[60vh] rounded-2xl border-2 border-[#6b73ff] bg-black shadow-[0_0_30px_rgba(107,115,255,0.3)] relative overflow-hidden flex flex-col pointer-events-none" role="region" aria-label="Membership Levels and Points">
+    <div class="w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] rounded-2xl border-2 border-[#6b73ff] bg-black shadow-[0_0_30px_rgba(107,115,255,0.3)] relative overflow-hidden flex flex-col" role="region" aria-label="Membership Levels and Points">
       <button class="absolute right-2 top-2 w-7 h-7 inline-flex items-center justify-center border border-[rgba(124,117,255,0.6)] rounded-md bg-[rgba(30,27,75,0.6)] text-[#e8e9ff] pointer-events-auto hover:brightness-110 transition-all" type="button" @click="$emit('close')">×</button>
       <!-- 移动端标签页 -->
-      <div class="md:hidden flex gap-2 justify-center py-3 border-b border-white/10 px-2 pointer-events-auto">
+      <div class="md:hidden flex gap-2 justify-center py-3 border-b border-white/10 px-3 pointer-events-auto">
         <button
           @click="mobileTab = 'info'"
-          class="px-4 py-1.5 rounded-full text-xs transition-all flex-1"
+          class="h-10 rounded-full text-sm font-semibold flex-1 border transition-all"
           :class="mobileTab === 'info' 
-            ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-            : 'bg-white/[0.08] text-white/70 border border-white'"
+            ? 'bg-[#6b73ff] border-[#6b73ff] text-white shadow-[0_6px_24px_rgba(107,115,255,0.35)]' 
+            : 'bg-white/5 border-white/15 text-white/70'"
         >
           My Info
         </button>
         <button
           @click="mobileTab = 'levels'"
-          class="px-4 py-1.5 rounded-full text-xs transition-all flex-1"
+          class="h-10 rounded-full text-sm font-semibold flex-1 border transition-all"
           :class="mobileTab === 'levels' 
-            ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-            : 'bg-white/[0.08] text-white/70 border border-white'"
+            ? 'bg-[#6b73ff] border-[#6b73ff] text-white shadow-[0_6px_24px_rgba(107,115,255,0.35)]' 
+            : 'bg-white/5 border-white/15 text-white/70'"
         >
           Levels & Points
         </button>
@@ -30,111 +30,68 @@
           <div v-show="mobileTab === 'info' || !isMobile" class="flex flex-col items-start max-md:items-center text-left max-md:text-center gap-4 w-full md:overflow-y-auto md:h-full">
             <!-- 显示会员信息 -->
             <div class="flex flex-col items-start max-md:items-center text-left max-md:text-center gap-4 w-full">
-              <!-- 头像单独一行 -->
+              <!-- 头像 + 登录/注册按钮 -->
               <div class="flex justify-center w-full">
-                <div class="w-[54px] h-[54px] overflow-hidden bg-transparent rounded-xl leading-[0]">
-                  <BadgeAvatar :logged="isLogged" :level="levelName" :topTierImageUrl="topTierImage" />
-                </div>
-              </div>
-
-              <!-- 登录/注册按钮或登出按钮 - 紧跟头像下方 -->
-              <div class="w-full" v-if="!isLogged">
-                <!-- 显示登录/注册按钮 -->
-                <div v-if="!showAuthForm" class="flex gap-2.5 justify-center items-center">
-                  <button class="h-[32px] px-4 inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] hover:brightness-110 text-white text-sm rounded-md transition-all" type="button" @click="openAuthForm('register')">{{ $t('user.register') }}</button>
-                  <button class="h-[32px] px-4 inline-flex items-center justify-center bg-white/10 hover:bg-white/20 text-white text-sm rounded-md transition-all" type="button" @click="openAuthForm('login')">{{ $t('user.login') }}</button>
-                </div>
-
-                <!-- 显示登录表单 -->
-                <div v-else-if="showAuthForm && authMode === 'login'" class="w-full bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 shadow-2xl">
-                  <h2 class="text-xl font-bold text-white text-center mb-4">{{ $t('auth.signIn', 'Sign in') }}</h2>
-                  <form @submit.prevent="handleLogin" class="space-y-3">
-                    <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.email', 'Email') }}</label>
-                      <input type="text" v-model="loginForm.username" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
+                <div class="flex items-center gap-4 w-full max-w-[360px] md:flex-col md:gap-3">
+                  <div class="w-[54px] h-[54px] overflow-hidden bg-transparent rounded-xl leading-[0]">
+                    <BadgeAvatar :logged="isLogged" :level="levelName" :topTierImageUrl="topTierImage" />
+                  </div>
+                  <div class="flex-1 w-full" v-if="!isLogged">
+                    <div class="flex gap-2 justify-end md:justify-center pointer-events-auto">
+                      <button
+                        class="h-10 px-5 rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold hover:brightness-110 transition-all pointer-events-auto"
+                        type="button"
+                        @click="openAuthForm('register')"
+                      >
+                        {{ $t('user.register') }}
+                      </button>
+                      <button
+                        class="h-10 px-5 rounded-full inline-flex items-center justify-center border border-white/20 bg-white/10 text-white text-sm font-semibold hover:bg-white/20 transition-all pointer-events-auto"
+                        type="button"
+                        @click="openAuthForm('login')"
+                      >
+                        {{ $t('user.login') }}
+                      </button>
                     </div>
-                    <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.password', 'Password') }}</label>
-                      <input type="password" v-model="loginForm.password" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
-                    </div>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" v-model="loginForm.remember" class="w-4 h-4" />
-                      <span class="text-sm text-white/70">{{ $t('auth.rememberMe', 'Remember me') }}</span>
-                    </label>
-                    <button type="submit" :disabled="loginForm.loading" class="w-full h-10 bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] hover:brightness-110 text-white font-semibold rounded-lg transition-all disabled:opacity-50">
-                      {{ loginForm.loading ? $t('auth.signingIn', 'Signing in...') : $t('auth.signIn', 'Sign in') }}
+                  </div>
+                  <div class="flex-1 w-full flex justify-end md:justify-center" v-else-if="isLogged">
+                    <button class="h-10 px-5 rounded-full inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all" type="button" @click="doLogout">
+                      {{ $t('user.logout') }}
                     </button>
-                    <div v-if="loginForm.error" class="text-sm text-red-400 text-center">{{ loginForm.error }}</div>
-                    
-                    <div class="text-center text-sm text-white/60">
-                      {{ $t('auth.dontHaveAccount', "Don't have an account?") }}
-                      <button type="button" @click="authMode = 'register'" class="ml-1 text-[#6b73ff] hover:text-[#40ffaa]">{{ $t('auth.signUpHere', 'Sign up here') }}</button>
-                    </div>
-                  </form>
+                  </div>
                 </div>
-
-                <!-- 显示注册表单 -->
-                <div v-else-if="showAuthForm && authMode === 'register'" class="w-full bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 shadow-2xl">
-                  <h2 class="text-xl font-bold text-white text-center mb-4">{{ $t('auth.signUp', 'Sign up') }}</h2>
-                  <form @submit.prevent="handleRegister" class="space-y-3">
-                    <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.username', 'Username') }}</label>
-                      <input type="text" v-model="registerForm.username" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.email', 'Email') }}</label>
-                      <input type="email" v-model="registerForm.email" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.password', 'Password') }}</label>
-                      <input type="password" v-model="registerForm.password" required class="w-full h-10 px-3 bg-white/5 border border-white rounded-lg text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-[#6b73ff]" />
-                    </div>
-                    <button type="submit" :disabled="registerForm.loading" class="w-full h-10 bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] hover:brightness-110 text-white font-semibold rounded-lg transition-all disabled:opacity-50">
-                      {{ registerForm.loading ? $t('auth.signingUp', 'Signing up...') : $t('auth.signUp', 'Sign up') }}
-                    </button>
-                    <div v-if="registerForm.error" class="text-sm text-red-400 text-center">{{ registerForm.error }}</div>
-                    
-                    <div class="text-center text-sm text-white/60">
-                      {{ $t('auth.alreadyHaveAccount', 'Already have an account?') }}
-                      <button type="button" @click="authMode = 'login'" class="ml-1 text-[#6b73ff] hover:text-[#40ffaa]">{{ $t('auth.signInHere', 'Sign in here') }}</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-              <div class="w-full flex gap-2.5 justify-center items-center" v-else-if="isLogged">
-                <button class="h-[32px] px-4 inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-all" type="button" @click="doLogout">{{ $t('user.logout') }}</button>
               </div>
               
               <!-- 会员信息容器 - 美化版 -->
               <div class="w-full border-2 border-[#6e6ee9] rounded-xl bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-4 backdrop-blur-sm">
                 <!-- 基础信息网格 -->
                 <div class="grid grid-cols-2 gap-3 mb-3 pb-3 border-b border-white/10">
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
                     <span class="text-lg">👤</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.membershipLevel', 'Level') }}</span>
-                      <span class="text-sm font-semibold text-white/90">{{ isLogged ? (levelName || '0') : '❓' }}</span>
+                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelName || '0') : '?' }}</span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
                     <span class="text-lg">🛍️</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.productDiscount', 'Product') }}</span>
-                      <span class="text-sm font-semibold text-white/90">{{ isLogged ? (levelDiscounts.product + '%') : '❓' }}</span>
+                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.product + '%') : '?' }}</span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
                     <span class="text-lg">💎</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.pointsDiscount', 'Points') }}</span>
-                      <span class="text-sm font-semibold text-white/90">{{ isLogged ? (levelDiscounts.points + '%') : '❓' }}</span>
+                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.points + '%') : '?' }}</span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
                     <span class="text-lg">📊</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.stackable', 'Stackable') }}</span>
-                      <span class="text-sm font-semibold text-white/90">{{ isLogged ? (levelDiscounts.stackable ? '✓' : '✗') : '❓' }}</span>
+                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.stackable ? '✓' : '✗') : '?' }}</span>
                     </div>
                   </div>
                 </div>
@@ -146,7 +103,7 @@
                     <div class="flex flex-col flex-1">
                       <span class="text-[11px] text-white/50">{{ $t('member.coupons', 'Coupons') }}</span>
                       <span class="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff]">
-                        {{ isLogged ? `× ${userCoupons}` : '❓' }}
+                        <span :class="isLogged ? '' : 'text-[#40ffaa]'">{{ isLogged ? `× ${userCoupons}` : '?' }}</span>
                       </span>
                     </div>
                   </div>
@@ -155,7 +112,7 @@
                     <div class="flex flex-col flex-1">
                       <span class="text-[11px] text-white/50">{{ $t('member.pointCards', 'Point Cards') }}</span>
                       <span class="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff]">
-                        {{ isLogged ? `× ${userPointCards}` : '❓' }}
+                        <span :class="isLogged ? '' : 'text-[#40ffaa]'">{{ isLogged ? `× ${userPointCards}` : '?' }}</span>
                       </span>
                     </div>
                   </div>
@@ -347,15 +304,53 @@
         </div>
       </div>
     </div>
+    
+    <!-- FAQ Modal -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        leave-active-class="transition duration-300 ease-in"
+        enter-from-class="translate-y-full opacity-0"
+        enter-to-class="translate-y-0 opacity-100"
+        leave-from-class="translate-y-0 opacity-100"
+        leave-to-class="translate-y-full opacity-0"
+      >
+        <div
+          v-if="showFaqModal"
+          class="fixed inset-0 z-[12000] flex items-end md:items-center justify-center p-0 md:p-4"
+        >
+          <div
+            class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            @click="closeFAQ"
+          ></div>
+          <div
+            class="relative w-full max-w-[1400px] px-3 pb-6 md:p-0"
+            @click.stop
+          >
+            <FaqModal @close="closeFAQ" />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <AuthModal
+      v-model="showAuthModal"
+      :default-mode="authMode"
+      @mode-change="handleAuthModeChange"
+      @success="handleAuthSuccess"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
+import FaqModal from '~/components/FaqModal.vue'
+import AuthModal from '~/components/AuthModal.vue'
+import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 
 const emit = defineEmits(['close'])
 const cart = useCart()
@@ -375,12 +370,31 @@ if (typeof window !== 'undefined') {
 }
 
 // 认证表单状态
-const showAuthForm = ref(false)
-const authMode = ref('login') // 'login' or 'register'
+const showAuthModal = ref(false)
+const authMode = ref('login')
+const showFaqModal = ref(false)
 
-// 表单数据
-const loginForm = ref({ username: '', password: '', remember: false, loading: false, error: '' })
-const registerForm = ref({ username: '', email: '', password: '', loading: false, error: '' })
+const SIDEBAR_TOKEN_MODAL = 'lever-modal'
+const SIDEBAR_TOKEN_AUTH = 'lever-auth'
+const SIDEBAR_TOKEN_FAQ = 'lever-faq'
+
+onMounted(() => {
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_MODAL, true)
+})
+
+watch(showAuthModal, (open) => {
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_AUTH, open)
+}, { immediate: true })
+
+watch(showFaqModal, (open) => {
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_FAQ, open)
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_MODAL, false)
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_AUTH, false)
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_FAQ, false)
+})
 
 // 用户优惠券和积分卡数量
 const userCoupons = ref(0)
@@ -471,52 +485,24 @@ const levelDiscounts = computed(() => {
 const doLogout = async () => {
   try { 
     await auth.logout()
-    showAuthForm.value = false
+    showAuthModal.value = false
   } catch {}
 }
 
 // 打开认证表单
 const openAuthForm = (mode) => {
   authMode.value = mode
-  showAuthForm.value = true
+  showAuthModal.value = true
 }
 
-// 处理登录
-const handleLogin = async () => {
-  loginForm.value.error = ''
-  loginForm.value.loading = true
-  try {
-    await auth.login(loginForm.value.username, loginForm.value.password, loginForm.value.remember)
-    showAuthForm.value = false
-    loginForm.value = { username: '', password: '', remember: false, loading: false, error: '' }
-    await auth.ensureSession()
-    await fetchUserAssets()
-  } catch (e) {
-    loginForm.value.error = e instanceof Error ? e.message : 'Login failed'
-  } finally {
-    loginForm.value.loading = false
-  }
+const handleAuthModeChange = (mode) => {
+  authMode.value = mode
 }
 
-// 处理注册
-const handleRegister = async () => {
-  registerForm.value.error = ''
-  registerForm.value.loading = true
-  try {
-    await auth.register({
-      username: registerForm.value.username,
-      email: registerForm.value.email,
-      password: registerForm.value.password
-    })
-    showAuthForm.value = false
-    registerForm.value = { username: '', email: '', password: '', loading: false, error: '' }
-    await auth.ensureSession()
-    await fetchUserAssets()
-  } catch (e) {
-    registerForm.value.error = e instanceof Error ? e.message : 'Registration failed'
-  } finally {
-    registerForm.value.loading = false
-  }
+const handleAuthSuccess = async () => {
+  showAuthModal.value = false
+  await auth.ensureSession()
+  await fetchUserAssets()
 }
 
 // 获取用户优惠券和积分卡数据
@@ -696,9 +682,11 @@ const handleViewCart = () => {
 
 // FAQ - 常见问题
 const handleFAQ = () => {
-  // TODO: 实现 FAQ 逻辑
-  console.log('FAQ clicked')
-  // 可以跳转到 FAQ 页面或打开 FAQ 弹窗
+  showFaqModal.value = true
+}
+
+const closeFAQ = () => {
+  showFaqModal.value = false
 }
 
 // Payment - 支付方式

@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "Sentro ng Miyembro",
     "register": "Magrehistro",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "Pag-navigate sa Kategorya",
+    "page1": "Category",
     "page2": "Filter at Higit Pa",
     "staticPages": "Mga Pahina",
     "categories": "Mga Kategorya ng Produkto",

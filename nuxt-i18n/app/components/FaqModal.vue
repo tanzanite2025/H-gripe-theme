@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[1400px] w-[calc(100%-2rem)] md:w-full h-[90vh] md:h-[700px] max-h-[85vh] bg-black rounded-2xl border-2 border-[#6b73ff] shadow-[0_0_30px_rgba(107,115,255,0.3)] overflow-hidden flex flex-col">
+  <div class="max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] bg-black rounded-2xl border-2 border-[#6b73ff] shadow-[0_0_30px_rgba(107,115,255,0.3)] overflow-hidden flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-3 md:py-4 border-b border-white/10">
       <h2 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff]">

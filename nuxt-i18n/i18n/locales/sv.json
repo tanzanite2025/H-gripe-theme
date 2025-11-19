@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "Medlemscenter",
     "register": "Registrera",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "Kategorinavigering",
+    "page1": "Category",
     "page2": "Filter & Mer",
     "staticPages": "Sidor",
     "categories": "Produktkategorier",

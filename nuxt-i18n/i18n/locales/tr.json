@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "Üye Merkezi",
     "register": "Kayıt Ol",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "Kategori Gezinme",
+    "page1": "Category",
     "page2": "Filtre ve Daha Fazlası",
     "staticPages": "Sayfalar",
     "categories": "Ürün Kategorileri",

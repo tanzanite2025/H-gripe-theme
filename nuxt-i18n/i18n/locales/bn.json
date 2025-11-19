@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "সদস্য কেন্দ্র",
     "register": "নিবন্ধন করুন",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "বিভাগ নেভিগেশন",
+    "page1": "Category",
     "page2": "ফিল্টার এবং আরও",
     "staticPages": "পৃষ্ঠা",
     "categories": "পণ্য বিভাগ",

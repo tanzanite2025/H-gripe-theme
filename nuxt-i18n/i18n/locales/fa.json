@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "مرکز اعضا",
     "register": "ثبت نام",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "ناوبری دسته‌بندی",
+    "page1": "Category",
     "page2": "فیلتر و بیشتر",
     "staticPages": "صفحات",
     "categories": "دسته‌بندی محصولات",

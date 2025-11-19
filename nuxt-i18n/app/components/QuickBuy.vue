@@ -12,7 +12,7 @@
         <!-- 弹窗内容 -->
         <Transition name="slide-up">
           <div
-            class="relative md:max-w-[1600px] w-full h-[90vh] md:h-[600px] max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] box-border flex flex-col"
+            class="relative max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgga(107,115,255,0.3)] box-border flex flex-col"
             role="dialog"
             aria-modal="true"
           >

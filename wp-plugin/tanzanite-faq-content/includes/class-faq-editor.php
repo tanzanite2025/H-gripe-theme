@@ -13,6 +13,8 @@ class TZ_FAQ_Editor
         add_action('admin_post_save_faq', [$this, 'handle_save']);
         add_action('admin_post_delete_faq', [$this, 'handle_delete']);
         add_action('admin_post_generate_json', [$this, 'handle_generate_json']);
+        add_action('admin_post_save_faq_category', [$this, 'handle_save_category']);
+        add_action('admin_post_delete_faq_category', [$this, 'handle_delete_category']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
     }
     
@@ -54,6 +56,15 @@ class TZ_FAQ_Editor
             'manage_options',
             'tanzanite-faq-add',
             [$this, 'render_edit_page']
+        );
+        
+        add_submenu_page(
+            'tanzanite-faq-content',
+            'FAQ Categories',
+            'Categories',
+            'manage_options',
+            'tanzanite-faq-categories',
+            [$this, 'render_categories_page']
         );
     }
     
@@ -439,10 +450,14 @@ class TZ_FAQ_Editor
                 <div class="faq-form-field">
                     <label for="category">Category:</label>
                     <select name="category" id="category" class="regular-text" required>
-                        <option value="product" <?php selected($faq['category'] ?? '', 'product'); ?>>Product Questions</option>
-                        <option value="shipping" <?php selected($faq['category'] ?? '', 'shipping'); ?>>Shipping & Delivery</option>
-                        <option value="return" <?php selected($faq['category'] ?? '', 'return'); ?>>Returns & Refunds</option>
-                        <option value="payment" <?php selected($faq['category'] ?? '', 'payment'); ?>>Payment Methods</option>
+                        <?php
+                        $categories = $this->get_categories();
+                        foreach ($categories as $key => $label):
+                        ?>
+                            <option value="<?php echo esc_attr($key); ?>" <?php selected($faq['category'] ?? '', $key); ?>>
+                                <?php echo esc_html($label); ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 
@@ -492,6 +507,23 @@ class TZ_FAQ_Editor
             </div>
         </div>
         <?php
+    }
+    
+    /**
+     * Get FAQ categories
+     */
+    private function get_categories()
+    {
+        $default_categories = [
+            'product' => 'Product Questions',
+            'shipping' => 'Shipping & Delivery',
+            'return' => 'Returns & Refunds',
+            'payment' => 'Payment Methods'
+        ];
+        
+        $custom_categories = get_option('tanzanite_faq_categories', []);
+        
+        return array_merge($default_categories, $custom_categories);
     }
     
     /**
@@ -584,6 +616,135 @@ class TZ_FAQ_Editor
         $generator->generate_all_json();
         
         wp_redirect(admin_url('admin.php?page=tanzanite-faq-content&generated=1'));
+        exit;
+    }
+    
+    /**
+     * Render categories management page
+     */
+    public function render_categories_page()
+    {
+        $categories = $this->get_categories();
+        $custom_categories = get_option('tanzanite_faq_categories', []);
+        
+        ?>
+        <div class="wrap tz-faq-admin">
+            <div class="tz-settings-wrapper">
+                <div class="tz-settings-header">
+                    <h1>FAQ Categories Management</h1>
+                    <p>Manage FAQ categories. The first 4 categories are default and cannot be deleted.</p>
+                </div>
+                
+                <?php if (isset($_GET['saved'])): ?>
+                    <div class="notice notice-success is-dismissible">
+                        <p>Category saved successfully!</p>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($_GET['deleted'])): ?>
+                    <div class="notice notice-success is-dismissible">
+                        <p>Category deleted successfully!</p>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Add New Category Form -->
+                <div class="tz-settings-section">
+                    <h2>Add New Category</h2>
+                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display: flex; gap: 12px; align-items: flex-end;">
+                        <input type="hidden" name="action" value="save_faq_category">
+                        <?php wp_nonce_field('save_faq_category_nonce'); ?>
+                        
+                        <div style="flex: 1;">
+                            <label for="category_key" style="display: block; margin-bottom: 4px; font-weight: 600;">Category Key (slug):</label>
+                            <input type="text" name="category_key" id="category_key" class="regular-text" required placeholder="e.g., technical">
+                        </div>
+                        
+                        <div style="flex: 1;">
+                            <label for="category_label" style="display: block; margin-bottom: 4px; font-weight: 600;">Category Label:</label>
+                            <input type="text" name="category_label" id="category_label" class="regular-text" required placeholder="e.g., Technical Support">
+                        </div>
+                        
+                        <button type="submit" class="button button-primary">Add Category</button>
+                    </form>
+                </div>
+                
+                <!-- Categories List -->
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Category Key</th>
+                            <th style="width: 50%;">Category Label</th>
+                            <th style="width: 20%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $key => $label): ?>
+                            <tr>
+                                <td><code><?php echo esc_html($key); ?></code></td>
+                                <td><?php echo esc_html($label); ?></td>
+                                <td>
+                                    <?php if (isset($custom_categories[$key])): ?>
+                                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display: inline;">
+                                            <input type="hidden" name="action" value="delete_faq_category">
+                                            <input type="hidden" name="category_key" value="<?php echo esc_attr($key); ?>">
+                                            <?php wp_nonce_field('delete_faq_category_nonce'); ?>
+                                            <button type="submit" class="button button-small button-link-delete" onclick="return confirm('Are you sure you want to delete this category?');">Delete</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span style="color: #999;">Default</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Handle save category
+     */
+    public function handle_save_category()
+    {
+        check_admin_referer('save_faq_category_nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+        
+        $key = sanitize_key($_POST['category_key']);
+        $label = sanitize_text_field($_POST['category_label']);
+        
+        $custom_categories = get_option('tanzanite_faq_categories', []);
+        $custom_categories[$key] = $label;
+        update_option('tanzanite_faq_categories', $custom_categories);
+        
+        wp_redirect(admin_url('admin.php?page=tanzanite-faq-categories&saved=1'));
+        exit;
+    }
+    
+    /**
+     * Handle delete category
+     */
+    public function handle_delete_category()
+    {
+        check_admin_referer('delete_faq_category_nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+        
+        $key = sanitize_key($_POST['category_key']);
+        
+        $custom_categories = get_option('tanzanite_faq_categories', []);
+        if (isset($custom_categories[$key])) {
+            unset($custom_categories[$key]);
+            update_option('tanzanite_faq_categories', $custom_categories);
+        }
+        
+        wp_redirect(admin_url('admin.php?page=tanzanite-faq-categories&deleted=1'));
         exit;
     }
 }

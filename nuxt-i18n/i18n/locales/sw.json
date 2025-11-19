@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "Kituo cha Wanachama",
     "register": "Jisajili",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "Urambazaji wa Kategoria",
+    "page1": "Category",
     "page2": "Chuja na Zaidi",
     "staticPages": "Kurasa",
     "categories": "Kategoria za Bidhaa",

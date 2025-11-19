@@ -1,4 +1,4 @@
-{
+﻿{
   "user": {
     "memberCenter": "Pusat Anggota",
     "register": "Daftar",
@@ -147,7 +147,7 @@
     }
   },
   "sidebar": {
-    "page1": "Navigasi Kategori",
+    "page1": "Category",
     "page2": "Filter & Liyane",
     "staticPages": "Kaca",
     "categories": "Kategori Produk",

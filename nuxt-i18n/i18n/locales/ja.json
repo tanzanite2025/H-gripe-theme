@@ -1,4 +1,4 @@
-{
+﻿{
   "welcome": "ようこそ",
   "home": "ホーム",
   "category": "カテゴリー",
@@ -169,7 +169,7 @@
     }
   },
   "sidebar": {
-    "page1": "カテゴリーナビゲーション",
+    "page1": "Category",
     "page2": "フィルターとその他",
     "staticPages": "ページ",
     "categories": "商品カテゴリー",

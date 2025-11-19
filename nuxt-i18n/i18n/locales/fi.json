@@ -1,4 +1,4 @@
-{
+﻿{
   "welcome": "Tervetuloa",
   "home": "Koti",
   "category": "Kategoria",
@@ -153,7 +153,7 @@
     }
   },
   "sidebar": {
-    "page1": "Luokkanavigointi",
+    "page1": "Category",
     "page2": "Suodatin ja lisää",
     "staticPages": "Sivut",
     "categories": "Tuoteluokat",
