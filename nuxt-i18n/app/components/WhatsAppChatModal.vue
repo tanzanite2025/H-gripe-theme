@@ -587,7 +587,7 @@
 
                 <div v-if="activeTab === 'share'" class="flex-1 flex flex-col overflow-hidden">
                   <div class="flex-1 overflow-y-auto p-6">
-                    <div class="flex gap-2 mb-4 items-center">
+                    <div class="flex gap-2 mb-3 items-center">
                       <input
                         v-model="searchQuery"
                         type="text"
@@ -603,6 +603,49 @@
                         {{ isSearching ? 'Searching...' : 'Search' }}
                       </button>
                     </div>
+
+                    <div
+                      v-if="!productDrawerVisible && !isSearching && searchResults.length === 0"
+                      class="text-center text-white/50 text-sm mb-4"
+                    >
+                      {{ searchQuery ? 'No products found' : 'Search products to share in chat' }}
+                    </div>
+
+                    <div class="flex justify-center gap-3 mb-4">
+                      <button
+                        type="button"
+                        @click="historyDrawerVisible = true"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm bg-white/[0.08] text-white/80 border border-white hover:bg-white/[0.15] transition-colors"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="8" stroke-width="1.7" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 8v4l2.5 2.5" />
+                        </svg>
+                        <span>History</span>
+                      </button>
+                      <button
+                        type="button"
+                        @click="openCart"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm bg-white/[0.08] text-white/80 border border-white hover:bg-white/[0.15] transition-colors"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 3h2l2 13h12l2-9H6" />
+                          <circle cx="9" cy="19" r="1.4" />
+                          <circle cx="17" cy="19" r="1.4" />
+                        </svg>
+                        <span>Cart</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm bg-white/[0.08] text-white/80 border border-white hover:bg-white/[0.15] transition-colors"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
+                        </svg>
+                        <span>Wishlist</span>
+                      </button>
+                    </div>
+
                     <div v-if="searchResults.length > 0 && !productDrawerVisible" class="grid grid-cols-2 gap-3">
                       <div
                         v-for="product in searchResults"
@@ -620,15 +663,6 @@
                         <p v-if="product.price" class="text-white/70 text-xs mt-1">{{ product.price }}</p>
                       </div>
                     </div>
-                    <div v-else-if="!productDrawerVisible && !isSearching && searchQuery" class="text-center text-white/50 py-12">
-                      No products found
-                    </div>
-                    <div v-else-if="!productDrawerVisible && !isSearching" class="text-center text-white/50 py-12">
-                      Search products to share in chat
-                    </div>
-                  </div>
-                  <div class="border-t border-white/10 p-4 bg-black/20">
-                    <BrowsingHistoryDark @share-to-chat="handleShareProductFromHistory" />
                   </div>
                 </div>
 
@@ -807,12 +841,44 @@
       @close="handleProductDrawerClose"
       @select="shareProductToChat"
     />
+
+    <Transition name="slide-up">
+      <div
+        v-if="historyDrawerVisible"
+        class="fixed inset-0 z-[10001] flex items-end justify-center p-0 md:p-4 pointer-events-none"
+        @click.self="handleHistoryDrawerClose"
+      >
+        <div
+          class="pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]
+                 rounded-2xl border-2 border-[#6b73ff] bg-black shadow-[0_0_30px_rgba(107,115,255,0.6)]
+                 flex flex-col overflow-hidden"
+        >
+          <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div class="text-sm font-semibold text-white/90">
+              Browsing history
+            </div>
+            <button
+              type="button"
+              class="w-8 h-8 rounded-full border border-white/40 text-white flex items-center justify-center hover:bg-white/10 transition-colors"
+              @click="handleHistoryDrawerClose"
+            >
+              <span class="text-lg leading-none">x</span>
+            </button>
+          </div>
+
+          <div class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+            <BrowsingHistoryDark @share-to-chat="handleShareProductFromHistory" />
+          </div>
+        </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { useCart } from '~/composables/useCart'
 import FaqModal from '~/components/FaqModal.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 
@@ -829,6 +895,7 @@ const emit = defineEmits<{
 }>()
 
 const { user } = useAuth()
+const { openCart } = useCart()
 const config = useRuntimeConfig()
 
 // Desktop-only搜索占位
@@ -947,6 +1014,7 @@ const isLoadingOrders = computed({
 const productDrawerVisible = ref(false)
 const productDrawerError = ref<string | null>(null)
 const productDrawerQuery = ref('')
+const historyDrawerVisible = ref(false)
 
 // 转接功能
 const showTransferModal = ref(false)
@@ -1392,6 +1460,10 @@ const handleProductDrawerClose = () => {
   searchQuery.value = ''
   searchResults.value = []
   isSearching.value = false
+}
+
+const handleHistoryDrawerClose = () => {
+  historyDrawerVisible.value = false
 }
 
 // 分享商品到聊天

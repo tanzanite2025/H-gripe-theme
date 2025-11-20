@@ -7,11 +7,18 @@
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div v-if="isCartOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" @click.self="closeCart">
-        <!-- 半透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+      <div
+        v-if="isCartOpen"
+        class="fixed inset-0 z-[10001] flex items-end justify-center p-0 md:p-4 pointer-events-none"
+        @click.self="closeCart"
+      >
         <!-- 弹窗内容 -->
-        <div class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] flex flex-col overflow-hidden" aria-modal="true" role="dialog" aria-label="Shopping Cart">
+        <div
+          class="relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
+          aria-modal="true"
+          role="dialog"
+          aria-label="Shopping Cart"
+        >
         <!-- 头部 -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 class="text-xl font-semibold text-white">

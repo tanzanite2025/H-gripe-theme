@@ -105,62 +105,64 @@
     </div>
     
     <!-- 移动端：三排垂直布局 -->
-    <div class="md:hidden grid gap-0.5 justify-items-center">
-      <!-- 第一排：站点标题 -->
-      <div class="flex justify-center items-center">
-        <h1 class="m-0 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)]">
-          {{ titleText }}
-        </h1>
-      </div>
-      
-      <!-- 第二排：FAQ + 分享 + 翻译转换器 -->
-      <div class="flex justify-center items-center gap-2">
+    <div class="md:hidden grid gap-1 justify-items-center">
+      <!-- 第一排：站点标题 + FAQ + 分享 -->
+      <div class="w-[90vw] max-w-[600px] flex items-center justify-between">
         <!-- FAQ 按钮 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[37px] h-[37px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleFaq()" 
           :aria-expanded="faqOpen" 
           aria-haspopup="dialog" 
           aria-label="Open FAQ"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/>
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
             <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
         </button>
+
+        <!-- 站点标题 -->
+        <div class="flex-1 flex justify-center px-2 py-0.5">
+          <h1 class="m-0 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
+            {{ titleText }}
+          </h1>
+        </div>
         
-        <!-- 分享按钮 - 改为圆形 -->
+        <!-- 分享按钮 - 圆形 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[37px] h-[37px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
           @click.stop="toggleShare()" 
           :aria-expanded="shareOpen" 
           aria-haspopup="dialog" 
           aria-label="Open membership panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
         </button>
-        
-        <!-- 翻译转换器 -->
-        <div class="relative min-w-[140px]" data-lang-wrapper>
-        <button 
-          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-[37px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
-          @click.stop="toggleDropdown"
-          @keydown="onButtonKeydown"
-          :id="buttonId"
-          aria-haspopup="listbox"
-          :aria-expanded="isOpen"
-          :aria-controls="dropdownId"
-          :aria-label="'Switch language'"
-        >
-          <span class="font-medium flex items-center gap-2">
-            <span class="w-[1.2em] inline-block" aria-hidden="true">
-              <img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+      </div>
+
+      <!-- 第二排：翻译转换器（单独一排，居中） -->
+      <div class="flex justify-center items-center">
+        <div class="relative min-w-[150px]" data-lang-wrapper>
+          <button 
+            class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[40px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
+            @click.stop="toggleDropdown"
+            @keydown="onButtonKeydown"
+            :id="buttonId"
+            aria-haspopup="listbox"
+            :aria-expanded="isOpen"
+            :aria-controls="dropdownId"
+            :aria-label="'Switch language'"
+          >
+            <span class="font-medium flex items-center gap-2">
+              <span class="w-[1.2em] inline-block" aria-hidden="true">
+                <img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+              </span>
+              {{ currentLocale.name }}
             </span>
-            {{ currentLocale.name }}
-          </span>
-          <span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
-        </button>
+            <span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
+          </button>
         </div>
       </div>
       
