@@ -4,7 +4,7 @@
     <Transition name="fade">
       <div
         v-if="conversation"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
         @click.self="handleClose"
       >
         <!-- 半透明背景遮罩 -->
@@ -387,7 +387,7 @@
                           {{ isSearching ? 'Searching...' : 'Search' }}
                         </button>
                       </div>
-                      <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+                      <div v-if="!productDrawerVisible" class="flex-1 overflow-y-auto space-y-3 pr-1">
                         <div
                           v-for="product in searchResults"
                           :key="product.id"
@@ -603,7 +603,7 @@
                         {{ isSearching ? 'Searching...' : 'Search' }}
                       </button>
                     </div>
-                    <div v-if="searchResults.length > 0" class="grid grid-cols-2 gap-3">
+                    <div v-if="searchResults.length > 0 && !productDrawerVisible" class="grid grid-cols-2 gap-3">
                       <div
                         v-for="product in searchResults"
                         :key="product.id"
@@ -620,10 +620,10 @@
                         <p v-if="product.price" class="text-white/70 text-xs mt-1">{{ product.price }}</p>
                       </div>
                     </div>
-                    <div v-else-if="!isSearching && searchQuery" class="text-center text-white/50 py-12">
+                    <div v-else-if="!productDrawerVisible && !isSearching && searchQuery" class="text-center text-white/50 py-12">
                       No products found
                     </div>
-                    <div v-else-if="!isSearching" class="text-center text-white/50 py-12">
+                    <div v-else-if="!productDrawerVisible && !isSearching" class="text-center text-white/50 py-12">
                       Search products to share in chat
                     </div>
                   </div>
@@ -796,6 +796,17 @@
         <FaqModal @close="showFAQ = false" />
       </div>
     </Transition>
+
+    <WhatsAppProductSearchResultDrawer
+      v-model="productDrawerVisible"
+      :loading="isSearching"
+      :results="searchResults"
+      :error="productDrawerError"
+      :agent="selectedAgent"
+      :query="productDrawerQuery"
+      @close="handleProductDrawerClose"
+      @select="shareProductToChat"
+    />
   </Teleport>
 </template>
 
@@ -803,6 +814,7 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import FaqModal from '~/components/FaqModal.vue'
+import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -931,6 +943,10 @@ const isLoadingOrders = computed({
     if (currentChatRoom.value) currentChatRoom.value.isLoadingOrders = val
   }
 })
+
+const productDrawerVisible = ref(false)
+const productDrawerError = ref<string | null>(null)
+const productDrawerQuery = ref('')
 
 // 转接功能
 const showTransferModal = ref(false)
@@ -1312,16 +1328,31 @@ const checkAutoReply = async (userMessage: string) => {
 
 // 搜索商品
 const searchProducts = async () => {
-  if (!searchQuery.value.trim()) {
+  console.log('[WhatsAppChatModal] searchProducts clicked, query =', searchQuery.value)
+
+  const trimmedQuery = searchQuery.value.trim()
+
+  // 如果关键字为空：仍然打开抽屉，只显示空状态，方便确认组件是否挂载
+  if (!trimmedQuery) {
+    console.log('[WhatsAppChatModal] empty search query, open drawer with empty state')
+    productDrawerQuery.value = ''
+    productDrawerError.value = null
+    productDrawerVisible.value = true
     searchResults.value = []
+    isSearching.value = false
     return
   }
 
+  productDrawerQuery.value = trimmedQuery
+  productDrawerError.value = null
+  productDrawerVisible.value = true
+
   isSearching.value = true
   try {
+    console.log('[WhatsAppChatModal] fetching products...')
     const response = await $fetch<any>('/wp-json/tanzanite/v1/products', {
       params: {
-        keyword: searchQuery.value,
+        keyword: trimmedQuery,
         per_page: 20,
         status: 'publish'
       },
@@ -1339,15 +1370,28 @@ const searchProducts = async () => {
           ? `$${item.prices.sale}` 
           : (item.prices?.regular > 0 ? `$${item.prices.regular}` : '')
       }))
+      console.log('[WhatsAppChatModal] products loaded:', searchResults.value.length)
     } else {
       searchResults.value = []
+      console.log('[WhatsAppChatModal] products response empty or invalid')
     }
   } catch (error) {
     console.error('搜索失败:', error)
+    productDrawerError.value = 'Search failed, please try again.'
     searchResults.value = []
   } finally {
     isSearching.value = false
+    console.log('[WhatsAppChatModal] search finished')
   }
+}
+
+const handleProductDrawerClose = () => {
+  productDrawerVisible.value = false
+  productDrawerError.value = null
+  productDrawerQuery.value = ''
+  searchQuery.value = ''
+  searchResults.value = []
+  isSearching.value = false
 }
 
 // 分享商品到聊天

@@ -67,28 +67,28 @@
                 <!-- 基础信息网格 -->
                 <div class="grid grid-cols-2 gap-3 mb-3 pb-3 border-b border-white/10">
                   <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                    <span class="text-lg">👤</span>
+                    <span class="text-2xl leading-none">👤</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.membershipLevel', 'Level') }}</span>
                       <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelName || '0') : '?' }}</span>
                     </div>
                   </div>
                   <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                    <span class="text-lg">🛍️</span>
+                    <span class="text-2xl leading-none">🛍️</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.productDiscount', 'Product') }}</span>
                       <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.product + '%') : '?' }}</span>
                     </div>
                   </div>
                   <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                    <span class="text-lg">💎</span>
+                    <span class="text-2xl leading-none">💎</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.pointsDiscount', 'Points') }}</span>
                       <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.points + '%') : '?' }}</span>
                     </div>
                   </div>
                   <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                    <span class="text-lg">📊</span>
+                    <span class="text-2xl leading-none">📊</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.stackable', 'Stackable') }}</span>
                       <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.stackable ? '✓' : '✗') : '?' }}</span>
