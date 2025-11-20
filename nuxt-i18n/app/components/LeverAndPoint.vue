@@ -301,6 +301,13 @@
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">Cart</button>
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleFAQ">FAQ</button>
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleWishlist">Wishlist</button>
+          <button
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold pointer-events-auto hover:brightness-110 transition-all"
+            type="button"
+            @click="handlePrivacy"
+          >
+            {{ $t('privacy.button', 'Privacy statement') }}
+          </button>
         </div>
       </div>
     </div>
@@ -319,8 +326,29 @@
           v-if="showFaqModal"
           class="fixed inset-0 z-[12000] flex items-end justify-center p-0 md:p-4 pointer-events-none"
         >
-          <div class="pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]">
-            <FaqModal @close="closeFAQ" />
+          <div class="pointer-events-none w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]">
+            <FaqModal class="pointer-events-auto" @close="closeFAQ" />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Privacy Statement Modal -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        leave-active-class="transition duration-300 ease-in"
+        enter-from-class="translate-y-full opacity-0"
+        enter-to-class="translate-y-0 opacity-100"
+        leave-from-class="translate-y-0 opacity-100"
+        leave-to-class="translate-y-full opacity-0"
+      >
+        <div
+          v-if="showPrivacyModal"
+          class="fixed inset-0 z-[12000] flex items-end justify-center p-0 md:p-4 pointer-events-none"
+        >
+          <div class="pointer-events-none w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]">
+            <PrivacyStatementModal class="pointer-events-auto" @close="closePrivacy" />
           </div>
         </div>
       </Transition>
@@ -347,6 +375,7 @@ import BadgeAvatar from '~/components/BadgeAvatar.vue'
 import FaqModal from '~/components/FaqModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
+import PrivacyStatementModal from '~/components/PrivacyStatementModal.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 
 const emit = defineEmits(['close'])
@@ -371,11 +400,13 @@ if (typeof window !== 'undefined') {
 const showAuthModal = ref(false)
 const authMode = ref('login')
 const showFaqModal = ref(false)
+const showPrivacyModal = ref(false)
 const wishlistDrawerVisible = ref(false)
 
 const SIDEBAR_TOKEN_MODAL = 'lever-modal'
 const SIDEBAR_TOKEN_AUTH = 'lever-auth'
 const SIDEBAR_TOKEN_FAQ = 'lever-faq'
+const SIDEBAR_TOKEN_PRIVACY = 'lever-privacy'
 
 onMounted(() => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_MODAL, true)
@@ -389,10 +420,15 @@ watch(showFaqModal, (open) => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_FAQ, open)
 }, { immediate: true })
 
+watch(showPrivacyModal, (open) => {
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_PRIVACY, open)
+}, { immediate: true })
+
 onBeforeUnmount(() => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_MODAL, false)
   setSidebarHandlesHidden(SIDEBAR_TOKEN_AUTH, false)
   setSidebarHandlesHidden(SIDEBAR_TOKEN_FAQ, false)
+  setSidebarHandlesHidden(SIDEBAR_TOKEN_PRIVACY, false)
 })
 
 // 用户优惠券和积分卡数量
@@ -688,6 +724,15 @@ const handleFAQ = () => {
 
 const closeFAQ = () => {
   showFaqModal.value = false
+}
+
+// Privacy statement
+const handlePrivacy = () => {
+  showPrivacyModal.value = true
+}
+
+const closePrivacy = () => {
+  showPrivacyModal.value = false
 }
 
 // Wishlist - 心愿单抽屉

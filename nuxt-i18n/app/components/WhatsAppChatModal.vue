@@ -29,11 +29,54 @@
                   <input
                     v-model="desktopSearchQuery"
                     type="text"
-                    placeholder="Search chats..."
+                    placeholder="Search agents..."
                     class="w-full h-10 pl-9 pr-3 rounded-full bg-black/50 text-white text-sm border border-white/20 focus:outline-none focus:border-[#6b73ff] placeholder:text-white/40"
+                    @focus="isDesktopSearchFocused = true"
+                    @blur="handleDesktopSearchBlur"
                   />
+                  <Transition name="fade">
+                    <div
+                      v-if="shouldShowDesktopSearchResults"
+                      class="absolute left-0 right-0 mt-2 rounded-xl bg-black/90 border border-white/10 shadow-xl z-20"
+                    >
+                      <div v-if="matchingAgents.length > 0" class="py-1 max-h-64 overflow-y-auto">
+                        <button
+                          v-for="agent in matchingAgents"
+                          :key="agent.id"
+                          type="button"
+                          class="w-full flex items-center gap-2 px-3 py-2 text-xs text-left text-white hover:bg-white/10"
+                          @mousedown.prevent="selectAgentFromSearch(agent)"
+                        >
+                          <div
+                            class="w-7 h-7 rounded-full bg-gradient-to-br from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-white text-[10px] flex-shrink-0"
+                          >
+                            <img
+                              v-if="agent.avatar"
+                              :src="agent.avatar"
+                              :alt="agent.name"
+                              class="w-full h-full rounded-full object-cover"
+                            />
+                            <span v-else>{{ getInitials(agent.name) }}</span>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium truncate">
+                              {{ agent.name }}
+                            </div>
+                            <div v-if="agent.email" class="text-[11px] text-white/50 truncate">
+                              {{ agent.email }}
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                      <div v-else class="px-3 py-2 text-[11px] text-white/50">
+                        No agents match "{{ desktopSearchQuery }}"
+                      </div>
+                    </div>
+                  </Transition>
                 </div>
-                <p class="text-[11px] text-white/40 mt-2">Search results will appear here (UI only).</p>
+                <p class="text-[11px] text-white/40 mt-2">
+                  Type a name or email to quickly find an agent.
+                </p>
               </div>
 
               <!-- 客服列表 -->
@@ -954,6 +997,28 @@ const agents = ref<any[]>([])
 const selectedAgent = ref<any>(null)
 const isLoadingAgents = ref(false)
 
+const isDesktopSearchFocused = ref(false)
+
+const matchingAgents = computed<any[]>(() => {
+  const query = desktopSearchQuery.value.trim().toLowerCase()
+  if (!query) return []
+
+  return agents.value.filter((agent) => {
+    const name = (agent?.name || '').toLowerCase()
+    const email = (agent?.email || '').toLowerCase()
+    const rawTags = Array.isArray((agent as any).tags)
+      ? (agent as any).tags.join(' ')
+      : (agent as any).tags || ''
+    const tags = String(rawTags).toLowerCase()
+
+    return name.includes(query) || email.includes(query) || tags.includes(query)
+  })
+})
+
+const shouldShowDesktopSearchResults = computed(() => {
+  return isDesktopSearchFocused.value && !!desktopSearchQuery.value.trim()
+})
+
 // 全局邮箱设置
 const emailSettings = ref({
   preSalesEmail: '',
@@ -1764,6 +1829,17 @@ const selectAgent = (agent: any) => {
   selectedAgent.value = agent
   ensureChatRoom(agent.id)
   loadMessagesFromStorage()
+}
+
+const selectAgentFromSearch = (agent: any) => {
+  selectAgent(agent)
+  isDesktopSearchFocused.value = false
+}
+
+const handleDesktopSearchBlur = () => {
+  setTimeout(() => {
+    isDesktopSearchFocused.value = false
+  }, 100)
 }
 
 // 根据客服ID获取背景颜色值（深色系）

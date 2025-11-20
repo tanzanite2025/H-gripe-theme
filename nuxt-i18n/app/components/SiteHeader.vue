@@ -201,13 +201,20 @@
     >
       <div
         v-if="shareOpen"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
-        @click.self="shareOpen = false"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none"
       >
         <!-- 不透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div
+          class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
+          @click="shareOpen = false"
+        ></div>
         <!-- 弹窗内容 -->
-        <div class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex" aria-modal="true" role="dialog" aria-label="Membership">
+        <div
+          class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto"
+          aria-modal="true"
+          role="dialog"
+          aria-label="Membership"
+        >
           <LeverAndPoint @close="shareOpen = false" />
         </div>
       </div>
