@@ -7,12 +7,16 @@
     <!-- 第一个按钮：客服聊天 -->
     <div class="relative inline-flex items-center">
       <button 
-        class="pointer-events-auto text-[#cfd6ff] bg-[rgba(31,41,55,0.9)] shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-12 h-12 max-md:w-12 max-md:h-12 rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white relative border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
+        class="pointer-events-auto text-[#cfd6ff] shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-[52px] h-[52px] max-md:w-[52px] max-md:h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white relative" 
         @click="openChatModal()" 
         aria-label="客服聊天"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="w-[56px] h-[56px]">
+          <g fill="none">
+            <path fill="#241d5e" d="M11.915 18.714c3.509 0 6.354-2.278 6.354-5.09c0-2.81-2.845-5.089-6.354-5.089s-6.354 2.28-6.354 5.09s2.844 5.09 6.354 5.09" />
+            <path fill="#f5c249" d="M20.685 11.694c-.148-1.53-.643-6.215-.652-6.39c-.01-.203-.302-.464-.302-.09c0 .265-.297 3.042-.297 5.21h-.522c-.976-2.375-3.555-3.937-6.628-4.04h-.594c-3.074.099-5.634 1.665-6.606 4.04h-.54c0-2.168-.27-4.949-.27-5.205c0-.379-.293-.118-.297.085c-.01.175-.504 4.86-.653 6.39a1.62 1.62 0 0 0-.324.981c0 .567.378 1.17.837 1.17c.122.324.28.797.477 1.08h.747c1.004 2.453 3.726 4.05 6.921 4.05s5.909-1.598 6.912-4.05h.779c.198-.284.373-.756.49-1.08c.463 0 .837-.599.837-1.17a1.64 1.64 0 0 0-.32-.981zm-8.698 6.853c-3.321 0-6.012-2.142-6.012-4.792c0-1.98 1.507-3.681 3.654-4.41l.391.805a.45.45 0 0 0 .167.203a.45.45 0 0 0 .252.072h3.105a.45.45 0 0 0 .252-.072a.45.45 0 0 0 .166-.203l.392-.8c2.142.733 3.64 2.43 3.64 4.41c0 2.646-2.69 4.788-6.007 4.788" />
+            <path fill="#f0f3fa" d="M14.03 12.225a.67.67 0 0 0-.477.207a.74.74 0 0 0-.198.504v1.728c0 .189.072.369.198.504a.65.65 0 0 0 .477.207c.18 0 .35-.077.477-.207a.74.74 0 0 0 .198-.504v-1.728a.74.74 0 0 0-.198-.504a.65.65 0 0 0-.477-.207m-4.05 0a.67.67 0 0 0-.477.207a.74.74 0 0 0-.198.504v1.728c0 .189.072.369.198.504a.65.65 0 0 0 .477.207c.18 0 .35-.077.477-.207a.74.74 0 0 0 .198-.504v-1.728a.74.74 0 0 0-.198-.504a.65.65 0 0 0-.477-.207m2.025 4.95a.9.9 0 0 1-.9-.9h.292c0 .315.27.576.608.576c.333 0 .607-.261.607-.576h.293a.9.9 0 0 1-.9.9" />
+          </g>
         </svg>
         <!-- 未读消息徽章 -->
         <span
@@ -50,13 +54,38 @@
       </span>
     </button>
     <button 
-      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-12 h-12 max-md:w-12 max-md:h-12 rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
+      class="pointer-events-auto text-[#cfd6ff] shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-[52px] h-[52px] max-md:w-[52px] max-md:h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white" 
       @click="openQuick()" 
       aria-haspopup="dialog" 
       :aria-expanded="quickOpen" 
       aria-label="Open quick buy"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="#c6a0f6" d="m11 5.5l3.5-1l-6.5 11l-6.5-11l3.5 1" stroke-width="1"/><path stroke="#eed49f" d="m6 1.5l-.5 5l2-1l-1 3L8 8v3l4-7.5l-2 .5L11.5.5Z" stroke-width="1"/></g></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="w-9 h-9">
+        <g fill="none">
+          <path fill="url(#SVGa3lGXcfD)" d="M15.037 9.504c-.505-.042-.739-.06-1.213.204a2070 2070 0 0 0-6.72 3.72a4.3 4.3 0 0 1-1.074.468c-1.699.354-3.205-1.26-2.593-2.832c.312-.804.798-1.05 1.657-1.524q5.508-3.058 11.035-6.09c1.14-.625 2.226-.6 3.27.083a2.73 2.73 0 0 1 1.2 1.609c.072.276.108.78.102 1.5v11.875c0 1.242-.822 2.43-2.148 2.478c-.36.012-.72.012-1.05-.12a2.84 2.84 0 0 1-1.602-2.46V10.95c0-.618-.084-1.08-.63-1.38a.6.6 0 0 0-.235-.066" />
+          <path fill="url(#SVGw2FHhcGq)" d="M10.674 20.551a7 7 0 0 1-3.126-1.626c-.198-.18-.42-.384-.468-.636c-.084-.42.228-.624.57-.816l2.988-1.668c.372-.21.852-.085 1.02.3c.043.09.043.24.043.462v3.156q0 .405-.109.576c-.198.318-.552.342-.918.252" />
+          <path fill="url(#SVGHT3QCcQu)" d="M14.965 9.498c-.456-.042-.69-.042-1.14.21a2056 2056 0 0 0-6.721 3.72a4.3 4.3 0 0 1-1.074.468c-1.699.354-3.205-1.26-2.593-2.832c.222-.57.534-.858 1.002-1.152c3.18-1.038 8.281-2.112 10.526-.42z" />
+          <path fill="url(#SVGT01Vfe6i)" d="m14.845 9.487l.192.018c.096.006.18.03.24.06c.48.27.6.624.618 1.128c.078-4.825-3.756-4.483-5.16-4.273l-5.64 3.12l-.085.049c-.21.114-.396.216-.558.318c3.15-1.038 8.173-2.1 10.393-.42" />
+          <defs>
+            <linearGradient id="SVGa3lGXcfD" x1="12" x2="12" y1="2.999" y2="21.001" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#4af78b" />
+              <stop offset="1" stop-color="#23bfef" />
+            </linearGradient>
+            <linearGradient id="SVGw2FHhcGq" x1="4.905" x2="18.018" y1="8.691" y2="18.997" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#3cd1c6" />
+              <stop offset="1" stop-color="#34c2d8" />
+            </linearGradient>
+            <linearGradient id="SVGHT3QCcQu" x1="15.241" x2="1.197" y1="3.008" y2="8.016" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#226a82" />
+              <stop offset="1" stop-color="#55deb0" />
+            </linearGradient>
+            <linearGradient id="SVGT01Vfe6i" x1="12.474" x2="10.38" y1="6.319" y2="11.641" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#2a687f" />
+              <stop offset="1" stop-color="#6cf7b6" />
+            </linearGradient>
+          </defs>
+        </g>
+      </svg>
     </button>
     
   </div>

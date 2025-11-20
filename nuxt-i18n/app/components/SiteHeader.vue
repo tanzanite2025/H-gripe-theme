@@ -20,28 +20,24 @@
       <div class="justify-self-end flex items-center gap-3">
         <!-- FAQ 按钮 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-12 h-12 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
           @click.stop="toggleFaq()" 
           :aria-expanded="faqOpen" 
           aria-haspopup="dialog" 
           aria-label="Open FAQ"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
+          <img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
         </button>
         
         <!-- 分享按钮（会员积分） - 改为圆形 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-12 h-12 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
           @click.stop="toggleShare()" 
           :aria-expanded="shareOpen" 
           aria-haspopup="dialog" 
           aria-label="Open membership panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
+          <img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
         </button>
         
         <!-- 翻译转换器 -->
@@ -104,49 +100,45 @@
       </div>
     </div>
     
-    <!-- 移动端：三排垂直布局 -->
-    <div class="md:hidden grid gap-1 justify-items-center">
+    <!-- 移动端：三排垂直布局（紧凑间距） -->
+    <div class="md:hidden grid gap-0.5 justify-items-center">
       <!-- 第一排：站点标题 + FAQ + 分享 -->
       <div class="w-[90vw] max-w-[600px] flex items-center justify-between">
         <!-- FAQ 按钮 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
           @click.stop="toggleFaq()" 
           :aria-expanded="faqOpen" 
           aria-haspopup="dialog" 
           aria-label="Open FAQ"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
+          <img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
         </button>
 
-        <!-- 站点标题 -->
-        <div class="flex-1 flex justify-center px-2 py-0.5">
-          <h1 class="m-0 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
+        <!-- 站点标题（压缩上下留白） -->
+        <div class="flex-1 flex justify-center px-2 py-0">
+          <h1 class="m-0 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
             {{ titleText }}
           </h1>
         </div>
         
         <!-- 分享按钮 - 圆形 -->
         <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]" 
+          class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
           @click.stop="toggleShare()" 
           :aria-expanded="shareOpen" 
           aria-haspopup="dialog" 
           aria-label="Open membership panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 16 16" aria-hidden="true" class="fill-current"><g fill="none" stroke="#ed8796" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"><path d="m8 12.5l4.5-5l-2-2h-5l-2 2z"/><path d="M14.5 12L8 15.5L1.5 12V4L8 .5L14.5 4z"/></g></svg>
+          <img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
         </button>
       </div>
 
-      <!-- 第二排：翻译转换器（单独一排，居中） -->
+      <!-- 第二排：翻译转换器（单独一排，居中，稍微压缩高度） -->
       <div class="flex justify-center items-center">
         <div class="relative min-w-[150px]" data-lang-wrapper>
           <button 
-            class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[40px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
+            class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[36px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
             @click.stop="toggleDropdown"
             @keydown="onButtonKeydown"
             :id="buttonId"
@@ -183,7 +175,11 @@
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div v-if="faqOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" @click.self="faqOpen = false">
+      <div
+        v-if="faqOpen"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
+        @click.self="faqOpen = false"
+      >
         <!-- 半透明背景遮罩 -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm -z-10"></div>
         <!-- 弹窗内容 -->
@@ -203,7 +199,11 @@
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div v-if="shareOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" @click.self="shareOpen = false">
+      <div
+        v-if="shareOpen"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
+        @click.self="shareOpen = false"
+      >
         <!-- 不透明背景遮罩 -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->

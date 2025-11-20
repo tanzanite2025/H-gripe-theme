@@ -387,6 +387,47 @@
                           {{ isSearching ? 'Searching...' : 'Search' }}
                         </button>
                       </div>
+
+                      <!-- Mobile actions: History / Cart / Wishlist -->
+                      <div class="flex gap-1.5 mb-3">
+                        <button
+                          type="button"
+                          @click="historyDrawerVisible = true"
+                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide border bg-black/40 flex items-center justify-center gap-1.5"
+                          :style="{ borderColor: currentThemeColor, color: currentThemeColor }"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="8" stroke-width="1.7" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 8v4l2.5 2.5" />
+                          </svg>
+                          <span>History</span>
+                        </button>
+                        <button
+                          type="button"
+                          @click="openCart"
+                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide border bg-black/40 flex items-center justify-center gap-1.5"
+                          :style="{ borderColor: currentThemeColor, color: currentThemeColor }"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 3h2l2 13h12l2-9H6" />
+                            <circle cx="9" cy="19" r="1.4" />
+                            <circle cx="17" cy="19" r="1.4" />
+                          </svg>
+                          <span>Cart</span>
+                        </button>
+                        <button
+                          type="button"
+                          @click="wishlistDrawerVisible = true"
+                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide border bg-black/40 flex items-center justify-center gap-1.5"
+                          :style="{ borderColor: currentThemeColor, color: currentThemeColor }"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
+                          </svg>
+                          <span>Wishlist</span>
+                        </button>
+                      </div>
+
                       <div v-if="!productDrawerVisible" class="flex-1 overflow-y-auto space-y-3 pr-1">
                         <div
                           v-for="product in searchResults"
@@ -637,6 +678,7 @@
                       </button>
                       <button
                         type="button"
+                        @click="wishlistDrawerVisible = true"
                         class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm bg-white/[0.08] text-white/80 border border-white hover:bg-white/[0.15] transition-colors"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -842,6 +884,11 @@
       @select="shareProductToChat"
     />
 
+    <WishlistDrawer
+      v-model="wishlistDrawerVisible"
+      @share-to-chat="handleShareProductFromHistory"
+    />
+
     <Transition name="slide-up">
       <div
         v-if="historyDrawerVisible"
@@ -881,6 +928,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import FaqModal from '~/components/FaqModal.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
+import WishlistDrawer from '~/components/WishlistDrawer.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -1015,6 +1063,7 @@ const productDrawerVisible = ref(false)
 const productDrawerError = ref<string | null>(null)
 const productDrawerQuery = ref('')
 const historyDrawerVisible = ref(false)
+const wishlistDrawerVisible = ref(false)
 
 // 转接功能
 const showTransferModal = ref(false)

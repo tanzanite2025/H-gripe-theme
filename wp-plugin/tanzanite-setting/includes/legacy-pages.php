@@ -153,7 +153,7 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
     final class Tanzanite_Settings_Plugin {
 
         private const VERSION             = '0.1.9';
-        private const DB_VERSION          = '0.1.8';
+        private const DB_VERSION          = '0.1.9';
         private const OPTION_DB_VERSION        = 'tanzanite_settings_db_version';
         private const OPTION_TRACKING_SETTINGS = 'tanz_tracking_settings';
         private const ALLOWED_PRODUCT_STATUSES = [ 'draft', 'pending', 'publish', 'private' ];
@@ -523,6 +523,11 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
 
             $charset = $wpdb->get_charset_collate();
 
+            // 确保 dbDelta 函数可用（在部分加载路径中不会自动包含 upgrade.php）。
+            if ( ! function_exists( 'dbDelta' ) ) {
+                require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            }
+
             $orders_sql = "CREATE TABLE {$this->orders_table} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 order_number VARCHAR(64) NOT NULL,
@@ -799,6 +804,21 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
 
             dbDelta( $member_profiles_sql );
 
+            // 心愿单表（仅支持已登录用户）
+            $wishlist_table = $wpdb->prefix . 'tanz_wishlist_items';
+            $wishlist_sql   = "CREATE TABLE {$wishlist_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                user_id BIGINT UNSIGNED NOT NULL,
+                product_id BIGINT UNSIGNED NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY user_product_unique (user_id, product_id),
+                KEY user_id (user_id),
+                KEY product_id (product_id)
+            ) {$charset};";
+
+            dbDelta( $wishlist_sql );
+
             // 优惠券表
             $coupons_table = $wpdb->prefix . 'tanz_coupons';
             $coupons_sql   = "CREATE TABLE {$coupons_table} (
@@ -974,6 +994,7 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
                 'Tanzanite_REST_Audit_Controller',
                 'Tanzanite_REST_ShippingTemplates_Controller',
                 'Tanzanite_REST_Chat_Controller',
+                'Tanzanite_REST_Wishlist_Controller',
             );
             
             foreach ( $controller_classes as $class_name ) {

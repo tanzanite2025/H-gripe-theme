@@ -32,7 +32,7 @@ class Tanzanite_Plugin {
 	 *
 	 * @var string
 	 */
-	const DB_VERSION = '0.1.8';
+	const DB_VERSION = '0.1.9';
 
 	/**
 	 * 单例实例
@@ -245,6 +245,7 @@ class Tanzanite_Plugin {
 			'Tanzanite_REST_Audit_Controller',
 			'Tanzanite_REST_ShippingTemplates_Controller',
 			'Tanzanite_REST_User_Assets_Controller',
+			'Tanzanite_REST_Wishlist_Controller',
 		);
 		
 		foreach ( $controller_classes as $class_name ) {

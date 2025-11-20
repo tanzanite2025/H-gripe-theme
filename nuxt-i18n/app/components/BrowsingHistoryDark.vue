@@ -80,7 +80,18 @@
               </p>
               
               <!-- 操作按钮 -->
-              <div class="flex gap-1.5">
+              <div class="flex gap-1.5 items-center">
+                <!-- 加入心愿单按钮 -->
+                <button
+                  @click="handleAddToWishlist(item)"
+                  class="w-8 h-8 flex items-center justify-center rounded-full border border-white/25 text-white/80 hover:bg-white/15 transition-colors"
+                  title="Add to wishlist"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
+                  </svg>
+                </button>
+
                 <!-- 查看详情按钮 -->
                 <NuxtLink
                   :to="item.url"
@@ -140,6 +151,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useBrowsingHistory } from '~/composables/useBrowsingHistory'
+import { useWishlist } from '~/composables/useWishlist'
 
 // 定义 emit 事件
 const emit = defineEmits<{
@@ -147,6 +159,7 @@ const emit = defineEmits<{
 }>()
 
 const { history, historyCount, hasHistory, clearHistory, removeItem } = useBrowsingHistory()
+const { addToWishlist } = useWishlist()
 
 const scrollContainer = ref<HTMLElement | null>(null)
 const showLeftArrow = ref(false)
@@ -183,6 +196,16 @@ const handleClearHistory = () => {
 // 移除单个商品
 const handleRemoveItem = (id: number) => {
   removeItem(id)
+}
+
+// 加入心愿单
+const handleAddToWishlist = async (item: any) => {
+  if (!item || !item.id) return
+  try {
+    await addToWishlist(item.id)
+  } catch (e) {
+    console.error('Failed to add to wishlist from history:', e)
+  }
 }
 
 // 分享商品到聊天

@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] bg-black rounded-2xl border-2 border-[#6b73ff] shadow-[0_0_30px_rgba(107,115,255,0.3)] overflow-hidden flex flex-col">
+  <div class="max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] bg-black rounded-2xl border-2 border-[#6b73ff] shadow-[0_0_30px_rgba(107,115,255,0.3)] overflow-hidden flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-3 md:py-4 border-b border-white/10">
       <h2 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff]">
@@ -132,16 +132,24 @@
 
     <!-- Footer -->
     <div class="px-6 py-4 border-t border-white/10 bg-white/[0.02]">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-3">
         <p class="text-sm text-white/40">
           {{ $t('faq.needHelp', 'Still need help?') }}
         </p>
-        <button 
-          @click="openWhatsApp"
-          class="px-4 py-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black font-medium text-sm hover:shadow-[0_0_20px_rgba(107,115,255,0.5)] transition-all duration-200"
-        >
-          {{ $t('common.contactUs', 'Contact Us') }}
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            @click="openAllFaq"
+            class="px-4 py-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black font-medium text-sm hover:shadow-[0_0_20px_rgba(107,115,255,0.5)] transition-all duration-200"
+          >
+            All F.A.Q
+          </button>
+          <button 
+            @click="openWhatsApp"
+            class="px-4 py-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black font-medium text-sm hover:shadow-[0_0_20px_rgba(107,115,255,0.5)] transition-all duration-200"
+          >
+            {{ $t('common.contactUs', 'Contact Us') }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -149,9 +157,11 @@
 
 <script setup>
 import ContentSearchFilter from '~/components/ContentSearchFilter.vue'
+import { useLocalePath } from '#imports'
 
 const { locale } = useI18n()
 const config = useRuntimeConfig()
+const localePath = useLocalePath()
 
 // Track open/closed items
 const openItems = ref([])
@@ -250,6 +260,17 @@ const toggleItem = (id) => {
 
 // Open WhatsApp Chat Modal
 const emit = defineEmits(['close', 'openWhatsApp'])
+
+const openAllFaq = () => {
+  try {
+    const target = localePath('/faq')
+    if (typeof window !== 'undefined' && target) {
+      window.open(String(target), '_blank')
+    }
+  } catch (error) {
+    console.error('Failed to open FAQ page:', error)
+  }
+}
 
 const openWhatsApp = () => {
   // Close FAQ modal

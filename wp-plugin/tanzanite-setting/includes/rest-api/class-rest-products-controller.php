@@ -671,7 +671,7 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 	 * @param WP_Post $post 文章对象
 	 * @return array
 	 */
-	private function prepare_item_for_response( $post ) {
+	public function prepare_item_for_response( $post ) {
 		// 获取 Meta 数据
 		$price_regular = (float) get_post_meta( $post->ID, '_tanz_price_regular', true );
 		$price_sale    = (float) get_post_meta( $post->ID, '_tanz_price_sale', true );

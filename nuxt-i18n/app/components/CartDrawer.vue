@@ -102,6 +102,16 @@
                   </button>
 
                   <button
+                    @click="handleAddToWishlist(item)"
+                    class="w-7 h-7 flex items-center justify-center rounded border border-white/[0.18] hover:bg-white/10 transition-colors text-white"
+                    title="Add to wishlist"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
+                    </svg>
+                  </button>
+
+                  <button
                     @click="removeFromCart(item.id)"
                     class="ml-auto text-red-400 hover:text-red-300 text-sm font-medium"
                   >
@@ -187,6 +197,7 @@
 <script setup lang="ts">
 import { watch, onBeforeUnmount } from 'vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
+import { useWishlist } from '~/composables/useWishlist'
 
 const {
   cartItems,
@@ -205,6 +216,8 @@ const {
   formatPrice,
 } = useCart()
 
+const { addToWishlist } = useWishlist()
+
 const SIDEBAR_TOKEN_CART = 'cart-drawer'
 
 watch(isCartOpen, (open) => {
@@ -214,6 +227,15 @@ watch(isCartOpen, (open) => {
 onBeforeUnmount(() => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_CART, false)
 })
+
+const handleAddToWishlist = async (item: any) => {
+  if (!item || !item.id) return
+  try {
+    await addToWishlist(item.id)
+  } catch (error) {
+    console.error('Failed to add to wishlist from cart:', error)
+  }
+}
 </script>
 
 <style scoped>

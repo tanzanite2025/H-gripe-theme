@@ -300,7 +300,7 @@
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleSelectProducts">Products</button>
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">Cart</button>
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleFAQ">FAQ</button>
-          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handlePayment">Payment</button>
+          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleWishlist">Wishlist</button>
         </div>
       </div>
     </div>
@@ -317,16 +317,9 @@
       >
         <div
           v-if="showFaqModal"
-          class="fixed inset-0 z-[12000] flex items-end md:items-center justify-center p-0 md:p-4"
+          class="fixed inset-0 z-[12000] flex items-end justify-center p-0 md:p-4 pointer-events-none"
         >
-          <div
-            class="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            @click="closeFAQ"
-          ></div>
-          <div
-            class="relative w-full max-w-[1400px] px-3 pb-6 md:p-0"
-            @click.stop
-          >
+          <div class="pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]">
             <FaqModal @close="closeFAQ" />
           </div>
         </div>
@@ -336,26 +329,31 @@
     <AuthModal
       v-model="showAuthModal"
       :default-mode="authMode"
+      embedded
       @mode-change="handleAuthModeChange"
       @success="handleAuthSuccess"
     />
+
+    <WishlistDrawer v-model="wishlistDrawerVisible" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-import { useI18n } from '#imports'
+import { useI18n, useLocalePath } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
 import FaqModal from '~/components/FaqModal.vue'
 import AuthModal from '~/components/AuthModal.vue'
+import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 
 const emit = defineEmits(['close'])
 const cart = useCart()
 const { t: $t } = useI18n()
 const auth = useAuth()
+const localePath = useLocalePath()
 
 // 移动端标签页状态
 const mobileTab = ref('info') // 'info' or 'levels'
@@ -373,6 +371,7 @@ if (typeof window !== 'undefined') {
 const showAuthModal = ref(false)
 const authMode = ref('login')
 const showFaqModal = ref(false)
+const wishlistDrawerVisible = ref(false)
 
 const SIDEBAR_TOKEN_MODAL = 'lever-modal'
 const SIDEBAR_TOKEN_AUTH = 'lever-auth'
@@ -665,18 +664,20 @@ const handleCopyLink = async () => {
   }
 }
 
-// Products - 选择商品 (placeholder for future logic)
+// Products - 在新标签页打开 Shop 页面
 const handleSelectProducts = () => {
-  // TODO: 实现选择商品逻辑
-  console.log('Products clicked')
+  try {
+    const target = localePath('/shop')
+    if (typeof window !== 'undefined' && target) {
+      window.open(String(target), '_blank')
+    }
+  } catch (e) {
+    console.error('Failed to open shop page:', e)
+  }
 }
 
-// Cart - 打开购物车弹窗
+// Cart - 打开购物车弹窗（不关闭当前 LeverAndPoint）
 const handleViewCart = () => {
-  // 关闭当前弹窗
-  emit('close')
-  
-  // 打开购物车
   cart.openCart()
 }
 
@@ -689,11 +690,9 @@ const closeFAQ = () => {
   showFaqModal.value = false
 }
 
-// Payment - 支付方式
-const handlePayment = () => {
-  // TODO: 实现支付方式逻辑
-  console.log('Payment clicked')
-  // 可以跳转到支付方式页面或打开支付方式弹窗
+// Wishlist - 心愿单抽屉
+const handleWishlist = () => {
+  wishlistDrawerVisible.value = true
 }
 </script>
 
