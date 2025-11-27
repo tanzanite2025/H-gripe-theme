@@ -1,225 +1,287 @@
 <template>
-  <div class="fixed top-1.5 left-1/2 -translate-x-1/2 w-[95vw] max-w-[1200px] z-[110]">
-    <!-- 桌面端：一排三元素 -->
-    <div class="hidden md:grid grid-cols-[250px_1fr_250px] items-center gap-4">
-      <!-- 左侧：站点标题 -->
-      <div class="flex justify-start items-center">
-        <h1 class="m-0 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] whitespace-nowrap">
-          {{ titleText }}
-        </h1>
-      </div>
-      
-      <!-- 中间：面包屑导航 -->
-      <nav class="justify-self-center w-full max-w-[600px] h-10 rounded-full bg-transparent border border-transparent pointer-events-none" aria-label="Breadcrumbs">
-        <div class="w-full h-full flex items-center justify-center px-4">
-          <span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
-        </div>
-      </nav>
-      
-      <!-- 右侧：FAQ + 分享 + 语言切换器 -->
-      <div class="justify-self-end flex items-center gap-3">
-        <!-- FAQ 按钮 -->
-        <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
-          @click.stop="toggleFaq()" 
-          :aria-expanded="faqOpen" 
-          aria-haspopup="dialog" 
-          aria-label="Open FAQ"
-        >
-          <img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
-        </button>
-        
-        <!-- 分享按钮（会员积分） - 改为圆形 -->
-        <button 
-          class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
-          @click.stop="toggleShare()" 
-          :aria-expanded="shareOpen" 
-          aria-haspopup="dialog" 
-          aria-label="Open membership panel"
-        >
-          <img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
-        </button>
-        
-        <!-- 翻译转换器 -->
-        <div class="relative" data-lang-wrapper>
-        <button 
-          class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
-          @click.stop="toggleDropdown"
-          @keydown="onButtonKeydown"
-          :id="buttonId"
-          aria-haspopup="listbox"
-          :aria-expanded="isOpen"
-          :aria-controls="dropdownId"
-          :aria-label="'Switch language'"
-        >
-          <span class="font-medium flex items-center gap-2">
-            <span class="w-[1.2em] inline-block" aria-hidden="true">
-              <img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-            </span>
-            {{ currentLocale.name }}
-          </span>
-          <span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
-        </button>
-        </div>
+	<div class="fixed top-1.5 left-1/2 -translate-x-1/2 w-[95vw] max-w-[1200px] z-[110]">
+		<div
+			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-2"
+		>
+			<!-- 桌面端：第一行 标题 + 主导航 + 右侧控件，第二行 面包屑 -->
+			<div class="hidden md:flex flex-col gap-1">
+				<!-- 第一行：标题 + 主导航 + 右侧控件 -->
+				<div class="grid grid-cols-[250px_1fr_250px] items-center gap-4">
+					<!-- 左侧：站点标题 -->
+					<div class="flex justify-start items-center">
+						<h1 class="m-0 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] whitespace-nowrap">
+							{{ titleText }}
+						</h1>
+					</div>
 
-        <teleport to="body">
-          <transition
-            enter-active-class="transition-all duration-200 ease-in-out"
-            leave-active-class="transition-all duration-200 ease-in-out"
-            enter-from-class="opacity-0 -translate-y-2.5"
-            leave-to-class="opacity-0 -translate-y-2.5"
-          >
-            <div
-              v-if="isOpen"
-              class="fixed top-[100px] max-md:top-[83px] left-1/2 -translate-x-1/2 w-[90vw] max-md:w-[70vw] max-w-[1600px] bg-[#0b1020] border border-[#6b79ff] rounded-md overflow-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain] [touch-action:pan-y] max-h-[70vh] max-md:max-h-[45vh] shadow-none grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] max-md:grid-cols-2 gap-1.5 justify-items-center z-[1200]"
-              role="listbox"
-              :id="dropdownId"
-              :aria-labelledby="buttonId"
-              tabindex="0"
-              @keydown="onListKeydown"
-            >
-              <button
-                v-for="(locale, index) in availableLocales"
-                :key="locale.code"
-                class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-[#2aa3ff40]"
-                :class="{ 'bg-[#2aa3ff40] font-medium': locale.code === currentLocale.code }"
-                role="option"
-                :aria-selected="locale.code === currentLocale.code"
-                :tabindex="-1"
-                :ref="el => setOptionRef(el, index)"
-                @click="switchLanguage(locale.code)"
-              >
-                <span class="w-[1.2em] inline-block" aria-hidden="true">
-                  <img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-                </span>
-                <span>{{ locale.name }}</span>
-              </button>
-            </div>
-          </transition>
-        </teleport>
-      </div>
-    </div>
-    
-    <!-- 移动端：三排垂直布局（紧凑间距） -->
-    <div class="md:hidden grid gap-0.5 justify-items-center">
-      <!-- 第一排：站点标题 + FAQ + 分享 -->
-      <div class="w-[90vw] max-w-[600px] flex items-center justify-between">
-        <!-- FAQ 按钮 -->
-        <button 
-          class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
-          @click.stop="toggleFaq()" 
-          :aria-expanded="faqOpen" 
-          aria-haspopup="dialog" 
-          aria-label="Open FAQ"
-        >
-          <img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
-        </button>
+					<!-- 中间：主导航（与站点标题同一行） -->
+					<nav
+						class="justify-self-center flex items-center justify-center gap-4"
+						aria-label="Primary navigation"
+					>
+						<NuxtLink
+							:to="localePath('/spoke-calculator')"
+							class="px-4 py-1.5 rounded-full border border-white/15 bg-white/5 text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+						>
+							{{ $t('footer.menus.products', 'Products') }}
+						</NuxtLink>
+						<NuxtLink
+							:to="localePath('/support/faqs')"
+							class="px-4 py-1.5 rounded-full border border-white/15 bg-white/5 text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+						>
+							{{ $t('footer.menus.support', 'Support') }}
+						</NuxtLink>
+						<NuxtLink
+							:to="localePath('/about')"
+							class="px-4 py-1.5 rounded-full border border-white/15 bg-white/5 text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+						>
+							{{ $t('footer.menus.company', 'Company') }}
+						</NuxtLink>
+					</nav>
 
-        <!-- 站点标题（压缩上下留白） -->
-        <div class="flex-1 flex justify-center px-2 py-0">
-          <h1 class="m-0 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
-            {{ titleText }}
-          </h1>
-        </div>
-        
-        <!-- 分享按钮 - 圆形 -->
-        <button 
-          class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]" 
-          @click.stop="toggleShare()" 
-          :aria-expanded="shareOpen" 
-          aria-haspopup="dialog" 
-          aria-label="Open membership panel"
-        >
-          <img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
-        </button>
-      </div>
+					<!-- 右侧：FAQ + 分享 + 语言切换器 -->
+					<div class="justify-self-end flex items-center gap-3">
+						<!-- FAQ 按钮 -->
+						<button
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+							@click.stop="toggleFaq()"
+							:aria-expanded="faqOpen"
+							aria-haspopup="dialog"
+							aria-label="Open FAQ"
+						>
+							<img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
+						</button>
 
-      <!-- 第二排：翻译转换器（单独一排，居中，稍微压缩高度） -->
-      <div class="flex justify-center items-center">
-        <div class="relative min-w-[150px]" data-lang-wrapper>
-          <button 
-            class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[36px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]" 
-            @click.stop="toggleDropdown"
-            @keydown="onButtonKeydown"
-            :id="buttonId"
-            aria-haspopup="listbox"
-            :aria-expanded="isOpen"
-            :aria-controls="dropdownId"
-            :aria-label="'Switch language'"
-          >
-            <span class="font-medium flex items-center gap-2">
-              <span class="w-[1.2em] inline-block" aria-hidden="true">
-                <img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-              </span>
-              {{ currentLocale.name }}
-            </span>
-            <span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
-          </button>
-        </div>
-      </div>
-      
-      <!-- 第三排：面包屑导航 -->
-      <nav class="w-[85vw] max-w-[600px] h-[30px] rounded-[30px] bg-transparent border border-transparent pointer-events-none" aria-label="Breadcrumbs">
-        <div class="w-full h-full flex items-center justify-center px-3">
-          <span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
-        </div>
-      </nav>
-    </div>
-  </div>
-  
-  <!-- FAQ 弹窗 -->
-  <teleport to="body">
-    <transition
-      enter-active-class="transition-opacity duration-300 ease-out"
-      leave-active-class="transition-opacity duration-200 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="faqOpen"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
-        @click.self="faqOpen = false"
-      >
-        <!-- 半透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm -z-10"></div>
-        <!-- 弹窗内容 -->
-        <FaqModal @close="faqOpen = false" @openWhatsApp="handleOpenWhatsApp" class="relative z-10" />
-      </div>
-    </transition>
-  </teleport>
-  
-  <!-- WhatsApp Chat 弹窗 -->
-  <WhatsAppChatModal v-if="whatsappOpen" :conversation="{ showAgentList: true }" @close="whatsappOpen = false" />
-  
-  <!-- LeverAndPoint 弹窗 -->
-  <teleport to="body">
-    <transition
-      enter-active-class="transition-opacity duration-300 ease-out"
-      leave-active-class="transition-opacity duration-200 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="shareOpen"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none"
-      >
-        <!-- 不透明背景遮罩 -->
-        <div
-          class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
-          @click="shareOpen = false"
-        ></div>
-        <!-- 弹窗内容 -->
-        <div
-          class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto"
-          aria-modal="true"
-          role="dialog"
-          aria-label="Membership"
-        >
-          <LeverAndPoint @close="shareOpen = false" />
-        </div>
-      </div>
-    </transition>
-  </teleport>
+						<!-- 分享按钮（会员积分） - 改为圆形 -->
+						<button
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+							@click.stop="toggleShare()"
+							:aria-expanded="shareOpen"
+							aria-haspopup="dialog"
+							aria-label="Open membership panel"
+						>
+							<img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
+						</button>
+
+						<!-- 翻译转换器 -->
+						<div class="relative" data-lang-wrapper>
+							<button
+								class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
+								@click.stop="toggleDropdown"
+								@keydown="onButtonKeydown"
+								:id="buttonId"
+								aria-haspopup="listbox"
+								:aria-expanded="isOpen"
+								:aria-controls="dropdownId"
+								:aria-label="'Switch language'"
+							>
+								<span class="font-medium flex items-center gap-2">
+									<span class="w-[1.2em] inline-block" aria-hidden="true">
+										<img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+									</span>
+									{{ currentLocale.name }}
+								</span>
+								<span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
+							</button>
+						</div>
+
+						<teleport to="body">
+							<transition
+								enter-active-class="transition-all duration-200 ease-in-out"
+								leave-active-class="transition-all duration-200 ease-in-out"
+								enter-from-class="opacity-0 -translate-y-2.5"
+								leave-to-class="opacity-0 -translate-y-2.5"
+							>
+								<div
+									v-if="isOpen"
+									class="fixed top-[100px] max-md:top-[83px] left-1/2 -translate-x-1/2 w-[90vw] max-md:w-[70vw] max-w-[1600px] bg-[#0b1020] border border-[#6b79ff] rounded-md overflow-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain] [touch-action:pan-y] max-h-[70vh] max-md:max-h-[45vh] shadow-none grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] max-md:grid-cols-2 gap-1.5 justify-items-center z-[1200]"
+									role="listbox"
+									:id="dropdownId"
+									:aria-labelledby="buttonId"
+									tabindex="0"
+									@keydown="onListKeydown"
+								>
+									<button
+										v-for="(locale, index) in availableLocales"
+										:key="locale.code"
+										class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-[#2aa3ff40]"
+										:class="{ 'bg-[#2aa3ff40] font-medium': locale.code === currentLocale.code }"
+										role="option"
+										:aria-selected="locale.code === currentLocale.code"
+										:tabindex="-1"
+										:ref="el => setOptionRef(el, index)"
+										@click="switchLanguage(locale.code)"
+									>
+										<span class="w-[1.2em] inline-block" aria-hidden="true">
+											<img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+										</span>
+										<span>{{ locale.name }}</span>
+									</button>
+								</div>
+							</transition>
+						</teleport>
+					</div>
+				</div>
+
+				<!-- 桌面端：第二行 面包屑（占位，将来可替换为真实组件） -->
+				<div class="w-full flex justify-center">
+					<span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
+				</div>
+			</div>
+
+			<!-- 移动端：三排垂直布局（紧凑间距） -->
+			<div class="md:hidden grid gap-0.5 justify-items-center">
+				<!-- 第一排：站点标题 + FAQ + 分享 -->
+				<div class="w-[90vw] max-w-[600px] flex items-center justify-between">
+					<!-- FAQ 按钮 -->
+					<button
+						class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+						@click.stop="toggleFaq()"
+						:aria-expanded="faqOpen"
+						aria-haspopup="dialog"
+						aria-label="Open FAQ"
+					>
+						<img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
+					</button>
+
+					<!-- 站点标题（压缩上下留白） -->
+					<div class="flex-1 flex justify-center px-2 py-0">
+						<h1 class="m-0 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
+							{{ titleText }}
+						</h1>
+					</div>
+
+					<!-- 分享按钮 - 圆形 -->
+					<button
+						class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+						@click.stop="toggleShare()"
+						:aria-expanded="shareOpen"
+						aria-haspopup="dialog"
+						aria-label="Open membership panel"
+					>
+						<img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
+					</button>
+				</div>
+
+				<!-- 第二排：翻译转换器（单独一排，居中，稍微压缩高度） -->
+				<div class="flex justify-center items-center">
+					<div class="relative min-w-[150px]" data-lang-wrapper>
+						<button
+							class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[36px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
+							@click.stop="toggleDropdown"
+							@keydown="onButtonKeydown"
+							:id="buttonId"
+							aria-haspopup="listbox"
+							:aria-expanded="isOpen"
+							:aria-controls="dropdownId"
+							:aria-label="'Switch language'"
+						>
+							<span class="font-medium flex items-center gap-2">
+								<span class="w-[1.2em] inline-block" aria-hidden="true">
+									<img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+								</span>
+								{{ currentLocale.name }}
+							</span>
+							<span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- 第三排：主导航 + 面包屑导航 -->
+				<nav
+					class="w-[85vw] max-w-[600px] rounded-[30px] bg-transparent border border-transparent pointer-events-auto"
+					aria-label="Primary navigation and breadcrumbs"
+				>
+					<div class="w-full flex flex-col items-center justify-center px-3 py-1 gap-1">
+						<!-- 第一行：主导航（Products / Support / Company） -->
+						<div class="w-full flex items-center justify-between text-[11px] gap-2">
+							<NuxtLink
+								:to="localePath('/spoke-calculator')"
+								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							>
+								{{ $t('footer.menus.products', 'Products') }}
+							</NuxtLink>
+							<NuxtLink
+								:to="localePath('/support/faqs')"
+								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							>
+								{{ $t('footer.menus.support', 'Support') }}
+							</NuxtLink>
+							<NuxtLink
+								:to="localePath('/about')"
+								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							>
+								{{ $t('footer.menus.company', 'Company') }}
+							</NuxtLink>
+						</div>
+
+						<!-- 第二行：面包屑占位，将来可替换为真实 Breadcrumb 组件 -->
+						<div class="flex items-center justify-center">
+							<span class="text-white font-semibold text-[11px]">Breadcrumbs</span>
+						</div>
+					</div>
+				</nav>
+			</div>
+		</div>
+	</div>
+
+	<!-- FAQ 弹窗 -->
+	<teleport to="body">
+		<transition
+			enter-active-class="transition-opacity duration-300 ease-out"
+			leave-active-class="transition-opacity duration-200 ease-in"
+			enter-from-class="opacity-0"
+			leave-to-class="opacity-0"
+		>
+			<div
+				v-if="faqOpen"
+				class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
+				@click.self="faqOpen = false"
+			>
+				<!-- 半透明背景遮罩 -->
+				<div class="absolute inset-0 bg-black/80 backdrop-blur-sm -z-10"></div>
+				<!-- 弹窗内容 -->
+				<FaqModal @close="faqOpen = false" @openWhatsApp="handleOpenWhatsApp" class="relative z-10" />
+			</div>
+		</transition>
+	</teleport>
+
+	<!-- WhatsApp Chat 弹窗 -->
+	<WhatsAppChatModal
+		v-if="whatsappOpen"
+		:conversation="{ showAgentList: true }"
+		@close="whatsappOpen = false"
+	/>
+
+	<!-- LeverAndPoint 弹窗 -->
+	<teleport to="body">
+		<transition
+			enter-active-class="transition-opacity duration-300 ease-out"
+			leave-active-class="transition-opacity duration-200 ease-in"
+			enter-from-class="opacity-0"
+			leave-to-class="opacity-0"
+		>
+			<div
+				v-if="shareOpen"
+				class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none"
+			>
+				<!-- 不透明背景遮罩 -->
+				<div
+					class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
+					@click="shareOpen = false"
+				></div>
+				<!-- 弹窗内容 -->
+				<div
+					class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto"
+					aria-modal="true"
+					role="dialog"
+					aria-label="Membership"
+				>
+					<LeverAndPoint @close="shareOpen = false" />
+				</div>
+			</div>
+		</transition>
+	</teleport>
 </template>
 
 <script setup lang="ts">

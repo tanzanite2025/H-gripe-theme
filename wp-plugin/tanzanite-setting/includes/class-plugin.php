@@ -118,6 +118,11 @@ class Tanzanite_Plugin {
 	private function load_dependencies() {
 		// 加载 URLLink 模块
 		$this->load_urllink();
+
+		$geometry_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-product-geometry-admin.php';
+		if ( file_exists( $geometry_admin ) ) {
+			require_once $geometry_admin;
+		}
 	}
 
 	/**
@@ -213,6 +218,11 @@ class Tanzanite_Plugin {
 
 		// 后台菜单
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
+
+		// 商品几何参数 meta box（仅在后台商品编辑页使用）
+		if ( is_admin() && class_exists( 'Tanzanite_Product_Geometry_Admin' ) ) {
+			Tanzanite_Product_Geometry_Admin::init();
+		}
 		
 		// 后台脚本和样式 - 调用 legacy plugin 的方法
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -246,6 +256,8 @@ class Tanzanite_Plugin {
 			'Tanzanite_REST_ShippingTemplates_Controller',
 			'Tanzanite_REST_User_Assets_Controller',
 			'Tanzanite_REST_Wishlist_Controller',
+			// 新增：辐条计算器专用商品列表控制器
+			'Tanzanite_REST_Spoke_Products_Controller',
 		);
 		
 		foreach ( $controller_classes as $class_name ) {
@@ -419,10 +431,20 @@ class Tanzanite_Plugin {
 		add_submenu_page(
 			$root_slug,
 			__( 'Cart Management', 'tanzanite-settings' ),
-			__( '🛒 Cart & Orders', 'tanzanite-settings' ),
+			__( '\ud83d\uded2 Cart & Orders', 'tanzanite-settings' ),
 			$root_capability,
 			'tanzanite-cart-list',
 			array( $this, 'render_cart_list' )
+		);
+
+		// Spoke Geometry - 轮组几何管理
+		add_submenu_page(
+			$root_slug,
+			__( 'Spoke Geometry', 'tanzanite-settings' ),
+			__( 'Spoke Geometry', 'tanzanite-settings' ),
+			$root_capability,
+			'tanzanite-spoke-geometry',
+			array( $this, 'render_spoke_geometry_page' )
 		);
 
 		// 审计日志
@@ -732,6 +754,24 @@ class Tanzanite_Plugin {
 			Tanzanite_Cart_Admin::render_cart_list();
 		} else {
 			echo '<div class="wrap"><h1>错误</h1><p>Tanzanite_Cart_Admin 类未找到</p></div>';
+		}
+	}
+
+	/**
+	 * 渲染 Spoke Geometry 管理页面
+	 *
+	 * @since 0.2.0
+	 */
+	public function render_spoke_geometry_page() {
+		$class_file = TANZANITE_PLUGIN_DIR . 'includes/admin/class-spoke-geometry-admin.php';
+		if ( file_exists( $class_file ) ) {
+			require_once $class_file;
+		}
+
+		if ( class_exists( 'Tanzanite_Spoke_Geometry_Admin' ) ) {
+			Tanzanite_Spoke_Geometry_Admin::render_page();
+		} else {
+			echo '<div class="wrap"><h1>错误</h1><p>Tanzanite_Spoke_Geometry_Admin 类未找到</p></div>';
 		}
 	}
 

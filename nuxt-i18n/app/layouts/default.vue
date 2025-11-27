@@ -1,11 +1,6 @@
 <template>
   <div class="layout">
     <main id="main-content" class="layout-main" role="main">
-      <TWCarousel>
-        <template #footer>
-          <Briefanswer />
-        </template>
-      </TWCarousel>
       <slot />
     </main>
 
@@ -26,8 +21,6 @@ import {
 } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
-import TWCarousel from '~/components/TWCarousel.vue'
-import Briefanswer from '~/components/Briefanswer.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 const config = useRuntimeConfig()

@@ -12,6 +12,13 @@ export default defineNuxtConfig({
       headers: {
         'cache-control': 'public, max-age=31536000, immutable'
       }
+    },
+
+    // Legacy path for the spoke calculator page. Keep this so that
+    // previously shared links to /spoke-calculator continue to work
+    // and are redirected to the new canonical /spokecalculator URL.
+    '/spoke-calculator': {
+      redirect: '/spokecalculator'
     }
   },
   
