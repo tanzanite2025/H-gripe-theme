@@ -127,6 +127,17 @@
     "loadMore": "Load More",
     "items": "items"
   },
+  "support": {
+    "nav": {
+      "faqs": "All FAQs",
+      "payment": "Payment",
+      "afterSales": "After sales",
+      "warranty": "Warranty",
+      "userManuals": "User Manuals",
+      "productFeedback": "Product Feedback",
+      "spokeCalculator": "Spoke Calculator"
+    }
+  },
   "privacy": {
     "button": "Privacy statement",
     "title": "Privacy statement",

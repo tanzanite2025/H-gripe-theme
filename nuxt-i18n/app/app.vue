@@ -9,6 +9,8 @@
         <ProductSearchResults />
       </template>
     </SidePanel>
+    <!-- Render the current page inside the active layout -->
+    <NuxtPage />
   </NuxtLayout>
   
   <!-- 购物车和结账弹窗 -->
