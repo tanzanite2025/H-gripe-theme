@@ -49,7 +49,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
   /* 桌面端：略微压缩底部 padding，让下方 Support 导航更靠上 */
   padding: 3rem 1.5rem 0.75rem;
   /* 去掉单独的 hero 渐变背景，直接使用整体布局背景，避免形成一条额外的色带 */
-  background: transparent;
+  background: transparent !important;
 }
 
 .support-hero__inner {
@@ -63,7 +63,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
   font-weight: 700;
   letter-spacing: 0.02em;
   color: #f9fafb;
-  display: none;
+  display: none !important;
 }
 
 .support-hero__subtitle {
@@ -96,6 +96,57 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 
   .support-content {
     padding-inline: 1.25rem;
+  }
+}
+
+/* 手机宽度区间覆盖以下断点：360x740, 375x667, 390x844, 412x915, 414x896, 430x932
+   在这些区间内将 Support 再向下移动一些（比通用 4.5rem 更明显） */
+/* 360 宽（含 360x640, 360x740 等） */
+@media (min-width: 360px) and (max-width: 374px) {
+  .support-hero {
+    margin-top: 6rem;
+  }
+}
+
+/* 375 宽（375x667, 375x812 等） */
+@media (min-width: 375px) and (max-width: 389px) {
+  .support-hero {
+    margin-top: 6rem;
+  }
+}
+
+/* 390 宽（390x844 等） */
+@media (min-width: 390px) and (max-width: 411px) {
+  .support-hero {
+    margin-top: 6rem;
+  }
+}
+
+/* 412 宽（412x915 等） */
+@media (min-width: 412px) and (max-width: 413px) {
+  .support-hero {
+    margin-top: 6rem;
+  }
+}
+
+/* 414 宽（414x896 等） */
+@media (min-width: 414px) and (max-width: 429px) {
+  .support-hero {
+    margin-top: 6rem;
+  }
+}
+
+/* 430 宽及以上手机（直到平板前的 767 宽） */
+@media (min-width: 430px) and (max-width: 767px) {
+  .support-hero {
+    margin-top: 6rem;
+  }
+}
+
+/* 平板视角（例如 768x1024, 820x1180）：整体向下移动一些，但不影响桌面和手机 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .support-hero {
+    margin-top: 5.5rem;
   }
 }
 </style>
