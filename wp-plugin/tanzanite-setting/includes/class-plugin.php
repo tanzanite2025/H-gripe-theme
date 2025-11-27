@@ -219,6 +219,9 @@ class Tanzanite_Plugin {
 		// 后台菜单
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
 
+		// Spoke Length History 导入处理
+		add_action( 'admin_post_tanz_spoke_history_import', array( $this, 'handle_spoke_history_import' ) );
+
 		// 商品几何参数 meta box（仅在后台商品编辑页使用）
 		if ( is_admin() && class_exists( 'Tanzanite_Product_Geometry_Admin' ) ) {
 			Tanzanite_Product_Geometry_Admin::init();
@@ -258,6 +261,10 @@ class Tanzanite_Plugin {
 			'Tanzanite_REST_Wishlist_Controller',
 			// 新增：辐条计算器专用商品列表控制器
 			'Tanzanite_REST_Spoke_Products_Controller',
+			// 新增：用户反馈 / 留言控制器
+			'Tanzanite_REST_Feedback_Controller',
+			// 新增：辐条长度历史搜索控制器
+			'Tanzanite_REST_Spoke_History_Controller',
 		);
 		
 		foreach ( $controller_classes as $class_name ) {
@@ -431,7 +438,7 @@ class Tanzanite_Plugin {
 		add_submenu_page(
 			$root_slug,
 			__( 'Cart Management', 'tanzanite-settings' ),
-			__( '\ud83d\uded2 Cart & Orders', 'tanzanite-settings' ),
+			__( 'Cart & Orders', 'tanzanite-settings' ),
 			$root_capability,
 			'tanzanite-cart-list',
 			array( $this, 'render_cart_list' )
@@ -445,6 +452,16 @@ class Tanzanite_Plugin {
 			$root_capability,
 			'tanzanite-spoke-geometry',
 			array( $this, 'render_spoke_geometry_page' )
+		);
+
+		// Spoke Length History - 辐条长度历史
+		add_submenu_page(
+			$root_slug,
+			__( 'Spoke Length History', 'tanzanite-settings' ),
+			__( 'Spoke Length History', 'tanzanite-settings' ),
+			$root_capability,
+			'tanzanite-spoke-history',
+			array( $this, 'render_spoke_history_page' )
 		);
 
 		// 审计日志
@@ -773,6 +790,282 @@ class Tanzanite_Plugin {
 		} else {
 			echo '<div class="wrap"><h1>错误</h1><p>Tanzanite_Spoke_Geometry_Admin 类未找到</p></div>';
 		}
+	}
+
+	/**
+	 * 渲染 Spoke Length History 页面
+	 *
+	 * @since 0.2.1
+	 */
+	public function render_spoke_history_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( '无权限访问此页面。', 'tanzanite-settings' ) );
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'tanz_spoke_history';
+
+		echo '<div class="wrap tz-settings-wrapper">';
+
+		// 统一使用后台通用的标题区域样式
+		echo '<div class="tz-settings-header">';
+		echo '<h1>' . esc_html__( 'Spoke Length History / 辐条长度历史', 'tanzanite-settings' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Import and review historical spoke length records for the spoke calculator.', 'tanzanite-settings' ) . '</p>';
+		echo '</div>';
+
+		// 导入结果提示
+		if ( isset( $_GET['import'] ) && 'success' === $_GET['import'] ) {
+			$inserted = isset( $_GET['inserted'] ) ? (int) $_GET['inserted'] : 0;
+			$updated  = isset( $_GET['updated'] ) ? (int) $_GET['updated'] : 0;
+			$skipped  = isset( $_GET['skipped'] ) ? (int) $_GET['skipped'] : 0;
+
+			echo '<div class="notice notice-success is-dismissible"><p>';
+			printf(
+				esc_html__( 'Import completed: %1$d inserted, %2$d updated, %3$d skipped.', 'tanzanite-settings' ),
+				$inserted,
+				$updated,
+				$skipped
+			);
+			echo '</p></div>';
+		}
+
+		$action_url = admin_url( 'admin-post.php' );
+
+		// 导入区域 - 使用统一的 tz-settings-section 卡片布局
+		echo '<div class="tz-settings-section">';
+		echo '<h2>' . esc_html__( 'Import from CSV', 'tanzanite-settings' ) . '</h2>';
+		echo '<form method="post" action="' . esc_url( $action_url ) . '" enctype="multipart/form-data">';
+		wp_nonce_field( 'tanz_spoke_history_import', 'tanz_spoke_history_import_nonce' );
+		echo '<input type="hidden" name="action" value="tanz_spoke_history_import" />';
+		echo '<p>';
+		echo '<input type="file" name="spoke_history_csv" accept=".csv" required /> ';
+		submit_button( __( 'Import', 'tanzanite-settings' ), 'primary', 'submit', false );
+		echo '</p>';
+		echo '<p class="description">' . esc_html__( 'CSV header should include columns such as hub_model, spoke_count, lacing_pattern, rim_model, erd_mm, etc.', 'tanzanite-settings' ) . '</p>';
+		echo '</form>';
+		echo '</div>';
+
+		// 最近记录列表，同样包裹在 section 内
+		echo '<div class="tz-settings-section">';
+		echo '<h2>' . esc_html__( 'Recent Records', 'tanzanite-settings' ) . '</h2>';
+
+		$rows = $wpdb->get_results(
+			"SELECT id, hub_brand, hub_model, rim_brand, rim_model, left_length_mm, right_length_mm, wheel_type, source_type, spoke_count, lacing_pattern, created_at FROM {$table} ORDER BY created_at DESC LIMIT 50",
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			echo '<p>' . esc_html__( 'No records found.', 'tanzanite-settings' ) . '</p>';
+		} else {
+			echo '<table class="widefat fixed striped">';
+			echo '<thead><tr>';
+			echo '<th>' . esc_html__( 'ID', 'tanzanite-settings' ) . '</th>';
+			echo '<th>' . esc_html__( 'Hub', 'tanzanite-settings' ) . '</th>';
+			echo '<th>' . esc_html__( 'Rim', 'tanzanite-settings' ) . '</th>';
+			echo '<th>' . esc_html__( 'Lengths (L/R)', 'tanzanite-settings' ) . '</th>';
+			echo '<th>' . esc_html__( 'Spokes / Pattern', 'tanzanite-settings' ) . '</th>';
+			echo '<th>' . esc_html__( 'Wheel / Source', 'tanzanite-settings' ) . '</th>';
+			echo '<th>' . esc_html__( 'Created At', 'tanzanite-settings' ) . '</th>';
+			echo '</tr></thead><tbody>';
+
+			foreach ( $rows as $row ) {
+				$hub = trim( ( $row['hub_brand'] ?? '' ) . ' ' . ( $row['hub_model'] ?? '' ) );
+				$rim = trim( ( $row['rim_brand'] ?? '' ) . ' ' . ( $row['rim_model'] ?? '' ) );
+				$len_l = isset( $row['left_length_mm'] ) ? (float) $row['left_length_mm'] : null;
+				$len_r = isset( $row['right_length_mm'] ) ? (float) $row['right_length_mm'] : null;
+				$len_display = '';
+				if ( null !== $len_l || null !== $len_r ) {
+					$len_display = ( null !== $len_l ? $len_l : '—' ) . ' / ' . ( null !== $len_r ? $len_r : '—' );
+				}
+
+				echo '<tr>';
+				echo '<td>' . (int) $row['id'] . '</td>';
+				echo '<td>' . esc_html( $hub ? $hub : '-' ) . '</td>';
+				echo '<td>' . esc_html( $rim ? $rim : '-' ) . '</td>';
+				echo '<td>' . esc_html( $len_display ? $len_display : '-' ) . '</td>';
+				$spoke_info = '';
+				if ( ! empty( $row['spoke_count'] ) ) {
+					$spoke_info = (int) $row['spoke_count'] . ' spokes';
+				}
+				if ( ! empty( $row['lacing_pattern'] ) ) {
+					$spoke_info .= $spoke_info ? ' · ' : '';
+					$spoke_info .= $row['lacing_pattern'];
+				}
+				echo '<td>' . esc_html( $spoke_info ? $spoke_info : '-' ) . '</td>';
+				$wheel_source = '';
+				if ( ! empty( $row['wheel_type'] ) ) {
+					$wheel_source = $row['wheel_type'];
+				}
+				if ( ! empty( $row['source_type'] ) ) {
+					$wheel_source .= $wheel_source ? ' · ' : '';
+					$wheel_source .= $row['source_type'];
+				}
+				echo '<td>' . esc_html( $wheel_source ? $wheel_source : '-' ) . '</td>';
+				echo '<td>' . esc_html( $row['created_at'] ) . '</td>';
+				echo '</tr>';
+			}
+
+			echo '</tbody></table>';
+		}
+
+		echo '</div>';
+	}
+
+	/**
+	 * 处理 Spoke Length History CSV 导入
+	 *
+	 * @since 0.2.1
+	 */
+	public function handle_spoke_history_import() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( '无权限执行此操作。', 'tanzanite-settings' ) );
+		}
+
+		if ( ! isset( $_POST['tanz_spoke_history_import_nonce'] ) || ! wp_verify_nonce( $_POST['tanz_spoke_history_import_nonce'], 'tanz_spoke_history_import' ) ) {
+			wp_die( __( '安全验证失败。', 'tanzanite-settings' ) );
+		}
+
+		if ( empty( $_FILES['spoke_history_csv']['tmp_name'] ) || ! is_uploaded_file( $_FILES['spoke_history_csv']['tmp_name'] ) ) {
+			wp_die( __( '未上传有效的 CSV 文件。', 'tanzanite-settings' ) );
+		}
+
+		$file   = $_FILES['spoke_history_csv']['tmp_name'];
+		$handle = fopen( $file, 'r' );
+		if ( false === $handle ) {
+			wp_die( __( '无法读取上传的文件。', 'tanzanite-settings' ) );
+		}
+
+		$header = fgetcsv( $handle );
+		if ( ! $header || ! is_array( $header ) ) {
+			fclose( $handle );
+			wp_die( __( 'CSV 头部无效。', 'tanzanite-settings' ) );
+		}
+
+		$columns = array();
+		foreach ( $header as $index => $name ) {
+			$key = sanitize_key( $name );
+			if ( $key ) {
+				$columns[ $index ] = $key;
+			}
+		}
+
+		if ( empty( $columns ) ) {
+			fclose( $handle );
+			wp_die( __( 'CSV 中未检测到有效字段。', 'tanzanite-settings' ) );
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'tanz_spoke_history';
+
+		$inserted = 0;
+		$updated  = 0;
+		$skipped  = 0;
+
+		$to_string = static function( $value ) {
+			$value = trim( (string) $value );
+			return '' === $value ? null : $value;
+		};
+
+		$to_float = static function( $value ) {
+			$value = trim( (string) $value );
+			return '' === $value ? null : (float) $value;
+		};
+
+		$to_int = static function( $value ) {
+			$value = trim( (string) $value );
+			return '' === $value ? null : (int) $value;
+		};
+
+		while ( ( $row = fgetcsv( $handle ) ) !== false ) {
+			// 跳过空行
+			if ( empty( array_filter( $row, 'strlen' ) ) ) {
+				continue;
+			}
+
+			$raw = array();
+			foreach ( $columns as $index => $key ) {
+				$raw[ $key ] = isset( $row[ $index ] ) ? $row[ $index ] : '';
+			}
+
+			$data = array(
+				'wheel_type'                => $to_string( $raw['wheel_type'] ?? '' ),
+				'source_type'               => $to_string( $raw['source_type'] ?? '' ),
+				'rim_brand'                 => $to_string( $raw['rim_brand'] ?? '' ),
+				'rim_model'                 => $to_string( $raw['rim_model'] ?? '' ),
+				'hub_brand'                 => $to_string( $raw['hub_brand'] ?? '' ),
+				'hub_model'                 => $to_string( $raw['hub_model'] ?? '' ),
+				'erd_mm'                    => $to_float( $raw['erd_mm'] ?? '' ),
+				'left_flange_pcd_mm'        => $to_float( $raw['left_flange_pcd_mm'] ?? '' ),
+				'right_flange_pcd_mm'       => $to_float( $raw['right_flange_pcd_mm'] ?? '' ),
+				'left_flange_to_center_mm'  => $to_float( $raw['left_flange_to_center_mm'] ?? '' ),
+				'right_flange_to_center_mm' => $to_float( $raw['right_flange_to_center_mm'] ?? '' ),
+				'spoke_count'               => $to_int( $raw['spoke_count'] ?? '' ),
+				'lacing_pattern'            => $to_string( $raw['lacing_pattern'] ?? '' ),
+				'nipple_type'               => $to_string( $raw['nipple_type'] ?? '' ),
+				'left_length_mm'            => $to_float( $raw['left_length_mm'] ?? '' ),
+				'right_length_mm'           => $to_float( $raw['right_length_mm'] ?? '' ),
+			);
+
+			$hub_model      = $data['hub_model'];
+			$spoke_count    = $data['spoke_count'];
+			$lacing_pattern = $data['lacing_pattern'];
+
+			$existing_id = null;
+			// 按 hub_model + spoke_count + lacing_pattern 去重 / 覆盖
+			if ( $hub_model && $spoke_count && $lacing_pattern ) {
+				$existing_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM {$table} WHERE hub_model = %s AND spoke_count = %d AND lacing_pattern = %s LIMIT 1",
+						$hub_model,
+						$spoke_count,
+						$lacing_pattern
+					)
+				);
+			}
+
+			if ( $existing_id ) {
+				// 更新已有记录（保留 created_at）
+				$result = $wpdb->update(
+					$table,
+					$data,
+					array( 'id' => (int) $existing_id ),
+					null,
+					array( '%d' )
+				);
+
+				if ( false === $result ) {
+					$skipped++;
+				} else {
+					$updated++;
+				}
+			} else {
+				// 新增记录
+				$data['created_at'] = current_time( 'mysql' );
+				$result            = $wpdb->insert( $table, $data );
+
+				if ( false === $result ) {
+					$skipped++;
+				} else {
+					$inserted++;
+				}
+			}
+		}
+
+		fclose( $handle );
+
+		$redirect_url = add_query_arg(
+			array(
+				'page'     => 'tanzanite-spoke-history',
+				'import'   => 'success',
+				'inserted' => $inserted,
+				'updated'  => $updated,
+				'skipped'  => $skipped,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		wp_safe_redirect( $redirect_url );
+		exit;
 	}
 
 	/**

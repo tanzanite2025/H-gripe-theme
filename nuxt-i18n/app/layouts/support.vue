@@ -46,8 +46,10 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 
 .support-hero {
   margin-top: 2.75rem;
-  padding: 3rem 1.5rem 1.25rem;
-  background: radial-gradient(circle at top left, #0f172a 0, #020617 40%, #020617 100%);
+  /* 桌面端：略微压缩底部 padding，让下方 Support 导航更靠上 */
+  padding: 3rem 1.5rem 0.75rem;
+  /* 去掉单独的 hero 渐变背景，直接使用整体布局背景，避免形成一条额外的色带 */
+  background: transparent;
 }
 
 .support-hero__inner {
@@ -61,6 +63,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
   font-weight: 700;
   letter-spacing: 0.02em;
   color: #f9fafb;
+  display: none;
 }
 
 .support-hero__subtitle {
@@ -80,12 +83,15 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 
 @media (max-width: 768px) {
   .support-hero {
-    margin-top: 3.25rem;
+    /* 为顶部固定 SiteHeader 预留更多空间，避免 Support 标题和顶部导航被遮挡 */
+    margin-top: 4.5rem;
     padding: 2rem 1.25rem 0.75rem;
   }
 
   .support-hero__title {
     font-size: 1.5rem;
+    /* 保持隐藏：移动端同样不展示 Support 标题行，避免占用垂直空间 */
+    display: none;
   }
 
   .support-content {

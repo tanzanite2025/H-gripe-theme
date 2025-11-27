@@ -263,7 +263,7 @@ const emit = defineEmits(['close', 'openWhatsApp'])
 
 const openAllFaq = () => {
   try {
-    const target = localePath('/faq')
+    const target = localePath('/support/faqs')
     if (typeof window !== 'undefined' && target) {
       window.open(String(target), '_blank')
     }

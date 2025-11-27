@@ -153,7 +153,7 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
     final class Tanzanite_Settings_Plugin {
 
         private const VERSION             = '0.1.9';
-        private const DB_VERSION          = '0.1.9';
+        private const DB_VERSION          = '0.2.1';
         private const OPTION_DB_VERSION        = 'tanzanite_settings_db_version';
         private const OPTION_TRACKING_SETTINGS = 'tanz_tracking_settings';
         private const ALLOWED_PRODUCT_STATUSES = [ 'draft', 'pending', 'publish', 'private' ];
@@ -894,6 +894,60 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
             ) {$charset};";
 
             dbDelta( $rewards_transactions_sql );
+
+            // 用户反馈 / 留言表
+            $feedback_table = $wpdb->prefix . 'tanz_feedback';
+            $feedback_sql   = "CREATE TABLE {$feedback_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                thread_key VARCHAR(190) NOT NULL,
+                user_id BIGINT UNSIGNED NOT NULL,
+                name VARCHAR(190) DEFAULT NULL,
+                email VARCHAR(190) DEFAULT NULL,
+                content TEXT NOT NULL,
+                status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                locale VARCHAR(32) DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY thread_key (thread_key),
+                KEY user_id (user_id),
+                KEY status (status),
+                KEY created_at (created_at)
+            ) {$charset};";
+
+            dbDelta( $feedback_sql );
+
+            // Spoke Length History / 辐条长度历史表
+            $spoke_history_table = $wpdb->prefix . 'tanz_spoke_history';
+            $spoke_history_sql   = "CREATE TABLE {$spoke_history_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                wheel_type VARCHAR(20) DEFAULT NULL,
+                source_type VARCHAR(20) DEFAULT NULL,
+                rim_brand VARCHAR(190) DEFAULT NULL,
+                rim_model VARCHAR(190) DEFAULT NULL,
+                hub_brand VARCHAR(190) DEFAULT NULL,
+                hub_model VARCHAR(190) DEFAULT NULL,
+                erd_mm DECIMAL(8,2) DEFAULT NULL,
+                left_flange_pcd_mm DECIMAL(8,2) DEFAULT NULL,
+                right_flange_pcd_mm DECIMAL(8,2) DEFAULT NULL,
+                left_flange_to_center_mm DECIMAL(8,2) DEFAULT NULL,
+                right_flange_to_center_mm DECIMAL(8,2) DEFAULT NULL,
+                spoke_count INT UNSIGNED DEFAULT NULL,
+                lacing_pattern VARCHAR(32) DEFAULT NULL,
+                nipple_type VARCHAR(50) DEFAULT NULL,
+                left_length_mm DECIMAL(8,2) DEFAULT NULL,
+                right_length_mm DECIMAL(8,2) DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY hub_model (hub_model),
+                KEY hub_brand (hub_brand),
+                KEY rim_model (rim_model),
+                KEY wheel_type (wheel_type),
+                KEY created_at (created_at)
+            ) {$charset};";
+
+            dbDelta( $spoke_history_sql );
 
             // 聊天会话表
             $chat_conversations_table = $wpdb->prefix . 'tanz_chat_conversations';
@@ -6807,7 +6861,16 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
          */
         public function enqueue_admin_assets(): void {
             $screen = get_current_screen();
-            if ( ! $screen || false === strpos( $screen->id, 'tanzanite-settings' ) ) {
+            if ( ! $screen ) {
+                return;
+            }
+
+            // 只在 Tanzanite 主设置页、购物车列表页以及 Spoke Geometry 管理页加载统一样式
+            if (
+                false === strpos( $screen->id, 'tanzanite-settings' )
+                && false === strpos( $screen->id, 'tanzanite-cart' )
+                && false === strpos( $screen->id, 'tanzanite-spoke-geometry' )
+            ) {
                 return;
             }
 
@@ -6853,7 +6916,16 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
          */
         public function filter_admin_body_class( string $classes ): string {
             $screen = get_current_screen();
-            if ( $screen && ( false !== strpos( $screen->id, 'tanzanite-settings' ) || false !== strpos( $screen->id, 'tanzanite-cart' ) ) ) {
+
+            // 为所有 Tanzanite 主设置页、购物车列表页，以及 Spoke Geometry 页统一应用 tz-settings-admin 样式
+            if (
+                $screen
+                && (
+                    false !== strpos( $screen->id, 'tanzanite-settings' )
+                    || false !== strpos( $screen->id, 'tanzanite-cart' )
+                    || false !== strpos( $screen->id, 'tanzanite-spoke-geometry' )
+                )
+            ) {
                 $classes .= ' tz-settings-admin';
             }
 

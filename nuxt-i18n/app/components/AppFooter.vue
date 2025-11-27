@@ -98,7 +98,7 @@ const footerSocialItems: FooterSocialItem[] = [
 .app-footer {
   /* 增大底部 padding，让文字区域整体上移，
      预留空间给底部浮动 Dock 覆盖 */
-  padding: 3rem 1.5rem 6rem;
+  padding: 1.5rem 1.5rem 4.75rem;
   background: rgba(0, 0, 0, 0.85);
   color: #f9fafb;
 }
@@ -109,7 +109,7 @@ const footerSocialItems: FooterSocialItem[] = [
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
   text-align: center;
 }
 
@@ -122,12 +122,12 @@ const footerSocialItems: FooterSocialItem[] = [
 
 .footer-menus-wrapper {
   width: 100%;
-  margin-top: 0.25rem;
+  margin-top: 0;
 }
 
 .footer-bottom {
   width: 100%;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
   margin-bottom: 0.75rem;
   display: flex;
   flex-direction: column;
@@ -221,7 +221,7 @@ const footerSocialItems: FooterSocialItem[] = [
 @media (max-width: 768px) {
   .app-footer {
     /* 移动端 Dock 通常更高，底部多留一些空间 */
-    padding: 2rem 1.25rem 7rem;
+    padding: 1.5rem 1.25rem 6rem;
   }
 }
 </style>

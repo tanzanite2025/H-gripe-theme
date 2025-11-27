@@ -38,7 +38,7 @@ export const footerMenus: FooterSection[] = [
     titleKey: 'footer.menus.support',
     links: [
       { labelKey: 'footer.links.helpCenter', to: '/help-center' },
-      { labelKey: 'footer.links.faq', to: '/faq' },
+      { labelKey: 'footer.links.faq', to: '/support/faqs' },
     ],
   },
   {

@@ -59,12 +59,7 @@
               href="mailto:support@tanzanite.com"
               class="footer-menus__link"
             >
-              {{
-                $t(
-                  'footer.brand.email',
-                  'support@tanzanite.com'
-                )
-              }}
+              support@tanzanite.com
             </a>
           </p>
         </div>

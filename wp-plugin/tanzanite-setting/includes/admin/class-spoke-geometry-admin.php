@@ -71,8 +71,12 @@ class Tanzanite_Spoke_Geometry_Admin {
         }
 
         echo '<div class="wrap tz-settings-wrapper">';
+
+        // 统一使用后台通用的标题区域样式
+        echo '<div class="tz-settings-header">';
         echo '<h1>' . esc_html__( 'Spoke Geometry / 轮组几何', 'tanzanite-settings' ) . '</h1>';
         echo '<p>' . esc_html__( '为已有商品补充轮圈 / 花鼓几何参数，用于辐条长度计算。', 'tanzanite-settings' ) . '</p>';
+        echo '</div>';
 
         if ( $message ) {
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
@@ -82,16 +86,18 @@ class Tanzanite_Spoke_Geometry_Admin {
             echo '<div class="notice notice-error"><p>' . esc_html( $error_msg ) . '</p></div>';
         }
 
-        // 当前商品的几何编辑表单
+        // 当前商品的几何编辑表单（使用统一的 section 包裹）
         if ( $current_product ) {
+            echo '<div class="tz-settings-section">';
             self::render_geometry_form( $current_product );
+            echo '</div>';
         }
 
-        // 筛选表单
-        echo '<hr />';
-        echo '<form method="get" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">';
+        // 筛选表单，套用统一的 tz-settings-section 卡片布局
+        echo '<div class="tz-settings-section">';
+        echo '<form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">';
         echo '<input type="hidden" name="page" value="tanzanite-spoke-geometry" />';
-        echo '<input type="search" name="s" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( '按标题搜索…', 'tanzanite-settings' ) . '" class="regular-text" />';
+        echo '<input type="search" name="s" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( '按标题搜索…', 'tanzanite-settings' ) . '" style="width:300px;" />';
 
         echo '<select name="tanz_geom_category">';
         echo '<option value="">' . esc_html__( '全部分类', 'tanzanite-settings' ) . '</option>';
@@ -100,7 +106,7 @@ class Tanzanite_Spoke_Geometry_Admin {
         echo '<option value="nipple" ' . selected( $category, 'nipple', false ) . '>' . esc_html__( 'Nipple', 'tanzanite-settings' ) . '</option>';
         echo '</select>';
 
-        submit_button( __( '筛选', 'tanzanite-settings' ), 'secondary', '', false );
+        submit_button( __( '筛选', 'tanzanite-settings' ), 'primary', '', false );
 
         if ( $search || $category ) {
             $reset_url = admin_url( 'admin.php?page=tanzanite-spoke-geometry' );
@@ -108,6 +114,7 @@ class Tanzanite_Spoke_Geometry_Admin {
         }
 
         echo '</form>';
+        echo '</div>';
 
         // 商品列表
         echo '<table class="wp-list-table widefat fixed striped">';
