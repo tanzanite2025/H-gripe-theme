@@ -57,15 +57,24 @@
       <!-- Eligibility message -->
       <div v-if="eligibilityState && !eligibilityState.can_post" class="space-y-3">
         <p class="text-sm text-slate-300">
-          {{ eligibilityState.reason || $t('feedback.loginRequired', 'Please sign in to leave feedback.') }}
+          {{ $t('feedback.loginRequired', 'Please sign in to leave feedback.') }}
         </p>
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-black shadow-md hover:brightness-110"
-          @click="showAuth = true"
-        >
-          {{ $t('feedback.loginCta', 'Sign in or create an account') }}
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-black shadow-md hover:brightness-110"
+            @click="showAuth = true"
+          >
+            {{ $t('feedback.loginCta', 'Sign in or create an account') }}
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-black shadow-md hover:brightness-110"
+            @click="openWhatsApp"
+          >
+            {{ $t('feedback.liveChatCta', 'To live chat') }}
+          </button>
+        </div>
       </div>
 
       <!-- Form -->
@@ -137,6 +146,11 @@
 
     <!-- Auth modal -->
     <AuthModal v-model="showAuth" @success="onAuthSuccess" />
+    <WhatsAppChatModal
+      v-if="showWhatsApp"
+      :conversation="{ showAgentList: true }"
+      @close="showWhatsApp = false"
+    />
   </section>
 </template>
 
@@ -144,6 +158,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from '#imports'
 import AuthModal from '~/components/AuthModal.vue'
+import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import { useFeedback } from '~/composables/useFeedback'
 
 const props = defineProps<{
@@ -181,6 +196,7 @@ const email = ref('')
 const submitMessage = ref('')
 const submitError = ref('')
 const showAuth = ref(false)
+const showWhatsApp = ref(false)
 
 const titleText = computed(
   () => props.title || $t('feedback.defaultTitle', 'Share your feedback')
@@ -243,5 +259,12 @@ const handleSubmit = async () => {
 const onAuthSuccess = async () => {
   showAuth.value = false
   await loadEligibility()
+}
+
+const openWhatsApp = () => {
+  showWhatsApp.value = true
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
+  }
 }
 </script>

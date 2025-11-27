@@ -6,6 +6,7 @@
         :key="item.id"
         class="support-top-nav__link"
         :class="{ 'support-top-nav__link--active': isActive(item) }"
+        :style="{ color: '#ffffff' }"
         :to="localePath(item.to)"
       >
         {{ $t(item.labelKey) }}
@@ -72,7 +73,7 @@ const isActive = (item: SupportNavItem) => {
 .support-top-nav__link {
   flex-shrink: 0;
   font-size: 0.875rem;
-  color: rgba(226, 232, 240, 0.75);
+  color: #ffffff !important;
   text-decoration: none;
   padding-bottom: 0.25rem;
   border-bottom: 2px solid transparent;

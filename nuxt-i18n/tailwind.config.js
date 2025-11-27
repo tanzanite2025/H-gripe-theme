@@ -10,7 +10,23 @@ module.exports = {
     './app/app.{vue,js,ts}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      screens: {
+        // 更细粒度的移动端宽度段，用于精细调整布局
+        // iPhone SE / 8 等 375 宽（同时涵盖 375x667、375x812 等）
+        'phone-375': { min: '375px', max: '389px' },
+        // 390 宽（如部分较新 iPhone）
+        'phone-390': { min: '390px', max: '413px' },
+        // 414 宽（例如 iPhone 11 / 12 Pro）
+        'phone-414': { min: '414px', max: '429px' },
+        // 430 宽等更宽的手机，但仍小于平板
+        'phone-430': { min: '430px', max: '767px' },
+        // iPad / 小平板 768 宽（768x1024 等）
+        'tablet-768': { min: '768px', max: '819px' },
+        // iPad Air 等 820 宽（820x1180 等），到桌面断点之前
+        'tablet-820': { min: '820px', max: '1023px' },
+      },
+    },
   },
   plugins: [],
 }

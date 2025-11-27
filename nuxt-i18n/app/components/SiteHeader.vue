@@ -1,49 +1,53 @@
 <template>
 	<div class="fixed top-1.5 left-1/2 -translate-x-1/2 w-[95vw] max-w-[1200px] z-[110]">
 		<div
-			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-1 md:py-2"
+			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-0.5 md:py-2"
 		>
 			<!-- 桌面端：第一行 标题 + 主导航 + 右侧控件，第二行 面包屑 -->
 			<div class="hidden md:flex flex-col gap-1">
 				<!-- 第一行：标题 + 主导航 + 右侧控件 -->
-				<div class="grid grid-cols-[250px_1fr_250px] items-center gap-4">
+				<div
+					class="grid grid-cols-[230px_1fr_240px] items-center gap-3 lg:grid-cols-[250px_1fr_250px] lg:gap-4"
+				>
 					<!-- 左侧：站点标题 -->
 					<div class="flex justify-start items-center">
-						<h1 class="m-0 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] whitespace-nowrap">
+						<h1 class="m-0 text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] whitespace-nowrap">
 							{{ titleText }}
 						</h1>
 					</div>
 
 					<!-- 中间：主导航（与站点标题同一行） -->
 					<nav
-						class="justify-self-center flex items-center justify-center gap-4"
+						class="justify-self-center flex items-center justify-center gap-3 lg:gap-4"
 						aria-label="Primary navigation"
 					>
 						<NuxtLink
 							:to="localePath('/spoke-calculator')"
-							class="px-4 py-1.5 rounded-full border border-white/15 bg-white/5 text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.products', 'Products') }}
 						</NuxtLink>
 						<NuxtLink
 							:to="localePath('/support/faqs')"
-							class="px-4 py-1.5 rounded-full border border-white/15 bg-white/5 text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.support', 'Support') }}
 						</NuxtLink>
 						<NuxtLink
 							:to="localePath('/about')"
-							class="px-4 py-1.5 rounded-full border border-white/15 bg-white/5 text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.company', 'Company') }}
 						</NuxtLink>
 					</nav>
 
 					<!-- 右侧：FAQ + 分享 + 语言切换器 -->
-					<div class="justify-self-end flex items-center gap-3">
+					<div
+						class="justify-self-end flex items-center gap-2 lg:gap-3"
+					>
 						<!-- FAQ 按钮 -->
 						<button
-							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] lg:w-[52px] lg:h-[52px] rounded-full hidden lg:inline-flex items-center justify-center bg-[#0b1020]"
 							@click.stop="toggleFaq()"
 							:aria-expanded="faqOpen"
 							aria-haspopup="dialog"
@@ -54,7 +58,7 @@
 
 						<!-- 分享按钮（会员积分） - 改为圆形 -->
 						<button
-							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] lg:w-[52px] lg:h-[52px] rounded-full hidden lg:inline-flex items-center justify-center bg-[#0b1020]"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-haspopup="dialog"
@@ -66,7 +70,7 @@
 						<!-- 翻译转换器 -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[125px] h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
+								class="flex items-center justify-between gap-2 lg:gap-3 px-3 py-2 lg:px-4 lg:py-2.5 rounded-full text-white text-xs lg:text-sm font-medium cursor-pointer transition-all duration-200 w-[110px] h-10 lg:w-[125px] lg:h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -124,15 +128,39 @@
 				</div>
 
 				<!-- 桌面端：第二行 面包屑（占位，将来可替换为真实组件） -->
-				<div class="w-full flex justify-center">
-					<span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
+				<div class="w-full flex items-center">
+					<div class="hidden md:flex lg:hidden w-[44px] justify-start mr-2">
+						<button
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+							@click.stop="toggleFaq()"
+							:aria-expanded="faqOpen"
+							aria-haspopup="dialog"
+							aria-label="Open FAQ"
+						>
+							<img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
+						</button>
+					</div>
+					<div class="flex-1 flex justify-center">
+						<span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
+					</div>
+					<div class="hidden md:flex lg:hidden w-[44px] justify-end ml-2">
+						<button
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+							@click.stop="toggleShare()"
+							:aria-expanded="shareOpen"
+							aria-haspopup="dialog"
+							aria-label="Open membership panel"
+						>
+							<img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
+						</button>
+					</div>
 				</div>
 			</div>
 
-			<!-- 移动端：三排垂直布局（紧凑间距） -->
-			<div class="md:hidden grid gap-0.5 justify-items-center">
-				<!-- 第一排：站点标题 + FAQ + 分享 -->
-				<div class="w-[90vw] max-w-[600px] flex items-center justify-between">
+			<!-- 移动端：三排垂直布局（更紧凑的间距） -->
+			<div class="md:hidden grid gap-0 justify-items-center">
+				<!-- 第一排：站点标题 + FAQ + 分享（整体向上贴近容器顶部） -->
+				<div class="w-[90vw] max-w-[600px] flex items-center justify-between -mt-1">
 					<!-- FAQ 按钮 -->
 					<button
 						class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
@@ -163,8 +191,8 @@
 					</button>
 				</div>
 
-				<!-- 第二排：翻译转换器（单独一排，居中，稍微压缩高度，与标题距离略缩小） -->
-				<div class="flex justify-center items-center -mt-1">
+				<!-- 第二排：翻译转换器（单独一排，居中，进一步压缩与标题的距离） -->
+				<div class="flex justify-center items-center -mt-1.5">
 					<div class="relative min-w-[150px]" data-lang-wrapper>
 						<button
 							class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[36px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
@@ -192,9 +220,21 @@
 					class="w-[85vw] max-w-[600px] rounded-[30px] bg-transparent border border-transparent pointer-events-auto"
 					aria-label="Primary navigation and breadcrumbs"
 				>
-					<div class="w-full flex flex-col items-center justify-center px-3 py-1 gap-1">
+					<div
+						class="w-full flex flex-col items-center justify-center px-3 py-0.5 gap-1
+							phone-375:py-0.5 phone-390:py-0.5 phone-414:py-0.5 phone-430:py-1
+							tablet-768:py-1 tablet-820:py-1.5"
+					>
 						<!-- 第一行：主导航（Products / Support / Company） -->
-						<div class="w-full flex items-center justify-between text-[11px] gap-2">
+						<div
+							class="w-full flex items-center justify-between gap-2 text-[10px]
+								phone-375:text-[10px]
+								phone-390:text-[10px]
+								phone-414:text-[10px]
+								phone-430:text-[11px]
+								tablet-768:text-[11px]
+								tablet-820:text-[12px]"
+						>
 							<NuxtLink
 								:to="localePath('/spoke-calculator')"
 								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
