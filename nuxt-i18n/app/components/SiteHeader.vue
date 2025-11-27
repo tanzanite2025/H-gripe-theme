@@ -1,7 +1,7 @@
 <template>
 	<div class="fixed top-1.5 left-1/2 -translate-x-1/2 w-[95vw] max-w-[1200px] z-[110]">
 		<div
-			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-2"
+			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-1 md:py-2"
 		>
 			<!-- 桌面端：第一行 标题 + 主导航 + 右侧控件，第二行 面包屑 -->
 			<div class="hidden md:flex flex-col gap-1">
@@ -163,8 +163,8 @@
 					</button>
 				</div>
 
-				<!-- 第二排：翻译转换器（单独一排，居中，稍微压缩高度） -->
-				<div class="flex justify-center items-center">
+				<!-- 第二排：翻译转换器（单独一排，居中，稍微压缩高度，与标题距离略缩小） -->
+				<div class="flex justify-center items-center -mt-1">
 					<div class="relative min-w-[150px]" data-lang-wrapper>
 						<button
 							class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[36px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
@@ -350,8 +350,9 @@ const localePath = useLocalePath()
 const router = useRouter()
 
 const switchLocalePath = (targetLocale: string) => {
-  const currentFullPath = router.currentRoute.value?.fullPath || '/'
-  return localePath({ path: currentFullPath }, targetLocale)
+	const currentFullPath = router.currentRoute.value?.fullPath || '/'
+	// 宽松断言交给 vue-i18n 处理具体的 locale 类型，避免 TS 联合类型报错
+	return localePath({ path: currentFullPath }, targetLocale as any)
 }
 
 const isOpen = ref(false)
@@ -442,7 +443,7 @@ const switchLanguage = async (code: string) => {
     locale.value = code
     await nextTick()
     try { await setLocale(code) } catch {}
-    const targetPath = switchLocalePath(code as Parameters<typeof switchLocalePath>[0])
+    const targetPath = switchLocalePath(code as any)
     const current = router.currentRoute.value?.fullPath || ''
     if (targetPath && targetPath !== current) {
       try {

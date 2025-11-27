@@ -96,79 +96,12 @@
 </template>
 
 <script setup>
-const { locale } = useI18n()
-const config = useRuntimeConfig()
+import { useLocalePath } from '#imports'
 
-// Track open/closed items
-const openItems = ref([])
+const localePath = useLocalePath()
 
-// Fetch FAQ data
-const { data: faqData, pending, error } = await useFetch(
-  () => `${config.public.wordpressUrl}/wp-content/uploads/faq/${locale.value}.json`,
-  {
-    key: `faq-${locale.value}`,
-    // Cache for 1 hour
-    getCachedData: (key) => {
-      const data = nuxtApp.payload.data[key] || nuxtApp.static.data[key]
-      if (!data) return
-      
-      // Check if cached data is still fresh (1 hour)
-      const expirationDate = new Date(data.fetchedAt)
-      expirationDate.setHours(expirationDate.getHours() + 1)
-      
-      if (expirationDate.getTime() < Date.now()) return
-      return data
-    }
-  }
-)
-
-// Toggle FAQ item
-const toggleItem = (id) => {
-  const index = openItems.value.indexOf(id)
-  if (index > -1) {
-    openItems.value.splice(index, 1)
-  } else {
-    openItems.value.push(id)
-  }
-}
-
-// SEO Meta Tags
-useHead({
-  title: () => `FAQ - ${locale.value.toUpperCase()}`,
-  meta: [
-    {
-      name: 'description',
-      content: 'Find answers to frequently asked questions about our products and services.'
-    }
-  ]
-})
-
-// FAQ Schema.org structured data
-useHead({
-  script: [
-    {
-      type: 'application/ld+json',
-      children: () => {
-        if (!faqData.value || !faqData.value.categories) return '{}'
-        
-        const allItems = faqData.value.categories.flatMap(cat => cat.items)
-        
-        return JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'FAQPage',
-          'mainEntity': allItems.map(item => ({
-            '@type': 'Question',
-            'name': item.question,
-            'acceptedAnswer': {
-              '@type': 'Answer',
-              'text': item.answer.replace(/<[^>]*>/g, '') // Strip HTML tags
-            }
-          }))
-        })
-      }
-    }
-  ]
-})
+// Legacy /faq route: redirect to the unified support FAQs page.
+await navigateTo(localePath('/support/faqs'), { redirectCode: 301 })
 </script>
 
 <style scoped>

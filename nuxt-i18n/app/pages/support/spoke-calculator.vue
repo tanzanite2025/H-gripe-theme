@@ -8,12 +8,25 @@
 
     <div class="support-page__calculator-wrapper">
       <SpokeCalculatorCore />
+
+      <div class="mt-8">
+        <SpokeHistorySearch />
+      </div>
+    </div>
+
+    <div class="mt-10">
+      <UserFeedbackThread
+        threadKey="support-spoke-calculator"
+        title="Share your feedback about the Spoke Calculator"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import SpokeCalculatorCore from '~/components/SpokeCalculatorCore.vue'
+import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import SpokeHistorySearch from '~/components/SpokeHistorySearch.vue'
 
 definePageMeta({
   layout: 'support',
