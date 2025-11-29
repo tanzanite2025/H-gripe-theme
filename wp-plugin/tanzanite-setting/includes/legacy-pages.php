@@ -6865,11 +6865,17 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
                 return;
             }
 
-            // 只在 Tanzanite 主设置页、购物车列表页以及 Spoke Geometry 管理页加载统一样式
+            $screen_id = $screen->id;
+
+            // 只在 Tanzanite 主设置页、购物车列表页、Spoke Geometry 管理页
+            // Tanzanite Photos（tanz_photo 列表/编辑页），以及 Subscription Broadcasts
+            // 页面加载统一样式
             if (
-                false === strpos( $screen->id, 'tanzanite-settings' )
-                && false === strpos( $screen->id, 'tanzanite-cart' )
-                && false === strpos( $screen->id, 'tanzanite-spoke-geometry' )
+                false === strpos( $screen_id, 'tanzanite-settings' )
+                && false === strpos( $screen_id, 'tanzanite-cart' )
+                && false === strpos( $screen_id, 'tanzanite-spoke-geometry' )
+                && false === strpos( $screen_id, 'tanz_photo' )
+                && false === strpos( $screen_id, 'tanzanite-subscription-broadcasts' )
             ) {
                 return;
             }
@@ -6917,13 +6923,17 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
         public function filter_admin_body_class( string $classes ): string {
             $screen = get_current_screen();
 
-            // 为所有 Tanzanite 主设置页、购物车列表页，以及 Spoke Geometry 页统一应用 tz-settings-admin 样式
+            // 为所有 Tanzanite 主设置页、购物车列表页、Spoke Geometry 页
+            // Tanzanite Photos（tanz_photo 列表/编辑页），以及 Subscription Broadcasts
+            // 页面统一应用 tz-settings-admin 样式
             if (
                 $screen
                 && (
                     false !== strpos( $screen->id, 'tanzanite-settings' )
                     || false !== strpos( $screen->id, 'tanzanite-cart' )
                     || false !== strpos( $screen->id, 'tanzanite-spoke-geometry' )
+                    || false !== strpos( $screen->id, 'tanz_photo' )
+                    || false !== strpos( $screen->id, 'tanzanite-subscription-broadcasts' )
                 )
             ) {
                 $classes .= ' tz-settings-admin';
