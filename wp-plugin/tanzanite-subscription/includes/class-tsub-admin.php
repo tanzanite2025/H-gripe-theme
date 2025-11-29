@@ -115,7 +115,7 @@ class TSUB_Admin {
         $footer_note   = get_option( 'tanz_sub_footer_note', '' );
         ?>
         <div class="wrap">
-            <h1><?php esc_html_e( 'Tanzanite Subscription Settings', 'tanzanite-subscription' ); ?></h1>
+            <h1><?php esc_html_e( 'Tanzanite 订阅设置', 'tanzanite-subscription' ); ?></h1>
 
             <form method="post" action="options.php">
                 <?php settings_fields( 'tanz_sub_options' ); ?>
@@ -123,7 +123,7 @@ class TSUB_Admin {
                 <table class="form-table" role="presentation">
                     <tr>
                         <th scope="row">
-                            <label for="tanz_sub_from_email"><?php esc_html_e( 'From Email', 'tanzanite-subscription' ); ?></label>
+                            <label for="tanz_sub_from_email"><?php esc_html_e( '发件邮箱（From Email）', 'tanzanite-subscription' ); ?></label>
                         </th>
                         <td>
                             <input
@@ -134,14 +134,14 @@ class TSUB_Admin {
                                 value="<?php echo esc_attr( $from_email ); ?>"
                             />
                             <p class="description">
-                                <?php esc_html_e( 'Suggested: a domain-matching address such as no-reply@your-domain.com, with SPF/DKIM configured.', 'tanzanite-subscription' ); ?>
+                                <?php esc_html_e( '建议使用与你域名一致的邮箱地址，例如 no-reply@your-domain.com，并在 DNS 中配置好 SPF/DKIM。', 'tanzanite-subscription' ); ?>
                             </p>
                         </td>
                     </tr>
 
                     <tr>
                         <th scope="row">
-                            <label for="tanz_sub_from_name"><?php esc_html_e( 'From Name', 'tanzanite-subscription' ); ?></label>
+                            <label for="tanz_sub_from_name"><?php esc_html_e( '发件人名称（From Name）', 'tanzanite-subscription' ); ?></label>
                         </th>
                         <td>
                             <input
@@ -155,7 +155,7 @@ class TSUB_Admin {
                     </tr>
 
                     <tr>
-                        <th scope="row"><?php esc_html_e( 'Automatic notifications', 'tanzanite-subscription' ); ?></th>
+                        <th scope="row"><?php esc_html_e( '自动通知设置', 'tanzanite-subscription' ); ?></th>
                         <td>
                             <fieldset>
                                 <label for="tanz_sub_auto_notify_posts">
@@ -166,7 +166,7 @@ class TSUB_Admin {
                                         value="1"
                                         <?php checked( 1, $auto_posts ); ?>
                                     />
-                                    <?php esc_html_e( 'Send email automatically when a new blog post is published', 'tanzanite-subscription' ); ?>
+                                    <?php esc_html_e( '当有新的博客文章发布时自动发送订阅邮件', 'tanzanite-subscription' ); ?>
                                 </label>
                                 <br />
                                 <label for="tanz_sub_auto_notify_products">
@@ -177,10 +177,10 @@ class TSUB_Admin {
                                         value="1"
                                         <?php checked( 1, $auto_products ); ?>
                                     />
-                                    <?php esc_html_e( 'Send email automatically when a new product is published', 'tanzanite-subscription' ); ?>
+                                    <?php esc_html_e( '当有新的商品上架时自动发送订阅邮件', 'tanzanite-subscription' ); ?>
                                 </label>
                                 <p class="description">
-                                    <?php esc_html_e( 'You can disable these and use manual broadcasts only to avoid over-notifying subscribers.', 'tanzanite-subscription' ); ?>
+                                    <?php esc_html_e( '你可以关闭以上自动通知，仅通过「订阅群发」页面手动发送，避免过于频繁打扰订阅者。', 'tanzanite-subscription' ); ?>
                                 </p>
                             </fieldset>
                         </td>
@@ -188,7 +188,7 @@ class TSUB_Admin {
 
                     <tr>
                         <th scope="row">
-                            <label for="tanz_sub_footer_note"><?php esc_html_e( 'Email footer note', 'tanzanite-subscription' ); ?></label>
+                            <label for="tanz_sub_footer_note"><?php esc_html_e( '邮件尾部备注', 'tanzanite-subscription' ); ?></label>
                         </th>
                         <td>
                             <textarea
@@ -198,7 +198,7 @@ class TSUB_Admin {
                                 class="large-text"
                             ><?php echo esc_textarea( $footer_note ); ?></textarea>
                             <p class="description">
-                                <?php esc_html_e( 'Optional text appended to the bottom of all subscription emails, e.g. brand signature or contact info.', 'tanzanite-subscription' ); ?>
+                                <?php esc_html_e( '可选，在所有订阅相关邮件底部自动追加的一段文字，例如品牌签名或联系方式。', 'tanzanite-subscription' ); ?>
                             </p>
                         </td>
                     </tr>

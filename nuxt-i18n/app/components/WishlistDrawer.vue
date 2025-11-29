@@ -159,7 +159,7 @@ const handleShare = (item: any) => {
   const payload = {
     id: product.id ?? item.product_id,
     title: product.title,
-    url: product.preview_url || `/product/${product.slug || product.id}`,
+    url: product.preview_url || `/shop/${product.slug || product.id}`,
     thumbnail: product.thumbnail,
     price,
   }

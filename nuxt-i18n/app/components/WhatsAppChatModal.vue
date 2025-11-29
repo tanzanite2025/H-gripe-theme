@@ -1546,7 +1546,7 @@ const searchProducts = async () => {
       searchResults.value = response.items.map((item: any) => ({
         id: item.id,
         title: item.title,
-        url: item.preview_url || `/product/${item.slug || item.id}`,
+        url: item.preview_url || `/shop/${item.slug || item.id}`,
         thumbnail: item.thumbnail,
         price: item.prices?.sale > 0 
           ? `$${item.prices.sale}` 
