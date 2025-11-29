@@ -86,8 +86,13 @@ class TSUB_Broadcasts {
             )
         );
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e( 'Subscription Broadcasts', 'tanzanite-subscription' ); ?></h1>
+        <div class="tz-settings-wrapper">
+            <div class="tz-settings-header">
+                <h1><?php esc_html_e( 'Subscription Broadcasts', 'tanzanite-subscription' ); ?></h1>
+                <p>
+                    <?php esc_html_e( 'Use this tool to send a one-off email to all confirmed subscribers for a specific blog post or product. This is useful for major announcements or product launches.', 'tanzanite-subscription' ); ?>
+                </p>
+            </div>
 
             <?php if ( $sent ) : ?>
                 <div class="notice notice-success is-dismissible">
@@ -99,81 +104,79 @@ class TSUB_Broadcasts {
                 </div>
             <?php endif; ?>
 
-            <p>
-                <?php esc_html_e( 'Use this tool to send a one-off email to all confirmed subscribers for a specific blog post or product. This is useful for major announcements or product launches.', 'tanzanite-subscription' ); ?>
-            </p>
+            <div class="tz-settings-section">
+                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                    <?php wp_nonce_field( 'tsub_send_broadcast', 'tsub_broadcast_nonce' ); ?>
+                    <input type="hidden" name="action" value="tsub_send_broadcast" />
 
-            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-                <?php wp_nonce_field( 'tsub_send_broadcast', 'tsub_broadcast_nonce' ); ?>
-                <input type="hidden" name="action" value="tsub_send_broadcast" />
+                    <table class="form-table" role="presentation">
+                        <tr>
+                            <th scope="row">
+                                <label for="tsub_object_id"><?php esc_html_e( 'Target content', 'tanzanite-subscription' ); ?></label>
+                            </th>
+                            <td>
+                                <select name="object_id" id="tsub_object_id" class="regular-text">
+                                    <option value=""><?php esc_html_e( 'Select a post or product…', 'tanzanite-subscription' ); ?></option>
+                                    <?php if ( ! empty( $recent_posts ) ) : ?>
+                                        <optgroup label="<?php esc_attr_e( 'Recent blog posts', 'tanzanite-subscription' ); ?>">
+                                            <?php foreach ( $recent_posts as $post ) : ?>
+                                                <option value="<?php echo esc_attr( $post->ID ); ?>">
+                                                    <?php echo esc_html( sprintf( '[Post] %s (ID: %d)', get_the_title( $post ), $post->ID ) ); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; ?>
 
-                <table class="form-table" role="presentation">
-                    <tr>
-                        <th scope="row">
-                            <label for="tsub_object_id"><?php esc_html_e( 'Target content', 'tanzanite-subscription' ); ?></label>
-                        </th>
-                        <td>
-                            <select name="object_id" id="tsub_object_id" class="regular-text">
-                                <option value=""><?php esc_html_e( 'Select a post or product…', 'tanzanite-subscription' ); ?></option>
-                                <?php if ( ! empty( $recent_posts ) ) : ?>
-                                    <optgroup label="<?php esc_attr_e( 'Recent blog posts', 'tanzanite-subscription' ); ?>">
-                                        <?php foreach ( $recent_posts as $post ) : ?>
-                                            <option value="<?php echo esc_attr( $post->ID ); ?>">
-                                                <?php echo esc_html( sprintf( '[Post] %s (ID: %d)', get_the_title( $post ), $post->ID ) ); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
-                                <?php endif; ?>
+                                    <?php if ( ! empty( $recent_products ) ) : ?>
+                                        <optgroup label="<?php esc_attr_e( 'Recent products', 'tanzanite-subscription' ); ?>">
+                                            <?php foreach ( $recent_products as $product ) : ?>
+                                                <option value="<?php echo esc_attr( $product->ID ); ?>">
+                                                    <?php echo esc_html( sprintf( '[Product] %s (ID: %d)', get_the_title( $product ), $product->ID ) ); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; ?>
+                                </select>
+                                <p class="description">
+                                    <?php esc_html_e( 'If the item you need is not listed, you can still enter its ID manually below.', 'tanzanite-subscription' ); ?>
+                                </p>
+                                <p>
+                                    <label for="tsub_object_id_manual">
+                                        <?php esc_html_e( 'Or enter a specific post / product ID:', 'tanzanite-subscription' ); ?>
+                                    </label>
+                                    <input type="number" name="object_id_manual" id="tsub_object_id_manual" class="small-text" />
+                                </p>
+                            </td>
+                        </tr>
 
-                                <?php if ( ! empty( $recent_products ) ) : ?>
-                                    <optgroup label="<?php esc_attr_e( 'Recent products', 'tanzanite-subscription' ); ?>">
-                                        <?php foreach ( $recent_products as $product ) : ?>
-                                            <option value="<?php echo esc_attr( $product->ID ); ?>">
-                                                <?php echo esc_html( sprintf( '[Product] %s (ID: %d)', get_the_title( $product ), $product->ID ) ); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
-                                <?php endif; ?>
-                            </select>
-                            <p class="description">
-                                <?php esc_html_e( 'If the item you need is not listed, you can still enter its ID manually below.', 'tanzanite-subscription' ); ?>
-                            </p>
-                            <p>
-                                <label for="tsub_object_id_manual">
-                                    <?php esc_html_e( 'Or enter a specific post / product ID:', 'tanzanite-subscription' ); ?>
-                                </label>
-                                <input type="number" name="object_id_manual" id="tsub_object_id_manual" class="small-text" />
-                            </p>
-                        </td>
-                    </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="tsub_subject"><?php esc_html_e( 'Email subject (optional)', 'tanzanite-subscription' ); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="subject" id="tsub_subject" class="regular-text" />
+                                <p class="description">
+                                    <?php esc_html_e( 'Leave blank to use a default subject based on the selected post or product title.', 'tanzanite-subscription' ); ?>
+                                </p>
+                            </td>
+                        </tr>
 
-                    <tr>
-                        <th scope="row">
-                            <label for="tsub_subject"><?php esc_html_e( 'Email subject (optional)', 'tanzanite-subscription' ); ?></label>
-                        </th>
-                        <td>
-                            <input type="text" name="subject" id="tsub_subject" class="regular-text" />
-                            <p class="description">
-                                <?php esc_html_e( 'Leave blank to use a default subject based on the selected post or product title.', 'tanzanite-subscription' ); ?>
-                            </p>
-                        </td>
-                    </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="tsub_message"><?php esc_html_e( 'Intro message (optional)', 'tanzanite-subscription' ); ?></label>
+                            </th>
+                            <td>
+                                <textarea name="message" id="tsub_message" rows="6" class="large-text"></textarea>
+                                <p class="description">
+                                    <?php esc_html_e( 'This text will appear at the top of the email. If left empty, the system will use the post excerpt or a short summary.', 'tanzanite-subscription' ); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
 
-                    <tr>
-                        <th scope="row">
-                            <label for="tsub_message"><?php esc_html_e( 'Intro message (optional)', 'tanzanite-subscription' ); ?></label>
-                        </th>
-                        <td>
-                            <textarea name="message" id="tsub_message" rows="6" class="large-text"></textarea>
-                            <p class="description">
-                                <?php esc_html_e( 'This text will appear at the top of the email. If left empty, the system will use the post excerpt or a short summary.', 'tanzanite-subscription' ); ?>
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-
-                <?php submit_button( __( 'Send Broadcast', 'tanzanite-subscription' ) ); ?>
-            </form>
+                    <?php submit_button( __( 'Send Broadcast', 'tanzanite-subscription' ) ); ?>
+                </form>
+            </div>
         </div>
         <?php
     }
