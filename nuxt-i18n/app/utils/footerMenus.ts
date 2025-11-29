@@ -30,7 +30,13 @@ export const footerMenus: FooterSection[] = [
     id: 'products',
     titleKey: 'footer.menus.products',
     links: [
-      { labelKey: 'footer.links.spokeCalculator', to: '/support/spoke-calculator' },
+      // Products column: product- and guide-related links
+      { labelKey: 'footer.links.shop', to: '/products' },
+      { labelKey: 'footer.links.aboutTools', to: '/guides/tools' },
+      { labelKey: 'footer.links.tireSizeCharts', to: '/guides/sizecharts' },
+      { labelKey: 'footer.links.wheelsbuildBlog', to: '/wheelsbuild' },
+      { labelKey: 'footer.links.technicalDocs', to: '/guides/technical' },
+      { labelKey: 'footer.links.wheelsetBuyersGuide', to: '/guides/wheelset-buyers' },
     ],
   },
   {
@@ -45,8 +51,9 @@ export const footerMenus: FooterSection[] = [
     id: 'company',
     titleKey: 'footer.menus.company',
     links: [
-      { labelKey: 'footer.links.about', to: '/about' },
-      { labelKey: 'footer.links.contact', to: '/contact' },
+      { labelKey: 'footer.links.ourStory', to: '/company/ourstory' },
+      { labelKey: 'footer.links.membershipPoints', to: '/company/membershipandpoints' },
+      { labelKey: 'footer.links.pictureWarehouse', to: '/company/picture-warehouse' },
     ],
   },
   {

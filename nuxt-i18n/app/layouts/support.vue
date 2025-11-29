@@ -132,7 +132,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 /* 414 宽（414x896 等） */
 @media (min-width: 414px) and (max-width: 429px) {
   .support-hero {
-    margin-top: 6rem;
+    margin-top: 6.5rem;
   }
 }
 
