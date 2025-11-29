@@ -125,7 +125,22 @@
     "noResults": "No products found",
     "tryAdjustFilters": "Try adjusting filters",
     "loadMore": "Load More",
-    "items": "items"
+    "items": "items",
+    "nav": {
+      "shop": "Shop",
+      "aboutTools": "About Tools",
+      "tireSizeCharts": "Tire Size Charts",
+      "wheelsbuildBlog": "Wheelsbuild blog",
+      "technicalDocs": "Technical documentation",
+      "wheelsetBuyersGuide": "Wheelset Buyers Guide"
+    }
+  },
+  "company": {
+    "nav": {
+      "ourStory": "Our Story",
+      "membershipPoints": "Membership and Points",
+      "pictureWarehouse": "Picture warehouse"
+    }
   },
   "support": {
     "nav": {
@@ -136,6 +151,44 @@
       "userManuals": "User Manuals",
       "productFeedback": "Product Feedback",
       "spokeCalculator": "Spoke Calculator"
+    }
+  },
+  "footer": {
+    "menus": {
+      "products": "PRODUCTS",
+      "support": "SUPPORT",
+      "company": "COMPANY",
+      "resources": "RESOURCES"
+    },
+    "links": {
+      "shop": "Shop",
+      "aboutTools": "About Tools",
+      "tireSizeCharts": "Tire Size Charts",
+      "wheelsbuildBlog": "Wheelsbuild blog",
+      "technicalDocs": "Technical documentation",
+      "wheelsetBuyersGuide": "Wheelset Buyers Guide",
+      "about": "About",
+      "contact": "Contact",
+      "ourStory": "Our Story",
+      "membershipPoints": "Membership and Points",
+      "pictureWarehouse": "Picture warehouse"
+    },
+    "brand": {
+      "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
+      "line2": "Flat 1602, 16/F, Lucky Centre,",
+      "line3": "No.165-171 Wan Chai Road, Wan Chai",
+      "line4": "Hong Kong.",
+      "hkLabel": "Hongkong:",
+      "xmLabel": "Xiamen:"
+    },
+    "support": {
+      "allFaqs": "All FAQ'S",
+      "payment": "Payment",
+      "afterSales": "After sales",
+      "warranty": "Warranty",
+      "userManuals": "User Manuals",
+      "productFeedback": "Product Feedback",
+      "spokecalculator": "Spokecalculator"
     }
   },
   "privacy": {
