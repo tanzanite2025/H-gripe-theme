@@ -16,7 +16,7 @@ export const productsNavItems: ProductsNavItem[] = [
   {
     id: 'shop',
     labelKey: 'products.nav.shop',
-    to: '/products',
+    to: '/shop',
   },
   {
     id: 'about-tools',

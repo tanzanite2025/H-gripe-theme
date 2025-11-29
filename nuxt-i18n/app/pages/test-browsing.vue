@@ -127,76 +127,76 @@ import { useBrowsingHistory } from '~/composables/useBrowsingHistory'
 const { historyCount, hasHistory, addToHistory } = useBrowsingHistory()
 
 // 测试商品数据
-const testProducts = [
+  const testProducts = [
   {
     id: 1,
     title: 'iPhone 15 Pro Max 256GB 深空黑色',
     thumbnail: 'https://images.unsplash.com/photo-1592286927505-2fd0f3a3b8d4?w=400',
     price: '$1,199.00',
-    url: '/product/1'
+    url: '/shop/1'
   },
   {
     id: 2,
     title: 'MacBook Pro 14" M3 芯片 16GB 512GB',
     thumbnail: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400',
     price: '$1,999.00',
-    url: '/product/2'
+    url: '/shop/2'
   },
   {
     id: 3,
     title: 'AirPods Pro 第二代 主动降噪无线耳机',
     thumbnail: 'https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=400',
     price: '$249.00',
-    url: '/product/3'
+    url: '/shop/3'
   },
   {
     id: 4,
     title: 'Apple Watch Series 9 GPS 45mm',
     thumbnail: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400',
     price: '$429.00',
-    url: '/product/4'
+    url: '/shop/4'
   },
   {
     id: 5,
     title: 'iPad Air 第五代 10.9英寸 256GB',
     thumbnail: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400',
     price: '$749.00',
-    url: '/product/5'
+    url: '/shop/5'
   },
   {
     id: 6,
     title: 'Magic Keyboard 妙控键盘 触控板版',
     thumbnail: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400',
     price: '$149.00',
-    url: '/product/6'
+    url: '/shop/6'
   },
   {
     id: 7,
     title: 'HomePod mini 智能音箱 白色',
     thumbnail: 'https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400',
     price: '$99.00',
-    url: '/product/7'
+    url: '/shop/7'
   },
   {
     id: 8,
     title: 'AirTag 4件装 防丢追踪器',
     thumbnail: 'https://images.unsplash.com/photo-1621768216002-5ac171876625?w=400',
     price: '$99.00',
-    url: '/product/8'
+    url: '/shop/8'
   },
   {
     id: 9,
     title: 'MagSafe 充电器 15W 无线快充',
     thumbnail: 'https://images.unsplash.com/photo-1591290619762-c588f0e8e23f?w=400',
     price: '$39.00',
-    url: '/product/9'
+    url: '/shop/9'
   },
   {
     id: 10,
     title: 'Apple Pencil 第二代 触控笔',
     thumbnail: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400',
     price: '$129.00',
-    url: '/product/10'
+    url: '/shop/10'
   }
 ]
 

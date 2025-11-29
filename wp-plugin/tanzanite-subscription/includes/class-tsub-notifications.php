@@ -122,6 +122,57 @@ class TSUB_Notifications {
             "SELECT email, unsubscribe_token FROM {$table_name} WHERE confirmed = 1 AND unsubscribed = 0"
         );
 
+        $this->send_to_subscriber_rows( $rows, $subject, $excerpt, $main_link );
+    }
+
+    /**
+     * Broadcast a message to a specific list of subscribers identified by email.
+     *
+     * Used by the manual broadcast page when the operator has selected a subset
+     * of subscribers instead of sending to everyone.
+     *
+     * @param string $subject Email subject.
+     * @param string $excerpt Short text body/summary.
+     * @param string $main_link Main URL for the content.
+     * @param array  $emails   List of email addresses to target.
+     */
+    public function broadcast_to_specific_subscribers( $subject, $excerpt, $main_link, array $emails ) {
+        $emails = array_filter(
+            array_map( 'sanitize_email', $emails ),
+            static function ( $email ) {
+                return (bool) $email && is_email( $email );
+            }
+        );
+
+        if ( empty( $emails ) ) {
+            return;
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'tanz_subscribers';
+
+        $placeholders = implode( ',', array_fill( 0, count( $emails ), '%s' ) );
+
+        $query = $wpdb->prepare(
+            "SELECT email, unsubscribe_token FROM {$table_name} WHERE confirmed = 1 AND unsubscribed = 0 AND email IN ({$placeholders})",
+            $emails
+        );
+
+        $rows = $wpdb->get_results( $query );
+
+        $this->send_to_subscriber_rows( $rows, $subject, $excerpt, $main_link );
+    }
+
+    /**
+     * Internal helper to actually send emails for a set of subscriber rows.
+     *
+     * @param array  $rows      Rows containing email and unsubscribe_token.
+     * @param string $subject   Email subject.
+     * @param string $excerpt   Short text body/summary.
+     * @param string $main_link Main URL for the content.
+     */
+    protected function send_to_subscriber_rows( $rows, $subject, $excerpt, $main_link ) {
         if ( empty( $rows ) ) {
             return;
         }

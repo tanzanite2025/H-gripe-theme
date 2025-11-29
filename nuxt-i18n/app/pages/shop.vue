@@ -83,6 +83,10 @@
 import { ref, onMounted } from 'vue'
 import { useWishlist } from '~/composables/useWishlist'
 
+definePageMeta({
+  layout: 'products',
+})
+
 interface ShopProduct {
   id: number
   title: string
@@ -116,7 +120,7 @@ const loadProducts = async () => {
       products.value = response.items.map((item: any) => ({
         id: item.id,
         title: item.title,
-        url: item.preview_url || `/product/${item.slug || item.id}`,
+        url: `/shop/${item.slug || item.id}`,
         thumbnail: item.thumbnail,
         price:
           item.prices?.sale > 0

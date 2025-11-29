@@ -37,8 +37,13 @@ const items = computed<ProductsNavItem[]>(() => {
   const path = route.path || ''
 
   // 当处于 /company 下的页面时，使用 Company 导航（Our Story / Membership and Points / Picture warehouse）
-  if (path.startsWith('/company/')) {
+  if (path === '/company' || path.startsWith('/company/')) {
     return companyNavItems
+  }
+
+  // 仅在 /guides 总览页精简为 Guides 子分类入口；/guides/* 仍使用完整 Products 导航
+  if (path === '/guides') {
+    return productsNavItems.filter(item => item.to.startsWith('/guides/'))
   }
 
   // 默认使用 Products 导航（Shop / Guides / blog 等）

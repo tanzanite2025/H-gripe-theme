@@ -28,13 +28,13 @@
 							{{ $t('footer.menus.products', 'Products') }}
 						</NuxtLink>
 						<NuxtLink
-							:to="localePath('/support/faqs')"
+							:to="localePath('/support')"
 							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.support', 'Support') }}
 						</NuxtLink>
 						<NuxtLink
-							:to="localePath('/company/ourstory')"
+							:to="localePath('/company')"
 							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.company', 'Company') }}
@@ -260,13 +260,13 @@
 								{{ $t('footer.menus.products', 'Products') }}
 							</NuxtLink>
 							<NuxtLink
-								:to="localePath('/support/faqs')"
+								:to="localePath('/support')"
 								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 							>
 								{{ $t('footer.menus.support', 'Support') }}
 							</NuxtLink>
 							<NuxtLink
-								:to="localePath('/company/ourstory')"
+								:to="localePath('/company')"
 								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 							>
 								{{ $t('footer.menus.company', 'Company') }}
@@ -471,6 +471,39 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
+  // Products hub: Home / Products
+  const productsHub = localePath('/products')
+  if (currentPath === productsHub) {
+    items.push({ label: t('footer.menus.products') as string })
+    return items
+  }
+
+  // Guides is its own top-level section (All Guides hub)
+  const guidesHub = localePath('/guides')
+  if (currentPath === guidesHub) {
+    items.push({ label: 'Guides' })
+    return items
+  }
+
+  const supportHub = localePath('/support')
+  if (currentPath === supportHub) {
+    items.push({ label: t('footer.menus.support') as string })
+    return items
+  }
+
+  const companyHub = localePath('/company')
+  if (currentPath === companyHub) {
+    items.push({ label: t('footer.menus.company') as string })
+    return items
+  }
+
+  // /shop 作为独立页面：直接显示 Home / Shop
+  const shopPath = localePath('/shop')
+  if (currentPath === shopPath) {
+    items.push({ label: t('products.nav.shop') as string })
+    return items
+  }
+
   const productMatch = matchNavItemForPath(productsNavItems)
   if (productMatch) {
     items.push({
@@ -488,7 +521,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   if (supportMatch) {
     items.push({
       label: t('footer.menus.support') as string,
-      to: localePath('/support/faqs'),
+      to: localePath('/support'),
     })
     const last = items[items.length - 1]
     if (!last || supportMatch.to !== last.to) {
@@ -501,7 +534,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   if (companyMatch) {
     items.push({
       label: t('footer.menus.company') as string,
-      to: localePath('/company/ourstory'),
+      to: localePath('/company'),
     })
     const last = items[items.length - 1]
     if (!last || companyMatch.to !== last.to) {
