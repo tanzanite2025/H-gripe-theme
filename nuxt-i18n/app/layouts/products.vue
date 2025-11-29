@@ -65,7 +65,7 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
 }
 
 .products-content {
-  padding: 2rem 1.5rem 3rem;
+  padding: 1rem 1.5rem 3rem;
 }
 
 .products-content__inner {
