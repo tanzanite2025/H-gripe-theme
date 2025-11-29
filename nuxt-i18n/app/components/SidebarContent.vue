@@ -50,7 +50,7 @@
           :options="{
             showPriceRange: true,
             showStockFilter: true,
-            showSortBy: true,
+            showSortBy: false,
             showRating: false,
             showResetButton: true,
             priceMin: 0,

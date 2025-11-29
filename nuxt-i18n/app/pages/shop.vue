@@ -1,11 +1,6 @@
 <template>
-  <main class="max-w-5xl mx-auto px-6 py-16 space-y-6">
-    <header class="space-y-2 text-center">
-      <h1 class="text-4xl font-semibold">Tanzanite Shop</h1>
-      <p class="text-base text-white/70">
-        Coming soon: curated product collections powered by the Tanzanite plugin.
-      </p>
-    </header>
+  <main class="max-w-5xl mx-auto px-6 pt-0 pb-16 space-y-6">
+    <ProductSearchPanel />
 
     <section class="rounded-xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
       <div v-if="loading" class="flex items-center justify-center py-12">
@@ -81,6 +76,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import ProductSearchPanel from '~/components/ProductSearchPanel.vue'
 import { useWishlist } from '~/composables/useWishlist'
 
 definePageMeta({
