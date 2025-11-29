@@ -67,7 +67,7 @@ const isActive = (item: ProductsNavItem) => {
 .products-top-nav__scroll {
   max-width: 960px;
   margin: 0 auto;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -77,11 +77,12 @@ const isActive = (item: ProductsNavItem) => {
 
 .products-top-nav__link {
   flex-shrink: 0;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  font-weight: 500;
   color: #ffffff !important;
   text-decoration: none;
-  padding-bottom: 0.25rem;
-  border-bottom: 2px solid transparent;
+  padding-bottom: 0.3rem;
+  border-bottom: 3px solid transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -92,6 +93,7 @@ const isActive = (item: ProductsNavItem) => {
 
 .products-top-nav__link--active {
   color: #ffffff;
+  font-weight: 600;
   border-color: #38bdf8;
 }
 

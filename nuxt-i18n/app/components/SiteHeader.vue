@@ -125,7 +125,7 @@
 					</div>
 				</div>
 
-				<!-- 桌面端：第二行 面包屑（占位，将来可替换为真实组件） -->
+				<!-- 桌面端：第二行 面包屑 -->
 				<div class="w-full flex items-center">
 					<div class="hidden md:flex lg:hidden w-[44px] justify-start mr-2">
 						<NuxtLink
@@ -137,7 +137,31 @@
 						</NuxtLink>
 					</div>
 					<div class="flex-1 flex justify-center">
-						<span class="text-white font-semibold text-[13px]">Breadcrumbs</span>
+						<nav
+							v-if="breadcrumbs.length"
+							aria-label="Breadcrumb"
+							class="text-[12px] leading-tight text-slate-300"
+						>
+							<ol class="flex items-center gap-1.5">
+								<li
+									v-for="(crumb, index) in breadcrumbs"
+									:key="index"
+									class="flex items-center gap-1"
+								>
+									<NuxtLink
+										v-if="crumb.to && index < breadcrumbs.length - 1"
+										:to="crumb.to"
+										class="hover:text-white"
+									>
+										{{ crumb.label }}
+									</NuxtLink>
+									<span v-else class="text-white font-semibold">
+										{{ crumb.label }}
+									</span>
+									<span v-if="index < breadcrumbs.length - 1">/</span>
+								</li>
+							</ol>
+						</nav>
 					</div>
 					<div class="hidden md:flex lg:hidden w-[44px] justify-end ml-2">
 						<button
@@ -249,10 +273,32 @@
 							</NuxtLink>
 						</div>
 
-						<!-- 第二行：面包屑占位，将来可替换为真实 Breadcrumb 组件 -->
-						<div class="flex items-center justify-center">
-							<span class="text-white font-semibold text-[11px]">Breadcrumbs</span>
-						</div>
+						<!-- 第二行：面包屑 -->
+						<nav
+							v-if="breadcrumbs.length"
+							aria-label="Breadcrumb"
+							class="text-[11px] text-slate-300"
+						>
+							<ol class="flex items-center gap-1.5">
+								<li
+									v-for="(crumb, index) in breadcrumbs"
+									:key="index"
+									class="flex items-center gap-1"
+								>
+									<NuxtLink
+										v-if="crumb.to && index < breadcrumbs.length - 1"
+										:to="crumb.to"
+										class="hover:text-white"
+									>
+										{{ crumb.label }}
+									</NuxtLink>
+									<span v-else class="text-white font-semibold">
+										{{ crumb.label }}
+									</span>
+									<span v-if="index < breadcrumbs.length - 1">/</span>
+								</li>
+							</ol>
+						</nav>
 					</div>
 				</nav>
 			</div>
@@ -320,12 +366,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type ComponentPublicInstance } from 'vue'
-import { useLocalePath } from '#imports'
+import { useLocalePath, useRoute } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import FaqModal from '~/components/FaqModal.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
+import { productsNavItems } from '~/utils/productsNav'
+import { supportNavItems } from '~/utils/supportNav'
+import { companyNavItems } from '~/utils/companyNav'
 
 // Site Title
 const props = defineProps<{ title?: string }>()
@@ -379,9 +428,90 @@ const toggleShare = () => {
 }
 
 // Language Switcher
-const { locale, locales, setLocale } = useI18n()
+const { locale, locales, setLocale, t } = useI18n()
 const localePath = useLocalePath()
 const router = useRouter()
+const route = useRoute()
+
+interface BreadcrumbItem {
+  label: string
+  to?: string
+}
+
+const matchNavItemForPath = (
+  items: { to: string; labelKey: string }[],
+): { label: string; to: string } | null => {
+  const currentPath = route.path || ''
+
+  for (const item of items) {
+    const targetPath = localePath(item.to)
+    if (
+      currentPath === targetPath ||
+      (currentPath.startsWith(targetPath) && currentPath[targetPath.length] === '/')
+    ) {
+      return {
+        label: t(item.labelKey) as string,
+        to: targetPath,
+      }
+    }
+  }
+
+  return null
+}
+
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const items: BreadcrumbItem[] = []
+  const homeTo = localePath('/')
+
+  items.push({ label: 'Home', to: homeTo })
+
+  const currentPath = route.path || ''
+
+  if (currentPath === homeTo) {
+    return items
+  }
+
+  const productMatch = matchNavItemForPath(productsNavItems)
+  if (productMatch) {
+    items.push({
+      label: t('footer.menus.products') as string,
+      to: localePath('/products'),
+    })
+    const last = items[items.length - 1]
+    if (!last || productMatch.to !== last.to) {
+      items.push({ label: productMatch.label })
+    }
+    return items
+  }
+
+  const supportMatch = matchNavItemForPath(supportNavItems)
+  if (supportMatch) {
+    items.push({
+      label: t('footer.menus.support') as string,
+      to: localePath('/support/faqs'),
+    })
+    const last = items[items.length - 1]
+    if (!last || supportMatch.to !== last.to) {
+      items.push({ label: supportMatch.label })
+    }
+    return items
+  }
+
+  const companyMatch = matchNavItemForPath(companyNavItems)
+  if (companyMatch) {
+    items.push({
+      label: t('footer.menus.company') as string,
+      to: localePath('/company/ourstory'),
+    })
+    const last = items[items.length - 1]
+    if (!last || companyMatch.to !== last.to) {
+      items.push({ label: companyMatch.label })
+    }
+    return items
+  }
+
+  return items
+})
 
 const switchLocalePath = (targetLocale: string) => {
 	const currentFullPath = router.currentRoute.value?.fullPath || '/'
