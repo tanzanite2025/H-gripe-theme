@@ -1,6 +1,12 @@
 <template>
   <footer class="app-footer">
     <div class="footer-content">
+      <div class="footer-subscription">
+        <SubscriptionOptIn
+          label="Subscribe for new products & blog updates"
+        />
+      </div>
+
       <div class="footer-widgets">
         <slot name="widgets" />
       </div>
@@ -55,6 +61,7 @@ import { computed } from 'vue'
 import { useRuntimeConfig } from '#imports'
 import SocialIcons from '~/components/SocialIcons.vue'
 import FooterMenus from '~/components/FooterMenus.vue'
+import SubscriptionOptIn from '~/components/SubscriptionOptIn.vue'
 
 const config = useRuntimeConfig()
 
@@ -111,6 +118,16 @@ const footerSocialItems: FooterSocialItem[] = [
   align-items: center;
   gap: 1rem;
   text-align: center;
+}
+
+.footer-subscription {
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 2rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.75rem;
+  background: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.6);
 }
 
 .footer-widgets {
