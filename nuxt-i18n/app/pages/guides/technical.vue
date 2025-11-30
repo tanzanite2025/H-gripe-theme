@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="products-page__title">Technical documentation</h2>
+    <h2 class="products-page__title">Technical</h2>
     <p class="products-page__intro">
       Technical notes, formulas, and reference docs for advanced wheelbuilding.
     </p>
@@ -13,7 +13,7 @@ definePageMeta({
 })
 
 useHead({
-  title: 'Technical documentation',
+  title: 'Technical',
 })
 </script>
 

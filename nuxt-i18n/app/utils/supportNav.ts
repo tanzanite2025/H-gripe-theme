@@ -25,6 +25,11 @@ export const supportNavItems: SupportNavItem[] = [
     to: '/support/payment',
   },
   {
+    id: 'shipping',
+    labelKey: 'support.nav.shipping',
+    to: '/support/shipping',
+  },
+  {
     id: 'after-sales',
     labelKey: 'support.nav.afterSales',
     to: '/support/after-sales',
@@ -35,18 +40,13 @@ export const supportNavItems: SupportNavItem[] = [
     to: '/support/warranty',
   },
   {
-    id: 'user-manuals',
-    labelKey: 'support.nav.userManuals',
-    to: '/support/user-manuals',
-  },
-  {
     id: 'product-feedback',
     labelKey: 'support.nav.productFeedback',
     to: '/support/product-feedback',
   },
   {
-    id: 'spoke-calculator',
-    labelKey: 'support.nav.spokeCalculator',
-    to: '/support/spoke-calculator',
+    id: 'test-report',
+    labelKey: 'support.nav.testReport',
+    to: '/support/test-report',
   },
 ]

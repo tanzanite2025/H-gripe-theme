@@ -46,13 +46,6 @@ const sections = [
     cta: 'Open shop',
   },
   {
-    to: '/guides/tools',
-    icon: 'T',
-    title: 'About Tools',
-    description: 'Overview of tools and utilities that support your wheelbuilding workflow.',
-    cta: 'Open tools guide',
-  },
-  {
     to: '/guides/sizecharts',
     icon: 'C',
     title: 'Tire Size Charts',
@@ -62,7 +55,7 @@ const sections = [
   {
     to: '/guides/technical',
     icon: 'D',
-    title: 'Technical documentation',
+    title: 'Technical',
     description: 'Technical notes, formulas, and reference docs for wheelbuilding.',
     cta: 'Open technical docs',
   },
@@ -74,11 +67,11 @@ const sections = [
     cta: 'Read buyers guide',
   },
   {
-    to: '/wheelsbuild',
-    icon: 'B',
-    title: 'Wheelsbuild blog',
-    description: 'Blog content about wheelbuilding, setups, and case studies.',
-    cta: 'Read blog',
+    to: '/spoke-calculator',
+    icon: 'S',
+    title: 'Spoke Calculator',
+    description: 'Use the spoke calculator to estimate spoke lengths for your wheel builds.',
+    cta: 'Open spoke calculator',
   },
 ]
 

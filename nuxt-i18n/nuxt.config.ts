@@ -14,11 +14,14 @@ export default defineNuxtConfig({
       }
     },
 
-    // Legacy path for the spoke calculator page. Keep this so that
-    // previously shared links to /spoke-calculator continue to work
-    // and are redirected to the new canonical /spokecalculator URL.
-    '/spoke-calculator': {
-      redirect: '/spokecalculator'
+    // Legacy paths for the spoke calculator page. Keep these so that
+    // previously shared links continue to work and are redirected to
+    // the canonical /spoke-calculator URL under the products layout.
+    '/spokecalculator': {
+      redirect: '/spoke-calculator'
+    },
+    '/support/spoke-calculator': {
+      redirect: '/spoke-calculator'
     }
   },
   

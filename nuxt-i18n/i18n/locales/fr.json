@@ -171,7 +171,15 @@
     "noResults": "Aucun produit trouvé",
     "tryAdjustFilters": "Essayez d'ajuster les filtres",
     "loadMore": "Charger plus",
-    "items": "articles"
+    "items": "articles",
+    "nav": {
+      "technicalDocs": "Technique"
+    }
+  },
+  "footer": {
+    "links": {
+      "technicalDocs": "Technique"
+    }
   },
   "privacy": {
     "button": "Déclaration de confidentialité",

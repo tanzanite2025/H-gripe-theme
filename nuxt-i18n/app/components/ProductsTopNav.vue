@@ -41,13 +41,24 @@ const items = computed<ProductsNavItem[]>(() => {
     return companyNavItems
   }
 
+  let base: ProductsNavItem[]
+
   // 仅在 /guides 总览页精简为 Guides 子分类入口；/guides/* 仍使用完整 Products 导航
   if (path === '/guides') {
-    return productsNavItems.filter(item => item.to.startsWith('/guides/'))
+    base = productsNavItems.filter((item) => item.to.startsWith('/guides/'))
+  } else {
+    base = productsNavItems
   }
 
-  // 默认使用 Products 导航（Shop / Guides / blog 等）
-  return productsNavItems
+  // 只要当前导航中包含 Shop，就隐藏 About Tools 与 Wheelsbuild blog 两个入口，
+  // 保持其它 Products 布局页面导航一致。
+  if (base.some((item) => item.id === 'shop')) {
+    return base.filter(
+      (item) => item.id !== 'about-tools' && item.id !== 'wheelsbuild-blog'
+    )
+  }
+
+  return base
 })
 
 const isActive = (item: ProductsNavItem) => {

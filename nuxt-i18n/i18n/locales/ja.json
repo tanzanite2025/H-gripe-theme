@@ -187,7 +187,15 @@
     "noResults": "商品が見つかりません",
     "tryAdjustFilters": "フィルターを調整してください",
     "loadMore": "もっと読み込む",
-    "items": "件"
+    "items": "件",
+    "nav": {
+      "technicalDocs": "技術"
+    }
+  },
+  "footer": {
+    "links": {
+      "technicalDocs": "技術"
+    }
   },
   "privacy": {
     "button": "プライバシーに関する声明",

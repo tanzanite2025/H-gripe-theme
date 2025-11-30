@@ -13,12 +13,12 @@
         <NuxtLink to="/company/ourstory" class="support-card__button">
           Our Story
         </NuxtLink>
-        <button type="button" class="support-card__button">
+        <NuxtLink to="/support/shipping" class="support-card__button">
           Shipping instructions
-        </button>
-        <button type="button" class="support-card__button">
+        </NuxtLink>
+        <NuxtLink to="/support/test-report" class="support-card__button">
           Test report
-        </button>
+        </NuxtLink>
         <button type="button" class="support-card__button">
           <span class="support-card__button-icon">📧</span>
           <span>Send email</span>
