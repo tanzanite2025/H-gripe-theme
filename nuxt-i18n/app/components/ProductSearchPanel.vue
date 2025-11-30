@@ -65,6 +65,10 @@ interface ProductSearchFilters {
   [key: string]: any
 }
 
+const emit = defineEmits<{
+  (e: 'search', payload: { query: string; filters: ProductSearchFilters }): void
+}>()
+
 const productSearchQuery = ref('')
 
 const filters = ref<ProductSearchFilters>({
@@ -99,6 +103,12 @@ const handleReset = () => {
   }
   filterResetKey.value += 1
   console.log('Product search filters reset')
+
+  // 重置后立即触发一次搜索，让父级重新请求商品列表
+  emit('search', {
+    query: '',
+    filters: { ...filters.value },
+  })
 }
 
 const searchProducts = async () => {
@@ -107,7 +117,12 @@ const searchProducts = async () => {
   const query = productSearchQuery.value.trim()
   console.log('Product search query:', query || '(empty)')
   console.log('Product search filters:', filters.value)
-  // TODO: 在此根据 query + filters 触发实际的商品搜索逻辑或向父组件发事件
+
+  emit('search', {
+    query,
+    filters: { ...filters.value },
+  })
+
   setTimeout(() => {
     searchingProducts.value = false
   }, 360)

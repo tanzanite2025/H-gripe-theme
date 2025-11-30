@@ -485,6 +485,29 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
+  // 单个 Guides 子页面：Home / Guides / {具体页面}
+  if (currentPath.startsWith(guidesHub + '/')) {
+    items.push({ label: 'Guides', to: guidesHub })
+
+    // 根据具体路径映射更友好的标题
+    if (currentPath === localePath('/guides/tools')) {
+      items.push({ label: 'About Tools' })
+    } else if (currentPath === localePath('/guides/sizecharts')) {
+      items.push({ label: 'Tire Size Charts' })
+    } else if (currentPath === localePath('/guides/technical')) {
+      items.push({ label: 'Technical documentation' })
+    } else if (currentPath === localePath('/guides/wheelset-buyers')) {
+      items.push({ label: 'Wheelset Buyers Guide' })
+    } else {
+      // 其它 /guides/* 页面，使用最后一段路径作为标题占位
+      const segments = currentPath.split('/').filter(Boolean)
+      const last = segments[segments.length - 1] || ''
+      items.push({ label: last })
+    }
+
+    return items
+  }
+
   const supportHub = localePath('/support')
   if (currentPath === supportHub) {
     items.push({ label: t('footer.menus.support') as string })

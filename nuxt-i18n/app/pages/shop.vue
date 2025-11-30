@@ -1,6 +1,6 @@
 <template>
   <main class="max-w-5xl mx-auto px-6 pt-0 pb-16 space-y-6">
-    <ProductSearchPanel />
+    <ProductSearchPanel @search="handleSearch" />
 
     <section class="rounded-xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
       <div v-if="loading" class="flex items-center justify-center py-12">
@@ -97,18 +97,57 @@ const error = ref<string | null>(null)
 
 const { addToWishlist } = useWishlist()
 
-const loadProducts = async () => {
+interface ProductSearchFiltersPayload {
+  priceRange: [number, number]
+  attributes?: Record<string, string[]>
+}
+
+interface ProductSearchPayload {
+  query: string
+  filters: ProductSearchFiltersPayload
+}
+
+const currentSearch = ref<ProductSearchPayload | null>(null)
+
+const buildProductQueryParams = (payload?: ProductSearchPayload) => {
+  const params: Record<string, any> = {
+    per_page: 24,
+    status: 'publish',
+  }
+
+  if (payload) {
+    const keyword = payload.query?.trim()
+    if (keyword) {
+      params.keyword = keyword
+    }
+
+    const priceRange = payload.filters?.priceRange
+    if (Array.isArray(priceRange) && priceRange.length === 2) {
+      const [min, max] = priceRange
+      params.price_min = min
+      params.price_max = max
+    }
+
+    const attrs = payload.filters?.attributes || {}
+    if (attrs && typeof attrs === 'object') {
+      params.attributes = attrs
+    }
+  }
+
+  return params
+}
+
+const loadProducts = async (payload?: ProductSearchPayload) => {
   loading.value = true
   error.value = null
   try {
     const config = useRuntimeConfig()
     const base = ((config.public as { wpApiBase?: string }).wpApiBase || '/wp-json').replace(/\/$/, '')
 
+    const params = buildProductQueryParams(payload || undefined)
+
     const response = await $fetch<any>(`${base}/tanzanite/v1/products`, {
-      params: {
-        per_page: 24,
-        status: 'publish',
-      },
+      params,
       credentials: 'include',
     })
 
@@ -137,7 +176,12 @@ const loadProducts = async () => {
   }
 }
 
-onMounted(loadProducts)
+const handleSearch = (payload: ProductSearchPayload) => {
+  currentSearch.value = payload
+  loadProducts(payload)
+}
+
+onMounted(() => loadProducts())
 
 const handleAddToWishlist = async (product: ShopProduct) => {
   if (!product?.id) return
