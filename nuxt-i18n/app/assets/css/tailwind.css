@@ -6,8 +6,7 @@
 @font-face {
   font-family: 'AerialFaster';
   src: url('../fonts/AerialFasterRegular.woff2') format('woff2'),
-       url('../fonts/AerialFasterRegular.woff') format('woff'),
-       url('../fonts/AerialFasterRegular-Yqd5o.ttf') format('truetype');
+       url('../fonts/AerialFasterRegular.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: block;

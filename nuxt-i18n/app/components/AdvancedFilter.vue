@@ -673,11 +673,13 @@ watch(() => props.initialFilters, (newFilters) => {
 .attribute-dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
+  right: 0; /* 统一从容器右侧对齐，避免在右边按钮时向外溢出 */
+  left: auto;
   margin-top: 0.25rem;
   z-index: 20;
-  min-width: 220px;
-  max-width: 360px;
+  box-sizing: border-box;
+  min-width: min(220px, 80vw);
+  max-width: min(320px, 80vw);
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
   background: rgba(15, 23, 42, 0.98);

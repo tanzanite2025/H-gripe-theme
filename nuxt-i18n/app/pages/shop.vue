@@ -71,12 +71,20 @@
         </div>
       </div>
     </section>
+
+    <section class="mt-10">
+      <UserFeedbackThread
+        threadKey="shop-page"
+        title="Share your feedback about the Tanzanite shop"
+      />
+    </section>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import ProductSearchPanel from '~/components/ProductSearchPanel.vue'
+import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import { useWishlist } from '~/composables/useWishlist'
 
 definePageMeta({
