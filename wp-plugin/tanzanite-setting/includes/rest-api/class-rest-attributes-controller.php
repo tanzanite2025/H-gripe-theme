@@ -81,6 +81,25 @@ class Tanzanite_REST_Attributes_Controller extends Tanzanite_REST_Controller {
 			)
 		);
 
+		// 前台可用的筛选属性列表（只读）
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/filterable',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_filterable_attributes' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'type' => array(
+							'type'     => 'string',
+							'required' => false,
+						),
+					),
+				),
+			)
+		);
+
 		// 属性单个操作
 		register_rest_route(
 			$this->namespace,
@@ -188,6 +207,62 @@ class Tanzanite_REST_Attributes_Controller extends Tanzanite_REST_Controller {
 				'page'        => $page,
 				'per_page'    => $per_page,
 				'total_pages' => ceil( $total / $per_page ),
+			)
+		);
+	}
+	
+	/**
+	 * 获取可用于前台筛选的属性（可按类型过滤，例如 type=color）
+	 *
+	 * @since 0.2.0
+	 * @param WP_REST_Request $request REST 请求对象
+	 * @return WP_REST_Response
+	 */
+	public function get_filterable_attributes( $request ) {
+		global $wpdb;
+
+		$type   = $request->get_param( 'type' );
+		$where  = 'WHERE is_enabled = 1 AND is_filterable = 1';
+		$params = array();
+
+		if ( ! empty( $type ) ) {
+			$where    .= ' AND type = %s';
+			$params[] = sanitize_key( (string) $type );
+		}
+
+		$sql = "SELECT * FROM {$this->product_attributes_table} {$where} ORDER BY sort_order ASC, id ASC";
+
+		if ( ! empty( $params ) ) {
+			$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$params ), ARRAY_A );
+		} else {
+			$rows = $wpdb->get_results( $sql, ARRAY_A );
+		}
+
+		$items = array();
+
+		foreach ( $rows as $row ) {
+			$attribute = $this->format_attribute_row( $row );
+
+			$value_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$this->attribute_values_table} WHERE attribute_id = %d AND is_enabled = 1 ORDER BY sort_order ASC, id ASC",
+					$row['id']
+				),
+				ARRAY_A
+			);
+
+			$values = array();
+			foreach ( $value_rows as $value_row ) {
+				$values[] = $this->format_attribute_value_row( $value_row );
+			}
+
+			$attribute['values'] = $values;
+			$items[]             = $attribute;
+		}
+
+		return $this->respond_success(
+			array(
+				'items' => $items,
 			)
 		);
 	}

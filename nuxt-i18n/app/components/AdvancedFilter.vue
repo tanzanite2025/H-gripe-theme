@@ -6,75 +6,103 @@
       theme === 'light' ? 'theme-light' : 'theme-dark'
     ]"
   >
-    <!-- 价格范围筛选 -->
-    <div v-if="options.showPriceRange" class="filter-section">
-      <h4 class="filter-label">
-        {{ $t('filter.priceRange', 'Price Range') }}
-      </h4>
-      <div class="price-range-container">
-        <!-- 价格显示 -->
-        <div class="price-display">
-          <span class="price-value">${{ localFilters.priceRange[0] }}</span>
-          <span class="price-separator">-</span>
-          <span class="price-value">${{ localFilters.priceRange[1] }}</span>
-        </div>
-        
-        <!-- 双滑块 -->
-        <div class="slider-container">
-          <input
-            type="range"
-            :min="options.priceMin"
-            :max="options.priceMax"
-            v-model.number="localFilters.priceRange[0]"
-            @input="handlePriceChange"
-            class="slider slider-min"
-          />
-          <input
-            type="range"
-            :min="options.priceMin"
-            :max="options.priceMax"
-            v-model.number="localFilters.priceRange[1]"
-            @input="handlePriceChange"
-            class="slider slider-max"
-          />
-          <div class="slider-track">
-            <div 
-              class="slider-range"
-              :style="sliderRangeStyle"
-            ></div>
+    <!-- 顶部行：价格范围 + 属性下拉（Color / Diameter / Brake） -->
+    <div
+      v-if="options.showPriceRange || attributeFilters.length"
+      class="filter-section filter-top-row"
+    >
+      <!-- 价格范围 -->
+      <div v-if="options.showPriceRange" class="price-range-inline">
+        <h4 class="filter-label">
+          {{ $t('filter.priceRange', 'Price Range') }}
+        </h4>
+        <div class="price-range-container">
+          <div class="price-inputs">
+            <div class="price-input-wrapper">
+              <span class="price-prefix">$</span>
+              <input
+                type="number"
+                class="price-input"
+                v-model.number="localFilters.priceRange[0]"
+                :min="options.priceMin"
+                :max="options.priceMax"
+                step="1"
+                @change="handlePriceChange"
+                @blur="handlePriceChange"
+              />
+            </div>
+            <span class="price-separator">-</span>
+            <div class="price-input-wrapper">
+              <span class="price-prefix">$</span>
+              <input
+                type="number"
+                class="price-input"
+                v-model.number="localFilters.priceRange[1]"
+                :min="options.priceMin"
+                :max="options.priceMax"
+                step="1"
+                @change="handlePriceChange"
+                @blur="handlePriceChange"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 库存状态筛选 -->
-    <div v-if="options.showStockFilter" class="filter-section">
-      <h4 class="filter-label">
-        {{ $t('filter.stockStatus', 'Stock Status') }}
-      </h4>
-      <div class="checkbox-group">
-        <label class="checkbox-item">
-          <input
-            type="checkbox"
-            v-model="localFilters.inStock"
-            @change="handleFilterChange"
-            class="checkbox-input"
-          />
-          <span class="checkbox-label">
-            {{ $t('filter.inStock', 'In Stock') }}
-          </span>
-        </label>
-        <label class="checkbox-item">
-          <input
-            type="checkbox"
-            v-model="localFilters.preOrder"
-            @change="handleFilterChange"
-            class="checkbox-input"
-          />
-          <span class="checkbox-label">
-            {{ $t('filter.preOrder', 'Pre-order') }}
-          </span>
-        </label>
+      <!-- 动态属性下拉（Color / Diameter / Brake） -->
+      <div v-if="attributeFilters.length" class="attribute-top-row">
+        <div
+          v-for="attr in attributeFilters"
+          :key="attr.id"
+          class="attribute-inline-row"
+        >
+          <button
+            type="button"
+            class="attribute-toggle"
+            @click="toggleGroupExpanded(attr.slug)"
+          >
+            <span class="attribute-label">
+              {{ attr.name }} ({{ getAttributeSummary(attr) }})
+            </span>
+            <span
+              class="attribute-toggle-icon"
+              :class="{ open: isGroupExpanded(attr.slug) }"
+            >
+              ▼
+            </span>
+          </button>
+
+          <transition name="attribute-dropdown">
+            <div
+              v-if="isGroupExpanded(attr.slug)"
+              class="attribute-dropdown"
+            >
+              <div class="checkbox-group">
+                <label
+                  v-for="value in attr.values"
+                  :key="value.id"
+                  class="checkbox-item"
+                >
+                  <input
+                    type="checkbox"
+                    class="checkbox-input"
+                    :value="value.slug"
+                    :checked="isAttributeSelected(attr.slug, value.slug)"
+                    @change="handleAttributeCheckboxChange(attr.slug, value.slug, $event)"
+                  />
+                  <span class="checkbox-label">
+                    <span
+                      v-if="attr.type === 'color' && value.value"
+                      class="inline-block w-4 h-4 rounded mr-2 align-middle border border-white/20"
+                      :style="{ backgroundColor: value.value as string }"
+                    />
+                    {{ formatAttributeValueLabel(attr.slug, value.name) }}
+                  </span>
+                </label>
+              </div>
+            </div>
+          </transition>
+        </div>
       </div>
     </div>
 
@@ -149,6 +177,7 @@ interface FilterState {
   preOrder: boolean
   sortBy: string
   minRating?: number
+  attributes?: Record<string, string[]>
   [key: string]: any
 }
 
@@ -163,12 +192,34 @@ interface FilterOptions {
   sortOptions?: Array<{ label: string; value: string; i18nKey: string }>
 }
 
+interface AttributeValueOption {
+  id: number
+  attribute_id: number
+  name: string
+  slug: string
+  value?: string | null
+  sort_order?: number
+  is_enabled?: boolean
+  meta?: Record<string, any>
+}
+
+interface AttributeFilterConfig {
+  id: number
+  name: string
+  slug: string
+  type: string
+  values: AttributeValueOption[]
+}
+
 interface Props {
   // 初始筛选条件
   initialFilters?: Partial<FilterState>
   
   // 可用的筛选选项
   options?: FilterOptions
+  
+  // 动态属性筛选配置（例如颜色属性组）
+  attributeFilters?: AttributeFilterConfig[]
   
   // 样式配置
   compact?: boolean
@@ -185,7 +236,8 @@ const props = withDefaults(defineProps<Props>(), {
     inStock: true,
     preOrder: false,
     sortBy: 'newest',
-    minRating: 0
+    minRating: 0,
+    attributes: {},
   }),
   options: () => ({
     showPriceRange: true,
@@ -220,8 +272,96 @@ const localFilters = ref<FilterState>({
   inStock: props.initialFilters?.inStock ?? true,
   preOrder: props.initialFilters?.preOrder ?? false,
   sortBy: props.initialFilters?.sortBy || 'newest',
-  minRating: props.initialFilters?.minRating || 0
+  minRating: props.initialFilters?.minRating || 0,
+  attributes: props.initialFilters?.attributes || {},
 })
+
+const attributeFilters = computed(() => props.attributeFilters || [])
+
+// 属性下拉展开状态
+const expandedGroups = ref<Record<string, boolean>>({})
+
+const ensureExpandedDefaults = () => {
+  const map: Record<string, boolean> = { ...expandedGroups.value }
+  let changed = false
+
+  attributeFilters.value.forEach((attr) => {
+    const slug = attr.slug
+    if (!slug) return
+    if (typeof map[slug] === 'undefined') {
+      map[slug] = false // 默认收起
+      changed = true
+    }
+  })
+
+  if (changed) {
+    expandedGroups.value = map
+  }
+}
+
+const isGroupExpanded = (slug: string): boolean => {
+  if (!slug) return false
+  return !!expandedGroups.value[slug]
+}
+
+const toggleGroupExpanded = (slug: string) => {
+  if (!slug) return
+  expandedGroups.value = {
+    ...expandedGroups.value,
+    [slug]: !expandedGroups.value[slug],
+  }
+}
+
+// 初始化属性筛选：默认每个属性组全选
+const initializeAttributeSelections = (force = false): boolean => {
+  const attrs = attributeFilters.value
+  if (!attrs || !attrs.length) return false
+
+  const currentAttributes: Record<string, string[]> = {
+    ...(localFilters.value.attributes || {}),
+  }
+
+  let changed = false
+
+  attrs.forEach((attr) => {
+    const key = attr.slug
+    if (!key) return
+
+    const existing = currentAttributes[key]
+    if (!force && Array.isArray(existing) && existing.length) {
+      return
+    }
+
+    const allValues = (attr.values || [])
+      .filter((v) => v && typeof v.slug === 'string' && v.slug.length > 0)
+      .map((v) => v.slug)
+
+    currentAttributes[key] = allValues
+    changed = true
+  })
+
+  if (changed) {
+    localFilters.value = {
+      ...localFilters.value,
+      attributes: currentAttributes,
+    }
+  }
+
+  return changed
+}
+
+// 当属性配置加载或变化时，如果该组还没有显式选择，则默认全选
+watch(
+  attributeFilters,
+  () => {
+    ensureExpandedDefaults()
+    const changed = initializeAttributeSelections(false)
+    if (changed) {
+      emit('update:filters', { ...localFilters.value })
+    }
+  },
+  { immediate: true, deep: true },
+)
 
 // 排序选项
 const sortOptions = computed(() => {
@@ -270,6 +410,71 @@ const handleFilterChange = () => {
   emit('update:filters', { ...localFilters.value })
 }
 
+// 属性筛选：检查某个属性值是否已被选中
+const isAttributeSelected = (attrSlug: string, valueSlug: string): boolean => {
+  const attributes = localFilters.value.attributes || {}
+  const selected = attributes[attrSlug] || []
+  return selected.includes(valueSlug)
+}
+
+// 属性按钮上的选中汇总：All / 选中数量
+const getAttributeSummary = (attr: AttributeFilterConfig): string => {
+  const slug = attr?.slug
+  if (!slug) return 'All'
+
+  const values = (attr.values || []).filter((v) => v && v.is_enabled !== false)
+  const total = values.length
+  if (!total) return 'All'
+
+  const attributes = localFilters.value.attributes || {}
+  const selected = Array.isArray(attributes[slug]) ? attributes[slug] : []
+
+  const selectedCount = values.reduce((count, v) => {
+    return count + (selected.includes(v.slug) ? 1 : 0)
+  }, 0)
+
+  if (!selectedCount || selectedCount >= total) return 'All'
+  return String(selectedCount)
+}
+
+// 属性值显示文案格式化（例如直径组：12inch -> 12"）
+const formatAttributeValueLabel = (attrSlug: string, valueName: string): string => {
+  if (attrSlug === 'diameter' && typeof valueName === 'string') {
+    return valueName.replace(/inch/gi, '"')
+  }
+  return valueName
+}
+
+// 属性筛选：切换选中状态
+const toggleAttributeSelection = (attrSlug: string, valueSlug: string, checked: boolean) => {
+  const currentAttributes = { ...(localFilters.value.attributes || {}) }
+  const currentValues = Array.isArray(currentAttributes[attrSlug])
+    ? [...currentAttributes[attrSlug]]
+    : []
+
+  const index = currentValues.indexOf(valueSlug)
+
+  if (checked && index === -1) {
+    currentValues.push(valueSlug)
+  } else if (!checked && index !== -1) {
+    currentValues.splice(index, 1)
+  }
+
+  currentAttributes[attrSlug] = currentValues
+
+  localFilters.value = {
+    ...localFilters.value,
+    attributes: currentAttributes,
+  }
+
+  handleFilterChange()
+}
+
+const handleAttributeCheckboxChange = (attrSlug: string, valueSlug: string, event: Event) => {
+  const target = event.target as HTMLInputElement | null
+  toggleAttributeSelection(attrSlug, valueSlug, !!target?.checked)
+}
+
 // 重置筛选
 const handleReset = () => {
   localFilters.value = {
@@ -277,9 +482,13 @@ const handleReset = () => {
     inStock: true,
     preOrder: false,
     sortBy: 'newest',
-    minRating: 0
+    minRating: 0,
+    attributes: {},
   }
-  
+
+  // 重置后默认每个属性组全选
+  initializeAttributeSelections(true)
+
   emit('reset')
   emit('update:filters', { ...localFilters.value })
 }
@@ -302,7 +511,7 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 筛选区块 */
 .filter-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem; /* 行与行之间再紧凑一点 */
 }
 
 .filter-section:last-of-type {
@@ -312,18 +521,54 @@ watch(() => props.initialFilters, (newFilters) => {
 .filter-label {
   font-size: 0.875rem;
   font-weight: 600;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   color: rgba(255, 255, 255, 0.9);
+}
+
+/* 顶部行：价格 + 属性下拉 同一行展示（大屏），小屏自动换行 */
+.filter-top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+}
+
+.filter-top-row .price-range-inline {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.attribute-top-row {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Price range 行内布局：标题 + 输入框一行展示 */
+.price-range-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.price-range-inline .filter-label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.price-range-inline .price-range-container {
+  flex: 1;
 }
 
 /* 紧凑模式 */
 .compact .filter-section {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .compact .filter-label {
   font-size: 0.8125rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.375rem;
 }
 
 /* 浅色主题 */
@@ -333,28 +578,129 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 价格范围 */
 .price-range-container {
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
 }
 
-.price-display {
+.price-inputs {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #40ffaa;
+}
+
+.price-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.price-prefix {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 0.15rem;
+}
+
+.price-input {
+  width: 4.5rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .price-separator {
   color: rgba(255, 255, 255, 0.4);
 }
 
+/* Brake / Color / Diameter 组：标题 + 选项一行显示 */
+.attribute-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem; /* 组与组之间再稍微缩小一点 */
+  position: relative;
+}
+
+.attribute-inline-row .filter-label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.attribute-inline-row .checkbox-group {
+  flex: 1;
+}
+
+/* 属性下拉开关按钮 */
+.attribute-toggle {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.8);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.attribute-toggle-icon {
+  display: inline-block;
+  font-size: 0.75rem;
+  transition: transform 0.15s ease;
+}
+
+.attribute-label {
+  line-height: 1;
+}
+
+.attribute-toggle:hover {
+  background: rgba(30, 64, 175, 0.85);
+  border-color: rgba(96, 165, 250, 0.8);
+  color: #e5f0ff;
+}
+
+.attribute-toggle-icon.open {
+  transform: rotate(180deg);
+}
+
+/* 属性下拉浮层 */
+.attribute-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  z-index: 20;
+  min-width: 220px;
+  max-width: 360px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.75);
+}
+
+/* 下拉动效 */
+.attribute-dropdown-enter-active,
+.attribute-dropdown-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.attribute-dropdown-enter-from,
+.attribute-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 /* 滑块容器 */
 .slider-container {
   position: relative;
-  height: 2.5rem;
+  height: 2rem;
   display: flex;
   align-items: center;
 }
@@ -366,196 +712,47 @@ watch(() => props.initialFilters, (newFilters) => {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   pointer-events: none;
-}
-
-.slider-range {
-  position: absolute;
-  height: 100%;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
-  border-radius: 2px;
-}
-
-.slider {
-  position: absolute;
-  width: 100%;
-  height: 4px;
-  background: transparent;
-  pointer-events: none;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #6b73ff;
   cursor: pointer;
-  pointer-events: auto;
-  border: 2px solid #000;
-  box-shadow: 0 0 0 2px rgba(107, 115, 255, 0.2);
   transition: all 0.2s;
-}
-
-.slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 4px rgba(107, 115, 255, 0.3);
-}
-
-.slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #6b73ff;
-  cursor: pointer;
-  pointer-events: auto;
-  border: 2px solid #000;
-  box-shadow: 0 0 0 2px rgba(107, 115, 255, 0.2);
-  transition: all 0.2s;
-}
-
-.slider::-moz-range-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 4px rgba(107, 115, 255, 0.3);
 }
 
 /* 复选框组 */
-.checkbox-group {
+.advanced-filter .checkbox-group {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  column-gap: 0.75rem; /* 横向间距稍大一点 */
+  row-gap: 0.25rem;    /* 纵向间距保持较小，整体高度不会太高 */
 }
 
-.checkbox-item {
-  display: flex;
+.advanced-filter .checkbox-item {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.3rem 0.45rem;
   border-radius: 0.5rem;
   transition: background-color 0.2s;
 }
 
-.checkbox-item:hover {
+.advanced-filter .checkbox-item:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-.checkbox-input {
+.advanced-filter .checkbox-input {
   width: 1.125rem;
   height: 1.125rem;
   cursor: pointer;
   accent-color: #6b73ff;
 }
 
-.checkbox-label {
+.advanced-filter .checkbox-label {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.7);
   user-select: none;
 }
 
-.theme-light .checkbox-label {
+.advanced-filter.theme-light .checkbox-label {
   color: rgba(0, 0, 0, 0.7);
-}
-
-/* 排序选择器 */
-.sort-select {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.sort-select:hover {
-  border-color: #6b73ff;
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.sort-select:focus {
-  outline: none;
-  border-color: #6b73ff;
-  box-shadow: 0 0 0 3px rgba(107, 115, 255, 0.1);
-}
-
-.theme-light .sort-select {
-  background-color: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: rgba(0, 0, 0, 0.9);
-}
-
-/* 评分组 */
-.rating-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.rating-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s;
-}
-
-.rating-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.rating-input {
-  width: 1rem;
-  height: 1rem;
-  cursor: pointer;
-  accent-color: #6b73ff;
-}
-
-.rating-stars {
-  display: flex;
-  gap: 0.125rem;
-}
-
-.star {
-  font-size: 0.875rem;
-  filter: grayscale(100%);
-  opacity: 0.3;
-}
-
-.star.filled {
-  filter: grayscale(0%);
-  opacity: 1;
-}
-
-.rating-text {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* 重置按钮 */
-.filter-actions {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.reset-button {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.5rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
 .reset-button:hover {
