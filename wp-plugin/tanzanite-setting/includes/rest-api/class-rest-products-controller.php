@@ -177,6 +177,35 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 		// Meta 查询（库存、积分等）
 		$meta_query = array();
 
+		// 价格区间筛选（基于商品常规定价）
+		$min_price = $request->has_param( 'price_min' ) ? (float) $request->get_param( 'price_min' ) : null;
+		$max_price = $request->has_param( 'price_max' ) ? (float) $request->get_param( 'price_max' ) : null;
+
+		if ( null !== $min_price || null !== $max_price ) {
+			if ( null !== $min_price && null !== $max_price ) {
+				$meta_query[] = array(
+					'key'     => '_tanz_price_regular',
+					'value'   => array( $min_price, $max_price ),
+					'compare' => 'BETWEEN',
+					'type'    => 'NUMERIC',
+				);
+			} elseif ( null !== $min_price ) {
+				$meta_query[] = array(
+					'key'     => '_tanz_price_regular',
+					'value'   => $min_price,
+					'compare' => '>=',
+					'type'    => 'NUMERIC',
+				);
+			} elseif ( null !== $max_price ) {
+				$meta_query[] = array(
+					'key'     => '_tanz_price_regular',
+					'value'   => $max_price,
+					'compare' => '<=',
+					'type'    => 'NUMERIC',
+				);
+			}
+		}
+
 		$min_inventory = $request->has_param( 'inventory_min' ) ? (int) $request->get_param( 'inventory_min' ) : null;
 		$max_inventory = $request->has_param( 'inventory_max' ) ? (int) $request->get_param( 'inventory_max' ) : null;
 
@@ -209,6 +238,54 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			$args['meta_query'] = $meta_query;
 		}
 
+		// 属性筛选（基于 SKU attributes JSON）
+		$attributes_param   = $request->get_param( 'attributes' );
+		$attribute_filters  = array();
+		if ( is_array( $attributes_param ) ) {
+			foreach ( $attributes_param as $attr_key => $values ) {
+				$slug = sanitize_key( (string) $attr_key );
+				if ( ! $slug ) {
+					continue;
+				}
+
+				$sanitized_values = array();
+				if ( is_array( $values ) ) {
+					foreach ( $values as $v ) {
+						$value = sanitize_text_field( (string) $v );
+						if ( '' !== $value ) {
+							$sanitized_values[] = $value;
+						}
+					}
+				} else {
+					$value = sanitize_text_field( (string) $values );
+					if ( '' !== $value ) {
+						$sanitized_values[] = $value;
+					}
+				}
+
+				if ( ! empty( $sanitized_values ) ) {
+					$attribute_filters[ $slug ] = array_values( array_unique( $sanitized_values ) );
+				}
+			}
+		}
+
+		if ( ! empty( $attribute_filters ) ) {
+			$product_ids = $this->find_product_ids_by_attributes( $attribute_filters );
+			if ( empty( $product_ids ) ) {
+				// 无匹配商品，强制返回空结果
+				$args['post__in'] = array( 0 );
+			} else {
+				if ( isset( $args['post__in'] ) && is_array( $args['post__in'] ) ) {
+					$args['post__in'] = array_values( array_intersect( $args['post__in'], $product_ids ) );
+					if ( empty( $args['post__in'] ) ) {
+						$args['post__in'] = array( 0 );
+					}
+				} else {
+					$args['post__in'] = $product_ids;
+				}
+			}
+		}
+
 		// 排序
 		if ( 'price_regular' === $sort ) {
 			$args['meta_key'] = '_tanz_price_regular';
@@ -239,7 +316,7 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 					'per_page'    => $per_page,
 					'total_pages' => $query->max_num_pages,
 					'total'       => $query->found_posts,
-					'filters'     => array( 'keyword', 'status', 'category', 'tags', 'author', 'inventory_min', 'inventory_max' ),
+					'filters'     => array( 'keyword', 'status', 'category', 'tags', 'author', 'inventory_min', 'inventory_max', 'price_min', 'price_max', 'attributes' ),
 					'sorting'     => array( 'updated_at', 'price_regular', 'stock_qty', 'points_reward' ),
 				),
 			)
@@ -999,6 +1076,70 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 		global $wpdb;
 		$table = $wpdb->prefix . 'tanz_product_skus';
 		$wpdb->delete( $table, array( 'product_id' => $product_id ), array( '%d' ) );
+	}
+
+	/**
+	 * 根据属性筛选匹配的商品 ID（基于 SKU attributes JSON）
+	 *
+	 * @since 0.2.x
+	 * @param array $attribute_filters 形如 [ 'color' => [ 'black', 'red' ], 'diameter' => [ '700C' ] ]
+	 * @return array 匹配的商品 ID 数组
+	 */
+	private function find_product_ids_by_attributes( $attribute_filters ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'tanz_product_skus';
+
+		$rows = $wpdb->get_results( "SELECT product_id, attributes FROM {$table}", ARRAY_A );
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$matched_product_ids = array();
+
+		foreach ( $rows as $row ) {
+			$product_id = isset( $row['product_id'] ) ? (int) $row['product_id'] : 0;
+			if ( $product_id <= 0 ) {
+				continue;
+			}
+
+			$raw_attributes = isset( $row['attributes'] ) ? $row['attributes'] : '';
+			$attrs         = json_decode( (string) $raw_attributes, true );
+			if ( ! is_array( $attrs ) ) {
+				continue;
+			}
+
+			$ok = true;
+			foreach ( $attribute_filters as $slug => $values ) {
+				if ( empty( $values ) ) {
+					continue;
+				}
+
+				if ( ! isset( $attrs[ $slug ] ) ) {
+					$ok = false;
+					break;
+				}
+
+				$sku_value = $attrs[ $slug ];
+				if ( is_array( $sku_value ) ) {
+					$intersect = array_intersect( array_map( 'strval', $sku_value ), $values );
+					if ( empty( $intersect ) ) {
+						$ok = false;
+						break;
+					}
+				} else {
+					if ( ! in_array( (string) $sku_value, $values, true ) ) {
+						$ok = false;
+						break;
+					}
+				}
+			}
+
+			if ( $ok ) {
+				$matched_product_ids[ $product_id ] = true;
+			}
+		}
+
+		return array_keys( $matched_product_ids );
 	}
 
 	/**
