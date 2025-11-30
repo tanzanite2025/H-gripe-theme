@@ -100,26 +100,10 @@
           </li>
           <li class="footer-menus__item">
             <NuxtLink
-              :to="localePath('/support/user-manuals')"
-              class="footer-menus__link"
-            >
-              {{ $t('footer.support.userManuals', 'User Manuals') }}
-            </NuxtLink>
-          </li>
-          <li class="footer-menus__item">
-            <NuxtLink
               :to="localePath('/support/product-feedback')"
               class="footer-menus__link"
             >
               {{ $t('footer.support.productFeedback', 'Product Feedback') }}
-            </NuxtLink>
-          </li>
-          <li class="footer-menus__item">
-            <NuxtLink
-              :to="localePath('/support/spoke-calculator')"
-              class="footer-menus__link"
-            >
-              {{ $t('footer.support.spokecalculator', 'Spokecalculator') }}
             </NuxtLink>
           </li>
         </ul>

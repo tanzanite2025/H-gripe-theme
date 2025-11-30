@@ -131,7 +131,7 @@
       "aboutTools": "About Tools",
       "tireSizeCharts": "Tire Size Charts",
       "wheelsbuildBlog": "Wheelsbuild blog",
-      "technicalDocs": "Technical documentation",
+      "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Buyers Guide"
     }
   },
@@ -146,11 +146,12 @@
     "nav": {
       "faqs": "All FAQs",
       "payment": "Payment",
+      "shipping": "Shipping",
       "afterSales": "After sales",
       "warranty": "Warranty",
-      "userManuals": "User Manuals",
       "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator"
+      "spokeCalculator": "Spoke Calculator",
+      "testReport": "Test report"
     }
   },
   "footer": {
@@ -165,7 +166,7 @@
       "aboutTools": "About Tools",
       "tireSizeCharts": "Tire Size Charts",
       "wheelsbuildBlog": "Wheelsbuild blog",
-      "technicalDocs": "Technical documentation",
+      "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Buyers Guide",
       "about": "About",
       "contact": "Contact",
@@ -186,7 +187,6 @@
       "payment": "Payment",
       "afterSales": "After sales",
       "warranty": "Warranty",
-      "userManuals": "User Manuals",
       "productFeedback": "Product Feedback",
       "spokecalculator": "Spokecalculator"
     }

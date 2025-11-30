@@ -43,4 +43,9 @@ export const productsNavItems: ProductsNavItem[] = [
     labelKey: 'products.nav.wheelsetBuyersGuide',
     to: '/guides/wheelset-buyers',
   },
+  {
+    id: 'spoke-calculator',
+    labelKey: 'support.nav.spokeCalculator',
+    to: '/spoke-calculator',
+  },
 ]

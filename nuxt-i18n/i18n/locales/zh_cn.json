@@ -165,7 +165,15 @@
     "noResults": "未找到商品",
     "tryAdjustFilters": "请尝试调整筛选条件",
     "loadMore": "加载更多",
-    "items": "件"
+    "items": "件",
+    "nav": {
+      "technicalDocs": "技术"
+    }
+  },
+  "footer": {
+    "links": {
+      "technicalDocs": "技术"
+    }
   },
   "privacy": {
     "button": "隐私声明",

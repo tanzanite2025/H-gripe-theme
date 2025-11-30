@@ -71,28 +71,12 @@ const sections = [
     cta: 'Read warranty details',
   },
   {
-    to: '/support/user-manuals',
-    icon: 'U',
-    title: 'User Manuals',
-    description:
-      'Download or view user manuals and setup guides for Tanzanite products.',
-    cta: 'Open manuals',
-  },
-  {
     to: '/support/product-feedback',
     icon: 'F',
     title: 'Product Feedback',
     description:
       'Share feedback about products and your riding experience with Tanzanite.',
     cta: 'Give feedback',
-  },
-  {
-    to: '/support/spoke-calculator',
-    icon: 'S',
-    title: 'Spoke Calculator',
-    description:
-      'Use the spoke calculator to estimate spoke lengths for your wheel builds.',
-    cta: 'Open spoke calculator',
   },
 ]
 

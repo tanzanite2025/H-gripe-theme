@@ -496,7 +496,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     } else if (currentPath === localePath('/guides/sizecharts')) {
       items.push({ label: t('products.nav.tireSizeCharts', 'Tire Size Charts') as string })
     } else if (currentPath === localePath('/guides/technical')) {
-      items.push({ label: t('products.nav.technicalDocs', 'Technical documentation') as string })
+      items.push({ label: t('products.nav.technicalDocs', 'Technical') as string })
     } else if (currentPath === localePath('/guides/wheelset-buyers')) {
       items.push({ label: t('products.nav.wheelsetBuyersGuide', 'Wheelset Buyers Guide') as string })
     } else {

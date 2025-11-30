@@ -59,7 +59,7 @@ const guides = [
   {
     to: '/guides/technical',
     icon: 'D',
-    title: 'Technical documentation',
+    title: 'Technical',
     description: 'Technical notes, formulas, and reference docs for advanced wheelbuilding.',
     cta: 'Open technical docs',
   },
