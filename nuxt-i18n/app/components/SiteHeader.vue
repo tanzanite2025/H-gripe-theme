@@ -48,7 +48,7 @@
 						<!-- All Guides 文本按钮（桌面端） -->
 						<NuxtLink
 							:to="localePath('/guides')"
-							class="pointer-events-auto text-slate-950 shadow-[0_0_16px_rgba(64,115,255,0.65)] hover:shadow-[0_0_22px_rgba(64,115,255,0.9)] transition-all duration-200 h-[44px] lg:h-[52px] px-3.5 lg:px-4 rounded-full hidden lg:inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[11px] lg:text-[12px] font-semibold hover:-translate-y-[1px] hover:scale-[1.02]"
+							class="pointer-events-auto text-slate-950 shadow-[0_0_16px_rgba(64,115,255,0.65)] hover:shadow-[0_0_22px_rgba(64,115,255,0.9)] transition-all duration-200 h-10 lg:h-12 px-3.5 lg:px-4 rounded-full hidden lg:inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[11px] lg:text-[12px] font-semibold hover:-translate-y-[1px] hover:scale-[1.02]"
 							aria-label="All Guides"
 						>
 							All Guides
@@ -56,7 +56,7 @@
 
 						<!-- 分享按钮（会员积分） - 改为圆形 -->
 						<button
-							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] lg:w-[52px] lg:h-[52px] rounded-full hidden lg:inline-flex items-center justify-center bg-[#0b1020]"
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-10 h-10 lg:w-12 lg:h-12 rounded-full hidden lg:inline-flex items-center justify-center bg-[#0b1020]"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-haspopup="dialog"
@@ -463,7 +463,8 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const items: BreadcrumbItem[] = []
   const homeTo = localePath('/')
 
-  items.push({ label: 'Home', to: homeTo })
+  // Home
+  items.push({ label: t('breadcrumbs.home', 'Home') as string, to: homeTo })
 
   const currentPath = route.path || ''
 
@@ -474,30 +475,30 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   // Products hub: Home / Products
   const productsHub = localePath('/products')
   if (currentPath === productsHub) {
-    items.push({ label: t('footer.menus.products') as string })
+    items.push({ label: t('footer.menus.products', 'Products') as string })
     return items
   }
 
   // Guides is its own top-level section (All Guides hub)
   const guidesHub = localePath('/guides')
   if (currentPath === guidesHub) {
-    items.push({ label: 'Guides' })
+    items.push({ label: t('breadcrumbs.guides', 'Guides') as string })
     return items
   }
 
   // 单个 Guides 子页面：Home / Guides / {具体页面}
   if (currentPath.startsWith(guidesHub + '/')) {
-    items.push({ label: 'Guides', to: guidesHub })
+    items.push({ label: t('breadcrumbs.guides', 'Guides') as string, to: guidesHub })
 
     // 根据具体路径映射更友好的标题
     if (currentPath === localePath('/guides/tools')) {
-      items.push({ label: 'About Tools' })
+      items.push({ label: t('products.nav.aboutTools', 'About Tools') as string })
     } else if (currentPath === localePath('/guides/sizecharts')) {
-      items.push({ label: 'Tire Size Charts' })
+      items.push({ label: t('products.nav.tireSizeCharts', 'Tire Size Charts') as string })
     } else if (currentPath === localePath('/guides/technical')) {
-      items.push({ label: 'Technical documentation' })
+      items.push({ label: t('products.nav.technicalDocs', 'Technical documentation') as string })
     } else if (currentPath === localePath('/guides/wheelset-buyers')) {
-      items.push({ label: 'Wheelset Buyers Guide' })
+      items.push({ label: t('products.nav.wheelsetBuyersGuide', 'Wheelset Buyers Guide') as string })
     } else {
       // 其它 /guides/* 页面，使用最后一段路径作为标题占位
       const segments = currentPath.split('/').filter(Boolean)
@@ -508,29 +509,39 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
+  // Support hub: Home / Support
   const supportHub = localePath('/support')
   if (currentPath === supportHub) {
-    items.push({ label: t('footer.menus.support') as string })
+    items.push({ label: t('footer.menus.support', 'Support') as string })
     return items
   }
 
+  // Company hub: Home / Company
   const companyHub = localePath('/company')
   if (currentPath === companyHub) {
-    items.push({ label: t('footer.menus.company') as string })
+    items.push({ label: t('footer.menus.company', 'Company') as string })
     return items
   }
 
   // /shop 作为独立页面：直接显示 Home / Shop
   const shopPath = localePath('/shop')
   if (currentPath === shopPath) {
-    items.push({ label: t('products.nav.shop') as string })
+    items.push({ label: t('products.nav.shop', 'Shop') as string })
     return items
   }
 
+  // Wheelsbuild blog 作为独立页面：直接显示 Home / Wheelsbuild blog
+  const wheelsbuildPath = localePath('/wheelsbuild')
+  if (currentPath === wheelsbuildPath) {
+    items.push({ label: t('products.nav.wheelsbuildBlog', 'Wheelsbuild blog') as string })
+    return items
+  }
+
+  // Products layout 子页面：Home / Products / {具体页面}
   const productMatch = matchNavItemForPath(productsNavItems)
   if (productMatch) {
     items.push({
-      label: t('footer.menus.products') as string,
+      label: t('footer.menus.products', 'Products') as string,
       to: localePath('/products'),
     })
     const last = items[items.length - 1]
@@ -540,10 +551,11 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
+  // Support layout 子页面：Home / Support / {具体页面}
   const supportMatch = matchNavItemForPath(supportNavItems)
   if (supportMatch) {
     items.push({
-      label: t('footer.menus.support') as string,
+      label: t('footer.menus.support', 'Support') as string,
       to: localePath('/support'),
     })
     const last = items[items.length - 1]
@@ -553,10 +565,11 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
+  // Company layout 子页面：Home / Company / {具体页面}
   const companyMatch = matchNavItemForPath(companyNavItems)
   if (companyMatch) {
     items.push({
-      label: t('footer.menus.company') as string,
+      label: t('footer.menus.company', 'Company') as string,
       to: localePath('/company'),
     })
     const last = items[items.length - 1]

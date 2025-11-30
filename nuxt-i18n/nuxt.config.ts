@@ -270,15 +270,6 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' }
       ],
-      link: [
-        {
-          rel: 'preload',
-          href: '/assets/fonts/AerialFasterRegular-Yqd5o.ttf',
-          as: 'font',
-          type: 'font/ttf',
-          crossorigin: 'anonymous'
-        }
-      ]
     }
   },
   
