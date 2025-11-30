@@ -1,10 +1,10 @@
 <template>
   <section
-    class="rounded-xl border border-white/10 bg-black/40 p-6 space-y-4 text-sm text-white/80 product-search-panel"
+    class="rounded-xl border border-white/10 bg-black/40 p-4 space-y-3 text-sm text-white/80 product-search-panel"
   >
     <div>
-      <h2 class="text-base font-semibold text-white mb-3">Product Search</h2>
-      <div class="flex flex-col md:flex-row gap-2 md:items-center">
+      <h2 class="text-base font-semibold text-white mb-2">Product Search</h2>
+      <div class="flex flex-col md:flex-row gap-1.5 md:items-center">
         <input
           v-model="productSearchQuery"
           type="text"
@@ -30,27 +30,30 @@
       </div>
     </div>
 
-    <div class="w-full border-t border-white/10 my-3"></div>
+    <div class="w-full border-t border-white/10 my-2"></div>
 
     <AdvancedFilter
+      :key="filterResetKey"
       v-model:filters="filters"
       :options="{
         showPriceRange: true,
-        showStockFilter: true,
+        showStockFilter: false,
         showSortBy: false,
         showRating: false,
         showResetButton: false,
         priceMin: 0,
         priceMax: 10000,
       }"
+      :attribute-filters="colorAttributes"
       @update:filters="handleFilterChange"
     />
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AdvancedFilter from '~/components/AdvancedFilter.vue'
+import { useProductAttributes } from '~/composables/useProductAttributes'
 
 interface ProductSearchFilters {
   priceRange: [number, number]
@@ -58,6 +61,7 @@ interface ProductSearchFilters {
   preOrder: boolean
   sortBy: string
   minRating?: number
+  attributes?: Record<string, string[]>
   [key: string]: any
 }
 
@@ -69,9 +73,14 @@ const filters = ref<ProductSearchFilters>({
   preOrder: false,
   sortBy: 'newest',
   minRating: 0,
+  attributes: {},
 })
 
 const searchingProducts = ref(false)
+
+const filterResetKey = ref(0)
+
+const { colorAttributes, loadFilterableColorAttributes } = useProductAttributes()
 
 const handleFilterChange = (newFilters: ProductSearchFilters) => {
   filters.value = newFilters
@@ -79,6 +88,16 @@ const handleFilterChange = (newFilters: ProductSearchFilters) => {
 }
 
 const handleReset = () => {
+  productSearchQuery.value = ''
+  filters.value = {
+    priceRange: [0, 5000],
+    inStock: true,
+    preOrder: false,
+    sortBy: 'newest',
+    minRating: 0,
+    attributes: {},
+  }
+  filterResetKey.value += 1
   console.log('Product search filters reset')
 }
 
@@ -93,6 +112,10 @@ const searchProducts = async () => {
     searchingProducts.value = false
   }, 360)
 }
+
+onMounted(() => {
+  loadFilterableColorAttributes()
+})
 </script>
 
 <style scoped>
