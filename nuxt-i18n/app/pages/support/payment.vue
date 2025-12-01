@@ -10,13 +10,28 @@
         not store your card number, CVV, or other sensitive data.
       </p>
       <div class="support-card__actions support-intro-banner__actions">
-        <NuxtLink to="/company/ourstory" class="support-card__button">
+        <NuxtLink
+          to="/company/ourstory"
+          target="_blank"
+          rel="noopener"
+          class="support-card__button"
+        >
           Our Story
         </NuxtLink>
-        <NuxtLink to="/support/shipping" class="support-card__button">
+        <NuxtLink
+          to="/support/shipping"
+          target="_blank"
+          rel="noopener"
+          class="support-card__button"
+        >
           Shipping instructions
         </NuxtLink>
-        <NuxtLink to="/support/test-report" class="support-card__button">
+        <NuxtLink
+          to="/support/test-report"
+          target="_blank"
+          rel="noopener"
+          class="support-card__button"
+        >
           Test report
         </NuxtLink>
         <button type="button" class="support-card__button">

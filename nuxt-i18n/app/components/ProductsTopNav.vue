@@ -86,6 +86,7 @@ const isActive = (item: ProductsNavItem) => {
   padding: 0.75rem 1.25rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
   overflow-x: auto;
   scrollbar-width: thin;
@@ -116,6 +117,7 @@ const isActive = (item: ProductsNavItem) => {
 @media (max-width: 768px) {
   .products-top-nav__scroll {
     padding-inline: 0.75rem;
+    justify-content: flex-start;
   }
 }
 </style>
