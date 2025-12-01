@@ -48,11 +48,173 @@
           different riding styles.
         </p>
         <ul class="technical-section__list">
-          <li>Common spoke diameters and shapes (straight / J-bend, round / bladed).</li>
-          <li>Typical spoke types and brands for racing, endurance and heavy duty use.</li>
-          <li>How spoke length affects build quality when it is too long or too short.</li>
-          <li>General guidance for matching spokes to Tanzanite rims and hubs.</li>
+          <li>
+            Common spoke diameters and shapes (straight / J-bend, round / bladed).
+            <div class="technical-inline-image technical-inline-image--spoke-shapes">
+              <img
+                src="/public/technical/j-bend-spokeandstraightpull-spoke.webp"
+                alt="Comparison of J-bend and straight-pull bicycle spokes"
+              />
+              <img
+                src="/public/technical/Sapim-black-stainless-steel-straight-gauge-2.0mm-spoke-double-butted-2.0-1.8-2.0mm-spoke-aero-flat-bladed-spoke.webp"
+                alt="Examples of Sapim stainless steel spokes in different shapes and profiles"
+              />
+            </div>
+          </li>
         </ul>
+        <div class="technical-materials">
+          <p class="technical-section__intro">
+            The following is a detailed introduction to different spoke materials:
+          </p>
+          <ul class="technical-section__list">
+            <li>
+              <strong class="technical-materials__heading">1. Stainless Steel</strong>
+              <p>
+                Stainless steel is currently the most mainstream and widely used spoke
+                material on the market.
+              </p>
+              <p>The main brands currently on the market include:</p>
+              <ul>
+                <li>
+                  <strong>Sapim</strong> &mdash; regarded as No. 1 in spokes and focused solely on
+                  spokes. Several of its models are high quality, and CX-RAY is used by many
+                  wheel brands.
+                  <button type="button" class="technical-brand-button">
+                    Sapim
+                  </button>
+                </li>
+                <li>
+                  <strong>DT Swiss</strong> &mdash; globally recognised quality, producing spokes,
+                  wheels and hubs.
+                  <button type="button" class="technical-brand-button">
+                    DT Swiss
+                  </button>
+                </li>
+                <li>
+                  <strong>Pillar</strong> &mdash; currently the third-ranked brand and very
+                  cost-effective compared with the first two.
+                  <button type="button" class="technical-brand-button">
+                    Pillar
+                  </button>
+                </li>
+              </ul>
+              <p>We also offer another cost-effective brand:</p>
+              <ul>
+                <li>
+                  <strong>YT (Yongteng)</strong> &mdash; an emerging Chinese brand producing both
+                  bicycle and motorcycle spokes.
+                  <button type="button" class="technical-brand-button">
+                    YT
+                  </button>
+                </li>
+              </ul>
+              <p><strong>Advantages:</strong></p>
+              <ul>
+                <li><strong>High strength and durability</strong> &mdash; able to withstand high
+                tension and long-term use.</li>
+                <li><strong>Strong corrosion resistance</strong> &mdash; not easy to rust and
+                suitable for various weather conditions.</li>
+                <li><strong>Cost-effective</strong> &mdash; relatively low cost while balancing
+                weight and performance.</li>
+                <li><strong>Good toughness</strong> &mdash; steel spokes have ductility and
+                elasticity, more likely to deform gradually than suddenly break under impact.</li>
+              </ul>
+              <p><strong>Disadvantages:</strong></p>
+              <ul>
+                <li><strong>Relatively heavy weight</strong> compared with carbon fiber or titanium
+                alloys.</li>
+              </ul>
+              <p>
+                <strong>Applicable scenarios:</strong> suitable for almost all types of bicycles,
+                from daily commuter bikes to professional mountain and road bikes.
+              </p>
+            </li>
+            <li>
+              <strong class="technical-materials__heading">2. Carbon Fiber</strong>
+              <p>
+                Carbon fiber spokes are typically found on the most high-end,
+                performance-focused wheelsets. We also offer factory-developed carbon fiber
+                spokes.
+              </p>
+              <p><strong>Advantages:</strong></p>
+              <ul>
+                <li><strong>Ultra-lightweight</strong> &mdash; can significantly reduce wheelset
+                weight compared with steel spokes (often saving more than 100 grams) and improve
+                acceleration.</li>
+                <li><strong>Excellent rigidity</strong> &mdash; provides very good lateral rigidity
+                and tensile strength, giving more direct power transfer and sharper handling.</li>
+                <li><strong>Good shock absorption</strong> &mdash; can absorb part of riding
+                vibration and improve comfort.</li>
+              </ul>
+              <p><strong>Disadvantages:</strong></p>
+              <ul>
+                <li><strong>Expensive</strong> &mdash; much higher price than stainless steel
+                spokes.</li>
+                <li><strong>Poor side impact resistance</strong> &mdash; very strong in tension but
+                vulnerable to side impacts or punctures; once damaged it usually cannot be
+                repaired and must be replaced.</li>
+                <li><strong>Higher maintenance requirements</strong> &mdash; installation and
+                service require professional skills and specific tools.</li>
+              </ul>
+              <p>
+                <strong>Applicable scenarios:</strong> high-end road racing, time trials,
+                triathlons and other situations that demand extreme light weight and stiffness.
+              </p>
+            </li>
+            <li>
+              <strong class="technical-materials__heading">3. Titanium Alloy</strong>
+              <p>
+                Titanium spokes sit between steel and carbon fiber in character, but are
+                relatively rare on the market. We plan to launch titanium options later.
+              </p>
+              <p><strong>Advantages:</strong></p>
+              <ul>
+                <li><strong>Lightweight and high strength</strong> &mdash; very high
+                strength-to-weight ratio, lighter than stainless steel while remaining strong.</li>
+                <li><strong>Excellent corrosion resistance</strong> &mdash; almost no rust.</li>
+                <li><strong>Smoother ride feel</strong> &mdash; good vibration absorption for a
+                smoother riding experience.</li>
+              </ul>
+              <p><strong>Disadvantages:</strong></p>
+              <ul>
+                <li><strong>Very expensive</strong> compared with stainless steel.</li>
+                <li><strong>Limited availability</strong> &mdash; relatively few options on the
+                market.</li>
+              </ul>
+              <p>
+                <strong>Applicable scenarios:</strong> high-end custom wheelsets and riders who
+                pursue light weight, comfort and uniqueness.
+              </p>
+            </li>
+            <li>
+              <strong class="technical-materials__heading">4. Aluminum Alloy</strong>
+              <p>
+                Aluminum spokes are relatively rare and mainly used by a few manufacturers (such
+                as Campagnolo) in certain high-end wheelsets.
+              </p>
+              <p><strong>Advantages:</strong></p>
+              <ul>
+                <li><strong>Very light</strong> &mdash; one of the lightest metal spoke
+                materials.</li>
+              </ul>
+              <p><strong>Disadvantages:</strong></p>
+              <ul>
+                <li><strong>Lower strength and durability</strong> than stainless steel or titanium
+                alloy, more prone to fatigue fracture.</li>
+                <li><strong>More prone to corrosion</strong> and requires more careful
+                maintenance.</li>
+              </ul>
+              <p>
+                <strong>Applicable scenarios:</strong> specially designed ultra-lightweight racing
+                wheelsets.
+              </p>
+            </li>
+          </ul>
+          <p class="technical-section__intro">
+            Which material you choose ultimately depends on your budget, riding style and
+            specific performance needs such as weight, stiffness and comfort.
+          </p>
+        </div>
       </section>
 
       <!-- Spoke length -->
@@ -397,6 +559,27 @@ const setActiveTab = (id: TechnicalTabId) => {
   margin-top: 0.25rem;
 }
 
+.technical-materials {
+  margin-top: 0.75rem;
+}
+
+.technical-materials > .technical-section__list > li {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.technical-materials > .technical-section__list > li + li {
+  margin-top: 0.6rem;
+}
+
+.technical-materials__heading {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #fbbf24;
+}
+
 .technical-link-button {
   margin-left: 0.5rem;
   padding: 0.15rem 0.6rem;
@@ -417,6 +600,26 @@ const setActiveTab = (id: TechnicalTabId) => {
   color: #ffffff;
 }
 
+.technical-brand-button {
+  margin-left: 0.5rem;
+  margin-top: 0.15rem;
+  padding: 0.25rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(56, 189, 248, 0.9);
+  background-image: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.9),
+    rgba(59, 130, 246, 0.95)
+  );
+  color: #0b1020;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .technical-inline-image {
   margin-top: 0.4rem;
 }
@@ -431,6 +634,16 @@ const setActiveTab = (id: TechnicalTabId) => {
 
 .technical-inline-image--spoke-length img {
   max-width: 380px;
+}
+
+.technical-inline-image--spoke-shapes img {
+  max-width: 260px;
+}
+
+.technical-inline-image--spoke-shapes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .technical-feedback {
