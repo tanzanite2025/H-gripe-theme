@@ -95,5 +95,9 @@ const isActive = (item: SupportNavItem) => {
   .support-top-nav__scroll {
     padding-inline: 0.75rem;
   }
+
+  .support-top-nav__link {
+    font-size: 0.875rem;
+  }
 }
 </style>

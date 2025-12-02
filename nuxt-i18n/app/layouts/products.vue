@@ -75,55 +75,68 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
 
 @media (max-width: 768px) {
   .products-hero {
-    margin-top: 4.5rem;
+    margin-top: 5.5rem;
     padding: 2rem 1.25rem 0.75rem;
   }
 
   .products-content {
-    padding-inline: 1.25rem;
+    padding-inline: 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .products-content {
+    padding-inline: 0.75rem;
   }
 }
 
 /* Mirror Support layout's extra spacing for key mobile widths */
 @media (min-width: 360px) and (max-width: 374px) {
   .products-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 @media (min-width: 375px) and (max-width: 389px) {
   .products-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 @media (min-width: 390px) and (max-width: 411px) {
   .products-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 @media (min-width: 412px) and (max-width: 413px) {
   .products-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 @media (min-width: 414px) and (max-width: 429px) {
   .products-hero {
-    margin-top: 6.5rem;
+    margin-top: 7.5rem;
   }
 }
 
 @media (min-width: 430px) and (max-width: 767px) {
   .products-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .products-hero {
     margin-top: 5.5rem;
+  }
+}
+
+/* Very narrow tall phones (e.g. iPhone SE portrait): ensure horizontal nav is fully visible below fixed header */
+@media (max-width: 359px) and (min-height: 700px) {
+  .products-hero {
+    margin-top: 7rem;
   }
 }
 </style>

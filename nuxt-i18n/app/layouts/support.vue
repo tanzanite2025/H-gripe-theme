@@ -84,7 +84,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 @media (max-width: 768px) {
   .support-hero {
     /* 为顶部固定 SiteHeader 预留更多空间，避免 Support 标题和顶部导航被遮挡 */
-    margin-top: 4.5rem;
+    margin-top: 5.5rem;
     padding: 2rem 1.25rem 0.75rem;
   }
 
@@ -104,42 +104,42 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 /* 360 宽（含 360x640, 360x740 等） */
 @media (min-width: 360px) and (max-width: 374px) {
   .support-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 /* 375 宽（375x667, 375x812 等） */
 @media (min-width: 375px) and (max-width: 389px) {
   .support-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 /* 390 宽（390x844 等） */
 @media (min-width: 390px) and (max-width: 411px) {
   .support-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 /* 412 宽（412x915 等） */
 @media (min-width: 412px) and (max-width: 413px) {
   .support-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
 /* 414 宽（414x896 等） */
 @media (min-width: 414px) and (max-width: 429px) {
   .support-hero {
-    margin-top: 6.5rem;
+    margin-top: 7.5rem;
   }
 }
 
 /* 430 宽及以上手机（直到平板前的 767 宽） */
 @media (min-width: 430px) and (max-width: 767px) {
   .support-hero {
-    margin-top: 6rem;
+    margin-top: 7rem;
   }
 }
 
@@ -147,6 +147,13 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 @media (min-width: 768px) and (max-width: 1023px) {
   .support-hero {
     margin-top: 5.5rem;
+  }
+}
+
+/* Very narrow tall phones (e.g. iPhone SE portrait): ensure horizontal nav is fully visible below fixed header */
+@media (max-width: 359px) and (min-height: 700px) {
+  .support-hero {
+    margin-top: 7rem;
   }
 }
 </style>

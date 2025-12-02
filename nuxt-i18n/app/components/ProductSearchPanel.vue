@@ -3,7 +3,6 @@
     class="rounded-xl border border-white/10 bg-black/40 p-4 space-y-3 text-sm text-white/80 product-search-panel"
   >
     <div>
-      <h2 class="text-base font-semibold text-white mb-2">Product Search</h2>
       <div class="flex flex-col md:flex-row gap-1.5 md:items-center">
         <input
           v-model="productSearchQuery"
@@ -134,4 +133,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.product-search-panel {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
 </style>

@@ -493,6 +493,9 @@ const setActiveTab = (id: TechnicalTabId) => {
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(148, 163, 184, 0.4);
   margin-bottom: 1rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .products-page__title--sr-only {
@@ -653,6 +656,12 @@ const setActiveTab = (id: TechnicalTabId) => {
 @media (min-width: 768px) {
   .technical-section {
     margin-top: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .technical-tabs {
+    justify-content: center;
   }
 }
 </style>
