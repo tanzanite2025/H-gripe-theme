@@ -1,5 +1,5 @@
 <template>
-  <main class="max-w-5xl mx-auto px-6 pt-0 pb-16 space-y-6">
+  <main class="shop-page max-w-5xl mx-auto pt-0 pb-16 space-y-6">
     <ProductSearchPanel @search="handleSearch" />
 
     <section class="rounded-xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
@@ -200,3 +200,21 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   }
 }
 </script>
+
+<style scoped>
+.shop-page {
+  padding-inline: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .shop-page {
+    padding-inline: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .shop-page {
+    padding-inline: 0;
+  }
+}
+</style>

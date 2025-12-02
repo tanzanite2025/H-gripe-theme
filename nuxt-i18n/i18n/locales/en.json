@@ -156,9 +156,9 @@
   },
   "footer": {
     "menus": {
-      "products": "PRODUCTS",
-      "support": "SUPPORT",
-      "company": "COMPANY",
+      "products": "Products",
+      "support": "Support",
+      "company": "Company",
       "resources": "RESOURCES"
     },
     "links": {

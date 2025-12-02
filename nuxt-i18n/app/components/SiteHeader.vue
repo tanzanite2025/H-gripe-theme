@@ -1,13 +1,13 @@
 <template>
-	<div class="fixed top-1.5 left-1/2 -translate-x-1/2 w-[95vw] max-w-[1200px] z-[110]">
+	<div class="fixed top-1.5 left-1/2 -translate-x-1/2 w-[95vw] max-w-[1200px] z-[110] site-header-root">
 		<div
-			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-0.5 md:py-2"
+			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-2 md:py-2"
 		>
 			<!-- 桌面端：第一行 标题 + 主导航 + 右侧控件，第二行 面包屑 -->
 			<div class="hidden md:flex flex-col gap-1">
 				<!-- 第一行：标题 + 主导航 + 右侧控件 -->
 				<div
-					class="grid grid-cols-[230px_1fr_240px] items-center gap-3 lg:grid-cols-[250px_1fr_250px] lg:gap-4"
+					class="grid grid-cols-[230px_1fr_240px] items-center gap-3 lg:grid-cols-[250px_1fr_250px] lg:gap-4 desktop-header-grid"
 				>
 					<!-- 左侧：站点标题 -->
 					<div class="flex justify-start items-center">
@@ -23,40 +23,40 @@
 					>
 						<NuxtLink
 							:to="localePath('/products')"
-							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="h-10 px-3 py-1 lg:px-4 lg:py-1.5 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.products', 'Products') }}
 						</NuxtLink>
 						<NuxtLink
 							:to="localePath('/support')"
-							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="h-10 px-3 py-1 lg:px-4 lg:py-1.5 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.support', 'Support') }}
 						</NuxtLink>
 						<NuxtLink
 							:to="localePath('/company')"
-							class="px-3 py-1 lg:px-4 lg:py-1.5 rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="h-10 px-3 py-1 lg:px-4 lg:py-1.5 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
 						>
 							{{ $t('footer.menus.company', 'Company') }}
 						</NuxtLink>
 					</nav>
 
-					<!-- 右侧：All Guides + 分享 + 语言切换器 -->
+					<!-- 右侧：Guides + 分享 + 语言切换器 -->
 					<div
 						class="justify-self-end flex items-center gap-2 lg:gap-3"
 					>
-						<!-- All Guides 文本按钮（桌面端） -->
+						<!-- Guides 文本按钮（桌面端） -->
 						<NuxtLink
 							:to="localePath('/guides')"
-							class="pointer-events-auto text-slate-950 shadow-[0_0_16px_rgba(64,115,255,0.65)] hover:shadow-[0_0_22px_rgba(64,115,255,0.9)] transition-all duration-200 h-10 lg:h-12 px-3.5 lg:px-4 rounded-full hidden lg:inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[11px] lg:text-[12px] font-semibold hover:-translate-y-[1px] hover:scale-[1.02]"
-							aria-label="All Guides"
+							class="pointer-events-auto text-white shadow-[0_0_16px_rgba(64,115,255,0.65)] hover:shadow-[0_0_22px_rgba(64,115,255,0.9)] transition-all duration-200 h-10 w-[80px] px-3.5 lg:px-4 rounded-full hidden lg:inline-flex items-center justify-center bg-black border-2 border-[#6b73ff] text-[11px] lg:text-[12px] font-semibold hover:-translate-y-[1px] hover:scale-[1.02]"
+							aria-label="Guides"
 						>
-							All Guides
+							Guides
 						</NuxtLink>
 
 						<!-- 分享按钮（会员积分） - 改为圆形 -->
 						<button
-							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-10 h-10 lg:w-12 lg:h-12 rounded-full hidden lg:inline-flex items-center justify-center bg-[#0b1020]"
+							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 h-10 w-[80px] rounded-full hidden lg:inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-haspopup="dialog"
@@ -68,7 +68,7 @@
 						<!-- 翻译转换器 -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="flex items-center justify-between gap-2 lg:gap-3 px-3 py-2 lg:px-4 lg:py-2.5 rounded-full text-white text-xs lg:text-sm font-medium cursor-pointer transition-all duration-200 w-[110px] h-10 lg:w-[125px] lg:h-12 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
+								class="flex items-center justify-between gap-2 lg:gap-3 px-3 py-2 lg:px-4 lg:py-2.5 rounded-full text-white text-xs lg:text-sm font-medium cursor-pointer transition-all duration-200 w-[130px] h-10 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff] desktop-lang-switcher"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -131,7 +131,7 @@
 						<NuxtLink
 							:to="localePath('/guides')"
 							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
-							aria-label="All Guides"
+							aria-label="Guides"
 						>
 							<img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
 						</NuxtLink>
@@ -179,27 +179,51 @@
 
 			<!-- 移动端：三排垂直布局（更紧凑的间距） -->
 			<div class="md:hidden grid gap-0 justify-items-center">
-				<!-- 第一排：站点标题 + All Guides + 分享（整体向上贴近容器顶部，414 宽单独微调） -->
-				<div class="w-[90vw] max-w-[600px] flex items-center justify-between -mt-1 phone-414:mt-0">
-					<!-- All Guides 文本按钮（移动端） -->
+				<!-- 第一排：仅站点标题（单独占一行） -->
+				<div class="w-[90vw] max-w-[600px] flex justify-center mt-0">
+					<h1 class="m-0 text-3xl phone-375:text-3xl phone-390:text-3xl phone-414:text-3xl phone-430:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
+						{{ titleText }}
+					</h1>
+				</div>
+				
+				<!-- 第二排：Guides + 翻译转换器 + 分享按钮（同一高度） -->
+				<div class="w-[90vw] max-w-[600px] flex items-center justify-between mt-1">
+					<!-- Guides 文本按钮（移动端） -->
 					<NuxtLink
 						:to="localePath('/guides')"
-						class="pointer-events-auto text-slate-950 transition-all duration-200 h-[52px] px-3.5 rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[11px] font-semibold shadow-[0_0_14px_rgba(64,115,255,0.65)] hover:shadow-[0_0_20px_rgba(64,115,255,0.9)] hover:-translate-y-[1px]"
-						aria-label="All Guides"
+						class="pointer-events-auto text-white header-mobile-nav-text transition-all duration-200 h-[32px] w-[80px] px-3.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff] text-[11px] font-semibold shadow-[0_0_14px_rgba(64,115,255,0.65)] hover:shadow-[0_0_20px_rgba(64,115,255,0.9)] hover:-translate-y-[1px]"
+						aria-label="Guides"
 					>
-						All Guides
+						Guides
 					</NuxtLink>
-
-					<!-- 站点标题（压缩上下留白） -->
-					<div class="flex-1 flex justify-center px-2 py-0">
-						<h1 class="m-0 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
-							{{ titleText }}
-						</h1>
+				
+					<!-- 翻译转换器（居中） -->
+					<div class="flex-1 flex justify-center">
+						<div class="relative min-w-[150px]" data-lang-wrapper>
+							<button
+								class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white header-mobile-nav-text text-[11px] font-medium cursor-pointer transition-all duration-200 w-[150px] h-[32px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
+								@click.stop="toggleDropdown"
+								@keydown="onButtonKeydown"
+								:id="buttonId"
+								aria-haspopup="listbox"
+								:aria-expanded="isOpen"
+								:aria-controls="dropdownId"
+								:aria-label="'Switch language'"
+							>
+								<span class="font-medium flex items-center gap-2">
+									<span class="w-[1.2em] inline-block" aria-hidden="true">
+										<img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+									</span>
+									{{ currentLocale.name }}
+								</span>
+								<span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
+							</button>
+						</div>
 					</div>
-
-					<!-- 分享按钮 - 圆形 -->
+				
+					<!-- 分享按钮 - 圆形，高度与翻译转换器一致 -->
 					<button
-						class="pointer-events-auto text-white transition-all duration-200 w-[52px] h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+						class="pointer-events-auto text-white transition-all duration-200 w-[80px] h-[32px] mr-1.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]"
 						@click.stop="toggleShare()"
 						:aria-expanded="shareOpen"
 						aria-haspopup="dialog"
@@ -209,65 +233,33 @@
 					</button>
 				</div>
 
-				<!-- 第二排：翻译转换器（单独一排，居中，414 宽下与上下行间距更均衡） -->
-				<div class="flex justify-center items-center -mt-1.5 phone-414:-mt-1">
-					<div class="relative min-w-[150px]" data-lang-wrapper>
-						<button
-							class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white text-sm font-medium cursor-pointer transition-all duration-200 w-[150px] h-[36px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
-							@click.stop="toggleDropdown"
-							@keydown="onButtonKeydown"
-							:id="buttonId"
-							aria-haspopup="listbox"
-							:aria-expanded="isOpen"
-							:aria-controls="dropdownId"
-							:aria-label="'Switch language'"
-						>
-							<span class="font-medium flex items-center gap-2">
-								<span class="w-[1.2em] inline-block" aria-hidden="true">
-									<img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-								</span>
-								{{ currentLocale.name }}
-							</span>
-							<span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
-						</button>
-					</div>
-				</div>
-
-				<!-- 第三排：主导航 + 面包屑导航（414 宽下略微下移） -->
+				<!-- 第三排：主导航 + 面包屑导航 -->
 				<nav
-					class="w-[85vw] max-w-[600px] rounded-[30px] bg-transparent border border-transparent pointer-events-auto mt-0 phone-414:mt-1"
+					class="w-[85vw] max-w-[600px] rounded-[30px] bg-transparent border border-transparent pointer-events-auto mt-0"
 					aria-label="Primary navigation and breadcrumbs"
 				>
 					<div
-						class="w-full flex flex-col items-center justify-center px-3 py-0.5 gap-1
-							phone-375:py-0.5 phone-390:py-0.5 phone-414:py-0.5 phone-430:py-1
-							tablet-768:py-1 tablet-820:py-1.5"
+						class="w-full flex flex-col items-center justify-center px-3 py-0.5 gap-1"
 					>
 						<!-- 第一行：主导航（Products / Support / Company） -->
 						<div
-							class="w-full flex items-center justify-between gap-2 text-[10px]
-								phone-375:text-[10px]
-								phone-390:text-[10px]
-								phone-414:text-[10px]
-								phone-430:text-[11px]
-								tablet-768:text-[11px]
-								tablet-820:text-[12px]"
+							class="w-full flex items-center justify-between gap-2 text-[11px] header-mobile-nav-text"
 						>
 							<NuxtLink
 								:to="localePath('/products')"
-								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+								class="flex-1 flex items-center justify-center text-center px-3 py-1 h-[32px] rounded-full border border-[#6b73ff] bg-[#6b73ff]/12 text-white/80 hover:text-white hover:bg-[#6b73ff]/20 hover:border-[#6b73ff] font-semibold transition-colors"
 							>
 								{{ $t('footer.menus.products', 'Products') }}
 							</NuxtLink>
 							<NuxtLink
 								:to="localePath('/support')"
-								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+								class="flex-1 flex items-center justify-center text-center px-3 py-1 h-[32px] rounded-full border border-[#6b73ff] bg-[#6b73ff]/12 text-white/80 hover:text-white hover:bg-[#6b73ff]/20 hover:border-[#6b73ff] font-semibold transition-colors"
 							>
 								{{ $t('footer.menus.support', 'Support') }}
 							</NuxtLink>
 							<NuxtLink
 								:to="localePath('/company')"
-								class="flex-1 text-center px-3 py-1 rounded-full border border-white/15 bg-white/5 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+								class="flex-1 flex items-center justify-center text-center px-3 py-1 h-[32px] rounded-full border border-[#6b73ff] bg-[#6b73ff]/12 text-white/80 hover:text-white hover:bg-[#6b73ff]/20 hover:border-[#6b73ff] font-semibold transition-colors"
 							>
 								{{ $t('footer.menus.company', 'Company') }}
 							</NuxtLink>
@@ -740,3 +732,25 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
   return `/twemoji/svg/${file}`
 }
 </script>
+
+<style scoped>
+.header-mobile-nav-text {
+  font-size: 12px !important;
+}
+
+/* iPad / small tablets: prevent desktop language switcher from overflowing header pill */
+@media (min-width: 768px) and (max-width: 1100px) {
+	.site-header-root {
+		width: 90vw;
+	}
+
+	.desktop-header-grid {
+		grid-template-columns: 230px minmax(0, 1fr) max-content;
+	}
+
+	.desktop-lang-switcher {
+		width: 106px;
+		padding-inline: 0.5rem;
+	}
+}
+</style>

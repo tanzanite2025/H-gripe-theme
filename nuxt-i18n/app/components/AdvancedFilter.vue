@@ -59,14 +59,14 @@
           <button
             type="button"
             class="attribute-toggle"
-            @click="toggleGroupExpanded(attr.slug)"
+            @click="toggleGroupExpanded(getAttributeKey(attr))"
           >
             <span class="attribute-label">
               {{ attr.name }} ({{ getAttributeSummary(attr) }})
             </span>
             <span
               class="attribute-toggle-icon"
-              :class="{ open: isGroupExpanded(attr.slug) }"
+              :class="{ open: isGroupExpanded(getAttributeKey(attr)) }"
             >
               ▼
             </span>
@@ -74,7 +74,7 @@
 
           <transition name="attribute-dropdown">
             <div
-              v-if="isGroupExpanded(attr.slug)"
+              v-if="isGroupExpanded(getAttributeKey(attr))"
               class="attribute-dropdown"
             >
               <div class="checkbox-group">
@@ -278,6 +278,14 @@ const localFilters = ref<FilterState>({
 
 const attributeFilters = computed(() => props.attributeFilters || [])
 
+// 为属性下拉展开状态生成稳定的 key（即使后端 slug 为空也可用）
+const getAttributeKey = (attr: AttributeFilterConfig): string => {
+  if (attr && typeof attr.slug === 'string' && attr.slug.length > 0) {
+    return attr.slug
+  }
+  return `attr-${attr.id}`
+}
+
 // 属性下拉展开状态
 const expandedGroups = ref<Record<string, boolean>>({})
 
@@ -286,10 +294,10 @@ const ensureExpandedDefaults = () => {
   let changed = false
 
   attributeFilters.value.forEach((attr) => {
-    const slug = attr.slug
-    if (!slug) return
-    if (typeof map[slug] === 'undefined') {
-      map[slug] = false // 默认收起
+    const key = getAttributeKey(attr)
+    if (!key) return
+    if (typeof map[key] === 'undefined') {
+      map[key] = false // 默认收起
       changed = true
     }
   })
@@ -299,16 +307,16 @@ const ensureExpandedDefaults = () => {
   }
 }
 
-const isGroupExpanded = (slug: string): boolean => {
-  if (!slug) return false
-  return !!expandedGroups.value[slug]
+const isGroupExpanded = (key: string): boolean => {
+  if (!key) return false
+  return !!expandedGroups.value[key]
 }
 
-const toggleGroupExpanded = (slug: string) => {
-  if (!slug) return
+const toggleGroupExpanded = (key: string) => {
+  if (!key) return
   expandedGroups.value = {
     ...expandedGroups.value,
-    [slug]: !expandedGroups.value[slug],
+    [key]: !expandedGroups.value[key],
   }
 }
 
@@ -507,6 +515,7 @@ watch(() => props.initialFilters, (newFilters) => {
 <style scoped>
 .advanced-filter {
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* 筛选区块 */
@@ -777,5 +786,22 @@ watch(() => props.initialFilters, (newFilters) => {
   background-color: rgba(0, 0, 0, 0.1);
   border-color: rgba(0, 0, 0, 0.3);
   color: rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 768px) {
+	/* 在移动端让 Color / Diameter / Brake 等属性按钮两排显示 */
+	.attribute-top-row {
+		flex-wrap: wrap;
+		justify-content: flex-start;
+	}
+
+	.attribute-inline-row {
+		flex: 1 1 calc(50% - 0.5rem);
+	}
+
+	/* 移动端：缩小价格输入框宽度，大约为桌面的约一半 */
+	.price-input {
+		width: 2.5rem;
+	}
 }
 </style>

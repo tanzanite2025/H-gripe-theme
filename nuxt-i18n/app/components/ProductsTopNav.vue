@@ -119,5 +119,9 @@ const isActive = (item: ProductsNavItem) => {
     padding-inline: 0.75rem;
     justify-content: flex-start;
   }
+
+  .products-top-nav__link {
+    font-size: 0.875rem;
+  }
 }
 </style>
