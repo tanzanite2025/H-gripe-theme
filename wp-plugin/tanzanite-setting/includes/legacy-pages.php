@@ -2047,27 +2047,6 @@ if ( ! class_exists( 'Tanzanite_Settings_Plugin' ) ) {
             echo '              </div>';
             echo '          </div>';
             echo '      </section>';
-
-            echo '          <div class="tz-settings-section">';
-            echo '              <div class="tz-section-title">' . esc_html__( '积分与会员', 'tanzanite-settings' ) . '</div>';
-            echo '              <div class="tz-section-body" style="display:grid;gap:12px;">';
-            echo '                  <label>' . esc_html__( '赠送积分', 'tanzanite-settings' ) . '<input type="number" id="tz-product-points-reward" class="regular-text" /></label>';
-            echo '                  <label>' . esc_html__( '积分抵扣上限', 'tanzanite-settings' ) . '<input type="number" id="tz-product-points-limit" class="regular-text" /></label>';
-            echo '                  <div>';
-            echo '                      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
-            echo '                          <strong>' . esc_html__( '适用会员等级', 'tanzanite-settings' ) . '</strong>';
-            echo '                          <div style="display:flex;gap:6px;flex-wrap:wrap;">';
-            echo '                              <button type="button" class="button" id="tz-member-select-all">' . esc_html__( '全选', 'tanzanite-settings' ) . '</button>';
-            echo '                              <button type="button" class="button" id="tz-member-select-clear">' . esc_html__( '清除', 'tanzanite-settings' ) . '</button>';
-            echo '                          </div>';
-            echo '                      </div>';
-            echo '                      <p class="description">' . esc_html__( '从会员系统同步的等级列表，可多选。未选择时表示对全部会员开放。', 'tanzanite-settings' ) . '</p>';
-            echo '                      <div id="tz-product-membership-list" class="tz-membership-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>';
-            echo '                      <input type="hidden" id="tz-product-membership" />';
-            echo '                  </div>';
-            echo '              </div>';
-            echo '          </div>';
-
             echo '          <div class="tz-settings-section">';
             echo '              <div class="tz-section-title">' . esc_html__( '物流与配送', 'tanzanite-settings' ) . '</div>';
             echo '              <div class="tz-section-body" style="display:grid;gap:12px;">';

@@ -26,14 +26,6 @@
         class="sizecharts-section"
       >
         <h3 class="sizecharts-section__title">Tubeless tires</h3>
-        <p class="sizecharts-section__intro">
-          Notes about tubeless tire sizing, compatibility and typical use cases.
-        </p>
-        <ul class="sizecharts-section__list">
-          <li>Basic explanation of tubeless-ready rims and tires.</li>
-          <li>Common ETRTO sizes that are typically available as tubeless.</li>
-          <li>Recommended pressure ranges and safety notes.</li>
-        </ul>
 
         <TubelessProducts />
       </section>
