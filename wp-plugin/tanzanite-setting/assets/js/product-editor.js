@@ -633,7 +633,8 @@
 
                 (attr.values || []).forEach(function(val) {
                     const valueLabel = document.createElement('label');
-                    valueLabel.style.cssText = 'display:flex;align-items:center;gap:6px;';
+                    // 强制一行展示：checkbox + 文本水平排列
+                    valueLabel.style.cssText = 'display:flex;flex-direction:row;align-items:center;gap:6px;';
                     
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
