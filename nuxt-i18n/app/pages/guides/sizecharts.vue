@@ -25,9 +25,82 @@
         id="tubeless"
         class="sizecharts-section"
       >
-        <h3 class="sizecharts-section__title">Tubeless tires</h3>
+        <h3 class="sizecharts-section__title sizecharts-section__title--sr-only">Tubeless tires</h3>
 
         <TubelessProducts />
+
+        <div class="sizecharts-installation-images sizecharts-installation-images--tubeless">
+          <figure class="sizecharts-installation-images__item">
+            <img
+              src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires1.webp"
+              alt="Comparison of tubeless, inner tube and tubular tires 1"
+              class="sizecharts-installation-images__img"
+              loading="lazy"
+            />
+          </figure>
+          <figure class="sizecharts-installation-images__item">
+            <img
+              src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires2.webp"
+              alt="Comparison of tubeless, inner tube and tubular tires 2"
+              class="sizecharts-installation-images__img"
+              loading="lazy"
+            />
+          </figure>
+        </div>
+
+        <p class="sizecharts-section__subheading">What is an inner tube tire?</p>
+        <p class="sizecharts-section__intro">
+          Tires with inner tubes are like the bicycle tires we rode when we were children. The tires are composed of
+          &quot;inner tube + outer tire&quot;. There is a frame on the outside and a pneumatic tire in the inner
+          cavity. It can be applied to any type of bicycle.
+        </p>
+
+        <p class="sizecharts-section__subheading">What is tubeless?</p>
+        <p class="sizecharts-section__intro">
+          As the name suggests, tubeless tubes are clincher tires that are inflated on a rim without a tube. Unlike
+          tubeless tubes, which need to keep air inside the tire, the tubeless tire, rim, and valve create a closed
+          air-tight space, just like a car or motorcycle tire.
+        </p>
+        <p class="sizecharts-section__intro">
+          The airtight chamber of a tubeless tire is made from a specialized tire using a specially made (usually
+          carbon fiber) bead and compatible rim, which locks into the rim and creates an airtight seal that maintains
+          pressure.
+        </p>
+
+        <p class="sizecharts-section__subheading">
+          Am I suitable for tubeless or tubeless use?
+        </p>
+        <p class="sizecharts-section__intro">
+          It depends on your usage needs and habits. If you are doing daily commuting or relaxing holiday riding,
+          tubeless tires are enough; but if you often ride on soft and slippery roads, or require more advanced,
+          high-speed riding enjoyment, then tubeless tires are a good choice.
+        </p>
+
+        <p class="sizecharts-section__subheading">How to install tubeless wheels?</p>
+        <button
+          type="button"
+          class="sizecharts-brand-button"
+          @click="setActiveTab('installation')"
+        >
+          View graphic installation details
+        </button>
+
+        <p class="sizecharts-section__subheading">
+          The difference between tubeless and tubeless systems
+        </p>
+        <p class="sizecharts-section__intro">
+          The biggest difference between the two is that tubeless tires do not require inner tubes, while both clincher
+          and tubular tires require the support of an inner tube structure. When some small punctures occur, the tire
+          sealing fluid in the tubeless tire will fill it up on its own. However, once the puncture is larger, it
+          cannot be repaired. At this time, there is no need to worry. You can plug an inner tube in to solve the
+          problem. At the same time, since there is no inner tube, there is no risk of snake bite and puncture in
+          tubeless tires, so the chance of puncture will be greatly reduced.
+        </p>
+        <p class="sizecharts-section__intro">
+          Compared with ordinary tires, tubeless tires are wider and can hold more air inside. The safe tire pressure
+          required to maintain the shape is relatively small, so the tire pressure of tubeless tires does not need to
+          be above 100psi. The best rolling resistance and riding comfort can be obtained at around 80psi.
+        </p>
       </section>
 
       <!-- Installation -->
@@ -360,6 +433,18 @@ const setActiveTab = (id: SizeChartsTabId) => {
 	border: 0;
 }
 
+.sizecharts-section__title--sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
 .sizecharts-page {
   margin: 0.25rem auto 0;
   max-width: 900px;
@@ -432,6 +517,10 @@ const setActiveTab = (id: SizeChartsTabId) => {
   margin-top: 0.25rem;
 }
 
+.sizecharts-section__list--numbered {
+  list-style-type: decimal;
+}
+
 .sizecharts-brand-button {
   margin-left: 0.5rem;
   margin-top: 0.5rem;
@@ -473,6 +562,10 @@ const setActiveTab = (id: SizeChartsTabId) => {
   object-fit: cover;
   border-radius: 0.5rem;
   border: 1px solid rgba(30, 64, 175, 0.7);
+}
+
+.sizecharts-installation-images--tubeless .sizecharts-installation-images__img {
+  object-fit: contain;
 }
 
 @media (max-width: 768px) {
