@@ -9,12 +9,14 @@
     >
       <div
         v-if="isCartOpen"
-        class="fixed inset-0 z-[10001] flex items-end justify-center p-0 md:p-4 pointer-events-none"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
         @click.self="closeCart"
       >
+        <!-- 半透明背景遮罩，与 WhatsApp/Checkout 保持一致 -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->
         <div
-          class="relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
+          class="relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
           aria-modal="true"
           role="dialog"
           aria-label="Shopping Cart"
