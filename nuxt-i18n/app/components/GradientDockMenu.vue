@@ -4,6 +4,23 @@
   
   <!-- Dock 菜单 -->
   <div class="fixed left-0 right-0 bottom-[8px] w-full flex items-center justify-center gap-[11px] max-md:gap-[5px] min-[769px]:max-[1024px]:grid min-[769px]:max-[1024px]:grid-cols-5 min-[769px]:max-[1024px]:gap-[7px] min-[769px]:max-[1024px]:justify-items-center min-[1025px]:max-[1200px]:grid min-[1025px]:max-[1200px]:grid-flow-col min-[1025px]:max-[1200px]:auto-cols-max min-[1025px]:max-[1200px]:gap-3 pb-[max(env(safe-area-inset-bottom),0px)] z-[101] pointer-events-none" ref="dockRef">
+    <!-- 新按钮：打开左侧 Sidebar -->
+    <div class="relative inline-flex items-center">
+      <button
+        class="pointer-events-auto text-[#cfd6ff] shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-[52px] h-[52px] max-md:w-[52px] max-md:h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white relative"
+        @click="openSidebarLeft"
+        aria-label="Open sidebar"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="w-7 h-7">
+          <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 5h16" />
+            <path d="M4 12h16" />
+            <path d="M4 19h16" />
+          </g>
+        </svg>
+      </button>
+    </div>
+
     <!-- 第一个按钮：客服聊天 -->
     <div class="relative inline-flex items-center">
       <button 
@@ -29,23 +46,10 @@
     </div>
     
     <button 
-      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] min-h-[52px] h-[52px] max-md:h-12 max-md:min-h-12 w-[250px] px-3.5 rounded-full font-semibold tracking-wider text-white uppercase bg-[#0b1020] shadow-none hover:shadow-none focus-visible:shadow-none inline-flex items-center justify-between border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
+      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] min-h-[52px] h-[52px] max-md:h-12 max-md:min-h-12 w-[120px] px-3.5 rounded-full font-semibold tracking-wider text-white uppercase bg-[#0b1020] shadow-none hover:shadow-none focus-visible:shadow-none inline-flex items-center justify-center border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
       type="button" 
-      @click="openCartDrawer" 
-      :aria-label="ctaLabel"
+      @click="openCheckoutFromDock"
     >
-      <span class="inline-flex items-center after:content-['•'] after:opacity-70 after:text-xs after:ml-1.5">
-        <span class="inline-flex flex-col items-center justify-center gap-0.5">
-          <svg aria-hidden="true" viewBox="0 0 24 24" class="w-4 h-4 block"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h13l-1.2 8H8.2L6 6z"/><circle cx="9" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2"/></g></svg>
-          <span class="normal-case leading-none text-[13px]">{{ itemsCount }}</span>
-        </span>
-      </span>
-      <span class="inline-flex items-center after:content-['•'] after:opacity-70 after:text-xs after:ml-1.5">
-        <span class="inline-flex flex-col items-center justify-center gap-0.5">
-          <svg aria-hidden="true" viewBox="0 0 24 24" class="w-4 h-4 block"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16"/><path d="M7 18l2-8h6l2 8"/><path d="M9 10a3 3 0 0 1 6 0"/></g></svg>
-          <span class="normal-case leading-none text-[13px]">{{ weightDisplay }}</span>
-        </span>
-      </span>
       <span class="inline-flex items-center">
         <span class="inline-flex flex-col items-center justify-center gap-0.5">
           <svg aria-hidden="true" viewBox="0 0 24 24" class="w-4 h-4 block"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h8l4 4-8 8-4-4z"/><path d="M10 10h.01"/></g></svg>
@@ -87,6 +91,36 @@
         </g>
       </svg>
     </button>
+    <button 
+      class="pointer-events-auto text-[#cfd6ff] shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-[52px] h-[52px] max-md:w-[52px] max-md:h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white relative" 
+      @click="openWishlist" 
+      aria-label="Open wishlist"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="w-7 h-7">
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
+        </g>
+      </svg>
+      <span
+        v-if="wishlistCount > 0"
+        class="absolute -top-1 -right-1 w-5 h-5 bg-[#40ffaa] text-black text-xs rounded-full flex items-center justify-center font-bold"
+      >
+        {{ wishlistCount > 9 ? '9+' : wishlistCount }}
+      </span>
+    </button>
+    <button 
+      class="pointer-events-auto text-[#cfd6ff] shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] w-[52px] h-[52px] max-md:w-[52px] max-md:h-[52px] rounded-full inline-flex items-center justify-center bg-[#0b1020] text-white" 
+      @click="openCartDrawer" 
+      aria-label="Open cart"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="w-7 h-7">
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h2l2 13h12l2-9H6" />
+          <circle cx="9" cy="19" r="1.4" />
+          <circle cx="17" cy="19" r="1.4" />
+        </g>
+      </svg>
+    </button>
     
   </div>
   
@@ -99,6 +133,9 @@
     :conversation="currentConversation"
     @close="handleCloseChat"
   />
+
+  <!-- Wishlist 抽屉弹窗 -->
+  <WishlistDrawer v-model="wishlistDrawerVisible" />
 </template>
 
 <script setup lang="ts">
@@ -106,16 +143,20 @@ import { ref, computed, onMounted, watch, onBeforeUnmount, watchEffect } from 'v
 import { useI18n, useRuntimeConfig } from '#imports'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
+import WishlistDrawer from '~/components/WishlistDrawer.vue'
+import { useWishlist } from '~/composables/useWishlist'
 
 // floating submenu state
 const isOpen = ref(false)
 const quickOpen = ref(false)
 const currentConversation = ref<any>(null)
+const wishlistDrawerVisible = ref(false)
 
 // mutually exclusive open helpers
 const closeAll = () => {
   isOpen.value = false
   quickOpen.value = false
+  wishlistDrawerVisible.value = false
 }
 
 // 关闭聊天窗口
@@ -172,6 +213,19 @@ const openChatModal = () => {
   }
 }
 
+// 打开心愿单抽屉
+const openWishlist = () => {
+  closeAll()
+  wishlistDrawerVisible.value = true
+}
+
+// 打开左侧 Sidebar（通过全局自定义事件通知 SidePanel）
+const openSidebarLeft = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:sidebar-open', { detail: { side: 'left' } }))
+  }
+}
+
 // 计算未读消息数（从 localStorage）
 const calculateUnreadCount = () => {
   try {
@@ -221,24 +275,29 @@ const cartUrl = computed(() => {
 })
 
 const itemsLabel = computed(() => $t('cart.summary.items', 'Items'))
-const weightLabel = computed(() => $t('cart.summary.weight', 'Weight'))
 const priceLabel = computed(() => $t('cart.summary.price', 'Price'))
 const ctaLabel = computed(() => $t('cart.summary.openCart', 'View cart summary'))
 
 // 集成购物车系统
-const { cartCount, cartItems, total, openCart, formatPrice } = useCart()
+const { cartCount, total, openCart, formatPrice } = useCart()
 
 const itemsCount = computed(() => cartCount.value)
 
-const weightDisplay = computed(() => {
-  const weight = cartItems.value.reduce((sum: number, item: any) => {
-    return sum + (item.weight || 0) * item.quantity
-  }, 0)
-  return `${weight.toFixed(1)} g`
-})
+// 心愿单数量（使用全局 wishlist composable）
+const { items: wishlistItems, loadWishlist, loadedOnce } = useWishlist()
+const wishlistCount = computed(() => wishlistItems.value.length)
 
 const priceDisplay = computed(() => {
   return formatPrice(total.value)
+})
+
+// 初次挂载时，如果尚未加载过心愿单，则触发一次加载
+onMounted(() => {
+  try {
+    if (!loadedOnce.value) {
+      loadWishlist()
+    }
+  } catch {}
 })
 
 const fetchSummary = async () => {
@@ -258,6 +317,14 @@ const openCartDrawer = () => {
   openCart()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'cart-drawer' } }))
+  }
+}
+
+// 从 Dock 直接打开结账弹窗
+const openCheckoutFromDock = () => {
+  closeAll()
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('open-checkout-modal'))
   }
 }
 

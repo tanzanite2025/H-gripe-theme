@@ -13,7 +13,7 @@
         <Transition name="scale">
           <div
             v-if="isCheckoutOpen"
-            class="relative bg-black border-2 border-[#6b73ff] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-[0_0_30px_rgba(107,115,255,0.3)]"
+            class="relative bg-black border-2 border-[#6b73ff] rounded-2xl w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden shadow-[0_0_30px_rgba(107,115,255,0.3)]"
           >
             <!-- 头部 -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">

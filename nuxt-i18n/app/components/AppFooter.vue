@@ -237,8 +237,8 @@ const footerSocialItems: FooterSocialItem[] = [
 
 @media (max-width: 768px) {
   .app-footer {
-    /* 移动端 Dock 通常更高，底部多留一些空间 */
-    padding: 1.5rem 1.25rem 6rem;
+    /* 移动端 Dock 通常更高，底部多留一些空间，但不需要额外一整行的高度 */
+    padding: 1.5rem 1.25rem 4.75rem;
   }
 }
 </style>
