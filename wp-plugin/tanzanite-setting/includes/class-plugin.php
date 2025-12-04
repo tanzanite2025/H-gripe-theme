@@ -599,6 +599,9 @@ class Tanzanite_Plugin {
 		$this->call_legacy_method( 'render_add_product' );
 	}
 
+	public function render_orders_list() {
+		$this->call_legacy_method( 'render_orders_list' );
+	}
 
 	/**
 	 * 渲染订单批量操作页面

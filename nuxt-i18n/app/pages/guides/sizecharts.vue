@@ -67,6 +67,14 @@
           pressure.
         </p>
 
+        <button
+          type="button"
+          class="sizecharts-brand-button"
+          @click="setActiveTab('choose')"
+        >
+          How to choose and specific specifications
+        </button>
+
         <p class="sizecharts-section__subheading">
           Am I suitable for tubeless or tubeless use?
         </p>
@@ -101,6 +109,14 @@
           required to maintain the shape is relatively small, so the tire pressure of tubeless tires does not need to
           be above 100psi. The best rolling resistance and riding comfort can be obtained at around 80psi.
         </p>
+
+        <button
+          type="button"
+          class="sizecharts-brand-button"
+          @click="setActiveTab('choose')"
+        >
+          Check the tire pressure limits of different models of tubeless tires
+        </button>
       </section>
 
       <!-- Installation -->
@@ -109,7 +125,7 @@
         id="installation"
         class="sizecharts-section"
       >
-        <h3 class="sizecharts-section__title">Installation</h3>
+        <h3 class="sizecharts-section__title sizecharts-section__title--sr-only">Installation</h3>
         <p class="sizecharts-section__intro">
           <strong>Before installation:</strong>
         </p>
@@ -321,23 +337,6 @@
         </ul>
       </section>
 
-      <!-- Commonly used -->
-      <section
-        v-show="activeTab === 'common'"
-        id="common"
-        class="sizecharts-section"
-      >
-        <h3 class="sizecharts-section__title">Commonly used</h3>
-        <p class="sizecharts-section__intro">
-          Placeholder lists of the most commonly used tire sizes for different wheel diameters.
-        </p>
-        <ul class="sizecharts-section__list">
-          <li>Typical 700c / 29&quot; combinations (e.g. 700×25C, 700×28C, 29×2.2&quot;).</li>
-          <li>Typical 27.5&quot; / 650B options for gravel and MTB.</li>
-          <li>Popular city / utility tire sizes and their use cases.</li>
-        </ul>
-      </section>
-
       <!-- Suitable for rims -->
       <section
         v-show="activeTab === 'rims'"
@@ -370,7 +369,7 @@ import { ref } from 'vue'
 import TubelessProducts from '~/components/TubelessProducts.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
-type SizeChartsTabId = 'tubeless' | 'installation' | 'choose' | 'common' | 'rims'
+type SizeChartsTabId = 'tubeless' | 'installation' | 'choose' | 'rims'
 
 definePageMeta({
   layout: 'products',
@@ -384,7 +383,6 @@ const tabs: { id: SizeChartsTabId; label: string }[] = [
   { id: 'tubeless', label: 'Tubeless tires' },
   { id: 'installation', label: 'Installation' },
   { id: 'choose', label: 'How to choose' },
-  { id: 'common', label: 'Commonly used' },
   { id: 'rims', label: 'Suitable for rims' },
 ]
 
