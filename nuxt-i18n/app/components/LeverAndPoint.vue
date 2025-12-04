@@ -25,7 +25,7 @@
       </div>
       
       <div class="flex-1 flex p-4 px-5 pointer-events-auto overflow-hidden box-border">
-        <div class="grid grid-cols-2 max-md:grid-cols-1 gap-5 w-full overflow-y-auto md:overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 w-full overflow-y-auto md:overflow-hidden">
           <!-- 左侧：认证表单或会员信息 -->
           <div v-show="mobileTab === 'info' || !isMobile" class="flex flex-col items-start max-md:items-center text-left max-md:text-center gap-4 w-full md:overflow-y-auto md:h-full">
             <!-- 显示会员信息 -->

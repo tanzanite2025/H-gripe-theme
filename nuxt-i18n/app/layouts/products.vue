@@ -139,4 +139,12 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
     margin-top: 7rem;
   }
 }
+
+/* Tall 20:9 Android phones (e.g. Pixel 8a) where the fixed header is slightly higher:
+   add extra spacing so the horizontal products nav is fully visible below the header. */
+@media (min-width: 400px) and (max-width: 430px) and (min-height: 850px) {
+  .products-hero {
+    margin-top: 8.25rem;
+  }
+}
 </style>

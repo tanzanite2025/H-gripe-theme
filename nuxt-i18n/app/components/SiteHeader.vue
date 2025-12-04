@@ -191,7 +191,7 @@
 					<!-- Guides 文本按钮（移动端） -->
 					<NuxtLink
 						:to="localePath('/guides')"
-						class="pointer-events-auto text-white header-mobile-nav-text transition-all duration-200 h-[32px] w-[80px] px-3.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff] text-[11px] font-semibold shadow-[0_0_14px_rgba(64,115,255,0.65)] hover:shadow-[0_0_20px_rgba(64,115,255,0.9)] hover:-translate-y-[1px]"
+						class="pointer-events-auto text-white header-mobile-nav-text transition-all duration-200 h-[32px] w-[120px] px-3.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff] text-[11px] font-semibold shadow-[0_0_14px_rgba(64,115,255,0.65)] hover:shadow-[0_0_20px_rgba(64,115,255,0.9)] hover:-translate-y-[1px]"
 						aria-label="Guides"
 					>
 						Guides
@@ -199,9 +199,9 @@
 				
 					<!-- 翻译转换器（居中） -->
 					<div class="flex-1 flex justify-center">
-						<div class="relative min-w-[150px]" data-lang-wrapper>
+						<div class="relative w-[120px]" data-lang-wrapper>
 							<button
-								class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white header-mobile-nav-text text-[11px] font-medium cursor-pointer transition-all duration-200 w-[150px] h-[32px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
+								class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white header-mobile-nav-text text-[11px] font-medium cursor-pointer transition-all duration-200 w-[120px] h-[32px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -223,7 +223,7 @@
 				
 					<!-- 分享按钮 - 圆形，高度与翻译转换器一致 -->
 					<button
-						class="pointer-events-auto text-white transition-all duration-200 w-[80px] h-[32px] mr-1.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]"
+						class="pointer-events-auto text-white transition-all duration-200 w-[120px] h-[32px] mr-1.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]"
 						@click.stop="toggleShare()"
 						:aria-expanded="shareOpen"
 						aria-haspopup="dialog"
