@@ -80,7 +80,7 @@ class Tanzanite_REST_Feedback_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => $this->permission_callback( 'manage_options', true ),
 					'args'                => array(
 						'id'     => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 						'status' => array(
 							'type'     => 'string',

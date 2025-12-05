@@ -53,6 +53,65 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 	}
 
 	/**
+	 * Decode and sanitize shipping template meta from database JSON.
+	 *
+	 * @since 0.2.0
+	 * @param string|null $json JSON string from database.
+	 * @return array
+	 */
+	private function decode_shipping_meta( $json ) {
+		if ( null === $json || '' === $json ) {
+			return $this->sanitize_shipping_meta( array() );
+		}
+
+		$decoded = json_decode( $json, true );
+		if ( ! is_array( $decoded ) ) {
+			$decoded = array();
+		}
+
+		return $this->sanitize_shipping_meta( $decoded );
+	}
+
+	/**
+	 * Sanitize shipping template meta payload.
+	 *
+	 * Supported keys:
+	 * - carrier: shipping carrier code (e.g. sf_express)
+	 * - currency: optional currency code, uppercased and limited to 3 letters
+	 *
+	 * @since 0.2.0
+	 * @param mixed $meta_raw Raw meta array or JSON string.
+	 * @return array
+	 */
+	private function sanitize_shipping_meta( $meta_raw ) {
+		if ( is_string( $meta_raw ) && '' !== $meta_raw ) {
+			$decoded = json_decode( $meta_raw, true );
+			$meta    = is_array( $decoded ) ? $decoded : array();
+		} elseif ( is_array( $meta_raw ) ) {
+			$meta = $meta_raw;
+		} else {
+			$meta = array();
+		}
+
+		$result = array();
+
+		if ( isset( $meta['carrier'] ) && '' !== $meta['carrier'] ) {
+			$result['carrier'] = sanitize_key( $meta['carrier'] );
+		}
+
+		if ( isset( $meta['currency'] ) && '' !== $meta['currency'] ) {
+			$currency_raw = strtoupper( sanitize_text_field( $meta['currency'] ) );
+			$currency_raw = preg_replace( '/[^A-Z]/', '', $currency_raw );
+
+			if ( '' !== $currency_raw ) {
+				$result['currency'] = substr( $currency_raw, 0, 3 );
+			}
+		}
+
+		return $result;
+	}
+
+	/**
 	 * 注册路由
 	 *
 	 * @since 0.2.0
@@ -71,7 +130,7 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_item' ),
-					'permission_callback' => $this->permission_callback( 'tanz_manage_shipping', true ),
+					'permission_callback' => $this->permission_callback( 'manage_options', true ),
 					'args'                => $this->get_create_params(),
 				),
 			)
@@ -88,23 +147,23 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 					'permission_callback' => 'is_user_logged_in',
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
-					'permission_callback' => $this->permission_callback( 'tanz_manage_shipping', true ),
+					'permission_callback' => $this->permission_callback( 'manage_options', true ),
 					'args'                => $this->get_update_params(),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => $this->permission_callback( 'tanz_manage_shipping', true ),
+					'permission_callback' => $this->permission_callback( 'manage_options', true ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -174,12 +233,15 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 			return $this->respond_error( $rules->get_error_code(), $rules->get_error_message(), 400 );
 		}
 
+		$meta_raw = $request->get_param( 'meta' );
+		$meta     = $this->sanitize_shipping_meta( $meta_raw );
+
 		$data = array(
 			'template_name' => $request->get_param( 'template_name' ),
 			'description'   => $request->get_param( 'description' ),
 			'rules'         => wp_json_encode( $rules ),
 			'is_active'     => 1,
-			'meta'          => wp_json_encode( array( 'stage' => 'placeholder' ) ),
+			'meta'          => wp_json_encode( $meta ),
 		);
 
 		$inserted = $wpdb->insert( $this->shipping_templates_table, $data, array( '%s', '%s', '%s', '%d', '%s' ) );
@@ -233,6 +295,12 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 			}
 
 			$data['rules'] = wp_json_encode( $rules );
+			$types[]       = '%s';
+		}
+		if ( $request->has_param( 'meta' ) ) {
+			$meta_raw      = $request->get_param( 'meta' );
+			$meta          = $this->sanitize_shipping_meta( $meta_raw );
+			$data['meta']  = wp_json_encode( $meta );
 			$types[]       = '%s';
 		}
 		if ( $request->has_param( 'is_active' ) ) {
@@ -294,6 +362,7 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 			'is_active'     => (bool) $row['is_active'],
 			'updated_at'    => $row['updated_at'],
 			'rules'         => $this->decode_shipping_rules( $row['rules'] ),
+			'meta'          => $this->decode_shipping_meta( isset( $row['meta'] ) ? $row['meta'] : null ),
 		);
 	}
 
@@ -399,6 +468,10 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 				'type'    => 'array',
 				'default' => array(),
 			),
+			'meta'          => array(
+				'type'    => 'array',
+				'default' => array(),
+			),
 			'description'   => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_textarea_field',
@@ -415,7 +488,7 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 	private function get_update_params() {
 		return array(
 			'id'            => array(
-				'validate_callback' => 'is_numeric',
+				'validate_callback' => array( $this, 'validate_numeric_param' ),
 			),
 			'template_name' => array(
 				'type'              => 'string',
@@ -430,6 +503,9 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 			),
 			'is_active'     => array(
 				'type' => 'boolean',
+			),
+			'meta'          => array(
+				'type' => 'array',
 			),
 		);
 	}

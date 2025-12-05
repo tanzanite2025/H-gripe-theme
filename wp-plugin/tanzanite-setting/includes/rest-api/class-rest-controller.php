@@ -128,6 +128,23 @@ abstract class Tanzanite_REST_Controller {
 	}
 
 	/**
+	 * Validate that a REST parameter value is numeric.
+	 *
+	 * This is a wrapper around is_numeric() that matches the validate_callback
+	 * signature used by WP REST API (value, request, param).
+	 *
+	 * @since 0.2.0
+	 *
+	 * @param mixed           $value   Parameter value.
+	 * @param WP_REST_Request $request Request object.
+	 * @param string          $param   Parameter name.
+	 * @return bool
+	 */
+	public function validate_numeric_param( $value, $request, $param ) {
+		return is_numeric( $value );
+	}
+
+	/**
 	 * 获取分页参数
 	 *
 	 * @since 0.2.0

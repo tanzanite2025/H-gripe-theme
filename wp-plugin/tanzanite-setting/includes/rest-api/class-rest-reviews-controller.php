@@ -89,7 +89,7 @@ class Tanzanite_REST_Reviews_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => 'is_user_logged_in',
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -105,7 +105,7 @@ class Tanzanite_REST_Reviews_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => $this->permission_callback( 'tanz_manage_reviews', true ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -546,7 +546,7 @@ class Tanzanite_REST_Reviews_Controller extends Tanzanite_REST_Controller {
 	private function get_update_params() {
 		return array(
 			'id'         => array(
-				'validate_callback' => 'is_numeric',
+				'validate_callback' => array( $this, 'validate_numeric_param' ),
 			),
 			'status'     => array(
 				'type' => 'string',

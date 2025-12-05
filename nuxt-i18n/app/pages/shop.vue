@@ -5,13 +5,15 @@
     <section class="flex gap-4">
       <!-- 桌面端左侧分类栏 -->
       <aside class="hidden md:block w-56 flex-shrink-0">
-        <CategorySidebar
-          :categories="categories"
-          :selected="selectedCategory"
-          :loading="categoriesLoading"
-          :error="categoriesError"
-          @select="onCategorySelect"
-        />
+        <section class="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
+          <CategorySidebar
+            :categories="categories"
+            :selected="selectedCategory"
+            :loading="categoriesLoading"
+            :error="categoriesError"
+            @select="onCategorySelect"
+          />
+        </section>
       </aside>
 
       <!-- 右侧商品列表区域 -->

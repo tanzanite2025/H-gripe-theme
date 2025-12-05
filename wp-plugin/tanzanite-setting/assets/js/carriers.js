@@ -128,11 +128,13 @@
 
                 if (!result.ok) {
                     renderCarriers([]);
-                    showNotice(elements.notice, 'error', result.data.message || '加载失败');
+                    showNotice(elements.notice, 'error', result.data?.message || result.data?.data?.message || '加载失败');
                     return;
                 }
 
-                renderCarriers(result.data.items || []);
+                // API 返回 { ok: true, data: { items: [...] } }，apiRequest 包装为 { ok, status, data }
+                const responseData = result.data?.data || result.data;
+                renderCarriers(responseData?.items || []);
                 showNotice(elements.notice, null);
 
             } catch (error) {
@@ -148,11 +150,13 @@
                 const result = await apiRequest(config.singleUrl + id);
 
                 if (!result.ok) {
-                    showNotice(elements.notice, 'error', result.data.message || '加载失败');
+                    showNotice(elements.notice, 'error', result.data?.message || result.data?.data?.message || '加载失败');
                     return;
                 }
 
-                fillForm(result.data);
+                // API 返回 { ok: true, data: {...} }，apiRequest 包装为 { ok, status, data }
+                const carrierData = result.data?.data || result.data;
+                fillForm(carrierData);
 
             } catch (error) {
                 showNotice(elements.notice, 'error', error.message);
@@ -197,7 +201,7 @@
                 });
 
                 if (!result.ok) {
-                    showNotice(elements.notice, 'error', result.data.message || '保存失败');
+                    showNotice(elements.notice, 'error', result.data?.message || result.data?.data?.message || '保存失败');
                     return;
                 }
 
@@ -224,7 +228,7 @@
                 });
 
                 if (!result.ok) {
-                    showNotice(elements.notice, 'error', result.data.message || '删除失败');
+                    showNotice(elements.notice, 'error', result.data?.message || result.data?.data?.message || '删除失败');
                     return;
                 }
 

@@ -81,9 +81,7 @@ class Tanzanite_REST_Coupons_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => array( $this, 'check_admin_permission' ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => function( $param ) {
-								return is_numeric( $param );
-							},
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -99,9 +97,7 @@ class Tanzanite_REST_Coupons_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => array( $this, 'check_admin_permission' ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => function( $param ) {
-								return is_numeric( $param );
-							},
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -652,7 +648,7 @@ class Tanzanite_REST_Coupons_Controller extends Tanzanite_REST_Controller {
 	private function get_update_params() {
 		return array(
 			'id'              => array(
-				'validate_callback' => 'is_numeric',
+				'validate_callback' => array( $this, 'validate_numeric_param' ),
 			),
 			'title'           => array(
 				'type' => 'string',
