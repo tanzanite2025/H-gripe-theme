@@ -2,13 +2,8 @@
   <div class="layout layout--support">
     <main class="layout-main">
       <!-- Support hero / banner -->
-      <section class="support-hero">
-        <div class="support-hero__inner">
-          <h1 class="support-hero__title">Support</h1>
-        </div>
-      </section>
-
       <!-- Top horizontal Support navigation -->
+      <div class="support-header-spacer" aria-hidden="true"></div>
       <SupportTopNav />
 
       <!-- Support page content -->
@@ -44,10 +39,14 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
   flex-direction: column;
 }
 
+.support-header-spacer {
+  height: 155px;
+}
+
 .support-hero {
-  margin-top: 2.75rem;
+  margin-top: 0;
   /* 桌面端：略微压缩底部 padding，让下方 Support 导航更靠上 */
-  padding: 3rem 1.5rem 0.75rem;
+  padding: 1.5rem 1.5rem 0.75rem;
   /* 去掉单独的 hero 渐变背景，直接使用整体布局背景，避免形成一条额外的色带 */
   background: transparent !important;
 }
@@ -83,9 +82,9 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 
 @media (max-width: 768px) {
   .support-hero {
-    /* 为顶部固定 SiteHeader 预留更多空间，避免 Support 标题和顶部导航被遮挡 */
-    margin-top: 5.5rem;
-    padding: 2rem 1.25rem 0.75rem;
+    /* 顶部固定 SiteHeader 由全局 spacer 处理，这里只负责内容与导航的间距 */
+    margin-top: 0;
+    padding: 1.25rem 1.25rem 0.75rem;
   }
 
   .support-hero__title {
@@ -99,61 +98,24 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
   }
 }
 
-/* 手机宽度区间覆盖以下断点：360x740, 375x667, 390x844, 412x915, 414x896, 430x932
-   在这些区间内将 Support 再向下移动一些（比通用 4.5rem 更明显） */
-/* 360 宽（含 360x640, 360x740 等） */
-@media (min-width: 360px) and (max-width: 374px) {
-  .support-hero {
-    margin-top: 7rem;
+@media (min-width: 768px) {
+  .support-header-spacer {
+    /* Desktop: push SupportTopNav slightly below the fixed SiteHeader */
+    height: 5.75rem;
   }
 }
 
-/* 375 宽（375x667, 375x812 等） */
-@media (min-width: 375px) and (max-width: 389px) {
-  .support-hero {
-    margin-top: 7rem;
+/* tablet-768: 768x1024 等宽度段，使用 160px 的顶部空白 */
+@media (min-width: 768px) and (max-width: 819px) {
+  .support-header-spacer {
+    height: 145px;
   }
 }
 
-/* 390 宽（390x844 等） */
-@media (min-width: 390px) and (max-width: 411px) {
-  .support-hero {
-    margin-top: 7rem;
-  }
-}
-
-/* 412 宽（412x915 等） */
-@media (min-width: 412px) and (max-width: 413px) {
-  .support-hero {
-    margin-top: 7rem;
-  }
-}
-
-/* 414 宽（414x896 等） */
-@media (min-width: 414px) and (max-width: 429px) {
-  .support-hero {
-    margin-top: 7.5rem;
-  }
-}
-
-/* 430 宽及以上手机（直到平板前的 767 宽） */
-@media (min-width: 430px) and (max-width: 767px) {
-  .support-hero {
-    margin-top: 7rem;
-  }
-}
-
-/* 平板视角（例如 768x1024, 820x1180）：整体向下移动一些，但不影响桌面和手机 */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .support-hero {
-    margin-top: 5.5rem;
-  }
-}
-
-/* Very narrow tall phones (e.g. iPhone SE portrait): ensure horizontal nav is fully visible below fixed header */
-@media (max-width: 359px) and (min-height: 700px) {
-  .support-hero {
-    margin-top: 7rem;
+/* tablet-820: 820x1180 等宽度段，使用 160px 的顶部空白 */
+@media (min-width: 820px) and (max-width: 1023px) {
+  .support-header-spacer {
+    height: 145px;
   }
 }
 </style>
