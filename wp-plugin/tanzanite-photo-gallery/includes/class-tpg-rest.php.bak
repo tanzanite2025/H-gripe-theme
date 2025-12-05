@@ -212,45 +212,15 @@ class TPG_REST {
                 }
             }
 
-            // Gallery Logic
-            $gallery_ids = get_post_meta($post_id, 'tanz_photo_gallery_ids', true);
-            $gallery_images = [];
-
-            // If we have a gallery array, use it
-            if (!empty($gallery_ids) && is_array($gallery_ids)) {
-                foreach ($gallery_ids as $att_id) {
-                    $url = wp_get_attachment_url($att_id);
-                    if ($url) {
-                        $gallery_images[] = $url;
-                    }
-                }
-            }
-
-            // Fallback: If gallery is empty, try the single image_id
-            if (empty($gallery_images)) {
-                $single_id = (int) get_post_meta($post_id, 'tanz_photo_image_id', true);
-                if ($single_id > 0) {
-                    $url = wp_get_attachment_url($single_id);
-                    if ($url) {
-                        $gallery_images[] = $url;
-                    }
-                }
-            }
-            
-            // Ensure at least one image for thumbnail logic
-            $thumbnail = !empty($gallery_images) ? $gallery_images[0] : '';
-
             $items[] = [
-                'id'             => $post_id,
-                'title'          => get_the_title($post_id),
-                'region'         => $region ?: 'Studio',
-                'location'       => $location ?: '',
-                'nickname'       => $nickname ?: '',
-                'type'           => get_post_meta($post_id, 'tanz_photo_type', true) ?: '',
-                'status'         => get_post_meta($post_id, 'tanz_photo_status', true) ?: 'pending',
-                'thumbnail'      => $thumbnail, // Backward compatibility for grid view
-                'gallery_images' => $gallery_images, // New field for lightbox
-                'product_refs'   => $product_refs,
+                'id'           => $post_id,
+                'title'        => get_the_title($post_id),
+                'region'       => $region ?: 'Studio',
+                'location'     => $location ?: '',
+                'nickname'     => $nickname ?: '',
+                'type'         => get_post_meta($post_id, 'tanz_photo_type', true) ?: '',
+                'status'       => get_post_meta($post_id, 'tanz_photo_status', true) ?: 'pending',
+                'product_refs' => $product_refs,
             ];
         }
 
@@ -272,10 +242,10 @@ class TPG_REST {
 
         $user_id = get_current_user_id();
 
-        // Rate limit checks
+        // 简单的基础防 spam：按用户做日限额和短时间间隔限制
         $today_key   = 'tanz_photo_daily_' . gmdate('Ymd');
         $daily_count = (int) get_user_meta($user_id, $today_key, true);
-        $daily_limit = 20;
+        $daily_limit = 20; // 每位用户每日最多 20 次上传
 
         if ($daily_count >= $daily_limit) {
             return new WP_Error(
@@ -286,7 +256,7 @@ class TPG_REST {
         }
 
         $last_ts   = (int) get_user_meta($user_id, 'tanz_photo_last_upload', true);
-        $min_delay = 30;
+        $min_delay = 30; // 两次上传至少间隔 30 秒
         if ($last_ts && (time() - $last_ts) < $min_delay) {
             return new WP_Error(
                 'tpg_rate_limited',
@@ -296,7 +266,7 @@ class TPG_REST {
         }
 
         $files = $request->get_file_params();
-        if (empty($files['file'])) {
+        if (empty($files['file']) || empty($files['file']['name'])) {
             return new WP_Error(
                 'tpg_no_file',
                 __('No file was uploaded.', 'tanzanite-photo-gallery'),
@@ -304,110 +274,76 @@ class TPG_REST {
             );
         }
 
-        // Normalize files array to support multiple uploads
-        $file_list = [];
-        $raw_file = $files['file'];
+        $file = $files['file'];
 
-        if (isset($raw_file['name']) && is_array($raw_file['name'])) {
-            // Multiple files uploaded
-            $count = count($raw_file['name']);
-            for ($i = 0; $i < $count; $i++) {
-                if (empty($raw_file['name'][$i])) continue;
-                $file_list[] = [
-                    'name'     => $raw_file['name'][$i],
-                    'type'     => $raw_file['type'][$i],
-                    'tmp_name' => $raw_file['tmp_name'][$i],
-                    'error'    => $raw_file['error'][$i],
-                    'size'     => $raw_file['size'][$i],
-                ];
-            }
-        } else {
-            // Single file uploaded
-            $file_list[] = $raw_file;
+        // 文件大小限制（约 5MB）
+        $max_size = 5 * 1024 * 1024;
+        if (! empty($file['size']) && (int) $file['size'] > $max_size) {
+            return new WP_Error(
+                'tpg_file_too_large',
+                __('Uploaded file is too large.', 'tanzanite-photo-gallery'),
+                ['status' => 400]
+            );
         }
 
-        if (empty($file_list)) {
-            return new WP_Error('tpg_no_file', __('No valid file found.', 'tanzanite-photo-gallery'), ['status' => 400]);
+        // 仅允许 WEBP
+        $check = wp_check_filetype_and_ext($file['tmp_name'], $file['name']);
+        if (empty($check['type']) || $check['type'] !== 'image/webp') {
+            return new WP_Error(
+                'tpg_invalid_type',
+                __('Only WEBP images are allowed.', 'tanzanite-photo-gallery'),
+                ['status' => 400]
+            );
         }
 
-        // Limit max files per upload to prevent abuse
-        if (count($file_list) > 10) {
-             return new WP_Error('tpg_too_many_files', __('Maximum 10 files allowed per upload.', 'tanzanite-photo-gallery'), ['status' => 400]);
-        }
-
+        // 需要使用媒体相关函数
         if (! function_exists('media_handle_upload')) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
             require_once ABSPATH . 'wp-admin/includes/media.php';
             require_once ABSPATH . 'wp-admin/includes/image.php';
         }
 
-        $uploaded_attachment_ids = [];
-        $errors = [];
+        // 使用 WordPress 媒体处理上传
+        $attachment_id = media_handle_upload('file', 0);
 
-        foreach ($file_list as $index => $file_data) {
-            // Manually set the $_FILES global because media_handle_upload relies on it
-            $_FILES['tpg_upload_' . $index] = $file_data;
+        if (is_wp_error($attachment_id)) {
+            return new WP_Error(
+                'tpg_upload_failed',
+                __('Could not save uploaded file.', 'tanzanite-photo-gallery'),
+                ['status' => 500]
+            );
+        }
 
-            // Basic Validation
-            $max_size = 5 * 1024 * 1024;
-            if (! empty($file_data['size']) && (int) $file_data['size'] > $max_size) {
-                $errors[] = sprintf(__('File %s is too large.', 'tanzanite-photo-gallery'), $file_data['name']);
-                continue;
-            }
+        // 使用图像编辑器将最长边压缩到 800px 以内
+        $file_path = get_attached_file($attachment_id);
+        if ($file_path && file_exists($file_path)) {
+            $editor = wp_get_image_editor($file_path);
+            if (! is_wp_error($editor)) {
+                $size = $editor->get_size();
+                if (! empty($size['width']) && ! empty($size['height'])) {
+                    $width    = (int) $size['width'];
+                    $height   = (int) $size['height'];
+                    $max_side = max($width, $height);
+                    $limit    = 800;
 
-            $check = wp_check_filetype_and_ext($file_data['tmp_name'], $file_data['name']);
-            if (empty($check['type']) || $check['type'] !== 'image/webp') {
-                $errors[] = sprintf(__('File %s is not a WEBP image.', 'tanzanite-photo-gallery'), $file_data['name']);
-                continue;
-            }
+                    if ($max_side > $limit) {
+                        $scale = $limit / $max_side;
+                        $new_w = (int) floor($width * $scale);
+                        $new_h = (int) floor($height * $scale);
 
-            // Handle Upload
-            $attachment_id = media_handle_upload('tpg_upload_' . $index, 0);
+                        $editor->resize($new_w, $new_h, false);
+                        $saved = $editor->save($file_path);
 
-            if (is_wp_error($attachment_id)) {
-                $errors[] = $attachment_id->get_error_message();
-                continue;
-            }
-
-            // Resize Logic (Max 800px)
-            $file_path = get_attached_file($attachment_id);
-            if ($file_path && file_exists($file_path)) {
-                $editor = wp_get_image_editor($file_path);
-                if (! is_wp_error($editor)) {
-                    $size = $editor->get_size();
-                    if (! empty($size['width']) && ! empty($size['height'])) {
-                        $width    = (int) $size['width'];
-                        $height   = (int) $size['height'];
-                        $max_side = max($width, $height);
-                        $limit    = 800;
-
-                        if ($max_side > $limit) {
-                            $scale = $limit / $max_side;
-                            $new_w = (int) floor($width * $scale);
-                            $new_h = (int) floor($height * $scale);
-
-                            $editor->resize($new_w, $new_h, false);
-                            $saved = $editor->save($file_path);
-
-                            if (! is_wp_error($saved)) {
-                                $meta = wp_generate_attachment_metadata($attachment_id, $file_path);
-                                wp_update_attachment_metadata($attachment_id, $meta);
-                            }
+                        if (! is_wp_error($saved)) {
+                            $meta = wp_generate_attachment_metadata($attachment_id, $file_path);
+                            wp_update_attachment_metadata($attachment_id, $meta);
                         }
                     }
                 }
             }
-
-            $uploaded_attachment_ids[] = $attachment_id;
         }
 
-        // Check if any upload succeeded
-        if (empty($uploaded_attachment_ids)) {
-            $msg = !empty($errors) ? implode(' ', $errors) : __('Upload failed.', 'tanzanite-photo-gallery');
-            return new WP_Error('tpg_upload_failed', $msg, ['status' => 400]);
-        }
-
-        // Prepare Post Data
+        // 准备元数据
         $region   = sanitize_text_field((string) $request->get_param('region'));
         $location = sanitize_text_field((string) $request->get_param('location'));
         $nickname = sanitize_text_field((string) $request->get_param('nickname'));
@@ -415,11 +351,13 @@ class TPG_REST {
         $notes    = sanitize_textarea_field((string) $request->get_param('notes'));
 
         if ($region === '') {
-            // Cleanup
-            foreach ($uploaded_attachment_ids as $att_id) {
-                wp_delete_attachment($att_id, true);
-            }
-            return new WP_Error('tpg_missing_region', __('Region is required.', 'tanzanite-photo-gallery'), ['status' => 400]);
+            // 删除附件，避免遗留垃圾数据
+            wp_delete_attachment($attachment_id, true);
+            return new WP_Error(
+                'tpg_missing_region',
+                __('Region is required.', 'tanzanite-photo-gallery'),
+                ['status' => 400]
+            );
         }
 
         $title = $region;
@@ -436,25 +374,19 @@ class TPG_REST {
 
         $post_id = wp_insert_post($post_data, true);
         if (is_wp_error($post_id)) {
-            // Cleanup
-            foreach ($uploaded_attachment_ids as $att_id) {
-                wp_delete_attachment($att_id, true);
-            }
-            return new WP_Error('tpg_create_failed', __('Could not create photo record.', 'tanzanite-photo-gallery'), ['status' => 500]);
+            wp_delete_attachment($attachment_id, true);
+            return new WP_Error(
+                'tpg_create_failed',
+                __('Could not create photo record.', 'tanzanite-photo-gallery'),
+                ['status' => 500]
+            );
         }
 
         $now = current_time('mysql', true);
 
-        // Save Meta
         update_post_meta($post_id, 'tanz_photo_type', 'user');
         update_post_meta($post_id, 'tanz_photo_status', 'pending');
-        
-        // Primary image (first one)
-        update_post_meta($post_id, 'tanz_photo_image_id', $uploaded_attachment_ids[0]);
-        
-        // Gallery images (all)
-        update_post_meta($post_id, 'tanz_photo_gallery_ids', $uploaded_attachment_ids);
-
+        update_post_meta($post_id, 'tanz_photo_image_id', $attachment_id);
         update_post_meta($post_id, 'tanz_photo_region', $region);
         update_post_meta($post_id, 'tanz_photo_location', $location);
         update_post_meta($post_id, 'tanz_photo_nickname', $nickname);
@@ -463,13 +395,13 @@ class TPG_REST {
         update_post_meta($post_id, 'tanz_photo_submitted_at', $now);
         update_post_meta($post_id, 'tanz_photo_source', 'web-form');
 
+        // 更新防 spam 计数
         update_user_meta($user_id, $today_key, $daily_count + 1);
         update_user_meta($user_id, 'tanz_photo_last_upload', time());
 
         $data = [
             'id'     => $post_id,
             'status' => 'pending',
-            'count'  => count($uploaded_attachment_ids)
         ];
 
         return new WP_REST_Response($data, 201);

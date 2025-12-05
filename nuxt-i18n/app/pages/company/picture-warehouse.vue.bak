@@ -211,11 +211,10 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[11px] text-slate-300">Photos (WEBP, Max 10)</label>
+            <label class="text-[11px] text-slate-300">Photo (WEBP, ≤ 5MB)</label>
             <input
               type="file"
               accept="image/webp"
-              multiple
               @change="onUploadFileChange"
               class="block w-full text-xs text-slate-200 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-slate-100 hover:file:bg-white/20 transition-colors"
             />
@@ -277,51 +276,23 @@
             </header>
 
             <!-- 中部：大图区域 + 左右切换 -->
-            <div class="relative flex-1 flex items-center justify-center bg-slate-900 p-4 overflow-hidden">
+            <div class="relative flex-1 flex items-center justify-center bg-slate-900">
               <button
                 type="button"
-                class="absolute left-2 sm:left-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white text-2xl hover:bg-black/70 transition-colors"
+                class="absolute left-3 sm:left-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white text-lg hover:bg-black/70"
                 @click.stop="goPrev"
                 aria-label="Previous photo"
               >
                 ‹
               </button>
 
-              <div class="relative w-full h-full flex flex-col items-center justify-center">
-                <!-- 大图 -->
-                <div class="relative flex items-center justify-center w-full h-full">
-                  <img
-                    v-if="currentImageUrl"
-                    :src="currentImageUrl"
-                    alt="Photo"
-                    class="max-w-full max-h-[65vh] object-contain rounded shadow-lg"
-                  />
-                  <div v-else class="w-full max-w-[500px] aspect-square bg-slate-800 rounded flex items-center justify-center text-slate-500">
-                    No image
-                  </div>
-                </div>
-
-                <!-- 悬浮缩略图 (仅当有多张图时显示) -->
-                <div
-                  v-if="activePhoto?.galleryImages && activePhoto.galleryImages.length > 1"
-                  class="mt-4 flex items-center gap-2 overflow-x-auto max-w-full pb-2 px-2 snap-x"
-                >
-                  <button
-                    v-for="(img, idx) in activePhoto.galleryImages"
-                    :key="idx"
-                    type="button"
-                    class="relative flex-shrink-0 w-12 h-12 rounded overflow-hidden border-2 transition-all snap-start"
-                    :class="idx === currentGalleryIndex ? 'border-sky-400 opacity-100' : 'border-transparent opacity-60 hover:opacity-90'"
-                    @click.stop="currentGalleryIndex = idx"
-                  >
-                    <img :src="img" class="w-full h-full object-cover" loading="lazy" />
-                  </button>
-                </div>
-              </div>
+              <div
+                class="w-full max-w-[640px] aspect-[4/5] max-h-[45vh] md:max-h-[60vh] bg-slate-800 rounded-md"
+              ></div>
 
               <button
                 type="button"
-                class="absolute right-2 sm:right-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white text-2xl hover:bg-black/70 transition-colors"
+                class="absolute right-3 sm:right-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white text-lg hover:bg-black/70"
                 @click.stop="goNext"
                 aria-label="Next photo"
               >
@@ -534,7 +505,6 @@ interface PicturePhoto {
   title: string
   region: string
   nickname?: string
-  galleryImages?: string[]
   productRefs?: ProductRefs
 }
 
@@ -571,7 +541,7 @@ const uploadLocation = ref('')
 const uploadNickname = ref('')
 const uploadBikeModel = ref('')
 const uploadNotes = ref('')
-const uploadFiles = ref<File[]>([])
+const uploadFile = ref<File | null>(null)
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 const uploadSuccess = ref<string | null>(null)
@@ -590,10 +560,10 @@ const shareMessage = ref<string | null>(null)
 const onUploadFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement | null
   if (!target || !target.files || target.files.length === 0) {
-    uploadFiles.value = []
+    uploadFile.value = null
     return
   }
-  uploadFiles.value = Array.from(target.files)
+  uploadFile.value = target.files[0] ?? null
 }
 
 const submitUpload = async () => {
@@ -605,13 +575,8 @@ const submitUpload = async () => {
     return
   }
 
-  if (uploadFiles.value.length === 0) {
-    uploadError.value = 'Please choose at least one WEBP image to upload.'
-    return
-  }
-  
-  if (uploadFiles.value.length > 10) {
-    uploadError.value = 'Maximum 10 files allowed.'
+  if (!uploadFile.value) {
+    uploadError.value = 'Please choose a WEBP image to upload.'
     return
   }
 
@@ -619,12 +584,7 @@ const submitUpload = async () => {
 
   try {
     const formData = new FormData()
-    
-    // Append multiple files. Using 'file[]' ensures PHP treats it as an array.
-    uploadFiles.value.forEach((file) => {
-      formData.append('file[]', file)
-    })
-    
+    formData.append('file', uploadFile.value)
     formData.append('region', uploadRegion.value.trim())
 
     if (uploadLocation.value.trim()) formData.append('location', uploadLocation.value.trim())
@@ -665,8 +625,8 @@ const submitUpload = async () => {
       return
     }
 
-    uploadSuccess.value = 'Photos submitted for review.'
-    uploadFiles.value = []
+    uploadSuccess.value = 'Photo submitted for review.'
+    uploadFile.value = null
     uploadBikeModel.value = ''
     uploadNotes.value = ''
   } catch {
@@ -740,7 +700,6 @@ const mapPayloadToPhotos = (payload: any[], kind: PhotoKind): PicturePhoto[] => 
         title: String(item.title ?? item.post_title ?? (kind === 'user' ? 'Rider photo' : 'Brand photo')),
         region: String(item.region ?? (kind === 'user' ? 'Unknown' : 'Studio')),
         nickname: typeof item.nickname === 'string' ? item.nickname : undefined,
-        galleryImages: Array.isArray(item.gallery_images) ? item.gallery_images : [],
         productRefs,
       }
     })
@@ -801,7 +760,6 @@ onMounted(() => {
 
 const activeKind = ref<PhotoKind | null>(null)
 const activeIndex = ref<number | null>(null)
-const currentGalleryIndex = ref(0)
 
 const isLightboxOpen = computed(() => activeKind.value !== null && activeIndex.value !== null)
 
@@ -816,20 +774,9 @@ const activePhoto = computed<PicturePhoto | null>(() => {
   return list[activeIndex.value] ?? null
 })
 
-const currentImageUrl = computed(() => {
-  const photo = activePhoto.value
-  if (!photo) return ''
-  // Prefer gallery image at current index, fallback to first gallery image, fallback to placeholder
-  if (photo.galleryImages && photo.galleryImages.length > 0) {
-    return photo.galleryImages[currentGalleryIndex.value] ?? photo.galleryImages[0]
-  }
-  return '' // Should handle empty case or show a placeholder if needed
-})
-
 const openLightbox = (kind: PhotoKind, index: number) => {
   activeKind.value = kind
   activeIndex.value = index
-  currentGalleryIndex.value = 0
   void loadCommentsForActivePhoto()
 }
 
@@ -850,7 +797,6 @@ const goNext = () => {
   if (!list || !list.length || activeIndex.value === null) return
   const nextIndex = (activeIndex.value + 1) % list.length
   activeIndex.value = nextIndex
-  currentGalleryIndex.value = 0
   void loadCommentsForActivePhoto()
 }
 
@@ -859,7 +805,6 @@ const goPrev = () => {
   if (!list || !list.length || activeIndex.value === null) return
   const prevIndex = (activeIndex.value - 1 + list.length) % list.length
   activeIndex.value = prevIndex
-  currentGalleryIndex.value = 0
   void loadCommentsForActivePhoto()
 }
 
