@@ -20,7 +20,7 @@
       aria-label="Sidebar"
     >
       <section
-        class="relative w-[78vw] max-md:w-[80vw] h-full max-md:h-[90vh] flex justify-center border-2 border-[#6b73ff] rounded-2xl bg-black shadow-[0_0_30px_rgba(107,115,255,0.3)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
+        class="relative w-[45vw] max-md:w-[80vw] h-full max-md:h-[90vh] flex justify-center border-2 border-[#6b73ff] rounded-2xl bg-black shadow-[0_0_30px_rgba(107,115,255,0.3)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
         :class="{
           'translate-x-0': leftOpen,
           '-translate-x-full': !leftOpen

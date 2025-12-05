@@ -27,6 +27,7 @@
   "filter": {
     "title": "Advanced Filters",
     "priceRange": "Price Range",
+    "price": "Price",
     "stockStatus": "Stock Status",
     "sortBy": "Sort By",
     "rating": "Rating",
@@ -34,6 +35,7 @@
     "preOrder": "Pre-order",
     "andUp": "& Up",
     "reset": "Reset Filters",
+    "resetShort": "Reset",
     "sort": {
       "newest": "Newest",
       "priceLowToHigh": "Price: Low to High",
@@ -115,7 +117,8 @@
     "quickSearch": "Quick Search",
     "productSearch": "Product Search",
     "searchProductPlaceholder": "Enter product name...",
-    "searchProducts": "Search Products"
+    "searchProducts": "Search Products",
+    "search": "Search"
   },
   "products": {
     "searchResults": "Search Results",
@@ -190,6 +193,25 @@
       "productFeedback": "Product Feedback",
       "spokecalculator": "Spokecalculator"
     }
+  },
+  "breadcrumbs": {
+    "home": "Home"
+  },
+  "feedback": {
+    "defaultSubtitle": "Help us improve this page and the tools you use every day.",
+    "empty": "No feedback has been submitted for this page yet.",
+    "formIntro": "Share your thoughts or report a problem about this page.",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Tell us what you think or what went wrong...",
+    "optionalName": "Your name (optional)",
+    "namePlaceholder": "Enter your name (optional)",
+    "optionalEmail": "Your email (optional)",
+    "emailPlaceholder": "Enter your email (optional)",
+    "submit": "Submit feedback",
+    "loading": "Loading feedback...",
+    "loginRequired": "Please sign in to leave feedback.",
+    "loginCta": "Sign in or create an account",
+    "liveChatCta": "To live chat"
   },
   "privacy": {
     "button": "Privacy statement",

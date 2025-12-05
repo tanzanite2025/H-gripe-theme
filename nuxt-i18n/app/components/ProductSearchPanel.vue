@@ -16,14 +16,14 @@
             class="flex-1 md:flex-none h-9 px-4 min-w-[120px] border-none rounded-lg bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-[13px] font-semibold cursor-pointer box-border transition-all duration-200 hover:shadow-[0_0_20px_rgba(107,115,255,0.5)] hover:-translate-y-0.5"
             @click="searchProducts"
           >
-            {{ $t('sidebar.searchProducts', 'Search Products') }}
+            {{ $t('sidebar.search', 'Search') }}
           </button>
           <button
             type="button"
             class="flex-1 md:flex-none h-9 px-4 min-w-[120px] border border-white/30 rounded-lg bg-transparent text-white/80 text-[12px] font-medium cursor-pointer box-border transition-all duration-200 hover:bg-white/10 hover:text-white"
             @click="handleReset"
           >
-            {{ $t('filter.reset', 'Reset Filters') }}
+            {{ $t('filter.resetShort', 'Reset') }}
           </button>
         </div>
       </div>
