@@ -14,7 +14,7 @@
       <!-- 价格范围 -->
       <div v-if="options.showPriceRange" class="price-range-inline">
         <h4 class="filter-label">
-          {{ $t('filter.priceRange', 'Price Range') }}
+          {{ $t('filter.price', 'Price') }}
         </h4>
         <div class="price-range-container">
           <div class="price-inputs">
@@ -87,8 +87,8 @@
                     type="checkbox"
                     class="checkbox-input"
                     :value="value.slug"
-                    :checked="isAttributeSelected(attr.slug, value.slug)"
-                    @change="handleAttributeCheckboxChange(attr.slug, value.slug, $event)"
+                    :checked="isAttributeSelected(getAttributeKey(attr), value.slug)"
+                    @change="handleAttributeCheckboxChange(getAttributeKey(attr), value.slug, $event)"
                   />
                   <span class="checkbox-label">
                     <span
@@ -332,7 +332,7 @@ const initializeAttributeSelections = (force = false): boolean => {
   let changed = false
 
   attrs.forEach((attr) => {
-    const key = attr.slug
+    const key = getAttributeKey(attr)
     if (!key) return
 
     const existing = currentAttributes[key]
@@ -363,7 +363,7 @@ watch(
   attributeFilters,
   () => {
     ensureExpandedDefaults()
-    const changed = initializeAttributeSelections(false)
+    const changed = initializeAttributeSelections(true)
     if (changed) {
       emit('update:filters', { ...localFilters.value })
     }
@@ -425,23 +425,39 @@ const isAttributeSelected = (attrSlug: string, valueSlug: string): boolean => {
   return selected.includes(valueSlug)
 }
 
-// 属性按钮上的选中汇总：All / 选中数量
+// 属性按钮上的选中汇总：All / 选中数量（0 时显示 0）
 const getAttributeSummary = (attr: AttributeFilterConfig): string => {
-  const slug = attr?.slug
-  if (!slug) return 'All'
+  const key = getAttributeKey(attr)
+  if (!key) return 'All'
 
   const values = (attr.values || []).filter((v) => v && v.is_enabled !== false)
   const total = values.length
   if (!total) return 'All'
 
   const attributes = localFilters.value.attributes || {}
-  const selected = Array.isArray(attributes[slug]) ? attributes[slug] : []
+  const selected = Array.isArray(attributes[key]) ? attributes[key] : []
 
   const selectedCount = values.reduce((count, v) => {
     return count + (selected.includes(v.slug) ? 1 : 0)
   }, 0)
 
-  if (!selectedCount || selectedCount >= total) return 'All'
+  // 调试信息：在本地环境观察实际选中数量与总数（仅在浏览器端打印）
+  if (typeof window !== 'undefined') {
+    // eslint-disable-next-line no-console
+    console.log('[AdvancedFilter:getAttributeSummary]', key, {
+      total,
+      selectedCount,
+      selectedSlugs: selected,
+    })
+  }
+
+  // 全选：显示 All
+  if (selectedCount >= total && total > 0) return 'All'
+
+  // 一个都没选：显示 0
+  if (selectedCount <= 0) return '0'
+
+  // 其它情况显示具体选中数量
   return String(selectedCount)
 }
 
@@ -613,7 +629,7 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .price-input {
-  width: 4.5rem;
+  width: 3rem;
   background: transparent;
   border: none;
   outline: none;
