@@ -738,6 +738,12 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
   font-size: 12px !important;
 }
 
+@media (max-width: 767px) {
+	.site-header-root {
+		max-height: 150px;
+	}
+}
+
 /* iPad / small tablets: prevent desktop language switcher from overflowing header pill */
 @media (min-width: 768px) and (max-width: 1100px) {
 	.site-header-root {
@@ -751,6 +757,20 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 	.desktop-lang-switcher {
 		width: 106px;
 		padding-inline: 0.5rem;
+	}
+}
+
+/* tablet-768: 768x1024 等宽度段，限制 SiteHeader 高度为 130px */
+@media (min-width: 768px) and (max-width: 819px) {
+	.site-header-root {
+		max-height: 130px;
+	}
+}
+
+/* tablet-820: 820x1180 等宽度段，限制 SiteHeader 高度为 130px */
+@media (min-width: 820px) and (max-width: 1023px) {
+	.site-header-root {
+		max-height: 130px;
 	}
 }
 </style>

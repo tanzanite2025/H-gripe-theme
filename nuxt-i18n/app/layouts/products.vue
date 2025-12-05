@@ -2,13 +2,8 @@
   <div class="layout layout--products">
     <main class="layout-main">
       <!-- Products hero / banner (copy support spacing & background) -->
-      <section class="products-hero">
-        <div class="products-hero__inner">
-          <h1 class="products-hero__title">Products</h1>
-        </div>
-      </section>
-
       <!-- Top horizontal Products navigation (same style as Support) -->
+      <div class="products-header-spacer" aria-hidden="true"></div>
       <ProductsTopNav />
 
       <!-- Products page content -->
@@ -44,9 +39,13 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
   flex-direction: column;
 }
 
+.products-header-spacer {
+  height: 155px;
+}
+
 .products-hero {
-  margin-top: 2.75rem;
-  padding: 3rem 1.5rem 0.75rem;
+  margin-top: 0;
+  padding: 1.5rem 1.5rem 0.75rem;
   background: transparent !important;
 }
 
@@ -75,8 +74,8 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
 
 @media (max-width: 768px) {
   .products-hero {
-    margin-top: 5.5rem;
-    padding: 2rem 1.25rem 0.75rem;
+    margin-top: 0;
+    padding: 1.25rem 1.25rem 0.75rem;
   }
 
   .products-content {
@@ -90,61 +89,24 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
   }
 }
 
-/* Mirror Support layout's extra spacing for key mobile widths */
-@media (min-width: 360px) and (max-width: 374px) {
-  .products-hero {
-    margin-top: 7rem;
+@media (min-width: 768px) {
+  .products-header-spacer {
+    /* Desktop: push ProductsTopNav slightly below the fixed SiteHeader */
+    height: 5.75rem;
   }
 }
 
-@media (min-width: 375px) and (max-width: 389px) {
-  .products-hero {
-    margin-top: 7rem;
+/* tablet-768: 768x1024 等宽度段，使用 160px 的顶部空白 */
+@media (min-width: 768px) and (max-width: 819px) {
+  .products-header-spacer {
+    height: 145px;
   }
 }
 
-@media (min-width: 390px) and (max-width: 411px) {
-  .products-hero {
-    margin-top: 7rem;
-  }
-}
-
-@media (min-width: 412px) and (max-width: 413px) {
-  .products-hero {
-    margin-top: 7rem;
-  }
-}
-
-@media (min-width: 414px) and (max-width: 429px) {
-  .products-hero {
-    margin-top: 7.5rem;
-  }
-}
-
-@media (min-width: 430px) and (max-width: 767px) {
-  .products-hero {
-    margin-top: 7rem;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .products-hero {
-    margin-top: 5.5rem;
-  }
-}
-
-/* Very narrow tall phones (e.g. iPhone SE portrait): ensure horizontal nav is fully visible below fixed header */
-@media (max-width: 359px) and (min-height: 700px) {
-  .products-hero {
-    margin-top: 7rem;
-  }
-}
-
-/* Tall 20:9 Android phones (e.g. Pixel 8a) where the fixed header is slightly higher:
-   add extra spacing so the horizontal products nav is fully visible below the header. */
-@media (min-width: 400px) and (max-width: 430px) and (min-height: 850px) {
-  .products-hero {
-    margin-top: 8.25rem;
+/* tablet-820: 820x1180 等宽度段，使用 160px 的顶部空白 */
+@media (min-width: 820px) and (max-width: 1023px) {
+  .products-header-spacer {
+    height: 145px;
   }
 }
 </style>
