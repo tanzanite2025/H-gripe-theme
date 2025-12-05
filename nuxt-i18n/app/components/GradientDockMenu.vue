@@ -3,7 +3,7 @@
   <div class="fixed left-0 right-0 bottom-0 w-full h-[72px] bg-[#0b1020]/70 backdrop-blur-md border-t border-white/5 z-[100] pointer-events-none"></div>
   
   <!-- Dock 菜单 -->
-  <div class="fixed left-0 right-0 bottom-[8px] w-full flex items-center justify-center gap-[11px] max-md:gap-[5px] min-[769px]:max-[1024px]:grid min-[769px]:max-[1024px]:grid-cols-5 min-[769px]:max-[1024px]:gap-[7px] min-[769px]:max-[1024px]:justify-items-center min-[1025px]:max-[1200px]:grid min-[1025px]:max-[1200px]:grid-flow-col min-[1025px]:max-[1200px]:auto-cols-max min-[1025px]:max-[1200px]:gap-3 pb-[max(env(safe-area-inset-bottom),0px)] z-[101] pointer-events-none" ref="dockRef">
+  <div class="fixed left-0 right-0 bottom-[8px] w-full flex items-center justify-center gap-[8px] max-md:gap-[4px] min-[769px]:max-[1024px]:grid min-[769px]:max-[1024px]:grid-cols-5 min-[769px]:max-[1024px]:gap-[6px] min-[769px]:max-[1024px]:justify-items-center min-[1025px]:max-[1200px]:grid min-[1025px]:max-[1200px]:grid-flow-col min-[1025px]:max-[1200px]:auto-cols-max min-[1025px]:max-[1200px]:gap-2.5 pb-[max(env(safe-area-inset-bottom),0px)] z-[101] pointer-events-none" ref="dockRef">
     <!-- 新按钮：打开左侧 Sidebar -->
     <div class="relative inline-flex items-center">
       <button
@@ -46,7 +46,7 @@
     </div>
     
     <button 
-      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] min-h-[52px] h-[52px] max-md:h-12 max-md:min-h-12 w-[120px] px-3.5 rounded-full font-semibold tracking-wider text-white uppercase bg-[#0b1020] shadow-none hover:shadow-none focus-visible:shadow-none inline-flex items-center justify-center border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
+      class="pointer-events-auto text-[#cfd6ff] bg-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,background] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.45)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_10px_28px_rgba(0,0,0,0.45)] min-h-[52px] h-[52px] max-md:h-12 max-md:min-h-12 w-[104px] px-3.5 rounded-full font-semibold tracking-wider text-white uppercase bg-[#0b1020] shadow-none hover:shadow-none focus-visible:shadow-none inline-flex items-center justify-center border-2 border-transparent bg-clip-padding [background-image:linear-gradient(#0b1020,#0b1020),linear-gradient(to_right,#40ffaa,#6b73ff)] [background-origin:border-box] [background-clip:padding-box,border-box]" 
       type="button" 
       @click="openCheckoutFromDock"
     >
