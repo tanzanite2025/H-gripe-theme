@@ -62,22 +62,6 @@ class TPG_Post_Type {
                 'single'       => true,
                 'show_in_rest' => true,
             ],
-            'tanz_photo_gallery_ids' => [
-                'type'         => 'array',
-                'single'       => true, // 虽然存的是数组，但在 WP 这里的 single 指的是 meta key 是否唯一，通常我们也设为 true 存序列化数组，或者 REST api schema 处理。但在 WP 5.x+ register_meta 对 array 支持有限，通常用 string/json 或自定义 schema。这里为了兼容性，我们暂且定义为 string (JSON) 或 object。
-                // 修正：为了最稳妥的 REST API 支持，我们定义为 'array' 并指定 schema items type
-                'type'         => 'array',
-                'description'  => 'List of attachment IDs for the gallery',
-                'single'       => true,
-                'show_in_rest' => [
-                    'schema' => [
-                        'type'  => 'array',
-                        'items' => [
-                            'type' => 'integer',
-                        ],
-                    ],
-                ],
-            ],
             'tanz_photo_region' => [
                 'type'         => 'string',
                 'single'       => true,

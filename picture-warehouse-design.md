@@ -6,7 +6,7 @@
 
 ## 1. 页面信息架构（/company/picture-warehouse）
 
-### 1.1 顶部结构【【【【这个结构是已经好了的，我们要做的只是在下方区域去做这个事情】
+### 1.1 顶部结构
 - 复用 `products` 布局：
   - 顶部 Company 导航（三项：Our Story / Membership and Points / Picture warehouse）。
   - 下方内容区域专用于图片展示与说明。
@@ -101,9 +101,8 @@
 
 ## 2. 数据模型与来源（规划）
 
-> 不在 tanzanite-setting 里扩展，而是新建一个专用插件（暂名：`tanzanite-photo-gallery`）。
 
-### 2.1 WordPress 侧数据结构（草案）
+### 2.1 WordPress 侧数据结构
 
 - **自定义 Post Type：`tanz_photo`**
   - 用途：统一存储用户与品牌的所有照片条目。
@@ -216,7 +215,7 @@
 
 ---
 
-### 2.3 评论系统数据结构与接口（草案）
+### 2.3 评论系统数据结构与接口
 
 > 不单独建新表，而是复用 WordPress 原生 `wp_comments` / `wp_commentmeta`：
 > - 每条评论通过 `comment_post_ID` 关联到对应的 `tanz_photo`；
@@ -274,7 +273,7 @@
     - 成功时返回 `{ id, status: 'pending' }`，提示用户“评论已提交，等待审核”；
     - 后续前端只在拉取 `comments` 时展示已审核通过的条目。
 
-## 3. 新插件结构（tanzanite-photo-gallery，草案）
+## 3. 新插件结构（tanzanite-photo-gallery）
 
 > 目标是让图片管理完全独立于 `tanzanite-setting` 插件，降低耦合。
 
@@ -287,7 +286,7 @@
   - 审核通过/拒绝
   - 简单过滤（按类型/状态）。
 
-### 3.2 插件目录草案
+### 3.2 插件目录
 - `tanzanite-photo-gallery/`
   - `tanzanite-photo-gallery.php` （入口）
   - `includes/`
@@ -387,107 +386,24 @@
   - 注册 REST 路由：`/gallery`、`/upload`、`/review`；
   - `/gallery` 已实现基础查询逻辑：支持按 `type`（user/brand/all）、`status`（pending/approved/rejected/all）、`page`、`per_page` 查询 `tanz_photo` 并返回元数据数组；
   - 在后台侧边栏添加 `Tanzanite Photos` 菜单，并在列表中显示 `Title / Type / Region / Status / Date` 等基本列。
-- 尚未实现：
-  - 上传与审核的具体业务处理（文件保存、状态流转等）；
-  - 后台列表中的批量审核操作和更完整的过滤控件。
 
-> 注：下方“尚未实现”列表仅针对后台 UI 细节。`/upload` 与 `/review` 的核心逻辑已经在插件中实现，用于支撑 Phase 3。
+## 4. 开发阶段规划（更新：2025-12-06）
 
-## 4. Nuxt 前端实现分阶段计划
+**Phase 1：静态骨架与基础展示 (已实现)**
+- 页面布局：两栏结构（Riders / Brand）
+- 数据展示：对接 `/gallery` 接口，支持分页（Show more）。
+- Lightbox：大图浏览，支持左右切换。
 
-### Phase 1：纯前端照片墙骨架（已完成）
+**Phase 2：用户上传 (已实现)**
+- 上传表单：支持 Region, Location, Nickname 等字段。
+- 接口对接：`POST /upload`。
+- 状态处理：上传后进入 Pending 状态。
 
-- 在 `/company/picture-warehouse`：
-  - 使用本地 mock 数据数组：
-    - `userPhotos[]` 和 `brandPhotos[]`。
-  - 实现两栏布局：
-    - 桌面：左右两列（左：用户照片；右：品牌照片）。
-    - 手机：上下两块（先用户，再品牌）。
-  - 每张卡片：
-    - 灰色图片占位区（后续替换为缩略图）。
-    - 一行 meta 文本：`Region · (Nickname)`。
-  - 单张图片弹窗（Lightbox）：
-    - 仅实现大图占位 + 标题 + 左右切换 + 关闭；
-    - 底部评论/分享/推荐区域只保留 UI 占位，不接任何逻辑。
+**Phase 3：评论与互动 (已实现)**
+- 评论展示：Lightbox 中加载评论列表。
+- 评论发表：支持登录用户发表评论（需审核）。
+- 分享功能：支持 Copy Link，社交按钮占位。
 
-### Phase 2：接入只读的品牌图片（brand gallery）
-
-- **目标**：
-  - 右侧 "Tanzanite photos" 列从真实品牌数据源加载；
-  - 左侧 "Riders photos" 暂时仍可保留 mock 数据或隐藏；
-  - 继续沿用 Phase 1 已有的卡片和 Lightbox UI，不改变整体结构。
-
-- **数据来源**：
-  - 后端通过新插件维护 `brand` 类型的 `tanz_photo`（或等价数据结构）。
-  - 仅 `status = approved` 的记录对前端可见。
-
-- **接口调用约定（初版）**：
-  - `GET /wp-json/tanz-photo/v1/gallery?type=brand&status=approved`。
-  - 返回字段（与前端 `PicturePhoto` 对齐）：
-    - `id`：唯一标识。
-    - `title`：用于卡片和 Lightbox 标题。
-    - `region`：如 `Studio` 或拍摄场景。
-    - （预留）`product_refs`：与产品关联的 ID/slug，供后续推荐模块使用。
-   - 排序规则：
-     - 若 `status=approved`，优先按 `tanz_photo_approved_at` 倒序排序（最新审核通过的在前）；
-     - 其他状态或缺少该字段时，退回按文章 `date` 倒序。
-
-- **前端行为**：
-  - 页面加载时：
-    - 右栏显示加载状态（skeleton 或 `Loading brand photos...` 提示）。
-    - 调用品牌 gallery 接口获取数据并填充 `brandPhotos`。
-  - 加载失败时：
-    - 在右栏显示一条错误占位文案，例如：`Unable to load brand photos. Please try again later.`；
-    - 不影响左栏用户照片的展示。
-  - 无数据（空列表）时：
-    - 显示占位文案：`No brand photos published yet.`，并保留布局框架。
-
-- **与 Lightbox 的关系**：
-  - Lightbox 继续使用当前的 "大图灰底 + 标题 + prev/next + 关闭" 行为；
-  - 从品牌接口返回的数据只影响标题/region 等文案展示；
-  - 评论/分享/推荐仍保持 UI 占位，不接真实数据。
-
-### Phase 3：实现用户上传 + 审核
-
-- 在 Picture warehouse 页增加一个上传区块（仅针对用户栏）：
-  - 表单字段：文件、地区、昵称、车款等。
-  - 调用 `POST /upload`，生成 `pending` 记录。
-- 后台通过新插件提供的审核界面处理照片。
-- 前端左栏由 `GET /gallery?type=user` 提供数据（仅 `approved`）。
-
-> 当前进度：
-> - 左侧 Riders 列已经通过 `GET /gallery?type=user&status=approved` 加载数据；
-> - 上传表单已接入 `POST /upload`，成功后会生成 `pending` 记录并等待后台/接口审核；
-> - `/review` 接口已实现，可用于将用户照片从 `pending` 更新为 `approved` 或 `rejected`；
-> - 评论系统已接入：Lightbox 下方左列会按照片加载已审核评论，并支持登录用户发表评论（提交为待审核状态）；
-> - Share 区已接入：提供 Facebook/X/Reddit/Copy link 四颗按钮，其中仅 Copy link 具备复制链接行为；
-> - 右侧推荐模块仍为 UI 占位，尚未连通产品数据。
-
-### Phase 4（可选）：过滤与更多展示
-
-- 增加过滤条件：
-  - 按地区 / 车型 / wheelset 等筛选。
-- 增加灯箱浏览、分页或懒加载等交互。
-
----
-
-## 5. 开放问题（待和你确认）
-
-1. **用户上传是否需要登录？**
-   - A. 允许未登录用户上传（需要强 CAPTCHA / rate limit）
-   - B. 只允许登录会员上传（更安全）
-
-2. **图片保留策略**：
-   - 是否允许管理员在前端移除已通过的图片（软删除标记）？
-
-3. **地区字段的精度**：
-   - 只想显示国家（如 `Germany`）还是 `Country · City`（如 `Germany · Berlin`）？
-
-4. **展示顺序**：
-   - 默认按 `approved_at` 时间倒序？还是你希望手动调整权重/置顶？
-
----
-
-> 请在这份 MD 上直接批注/修改：
-> - 如果 Phase 计划 OK，我会先只做 Phase 1 的前端照片墙骨架。
-> - 如果数据结构或字段有你更偏好的命名方式，也可以在这里直接改。 
+**Phase 4：推荐与管理 (进行中)**
+- 产品推荐：已实现 "Like This? Get The Same Build" 链接展示（基于 `productRefs`）。
+- 后台管理：`tanzanite-photo-gallery` 插件已支持基础审核流程。
