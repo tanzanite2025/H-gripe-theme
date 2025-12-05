@@ -141,6 +141,15 @@
     };
 
     /**
+     * 确认对话框（异步版本，用于 async/await）
+     * @param {string} message - 确认消息
+     * @returns {Promise<boolean>}
+     */
+    window.TanzaniteAdmin.confirmAction = function(message) {
+        return Promise.resolve(confirm(message || '确定要执行此操作吗？'));
+    };
+
+    /**
      * 滚动到元素
      * @param {HTMLElement} element - 目标元素
      */

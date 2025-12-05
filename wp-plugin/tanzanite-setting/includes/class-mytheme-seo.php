@@ -324,7 +324,12 @@ if (!class_exists('MyTheme_SEO_Plugin')) {
 
         public function render_admin_page(): void
         {
-            echo '<div class="wrap"><h1>MyTheme SEO</h1>';
+            echo '<div class="tz-settings-wrapper tz-seo-settings">';
+            
+            echo '  <div class="tz-settings-header">';
+            echo '      <h1>' . esc_html__('SEO Settings', 'mytheme-seo') . '</h1>';
+            echo '      <p>' . esc_html__('Manage multilingual SEO meta, schema markup, and sitemap settings.', 'mytheme-seo') . '</p>';
+            echo '  </div>';
             
             // 调试：确认页面渲染
             echo '<div class="notice notice-info"><p>SEO 页面已加载。如果下方空白，请检查浏览器控制台（F12）是否有 JavaScript 错误。</p></div>';

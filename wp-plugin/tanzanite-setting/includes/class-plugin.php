@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 /**
  * Tanzanite Settings Plugin Core Class
  *
- * 插件核心类，负责初始化和协调所有模块
+ * Plugin core class, responsible for initialization and coordination of all modules.
  *
  * @package    Tanzanite_Settings
  * @subpackage Includes
@@ -14,42 +14,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * 插件核心类
- *
- * 负责插件的初始化、钩子注册和模块协调
+ * 鎻掍欢鏍稿績绫? *
+ * 璐熻矗鎻掍欢鐨勫垵濮嬪寲銆侀挬瀛愭敞鍐屽拰妯″潡鍗忚皟
  */
 class Tanzanite_Plugin {
 
 	/**
-	 * 插件版本
+	 * 鎻掍欢鐗堟湰
 	 *
 	 * @var string
 	 */
 	const VERSION = '0.2.0';
 
 	/**
-	 * 数据库版本
-	 *
+	 * 鏁版嵁搴撶増鏈?	 *
 	 * @var string
 	 */
 	const DB_VERSION = '0.1.9';
 
 	/**
-	 * 单例实例
+	 * 鍗曚緥瀹炰緥
 	 *
 	 * @var Tanzanite_Plugin
 	 */
 	private static $instance = null;
 
 	/**
-	 * REST API 控制器列表
-	 *
+	 * REST API 鎺у埗鍣ㄥ垪琛?	 *
 	 * @var array
 	 */
 	private $rest_controllers = array();
 
 	/**
-	 * 后台页面列表
+	 * 鍚庡彴椤甸潰鍒楄〃
 	 *
 	 * @var array
 	 */
@@ -63,7 +60,7 @@ class Tanzanite_Plugin {
 	private $legacy_plugin = null;
 
 	/**
-	 * 获取单例实例
+	 * 鑾峰彇鍗曚緥瀹炰緥
 	 *
 	 * @since 0.2.0
 	 * @return Tanzanite_Plugin
@@ -85,7 +82,7 @@ class Tanzanite_Plugin {
 	}
 
 	/**
-	 * 运行插件
+	 * 杩愯鎻掍欢
 	 *
 	 * @since 0.2.0
 	 */
@@ -97,7 +94,7 @@ class Tanzanite_Plugin {
 	}
 
 	/**
-	 * 定义常量
+	 * 瀹氫箟甯搁噺
 	 *
 	 * @since 0.2.0
 	 */
@@ -111,28 +108,106 @@ class Tanzanite_Plugin {
 	}
 
 	/**
-	 * 加载依赖
+	 * 鍔犺浇渚濊禆
 	 *
 	 * @since 0.2.0
 	 */
 	private function load_dependencies() {
-		// 加载 URLLink 模块
+		// 鍔犺浇 URLLink 妯″潡
 		$this->load_urllink();
 
 		$geometry_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-product-geometry-admin.php';
 		if ( file_exists( $geometry_admin ) ) {
 			require_once $geometry_admin;
 		}
+
+		// 鍔犺浇 Orders Admin (Refactored)
+		$orders_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-orders-admin.php';
+		if ( file_exists( $orders_admin ) ) {
+			require_once $orders_admin;
+		}
+
+		// 鍔犺浇 Reviews Admin
+		$reviews_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-reviews-admin.php';
+		if ( file_exists( $reviews_admin ) ) {
+			require_once $reviews_admin;
+		}
+
+		// 鍔犺浇 Carriers Admin
+		$carriers_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-carriers-admin.php';
+		if ( file_exists( $carriers_admin ) ) {
+			require_once $carriers_admin;
+		}
+
+		// 鍔犺浇 Shipping Templates Admin
+		$shipping_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-shipping-admin.php';
+		if ( file_exists( $shipping_admin ) ) {
+			require_once $shipping_admin;
+		}
+
+		// 鍔犺浇 Members Admin
+		$members_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-members-admin.php';
+		if ( file_exists( $members_admin ) ) {
+			require_once $members_admin;
+		}
+
+		// 鍔犺浇 Rewards Admin
+		$rewards_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-rewards-admin.php';
+		if ( file_exists( $rewards_admin ) ) {
+			require_once $rewards_admin;
+		}
+
+		// 鍔犺浇 Loyalty Admin
+		$loyalty_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-loyalty-admin.php';
+		if ( file_exists( $loyalty_admin ) ) {
+			require_once $loyalty_admin;
+		}
+
+		// 鍔犺浇 Payment Admin
+		$payment_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-payment-admin.php';
+		if ( file_exists( $payment_admin ) ) {
+			require_once $payment_admin;
+		}
+
+		// 鍔犺浇 Tax Rates Admin
+		$tax_rates_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-tax-rates-admin.php';
+		if ( file_exists( $tax_rates_admin ) ) {
+			require_once $tax_rates_admin;
+		}
+
+		// 鍔犺浇 Markdown Templates Admin
+		$markdown_templates_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-markdown-templates-admin.php';
+		if ( file_exists( $markdown_templates_admin ) ) {
+			require_once $markdown_templates_admin;
+		}
+
+		// 鍔犺浇 Products List Admin
+		$products_list_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-products-list-admin.php';
+		if ( file_exists( $products_list_admin ) ) {
+			require_once $products_list_admin;
+		}
+
+		// 加载 Add Product Admin
+		$add_product_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-add-product-admin.php';
+		if ( file_exists( $add_product_admin ) ) {
+			require_once $add_product_admin;
+		}
+
+		// 加载 Attributes Admin
+		$attributes_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-attributes-admin.php';
+		if ( file_exists( $attributes_admin ) ) {
+			require_once $attributes_admin;
+		}
 	}
 
 	/**
-	 * 加载 URLLink 模块
+	 * 鍔犺浇 URLLink 妯″潡
 	 *
 	 * @since 0.2.0
 	 */
 	private function load_urllink() {
 		try {
-			// 定义 URLLink 常量
+			// 瀹氫箟 URLLink 甯搁噺
 			if ( ! defined( 'URLLINK_VERSION' ) ) {
 				define( 'URLLINK_VERSION', '0.1.0' );
 			}
@@ -159,14 +234,13 @@ class Tanzanite_Plugin {
 				}
 			}
 			
-			// 加载 URLLink 文件（meta.php 必须最先加载，因为包含 urllink_normalize_path 函数）
-			require_once URLLINK_DIR . 'meta.php';
+			// 鍔犺浇 URLLink 鏂囦欢锛坢eta.php 蹇呴』鏈€鍏堝姞杞斤紝鍥犱负鍖呭惈 urllink_normalize_path 鍑芥暟锛?			require_once URLLINK_DIR . 'meta.php';
 			require_once URLLINK_DIR . 'rewrite.php';
 			require_once URLLINK_DIR . 'rest.php';
 			require_once URLLINK_DIR . 'admin.php';
 			require_once URLLINK_DIR . 'class-urllink-plugin.php';
 			
-			// 初始化 URLLink
+			// 鍒濆鍖?URLLink
 			if ( class_exists( 'URLLink_Plugin' ) ) {
 				URLLink_Plugin::instance();
 			}
@@ -230,6 +304,9 @@ class Tanzanite_Plugin {
 		// 后台脚本和样式 - 调用 legacy plugin 的方法
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		
+		// 添加自定义 body class
+		add_filter( 'admin_body_class', array( $this, 'filter_admin_body_class' ) );
+
 		error_log( 'Tanzanite Plugin: init_hooks() called, rest_api_init hook registered' );
 	}
 
@@ -255,7 +332,7 @@ class Tanzanite_Plugin {
 			'Tanzanite_REST_Redeem_Controller',
 			'Tanzanite_REST_Loyalty_Controller',
 			'Tanzanite_REST_Attributes_Controller',
-			'Tanzanite_REST_Audit_Controller',
+			// 'Tanzanite_REST_Audit_Controller',
 			'Tanzanite_REST_ShippingTemplates_Controller',
 			'Tanzanite_REST_User_Assets_Controller',
 			'Tanzanite_REST_Wishlist_Controller',
@@ -334,7 +411,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_reviews' )
 		);
 
-		// 添加商品
+		// 娣诲姞鍟嗗搧
 		add_submenu_page(
 			$root_slug,
 			__( 'Add New Product', 'tanzanite-settings' ),
@@ -344,7 +421,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_add_product' )
 		);
 
-		// 支付方式
+		// 鏀粯鏂瑰紡
 		add_submenu_page(
 			$root_slug,
 			__( 'Payment Method', 'tanzanite-settings' ),
@@ -354,7 +431,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_payment_method' )
 		);
 
-		// 税率管理
+		// 绋庣巼绠＄悊
 		add_submenu_page(
 			$root_slug,
 			__( 'Tax Rates', 'tanzanite-settings' ),
@@ -364,7 +441,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_tax_rates' )
 		);
 
-		// 订单列表
+		// 璁㈠崟鍒楄〃
 		add_submenu_page(
 			$root_slug,
 			__( 'All Orders', 'tanzanite-settings' ),
@@ -374,7 +451,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_orders_list' )
 		);
 
-		// 订单批量操作
+		// Order Bulk
 		add_submenu_page(
 			$root_slug,
 			__( 'Order Bulk', 'tanzanite-settings' ),
@@ -384,7 +461,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_orders_bulk' )
 		);
 
-		// 运费模板
+		// Shipping Templates
 		add_submenu_page(
 			$root_slug,
 			__( 'Shipping Templates', 'tanzanite-settings' ),
@@ -394,7 +471,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_shipping_templates' )
 		);
 
-		// 物流商管理
+		// Carriers
 		add_submenu_page(
 			$root_slug,
 			__( 'Carriers & Tracking', 'tanzanite-settings' ),
@@ -404,7 +481,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_carriers' )
 		);
 
-		// 会员档案
+		// Member Profiles
 		add_submenu_page(
 			$root_slug,
 			__( 'Member Profiles', 'tanzanite-settings' ),
@@ -414,7 +491,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_member_profiles' )
 		);
 
-		// 礼品卡和优惠券
+		// Rewards
 		add_submenu_page(
 			$root_slug,
 			__( 'Gift Cards & Coupons', 'tanzanite-settings' ),
@@ -424,7 +501,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_rewards' )
 		);
 
-		// 积分设置
+		// Loyalty
 		add_submenu_page(
 			$root_slug,
 			__( 'Loyalty Settings', 'tanzanite-settings' ),
@@ -434,7 +511,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_loyalty_settings' )
 		);
 
-		// 购物车管理
+		// Cart
 		add_submenu_page(
 			$root_slug,
 			__( 'Cart Management', 'tanzanite-settings' ),
@@ -444,7 +521,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_cart_list' )
 		);
 
-		// Spoke Geometry - 轮组几何管理
+		// Spoke Geometry
 		add_submenu_page(
 			$root_slug,
 			__( 'Spoke Geometry', 'tanzanite-settings' ),
@@ -454,7 +531,7 @@ class Tanzanite_Plugin {
 			array( $this, 'render_spoke_geometry_page' )
 		);
 
-		// Spoke Length History - 辐条长度历史
+		// Spoke History
 		add_submenu_page(
 			$root_slug,
 			__( 'Spoke Length History', 'tanzanite-settings' ),
@@ -464,17 +541,8 @@ class Tanzanite_Plugin {
 			array( $this, 'render_spoke_history_page' )
 		);
 
-		// 审计日志
-		add_submenu_page(
-			$root_slug,
-			__( 'Audit Logs', 'tanzanite-settings' ),
-			__( 'Audit Logs', 'tanzanite-settings' ),
-			$root_capability,
-			'tanzanite-settings-audit-logs',
-			array( $this, 'render_audit_logs' )
-		);
 
-		// URLLink - 自定义永久链接
+		// URLLink
 		add_submenu_page(
 			$root_slug,
 			__( 'URL Management', 'tanzanite-settings' ),
@@ -512,55 +580,104 @@ class Tanzanite_Plugin {
 	 * @param string $hook 当前页面钩子
 	 */
 	public function enqueue_admin_assets( $hook ) {
-		// 调用 legacy plugin 的方法
-		if ( $this->legacy_plugin && method_exists( $this->legacy_plugin, 'enqueue_admin_assets' ) ) {
-			$this->legacy_plugin->enqueue_admin_assets( $hook );
+		// 加载全局样式
+		// 注意：admin.css 和 admin.min.css 内容相同，保留两个文件是为了符合 WordPress 标准
+		// 生产环境自动加载 .min.css，开发环境（SCRIPT_DEBUG=true）加载 .css
+		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+		wp_enqueue_style(
+			'tanzanite-settings-admin',
+			TANZANITE_PLUGIN_URL . 'assets/css/admin' . $suffix . '.css',
+			[],
+			self::VERSION
+		);
+
+		// 注册公共 JS 库
+		wp_register_script(
+			'tz-admin-common',
+			TANZANITE_PLUGIN_URL . 'assets/js/admin-common.js',
+			array( 'jquery' ),
+			self::VERSION,
+			true
+		);
+
+		// Attributes 页面 JS 加载 - 迁移后逻辑
+		$screen = get_current_screen();
+		if ( $screen && strpos( $screen->id, 'tanzanite-settings-attributes' ) !== false ) {
+			wp_enqueue_media();
+			wp_enqueue_script(
+				'tz-attributes',
+				TANZANITE_PLUGIN_URL . 'assets/js/attributes.js',
+				array( 'jquery', 'wp-media' ),
+				self::VERSION,
+				true
+			);
 		}
 	}
 
 	/**
-	 * 检查并升级数据库
-	 *
+	 * 在插件页面添加自定义 body class 以便样式隔离。
+	 */
+	public function filter_admin_body_class( $classes ) {
+		$screen = get_current_screen();
+
+		// 为所有 Tanzanite 主设置页、购物车列表页、Spoke Geometry 页
+		// Tanzanite Photos（tanz_photo 列表/编辑页），以及 Subscription Broadcasts
+		// 页面统一应用 tz-settings-admin 样式
+		if (
+			$screen
+			&& (
+				false !== strpos( $screen->id, 'tanzanite-settings' )
+				|| false !== strpos( $screen->id, 'tanzanite-cart' )
+				|| false !== strpos( $screen->id, 'tanzanite-spoke-geometry' )
+				|| false !== strpos( $screen->id, 'tanz_photo' )
+				|| false !== strpos( $screen->id, 'tanzanite-subscription-broadcasts' )
+			)
+		) {
+			$classes .= ' tz-settings-admin';
+		}
+
+		return $classes;
+	}
+
+	/**
+	 * 检查并升级数据库	 *
 	 * @since 0.2.0
 	 */
 	public function maybe_upgrade_database() {
 		$stored_version = get_option( 'tanzanite_db_version' );
 		
 		if ( self::DB_VERSION !== $stored_version ) {
-			// 将由 Database 类处理
-			// Tanzanite_Database::upgrade();
+			// 灏嗙敱 Database 绫诲鐞?			// Tanzanite_Database::upgrade();
 			update_option( 'tanzanite_db_version', self::DB_VERSION );
 		}
 	}
 
 	/**
-	 * 插件激活钩子
-	 *
+	 * 鎻掍欢婵€娲婚挬瀛?	 *
 	 * @since 0.2.0
 	 */
 	public static function activate() {
-		// 创建数据库表
+		// 鍒涘缓鏁版嵁搴撹〃
 		// Tanzanite_Database::create_tables();
 		
-		// 创建角色和权限
-		// Tanzanite_Permissions::create_roles();
+		// 鍒涘缓瑙掕壊鍜屾潈闄?		// Tanzanite_Permissions::create_roles();
 		
-		// 刷新重写规则
+		// 鍒锋柊閲嶅啓瑙勫垯
 		flush_rewrite_rules();
 	}
 
 	/**
-	 * 插件停用钩子
+	 * 鎻掍欢鍋滅敤閽╁瓙
 	 *
 	 * @since 0.2.0
 	 */
 	public static function deactivate() {
-		// 刷新重写规则
+		// 鍒锋柊閲嶅啓瑙勫垯
 		flush_rewrite_rules();
 	}
 
 	/**
-	 * 获取插件版本
+	 * 鑾峰彇鎻掍欢鐗堟湰
 	 *
 	 * @since 0.2.0
 	 * @return string
@@ -570,8 +687,7 @@ class Tanzanite_Plugin {
 	}
 
 	/**
-	 * 获取数据库版本
-	 *
+	 * 鑾峰彇鏁版嵁搴撶増鏈?	 *
 	 * @since 0.2.0
 	 * @return string
 	 */
@@ -580,126 +696,164 @@ class Tanzanite_Plugin {
 	}
 
 	/**
-	 * 渲染商品列表页面
+	 * 娓叉煋鍟嗗搧鍒楄〃椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_all_products() {
-		if ( $this->legacy_plugin && method_exists( $this->legacy_plugin, 'render_all_products' ) ) {
+		if ( class_exists( 'Tanzanite_Products_List_Admin' ) ) {
+			Tanzanite_Products_List_Admin::render_page();
+		} elseif ( $this->legacy_plugin && method_exists( $this->legacy_plugin, 'render_all_products' ) ) {
 			$this->legacy_plugin->render_all_products();
 		}
 	}
 
 	/**
-	 * 渲染添加商品页面
+	 * 娓叉煋娣诲姞鍟嗗搧椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_add_product() {
-		$this->call_legacy_method( 'render_add_product' );
+		if ( class_exists( 'Tanzanite_Add_Product_Admin' ) ) {
+			Tanzanite_Add_Product_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_add_product' );
+		}
 	}
 
 	public function render_orders_list() {
-		$this->call_legacy_method( 'render_orders_list' );
+		if ( class_exists( 'Tanzanite_Orders_Admin' ) ) {
+			Tanzanite_Orders_Admin::render_list_page();
+		} else {
+			$this->call_legacy_method( 'render_orders_list' );
+		}
 	}
 
 	/**
-	 * 渲染订单批量操作页面
+	 * 娓叉煋璁㈠崟鎵归噺鎿嶄綔椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_orders_bulk() {
-		$this->call_legacy_method( 'render_orders_bulk' );
+		if ( class_exists( 'Tanzanite_Orders_Admin' ) ) {
+			Tanzanite_Orders_Admin::render_bulk_page();
+		} else {
+			$this->call_legacy_method( 'render_orders_bulk' );
+		}
 	}
 
 	/**
-	 * 渲染属性管理页面
-	 *
+	 * 娓叉煋灞炴€х鐞嗛〉闈?	 *
 	 * @since 0.2.0
 	 */
 	public function render_attributes() {
-		$this->call_legacy_method( 'render_attributes' );
+		if ( class_exists( 'Tanzanite_Attributes_Admin' ) ) {
+			Tanzanite_Attributes_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_attributes' );
+		}
 	}
 
 	/**
-	 * 渲染评论管理页面
+	 * 娓叉煋璇勮绠＄悊椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_reviews() {
-		$this->call_legacy_method( 'render_reviews' );
+		if ( class_exists( 'Tanzanite_Reviews_Admin' ) ) {
+			Tanzanite_Reviews_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_reviews' );
+		}
 	}
 
 	/**
-	 * 渲染支付方式页面
+	 * 娓叉煋鏀粯鏂瑰紡椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_payment_method() {
-		$this->call_legacy_method( 'render_payment_method' );
+		if ( class_exists( 'Tanzanite_Payment_Admin' ) ) {
+			Tanzanite_Payment_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_payment_method' );
+		}
 	}
 
 	/**
-	 * 渲染税率管理页面
+	 * 娓叉煋绋庣巼绠＄悊椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_tax_rates() {
-		$this->call_legacy_method( 'render_tax_rates' );
+		if ( class_exists( 'Tanzanite_Tax_Rates_Admin' ) ) {
+			Tanzanite_Tax_Rates_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_tax_rates' );
+		}
 	}
 
 	/**
-	 * 渲染运费模板页面
+	 * 娓叉煋杩愯垂妯℃澘椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_shipping_templates() {
-		$this->call_legacy_method( 'render_shipping_templates' );
+		if ( class_exists( 'Tanzanite_Shipping_Admin' ) ) {
+			Tanzanite_Shipping_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_shipping_templates' );
+		}
 	}
 
 	/**
-	 * 渲染物流商管理页面
-	 *
+	 * 娓叉煋鐗╂祦鍟嗙鐞嗛〉闈?	 *
 	 * @since 0.2.0
 	 */
 	public function render_carriers() {
-		$this->call_legacy_method( 'render_carriers' );
+		if ( class_exists( 'Tanzanite_Carriers_Admin' ) ) {
+			Tanzanite_Carriers_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_carriers' );
+		}
 	}
 
 	/**
-	 * 渲染会员档案页面
+	 * 娓叉煋浼氬憳妗ｆ椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_member_profiles() {
-		$this->call_legacy_method( 'render_member_profiles' );
+		if ( class_exists( 'Tanzanite_Members_Admin' ) ) {
+			Tanzanite_Members_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_member_profiles' );
+		}
 	}
 
 	/**
-	 * 渲染礼品卡和优惠券页面
-	 *
+	 * 娓叉煋绀煎搧鍗″拰浼樻儬鍒搁〉闈?	 *
 	 * @since 0.2.0
 	 */
 	public function render_rewards() {
-		$this->call_legacy_method( 'render_rewards' );
+		if ( class_exists( 'Tanzanite_Rewards_Admin' ) ) {
+			Tanzanite_Rewards_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_rewards' );
+		}
 	}
 
 	/**
-	 * 渲染积分设置页面
+	 * 娓叉煋绉垎璁剧疆椤甸潰
 	 *
 	 * @since 0.2.0
 	 */
 	public function render_loyalty_settings() {
-		$this->call_legacy_method( 'render_loyalty_settings' );
-	}
-
-	/**
-	 * 渲染审计日志页面
-	 *
-	 * @since 0.2.0
-	 */
-	public function render_audit_logs() {
-		$this->call_legacy_method( 'render_audit_logs' );
+		if ( class_exists( 'Tanzanite_Loyalty_Admin' ) ) {
+			Tanzanite_Loyalty_Admin::render_page();
+		} else {
+			$this->call_legacy_method( 'render_loyalty_settings' );
+		}
 	}
 
 	/**
@@ -748,12 +902,9 @@ class Tanzanite_Plugin {
 	 * @since 0.2.0
 	 */
 	public function render_markdown_templates() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( '无权限访问此页面。', 'tanzanite-settings' ) );
-		}
-
-		// 调用 legacy plugin 的方法
-		if ( $this->legacy_plugin && method_exists( $this->legacy_plugin, 'render_markdown_templates_page' ) ) {
+		if ( class_exists( 'Tanzanite_Markdown_Templates_Admin' ) ) {
+			Tanzanite_Markdown_Templates_Admin::render_page();
+		} elseif ( $this->legacy_plugin && method_exists( $this->legacy_plugin, 'render_markdown_templates_page' ) ) {
 			$this->legacy_plugin->render_markdown_templates_page();
 		}
 	}
@@ -783,11 +934,6 @@ class Tanzanite_Plugin {
 	 * @since 0.2.0
 	 */
 	public function render_spoke_geometry_page() {
-		$class_file = TANZANITE_PLUGIN_DIR . 'includes/admin/class-spoke-geometry-admin.php';
-		if ( file_exists( $class_file ) ) {
-			require_once $class_file;
-		}
-
 		if ( class_exists( 'Tanzanite_Spoke_Geometry_Admin' ) ) {
 			Tanzanite_Spoke_Geometry_Admin::render_page();
 		} else {
@@ -878,7 +1024,7 @@ class Tanzanite_Plugin {
 				$len_r = isset( $row['right_length_mm'] ) ? (float) $row['right_length_mm'] : null;
 				$len_display = '';
 				if ( null !== $len_l || null !== $len_r ) {
-					$len_display = ( null !== $len_l ? $len_l : '—' ) . ' / ' . ( null !== $len_r ? $len_r : '—' );
+					$len_display = ( null !== $len_l ? $len_l : '-' ) . ' / ' . ( null !== $len_r ? $len_r : '-' );
 				}
 
 				echo '<tr>';
@@ -1034,6 +1180,7 @@ class Tanzanite_Plugin {
 					array( 'id' => (int) $existing_id ),
 					null,
 					array( '%d' )
+
 				);
 
 				if ( false === $result ) {
@@ -1042,7 +1189,7 @@ class Tanzanite_Plugin {
 					$updated++;
 				}
 			} else {
-				// 新增记录
+				// 鏂板璁板綍
 				$data['created_at'] = current_time( 'mysql' );
 				$result            = $wpdb->insert( $table, $data );
 
@@ -1071,6 +1218,102 @@ class Tanzanite_Plugin {
 		exit;
 	}
 
+
+	/**
+	 * 楠岃瘉鍜屾竻鐞嗛樁姊畾浠锋暟鎹?	 *
+	 * @since 0.2.0
+	 * @param mixed $value 杈撳叆鏁版嵁
+	 * @param bool $from_request 鏄惁鏉ヨ嚜 API 璇锋眰锛堝鏋滄槸锛岃繑鍥?WP_Error锛?	 * @return array|WP_Error
+	 */
+	public static function sanitize_tier_pricing( $value, bool $from_request = false ) {
+		if ( empty( $value ) || ! is_array( $value ) ) {
+			return [];
+		}
+
+		$sanitized = [];
+
+		foreach ( $value as $item ) {
+			if ( ! is_array( $item ) ) {
+				if ( is_object( $item ) ) {
+					$item = json_decode( wp_json_encode( $item ), true );
+				} else {
+					continue;
+				}
+			}
+
+			$min_qty = isset( $item['min_qty'] ) ? (int) $item['min_qty'] : ( isset( $item['minQty'] ) ? (int) $item['minQty'] : ( isset( $item['min'] ) ? (int) $item['min'] : 0 ) );
+			$max_raw = $item['max_qty'] ?? ( $item['maxQty'] ?? ( $item['max'] ?? null ) );
+			$max_qty = ( '' === $max_raw || null === $max_raw ) ? null : (int) $max_raw;
+			$price_raw = $item['price'] ?? ( $item['amount'] ?? ( $item['value'] ?? null ) );
+			$price = is_numeric( $price_raw ) ? (float) $price_raw : null;
+			$note_raw = $item['note'] ?? ( $item['label'] ?? ( $item['desc'] ?? '' ) );
+			$note = $note_raw ? sanitize_text_field( (string) $note_raw ) : '';
+
+			if ( $min_qty <= 0 || null === $price || $price < 0 ) {
+				if ( $from_request ) {
+					return new \WP_Error( 'invalid_tier_qty', __( '请填写有效的最小数量和单价。', 'tanzanite-settings' ) );
+				}
+				continue;
+			}
+
+			if ( null !== $max_qty && $max_qty < $min_qty ) {
+				if ( $from_request ) {
+					return new \WP_Error( 'invalid_tier_range', __( '最大数量必须大于或等于最小数量。', 'tanzanite-settings' ) );
+				}
+				continue;
+			}
+
+			$sanitized[] = [
+				'min_qty' => $min_qty,
+				'max_qty' => $max_qty,
+				'price'   => (float) number_format( $price, 2, '.', '' ),
+				'note'    => $note,
+			];
+		}
+
+		if ( empty( $sanitized ) ) {
+			return [];
+		}
+
+		usort(
+			$sanitized,
+			static function ( $a, $b ) {
+				return $a['min_qty'] <=> $b['min_qty'];
+			}
+		);
+
+		$previous_max = null;
+		$previous_min = null;
+
+		foreach ( $sanitized as $index => $row ) {
+			$min = (int) $row['min_qty'];
+			$max = $row['max_qty'];
+
+			if ( 0 === $index ) {
+				$previous_max = $max;
+				$previous_min = $min;
+				continue;
+			}
+
+			if ( null === $previous_max ) {
+				$error = __( 'Only the last tier can have no maximum quantity.', 'tanzanite-settings' );
+
+				return $from_request ? new \WP_Error( 'invalid_tier_limit', $error ) : [];
+			}
+
+			if ( $min <= $previous_max || $min <= $previous_min ) {
+				$error = __( 'Tier ranges overlap or are out of order. Please check.', 'tanzanite-settings' );
+
+				return $from_request ? new \WP_Error( 'invalid_tier_overlap', $error ) : [];
+			}
+
+			$previous_max = $max;
+			$previous_min = $min;
+		}
+
+		return $sanitized;
+	}
+
 	/**
 	 * 调用 legacy 方法的辅助函数
 	 *
@@ -1083,4 +1326,11 @@ class Tanzanite_Plugin {
 		}
 	}
 
+}
+
+
+if ( ! function_exists( 'tanzanite_settings_sanitize_tier_pricing' ) ) {
+    function tanzanite_settings_sanitize_tier_pricing( $value, bool $from_request = false ) {
+        return Tanzanite_Plugin::sanitize_tier_pricing( $value, $from_request );
+    }
 }

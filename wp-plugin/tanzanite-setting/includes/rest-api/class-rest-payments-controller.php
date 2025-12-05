@@ -89,7 +89,7 @@ class Tanzanite_REST_Payments_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => 'is_user_logged_in',
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -105,7 +105,7 @@ class Tanzanite_REST_Payments_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => $this->permission_callback( 'tanz_manage_payments', true ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),

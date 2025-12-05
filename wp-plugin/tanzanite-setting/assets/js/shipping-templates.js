@@ -33,11 +33,29 @@
             resetBtn: document.getElementById('tz-shipping-reset'),
             exportBtn: document.getElementById('tz-shipping-export'),
             addRuleBtn: document.getElementById('tz-shipping-add-rule'),
+            ruleEditor: document.getElementById('tz-shipping-rule-editor'),
+            ruleInputs: {
+                type: document.getElementById('tz-shipping-rule-type'),
+                service: document.getElementById('tz-shipping-rule-service'),
+                serviceLabel: document.getElementById('tz-shipping-rule-service-label'),
+                regions: document.getElementById('tz-shipping-rule-regions'),
+                min: document.getElementById('tz-shipping-rule-min'),
+                max: document.getElementById('tz-shipping-rule-max'),
+                fee: document.getElementById('tz-shipping-rule-fee'),
+                freeOver: document.getElementById('tz-shipping-rule-free-over'),
+                etaMin: document.getElementById('tz-shipping-rule-eta-min'),
+                etaMax: document.getElementById('tz-shipping-rule-eta-max')
+            },
+            ruleButtons: {
+                save: document.getElementById('tz-shipping-rule-save'),
+                reset: document.getElementById('tz-shipping-rule-reset')
+            },
             inputs: {
                 id: document.getElementById('tz-shipping-id'),
                 name: document.getElementById('tz-shipping-name'),
                 description: document.getElementById('tz-shipping-description'),
-                active: document.getElementById('tz-shipping-active')
+                active: document.getElementById('tz-shipping-active'),
+                carrier: document.getElementById('tz-shipping-carrier')
             }
         };
 
@@ -48,6 +66,7 @@
         }
 
         let rules = [];
+        let editingRuleIndex = null;
 
         const ruleTypes = {
             weight: '按重量',
@@ -63,7 +82,12 @@
         function resetForm() {
             elements.form.reset();
             elements.inputs.id.value = '';
+            if (elements.inputs.carrier) {
+                elements.inputs.carrier.value = '';
+            }
             rules = [];
+            editingRuleIndex = null;
+            resetRuleEditor();
             renderRules();
             showNotice(elements.notice, null);
         }
@@ -77,6 +101,10 @@
             elements.inputs.name.value = data.template_name || '';
             elements.inputs.description.value = data.description || '';
             elements.inputs.active.value = data.is_active ? '1' : '0';
+            if (elements.inputs.carrier) {
+                const meta = data.meta || {};
+                elements.inputs.carrier.value = meta.carrier || '';
+            }
             rules = data.rules || [];
             renderRules();
         }
@@ -97,6 +125,13 @@
                 div.style.cssText = 'padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:8px;';
 
                 const typeText = ruleTypes[rule.type] || rule.type;
+                const serviceText = rule.service_label || rule.service || '默认方式';
+                const regionsText = Array.isArray(rule.regions) && rule.regions.length
+                    ? rule.regions.join(', ')
+                    : '所有国家';
+                const etaText = (rule.eta_min_days != null || rule.eta_max_days != null)
+                    ? ' · 时效: ' + (rule.eta_min_days != null ? rule.eta_min_days : '?') + '-' + (rule.eta_max_days != null ? rule.eta_max_days : '?') + ' 天'
+                    : '';
                 let rangeText = '';
 
                 if (rule.min !== null && rule.max !== null) {
@@ -112,7 +147,7 @@
                 div.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div>
-                            <strong>${typeText}</strong> ${rangeText} → 运费: ¥${rule.fee}${freeOverText}
+                            <strong>${typeText}</strong> · ${serviceText} · ${regionsText} ${rangeText} → 运费: ¥${rule.fee}${freeOverText}${etaText}
                         </div>
                         <div>
                             <button type="button" class="button button-small edit-rule" data-idx="${idx}">编辑</button>
@@ -123,6 +158,146 @@
 
                 elements.rulesList.appendChild(div);
             });
+        }
+
+        /**
+         * 重置规则编辑表单
+         */
+        function resetRuleEditor() {
+            const ri = elements.ruleInputs || {};
+
+            if (ri.type && ri.type.options && ri.type.options.length) {
+                ri.type.value = ri.type.value || 'weight';
+            }
+            if (ri.service) {
+                ri.service.value = '';
+            }
+            if (ri.serviceLabel) {
+                ri.serviceLabel.value = '';
+            }
+            if (ri.regions) {
+                ri.regions.value = '';
+            }
+            if (ri.min) {
+                ri.min.value = '';
+            }
+            if (ri.max) {
+                ri.max.value = '';
+            }
+            if (ri.fee) {
+                ri.fee.value = '';
+            }
+            if (ri.freeOver) {
+                ri.freeOver.value = '';
+            }
+            if (ri.etaMin) {
+                ri.etaMin.value = '';
+            }
+            if (ri.etaMax) {
+                ri.etaMax.value = '';
+            }
+
+            editingRuleIndex = null;
+        }
+
+        /**
+         * 将已有规则填充到编辑表单
+         */
+        function fillRuleEditor(rule, idx) {
+            const ri = elements.ruleInputs || {};
+            editingRuleIndex = typeof idx === 'number' ? idx : null;
+
+            if (!rule) {
+                resetRuleEditor();
+                return;
+            }
+
+            if (ri.type && rule.type) {
+                ri.type.value = rule.type;
+            }
+            if (ri.service) {
+                ri.service.value = rule.service || '';
+            }
+            if (ri.serviceLabel) {
+                ri.serviceLabel.value = rule.service_label || '';
+            }
+            if (ri.regions) {
+                ri.regions.value = Array.isArray(rule.regions) && rule.regions.length
+                    ? rule.regions.join(',')
+                    : '';
+            }
+            if (ri.min) {
+                ri.min.value = rule.min != null ? rule.min : '';
+            }
+            if (ri.max) {
+                ri.max.value = rule.max != null ? rule.max : '';
+            }
+            if (ri.fee) {
+                ri.fee.value = rule.fee != null ? rule.fee : '';
+            }
+            if (ri.freeOver) {
+                ri.freeOver.value = rule.free_over != null ? rule.free_over : '';
+            }
+            if (ri.etaMin) {
+                ri.etaMin.value = rule.eta_min_days != null ? rule.eta_min_days : '';
+            }
+            if (ri.etaMax) {
+                ri.etaMax.value = rule.eta_max_days != null ? rule.eta_max_days : '';
+            }
+        }
+
+        /**
+         * 从规则编辑表单构建规则对象
+         */
+        function buildRuleFromEditor() {
+            const ri = elements.ruleInputs || {};
+
+            const type = ri.type && ri.type.value ? ri.type.value : 'weight';
+            const service = ri.service ? ri.service.value.trim() : '';
+            const serviceLabel = ri.serviceLabel ? ri.serviceLabel.value.trim() : '';
+
+            const regionsInput = ri.regions ? ri.regions.value.trim() : '';
+            let regions = [];
+            if (regionsInput) {
+                regions = regionsInput.split(',').map(function(s) {
+                    return s.trim();
+                }).filter(function(s) {
+                    return s.length > 0;
+                });
+            }
+
+            const minStr = ri.min ? ri.min.value : '';
+            const maxStr = ri.max ? ri.max.value : '';
+            const feeStr = ri.fee ? ri.fee.value : '';
+            const freeOverStr = ri.freeOver ? ri.freeOver.value : '';
+            const etaMinStr = ri.etaMin ? ri.etaMin.value : '';
+            const etaMaxStr = ri.etaMax ? ri.etaMax.value : '';
+
+            const fee = feeStr !== '' ? parseFloat(feeStr) : NaN;
+            if (isNaN(fee)) {
+                alert('请填写有效的运费金额');
+                return null;
+            }
+
+            const min = minStr !== '' ? parseFloat(minStr) : null;
+            const max = maxStr !== '' ? parseFloat(maxStr) : null;
+            const freeOver = freeOverStr !== '' ? parseFloat(freeOverStr) : null;
+            const etaMin = etaMinStr !== '' ? parseInt(etaMinStr, 10) : null;
+            const etaMax = etaMaxStr !== '' ? parseInt(etaMaxStr, 10) : null;
+
+            return {
+                type: type,
+                min: min,
+                max: max,
+                fee: fee,
+                priority: 0,
+                free_over: freeOver,
+                service: service || undefined,
+                service_label: serviceLabel || undefined,
+                regions: regions,
+                eta_min_days: etaMin,
+                eta_max_days: etaMax
+            };
         }
 
         /**
@@ -152,38 +327,12 @@
          * 添加规则（简化版）
          */
         function promptAddRule() {
-            const type = prompt('规则类型：\n1=按重量\n2=按金额\n3=按件数\n4=按体积\n5=按商品数', '1');
-            if (!type) return;
-
-            const typeMap = {
-                '1': 'weight',
-                '2': 'amount',
-                '3': 'quantity',
-                '4': 'volume',
-                '5': 'items'
-            };
-
-            const selectedType = typeMap[type];
-            if (!selectedType) {
-                alert('无效类型');
-                return;
+            // 现在使用下方的小表单来添加规则
+            editingRuleIndex = null;
+            resetRuleEditor();
+            if (elements.ruleEditor) {
+                scrollToElement(elements.ruleEditor);
             }
-
-            const min = prompt('最小值（留空表示无限制）', '');
-            const max = prompt('最大值（留空表示无限制）', '');
-            const fee = prompt('运费（元）', '10');
-            const freeOver = prompt('满多少金额包邮（留空表示不包邮）', '');
-
-            const rule = {
-                type: selectedType,
-                min: min ? parseFloat(min) : null,
-                max: max ? parseFloat(max) : null,
-                fee: parseFloat(fee) || 0,
-                priority: 0,
-                free_over: freeOver ? parseFloat(freeOver) : null
-            };
-
-            addOrUpdateRule(rule, null);
         }
 
         /**
@@ -274,6 +423,16 @@
                 is_active: elements.inputs.active.value === '1',
                 rules: rules
             };
+
+            // 	00ecfdbf	7ed7ccdffcfacfdbf	fe	0e	c3	d	f
+            if (elements.inputs.carrier) {
+                const carrier = elements.inputs.carrier.value.trim();
+                if (carrier) {
+                    payload.meta = {
+                        carrier: carrier
+                    };
+                }
+            }
 
             const url = id ? config.singleUrl + id : config.listUrl;
             const method = id ? 'PUT' : 'POST';
@@ -399,10 +558,12 @@
             if (target.classList.contains('edit-rule')) {
                 const idx = parseInt(target.dataset.idx);
                 const rule = rules[idx];
-                const fee = prompt('运费（元）', rule.fee);
-                if (fee !== null) {
-                    rule.fee = parseFloat(fee) || 0;
-                    renderRules();
+                if (!rule) {
+                    return;
+                }
+                fillRuleEditor(rule, idx);
+                if (elements.ruleEditor) {
+                    scrollToElement(elements.ruleEditor);
                 }
             }
         });
@@ -414,6 +575,25 @@
 
         elements.addRuleBtn.addEventListener('click', promptAddRule);
         elements.exportBtn.addEventListener('click', exportJSON);
+
+        if (elements.ruleButtons.save) {
+            elements.ruleButtons.save.addEventListener('click', function() {
+                const rule = buildRuleFromEditor();
+                if (!rule) {
+                    return;
+                }
+                addOrUpdateRule(rule, editingRuleIndex);
+                editingRuleIndex = null;
+                resetRuleEditor();
+            });
+        }
+
+        if (elements.ruleButtons.reset) {
+            elements.ruleButtons.reset.addEventListener('click', function() {
+                editingRuleIndex = null;
+                resetRuleEditor();
+            });
+        }
 
         elements.form.addEventListener('submit', saveForm);
         elements.saveBtn.addEventListener('click', saveForm);

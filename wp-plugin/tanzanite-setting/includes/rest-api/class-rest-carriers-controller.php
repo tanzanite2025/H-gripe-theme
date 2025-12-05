@@ -59,12 +59,12 @@ class Tanzanite_REST_Carriers_Controller extends Tanzanite_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_items' ),
-					'permission_callback' => $this->permission_callback( 'tanz_view_shipping', true ),
+					'permission_callback' => 'is_user_logged_in',
 				),
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_item' ),
-					'permission_callback' => $this->permission_callback( 'tanz_manage_shipping', true ),
+					'permission_callback' => $this->permission_callback( 'manage_options', true ),
 					'args'                => $this->get_create_params(),
 				),
 			)
@@ -78,26 +78,26 @@ class Tanzanite_REST_Carriers_Controller extends Tanzanite_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_item' ),
-					'permission_callback' => $this->permission_callback( 'tanz_view_shipping', true ),
+					'permission_callback' => 'is_user_logged_in',
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
-					'permission_callback' => $this->permission_callback( 'tanz_manage_shipping', true ),
+					'permission_callback' => $this->permission_callback( 'manage_options', true ),
 					'args'                => $this->get_update_params(),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => $this->permission_callback( 'tanz_manage_shipping', true ),
+					'permission_callback' => $this->permission_callback( 'manage_options', true ),
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => 'is_numeric',
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -520,7 +520,7 @@ class Tanzanite_REST_Carriers_Controller extends Tanzanite_REST_Controller {
 	private function get_update_params() {
 		return array(
 			'id'              => array(
-				'validate_callback' => 'is_numeric',
+				'validate_callback' => array( $this, 'validate_numeric_param' ),
 			),
 			'code'            => array(
 				'type'              => 'string',

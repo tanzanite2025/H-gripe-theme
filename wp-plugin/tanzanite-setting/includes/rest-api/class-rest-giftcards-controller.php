@@ -81,7 +81,7 @@ class Tanzanite_REST_Giftcards_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => '__return_true',
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => function( $param ) { return is_numeric( $param ); },
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -97,7 +97,7 @@ class Tanzanite_REST_Giftcards_Controller extends Tanzanite_REST_Controller {
 					'permission_callback' => function() { return true; },
 					'args'                => array(
 						'id' => array(
-							'validate_callback' => function( $param ) { return is_numeric( $param ); },
+							'validate_callback' => array( $this, 'validate_numeric_param' ),
 						),
 					),
 				),
@@ -156,7 +156,7 @@ class Tanzanite_REST_Giftcards_Controller extends Tanzanite_REST_Controller {
 				'permission_callback' => 'is_user_logged_in',
 				'args'                => array(
 					'id'              => array(
-						'validate_callback' => 'is_numeric',
+						'validate_callback' => array( $this, 'validate_numeric_param' ),
 					),
 					'recipient_email' => array(
 						'type'     => 'string',
@@ -438,7 +438,7 @@ class Tanzanite_REST_Giftcards_Controller extends Tanzanite_REST_Controller {
 	private function get_update_params() {
 		return array(
 			'id'      => array(
-				'validate_callback' => 'is_numeric',
+				'validate_callback' => array( $this, 'validate_numeric_param' ),
 			),
 			'balance' => array(
 				'type' => 'number',

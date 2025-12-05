@@ -114,7 +114,7 @@ class Tanzanite_REST_Orders_Controller extends Tanzanite_REST_Controller {
 					'callback'            => array( $this, 'get_item' ),
 					'permission_callback' => 'is_user_logged_in',
 					'args'                => array(
-						'id' => array( 'validate_callback' => 'is_numeric' ),
+						'id' => array( 'validate_callback' => array( $this, 'validate_numeric_param' ) ),
 					),
 				),
 				array(
@@ -122,7 +122,7 @@ class Tanzanite_REST_Orders_Controller extends Tanzanite_REST_Controller {
 					'callback'            => array( $this, 'update_item' ),
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
 					'args'                => array(
-						'id'                => array( 'validate_callback' => 'is_numeric' ),
+						'id'                => array( 'validate_callback' => array( $this, 'validate_numeric_param' ) ),
 						'status'            => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_key' ),
 						'payment_method'    => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
 						'channel'           => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
@@ -140,7 +140,7 @@ class Tanzanite_REST_Orders_Controller extends Tanzanite_REST_Controller {
 					'callback'            => array( $this, 'delete_item' ),
 					'permission_callback' => array( $this, 'delete_item_permissions_check' ),
 					'args'                => array(
-						'id' => array( 'validate_callback' => 'is_numeric' ),
+						'id' => array( 'validate_callback' => array( $this, 'validate_numeric_param' ) ),
 					),
 				),
 			)
@@ -155,7 +155,7 @@ class Tanzanite_REST_Orders_Controller extends Tanzanite_REST_Controller {
 				'callback'            => array( $this, 'sync_tracking' ),
 				'permission_callback' => array( $this, 'update_item_permissions_check' ),
 				'args'                => array(
-					'id' => array( 'validate_callback' => 'is_numeric' ),
+					'id' => array( 'validate_callback' => array( $this, 'validate_numeric_param' ) ),
 				),
 			)
 		);
