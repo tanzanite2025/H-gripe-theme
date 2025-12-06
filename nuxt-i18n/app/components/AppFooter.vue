@@ -25,6 +25,7 @@
             <img src="/icons/payment/jcb.svg?v=4" alt="JCB" loading="lazy" />
             <img src="/icons/payment/diners.svg?v=4" alt="Diners Club" loading="lazy" />
             <img src="/icons/payment/alipay.svg?v=4" alt="Alipay" loading="lazy" />
+            <img src="/icons/payment/stripe.svg?v=4" alt="Stripe" loading="lazy" />
           </div>
         </div>
 

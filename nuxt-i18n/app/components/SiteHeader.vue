@@ -268,27 +268,6 @@
 		</div>
 	</div>
 
-	<!-- FAQ 弹窗 -->
-	<teleport to="body">
-		<transition
-			enter-active-class="transition-opacity duration-300 ease-out"
-			leave-active-class="transition-opacity duration-200 ease-in"
-			enter-from-class="opacity-0"
-			leave-to-class="opacity-0"
-		>
-			<div
-				v-if="faqOpen"
-				class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
-				@click.self="faqOpen = false"
-			>
-				<!-- 半透明背景遮罩 -->
-				<div class="absolute inset-0 bg-black/80 backdrop-blur-sm -z-10"></div>
-				<!-- 弹窗内容 -->
-				<FaqModal @close="faqOpen = false" @openWhatsApp="handleOpenWhatsApp" class="relative z-10" />
-			</div>
-		</transition>
-	</teleport>
-
 	<!-- WhatsApp Chat 弹窗 -->
 	<WhatsAppChatModal
 		v-if="whatsappOpen"
@@ -332,7 +311,6 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type Compon
 import { useLocalePath, useRoute } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
-import FaqModal from '~/components/FaqModal.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { productsNavItems } from '~/utils/productsNav'
@@ -347,32 +325,10 @@ const titleText = computed(() => {
   return fromProp.length ? fromProp : siteTitle.value
 })
 
-// FAQ button
-const faqOpen = ref(false)
-
-const toggleFaq = () => {
-  faqOpen.value = !faqOpen.value
-  if (faqOpen.value && typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-faq' } }))
-  }
-}
-
-const SIDEBAR_TOKEN_HEADER_FAQ = 'header-faq'
-
-watch(faqOpen, (open) => {
-  setSidebarHandlesHidden(SIDEBAR_TOKEN_HEADER_FAQ, open)
-}, { immediate: true })
-
-onBeforeUnmount(() => {
-  setSidebarHandlesHidden(SIDEBAR_TOKEN_HEADER_FAQ, false)
-})
-
 // WhatsApp Chat Modal
 const whatsappOpen = ref(false)
 
 const handleOpenWhatsApp = () => {
-  // 先关闭 FAQ 弹窗
-  faqOpen.value = false
   // 打开 WhatsApp 弹窗
   whatsappOpen.value = true
   if (typeof window !== 'undefined') {
