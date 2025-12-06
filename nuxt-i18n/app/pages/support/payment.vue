@@ -72,7 +72,7 @@
         <article class="support-card">
           <h4 class="support-card__title">
             <span class="support-card__icon">
-              <img src="/icons/payment/credit-card.svg" alt="Credit &amp; debit cards" class="support-card__icon-image" />
+              <img src="/icons/payment/credit-card.svg?v=4" alt="Credit &amp; debit cards" class="support-card__icon-image" />
             </span>
             <span>Credit &amp; debit cards</span>
           </h4>
@@ -84,7 +84,7 @@
         <article class="support-card">
           <h4 class="support-card__title">
             <span class="support-card__icon">
-              <img src="/icons/payment/paypal.svg" alt="PayPal or wallet payments" class="support-card__icon-image" />
+              <img src="/icons/payment/paypal.svg?v=4" alt="PayPal or wallet payments" class="support-card__icon-image" />
             </span>
             <span>PayPal or wallet payments</span>
           </h4>
@@ -100,7 +100,7 @@
         <article class="support-card">
           <h4 class="support-card__title">
             <span class="support-card__icon">
-              <img src="/icons/payment/bank-transfer.svg" alt="Bank transfer" class="support-card__icon-image" />
+              <img src="/icons/payment/bank-transfer.svg?v=4" alt="Bank transfer" class="support-card__icon-image" />
             </span>
             <span>Bank transfer (on request)</span>
           </h4>
@@ -117,10 +117,10 @@
           <h4 class="support-card__title">
             <span class="support-card__icon-group">
               <span class="support-card__icon">
-                <img src="/icons/payment/wechatpay.svg" alt="WeChat Pay" class="support-card__icon-image" />
+                <img src="/icons/payment/wechatpay.svg?v=4" alt="WeChat Pay" class="support-card__icon-image" />
               </span>
               <span class="support-card__icon">
-                <img src="/icons/payment/alipay.svg" alt="Alipay" class="support-card__icon-image" />
+                <img src="/icons/payment/alipay.svg?v=4" alt="Alipay" class="support-card__icon-image" />
               </span>
             </span>
             <span>WeChat / Alipay</span>
@@ -139,7 +139,7 @@
         <article class="support-card">
           <h4 class="support-card__title">
             <span class="support-card__icon">
-              <img src="/icons/payment/stripe.svg" alt="Stripe" class="support-card__icon-image" />
+              <img src="/icons/payment/stripe.svg?v=4" alt="Stripe" class="support-card__icon-image" />
             </span>
             <span>Stripe</span>
           </h4>

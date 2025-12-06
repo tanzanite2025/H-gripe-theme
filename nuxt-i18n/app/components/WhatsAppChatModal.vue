@@ -151,14 +151,8 @@
                 </div>
               </div>
               
-              <!-- FAQ + 邮箱按钮区域 - 固定在底部 -->
+              <!-- 邮箱按钮区域 - 固定在底部 -->
               <div class="border-t border-white/10 p-3 space-y-2">
-                <button
-                  @click="showFAQ = true"
-                  class="w-full px-3 py-2 rounded-lg text-xs font-semibold border border-white/20 text-white hover:bg-white/10 transition-colors"
-                >
-                  FAQ
-                </button>
                 <!-- Pre-sales 邮箱按钮 -->
                 <a
                   :href="emailSettings.preSalesEmail ? `mailto:${emailSettings.preSalesEmail}?subject=Pre-sales Inquiry` : 'javascript:void(0)'"
@@ -231,15 +225,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                         </a>
-                        <button
-                          class="flex-1 h-full rounded-full bg-white/15 text-white flex items-center justify-center transition-colors hover:bg-white/25"
-                          @click="showFAQ = true"
-                          aria-label="Open FAQ"
-                        >
-                          <svg class="w-[70%] h-[70%]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.01 4h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8z" />
-                          </svg>
-                        </button>
                       </div>
                       <button
                         @click="handleClose"
@@ -905,16 +890,6 @@
         {{ toastMessage }}
       </div>
     </Transition>
-    
-    <!-- FAQ 弹窗 - 移动端从底部滑出，桌面端居中 -->
-    <Transition name="slide-up">
-      <div
-        v-if="showFAQ"
-        class="fixed inset-0 z-[10001] flex items-end md:items-center justify-center p-0 md:p-4"
-      >
-        <FaqModal @close="showFAQ = false" />
-      </div>
-    </Transition>
 
     <WhatsAppProductSearchResultDrawer
       v-model="productDrawerVisible"
@@ -969,7 +944,6 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
-import FaqModal from '~/components/FaqModal.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 
@@ -1173,9 +1147,6 @@ const pressedMessage = ref<any | null>(null)
 let longPressTimer: number | null = null
 const longPressDuration = 500 // 长按时长（毫秒）
 let isLongPress = ref(false)
-
-// FAQ 弹窗
-const showFAQ = ref(false)
 
 // 是否显示"我的订单"标签
 const shouldShowOrders = computed(() => !!user.value)
