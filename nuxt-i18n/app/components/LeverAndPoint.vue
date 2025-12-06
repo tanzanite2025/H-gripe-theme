@@ -297,11 +297,18 @@
       </div>
       <div class="flex flex-col items-center justify-center py-3 pb-4 pointer-events-auto gap-3">
         <div class="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
+          <button
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold pointer-events-auto hover:brightness-110 transition-all"
+            type="button"
+            @click="handleMemberCenter"
+          >
+            {{ $t('member.viewAll', 'Member Center') }}
+          </button>
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleSelectProducts">Products</button>
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">Cart</button>
           <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleWishlist">Wishlist</button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold pointer-events-auto hover:brightness-110 transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center border border-white/20 bg-white/10 text-white text-sm font-semibold pointer-events-auto hover:bg-white/20 transition-all"
             type="button"
             @click="handlePrivacy"
           >
@@ -699,6 +706,14 @@ const closePrivacy = () => {
 // Wishlist - 心愿单抽屉
 const handleWishlist = () => {
   wishlistDrawerVisible.value = true
+}
+
+// Member Center - 跳转到会员中心页面
+const handleMemberCenter = () => {
+  const target = localePath('/company/membershipandpoints')
+  if (typeof window !== 'undefined' && target) {
+    window.location.href = String(target)
+  }
 }
 </script>
 

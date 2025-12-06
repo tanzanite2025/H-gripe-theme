@@ -152,6 +152,7 @@
       "shipping": "Shipping",
       "afterSales": "After sales",
       "warranty": "Warranty",
+      "warrantyCheck": "Warranty Check",
       "productFeedback": "Product Feedback",
       "spokeCalculator": "Spoke Calculator",
       "testReport": "Test report"
@@ -264,5 +265,48 @@
     "section8Body": "If you are located outside [Your Country], your data may be transferred to and processed in [Your Country], where data protection laws may differ.",
     "section9Title": "9. Changes to This Policy",
     "section9Body": "We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date."
+  },
+  "warranty": {
+    "title": "Warranty Check",
+    "subtitle": "Check your product warranty status",
+    "login_required": "Please log in to check your product warranty.",
+    "login_button": "Log In",
+    "input_label": "Enter your product code:",
+    "input_placeholder": "e.g. ABC123",
+    "check_button": "Check",
+    "help_text": "Your product code can be found on the product packaging or warranty card.",
+    "months": "months",
+    "days": "days",
+    "result": {
+      "valid": "Warranty Valid",
+      "expired": "Warranty Expired",
+      "not_found": "Product Not Found"
+    },
+    "fields": {
+      "product_code": "Product Code",
+      "product_type": "Product Type",
+      "product_name": "Product Name",
+      "ship_date": "Ship Date",
+      "warranty_period": "Warranty Period",
+      "warranty_until": "Warranty Until",
+      "remaining": "Remaining",
+      "expired_ago": "Expired {days} days ago"
+    },
+    "records": {
+      "title": "Service Records",
+      "no_records": "No service records"
+    },
+    "actions": {
+      "check_another": "Check Another",
+      "contact_support": "Contact Support"
+    },
+    "errors": {
+      "not_found_message": "We couldn't find a product with code: {code}",
+      "check_tips": [
+        "The code is entered correctly",
+        "The code is from a Tanzanite product"
+      ],
+      "error_contact": "If you believe this is an error, please contact us."
+    }
   }
 }

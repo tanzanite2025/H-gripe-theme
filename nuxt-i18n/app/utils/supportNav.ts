@@ -40,6 +40,11 @@ export const supportNavItems: SupportNavItem[] = [
     to: '/support/warranty',
   },
   {
+    id: 'warranty-check',
+    labelKey: 'support.nav.warrantyCheck',
+    to: '/support/warranty-check',
+  },
+  {
     id: 'product-feedback',
     labelKey: 'support.nav.productFeedback',
     to: '/support/product-feedback',
