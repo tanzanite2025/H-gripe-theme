@@ -5,10 +5,21 @@
       Share feedback about Tanzanite products and your riding experience. This
       placeholder page can later be connected to a form or survey system.
     </p>
+
+    <!-- FAQ Section -->
+    <section class="support-section">
+      <PageFaq 
+        page-id="support-product-feedback"
+        theme="dark"
+        :show-categories="true"
+      />
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import PageFaq from '~/components/PageFaq.vue'
+
 definePageMeta({
   layout: 'support',
 })

@@ -2,11 +2,15 @@
   <main class="i18n-demo-page">
     <!-- Tailwind Carousel Preview (demo only) -->
     <TWCarousel />
+
+    <!-- FAQ Preview Section -->
+    <HomeFaqPreview :max-items-per-category="4" />
   </main>
 </template>
 
 <script setup>
 import TWCarousel from '~/components/TWCarousel.vue'
+import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
 const { t } = useI18n()
 
 // SEO Meta Tags

@@ -6,10 +6,21 @@
       Use this page to explain how long components are covered and what is
       included or excluded.
     </p>
+
+    <!-- FAQ Section -->
+    <section class="support-section">
+      <PageFaq 
+        page-id="support-warranty"
+        theme="dark"
+        :show-categories="true"
+      />
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import PageFaq from '~/components/PageFaq.vue'
+
 definePageMeta({
   layout: 'support',
 })

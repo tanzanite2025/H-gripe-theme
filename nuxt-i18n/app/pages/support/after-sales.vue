@@ -6,10 +6,21 @@
       requests. This page is a placeholder and will later describe policies and
       step-by-step procedures.
     </p>
+
+    <!-- FAQ Section -->
+    <section class="support-section">
+      <PageFaq 
+        page-id="support-after-sales"
+        theme="dark"
+        :show-categories="true"
+      />
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import PageFaq from '~/components/PageFaq.vue'
+
 definePageMeta({
   layout: 'support',
 })

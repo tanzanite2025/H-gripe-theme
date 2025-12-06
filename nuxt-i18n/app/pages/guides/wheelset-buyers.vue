@@ -115,12 +115,22 @@
       >
         <h3 class="wheelset-section__title">Optional</h3>
       </section>
+
+      <!-- FAQ Section - 放在所有 tab 内容之后 -->
+      <section class="wheelset-section wheelset-faq">
+        <PageFaq 
+          page-id="guides-wheelset-buyers"
+          theme="dark"
+          :show-categories="true"
+        />
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import PageFaq from '~/components/PageFaq.vue'
 
 definePageMeta({
   layout: 'products',
