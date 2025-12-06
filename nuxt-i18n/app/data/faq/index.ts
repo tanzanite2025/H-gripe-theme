@@ -12,6 +12,7 @@ import { supportPaymentFaq } from './pages/support-payment'
 import { supportShippingFaq } from './pages/support-shipping'
 import { supportAfterSalesFaq } from './pages/support-after-sales'
 import { supportWarrantyFaq } from './pages/support-warranty'
+import { supportWarrantyCheckFaq } from './pages/support-warranty-check'
 import { supportProductFeedbackFaq } from './pages/support-product-feedback'
 import { supportTestReportFaq } from './pages/support-test-report'
 import { companyMembershipFaq } from './pages/company-membership'
@@ -25,6 +26,7 @@ export const faqRegistry: FaqRegistry = {
   'support-shipping': supportShippingFaq,
   'support-after-sales': supportAfterSalesFaq,
   'support-warranty': supportWarrantyFaq,
+  'support-warranty-check': supportWarrantyCheckFaq,
   'support-product-feedback': supportProductFeedbackFaq,
   'support-test-report': supportTestReportFaq,
   'company-membership': companyMembershipFaq,
