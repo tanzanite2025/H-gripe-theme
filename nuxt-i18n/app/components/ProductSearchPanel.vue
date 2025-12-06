@@ -13,14 +13,14 @@
         <div class="flex gap-2 w-full md:w-auto">
           <button
             type="button"
-            class="flex-1 md:flex-none h-9 px-4 min-w-[120px] border-none rounded-lg bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-[13px] font-semibold cursor-pointer box-border transition-all duration-200 hover:shadow-[0_0_20px_rgba(107,115,255,0.5)] hover:-translate-y-0.5"
+            class="flex-1 md:flex-none h-9 px-4 min-w-[80px] md:min-w-[120px] border-none rounded-lg bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-[13px] font-semibold cursor-pointer box-border transition-all duration-200 hover:shadow-[0_0_20px_rgba(107,115,255,0.5)] hover:-translate-y-0.5"
             @click="searchProducts"
           >
             {{ $t('sidebar.search', 'Search') }}
           </button>
           <button
             type="button"
-            class="flex-1 md:flex-none h-9 px-4 min-w-[120px] border border-white/30 rounded-lg bg-transparent text-white/80 text-[12px] font-medium cursor-pointer box-border transition-all duration-200 hover:bg-white/10 hover:text-white"
+            class="flex-1 md:flex-none h-9 px-4 min-w-[80px] md:min-w-[120px] border border-white/30 rounded-lg bg-transparent text-white/80 text-[12px] font-medium cursor-pointer box-border transition-all duration-200 hover:bg-white/10 hover:text-white"
             @click="handleReset"
           >
             {{ $t('filter.resetShort', 'Reset') }}
@@ -32,6 +32,7 @@
     <div class="w-full border-t border-white/10 my-2"></div>
 
     <AdvancedFilter
+      class="sidebar-advanced-filter"
       :key="filterResetKey"
       v-model:filters="filters"
       :options="{
@@ -137,5 +138,18 @@ onMounted(() => {
 	width: 100%;
 	max-width: 100%;
 	box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  /* 针对移动端侧边栏：强制属性筛选按钮垂直堆叠，防止水平溢出 */
+  :deep(.sidebar-advanced-filter .attribute-top-row) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  :deep(.sidebar-advanced-filter .attribute-inline-row) {
+    width: 100%;
+  }
 }
 </style>

@@ -13,7 +13,7 @@
     >
       <!-- 价格范围 -->
       <div v-if="options.showPriceRange" class="price-range-inline">
-        <h4 class="filter-label">
+        <h4 class="filter-label hidden md:block">
           {{ $t('filter.price', 'Price') }}
         </h4>
         <div class="price-range-container">
@@ -62,7 +62,9 @@
             @click="toggleGroupExpanded(getAttributeKey(attr))"
           >
             <span class="attribute-label">
-              {{ attr.name }} ({{ getAttributeSummary(attr) }})
+              {{ attr.name }}
+              <span v-if="getAttributeSummary(attr) !== 'All'" class="ml-0.5">({{ getAttributeSummary(attr) }})</span>
+              <span v-else class="hidden md:inline ml-0.5">({{ getAttributeSummary(attr) }})</span>
             </span>
             <span
               class="attribute-toggle-icon"
@@ -805,14 +807,16 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 @media (max-width: 768px) {
-	/* 在移动端让 Color / Diameter / Brake 等属性按钮两排显示 */
+	/* 在移动端让 Color / Diameter / Brake 等属性按钮自然流式排列，避免强制 50% 宽度导致溢出 */
 	.attribute-top-row {
 		flex-wrap: wrap;
 		justify-content: flex-start;
+		gap: 0.5rem;
 	}
 
 	.attribute-inline-row {
-		flex: 1 1 calc(50% - 0.5rem);
+		flex: 0 1 auto; /* 自适应宽度 */
+		width: auto;
 	}
 
 	/* 移动端：缩小价格输入框宽度，大约为桌面的约一半 */
