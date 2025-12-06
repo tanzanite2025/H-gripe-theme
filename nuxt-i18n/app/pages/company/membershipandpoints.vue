@@ -4,10 +4,21 @@
     <p class="company-page__intro">
       This page will describe membership tiers, benefits, and how the points system works.
     </p>
+
+    <!-- FAQ Section -->
+    <section class="company-section">
+      <PageFaq 
+        page-id="company-membership"
+        theme="dark"
+        :show-categories="true"
+      />
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import PageFaq from '~/components/PageFaq.vue'
+
 definePageMeta({
   layout: 'products',
 })

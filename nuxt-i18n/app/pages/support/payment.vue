@@ -277,6 +277,15 @@
       </p>
     </section>
 
+    <!-- FAQ Section -->
+    <section class="support-section">
+      <PageFaq 
+        page-id="support-payment"
+        theme="dark"
+        :show-categories="true"
+      />
+    </section>
+
     <section class="support-section">
       <UserFeedbackThread
         threadKey="support-payment"
@@ -290,6 +299,7 @@
 import { ref } from 'vue'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import PageFaq from '~/components/PageFaq.vue'
 
 definePageMeta({
   layout: 'support',

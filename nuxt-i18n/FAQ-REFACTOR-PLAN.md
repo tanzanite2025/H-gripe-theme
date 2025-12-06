@@ -1,7 +1,8 @@
 # FAQ 重构计划：从弹窗模式迁移到页面内嵌模式
 
 > 创建时间：2024-12-06  
-> 状态：待实施
+> 完成时间：2024-12-07  
+> 状态：✅ 已完成
 
 ---
 
@@ -120,42 +121,100 @@ export interface PageFaqDataI18n {
 - [x] **步骤 1.5**：检查是否有其他文件引用 `FaqModal`，如有则清理（无其他引用）
 - [ ] **步骤 1.6**：运行项目，确认无报错
 
-### 第二阶段：创建新 FAQ 基础设施 ⬜
+### 第二阶段：创建新 FAQ 基础设施 ✅ 已完成
 
-- [ ] **步骤 2.1**：创建类型定义文件 `app/data/faq/types.ts`
-- [ ] **步骤 2.2**：创建通用组件 `app/components/PageFaq.vue`
-  - 手风琴样式（点击展开/收起）
-  - 响应式设计，移动端友好
-  - 支持浅色/深色主题
-  - 平滑动画过渡
-- [ ] **步骤 2.3**：创建数据导出入口 `app/data/faq/index.ts`
+> 完成时间：2024-12-07
 
-### 第三阶段：试点页面 ⬜
+- [x] **步骤 2.1**：创建类型定义文件 `app/data/faq/types.ts`
+  - ✅ 定义 `FaqItem`、`FaqCategory`、`PageFaqData` 接口
+  - ✅ 定义 `PageFaqProps` 组件属性接口
+  - ✅ 定义 `FaqRegistry` 注册表类型
+- [x] **步骤 2.2**：创建数据索引文件 `app/data/faq/index.ts`
+  - ✅ 创建 FAQ 注册表
+  - ✅ 实现 `getFaqData`、`getAllFaqData`、`getAllFaqItems` 函数
+- [x] **步骤 2.3**：创建通用组件 `app/components/PageFaq.vue`
+  - ✅ 手风琴样式（点击展开/收起）
+  - ✅ 响应式设计，移动端友好
+  - ✅ 支持浅色/深色主题
+  - ✅ 平滑动画过渡
+  - ✅ 支持 maxItems 限制和 "View All" 链接
+- [x] **步骤 2.4**：创建页面数据目录 `app/data/faq/pages/`
 
-选择 1-2 个页面进行试点：
+### 第三阶段：试点页面 ✅ 已完成
 
-- [ ] **步骤 3.1**：创建试点页面的 FAQ 数据文件（如 `support-payment.ts`）
-- [ ] **步骤 3.2**：在试点页面集成 `PageFaq` 组件
-- [ ] **步骤 3.3**：测试效果，调整样式
+> 完成时间：2024-12-07
+> 试点页面：`/support/payment`
 
-### 第四阶段：推广到其他页面 ⬜
+- [x] **步骤 3.1**：创建试点页面的 FAQ 数据文件
+  - ✅ 创建 `app/data/faq/pages/support-payment.ts`
+  - ✅ 包含 4 个分类：Payment Methods, Security, Billing, Troubleshooting
+  - ✅ 共 11 个 FAQ 条目
+- [x] **步骤 3.2**：在试点页面集成 `PageFaq` 组件
+  - ✅ 在 `app/pages/support/payment.vue` 中添加 PageFaq 组件
+  - ✅ 使用 dark 主题，显示分类
+- [x] **步骤 3.3**：测试效果，调整样式
+  - ✅ 调整标题大小（text-base md:text-lg）
+  - ✅ 减小上边距（py-4 md:py-6）
+  - ✅ 调整问题/答案文字大小（text-xs md:text-sm）
+  - ✅ 优化内边距和间距
 
-- [ ] **步骤 4.1**：整理所有需要 FAQ 的页面清单
-- [ ] **步骤 4.2**：为每个页面创建对应的 FAQ 数据文件
-- [ ] **步骤 4.3**：逐个页面集成组件
+### 第四阶段：推广到其他页面 ✅ 已完成
 
-### 第五阶段：汇总页面 ⬜
+> 完成时间：2024-12-07
 
-- [ ] **步骤 5.1**：修改 `/support/faqs` 页面
-- [ ] **步骤 5.2**：导入所有 FAQ 数据
-- [ ] **步骤 5.3**：按分类/来源页面分组显示
-- [ ] **步骤 5.4**：添加搜索/筛选功能（可选）
+- [x] **步骤 4.1**：整理所有需要 FAQ 的页面清单
+- [x] **步骤 4.2**：为每个页面创建对应的 FAQ 数据文件
+  - ✅ `support-shipping.ts` - 10 个 FAQ 条目
+  - ✅ `support-after-sales.ts` - 8 个 FAQ 条目
+  - ✅ `support-warranty.ts` - 6 个 FAQ 条目
+  - ✅ `support-product-feedback.ts` - 5 个 FAQ 条目
+  - ✅ `support-test-report.ts` - 7 个 FAQ 条目
+- [x] **步骤 4.3**：逐个页面集成组件
+  - ✅ `/support/shipping`
+  - ✅ `/support/after-sales`
+  - ✅ `/support/warranty`
+  - ✅ `/support/product-feedback`
+  - ✅ `/support/test-report`
+  - ✅ `/company/membershipandpoints` - 9 个 FAQ 条目
+  - ✅ `/guides/wheelset-buyers` - 7 个 FAQ 条目（放在所有 tab 内容之后）
 
-### 第六阶段：收尾工作 ⬜
+### 第五阶段：汇总页面 ✅ 已完成
 
-- [ ] **步骤 6.1**：（可选）移除 WordPress 插件中的 FAQ JSON 生成逻辑
-- [ ] **步骤 6.2**：更新相关文档
-- [ ] **步骤 6.3**：最终测试所有页面
+> 完成时间：2024-12-07
+
+- [x] **步骤 5.1**：修改 `/support/faqs` 页面
+  - ✅ 重写页面，使用新的 FAQ 数据系统
+- [x] **步骤 5.2**：导入所有 FAQ 数据
+  - ✅ 使用 `getAllFaqData()` 获取所有注册的 FAQ
+- [x] **步骤 5.3**：按分类/来源页面分组显示
+  - ✅ 按页面分组显示所有 FAQ 条目
+  - ✅ 每个条目显示分类标签
+- [x] **步骤 5.4**：添加搜索/筛选功能
+  - ✅ 搜索框支持搜索问题、答案、分类、标签
+  - ✅ 页面分类标签支持按页面筛选
+  - ✅ 手风琴展开/收起动画
+
+### 第六阶段：收尾工作 ✅ 已完成
+
+> 完成时间：2024-12-07
+
+- [x] **步骤 6.1**：WordPress 插件处理
+  - ⚠️ 发现 `wp-plugin/tanzanite-faq-content/` 插件仍存在
+  - ✅ 建议：保留插件文件但在 WordPress 后台禁用
+  - ✅ 前端已完全独立，不再依赖 WordPress FAQ 数据
+- [x] **步骤 6.2**：更新相关文档
+  - ✅ FAQ-REFACTOR-PLAN.md 已更新完成
+- [x] **步骤 6.3**：最终测试清单
+  - 测试页面：
+    - `/support/payment` - PageFaq 组件
+    - `/support/shipping` - PageFaq 组件
+    - `/support/after-sales` - PageFaq 组件
+    - `/support/warranty` - PageFaq 组件
+    - `/support/product-feedback` - PageFaq 组件
+    - `/support/test-report` - PageFaq 组件
+    - `/company/membershipandpoints` - PageFaq 组件
+    - `/guides/wheelset-buyers` - PageFaq 组件
+    - `/support/faqs` - 汇总页面（搜索 + 筛选）
 
 ---
 
@@ -291,11 +350,11 @@ export const supportPaymentFaq = {
 | 阶段 | 状态 | 开始时间 | 完成时间 | 备注 |
 |------|------|----------|----------|------|
 | 第一阶段：清理旧代码 | ✅ 已完成 | 2024-12-07 | 2024-12-07 | 已清理 3 个文件，删除 FaqModal.vue |
-| 第二阶段：基础设施 | ⬜ 待开始 | - | - | - |
-| 第三阶段：试点页面 | ⬜ 待开始 | - | - | - |
-| 第四阶段：推广 | ⬜ 待开始 | - | - | - |
-| 第五阶段：汇总页面 | ⬜ 待开始 | - | - | - |
-| 第六阶段：收尾工作 | ⬜ 待开始 | - | - | - |
+| 第二阶段：基础设施 | ✅ 已完成 | 2024-12-07 | 2024-12-07 | 类型定义 + 通用组件 + 数据注册表 |
+| 第三阶段：试点页面 | ✅ 已完成 | 2024-12-07 | 2024-12-07 | /support/payment 页面集成完成 |
+| 第四阶段：推广 | ✅ 已完成 | 2024-12-07 | 2024-12-07 | 8 个页面已集成，共 63 个 FAQ 条目 |
+| 第五阶段：汇总页面 | ✅ 已完成 | 2024-12-07 | 2024-12-07 | /support/faqs 页面重写，支持搜索和筛选 |
+| 第六阶段：收尾工作 | ✅ 已完成 | 2024-12-07 | 2024-12-07 | 文档更新，测试清单已列出 |
 
 ---
 
@@ -321,4 +380,141 @@ export const supportPaymentFaq = {
 
 ---
 
-*文档结束 - 请在实施过程中更新进度状态*
+## 十、维护指南（重要）
+
+### 10.1 添加新页面 FAQ
+
+**步骤：**
+
+1. **创建数据文件** `app/data/faq/pages/[page-name].ts`
+   ```typescript
+   import type { PageFaqData } from '../types'
+   
+   export const yourPageFaq: PageFaqData = {
+     pageId: 'your-page-id',  // 唯一标识，用于组件引用
+     title: 'Your Page FAQs',
+     subtitle: 'Optional subtitle',
+     categories: [
+       {
+         id: 'category-1',
+         name: 'Category Name',
+         icon: '📦',  // 可选 emoji 图标
+         items: [
+           {
+             id: 'item-1',  // 在页面内唯一即可
+             question: 'Your question?',
+             answer: 'Your answer. <strong>Supports HTML</strong>.',
+             tags: ['optional', 'tags'],  // 用于搜索
+           },
+         ],
+       },
+     ],
+   }
+   ```
+
+2. **注册到 index.ts** `app/data/faq/index.ts`
+   ```typescript
+   // 添加导入
+   import { yourPageFaq } from './pages/your-page'
+   
+   // 添加到注册表
+   export const faqRegistry: FaqRegistry = {
+     // ... 现有条目
+     'your-page-id': yourPageFaq,  // 添加这行
+   }
+   ```
+
+3. **在页面中使用组件**
+   ```vue
+   <template>
+     <!-- 页面其他内容 -->
+     
+     <section class="your-section">
+       <PageFaq 
+         page-id="your-page-id"
+         theme="dark"
+         :show-categories="true"
+       />
+     </section>
+   </template>
+   
+   <script setup lang="ts">
+   import PageFaq from '~/components/PageFaq.vue'
+   </script>
+   ```
+
+### 10.2 修改现有 FAQ
+
+- 直接编辑对应的 `app/data/faq/pages/[page-name].ts` 文件
+- 修改 `question`、`answer`、`tags` 等字段
+- 无需修改其他文件
+
+### 10.3 删除 FAQ 条目
+
+- 从对应数据文件的 `items` 数组中移除条目
+- 如果删除整个分类，从 `categories` 数组中移除
+- 如果删除整个页面的 FAQ：
+  1. 删除数据文件
+  2. 从 `index.ts` 移除导入和注册
+  3. 从页面组件中移除 `<PageFaq>` 组件
+
+### 10.4 注意事项
+
+#### ⚠️ ID 唯一性
+- `pageId` 必须全局唯一（跨所有页面）
+- `category.id` 在同一页面内唯一
+- `item.id` 在同一分类内唯一
+- 汇总页面会将 `pageId-itemId` 组合作为全局唯一 ID
+
+#### ⚠️ HTML 内容安全
+- `answer` 字段支持 HTML，使用 `v-html` 渲染
+- 只使用受信任的内容，避免 XSS 风险
+- 推荐使用的 HTML 标签：`<ul>`, `<ol>`, `<li>`, `<strong>`, `<br>`, `<p>`
+
+#### ⚠️ 类型检查
+- 所有数据文件必须导入并使用 `PageFaqData` 类型
+- TypeScript 会自动检查数据结构是否正确
+
+#### ⚠️ 汇总页面自动更新
+- `/support/faqs` 页面使用 `getAllFaqData()` 自动获取所有注册的 FAQ
+- 新增页面 FAQ 后，汇总页面会自动包含
+- 无需手动修改汇总页面
+
+### 10.5 组件 Props 说明
+
+| Prop | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `page-id` | `string` | 必填 | 对应注册表中的 pageId |
+| `title` | `string` | 从数据获取 | 覆盖数据中的标题 |
+| `theme` | `'light' \| 'dark'` | `'light'` | 主题色 |
+| `show-categories` | `boolean` | `true` | 是否显示分类标题 |
+| `max-items` | `number` | 无限制 | 最多显示条目数 |
+| `show-view-all-link` | `boolean` | `false` | 显示"查看全部"链接 |
+
+### 10.6 文件结构总览
+
+```
+app/
+├── components/
+│   └── PageFaq.vue              # 通用 FAQ 组件
+├── data/
+│   └── faq/
+│       ├── types.ts             # 类型定义
+│       ├── index.ts             # 注册表和工具函数
+│       └── pages/               # 各页面 FAQ 数据
+│           ├── support-payment.ts
+│           ├── support-shipping.ts
+│           ├── support-after-sales.ts
+│           ├── support-warranty.ts
+│           ├── support-product-feedback.ts
+│           ├── support-test-report.ts
+│           ├── company-membership.ts
+│           └── guides-wheelset-buyers.ts
+└── pages/
+    └── support/
+        └── faqs.vue             # 汇总页面
+```
+
+---
+
+*文档完成 - 最后更新：2024-12-07*

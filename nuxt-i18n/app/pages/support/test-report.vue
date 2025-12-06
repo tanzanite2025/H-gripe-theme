@@ -23,10 +23,21 @@
         manually while this page is being completed.
       </p>
     </section>
+
+    <!-- FAQ Section -->
+    <section class="support-section">
+      <PageFaq 
+        page-id="support-test-report"
+        theme="dark"
+        :show-categories="true"
+      />
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import PageFaq from '~/components/PageFaq.vue'
+
 definePageMeta({
   layout: 'support',
 })

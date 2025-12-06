@@ -171,13 +171,14 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* 轮播组件上边距 - 使用CSS媒体查询避免SSR跳动 */
+/* 需要留出 SiteHeader 的高度空间 */
 .carousel-section {
-  margin-top: 80px;
+  margin-top: 100px;
 }
 
 @media (max-width: 768px) {
   .carousel-section {
-    margin-top: 125px;
+    margin-top: 140px;
   }
 }
 
