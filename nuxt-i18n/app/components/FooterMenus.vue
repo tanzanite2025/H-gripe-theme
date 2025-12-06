@@ -179,21 +179,22 @@ const sections = computed<FooterSection[]>(() => {
 }
 
 .footer-menus__title {
-  margin: 0 0 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(249, 250, 251, 0.8);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .footer-menus__brand-text {
-  font-size: 0.875rem;
-  color: rgba(249, 250, 251, 0.75);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .footer-menus__brand-paragraph {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.75rem;
 }
 
 .footer-menus__list {
@@ -202,20 +203,21 @@ const sections = computed<FooterSection[]>(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.6rem;
 }
 
 .footer-menus__link {
   font-size: 0.875rem;
-  color: rgba(249, 250, 251, 0.75);
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  transition: color 0.15s ease, transform 0.15s ease;
+  display: inline-block;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .footer-menus__link:hover,
 .footer-menus__link:focus-visible {
-  color: #e5f2ff;
-  transform: translateY(-1px);
+  color: #ffffff;
+  transform: translateX(4px);
 }
 
 @media (max-width: 768px) {

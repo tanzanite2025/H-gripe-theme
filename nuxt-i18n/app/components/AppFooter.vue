@@ -1,25 +1,33 @@
 <template>
   <footer class="app-footer">
     <div class="footer-content">
-      <div class="footer-subscription">
-        <SubscriptionOptIn
-          label="Subscribe for new products & blog updates"
-        />
+      
+      <!-- Desktop: Side-by-Side Layout Wrapper -->
+      <div class="footer-main-row">
+        
+        <!-- Left: Subscription -->
+        <div class="footer-subscription">
+          <SubscriptionOptIn
+            label="Subscribe for new products & blog updates"
+          />
+          <!-- Social Icons moved here -->
+          <div class="footer-subscription__social">
+            <SocialIcons :items="footerSocialItems" />
+          </div>
+        </div>
+
+        <!-- Right: Menus -->
+        <div class="footer-menus-wrapper">
+          <FooterMenus />
+        </div>
+
       </div>
 
       <div class="footer-widgets">
         <slot name="widgets" />
       </div>
 
-      <div class="footer-menus-wrapper">
-        <FooterMenus />
-      </div>
-
       <div class="footer-bottom">
-        <div class="footer-bottom__social">
-          <SocialIcons :items="footerSocialItems" />
-        </div>
-
         <div class="footer-bottom__info">
           <p class="footer-info__text">
             &copy;
@@ -29,21 +37,21 @@
               trademark.
             </span>
           </p>
-        </div>
-
-        <div class="footer-bottom__buttons">
+          
+          <!-- Moved buttons here for better layout grouping -->
           <div class="footer-info__buttons">
             <NuxtLink
               to="/privacy"
-              class="footer-info__button"
+              class="footer-info__link"
               target="_blank"
               rel="noopener noreferrer"
             >
               Privacy Policy
             </NuxtLink>
+            <span class="footer-info__sep">|</span>
             <NuxtLink
               to="/terms"
-              class="footer-info__button"
+              class="footer-info__link"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -103,142 +111,143 @@ const footerSocialItems: FooterSocialItem[] = [
 
 <style scoped>
 .app-footer {
-  /* 增大底部 padding，让文字区域整体上移，
-     预留空间给底部浮动 Dock 覆盖 */
-  padding: 1.5rem 1.5rem 4.75rem;
+  /* 增大底部 padding，预留空间给底部浮动 Dock (Desktop: 8rem, Mobile: 6rem) */
+  padding: 1.5rem 1.5rem 8rem;
   background: rgba(0, 0, 0, 0.85);
   color: #f9fafb;
 }
 
 .footer-content {
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 1rem;
+  /* Mobile: centered text */
   text-align: center;
+}
+
+.footer-main-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+  margin-bottom: 2rem;
 }
 
 .footer-subscription {
   width: 100%;
   max-width: 480px;
-  margin-bottom: 2rem;
-  padding: 1.25rem 1.5rem;
-  border-radius: 0.75rem;
-  background: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.6);
-}
-
-.footer-widgets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
+  padding: 0 1rem;
 }
 
 .footer-menus-wrapper {
   width: 100%;
-  margin-top: 0;
 }
 
-.footer-bottom {
-  width: 100%;
-  margin-top: 0.5rem;
-  margin-bottom: 0.75rem;
+.footer-subscription__social {
+  margin-top: 1.5rem;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.footer-bottom__social {
-  display: flex;
-  justify-content: center;
+  justify-content: center; /* Mobile center */
 }
 
 .footer-bottom__info {
   font-size: 0.875rem;
   color: rgba(249, 250, 251, 0.7);
-}
-
-.footer-bottom__buttons {
   display: flex;
-  justify-content: center;
-  padding-bottom: 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .footer-info__text {
   margin: 0;
+  line-height: 1.5;
 }
 
 .footer-info__buttons {
-  margin-top: 0.5rem;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.75rem;
+  font-size: 0.8rem;
 }
 
-.footer-info__button {
-  padding: 0.25rem 0.85rem;
-  border-radius: 999px;
-  border: 1px solid rgba(249, 250, 251, 0.7);
-  background: transparent;
-  color: rgba(249, 250, 251, 0.85);
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+.footer-info__link {
+  color: rgba(249, 250, 251, 0.6);
+  text-decoration: none;
+  transition: color 0.2s;
 }
 
-.footer-info__button:hover,
-.footer-info__button:focus-visible {
-  background-color: rgba(249, 250, 251, 0.12);
-  border-color: rgba(249, 250, 251, 0.95);
+.footer-info__link:hover {
   color: #ffffff;
+  text-decoration: underline;
+}
+
+.footer-info__sep {
+  color: rgba(255, 255, 255, 0.2);
 }
 
 .footer-site {
-  margin: 0 0.5rem;
+  margin: 0 0.25rem;
   font-weight: 600;
 }
 
 @media (min-width: 768px) {
-  .footer-bottom {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+  .footer-content {
+    text-align: left;
+    align-items: stretch;
   }
 
-  .footer-bottom__social,
-  .footer-bottom__info,
-  .footer-bottom__buttons {
-    flex: 1;
+  .footer-main-row {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    align-items: start;
+    gap: 4rem;
+    margin-bottom: 0; /* Removed bottom margin entirely */
   }
 
-  /* Reorder for desktop: left = copyright, center = buttons, right = social */
-  .footer-bottom__info {
-    order: 1;
+  .footer-subscription {
+    max-width: 100%; /* Fill the grid column */
+    padding: 0;
     text-align: left;
   }
-
-  .footer-bottom__buttons {
-    order: 2;
-    justify-content: center;
-    padding-bottom: 0;
+  
+  .footer-subscription__social {
+    justify-content: flex-start; /* Desktop left align */
+  }
+  
+  /* Ensure label in subscription aligns left on desktop */
+  .footer-subscription :deep(label) {
+    text-align: left;
+  }
+  
+  .footer-menus-wrapper {
+    margin-top: 0.5rem; /* Visual alignment with subscription input */
   }
 
-  .footer-bottom__social {
-    order: 3;
-    justify-content: flex-end;
+  .footer-bottom {
+    /* Simplified bottom bar since social moved out */
+    display: flex;
+    margin-top: 0;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .footer-bottom__info {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    text-align: left;
+    gap: 1rem;
   }
 }
 
 @media (max-width: 768px) {
   .app-footer {
-    /* 移动端 Dock 通常更高，底部多留一些空间，但不需要额外一整行的高度 */
-    padding: 1.5rem 1.25rem 4.75rem;
+    /* 移动端 Dock 通常更高，底部多留一些空间 */
+    padding: 1.5rem 1.25rem 6rem;
   }
 }
 </style>

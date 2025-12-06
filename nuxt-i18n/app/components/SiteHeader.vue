@@ -3,178 +3,163 @@
 		<div
 			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-2 md:py-2"
 		>
-			<!-- 桌面端：第一行 标题 + 主导航 + 右侧控件，第二行 面包屑 -->
-			<div class="hidden md:flex flex-col gap-1">
-				<!-- 第一行：标题 + 主导航 + 右侧控件 -->
-				<div
-					class="grid grid-cols-[230px_1fr_240px] items-center gap-3 lg:grid-cols-[250px_1fr_250px] lg:gap-4 desktop-header-grid"
-				>
-					<!-- 左侧：站点标题 -->
-					<div class="flex justify-start items-center">
-						<h1 class="m-0 text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] whitespace-nowrap">
+			<!-- 桌面端：宽版极简胶囊布局 (Option B Wide) -->
+			<div class="hidden md:flex flex-col items-center gap-1">
+				<!-- 主胶囊 Header -->
+				<div class="w-full grid grid-cols-[200px_1fr_200px] items-center gap-4 px-6 py-3 rounded-[99px] bg-[#0b1020]/80 backdrop-blur-md border border-white/10 shadow-lg">
+					
+					<!-- Logo -->
+					<div class="flex items-center justify-start">
+						<h1 class="m-0 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none italic cursor-default">
 							{{ titleText }}
 						</h1>
 					</div>
 
-					<!-- 中间：主导航（与站点标题同一行） -->
-					<nav
-						class="justify-self-center flex items-center justify-center gap-3 lg:gap-4"
-						aria-label="Primary navigation"
-					>
+					<!-- Nav (Centered) -->
+					<nav class="flex items-center justify-center gap-8 relative">
+						<!-- Vertical Divider Left -->
+						<div class="w-px h-6 bg-white/10 absolute left-0 hidden xl:block"></div>
+						
 						<NuxtLink
 							:to="localePath('/products')"
-							class="h-10 px-3 py-1 lg:px-4 lg:py-1.5 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
+							active-class="!text-white"
 						>
 							{{ $t('footer.menus.products', 'Products') }}
+							<span 
+								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
+								:class="route.path.startsWith(localePath('/products')) ? 'opacity-100' : 'opacity-0'"
+							></span>
 						</NuxtLink>
 						<NuxtLink
 							:to="localePath('/support')"
-							class="h-10 px-3 py-1 lg:px-4 lg:py-1.5 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
+							active-class="!text-white"
 						>
 							{{ $t('footer.menus.support', 'Support') }}
+							<span 
+								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
+								:class="route.path.startsWith(localePath('/support')) ? 'opacity-100' : 'opacity-0'"
+							></span>
 						</NuxtLink>
 						<NuxtLink
 							:to="localePath('/company')"
-							class="h-10 px-3 py-1 lg:px-4 lg:py-1.5 inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 text-[12px] lg:text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-colors"
+							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
+							active-class="!text-white"
 						>
 							{{ $t('footer.menus.company', 'Company') }}
+							<span 
+								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
+								:class="route.path.startsWith(localePath('/company')) ? 'opacity-100' : 'opacity-0'"
+							></span>
 						</NuxtLink>
-					</nav>
-
-					<!-- 右侧：Guides + 分享 + 语言切换器 -->
-					<div
-						class="justify-self-end flex items-center gap-2 lg:gap-3"
-					>
-						<!-- Guides 文本按钮（桌面端） -->
 						<NuxtLink
 							:to="localePath('/guides')"
-							class="pointer-events-auto text-white shadow-[0_0_16px_rgba(64,115,255,0.65)] hover:shadow-[0_0_22px_rgba(64,115,255,0.9)] transition-all duration-200 h-10 w-[80px] px-3.5 lg:px-4 rounded-full hidden lg:inline-flex items-center justify-center bg-black border-2 border-[#6b73ff] text-[11px] lg:text-[12px] font-semibold hover:-translate-y-[1px] hover:scale-[1.02]"
-							aria-label="Guides"
+							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
+							active-class="!text-white"
 						>
 							Guides
+							<span 
+								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
+								:class="route.path.startsWith(localePath('/guides')) ? 'opacity-100' : 'opacity-0'"
+							></span>
 						</NuxtLink>
 
-						<!-- 分享按钮（会员积分） - 改为圆形 -->
-						<button
-							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 h-10 w-[80px] rounded-full hidden lg:inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]"
-							@click.stop="toggleShare()"
-							:aria-expanded="shareOpen"
-							aria-haspopup="dialog"
-							aria-label="Open membership panel"
-						>
-							<img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
-						</button>
+						<!-- Vertical Divider Right -->
+						<div class="w-px h-6 bg-white/10 absolute right-0 hidden xl:block"></div>
+					</nav>
 
-						<!-- 翻译转换器 -->
+					<!-- Right Actions -->
+					<div class="flex items-center justify-end gap-4">
+						<!-- Language -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="flex items-center justify-between gap-2 lg:gap-3 px-3 py-2 lg:px-4 lg:py-2.5 rounded-full text-white text-xs lg:text-sm font-medium cursor-pointer transition-all duration-200 w-[130px] h-10 shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff] desktop-lang-switcher"
+								class="w-9 h-9 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all"
 								@click.stop="toggleDropdown"
-								@keydown="onButtonKeydown"
 								:id="buttonId"
 								aria-haspopup="listbox"
 								:aria-expanded="isOpen"
-								:aria-controls="dropdownId"
 								:aria-label="'Switch language'"
 							>
-								<span class="font-medium flex items-center gap-2">
-									<span class="w-[1.2em] inline-block" aria-hidden="true">
-										<img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-									</span>
-									{{ currentLocale.name }}
-								</span>
-								<span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
+								<span class="text-xs font-bold uppercase">{{ currentLocale.iso?.split('-')[0] || 'EN' }}</span>
 							</button>
+							
+							<!-- Dropdown Teleport Logic (Reused) -->
+							<teleport to="body">
+								<transition
+									enter-active-class="transition-all duration-200 ease-in-out"
+									leave-active-class="transition-all duration-200 ease-in-out"
+									enter-from-class="opacity-0 -translate-y-2.5"
+									leave-to-class="opacity-0 -translate-y-2.5"
+								>
+									<div
+										v-if="isOpen"
+										class="fixed top-[80px] left-1/2 -translate-x-1/2 w-[90vw] max-w-[1600px] bg-[#0b1020] border border-[#6b79ff] rounded-md overflow-auto max-h-[70vh] shadow-none grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center z-[1200]"
+										role="listbox"
+										:id="dropdownId"
+										:aria-labelledby="buttonId"
+										tabindex="0"
+										@keydown="onListKeydown"
+									>
+										<button
+											v-for="(locale, index) in availableLocales"
+											:key="locale.code"
+											class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-[#2aa3ff40]"
+											:class="{ 'bg-[#2aa3ff40] font-medium': locale.code === currentLocale.code }"
+											role="option"
+											:aria-selected="locale.code === currentLocale.code"
+											:tabindex="-1"
+											:ref="el => setOptionRef(el, index)"
+											@click="switchLanguage(locale.code)"
+										>
+											<span class="w-[1.2em] inline-block" aria-hidden="true">
+												<img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+											</span>
+											<span>{{ locale.name }}</span>
+										</button>
+									</div>
+								</transition>
+							</teleport>
 						</div>
 
-						<teleport to="body">
-							<transition
-								enter-active-class="transition-all duration-200 ease-in-out"
-								leave-active-class="transition-all duration-200 ease-in-out"
-								enter-from-class="opacity-0 -translate-y-2.5"
-								leave-to-class="opacity-0 -translate-y-2.5"
-							>
-								<div
-									v-if="isOpen"
-									class="fixed top-[100px] max-md:top-[83px] left-1/2 -translate-x-1/2 w-[90vw] max-md:w-[70vw] max-w-[1600px] bg-[#0b1020] border border-[#6b79ff] rounded-md overflow-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain] [touch-action:pan-y] max-h-[70vh] max-md:max-h-[45vh] shadow-none grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] max-md:grid-cols-2 gap-1.5 justify-items-center z-[1200]"
-									role="listbox"
-									:id="dropdownId"
-									:aria-labelledby="buttonId"
-									tabindex="0"
-									@keydown="onListKeydown"
-								>
-									<button
-										v-for="(locale, index) in availableLocales"
-										:key="locale.code"
-										class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-[#2aa3ff40]"
-										:class="{ 'bg-[#2aa3ff40] font-medium': locale.code === currentLocale.code }"
-										role="option"
-										:aria-selected="locale.code === currentLocale.code"
-										:tabindex="-1"
-										:ref="el => setOptionRef(el, index)"
-										@click="switchLanguage(locale.code)"
-									>
-										<span class="w-[1.2em] inline-block" aria-hidden="true">
-											<img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-										</span>
-										<span>{{ locale.name }}</span>
-									</button>
-								</div>
-							</transition>
-						</teleport>
-					</div>
-				</div>
-
-				<!-- 桌面端：第二行 面包屑 -->
-				<div class="w-full flex items-center">
-					<div class="hidden md:flex lg:hidden w-[44px] justify-start mr-2">
-						<NuxtLink
-							:to="localePath('/guides')"
-							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
-							aria-label="Guides"
-						>
-							<img src="/icons/token-branded--ionx.svg" alt="" class="w-full h-full" />
-						</NuxtLink>
-					</div>
-					<div class="flex-1 flex justify-center">
-						<nav
-							v-if="breadcrumbs.length"
-							aria-label="Breadcrumb"
-							class="text-[12px] leading-tight text-slate-300"
-						>
-							<ol class="flex items-center gap-1.5">
-								<li
-									v-for="(crumb, index) in breadcrumbs"
-									:key="index"
-									class="flex items-center gap-1"
-								>
-									<NuxtLink
-										v-if="crumb.to && index < breadcrumbs.length - 1"
-										:to="crumb.to"
-										class="hover:text-white"
-									>
-										{{ crumb.label }}
-									</NuxtLink>
-									<span v-else class="text-white font-semibold">
-										{{ crumb.label }}
-									</span>
-									<span v-if="index < breadcrumbs.length - 1">/</span>
-								</li>
-							</ol>
-						</nav>
-					</div>
-					<div class="hidden md:flex lg:hidden w-[44px] justify-end ml-2">
+						<!-- Share/Points -->
 						<button
-							class="pointer-events-auto text-white shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] transition-all duration-200 w-[44px] h-[44px] rounded-full inline-flex items-center justify-center bg-[#0b1020]"
+							class="w-10 h-10 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-lg hover:shadow-[#40ffaa]/30 transition-all transform hover:scale-105"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
-							aria-haspopup="dialog"
 							aria-label="Open membership panel"
 						>
-							<img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
 						</button>
 					</div>
 				</div>
+
+				<!-- 面包屑 (移至胶囊下方，极简风格 - 无背景) -->
+				<nav
+					v-if="breadcrumbs.length"
+					aria-label="Breadcrumb"
+					class="flex justify-center mt-1"
+				>
+					<ol class="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight transition-colors hover:text-slate-400">
+						<li
+							v-for="(crumb, index) in breadcrumbs"
+							:key="index"
+							class="flex items-center gap-1"
+						>
+							<NuxtLink
+								v-if="crumb.to && index < breadcrumbs.length - 1"
+								:to="crumb.to"
+								class="hover:text-white transition-colors"
+							>
+								{{ crumb.label }}
+							</NuxtLink>
+							<span v-else class="text-slate-300 font-medium">
+								{{ crumb.label }}
+							</span>
+							<span v-if="index < breadcrumbs.length - 1" class="text-slate-700">/</span>
+						</li>
+					</ol>
+				</nav>
 			</div>
 
 			<!-- 移动端：新版极简双行布局 -->

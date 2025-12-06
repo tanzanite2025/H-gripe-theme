@@ -92,7 +92,7 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
 @media (min-width: 768px) {
   .products-header-spacer {
     /* Desktop: push ProductsTopNav slightly below the fixed SiteHeader */
-    height: 5.75rem;
+    height: 130px;
   }
 }
 

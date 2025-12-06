@@ -101,7 +101,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 @media (min-width: 768px) {
   .support-header-spacer {
     /* Desktop: push SupportTopNav slightly below the fixed SiteHeader */
-    height: 5.75rem;
+    height: 130px;
   }
 }
 
