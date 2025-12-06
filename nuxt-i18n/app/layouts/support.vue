@@ -40,7 +40,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 }
 
 .support-header-spacer {
-  height: 155px;
+  height: 145px;
 }
 
 .support-hero {

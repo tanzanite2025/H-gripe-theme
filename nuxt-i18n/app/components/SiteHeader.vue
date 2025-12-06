@@ -177,122 +177,108 @@
 				</div>
 			</div>
 
-			<!-- 移动端：三排垂直布局（更紧凑的间距） -->
-			<div class="md:hidden grid gap-0 justify-items-center">
-				<!-- 第一排：仅站点标题（单独占一行） -->
-				<div class="w-[90vw] max-w-[600px] flex justify-center mt-0">
-					<h1 class="m-0 text-3xl phone-375:text-3xl phone-390:text-3xl phone-414:text-3xl phone-430:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none text-center">
+			<!-- 移动端：新版极简双行布局 -->
+			<div class="md:hidden flex flex-col gap-3">
+				
+				<!-- 第一行：Logo (左) + 工具图标 (右) -->
+				<div class="flex items-center justify-between px-1">
+					<!-- Logo -->
+					<h1 class="m-0 text-2xl phone-390:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none">
 						{{ titleText }}
 					</h1>
-				</div>
-				
-				<!-- 第二排：Guides + 翻译转换器 + 分享按钮（同一高度） -->
-				<div class="w-[90vw] max-w-[600px] flex items-center justify-between mt-1">
-					<!-- Guides 文本按钮（移动端） -->
-					<NuxtLink
-						:to="localePath('/guides')"
-						class="pointer-events-auto text-white header-mobile-nav-text transition-all duration-200 h-[32px] w-[120px] px-3.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff] text-[11px] font-semibold shadow-[0_0_14px_rgba(64,115,255,0.65)] hover:shadow-[0_0_20px_rgba(64,115,255,0.9)] hover:-translate-y-[1px]"
-						aria-label="Guides"
-					>
-						Guides
-					</NuxtLink>
-				
-					<!-- 翻译转换器（居中） -->
-					<div class="flex-1 flex justify-center">
-						<div class="relative w-[120px]" data-lang-wrapper>
+
+					<!-- 右侧工具图标组 -->
+					<div class="flex items-center gap-3 phone-390:gap-4">
+						<!-- Guides (Icon) -->
+						<NuxtLink
+							:to="localePath('/guides')"
+							class="text-white/70 hover:text-white transition-colors p-1"
+							aria-label="Guides"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+						</NuxtLink>
+
+						<!-- Language Switcher (Text + Icon) -->
+						<div class="relative" data-lang-wrapper>
 							<button
-								class="flex items-center justify-between gap-3 px-4 py-1.5 rounded-full text-white header-mobile-nav-text text-[11px] font-medium cursor-pointer transition-all duration-200 w-[120px] h-[32px] shadow-[0_2px_8px_#2aa3ff40] hover:shadow-[0_4px_12px_#2aa3ff40] bg-black border-2 border-[#6b73ff]"
+								class="text-white/70 hover:text-white transition-colors flex items-center gap-1 p-1"
 								@click.stop="toggleDropdown"
-								@keydown="onButtonKeydown"
 								:id="buttonId"
 								aria-haspopup="listbox"
 								:aria-expanded="isOpen"
-								:aria-controls="dropdownId"
 								:aria-label="'Switch language'"
 							>
-								<span class="font-medium flex items-center gap-2">
-									<span class="w-[1.2em] inline-block" aria-hidden="true">
-										<img :src="flagSrc(currentLocale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-									</span>
-									{{ currentLocale.name }}
-								</span>
-								<span class="text-[10px] transition-transform duration-200" :class="{ 'rotate-180': isOpen }">▼</span>
+								<span class="text-xs font-bold uppercase">{{ currentLocale.iso?.split('-')[0] || currentLocale.code }}</span>
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{ 'rotate-180': isOpen }" class="transition-transform"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 							</button>
 						</div>
+
+						<!-- Share/Points (Icon) -->
+						<button
+							class="text-white/70 hover:text-[#40ffaa] transition-colors p-1"
+							@click.stop="toggleShare()"
+							:aria-expanded="shareOpen"
+							aria-label="Open membership panel"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
+						</button>
 					</div>
-				
-					<!-- 分享按钮 - 圆形，高度与翻译转换器一致 -->
-					<button
-						class="pointer-events-auto text-white transition-all duration-200 w-[120px] h-[32px] mr-1.5 rounded-full inline-flex items-center justify-center bg-black border-2 border-[#6b73ff]"
-						@click.stop="toggleShare()"
-						:aria-expanded="shareOpen"
-						aria-haspopup="dialog"
-						aria-label="Open membership panel"
-					>
-						<img src="/icons/token-branded--looks.svg" alt="" class="w-full h-full" />
-					</button>
 				</div>
 
-				<!-- 第三排：主导航 + 面包屑导航 -->
-				<nav
-					class="w-[85vw] max-w-[600px] rounded-[30px] bg-transparent border border-transparent pointer-events-auto mt-0"
-					aria-label="Primary navigation and breadcrumbs"
-				>
-					<div
-						class="w-full flex flex-col items-center justify-center px-3 py-0.5 gap-1"
+				<!-- 第二行：主要导航 (Segmented Control Style) -->
+				<nav class="bg-white/5 rounded-xl p-1 flex items-center justify-between relative" aria-label="Mobile primary navigation">
+					<NuxtLink
+						:to="localePath('/products')"
+						class="flex-1 py-2 rounded-lg text-xs phone-390:text-[13px] font-medium text-center transition-all"
+						:class="route.path.startsWith(localePath('/products')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
 					>
-						<!-- 第一行：主导航（Products / Support / Company） -->
-						<div
-							class="w-full flex items-center justify-between gap-2 text-[11px] header-mobile-nav-text"
-						>
-							<NuxtLink
-								:to="localePath('/products')"
-								class="flex-1 flex items-center justify-center text-center px-3 py-1 h-[32px] rounded-full border border-[#6b73ff] bg-[#6b73ff]/12 text-white/80 hover:text-white hover:bg-[#6b73ff]/20 hover:border-[#6b73ff] font-semibold transition-colors"
-							>
-								{{ $t('footer.menus.products', 'Products') }}
-							</NuxtLink>
-							<NuxtLink
-								:to="localePath('/support')"
-								class="flex-1 flex items-center justify-center text-center px-3 py-1 h-[32px] rounded-full border border-[#6b73ff] bg-[#6b73ff]/12 text-white/80 hover:text-white hover:bg-[#6b73ff]/20 hover:border-[#6b73ff] font-semibold transition-colors"
-							>
-								{{ $t('footer.menus.support', 'Support') }}
-							</NuxtLink>
-							<NuxtLink
-								:to="localePath('/company')"
-								class="flex-1 flex items-center justify-center text-center px-3 py-1 h-[32px] rounded-full border border-[#6b73ff] bg-[#6b73ff]/12 text-white/80 hover:text-white hover:bg-[#6b73ff]/20 hover:border-[#6b73ff] font-semibold transition-colors"
-							>
-								{{ $t('footer.menus.company', 'Company') }}
-							</NuxtLink>
-						</div>
-
-						<!-- 第二行：面包屑 -->
-						<nav
-							v-if="breadcrumbs.length"
-							aria-label="Breadcrumb"
-							class="text-[11px] text-slate-300"
-						>
-							<ol class="flex items-center gap-1.5">
-								<li
-									v-for="(crumb, index) in breadcrumbs"
-									:key="index"
-									class="flex items-center gap-1"
-								>
-									<NuxtLink
-										v-if="crumb.to && index < breadcrumbs.length - 1"
-										:to="crumb.to"
-										class="hover:text-white"
-									>
-										{{ crumb.label }}
-									</NuxtLink>
-									<span v-else class="text-white font-semibold">
-										{{ crumb.label }}
-									</span>
-									<span v-if="index < breadcrumbs.length - 1">/</span>
-								</li>
-							</ol>
-						</nav>
-					</div>
+						{{ $t('footer.menus.products', 'Products') }}
+					</NuxtLink>
+					
+					<NuxtLink
+						:to="localePath('/support')"
+						class="flex-1 py-2 rounded-lg text-xs phone-390:text-[13px] font-medium text-center transition-all"
+						:class="route.path.startsWith(localePath('/support')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+					>
+						{{ $t('footer.menus.support', 'Support') }}
+					</NuxtLink>
+					
+					<NuxtLink
+						:to="localePath('/company')"
+						class="flex-1 py-2 rounded-lg text-xs phone-390:text-[13px] font-medium text-center transition-all"
+						:class="route.path.startsWith(localePath('/company')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+					>
+						{{ $t('footer.menus.company', 'Company') }}
+					</NuxtLink>
 				</nav>
+
+				<!-- 第三行：面包屑 (恢复移动端显示) -->
+				<nav
+					v-if="breadcrumbs.length"
+					aria-label="Breadcrumb"
+					class="px-2 pb-1 -mt-1"
+				>
+					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[10px] text-slate-400 leading-tight">
+						<li
+							v-for="(crumb, index) in breadcrumbs"
+							:key="index"
+							class="flex items-center gap-1"
+						>
+							<NuxtLink
+								v-if="crumb.to && index < breadcrumbs.length - 1"
+								:to="crumb.to"
+								class="hover:text-white transition-colors truncate max-w-[100px]"
+							>
+								{{ crumb.label }}
+							</NuxtLink>
+							<span v-else class="text-slate-200 font-medium truncate max-w-[120px]">
+								{{ crumb.label }}
+							</span>
+							<span v-if="index < breadcrumbs.length - 1" class="text-slate-600">/</span>
+						</li>
+					</ol>
+				</nav>
+
 			</div>
 		</div>
 	</div>

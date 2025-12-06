@@ -1,6 +1,6 @@
 <template>
   <div class="support-page">
-    <h2 class="support-page__title">Payment</h2>
+    <h1 class="sr-only">Payment</h1>
     <div class="support-intro-banner">
       <p class="support-intro-banner__text">
         All pages on this site use HTTPS with an SSL certificate issued by a trusted certificate

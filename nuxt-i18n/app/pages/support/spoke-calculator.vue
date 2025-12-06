@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="support-page__title">Spoke Calculator</h2>
+    <h1 class="sr-only">Spoke Calculator</h1>
     <p class="support-page__intro">
       Use the Tanzanite spoke length calculator directly inside Support to design wheelsets and
       estimate spoke lengths before you order.

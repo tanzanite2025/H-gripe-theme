@@ -40,7 +40,7 @@ import ProductsTopNav from '~/components/ProductsTopNav.vue'
 }
 
 .products-header-spacer {
-  height: 155px;
+  height: 145px;
 }
 
 .products-hero {

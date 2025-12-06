@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="products-page__title">Product Center</h2>
+    <h1 class="sr-only">Product Center</h1>
     <p class="products-page__intro">
       Explore Tanzanite products, tools, charts, and wheelbuilding guides from one place.
       Choose a section below to open the shop, documentation, or blog.
