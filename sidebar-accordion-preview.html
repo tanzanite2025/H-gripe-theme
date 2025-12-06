@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Accordion Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .sidebar {
+      width: 100%;
+      max-width: 420px;
+      background: linear-gradient(180deg, rgba(15, 15, 25, 0.95) 0%, rgba(5, 5, 15, 0.98) 100%);
+      border: 1px solid rgba(107, 115, 255, 0.4);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 
+        0 0 40px rgba(107, 115, 255, 0.15),
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    /* 搜索区域 */
+    .search-area {
+      margin-bottom: 20px;
+    }
+
+    .search-wrapper {
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 14px 16px 14px 42px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .search-input::placeholder {
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .search-input:focus {
+      border-color: rgba(107, 115, 255, 0.5);
+      background: rgba(107, 115, 255, 0.05);
+      box-shadow: 0 0 0 3px rgba(107, 115, 255, 0.1);
+    }
+
+    /* 手风琴容器 */
+    .accordion {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 手风琴项 */
+    .accordion-item {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .accordion-item:hover {
+      border-color: rgba(107, 115, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .accordion-item.active {
+      border-color: rgba(107, 115, 255, 0.4);
+      background: linear-gradient(135deg, rgba(107, 115, 255, 0.08) 0%, rgba(107, 115, 255, 0.02) 100%);
+      box-shadow: 0 4px 20px rgba(107, 115, 255, 0.1);
+    }
+
+    /* 手风琴标题 */
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .accordion-header:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .accordion-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 0.01em;
+    }
+
+    .accordion-icon {
+      font-size: 18px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .accordion-arrow {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      transition: all 0.25s ease;
+      font-size: 10px;
+    }
+
+    .accordion-item:hover .accordion-arrow {
+      background: rgba(107, 115, 255, 0.15);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .accordion-item.active .accordion-arrow {
+      transform: rotate(180deg);
+      background: rgba(107, 115, 255, 0.3);
+      color: #fff;
+    }
+
+    /* 手风琴内容 */
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .accordion-item.active .accordion-content {
+      max-height: 400px;
+    }
+
+    .accordion-body {
+      padding: 4px 16px 16px;
+    }
+
+    /* 按钮网格 */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+      gap: 8px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.75);
+      background: linear-gradient(135deg, rgba(107, 115, 255, 0.12) 0%, rgba(107, 115, 255, 0.06) 100%);
+      border: 1px solid rgba(107, 115, 255, 0.2);
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, rgba(107, 115, 255, 0.25) 0%, rgba(107, 115, 255, 0.15) 100%);
+      border-color: rgba(107, 115, 255, 0.5);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(107, 115, 255, 0.2);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-icon {
+      font-size: 13px;
+    }
+
+    /* 计数徽章 */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.9);
+      background: linear-gradient(135deg, rgba(107, 115, 255, 0.7) 0%, rgba(64, 255, 170, 0.5) 100%);
+      border-radius: 10px;
+      margin-left: 8px;
+      box-shadow: 0 2px 8px rgba(107, 115, 255, 0.3);
+    }
+
+    /* 分隔线 */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
+      margin: 8px 0;
+    }
+
+    /* 响应式 */
+    @media (max-width: 400px) {
+      .sidebar {
+        padding: 16px;
+        border-radius: 16px;
+      }
+
+      .btn-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .accordion-header {
+        padding: 12px 14px;
+      }
+
+      .accordion-body {
+        padding: 4px 14px 14px;
+      }
+
+      .btn {
+        padding: 9px 10px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <!-- 搜索区域 -->
+    <div class="search-area">
+      <input type="text" class="search-input" placeholder="🔍 Search products...">
+    </div>
+
+    <!-- 手风琴 -->
+    <div class="accordion">
+      <!-- Product related -->
+      <div class="accordion-item active">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title">
+            <span class="accordion-icon">🛒</span>
+            Product related
+            <span class="badge">7</span>
+          </div>
+          <div class="accordion-arrow">▼</div>
+        </div>
+        <div class="accordion-content">
+          <div class="accordion-body">
+            <div class="btn-grid">
+              <a href="#" class="btn">Carbon Rim</a>
+              <a href="#" class="btn">Carbon Wheels</a>
+              <a href="#" class="btn">Hub</a>
+              <a href="#" class="btn">Spoke</a>
+              <a href="#" class="btn">Tools</a>
+              <a href="#" class="btn">Tire</a>
+              <a href="#" class="btn">All products</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Support -->
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title">
+            <span class="accordion-icon">🛠️</span>
+            Support
+            <span class="badge">7</span>
+          </div>
+          <div class="accordion-arrow">▼</div>
+        </div>
+        <div class="accordion-content">
+          <div class="accordion-body">
+            <div class="btn-grid">
+              <a href="#" class="btn"><span class="btn-icon">🛡️</span> Warranty</a>
+              <a href="#" class="btn">Spoke Calc</a>
+              <a href="#" class="btn">Shipping</a>
+              <a href="#" class="btn">Payment</a>
+              <a href="#" class="btn">After Sales</a>
+              <a href="#" class="btn">Test Report</a>
+              <a href="#" class="btn">All FAQs</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand -->
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title">
+            <span class="accordion-icon">✨</span>
+            Brand
+            <span class="badge">3</span>
+          </div>
+          <div class="accordion-arrow">▼</div>
+        </div>
+        <div class="accordion-content">
+          <div class="accordion-body">
+            <div class="btn-grid">
+              <a href="#" class="btn">Sapim</a>
+              <a href="#" class="btn">DT Swiss</a>
+              <a href="#" class="btn">Pillar</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guides -->
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title">
+            <span class="accordion-icon">📖</span>
+            Guides
+            <span class="badge">6</span>
+          </div>
+          <div class="accordion-arrow">▼</div>
+        </div>
+        <div class="accordion-content">
+          <div class="accordion-body">
+            <div class="btn-grid">
+              <a href="#" class="btn">Wheelset Guide</a>
+              <a href="#" class="btn">Tire Size</a>
+              <a href="#" class="btn">Technical</a>
+              <a href="#" class="btn">Our Story</a>
+              <a href="#" class="btn">Membership</a>
+              <a href="#" class="btn">Pictures</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleAccordion(header) {
+      const item = header.parentElement;
+      const isActive = item.classList.contains('active');
+      
+      // 关闭所有其他项（可选：如果想要同时只展开一个）
+      // document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('active'));
+      
+      // 切换当前项
+      if (isActive) {
+        item.classList.remove('active');
+      } else {
+        item.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

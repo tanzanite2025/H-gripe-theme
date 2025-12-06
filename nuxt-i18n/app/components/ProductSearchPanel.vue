@@ -141,15 +141,11 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  /* 针对移动端侧边栏：强制属性筛选按钮垂直堆叠，防止水平溢出 */
-  :deep(.sidebar-advanced-filter .attribute-top-row) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-  
-  :deep(.sidebar-advanced-filter .attribute-inline-row) {
-    width: 100%;
+  /* 移动端隐藏 Color、Diameter、Brake 下拉筛选按钮 */
+  :deep(.sidebar-advanced-filter .attribute-top-row),
+  :deep(.sidebar-advanced-filter .attribute-inline-row),
+  :deep(.sidebar-advanced-filter [class*="attribute-filter"]) {
+    display: none !important;
   }
 }
 </style>
