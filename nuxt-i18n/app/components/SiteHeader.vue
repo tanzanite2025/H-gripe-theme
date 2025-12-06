@@ -71,6 +71,18 @@
 
 					<!-- Right Actions -->
 					<div class="flex items-center justify-end gap-4">
+						<!-- Search -->
+						<button
+							class="w-9 h-9 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all"
+							@click="openSidebar"
+							aria-label="Search"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="11" cy="11" r="8"></circle>
+								<path d="m21 21-4.3-4.3"></path>
+							</svg>
+						</button>
+
 						<!-- Language -->
 						<div class="relative" data-lang-wrapper>
 							<button
@@ -174,6 +186,18 @@
 
 					<!-- 右侧工具图标组 -->
 					<div class="flex items-center gap-3 phone-390:gap-4">
+						<!-- Search (Icon) -->
+						<button
+							class="text-white/70 hover:text-white transition-colors p-1"
+							@click="openSidebar"
+							aria-label="Search"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="11" cy="11" r="8"></circle>
+								<path d="m21 21-4.3-4.3"></path>
+							</svg>
+						</button>
+
 						<!-- Guides (Icon) -->
 						<NuxtLink
 							:to="localePath('/guides')"
@@ -343,6 +367,13 @@ const toggleShare = () => {
   shareOpen.value = !shareOpen.value
   if (shareOpen.value && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-share' } }))
+  }
+}
+
+// Open Sidebar (Search)
+const openSidebar = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:sidebar-open', { detail: { side: 'left' } }))
   }
 }
 
