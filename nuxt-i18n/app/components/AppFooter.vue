@@ -14,6 +14,18 @@
           <div class="footer-subscription__social">
             <SocialIcons :items="footerSocialItems" />
           </div>
+          
+          <!-- Payment Icons -->
+          <div class="footer-subscription__payment">
+            <img src="/icons/payment/paypal.svg?v=4" alt="PayPal" loading="lazy" />
+            <img src="/icons/payment/visa.svg?v=4" alt="Visa" loading="lazy" />
+            <img src="/icons/payment/mastercard.svg?v=4" alt="Mastercard" loading="lazy" />
+            <img src="/icons/payment/amex.svg?v=4" alt="American Express" loading="lazy" />
+            <img src="/icons/payment/discover.svg?v=4" alt="Discover" loading="lazy" />
+            <img src="/icons/payment/jcb.svg?v=4" alt="JCB" loading="lazy" />
+            <img src="/icons/payment/diners.svg?v=4" alt="Diners Club" loading="lazy" />
+            <img src="/icons/payment/alipay.svg?v=4" alt="Alipay" loading="lazy" />
+          </div>
         </div>
 
         <!-- Right: Menus -->
@@ -152,6 +164,20 @@ const footerSocialItems: FooterSocialItem[] = [
   justify-content: center; /* Mobile center */
 }
 
+.footer-subscription__payment {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center; /* Mobile center */
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.footer-subscription__payment img {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+
 .footer-bottom__info {
   font-size: 0.875rem;
   color: rgba(249, 250, 251, 0.7);
@@ -215,6 +241,10 @@ const footerSocialItems: FooterSocialItem[] = [
   }
   
   .footer-subscription__social {
+    justify-content: flex-start; /* Desktop left align */
+  }
+
+  .footer-subscription__payment {
     justify-content: flex-start; /* Desktop left align */
   }
   

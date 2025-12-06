@@ -55,6 +55,7 @@ const isActive = (item: SupportNavItem) => {
   width: 100%;
   border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   background: rgba(15, 23, 42, 0.92);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
