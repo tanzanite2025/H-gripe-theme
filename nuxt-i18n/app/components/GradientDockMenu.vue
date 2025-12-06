@@ -5,7 +5,7 @@
       
       <!-- 1. Menu (Sidebar) -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[50px]"
+        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[40px]"
         @click="openSidebarLeft"
         aria-label="Open sidebar"
       >
@@ -15,7 +15,7 @@
 
       <!-- 2. Chat -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[50px] relative"
+        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[40px] relative"
         @click="openChatModal()" 
         aria-label="Chat"
       >
@@ -24,13 +24,13 @@
         <!-- Unread Badge -->
         <span
           v-if="totalUnreadCount > 0"
-          class="absolute top-0 right-2 md:right-4 w-2 h-2 md:w-2.5 md:h-2.5 bg-red-500 rounded-full border border-[#0b1020]"
+          class="absolute top-0 right-1 md:right-4 w-2 h-2 md:w-2.5 md:h-2.5 bg-red-500 rounded-full border border-[#0b1020]"
         ></span>
       </button>
 
       <!-- 3. Checkout (Main Action) -->
       <button 
-        class="h-10 px-3 mx-1 md:h-12 md:px-6 md:mx-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center shadow-lg shadow-[#40ffaa]/20 hover:shadow-[#40ffaa]/40 transition-all transform hover:-translate-y-0.5 min-w-[80px] md:min-w-[100px]"
+        class="h-10 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center shadow-lg shadow-[#40ffaa]/20 hover:shadow-[#40ffaa]/40 transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
         @click="openCheckoutFromDock"
       >
         <span>{{ priceDisplay }}</span>
@@ -38,7 +38,7 @@
 
       <!-- 4. Quick Buy -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-[#40ffaa] transition-colors py-1 min-w-[50px]"
+        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-[#40ffaa] transition-colors py-1 min-w-[40px]"
         @click="openQuick()" 
         aria-haspopup="dialog" 
         :aria-expanded="quickOpen" 
@@ -50,7 +50,7 @@
 
       <!-- 5. Cart -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[50px]"
+        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[40px]"
         @click="openCartDrawer" 
         aria-label="Open cart"
       >
@@ -60,7 +60,7 @@
 
       <!-- 6. Saved (Wishlist) -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[50px] relative"
+        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[40px] relative"
         @click="openWishlist" 
         aria-label="Open wishlist"
       >
@@ -68,7 +68,7 @@
         <span class="text-[9px] md:text-xs font-medium tracking-tight">Saved</span>
         <span
           v-if="wishlistCount > 0"
-          class="absolute top-0 right-3 md:right-5 w-2 h-2 md:w-2.5 md:h-2.5 bg-[#40ffaa] rounded-full border border-[#0b1020]"
+          class="absolute top-0 right-1 md:right-5 w-2 h-2 md:w-2.5 md:h-2.5 bg-[#40ffaa] rounded-full border border-[#0b1020]"
         ></span>
       </button>
 

@@ -222,8 +222,41 @@ const sections = computed<FooterSection[]>(() => {
 
 @media (max-width: 768px) {
   .footer-menus__grid {
-    /* On small screens, fall back to 2 columns for readability */
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    overflow-x: auto;
+    gap: 2rem;
+    padding-bottom: 1rem;
+    
+    /* Scroll snap for better UX */
+    scroll-snap-type: x mandatory;
+    
+    /* Extend scroll area to screen edges (counteracting parent padding) */
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    
+    /* Hide scrollbar for cleaner look */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .footer-menus__grid::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
+  .footer-menus__column {
+    /* Ensure minimum width to prevent squishing on small screens */
+    min-width: 160px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+  
+  /* Add some spacer at the end so the last item isn't flush with edge */
+  .footer-menus__column:last-child {
+    padding-right: 1.25rem;
+    box-sizing: content-box;
   }
 }
 </style>
