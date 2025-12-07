@@ -80,13 +80,6 @@
   
   <!-- Quick Buy Modal from Dock -->
   <QuickBuyModal v-if="quickOpen" :config="props.config || null" @close="quickOpen = false" />
-  
-  <!-- WhatsApp 聊天弹窗 -->
-  <WhatsAppChatModal 
-    v-if="currentConversation"
-    :conversation="currentConversation"
-    @close="handleCloseChat"
-  />
 
   <!-- Wishlist 抽屉弹窗 -->
   <WishlistDrawer v-model="wishlistDrawerVisible" />
@@ -96,7 +89,6 @@
 import { ref, computed, onMounted, watch, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n, useRuntimeConfig } from '#imports'
 import QuickBuyModal from '@/components/QuickBuy.vue'
-import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useChatWidget } from '~/composables/useChatWidget'
@@ -116,10 +108,6 @@ const closeAll = () => {
   wishlistDrawerVisible.value = false
 }
 
-// 关闭聊天窗口（供 WhatsAppChatModal 使用）
-const handleCloseChat = () => {
-  closeChat()
-}
 
 const openQuick = () => {
   closeAll()

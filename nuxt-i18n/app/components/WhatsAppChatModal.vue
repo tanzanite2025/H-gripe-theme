@@ -41,7 +41,7 @@
                   Hi there! <span class="inline-block animate-wave">👋</span>
                 </h1>
                 <p class="text-sm md:text-base text-white/70 leading-relaxed">
-                  Welcome to Tanzanite. We're here to help you find the perfect carbon wheels for your ride.
+                  Chat with our team, track your orders, or find answers in our FAQ.
                 </p>
               </div>
 
@@ -79,14 +79,14 @@
               <!-- 开始对话按钮 -->
               <button
                 type="button"
-                class="w-full py-4 rounded-xl bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-base font-semibold flex items-center justify-center gap-2 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                class="w-full py-3 rounded-xl bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 :disabled="!selectedAgent"
                 @click="enterChat"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                 </svg>
-                Start Conversation
+                Start — Chat, Orders & FAQ
               </button>
 
               <!-- 快捷联系 -->
@@ -152,16 +152,16 @@
                     <div class="text-white/50 text-xs truncate">{{ selectedAgent?.email }}</div>
                   </div>
                   
-                  <!-- WhatsApp 按钮 -->
+                  <!-- WhatsApp 按钮 - 官方图标样式 -->
                   <a
                     v-if="selectedAgent?.whatsapp"
                     :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
                     target="_blank"
-                    class="w-9 h-9 rounded-full bg-[#25D366] text-white flex items-center justify-center hover:bg-[#20BA5A] transition-colors"
-                    title="WhatsApp"
+                    class="w-9 h-9 rounded-full bg-[#25D366] text-white flex items-center justify-center hover:bg-[#20BA5A] transition-colors shadow-lg"
+                    title="Contact via WhatsApp"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                     </svg>
                   </a>
                   
@@ -182,10 +182,10 @@
               <div v-if="selectedAgent" class="md:hidden flex-1 min-h-0 px-3 pb-4">
                 <div class="flex flex-col h-full rounded-[28px] border-2 overflow-hidden" :style="mobilePanelStyle">
                   <!-- 第三排：功能按钮 -->
-                  <div class="flex gap-1.5 px-3 pt-4 pb-2">
+                  <div class="flex gap-1 px-2 pt-3 pb-2">
                     <button
                       @click="activeTab = 'chat'"
-                      class="flex-1 h-10 rounded-full text-xs font-semibold tracking-wide transition-all"
+                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
                       :style="activeTab === 'chat'
                         ? { backgroundColor: '#000', color: currentThemeColor }
                         : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
@@ -194,7 +194,7 @@
                     </button>
                     <button
                       @click="activeTab = 'share'"
-                      class="flex-1 h-10 rounded-full text-xs font-semibold tracking-wide transition-all"
+                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
                       :style="activeTab === 'share'
                         ? { backgroundColor: '#000', color: currentThemeColor }
                         : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
@@ -203,34 +203,22 @@
                     </button>
                     <button
                       @click="activeTab = 'orders'"
-                      class="flex-1 h-10 rounded-full text-xs font-semibold tracking-wide transition-all"
+                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
                       :style="activeTab === 'orders'
                         ? { backgroundColor: '#000', color: currentThemeColor }
                         : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
                     >
                       Orders
                     </button>
-                  </div>
-
-                  <!-- 第四排：WhatsApp -->
-                  <div class="px-3 pb-3">
                     <button
-                      v-if="selectedAgent?.whatsapp"
-                      @click.prevent="handleWhatsAppClick(selectedAgent)"
-                      @touchstart="handleWhatsAppTouchStart(selectedAgent)"
-                      @touchend="handleWhatsAppTouchEnd"
-                      @touchcancel="handleWhatsAppTouchEnd"
-                      class="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold text-black"
-                      :style="{ backgroundColor: currentThemeColor }"
+                      @click="activeTab = 'faq'"
+                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
+                      :style="activeTab === 'faq'
+                        ? { backgroundColor: '#000', color: currentThemeColor }
+                        : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
                     >
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                      </svg>
-                      WhatsApp
+                      FAQ
                     </button>
-                    <div v-else class="w-full rounded-2xl py-2.5 text-center text-sm text-white/60 border border-white/30">
-                      WhatsApp unavailable
-                    </div>
                   </div>
 
                   <!-- 内容区域 -->
@@ -377,7 +365,7 @@
                       </div>
                     </div>
 
-                    <div v-else class="h-full overflow-y-auto space-y-3 px-1">
+                    <div v-else-if="activeTab === 'orders'" class="h-full overflow-y-auto space-y-3 px-1">
                       <div v-if="isLoadingOrders" class="text-center text-white/60 py-10 text-sm">
                         Loading orders...
                       </div>
@@ -399,6 +387,11 @@
                       <div v-else class="text-center text-white/60 text-sm py-10">
                         No orders yet
                       </div>
+                    </div>
+
+                    <!-- 移动端 FAQ 面板 -->
+                    <div v-else-if="activeTab === 'faq'" class="h-full overflow-y-auto">
+                      <HomeFaqPreview :max-items-per-category="5" />
                     </div>
                   </div>
 
@@ -476,7 +469,7 @@
                       ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
                       : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
                   >
-                    Share Products
+                    Products
                   </button>
                   <button
                     @click="activeTab = 'orders'"
@@ -485,7 +478,16 @@
                       ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
                       : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
                   >
-                    My Orders
+                    Orders
+                  </button>
+                  <button
+                    @click="activeTab = 'faq'"
+                    class="px-4 py-1.5 rounded-full text-sm transition-all whitespace-nowrap"
+                    :class="activeTab === 'faq' 
+                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
+                      : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
+                  >
+                    FAQ
                   </button>
                 </div>
 
@@ -659,6 +661,11 @@
                   <div v-else class="text-center text-white/50 py-12">
                     No orders yet
                   </div>
+                </div>
+
+                <!-- FAQ 面板 -->
+                <div v-if="activeTab === 'faq'" class="flex-1 overflow-y-auto">
+                  <HomeFaqPreview :max-items-per-category="5" />
                 </div>
 
                 <div v-if="activeTab === 'chat'" class="border-t border-white p-4">
@@ -845,6 +852,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
+import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{

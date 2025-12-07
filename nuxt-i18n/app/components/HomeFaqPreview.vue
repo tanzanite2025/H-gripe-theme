@@ -55,9 +55,9 @@
       </div>
     </div>
 
-    <!-- 查看全部链接 -->
+    <!-- 查看全部链接 - 在新窗口打开 -->
     <div class="home-faq__footer">
-      <NuxtLink to="/support/faqs" class="home-faq__link">
+      <NuxtLink to="/support/faqs" target="_blank" class="home-faq__link">
         View All FAQs
         <svg class="home-faq__link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />

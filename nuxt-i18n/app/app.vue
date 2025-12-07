@@ -17,6 +17,13 @@
   <!-- 购物车和结账弹窗 -->
   <CartDrawer />
   <CheckoutModal />
+  
+  <!-- 全局聊天弹窗 -->
+  <WhatsAppChatModal
+    v-if="currentConversation"
+    :conversation="currentConversation"
+    @close="closeChat"
+  />
 </template>
 
 <script setup lang="ts">
@@ -25,6 +32,11 @@ import SidePanel from './components/SidePanel.vue'
 import SidebarContent from './components/SidebarContent.vue'
 import ProductSearchResults from './components/ProductSearchResults.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
+import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
+import { useChatWidget } from '~/composables/useChatWidget'
+
+// 全局聊天状态
+const { currentConversation, closeChat } = useChatWidget()
 
 const siteHeaderRef = ref<InstanceType<typeof SiteHeader> | null>(null)
 const headerHeight = ref(0)
