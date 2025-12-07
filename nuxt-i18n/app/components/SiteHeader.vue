@@ -292,13 +292,6 @@
 		</div>
 	</div>
 
-	<!-- WhatsApp Chat 弹窗 -->
-	<WhatsAppChatModal
-		v-if="whatsappOpen"
-		:conversation="{ showAgentList: true }"
-		@close="whatsappOpen = false"
-	/>
-
 	<!-- LeverAndPoint 弹窗 -->
 	<teleport to="body">
 		<transition
@@ -335,7 +328,6 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type Compon
 import { useLocalePath, useRoute } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
-import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { productsNavItems } from '~/utils/productsNav'
 import { supportNavItems } from '~/utils/supportNav'
@@ -348,17 +340,6 @@ const titleText = computed(() => {
   const fromProp = (props.title ?? '').toString().trim()
   return fromProp.length ? fromProp : siteTitle.value
 })
-
-// WhatsApp Chat Modal
-const whatsappOpen = ref(false)
-
-const handleOpenWhatsApp = () => {
-  // 打开 WhatsApp 弹窗
-  whatsappOpen.value = true
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
-  }
-}
 
 // Share button (Membership panel)
 const shareOpen = ref(false)
