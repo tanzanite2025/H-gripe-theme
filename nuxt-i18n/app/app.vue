@@ -24,6 +24,9 @@
     :conversation="currentConversation"
     @close="closeChat"
   />
+  
+  <!-- Cookie 同意弹窗 -->
+  <CookieConsent />
 </template>
 
 <script setup lang="ts">
