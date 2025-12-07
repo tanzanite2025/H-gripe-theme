@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-full flex flex-col gap-4 p-2">
-    <!-- 搜索区域 -->
-    <div class="shrink-0">
+    <!-- 搜索区域（移动端隐藏） -->
+    <div class="shrink-0 hidden md:block">
       <ProductSearchPanel />
     </div>
 
@@ -17,6 +17,30 @@
       Home
     </NuxtLink>
 
+    <!-- Shop 按钮 -->
+    <NuxtLink 
+      :to="localePath('/shop')"
+      class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-cyan-400/10 border border-cyan-500/50 rounded-xl text-white font-semibold text-sm hover:from-cyan-500/30 hover:to-cyan-400/20 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
+      @click="closeSidebar"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+      </svg>
+      Shop
+    </NuxtLink>
+
+    <!-- Picture Warehouse 按钮 -->
+    <NuxtLink 
+      :to="localePath('/picture-warehouse')"
+      class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-cyan-400/10 border border-cyan-500/50 rounded-xl text-white font-semibold text-sm hover:from-cyan-500/30 hover:to-cyan-400/20 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
+      @click="closeSidebar"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      Picture Warehouse
+    </NuxtLink>
+
     <!-- 信任卡片区 -->
     <div class="shrink-0">
       <TrustCards layout="grid" size="sm" />
@@ -27,56 +51,6 @@
 
     <!-- 手风琴区域 -->
     <div class="flex flex-col gap-2.5 flex-1 overflow-y-auto">
-      <!-- Product related -->
-      <div 
-        class="bg-black/50 rounded-xl overflow-hidden transition-all duration-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
-        :class="activeSections.has('product') ? 'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_20px_rgba(16,185,129,0.15)]' : 'hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.3)]'"
-      >
-        <button 
-          type="button"
-          class="w-full flex items-center justify-between px-4 py-3.5 cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
-          @click="toggleSection('product')"
-        >
-          <div class="flex items-center gap-2.5 text-sm font-semibold text-white/90">
-            Product
-            <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[11px] font-bold text-black bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-full shadow-sm">
-              {{ productCategories.length + productLinks.length }}
-            </span>
-          </div>
-          <div 
-            class="w-6 h-6 flex items-center justify-center text-[10px] rounded-md transition-all duration-200 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
-            :class="activeSections.has('product') ? 'rotate-180 bg-gradient-to-br from-emerald-400 to-cyan-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.8)]' : 'bg-emerald-500/20 text-emerald-400'"
-          >▼</div>
-        </button>
-        <div 
-          class="overflow-hidden transition-all duration-300"
-          :class="activeSections.has('product') ? 'max-h-96' : 'max-h-0'"
-        >
-          <div class="px-4 pb-4 pt-1">
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                v-for="cat in productCategories"
-                :key="cat.id"
-                type="button"
-                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0"
-                @click="handleCategoryClick(cat.id)"
-              >
-                {{ cat.label }}
-              </button>
-              <NuxtLink
-                v-for="item in productLinks"
-                :key="item.id"
-                :to="localePath(item.to)"
-                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0 no-underline"
-                @click="closeSidebar"
-              >
-                {{ $t(item.labelKey, item.fallback) }}
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Support -->
       <div 
         class="bg-black/50 rounded-xl overflow-hidden transition-all duration-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
@@ -220,7 +194,7 @@ import ProductSearchPanel from '~/components/ProductSearchPanel.vue'
 const localePath = useLocalePath()
 
 // 手风琴状态（支持多个同时展开）
-const activeSections = ref<Set<string>>(new Set(['product']))
+const activeSections = ref<Set<string>>(new Set(['support']))
 
 const toggleSection = (section: string) => {
   if (activeSections.value.has(section)) {
@@ -239,34 +213,10 @@ const closeSidebar = () => {
   sidePanel.closeLeft?.()
 }
 
-// 商品分类按钮
-const productCategories = [
-  { id: 'carbon-rim', label: 'Carbon Rim' },
-  { id: 'carbon-wheels', label: 'Carbon Wheels' },
-  { id: 'hub', label: 'Hub' },
-  { id: 'spoke', label: 'Spoke' },
-  { id: 'tools', label: 'Tools' },
-  { id: 'tire', label: 'Tire' },
-]
-
-// 分类点击处理（暂时为空，等商品准备好后实现）
-const handleCategoryClick = (categoryId: string) => {
-  // TODO: 实现分类跳转逻辑
-  console.log('Category clicked:', categoryId)
-}
-
-// 商品快捷链接
-const productLinks = [
-  { id: 'shop', labelKey: 'products.nav.allProducts', to: '/shop', fallback: 'All products' },
-]
-
 // 支持快捷链接
 const supportLinks = [
   { id: 'warranty-check', labelKey: 'support.nav.warrantyCheck', to: '/support/warranty-check', fallback: 'Warranty Check' },
   { id: 'spoke-calculator', labelKey: 'support.nav.spokeCalculator', to: '/spoke-calculator', fallback: 'Spoke Calculator' },
-  { id: 'shipping', labelKey: 'support.nav.shipping', to: '/support/shipping', fallback: 'Shipping' },
-  { id: 'payment', labelKey: 'support.nav.payment', to: '/support/payment', fallback: 'Payment' },
-  { id: 'after-sales', labelKey: 'support.nav.afterSales', to: '/support/after-sales', fallback: 'After Sales' },
   { id: 'test-report', labelKey: 'support.nav.testReport', to: '/support/test-report', fallback: 'Test Report' },
   { id: 'faqs', labelKey: 'support.nav.faqs', to: '/support/faqs', fallback: 'All FAQs' },
 ]
@@ -295,7 +245,6 @@ const guidesNavLinks = [
   { id: 'technical', label: 'Technical', to: '/guides/technical' },
   { id: 'our-story', label: 'Our Story', to: '/company/about' },
   { id: 'membership', label: 'Membership', to: '/company/membershipandpoints' },
-  { id: 'picture-warehouse', label: 'Picture Warehouse', to: '/picture-warehouse' },
 ]
 </script>
 

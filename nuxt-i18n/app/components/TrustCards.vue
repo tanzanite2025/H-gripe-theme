@@ -19,7 +19,7 @@
       >
         <!-- 背景图片 -->
         <div 
-          class="absolute inset-0 bg-contain bg-right bg-no-repeat transition-opacity"
+          class="absolute inset-0 bg-right bg-no-repeat transition-opacity bg-[length:45%] lg:bg-contain"
           :style="{ backgroundImage: `url(${card.image})` }"
         ></div>
         
