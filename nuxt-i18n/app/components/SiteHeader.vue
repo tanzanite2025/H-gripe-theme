@@ -238,7 +238,7 @@
 				<nav class="bg-white/5 rounded-xl p-1 flex items-center justify-between relative" aria-label="Mobile primary navigation">
 					<NuxtLink
 						:to="localePath('/products')"
-						class="flex-1 py-2 rounded-lg text-xs phone-390:text-[13px] font-medium text-center transition-all"
+						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
 						:class="route.path.startsWith(localePath('/products')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
 					>
 						{{ $t('footer.menus.products', 'Products') }}
@@ -246,7 +246,7 @@
 					
 					<NuxtLink
 						:to="localePath('/support')"
-						class="flex-1 py-2 rounded-lg text-xs phone-390:text-[13px] font-medium text-center transition-all"
+						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
 						:class="route.path.startsWith(localePath('/support')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
 					>
 						{{ $t('footer.menus.support', 'Support') }}
@@ -254,7 +254,7 @@
 					
 					<NuxtLink
 						:to="localePath('/company')"
-						class="flex-1 py-2 rounded-lg text-xs phone-390:text-[13px] font-medium text-center transition-all"
+						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
 						:class="route.path.startsWith(localePath('/company')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
 					>
 						{{ $t('footer.menus.company', 'Company') }}

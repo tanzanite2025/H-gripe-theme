@@ -20,7 +20,7 @@
       aria-label="Sidebar"
     >
       <section
-        class="relative w-[65vw] md:w-[45vw] h-full max-md:h-[90vh] flex justify-center border-2 border-[#6b73ff] rounded-2xl bg-black shadow-[0_0_30px_rgba(107,115,255,0.3)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
+        class="relative w-[85vw] md:w-[45vw] h-full max-md:h-[90vh] flex border border-[#6b73ff]/60 rounded-2xl bg-[#0d1117] shadow-[0_0_20px_rgba(107,115,255,0.3),0_0_40px_rgba(107,115,255,0.15)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
         :class="{
           'translate-x-0': leftOpen,
           '-translate-x-full': !leftOpen
@@ -45,7 +45,7 @@
         </button>
         
         <!-- 左侧内容 -->
-        <div class="w-full h-full box-border m-0 relative overflow-y-auto bg-black p-4 rounded-2xl">
+        <div class="w-full h-full box-border m-0 relative overflow-y-auto bg-[#0d1117] pt-10 px-2 pb-2 md:pt-12 md:px-4 md:pb-4 rounded-2xl">
           <slot name="left" />
         </div>
       </section>
