@@ -663,22 +663,23 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 属性下拉开关按钮 */
 .attribute-toggle {
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  background: rgba(15, 23, 42, 0.8);
-  color: rgba(255, 255, 255, 0.8);
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 1);
   cursor: pointer;
-  padding: 0.3rem 0.6rem;
+  padding: 0.4rem 0.75rem;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border-radius: 9999px;
+  border-radius: 0.5rem;
   font-size: 0.8125rem;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .attribute-toggle-icon {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
   transition: transform 0.15s ease;
 }
 
@@ -687,9 +688,8 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .attribute-toggle:hover {
-  background: rgba(30, 64, 175, 0.85);
-  border-color: rgba(96, 165, 250, 0.8);
-  color: #e5f0ff;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
 .attribute-toggle-icon.open {

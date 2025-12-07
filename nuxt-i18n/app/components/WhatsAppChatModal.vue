@@ -212,7 +212,7 @@
           <div
             v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
-            class="relative border-2 border-[#6b73ff] rounded-2xl md:rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
+            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[99vh] md:h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
           >
             <!-- 关闭按钮 - 固定右上角 -->
             <button
@@ -286,7 +286,7 @@
               <!-- 开始对话按钮 -->
               <button
                 type="button"
-                class="w-full py-2.5 md:py-3 rounded-xl bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                class="w-full py-2 md:py-3 rounded-xl bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 :disabled="!selectedAgent"
                 @click="enterChat"
               >
@@ -302,7 +302,7 @@
                   v-if="selectedAgent?.whatsapp"
                   :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
                   target="_blank"
-                  class="flex-1 py-2.5 md:py-3 rounded-xl bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2 md:py-3 rounded-xl bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
@@ -312,7 +312,7 @@
                 <a
                   v-if="emailSettings.preSalesEmail"
                   :href="`mailto:${emailSettings.preSalesEmail}`"
-                  class="flex-1 py-2.5 md:py-3 rounded-xl bg-white/10 border border-white/15 text-white/80 text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2 md:py-3 rounded-xl bg-white/10 border border-white/15 text-white/80 text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -328,7 +328,7 @@
           <div
             v-else
             key="chat"
-            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col transition-colors duration-300 bg-black pointer-events-auto"
+            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[99vh] md:h-[85vh] max-h-[800px] overflow-hidden flex flex-col transition-colors duration-300 bg-black pointer-events-auto"
           >
             <!-- 聊天区域 -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
