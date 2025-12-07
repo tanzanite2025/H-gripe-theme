@@ -19,7 +19,7 @@
           'flex-1 flex flex-col items-center gap-0.5 transition-colors py-1 min-w-[40px] relative',
           isChatOpen ? 'text-[#40ffaa]' : 'text-white/60 hover:text-white'
         ]"
-        @click="toggleChatModal()" 
+        @click="toggleChatFromDock()" 
         aria-label="Chat"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="md:w-6 md:h-6 transition-all"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -99,12 +99,15 @@ import QuickBuyModal from '@/components/QuickBuy.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import { useWishlist } from '~/composables/useWishlist'
+import { useChatWidget } from '~/composables/useChatWidget'
 
 // floating submenu state
 const isOpen = ref(false)
 const quickOpen = ref(false)
-const currentConversation = ref<any>(null)
 const wishlistDrawerVisible = ref(false)
+
+// 全局聊天窗口状态（在多个布局之间保持一致）
+const { currentConversation, isChatOpen, openChat, closeChat } = useChatWidget()
 
 // mutually exclusive open helpers
 const closeAll = () => {
@@ -113,9 +116,9 @@ const closeAll = () => {
   wishlistDrawerVisible.value = false
 }
 
-// 关闭聊天窗口
+// 关闭聊天窗口（供 WhatsAppChatModal 使用）
 const handleCloseChat = () => {
-  currentConversation.value = null
+  closeChat()
 }
 
 const openQuick = () => {
@@ -157,25 +160,16 @@ const { t: $t } = useI18n()
 // 未读消息数（从 localStorage 跟踪）
 const totalUnreadCount = ref(0)
 
-// 聊天窗口是否打开
-const isChatOpen = computed(() => !!currentConversation.value)
-
-// 直接打开聊天窗口（WhatsAppChatModal 内部会显示客服列表）
-const openChatModal = () => {
-  closeAll()
-  // 打开聊天窗口，不需要预先选择客服
-  currentConversation.value = { showAgentList: true }
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
-  }
-}
-
-// 切换聊天窗口打开 / 关闭
-const toggleChatModal = () => {
+// Dock 内部控制聊天开关：需要兼顾全局状态和现有事件
+const toggleChatFromDock = () => {
   if (isChatOpen.value) {
-    handleCloseChat()
+    closeChat()
   } else {
-    openChatModal()
+    closeAll()
+    openChat({ showAgentList: true })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
+    }
   }
 }
 
