@@ -28,7 +28,7 @@
           <span class="text-white font-medium" :class="titleSizeClass">{{ card.label }}</span>
           <span v-if="card.desc && size === 'lg'" class="text-white/70 text-xs">{{ card.desc }}</span>
         </div>
-        <span v-else class="relative z-10 text-white text-xs font-medium">{{ card.label }}</span>
+        <span v-else class="relative z-10 text-white text-sm font-semibold">{{ card.label }}</span>
       </NuxtLink>
     </div>
   </div>
@@ -169,7 +169,7 @@ const cards = [
 // 布局类
 const layoutClass = computed(() => {
   if (props.layout === 'row') {
-    return 'grid-cols-4'
+    return 'grid-cols-2 lg:grid-cols-4'
   }
   return 'grid-cols-2'
 })
@@ -202,9 +202,9 @@ const iconSizeClass = computed(() => {
 const titleSizeClass = computed(() => {
   switch (props.size) {
     case 'lg':
-      return 'text-sm'
+      return 'text-base'
     default:
-      return 'text-xs'
+      return 'text-sm'
   }
 })
 

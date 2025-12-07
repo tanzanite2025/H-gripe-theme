@@ -1,16 +1,20 @@
 <template>
   <main class="i18n-demo-page">
     <!-- Tailwind Carousel Preview (demo only) -->
-    <TWCarousel />
+    <div class="carousel-wrapper">
+      <TWCarousel />
+    </div>
 
     <!-- Trust Cards Section -->
-    <section class="max-w-5xl mx-auto px-4 py-12">
-      <h2 class="text-xl font-semibold text-white/90 text-center mb-6">Why Choose Us</h2>
+    <section class="max-w-5xl mx-auto px-4 py-4 lg:py-12">
+      <h2 class="text-lg lg:text-xl font-semibold text-white/90 text-center mb-4 lg:mb-6">Why Choose Us</h2>
       <TrustCards layout="row" size="lg" :show-title="false" />
     </section>
 
     <!-- FAQ Preview Section -->
-    <HomeFaqPreview :max-items-per-category="4" />
+    <div class="mt-2 lg:mt-0">
+      <HomeFaqPreview :max-items-per-category="4" />
+    </div>
   </main>
 </template>
 
@@ -36,6 +40,21 @@ useHead({
   background: #0a0a0a;
   color: #fff;
   padding: 20px;
+}
+
+/* 轮播突破父级 padding，移动端满屏 */
+.carousel-wrapper {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+}
+
+@media (min-width: 1024px) {
+  .carousel-wrapper {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+  }
 }
 
 .demo-header {

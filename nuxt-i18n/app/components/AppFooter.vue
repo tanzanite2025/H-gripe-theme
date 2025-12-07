@@ -230,7 +230,41 @@ const footerSocialItems: FooterSocialItem[] = [
   font-weight: 600;
 }
 
-@media (min-width: 768px) {
+/* 平板断点 (768px - 1024px): 保持移动端布局 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .footer-content {
+    text-align: center;
+  }
+
+  .footer-main-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .footer-subscription {
+    max-width: 480px;
+    text-align: center;
+  }
+  
+  .footer-subscription__social {
+    justify-content: center;
+  }
+
+  .footer-subscription__payment {
+    justify-content: center;
+  }
+
+  .footer-bottom__info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+/* 桌面端 (1024px+): 并排布局 */
+@media (min-width: 1024px) {
   .footer-content {
     text-align: left;
     align-items: stretch;
@@ -241,34 +275,32 @@ const footerSocialItems: FooterSocialItem[] = [
     grid-template-columns: 360px 1fr;
     align-items: start;
     gap: 4rem;
-    margin-bottom: 0; /* Removed bottom margin entirely */
+    margin-bottom: 0;
   }
 
   .footer-subscription {
-    max-width: 100%; /* Fill the grid column */
+    max-width: 100%;
     padding: 0;
     text-align: left;
   }
   
   .footer-subscription__social {
-    justify-content: flex-start; /* Desktop left align */
+    justify-content: flex-start;
   }
 
   .footer-subscription__payment {
-    justify-content: flex-start; /* Desktop left align */
+    justify-content: flex-start;
   }
   
-  /* Ensure label in subscription aligns left on desktop */
   .footer-subscription :deep(label) {
     text-align: left;
   }
   
   .footer-menus-wrapper {
-    margin-top: 0.5rem; /* Visual alignment with subscription input */
+    margin-top: 0.5rem;
   }
 
   .footer-bottom {
-    /* Simplified bottom bar since social moved out */
     display: flex;
     margin-top: 0;
     padding-top: 1rem;
