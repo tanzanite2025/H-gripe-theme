@@ -15,8 +15,11 @@
 
       <!-- 2. Chat -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 text-white/60 hover:text-white transition-colors py-1 min-w-[40px] relative"
-        @click="openChatModal()" 
+        :class="[
+          'flex-1 flex flex-col items-center gap-0.5 transition-colors py-1 min-w-[40px] relative',
+          isChatOpen ? 'text-[#40ffaa]' : 'text-white/60 hover:text-white'
+        ]"
+        @click="toggleChatModal()" 
         aria-label="Chat"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="md:w-6 md:h-6 transition-all"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -154,6 +157,9 @@ const { t: $t } = useI18n()
 // 未读消息数（从 localStorage 跟踪）
 const totalUnreadCount = ref(0)
 
+// 聊天窗口是否打开
+const isChatOpen = computed(() => !!currentConversation.value)
+
 // 直接打开聊天窗口（WhatsAppChatModal 内部会显示客服列表）
 const openChatModal = () => {
   closeAll()
@@ -161,6 +167,15 @@ const openChatModal = () => {
   currentConversation.value = { showAgentList: true }
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
+  }
+}
+
+// 切换聊天窗口打开 / 关闭
+const toggleChatModal = () => {
+  if (isChatOpen.value) {
+    handleCloseChat()
+  } else {
+    openChatModal()
   }
 }
 

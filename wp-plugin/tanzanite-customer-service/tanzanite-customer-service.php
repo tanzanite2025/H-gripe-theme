@@ -376,16 +376,17 @@ class Tanzanite_Customer_Service_Plugin {
         
         // 只返回启用的客服
         $agents = $wpdb->get_results(
-            "SELECT agent_id, name, email, avatar, whatsapp FROM $table WHERE status = 'active' ORDER BY created_at ASC"
+            "SELECT agent_id, wp_user_id, name, email, avatar, whatsapp FROM $table WHERE status = 'active' ORDER BY created_at ASC"
         );
         
         // 格式化输出
         $formatted = array_map( fn( $agent ) => [
-            'id'       => $agent->agent_id,
-            'name'     => $agent->name,
-            'email'    => $agent->email,
-            'avatar'   => $agent->avatar,
-            'whatsapp' => $agent->whatsapp,
+            'id'         => $agent->agent_id,
+            'wp_user_id' => $agent->wp_user_id ? (int) $agent->wp_user_id : null,
+            'name'       => $agent->name,
+            'email'      => $agent->email,
+            'avatar'     => $agent->avatar,
+            'whatsapp'   => $agent->whatsapp,
         ], $agents );
         
         // 获取全局邮箱设置
@@ -605,6 +606,7 @@ class Tanzanite_Customer_Service_Plugin {
             $table = $wpdb->prefix . 'tz_cs_agents';
             
             $agent_id = sanitize_text_field( $_POST['agent_id'] );
+            $wp_user_id = ! empty( $_POST['wp_user_id'] ) ? intval( $_POST['wp_user_id'] ) : null;
             $name     = sanitize_text_field( $_POST['name'] );
             $email    = sanitize_email( $_POST['email'] );
             $password = $_POST['password'];
@@ -627,6 +629,7 @@ class Tanzanite_Customer_Service_Plugin {
                     $table,
                     [
                         'agent_id'          => $agent_id,
+                        'wp_user_id'        => $wp_user_id,
                         'name'              => $name,
                         'email'             => $email,
                         'password'          => password_hash( $password, PASSWORD_BCRYPT ),
@@ -637,7 +640,7 @@ class Tanzanite_Customer_Service_Plugin {
                         'status'            => 'active',
                         'created_at'        => current_time( 'mysql' ),
                     ],
-                    [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+                    [ '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
                 );
                 
                 if ( $result ) {
@@ -693,6 +696,7 @@ class Tanzanite_Customer_Service_Plugin {
             $table = $wpdb->prefix . 'tz_cs_agents';
             
             $agent_id = sanitize_text_field( $_POST['agent_id'] );
+            $wp_user_id = ! empty( $_POST['wp_user_id'] ) ? intval( $_POST['wp_user_id'] ) : null;
             $name     = sanitize_text_field( $_POST['name'] );
             $email    = sanitize_email( $_POST['email'] );
             $avatar   = esc_url_raw( $_POST['avatar'] );
@@ -702,6 +706,7 @@ class Tanzanite_Customer_Service_Plugin {
             $status   = sanitize_text_field( $_POST['status'] );
             
             $update_data = [
+                'wp_user_id'        => $wp_user_id,
                 'name'              => $name,
                 'email'             => $email,
                 'avatar'            => $avatar,
@@ -775,8 +780,8 @@ class Tanzanite_Customer_Service_Plugin {
             return;
         }
         
-        // 获取数据库中的客服列表
-        $agents = $wpdb->get_results( "SELECT * FROM $table ORDER BY created_at DESC" );
+        // 获取数据库中的客服列表（包含 wp_user_id）
+        $agents = $wpdb->get_results( "SELECT id, agent_id, wp_user_id, name, email, password, avatar, whatsapp, pre_sales_email, after_sales_email, status, last_login, created_at FROM $table ORDER BY created_at DESC" );
         
         ?>
         <div class="wrap tz-cs-admin">
@@ -796,6 +801,18 @@ class Tanzanite_Customer_Service_Plugin {
                             <tr>
                                 <th><label for="agent_id">客服工号 *</label></th>
                                 <td><input type="text" name="agent_id" id="agent_id" class="regular-text" required placeholder="例如：CS001"></td>
+                            </tr>
+                            <tr>
+                                <th><label for="wp_user_id">关联 WordPress 用户</label></th>
+                                <td>
+                                    <?php wp_dropdown_users([
+                                        'name' => 'wp_user_id',
+                                        'id' => 'wp_user_id',
+                                        'show_option_none' => '-- 不关联 --',
+                                        'option_none_value' => '',
+                                    ]); ?>
+                                    <p class="description">关联后，该用户在前台聊天窗口中将不会看到自己</p>
+                                </td>
                             </tr>
                             <tr>
                                 <th><label for="name">客服名称 *</label></th>
@@ -963,6 +980,7 @@ class Tanzanite_Customer_Service_Plugin {
                 
                 // 填充表单
                 $('#edit-agent-id').val(agent.agent_id);
+                $('#edit-wp-user-id').val(agent.wp_user_id || '');
                 $('#edit-name').val(agent.name);
                 $('#edit-email').val(agent.email);
                 $('#edit-whatsapp').val(agent.whatsapp);
@@ -1018,6 +1036,18 @@ class Tanzanite_Customer_Service_Plugin {
                     <input type="hidden" id="edit-agent-id" name="agent_id" value="">
                     
                     <table class="form-table">
+                        <tr>
+                            <th><label for="edit-wp-user-id">关联 WordPress 用户</label></th>
+                            <td>
+                                <?php wp_dropdown_users([
+                                    'name' => 'wp_user_id',
+                                    'id' => 'edit-wp-user-id',
+                                    'show_option_none' => '-- 不关联 --',
+                                    'option_none_value' => '',
+                                ]); ?>
+                                <p class="description">关联后，该用户在前台聊天窗口中将不会看到自己</p>
+                            </td>
+                        </tr>
                         <tr>
                             <th><label for="edit-name">客服名称 *</label></th>
                             <td><input type="text" id="edit-name" name="name" class="regular-text" required></td>

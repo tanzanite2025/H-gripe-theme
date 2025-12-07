@@ -98,6 +98,7 @@ class TZ_CS_Database {
         $sql_agents = "CREATE TABLE $table_agents (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             agent_id varchar(50) NOT NULL,
+            wp_user_id bigint(20) unsigned DEFAULT NULL,
             name varchar(100) NOT NULL,
             email varchar(100) NOT NULL,
             password varchar(255) NOT NULL,
@@ -220,6 +221,10 @@ class TZ_CS_Database {
             
             if ( ! in_array( 'after_sales_email', $columns ) ) {
                 $wpdb->query( "ALTER TABLE $table_agents ADD COLUMN after_sales_email varchar(100) DEFAULT '' AFTER pre_sales_email" );
+            }
+            
+            if ( ! in_array( 'wp_user_id', $columns ) ) {
+                $wpdb->query( "ALTER TABLE $table_agents ADD COLUMN wp_user_id bigint(20) unsigned DEFAULT NULL AFTER agent_id" );
             }
             
             $result_agents = [ 'updated' => $table_agents ];
