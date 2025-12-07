@@ -3,6 +3,12 @@
     <!-- Tailwind Carousel Preview (demo only) -->
     <TWCarousel />
 
+    <!-- Trust Cards Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-xl font-semibold text-white/90 text-center mb-6">Why Choose Us</h2>
+      <TrustCards layout="row" size="lg" :show-title="false" />
+    </section>
+
     <!-- FAQ Preview Section -->
     <HomeFaqPreview :max-items-per-category="4" />
   </main>
