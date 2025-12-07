@@ -9,7 +9,7 @@
           v-for="(card, i) in extendedItems"
           :key="i"
           :class="[
-            'flex-none w-[calc((100%-48px)/3)] max-md:w-full h-[300px] max-md:h-[25vh] min-[1024px]:aspect-[21/9]:h-[calc(45vh-60px)] rounded-3xl max-md:rounded-2xl overflow-hidden bg-[#111111] border-2 border-[#6b73ff] snap-center transition-[transform,opacity,box-shadow] duration-[350ms] ease-in-out',
+            'flex-none w-[calc(100vw-32px)] lg:w-[calc((100%-48px)/3)] h-[50vw] lg:h-[300px] min-[1024px]:h-[calc(45vh-60px)] rounded-2xl lg:rounded-3xl overflow-hidden bg-[#111111] border-2 border-[#6b73ff] snap-center transition-[transform,opacity,box-shadow] duration-[350ms] ease-in-out',
             i === activeIndex 
               ? 'scale-100 opacity-100 shadow-[0_0_30px_rgba(107,115,255,0.3)]' 
               : 'scale-[0.88] opacity-65'
@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 // Keep placeholder items; you can later replace the slot content by injecting images/content
 const items = ref<Record<string, unknown>[]>([{}, {}, {}, {}])
@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .carousel-section {
-    margin-top: 140px;
+    margin-top: 115px;
   }
 }
 

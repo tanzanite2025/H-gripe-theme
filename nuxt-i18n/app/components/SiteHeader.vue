@@ -6,7 +6,7 @@
 			<!-- 桌面端：宽版极简胶囊布局 (Option B Wide) -->
 			<div class="hidden md:flex flex-col items-center gap-1">
 				<!-- 主胶囊 Header -->
-				<div class="w-full grid grid-cols-[200px_1fr_200px] items-center gap-4 px-6 py-3 rounded-[99px] bg-[#0b1020]/80 backdrop-blur-md border border-white/10 shadow-lg">
+				<div class="w-full grid grid-cols-[160px_1fr_auto] lg:grid-cols-[200px_1fr_200px] items-center gap-2 lg:gap-4 px-2 lg:px-6 py-3 rounded-[99px] bg-[#0b1020]/80 backdrop-blur-md border border-white/10 shadow-lg">
 					
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
@@ -16,7 +16,7 @@
 					</div>
 
 					<!-- Nav (Centered) -->
-					<nav class="flex items-center justify-center gap-8 relative">
+					<nav class="flex items-center justify-center gap-4 lg:gap-8 relative">
 						<!-- Vertical Divider Left -->
 						<div class="w-px h-6 bg-white/10 absolute left-0 hidden xl:block"></div>
 						
@@ -465,6 +465,27 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const wheelsbuildPath = localePath('/wheelsbuild')
   if (currentPath === wheelsbuildPath) {
     items.push({ label: t('products.nav.wheelsbuildBlog', 'Wheelsbuild blog') as string })
+    return items
+  }
+
+  // Privacy Policy 页面
+  const privacyPath = localePath('/privacy')
+  if (currentPath === privacyPath) {
+    items.push({ label: 'Privacy Policy' })
+    return items
+  }
+
+  // Cookie Policy 页面
+  const cookiePolicyPath = localePath('/cookie-policy')
+  if (currentPath === cookiePolicyPath) {
+    items.push({ label: 'Cookie Policy' })
+    return items
+  }
+
+  // Terms of Service 页面
+  const termsPath = localePath('/terms')
+  if (currentPath === termsPath) {
+    items.push({ label: 'Terms of Service' })
     return items
   }
 

@@ -1,9 +1,8 @@
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-50 pt-24 pb-16 md:pt-28">
     <div class="max-w-4xl mx-auto px-4">
-      <h1 class="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
-        Cookie Policy
-      </h1>
+      <!-- H1 隐藏，SEO 保留 -->
+      <h1 class="sr-only">Cookie Policy</h1>
       <p class="text-sm text-slate-400 mb-6">
         This page explains how Tanzanite uses cookies and similar technologies
         to improve your browsing experience.
