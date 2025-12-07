@@ -1,32 +1,52 @@
 <template>
-  <div class="sidebar-container">
+  <div class="w-full h-full flex flex-col gap-4 p-2">
     <!-- 搜索区域 -->
-    <div class="sidebar-search">
+    <div class="shrink-0">
       <ProductSearchPanel />
     </div>
 
+    <!-- 信任卡片区 -->
+    <div class="shrink-0">
+      <TrustCards layout="grid" size="sm" />
+    </div>
+
+    <!-- 分隔线 -->
+    <div class="border-t border-white/10"></div>
+
     <!-- 手风琴区域 -->
-    <div class="accordion">
+    <div class="flex flex-col gap-2.5 flex-1 overflow-y-auto">
       <!-- Product related -->
       <div 
-        class="accordion-item" 
-        :class="{ active: activeSection === 'product' }"
+        class="bg-black/50 rounded-xl overflow-hidden transition-all duration-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
+        :class="activeSections.has('product') ? 'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_20px_rgba(16,185,129,0.15)]' : 'hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.3)]'"
       >
-        <div class="accordion-header" @click="toggleSection('product')">
-          <div class="accordion-title">
+        <button 
+          type="button"
+          class="w-full flex items-center justify-between px-4 py-3.5 cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
+          @click="toggleSection('product')"
+        >
+          <div class="flex items-center gap-2.5 text-sm font-semibold text-white/90">
             Product
-            <span class="accordion-badge">{{ productCategories.length + productLinks.length }}</span>
+            <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[11px] font-bold text-black bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-full shadow-sm">
+              {{ productCategories.length + productLinks.length }}
+            </span>
           </div>
-          <div class="accordion-arrow">▼</div>
-        </div>
-        <div class="accordion-content">
-          <div class="accordion-body">
-            <div class="btn-grid">
+          <div 
+            class="w-6 h-6 flex items-center justify-center text-[10px] rounded-md transition-all duration-200 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+            :class="activeSections.has('product') ? 'rotate-180 bg-gradient-to-br from-emerald-400 to-cyan-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.8)]' : 'bg-emerald-500/20 text-emerald-400'"
+          >▼</div>
+        </button>
+        <div 
+          class="overflow-hidden transition-all duration-300"
+          :class="activeSections.has('product') ? 'max-h-96' : 'max-h-0'"
+        >
+          <div class="px-4 pb-4 pt-1">
+            <div class="grid grid-cols-2 gap-2">
               <button
                 v-for="cat in productCategories"
                 :key="cat.id"
                 type="button"
-                class="sidebar-btn"
+                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0"
                 @click="handleCategoryClick(cat.id)"
               >
                 {{ cat.label }}
@@ -35,7 +55,7 @@
                 v-for="item in productLinks"
                 :key="item.id"
                 :to="localePath(item.to)"
-                class="sidebar-btn"
+                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0 no-underline"
                 @click="closeSidebar"
               >
                 {{ $t(item.labelKey, item.fallback) }}
@@ -47,24 +67,36 @@
 
       <!-- Support -->
       <div 
-        class="accordion-item" 
-        :class="{ active: activeSection === 'support' }"
+        class="bg-black/50 rounded-xl overflow-hidden transition-all duration-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
+        :class="activeSections.has('support') ? 'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_20px_rgba(16,185,129,0.15)]' : 'hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.3)]'"
       >
-        <div class="accordion-header" @click="toggleSection('support')">
-          <div class="accordion-title">
+        <button 
+          type="button"
+          class="w-full flex items-center justify-between px-4 py-3.5 cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
+          @click="toggleSection('support')"
+        >
+          <div class="flex items-center gap-2.5 text-sm font-semibold text-white/90">
             {{ $t('footer.menus.support', 'Support') }}
-            <span class="accordion-badge">{{ supportLinks.length }}</span>
+            <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[11px] font-bold text-black bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-full shadow-sm">
+              {{ supportLinks.length }}
+            </span>
           </div>
-          <div class="accordion-arrow">▼</div>
-        </div>
-        <div class="accordion-content">
-          <div class="accordion-body">
-            <div class="btn-grid">
+          <div 
+            class="w-6 h-6 flex items-center justify-center text-[10px] rounded-md transition-all duration-200 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+            :class="activeSections.has('support') ? 'rotate-180 bg-gradient-to-br from-emerald-400 to-cyan-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.8)]' : 'bg-emerald-500/20 text-emerald-400'"
+          >▼</div>
+        </button>
+        <div 
+          class="overflow-hidden transition-all duration-300"
+          :class="activeSections.has('support') ? 'max-h-96' : 'max-h-0'"
+        >
+          <div class="px-4 pb-4 pt-1">
+            <div class="grid grid-cols-2 gap-2">
               <NuxtLink
                 v-for="item in supportLinks"
                 :key="item.id"
                 :to="localePath(item.to)"
-                class="sidebar-btn"
+                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0 no-underline"
                 @click="closeSidebar"
               >
                 {{ $t(item.labelKey, item.fallback) }}
@@ -76,24 +108,36 @@
 
       <!-- Brand -->
       <div 
-        class="accordion-item" 
-        :class="{ active: activeSection === 'brand' }"
+        class="bg-black/50 rounded-xl overflow-hidden transition-all duration-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
+        :class="activeSections.has('brand') ? 'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_20px_rgba(16,185,129,0.15)]' : 'hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.3)]'"
       >
-        <div class="accordion-header" @click="toggleSection('brand')">
-          <div class="accordion-title">
+        <button 
+          type="button"
+          class="w-full flex items-center justify-between px-4 py-3.5 cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
+          @click="toggleSection('brand')"
+        >
+          <div class="flex items-center gap-2.5 text-sm font-semibold text-white/90">
             Brand
-            <span class="accordion-badge">{{ brandCategories.length }}</span>
+            <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[11px] font-bold text-black bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-full shadow-sm">
+              {{ brandCategories.length }}
+            </span>
           </div>
-          <div class="accordion-arrow">▼</div>
-        </div>
-        <div class="accordion-content">
-          <div class="accordion-body">
-            <div class="btn-grid">
+          <div 
+            class="w-6 h-6 flex items-center justify-center text-[10px] rounded-md transition-all duration-200 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+            :class="activeSections.has('brand') ? 'rotate-180 bg-gradient-to-br from-emerald-400 to-cyan-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.8)]' : 'bg-emerald-500/20 text-emerald-400'"
+          >▼</div>
+        </button>
+        <div 
+          class="overflow-hidden transition-all duration-300"
+          :class="activeSections.has('brand') ? 'max-h-96' : 'max-h-0'"
+        >
+          <div class="px-4 pb-4 pt-1">
+            <div class="grid grid-cols-2 gap-2">
               <button
                 v-for="brand in brandCategories"
                 :key="brand.id"
                 type="button"
-                class="sidebar-btn"
+                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0"
                 @click="handleBrandClick(brand.id)"
               >
                 {{ brand.label }}
@@ -105,24 +149,36 @@
 
       <!-- Guides -->
       <div 
-        class="accordion-item" 
-        :class="{ active: activeSection === 'guides' }"
+        class="bg-black/50 rounded-xl overflow-hidden transition-all duration-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
+        :class="activeSections.has('guides') ? 'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_20px_rgba(16,185,129,0.15)]' : 'hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.3)]'"
       >
-        <div class="accordion-header" @click="toggleSection('guides')">
-          <div class="accordion-title">
+        <button 
+          type="button"
+          class="w-full flex items-center justify-between px-4 py-3.5 cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
+          @click="toggleSection('guides')"
+        >
+          <div class="flex items-center gap-2.5 text-sm font-semibold text-white/90">
             Guides
-            <span class="accordion-badge">{{ guidesLinks.length + guidesNavLinks.length }}</span>
+            <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[11px] font-bold text-black bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-full shadow-sm">
+              {{ guidesLinks.length + guidesNavLinks.length }}
+            </span>
           </div>
-          <div class="accordion-arrow">▼</div>
-        </div>
-        <div class="accordion-content">
-          <div class="accordion-body">
-            <div class="btn-grid">
+          <div 
+            class="w-6 h-6 flex items-center justify-center text-[10px] rounded-md transition-all duration-200 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+            :class="activeSections.has('guides') ? 'rotate-180 bg-gradient-to-br from-emerald-400 to-cyan-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.8)]' : 'bg-emerald-500/20 text-emerald-400'"
+          >▼</div>
+        </button>
+        <div 
+          class="overflow-hidden transition-all duration-300"
+          :class="activeSections.has('guides') ? 'max-h-96' : 'max-h-0'"
+        >
+          <div class="px-4 pb-4 pt-1">
+            <div class="grid grid-cols-2 gap-2">
               <NuxtLink
                 v-for="item in guidesLinks"
                 :key="item.id"
                 :to="localePath(item.to)"
-                class="sidebar-btn"
+                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0 no-underline"
                 @click="closeSidebar"
               >
                 {{ $t(item.labelKey, item.fallback) }}
@@ -131,7 +187,7 @@
                 v-for="item in guidesNavLinks"
                 :key="item.id"
                 :to="localePath(item.to)"
-                class="sidebar-btn"
+                class="flex items-center justify-center px-3 py-2.5 text-xs font-semibold text-white bg-black/50 rounded-full cursor-pointer transition-all shadow-[0_0_0_1px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_0_12px_rgba(255,255,255,0.3)] active:translate-y-0 no-underline"
                 @click="closeSidebar"
               >
                 {{ item.label }}
@@ -151,11 +207,17 @@ import ProductSearchPanel from '~/components/ProductSearchPanel.vue'
 
 const localePath = useLocalePath()
 
-// 手风琴状态
-const activeSection = ref<string | null>('product')
+// 手风琴状态（支持多个同时展开）
+const activeSections = ref<Set<string>>(new Set(['product']))
 
 const toggleSection = (section: string) => {
-  activeSection.value = activeSection.value === section ? null : section
+  if (activeSections.value.has(section)) {
+    activeSections.value.delete(section)
+  } else {
+    activeSections.value.add(section)
+  }
+  // 触发响应式更新
+  activeSections.value = new Set(activeSections.value)
 }
 
 // 获取侧边栏控制方法
@@ -225,197 +287,3 @@ const guidesNavLinks = [
 ]
 </script>
 
-<style scoped>
-.sidebar-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 8px;
-}
-
-.sidebar-search {
-  flex-shrink: 0;
-}
-
-/* 手风琴容器 */
-.accordion {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-/* 手风琴项 */
-.accordion-item {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: all 0.25s ease;
-}
-
-.accordion-item:hover {
-  border-color: rgba(107, 115, 255, 0.25);
-}
-
-.accordion-item.active {
-  border-color: rgba(107, 115, 255, 0.4);
-  background: linear-gradient(135deg, rgba(107, 115, 255, 0.08) 0%, rgba(107, 115, 255, 0.02) 100%);
-  box-shadow: 0 4px 20px rgba(107, 115, 255, 0.1);
-}
-
-/* 手风琴标题 */
-.accordion-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  cursor: pointer;
-  -webkit-user-select: none;
-  user-select: none;
-  transition: all 0.15s ease;
-}
-
-.accordion-header:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.accordion-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.01em;
-}
-
-.accordion-icon {
-  font-size: 18px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.accordion-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-  background: linear-gradient(135deg, rgba(107, 115, 255, 0.7) 0%, rgba(64, 255, 170, 0.5) 100%);
-  border-radius: 10px;
-  margin-left: 4px;
-  box-shadow: 0 2px 8px rgba(107, 115, 255, 0.3);
-}
-
-.accordion-arrow {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  transition: all 0.25s ease;
-  font-size: 10px;
-}
-
-.accordion-item:hover .accordion-arrow {
-  background: rgba(107, 115, 255, 0.15);
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.accordion-item.active .accordion-arrow {
-  transform: rotate(180deg);
-  background: rgba(107, 115, 255, 0.3);
-  color: #fff;
-}
-
-/* 手风琴内容 */
-.accordion-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.accordion-item.active .accordion-content {
-  max-height: 400px;
-}
-
-.accordion-body {
-  padding: 4px 16px 16px;
-}
-
-/* 按钮网格 */
-.btn-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
-  gap: 8px;
-}
-
-/* 按钮样式 */
-.sidebar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 10px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.75);
-  background: linear-gradient(135deg, rgba(107, 115, 255, 0.12) 0%, rgba(107, 115, 255, 0.06) 100%);
-  border: 1px solid rgba(107, 115, 255, 0.2);
-  border-radius: 10px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.sidebar-btn:hover {
-  background: linear-gradient(135deg, rgba(107, 115, 255, 0.25) 0%, rgba(107, 115, 255, 0.15) 100%);
-  border-color: rgba(107, 115, 255, 0.5);
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(107, 115, 255, 0.2);
-}
-
-.sidebar-btn:active {
-  transform: translateY(0);
-}
-
-.sidebar-btn__icon {
-  font-size: 13px;
-}
-
-/* 响应式 */
-@media (max-width: 400px) {
-  .sidebar-container {
-    padding: 6px;
-  }
-
-  .btn-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .accordion-header {
-    padding: 12px 14px;
-  }
-
-  .accordion-body {
-    padding: 4px 14px 14px;
-  }
-
-  .sidebar-btn {
-    padding: 9px 10px;
-    font-size: 11px;
-  }
-}
-</style>
