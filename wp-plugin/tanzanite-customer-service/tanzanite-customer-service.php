@@ -360,6 +360,19 @@ class Tanzanite_Customer_Service_Plugin {
             'permission_callback' => [ $this, 'check_agent_permission' ],
         ] );
         
+        // 检查是否有历史对话（访客端，用于显示 Continue/Start 按钮）
+        register_rest_route( 'tanzanite/v1', '/customer-service/has-conversation', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'rest_has_conversation' ],
+            'permission_callback' => '__return_true',
+            'args'                => [
+                'visitor_id' => [
+                    'required'          => false,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ] );
+        
         // 注册客服端API路由
         TZ_CS_Agent_API::register_routes();
         
@@ -400,6 +413,46 @@ class Tanzanite_Customer_Service_Plugin {
                 'preSalesEmail'   => $preSalesEmail,
                 'afterSalesEmail' => $afterSalesEmail,
             ],
+        ], 200 );
+    }
+    
+    /**
+     * REST API: 检查是否有历史对话（访客端）
+     * 
+     * 用于前端欢迎页显示 "Continue" 或 "Start" 按钮
+     */
+    public function rest_has_conversation( \WP_REST_Request $request ): \WP_REST_Response {
+        global $wpdb;
+        
+        $visitor_id = $request->get_param( 'visitor_id' );
+        
+        if ( empty( $visitor_id ) ) {
+            return new \WP_REST_Response( [
+                'hasConversation' => false,
+            ], 200 );
+        }
+        
+        $table_messages = $wpdb->prefix . 'tz_cs_messages';
+        
+        // 查询是否有该访客的消息记录
+        // conversation_id 格式为 visitor_{timestamp}_{random} 或 user_{id}
+        $count = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_messages} WHERE conversation_id = %s LIMIT 1",
+            $visitor_id
+        ) );
+        
+        // 获取上次聊天的客服ID（可选）
+        $last_agent_id = null;
+        if ( $count > 0 ) {
+            $last_agent_id = $wpdb->get_var( $wpdb->prepare(
+                "SELECT agent_id FROM {$table_messages} WHERE conversation_id = %s AND agent_id IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+                $visitor_id
+            ) );
+        }
+        
+        return new \WP_REST_Response( [
+            'hasConversation' => $count > 0,
+            'lastAgentId'     => $last_agent_id ? (int) $last_agent_id : null,
         ], 200 );
     }
     

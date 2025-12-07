@@ -97,6 +97,10 @@ class Tanzanite_Shipping_Admin {
 		echo '                  </div>';
 		echo '                  <div class="tz-form-grid">';
 		echo '                      <label>' . esc_html__( '适用国家代码', 'tanzanite-settings' ) . '<input type="text" id="tz-shipping-rule-regions" placeholder="JP 或 JP,US（ISO 代码，逗号分隔）" /></label>';
+		echo '                      <label>' . esc_html__( '邮编范围', 'tanzanite-settings' ) . '<input type="text" id="tz-shipping-rule-zip-ranges" placeholder="10001-10999,11001-11999（留空=全国）" /></label>';
+		echo '                  </div>';
+		echo '                  <p class="description" style="margin-top:4px;color:#6b7280;">' . esc_html__( '邮编范围示例：美国纽约 10001-10999，阿拉斯加 99501-99950。留空表示该国家的兜底规则。', 'tanzanite-settings' ) . '</p>';
+		echo '                  <div class="tz-form-grid">';
 		echo '                      <label><span id="tz-shipping-rule-min-label">' . esc_html__( '最小重量 (KG)', 'tanzanite-settings' ) . '</span><input type="number" step="0.01" id="tz-shipping-rule-min" placeholder="' . esc_attr__( '如 0、0.5、1', 'tanzanite-settings' ) . '" /></label>';
 		echo '                      <label><span id="tz-shipping-rule-max-label">' . esc_html__( '最大重量 (KG)', 'tanzanite-settings' ) . '</span><input type="number" step="0.01" id="tz-shipping-rule-max" placeholder="' . esc_attr__( '留空表示无上限', 'tanzanite-settings' ) . '" /></label>';
 		echo '                  </div>';

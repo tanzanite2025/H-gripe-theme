@@ -145,6 +145,12 @@ class Tanzanite_Plugin {
 			require_once $shipping_admin;
 		}
 
+		// 加载 Packaging Rules Admin
+		$packaging_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-packaging-admin.php';
+		if ( file_exists( $packaging_admin ) ) {
+			require_once $packaging_admin;
+		}
+
 		// 鍔犺浇 Members Admin
 		$members_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-members-admin.php';
 		if ( file_exists( $members_admin ) ) {
@@ -334,6 +340,7 @@ class Tanzanite_Plugin {
 			'Tanzanite_REST_Attributes_Controller',
 			// 'Tanzanite_REST_Audit_Controller',
 			'Tanzanite_REST_ShippingTemplates_Controller',
+			'Tanzanite_REST_Packaging_Controller',
 			'Tanzanite_REST_User_Assets_Controller',
 			'Tanzanite_REST_Wishlist_Controller',
 			// 新增：辐条计算器专用商品列表控制器
@@ -469,6 +476,16 @@ class Tanzanite_Plugin {
 			$root_capability,
 			'tanzanite-settings-shipping-templates',
 			array( $this, 'render_shipping_templates' )
+		);
+
+		// Packaging Rules
+		add_submenu_page(
+			$root_slug,
+			__( 'Packaging Rules', 'tanzanite-settings' ),
+			__( 'Packaging Rules', 'tanzanite-settings' ),
+			$root_capability,
+			'tanzanite-settings-packaging-rules',
+			array( $this, 'render_packaging_rules' )
 		);
 
 		// Carriers
@@ -807,7 +824,18 @@ class Tanzanite_Plugin {
 	}
 
 	/**
-	 * 娓叉煋鐗╂祦鍟嗙鐞嗛〉闈?	 *
+	 * 渲染包装规则管理页面
+	 *
+	 * @since 0.3.0
+	 */
+	public function render_packaging_rules() {
+		if ( class_exists( 'Tanzanite_Packaging_Admin' ) ) {
+			Tanzanite_Packaging_Admin::render_page();
+		}
+	}
+
+	/**
+	 * 娓叉煋鐗╂祦鍟嗙鐞嗛〉闈?	 *
 	 * @since 0.2.0
 	 */
 	public function render_carriers() {

@@ -47,10 +47,19 @@
 
               <!-- 客服状态卡片 -->
               <div class="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-4 mb-4">
-                <div class="flex items-center gap-2 mb-4">
-                  <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <span class="text-sm text-white/80">
-                    <strong class="text-emerald-500">{{ onlineAgentsCount }} agent{{ onlineAgentsCount > 1 ? 's' : '' }}</strong> online now
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span class="text-sm text-white/80">
+                      <strong class="text-emerald-500">{{ onlineAgentsCount }} agent{{ onlineAgentsCount > 1 ? 's' : '' }}</strong> online
+                    </span>
+                  </div>
+                  <span class="text-xs text-white/50 flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M12 6v6l4 2"/>
+                    </svg>
+                    Replies in ~5 min
                   </span>
                 </div>
 
@@ -86,7 +95,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                 </svg>
-                Start — Chat, Orders & FAQ
+                {{ hasHistoryChat ? 'Continue' : 'Start' }} — Chat, Orders & FAQ
               </button>
 
               <!-- 快捷联系 -->
@@ -875,6 +884,64 @@ const desktopSearchQuery = ref('')
 
 // 欢迎页状态
 const showWelcomeScreen = ref(true)
+
+// 是否有历史对话（用于显示 "Continue" 或 "Start"）
+const hasHistoryChat = ref(false)
+
+// 检查本地是否有历史对话（同步，立即返回）
+const checkLocalHistoryChat = (): boolean => {
+  if (typeof window === 'undefined') return false
+  try {
+    const keys = Object.keys(localStorage)
+    const chatKeys = keys.filter(key => key.startsWith('tz_chat_'))
+    
+    for (const key of chatKeys) {
+      const data = localStorage.getItem(key)
+      if (data) {
+        const parsed = JSON.parse(data)
+        if (parsed.messages && parsed.messages.length > 0) {
+          return true
+        }
+      }
+    }
+  } catch (error) {
+    console.error('检查本地历史对话失败:', error)
+  }
+  return false
+}
+
+// 从后端 API 检查是否有历史对话（异步校验）
+const checkApiHistoryChat = async (): Promise<boolean> => {
+  try {
+    // 获取访客ID
+    let visitorId = localStorage.getItem('tz_visitor_id')
+    if (!visitorId && !user.value) return false
+    
+    const identifier = user.value ? `user_${user.value.id}` : visitorId
+    
+    const response = await $fetch<{ hasConversation: boolean }>('/wp-json/tanzanite/v1/customer-service/has-conversation', {
+      params: { visitor_id: identifier }
+    })
+    
+    return response?.hasConversation || false
+  } catch (error) {
+    // API 失败时不影响用户体验，保持 localStorage 的结果
+    console.error('检查后端历史对话失败:', error)
+    return hasHistoryChat.value
+  }
+}
+
+// 初始化历史对话检查
+const initHistoryChatCheck = async () => {
+  // 1. 先从 localStorage 同步读取（立即显示）
+  hasHistoryChat.value = checkLocalHistoryChat()
+  
+  // 2. 后台 API 校验（如果结果不同则更新）
+  const apiResult = await checkApiHistoryChat()
+  if (apiResult !== hasHistoryChat.value) {
+    hasHistoryChat.value = apiResult
+  }
+}
 
 // 客服列表和选中状态
 const agents = ref<any[]>([])
@@ -1946,9 +2013,10 @@ const handleImageUpload = async (event: Event) => {
   }
 }
 
-// 组件挂载时获取客服列表
+// 组件挂载时获取客服列表和检查历史对话
 onMounted(async () => {
   await fetchAgents()
+  initHistoryChatCheck()
   scrollToBottom()
 })
 </script>
