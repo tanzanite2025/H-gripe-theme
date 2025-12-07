@@ -19,7 +19,8 @@
       >
         <!-- 背景图片 -->
         <div 
-          class="absolute inset-0 bg-right bg-no-repeat transition-opacity bg-[length:45%] lg:bg-contain"
+          class="absolute inset-0 bg-right bg-no-repeat transition-opacity lg:bg-contain"
+          :class="layout === 'grid' ? 'bg-[length:30%] md:bg-[length:45%]' : 'bg-[length:45%]'"
           :style="{ backgroundImage: `url(${card.image})` }"
         ></div>
         
@@ -171,7 +172,8 @@ const layoutClass = computed(() => {
   if (props.layout === 'row') {
     return 'grid-cols-2 lg:grid-cols-4'
   }
-  return 'grid-cols-2'
+  // grid 布局：移动端单列，md 以上双列
+  return 'grid-cols-1 md:grid-cols-2'
 })
 
 // 尺寸类
@@ -182,7 +184,8 @@ const sizeClass = computed(() => {
     case 'md':
       return 'p-3'
     default:
-      return props.layout === 'grid' ? 'flex-col p-3' : 'p-2.5'
+      // grid 布局：移动端统一高度 h-12，md 以上恢复自适应
+      return props.layout === 'grid' ? 'flex-col p-3 h-12 md:h-auto' : 'p-2.5'
   }
 })
 
