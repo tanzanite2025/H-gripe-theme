@@ -20,7 +20,7 @@
       aria-label="Sidebar"
     >
       <section
-        class="relative w-[85vw] md:w-[45vw] h-full max-md:h-[90vh] flex border border-[#6b73ff]/60 rounded-2xl bg-[#0d1117] shadow-[0_0_20px_rgba(107,115,255,0.3),0_0_40px_rgba(107,115,255,0.15)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
+        class="sidebar-panel relative w-[85vw] md:w-[45vw] h-full max-md:h-[90vh] flex border border-white/20 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.08),0_0_60px_rgba(129,140,248,0.1),0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
         :class="{
           'translate-x-0': leftOpen,
           '-translate-x-full': !leftOpen
@@ -28,7 +28,7 @@
       >
         <!-- 左侧关闭按钮 -->
         <button 
-          class="absolute top-2 right-2 w-7 h-7 inline-flex items-center justify-center border border-[rgba(124,117,255,0.6)] rounded-md bg-[rgba(30,27,75,0.6)] text-[#e8e9ff] cursor-pointer hover:brightness-110 transition-all z-10 pointer-events-auto" 
+          class="absolute top-2 right-2 w-8 h-8 inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-blue-500 text-black font-bold text-sm cursor-pointer hover:shadow-[0_4px_12px_rgba(45,212,191,0.4)] hover:scale-105 transition-all z-10 pointer-events-auto" 
           type="button" 
           @click="closeLeft" 
           aria-label="Close sidebar"
@@ -45,7 +45,7 @@
         </button>
         
         <!-- 左侧内容 -->
-        <div class="w-full h-full box-border m-0 relative overflow-y-auto bg-[#0d1117] pt-10 px-2 pb-2 md:pt-12 md:px-4 md:pb-4 rounded-2xl">
+        <div class="w-full h-full box-border m-0 relative overflow-y-auto pt-10 px-2 pb-2 md:pt-12 md:px-4 md:pb-4 rounded-2xl">
           <slot name="left" />
         </div>
       </section>
@@ -121,6 +121,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
+/* 侧边栏面板背景 - Style C 渐变 */
+.sidebar-panel {
+  background: radial-gradient(circle at 50% 0%, #0f172a 0%, #000000 100%);
+}
+
 body.hide-sidebar-handles .sidebar-handle {
   opacity: 0;
   pointer-events: none;

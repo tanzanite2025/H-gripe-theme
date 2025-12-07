@@ -1,36 +1,35 @@
 <template>
-  <section
-    class="rounded-xl border border-white/10 bg-black/40 p-4 space-y-3 text-sm text-white/80 product-search-panel"
-  >
-    <div>
-      <div class="flex flex-col md:flex-row gap-1.5 md:items-center">
-        <input
-          v-model="productSearchQuery"
-          type="text"
-          :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
-          class="flex-1 h-9 px-3 py-2 border border-white/20 rounded-lg bg-white/[0.05] text-white text-[13px] box-border transition-all duration-200 placeholder:text-white/50 focus:outline-none focus:border-[#6b73ff] focus:bg-white/[0.08]"
-        />
-        <div class="flex gap-2 w-full md:w-auto">
-          <button
-            type="button"
-            class="flex-1 md:flex-none h-9 px-4 min-w-[80px] md:min-w-[120px] border border-blue-500/40 rounded-lg bg-blue-500/30 text-white text-[13px] font-semibold cursor-pointer box-border transition-all duration-200 hover:bg-blue-500/40 hover:border-blue-500/60"
-            @click="searchProducts"
-          >
-            {{ $t('sidebar.search', 'Search') }}
-          </button>
-          <button
-            type="button"
-            class="flex-1 md:flex-none h-9 px-4 min-w-[80px] md:min-w-[120px] border border-white/30 rounded-lg bg-transparent text-white/80 text-[12px] font-medium cursor-pointer box-border transition-all duration-200 hover:bg-white/10 hover:text-white"
-            @click="handleReset"
-          >
-            {{ $t('filter.resetShort', 'Reset') }}
-          </button>
-        </div>
+  <section class="search-panel-c">
+    <!-- 搜索输入行 -->
+    <div class="search-row-c">
+      <input
+        v-model="productSearchQuery"
+        type="text"
+        :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
+        class="search-input-c"
+      />
+      <div class="btn-group">
+        <button
+          type="button"
+          class="search-btn-c primary"
+          @click="searchProducts"
+        >
+          {{ $t('sidebar.search', 'Search') }}
+        </button>
+        <button
+          type="button"
+          class="search-btn-c secondary"
+          @click="handleReset"
+        >
+          {{ $t('filter.resetShort', 'Reset') }}
+        </button>
       </div>
     </div>
 
-    <div class="w-full border-t border-white/10 my-2"></div>
+    <!-- 分隔线 -->
+    <div class="filter-divider-c"></div>
 
+    <!-- 高级筛选 -->
     <AdvancedFilter
       class="sidebar-advanced-filter"
       :key="filterResetKey"
@@ -134,10 +133,85 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.product-search-panel {
-	width: 100%;
-	max-width: 100%;
-	box-sizing: border-box;
+/* 搜索面板容器 */
+.search-panel-c {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+/* 搜索行 */
+.search-row-c {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.btn-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 搜索输入框 */
+.search-input-c {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.3s;
+}
+.search-input-c::placeholder { color: rgba(255,255,255,0.4); }
+.search-input-c:focus {
+  border-color: #2dd4bf;
+  background: rgba(45, 212, 191, 0.05);
+  box-shadow: 0 0 15px rgba(45, 212, 191, 0.15);
+}
+
+/* 搜索按钮 */
+.search-btn-c {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+.search-btn-c.primary {
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.3), rgba(59, 130, 246, 0.3));
+  border-color: rgba(45, 212, 191, 0.5);
+  color: #fff;
+}
+.search-btn-c.primary:hover {
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.5), rgba(59, 130, 246, 0.5));
+  box-shadow: 0 0 15px rgba(45, 212, 191, 0.3);
+  transform: translateY(-1px);
+}
+.search-btn-c.secondary {
+  background: transparent;
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+}
+.search-btn-c.secondary:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+
+/* 分隔线 */
+.filter-divider-c {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  margin: 12px 0;
 }
 
 @media (max-width: 768px) {

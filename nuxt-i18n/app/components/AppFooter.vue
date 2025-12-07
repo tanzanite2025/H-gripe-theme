@@ -154,8 +154,8 @@ const footerSocialItems: FooterSocialItem[] = [
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3rem;
-  margin-bottom: 2rem;
+  gap: 2rem;
+  margin-bottom: 1rem;
 }
 
 .footer-subscription {
@@ -320,6 +320,15 @@ const footerSocialItems: FooterSocialItem[] = [
   .app-footer {
     /* 移动端 Dock 通常更高，底部多留一些空间 */
     padding: 1.5rem 1.25rem 6rem;
+  }
+  
+  .footer-main-row {
+    gap: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .footer-content {
+    gap: 0.5rem;
   }
 }
 </style>
