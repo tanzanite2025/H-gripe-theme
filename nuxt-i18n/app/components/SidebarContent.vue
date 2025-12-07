@@ -1,177 +1,169 @@
 <template>
-  <div class="w-full h-full flex flex-col gap-2 md:gap-3 p-2 md:p-3">
-    <!-- 搜索区域（移动端隐藏） -->
-    <div class="shrink-0 hidden md:block">
+  <div class="sidebar-content w-full h-full flex flex-col p-3 md:p-4">
+    <!-- 搜索组件 -->
+    <div class="shrink-0 mb-3">
       <ProductSearchPanel />
     </div>
 
-    <!-- 导航按钮组 - 分段控制样式 -->
-    <div class="shrink-0 bg-white/[0.03] p-1 rounded-xl flex gap-1">
+    <!-- Dock 导航 -->
+    <div class="shrink-0 dock-nav flex gap-1 p-1.5 rounded-3xl bg-white/[0.03] border border-white/5 mb-3">
       <NuxtLink 
         :to="localePath('/')"
-        class="flex-1 h-9 rounded-lg bg-gradient-to-r from-emerald-500/15 via-cyan-500/15 to-emerald-500/15 text-white text-xs font-medium flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(64,255,170,0.1)]"
+        class="dock-item active"
         @click="closeSidebar"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
-        Home
+        <span>Home</span>
       </NuxtLink>
       <NuxtLink 
         :to="localePath('/shop')"
-        class="flex-1 h-9 rounded-lg text-white/90 text-xs font-medium flex items-center justify-center gap-1.5 hover:text-white hover:bg-white/[0.06] transition-all"
+        class="dock-item"
         @click="closeSidebar"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
         </svg>
-        Shop
+        <span>Shop</span>
       </NuxtLink>
       <NuxtLink 
         :to="localePath('/company/picture-warehouse')"
-        class="flex-1 h-9 rounded-lg text-white/90 text-xs font-medium flex items-center justify-center gap-1.5 hover:text-white hover:bg-white/[0.06] transition-all"
+        class="dock-item"
         @click="closeSidebar"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        Picture
+        <span>Picture</span>
       </NuxtLink>
     </div>
 
-    <!-- 渐变分隔线 -->
-    <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-
-    <!-- Quick Access - 彩色横条卡片 -->
-    <div class="shrink-0">
-      <div class="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 md:mb-2 px-0.5">Quick Access</div>
-      <div class="space-y-0.5 md:space-y-1">
-        <!-- Payment -->
-        <NuxtLink 
-          :to="localePath('/support/payment')"
-          class="group relative overflow-hidden flex items-center gap-2.5 px-3 h-11 rounded-lg bg-gradient-to-r from-emerald-500/[0.35] to-emerald-500/[0.25] hover:from-emerald-500/[0.42] hover:to-emerald-500/[0.32] transition-all"
-          @click="closeSidebar"
-        >
-          <div class="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          <svg class="w-4 h-4 text-emerald-400 shrink-0 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
-          <span class="text-xs text-white font-medium transition-colors relative z-10">Payment Methods</span>
-          <svg class="w-3.5 h-3.5 text-emerald-500/40 group-hover:text-emerald-400 ml-auto transition-colors relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </NuxtLink>
-        <!-- Shipping -->
-        <NuxtLink 
-          :to="localePath('/support/shipping')"
-          class="group relative overflow-hidden flex items-center gap-2.5 px-3 h-11 rounded-lg bg-gradient-to-r from-blue-500/[0.35] to-blue-500/[0.25] hover:from-blue-500/[0.42] hover:to-blue-500/[0.32] transition-all"
-          @click="closeSidebar"
-        >
-          <div class="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br from-blue-400/20 to-transparent rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          <svg class="w-4 h-4 text-blue-400 shrink-0 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-          </svg>
-          <span class="text-xs text-white font-medium transition-colors relative z-10">Shipping Info</span>
-          <svg class="w-3.5 h-3.5 text-blue-500/40 group-hover:text-blue-400 ml-auto transition-colors relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </NuxtLink>
-        <!-- Warranty -->
-        <NuxtLink 
-          :to="localePath('/support/warranty')"
-          class="group relative overflow-hidden flex items-center gap-2.5 px-3 h-11 rounded-lg bg-gradient-to-r from-cyan-500/[0.35] to-cyan-500/[0.25] hover:from-cyan-500/[0.42] hover:to-cyan-500/[0.32] transition-all"
-          @click="closeSidebar"
-        >
-          <div class="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br from-cyan-400/20 to-transparent rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          <svg class="w-4 h-4 text-cyan-400 shrink-0 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
-          <span class="text-xs text-white font-medium transition-colors relative z-10">Warranty Policy</span>
-          <svg class="w-3.5 h-3.5 text-cyan-500/40 group-hover:text-cyan-400 ml-auto transition-colors relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </NuxtLink>
-        <!-- After Sales -->
-        <NuxtLink 
-          :to="localePath('/support/after-sales')"
-          class="group relative overflow-hidden flex items-center gap-2.5 px-3 h-11 rounded-lg bg-gradient-to-r from-purple-500/[0.35] to-purple-500/[0.25] hover:from-purple-500/[0.42] hover:to-purple-500/[0.32] transition-all"
-          @click="closeSidebar"
-        >
-          <div class="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          <svg class="w-4 h-4 text-purple-400 shrink-0 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <span class="text-xs text-white font-medium transition-colors relative z-10">After Sales Support</span>
-          <svg class="w-3.5 h-3.5 text-purple-500/40 group-hover:text-purple-400 ml-auto transition-colors relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </NuxtLink>
+    <!-- 可滚动内容区 -->
+    <div class="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+      <!-- Quick Access -->
+      <div>
+        <div class="section-label">
+          <span class="dot bg-indigo-500"></span>
+          Quick Access
+        </div>
+        <div class="space-y-2">
+          <!-- Payment -->
+          <NuxtLink 
+            :to="localePath('/support/payment')"
+            class="hybrid-card card-indigo"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">Payment Methods</div>
+              <div class="hybrid-desc">Wallet, Cards & Crypto</div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
+          <!-- Shipping -->
+          <NuxtLink 
+            :to="localePath('/support/shipping')"
+            class="hybrid-card card-teal"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">Shipping Info</div>
+              <div class="hybrid-desc">Track & Trace</div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
+          <!-- Warranty -->
+          <NuxtLink 
+            :to="localePath('/support/warranty')"
+            class="hybrid-card card-sky"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">Warranty Policy</div>
+              <div class="hybrid-desc">Protection Plan</div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
+          <!-- After Sales -->
+          <NuxtLink 
+            :to="localePath('/support/after-sales')"
+            class="hybrid-card card-pink"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">After Sales</div>
+              <div class="hybrid-desc">24/7 Support</div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
+        </div>
       </div>
-    </div>
 
-    <!-- 渐变分隔线 -->
-    <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-
-    <!-- Support & Tools -->
-    <div class="shrink-0">
-      <div class="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 md:mb-2 px-0.5">Support & Tools</div>
-      <div class="flex flex-wrap gap-1 md:gap-1.5">
-        <NuxtLink
-          v-for="item in supportLinks"
-          :key="item.id"
-          :to="localePath(item.to)"
-          class="px-3 h-9 rounded-lg bg-white/[0.08] text-[11px] font-medium text-white hover:bg-white/[0.15] transition-all flex items-center justify-center"
-          @click="closeSidebar"
-        >
-          {{ $t(item.labelKey, item.fallback) }}
-        </NuxtLink>
-      </div>
-    </div>
-
-    <!-- 渐变分隔线 -->
-    <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-
-    <!-- Guides & Resources -->
-    <div class="shrink-0">
-      <div class="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 md:mb-2 px-0.5">Guides & Resources</div>
-      <div class="flex flex-wrap gap-1 md:gap-1.5">
-        <NuxtLink
-          v-for="item in guidesLinks"
-          :key="item.id"
-          :to="localePath(item.to)"
-          class="px-3 h-9 rounded-lg bg-white/[0.08] text-[11px] font-medium text-white hover:bg-white/[0.15] transition-all flex items-center justify-center"
-          @click="closeSidebar"
-        >
-          {{ $t(item.labelKey, item.fallback) }}
-        </NuxtLink>
-        <NuxtLink
-          v-for="item in guidesNavLinks"
-          :key="item.id"
-          :to="localePath(item.to)"
-          class="px-3 h-9 rounded-lg bg-white/[0.08] text-[11px] font-medium text-white hover:bg-white/[0.15] transition-all flex items-center justify-center"
-          @click="closeSidebar"
-        >
-          {{ item.label }}
-        </NuxtLink>
-      </div>
-    </div>
-
-    <!-- 渐变分隔线 -->
-    <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-
-    <!-- Shop by Brand -->
-    <div class="shrink-0">
-      <div class="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 md:mb-2 px-0.5">Shop by Brand</div>
-      <div class="flex gap-1.5 md:gap-2">
-        <button
-          v-for="brand in brandCategories"
-          :key="brand.id"
-          type="button"
-          class="flex-1 h-9 rounded-lg bg-white/[0.08] text-[11px] font-semibold text-white hover:bg-white/[0.15] transition-all flex items-center justify-center"
-          @click="handleBrandClick(brand.id)"
-        >
-          {{ brand.label }}
-        </button>
+      <!-- Tools & Resources -->
+      <div>
+        <div class="section-label">
+          <span class="dot bg-teal-400"></span>
+          Tools & Resources
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <!-- Support -->
+          <NuxtLink
+            v-for="item in supportLinks"
+            :key="item.id"
+            :to="localePath(item.to)"
+            class="hybrid-btn btn-teal"
+            @click="closeSidebar"
+          >
+            {{ $t(item.labelKey, item.fallback) }}
+          </NuxtLink>
+          <!-- Guides -->
+          <NuxtLink
+            v-for="item in guidesLinks"
+            :key="item.id"
+            :to="localePath(item.to)"
+            class="hybrid-btn btn-sky"
+            @click="closeSidebar"
+          >
+            {{ $t(item.labelKey, item.fallback) }}
+          </NuxtLink>
+          <NuxtLink
+            v-for="item in guidesNavLinks"
+            :key="item.id"
+            :to="localePath(item.to)"
+            class="hybrid-btn btn-sky"
+            @click="closeSidebar"
+          >
+            {{ item.label }}
+          </NuxtLink>
+        </div>
       </div>
     </div>
   </div>
@@ -199,20 +191,6 @@ const supportLinks = [
   { id: 'faqs', labelKey: 'support.nav.faqs', to: '/support/faqs', fallback: 'All FAQs' },
 ]
 
-// 品牌按钮
-const brandCategories = [
-  { id: 'sapim', label: 'Sapim' },
-  { id: 'dt-swiss', label: 'DT Swiss' },
-  { id: 'pillar', label: 'Pillar' },
-]
-
-// 品牌点击处理
-const handleBrandClick = (brandId: string) => {
-  // TODO: 实现品牌跳转逻辑
-  console.log('Brand clicked:', brandId)
-  closeSidebar()
-}
-
 // Guides 快捷链接
 const guidesLinks = [
   { id: 'wheelset-buyers', labelKey: 'products.nav.wheelsetBuyersGuide', to: '/guides/wheelset-buyers', fallback: 'Wheelset guide' },
@@ -226,4 +204,217 @@ const guidesNavLinks = [
   { id: 'membership', label: 'Membership', to: '/company/membershipandpoints' },
 ]
 </script>
+
+<style scoped>
+/* 隐藏滚动条 */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Dock 导航 */
+.dock-item {
+  flex: 1;
+  height: 40px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #9ca3af;
+  transition: all 0.3s;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dock-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+}
+.dock-item.active {
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #000;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+}
+
+/* 区块标题 */
+.section-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Hybrid 卡片 */
+.hybrid-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.hybrid-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--card-color);
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 8px var(--card-color), 0 0 15px var(--card-color-dim);
+}
+.hybrid-card:hover {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  transform: translateY(-2px);
+  box-shadow: 
+    0 0 0 1px var(--card-color-alpha),
+    0 10px 30px -10px rgba(0,0,0,0.5),
+    0 0 20px var(--card-color-dim);
+}
+.hybrid-card:hover::after {
+  opacity: 1;
+  width: 6px;
+  box-shadow: 0 0 12px var(--card-color), 0 0 25px var(--card-color);
+}
+
+/* 卡片颜色变体 */
+.card-indigo {
+  --card-color: #818cf8;
+  --card-color-alpha: rgba(129, 140, 248, 0.5);
+  --card-color-dim: rgba(129, 140, 248, 0.2);
+  --card-bg: rgba(129, 140, 248, 0.1);
+}
+.card-teal {
+  --card-color: #2dd4bf;
+  --card-color-alpha: rgba(45, 212, 191, 0.5);
+  --card-color-dim: rgba(45, 212, 191, 0.2);
+  --card-bg: rgba(45, 212, 191, 0.1);
+}
+.card-sky {
+  --card-color: #38bdf8;
+  --card-color-alpha: rgba(56, 189, 248, 0.5);
+  --card-color-dim: rgba(56, 189, 248, 0.2);
+  --card-bg: rgba(56, 189, 248, 0.1);
+}
+.card-pink {
+  --card-color: #f472b6;
+  --card-color-alpha: rgba(244, 114, 182, 0.5);
+  --card-color-dim: rgba(244, 114, 182, 0.2);
+  --card-bg: rgba(244, 114, 182, 0.1);
+}
+
+.hybrid-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--card-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  border: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+.hybrid-card:hover .hybrid-icon {
+  background: var(--card-color);
+  color: #000;
+  box-shadow: 0 0 15px var(--card-color);
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.hybrid-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e5e5e5;
+  margin-bottom: 2px;
+}
+.hybrid-card:hover .hybrid-title { color: #fff; }
+
+.hybrid-desc {
+  font-size: 11px;
+  color: #888;
+  font-weight: 500;
+}
+.hybrid-card:hover .hybrid-desc { color: var(--card-color); }
+
+.hybrid-arrow {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  color: #444;
+  transition: all 0.3s;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.hybrid-card:hover .hybrid-arrow {
+  color: var(--card-color);
+  transform: translateX(4px);
+}
+
+/* 工具按钮 */
+.hybrid-btn {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #aaa;
+  transition: all 0.2s;
+  flex-grow: 1;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.hybrid-btn:hover {
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  border-color: var(--btn-color);
+  box-shadow: 0 0 10px var(--btn-dim);
+  transform: translateY(-1px);
+}
+
+/* 按钮颜色变体 */
+.btn-teal {
+  --btn-color: #2dd4bf;
+  --btn-bg: rgba(45,212,191,0.1);
+  --btn-dim: rgba(45,212,191,0.2);
+}
+.btn-sky {
+  --btn-color: #38bdf8;
+  --btn-bg: rgba(56,189,248,0.1);
+  --btn-dim: rgba(56,189,248,0.2);
+}
+.btn-indigo {
+  --btn-color: #818cf8;
+  --btn-bg: rgba(129,140,248,0.1);
+  --btn-dim: rgba(129,140,248,0.2);
+}
+</style>
 
