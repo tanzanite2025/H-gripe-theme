@@ -1,4 +1,5 @@
 import { useRuntimeConfig, useState } from 'nuxt/app'
+import { computed } from 'vue'
 
 interface LoginPayload {
   username: string
@@ -27,9 +28,20 @@ interface AuthUser {
   username?: string
   email?: string
   display_name?: string
+  avatar?: string
+  roles?: string[]
+  is_agent?: boolean
+  agent_id?: string | null
   profile?: RegisterProfile
   loyalty?: Record<string, unknown>
   [key: string]: unknown
+}
+
+// API 响应格式
+interface ApiResponse<T> {
+  ok: boolean
+  data: T
+  message?: string
 }
 
 type MaybeJson = Record<string, unknown> | string | null
@@ -105,7 +117,8 @@ export function useAuth() {
 
     initialized.value = true
     try {
-      const data = await request<AuthUser>('/mytheme/v1/auth/me', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
+      const response = await request<ApiResponse<{ user: AuthUser }>>('/tanzanite/v1/chat/me', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
+      const data = response?.data?.user || null
       user.value = data
       error.value = null
       return data
@@ -120,8 +133,8 @@ export function useAuth() {
     error.value = null
 
     try {
-      const data = await request<AuthUser>(
-        '/mytheme/v1/auth/login',
+      const response = await request<ApiResponse<{ user: AuthUser }>>(
+        '/tanzanite/v1/chat/login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -129,6 +142,7 @@ export function useAuth() {
         },
         'Login failed'
       )
+      const data = response?.data?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -145,8 +159,8 @@ export function useAuth() {
     error.value = null
 
     try {
-      const data = await request<AuthUser>(
-        '/mytheme/v1/auth/register',
+      const response = await request<ApiResponse<{ user: AuthUser }>>(
+        '/tanzanite/v1/chat/register',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -154,6 +168,7 @@ export function useAuth() {
         },
         'Registration failed'
       )
+      const data = response?.data?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -172,7 +187,7 @@ export function useAuth() {
     }
 
     try {
-      await request('/mytheme/v1/auth/logout', { method: 'POST' }, 'Logout failed')
+      await request('/tanzanite/v1/chat/logout', { method: 'POST' }, 'Logout failed')
     } catch (err) {
       console.warn('Logout request failed:', err)
     } finally {
@@ -180,11 +195,19 @@ export function useAuth() {
     }
   }
 
+  // 计算属性：是否是客服
+  const isAgent = computed(() => !!user.value?.is_agent)
+  
+  // 计算属性：客服 ID
+  const agentId = computed(() => user.value?.agent_id || null)
+
   return {
     user,
     loading,
     error,
     initialized,
+    isAgent,
+    agentId,
     ensureSession,
     login,
     register,

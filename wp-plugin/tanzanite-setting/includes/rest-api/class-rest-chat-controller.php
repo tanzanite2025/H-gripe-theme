@@ -83,6 +83,19 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 			)
 		);
 
+		// 注册
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/register',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'register_user' ),
+					'permission_callback' => '__return_true',
+				),
+			)
+		);
+
 		// 获取当前用户信息
 		register_rest_route(
 			$this->namespace,
@@ -161,6 +174,24 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 			)
 		);
 
+		// 更新客服状态（在线/忙碌/离线）
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/agent-status',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_agent_status' ),
+					'permission_callback' => 'is_user_logged_in',
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'update_agent_status' ),
+					'permission_callback' => 'is_user_logged_in',
+				),
+			)
+		);
+
 		// 上传文件
 		register_rest_route(
 			$this->namespace,
@@ -209,11 +240,6 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 			return $this->respond_error( 'invalid_credentials', '用户名或密码错误', 401 );
 		}
 
-		// 检查用户是否有权限（管理员或客服）
-		if ( ! user_can( $user, 'manage_options' ) && ! user_can( $user, 'edit_posts' ) ) {
-			return $this->respond_error( 'insufficient_permissions', '您没有权限访问客服系统', 403 );
-		}
-
 		// 设置登录状态
 		wp_set_current_user( $user->ID );
 		wp_set_auth_cookie( $user->ID, true );
@@ -247,6 +273,84 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 	}
 
 	/**
+	 * 用户注册
+	 *
+	 * @param WP_REST_Request $request REST 请求对象
+	 * @return WP_REST_Response
+	 */
+	public function register_user( $request ) {
+		$username = sanitize_user( $request->get_param( 'username' ) );
+		$email    = sanitize_email( $request->get_param( 'email' ) );
+		$password = $request->get_param( 'password' );
+		$profile  = $request->get_param( 'profile' ) ?: array();
+
+		// 验证必填字段
+		if ( empty( $username ) || empty( $email ) || empty( $password ) ) {
+			return $this->respond_error( 'missing_fields', '请填写用户名、邮箱和密码', 400 );
+		}
+
+		// 验证邮箱格式
+		if ( ! is_email( $email ) ) {
+			return $this->respond_error( 'invalid_email', '邮箱格式不正确', 400 );
+		}
+
+		// 检查用户名是否已存在
+		if ( username_exists( $username ) ) {
+			return $this->respond_error( 'username_exists', '用户名已被使用', 400 );
+		}
+
+		// 检查邮箱是否已存在
+		if ( email_exists( $email ) ) {
+			return $this->respond_error( 'email_exists', '邮箱已被注册', 400 );
+		}
+
+		// 创建用户
+		$user_id = wp_create_user( $username, $password, $email );
+
+		if ( is_wp_error( $user_id ) ) {
+			return $this->respond_error( 'registration_failed', $user_id->get_error_message(), 500 );
+		}
+
+		// 保存用户档案到 member_profiles 表
+		if ( ! empty( $profile ) && is_array( $profile ) ) {
+			global $wpdb;
+			$profiles_table = $wpdb->prefix . 'tanz_member_profiles';
+
+			$profile_data = array(
+				'user_id'        => $user_id,
+				'full_name'      => isset( $profile['fullName'] ) ? sanitize_text_field( $profile['fullName'] ) : '',
+				'phone'          => isset( $profile['phone'] ) ? sanitize_text_field( $profile['phone'] ) : '',
+				'country'        => isset( $profile['country'] ) ? sanitize_text_field( $profile['country'] ) : '',
+				'brand'          => isset( $profile['company'] ) ? sanitize_text_field( $profile['company'] ) : '',
+				'marketing_optin' => ! empty( $profile['marketingOptIn'] ) ? 1 : 0,
+				'notes'          => isset( $profile['notes'] ) ? sanitize_textarea_field( $profile['notes'] ) : '',
+				'created_at'     => current_time( 'mysql' ),
+			);
+
+			$wpdb->insert( $profiles_table, $profile_data );
+		}
+
+		// 自动登录
+		wp_set_current_user( $user_id );
+		wp_set_auth_cookie( $user_id, true );
+
+		$user = get_userdata( $user_id );
+
+		return $this->respond_success(
+			array(
+				'user' => array(
+					'id'           => $user->ID,
+					'username'     => $user->user_login,
+					'display_name' => $user->display_name,
+					'email'        => $user->user_email,
+					'avatar'       => get_avatar_url( $user->ID ),
+					'roles'        => $user->roles,
+				),
+			)
+		);
+	}
+
+	/**
 	 * 获取当前用户信息
 	 *
 	 * @param WP_REST_Request $request REST 请求对象
@@ -259,6 +363,9 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 			return $this->respond_error( 'not_logged_in', '未登录', 401 );
 		}
 
+		// 检查用户是否是客服（通过 wp_user_id 关联）
+		$agent_id = $this->get_agent_id_by_user( $user->ID );
+
 		return $this->respond_success(
 			array(
 				'user' => array(
@@ -268,7 +375,121 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 					'email'        => $user->user_email,
 					'avatar'       => get_avatar_url( $user->ID ),
 					'roles'        => $user->roles,
+					'is_agent'     => ! empty( $agent_id ),
+					'agent_id'     => $agent_id,
 				),
+			)
+		);
+	}
+
+	/**
+	 * 根据 WordPress 用户 ID 获取客服 ID
+	 *
+	 * @param int $user_id WordPress 用户 ID
+	 * @return string|null 客服 ID 或 null
+	 */
+	private function get_agent_id_by_user( $user_id ) {
+		global $wpdb;
+		$agents_table = $wpdb->prefix . 'tz_cs_agents';
+
+		// 检查表是否存在
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$agents_table}'" );
+		if ( ! $table_exists ) {
+			return null;
+		}
+
+		$agent_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT agent_id FROM {$agents_table} WHERE wp_user_id = %d AND status = 'active' LIMIT 1",
+				$user_id
+			)
+		);
+
+		return $agent_id ?: null;
+	}
+
+	/**
+	 * 获取客服状态
+	 *
+	 * @param WP_REST_Request $request REST 请求对象
+	 * @return WP_REST_Response
+	 */
+	public function get_agent_status( $request ) {
+		$user_id = get_current_user_id();
+		$agent_id = $this->get_agent_id_by_user( $user_id );
+
+		if ( ! $agent_id ) {
+			return $this->respond_error( 'not_agent', '您不是客服', 403 );
+		}
+
+		global $wpdb;
+		$agents_table = $wpdb->prefix . 'tz_cs_agents';
+
+		$agent = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT agent_id, name, status, last_active_at FROM {$agents_table} WHERE agent_id = %s",
+				$agent_id
+			)
+		);
+
+		if ( ! $agent ) {
+			return $this->respond_error( 'agent_not_found', '客服不存在', 404 );
+		}
+
+		return $this->respond_success(
+			array(
+				'agent_id'       => $agent->agent_id,
+				'name'           => $agent->name,
+				'status'         => $agent->status ?: 'offline',
+				'last_active_at' => $agent->last_active_at,
+			)
+		);
+	}
+
+	/**
+	 * 更新客服状态
+	 *
+	 * @param WP_REST_Request $request REST 请求对象
+	 * @return WP_REST_Response
+	 */
+	public function update_agent_status( $request ) {
+		$user_id = get_current_user_id();
+		$agent_id = $this->get_agent_id_by_user( $user_id );
+
+		if ( ! $agent_id ) {
+			return $this->respond_error( 'not_agent', '您不是客服', 403 );
+		}
+
+		$status = sanitize_text_field( $request->get_param( 'status' ) );
+
+		// 验证状态值
+		$valid_statuses = array( 'online', 'busy', 'away', 'offline' );
+		if ( ! in_array( $status, $valid_statuses, true ) ) {
+			return $this->respond_error( 'invalid_status', '无效的状态值，可选：online, busy, away, offline', 400 );
+		}
+
+		global $wpdb;
+		$agents_table = $wpdb->prefix . 'tz_cs_agents';
+
+		$updated = $wpdb->update(
+			$agents_table,
+			array(
+				'status'         => $status,
+				'last_active_at' => current_time( 'mysql' ),
+			),
+			array( 'agent_id' => $agent_id ),
+			array( '%s', '%s' ),
+			array( '%s' )
+		);
+
+		if ( false === $updated ) {
+			return $this->respond_error( 'update_failed', '状态更新失败', 500 );
+		}
+
+		return $this->respond_success(
+			array(
+				'status'         => $status,
+				'last_active_at' => current_time( 'mysql' ),
 			)
 		);
 	}
