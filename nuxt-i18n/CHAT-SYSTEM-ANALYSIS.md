@@ -8,7 +8,7 @@
 |------|------|------|
 | **前端聊天窗口** | Vue 3 (Nuxt) | `WhatsAppChatModal.vue` (2045行) |
 | **后端 API** | WordPress REST API | `tanzanite/v1/customer-service/agents` |
-| **用户认证** | WordPress Cookie | `useAuth.ts` → `/mytheme/v1/auth/me` |
+| **用户认证** | WordPress Cookie | `useAuth.ts` → `/tanzanite/v1/chat/me` ✅ 已修复 |
 | **实时通信** | 轮询 (暂无 WebSocket) | 计划换 VPS 后升级 |
 | **移动端客服** | React Native | `tanzanite-chat` 项目 |
 
@@ -22,7 +22,7 @@
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  useAuth.ensureSession()                                        │
-│  → 调用 /mytheme/v1/auth/me                                     │
+│  → 调用 /tanzanite/v1/chat/me ✅                                │
 │  → 返回用户信息 (如果已登录) 或 null (游客)                      │
 └─────────────────────────────────────────────────────────────────┘
                                 │
@@ -178,24 +178,49 @@ if (user.value?.is_agent) {
 
 ## 五、改进计划
 
-### 阶段 1：修复身份识别问题
+### 阶段 1：修复身份识别问题 ✅
 
-- [ ] 前端过滤：在 `fetchAgents()` 中排除当前用户
-- [ ] 后端增强：API 返回时排除当前用户
-- [ ] 用户信息增强：`/auth/me` 返回 `is_agent` 字段
+- [x] 前端过滤：在 `fetchAgents()` 中排除当前用户 ✅
+- [x] 后端增强：API 返回 `wp_user_id` 字段 ✅
+- [ ] 用户信息增强：`/auth/me` 返回 `is_agent` 字段（可选，暂不需要）
 
-### 阶段 2：添加欢迎页
+### 阶段 2：添加欢迎页 ✅
 
-- [ ] 设计欢迎页 UI（参考 Chatwoot）
-- [ ] 显示客服头像和状态
-- [ ] 集成 FAQ 快捷入口
+- [x] 设计欢迎页 UI（参考 Chatwoot）✅
+- [x] 显示客服头像和状态 ✅
+- [x] 集成 FAQ 快捷入口 ✅
 
-### 阶段 3：Web 端客服工作台
+### 阶段 3：Web 端客服工作台 🔄 进行中
 
-- [ ] 创建客服工作台页面 `/agent/dashboard`
-- [ ] 会话列表组件
-- [ ] 消息收发组件
-- [ ] 客服状态切换
+**方案：智能切换模式**（复用现有组件，检测到客服时自动切换视角）
+
+#### 3.1 后端准备 ✅
+- [x] 修复 API 路径：`/mytheme/v1/auth/*` → `/tanzanite/v1/chat/*` ✅
+- [x] `/tanzanite/v1/chat/me` 返回 `is_agent` 和 `agent_id` 字段 ✅
+- [x] 添加 `/tanzanite/v1/chat/register` 用户注册 API ✅
+- [x] 移除登录权限限制，允许所有用户登录 ✅
+- [ ] 获取客服的所有会话列表 API（已有 `/tanzanite/v1/chat/conversations`）
+
+#### 3.2 前端检测 ✅
+- [x] `useAuth` 中添加 `isAgent` 和 `agentId` 计算属性 ✅
+- [x] `AuthUser` 接口添加 `is_agent` 和 `agent_id` 字段 ✅
+- [ ] 聊天窗口根据 `isAgent` 切换模式
+
+#### 3.3 客服工作台 UI ✅
+- [x] 会话列表视图（显示所有待处理/进行中的会话）✅
+- [x] 会话项显示：用户名、最后消息、未读数、时间 ✅
+- [x] 点击会话进入聊天界面 ✅
+
+#### 3.4 客服聊天界面 ✅
+- [x] 消息列表显示 ✅
+- [x] 顶部显示客户信息（而非客服信息）✅
+- [x] 支持返回会话列表 ✅
+- [x] 发送消息功能 ✅
+
+#### 3.5 客服状态管理 ✅
+- [x] 在线/忙碌/离线状态切换 ✅
+- [x] 状态同步到后端 ✅
+- [x] 后端 API：`/tanzanite/v1/chat/agent-status` (GET/POST) ✅
 
 ### 阶段 4：实时通信升级
 
@@ -541,7 +566,7 @@ if (response.success && response.data) {
 - [x] **1.3** 修改 `WhatsAppChatModal.vue`：过滤当前用户 ✅
   - 缓存读取时过滤 ✅
   - API 获取时过滤 ✅
-- [ ] **1.4** 测试验证
+- [x] **1.4** 测试验证 ✅
 
 ### 阶段 2：添加欢迎页 ✅
 
@@ -551,12 +576,15 @@ if (response.success && response.data) {
 - [x] **2.4** 添加挥手动画 CSS ✅
 - [x] **2.5** 集成 FAQ 快捷入口 ✅
 
+### 阶段 3：Web 端客服工作台 🔄 进行中
+
+详见上方「五、改进计划 - 阶段 3」
+
 ### 后续阶段
 
-- 阶段 3：Web 端客服工作台
-- 阶段 4：WebSocket 升级
+- 阶段 4：WebSocket 升级（待 VPS 迁移）
 
 ---
 
 *文档创建时间：2025-12-07*
-*最后更新：2025-12-07 05:20*
+*最后更新：2025-12-07 21:25*

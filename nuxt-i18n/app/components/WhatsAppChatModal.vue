@@ -8,11 +8,209 @@
       >
         <!-- 聊天窗口容器 - 右下角定位 -->
         
-        <!-- 欢迎页 / 聊天窗口 切换容器 -->
+        <!-- 客服模式 / 访客模式 切换 -->
         <Transition name="fade-scale" mode="out-in">
-          <!-- 欢迎页 -->
+          <!-- 客服模式：会话列表 -->
           <div
-            v-if="showWelcomeScreen"
+            v-if="agentMode && !selectedConversation"
+            key="agent-list"
+            class="relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
+          >
+            <!-- 头部 -->
+            <div class="border-b border-white/10 bg-black/70 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center text-sm font-semibold text-black">
+                  {{ user?.display_name?.charAt(0) || 'A' }}
+                </div>
+                <div>
+                  <div class="text-white font-medium text-sm">{{ user?.display_name || 'Agent' }}</div>
+                  <!-- 状态切换下拉 -->
+                  <div class="relative">
+                    <button
+                      type="button"
+                      class="text-xs flex items-center gap-1 hover:opacity-80 transition-opacity"
+                      :class="agentStatusColors[currentAgentStatus]?.text || 'text-gray-400'"
+                      @click="showStatusDropdown = !showStatusDropdown"
+                    >
+                      <span 
+                        class="w-2 h-2 rounded-full"
+                        :class="[agentStatusColors[currentAgentStatus]?.dot || 'bg-gray-500', currentAgentStatus === 'online' ? 'animate-pulse' : '']"
+                      ></span>
+                      {{ agentStatusLabels[currentAgentStatus] || 'Offline' }}
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9l6 6 6-6"/>
+                      </svg>
+                    </button>
+                    <!-- 下拉菜单 -->
+                    <div
+                      v-if="showStatusDropdown"
+                      class="absolute top-full left-0 mt-1 bg-black/95 border border-white/10 rounded-lg py-1 min-w-[120px] z-50 shadow-xl"
+                    >
+                      <button
+                        v-for="status in ['online', 'busy', 'away', 'offline']"
+                        :key="status"
+                        type="button"
+                        class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-white/5 transition-colors"
+                        :class="currentAgentStatus === status ? 'bg-white/10' : ''"
+                        @click="changeAgentStatus(status)"
+                      >
+                        <span 
+                          class="w-2 h-2 rounded-full"
+                          :class="agentStatusColors[status]?.dot || 'bg-gray-500'"
+                        ></span>
+                        <span :class="agentStatusColors[status]?.text || 'text-gray-400'">
+                          {{ agentStatusLabels[status] }}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="w-9 h-9 rounded-full border-2 border-white/20 text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+                @click="handleClose"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            
+            <!-- 会话列表 -->
+            <div class="flex-1 overflow-y-auto p-4">
+              <div class="text-white/50 text-xs uppercase tracking-wider mb-3">Conversations</div>
+              
+              <!-- 加载中 -->
+              <div v-if="isLoadingConversations" class="flex items-center justify-center py-8">
+                <div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              
+              <!-- 空状态 -->
+              <div v-else-if="agentConversations.length === 0" class="text-center py-8">
+                <div class="text-white/30 text-4xl mb-2">💬</div>
+                <div class="text-white/50 text-sm">No conversations yet</div>
+              </div>
+              
+              <!-- 会话列表项 -->
+              <div v-else class="space-y-2">
+                <button
+                  v-for="conv in agentConversations"
+                  :key="conv.id"
+                  type="button"
+                  class="w-full p-3 rounded-xl border border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all text-left"
+                  @click="selectConversation(conv)"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-sm font-semibold text-black flex-shrink-0">
+                      {{ conv.customer_name?.charAt(0) || 'U' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between">
+                        <span class="text-white font-medium text-sm truncate">{{ conv.customer_name || 'Unknown' }}</span>
+                        <span class="text-white/40 text-xs">{{ formatTime(conv.updated_at) }}</span>
+                      </div>
+                      <div class="text-white/50 text-xs truncate">{{ conv.last_message || 'No messages' }}</div>
+                    </div>
+                    <div v-if="conv.unread_count > 0" class="w-5 h-5 rounded-full bg-emerald-500 text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
+                      {{ conv.unread_count > 9 ? '9+' : conv.unread_count }}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+            
+            <!-- 刷新按钮 -->
+            <div class="border-t border-white/10 p-3">
+              <button
+                type="button"
+                class="w-full py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-colors"
+                @click="fetchAgentConversations"
+              >
+                Refresh Conversations
+              </button>
+            </div>
+          </div>
+
+          <!-- 客服模式：聊天界面 -->
+          <div
+            v-else-if="agentMode && selectedConversation"
+            key="agent-chat"
+            class="relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col bg-black pointer-events-auto"
+          >
+            <!-- 头部 - 显示客户信息 -->
+            <div class="border-b border-white/10 bg-black/70 backdrop-blur-md px-4 py-3 flex items-center gap-3">
+              <button
+                type="button"
+                class="w-9 h-9 rounded-full border border-white/20 text-white/60 flex items-center justify-center hover:border-white/40 hover:text-white transition-colors"
+                @click="backToConversationList"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 18l-6-6 6-6"/>
+                </svg>
+              </button>
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-sm font-semibold text-black flex-shrink-0">
+                {{ selectedConversation.customer_name?.charAt(0) || 'U' }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-white font-medium text-sm truncate">{{ selectedConversation.customer_name || 'Customer' }}</div>
+                <div class="text-white/50 text-xs truncate">{{ selectedConversation.customer_email || '' }}</div>
+              </div>
+              <button
+                type="button"
+                class="w-9 h-9 rounded-full border-2 border-white/20 text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+                @click="handleClose"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            
+            <!-- 消息区域 -->
+            <div ref="messagesContainerDesktop" class="flex-1 overflow-y-auto p-4 space-y-3">
+              <div
+                v-for="msg in messages"
+                :key="msg.id"
+                class="flex"
+                :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'"
+              >
+                <div
+                  class="max-w-[80%] px-4 py-2 rounded-2xl text-sm"
+                  :class="msg.sender_type === 'agent' ? 'bg-emerald-500 text-black' : 'bg-white/10 text-white'"
+                >
+                  {{ msg.message }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="border-t border-white/10 p-3">
+              <div class="flex gap-2">
+                <input
+                  v-model="newMessage"
+                  type="text"
+                  placeholder="Type a message..."
+                  class="flex-1 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
+                  @keyup.enter="sendMessage"
+                />
+                <button
+                  type="button"
+                  class="w-10 h-10 rounded-full bg-emerald-500 text-black flex items-center justify-center hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                  :disabled="!newMessage.trim() || isSending"
+                  @click="sendMessage"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 访客模式：欢迎页 -->
+          <div
+            v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
             class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
           >
@@ -875,14 +1073,42 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { user } = useAuth()
+const { user, isAgent, agentId } = useAuth()
 const { openCart } = useCart()
 const config = useRuntimeConfig()
 
 // Desktop-only搜索占位
 const desktopSearchQuery = ref('')
 
-// 欢迎页状态
+// 客服模式状态
+const agentMode = computed(() => isAgent.value)
+
+// 客服会话列表
+const agentConversations = ref<any[]>([])
+const isLoadingConversations = ref(false)
+const selectedConversation = ref<any>(null)
+
+// 客服状态管理
+const currentAgentStatus = ref<string>('offline')
+const showStatusDropdown = ref(false)
+
+// 状态颜色配置
+const agentStatusColors: Record<string, { dot: string; text: string }> = {
+  online: { dot: 'bg-emerald-500', text: 'text-emerald-400' },
+  busy: { dot: 'bg-amber-500', text: 'text-amber-400' },
+  away: { dot: 'bg-orange-500', text: 'text-orange-400' },
+  offline: { dot: 'bg-gray-500', text: 'text-gray-400' }
+}
+
+// 状态标签
+const agentStatusLabels: Record<string, string> = {
+  online: 'Online',
+  busy: 'Busy',
+  away: 'Away',
+  offline: 'Offline'
+}
+
+// 欢迎页状态（客服模式下不显示欢迎页）
 const showWelcomeScreen = ref(true)
 
 // 是否有历史对话（用于显示 "Continue" 或 "Start"）
@@ -979,7 +1205,7 @@ const emailSettings = ref({
   afterSalesEmail: ''
 })
 
-type ChatTab = 'chat' | 'share' | 'orders'
+type ChatTab = 'chat' | 'share' | 'orders' | 'faq'
 interface ChatRoomState {
   messages: any[]
   activeTab: ChatTab
@@ -1903,6 +2129,23 @@ const getInitials = (name: string) => {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
+// 格式化时间（客服模式会话列表用）
+const formatTime = (dateStr: string) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  
+  // 小于1分钟
+  if (diff < 60 * 1000) return 'Just now'
+  // 小于1小时
+  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)}m`
+  // 小于24小时
+  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)}h`
+  // 超过24小时显示日期
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 // 转接会话
 async function handleTransfer() {
   if (!transferToAgent.value) {
@@ -2013,10 +2256,164 @@ const handleImageUpload = async (event: Event) => {
   }
 }
 
+// 获取客服会话列表（客服模式）
+const fetchAgentConversations = async () => {
+  if (!agentMode.value) return
+  
+  isLoadingConversations.value = true
+  try {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/conversations', {
+      credentials: 'include',
+      headers: {
+        'X-WP-Nonce': config.public?.wpNonce as string || ''
+      }
+    })
+    
+    if (response?.ok && response?.data) {
+      agentConversations.value = response.data.items || []
+    }
+  } catch (error) {
+    console.error('获取客服会话列表失败:', error)
+  } finally {
+    isLoadingConversations.value = false
+  }
+}
+
+// 选择会话（客服模式）
+const selectConversation = (conversation: any) => {
+  selectedConversation.value = conversation
+  // 加载该会话的消息
+  loadConversationMessages(conversation.id)
+}
+
+// 加载会话消息
+const loadConversationMessages = async (conversationId: string) => {
+  try {
+    const response = await $fetch<any>(`/wp-json/tanzanite/v1/chat/messages/${conversationId}`, {
+      credentials: 'include',
+      headers: {
+        'X-WP-Nonce': config.public?.wpNonce as string || ''
+      }
+    })
+    
+    if (response?.ok && response?.data) {
+      messages.value = response.data.items || []
+      scrollToBottom()
+    }
+  } catch (error) {
+    console.error('加载会话消息失败:', error)
+  }
+}
+
+// 返回会话列表（客服模式）
+const backToConversationList = () => {
+  selectedConversation.value = null
+}
+
+// 发送消息（客服模式）
+const sendMessage = async () => {
+  if (!newMessage.value.trim() || !selectedConversation.value) return
+  
+  isSending.value = true
+  const messageText = newMessage.value.trim()
+  newMessage.value = ''
+  
+  try {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/send', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': config.public?.wpNonce as string || ''
+      },
+      body: {
+        conversation_id: selectedConversation.value.id,
+        message: messageText
+      }
+    })
+    
+    if (response?.ok) {
+      // 添加消息到列表
+      messages.value.push({
+        id: Date.now(),
+        message: messageText,
+        sender_type: 'agent',
+        created_at: new Date().toISOString()
+      })
+      scrollToBottom()
+    }
+  } catch (error) {
+    console.error('发送消息失败:', error)
+    // 恢复消息
+    newMessage.value = messageText
+  } finally {
+    isSending.value = false
+  }
+}
+
+// 获取客服状态
+const fetchAgentStatus = async () => {
+  if (!agentMode.value) return
+  
+  try {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/agent-status', {
+      credentials: 'include',
+      headers: {
+        'X-WP-Nonce': config.public?.wpNonce as string || ''
+      }
+    })
+    
+    if (response?.ok && response?.data?.status) {
+      currentAgentStatus.value = response.data.status
+    }
+  } catch (error) {
+    console.error('获取客服状态失败:', error)
+  }
+}
+
+// 更新客服状态
+const changeAgentStatus = async (status: string) => {
+  showStatusDropdown.value = false
+  
+  const previousStatus = currentAgentStatus.value
+  currentAgentStatus.value = status // 乐观更新
+  
+  try {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/agent-status', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': config.public?.wpNonce as string || ''
+      },
+      body: { status }
+    })
+    
+    if (!response?.ok) {
+      // 回滚
+      currentAgentStatus.value = previousStatus
+    }
+  } catch (error) {
+    console.error('更新客服状态失败:', error)
+    // 回滚
+    currentAgentStatus.value = previousStatus
+  }
+}
+
 // 组件挂载时获取客服列表和检查历史对话
 onMounted(async () => {
-  await fetchAgents()
-  initHistoryChatCheck()
+  if (agentMode.value) {
+    // 客服模式：获取会话列表和状态，跳过欢迎页
+    showWelcomeScreen.value = false
+    await Promise.all([
+      fetchAgentConversations(),
+      fetchAgentStatus()
+    ])
+  } else {
+    // 访客模式：获取客服列表
+    await fetchAgents()
+    initHistoryChatCheck()
+  }
   scrollToBottom()
 })
 </script>
