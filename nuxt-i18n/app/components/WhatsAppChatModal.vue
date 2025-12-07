@@ -4,7 +4,7 @@
     <Transition name="fade">
       <div
         v-if="conversation"
-        class="fixed inset-0 z-[9000] flex items-center justify-end p-4 md:p-6 pointer-events-none"
+        class="fixed inset-0 z-[9000] flex items-center justify-center md:justify-end p-0 md:p-6 pointer-events-none"
       >
         <!-- 聊天窗口容器 - 右下角定位 -->
         
@@ -212,7 +212,7 @@
           <div
             v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
-            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
+            class="relative border-2 border-[#6b73ff] rounded-2xl md:rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
           >
             <!-- 关闭按钮 - 固定右上角 -->
             <button
@@ -226,15 +226,15 @@
             </button>
             
             <!-- 可滚动内容区域 -->
-            <div class="h-full overflow-y-auto p-6 md:p-8">
+            <div class="h-full overflow-y-auto p-4 md:p-8">
               <div class="w-full">
                 <!-- Logo -->
-                <div class="mb-4">
+                <div class="mb-2 md:mb-4">
                   <img src="/images/chat-logo.webp" alt="Tanzanite" class="w-12 h-12 rounded-xl object-cover" />
                 </div>
 
               <!-- 欢迎语 -->
-              <div class="mb-5">
+              <div class="mb-3 md:mb-5">
                 <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">
                   Hi there! <span class="inline-block animate-wave">👋</span>
                 </h1>
@@ -244,8 +244,8 @@
               </div>
 
               <!-- 客服状态卡片 -->
-              <div class="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-4 mb-4">
-                <div class="flex items-center justify-between mb-4">
+              <div class="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-3 md:p-4 mb-3 md:mb-4">
+                <div class="flex items-center justify-between mb-2 md:mb-4">
                   <div class="flex items-center gap-2">
                     <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
                     <span class="text-sm text-white/80">
@@ -262,23 +262,23 @@
                 </div>
 
                 <!-- 客服头像列表 -->
-                <div class="flex gap-3 flex-wrap">
+                <div class="flex gap-2 md:gap-3">
                   <button
                     v-for="agent in agents"
                     :key="agent.id"
                     type="button"
-                    class="flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all flex-1 min-w-[80px]"
+                    class="flex flex-col items-center gap-1 md:gap-2 p-2 md:p-3 rounded-xl border-2 transition-all flex-1"
                     :class="selectedAgent?.id === agent.id ? 'bg-[#6b73ff]/15 border-[#6b73ff]' : 'border-transparent hover:bg-[#6b73ff]/10 hover:border-[#6b73ff]/30'"
                     @click="selectAgentFromWelcome(agent)"
                   >
                     <div class="relative">
-                      <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-base font-semibold text-black overflow-hidden">
+                      <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-sm md:text-base font-semibold text-black overflow-hidden">
                         <img v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="w-full h-full object-cover" />
                         <span v-else>{{ getInitials(agent.name) }}</span>
                       </div>
-                      <div class="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0d1117]"></div>
+                      <div class="absolute bottom-0 right-0 md:bottom-0.5 md:right-0.5 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-emerald-500 border-2 border-[#0d1117]"></div>
                     </div>
-                    <span class="text-xs text-white/80 text-center max-w-[70px] truncate">{{ agent.name }}</span>
+                    <span class="text-[10px] md:text-xs text-white/80 text-center max-w-[60px] md:max-w-[70px] truncate">{{ agent.name }}</span>
                   </button>
                 </div>
               </div>
@@ -286,7 +286,7 @@
               <!-- 开始对话按钮 -->
               <button
                 type="button"
-                class="w-full py-3 rounded-xl bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                class="w-full py-2.5 md:py-3 rounded-xl bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 :disabled="!selectedAgent"
                 @click="enterChat"
               >
@@ -297,12 +297,12 @@
               </button>
 
               <!-- 快捷联系 -->
-              <div class="flex gap-2.5 mt-4">
+              <div class="flex gap-2 md:gap-2.5 mt-3 md:mt-4">
                 <a
                   v-if="selectedAgent?.whatsapp"
                   :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
                   target="_blank"
-                  class="flex-1 py-3 rounded-xl bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2.5 md:py-3 rounded-xl bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
@@ -312,7 +312,7 @@
                 <a
                   v-if="emailSettings.preSalesEmail"
                   :href="`mailto:${emailSettings.preSalesEmail}`"
-                  class="flex-1 py-3 rounded-xl bg-white/10 border border-white/15 text-white/80 text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2.5 md:py-3 rounded-xl bg-white/10 border border-white/15 text-white/80 text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -328,7 +328,7 @@
           <div
             v-else
             key="chat"
-            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col transition-colors duration-300 bg-black pointer-events-auto"
+            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col transition-colors duration-300 bg-black pointer-events-auto"
           >
             <!-- 聊天区域 -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -875,13 +875,13 @@
                   <HomeFaqPreview :max-items-per-category="5" />
                 </div>
 
-                <div v-if="activeTab === 'chat'" class="border-t border-white p-4">
-                  <form @submit.prevent="handleSendMessage" class="flex gap-2">
+                <div v-if="activeTab === 'chat'" class="border-t border-white p-3 md:p-4">
+                  <form @submit.prevent="handleSendMessage" class="flex gap-1.5 md:gap-2">
                     <input
                       v-model="newMessage"
                       type="text"
                       placeholder="Type a message..."
-                      class="flex-1 px-4 py-2.5 bg-white/[0.06] text-white border border-white rounded-full focus:outline-none focus:border-[#6b73ff] transition-colors text-base"
+                      class="flex-1 min-w-0 px-3 md:px-4 py-2 md:py-2.5 bg-white/[0.06] text-white border border-white rounded-full focus:outline-none focus:border-[#6b73ff] transition-colors text-sm md:text-base"
                       :disabled="isSending"
                     />
                     <input
@@ -895,13 +895,13 @@
                       type="button"
                       @click="imageInput?.click()"
                       :disabled="isUploadingImage"
-                      class="w-11 h-11 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-full transition-colors disabled:opacity-50 flex items-center justify-center"
+                      class="shrink-0 w-10 h-10 md:w-11 md:h-11 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-full transition-colors disabled:opacity-50 flex items-center justify-center"
                       title="Upload image"
                     >
-                      <svg v-if="!isUploadingImage" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg v-if="!isUploadingImage" class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                       </svg>
-                      <svg v-else class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <svg v-else class="animate-spin h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -909,7 +909,7 @@
                     <button
                       type="submit"
                       :disabled="!newMessage.trim() || isSending"
-                      class="px-6 py-2.5 bg-[#6b73ff] hover:bg-[#5d65e8] text-white rounded-full transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                      class="shrink-0 px-4 md:px-6 py-2 md:py-2.5 bg-[#6b73ff] hover:bg-[#5d65e8] text-white rounded-full transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
                     >
                       <span v-if="!isSending">Send</span>
                       <span v-else class="flex items-center gap-2">
