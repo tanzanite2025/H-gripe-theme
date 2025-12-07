@@ -63,6 +63,15 @@
             </NuxtLink>
             <span class="footer-info__sep">|</span>
             <NuxtLink
+              to="/cookie-policy"
+              class="footer-info__link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Cookie Policy
+            </NuxtLink>
+            <span class="footer-info__sep">|</span>
+            <NuxtLink
               to="/terms"
               class="footer-info__link"
               target="_blank"
