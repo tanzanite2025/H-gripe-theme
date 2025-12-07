@@ -424,26 +424,50 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 			$regions = array();
 			if ( isset( $rule['regions'] ) && is_array( $rule['regions'] ) ) {
 				foreach ( $rule['regions'] as $region ) {
-					$regions[] = sanitize_text_field( $region );
+					$regions[] = strtoupper( sanitize_text_field( $region ) );
 				}
 			}
 
+			// 邮编范围（新增）
+			$zip_ranges = array();
+			if ( isset( $rule['zip_ranges'] ) && is_array( $rule['zip_ranges'] ) ) {
+				foreach ( $rule['zip_ranges'] as $range ) {
+					$sanitized_range = sanitize_text_field( $range );
+					if ( '' !== $sanitized_range ) {
+						$zip_ranges[] = $sanitized_range;
+					}
+				}
+			}
+
+			// 预计时效（新增）
+			$eta_min_days = isset( $rule['eta_min_days'] ) && '' !== $rule['eta_min_days'] ? (int) $rule['eta_min_days'] : null;
+			$eta_max_days = isset( $rule['eta_max_days'] ) && '' !== $rule['eta_max_days'] ? (int) $rule['eta_max_days'] : null;
+
+			// 服务编码和名称（新增）
+			$service       = isset( $rule['service'] ) ? sanitize_key( $rule['service'] ) : null;
+			$service_label = isset( $rule['service_label'] ) ? sanitize_text_field( $rule['service_label'] ) : null;
+
 			$sanitized[] = array_filter(
 				array(
-					'type'      => $type,
-					'min'       => $min,
-					'max'       => $max,
-					'fee'       => $fee,
-					'priority'  => $priority,
-					'free_over' => $free_over,
-					'regions'   => $regions,
+					'type'         => $type,
+					'min'          => $min,
+					'max'          => $max,
+					'fee'          => $fee,
+					'priority'     => $priority,
+					'free_over'    => $free_over,
+					'regions'      => $regions,
+					'zip_ranges'   => $zip_ranges,
+					'eta_min_days' => $eta_min_days,
+					'eta_max_days' => $eta_max_days,
+					'service'      => $service,
+					'service_label' => $service_label,
 				),
 				function ( $value ) {
 					if ( is_array( $value ) ) {
 						return ! empty( $value );
 					}
 
-					return null !== $value;
+					return null !== $value && '' !== $value;
 				}
 			);
 		}

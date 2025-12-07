@@ -47,8 +47,101 @@
                     </h3>
                     
                     <div class="space-y-3">
+                      <!-- Country Selection -->
                       <div>
-                        <label class="block text-sm font-medium text-white/80 mb-1">Recipient</label>
+                        <label class="block text-sm font-medium text-white/80 mb-1">Country / Region <span class="text-red-400">*</span></label>
+                        <select
+                          v-model="form.country"
+                          class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
+                          :class="{ 'border-red-500': form.country && !shippingValidation.isShippable }"
+                        >
+                          <option value="" disabled class="bg-gray-900">Select a country</option>
+                          <optgroup label="Available for Shipping" class="bg-gray-900">
+                            <option
+                              v-for="country in shippableCountries"
+                              :key="country.code"
+                              :value="country.code"
+                              class="bg-gray-900"
+                            >
+                              {{ country.name }}
+                            </option>
+                          </optgroup>
+                          <optgroup label="Other Countries" class="bg-gray-900">
+                            <option
+                              v-for="country in nonShippableCountries"
+                              :key="country.code"
+                              :value="country.code"
+                              class="bg-gray-900 text-white/50"
+                            >
+                              {{ country.name }}
+                            </option>
+                          </optgroup>
+                        </select>
+                      </div>
+
+                      <!-- Shipping Unavailable Warning -->
+                      <div
+                        v-if="form.country && !shippingValidation.isShippable"
+                        class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg"
+                      >
+                        <div class="flex items-start gap-3">
+                          <svg class="w-6 h-6 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <div class="flex-1">
+                            <p class="text-red-400 font-medium">{{ shippingValidation.reason }}</p>
+                            <p class="text-white/60 text-sm mt-2">Don't worry, we have options for you:</p>
+                            <div class="mt-3 space-y-2">
+                              <button
+                                type="button"
+                                @click="openContactSupport"
+                                class="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                              >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                Contact us for special shipping arrangements
+                              </button>
+                              <button
+                                type="button"
+                                @click="openFreightForwarder"
+                                class="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+                              >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                Use a freight forwarder service
+                              </button>
+                              <button
+                                type="button"
+                                @click="saveCartForLater"
+                                class="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+                              >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                                Save cart and check back later
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Estimated Delivery -->
+                      <div
+                        v-if="form.country && shippingValidation.isShippable && estimatedDelivery"
+                        class="p-2 bg-green-500/10 border border-green-500/30 rounded-lg"
+                      >
+                        <p class="text-green-400 text-sm flex items-center gap-2">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Estimated delivery: {{ estimatedDelivery }}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label class="block text-sm font-medium text-white/80 mb-1">Recipient <span class="text-red-400">*</span></label>
                         <input
                           v-model="form.name"
                           type="text"
@@ -58,7 +151,7 @@
                       </div>
                       
                       <div>
-                        <label class="block text-sm font-medium text-white/80 mb-1">Phone</label>
+                        <label class="block text-sm font-medium text-white/80 mb-1">Phone <span class="text-red-400">*</span></label>
                         <input
                           v-model="form.phone"
                           type="tel"
@@ -68,7 +161,7 @@
                       </div>
                       
                       <div>
-                        <label class="block text-sm font-medium text-white/80 mb-1">Address</label>
+                        <label class="block text-sm font-medium text-white/80 mb-1">Address <span class="text-red-400">*</span></label>
                         <textarea
                           v-model="form.address"
                           rows="3"
@@ -79,7 +172,7 @@
                       
                       <div class="grid grid-cols-2 gap-3">
                         <div>
-                          <label class="block text-sm font-medium text-white/80 mb-1">City</label>
+                          <label class="block text-sm font-medium text-white/80 mb-1">City <span class="text-red-400">*</span></label>
                           <input
                             v-model="form.city"
                             type="text"
@@ -92,9 +185,10 @@
                           <input
                             v-model="form.zip"
                             type="text"
-                            placeholder="Zip code"
+                            :placeholder="zipPlaceholder"
                             class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
                           />
+                          <p v-if="zipHint" class="text-xs text-white/50 mt-1">{{ zipHint }}</p>
                         </div>
                       </div>
                     </div>
@@ -172,10 +266,30 @@
                       </div>
                       
                       <div class="flex justify-between text-sm">
-                        <span class="text-white/70">Shipping</span>
-                        <span class="font-medium text-white">
-                          {{ priceBreakdown.shipping === 0 ? 'Free' : formatPrice(priceBreakdown.shipping) }}
+                        <span class="text-white/70">
+                          Shipping
+                          <span v-if="form.country && shippingValidation.matchedRule?.service_label" class="text-xs text-white/50">
+                            ({{ shippingValidation.matchedRule.service_label }})
+                          </span>
                         </span>
+                        <span class="font-medium text-white">
+                          <template v-if="!form.country">
+                            <span class="text-white/50 text-xs">Select country</span>
+                          </template>
+                          <template v-else-if="!shippingValidation.isShippable">
+                            <span class="text-red-400 text-xs">Unavailable</span>
+                          </template>
+                          <template v-else>
+                            {{ regionShippingFee === 0 ? 'Free' : formatPrice(regionShippingFee) }}
+                          </template>
+                        </span>
+                      </div>
+                      <!-- 免运费进度 -->
+                      <div
+                        v-if="form.country && shippingValidation.isShippable && shippingValidation.matchedRule?.free_over && regionShippingFee > 0"
+                        class="text-xs text-green-400 mt-1"
+                      >
+                        Add {{ formatPrice(shippingValidation.matchedRule.free_over - priceBreakdown.subtotal) }} more for free shipping!
                       </div>
                       <div class="flex justify-between text-sm">
                         <span class="text-white/70">Tax</span>
@@ -296,6 +410,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { COUNTRIES } from '~/data/countries'
+import { useShippingValidation } from '~/composables/useShippingValidation'
 
 const {
   cartItems,
@@ -308,9 +424,19 @@ const {
   calculation,
 } = useCart()
 
-// 初始化计算系统
-onMounted(() => {
+// 配送验证
+const {
+  loadShippingTemplates,
+  validateShipping,
+  getShippableCountries,
+  getEstimatedDeliveryText,
+  getZipFormatHint,
+} = useShippingValidation()
+
+// 初始化计算系统和配送模板
+onMounted(async () => {
   calculation.initialize()
+  await loadShippingTemplates()
 })
 
 // 支付方式列表
@@ -323,6 +449,7 @@ const paymentMethods = [
 
 // 表单数据
 const form = ref({
+  country: '',
   name: '',
   phone: '',
   address: '',
@@ -335,6 +462,75 @@ const form = ref({
 const isSubmitting = ref(false)
 const couponCode = ref('')
 const isApplyingCoupon = ref(false)
+
+// 配送验证结果
+const shippingValidation = computed(() => {
+  return validateShipping(form.value.country, form.value.zip)
+})
+
+// 可配送国家列表
+const shippableCountryCodes = computed(() => getShippableCountries())
+
+const shippableCountries = computed(() => {
+  return COUNTRIES.filter(c => shippableCountryCodes.value.includes(c.code))
+})
+
+const nonShippableCountries = computed(() => {
+  return COUNTRIES.filter(c => !shippableCountryCodes.value.includes(c.code))
+})
+
+// 预计送达时间
+const estimatedDelivery = computed(() => {
+  if (!shippingValidation.value.isShippable) return null
+  return getEstimatedDeliveryText(shippingValidation.value.matchedRule)
+})
+
+// 邮编格式提示
+const zipFormatHint = computed(() => {
+  if (!form.value.country) return null
+  return getZipFormatHint(form.value.country)
+})
+
+const zipPlaceholder = computed(() => {
+  return zipFormatHint.value?.placeholder || 'Zip code'
+})
+
+const zipHint = computed(() => {
+  return zipFormatHint.value?.hint || ''
+})
+
+// 联系客服
+const openContactSupport = () => {
+  window.open('/contact', '_blank')
+}
+
+// 货运代理服务
+const openFreightForwarder = () => {
+  window.open('/help/freight-forwarder', '_blank')
+}
+
+// 保存购物车稍后再买
+const saveCartForLater = () => {
+  // 可以保存到 localStorage 或用户账户
+  alert('Your cart has been saved. We\'ll notify you when shipping becomes available to your region.')
+}
+
+// 基于地区的运费计算
+const regionShippingFee = computed(() => {
+  if (!form.value.country || !shippingValidation.value.isShippable) {
+    return 0
+  }
+  
+  const rule = shippingValidation.value.matchedRule
+  if (!rule) return 0
+  
+  // 检查免运费门槛
+  if (rule.free_over && priceBreakdown.value.subtotal >= rule.free_over) {
+    return 0
+  }
+  
+  return rule.fee || 0
+})
 
 // 应用优惠券
 const handleApplyCoupon = async () => {
@@ -354,6 +550,8 @@ const handleApplyCoupon = async () => {
 // 表单验证
 const isFormValid = computed(() => {
   return (
+    form.value.country !== '' &&
+    shippingValidation.value.isShippable &&
     form.value.name.trim() !== '' &&
     form.value.phone.trim() !== '' &&
     form.value.address.trim() !== '' &&
@@ -393,6 +591,7 @@ const handleSubmit = async () => {
 
     // 重置表单
     form.value = {
+      country: '',
       name: '',
       phone: '',
       address: '',

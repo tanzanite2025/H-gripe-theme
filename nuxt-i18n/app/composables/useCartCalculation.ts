@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { isZipInRanges } from './useShippingValidation'
 
 /**
  * 购物车计算系统 - 集成 Tanzanite Setting 配置
@@ -27,18 +28,35 @@ export const MEMBER_TIERS: Record<string, MemberTier> = {
   platinum: { name: 'Platinum', min: 10000, max: null, discount: 20 },
 }
 
-// 运费模板
+// 运费模板（扩展版）
 export interface ShippingTemplate {
   id: number
   name: string
+  template_name?: string
   type: 'weight' | 'quantity' | 'volume' | 'amount' | 'items'
   base_fee: number
   free_threshold?: number
+  is_active?: boolean
   rules: Array<{
-    min: number
-    max: number
+    type?: string
+    min: number | null
+    max: number | null
     fee: number
+    free_over?: number | null
+    regions?: string[]
+    zip_ranges?: string[]
+    eta_min_days?: number | null
+    eta_max_days?: number | null
+    service?: string
+    service_label?: string
   }>
+}
+
+// 配送地址
+export interface ShippingAddressInfo {
+  country: string
+  zip?: string
+  city?: string
 }
 
 // 税率配置
@@ -140,8 +158,10 @@ export const useCartCalculation = () => {
    * 根据用户积分获取会员等级
    */
   const getUserTier = computed((): MemberTier => {
+    const defaultTier: MemberTier = { name: 'Ordinary', min: 0, max: 499, discount: 0 }
+    
     if (!userPoints.value) {
-      return MEMBER_TIERS.ordinary
+      return MEMBER_TIERS.ordinary ?? defaultTier
     }
 
     const points = userPoints.value.total
@@ -154,7 +174,7 @@ export const useCartCalculation = () => {
       }
     }
 
-    return MEMBER_TIERS.ordinary
+    return MEMBER_TIERS.ordinary ?? defaultTier
   })
 
   /**
@@ -265,10 +285,88 @@ export const useCartCalculation = () => {
 
     // 查找匹配的规则
     const matchedRule = template.rules?.find(
-      rule => calculationValue >= rule.min && calculationValue <= rule.max
+      rule => {
+        const min = rule.min ?? 0
+        const max = rule.max ?? Infinity
+        return calculationValue >= min && calculationValue <= max
+      }
     )
 
     return matchedRule ? matchedRule.fee : template.base_fee
+  }
+
+  /**
+   * 基于地区计算运费（新版）
+   * 根据国家、邮编匹配运费规则
+   */
+  const calculateShippingByRegion = (
+    items: Array<{ weight?: number; quantity: number; price: number }>,
+    subtotal: number,
+    address: ShippingAddressInfo
+  ): { fee: number; rule: ShippingTemplate['rules'][0] | null; template: ShippingTemplate | null } => {
+    const { country, zip } = address
+    const normalizedCountry = country?.toUpperCase() || ''
+
+    if (!normalizedCountry) {
+      return { fee: 0, rule: null, template: null }
+    }
+
+    // 计算总重量
+    const totalWeight = items.reduce((sum, item) => sum + (item.weight || 0) * item.quantity, 0)
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0)
+
+    // 遍历所有模板查找匹配的规则
+    for (const template of shippingTemplates.value) {
+      if (template.is_active === false) continue
+
+      for (const rule of template.rules || []) {
+        // 检查国家匹配
+        const regions = rule.regions || []
+        if (regions.length === 0 || !regions.map(r => r.toUpperCase()).includes(normalizedCountry)) {
+          continue
+        }
+
+        // 检查邮编匹配
+        const zipRanges = rule.zip_ranges || []
+        if (zipRanges.length > 0 && zip) {
+          const zipMatched = isZipInRanges(zip, zipRanges)
+          if (!zipMatched) continue
+        }
+
+        // 检查重量/数量范围
+        const ruleType = rule.type || 'weight'
+        let valueToCheck = 0
+
+        switch (ruleType) {
+          case 'weight':
+            valueToCheck = totalWeight
+            break
+          case 'quantity':
+          case 'items':
+            valueToCheck = totalQuantity
+            break
+          case 'amount':
+            valueToCheck = subtotal
+            break
+          default:
+            valueToCheck = totalWeight
+        }
+
+        const min = rule.min ?? 0
+        const max = rule.max ?? Infinity
+
+        if (valueToCheck >= min && valueToCheck <= max) {
+          // 检查免运费门槛
+          if (rule.free_over && subtotal >= rule.free_over) {
+            return { fee: 0, rule, template }
+          }
+          return { fee: rule.fee, rule, template }
+        }
+      }
+    }
+
+    // 没有匹配的规则，返回默认运费
+    return { fee: subtotal >= 100 ? 0 : 10, rule: null, template: null }
   }
 
   /**
@@ -433,6 +531,7 @@ export const useCartCalculation = () => {
     calculatePointsDiscount,
     calculateCouponDiscount,
     calculateShipping,
+    calculateShippingByRegion,
     calculateTax,
     calculateTotal,
     autoSelectTaxRates,

@@ -39,6 +39,7 @@
                 service: document.getElementById('tz-shipping-rule-service'),
                 serviceLabel: document.getElementById('tz-shipping-rule-service-label'),
                 regions: document.getElementById('tz-shipping-rule-regions'),
+                zipRanges: document.getElementById('tz-shipping-rule-zip-ranges'),
                 min: document.getElementById('tz-shipping-rule-min'),
                 max: document.getElementById('tz-shipping-rule-max'),
                 fee: document.getElementById('tz-shipping-rule-fee'),
@@ -128,7 +129,10 @@
                 const serviceText = rule.service_label || rule.service || '默认方式';
                 const regionsText = Array.isArray(rule.regions) && rule.regions.length
                     ? rule.regions.join(', ')
-                    : '所有国家';
+                    : '未设置国家';
+                const zipRangesText = Array.isArray(rule.zip_ranges) && rule.zip_ranges.length
+                    ? ' [邮编: ' + rule.zip_ranges.join(', ') + ']'
+                    : '';
                 const etaText = (rule.eta_min_days != null || rule.eta_max_days != null)
                     ? ' · 时效: ' + (rule.eta_min_days != null ? rule.eta_min_days : '?') + '-' + (rule.eta_max_days != null ? rule.eta_max_days : '?') + ' 天'
                     : '';
@@ -147,7 +151,7 @@
                 div.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div>
-                            <strong>${typeText}</strong> · ${serviceText} · ${regionsText} ${rangeText} → 运费: ¥${rule.fee}${freeOverText}${etaText}
+                            <strong>${typeText}</strong> · ${serviceText} · ${regionsText}${zipRangesText} ${rangeText} → 运费: ¥${rule.fee}${freeOverText}${etaText}
                         </div>
                         <div>
                             <button type="button" class="button button-small edit-rule" data-idx="${idx}">编辑</button>
@@ -177,6 +181,9 @@
             }
             if (ri.regions) {
                 ri.regions.value = '';
+            }
+            if (ri.zipRanges) {
+                ri.zipRanges.value = '';
             }
             if (ri.min) {
                 ri.min.value = '';
@@ -226,6 +233,11 @@
                     ? rule.regions.join(',')
                     : '';
             }
+            if (ri.zipRanges) {
+                ri.zipRanges.value = Array.isArray(rule.zip_ranges) && rule.zip_ranges.length
+                    ? rule.zip_ranges.join(',')
+                    : '';
+            }
             if (ri.min) {
                 ri.min.value = rule.min != null ? rule.min : '';
             }
@@ -260,6 +272,16 @@
             let regions = [];
             if (regionsInput) {
                 regions = regionsInput.split(',').map(function(s) {
+                    return s.trim().toUpperCase();
+                }).filter(function(s) {
+                    return s.length > 0;
+                });
+            }
+
+            const zipRangesInput = ri.zipRanges ? ri.zipRanges.value.trim() : '';
+            let zipRanges = [];
+            if (zipRangesInput) {
+                zipRanges = zipRangesInput.split(',').map(function(s) {
                     return s.trim();
                 }).filter(function(s) {
                     return s.length > 0;
@@ -295,6 +317,7 @@
                 service: service || undefined,
                 service_label: serviceLabel || undefined,
                 regions: regions,
+                zip_ranges: zipRanges,
                 eta_min_days: etaMin,
                 eta_max_days: etaMax
             };
