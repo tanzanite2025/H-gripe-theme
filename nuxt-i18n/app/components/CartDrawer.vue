@@ -90,7 +90,7 @@
                   <input
                     type="number"
                     :value="item.quantity"
-                    @input="updateQuantity(item.id, parseInt(($event.target as HTMLInputElement).value) || 1)"
+                    @input="onQuantityInput(item.id, $event)"
                     class="w-12 h-7 text-center border border-white rounded bg-white/[0.06] text-white focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
                     min="1"
                     :max="item.maxStock"
@@ -232,6 +232,7 @@
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { useWishlist } from '~/composables/useWishlist'
+import { useCart } from '~/composables/useCart'
 
 const {
   cartItems,
@@ -272,6 +273,13 @@ const handleAddToWishlist = async (item: any) => {
   } catch (error) {
     console.error('Failed to add to wishlist from cart:', error)
   }
+}
+
+const onQuantityInput = (id: number, event: Event) => {
+  const target = event.target as HTMLInputElement | null
+  const raw = target ? target.value : ''
+  const parsed = parseInt(raw, 10) || 1
+  updateQuantity(id, parsed)
 }
 </script>
 

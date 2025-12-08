@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="products-page__title products-page__title--sr-only">Tire Size Charts</h2>
+    <h1 class="products-page__title products-page__title--sr-only">Tire Size Charts</h1>
     <p class="products-page__intro products-page__intro--sr-only">
       Reference charts for common tire and rim sizes. Detailed data will be added here later.
     </p>
@@ -25,7 +25,7 @@
         id="tubeless"
         class="sizecharts-section"
       >
-        <h3 class="sizecharts-section__title sizecharts-section__title--sr-only">Tubeless tires</h3>
+        <h2 class="sizecharts-section__title sizecharts-section__title--sr-only">Tubeless tires</h2>
 
         <TubelessProducts />
 
@@ -48,14 +48,14 @@
           </figure>
         </div>
 
-        <p class="sizecharts-section__subheading">What is an inner tube tire?</p>
+        <h3 class="sizecharts-section__subheading">What is an inner tube tire?</h3>
         <p class="sizecharts-section__intro">
           Tires with inner tubes are like the bicycle tires we rode when we were children. The tires are composed of
           &quot;inner tube + outer tire&quot;. There is a frame on the outside and a pneumatic tire in the inner
           cavity. It can be applied to any type of bicycle.
         </p>
 
-        <p class="sizecharts-section__subheading">What is tubeless?</p>
+        <h3 class="sizecharts-section__subheading">What is tubeless?</h3>
         <p class="sizecharts-section__intro">
           As the name suggests, tubeless tubes are clincher tires that are inflated on a rim without a tube. Unlike
           tubeless tubes, which need to keep air inside the tire, the tubeless tire, rim, and valve create a closed
@@ -75,16 +75,16 @@
           How to choose and specific specifications
         </button>
 
-        <p class="sizecharts-section__subheading">
+        <h3 class="sizecharts-section__subheading">
           Am I suitable for tubeless or tubeless use?
-        </p>
+        </h3>
         <p class="sizecharts-section__intro">
           It depends on your usage needs and habits. If you are doing daily commuting or relaxing holiday riding,
           tubeless tires are enough; but if you often ride on soft and slippery roads, or require more advanced,
           high-speed riding enjoyment, then tubeless tires are a good choice.
         </p>
 
-        <p class="sizecharts-section__subheading">How to install tubeless wheels?</p>
+        <h3 class="sizecharts-section__subheading">How to install tubeless wheels?</h3>
         <button
           type="button"
           class="sizecharts-brand-button"
@@ -93,9 +93,9 @@
           View graphic installation details
         </button>
 
-        <p class="sizecharts-section__subheading">
+        <h3 class="sizecharts-section__subheading">
           The difference between tubeless and tubeless systems
-        </p>
+        </h3>
         <p class="sizecharts-section__intro">
           The biggest difference between the two is that tubeless tires do not require inner tubes, while both clincher
           and tubular tires require the support of an inner tube structure. When some small punctures occur, the tire
@@ -125,7 +125,7 @@
         id="installation"
         class="sizecharts-section"
       >
-        <h3 class="sizecharts-section__title sizecharts-section__title--sr-only">Installation</h3>
+        <h2 class="sizecharts-section__title sizecharts-section__title--sr-only">Installation</h2>
         <p class="sizecharts-section__intro">
           <strong>Before installation:</strong>
         </p>
@@ -231,7 +231,7 @@
           </li>
         </ul>
 
-        <p class="sizecharts-section__subheading">1. Install tubeless tires</p>
+        <h3 class="sizecharts-section__subheading">1. Install tubeless tires</h3>
         <ul class="sizecharts-section__list">
           <li>
             Then install the tire on the rim just like a clincher tire. Generally speaking, tubeless tires are tighter and more difficult to install than clincher tires of the same type, requiring a certain amount of strength and a lot of patience. Here's a trick: Push all the bead into the concave center of the rim to make the tire easier to install.
@@ -277,7 +277,7 @@
           </figure>
         </div>
 
-        <p class="sizecharts-section__subheading">2. Fill the tire with tire repair fluid.</p>
+        <h3 class="sizecharts-section__subheading">2. Fill the tire with tire repair fluid.</h3>
         <ul class="sizecharts-section__list">
           <li>Use special tools to remove the core of the valve.</li>
           <li>
@@ -312,7 +312,7 @@
           </figure>
         </div>
 
-        <p class="sizecharts-section__subheading">3. Cheer up</p>
+        <h3 class="sizecharts-section__subheading">3. Cheer up</h3>
         <ul class="sizecharts-section__list">
           <li>
             Inflate the same as ordinary clincher tires. Because the tires have been installed in place in the previous step. Pump up the air, hold your wheel up, down, left, and right, and shake the tire sealant evenly, and you're done.
@@ -326,7 +326,7 @@
         id="choose"
         class="sizecharts-section"
       >
-        <h3 class="sizecharts-section__title">How to choose</h3>
+        <h2 class="sizecharts-section__title">How to choose</h2>
         <p class="sizecharts-section__intro">
           Simple guidelines for selecting tire size based on usage and frame clearance.
         </p>
@@ -343,7 +343,7 @@
         id="rims"
         class="sizecharts-section"
       >
-        <h3 class="sizecharts-section__title">Suitable for rims</h3>
+        <h2 class="sizecharts-section__title">Suitable for rims</h2>
         <p class="sizecharts-section__intro">
           How to read which tire widths are suitable for a given rim internal width.
         </p>

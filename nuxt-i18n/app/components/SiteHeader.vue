@@ -106,29 +106,34 @@
 								>
 									<div
 										v-if="isOpen"
-										class="fixed top-[80px] left-1/2 -translate-x-1/2 w-[90vw] max-w-[1600px] bg-[#0b1020] border border-[#6b79ff] rounded-md overflow-auto max-h-[70vh] shadow-none grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center z-[1200]"
-										role="listbox"
-										:id="dropdownId"
-										:aria-labelledby="buttonId"
-										tabindex="0"
-										@keydown="onListKeydown"
+										class="fixed inset-0 z-[1200] flex items-start justify-center pt-[80px]"
 									>
-										<button
-											v-for="(locale, index) in availableLocales"
-											:key="locale.code"
-											class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-[#2aa3ff40]"
-											:class="{ 'bg-[#2aa3ff40] font-medium': locale.code === currentLocale.code }"
-											role="option"
-											:aria-selected="locale.code === currentLocale.code"
-											:tabindex="-1"
-											:ref="el => setOptionRef(el, index)"
-											@click="switchLanguage(locale.code)"
+										<div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden"></div>
+										<div
+											class="relative w-full md:w-[90vw] md:max-w-[1600px] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl overflow-auto max-h-[70vh] shadow-[0_0_30px_rgba(107,115,255,0.6)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
+											role="listbox"
+											:id="dropdownId"
+											:aria-labelledby="buttonId"
+											tabindex="0"
+											@keydown="onListKeydown"
 										>
-											<span class="w-[1.2em] inline-block" aria-hidden="true">
-												<img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
-											</span>
-											<span>{{ locale.name }}</span>
-										</button>
+											<button
+												v-for="(locale, index) in availableLocales"
+												:key="locale.code"
+												class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-[#2aa3ff40]"
+												:class="{ 'bg-[#2aa3ff40] font-medium': locale.code === currentLocale.code }"
+												role="option"
+												:aria-selected="locale.code === currentLocale.code"
+												:tabindex="-1"
+												:ref="el => setOptionRef(el, index)"
+												@click="switchLanguage(locale.code)"
+											>
+												<span class="w-[1.2em] inline-block" aria-hidden="true">
+													<img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+												</span>
+												<span>{{ locale.name }}</span>
+											</button>
+										</div>
 									</div>
 								</transition>
 							</teleport>

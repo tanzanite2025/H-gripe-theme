@@ -1,0 +1,19 @@
+1|Step 01 - Epoxy Resin|We purchase raw materials from realiable suppliers.We produce the optimal epoxy resin for carbon rims.
+2|Step 02 - .Carbon Prepregs|We purchase different kinds of carbon fibers from Toray Japan.The carbon prepregs are carbon fibers saturated with epoxy resin through the weaving machines.
+3|Step 03 - Carbon prepregs Storeroom|Carbon prepregs are carbon fibers saturated with epoxy resin, and kept in optimal condition under -5℃ which is a stable temperature for the resin.
+4|Step 04 - Cutting Workshop|According to the production schedule,we need to select the necessary carbon sheets.Carbon fiber sheets are cut into the desired angles of 0°, ±45°,±30°, and ±90°. The carbon fibers are precisely machine-cut into pieces
+5|Step 05 - Lamination Preparation|This step is very import to speed up the carbon rim production.Lamination prepares the different parts of the rim with the carbon sheets which allows us to arrange the product more easily.We have the unique innovation in the carbon sheets lamination which can balance the rim weight,durability,rigidity better.This innovation keep us stand out from many manufacturers.
+6|Step 06 - Premold & Layup|The premold eliminate the risk of fiber moving during layup transfer. We adopt two-in-one molds for manfacturing to make mold more precise.Our layup technicians hand lay the fabric layers from the outer to the inner, constructing the rim body as well as fine details like bead hook and nipple reinforcement. After each overlap, we smooth the prepregs to ensure there are no wrinkles, fiber fractures, or air bubbles. When layups are finished, the two parts of the premold are merge into one mold and prepared for the next process.
+7|Step 07 - Molding|Before sent it to the mold plate,the workers need to check everything is well.Then the complete molds are moved to the molding machines.During the molding process,heat and pressure are accurately controlled and monitored in the composite curing ovens.
+8|Step 08 - Appearance inspection|All rims are 100% inspected.
+9|Step 09 - CNC Machining|After quality inspection,the rims are moved to CNC machining workshop to drill holes.We use aviation-grade CNC drills with drill bits specifically designed for drilling through advanced composites.All rims are drilled at a proper angle and good condition.
+10|Step 10 - Weight detectionlStrictly control weight standards, accurate to 1 gram.
+11|Step 11 - Sanding|After quality inspection,the rims will be tansferred to sanding worshop to be sanded.
+12|Step 12 - Grinding|After sanding process,the rims will be tansferred to grinding worshop to be grinded.
+13|Step 13 - Details Treatment|Details determine success or failure.We focus on the rim details,we have special details treatment workshop to handle the details.
+14|Step 14 - Other tests|Drainage holes, spoke holes, appearance inspection before shipment.
+15|Step 15 - Painting|The ultralight carbon rims are paintless but the traditional rims should be sent to the painting workshop for a glossy, matte, or any custom finish.
+16|Step 16 - Waterslide Decals|After painting,some rims required waterslide cecals will be sent to here to be processed.
+17|Step 17 - Laser Carving|The rims required the laser carving logo will be sent to here to be carved.
+18|Step 18 - Inspection & Packing|All the rims will be inspected again and put into foam bag and then be packed into carton box carefully.
+19|Step 19 - Our Warehouse|Compliant operation and classification ensure the accuracy of model rules.
