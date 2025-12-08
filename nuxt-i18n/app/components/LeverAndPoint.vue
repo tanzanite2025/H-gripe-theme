@@ -1,6 +1,8 @@
 <template>
   <div class="flex justify-center pt-0 pb-0 w-full">
-    <div class="w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] rounded-2xl border-2 border-[#6b73ff] bg-black shadow-[0_0_30px_rgba(107,115,255,0.3)] relative overflow-hidden flex flex-col" role="region" aria-label="Membership Levels and Points">
+    <div class="sidebar-panel w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] rounded-2xl border-2 border-[#6b73ff]/40 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] relative overflow-hidden flex flex-col" role="region" aria-label="Membership Levels and Points">
+      <!-- 背景装饰，与聊天欢迎页一致 -->
+      <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
       <button class="absolute right-2 top-2 w-7 h-7 inline-flex items-center justify-center border border-[rgba(124,117,255,0.6)] rounded-md bg-[rgba(30,27,75,0.6)] text-[#e8e9ff] pointer-events-auto hover:brightness-110 transition-all" type="button" @click="$emit('close')">×</button>
       <!-- 移动端标签页 -->
       <div class="md:hidden flex gap-2 justify-center py-3 border-b border-white/10 px-3 pointer-events-auto">

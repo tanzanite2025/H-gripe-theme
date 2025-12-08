@@ -690,7 +690,7 @@ const setActiveTab = (id: TechnicalTabId) => {
 
 @media (max-width: 768px) {
   .technical-tabs {
-    justify-content: center;
+    justify-content: flex-start;
   }
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
-	<div class="fixed top-1.5 left-1/2 -translate-x-1/2 w-[95vw] max-w-[1200px] z-[110] site-header-root">
+	<div class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[110] site-header-root">
 		<div
-			class="relative w-full rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-2 md:py-2"
+			class="relative w-full rounded-none md:rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-2 md:py-2"
 		>
 			<!-- 桌面端：宽版极简胶囊布局 (Option B Wide) -->
 			<div class="hidden md:flex flex-col items-center gap-1">
@@ -309,15 +309,17 @@
 					class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
 					@click="shareOpen = false"
 				></div>
-				<!-- 弹窗内容 -->
-				<div
-					class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto"
-					aria-modal="true"
-					role="dialog"
-					aria-label="Membership"
-				>
-					<LeverAndPoint @close="shareOpen = false" />
-				</div>
+				<!-- 弹窗内容：自下而上的 slide-up 动画，与其它弹窗保持一致 -->
+				<Transition name="slide-up" appear>
+					<div
+						class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto"
+						aria-modal="true"
+						role="dialog"
+						aria-label="Membership"
+					>
+						<LeverAndPoint @close="shareOpen = false" />
+					</div>
+				</Transition>
 			</div>
 		</transition>
 	</teleport>
@@ -725,6 +727,24 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 	.site-header-root {
 		max-height: 130px;
 	}
+}
+
+/* LeverAndPoint 弹窗使用的自下而上滑入动画（与 CartDrawer/QuickBuy/Wishlist 保持一致） */
+.slide-up-enter-active,
+.slide-up-leave-active {
+	transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+	transform: translateY(100%);
+	opacity: 0;
+}
+
+.slide-up-enter-to,
+.slide-up-leave-from {
+	transform: translateY(0%);
+	opacity: 1;
 }
 
 /* tablet-820: 820x1180 等宽度段，限制 SiteHeader 高度为 130px */

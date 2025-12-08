@@ -9,18 +9,21 @@
     >
       <div
         v-if="isCartOpen"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
         @click.self="closeCart"
       >
         <!-- 半透明背景遮罩，与 WhatsApp/Checkout 保持一致 -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->
-        <div
-          class="relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
-          aria-modal="true"
-          role="dialog"
-          aria-label="Shopping Cart"
-        >
+        <Transition name="slide-up" appear>
+          <div
+            class="sidebar-panel relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
+            aria-modal="true"
+            role="dialog"
+            aria-label="Shopping Cart"
+          >
+        <!-- 背景装饰，与聊天欢迎页一致 -->
+        <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
         <!-- 头部 -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 class="text-xl font-semibold text-white">
@@ -218,7 +221,8 @@
             </button>
           </div>
         </div>
-        </div>
+          </div>
+        </Transition>
       </div>
     </Transition>
   </Teleport>
@@ -292,5 +296,23 @@ const handleAddToWishlist = async (item: any) => {
 .slide-right-enter-from,
 .slide-right-leave-to {
   transform: translateX(100%);
+}
+
+/* 自下而上的模态滑入动画：与 WishlistDrawer/QuickBuy 保持一致 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+	transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+	transform: translateY(100%);
+	opacity: 0;
+}
+
+.slide-up-enter-to,
+.slide-up-leave-from {
+	transform: translateY(0%);
+	opacity: 1;
 }
 </style>

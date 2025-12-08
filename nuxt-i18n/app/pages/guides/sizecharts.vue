@@ -598,7 +598,7 @@ const setActiveTab = (id: SizeChartsTabId) => {
 
 @media (max-width: 768px) {
   .sizecharts-tabs {
-    justify-content: center;
+    justify-content: flex-start;
   }
 }
 </style>

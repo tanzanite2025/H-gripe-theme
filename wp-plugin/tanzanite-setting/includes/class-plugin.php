@@ -121,6 +121,12 @@ class Tanzanite_Plugin {
 			require_once $geometry_admin;
 		}
 
+		// 加载 Spoke Geometry Admin（独立后台页面用）
+		$spoke_geometry_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-spoke-geometry-admin.php';
+		if ( file_exists( $spoke_geometry_admin ) ) {
+			require_once $spoke_geometry_admin;
+		}
+
 		// 鍔犺浇 Orders Admin (Refactored)
 		$orders_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-orders-admin.php';
 		if ( file_exists( $orders_admin ) ) {

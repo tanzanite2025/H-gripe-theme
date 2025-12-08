@@ -1,7 +1,7 @@
 <template>
   <div class="sidebar-content w-full h-full flex flex-col p-3 md:p-4">
-    <!-- 搜索组件 -->
-    <div class="shrink-0 mb-3">
+    <!-- 搜索组件（移动端隐藏，桌面端显示） -->
+    <div class="shrink-0 mb-3 hidden md:block">
       <ProductSearchPanel />
     </div>
 
