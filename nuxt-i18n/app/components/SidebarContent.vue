@@ -211,6 +211,14 @@ const guidesNavLinks = [
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* Dock 导航 */
+.dock-nav {
+  background: radial-gradient(circle at top left, rgba(31,41,55,0.9), rgba(15,23,42,0.98));
+  border-radius: 24px;
+  border: none;
+  box-shadow:
+    0 6px 18px -10px rgba(0,0,0,0.9),
+    0 0 16px rgba(15,23,42,0.85);
+}
 .dock-item {
   flex: 1;
   height: 40px;
@@ -220,15 +228,17 @@ const guidesNavLinks = [
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: #9ca3af;
-  transition: all 0.3s;
+  color: rgba(248,250,252,0.9);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
 }
 .dock-item:hover {
-  background: rgba(255,255,255,0.05);
-  color: #fff;
+  background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(15,23,42,0.8));
+  box-shadow:
+    0 3px 9px -6px rgba(0,0,0,0.9),
+    0 0 9px rgba(15,23,42,0.8);
 }
 .dock-item.active {
   background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
@@ -266,12 +276,16 @@ const guidesNavLinks = [
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: radial-gradient(circle at top left, rgba(31,41,55,0.95), rgba(15,23,42,0.98));
   border-radius: 16px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  text-decoration: none;
+  box-shadow:
+    0 4px 14px -10px rgba(0,0,0,0.9),
+    0 0 12px rgba(15,23,42,0.85);
 }
 .hybrid-card::after {
   content: '';
@@ -281,17 +295,22 @@ const guidesNavLinks = [
   bottom: 0;
   width: 4px;
   background: var(--card-color);
-  opacity: 0.9;
+  opacity: 0.85;
   transition: all 0.3s ease;
-  box-shadow: 0 0 8px var(--card-color), 0 0 15px var(--card-color-dim);
+  box-shadow: 0 0 6px var(--card-color), 0 0 12px var(--card-color-dim);
 }
 .hybrid-card:hover {
-  background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  background: linear-gradient(90deg, rgba(31,41,55,0.98), rgba(15,23,42,0.99));
   transform: translateY(-2px);
-  box-shadow: 
-    0 0 0 1px var(--card-color-alpha),
-    0 10px 30px -10px rgba(0,0,0,0.5),
-    0 0 20px var(--card-color-dim);
+  box-shadow:
+    0 5px 16px -10px rgba(0,0,0,0.95),
+    0 0 12px rgba(15,23,42,0.8);
+}
+.hybrid-card:active {
+  transform: translateY(2px) scale(0.99);
+  box-shadow:
+    0 3px 10px -8px rgba(0,0,0,0.9),
+    0 0 10px rgba(15,23,42,0.8);
 }
 .hybrid-card:hover::after {
   opacity: 1;
@@ -319,10 +338,10 @@ const guidesNavLinks = [
   --card-bg: rgba(56, 189, 248, 0.1);
 }
 .card-pink {
-  --card-color: #f472b6;
-  --card-color-alpha: rgba(244, 114, 182, 0.5);
-  --card-color-dim: rgba(244, 114, 182, 0.2);
-  --card-bg: rgba(244, 114, 182, 0.1);
+  --card-color: #8b5cf6;
+  --card-color-alpha: rgba(139, 92, 246, 0.55);
+  --card-color-dim: rgba(139, 92, 246, 0.25);
+  --card-bg: rgba(139, 92, 246, 0.12);
 }
 
 .hybrid-icon {
@@ -364,39 +383,45 @@ const guidesNavLinks = [
   width: 16px;
   height: 16px;
   margin-left: auto;
-  color: #444;
-  transition: all 0.3s;
   margin-right: 8px;
+  color: #fff;
+  transition: all 0.3s;
   flex-shrink: 0;
+  opacity: 1;
 }
 .hybrid-card:hover .hybrid-arrow {
-  color: var(--card-color);
+  color: #fff;
   transform: translateX(4px);
 }
 
 /* 工具按钮 */
 .hybrid-btn {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96)),
+    radial-gradient(circle at top left, var(--btn-bg), transparent 65%);
+  border: none;
   height: 32px;
   padding: 0 12px;
   border-radius: 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #aaa;
-  transition: all 0.2s;
+  color: #cbd5f5;
+  transition: all 0.2s ease;
   flex-grow: 1;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow:
+    0 3px 9px -6px rgba(0,0,0,0.9),
+    0 0 10px rgba(15,23,42,0.9);
 }
 .hybrid-btn:hover {
-  background: var(--btn-bg);
+  background: linear-gradient(135deg, var(--btn-bg), rgba(15,23,42,0.96));
   color: var(--btn-color);
-  border-color: var(--btn-color);
-  box-shadow: 0 0 10px var(--btn-dim);
+  box-shadow:
+    0 4px 12px -8px rgba(0,0,0,0.95),
+    0 0 12px rgba(15,23,42,0.85);
   transform: translateY(-1px);
 }
 

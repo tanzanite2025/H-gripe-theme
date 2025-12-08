@@ -213,17 +213,20 @@ const setActiveTab = (id: WheelsetTabId) => {
 
 .wheelset-tabs__item {
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: none;
   border-radius: 9999px;
   padding: 8px 18px;
   font-size: 0.85rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  background: rgba(31, 41, 55, 0.9);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   backdrop-filter: blur(4px);
+  box-shadow:
+    0 3px 9px -6px rgba(0, 0, 0, 0.9),
+    0 0 9px rgba(0, 0, 0, 0.85);
 }
 
 .wheelset-tabs__item:active {
@@ -231,18 +234,16 @@ const setActiveTab = (id: WheelsetTabId) => {
 }
 
 .wheelset-tabs__item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(51, 65, 85, 0.95);
+  color: #ffffff;
 }
 
 .wheelset-tabs__item--active {
-  background: rgba(45, 212, 191, 0.15);
-  color: #2dd4bf;
-  border-color: rgba(45, 212, 191, 0.5);
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #000000;
+  border: none;
   font-weight: 600;
-  box-shadow: 0 0 15px rgba(45, 212, 191, 0.2), inset 0 0 10px rgba(45, 212, 191, 0.1);
-  text-shadow: 0 0 8px rgba(45, 212, 191, 0.4);
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
 }
 
 @media (min-width: 768px) {
