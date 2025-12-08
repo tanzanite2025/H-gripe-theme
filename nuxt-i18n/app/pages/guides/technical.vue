@@ -473,6 +473,18 @@ const setActiveTab = (id: TechnicalTabId) => {
   color: #f9fafb;
 }
 
+.products-page__title--sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .products-page__intro {
   margin: 0 0 1rem;
   font-size: 0.95rem;
@@ -486,45 +498,62 @@ const setActiveTab = (id: TechnicalTabId) => {
 
 .technical-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.3rem;
-  border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  margin-bottom: 1rem;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 4px 16px;
+  margin: 0 -16px 1rem;
+  max-width: calc(100% + 32px);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x;
 }
 
-.products-page__title--sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.technical-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .technical-tabs__item {
-  border: none;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.8rem;
+  padding: 8px 18px;
+  font-size: 0.85rem;
   font-weight: 500;
-  color: rgba(148, 163, 184, 0.9);
-  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.technical-tabs__item:active {
+  transform: scale(0.96);
+}
+
+.technical-tabs__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .technical-tabs__item--active {
-  background: rgba(56, 189, 248, 0.15);
-  color: #e5e7eb;
-  border: 1px solid rgba(56, 189, 248, 0.8);
+  background: rgba(45, 212, 191, 0.15);
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.5);
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(45, 212, 191, 0.2), inset 0 0 10px rgba(45, 212, 191, 0.1);
+  text-shadow: 0 0 8px rgba(45, 212, 191, 0.4);
+}
+
+@media (min-width: 768px) {
+  .technical-tabs {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0 0 1rem;
+    padding: 4px 0;
+    max-width: 100%;
+  }
 }
 
 .technical-section {
