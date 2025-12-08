@@ -1,6 +1,6 @@
 <template>
   <teleport to="body">
-    <!-- 背景蒙版（当前已禁用） -->
+    <!-- 背景蒙版 -->
     <transition
       enter-active-class="transition-opacity duration-300 ease-out"
       leave-active-class="transition-opacity duration-200 ease-in"
@@ -8,7 +8,7 @@
       leave-to-class="opacity-0"
     >
       <div 
-        v-if="false"
+        v-if="leftOpen"
         class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
         @click="handleBackdropClick"
       ></div>
@@ -20,7 +20,7 @@
       aria-label="Sidebar"
     >
       <section
-        class="sidebar-panel relative w-[85vw] md:w-[45vw] h-full max-md:h-[90vh] flex border border-white/20 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.08),0_0_60px_rgba(129,140,248,0.1),0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
+        class="sidebar-panel relative w-[85vw] md:w-[45vw] h-full max-md:h-[90vh] flex border border-white/20 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
         :class="{
           'translate-x-0': leftOpen,
           '-translate-x-full': !leftOpen

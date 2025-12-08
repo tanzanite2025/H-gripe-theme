@@ -10,12 +10,14 @@
         <!-- 半透明背景遮罩 -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->
-        <Transition name="slide-up">
+        <Transition name="slide-up" appear>
           <div
-            class="relative max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgga(107,115,255,0.3)] box-border flex flex-col"
+            class="sidebar-panel relative max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] box-border flex flex-col overflow-hidden"
             role="dialog"
             aria-modal="true"
           >
+        <!-- 背景装饰，与聊天欢迎页一致 -->
+        <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
         <!-- 头部 -->
         <header class="flex items-center justify-between px-3.5 max-md:px-2 py-2.5 max-md:py-2 border-b border-white/10 rounded-t-2xl overflow-hidden max-md:gap-1.5">
           <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" aria-label="quick-buy-steps">
@@ -388,22 +390,21 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-/* 弹窗滑入滑出动画 */
+/* 弹窗滑入滑出动画：与 WishlistDrawer 一致，从底部整块滑入 */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 }
 
 .slide-up-enter-from,
 .slide-up-leave-to {
+  transform: translateY(100%);
   opacity: 0;
-  transform: translateY(20px);
 }
 
-@media (max-width: 768px) {
-  .slide-up-enter-from,
-  .slide-up-leave-to {
-    transform: translateY(100%);
-  }
+.slide-up-enter-to,
+.slide-up-leave-from {
+  transform: translateY(0%);
+  opacity: 1;
 }
 </style>

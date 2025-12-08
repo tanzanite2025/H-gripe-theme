@@ -3,16 +3,18 @@
     <Transition name="whatsapp-product-drawer">
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
         @click.self="handleClose"
       >
         <!-- 半透明背景遮罩，与 WhatsApp/Checkout 保持一致 -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <div
-          class="relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh]
-                 rounded-2xl border-2 border-[#6b73ff] bg-black shadow-[0_0_30px_rgba(107,115,255,0.6)]
+          class="sidebar-panel relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh]
+                 rounded-2xl border-2 border-[#6b73ff]/40 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)]
                  flex flex-col overflow-hidden"
         >
+          <!-- 背景装饰，与聊天欢迎页一致 -->
+          <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
           <!-- Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <div class="flex flex-col gap-1 min-w-0">

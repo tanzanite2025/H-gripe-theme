@@ -316,7 +316,7 @@ const setActiveTab = (id: WheelsetTabId) => {
 
 @media (max-width: 768px) {
   .wheelset-tabs {
-    justify-content: center;
+    justify-content: flex-start;
   }
 }
 </style>
