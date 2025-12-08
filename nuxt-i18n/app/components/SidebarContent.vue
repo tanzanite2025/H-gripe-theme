@@ -200,7 +200,7 @@ const guidesLinks = [
 // Guides 快捷链接
 const guidesNavLinks = [
   { id: 'technical', label: 'Technical', to: '/guides/technical' },
-  { id: 'our-story', label: 'Our Story', to: '/company/about' },
+  { id: 'our-story', label: 'Our Story', to: '/company/ourstory' },
   { id: 'membership', label: 'Membership', to: '/company/membershipandpoints' },
 ]
 </script>

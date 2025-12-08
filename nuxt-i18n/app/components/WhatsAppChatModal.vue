@@ -212,12 +212,14 @@
           <div
             v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
-            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[99vh] md:h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
+            class="relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[99vh] md:h-[85vh] max-h-[800px] rounded-[32px] overflow-hidden flex flex-col border-2 border-[#6b73ff] ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-indigo-900/20 pointer-events-auto"
           >
+            <!-- 背景装饰 -->
+            <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
             <!-- 关闭按钮 - 固定右上角 -->
             <button
               type="button"
-              class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full border-2 border-white/20 bg-black/50 backdrop-blur-sm text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+              class="absolute top-4 right-4 z-20 w-9 h-9 rounded-full border-2 border-white/20 bg-black/50 backdrop-blur-sm text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors pointer-events-auto"
               @click="handleClose"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -226,7 +228,7 @@
             </button>
             
             <!-- 可滚动内容区域 -->
-            <div class="h-full overflow-y-auto p-4 md:p-8">
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 relative z-10">
               <div class="w-full">
                 <!-- Logo -->
                 <div class="mb-2 md:mb-4">
@@ -243,50 +245,59 @@
                 </p>
               </div>
 
-              <!-- 客服状态卡片 -->
-              <div class="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-3 md:p-4 mb-3 md:mb-4">
-                <div class="flex items-center justify-between mb-2 md:mb-4">
-                  <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span class="text-sm text-white/80">
-                      <strong class="text-emerald-500">{{ onlineAgentsCount }} agent{{ onlineAgentsCount > 1 ? 's' : '' }}</strong> online
-                    </span>
+              <!-- 客服状态 & 在线团队 -->
+              <div class="space-y-4 mb-6">
+                <div class="flex items-center gap-2 mb-2 pl-1">
+                  <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
+                  <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                    Online support team
                   </div>
-                  <span class="text-xs text-white/50 flex items-center gap-1">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <path d="M12 6v6l4 2"/>
-                    </svg>
-                    Replies in ~5 min
-                  </span>
                 </div>
 
-                <!-- 客服头像列表 -->
-                <div class="flex gap-2 md:gap-3">
+                <!-- 客服头像列表：更柔和的方形卡片 + 网格布局 -->
+                <div class="grid grid-cols-4 gap-2 md:gap-3">
                   <button
                     v-for="agent in agents"
                     :key="agent.id"
                     type="button"
-                    class="flex flex-col items-center gap-1 md:gap-2 p-2 md:p-3 rounded-xl border-2 transition-all flex-1"
-                    :class="selectedAgent?.id === agent.id ? 'bg-[#6b73ff]/15 border-[#6b73ff]' : 'border-transparent hover:bg-[#6b73ff]/10 hover:border-[#6b73ff]/30'"
+                    class="flex flex-col items-center group cursor-pointer"
                     @click="selectAgentFromWelcome(agent)"
                   >
-                    <div class="relative">
-                      <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-sm md:text-base font-semibold text-black overflow-hidden">
-                        <img v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="w-full h-full object-cover" />
-                        <span v-else>{{ getInitials(agent.name) }}</span>
+                    <div class="relative mb-2">
+                      <div
+                        class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-xs font-semibold text-white/80 group-hover:bg-white/10 group-hover:text-white transition-all"
+                        :class="selectedAgent?.id === agent.id ? 'ring-2 ring-[#6b73ff]' : ''"
+                      >
+                        <template v-if="agent.avatar">
+                          <img :src="agent.avatar" :alt="agent.name" class="w-full h-full rounded-2xl object-cover" />
+                        </template>
+                        <template v-else>
+                          {{ getInitials(agent.name) }}
+                        </template>
                       </div>
-                      <div class="absolute bottom-0 right-0 md:bottom-0.5 md:right-0.5 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-emerald-500 border-2 border-[#0d1117]"></div>
+                      <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-[3px] border-slate-950/90"></div>
                     </div>
-                    <span class="text-[10px] md:text-xs text-white/80 text-center max-w-[60px] md:max-w-[70px] truncate">{{ agent.name }}</span>
+                    <span class="text-xs font-medium text-white/70 group-hover:text-white transition-colors truncate max-w-[60px]">
+                      {{ agent.name }}
+                    </span>
                   </button>
                 </div>
+
+                <p class="text-[10px] text-white/40 leading-relaxed text-center px-2">
+                  {{ onlineAgentsCount }} agent{{ onlineAgentsCount > 1 ? 's' : '' }} online · Our team typically replies in a few minutes.
+                </p>
               </div>
 
+              <!-- TODO: 后续可在这里加入 "Your chats" 动态列表，目前先保持简洁 -->
+              </div>
+            </div>
+
+            <!-- 底部操作：Start / WhatsApp / Email 固定在欢迎容器底部 -->
+            <div class="p-4 md:px-8 md:pb-6 shrink-0 z-20 bg-white/[0.02] border-t border-white/[0.08]">
               <!-- 开始对话按钮 -->
               <button
                 type="button"
-                class="w-full py-2 md:py-3 rounded-xl bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                class="w-full py-2.5 px-4 bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 :disabled="!selectedAgent"
                 @click="enterChat"
               >
@@ -297,12 +308,12 @@
               </button>
 
               <!-- 快捷联系 -->
-              <div class="flex gap-2 md:gap-2.5 mt-3 md:mt-4">
+              <div class="flex gap-2.5 mt-3">
                 <a
                   v-if="selectedAgent?.whatsapp"
                   :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
                   target="_blank"
-                  class="flex-1 py-2 md:py-3 rounded-xl bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
@@ -312,14 +323,13 @@
                 <a
                   v-if="emailSettings.preSalesEmail"
                   :href="`mailto:${emailSettings.preSalesEmail}`"
-                  class="flex-1 py-2 md:py-3 rounded-xl bg-white/10 border border-white/15 text-white/80 text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2.5 rounded-xl bg-white/10 border border-white/15 text-white/80 text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                   </svg>
                   Email
                 </a>
-              </div>
               </div>
             </div>
           </div>
@@ -328,12 +338,14 @@
           <div
             v-else
             key="chat"
-            class="relative border-2 border-[#6b73ff] rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[99vh] md:h-[85vh] max-h-[800px] overflow-hidden flex flex-col transition-colors duration-300 bg-black pointer-events-auto"
+            class="relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[99vh] md:h-[85vh] max-h-[800px] rounded-[32px] overflow-hidden flex flex-col border-2 border-[#6b73ff] ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-indigo-900/20 transition-colors duration-300 pointer-events-auto"
           >
+            <!-- 背景装饰 -->
+            <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none"></div>
             <!-- 聊天区域 -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
               <!-- 头部 - 当前客服信息 -->
-              <div class="border-b border-white/10 bg-black/70 backdrop-blur-md">
+              <div class="border-b border-white/[0.08] bg-white/[0.03] backdrop-blur-md">
                 <div class="px-4 py-3 flex items-center gap-3">
                   <!-- 返回欢迎页按钮 -->
                   <button
@@ -624,7 +636,7 @@
                         type="button"
                         @click="imageInput?.click()"
                         :disabled="isUploadingImage"
-                        class="w-10 h-10 rounded-full border border-white/40 text-white flex items-center justify-center disabled:opacity-50"
+                        class="w-10 h-10 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-white flex items-center justify-center shadow-sm shadow-black/40 disabled:opacity-50 transition-colors"
                       >
                         <svg v-if="!isUploadingImage" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -637,10 +649,15 @@
                       <button
                         type="submit"
                         :disabled="!newMessage.trim() || isSending"
-                        class="px-4 h-11 rounded-full font-semibold text-sm text-black"
+                        class="px-4 h-11 rounded-full font-semibold text-sm text-black flex items-center justify-center"
                         :style="{ backgroundColor: currentThemeColor }"
+                        title="Send message"
                       >
-                        <span v-if="!isSending">Send</span>
+                        <span v-if="!isSending">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l14-8-4 16-3-7-7-1z" />
+                          </svg>
+                        </span>
                         <span v-else class="flex items-center gap-2">
                           <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -657,9 +674,9 @@
                 Select an agent to start chat
               </div>
 
-              <!-- 桌面端内容保持不变 -->
+              <!-- 桌面端内容 -->
               <div class="hidden md:flex flex-col flex-1 min-h-0">
-                <div class="flex gap-2 justify-center py-3 border-b border-white/10 px-2">
+                <div class="flex gap-2 justify-center py-3 border-b border-white/[0.08] px-4 bg-white/[0.02]">
                   <button
                     @click="activeTab = 'chat'"
                     class="px-4 py-1.5 rounded-full text-sm transition-all"
@@ -875,7 +892,7 @@
                   <HomeFaqPreview :max-items-per-category="5" />
                 </div>
 
-                <div v-if="activeTab === 'chat'" class="border-t border-white p-3 md:p-4">
+                <div v-if="activeTab === 'chat'" class="border-t border-white/[0.08] bg-white/[0.02] p-3 md:p-4">
                   <form @submit.prevent="handleSendMessage" class="flex gap-1.5 md:gap-2">
                     <input
                       v-model="newMessage"
@@ -895,7 +912,7 @@
                       type="button"
                       @click="imageInput?.click()"
                       :disabled="isUploadingImage"
-                      class="shrink-0 w-10 h-10 md:w-11 md:h-11 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-full transition-colors disabled:opacity-50 flex items-center justify-center"
+                      class="shrink-0 w-10 h-10 md:w-11 md:h-11 bg-white/[0.08] hover:bg-white/[0.18] text-white rounded-full shadow-sm shadow-black/40 transition-colors disabled:opacity-50 flex items-center justify-center"
                       title="Upload image"
                     >
                       <svg v-if="!isUploadingImage" class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -909,9 +926,14 @@
                     <button
                       type="submit"
                       :disabled="!newMessage.trim() || isSending"
-                      class="shrink-0 px-4 md:px-6 py-2 md:py-2.5 bg-[#6b73ff] hover:bg-[#5d65e8] text-white rounded-full transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+                      class="shrink-0 px-4 md:px-6 py-2 md:py-2.5 bg-[#6b73ff] hover:bg-[#5d65e8] text-white rounded-full transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base flex items-center justify-center"
+                      title="Send message"
                     >
-                      <span v-if="!isSending">Send</span>
+                      <span v-if="!isSending">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l14-8-4 16-3-7-7-1z" />
+                        </svg>
+                      </span>
                       <span v-else class="flex items-center gap-2">
                         <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
