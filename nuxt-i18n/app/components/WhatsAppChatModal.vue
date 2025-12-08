@@ -213,7 +213,7 @@
           <div
             v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
-            class="sidebar-panel relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[95vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto"
+            class="sidebar-panel relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto"
           >
             <!-- 背景装饰 -->
             <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
@@ -339,7 +339,7 @@
           <div
             v-else
             key="chat"
-            class="sidebar-panel relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[95vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] transition-colors duration-300 pointer-events-auto"
+            class="sidebar-panel relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] transition-colors duration-300 pointer-events-auto"
           >
             <!-- 背景装饰 -->
             <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none"></div>
