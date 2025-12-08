@@ -135,10 +135,13 @@ onMounted(() => {
 <style scoped>
 /* 搜索面板容器 */
 .search-panel-c {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
+  background: radial-gradient(circle at top left, rgba(41,55,80,0.96), rgba(15,23,42,0.98));
+  border-radius: 18px;
+  border: none;
   padding: 14px;
+  box-shadow:
+    0 8px 24px -12px rgba(0,0,0,0.9),
+    0 0 18px rgba(15,23,42,0.9);
 }
 
 /* 搜索行 */
@@ -160,19 +163,23 @@ onMounted(() => {
   min-width: 0;
   height: 38px;
   padding: 0 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+  border: none;
   border-radius: 10px;
-  color: #fff;
+  color: #ffffff;
   font-size: 13px;
   outline: none;
-  transition: all 0.3s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 2px 6px -3px rgba(0,0,0,0.9),
+    0 0 6px rgba(15,23,42,0.7);
 }
-.search-input-c::placeholder { color: rgba(255,255,255,0.4); }
+.search-input-c::placeholder { color: rgba(148,163,184,0.7); }
 .search-input-c:focus {
-  border-color: #2dd4bf;
-  background: rgba(45, 212, 191, 0.05);
-  box-shadow: 0 0 15px rgba(45, 212, 191, 0.15);
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.98));
+  box-shadow:
+    0 0 0 1px rgba(45,212,191,0.75),
+    0 0 14px rgba(45,212,191,0.35);
 }
 
 /* 搜索按钮 */
@@ -183,28 +190,32 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid;
+  transition: all 0.2s ease;
+  border: none;
 }
 .search-btn-c.primary {
-  background: linear-gradient(135deg, rgba(45, 212, 191, 0.3), rgba(59, 130, 246, 0.3));
-  border-color: rgba(45, 212, 191, 0.5);
-  color: #fff;
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.7), rgba(59, 130, 246, 0.85));
+  color: #0b1020;
+  box-shadow:
+    0 4px 14px -8px rgba(59,130,246,0.8),
+    0 0 14px rgba(45,212,191,0.55);
 }
 .search-btn-c.primary:hover {
-  background: linear-gradient(135deg, rgba(45, 212, 191, 0.5), rgba(59, 130, 246, 0.5));
-  box-shadow: 0 0 15px rgba(45, 212, 191, 0.3);
   transform: translateY(-1px);
+  box-shadow:
+    0 6px 18px -10px rgba(59,130,246,0.9),
+    0 0 18px rgba(45,212,191,0.7);
 }
 .search-btn-c.secondary {
-  background: transparent;
-  border-color: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.7);
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+  color: #ffffff;
+  box-shadow:
+    0 2px 6px -4px rgba(0,0,0,0.9),
+    0 0 6px rgba(15,23,42,0.7);
 }
 .search-btn-c.secondary:hover {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.3);
-  color: #fff;
+  background: linear-gradient(135deg, rgba(31,41,55,0.98), rgba(15,23,42,0.96));
+  color: #ffffff;
 }
 
 /* 分隔线 */

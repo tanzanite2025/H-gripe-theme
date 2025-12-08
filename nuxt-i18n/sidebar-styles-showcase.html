@@ -38,11 +38,14 @@
 
         /* 搜索组件 */
         .search-panel-c {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 16px;
+            background: radial-gradient(circle at top left, rgba(41,55,80,0.96), rgba(15,23,42,0.98));
+            border-radius: 18px;
+            border: none;
             padding: 14px;
             margin-bottom: 16px;
+            box-shadow:
+                0 8px 24px -12px rgba(0,0,0,0.9),
+                0 0 18px rgba(15,23,42,0.9);
         }
 
         .search-row-c {
@@ -65,19 +68,23 @@
             flex: 1;
             height: 38px;
             padding: 0 14px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+            border: none;
             border-radius: 10px;
-            color: #fff;
+            color: #ffffff;
             font-size: 13px;
             outline: none;
-            transition: all 0.3s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow:
+                0 2px 6px -3px rgba(0,0,0,0.9),
+                0 0 6px rgba(15,23,42,0.7);
         }
-        .search-input-c::placeholder { color: rgba(255,255,255,0.4); }
+        .search-input-c::placeholder { color: rgba(148,163,184,0.7); }
         .search-input-c:focus {
-            border-color: #2dd4bf;
-            background: rgba(45, 212, 191, 0.05);
-            box-shadow: 0 0 15px rgba(45, 212, 191, 0.15);
+            background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.98));
+            box-shadow:
+                0 0 0 1px rgba(45,212,191,0.75),
+                0 0 14px rgba(45,212,191,0.35);
         }
 
         .search-btn-c {
@@ -87,28 +94,32 @@
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid;
+            transition: all 0.2s ease;
+            border: none;
         }
         .search-btn-c.primary {
-            background: linear-gradient(135deg, rgba(45, 212, 191, 0.3), rgba(59, 130, 246, 0.3));
-            border-color: rgba(45, 212, 191, 0.5);
-            color: #fff;
+            background: linear-gradient(135deg, rgba(45, 212, 191, 0.7), rgba(59, 130, 246, 0.85));
+            color: #0b1020;
+            box-shadow:
+                0 4px 14px -8px rgba(59,130,246,0.8),
+                0 0 14px rgba(45,212,191,0.55);
         }
         .search-btn-c.primary:hover {
-            background: linear-gradient(135deg, rgba(45, 212, 191, 0.5), rgba(59, 130, 246, 0.5));
-            box-shadow: 0 0 15px rgba(45, 212, 191, 0.3);
             transform: translateY(-1px);
+            box-shadow:
+                0 6px 18px -10px rgba(59,130,246,0.9),
+                0 0 18px rgba(45,212,191,0.7);
         }
         .search-btn-c.secondary {
-            background: transparent;
-            border-color: rgba(255,255,255,0.15);
-            color: rgba(255,255,255,0.7);
+            background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+            color: #ffffff;
+            box-shadow:
+                0 2px 6px -4px rgba(0,0,0,0.9),
+                0 0 6px rgba(15,23,42,0.7);
         }
         .search-btn-c.secondary:hover {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.3);
-            color: #fff;
+            background: linear-gradient(135deg, rgba(31,41,55,0.98), rgba(15,23,42,0.96));
+            color: #ffffff;
         }
 
         .filter-divider-c {
@@ -124,7 +135,7 @@
         }
         .price-label-c {
             font-size: 11px;
-            color: rgba(255,255,255,0.5);
+            color: #ffffff;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -133,17 +144,21 @@
             width: 70px;
             height: 32px;
             padding: 0 8px 0 20px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95));
+            border: none;
             border-radius: 8px;
-            color: #fff;
+            color: #ffffff;
             font-size: 12px;
             outline: none;
             transition: all 0.2s;
+            box-shadow:
+                0 2px 5px -4px rgba(0,0,0,0.9),
+                0 0 5px rgba(15,23,42,0.7);
         }
         .price-input-c:focus {
-            border-color: rgba(129, 140, 248, 0.5);
-            background: rgba(129, 140, 248, 0.05);
+            box-shadow:
+                0 0 0 1px rgba(129,140,248,0.75),
+                0 0 10px rgba(129,140,248,0.45);
         }
         .price-wrapper-c {
             position: relative;
@@ -171,43 +186,51 @@
         .attr-btn-c {
             height: 32px;
             padding: 0 12px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+            border: none;
             border-radius: 8px;
-            color: rgba(255,255,255,0.7);
+            color: #ffffff;
             font-size: 11px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             gap: 6px;
+            box-shadow:
+                0 2px 6px -4px rgba(0,0,0,0.9),
+                0 0 8px rgba(15,23,42,0.85);
         }
         .attr-btn-c:hover {
-            background: rgba(129, 140, 248, 0.1);
-            border-color: rgba(129, 140, 248, 0.3);
-            color: #fff;
+            background: linear-gradient(135deg, rgba(31,41,55,0.98), rgba(15,23,42,0.96));
+            box-shadow:
+                0 3px 9px -5px rgba(0,0,0,0.95),
+                0 0 10px rgba(15,23,42,0.9);
         }
         .attr-btn-c .arrow {
             font-size: 8px;
-            opacity: 0.5;
+            color: #ffffff;
+            opacity: 1;
             transition: transform 0.2s;
         }
         .attr-btn-c:hover .arrow {
-            opacity: 1;
+            transform: translateY(1px);
         }
 
         /* Dock 导航 */
         .prime-nav-dock {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
+            background: radial-gradient(circle at top left, rgba(31,41,55,0.9), rgba(15,23,42,0.98));
             border-radius: 24px;
+            border: none;
             padding: 6px;
             display: flex;
             gap: 4px;
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             margin-bottom: 12px;
+            box-shadow:
+                0 6px 18px -10px rgba(0,0,0,0.9),
+                0 0 16px rgba(15,23,42,0.85);
         }
         .prime-nav-item {
             flex: 1;
@@ -218,15 +241,17 @@
             align-items: center;
             justify-content: center;
             gap: 2px;
-            color: #9ca3af;
-            transition: all 0.3s;
+            color: rgba(248,250,252,0.9);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 10px;
             font-weight: 600;
             cursor: pointer;
         }
         .prime-nav-item:hover {
-            background: rgba(255,255,255,0.05);
-            color: #fff;
+            background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(15,23,42,0.8));
+            box-shadow:
+                0 3px 9px -6px rgba(0,0,0,0.9),
+                0 0 9px rgba(15,23,42,0.8);
         }
         .prime-nav-item.active {
             background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
@@ -240,12 +265,15 @@
             align-items: center;
             gap: 12px;
             padding: 12px 14px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.05);
+            background: radial-gradient(circle at top left, rgba(31,41,55,0.95), rgba(15,23,42,0.98));
             border-radius: 16px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            box-shadow:
+                0 4px 14px -10px rgba(0,0,0,0.9),
+                0 0 12px rgba(15,23,42,0.85);
         }
 
         .hybrid-card::before {
@@ -253,13 +281,7 @@
             position: absolute;
             inset: 0;
             border-radius: 16px;
-            padding: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0.5;
+            opacity: 0;
         }
 
         .hybrid-card::after {
@@ -270,18 +292,24 @@
             bottom: 0;
             width: 4px;
             background: var(--card-color);
-            opacity: 0.9;
+            opacity: 0.85;
             transition: all 0.3s ease;
-            box-shadow: 0 0 8px var(--card-color), 0 0 15px var(--card-color-dim);
+            box-shadow: 0 0 6px var(--card-color), 0 0 12px var(--card-color-dim);
         }
 
         .hybrid-card:hover {
-            background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            background: linear-gradient(90deg, rgba(31,41,55,0.98), rgba(15,23,42,0.99));
             transform: translateY(-2px);
-            box-shadow: 
-                0 0 0 1px var(--card-color-alpha),
-                0 10px 30px -10px rgba(0,0,0,0.5),
-                0 0 20px var(--card-color-dim);
+            box-shadow:
+                0 5px 16px -10px rgba(0,0,0,0.95),
+                0 0 12px rgba(15,23,42,0.8);
+        }
+
+        .hybrid-card:active {
+            transform: translateY(2px) scale(0.99);
+            box-shadow:
+                0 3px 10px -8px rgba(0,0,0,0.9),
+                0 0 10px rgba(15,23,42,0.8);
         }
 
         .hybrid-card:hover::after {
@@ -326,13 +354,16 @@
         .hybrid-card:hover .hybrid-desc { color: var(--card-color); }
 
         .hybrid-arrow {
+            width: 16px;
+            height: 16px;
             margin-left: auto;
-            color: #444;
-            transition: all 0.3s;
             margin-right: 8px;
+            color: #ffffff;
+            transition: all 0.3s;
+            opacity: 1;
         }
         .hybrid-card:hover .hybrid-arrow {
-            color: var(--card-color);
+            color: #ffffff;
             transform: translateX(4px);
         }
 
@@ -343,27 +374,32 @@
             gap: 8px;
         }
         .hybrid-btn {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
+            background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96)),
+                        radial-gradient(circle at top left, var(--btn-bg), transparent 65%);
+            border: none;
             height: 32px;
             padding: 0 12px;
             border-radius: 8px;
             font-size: 11px;
             font-weight: 600;
-            color: #aaa;
-            transition: all 0.2s;
+            color: #cbd5f5;
+            transition: all 0.2s ease;
             flex-grow: 1;
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            box-shadow:
+                0 3px 9px -6px rgba(0,0,0,0.9),
+                0 0 10px rgba(15,23,42,0.9);
         }
         .hybrid-btn:hover {
-            background: var(--btn-bg);
+            background: linear-gradient(135deg, var(--btn-bg), rgba(15,23,42,0.96));
             color: var(--btn-color);
-            border-color: var(--btn-color);
-            box-shadow: 0 0 10px var(--btn-dim);
+            box-shadow:
+                0 4px 12px -8px rgba(0,0,0,0.95),
+                0 0 12px rgba(15,23,42,0.85);
             transform: translateY(-1px);
         }
 
@@ -467,7 +503,7 @@
                         <svg class="hybrid-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </div>
                     <!-- After Sales -->
-                    <div class="hybrid-card cursor-pointer" style="--card-color: #f472b6; --card-color-alpha: rgba(244, 114, 182, 0.5); --card-color-dim: rgba(244, 114, 182, 0.2); --card-bg: rgba(244, 114, 182, 0.1);">
+                    <div class="hybrid-card cursor-pointer" style="--card-color: #8b5cf6; --card-color-alpha: rgba(139, 92, 246, 0.55); --card-color-dim: rgba(139, 92, 246, 0.25); --card-bg: rgba(139, 92, 246, 0.12);">
                         <div class="hybrid-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div>
                         <div><div class="hybrid-title">After Sales</div><div class="hybrid-desc">24/7 Support</div></div>
                         <svg class="hybrid-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>

@@ -619,14 +619,17 @@ watch(() => props.initialFilters, (newFilters) => {
   align-items: center;
   padding: 0 0.5rem;
   height: 2rem;
-  border-radius: 0.375rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95));
+  border: none;
+  box-shadow:
+    0 2px 5px -4px rgba(0,0,0,0.9),
+    0 0 5px rgba(15,23,42,0.7);
 }
 
 .price-prefix {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #ffffff;
   margin-right: 0.15rem;
 }
 
@@ -636,11 +639,11 @@ watch(() => props.initialFilters, (newFilters) => {
   border: none;
   outline: none;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
 }
 
 .price-separator {
-  color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
 }
 
 /* Brake / Color / Diameter 组：标题 + 选项一行显示 */
@@ -664,8 +667,8 @@ watch(() => props.initialFilters, (newFilters) => {
 /* 属性下拉开关按钮 */
 .attribute-toggle {
   border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 1);
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+  color: #ffffff;
   cursor: pointer;
   padding: 0.4rem 0.75rem;
   display: inline-flex;
@@ -674,12 +677,15 @@ watch(() => props.initialFilters, (newFilters) => {
   border-radius: 0.5rem;
   font-size: 0.8125rem;
   transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  box-shadow:
+    0 2px 6px -4px rgba(0,0,0,0.9),
+    0 0 8px rgba(15,23,42,0.85);
 }
 
 .attribute-toggle-icon {
   display: inline-block;
   font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
   transition: transform 0.15s ease;
 }
 
@@ -688,7 +694,7 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .attribute-toggle:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, rgba(31,41,55,0.98), rgba(15,23,42,0.96));
   color: #ffffff;
 }
 
