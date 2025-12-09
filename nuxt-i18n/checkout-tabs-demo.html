@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Checkout Payment Tabs Demo</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body class="min-h-full flex items-center justify-center bg-slate-950">
+    <div
+      class="w-full max-w-5xl mx-auto px-4 py-10 flex flex-col gap-8 bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] text-slate-50"
+    >
+      <header class="space-y-2">
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-50">Checkout Payment Flow — Tabs Demo</h1>
+        <p class="text-sm text-slate-300/80 max-w-2xl">
+          Static HTML prototype to explore how different payment methods (Card / PayPal / Local wallets) map to different
+          required fields and explanations. No real logic is wired — this file is only for layout &amp; copy decisions.
+        </p>
+      </header>
+
+      <section
+        class="rounded-2xl border border-white/10 shadow-[0_24px_56px_-18px_rgba(0,0,0,1)] bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] overflow-hidden"
+      >
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <div>
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+              <span class="text-lg">💳</span>
+              <span>Checkout — Payment Options</span>
+            </h2>
+            <p class="mt-1 text-xs text-white/60 max-w-xl">
+              We will test how clearly we can explain what data is needed for each payment method, and when we can reuse
+              information from PayPal / local wallets instead of asking you to type everything again.
+            </p>
+          </div>
+          <div class="hidden md:flex items-center gap-2 text-xs text-white/60">
+            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(45,212,191,0.9)]"></span>
+            <span>Prototype only — no real payment</span>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-5">
+          <!-- Security note card -->
+          <div
+            class="flex items-start gap-3 p-4 rounded-xl bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border border-emerald-400/35 shadow-[0_4px_16px_-10px_rgba(0,0,0,1)]"
+          >
+            <div
+              class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.5)]"
+            >
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4.5l6 2.25v5.25c0 3.5-2.55 6.75-6 7.5-3.45-.75-6-4-6-7.5V6.75L12 4.5z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.75 12.75L11.25 14.25 14.25 11.25"
+                />
+              </svg>
+            </div>
+            <div class="space-y-1">
+              <p class="text-sm font-semibold text-emerald-300 tracking-tight">
+                Secure payment, minimal data collection
+              </p>
+              <p class="text-xs text-white/75 leading-relaxed max-w-3xl">
+                All pages on this site use HTTPS with an SSL certificate issued by a trusted certificate authority. All
+                payment information is transmitted over encrypted channels to prevent it from being intercepted or
+                tampered with. Actual charges are processed by reputable payment providers such as PayPal, Stripe,
+                Alipay / WeChat Pay / UnionPay. We only receive the payment result and do not store your card number,
+                CVV, or other sensitive data.
+              </p>
+            </div>
+          </div>
+
+          <!-- Tabs + content two-column layout -->
+          <div class="grid md:grid-cols-[1.2fr,1fr] gap-6">
+            <!-- Left: payment tabs & per-method fields -->
+            <div class="space-y-4">
+              <!-- Tabs -->
+              <div
+                class="inline-flex rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border border-white/10 p-1 shadow-[0_10px_30px_-18px_rgba(0,0,0,1)]"
+              >
+                <button
+                  type="button"
+                  class="px-4 py-1.5 text-xs md:text-sm rounded-full bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-slate-950 font-semibold shadow-[0_12px_30px_-18px_rgba(0,0,0,1)]"
+                >
+                  Card
+                </button>
+                <button
+                  type="button"
+                  class="px-4 py-1.5 text-xs md:text-sm rounded-full text-white/70 hover:text-white transition-colors"
+                >
+                  PayPal
+                </button>
+                <button
+                  type="button"
+                  class="px-4 py-1.5 text-xs md:text-sm rounded-full text-white/70 hover:text-white transition-colors"
+                >
+                  Alipay / WeChat / UnionPay
+                </button>
+              </div>
+
+              <!-- Card: fields & explanation -->
+              <section
+                class="space-y-4 rounded-2xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] border border-white/10"
+              >
+                <header class="space-y-1">
+                  <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/20 text-sky-300">
+                      💳
+                    </span>
+                    <span>Pay with credit / debit card</span>
+                  </h3>
+                  <p class="text-xs text-white/70">
+                    For card payments we need your full shipping details here for delivery and verification. This is the
+                    most traditional and widely supported method.
+                  </p>
+                </header>
+
+                <div class="space-y-3 text-xs">
+                  <div class="flex items-center justify-between">
+                    <span class="text-white/80">Required fields in this tab</span>
+                    <span class="text-[10px] uppercase tracking-[0.18em] text-emerald-300">
+                      Card · Full shipping info
+                    </span>
+                  </div>
+                  <ul class="space-y-1.5 text-white/75">
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                      <span>Country / Region (for shipping availability &amp; cost)</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                      <span>Recipient name &amp; phone number</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                      <span>Full street address, city and postal / zip code</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 gap-3 text-[11px] text-white/60">
+                  <div class="space-y-1">
+                    <p class="font-medium text-white/80 flex items-center gap-1">
+                      <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
+                      Why we ask for your phone number
+                    </p>
+                    <p>
+                      For international shipments the carrier may need to contact you for customs clearance or final
+                      delivery. We only share this with the logistics providers handling your order.
+                    </p>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="font-medium text-white/80 flex items-center gap-1">
+                      <span class="inline-flex h-1 w-4 rounded-full bg-sky-400/80"></span>
+                      When to choose card payments
+                    </p>
+                    <p>
+                      Good if you prefer to pay directly with Visa / MasterCard and keep everything in one checkout
+                      flow without being redirected.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <!-- PayPal: copy-only variant for now -->
+              <section
+                class="space-y-4 rounded-2xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border border-white/5 text-white/75"
+              >
+                <header class="space-y-1">
+                  <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/25 text-sky-300">
+                      🅿️
+                    </span>
+                    <span>Pay with PayPal (minimal typing)</span>
+                  </h3>
+                  <p class="text-xs text-white/70">
+                    For privacy and convenience, if you choose PayPal we rely on the shipping address already stored in
+                    your PayPal account whenever possible.
+                  </p>
+                </header>
+
+                <div class="space-y-2 text-xs">
+                  <p class="font-medium text-emerald-300">
+                    What we still need on this page (before redirecting to PayPal)
+                  </p>
+                  <ul class="space-y-1.5">
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                      <span>Country / Region — to show if we can ship to your location and estimate shipping fees.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="mt-3 space-y-2 text-xs">
+                  <p class="font-medium text-white/80 flex items-center gap-1">
+                    <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
+                    What we <span class="text-emerald-300">do not</span> ask you to repeat for PayPal
+                  </p>
+                  <ul class="space-y-1.5 text-white/70">
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-white/60"></span>
+                      <span>Full street address, city and postal code (we prefer to reuse your PayPal shipping
+                        address).</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-white/60"></span>
+                      <span>Card number, expiry date or CVV — these stay inside PayPal.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="mt-3 text-[11px] text-white/60 space-y-1">
+                  <p class="font-medium text-white/80">Why this can improve conversions</p>
+                  <p>
+                    Users used to paying with PayPal often expect a quick flow. If we ask them to fill a full shipping
+                    form before redirecting, some may give up. Minimising typing here respects that habit.
+                  </p>
+                </div>
+              </section>
+
+              <!-- Local wallets: Alipay / WeChat / UnionPay -->
+              <section
+                class="space-y-4 rounded-2xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border border-white/5 text-white/75"
+              >
+                <header class="space-y-1">
+                  <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/25 text-emerald-300">
+                      🌏
+                    </span>
+                    <span>Pay with Alipay / WeChat Pay / UnionPay</span>
+                  </h3>
+                  <p class="text-xs text-white/70">
+                    For these local payment methods you will be redirected to the provider to authorise the payment. We
+                    usually still need your shipping details here to prepare the parcel.
+                  </p>
+                </header>
+
+                <div class="space-y-2 text-xs">
+                  <p class="font-medium text-emerald-300">Typically required in this tab</p>
+                  <ul class="space-y-1.5">
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                      <span>Country / Region + city and postal code</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                      <span>Recipient name and phone number (for local carriers).</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                      <span>Street address if not fully provided by the wallet.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="mt-3 text-[11px] text-white/60 space-y-1">
+                  <p class="font-medium text-white/80">Notes</p>
+                  <p>
+                    In some regions these wallets can also return part of the shipping address. This demo keeps the
+                    explanation generic — we can refine it once the real API behaviour is confirmed.
+                  </p>
+                </div>
+              </section>
+            </div>
+
+            <!-- Right: order summary (static) -->
+            <aside class="space-y-4">
+              <div
+                class="rounded-2xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] border border-white/10"
+              >
+                <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/25 text-emerald-300">
+                    🧾
+                  </span>
+                  <span>Order summary (read-only demo)</span>
+                </h3>
+                <div class="space-y-2 text-xs text-white/70">
+                  <div class="flex justify-between">
+                    <span>Items subtotal</span>
+                    <span class="text-white font-medium">$380.00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Estimated shipping</span>
+                    <span class="text-white font-medium">$25.00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Tax</span>
+                    <span class="text-white font-medium">$0.00</span>
+                  </div>
+                  <div class="pt-2 mt-1 border-t border-white/15 flex justify-between items-center">
+                    <span class="text-white font-semibold">Estimated total</span>
+                    <span class="text-lg font-semibold text-sky-300">$405.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="rounded-2xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border border-white/10 text-xs text-white/70 space-y-2"
+              >
+                <p class="font-medium text-white/85 flex items-center gap-1.5">
+                  <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
+                  <span>How to read this demo</span>
+                </p>
+                <p>
+                  Left side explains what data we ask for under each payment tab, and why. Right side is a frozen order
+                  summary just to give context. When we move this into the real component, only the layout will be
+                  reused — the data will still come from Vue.
+                </p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

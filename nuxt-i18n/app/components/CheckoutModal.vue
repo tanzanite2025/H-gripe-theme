@@ -1,7 +1,7 @@
 <template>
-  <Teleport to="body">
+  <teleport to="body">
     <!-- 遮罩层 -->
-    <Transition name="fade">
+    <transition name="fade">
       <div
         v-if="isCheckoutOpen"
         class="fixed inset-0 z-[9998] flex items-center justify-center p-4"
@@ -10,11 +10,8 @@
         <!-- 半透明背景遮罩 -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 结账弹窗 -->
-        <Transition name="scale">
-          <div
-            v-if="isCheckoutOpen"
-            class="relative bg-black border-2 border-[#6b73ff] rounded-2xl w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden shadow-[0_0_30px_rgba(107,115,255,0.3)]"
-          >
+        <transition name="scale">
+          <div v-if="isCheckoutOpen" class="relative flex flex-col w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border border-white/10 shadow-[0_24px_56px_-18px_rgba(0,0,0,1)]">
             <!-- 头部 -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <h2 class="text-2xl font-bold text-white">
@@ -32,12 +29,30 @@
             </div>
 
             <!-- 内容区域 -->
-            <div class="overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div class="grid md:grid-cols-2 gap-6 p-6">
+            <div class="flex-1 overflow-y-auto">
+              <div class="p-6 space-y-4">
+                <div class="flex items-start gap-3 p-4 rounded-xl bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border border-emerald-400/35 shadow-[0_4px_16px_-10px_rgba(0,0,0,1)]">
+                  <div class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5l6 2.25v5.25c0 3.5-2.55 6.75-6 7.5-3.45-.75-6-4-6-7.5V6.75L12 4.5z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 12.75L11.25 14.25 14.25 11.25" />
+                    </svg>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-sm font-semibold text-emerald-300">
+                      Secure payment &amp; data protection
+                    </p>
+                    <p class="text-xs text-white/75 leading-relaxed">
+                      All pages on this site use HTTPS with an SSL certificate issued by a trusted certificate authority. All payment information is transmitted over encrypted channels to prevent it from being intercepted or tampered with. Actual charges are processed by reputable payment providers such as PayPal, Stripe, Alipay / WeChat Pay / UnionPay. We only receive the payment result and do not store your card number, CVV, or other sensitive data.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
                 <!-- 左侧：表单 -->
                 <div class="space-y-6">
                   <!-- Shipping Address -->
-                  <div class="bg-white/[0.06] border border-white/10 rounded-xl p-5">
+                  <div class="rounded-xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                     <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                       <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -52,8 +67,8 @@
                         <label class="block text-sm font-medium text-white/80 mb-1">Country / Region <span class="text-red-400">*</span></label>
                         <select
                           v-model="form.country"
-                          class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
-                          :class="{ 'border-red-500': form.country && !shippingValidation.isShippable }"
+                          class="w-full px-4 py-2.5 rounded-lg border-none text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
+                          :class="{ 'focus:[box-shadow:0_0_0_1px_rgba(248,113,113,0.9)]': form.country && !shippingValidation.isShippable }"
                         >
                           <option value="" disabled class="bg-gray-900">Select a country</option>
                           <optgroup label="Available for Shipping" class="bg-gray-900">
@@ -146,7 +161,7 @@
                           v-model="form.name"
                           type="text"
                           placeholder="Enter recipient name"
-                          class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
+                          class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                         />
                       </div>
                       
@@ -156,7 +171,7 @@
                           v-model="form.phone"
                           type="tel"
                           placeholder="Enter phone number"
-                          class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
+                          class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                         />
                       </div>
                       
@@ -166,8 +181,8 @@
                           v-model="form.address"
                           rows="3"
                           placeholder="Enter detailed address"
-                          class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff] resize-none"
-                        />
+                          class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)] resize-none"
+                        ></textarea>
                       </div>
                       
                       <div class="grid grid-cols-2 gap-3">
@@ -177,7 +192,7 @@
                             v-model="form.city"
                             type="text"
                             placeholder="City"
-                            class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
+                            class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                           />
                         </div>
                         <div>
@@ -186,7 +201,7 @@
                             v-model="form.zip"
                             type="text"
                             :placeholder="zipPlaceholder"
-                            class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
+                            class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                           />
                           <p v-if="zipHint" class="text-xs text-white/50 mt-1">{{ zipHint }}</p>
                         </div>
@@ -195,7 +210,7 @@
                   </div>
 
                   <!-- Payment Method -->
-                  <div class="bg-white/[0.06] border border-white/10 rounded-xl p-5">
+                  <div class="rounded-xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                     <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                       <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -207,8 +222,8 @@
                       <label
                         v-for="method in paymentMethods"
                         :key="method.id"
-                        class="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all"
-                        :class="form.paymentMethod === method.id ? 'border-[#6b73ff] bg-[#6b73ff]/10' : 'border-white/20 hover:border-white/30'"
+                        class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_4px_12px_-8px_rgba(0,0,0,0.95)]"
+                        :class="form.paymentMethod === method.id ? 'ring-1 ring-emerald-400/80 shadow-[0_6px_20px_-10px_rgba(0,0,0,1)]' : 'hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.96))]'"
                       >
                         <input
                           v-model="form.paymentMethod"
@@ -225,7 +240,7 @@
 
                 <!-- 右侧：订单摘要 -->
                 <div class="space-y-6">
-                  <div class="bg-white/[0.06] border border-white/10 rounded-xl p-5">
+                  <div class="rounded-xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                     <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                       <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -238,9 +253,9 @@
                       <div
                         v-for="item in cartItems"
                         :key="item.id"
-                        class="flex gap-3 p-3 bg-white/[0.04] border border-white/10 rounded-lg"
+                        class="flex gap-3 p-3 rounded-lg bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_18px_-10px_rgba(0,0,0,0.95)]"
                       >
-                        <div class="w-16 h-16 flex-shrink-0 bg-white/5 rounded-lg overflow-hidden border border-white">
+                        <div class="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_4px_12px_-6px_rgba(0,0,0,0.95)]">
                           <img
                             v-if="item.thumbnail"
                             :src="item.thumbnail"
@@ -303,7 +318,7 @@
                   </div>
 
                   <!-- Coupon -->
-                  <div class="bg-white/[0.06] border border-white/10 rounded-xl p-5">
+                  <div class="rounded-xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                     <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                       <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z" clip-rule="evenodd" />
@@ -315,7 +330,7 @@
                         v-model="couponCode"
                         type="text"
                         placeholder="Enter coupon code"
-                        class="flex-1 px-3 py-2 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff] text-sm"
+                        class="flex-1 px-3 py-2 rounded-lg border-none text-sm text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                       />
                       <button
                         @click="handleApplyCoupon"
@@ -334,7 +349,7 @@
                   </div>
 
                   <!-- Points Discount -->
-                  <div v-if="calculation.userPoints.value" class="bg-white/[0.06] border border-white/10 rounded-xl p-5">
+                  <div v-if="calculation.userPoints.value" class="rounded-xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                     <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                       <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
@@ -354,42 +369,43 @@
                       <label class="block text-xs text-white/70 mb-1">Points to use</label>
                       <input
                         :value="calculation.pointsToUse.value"
-                        @input="calculation.setPointsUsage(parseInt(($event.target as HTMLInputElement).value) || 0)"
+                        @input="calculation.setPointsUsage(parseInt(($event.target && $event.target.value) || '0', 10) || 0)"
                         type="number"
                         :max="calculation.userPoints.value.available"
                         min="0"
-                        class="w-full px-3 py-2 bg-white/5 border border-white rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#6b73ff] text-sm"
+                        class="w-full px-3 py-2 rounded-lg border-none text-sm text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                       />
                       <p class="mt-1 text-xs text-white/60">1 point = $0.01, max 50% of order</p>
                     </div>
                   </div>
 
                   <!-- Notes -->
-                  <div class="bg-white/[0.06] border border-white/10 rounded-xl p-5">
+                  <div class="rounded-xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                     <label class="block text-sm font-medium text-white/80 mb-2">Order Notes (Optional)</label>
                     <textarea
                       v-model="form.notes"
                       rows="3"
                       placeholder="Any special requests..."
-                      class="w-full px-4 py-2.5 bg-white/5 border border-white rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#6b73ff] resize-none"
-                    />
+                      class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)] resize-none"
+                    ></textarea>
                   </div>
                 </div>
               </div>
             </div>
+            </div>
 
             <!-- 底部按钮 -->
-            <div class="border-t border-white/10 px-6 py-4 flex gap-3">
+            <div class="shrink-0 border-t border-white/10 px-6 py-4 flex gap-3 bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.98),rgba(0,0,0,1))] shadow-[0_-10px_26px_-18px_rgba(0,0,0,1)]">
               <button
                 @click="backToCart"
-                class="px-6 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
+                class="px-6 py-3 rounded-full text-sm font-medium text-white/80 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] hover:text-white hover:-translate-y-0.5 transition-all"
               >
                 ← Back to Cart
               </button>
               <button
                 @click="handleSubmit"
                 :disabled="!isFormValid || isSubmitting"
-                class="flex-1 px-6 py-3 bg-[#6b73ff] text-white rounded-lg hover:brightness-110 transition-all font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                class="flex-1 px-6 py-3 rounded-full text-sm font-semibold text-slate-950 bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] shadow-[0_10px_30px_-16px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[0_18px_45px_-18px_rgba(0,0,0,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span v-if="!isSubmitting">Confirm Payment {{ formatPrice(priceBreakdown.total) }}</span>
                 <span v-else class="flex items-center justify-center gap-2">
@@ -402,10 +418,10 @@
               </button>
             </div>
           </div>
-        </Transition>
+        </transition>
       </div>
-    </Transition>
-  </Teleport>
+    </transition>
+  </teleport>
 </template>
 
 <script setup lang="ts">
