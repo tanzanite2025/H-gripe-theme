@@ -96,10 +96,10 @@ const onClick = (event: MouseEvent) => {
   .chat-start-button {
     color: #e5e7eb;
     background:
-      radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+      linear-gradient(135deg, rgba(51, 65, 85, 0.98), rgba(15, 23, 42, 0.98));
     box-shadow:
-      0 4px 14px -10px rgba(0, 0, 0, 0.9),
-      0 0 12px rgba(15, 23, 42, 0.85);
+      0 10px 30px -18px rgba(0, 0, 0, 1),
+      0 0 18px rgba(15, 23, 42, 0.95);
   }
 
   .chat-start-button__overlay {
@@ -142,9 +142,11 @@ const onClick = (event: MouseEvent) => {
 @media (hover: none) and (pointer: coarse) {
   .chat-start-button {
     padding: 0.625rem 1rem;
-    color: #020617;
-    background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-    box-shadow: 0 8px 24px rgba(45, 212, 191, 0.4);
+    color: #e5e7eb;
+    background: linear-gradient(135deg, rgba(51, 65, 85, 0.98), rgba(15, 23, 42, 0.98));
+    box-shadow:
+      0 10px 30px -18px rgba(0, 0, 0, 1),
+      0 0 18px rgba(15, 23, 42, 0.95);
   }
 
   .chat-start-button__label {
