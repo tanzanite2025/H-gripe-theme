@@ -130,7 +130,7 @@
             payment page, or ask customer service for the payment code.
           </p>
           <p class="support-card__body support-card__highlight">
-            WeChat payment: 0.6% of the order amount.
+            WeChat payment: 1% of the order amount.
           </p>
           <p class="support-card__body support-card__highlight">
             Alipay payment: 1% of the order amount.
