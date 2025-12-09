@@ -394,6 +394,20 @@
     </section>
 
     <section
+      v-show="activeTab === 'appearance'"
+      id="appearance"
+      class="company-section"
+    >
+      <h3 class="company-section__title">Appearance</h3>
+      <p class="company-section__body">
+        Use this tab to highlight the visual details of Tanzanite rims and wheelsets: finishes, decals, logo styles, and paint or paintless options.
+      </p>
+      <p class="company-section__body">
+        Later you can replace this placeholder with your own photos and descriptions of different appearance packages so riders can quickly understand what their wheels will look like on the bike.
+      </p>
+    </section>
+
+    <section
       v-show="activeTab === 'facility'"
       id="facility"
       class="company-section"
@@ -460,10 +474,11 @@ import { ref } from 'vue'
 import { useHead, definePageMeta } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
-type OurStoryTabId = 'factory' | 'facility' | 'manufacture' | 'qualitycontrol'
+type OurStoryTabId = 'factory' | 'appearance' | 'facility' | 'manufacture' | 'qualitycontrol'
 
 const tabs: { id: OurStoryTabId; label: string }[] = [
   { id: 'factory', label: 'Factory' },
+  { id: 'appearance', label: 'Appearance' },
   { id: 'facility', label: 'Facility' },
   { id: 'manufacture', label: 'Manufacture' },
   { id: 'qualitycontrol', label: 'Quality control' },
@@ -488,7 +503,7 @@ useHead({
 .company-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0;
 }
 
 .company-page__title {
@@ -568,7 +583,7 @@ useHead({
 }
 
 .company-section {
-  padding-top: 0.5rem;
+  margin-top: 0;
 }
 
 .company-section__title {

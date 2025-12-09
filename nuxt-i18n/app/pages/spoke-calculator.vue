@@ -91,20 +91,19 @@ const localePath = useLocalePath()
 .support-page__technical-hint-button {
   padding: 0.15rem 0.7rem;
   border-radius: 9999px;
-  border: 1px solid rgba(56, 189, 248, 0.9);
+  border: none;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #e0f2fe;
+  color: #ffffff;
   text-decoration: none;
-  background: rgba(15, 23, 42, 0.9);
-  transition: background-color 0.15s ease, border-color 0.15s ease,
-    color 0.15s ease;
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  transition: all 0.18s ease;
 }
 
 .support-page__technical-hint-button:hover {
-  background: rgba(56, 189, 248, 0.2);
-  border-color: rgba(56, 189, 248, 1);
-  color: #ffffff;
+  background: radial-gradient(circle at top left, rgba(51, 65, 85, 0.98), rgba(15, 23, 42, 0.98));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
 }
 
 .support-page__technical-image {
@@ -116,7 +115,8 @@ const localePath = useLocalePath()
   max-width: 480px;
   width: 100%;
   height: auto;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.95);
 }
 
 .support-page__calculator-wrapper {

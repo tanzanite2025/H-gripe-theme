@@ -37,7 +37,7 @@ useHead({
 <style scoped>
 .i18n-demo-page {
   min-height: 100vh;
-  background: #0a0a0a;
+  background: #020617;
   color: #fff;
   padding: 20px;
 }

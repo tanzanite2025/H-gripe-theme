@@ -294,18 +294,19 @@ const formatDate = (dateStr: string): string => {
 
 .warranty-check__login-btn {
   padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #6b73ff, #40ffaa);
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
   border: none;
   border-radius: 9999px;
-  color: #000;
+  color: #020617;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .warranty-check__login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(107, 115, 255, 0.4);
+  box-shadow: 0 6px 18px rgba(45, 212, 191, 0.4);
 }
 
 /* 查询表单 */
@@ -328,16 +329,21 @@ const formatDate = (dateStr: string): string => {
 .warranty-check__input {
   flex: 1;
   padding: 0.75rem 1rem;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  border-radius: 0.5rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+  border: none;
+  border-radius: 9999px;
   color: #e5e7eb;
   font-size: 1rem;
+  box-shadow:
+    0 2px 6px -3px rgba(0, 0, 0, 0.9),
+    0 0 6px rgba(15, 23, 42, 0.7);
 }
 
 .warranty-check__input:focus {
   outline: none;
-  border-color: rgba(56, 189, 248, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(45, 212, 191, 0.75),
+    0 0 14px rgba(45, 212, 191, 0.35);
 }
 
 .warranty-check__input::placeholder {
@@ -346,19 +352,25 @@ const formatDate = (dateStr: string): string => {
 
 .warranty-check__submit-btn {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #6b73ff, #40ffaa);
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
   border: none;
-  border-radius: 0.5rem;
-  color: #000;
+  border-radius: 9999px;
+  color: #020617;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
   min-width: 100px;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+  transition: opacity 0.2s, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .warranty-check__submit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.warranty-check__submit-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(45, 212, 191, 0.4);
 }
 
 .warranty-check__spinner {
@@ -425,17 +437,19 @@ const formatDate = (dateStr: string): string => {
 .warranty-check__contact-btn {
   display: inline-block;
   padding: 0.5rem 1.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  border: none;
   border-radius: 9999px;
   color: #e5e7eb;
   text-decoration: none;
   font-size: 0.85rem;
-  transition: background 0.2s;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  transition: all 0.18s ease;
 }
 
 .warranty-check__contact-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
 }
 
 /* 查询结果 */
@@ -589,29 +603,32 @@ const formatDate = (dateStr: string): string => {
 .warranty-check__action-btn {
   flex: 1;
   padding: 0.6rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   font-size: 0.85rem;
   font-weight: 500;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.18s ease;
 }
 
 .warranty-check__action-btn:not(.warranty-check__action-btn--secondary) {
-  background: linear-gradient(135deg, #6b73ff, #40ffaa);
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
   border: none;
-  color: #000;
+  color: #020617;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
 }
 
 .warranty-check__action-btn--secondary {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  border: none;
   color: #e5e7eb;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
 }
 
 .warranty-check__action-btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
 }
 
 /* FAQ 区域 */

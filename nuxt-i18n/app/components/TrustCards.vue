@@ -14,7 +14,7 @@
         v-for="card in cards"
         :key="card.id"
         :to="localePath(card.to)"
-        class="group relative flex items-center gap-3 border rounded-xl transition-all hover:-translate-y-0.5 overflow-hidden"
+        class="group relative flex items-center gap-3 rounded-2xl transition-all hover:-translate-y-1 overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] hover:shadow-[0_14px_32px_-18px_rgba(0,0,0,1)]"
         :class="[sizeClass, cardColorClass(card.color)]"
       >
         <!-- 背景图片 -->
@@ -214,12 +214,12 @@ const titleSizeClass = computed(() => {
 // 颜色相关类
 const cardColorClass = (color: string) => {
   const colors: Record<string, string> = {
-    purple: 'bg-transparent border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)] hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(6,182,212,0.6)]',
-    cyan: 'bg-transparent border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)] hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(6,182,212,0.6)]',
-    violet: 'bg-transparent border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)] hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(6,182,212,0.6)]',
-    indigo: 'bg-transparent border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)] hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(6,182,212,0.6)]'
+    purple: '',
+    cyan: '',
+    violet: '',
+    indigo: ''
   }
-  return colors[color] || colors.purple
+  return colors[color] || ''
 }
 
 const iconColorClass = (color: string) => {

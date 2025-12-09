@@ -338,8 +338,8 @@ const openQuickFromPayment = () => {
   padding: 0.85rem 1rem;
   border-radius: 0.9rem;
   background-image: linear-gradient(135deg, rgba(34, 211, 238, 0.26), rgba(59, 130, 246, 0.35));
-  border: 1px solid rgba(56, 189, 248, 0.7);
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.8);
+  border: none;
+  box-shadow: 0 10px 26px -16px rgba(0, 0, 0, 0.95);
 }
 
 .support-intro-banner__text {
@@ -372,10 +372,10 @@ const openQuickFromPayment = () => {
 
 .support-card {
   border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  border: none;
   padding: 0.9rem 1rem;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.7);
+  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.95);
 }
 
 .support-card__title {
@@ -450,11 +450,18 @@ const openQuickFromPayment = () => {
   padding: 0.4rem 0.9rem;
   font-size: 0.85rem;
   font-weight: 600;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: rgba(15, 23, 42, 0.9);
+  border: none;
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   color: #e5e7eb;
   cursor: pointer;
   text-decoration: none;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  transition: all 0.18s ease;
+}
+
+.support-card__button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
 }
 
 .support-card__button-icon {
@@ -463,9 +470,9 @@ const openQuickFromPayment = () => {
 }
 
 .support-card__button--primary {
-  border-color: rgba(56, 189, 248, 0.9);
-  background-image: linear-gradient(135deg, rgba(56, 189, 248, 0.9), rgba(59, 130, 246, 0.95));
-  color: #0b1020;
+  background-image: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #020617;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
 }
 
 .support-list {

@@ -1,7 +1,7 @@
 <template>
-  <section class="mt-8 rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-sm">
+  <section class="mt-8 rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
     <header class="flex flex-col gap-1 mb-4">
-      <h3 class="text-sm font-semibold text-slate-100">Spoke length history</h3>
+      <h2 class="text-sm font-semibold text-slate-100">Spoke length history</h2>
       <p class="text-xs text-slate-400">
         Search past wheel builds by hub model, hub brand, or rim model. Results are limited to the most recent 5
         matches.
@@ -12,13 +12,13 @@
       <input
         v-model="searchTextLocal"
         type="text"
-        class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        class="block w-full rounded-full border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(45,212,191,0.75),0_0_14px_rgba(45,212,191,0.35)]"
         placeholder="Search by hub model (e.g. '350', '240', 'D791')"
         @keyup.enter="onSearch"
       />
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed md:w-auto"
+        class="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] px-4 py-2 text-sm font-medium text-slate-950 shadow-[0_4px_12px_rgba(45,212,191,0.3)] hover:shadow-[0_6px_18px_rgba(45,212,191,0.4)] hover:-translate-y-[1px] transition-all focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed md:w-auto"
         :disabled="loading"
         @click="onSearch"
       >
@@ -40,7 +40,7 @@
         <li
           v-for="item in items"
           :key="item.id"
-          class="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs text-slate-200"
+          class="rounded-xl border border-slate-800/70 bg-slate-950/70 px-4 py-3 text-xs text-slate-200 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]"
         >
           <div class="flex flex-col gap-1">
             <div class="flex flex-wrap items-center justify-between gap-2">
@@ -75,7 +75,7 @@
       <div v-if="isLoggedIn && canLoadMore" class="mt-3">
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-xs font-medium text-slate-100 shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="inline-flex items-center justify-center rounded-full border-none bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-2 text-xs font-medium text-slate-100 shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:shadow-[0_4px_12px_rgba(0,0,0,1)] hover:-translate-y-[1px] transition-all focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="loading"
           @click="onLoadMore"
         >

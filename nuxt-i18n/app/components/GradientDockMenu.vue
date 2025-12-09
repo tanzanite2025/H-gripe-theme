@@ -1,7 +1,7 @@
 <template>
   <!-- Dock 菜单容器 (统一胶囊风格) -->
   <div class="fixed left-0 md:left-1/2 md:-translate-x-1/2 bottom-0 md:bottom-6 w-full md:w-[96%] md:max-w-[500px] z-[101] pointer-events-auto transition-all duration-300">
-    <div class="w-full bg-[#0b1020]/80 backdrop-blur-md rounded-none md:rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] px-1 py-2 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
+    <div class="w-full bg-[radial-gradient(circle_at_top,rgba(31,41,55,0.98),rgba(15,23,42,0.98),rgba(15,23,42,1))] backdrop-blur-md rounded-none md:rounded-full shadow-[0_24px_56px_-16px_rgba(0,0,0,1)] px-1 py-2 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
       
       <!-- 1. Menu (Sidebar) -->
       <button 
