@@ -179,24 +179,25 @@ const displayItems = computed<FlatItem[]>(() => {
 .home-faq__tab {
   border: none;
   border-radius: 9999px;
-  padding: 0.3rem 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  color: rgba(148, 163, 184, 0.9);
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #ffffff;
+  background: rgba(31, 41, 55, 0.9);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
 }
 
 .home-faq__tab:hover {
-  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(51, 65, 85, 0.95);
+  color: #ffffff;
 }
 
 .home-faq__tab--active {
-  background: rgba(56, 189, 248, 0.15);
-  color: #e5e7eb;
-  border-color: rgba(56, 189, 248, 0.8);
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
 }
 
 .home-faq__content {
@@ -283,17 +284,20 @@ const displayItems = computed<FlatItem[]>(() => {
   padding: 0.5rem 1.25rem;
   border-radius: 9999px;
   font-size: 0.8rem;
-  font-weight: 500;
-  color: #e5e7eb;
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.5);
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
   text-decoration: none;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
 
 .home-faq__link:hover {
-  background: rgba(56, 189, 248, 0.25);
-  border-color: rgba(56, 189, 248, 0.8);
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 18px -10px rgba(59, 130, 246, 0.9),
+    0 0 18px rgba(45, 212, 191, 0.7);
 }
 
 .home-faq__link-icon {

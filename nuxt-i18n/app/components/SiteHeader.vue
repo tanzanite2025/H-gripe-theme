@@ -1,12 +1,12 @@
 <template>
 	<div class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[110] site-header-root">
 		<div
-			class="relative w-full rounded-none md:rounded-[30px] bg-[#0b1020]/70 backdrop-blur-md border border-white/10 shadow-[0_18px_45px_rgba(15,23,42,0.9)] px-4 py-2 md:py-2"
+			class="relative w-full rounded-none md:rounded-[30px] bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:py-2"
 		>
 			<!-- 桌面端：宽版极简胶囊布局 (Option B Wide) -->
 			<div class="hidden md:flex flex-col items-center gap-1">
 				<!-- 主胶囊 Header -->
-				<div class="w-full grid grid-cols-[160px_1fr_auto] lg:grid-cols-[200px_1fr_200px] items-center gap-2 lg:gap-4 px-2 lg:px-6 py-3 rounded-[99px] bg-[#0b1020]/80 backdrop-blur-md border border-white/10 shadow-lg">
+				<div class="w-full grid grid-cols-[160px_1fr_auto] lg:grid-cols-[200px_1fr_200px] items-center gap-2 lg:gap-4 px-2 lg:px-6 py-3 rounded-[99px] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
 					
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
@@ -73,7 +73,7 @@
 					<div class="flex items-center justify-end gap-4">
 						<!-- Search -->
 						<button
-							class="w-9 h-9 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all"
+							class="w-9 h-9 rounded-full bg-slate-900/70 flex items-center justify-center text-slate-200 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-sky-300 hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
 							@click="openSidebar"
 							aria-label="Search"
 						>
@@ -86,7 +86,7 @@
 						<!-- Language -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="w-9 h-9 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all"
+								class="w-9 h-9 rounded-full bg-slate-900/70 flex items-center justify-center text-[11px] font-bold text-slate-200 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-sky-300 hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
 								@click.stop="toggleDropdown"
 								:id="buttonId"
 								aria-haspopup="listbox"
@@ -141,7 +141,7 @@
 
 						<!-- Share/Points -->
 						<button
-							class="w-10 h-10 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-lg hover:shadow-[#40ffaa]/30 transition-all transform hover:scale-105"
+							class="w-10 h-10 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-[0_10px_26px_-6px_rgba(0,0,0,1)] hover:shadow-[0_14px_32px_-8px_rgba(0,0,0,1)] transition-all transform hover:scale-105"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-label="Open membership panel"

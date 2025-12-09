@@ -229,10 +229,13 @@ const groupedItems = computed(() => {
   width: 100%;
   padding: 0.6rem 2.5rem 0.6rem 1rem;
   border-radius: 9999px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.85);
+  border: none;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
   color: #e5e7eb;
   font-size: 0.875rem;
+  box-shadow:
+    0 2px 6px -3px rgba(0, 0, 0, 0.9),
+    0 0 6px rgba(15, 23, 42, 0.7);
 }
 
 .faqs-search__input::placeholder {
@@ -241,7 +244,9 @@ const groupedItems = computed(() => {
 
 .faqs-search__input:focus {
   outline: none;
-  border-color: rgba(56, 189, 248, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(45, 212, 191, 0.75),
+    0 0 14px rgba(45, 212, 191, 0.35);
 }
 
 .faqs-search__clear {
@@ -271,21 +276,21 @@ const groupedItems = computed(() => {
   padding: 0.25rem 0.65rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: rgba(148, 163, 184, 0.9);
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #ffffff;
+  background: rgba(31, 41, 55, 0.9);
   cursor: pointer;
   transition: all 0.15s;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
 }
 
 .faqs-tabs__item:hover {
-  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(51, 65, 85, 0.95);
 }
 
 .faqs-tabs__item--active {
-  background: rgba(56, 189, 248, 0.15);
-  color: #e5e7eb;
-  border-color: rgba(56, 189, 248, 0.8);
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
 }
 
 .faqs-content {

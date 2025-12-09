@@ -1,7 +1,9 @@
 <template>
   <div class="spoke-calculator">
     <div class="grid gap-6 items-start">
-      <section class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-sm">
+      <section
+        class="rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
+      >
         <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-4">
           Wheel setup
         </h2>
@@ -9,13 +11,17 @@
         <!-- Two-column layout: Front Wheel | Rear Wheel -->
         <div class="grid gap-6 md:grid-cols-2">
           <!-- ========== FRONT WHEEL COLUMN ========== -->
-          <div class="space-y-4 p-4 rounded-xl border border-slate-800 bg-slate-950/40">
+          <div class="space-y-4 p-4 rounded-xl bg-slate-950/70 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.95)]">
             <h3 class="text-sm font-semibold text-sky-400 uppercase tracking-wide">Front Wheel</h3>
 
             <!-- Spoke count -->
             <div class="space-y-1.5">
               <label for="front-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
-              <select id="front-spoke-count" v-model.number="frontConfig.spokeCount" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="front-spoke-count"
+                v-model.number="frontConfig.spokeCount"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option :value="24">24</option>
                 <option :value="28">28</option>
                 <option :value="32">32</option>
@@ -26,7 +32,11 @@
             <!-- Lacing pattern -->
             <div class="space-y-1.5">
               <label for="front-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
-              <select id="front-lacing" v-model.number="frontConfig.crossing" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="front-lacing"
+                v-model.number="frontConfig.crossing"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option :value="2">2-cross</option>
                 <option :value="3">3-cross</option>
                 <option :value="4">4-cross</option>
@@ -36,7 +46,11 @@
             <!-- Nipple type -->
             <div class="space-y-1.5">
               <label for="front-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
-              <select id="front-nipple" v-model="frontConfig.nippleType" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="front-nipple"
+                v-model="frontConfig.nippleType"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option value="standard">Standard external</option>
                 <option value="hidden">Hidden / aero</option>
               </select>
@@ -47,7 +61,11 @@
               <label for="front-rim" class="block text-xs font-medium text-slate-200">
                 Rim <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop rims)</span>
               </label>
-              <select id="front-rim" v-model="frontConfig.rimId" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="front-rim"
+                v-model="frontConfig.rimId"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option v-if="!rimOptions.length" value="" disabled>No rim products configured yet</option>
                 <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id">{{ rim.label }}</option>
               </select>
@@ -58,7 +76,12 @@
               <label for="front-hub" class="block text-xs font-medium text-slate-200">
                 Hub <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop hubs)</span>
               </label>
-              <select id="front-hub" v-model="frontConfig.hubId" :disabled="!frontHubOptions.length" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed">
+              <select
+                id="front-hub"
+                v-model="frontConfig.hubId"
+                :disabled="!frontHubOptions.length"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <option v-if="!frontHubOptions.length" value="" disabled>No hubs available</option>
                 <option v-for="hub in frontHubOptions" :key="hub.id" :value="hub.id">{{ hub.label }}</option>
               </select>
@@ -68,7 +91,14 @@
             <div class="space-y-1.5">
               <label for="front-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
               <div class="flex items-center gap-2">
-                <input id="front-erd" v-model.number="frontConfig.erd" type="number" min="400" max="750" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                <input
+                  id="front-erd"
+                  v-model.number="frontConfig.erd"
+                  type="number"
+                  min="400"
+                  max="750"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
@@ -77,7 +107,14 @@
             <div class="space-y-1.5">
               <label for="front-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
               <div class="flex items-center gap-2">
-                <input id="front-left-flange" v-model.number="frontConfig.leftFlange" type="number" min="10" max="60" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                <input
+                  id="front-left-flange"
+                  v-model.number="frontConfig.leftFlange"
+                  type="number"
+                  min="10"
+                  max="60"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
@@ -86,20 +123,31 @@
             <div class="space-y-1.5">
               <label for="front-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
               <div class="flex items-center gap-2">
-                <input id="front-right-flange" v-model.number="frontConfig.rightFlange" type="number" min="10" max="60" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                <input
+                  id="front-right-flange"
+                  v-model.number="frontConfig.rightFlange"
+                  type="number"
+                  min="10"
+                  max="60"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
           </div>
 
           <!-- ========== REAR WHEEL COLUMN ========== -->
-          <div class="space-y-4 p-4 rounded-xl border border-slate-800 bg-slate-950/40">
+          <div class="space-y-4 p-4 rounded-xl bg-slate-950/70 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.95)]">
             <h3 class="text-sm font-semibold text-emerald-400 uppercase tracking-wide">Rear Wheel</h3>
 
             <!-- Spoke count -->
             <div class="space-y-1.5">
               <label for="rear-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
-              <select id="rear-spoke-count" v-model.number="rearConfig.spokeCount" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="rear-spoke-count"
+                v-model.number="rearConfig.spokeCount"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option :value="24">24</option>
                 <option :value="28">28</option>
                 <option :value="32">32</option>
@@ -110,7 +158,11 @@
             <!-- Lacing pattern -->
             <div class="space-y-1.5">
               <label for="rear-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
-              <select id="rear-lacing" v-model.number="rearConfig.crossing" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="rear-lacing"
+                v-model.number="rearConfig.crossing"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option :value="2">2-cross</option>
                 <option :value="3">3-cross</option>
                 <option :value="4">4-cross</option>
@@ -120,7 +172,11 @@
             <!-- Nipple type -->
             <div class="space-y-1.5">
               <label for="rear-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
-              <select id="rear-nipple" v-model="rearConfig.nippleType" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="rear-nipple"
+                v-model="rearConfig.nippleType"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option value="standard">Standard external</option>
                 <option value="hidden">Hidden / aero</option>
               </select>
@@ -131,7 +187,11 @@
               <label for="rear-rim" class="block text-xs font-medium text-slate-200">
                 Rim <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop rims)</span>
               </label>
-              <select id="rear-rim" v-model="rearConfig.rimId" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <select
+                id="rear-rim"
+                v-model="rearConfig.rimId"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+              >
                 <option v-if="!rimOptions.length" value="" disabled>No rim products configured yet</option>
                 <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id">{{ rim.label }}</option>
               </select>
@@ -142,7 +202,12 @@
               <label for="rear-hub" class="block text-xs font-medium text-slate-200">
                 Hub <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop hubs)</span>
               </label>
-              <select id="rear-hub" v-model="rearConfig.hubId" :disabled="!rearHubOptions.length" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed">
+              <select
+                id="rear-hub"
+                v-model="rearConfig.hubId"
+                :disabled="!rearHubOptions.length"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <option v-if="!rearHubOptions.length" value="" disabled>No hubs available</option>
                 <option v-for="hub in rearHubOptions" :key="hub.id" :value="hub.id">{{ hub.label }}</option>
               </select>
@@ -152,7 +217,14 @@
             <div class="space-y-1.5">
               <label for="rear-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
               <div class="flex items-center gap-2">
-                <input id="rear-erd" v-model.number="rearConfig.erd" type="number" min="400" max="750" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                <input
+                  id="rear-erd"
+                  v-model.number="rearConfig.erd"
+                  type="number"
+                  min="400"
+                  max="750"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
@@ -161,7 +233,14 @@
             <div class="space-y-1.5">
               <label for="rear-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
               <div class="flex items-center gap-2">
-                <input id="rear-left-flange" v-model.number="rearConfig.leftFlange" type="number" min="10" max="60" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                <input
+                  id="rear-left-flange"
+                  v-model.number="rearConfig.leftFlange"
+                  type="number"
+                  min="10"
+                  max="60"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
@@ -170,7 +249,14 @@
             <div class="space-y-1.5">
               <label for="rear-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
               <div class="flex items-center gap-2">
-                <input id="rear-right-flange" v-model.number="rearConfig.rightFlange" type="number" min="10" max="60" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                <input
+                  id="rear-right-flange"
+                  v-model.number="rearConfig.rightFlange"
+                  type="number"
+                  min="10"
+                  max="60"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
@@ -180,7 +266,11 @@
         <!-- Tools row (spans full width) -->
         <div class="mt-6 space-y-1.5">
           <label for="tools" class="block text-xs font-medium text-slate-200">Tools</label>
-          <select id="tools" v-model="selectedTool" class="block w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-50 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500">
+          <select
+            id="tools"
+            v-model="selectedTool"
+            class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+          >
             <option value="spoke-wrench">Spoke wrench</option>
             <option value="truing-stand">Truing stand</option>
             <option value="tension-meter">Tension meter</option>
@@ -208,7 +298,9 @@
         </div>
 
         <!-- Estimated Lengths (4 result boxes aligned with columns) -->
-        <section class="mt-6 rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-sm">
+        <section
+          class="mt-6 rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
+        >
           <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-3">
             Estimated lengths
           </h2>
@@ -222,14 +314,14 @@
             <div class="space-y-3">
               <div class="text-xs font-semibold text-sky-400 uppercase tracking-wide mb-2">Front Wheel</div>
               <div class="grid gap-3 grid-cols-2">
-                <div class="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
                   <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Left side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ frontLeftDisplay }}</span>
                     <span class="text-xs text-slate-400">mm</span>
                   </div>
                 </div>
-                <div class="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
                   <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Right side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ frontRightDisplay }}</span>
@@ -243,14 +335,14 @@
             <div class="space-y-3">
               <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-2">Rear Wheel</div>
               <div class="grid gap-3 grid-cols-2">
-                <div class="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
                   <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Left side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ rearLeftDisplay }}</span>
                     <span class="text-xs text-slate-400">mm</span>
                   </div>
                 </div>
-                <div class="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
                   <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Right side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ rearRightDisplay }}</span>

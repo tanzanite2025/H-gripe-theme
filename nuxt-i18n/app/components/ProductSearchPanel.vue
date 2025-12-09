@@ -195,7 +195,7 @@ onMounted(() => {
 }
 .search-btn-c.primary {
   background: linear-gradient(135deg, rgba(45, 212, 191, 0.7), rgba(59, 130, 246, 0.85));
-  color: #0b1020;
+  color: #ffffff;
   box-shadow:
     0 4px 14px -8px rgba(59,130,246,0.8),
     0 0 14px rgba(45,212,191,0.55);

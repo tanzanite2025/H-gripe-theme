@@ -10,7 +10,7 @@
         v-for="guide in guides"
         :key="guide.to"
         :to="localePath(guide.to)"
-        class="group flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 sm:px-5 sm:py-5"
+        class="group flex items-start gap-4 rounded-2xl px-4 py-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] transition-all duration-200 hover:bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.99))] hover:shadow-[0_14px_32px_-16px_rgba(0,0,0,1)] hover:-translate-y-[1px] sm:px-5 sm:py-5"
       >
         <div
           class="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-emerald-400 text-xs font-semibold text-slate-950 shadow-[0_0_20px_rgba(56,189,248,0.35)]"

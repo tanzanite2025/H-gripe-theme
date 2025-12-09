@@ -1,9 +1,9 @@
 <template>
-  <section class="mt-10 rounded-2xl bg-slate-900/80 backdrop-blur-xl p-4 md:p-6 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.9),0_0_18px_rgba(15,23,42,0.9)]">
+  <section class="mt-10 rounded-2xl bg-slate-900/80 backdrop-blur-xl p-4 md:p-6 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.98)]">
     <header class="mb-4 md:mb-6">
-      <h3 class="text-lg md:text-xl font-semibold text-slate-50">
+      <h2 class="text-lg md:text-xl font-semibold text-slate-50">
         {{ titleText }}
-      </h3>
+      </h2>
       <p v-if="subtitleText" class="mt-1 text-sm text-slate-400">
         {{ subtitleText }}
       </p>
@@ -19,7 +19,7 @@
           v-model="searchQuery"
           type="text"
           :placeholder="$t('feedback.searchPlaceholder', 'Type to filter comments on this page...')"
-          class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(15,23,42,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+          class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
         />
       </div>
     </div>
@@ -36,7 +36,7 @@
         v-for="item in filteredItems"
         v-else
         :key="item.id"
-        class="rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-2.5 md:px-4 md:py-3 shadow-[0_3px_8px_rgba(15,23,42,0.8)]"
+        class="rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-2.5 md:px-4 md:py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]"
       >
         <header class="mb-1.5 flex items-center justify-between gap-2">
           <span class="text-sm font-medium text-slate-100">
@@ -90,7 +90,7 @@
           <textarea
             v-model="message"
             rows="3"
-            class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(15,23,42,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+            class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
             :placeholder="$t('feedback.messagePlaceholder', 'Tell us what worked well and what could be improved...')"
           />
         </div>
@@ -103,7 +103,7 @@
             <input
               v-model="name"
               type="text"
-              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(15,23,42,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
               :placeholder="$t('feedback.namePlaceholder', 'How should we address you?')"
             />
           </div>
@@ -114,7 +114,7 @@
             <input
               v-model="email"
               type="email"
-              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(15,23,42,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
               :placeholder="$t('feedback.emailPlaceholder', 'For follow-up only, never shared publicly.')"
             />
           </div>

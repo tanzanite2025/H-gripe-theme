@@ -150,7 +150,9 @@
                   <path d="M15 18l-6-6 6-6"/>
                 </svg>
               </button>
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-sm font-semibold text-black flex-shrink-0">
+              <div
+                class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xs font-semibold text-white overflow-hidden shadow-[0_0_12px_rgba(15,23,42,0.95)] flex-shrink-0"
+              >
                 {{ selectedConversation.customer_name?.charAt(0) || 'U' }}
               </div>
               <div class="flex-1 min-w-0">
@@ -192,7 +194,7 @@
                   v-model="newMessage"
                   type="text"
                   placeholder="Type a message..."
-                  class="flex-1 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
+                  class="flex-1 px-4 py-2 rounded-full text-white text-sm placeholder-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                   @keyup.enter="sendMessage"
                 />
                 <button
@@ -266,11 +268,13 @@
                   >
                     <div class="relative mb-2">
                       <div
-                        class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-xs font-semibold text-white/80 group-hover:bg-white/10 group-hover:text-white transition-all"
-                        :class="selectedAgent?.id === agent.id ? 'ring-2 ring-[#6b73ff]' : ''"
+                        class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xs font-semibold text-white/80 overflow-hidden shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)] group-hover:bg-white/30 group-hover:text-white transition-all"
+                        :class="selectedAgent?.id === agent.id
+                          ? 'bg-white/30 text-white shadow-[0_0_6px_rgba(15,23,42,1),0_0_14px_rgba(45,212,191,1),0_0_20px_rgba(255,255,255,0.9)] ring-2 ring-emerald-400/80 ring-offset-2 ring-offset-slate-950/90 scale-105'
+                          : ''"
                       >
                         <template v-if="agent.avatar">
-                          <img :src="agent.avatar" :alt="agent.name" class="w-full h-full rounded-2xl object-cover" />
+                          <img :src="agent.avatar" :alt="agent.name" class="w-full h-full rounded-full object-cover" />
                         </template>
                         <template v-else>
                           {{ getInitials(agent.name) }}
@@ -296,17 +300,12 @@
             <!-- 底部操作：Start / WhatsApp / Email 固定在欢迎容器底部 -->
             <div class="p-4 md:px-8 md:pb-6 shrink-0 z-20 bg-white/[0.02] border-t border-white/[0.08]">
               <!-- 开始对话按钮 -->
-              <button
-                type="button"
-                class="w-full py-2.5 px-4 bg-gradient-to-r from-[#6b73ff] to-[#40ffaa] text-black text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:shadow-[0_8px_24px_rgba(107,115,255,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              <ChatStartButton
+                class="w-full text-sm"
+                :label="`${hasHistoryChat ? 'Continue' : 'Start'} — Chat, Orders & FAQ`"
                 :disabled="!selectedAgent"
                 @click="enterChat"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                </svg>
-                {{ hasHistoryChat ? 'Continue' : 'Start' }} — Chat, Orders & FAQ
-              </button>
+              />
 
               <!-- 快捷联系 -->
               <div class="flex gap-2.5 mt-3">
@@ -314,7 +313,7 @@
                   v-if="selectedAgent?.whatsapp"
                   :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
                   target="_blank"
-                  class="flex-1 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2.5 rounded-full bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_4px_12px_rgba(0,0,0,0.9)] hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
@@ -324,7 +323,7 @@
                 <a
                   v-if="emailSettings.preSalesEmail"
                   :href="`mailto:${emailSettings.preSalesEmail}`"
-                  class="flex-1 py-2.5 rounded-xl bg-white/10 border border-white/15 text-white/80 text-sm font-medium flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-transform"
+                  class="flex-1 py-2.5 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] hover:-translate-y-0.5 transition-transform"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -361,8 +360,15 @@
                   </button>
                   
                   <!-- 当前客服头像 -->
-                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-sm font-semibold text-black overflow-hidden flex-shrink-0">
-                    <img v-if="selectedAgent?.avatar" :src="selectedAgent.avatar" :alt="selectedAgent.name" class="w-full h-full object-cover" />
+                  <div
+                    class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xs font-semibold text-white overflow-hidden shadow-[0_0_12px_rgba(15,23,42,0.95)] flex-shrink-0"
+                  >
+                    <img
+                      v-if="selectedAgent?.avatar"
+                      :src="selectedAgent.avatar"
+                      :alt="selectedAgent.name"
+                      class="w-full h-full rounded-full object-cover"
+                    />
                     <span v-else>{{ selectedAgent ? getInitials(selectedAgent.name) : '?' }}</span>
                   </div>
                   
@@ -405,37 +411,37 @@
                   <div class="flex gap-1 px-2 pt-3 pb-2">
                     <button
                       @click="activeTab = 'chat'"
-                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
-                      :style="activeTab === 'chat'
-                        ? { backgroundColor: '#000', color: currentThemeColor }
-                        : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
+                      class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap"
+                      :class="activeTab === 'chat'
+                        ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
+                        : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                     >
                       Chat
                     </button>
                     <button
                       @click="activeTab = 'share'"
-                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
-                      :style="activeTab === 'share'
-                        ? { backgroundColor: '#000', color: currentThemeColor }
-                        : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
+                      class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap"
+                      :class="activeTab === 'share'
+                        ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
+                        : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                     >
                       Products
                     </button>
                     <button
                       @click="activeTab = 'orders'"
-                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
-                      :style="activeTab === 'orders'
-                        ? { backgroundColor: '#000', color: currentThemeColor }
-                        : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
+                      class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap"
+                      :class="activeTab === 'orders'
+                        ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
+                        : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                     >
                       Orders
                     </button>
                     <button
                       @click="activeTab = 'faq'"
-                      class="flex-1 h-9 rounded-full text-[11px] font-semibold tracking-wide transition-all"
-                      :style="activeTab === 'faq'
-                        ? { backgroundColor: '#000', color: currentThemeColor }
-                        : { backgroundColor: 'rgba(0,0,0,0.35)', color: '#fff' }"
+                      class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap"
+                      :class="activeTab === 'faq'
+                        ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
+                        : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                     >
                       FAQ
                     </button>
@@ -511,13 +517,20 @@
                           v-model="searchQuery"
                           type="text"
                           placeholder="Search products..."
-                          class="flex-1 h-10 px-3 rounded-xl bg-black/40 text-white text-sm border border-white/30 focus:outline-none"
+                          class="flex-1 h-10 px-3 rounded-xl text-white text-sm focus:outline-none transition-colors"
+                          :class="[
+                            'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))]',
+                            'shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]',
+                          ]"
                           @keydown.enter.prevent="searchProducts"
                         />
                         <button
                           @click="searchProducts"
                           :disabled="isSearching"
-                          class="px-3 h-10 rounded-xl text-sm font-semibold text-white border border-white/40 disabled:opacity-50"
+                          class="px-3 h-10 rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors"
+                          :class="isSearching
+                            ? 'bg-[rgba(15,23,42,0.98)] text-white/70 shadow-[0_2px_6px_-4px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]'
+                            : 'bg-[linear-gradient(135deg,rgba(45,212,191,0.7),rgba(59,130,246,0.85))] text-white shadow-[0_4px_14px_-8px_rgba(59,130,246,0.8),0_0_14px_rgba(45,212,191,0.55)]'"
                         >
                           {{ isSearching ? 'Searching...' : 'Search' }}
                         </button>
@@ -528,8 +541,8 @@
                         <button
                           type="button"
                           @click="historyDrawerVisible = true"
-                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide border bg-black/40 flex items-center justify-center gap-1.5"
-                          :style="{ borderColor: currentThemeColor, color: currentThemeColor }"
+                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+                          :style="{ borderColor: currentThemeColor }"
                         >
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="8" stroke-width="1.7" />
@@ -540,8 +553,8 @@
                         <button
                           type="button"
                           @click="openCart"
-                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide border bg-black/40 flex items-center justify-center gap-1.5"
-                          :style="{ borderColor: currentThemeColor, color: currentThemeColor }"
+                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+                          :style="{ borderColor: currentThemeColor }"
                         >
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 3h2l2 13h12l2-9H6" />
@@ -553,8 +566,8 @@
                         <button
                           type="button"
                           @click="wishlistDrawerVisible = true"
-                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide border bg-black/40 flex items-center justify-center gap-1.5"
-                          :style="{ borderColor: currentThemeColor, color: currentThemeColor }"
+                          class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+                          :style="{ borderColor: currentThemeColor }"
                         >
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
@@ -622,7 +635,7 @@
                         v-model="newMessage"
                         type="text"
                         placeholder="Type a message..."
-                        class="flex-1 h-11 px-4 rounded-full text-sm text-white bg-black/40 border"
+                        class="flex-1 h-11 px-4 rounded-full text-sm text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                         :style="{ borderColor: currentThemeColor }"
                         :disabled="isSending"
                       />
@@ -680,37 +693,37 @@
                 <div class="flex gap-2 justify-center py-3 border-b border-white/[0.08] px-4 bg-white/[0.02]">
                   <button
                     @click="activeTab = 'chat'"
-                    class="px-4 py-1.5 rounded-full text-sm transition-all"
+                    class="px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
                     :class="activeTab === 'chat' 
-                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-                      : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
+                      ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]' 
+                      : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                   >
                     Chat
                   </button>
                   <button
                     @click="activeTab = 'share'"
-                    class="px-4 py-1.5 rounded-full text-sm transition-all whitespace-nowrap"
+                    class="px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
                     :class="activeTab === 'share' 
-                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-                      : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
+                      ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]' 
+                      : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                   >
                     Products
                   </button>
                   <button
                     @click="activeTab = 'orders'"
-                    class="px-4 py-1.5 rounded-full text-sm transition-all whitespace-nowrap"
+                    class="px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
                     :class="activeTab === 'orders' 
-                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-                      : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
+                      ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]' 
+                      : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                   >
                     Orders
                   </button>
                   <button
                     @click="activeTab = 'faq'"
-                    class="px-4 py-1.5 rounded-full text-sm transition-all whitespace-nowrap"
+                    class="px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
                     :class="activeTab === 'faq' 
-                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white' 
-                      : 'bg-white/[0.08] text-white/70 border border-white hover:bg-white/[0.15]'"
+                      ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]' 
+                      : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                   >
                     FAQ
                   </button>
@@ -787,13 +800,20 @@
                         v-model="searchQuery"
                         type="text"
                         placeholder="Search products..."
-                        class="flex-1 h-[42px] px-3 rounded-lg bg-white/[0.06] text-white border border-white focus:outline-none focus:border-[#6b73ff] transition-colors text-sm"
+                        class="flex-1 h-[42px] px-3 rounded-lg text-white focus:outline-none transition-colors text-sm"
+                        :class="[
+                          'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))]',
+                          'shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]',
+                        ]"
                         @keydown.enter.prevent="searchProducts"
                       />
                       <button
                         @click="searchProducts"
                         :disabled="isSearching"
-                        class="h-[42px] px-4 bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
+                        class="h-[42px] px-4 rounded-lg text-sm font-semibold disabled:opacity-50 whitespace-nowrap transition-colors"
+                        :class="isSearching
+                          ? 'bg-[rgba(15,23,42,0.98)] text-white/70 shadow-[0_2px_6px_-4px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]'
+                          : 'bg-[linear-gradient(135deg,rgba(45,212,191,0.7),rgba(59,130,246,0.85))] text-white shadow-[0_4px_14px_-8px_rgba(59,130,246,0.8),0_0_14px_rgba(45,212,191,0.55)]'"
                       >
                         {{ isSearching ? 'Searching...' : 'Search' }}
                       </button>
@@ -810,7 +830,7 @@
                       <button
                         type="button"
                         @click="historyDrawerVisible = true"
-                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm bg-white/[0.08] text-white/80 border border-white hover:bg-white/[0.15] transition-colors"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)] transition-all"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <circle cx="12" cy="12" r="8" stroke-width="1.7" />
@@ -821,7 +841,7 @@
                       <button
                         type="button"
                         @click="openCart"
-                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm bg-white/[0.08] text-white/80 border border-white hover:bg-white/[0.15] transition-colors"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)] transition-all"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 3h2l2 13h12l2-9H6" />
@@ -833,7 +853,7 @@
                       <button
                         type="button"
                         @click="wishlistDrawerVisible = true"
-                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm bg-white/[0.08] text-white/80 border border-white hover:bg-white/[0.15] transition-colors"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)] transition-all"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
@@ -899,7 +919,7 @@
                       v-model="newMessage"
                       type="text"
                       placeholder="Type a message..."
-                      class="flex-1 min-w-0 px-3 md:px-4 py-2 md:py-2.5 bg-white/[0.06] text-white border border-white rounded-full focus:outline-none focus:border-[#6b73ff] transition-colors text-sm md:text-base"
+                      class="flex-1 min-w-0 px-3 md:px-4 py-2 md:py-2.5 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)] transition-colors text-sm md:text-base"
                       :disabled="isSending"
                     />
                     <input
@@ -1083,6 +1103,7 @@ import { useCart } from '~/composables/useCart'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
+import ChatStartButton from '~/components/ChatStartButton.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
