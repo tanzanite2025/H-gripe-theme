@@ -610,9 +610,6 @@
                           <h4 class="text-white text-sm font-semibold truncate">{{ product.title }}</h4>
                           <p v-if="product.price" class="text-white/70 text-xs mt-1">{{ product.price }}</p>
                         </div>
-                        <div v-if="!isSearching && searchResults.length === 0" class="text-center text-white/60 text-sm py-8">
-                          {{ searchQuery ? 'No products found' : 'Search products to share' }}
-                        </div>
                       </div>
                     </div>
 
@@ -957,13 +954,6 @@
                       >
                         {{ isSearching ? 'Searching...' : 'Search' }}
                       </button>
-                    </div>
-
-                    <div
-                      v-if="!productDrawerVisible && !isSearching && searchResults.length === 0"
-                      class="text-center text-white/50 text-sm mb-4"
-                    >
-                      {{ searchQuery ? 'No products found' : 'Search products to share in chat' }}
                     </div>
 
                     <div class="flex justify-center gap-3 mb-4">
