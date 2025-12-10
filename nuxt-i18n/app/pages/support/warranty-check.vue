@@ -1,147 +1,9 @@
 <template>
   <div class="warranty-check">
-    <div class="warranty-check__container">
-      <!-- 标题 -->
-      <div class="warranty-check__header">
-        <h1 class="warranty-check__title">{{ $t('warranty.title') }}</h1>
-        <p class="warranty-check__subtitle">{{ $t('warranty.subtitle') }}</p>
-      </div>
-
-      <!-- 未登录状态 -->
-      <div v-if="!isLoggedIn" class="warranty-check__login-required">
-        <div class="warranty-check__lock-icon">🔒</div>
-        <p>{{ $t('warranty.login_required') }}</p>
-        <button type="button" class="warranty-check__login-btn" @click="handleLogin">
-          {{ $t('warranty.login_button') }}
-        </button>
-      </div>
-
-      <!-- 已登录 - 查询表单 -->
-      <div v-else class="warranty-check__content">
-        <!-- 查询表单 -->
-        <div class="warranty-check__form">
-          <label for="product-code" class="warranty-check__label">
-            {{ $t('warranty.input_label') }}
-          </label>
-          <div class="warranty-check__input-group">
-            <input
-              id="product-code"
-              v-model="productCode"
-              type="text"
-              class="warranty-check__input"
-              :placeholder="$t('warranty.input_placeholder')"
-              @keypress.enter="checkWarranty"
-            />
-            <button
-              type="button"
-              class="warranty-check__submit-btn"
-              :disabled="loading || !productCode.trim()"
-              @click="checkWarranty"
-            >
-              <span v-if="loading" class="warranty-check__spinner"></span>
-              <span v-else>{{ $t('warranty.check_button') }}</span>
-            </button>
-          </div>
-          <p class="warranty-check__help">{{ $t('warranty.help_text') }}</p>
-        </div>
-
-        <!-- 错误提示 -->
-        <div v-if="error" class="warranty-check__error">
-          <div class="warranty-check__error-icon">❌</div>
-          <h3>{{ $t('warranty.result.not_found') }}</h3>
-          <p>{{ $t('warranty.errors.not_found_message', { code: searchedCode }) }}</p>
-          <ul class="warranty-check__tips">
-            <li>{{ $t('warranty.errors.check_tips.0') }}</li>
-            <li>{{ $t('warranty.errors.check_tips.1') }}</li>
-          </ul>
-          <p class="warranty-check__error-contact">{{ $t('warranty.errors.error_contact') }}</p>
-          <NuxtLink to="/support" class="warranty-check__contact-btn">
-            {{ $t('warranty.actions.contact_support') }}
-          </NuxtLink>
-        </div>
-
-        <!-- 查询结果 -->
-        <div v-if="result" class="warranty-check__result">
-          <!-- 状态标题 -->
-          <div 
-            class="warranty-check__status"
-            :class="result.status === 'valid' ? 'warranty-check__status--valid' : 'warranty-check__status--expired'"
-          >
-            <span class="warranty-check__status-icon">{{ result.status === 'valid' ? '✅' : '❌' }}</span>
-            <span>{{ result.status === 'valid' ? $t('warranty.result.valid') : $t('warranty.result.expired') }}</span>
-          </div>
-
-          <!-- 产品信息 -->
-          <div class="warranty-check__info">
-            <div class="warranty-check__info-row">
-              <span class="warranty-check__info-label">{{ $t('warranty.fields.product_code') }}</span>
-              <span class="warranty-check__info-value">{{ result.product_code }}</span>
-            </div>
-            <div class="warranty-check__info-row">
-              <span class="warranty-check__info-label">{{ $t('warranty.fields.product_type') }}</span>
-              <span class="warranty-check__info-value">{{ String(locale).startsWith('zh') ? result.product_type.name_zh : result.product_type.name }}</span>
-            </div>
-            <div v-if="result.product_name" class="warranty-check__info-row">
-              <span class="warranty-check__info-label">{{ $t('warranty.fields.product_name') }}</span>
-              <span class="warranty-check__info-value">{{ result.product_name }}</span>
-            </div>
-            <div class="warranty-check__info-row">
-              <span class="warranty-check__info-label">{{ $t('warranty.fields.ship_date') }}</span>
-              <span class="warranty-check__info-value">{{ formatDate(result.ship_date) }}</span>
-            </div>
-            <div class="warranty-check__info-row">
-              <span class="warranty-check__info-label">{{ $t('warranty.fields.warranty_period') }}</span>
-              <span class="warranty-check__info-value">{{ result.warranty_months }} {{ $t('warranty.months') }}</span>
-            </div>
-            <div class="warranty-check__info-row">
-              <span class="warranty-check__info-label">{{ $t('warranty.fields.warranty_until') }}</span>
-              <span class="warranty-check__info-value">{{ formatDate(result.warranty_end) }}</span>
-            </div>
-          </div>
-
-          <!-- 剩余时间 -->
-          <div 
-            class="warranty-check__remaining"
-            :class="result.status === 'valid' ? 'warranty-check__remaining--valid' : 'warranty-check__remaining--expired'"
-          >
-            <span class="warranty-check__remaining-icon">⏱️</span>
-            <span v-if="result.status === 'valid'">
-              {{ $t('warranty.fields.remaining') }}: {{ result.remaining.months }} {{ $t('warranty.months') }} {{ result.remaining.days }} {{ $t('warranty.days') }}
-            </span>
-            <span v-else>
-              {{ $t('warranty.fields.expired_ago', { days: result.remaining.expired_days }) }}
-            </span>
-          </div>
-
-          <!-- 服务记录 -->
-          <div v-if="result.records && result.records.length > 0" class="warranty-check__records">
-            <h4>{{ $t('warranty.records.title') }}</h4>
-            <ul class="warranty-check__records-list">
-              <li v-for="record in result.records" :key="record.date" class="warranty-check__record-item">
-                <span class="warranty-check__record-type">
-                  {{ String(locale).startsWith('zh') ? record.type_name_zh : record.type_name }}
-                </span>
-                <span class="warranty-check__record-date">{{ record.date }}</span>
-                <span v-if="record.description" class="warranty-check__record-desc">{{ record.description }}</span>
-              </li>
-            </ul>
-          </div>
-          <div v-else class="warranty-check__no-records">
-            <p>{{ $t('warranty.records.no_records') }}</p>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="warranty-check__actions">
-            <button type="button" class="warranty-check__action-btn" @click="resetForm">
-              {{ $t('warranty.actions.check_another') }}
-            </button>
-            <NuxtLink to="/support" class="warranty-check__action-btn warranty-check__action-btn--secondary">
-              {{ $t('warranty.actions.contact_support') }}
-            </NuxtLink>
-          </div>
-        </div>
-      </div>
-    </div>
+    <WarrantyCheckPanel
+      :is-logged-in="isLoggedIn"
+      @login-request="handleLogin"
+    />
 
     <!-- FAQ Section -->
     <section class="warranty-check__faq">
@@ -151,12 +13,24 @@
         :show-categories="true"
       />
     </section>
+
+    <!-- 登录弹窗：复用全局 AuthModal，嵌入模式 -->
+    <AuthModal
+      v-model="showAuthModal"
+      :default-mode="authMode"
+      embedded
+      @mode-change="authMode = $event"
+      @success="handleAuthSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 import PageFaq from '~/components/PageFaq.vue'
+import WarrantyCheckPanel from '~/components/WarrantyCheckPanel.vue'
+import AuthModal from '~/components/AuthModal.vue'
 
 definePageMeta({
   layout: 'support',
@@ -168,83 +42,26 @@ useHead({
   title: t('warranty.title'),
 })
 
-// 模拟登录状态（实际应从用户状态管理获取）
-const isLoggedIn = ref(true) // TODO: 替换为实际登录状态
+// 登录状态：来源于全局 auth
+const auth = useAuth()
+const isLoggedIn = computed(() => !!auth.user.value)
 
-// 表单状态
-const productCode = ref('')
-const searchedCode = ref('')
-const loading = ref(false)
-const error = ref(false)
-const result = ref<any>(null)
+// 登录弹窗状态
+const showAuthModal = ref(false)
+const authMode = ref<'login' | 'register'>('login')
 
-// API 基础 URL
-const apiBase = useRuntimeConfig().public.apiBase || ''
-
-// 查询保修状态
-const checkWarranty = async () => {
-  if (!productCode.value.trim()) return
-
-  loading.value = true
-  error.value = false
-  result.value = null
-  searchedCode.value = productCode.value.trim()
-
-  try {
-    const response = await $fetch(`${apiBase}/wp-json/tanzanite/v1/warranty/${encodeURIComponent(searchedCode.value)}`, {
-      credentials: 'include',
-      headers: {
-        'X-WP-Nonce': getWpNonce(),
-      },
-    })
-
-    if (response && (response as any).success) {
-      result.value = (response as any).data
-    } else {
-      error.value = true
-    }
-  } catch (e: any) {
-    console.error('Warranty check error:', e)
-    error.value = true
-  } finally {
-    loading.value = false
-  }
-}
-
-// 获取 WP Nonce（需要从页面或 cookie 获取）
-const getWpNonce = (): string => {
-  // TODO: 实际实现需要从 WordPress 获取 nonce
-  return ''
-}
-
-// 重置表单
-const resetForm = () => {
-  productCode.value = ''
-  searchedCode.value = ''
-  error.value = false
-  result.value = null
-}
-
-// 处理登录
+// 处理登录：打开 AuthModal
 const handleLogin = () => {
-  // TODO: 跳转到登录页面或打开登录弹窗
-  navigateTo('/login')
+  authMode.value = 'login'
+  showAuthModal.value = true
 }
 
-// 格式化日期
-const formatDate = (dateStr: string): string => {
-  if (!dateStr) return '-'
-  const [year, month] = dateStr.split('-')
-  if (String(locale.value).startsWith('zh')) {
-    return `${year}年${month}月`
-  }
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-  return `${monthNames[parseInt(month) - 1]} ${year}`
+const handleAuthSuccess = () => {
+  showAuthModal.value = false
 }
 </script>
 
-<style scoped>
+<style>
 .warranty-check {
   min-height: 60vh;
   padding: 2rem 1rem;
