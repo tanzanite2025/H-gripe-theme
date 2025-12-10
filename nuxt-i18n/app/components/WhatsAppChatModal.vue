@@ -552,7 +552,7 @@
                         </button>
                         <button
                           type="button"
-                          @click="openCart"
+                          @click="openCartFromChat"
                           class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
                           :style="{ borderColor: currentThemeColor }"
                         >
@@ -840,7 +840,7 @@
                       </button>
                       <button
                         type="button"
-                        @click="openCart"
+                        @click="openCartFromChat"
                         class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)] transition-all"
                       >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1060,6 +1060,7 @@
 
     <WishlistDrawer
       v-model="wishlistDrawerVisible"
+      variant="bottom"
       @share-to-chat="handleShareProductFromHistory"
     />
 
@@ -1071,7 +1072,9 @@
       >
         <div
           class="pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]
-                 rounded-2xl border-2 border-[#6b73ff]/40 bg-black shadow-[0_0_30px_rgba(107,115,255,0.6)]
+                 rounded-2xl border-2 border-[#6b73ff]/40
+                 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
+                 backdrop-blur-md shadow-[0_0_30px_rgba(107,115,255,0.6)]
                  flex flex-col overflow-hidden"
         >
           <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
@@ -1118,7 +1121,7 @@ const emit = defineEmits<{
 }>()
 
 const { user, isAgent, agentId } = useAuth()
-const { openCart } = useCart()
+const { openCartFromChat } = useCart()
 const config = useRuntimeConfig()
 
 // Desktop-only搜索占位

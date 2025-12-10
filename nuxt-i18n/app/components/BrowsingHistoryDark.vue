@@ -1,7 +1,11 @@
 <template>
-  <div class="w-full bg-white/[0.06] border border-white/[0.18] rounded-lg overflow-hidden">
+  <div
+    class="w-full rounded-2xl border border-[rgba(110,110,233,0.35)]
+           bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
+           backdrop-blur-md shadow-[0_3px_9px_rgba(0,0,0,0.9)] overflow-hidden"
+  >
     <!-- 标题栏 -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.03]">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
       <div class="flex items-center gap-2">
         <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -41,8 +45,13 @@
           :key="item.id"
           class="flex-shrink-0 w-40 group"
         >
-          <!-- 商品卡片 -->
-          <div class="relative bg-white/[0.06] border border-white/[0.18] rounded-lg overflow-hidden hover:bg-white/[0.10] hover:border-white/30 transition-all duration-200">
+          <!-- 商品卡片：暗色玻璃 + 纯黑阴影，无边框 -->
+          <div
+            class="relative rounded-[14px]
+                   bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
+                   shadow-[0_4px_12px_-4px_rgba(0,0,0,1)] overflow-hidden
+                   transition-all duration-200"
+          >
             <!-- 删除按钮 -->
             <button
               @click="handleRemoveItem(item.id)"
@@ -55,7 +64,7 @@
             </button>
 
             <!-- 商品图片 -->
-            <div class="relative w-full h-32 bg-white/[0.03]">
+            <div class="relative w-full h-32 bg-black/20">
               <img
                 v-if="item.thumbnail"
                 :src="item.thumbnail"

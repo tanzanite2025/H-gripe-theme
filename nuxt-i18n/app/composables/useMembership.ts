@@ -87,16 +87,21 @@ export function useMembership() {
   const loadTierConfigs = async () => {
     tierConfigsLoading.value = true
     try {
-      const response = await $fetch<{ tiers?: Record<string, any> }>('/wp-json/tanzanite/v1/loyalty/settings')
-      if (response?.tiers) {
-        tierConfigs.value = Object.entries(response.tiers).map(([key, config]) => ({
-          key,
-          name: config.name,
-          min: config.min,
-          max: config.max,
-          discount: config.discount,
-          pointsDiscount: config.points_discount || 0,
-          stackable: config.stackable !== false
+      // 使用 Tanzanite_REST_Loyalty_Controller::get_config 提供的公开配置接口
+      // GET /wp-json/tanzanite/v1/loyalty/config
+      const response = await $fetch<{ tiers?: any[] }>('/wp-json/tanzanite/v1/loyalty/config')
+
+      if (Array.isArray(response?.tiers)) {
+        tierConfigs.value = response.tiers.map((tier: any) => ({
+          key: tier.key,
+          name: tier.name ?? tier.label ?? String(tier.key || '').toUpperCase(),
+          min: Number(tier.min ?? 0),
+          max: typeof tier.max === 'number' ? (tier.max === -1 ? null : tier.max) : null,
+          discount: Number(tier.discount ?? 0),
+          // 这里将积分折扣近似映射为可用积分抵扣的最大订单百分比
+          pointsDiscount: Number(tier.redeem?.percent_of_total ?? 0),
+          // 是否允许与百分比折扣叠加
+          stackable: tier.redeem?.stack_with_percent ?? true,
         }))
       }
     } catch (error) {

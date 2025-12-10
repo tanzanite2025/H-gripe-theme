@@ -4,23 +4,23 @@
       <!-- 背景装饰，与聊天欢迎页一致 -->
       <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
       <button class="absolute right-2 top-2 w-7 h-7 inline-flex items-center justify-center border border-[rgba(124,117,255,0.6)] rounded-md bg-[rgba(30,27,75,0.6)] text-[#e8e9ff] pointer-events-auto hover:brightness-110 transition-all" type="button" @click="$emit('close')">×</button>
-      <!-- 移动端标签页 -->
+      <!-- 移动端标签页：样式与下方按钮保持一致 -->
       <div class="md:hidden flex gap-2 justify-center py-3 border-b border-white/10 px-3 pointer-events-auto">
         <button
           @click="mobileTab = 'info'"
-          class="h-10 rounded-full text-sm font-semibold flex-1 border transition-all"
-          :class="mobileTab === 'info' 
-            ? 'bg-[#6b73ff] border-[#6b73ff] text-white shadow-[0_6px_24px_rgba(107,115,255,0.35)]' 
-            : 'bg-white/5 border-white/15 text-white/70'"
+          class="h-10 px-5 rounded-full text-sm font-semibold flex-1 inline-flex items-center justify-center transition-all"
+          :class="mobileTab === 'info'
+            ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]'
+            : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/80 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)]'"
         >
           My Info
         </button>
         <button
           @click="mobileTab = 'levels'"
-          class="h-10 rounded-full text-sm font-semibold flex-1 border transition-all"
-          :class="mobileTab === 'levels' 
-            ? 'bg-[#6b73ff] border-[#6b73ff] text-white shadow-[0_6px_24px_rgba(107,115,255,0.35)]' 
-            : 'bg-white/5 border-white/15 text-white/70'"
+          class="h-10 px-5 rounded-full text-sm font-semibold flex-1 inline-flex items-center justify-center transition-all"
+          :class="mobileTab === 'levels'
+            ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]'
+            : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/80 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)]'"
         >
           Levels & Points
         </button>
@@ -79,21 +79,21 @@
                     <span class="text-2xl leading-none">🛍️</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.productDiscount', 'Product') }}</span>
-                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.product + '%') : '?' }}</span>
+                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (membershipLevelDiscounts.product + '%') : '?' }}</span>
                     </div>
                   </div>
                   <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl leading-none">💎</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.pointsDiscount', 'Points') }}</span>
-                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.points + '%') : '?' }}</span>
+                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (membershipLevelDiscounts.points + '%') : '?' }}</span>
                     </div>
                   </div>
                   <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl leading-none">📊</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.stackable', 'Stackable') }}</span>
-                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.stackable ? '✓' : '✗') : '?' }}</span>
+                      <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (membershipLevelDiscounts.stackable ? '✓' : '✗') : '?' }}</span>
                     </div>
                   </div>
                 </div>
@@ -182,21 +182,17 @@
                   <div 
                     v-for="card in availableGiftcards" 
                     :key="card.id"
-                    class="relative border border-white/10 rounded-xl overflow-hidden hover:border-[#6b73ff]/50 transition-all"
+                    class="relative rounded-[10px] border border-[rgba(110,110,233,0.35)] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md overflow-hidden hover:border-[#6b73ff]/60 transition-all"
                   >
-                    <!-- 背景图片或默认渐变 -->
+                    <!-- 可选背景图片（叠加在暗色玻璃卡片上） -->
                     <div 
                       v-if="card.cover_image" 
-                      class="absolute inset-0 bg-cover bg-center opacity-30"
+                      class="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-soft-light"
                       :style="{ backgroundImage: `url(${card.cover_image})` }"
-                    ></div>
-                    <div 
-                      v-else
-                      class="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-white/[0.03]"
                     ></div>
                     
                     <!-- 内容层 -->
-                    <div class="relative z-10 p-3 backdrop-blur-sm bg-black/20">
+                    <div class="relative z-10 p-3">
                       <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
                           <span class="text-2xl">💳</span>
@@ -253,9 +249,9 @@
                   <div class="text-[13px] text-white/90">{{ $t('member.levels.header.productDiscount', 'Product discount') }}</div>
                   <div class="text-[13px] text-white/90">{{ $t('member.levels.header.pointsDiscount', 'Points discount') }}</div>
                 </div>
-                <!-- 动态渲染会员等级表格 -->
+                <!-- 动态渲染会员等级表格（数据来自 useMembership） -->
                 <div
-                  v-for="tier in tierConfigs"
+                  v-for="tier in membershipTierConfigs"
                   :key="tier.key"
                   class="grid grid-cols-2 md:grid-cols-[1.1fr_1fr_1fr_1fr] gap-1.5 md:gap-0 items-center py-2 px-4 rounded-full bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
                 >
@@ -364,7 +360,7 @@
       @success="handleAuthSuccess"
     />
 
-    <WishlistDrawer v-model="wishlistDrawerVisible" />
+    <WishlistDrawer v-model="wishlistDrawerVisible" variant="bottom" />
   </div>
 </template>
 
@@ -373,6 +369,7 @@ import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
+import { useMembership } from '~/composables/useMembership'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
@@ -384,6 +381,13 @@ const cart = useCart()
 const { t: $t } = useI18n()
 const auth = useAuth()
 const localePath = useLocalePath()
+
+// 复用会员中心 composable 的等级配置和折扣数据，保证与 /company/membershipandpoints 页面一致
+const {
+  tierConfigs: membershipTierConfigs,
+  levelDiscounts: membershipLevelDiscounts,
+  initMembership,
+} = useMembership()
 
 // 移动端标签页状态
 const mobileTab = ref('info') // 'info' or 'levels'
@@ -469,48 +473,6 @@ const tierInfo = computed(() => {
   return { current, next, pct }
 })
 
-// 从后台获取会员等级配置
-const tierConfigs = ref([])
-
-const loadTierConfigs = async () => {
-  try {
-    const response = await $fetch('/wp-json/tanzanite/v1/loyalty/settings')
-    if (response?.tiers) {
-      tierConfigs.value = Object.entries(response.tiers).map(([key, config]) => ({
-        key,
-        name: config.name,
-        min: config.min,
-        max: config.max,
-        discount: config.discount,
-        pointsDiscount: config.points_discount || 0,
-        stackable: config.stackable !== false
-      }))
-    }
-  } catch (error) {
-    console.error('Failed to load tier configs:', error)
-  }
-}
-
-onMounted(() => {
-  loadTierConfigs()
-})
-
-const levelDiscounts = computed(() => {
-  const lvl = (levelName.value || '').toString().toLowerCase()
-  if (!lvl || lvl === '—') return { product: 0, points: 0, stackable: false }
-  
-  const config = tierConfigs.value.find(t => t.key === lvl)
-  if (config) {
-    return {
-      product: config.discount,
-      points: config.pointsDiscount,
-      stackable: config.stackable
-    }
-  }
-  
-  return { product: 0, points: 0, stackable: false }
-})
-
 const doLogout = async () => {
   try { 
     await auth.logout()
@@ -530,8 +492,7 @@ const handleAuthModeChange = (mode) => {
 
 const handleAuthSuccess = async () => {
   showAuthModal.value = false
-  await auth.ensureSession()
-  await fetchUserAssets()
+  await refreshData()
 }
 
 // 获取用户优惠券和积分卡数据
@@ -663,6 +624,7 @@ onMounted(() => {
   auth.ensureSession()
   fetchUserAssets()
   fetchAvailableGiftcards()
+  initMembership()
 })
 
 // copy link (migrated from dock share)
@@ -706,9 +668,9 @@ const handleSelectProducts = () => {
   }
 }
 
-// Cart - 打开购物车弹窗（不关闭当前 LeverAndPoint）
+// Cart - 打开购物车弹窗（不关闭当前 LeverAndPoint），使用专用底部停靠模式
 const handleViewCart = () => {
-  cart.openCart()
+  cart.openCartFromLever()
 }
 
 // Privacy statement
