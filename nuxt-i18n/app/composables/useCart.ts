@@ -25,7 +25,12 @@ export interface ShippingAddress {
 const cartItems = ref<CartItem[]>([])
 const isCartOpen = ref(false)
 const isCheckoutOpen = ref(false)
-const cartVariant = ref<'default' | 'checkout-bottom'>('default')
+// cartVariant 用来区分不同父级打开购物车时的停靠方式：
+// - default: 全屏遮罩 + 居中弹窗（导航、小球等默认入口）
+// - checkout-bottom: 结账页面底部抽屉模式
+// - lever-bottom: LeverAndPoint 弹窗内专用底部抽屉模式
+// - chat-bottom: WhatsApp 聊天页专用底部抽屉模式
+const cartVariant = ref<'default' | 'checkout-bottom' | 'lever-bottom' | 'chat-bottom'>('default')
 const shippingAddress = ref<ShippingAddress | null>(null)
 const selectedPaymentMethod = ref<string>('')
 
@@ -182,6 +187,7 @@ export const useCart = () => {
 
   // 打开/关闭购物车
   const openCart = () => {
+    // 默认入口：使用居中弹窗样式
     cartVariant.value = 'default'
     isCartOpen.value = true
   }
@@ -197,6 +203,18 @@ export const useCart = () => {
   // 从 Checkout 打开购物车：保持结账弹窗打开，仅在底部以抽屉形式展示购物车
   const openCartFromCheckout = () => {
     cartVariant.value = 'checkout-bottom'
+    isCartOpen.value = true
+  }
+
+  // 从 LeverAndPoint 等父级打开购物车的专用底部抽屉模式
+  const openCartFromLever = () => {
+    cartVariant.value = 'lever-bottom'
+    isCartOpen.value = true
+  }
+
+  // 从 WhatsApp 聊天页等入口打开购物车：专用底部抽屉模式
+  const openCartFromChat = () => {
+    cartVariant.value = 'chat-bottom'
     isCartOpen.value = true
   }
 
@@ -264,6 +282,8 @@ export const useCart = () => {
     closeCart,
     toggleCart,
     openCartFromCheckout,
+    openCartFromLever,
+     openCartFromChat,
     openCheckout,
     closeCheckout,
     backToCart,

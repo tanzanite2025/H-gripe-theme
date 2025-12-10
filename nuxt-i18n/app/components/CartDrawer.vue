@@ -10,8 +10,8 @@
       <div
         v-if="isCartOpen"
         :class="[
-          'fixed inset-0 z-[9999] flex justify-center p-0 md:p-4',
-          cartVariant === 'checkout-bottom' ? 'items-end' : 'items-center'
+          'fixed inset-0 z-[14000] flex justify-center p-0 md:p-4',
+          cartVariant === 'default' ? 'items-center' : 'items-end'
         ]"
         @click.self="closeCart"
       >

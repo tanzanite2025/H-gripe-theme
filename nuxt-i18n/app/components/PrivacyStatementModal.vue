@@ -1,6 +1,10 @@
 <template>
   <div
-    class="max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] bg-black rounded-2xl border-2 border-[#6b73ff] shadow-[0_0_30px_rgba(107,115,255,0.3)] overflow-hidden flex flex-col"
+    class="max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]
+           rounded-2xl border-2 border-[#6b73ff]/40
+           bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))]
+           backdrop-blur-md shadow-[0_0_30px_rgba(107,115,255,0.6)]
+           overflow-hidden flex flex-col"
   >
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-3 md:py-4 border-b border-white/10">

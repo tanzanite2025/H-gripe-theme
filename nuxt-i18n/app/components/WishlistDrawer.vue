@@ -3,11 +3,17 @@
     <Transition name="whatsapp-product-drawer">
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
+        :class="[
+          'fixed inset-0 z-[14000] flex justify-center p-0 md:p-4',
+          props.variant === 'bottom' ? 'items-end' : 'items-center'
+        ]"
         @click.self="handleClose"
       >
         <!-- 半透明背景遮罩，与 WhatsApp/Checkout 保持一致 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div
+          v-if="props.variant !== 'bottom'"
+          class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        ></div>
         <div
           class="sidebar-panel relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh]
                  rounded-2xl border-2 border-[#6b73ff]/40 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)]
@@ -125,6 +131,7 @@ import { useWishlist } from '~/composables/useWishlist'
 
 const props = defineProps<{
   modelValue: boolean
+  variant?: 'default' | 'bottom'
 }>()
 
 const emit = defineEmits<{
