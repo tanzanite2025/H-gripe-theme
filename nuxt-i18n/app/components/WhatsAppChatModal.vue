@@ -408,7 +408,7 @@
               <div v-if="selectedAgent" class="md:hidden flex-1 min-h-0 px-3 pb-4">
                 <div class="flex flex-col h-full rounded-[28px] border-2 overflow-hidden" :style="mobilePanelStyle">
                   <!-- 第三排：功能按钮 -->
-                  <div class="flex gap-1 px-2 pt-3 pb-2">
+                  <div class="flex flex-wrap gap-1 justify-center px-2 pt-3 pb-2">
                     <button
                       @click="activeTab = 'chat'"
                       class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap"
@@ -453,6 +453,15 @@
                         : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                     >
                       Warranty
+                    </button>
+                    <button
+                      @click="activeTab = 'member'"
+                      class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap"
+                      :class="activeTab === 'member'
+                        ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
+                        : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
+                    >
+                      Member
                     </button>
                   </div>
 
@@ -647,6 +656,98 @@
                         />
                       </div>
                     </div>
+                    <!-- 移动端：会员概览面板 -->
+                    <div
+                      v-else-if="activeTab === 'member'"
+                      class="h-full overflow-y-auto px-1 pt-1 pb-3"
+                    >
+                      <div class="w-full rounded-2xl p-3 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md space-y-3">
+                        <!-- 顶部：当前等级 / 提示 -->
+                        <div class="flex items-center gap-3">
+                          <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-[11px] font-semibold text-white/80 border border-white/20">
+                            {{ isMemberLogged ? (levelName || '—') : 'Guest' }}
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="text-[11px] text-white/50 truncate">
+                              {{ isMemberLogged ? 'Your membership' : 'Membership program' }}
+                            </div>
+                            <div class="text-sm font-semibold text-white truncate">
+                              <span v-if="isMemberLogged">Level {{ levelName }}</span>
+                              <span v-else>Log in to unlock member prices</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- 核心指标网格 -->
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                          <div class="rounded-xl px-2.5 py-2 bg-white/5">
+                            <div class="text-white/50">Points</div>
+                            <div class="text-sm font-semibold text-white">
+                              {{ isMemberLogged ? points : '—' }}
+                            </div>
+                          </div>
+                          <div class="rounded-xl px-2.5 py-2 bg-white/5">
+                            <div class="text-white/50">Product discount</div>
+                            <div class="text-sm font-semibold text-white">
+                              {{ isMemberLogged ? (levelDiscounts.product + '%') : '—' }}
+                            </div>
+                          </div>
+                          <div class="rounded-xl px-2.5 py-2 bg-white/5">
+                            <div class="text-white/50">Points discount</div>
+                            <div class="text-sm font-semibold text-white">
+                              {{ isMemberLogged ? (levelDiscounts.points + '%') : '—' }}
+                            </div>
+                          </div>
+                          <div class="rounded-xl px-2.5 py-2 bg-white/5">
+                            <div class="text-white/50">Coupons / Cards</div>
+                            <div class="text-sm font-semibold text-white">
+                              {{ isMemberLogged ? `× ${userCoupons} / × ${userPointCards}` : '—' }}
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- 等级进度条 -->
+                        <div v-if="isMemberLogged" class="space-y-1.5">
+                          <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              class="h-full bg-[linear-gradient(90deg,#40ffaa,#6b73ff)]"
+                              :style="{ width: tierInfo.pct + '%' }"
+                            ></div>
+                          </div>
+                          <div class="flex items-center justify-between text-[10px] text-white/60">
+                            <span>{{ tierInfo.current ? tierInfo.current.min : 0 }}</span>
+                            <span class="font-semibold text-white/80">{{ tierInfo.pct }}%</span>
+                            <span>
+                              {{
+                                tierInfo.next
+                                  ? tierInfo.next.min
+                                  : (tierInfo.current && tierInfo.current.max !== -1 ? tierInfo.current.max : 'MAX')
+                              }}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div v-else class="text-[11px] text-white/60 space-y-2">
+                          <p>Log in or sign up to see your member prices, points and progress.</p>
+                          <div class="flex gap-1.5">
+                            <button
+                              type="button"
+                              class="flex-1 h-8 rounded-full bg-[linear-gradient(135deg,#40ffaa,#6b73ff)] text-slate-950 text-[11px] font-semibold hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
+                              @click="openMemberAuth('register')"
+                            >
+                              Sign up
+                            </button>
+                            <button
+                              type="button"
+                              class="flex-1 h-8 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-[11px] font-semibold shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+                              @click="openMemberAuth('login')"
+                            >
+                              Log in
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- 输入区 -->
@@ -711,7 +812,7 @@
 
               <!-- 桌面端内容 -->
               <div class="hidden md:flex flex-col flex-1 min-h-0">
-                <div class="flex gap-2 justify-center py-3 border-b border-white/[0.08] px-4 bg-white/[0.02]">
+                <div class="flex flex-wrap gap-2 justify-center py-3 border-b border-white/[0.08] px-4 bg-white/[0.02]">
                   <button
                     @click="activeTab = 'chat'"
                     class="px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
@@ -756,6 +857,15 @@
                       : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                   >
                     Warranty
+                  </button>
+                  <button
+                    @click="activeTab = 'member'"
+                    class="px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
+                    :class="activeTab === 'member' 
+                      ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]' 
+                      : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
+                  >
+                    Member
                   </button>
                 </div>
 
@@ -950,6 +1060,93 @@
                       :is-logged-in="isLoggedInForWarranty"
                       @login-request="handleWarrantyLoginRequest"
                     />
+                  </div>
+                </div>
+
+                <!-- 桌面端：会员概览面板 -->
+                <div v-if="activeTab === 'member'" class="flex-1 overflow-y-auto p-6">
+                  <div class="max-w-md mx-auto rounded-2xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md space-y-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white/80 border border-white/20">
+                        {{ isMemberLogged ? (levelName || '—') : 'Guest' }}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[11px] text-white/50 truncate">
+                          {{ isMemberLogged ? 'Your membership' : 'Membership program' }}
+                        </div>
+                        <div class="text-sm font-semibold text-white truncate">
+                          <span v-if="isMemberLogged">Level {{ levelName }}</span>
+                          <span v-else>Log in to unlock member prices</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-[11px]">
+                      <div class="rounded-xl px-3 py-2 bg-white/5">
+                        <div class="text-white/50">Points</div>
+                        <div class="text-sm font-semibold text-white">
+                          {{ isMemberLogged ? points : '—' }}
+                        </div>
+                      </div>
+                      <div class="rounded-xl px-3 py-2 bg-white/5">
+                        <div class="text-white/50">Product discount</div>
+                        <div class="text-sm font-semibold text-white">
+                          {{ isMemberLogged ? (levelDiscounts.product + '%') : '—' }}
+                        </div>
+                      </div>
+                      <div class="rounded-xl px-3 py-2 bg-white/5">
+                        <div class="text-white/50">Points discount</div>
+                        <div class="text-sm font-semibold text-white">
+                          {{ isMemberLogged ? (levelDiscounts.points + '%') : '—' }}
+                        </div>
+                      </div>
+                      <div class="rounded-xl px-3 py-2 bg-white/5">
+                        <div class="text-white/50">Coupons / Cards</div>
+                        <div class="text-sm font-semibold text-white">
+                          {{ isMemberLogged ? `× ${userCoupons} / × ${userPointCards}` : '—' }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-if="isMemberLogged" class="space-y-1.5">
+                      <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          class="h-full bg-[linear-gradient(90deg,#40ffaa,#6b73ff)]"
+                          :style="{ width: tierInfo.pct + '%' }"
+                        ></div>
+                      </div>
+                      <div class="flex items-center justify-between text-[11px] text-white/60">
+                        <span>{{ tierInfo.current ? tierInfo.current.min : 0 }}</span>
+                        <span class="font-semibold text-white/80">{{ tierInfo.pct }}%</span>
+                        <span>
+                          {{
+                            tierInfo.next
+                              ? tierInfo.next.min
+                              : (tierInfo.current && tierInfo.current.max !== -1 ? tierInfo.current.max : 'MAX')
+                          }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div v-else class="text-[11px] text-white/60 space-y-3">
+                      <p>Log in or sign up to see your member prices, points and progress.</p>
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          class="flex-1 h-9 rounded-full bg-[linear-gradient(135deg,#40ffaa,#6b73ff)] text-slate-950 text-[11px] font-semibold hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
+                          @click="openMemberAuth('register')"
+                        >
+                          Sign up
+                        </button>
+                        <button
+                          type="button"
+                          class="flex-1 h-9 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-[11px] font-semibold shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+                          @click="openMemberAuth('login')"
+                        >
+                          Log in
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1152,6 +1349,7 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
+import { useMembership } from '~/composables/useMembership'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
@@ -1173,6 +1371,17 @@ const emit = defineEmits<{
 
 const { user, isAgent, agentId } = useAuth()
 const { openCartFromChat } = useCart()
+const {
+  isLogged: isMemberLogged,
+  levelName,
+  points,
+  tierInfo,
+  levelDiscounts,
+  userCoupons,
+  userPointCards,
+  initMembership,
+  refreshData: refreshMembershipData,
+} = useMembership()
 const config = useRuntimeConfig()
 
 // Desktop-only搜索占位
@@ -1303,7 +1512,7 @@ const emailSettings = ref({
   afterSalesEmail: ''
 })
 
-type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty'
+type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member'
 interface ChatRoomState {
   messages: any[]
   activeTab: ChatTab
@@ -1462,14 +1671,20 @@ const isLoggedInForWarranty = computed(() => !!user.value)
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'register'>('login')
 
-// 从聊天中的保修查询触发登录：打开 AuthModal
-const handleWarrantyLoginRequest = () => {
-  authMode.value = 'login'
+// 打开聊天内 AuthModal（用于会员 / 保修登录）
+const openMemberAuth = (mode: 'login' | 'register') => {
+  authMode.value = mode
   showAuthModal.value = true
 }
 
-const handleChatAuthSuccess = () => {
+// 从聊天中的保修查询触发登录：打开 AuthModal
+const handleWarrantyLoginRequest = () => {
+  openMemberAuth('login')
+}
+
+const handleChatAuthSuccess = async () => {
   showAuthModal.value = false
+  await refreshMembershipData()
 }
 
 // 关闭弹窗
@@ -2515,8 +2730,10 @@ const changeAgentStatus = async (status: string) => {
   }
 }
 
-// 组件挂载时获取客服列表和检查历史对话
+// 组件挂载时获取客服列表、会员数据和检查历史对话
 onMounted(async () => {
+  await initMembership()
+
   if (agentMode.value) {
     // 客服模式：获取会话列表和状态，跳过欢迎页
     showWelcomeScreen.value = false
