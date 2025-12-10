@@ -580,10 +580,12 @@ onMounted(() => {
 
 /* 会员卡片 */
 .member-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.9);
   border-radius: 12px;
   padding: 1rem;
+  box-shadow:
+    0 10px 26px -14px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(15, 23, 42, 0.9);
 }
 
 .card-title {
@@ -759,10 +761,12 @@ onMounted(() => {
 
 /* 等级表格 */
 .tier-table {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.9);
   border-radius: 12px;
   padding: 1rem;
+  box-shadow:
+    0 10px 26px -14px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(15, 23, 42, 0.9);
 }
 
 .tier-table h4 {
@@ -805,10 +809,12 @@ onMounted(() => {
 
 /* 积分规则 */
 .points-rules {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.9);
   border-radius: 12px;
   padding: 1rem;
+  box-shadow:
+    0 10px 26px -14px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(15, 23, 42, 0.9);
 }
 
 .points-rules h4 {
