@@ -445,6 +445,15 @@
                     >
                       FAQ
                     </button>
+                    <button
+                      @click="activeTab = 'warranty'"
+                      class="flex-1 h-10 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap"
+                      :class="activeTab === 'warranty'
+                        ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
+                        : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
+                    >
+                      Warranty
+                    </button>
                   </div>
 
                   <!-- 内容区域 -->
@@ -626,6 +635,18 @@
                     <div v-else-if="activeTab === 'faq'" class="h-full overflow-y-auto">
                       <HomeFaqPreview :max-items-per-category="5" />
                     </div>
+                    <!-- 移动端：保修查询面板 -->
+                    <div
+                      v-else-if="activeTab === 'warranty'"
+                      class="h-full overflow-y-auto px-1 pt-1 pb-3"
+                    >
+                      <div class="warranty-check">
+                        <WarrantyCheckPanel
+                          :is-logged-in="isLoggedInForWarranty"
+                          @login-request="handleWarrantyLoginRequest"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <!-- 输入区 -->
@@ -726,6 +747,15 @@
                       : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
                   >
                     FAQ
+                  </button>
+                  <button
+                    @click="activeTab = 'warranty'"
+                    class="px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
+                    :class="activeTab === 'warranty' 
+                      ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]' 
+                      : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
+                  >
+                    Warranty
                   </button>
                 </div>
 
@@ -913,6 +943,16 @@
                   <HomeFaqPreview :max-items-per-category="5" />
                 </div>
 
+                <!-- 桌面端：保修查询面板 -->
+                <div v-if="activeTab === 'warranty'" class="flex-1 overflow-y-auto p-6">
+                  <div class="warranty-check max-w-[640px] mx-auto">
+                    <WarrantyCheckPanel
+                      :is-logged-in="isLoggedInForWarranty"
+                      @login-request="handleWarrantyLoginRequest"
+                    />
+                  </div>
+                </div>
+
                 <div v-if="activeTab === 'chat'" class="border-t border-white/[0.08] bg-white/[0.02] p-3 md:p-4">
                   <form @submit.prevent="handleSendMessage" class="flex gap-1.5 md:gap-2">
                     <input
@@ -1064,6 +1104,15 @@
       @share-to-chat="handleShareProductFromHistory"
     />
 
+    <!-- 聊天内登录弹窗（复用全局 AuthModal，嵌入模式） -->
+    <AuthModal
+      v-model="showAuthModal"
+      :default-mode="authMode"
+      embedded
+      @mode-change="authMode = $event"
+      @success="handleChatAuthSuccess"
+    />
+
     <Transition name="slide-up">
       <div
         v-if="historyDrawerVisible"
@@ -1107,6 +1156,8 @@ import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearc
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
 import ChatStartButton from '~/components/ChatStartButton.vue'
+import WarrantyCheckPanel from '~/components/WarrantyCheckPanel.vue'
+import AuthModal from '~/components/AuthModal.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -1252,7 +1303,7 @@ const emailSettings = ref({
   afterSalesEmail: ''
 })
 
-type ChatTab = 'chat' | 'share' | 'orders' | 'faq'
+type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty'
 interface ChatRoomState {
   messages: any[]
   activeTab: ChatTab
@@ -1403,6 +1454,23 @@ let isLongPress = ref(false)
 
 // 是否显示"我的订单"标签
 const shouldShowOrders = computed(() => !!user.value)
+
+// 保修查询登录状态
+const isLoggedInForWarranty = computed(() => !!user.value)
+
+// 聊天内登录弹窗状态
+const showAuthModal = ref(false)
+const authMode = ref<'login' | 'register'>('login')
+
+// 从聊天中的保修查询触发登录：打开 AuthModal
+const handleWarrantyLoginRequest = () => {
+  authMode.value = 'login'
+  showAuthModal.value = true
+}
+
+const handleChatAuthSuccess = () => {
+  showAuthModal.value = false
+}
 
 // 关闭弹窗
 const handleClose = () => {
