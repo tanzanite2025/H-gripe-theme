@@ -25,6 +25,7 @@ export interface ShippingAddress {
 const cartItems = ref<CartItem[]>([])
 const isCartOpen = ref(false)
 const isCheckoutOpen = ref(false)
+const cartVariant = ref<'default' | 'checkout-bottom'>('default')
 const shippingAddress = ref<ShippingAddress | null>(null)
 const selectedPaymentMethod = ref<string>('')
 
@@ -181,6 +182,7 @@ export const useCart = () => {
 
   // 打开/关闭购物车
   const openCart = () => {
+    cartVariant.value = 'default'
     isCartOpen.value = true
   }
 
@@ -190,6 +192,12 @@ export const useCart = () => {
 
   const toggleCart = () => {
     isCartOpen.value = !isCartOpen.value
+  }
+
+  // 从 Checkout 打开购物车：保持结账弹窗打开，仅在底部以抽屉形式展示购物车
+  const openCartFromCheckout = () => {
+    cartVariant.value = 'checkout-bottom'
+    isCartOpen.value = true
   }
 
   // 打开/关闭结账
@@ -230,6 +238,7 @@ export const useCart = () => {
     cartItems,
     isCartOpen,
     isCheckoutOpen,
+    cartVariant,
     shippingAddress,
     selectedPaymentMethod,
     
@@ -254,6 +263,7 @@ export const useCart = () => {
     openCart,
     closeCart,
     toggleCart,
+    openCartFromCheckout,
     openCheckout,
     closeCheckout,
     backToCart,

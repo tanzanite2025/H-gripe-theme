@@ -11,7 +11,7 @@
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 结账弹窗 -->
         <transition name="scale">
-          <div v-if="isCheckoutOpen" class="relative flex flex-col w-full max-w-[1400px] h-[92vh] md:h-[780px] max-h-[95vh] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border border-white/10 shadow-[0_24px_56px_-18px_rgba(0,0,0,1)]">
+          <div v-if="isCheckoutOpen" class="relative flex flex-col w-full max-w-[1400px] h-[92vh] md:h-[780px] max-h-[95vh] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)]">
             <!-- 头部：再次压缩高度，为下方内容留出更多空间 -->
             <div class="flex items-center justify-between px-6 py-2.5 border-b border-white/10">
               <div class="flex items-center gap-2">
@@ -59,7 +59,7 @@
                             : 'bg-[linear-gradient(135deg,rgba(31,41,55,0.95),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
                         ]"
                       >
-                        <span>Card</span>
+                        <span>Credit / Debit Cards</span>
                         <span
                           :class="[
                             'text-[10px] md:text-[11px] font-normal',
@@ -544,12 +544,37 @@
                         Shipping Address
                       </h3>
 
+                      <p class="text-xs text-white/70 mb-2">
+                        If shipping to your area isn't available yet, it doesn't always mean we can't deliver. Please contact us and we'll check possible shipping options for you.
+                      </p>
+                      <div class="flex flex-wrap gap-2 mb-3">
+                        <button
+                          type="button"
+                          class="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-emerald-300 bg-emerald-500/20 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.9),0_0_10px_rgba(15,23,42,0.9)] hover:bg-emerald-500/30 hover:text-emerald-200 transition-all"
+                          @click="handleOpenShippingChat"
+                        >
+                          Chat with us
+                        </button>
+                        <button
+                          type="button"
+                          class="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-white/80 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_8px_-3px_rgba(0,0,0,0.9),0_0_10px_rgba(15,23,42,0.9)] hover:text-white hover:brightness-110 transition-all"
+                        >
+                          Email support
+                        </button>
+                      </div>
+
                       <div class="space-y-3">
                         <!-- 4 个主要字段：Country / Recipient / Phone / Address，在桌面端两行两列排列 -->
                         <div class="grid md:grid-cols-2 gap-3">
                           <!-- Country Selection -->
                           <div>
                             <label class="block text-sm font-medium text-white/80 mb-1">Country / Region <span class="text-red-400">*</span></label>
+                            <input
+                              v-model="countrySearch"
+                              type="text"
+                              placeholder="Search country or region"
+                              class="mb-1 w-full px-3 py-1.5 rounded-lg border-none text-xs text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
+                            />
                             <select
                               v-model="form.country"
                               class="w-full px-4 py-2.5 rounded-lg border-none text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
@@ -558,7 +583,7 @@
                               <option value="" disabled class="bg-gray-900">Select a country</option>
                               <optgroup label="Available for Shipping" class="bg-gray-900">
                                 <option
-                                  v-for="country in shippableCountries"
+                                  v-for="country in filteredShippableCountries"
                                   :key="country.code"
                                   :value="country.code"
                                   class="bg-gray-900"
@@ -568,7 +593,7 @@
                               </optgroup>
                               <optgroup label="Other Countries" class="bg-gray-900">
                                 <option
-                                  v-for="country in nonShippableCountries"
+                                  v-for="country in filteredNonShippableCountries"
                                   :key="country.code"
                                   :value="country.code"
                                   class="bg-gray-900 text-white/50"
@@ -839,6 +864,7 @@
                         <button
                           type="button"
                           class="w-full inline-flex items-center justify-center px-3 py-2 rounded-lg border border-white/10 text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                          @click="openCartFromCheckout"
                         >
                           View cart
                         </button>
@@ -861,6 +887,7 @@ import { ref, computed } from 'vue'
 import ChatStartButton from '~/components/ChatStartButton.vue'
 import { COUNTRIES } from '~/data/countries'
 import { useShippingValidation } from '~/composables/useShippingValidation'
+import { useChatWidget } from '~/composables/useChatWidget'
 
 const {
   cartItems,
@@ -871,6 +898,7 @@ const {
   formatPrice,
   clearCart,
   calculation,
+  openCartFromCheckout,
 } = useCart()
 
 // 配送验证
@@ -887,6 +915,16 @@ onMounted(async () => {
   calculation.initialize()
   await loadShippingTemplates()
 })
+
+// 聊天窗口（WhatsAppChatModal）
+const { openChat } = useChatWidget()
+
+const handleOpenShippingChat = () => {
+  openChat({ showAgentList: true })
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
+  }
+}
 
 // 支付方式列表（暂未直接用于 Tabs，但保留给后续逻辑使用）
 const paymentMethods = [
@@ -932,6 +970,28 @@ const shippableCountries = computed(() => {
 
 const nonShippableCountries = computed(() => {
   return COUNTRIES.filter(c => !shippableCountryCodes.value.includes(c.code))
+})
+
+const countrySearch = ref('')
+
+const filteredShippableCountries = computed(() => {
+  const term = countrySearch.value.trim().toLowerCase()
+  if (!term) return shippableCountries.value
+  return shippableCountries.value.filter(country => {
+    const name = country.name.toLowerCase()
+    const code = country.code.toLowerCase()
+    return name.includes(term) || code.includes(term)
+  })
+})
+
+const filteredNonShippableCountries = computed(() => {
+  const term = countrySearch.value.trim().toLowerCase()
+  if (!term) return nonShippableCountries.value
+  return nonShippableCountries.value.filter(country => {
+    const name = country.name.toLowerCase()
+    const code = country.code.toLowerCase()
+    return name.includes(term) || code.includes(term)
+  })
 })
 
 // 预计送达时间

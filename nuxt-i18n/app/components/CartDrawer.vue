@@ -9,11 +9,17 @@
     >
       <div
         v-if="isCartOpen"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4"
+        :class="[
+          'fixed inset-0 z-[9999] flex justify-center p-0 md:p-4',
+          cartVariant === 'checkout-bottom' ? 'items-end' : 'items-center'
+        ]"
         @click.self="closeCart"
       >
-        <!-- 半透明背景遮罩，与 WhatsApp/Checkout 保持一致 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <!-- 半透明背景遮罩：默认模式使用，Checkout 专用底部模式不再叠加第二层遮罩 -->
+        <div
+          v-if="cartVariant === 'default'"
+          class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        ></div>
         <!-- 弹窗内容 -->
         <Transition name="slide-up" appear>
           <div
@@ -237,6 +243,7 @@ import { useCart } from '~/composables/useCart'
 const {
   cartItems,
   isCartOpen,
+  cartVariant,
   cartCount,
   subtotal,
   shipping,
