@@ -20,10 +20,10 @@
           @click="close"
         ></div>
 
-        <!-- 弹窗卡片 -->
+        <!-- 弹窗卡片：对齐 Checkout 弹窗的暗色玻璃风格 -->
         <div
           :class="[
-            'relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] bg-black border-2 border-[#6b73ff] rounded-t-3xl md:rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.3)] text-white flex flex-col pointer-events-auto overflow-hidden',
+            'relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-t-3xl md:rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden',
             props.embedded ? 'rounded-2xl' : ''
           ]"
         >
@@ -48,8 +48,8 @@
                     type="button"
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'login'
-                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black'
-                      : 'border border-white/20 text-white/70'"
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_12px_26px_-14px_rgba(15,23,42,1)]'
+                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/80 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
                     @click="setMode('login')"
                   >
                     {{ $t('auth.signIn', 'Sign in') }}
@@ -58,8 +58,8 @@
                     type="button"
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'register'
-                      ? 'bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black'
-                      : 'border border-white/20 text-white/70'"
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_12px_26px_-14px_rgba(15,23,42,1)]'
+                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/80 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
                     @click="setMode('register')"
                   >
                     {{ $t('auth.signUp', 'Sign up') }}
@@ -94,7 +94,7 @@
                   <div class="flex items-center gap-2 text-white/40 text-xs uppercase tracking-[0.2em] justify-center">
                     <span class="flex-1 h-px bg-white/10"></span>
                     <span>{{ $t('auth.orWithEmail', 'or with email') }}</span>
-                    <span class="flex-1 h-px bg白/10"></span>
+                    <span class="flex-1 h-px bg-white/10"></span>
                   </div>
 
                   <!-- 登录表单 -->
@@ -325,12 +325,15 @@ const handleCompletionCta = async () => {
 
 .form-input {
   width: 100%;
-  height: 2.75rem;
-  padding: 0 0.75rem;
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: white;
+  height: 2.6rem;
+  padding: 0 0.85rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+  border: none;
+  box-shadow:
+    0 2px 6px -3px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
 }
 
 .form-input::placeholder {
@@ -339,16 +342,25 @@ const handleCompletionCta = async () => {
 
 .form-input:focus {
   outline: none;
-  border-color: #6b73ff;
+  border-color: rgba(56, 189, 248, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.95),
+    0 0 12px rgba(15, 23, 42, 0.9);
 }
 
 .primary-btn {
   height: 2.75rem;
-  border-radius: 0.5rem;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
-  color: black;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #0b1120;
   font-weight: 600;
-  transition: filter 0.2s ease;
+  box-shadow:
+    0 12px 30px -18px rgba(15, 23, 42, 1),
+    0 0 18px rgba(37, 99, 235, 0.6);
+  transition:
+    filter 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
 .primary-btn:disabled {
@@ -357,23 +369,37 @@ const handleCompletionCta = async () => {
 }
 
 .primary-btn:not(:disabled):hover {
-  filter: brightness(1.1);
+  filter: brightness(1.02);
+  box-shadow:
+    0 10px 26px -18px rgba(15, 23, 42, 1),
+    0 0 20px rgba(56, 189, 248, 0.7);
+  transform: translateY(-1px);
 }
 
 .social-btn {
   width: 3rem;
   height: 3rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+  border: none;
+  color: #e5e7eb;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;
+  box-shadow:
+    0 6px 18px -12px rgba(0, 0, 0, 1),
+    0 0 10px rgba(15, 23, 42, 0.9);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
 .social-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(15, 23, 42, 0.98));
+  box-shadow:
+    0 8px 20px -12px rgba(0, 0, 0, 1),
+    0 0 14px rgba(15, 23, 42, 0.95);
+  transform: translateY(-1px);
 }
 </style>

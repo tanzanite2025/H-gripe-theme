@@ -4,7 +4,7 @@
     <transition name="fade">
       <div
         v-if="isCheckoutOpen"
-        class="fixed inset-0 z-[9998] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9998] flex items-center justify-center p-0 md:p-4"
         @click.self="closeCheckout"
       >
         <!-- 半透明背景遮罩 -->
@@ -13,7 +13,7 @@
         <transition name="scale">
           <div v-if="isCheckoutOpen" class="relative flex flex-col w-full max-w-[1400px] h-[92vh] md:h-[780px] max-h-[95vh] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)]">
             <!-- 头部：再次压缩高度，为下方内容留出更多空间 -->
-            <div class="flex items-center justify-between px-6 py-2.5 border-b border-white/10">
+            <div class="flex items-center justify-between px-2 md:px-6 py-2.5 border-b border-white/10">
               <div class="flex items-center gap-2">
                 <button
                   @click="backToCart"
@@ -36,137 +36,129 @@
               </button>
             </div>
 
+            <!-- 顶部统一安全说明：来源于 Secure payment & data protection 卡片内容 -->
+            <div class="px-2 md:px-6 pt-1 pb-1 md:pb-2 text-center space-y-0.5">
+              <p class="text-[11px] md:text-xs font-semibold text-emerald-300">
+                Secure payment &amp; data protection
+              </p>
+              <p class="text-[11px] md:text-xs text-white/70">
+                Pages use HTTPS with trusted SSL; payments are processed by providers like PayPal / Stripe / Alipay. We only
+                store the result, not your card details.
+              </p>
+            </div>
+
+            <!-- 支付方式 Tabs（移动端两行横向滚动，桌面端胶囊居中） -->
+            <div class="px-2 md:px-6 pt-1 pb-2">
+              <div
+                class="w-full px-1 py-1
+                  grid grid-rows-2 grid-flow-col auto-cols-[minmax(120px,1fr)] gap-1.5 overflow-x-auto
+                  md:mt-1 md:px-1 md:py-2 md:rounded-full md:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] md:shadow-[0_14px_36px_-20px_rgba(0,0,0,1)]
+                  md:flex md:flex-wrap md:items-center md:justify-center md:overflow-visible"
+              >
+                <!-- Active: Card -->
+                <button
+                  type="button"
+                  @click="setActivePaymentTab('card')"
+                  :class="[
+                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
+                    activePaymentTab === 'card'
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
+                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
+                  ]"
+                >
+                  <span class="whitespace-nowrap">Credit / Debit Cards</span>
+                  <span
+                    :class="[
+                      'text-[10px] md:text-[11px] font-normal',
+                      activePaymentTab === 'card' ? 'text-slate-900/80' : 'text-emerald-200/80'
+                    ]"
+                  >
+                    ≈ {{ formatPrice(priceBreakdown.total) }}
+                  </span>
+                </button>
+                <!-- PayPal -->
+                <button
+                  type="button"
+                  @click="setActivePaymentTab('paypal')"
+                  :class="[
+                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
+                    activePaymentTab === 'paypal'
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
+                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
+                  ]"
+                >
+                  <span class="whitespace-nowrap">PayPal</span>
+                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
+                </button>
+                <!-- Alipay / WeChat -->
+                <button
+                  type="button"
+                  @click="setActivePaymentTab('alipay')"
+                  :class="[
+                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
+                    activePaymentTab === 'alipay'
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
+                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
+                  ]"
+                >
+                  <span class="whitespace-nowrap">Alipay / WeChat</span>
+                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
+                </button>
+                <!-- Stripe -->
+                <button
+                  type="button"
+                  @click="setActivePaymentTab('stripe')"
+                  :class="[
+                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
+                    activePaymentTab === 'stripe'
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
+                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
+                  ]"
+                >
+                  <span class="whitespace-nowrap">Stripe</span>
+                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
+                </button>
+                <!-- Bank transfer -->
+                <button
+                  type="button"
+                  @click="setActivePaymentTab('bank')"
+                  :class="[
+                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
+                    activePaymentTab === 'bank'
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
+                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
+                  ]"
+                >
+                  <span class="whitespace-nowrap">Bank transfer</span>
+                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
+                </button>
+                <!-- WorldFirst -->
+                <button
+                  type="button"
+                  @click="setActivePaymentTab('worldfirst')"
+                  :class="[
+                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
+                    activePaymentTab === 'worldfirst'
+                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
+                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
+                  ]"
+                >
+                  <span class="whitespace-nowrap">WorldFirst</span>
+                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
+                </button>
+              </div>
+            </div>
+
             <!-- 内容区域 -->
             <div class="flex-1 overflow-y-auto md:overflow-visible">
-              <div class="px-6 pt-1 pb-6 space-y-4">
+              <div class="px-2 md:px-6 pt-1 pb-6 space-y-4">
                 <div class="space-y-4">
                 <!-- 右侧：支付方式 Tabs + Shipping Address + 订单摘要 -->
-                <div class="space-y-4">
-                  <!-- 支付方式 Tabs 头部 + Card 说明（静态布局，仅作为 HTML Demo 的第一步迁移） -->
-                  <div class="space-y-4">
-                    <!-- Tabs 头部 -->
-                    <div
-                      class="w-full mt-2 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-1 py-2 shadow-[0_14px_36px_-20px_rgba(0,0,0,1)] flex flex-wrap items-center justify-center gap-1.5"
-                    >
-                      <!-- Active: Card -->
-                      <button
-                        type="button"
-                        @click="setActivePaymentTab('card')"
-                        :class="[
-                          'inline-flex items-center gap-2 px-4 py-2 text-left rounded-full text-[11px] md:text-[12px]',
-                          activePaymentTab === 'card'
-                            ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                            : 'bg-[linear-gradient(135deg,rgba(31,41,55,0.95),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                        ]"
-                      >
-                        <span>Credit / Debit Cards</span>
-                        <span
-                          :class="[
-                            'text-[10px] md:text-[11px] font-normal',
-                            activePaymentTab === 'card' ? 'text-slate-900/80' : 'text-emerald-200/80'
-                          ]"
-                        >
-                          · ≈ {{ formatPrice(priceBreakdown.total) }}
-                        </span>
-                      </button>
-                      <!-- PayPal -->
-                      <button
-                        type="button"
-                        @click="setActivePaymentTab('paypal')"
-                        :class="[
-                          'inline-flex items-center gap-2 px-4 py-2 text-left rounded-full text-[11px] md:text-[12px]',
-                          activePaymentTab === 'paypal'
-                            ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                            : 'bg-[linear-gradient(135deg,rgba(31,41,55,0.95),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                        ]"
-                      >
-                        <span>PayPal</span>
-                        <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">· ≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                      </button>
-                      <!-- Alipay / WeChat / UnionPay -->
-                      <button
-                        type="button"
-                        @click="setActivePaymentTab('alipay')"
-                        :class="[
-                          'inline-flex items-center gap-2 px-4 py-2 text-left rounded-full text-[11px] md:text-[12px]',
-                          activePaymentTab === 'alipay'
-                            ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                            : 'bg-[linear-gradient(135deg,rgba(31,41,55,0.95),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                        ]"
-                      >
-                        <span>Alipay / WeChat / UnionPay</span>
-                        <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">· ≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                      </button>
-                      <!-- Stripe -->
-                      <button
-                        type="button"
-                        @click="setActivePaymentTab('stripe')"
-                        :class="[
-                          'inline-flex items-center gap-2 px-4 py-2 text-left rounded-full text-[11px] md:text-[12px]',
-                          activePaymentTab === 'stripe'
-                            ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                            : 'bg-[linear-gradient(135deg,rgba(31,41,55,0.95),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                        ]"
-                      >
-                        <span>Stripe</span>
-                        <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">· ≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                      </button>
-                      <!-- Bank transfer -->
-                      <button
-                        type="button"
-                        @click="setActivePaymentTab('bank')"
-                        :class="[
-                          'inline-flex items-center gap-2 px-4 py-2 text-left rounded-full text-[11px] md:text-[12px]',
-                          activePaymentTab === 'bank'
-                            ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                            : 'bg-[linear-gradient(135deg,rgba(31,41,55,0.95),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                        ]"
-                      >
-                        <span>Bank transfer</span>
-                        <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">· ≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                      </button>
-                      <!-- WorldFirst -->
-                      <button
-                        type="button"
-                        @click="setActivePaymentTab('worldfirst')"
-                        :class="[
-                          'inline-flex items-center gap-2 px-4 py-2 text-left rounded-full text-[11px] md:text-[12px]',
-                          activePaymentTab === 'worldfirst'
-                            ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                            : 'bg-[linear-gradient(135deg,rgba(31,41,55,0.95),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                        ]"
-                      >
-                        <span>WorldFirst</span>
-                        <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">· ≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                      </button>
-                    </div>
-
-                  </div>
-
-                  <!-- 安全说明 + Coupon + Points + Notes 一行四卡（桌面端等宽 3:3:3:3） -->
+                <div class="space-y-3">
+                  <!-- 安全说明内容已移至顶部，这里仅保留 Coupon + Points + Notes 卡片 -->
                   <div class="grid gap-3 md:grid-cols-12">
-                    <!-- Secure payment & data protection -->
-                    <section class="md:col-span-3">
-                      <div class="flex items-start gap-2 p-2.5 rounded-xl bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_4px_16px_-10px_rgba(0,0,0,1)]">
-                        <div class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
-                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5l6 2.25v5.25c0 3.5-2.55 6.75-6 7.5-3.45-.75-6-4-6-7.5V6.75L12 4.5z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 12.75L11.25 14.25 14.25 11.25" />
-                          </svg>
-                        </div>
-                        <div class="space-y-1">
-                          <p class="text-sm font-semibold text-emerald-300 leading-snug">
-                            Secure payment &amp; data protection
-                          </p>
-                          <p class="text-xs text-white/70 leading-snug">
-                            Pages use HTTPS with trusted SSL; payments are processed by providers like PayPal / Stripe / Alipay. We only store the result, not your card details.
-                          </p>
-                        </div>
-                      </div>
-                    </section>
-
                     <!-- Coupon -->
-                    <div class="md:col-span-3 rounded-xl p-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
+                    <div class="md:col-span-4 rounded-xl px-2.5 py-1.5 md:py-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                       <h3 class="text-sm font-semibold text-white mb-1 flex items-center gap-2">
                         <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z" clip-rule="evenodd" />
@@ -199,7 +191,7 @@
                     <!-- Points Discount -->
                     <div
                       v-if="calculation.userPoints.value"
-                      class="md:col-span-3 rounded-xl p-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
+                      class="md:col-span-4 rounded-xl px-2.5 py-1.5 md:py-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
                     >
                       <h3 class="text-sm font-semibold text-white mb-1 flex items-center gap-2">
                         <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
@@ -231,7 +223,7 @@
                     </div>
 
                     <!-- Notes -->
-                    <div class="md:col-span-3 rounded-xl p-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
+                    <div class="md:col-span-4 rounded-xl px-2.5 py-1.5 md:py-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
                       <label class="block text-sm font-medium text-white/80 mb-1">Order Notes (Optional)</label>
                       <textarea
                         v-model="form.notes"
@@ -248,7 +240,7 @@
                     <section
                       :class="[
                         activePaymentTab === 'bank' || activePaymentTab === 'worldfirst' ? 'md:col-span-6' : 'md:col-span-3',
-                        'md:h-[460px] space-y-3 rounded-2xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]'
+                        'md:h-[460px] space-y-3 rounded-2xl px-4 py-1.5 md:py-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]'
                       ]"
                     >
                       <header class="space-y-1">
@@ -312,12 +304,12 @@
                         </h3>
                       </header>
 
-                      <div class="mt-3 space-y-3 text-sm text-white/60">
+                      <div class="mt-2 space-y-2 text-sm text-white/60">
                         <template v-if="activePaymentTab === 'card'">
                           <p class="text-xs text-white/70">
                             For card payments we first collect your shipping and contact details here. Your card details will be entered on a secure payment page provided by our payment partner and are never stored on our servers.
                           </p>
-                          <div class="mt-2 space-y-2 text-xs">
+                          <div class="mt-1 space-y-1.5 text-xs">
                             <div class="flex items-center justify-between">
                               <span class="text-white/80">Required fields in this tab</span>
                               <span class="text-[10px] uppercase tracking-[0.18em] text-emerald-300">
@@ -339,7 +331,7 @@
                               </li>
                             </ul>
                           </div>
-                          <div class="grid grid-cols-1 gap-2 mt-3">
+                          <div class="grid grid-cols-1 gap-1.5 mt-2">
                             <div class="space-y-1">
                               <p class="font-medium text-white/80 flex items-center gap-1">
                                 <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
@@ -364,7 +356,7 @@
                             For privacy and convenience, if you choose PayPal we rely on the shipping address already stored in
                             your PayPal account whenever possible.
                           </p>
-                          <div class="mt-2 space-y-2 text-xs">
+                          <div class="mt-1 space-y-1.5 text-xs">
                             <ul class="space-y-1.5">
                               <li class="flex items-center gap-2">
                                 <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
@@ -399,7 +391,7 @@
                             When you choose Stripe we process your card through Stripe's secure checkout. We aim to keep the
                             form here minimal and let Stripe handle card details and extra verification.
                           </p>
-                          <div class="mt-2 space-y-2 text-xs">
+                          <div class="mt-1 space-y-1.5 text-xs">
                             <ul class="space-y-1.5">
                               <li class="flex items-center gap-2">
                                 <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
@@ -428,7 +420,7 @@
                             For these local payment methods you will be redirected to the provider to authorise the payment. We
                             usually still need your shipping details here to prepare the parcel.
                           </p>
-                          <div class="mt-2 space-y-2 text-xs">
+                          <div class="mt-1 space-y-1.5 text-xs">
                             <p class="font-medium text-emerald-300">Typically required in this tab</p>
                             <ul class="space-y-1.5">
                               <li class="flex items-center gap-2">
@@ -452,7 +444,7 @@
                             For larger or custom orders you can pay via bank transfer. A fixed bank fee is added to your order
                             total. Your own bank may also charge additional fees.
                           </p>
-                          <div class="mt-2 space-y-2 text-xs">
+                          <div class="mt-1 space-y-1.5 text-xs">
                             <p class="font-medium text-emerald-300">How bank transfer works in this checkout</p>
                             <ul class="space-y-1.5">
                               <li class="flex items-center gap-2">
@@ -469,7 +461,7 @@
                             </ul>
                           </div>
                           <div
-                            class="mt-3 rounded-xl p-4 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_20px_-12px_rgba(0,0,0,0.95)] border border-white/10 text-xs space-y-2"
+                            class="mt-2 rounded-xl px-4 py-1.5 md:py-4 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_20px_-12px_rgba(0,0,0,0.95)] border border-white/10 text-xs space-y-1.5"
                           >
                             <div class="flex items-center justify-between">
                               <p class="font-medium text-white/85">Example bank account details</p>
@@ -482,7 +474,7 @@
                               <p><span class="text-white/60">SWIFT / BIC:</span> EXAMPBANKXXX</p>
                             </div>
                           </div>
-                          <div class="mt-2 text-[11px] text-white/60 space-y-1">
+                          <div class="mt-1 text-[11px] text-white/60 space-y-0.5">
                             <p class="font-medium text-white/80">After you have sent the bank transfer</p>
                             <p>
                               On the live checkout we will show a clear confirmation step so you can tell us once your bank
@@ -496,7 +488,7 @@
                             For selected international or business orders you can pay via WorldFirst. You pay to a local
                             account in your currency, and WorldFirst settles the funds to us with an additional service fee.
                           </p>
-                          <div class="mt-2 space-y-2 text-xs">
+                          <div class="mt-1 space-y-1.5 text-xs">
                             <p class="font-medium text-emerald-300">Typical WorldFirst flow</p>
                             <ul class="space-y-1.5">
                               <li class="flex items-center gap-2">
@@ -510,7 +502,7 @@
                             </ul>
                           </div>
                           <div
-                            class="mt-3 rounded-xl p-4 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_20px_-12px_rgba(0,0,0,0.95)] border border-white/10 text-xs space-y-2"
+                            class="mt-3 rounded-xl px-4 py-1.5 md:py-4 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_20px_-12px_rgba(0,0,0,0.95)] border border-white/10 text-xs space-y-2"
                           >
                             <div class="flex items-center justify-between">
                               <p class="font-medium text-white/85">Example WorldFirst details</p>
@@ -534,9 +526,9 @@
                     <!-- Shipping Address（Card / 在线支付 Tab 所需的收货信息） -->
                     <div
                       v-if="activePaymentTab !== 'bank' && activePaymentTab !== 'worldfirst'"
-                      class="md:col-span-6 md:h-[460px] rounded-xl p-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] overflow-y-auto md:overflow-visible"
+                      class="md:col-span-6 md:h-[460px] rounded-xl px-4 py-1.5 md:py-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] overflow-y-auto md:overflow-visible"
                     >
-                      <h3 class="text-base font-semibold text-white mb-2 flex items-center gap-2">
+                      <h3 class="text-base font-semibold text-white mb-1.5 flex items-center gap-2">
                         <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -544,10 +536,10 @@
                         Shipping Address
                       </h3>
 
-                      <p class="text-xs text-white/70 mb-2">
+                      <p class="text-xs text-white/70 mb-1.5">
                         If shipping to your area isn't available yet, it doesn't always mean we can't deliver. Please contact us and we'll check possible shipping options for you.
                       </p>
-                      <div class="flex flex-wrap gap-2 mb-3">
+                      <div class="flex flex-wrap gap-2 mb-2">
                         <button
                           type="button"
                           class="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-emerald-300 bg-emerald-500/20 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.9),0_0_10px_rgba(15,23,42,0.9)] hover:bg-emerald-500/30 hover:text-emerald-200 transition-all"
@@ -563,9 +555,9 @@
                         </button>
                       </div>
 
-                      <div class="space-y-3">
+                      <div class="space-y-2.5">
                         <!-- 4 个主要字段：Country / Recipient / Phone / Address，在桌面端两行两列排列 -->
-                        <div class="grid md:grid-cols-2 gap-3">
+                        <div class="grid md:grid-cols-2 gap-2.5">
                           <!-- Country Selection -->
                           <div>
                             <label class="block text-sm font-medium text-white/80 mb-1">Country / Region <span class="text-red-400">*</span></label>
@@ -577,7 +569,7 @@
                             />
                             <select
                               v-model="form.country"
-                              class="w-full px-4 py-2.5 rounded-lg border-none text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
+                              class="w-full px-4 py-1.5 rounded-lg border-none text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                               :class="{ 'focus:[box-shadow:0_0_0_1px_rgba(248,113,113,0.9)]': form.country && !shippingValidation.isShippable }"
                             >
                               <option value="" disabled class="bg-gray-900">Select a country</option>
@@ -610,7 +602,7 @@
                               v-model="form.name"
                               type="text"
                               placeholder="Enter recipient name"
-                              class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
+                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                             />
                           </div>
 
@@ -620,7 +612,7 @@
                               v-model="form.phone"
                               type="tel"
                               placeholder="Enter phone number"
-                              class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
+                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                             />
                           </div>
 
@@ -630,7 +622,7 @@
                               v-model="form.address"
                               rows="1"
                               placeholder="Enter detailed address"
-                              class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)] resize-none"
+                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)] resize-none"
                             ></textarea>
                           </div>
                         </div>
@@ -638,7 +630,7 @@
                         <!-- Shipping Unavailable Warning -->
                         <div
                           v-if="form.country && !shippingValidation.isShippable"
-                          class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg"
+                          class="px-4 py-1.5 md:py-4 bg-red-500/10 border border-red-500/30 rounded-lg"
                         >
                           <div class="flex items-start gap-3">
                             <svg class="w-6 h-6 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -686,7 +678,7 @@
                         <!-- Estimated Delivery -->
                         <div
                           v-if="form.country && shippingValidation.isShippable && estimatedDelivery"
-                          class="p-2 bg-green-500/10 border border-green-500/30 rounded-lg"
+                          class="px-2 py-1.5 md:py-2 bg-green-500/10 border border-green-500/30 rounded-lg"
                         >
                           <p class="text-green-400 text-sm flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -696,14 +688,14 @@
                           </p>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-2.5">
                           <div>
                             <label class="block text-sm font-medium text-white/80 mb-1">City <span class="text-red-400">*</span></label>
                             <input
                               v-model="form.city"
                               type="text"
                               placeholder="City"
-                              class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
+                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                             />
                           </div>
                           <div>
@@ -712,7 +704,7 @@
                               v-model="form.zip"
                               type="text"
                               :placeholder="zipPlaceholder"
-                              class="w-full px-4 py-2.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
+                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
                             />
                             <p v-if="zipHint" class="text-xs text-white/50 mt-1">{{ zipHint }}</p>
                           </div>
@@ -724,10 +716,10 @@
                     <div
                       :class="[
                         activePaymentTab === 'bank' || activePaymentTab === 'worldfirst' ? 'md:col-span-6' : 'md:col-span-3',
-                        'md:h-[460px] rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] flex flex-col'
+                        'md:h-[460px] rounded-xl px-4 py-1.5 md:py-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] flex flex-col'
                       ]"
                     >
-                      <h3 class="text-sm font-semibold text-white mb-1 flex items-center gap-1">
+                      <h3 class="text-xs md:text-sm font-semibold text-white mb-0.5 md:mb-1 flex items-center gap-1 leading-tight">
                         <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
@@ -829,37 +821,43 @@
                           v-if="activePaymentTab === 'card'"
                           class="text-[11px] text-white/60 text-center"
                         >
-                          You'll enter your card details on a secure payment page provided by our payment partner. We never store your card number or CVC.
+                          You'll enter your card details on a secure payment page provided by our payment partner. We never
+                          store your card number or CVC.
                         </p>
                         <p
                           v-else-if="activePaymentTab === 'paypal'"
                           class="text-[11px] text-white/60 text-center"
                         >
-                          You'll be redirected to PayPal to complete your payment. We never see or store your PayPal password or card details.
+                          You'll be redirected to PayPal to complete your payment. We never see or store your PayPal password
+                          or card details.
                         </p>
                         <p
                           v-else-if="activePaymentTab === 'stripe'"
                           class="text-[11px] text-white/60 text-center"
                         >
-                          You'll be taken to Stripe's secure checkout to enter your card details. We never store your card number or CVC.
+                          You'll be taken to Stripe's secure checkout to enter your card details. We never store your card
+                          number or CVC.
                         </p>
                         <p
                           v-else-if="activePaymentTab === 'alipay'"
                           class="text-[11px] text-white/60 text-center"
                         >
-                          You'll complete payment via your usual local wallet (Alipay / WeChat / UnionPay). We do not store your wallet login details.
+                          You'll complete payment via your usual local wallet (Alipay / WeChat / UnionPay). We do not store
+                          your wallet login details.
                         </p>
                         <p
                           v-else-if="activePaymentTab === 'bank'"
                           class="text-[11px] text-white/60 text-center"
                         >
-                          You'll complete payment by bank transfer using the account details we provide. We do not have access to your online banking login.
+                          You'll complete payment by bank transfer using the account details we provide. We do not have access
+                          to your online banking login.
                         </p>
                         <p
                           v-else-if="activePaymentTab === 'worldfirst'"
                           class="text-[11px] text-white/60 text-center"
                         >
-                          You'll send the payment from your local bank to a WorldFirst account as usual. We never see your full bank credentials.
+                          You'll send the payment from your local bank to a WorldFirst account as usual. We never see your full
+                          bank credentials.
                         </p>
                         <button
                           type="button"
