@@ -344,14 +344,16 @@ onMounted(() => {
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
   background: linear-gradient(135deg, rgba(64, 255, 170, 0.1), rgba(107, 115, 255, 0.1));
-  border: 1px solid rgba(107, 115, 255, 0.3);
+  border: none;
   border-radius: 12px;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   transition: all 0.2s;
 }
 
 .warranty-card:hover {
-  border-color: rgba(107, 115, 255, 0.5);
-  box-shadow: 0 4px 20px rgba(107, 115, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.9);
 }
 
 .warranty-card__icon {
@@ -451,9 +453,11 @@ onMounted(() => {
   justify-content: center;
   gap: 0.75rem;
   padding: 1.5rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 12px;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   text-align: center;
 }
 
@@ -526,17 +530,23 @@ onMounted(() => {
   height: 40px;
   padding: 0 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: none;
   cursor: pointer;
+  box-shadow:
+    0 2px 6px -3px rgba(0, 0, 0, 0.9),
+    0 0 6px rgba(0, 0, 0, 0.7);
   transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(15, 23, 42, 0.98));
+  box-shadow:
+    0 4px 12px -4px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.9);
 }
 
 .btn-danger {
@@ -580,12 +590,12 @@ onMounted(() => {
 
 /* 会员卡片 */
 .member-card {
-  background: rgba(15, 23, 42, 0.9);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 12px;
   padding: 1rem;
-  box-shadow:
-    0 10px 26px -14px rgba(0, 0, 0, 0.95),
-    0 0 14px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .card-title {
@@ -608,9 +618,11 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .stat-icon {
@@ -656,9 +668,11 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .asset-icon {
@@ -720,10 +734,12 @@ onMounted(() => {
 
 /* 个人资料 */
 .profile-info {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 12px;
   padding: 1rem;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .profile-info h4 {
@@ -761,12 +777,12 @@ onMounted(() => {
 
 /* 等级表格 */
 .tier-table {
-  background: rgba(15, 23, 42, 0.9);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 12px;
   padding: 1rem;
-  box-shadow:
-    0 10px 26px -14px rgba(0, 0, 0, 0.95),
-    0 0 14px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .tier-table h4 {
@@ -782,7 +798,8 @@ onMounted(() => {
 
 .tier-table table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 6px;
 }
 
 .tier-table th,
@@ -790,7 +807,6 @@ onMounted(() => {
   padding: 0.75rem;
   text-align: left;
   font-size: 13px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tier-table th {
@@ -803,18 +819,35 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.9);
 }
 
-.tier-table tr:last-child td {
-  border-bottom: none;
+.tier-table thead tr,
+.tier-table tbody tr {
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.98), rgba(15, 23, 42, 0.98));
+  border-radius: 999px;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.tier-table thead tr th:first-child,
+.tier-table tbody tr td:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.tier-table thead tr th:last-child,
+.tier-table tbody tr td:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
 }
 
 /* 积分规则 */
 .points-rules {
-  background: rgba(15, 23, 42, 0.9);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 12px;
   padding: 1rem;
-  box-shadow:
-    0 10px 26px -14px rgba(0, 0, 0, 0.95),
-    0 0 14px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .points-rules h4 {
@@ -832,9 +865,11 @@ onMounted(() => {
 
 .rule-item {
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 8px;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .rule-title {
@@ -862,10 +897,12 @@ onMounted(() => {
 
 /* 礼品卡 */
 .giftcard-section {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 12px;
   padding: 1rem;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .giftcard-section h4 {
@@ -882,15 +919,17 @@ onMounted(() => {
 }
 
 .giftcard-item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border-radius: 12px;
   padding: 0.75rem;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: all 0.2s;
 }
 
 .giftcard-item:hover {
-  border-color: rgba(107, 115, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.9);
 }
 
 .giftcard-header {
