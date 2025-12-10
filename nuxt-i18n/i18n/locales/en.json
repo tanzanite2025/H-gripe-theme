@@ -140,6 +140,7 @@
   },
   "company": {
     "nav": {
+      "about": "About Us",
       "ourStory": "Our Story",
       "membershipPoints": "Membership and Points",
       "pictureWarehouse": "Picture warehouse"
@@ -173,6 +174,7 @@
       "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Guide",
       "about": "About",
+      "aboutUs": "About Us",
       "contact": "Contact",
       "ourStory": "Our Story",
       "membershipPoints": "Membership and Points",
