@@ -93,9 +93,6 @@
             and additional buyer protection. You will be redirected back to our site once the payment is
             approved.
           </p>
-          <p class="support-card__body support-card__highlight">
-            PayPal and credit cards: 3.5% of the order amount.
-          </p>
         </article>
         <article class="support-card">
           <h4 class="support-card__title">
@@ -108,9 +105,6 @@
             For larger or custom orders we can sometimes arrange payment via bank transfer. Please
             contact support before placing the order so that we can provide the correct account details
             and reserve your items.
-          </p>
-          <p class="support-card__body support-card__highlight">
-            Bank transfer: $45 USD bank fee added to your order. The fee from your bank will vary.
           </p>
         </article>
         <article class="support-card">
@@ -129,12 +123,6 @@
             If you are a Chinese user, you can also use WeChat or Alipay to pay. You can pay on the
             payment page, or ask customer service for the payment code.
           </p>
-          <p class="support-card__body support-card__highlight">
-            WeChat payment: 1% of the order amount.
-          </p>
-          <p class="support-card__body support-card__highlight">
-            Alipay payment: 1% of the order amount.
-          </p>
         </article>
         <article class="support-card">
           <h4 class="support-card__title">
@@ -148,9 +136,6 @@
             processing on our behalf, and your card details are never stored on our servers. Additional
             verification (3D Secure) may be required depending on your card issuer.
           </p>
-          <p class="support-card__body support-card__highlight">
-            Stripe payment: 3.5% of the order amount.
-          </p>
         </article>
         <article class="support-card">
           <h4 class="support-card__title">
@@ -161,9 +146,6 @@
             For selected international or business orders we can accept payment via WorldFirst. You pay
             from your local bank to a WorldFirst account in a supported currency, and WorldFirst handles
             the currency conversion and settlement to us.
-          </p>
-          <p class="support-card__body support-card__highlight">
-            WorldFirst payment: 1% of the order amount.
           </p>
         </article>
       </div>
@@ -178,6 +160,9 @@
             Product prices on the site are usually shown in a reference currency (for example USD).
             Your bank or payment provider may convert this amount into your local currency using their
             own exchange rate and possible conversion fees.
+          </p>
+          <p class="support-card__body">
+            Depending on your bank or payment provider, additional currency conversion or processing charges may apply. These charges are set by your provider and are not collected by us.
           </p>
         </article>
         <article class="support-card">
@@ -201,9 +186,6 @@
         <ul class="support-list support-list--example">
           <li class="support-list__item">
             <strong>Product subtotal</strong>: $1,000
-          </li>
-          <li class="support-list__item">
-            <strong>Payment fee (PayPal 3.5%)</strong>: $35
           </li>
           <li class="support-list__item">
             <strong>Shipping cost</strong>: $60
