@@ -35,20 +35,20 @@
               <!-- 头像 + 登录/注册按钮 -->
               <div class="flex justify-center w-full">
                 <div class="flex items-center gap-4 w-full max-w-[360px] md:flex-col md:gap-3">
-                  <div class="w-[54px] h-[54px] overflow-hidden bg-transparent rounded-xl leading-[0]">
+                  <div class="w-[96px] h-[96px] leading-[0] flex items-center justify-center">
                     <BadgeAvatar :logged="isLogged" :level="levelName" :topTierImageUrl="topTierImage" />
                   </div>
                   <div class="flex-1 w-full" v-if="!isLogged">
                     <div class="flex gap-2 justify-end md:justify-center pointer-events-auto">
                       <button
-                        class="h-10 px-5 rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold hover:brightness-110 transition-all pointer-events-auto"
+                        class="h-10 px-5 rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold hover:brightness-110 transition-all pointer-events-auto shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
                         type="button"
                         @click="openAuthForm('register')"
                       >
                         {{ $t('user.register') }}
                       </button>
                       <button
-                        class="h-10 px-5 rounded-full inline-flex items-center justify-center border border-white/20 bg-white/10 text-white text-sm font-semibold hover:bg-white/20 transition-all pointer-events-auto"
+                        class="h-10 px-5 rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
                         type="button"
                         @click="openAuthForm('login')"
                       >
@@ -64,32 +64,32 @@
                 </div>
               </div>
               
-              <!-- 会员信息容器 - 美化版 -->
-              <div class="w-full border-2 border-[#6e6ee9] rounded-xl bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-4 backdrop-blur-sm">
+              <!-- 会员信息容器 - 复用 membership 页面暗色玻璃卡样式 -->
+              <div class="w-full rounded-2xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] backdrop-blur-xl shadow-[0_3px_9px_rgba(0,0,0,0.9)]">
                 <!-- 基础信息网格 -->
                 <div class="grid grid-cols-2 gap-3 mb-3 pb-3 border-b border-white/10">
-                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                  <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl leading-none">👤</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.membershipLevel', 'Level') }}</span>
                       <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelName || '0') : '?' }}</span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                  <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl leading-none">🛍️</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.productDiscount', 'Product') }}</span>
                       <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.product + '%') : '?' }}</span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                  <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl leading-none">💎</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.pointsDiscount', 'Points') }}</span>
                       <span class="text-sm font-semibold" :class="isLogged ? 'text-white/90' : 'text-[#40ffaa]'">{{ isLogged ? (levelDiscounts.points + '%') : '?' }}</span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                  <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl leading-none">📊</span>
                     <div class="flex flex-col">
                       <span class="text-[11px] text-white/50">{{ $t('member.brief.stackable', 'Stackable') }}</span>
@@ -100,7 +100,7 @@
                 
                 <!-- 优惠券和积分卡 -->
                 <div class="grid grid-cols-2 gap-3">
-                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                  <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl">🎟️</span>
                     <div class="flex flex-col flex-1">
                       <span class="text-[11px] text-white/50">{{ $t('member.coupons', 'Coupons') }}</span>
@@ -109,7 +109,7 @@
                       </span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                  <div class="flex items-center gap-2 rounded-lg p-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                     <span class="text-2xl">💳</span>
                     <div class="flex flex-col flex-1">
                       <span class="text-[11px] text-white/50">{{ $t('member.pointCards', 'Point Cards') }}</span>
@@ -247,7 +247,7 @@
             <div class="flex-1 w-full py-2 px-3 box-border overflow-y-auto">
               <div class="text-sm font-semibold text-white/90 my-1.5 mb-2">{{ $t('member.levels.title', 'Membership levels') }}</div>
               <div class="flex flex-col gap-2.5 w-full">
-                <div class="hidden md:grid grid-cols-[1.1fr_1fr_1fr_1fr] items-center py-2 px-3 border border-[rgba(110,110,233,0.35)] rounded-[10px] bg-[rgba(110,110,233,0.08)] font-semibold">
+                <div class="hidden md:grid grid-cols-[1.1fr_1fr_1fr_1fr] items-center py-2 px-3 border border-[rgba(110,110,233,0.35)] rounded-[10px] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md font-semibold">
                   <div class="text-[13px] text-white/90">{{ $t('member.levels.header.level', 'Level') }}</div>
                   <div class="text-[13px] text-white/90">{{ $t('member.levels.header.pointsRequired', 'Points required') }}</div>
                   <div class="text-[13px] text-white/90">{{ $t('member.levels.header.productDiscount', 'Product discount') }}</div>
@@ -257,7 +257,7 @@
                 <div
                   v-for="tier in tierConfigs"
                   :key="tier.key"
-                  class="grid grid-cols-2 md:grid-cols-[1.1fr_1fr_1fr_1fr] gap-1.5 md:gap-0 items-center py-2 px-3 border border-white/10 rounded-[10px] bg-white/[0.04] odd:bg-white/[0.03]"
+                  class="grid grid-cols-2 md:grid-cols-[1.1fr_1fr_1fr_1fr] gap-1.5 md:gap-0 items-center py-2 px-4 rounded-full bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
                 >
                   <div class="text-[13px] text-white/90 md:before:content-none before:content-['Level'] before:block before:text-[11px] before:opacity-70">
                     {{ tier.name }}
@@ -275,14 +275,14 @@
               </div>
               <div class="text-sm font-semibold text-white/90 mt-4 mb-2">{{ $t('member.points.title', 'How to get points?') }}</div>
               <div class="flex flex-col gap-2.5">
-                <div class="grid grid-cols-[1.2fr_2fr] max-[480px]:grid-cols-1 gap-2.5 items-center py-2 px-3 border border-white/10 rounded-[10px] bg-white/[0.04] odd:bg-white/[0.03]">
+                <div class="grid grid-cols-[1.2fr_2fr] max-[480px]:grid-cols-1 gap-2.5 items-center py-2 px-3 rounded-[10px] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                   <div class="text-[13px] text-white/85 font-semibold">{{ $t('member.points.invite', 'Invite new users') }}</div>
                   <div class="text-[13px] text-white/90">{{ $t('member.points.inviteDesc', '50 Points (invitee gets 30 Points)') }}</div>
                 </div>
                 <!-- Copy Link 按钮单独一行 -->
-                <div class="flex items-center gap-3 py-2 px-3 border border-white/10 rounded-[10px] bg-white/[0.04]">
+                <div class="flex items-center gap-3 py-2 px-3 rounded-[10px] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md">
                   <button 
-                    class="h-10 px-[18px] rounded-full border border-white/[0.14] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white text-sm font-bold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0" 
+                    class="h-10 px-5 rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]" 
                     @click="handleCopyLink" 
                     :disabled="inviteLoading"
                   >
@@ -290,8 +290,8 @@
                   </button>
                   <div class="text-left text-[#cfd6ff] text-xs min-h-[16px] flex-1">{{ inviteMsg || '\u00A0' }}</div>
                 </div>
-                <div class="grid grid-cols-[1.2fr_2fr] max-[480px]:grid-cols-1 gap-2.5 items-center py-2 px-3 border border-white/10 rounded-[10px] bg-white/[0.04] odd:bg-white/[0.03]"><div class="text-[13px] text-white/85 font-semibold">{{ $t('member.points.consume', 'Consumption currency') }}</div><div class="text-[13px] text-white/90">{{ $t('member.points.consumeDesc', '1 Dollar = 1 Point') }}</div></div>
-                <div class="grid grid-cols-[1.2fr_2fr] max-[480px]:grid-cols-1 gap-2.5 items-center py-2 px-3 border border-white/10 rounded-[10px] bg-white/[0.04] odd:bg-white/[0.03]"><div class="text-[13px] text-white/85 font-semibold">{{ $t('member.points.daily', 'Daily login') }}</div><div class="text-[13px] text-white/90">{{ $t('member.points.dailyDesc', '1 Point (30 days validity)') }}</div></div>
+                <div class="grid grid-cols-[1.2fr_2fr] max-[480px]:grid-cols-1 gap-2.5 items-center py-2 px-3 rounded-[10px] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"><div class="text-[13px] text-white/85 font-semibold">{{ $t('member.points.consume', 'Consumption currency') }}</div><div class="text-[13px] text-white/90">{{ $t('member.points.consumeDesc', '1 Dollar = 1 Point') }}</div></div>
+                <div class="grid grid-cols-[1.2fr_2fr] max-[480px]:grid-cols-1 gap-2.5 items-center py-2 px-3 rounded-[10px] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"><div class="text-[13px] text-white/85 font-semibold">{{ $t('member.points.daily', 'Daily login') }}</div><div class="text-[13px] text-white/90">{{ $t('member.points.dailyDesc', '1 Point (30 days validity)') }}</div></div>
               </div>
             </div>
           </div>
@@ -300,17 +300,32 @@
       <div class="flex flex-col items-center justify-center py-3 pb-4 pointer-events-auto gap-3">
         <div class="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold pointer-events-auto hover:brightness-110 transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold pointer-events-auto hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
             type="button"
             @click="handleMemberCenter"
           >
             {{ $t('member.viewAll', 'Member Center') }}
           </button>
-          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleSelectProducts">Products</button>
-          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleViewCart">Cart</button>
-          <button class="h-10 px-[18px] rounded-full border border-[#6b73ff] bg-[#6b73ff] text-white text-sm font-bold pointer-events-auto hover:brightness-110 transition-all" @click="handleWishlist">Wishlist</button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center border border-white/20 bg-white/10 text-white text-sm font-semibold pointer-events-auto hover:bg-white/20 transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            @click="handleSelectProducts"
+          >
+            Products
+          </button>
+          <button
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            @click="handleViewCart"
+          >
+            Cart
+          </button>
+          <button
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            @click="handleWishlist"
+          >
+            Wishlist
+          </button>
+          <button
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
             type="button"
             @click="handlePrivacy"
           >

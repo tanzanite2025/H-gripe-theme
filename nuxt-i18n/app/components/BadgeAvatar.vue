@@ -94,8 +94,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.badge { position: relative; width: 96px; height: 96px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; background: #222; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
-.badge::before { content: ""; position: absolute; inset: 0; border-radius: 16px; padding: 2px; background: var(--badge-border-grad, conic-gradient(from 180deg at 50% 50%, #7dd3fc, #a78bfa, #f472b6, #f59e0b, #34d399, #60a5fa, #7dd3fc)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+.badge { position: relative; width: 96px; height: 96px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: rgba(15,23,42,0.98); box-shadow: 0 4px 10px -4px rgba(0,0,0,0.95); }
+.badge::before { content: none; }
 .badge::after { content: ""; position: absolute; inset: 0; background-image: var(--badge-frame-url, none); background-repeat: no-repeat; background-position: center; background-size: contain; pointer-events: none; }
-.badge-core { width: 86px; height: 86px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.08); }
+.badge-core { width: 86px; height: 86px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.06); }
 </style>

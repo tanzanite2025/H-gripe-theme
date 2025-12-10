@@ -97,15 +97,19 @@ useHead({
   gap: 1rem;
   padding: 1rem 1.1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow:
+    0 14px 40px -24px rgba(0, 0, 0, 1),
+    0 0 18px rgba(0, 0, 0, 0.9);
   text-decoration: none;
-  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .company-card:hover {
-  border-color: rgba(148, 163, 184, 0.6);
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow:
+    0 18px 50px -26px rgba(0, 0, 0, 1),
+    0 0 22px rgba(0, 0, 0, 0.95);
   transform: translateY(-1px);
 }
 

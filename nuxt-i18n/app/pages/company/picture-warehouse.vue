@@ -20,12 +20,12 @@
             <div
               v-for="n in 3"
               :key="n"
-              class="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5"
+              class="flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
             >
-              <div class="aspect-square w-full bg-slate-800/70 animate-pulse"></div>
+              <div class="aspect-square w-full bg-slate-800/80 animate-pulse"></div>
               <div class="px-2.5 py-2 flex flex-col gap-1">
-                <div class="h-2.5 w-3/4 rounded bg-slate-700/70 animate-pulse"></div>
-                <div class="h-2 w-1/2 rounded bg-slate-800/70 animate-pulse"></div>
+                <div class="h-2.5 w-3/4 rounded bg-slate-700/80 animate-pulse"></div>
+                <div class="h-2 w-1/2 rounded bg-slate-800/80 animate-pulse"></div>
               </div>
             </div>
           </div>
@@ -43,11 +43,11 @@
                   v-for="(photo, index) in visibleUserPhotos"
                   :key="photo.id"
                   type="button"
-                  class="group flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10 transition-colors"
+                  class="group flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.9)] transition-all"
                   @click="openLightbox('user', index)"
                 >
                   <div
-                    class="aspect-square w-full bg-slate-800 group-hover:bg-slate-700 transition-colors"
+                    class="aspect-square w-full bg-slate-800/90 group-hover:bg-slate-700/90 transition-colors"
                   ></div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
                     <p class="text-[11px] font-medium text-slate-100 truncate">
@@ -87,12 +87,12 @@
             <div
               v-for="n in 3"
               :key="n"
-              class="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5"
+              class="flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
             >
-              <div class="aspect-square w-full bg-slate-900/70 animate-pulse"></div>
+              <div class="aspect-square w-full bg-slate-900/80 animate-pulse"></div>
               <div class="px-2.5 py-2 flex flex-col gap-1">
-                <div class="h-2.5 w-3/4 rounded bg-slate-700/70 animate-pulse"></div>
-                <div class="h-2 w-1/2 rounded bg-slate-800/70 animate-pulse"></div>
+                <div class="h-2.5 w-3/4 rounded bg-slate-700/80 animate-pulse"></div>
+                <div class="h-2 w-1/2 rounded bg-slate-800/80 animate-pulse"></div>
               </div>
             </div>
           </div>
@@ -110,11 +110,11 @@
                   v-for="(photo, index) in visibleBrandPhotos"
                   :key="photo.id"
                   type="button"
-                  class="group flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10 transition-colors"
+                  class="group flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.9)] transition-all"
                   @click="openLightbox('brand', index)"
                 >
                   <div
-                    class="aspect-square w-full bg-slate-900 group-hover:bg-slate-800 transition-colors"
+                    class="aspect-square w-full bg-slate-900/90 group-hover:bg-slate-800/90 transition-colors"
                   ></div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
                     <p class="text-[11px] font-medium text-slate-100 truncate">
@@ -144,7 +144,7 @@
 
     <!-- 上传表单（Phase 3：调用 /tanz-photo/v1/upload） - 移至底部通栏 -->
     <section class="mt-10 border-t border-white/10 pt-8">
-      <div class="mx-auto max-w-3xl rounded-xl border border-white/10 bg-white/5 px-4 py-4 sm:px-6 sm:py-5">
+      <div class="mx-auto max-w-3xl rounded-2xl px-4 py-4 sm:px-6 sm:py-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] backdrop-blur-xl shadow-[0_3px_9px_rgba(0,0,0,0.9)]">
         <div class="mb-4 text-center">
           <h4 class="text-sm font-semibold text-slate-100">
             Share your build (login required)
@@ -163,7 +163,7 @@
               <input
                 v-model="uploadRegion"
                 type="text"
-                class="h-8 rounded border border-white/15 bg-slate-900/60 px-2.5 text-xs text-slate-100 focus:border-sky-400 focus:outline-none"
+                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                 placeholder="e.g. Germany"
                 required
               />
@@ -173,7 +173,7 @@
               <input
                 v-model="uploadLocation"
                 type="text"
-                class="h-8 rounded border border-white/15 bg-slate-900/60 px-2.5 text-xs text-slate-100 focus:border-sky-400 focus:outline-none"
+                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                 placeholder="e.g. Berlin"
               />
             </div>
@@ -185,7 +185,7 @@
               <input
                 v-model="uploadNickname"
                 type="text"
-                class="h-8 rounded border border-white/15 bg-slate-900/60 px-2.5 text-xs text-slate-100 focus:border-sky-400 focus:outline-none"
+                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                 placeholder="Your name or handle"
               />
             </div>
@@ -194,7 +194,7 @@
               <input
                 v-model="uploadBikeModel"
                 type="text"
-                class="h-8 rounded border border-white/15 bg-slate-900/60 px-2.5 text-xs text-slate-100 focus:border-sky-400 focus:outline-none"
+                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                 placeholder="Model info"
               />
             </div>
@@ -205,7 +205,7 @@
             <textarea
               v-model="uploadNotes"
               rows="2"
-              class="rounded border border-white/15 bg-slate-900/60 px-2.5 py-1.5 text-xs text-slate-100 focus:border-sky-400 focus:outline-none"
+              class="rounded-lg px-2.5 py-1.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
               placeholder="Tell us about your build..."
             ></textarea>
           </div>
@@ -221,7 +221,7 @@
             />
           </div>
 
-          <div class="flex items-center justify-between gap-2 pt-2 border-t border-white/5 mt-2">
+          <div class="flex items-center justify-between gap-2 pt-2 border-t border-white/10 mt-2">
             <div class="flex-1">
                <p v-if="uploadSuccess" class="text-[11px] text-emerald-400">
                 {{ uploadSuccess }}
@@ -232,7 +232,7 @@
             </div>
             <button
               type="submit"
-              class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-5 py-1.5 text-xs font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 transition-opacity"
+              class="inline-flex items-center justify-center h-9 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-5 text-xs font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
               :disabled="uploading"
             >
               <span v-if="uploading">Uploading…</span>
@@ -389,7 +389,7 @@
                     <li
                       v-for="comment in comments"
                       :key="comment.id"
-                      class="rounded border border-white/10 bg-slate-900/80 px-2.5 py-1.5"
+                      class="rounded-lg px-2.5 py-1.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
                     >
                       <div class="mb-0.5 flex items-center justify-between gap-2">
                         <span class="font-semibold text-[10px] text-slate-100">
@@ -413,14 +413,14 @@
                     <textarea
                       v-model="commentContent"
                       rows="2"
-                      class="w-full rounded border border-white/15 bg-slate-950/80 px-2 py-1 text-[11px] text-slate-100 focus:border-sky-400 focus:outline-none"
+                      class="w-full rounded-lg px-2 py-1 text-[11px] text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                       placeholder="Write a comment (login required)"
                     ></textarea>
                     <div class="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1.1fr)] gap-1.5 items-center">
                       <input
                         v-model="commentLocation"
                         type="text"
-                        class="h-7 rounded border border-white/15 bg-slate-950/80 px-2 text-[10px] text-slate-100 focus:border-sky-400 focus:outline-none"
+                        class="h-7 rounded-lg px-2 text-[10px] text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                         placeholder="Location (optional)"
                       />
                       <div class="flex items-center justify-end gap-2">
