@@ -144,7 +144,7 @@ URL 更新：/products/gold-necklace
 | **商店列表** | `/shop` | Nuxt pages | ❌ 不需要 |
 | **FAQ** | `/faq` | Nuxt pages | ❌ 不需要 |
 | **联系我们** | `/contact` | Nuxt pages | ❌ 不需要 |
-| **关于我们** | `/about` | Nuxt pages | ❌ 不需要 |
+| **关于我们** | `/company/about` | Nuxt pages | ❌ 不需要 |
 | **商品详情** | `/products/diamond-ring` | Tanzanite Setting + URLLink | ✅ **需要** |
 | **商品分类** | `/products/rings/` | URLLink 目录树 | ✅ **需要** |
 

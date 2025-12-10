@@ -6,6 +6,11 @@ import type { ProductsNavItem } from '~/utils/productsNav'
  */
 export const companyNavItems: ProductsNavItem[] = [
   {
+    id: 'about',
+    labelKey: 'company.nav.about',
+    to: '/company/about',
+  },
+  {
     id: 'our-story',
     labelKey: 'company.nav.ourStory',
     to: '/company/ourstory',

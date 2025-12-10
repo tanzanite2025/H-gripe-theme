@@ -176,8 +176,20 @@
 > - 点击返回 → 回到列表视图；
 > - 关闭抽屉 → 所有状态重置。
 
+#### 4.5 进度快照（2025-12-11）
 
-### Phase 2：接入真实配置字段 & 发送配置卡片
+- ✅ `WhatsAppProductSearchResultDrawer` 内已经加入 `viewMode` / `selectedConfigProduct` 状态，并在关闭时统一重置。
+- ✅ 商品卡片新增「分享至聊天」与「和客服确认配置」双按钮，后者会记录所选商品并切换到配置确认视图。
+- ✅ 配置确认视图完成第一版壳结构：
+  - 头部包含返回按钮 + 标题。
+  - 左侧展示已选商品缩略图 / 标题 / 价格，右侧提供占位区说明后续会放配置字段与禁用的 CTA（“发送配置给客服”）。
+- ✅ 交互流程已打通：搜索 → 查看结果 → 进入配置确认 → 返回列表 → 关闭抽屉，全程保持暗色玻璃风格一致，不再触发模板报错。
+- ⚠️ 待办：渲染真实配置字段、启用“发送配置给客服”并生成结构化消息；同时规划 Orders Tab 二次确认入口。
+
+
+### Phase 2：接入真实配置字段 & 发送
+
+配置卡片
 
 > 注：本阶段在商品和配置数据准备好之后再实现，这里仅做设计占位。
 
@@ -277,13 +289,13 @@ interface ProductConfigSelection {
 
 ### Phase 1：壳
 
-- [ ] 在 `WhatsAppProductSearchResultDrawer` 中新增内部状态：`viewMode`、`selectedConfigProduct`。
-- [ ] 为商品卡片增加 `和客服确认配置` 按钮，并实现 `openConfigConfirm(product)`。
-- [ ] 在弹窗内添加 `viewMode === 'configConfirm'` 视图：
-  - [ ] 头部：标题 + 返回按钮。
-  - [ ] 主体：商品基础信息 + 占位说明文案。
-  - [ ] 底部：占位主按钮，点击仅做 log / toast。
-- [ ] 关闭弹窗时重置 `viewMode` 和 `selectedConfigProduct`。
+- [x] 在 `WhatsAppProductSearchResultDrawer` 中新增内部状态：`viewMode`、`selectedConfigProduct`。
+- [x] 为商品卡片增加 `和客服确认配置` 按钮，并实现 `openConfigConfirm(product)`。
+- [x] 在弹窗内添加 `viewMode === 'configConfirm'` 视图：
+  - [x] 头部：标题 + 返回按钮。
+  - [x] 主体：商品基础信息 + 占位说明文案。
+  - [x] 底部：占位主按钮（目前禁用显示“即将上线”提示）。
+- [x] 关闭弹窗时重置 `viewMode` 和 `selectedConfigProduct`。
 
 ### Phase 2：内容 & 发送
 

@@ -39,6 +39,13 @@ const localePath = useLocalePath()
 
 const sections = [
   {
+    to: '/company/about',
+    icon: 'A',
+    title: 'About Us',
+    description: 'Learn about our mission, values, and the team behind Tanzanite.',
+    cta: 'About Tanzanite',
+  },
+  {
     to: '/company/ourstory',
     icon: 'O',
     title: 'Our Story',

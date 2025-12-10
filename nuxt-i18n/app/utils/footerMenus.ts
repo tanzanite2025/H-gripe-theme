@@ -51,6 +51,7 @@ export const footerMenus: FooterSection[] = [
     id: 'company',
     titleKey: 'footer.menus.company',
     links: [
+      { labelKey: 'footer.links.aboutUs', to: '/company/about' },
       { labelKey: 'footer.links.ourStory', to: '/company/ourstory' },
       { labelKey: 'footer.links.membershipPoints', to: '/company/membershipandpoints' },
       { labelKey: 'footer.links.pictureWarehouse', to: '/company/picture-warehouse' },
