@@ -13,7 +13,7 @@
         <transition name="scale">
           <div v-if="isCheckoutOpen" class="relative flex flex-col w-full max-w-[1400px] h-[92vh] md:h-[780px] max-h-[95vh] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)]">
             <!-- 头部：再次压缩高度，为下方内容留出更多空间 -->
-            <div class="flex items-center justify-between px-2 md:px-6 py-2.5 border-b border-white/10">
+            <div class="flex items-center justify-between px-2 md:px-6 py-0.5 md:py-2 border-b border-white/10">
               <div class="flex items-center gap-2">
                 <h2 class="text-lg font-bold text-white">
                   Checkout
@@ -53,116 +53,64 @@
             </div>
 
             <!-- 顶部提示：保留说明文字但移除标题 -->
-            <div class="px-2 md:px-6 pt-1 pb-1 md:pb-2 text-center">
-              <p class="text-[11px] md:text-xs text-emerald-300">
-                Pages use HTTPS with trusted SSL; payments are processed by providers like PayPal / Stripe / Alipay. We only store the result, not your card details.
-              </p>
-            </div>
-
-            <!-- 支付方式 Tabs（移动端两行横向滚动，桌面端胶囊居中） -->
-            <div class="px-2 md:px-6 pt-1 pb-2">
-              <div
-                class="w-full px-1 py-1
-                  grid grid-rows-2 grid-flow-col auto-cols-[minmax(120px,1fr)] gap-1.5 overflow-x-auto
-                  md:mt-1 md:px-1 md:py-2 md:rounded-full md:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] md:shadow-[0_14px_36px_-20px_rgba(0,0,0,1)]
-                  md:flex md:flex-wrap md:items-center md:justify-center md:overflow-visible"
-              >
-                <!-- Active: Card -->
-                <button
-                  type="button"
-                  @click="setActivePaymentTab('card')"
-                  :class="[
-                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
-                    activePaymentTab === 'card'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                  ]"
-                >
-                  <span class="whitespace-nowrap">Credit / Debit Cards</span>
-                  <span
-                    :class="[
-                      'text-[10px] md:text-[11px] font-normal',
-                      activePaymentTab === 'card' ? 'text-slate-900/80' : 'text-emerald-200/80'
-                    ]"
-                  >
-                    ≈ {{ formatPrice(priceBreakdown.total) }}
-                  </span>
-                </button>
-                <!-- PayPal -->
-                <button
-                  type="button"
-                  @click="setActivePaymentTab('paypal')"
-                  :class="[
-                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
-                    activePaymentTab === 'paypal'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                  ]"
-                >
-                  <span class="whitespace-nowrap">PayPal</span>
-                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                </button>
-                <!-- Alipay / WeChat -->
-                <button
-                  type="button"
-                  @click="setActivePaymentTab('alipay')"
-                  :class="[
-                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
-                    activePaymentTab === 'alipay'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                  ]"
-                >
-                  <span class="whitespace-nowrap">Alipay / WeChat</span>
-                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                </button>
-                <!-- Stripe -->
-                <button
-                  type="button"
-                  @click="setActivePaymentTab('stripe')"
-                  :class="[
-                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
-                    activePaymentTab === 'stripe'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                  ]"
-                >
-                  <span class="whitespace-nowrap">Stripe</span>
-                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                </button>
-                <!-- Bank transfer -->
-                <button
-                  type="button"
-                  @click="setActivePaymentTab('bank')"
-                  :class="[
-                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
-                    activePaymentTab === 'bank'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                  ]"
-                >
-                  <span class="whitespace-nowrap">Bank transfer</span>
-                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                </button>
-                <!-- WorldFirst -->
-                <button
-                  type="button"
-                  @click="setActivePaymentTab('worldfirst')"
-                  :class="[
-                    'flex flex-col items-start justify-center gap-0.5 px-3 py-1 text-left rounded-full text-[11px] md:px-4 md:py-1.5 md:text-[12px]',
-                    activePaymentTab === 'worldfirst'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_20px_46px_-20px_rgba(0,0,0,1)] font-semibold'
-                      : 'bg-[linear-gradient(135deg,rgba(51,65,85,0.96),rgba(15,23,42,0.98))] text-white/90 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]'
-                  ]"
-                >
-                  <span class="whitespace-nowrap">WorldFirst</span>
-                  <span class="text-[10px] md:text-[11px] font-normal text-emerald-200/80">≈ {{ formatPrice(priceBreakdown.total) }}</span>
-                </button>
+            <div class="px-2 md:px-6 pt-0.5 pb-0 md:pb-1">
+              <div class="flex items-center justify-center gap-1.5 text-[11px] md:text-xs text-emerald-300 max-w-[420px] mx-auto text-center leading-tight">
+                <img
+                  src="/checkout/secured_ssl-preview.png"
+                  alt="Secure SSL"
+                  class="h-12 w-auto md:h-16 -my-2 md:-my-3"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <p class="leading-tight">
+                  Pages use HTTPS with trusted SSL; we only store the result, not your card details.
+                </p>
               </div>
             </div>
 
+            <div class="px-2 md:px-6 pb-2">
+              <CheckoutStepper
+                :initial-step="1"
+                :initial-method="activePaymentTab"
+                :coupon-input="couponCode"
+                :is-applying-coupon="isApplyingCoupon"
+                :applied-coupon="calculation.appliedCoupon.value"
+                :points-available="calculation.userPoints.value?.available || 0"
+                :is-using-points="calculation.usePointsDiscount.value"
+                :points-to-use="calculation.pointsToUse.value"
+                :max-points-to-use="calculation.userPoints.value?.available || 0"
+                :points-hint="'1 point = $0.01, max 50% of order'"
+                :order-summary="stepperOrderSummary"
+                :currency="'USD'"
+                :show-shipping-form="activePaymentTab !== 'bank' && activePaymentTab !== 'worldfirst'"
+                :shipping-form="form"
+                :country-search="countrySearch"
+                :shippable-countries="filteredShippableCountries"
+                :non-shippable-countries="filteredNonShippableCountries"
+                :shipping-validation="shippingValidation"
+                :estimated-delivery="estimatedDelivery"
+                :zip-placeholder="zipPlaceholder"
+                :zip-hint="zipHint"
+                :desktop-cta-label="paymentCtaLabel"
+                :cta-description="desktopCtaDescription"
+                :mobile-payment-title="mobilePaymentTitle"
+                :mobile-payment-description="mobilePaymentDescription"
+                :is-submitting="isSubmitting"
+                @coupon-input="handleStepperCouponInput"
+                @apply-coupon="handleApplyCoupon"
+                @toggle-points="handleStepperTogglePoints"
+                @points-input="handleStepperPointsInput"
+                @update-shipping-field="handleStepperShippingField"
+                @country-search="handleStepperCountrySearch"
+                @open-contact="openContactSupport"
+                @open-freight="openFreightForwarder"
+                @save-cart="saveCartForLater"
+              />
+            </div>
+
+
             <!-- 内容区域 -->
-            <div class="flex-1 overflow-y-auto md:overflow-visible">
+            <div class="flex-1 overflow-y-auto md:overflow-visible px-2 md:px-6">
               <div class="px-2 md:px-6 pt-1 pb-32 md:pb-6 space-y-4">
                 <div class="space-y-4">
                 <!-- 右侧：支付方式 Tabs + Shipping Address + 订单摘要 -->
@@ -1310,8 +1258,67 @@ const paymentCopy: Record<PaymentTab, { title: string; description: string; cta:
   },
 }
 
+type StepperOption = {
+  id: PaymentTab
+  title: string
+  subtitle: string
+  description: string
+}
+
+const stepperOptions = computed<StepperOption[]>(() => {
+  const priceText = `≈ ${formatPrice(priceBreakdown.value.total)}`
+  return [
+    {
+      id: 'card',
+      title: 'Credit / Debit cards',
+      subtitle: `${priceText} · Secure card page`,
+      description:
+        'Enter full shipping info and contact number here, then we redirect you to the PCI-compliant card page. We never store your card number or CVC.',
+    },
+    {
+      id: 'alipay',
+      title: 'Alipay / WeChat / UnionPay',
+      subtitle: `${priceText} · Local wallets`,
+      description:
+        'Approve payment inside your usual wallet. We still gather shipping details in this tab to prepare dispatch and confirm customs information.',
+    },
+    {
+      id: 'paypal',
+      title: 'PayPal',
+      subtitle: `${priceText} · Express checkout`,
+      description:
+        'We rely on the shipping address saved in your PayPal account whenever possible. Choose a supported country first so we can confirm fulfillment.',
+    },
+    {
+      id: 'stripe',
+      title: 'Stripe',
+      subtitle: `${priceText} · 3D Secure ready`,
+      description:
+        'Stripe handles card input and any extra verification. We keep the form minimal here and let Stripe manage the sensitive fields.',
+    },
+    {
+      id: 'bank',
+      title: 'Bank transfer',
+      subtitle: `${priceText} · Manual invoice`,
+      description:
+        'Place the order, then transfer the funds using the bank instructions shown on the next step. Remember to include your order number as reference.',
+    },
+    {
+      id: 'worldfirst',
+      title: 'WorldFirst',
+      subtitle: `${priceText} · Cross-border`,
+      description:
+        'Ideal for international or business orders. You pay into a regional WorldFirst account in your currency; they settle the converted funds to us.',
+    },
+  ]
+})
+
 const setActivePaymentTab = (tab: PaymentTab) => {
   activePaymentTab.value = tab
+}
+
+const handleStepperSelect = (tab: PaymentTab) => {
+  setActivePaymentTab(tab)
 }
 
 const mobilePaymentTitle = computed(() => paymentCopy[activePaymentTab.value].title)
