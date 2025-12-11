@@ -4,6 +4,7 @@
  */
 
 import { ref } from 'vue'
+import type { CartItem } from '~/types/cart'
 
 /**
  * 包装规则接口
@@ -24,18 +25,6 @@ export interface PackagingRule {
     type: 'category' | 'tag' | 'product' | 'all'
     value: string | null
   }>
-}
-
-/**
- * 购物车商品接口
- */
-export interface CartItem {
-  id: number
-  name: string
-  quantity: number
-  weight?: number // kg
-  category?: string
-  tags?: string[]
 }
 
 /**

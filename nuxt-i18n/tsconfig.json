@@ -5,7 +5,9 @@
     "paths": {
       "~/*": ["./*"],
       "@/*": ["./*"],
-      "~/composables/*": ["app/composables/*"]
+      "~/composables/*": ["app/composables/*"],
+      "~/types/*": ["types/*"],
+      "@/types/*": ["types/*"]
     },
     "strict": true,
     "forceConsistentCasingInFileNames": true,

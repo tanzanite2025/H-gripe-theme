@@ -1,16 +1,5 @@
 import { ref, computed } from 'vue'
-
-export interface CartItem {
-  id: number
-  title: string
-  slug: string
-  price: number
-  quantity: number
-  thumbnail?: string
-  sku?: string
-  maxStock?: number
-  weight?: number // 商品重量（克）
-}
+import type { CartItem } from '~/types/cart'
 
 export interface ShippingAddress {
   name: string
