@@ -12,14 +12,17 @@
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <!-- 结账弹窗 -->
         <transition name="scale">
-          <div v-if="isCheckoutOpen" class="relative flex flex-col w-full max-w-[1400px] h-[92vh] md:h-[780px] max-h-[95vh] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)]">
+          <div
+            v-if="isCheckoutOpen"
+            class="relative flex flex-col w-full max-w-[1400px] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] checkout-modal-shell h-[92vh] md:h-[780px] max-h-[95vh]"
+          >
             <!-- 头部：再次压缩高度，为下方内容留出更多空间 -->
-            <div class="flex items-center justify-between px-2 md:px-6 py-1.5 md:py-2 border-b border-white/10">
-              <div class="flex items-center gap-2">
+            <div class="relative flex items-center justify-center px-2 md:px-6 py-2.5 md:py-3 border-b border-transparent bg-[rgba(4,7,20,0.92)] backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:border-transparent md:bg-transparent md:backdrop-blur-0 md:shadow-none">
+              <div class="flex items-center gap-2 md:gap-3">
                 <h2 class="text-lg font-bold text-white">
                   Checkout
                 </h2>
-                <div class="flex items-center gap-2 ml-auto overflow-x-auto sm:overflow-visible">
+                <div class="flex items-center gap-2 overflow-x-auto sm:overflow-visible">
                   <button
                     type="button"
                     @click="openCartFromCheckout"
@@ -44,7 +47,7 @@
               </div>
               <button
                 @click="closeCheckout"
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+                class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
                 aria-label="Close checkout"
               >
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,7 +58,7 @@
 
             <!-- 顶部提示：保留说明文字但移除标题 -->
             <div class="px-2 md:px-6 pt-0.5 pb-0 md:pb-1">
-              <div class="flex items-center justify-center gap-1.5 text-[11px] md:text-xs text-emerald-300 max-w-[420px] mx-auto text-center leading-tight">
+              <div class="checkout-modal-ssl-banner flex items-center justify-center gap-1.5 text-[11px] md:text-xs text-emerald-100 max-w-[420px] mx-auto text-center leading-tight">
                 <img
                   src="/checkout/secured_ssl-preview.png"
                   alt="Secure SSL"
@@ -499,6 +502,41 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+.checkout-modal-shell {
+  height: 92vh;
+  max-height: 95vh;
+}
+
+.checkout-modal-ssl-banner {
+  background: linear-gradient(135deg, rgba(54, 213, 149, 0.25), rgba(59, 130, 246, 0.2));
+  border: 1px solid rgba(148, 255, 223, 0.35);
+  border-radius: 9999px;
+  padding: 0.2rem 1.1rem;
+  box-shadow:
+    0 6px 24px rgba(59, 130, 246, 0.2),
+    inset 0 0 12px rgba(13, 148, 136, 0.25);
+}
+
+@supports (height: 100dvh) {
+  .checkout-modal-shell {
+    height: 92dvh;
+    max-height: 95dvh;
+  }
+}
+
+@media (min-width: 768px) {
+  .checkout-modal-shell {
+    height: 780px;
+    max-height: 95vh;
+  }
+
+  @supports (height: 100dvh) {
+    .checkout-modal-shell {
+      height: min(780px, 95dvh);
+    }
+  }
+}
+
 /* 淡入淡出动画 */
 .fade-enter-active,
 .fade-leave-active {

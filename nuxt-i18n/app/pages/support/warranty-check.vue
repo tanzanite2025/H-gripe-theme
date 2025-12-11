@@ -96,7 +96,10 @@ const handleAuthSuccess = () => {
   padding: 3rem 2rem;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.45),
+    0 14px 40px rgba(0, 0, 0, 0.35);
 }
 
 .warranty-check__lock-icon {
