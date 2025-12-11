@@ -243,6 +243,11 @@
       "expired": "保修已过期",
       "not_found": "未找到产品"
     },
+    "actions": {
+      "removeAttachment": "移除",
+      "selectFiles": "选择文件",
+      "loginFirst": "请先登录才能上传附件"
+    },
     "fields": {
       "product_code": "产品编码",
       "product_type": "产品类型",

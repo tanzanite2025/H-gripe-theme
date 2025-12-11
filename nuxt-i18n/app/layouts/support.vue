@@ -78,6 +78,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 .support-content__inner {
   max-width: 960px;
   margin: 0 auto;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -94,7 +95,13 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
   }
 
   .support-content {
-    padding-inline: 1.25rem;
+    padding-inline: 0;
+  }
+
+  .support-content__inner {
+    max-width: none;
+    margin: 0;
+    padding-inline: 1rem;
   }
 }
 

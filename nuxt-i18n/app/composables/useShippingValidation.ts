@@ -243,12 +243,23 @@ export function useShippingValidation() {
    * 验证配送可用性
    */
   function validateShipping(countryCode: string, zipCode: string = ''): ShippingValidationResult {
+    const hasTemplates = shippingTemplates.value.length > 0
+
     if (!countryCode) {
       return {
         isShippable: false,
         matchedRule: null,
         matchedTemplate: null,
         reason: 'Please select a country'
+      }
+    }
+
+    if (!hasTemplates && import.meta.dev) {
+      return {
+        isShippable: true,
+        matchedRule: null,
+        matchedTemplate: null,
+        reason: undefined,
       }
     }
 
