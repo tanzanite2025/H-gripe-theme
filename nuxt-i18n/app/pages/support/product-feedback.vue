@@ -92,6 +92,19 @@ useHead({
 }
 
 .feedback-section {
+  width: 100%;
   max-width: 960px;
+}
+
+@media (max-width: 768px) {
+  .feedback-section {
+    max-width: none;
+  }
+
+  :deep(.feedback-card) {
+    width: 100%;
+    border-radius: 20px;
+    padding: 1.25rem;
+  }
 }
 </style>

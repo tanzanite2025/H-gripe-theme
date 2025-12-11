@@ -142,6 +142,14 @@
             @change="handleFileSelect"
           />
         </div>
+        <button
+          v-if="needsAuthCta"
+          type="button"
+          class="feedback-upload__auth-cta"
+          @click="openAuthModal('register')"
+        >
+          Register / Login
+        </button>
         <ul v-if="form.attachments.length" class="feedback-upload__list">
           <li v-for="(file, index) in form.attachments" :key="file.name">
             <span>{{ file.name }}</span>
@@ -174,6 +182,13 @@
       <p v-if="infoMessage" class="feedback-form__info">{{ infoMessage }}</p>
       <p v-else-if="errorMessage" class="feedback-form__info feedback-form__info--error">{{ errorMessage }}</p>
     </form>
+    <AuthModal
+      v-model="showAuthModal"
+      :default-mode="authMode"
+      placement="center"
+      embedded
+      @success="handleAuthModalSuccess"
+    />
   </section>
 </template>
 
@@ -181,6 +196,7 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useSuggestionFeedback } from '~/composables/useSuggestionFeedback'
+import AuthModal from '~/components/AuthModal.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -215,6 +231,8 @@ watch(threadKeyRef, () => {
 const messageMaxLength = 1000
 const infoMessage = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const showAuthModal = ref(false)
+const authMode = ref<'login' | 'register'>('register')
 
 const form = reactive({
   fullName: '',
@@ -269,6 +287,11 @@ const attachmentHint = computed(() => {
   return t('feedbackForm.upload.limit')
 })
 
+const needsAuthCta = computed(() => {
+  const e = eligibility.value
+  return props.showAttachments && e && !e.loggedIn
+})
+
 const messageCharactersLeft = computed(() => {
   return Math.max(messageMaxLength - form.message.length, 0)
 })
@@ -286,6 +309,16 @@ const removeAttachment = (index: number) => {
 
 const triggerFileInput = () => {
   fileInputRef.value?.click()
+}
+
+const openAuthModal = (mode: 'login' | 'register') => {
+  authMode.value = mode
+  showAuthModal.value = true
+}
+
+const handleAuthModalSuccess = async () => {
+  showAuthModal.value = false
+  await loadEligibility()
 }
 
 const mapAttachmentsForPayload = () => {
@@ -343,7 +376,7 @@ const resetForm = () => {
 .feedback-card {
   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(2, 6, 23, 0.98));
   border-radius: 24px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 18px 35px -22px rgba(0, 0, 0, 0.95);
   position: relative;
   overflow: hidden;
@@ -352,8 +385,8 @@ const resetForm = () => {
 .feedback-card__header {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding-bottom: 1.5rem;
+  gap: 1rem;
+  padding-bottom: 1.1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
@@ -388,10 +421,10 @@ const resetForm = () => {
 .feedback-card__stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(120px, 1fr));
-  gap: 1rem;
+  gap: 0.75rem;
   background: rgba(2, 6, 23, 0.85);
   border-radius: 16px;
-  padding: 1rem;
+  padding: 0.85rem;
   box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.65);
 }
 
@@ -409,22 +442,22 @@ const resetForm = () => {
 }
 
 .feedback-form {
-  margin-top: 1.5rem;
+  margin-top: 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .feedback-form__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .feedback-form__field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
   font-size: 0.95rem;
   color: #e2e8f0;
 }
@@ -453,14 +486,14 @@ const resetForm = () => {
 
 .feedback-form__field textarea {
   resize: vertical;
-  min-height: 160px;
+  min-height: 140px;
 }
 
 .feedback-form__label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .feedback-form__char-counter {
@@ -471,6 +504,7 @@ const resetForm = () => {
 .feedback-form__pills {
   display: flex;
   flex-wrap: wrap;
+  gap: 0.35rem;
   gap: 0.5rem;
 }
 
@@ -509,7 +543,7 @@ const resetForm = () => {
 .feedback-upload {
   border: none;
   border-radius: 20px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.92));
   color: rgba(148, 163, 184, 0.9);
   cursor: pointer;
@@ -518,6 +552,10 @@ const resetForm = () => {
   align-items: center;
   gap: 1rem;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 14px 24px -18px rgba(0, 0, 0, 0.95);
+}
+
+.feedback-upload__input {
+  display: none;
 }
 
 .feedback-upload--disabled {
@@ -548,6 +586,30 @@ const resetForm = () => {
   cursor: pointer;
 }
 
+.feedback-upload__auth-cta {
+  margin-top: 0.65rem;
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.85);
+  background: #fff;
+  color: #0b1120;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  box-shadow: 0 6px 18px -12px rgba(0, 0, 0, 1), 0 0 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.feedback-upload__auth-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 1), 0 0 10px rgba(0, 0, 0, 0.45);
+}
+
+.feedback-upload__auth-cta:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 14px -10px rgba(0, 0, 0, 1);
+}
+
 .feedback-form__consent {
   display: flex;
   align-items: center;
@@ -564,16 +626,17 @@ const resetForm = () => {
 .feedback-form__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .feedback-form__submit {
   background: linear-gradient(135deg, #22d3ee, #818cf8);
   border: none;
   border-radius: 9999px;
-  padding: 0.85rem 2.25rem;
+  padding: 0.32rem 1.6rem;
   color: #020617;
   font-weight: 700;
+  font-size: 0.95rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -590,9 +653,10 @@ const resetForm = () => {
   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border: none;
   border-radius: 9999px;
-  padding: 0.85rem 1.75rem;
+  padding: 0.3rem 1.2rem;
   color: rgba(226, 232, 240, 0.9);
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.95);
 }

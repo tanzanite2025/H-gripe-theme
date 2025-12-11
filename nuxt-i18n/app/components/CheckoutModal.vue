@@ -6,6 +6,7 @@
         v-if="isCheckoutOpen"
         class="fixed inset-0 z-[9998] flex items-center justify-center p-0 md:p-4"
         @click.self="closeCheckout"
+        @save-cart="saveCartForLater"
       >
         <!-- 半透明背景遮罩 -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
@@ -13,7 +14,7 @@
         <transition name="scale">
           <div v-if="isCheckoutOpen" class="relative flex flex-col w-full max-w-[1400px] h-[92vh] md:h-[780px] max-h-[95vh] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)]">
             <!-- 头部：再次压缩高度，为下方内容留出更多空间 -->
-            <div class="flex items-center justify-between px-2 md:px-6 py-0.5 md:py-2 border-b border-white/10">
+            <div class="flex items-center justify-between px-2 md:px-6 py-1.5 md:py-2 border-b border-white/10">
               <div class="flex items-center gap-2">
                 <h2 class="text-lg font-bold text-white">
                   Checkout
@@ -22,20 +23,20 @@
                   <button
                     type="button"
                     @click="openCartFromCheckout"
-                    class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-emerald-300 bg-emerald-500/20 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.9),0_0_10px_rgba(15,23,42,0.9)] hover:bg-emerald-500/30 hover:text-emerald-200 transition-all"
+                    class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold text-slate-900 bg-white shadow-[4px_6px_16px_rgba(0,0,0,0.45)] hover:bg-white/90 transition-all"
                   >
                     View cart
                   </button>
                   <button
                     type="button"
-                    class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-emerald-300 bg-emerald-500/20 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.9),0_0_10px_rgba(15,23,42,0.9)] hover:bg-emerald-500/30 hover:text-emerald-200 transition-all"
+                    class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold text-slate-900 bg-white shadow-[4px_6px_16px_rgba(0,0,0,0.45)] hover:bg-white/90 transition-all"
                     @click="handleOpenShippingChat"
                   >
                     Livechat
                   </button>
                   <button
                     type="button"
-                    class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-emerald-300 bg-emerald-500/20 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.9),0_0_10px_rgba(15,23,42,0.9)] hover:bg-emerald-500/30 hover:text-emerald-200 transition-all"
+                    class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold text-slate-900 bg-white shadow-[4px_6px_16px_rgba(0,0,0,0.45)] hover:bg-white/90 transition-all"
                   >
                     Email
                   </button>
@@ -68,9 +69,9 @@
               </div>
             </div>
 
-            <div class="px-2 md:px-6 pb-2">
+            <div class="flex-1 overflow-y-auto px-0 md:px-6 pb-1 md:pb-4">
               <CheckoutStepper
-                :initial-step="1"
+                :initial-step="currentStepperStep"
                 :initial-method="activePaymentTab"
                 :coupon-input="couponCode"
                 :is-applying-coupon="isApplyingCoupon"
@@ -96,6 +97,7 @@
                 :mobile-payment-title="mobilePaymentTitle"
                 :mobile-payment-description="mobilePaymentDescription"
                 :is-submitting="isSubmitting"
+                @update:step="handleStepperStepChange"
                 @coupon-input="handleStepperCouponInput"
                 @apply-coupon="handleApplyCoupon"
                 @toggle-points="handleStepperTogglePoints"
@@ -107,1061 +109,6 @@
                 @save-cart="saveCartForLater"
               />
             </div>
-
-
-            <!-- 内容区域 -->
-            <div class="flex-1 overflow-y-auto md:overflow-visible px-2 md:px-6">
-              <div class="px-2 md:px-6 pt-1 pb-32 md:pb-6 space-y-4">
-                <div class="space-y-4">
-                <!-- 右侧：支付方式 Tabs + Shipping Address + 订单摘要 -->
-                <div class="space-y-3">
-                  <!-- 移动端支付方式说明：紧贴 Tabs 下方，随内容滚动 -->
-                  <section class="md:hidden rounded-2xl px-4 py-3 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] space-y-3">
-                    <header class="space-y-1">
-                      <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-                        <span>
-                          <template v-if="activePaymentTab === 'card'">
-                            Pay with credit / debit card
-                          </template>
-                          <template v-else-if="activePaymentTab === 'paypal'">
-                            Pay with PayPal
-                          </template>
-                          <template v-else-if="activePaymentTab === 'alipay'">
-                            Pay with Alipay / WeChat Pay / UnionPay
-                          </template>
-                          <template v-else-if="activePaymentTab === 'stripe'">
-                            Pay with Stripe
-                          </template>
-                          <template v-else-if="activePaymentTab === 'bank'">
-                            Pay by bank transfer (on request)
-                          </template>
-                          <template v-else>
-                            Pay with WorldFirst
-                          </template>
-                        </span>
-                      </h3>
-                    </header>
-
-                    <div class="space-y-2 text-sm text-white/60">
-                      <template v-if="activePaymentTab === 'card'">
-                        <div class="space-y-1.5 text-xs">
-                          <div class="flex items-center justify-between">
-                            <span class="text-white/80">Required fields in this tab</span>
-                            <span class="text-[10px] uppercase tracking-[0.18em] text-emerald-300">
-                              Card · Full shipping info
-                            </span>
-                          </div>
-                          <ul class="space-y-1.5 text-white/75">
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>Country / Region (for shipping availability &amp; cost)</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>Recipient name &amp; phone number</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>Full street address, city and postal / zip code</span>
-                            </li>
-                          </ul>
-                        </div>
-                        <div class="grid grid-cols-1 gap-1.5 mt-2 text-xs">
-                          <div class="space-y-1">
-                            <p class="font-medium text-white/80 flex items-center gap-1">
-                              <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
-                              Why we ask for your phone number
-                            </p>
-                            <p>
-                              For international shipments the carrier may need to contact you for customs clearance or final
-                              delivery. We only share this with the logistics providers handling your order.
-                            </p>
-                          </div>
-                        </div>
-                      </template>
-
-                      <template v-else-if="activePaymentTab === 'paypal'">
-                        <p class="text-xs text-white/70">
-                          For privacy and convenience, if you choose PayPal we rely on the shipping address already stored in
-                          your PayPal account whenever possible.
-                        </p>
-                        <div class="mt-1 space-y-1.5 text-xs">
-                          <ul class="space-y-1.5">
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>
-                                Country / Region — to show if we can ship to your location and estimate shipping fees.
-                              </span>
-                            </li>
-                          </ul>
-                        </div>
-                      </template>
-
-                      <template v-else-if="activePaymentTab === 'stripe'">
-                        <p class="text-xs text-white/70">
-                          When you choose Stripe we process your card through Stripe's secure checkout. We aim to keep the
-                          form here minimal and let Stripe handle card details and extra verification.
-                        </p>
-                        <div class="mt-1 space-y-1.5 text-xs">
-                          <ul class="space-y-1.5">
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>
-                                Country / Region — to show if we can ship to your location and estimate shipping fees.
-                              </span>
-                            </li>
-                          </ul>
-                        </div>
-                      </template>
-
-                      <template v-else-if="activePaymentTab === 'alipay'">
-                        <p class="text-xs text-white/70">
-                          For these local payment methods you will be redirected to the provider to authorise the payment. We
-                          usually still need your shipping details here to prepare the parcel.
-                        </p>
-                        <div class="mt-1 space-y-1.5 text-xs">
-                          <p class="font-medium text-emerald-300">Typically required in this tab</p>
-                          <ul class="space-y-1.5">
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>Country / Region + city and postal code</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>Recipient name and phone number (for local carriers).</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>Street address if not fully provided by the wallet.</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </template>
-
-                      <template v-else-if="activePaymentTab === 'bank'">
-                        <p class="text-xs text-white/70">
-                          For larger or custom orders you can pay via bank transfer. A fixed bank fee is added to your order
-                          total. Your own bank may also charge additional fees.
-                        </p>
-                        <div class="mt-1 space-y-1.5 text-xs">
-                          <p class="font-medium text-emerald-300">How bank transfer works in this checkout</p>
-                          <ul class="space-y-1.5">
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>
-                                Place your order with bank transfer selected, then send the payment using the account details
-                                shown on the next step.
-                              </span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>Include your order number as the payment reference.</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </template>
-
-                      <template v-else>
-                        <p class="text-xs text-white/70">
-                          For selected international or business orders you can pay via WorldFirst. You pay to a local
-                          account in your currency, and WorldFirst settles the funds to us with an additional service fee.
-                        </p>
-                        <div class="mt-1 space-y-1.5 text-xs">
-                          <p class="font-medium text-emerald-300">Typical WorldFirst flow</p>
-                          <ul class="space-y-1.5">
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>We show you a WorldFirst account in your region and currency after you choose this option.</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                              <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                              <span>You initiate the transfer from your bank to WorldFirst, using the order reference we provide.</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </template>
-                    </div>
-                  </section>
-                  <!-- 安全说明内容已移至顶部，这里仅保留 Coupon + Points + Notes 卡片 -->
-                  <div class="grid gap-3 md:grid-cols-12">
-                    <!-- Coupon -->
-                    <div class="md:col-span-4 rounded-xl px-2.5 py-1.5 md:py-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
-                      <h3 class="text-sm font-semibold text-white mb-1 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z" clip-rule="evenodd" />
-                        </svg>
-                        Coupon
-                      </h3>
-                      <div class="flex gap-2">
-                        <input
-                          v-model="couponCode"
-                          type="text"
-                          placeholder="Enter coupon code"
-                          class="flex-1 px-3 py-1.5 rounded-lg border-none text-sm text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                        />
-                        <button
-                          @click="handleApplyCoupon"
-                          :disabled="!couponCode || isApplyingCoupon"
-                          class="px-3.5 py-1.5 bg-[#6b73ff] text-white rounded-lg hover:brightness-110 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {{ isApplyingCoupon ? 'Applying...' : 'Apply' }}
-                        </button>
-                      </div>
-                      <p v-if="calculation.appliedCoupon.value" class="mt-1 text-xs text-green-400 flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                        Coupon applied: {{ calculation.appliedCoupon.value.code }}
-                      </p>
-                    </div>
-
-                    <!-- Points Discount -->
-                    <div
-                      v-if="calculation.userPoints.value"
-                      class="md:col-span-4 rounded-xl px-2.5 py-1.5 md:py-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
-                    >
-                      <h3 class="text-sm font-semibold text-white mb-1 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd" />
-                        </svg>
-                        Use Points Discount
-                      </h3>
-                      <div class="flex items-center gap-2.5 mb-1">
-                        <input
-                          v-model="calculation.usePointsDiscount.value"
-                          type="checkbox"
-                          class="w-4 h-4 text-[#6b73ff] rounded"
-                        />
-                        <span class="text-sm text-white/80">Use points (Available: {{ calculation.userPoints.value.available }} pts)</span>
-                      </div>
-                      <div v-if="calculation.usePointsDiscount.value" class="mt-2">
-                        <label class="block text-xs text-white/70 mb-1">Points to use</label>
-                        <input
-                          :value="calculation.pointsToUse.value"
-                          @input="calculation.setPointsUsage(parseInt(($event.target && $event.target.value) || '0', 10) || 0)"
-                          type="number"
-                          :max="calculation.userPoints.value.available"
-                          min="0"
-                          class="w-full px-3 py-1.5 rounded-lg border-none text-sm text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                        />
-                        <p class="mt-1 text-xs text-white/60">1 point = $0.01, max 50% of order</p>
-                      </div>
-                    </div>
-
-                    <!-- Notes -->
-                    <div class="md:col-span-4 rounded-xl px-2.5 py-1.5 md:py-2.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
-                      <label class="block text-sm font-medium text-white/80 mb-1">Order Notes (Optional)</label>
-                      <textarea
-                        v-model="form.notes"
-                        rows="2"
-                        placeholder="Any special requests..."
-                        class="w-full px-3.5 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)] resize-none"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <!-- Card 说明 + Shipping Address + Order Summary 并排（桌面端三列，移动端一列） -->
-                  <div class="grid gap-3 md:grid-cols-12">
-                    <!-- Card 说明块（不含礼品卡与积分） -->
-                    <section
-                      class="md:hidden rounded-2xl px-4 py-3 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] space-y-3"
-                    >
-                      <header class="space-y-1">
-                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-                          <span>
-                            <template v-if="activePaymentTab === 'card'">
-                              Pay with credit / debit card
-                            </template>
-                            <template v-else-if="activePaymentTab === 'paypal'">
-                              Pay with PayPal
-                            </template>
-                            <template v-else-if="activePaymentTab === 'alipay'">
-                              Pay with Alipay / WeChat Pay / UnionPay
-                            </template>
-                            <template v-else-if="activePaymentTab === 'stripe'">
-                              Pay with Stripe
-                            </template>
-                            <template v-else-if="activePaymentTab === 'bank'">
-                              Pay by bank transfer (on request)
-                            </template>
-                            <template v-else>
-                              Pay with WorldFirst
-                            </template>
-                          </span>
-                        </h3>
-                      </header>
-
-                      <div class="space-y-2 text-sm text-white/60">
-                        <template v-if="activePaymentTab === 'card'">
-                          <div class="space-y-1.5 text-xs">
-                            <div class="flex items-center justify-between">
-                              <span class="text-white/80">Required fields in this tab</span>
-                              <span class="text-[10px] uppercase tracking-[0.18em] text-emerald-300">
-                                Card · Full shipping info
-                              </span>
-                            </div>
-                            <ul class="space-y-1.5 text-white/75">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Country / Region (for shipping availability &amp; cost)</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Recipient name &amp; phone number</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Full street address, city and postal / zip code</span>
-                              </li>
-                            </ul>
-                          </div>
-                          <div class="grid grid-cols-1 gap-1.5 mt-2 text-xs">
-                            <div class="space-y-1">
-                              <p class="font-medium text-white/80 flex items-center gap-1">
-                                <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
-                                Why we ask for your phone number
-                              </p>
-                              <p>
-                                For international shipments the carrier may need to contact you for customs clearance or final
-                                delivery. We only share this with the logistics providers handling your order.
-                              </p>
-                            </div>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'paypal'">
-                          <p class="text-xs text-white/70">
-                            For privacy and convenience, if you choose PayPal we rely on the shipping address already stored in
-                            your PayPal account whenever possible.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>
-                                  Country / Region — to show if we can ship to your location and estimate shipping fees.
-                                </span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'stripe'">
-                          <p class="text-xs text-white/70">
-                            When you choose Stripe we process your card through Stripe's secure checkout. We aim to keep the
-                            form here minimal and let Stripe handle card details and extra verification.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>
-                                  Country / Region — to show if we can ship to your location and estimate shipping fees.
-                                </span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'alipay'">
-                          <p class="text-xs text-white/70">
-                            For these local payment methods you will be redirected to the provider to authorise the payment. We
-                            usually still need your shipping details here to prepare the parcel.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <p class="font-medium text-emerald-300">Typically required in this tab</p>
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Country / Region + city and postal code</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Recipient name and phone number (for local carriers).</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Street address if not fully provided by the wallet.</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'bank'">
-                          <p class="text-xs text-white/70">
-                            For larger or custom orders you can pay via bank transfer. A fixed bank fee is added to your order
-                            total. Your own bank may also charge additional fees.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <p class="font-medium text-emerald-300">How bank transfer works in this checkout</p>
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>
-                                  Place your order with bank transfer selected, then send the payment using the account details
-                                  shown on the next step.
-                                </span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Include your order number as the payment reference.</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-
-                        <template v-else>
-                          <p class="text-xs text-white/70">
-                            For selected international or business orders you can pay via WorldFirst. You pay to a local
-                            account in your currency, and WorldFirst settles the funds to us with an additional service fee.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <p class="font-medium text-emerald-300">Typical WorldFirst flow</p>
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>We show you a WorldFirst account in your region and currency after you choose this option.</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>You initiate the transfer from your bank to WorldFirst, using the order reference we provide.</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-                      </div>
-                    </section>
-
-                    <section
-                      :class="[
-                        activePaymentTab === 'bank' || activePaymentTab === 'worldfirst' ? 'md:col-span-6' : 'md:col-span-3',
-                        'hidden md:block md:h-[460px] space-y-3 rounded-2xl px-4 py-1.5 md:py-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]'
-                      ]"
-                    >
-                      <header class="space-y-1">
-                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-                          <span
-                            v-if="activePaymentTab === 'card'"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/20 text-sky-300"
-                          >
-                            💳
-                          </span>
-                          <span
-                            v-else-if="activePaymentTab === 'paypal'"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/25 text-sky-300"
-                          >
-                            🅿️
-                          </span>
-                          <span
-                            v-else-if="activePaymentTab === 'alipay'"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/25 text-emerald-300"
-                          >
-                            🌏
-                          </span>
-                          <span
-                            v-else-if="activePaymentTab === 'stripe'"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/25 text-sky-300"
-                          >
-                            💳
-                          </span>
-                          <span
-                            v-else-if="activePaymentTab === 'bank'"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/25 text-amber-300"
-                          >
-                            🏦
-                          </span>
-                          <span
-                            v-else
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/25 text-emerald-300"
-                          >
-                            🌍
-                          </span>
-                          <span>
-                            <template v-if="activePaymentTab === 'card'">
-                              Pay with credit / debit card
-                            </template>
-                            <template v-else-if="activePaymentTab === 'paypal'">
-                              Pay with PayPal
-                            </template>
-                            <template v-else-if="activePaymentTab === 'alipay'">
-                              Pay with Alipay / WeChat Pay / UnionPay
-                            </template>
-                            <template v-else-if="activePaymentTab === 'stripe'">
-                              Pay with Stripe
-                            </template>
-                            <template v-else-if="activePaymentTab === 'bank'">
-                              Pay by bank transfer (on request)
-                            </template>
-                            <template v-else>
-                              Pay with WorldFirst
-                            </template>
-                          </span>
-                        </h3>
-                      </header>
-
-                      <div class="mt-2 space-y-2 text-sm text-white/60">
-                        <template v-if="activePaymentTab === 'card'">
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <div class="flex items-center justify-between">
-                              <span class="text-white/80">Required fields in this tab</span>
-                              <span class="text-[10px] uppercase tracking-[0.18em] text-emerald-300">
-                                Card · Full shipping info
-                              </span>
-                            </div>
-                            <ul class="space-y-1.5 text-white/75">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Country / Region (for shipping availability &amp; cost)</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Recipient name &amp; phone number</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Full street address, city and postal / zip code</span>
-                              </li>
-                            </ul>
-                          </div>
-                          <div class="grid grid-cols-1 gap-1.5 mt-2">
-                            <div class="space-y-1">
-                              <p class="font-medium text-white/80 flex items-center gap-1">
-                                <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
-                                Why we ask for your phone number
-                              </p>
-                              <p>
-                                For international shipments the carrier may need to contact you for customs clearance or final
-                                delivery. We only share this with the logistics providers handling your order.
-                              </p>
-                            </div>
-                            <div class="space-y-1">
-                              <p class="font-medium text-white/80 flex items-center gap-1">
-                                <span class="inline-flex h-1 w-4 rounded-full bg-sky-400/80"></span>
-                                When to choose card payments
-                              </p>
-                            </div>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'paypal'">
-                          <p class="text-xs text-white/70">
-                            For privacy and convenience, if you choose PayPal we rely on the shipping address already stored in
-                            your PayPal account whenever possible.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>
-                                  Country / Region — to show if we can ship to your location and estimate shipping fees.
-                                </span>
-                              </li>
-                            </ul>
-                          </div>
-                          <div class="mt-2 space-y-2 text-xs">
-                            <p class="font-medium text-white/80 flex items-center gap-1">
-                              <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
-                              What we <span class="text-emerald-300">do not</span> ask you to repeat for PayPal
-                            </p>
-                            <ul class="space-y-1.5 text-white/70">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-white/60"></span>
-                                <span>
-                                  Full street address, city and postal code (we prefer to reuse your PayPal shipping address).
-                                </span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-white/60"></span>
-                                <span>Card number, expiry date or CVV — these stay inside PayPal.</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'stripe'">
-                          <p class="text-xs text-white/70">
-                            When you choose Stripe we process your card through Stripe's secure checkout. We aim to keep the
-                            form here minimal and let Stripe handle card details and extra verification.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>
-                                  Country / Region — to show if we can ship to your location and estimate shipping fees.
-                                </span>
-                              </li>
-                            </ul>
-                          </div>
-                          <div class="mt-2 space-y-2 text-xs">
-                            <p class="font-medium text-white/80 flex items-center gap-1">
-                              <span class="inline-flex h-1 w-4 rounded-full bg-emerald-400/80"></span>
-                              What we <span class="text-emerald-300">do not</span> ask you to repeat for Stripe
-                            </p>
-                            <ul class="space-y-1.5 text-white/70">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-white/60"></span>
-                                <span>Full card number, expiry date and CVV — these stay inside Stripe's checkout.</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'alipay'">
-                          <p class="text-xs text-white/70">
-                            For these local payment methods you will be redirected to the provider to authorise the payment. We
-                            usually still need your shipping details here to prepare the parcel.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <p class="font-medium text-emerald-300">Typically required in this tab</p>
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Country / Region + city and postal code</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Recipient name and phone number (for local carriers).</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Street address if not fully provided by the wallet.</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </template>
-
-                        <template v-else-if="activePaymentTab === 'bank'">
-                          <p class="text-xs text-white/70">
-                            For larger or custom orders you can pay via bank transfer. A fixed bank fee is added to your order
-                            total. Your own bank may also charge additional fees.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <p class="font-medium text-emerald-300">How bank transfer works in this checkout</p>
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>
-                                  Place your order with bank transfer selected, then send the payment using the account details
-                                  shown on the next step.
-                                </span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>Include your order number as the transfer reference so we can match your payment quickly.</span>
-                              </li>
-                            </ul>
-                          </div>
-                          <div
-                            class="mt-2 rounded-xl px-4 py-1.5 md:py-4 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_20px_-12px_rgba(0,0,0,0.95)] border border-white/10 text-xs space-y-1.5"
-                          >
-                            <div class="flex items-center justify-between">
-                              <p class="font-medium text-white/85">Example bank account details</p>
-                              <span class="text-[10px] text-white/50">Actual details shown on real checkout</span>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 text-white/75">
-                              <p><span class="text-white/60">Bank name:</span> Example Bank Ltd.</p>
-                              <p><span class="text-white/60">Account name:</span> Tanzanite Components</p>
-                              <p><span class="text-white/60">Account number:</span> 0000 1234 5678</p>
-                              <p><span class="text-white/60">SWIFT / BIC:</span> EXAMPBANKXXX</p>
-                            </div>
-                          </div>
-                          <div class="mt-1 text-[11px] text-white/60 space-y-0.5">
-                            <p class="font-medium text-white/80">After you have sent the bank transfer</p>
-                            <p>
-                              On the live checkout we will show a clear confirmation step so you can tell us once your bank
-                              shows the payment as sent with the correct reference.
-                            </p>
-                          </div>
-                        </template>
-
-                        <template v-else>
-                          <p class="text-xs text-white/70">
-                            For selected international or business orders you can pay via WorldFirst. You pay to a local
-                            account in your currency, and WorldFirst settles the funds to us with an additional service fee.
-                          </p>
-                          <div class="mt-1 space-y-1.5 text-xs">
-                            <p class="font-medium text-emerald-300">Typical WorldFirst flow</p>
-                            <ul class="space-y-1.5">
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>We show you a WorldFirst account in your region and currency after you choose this option.</span>
-                              </li>
-                              <li class="flex items-center gap-2">
-                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                <span>You initiate the transfer from your bank to WorldFirst, using the order reference we provide.</span>
-                              </li>
-                            </ul>
-                          </div>
-                          <div
-                            class="mt-3 rounded-xl px-4 py-1.5 md:py-4 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_20px_-12px_rgba(0,0,0,0.95)] border border-white/10 text-xs space-y-2"
-                          >
-                            <div class="flex items-center justify-between">
-                              <p class="font-medium text-white/85">Example WorldFirst details</p>
-                              <span class="text-[10px] text-white/50">Real account info appears on live checkout</span>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 text-white/75">
-                              <p><span class="text-white/60">Receiving account:</span> WorldFirst demo account</p>
-                              <p><span class="text-white/60">Reference:</span> Your order number</p>
-                            </div>
-                          </div>
-                          <div class="mt-2 text-[11px] text-white/60 space-y-1">
-                            <p class="font-medium text-white/80">What happens next</p>
-                            <p>
-                              Once WorldFirst confirms the funds we mark your order as paid and move it into the shipping queue.
-                            </p>
-                          </div>
-                        </template>
-                      </div>
-                    </section>
-
-                    <!-- Shipping Address（Card / 在线支付 Tab 所需的收货信息） -->
-                    <div
-                      v-if="activePaymentTab !== 'bank' && activePaymentTab !== 'worldfirst'"
-                      class="md:col-span-6 md:h-[460px] rounded-xl px-4 py-1.5 md:py-2 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] overflow-y-auto md:overflow-visible"
-                    >
-                      <h3 class="text-base font-semibold text-white mb-1.5 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Shipping Address
-                      </h3>
-
-                      <p class="text-xs text-white/70 mb-1.5">
-                        If shipping to your area isn't available yet, it doesn't always mean we can't deliver. Please contact us and we'll check possible shipping options for you.
-                      </p>
-                      <div class="flex flex-wrap gap-2 mb-2"></div>
-
-                      <div class="space-y-2.5">
-                        <!-- 4 个主要字段：Country / Recipient / Phone / Address，在桌面端两行两列排列 -->
-                        <div class="grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2">
-                          <!-- Country Selection -->
-                          <div class="min-[360px]:col-span-2">
-                            <label class="block text-sm font-medium text-white/80 mb-1">Country / Region <span class="text-red-400">*</span></label>
-                            <input
-                              v-model="countrySearch"
-                              type="text"
-                              placeholder="Search country or region"
-                              class="mb-1 w-full px-3 py-1.5 rounded-lg border-none text-xs text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                            />
-                            <select
-                              v-model="form.country"
-                              class="w-full px-4 py-1.5 rounded-lg border-none text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                              :class="{ 'focus:[box-shadow:0_0_0_1px_rgba(248,113,113,0.9)]': form.country && !shippingValidation.isShippable }"
-                            >
-                              <option value="" disabled class="bg-gray-900">Select a country</option>
-                              <optgroup label="Available for Shipping" class="bg-gray-900">
-                                <option
-                                  v-for="country in filteredShippableCountries"
-                                  :key="country.code"
-                                  :value="country.code"
-                                  class="bg-gray-900"
-                                >
-                                  {{ country.name }}
-                                </option>
-                              </optgroup>
-                              <optgroup label="Other Countries" class="bg-gray-900">
-                                <option
-                                  v-for="country in filteredNonShippableCountries"
-                                  :key="country.code"
-                                  :value="country.code"
-                                  class="bg-gray-900 text-white/50"
-                                >
-                                  {{ country.name }}
-                                </option>
-                              </optgroup>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label class="block text-sm font-medium text-white/80 mb-1">Recipient <span class="text-red-400">*</span></label>
-                            <input
-                              v-model="form.name"
-                              type="text"
-                              placeholder="Enter recipient name"
-                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                            />
-                          </div>
-
-                          <div>
-                            <label class="block text-sm font-medium text-white/80 mb-1">Phone <span class="text-red-400">*</span></label>
-                            <input
-                              v-model="form.phone"
-                              type="tel"
-                              placeholder="Enter phone number"
-                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                            />
-                          </div>
-
-                          <div class="min-[360px]:col-span-2">
-                            <label class="block text-sm font-medium text-white/80 mb-1">Address <span class="text-red-400">*</span></label>
-                            <textarea
-                              v-model="form.address"
-                              rows="1"
-                              placeholder="Enter detailed address"
-                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)] resize-none"
-                            ></textarea>
-                          </div>
-                        </div>
-
-                        <!-- Shipping Unavailable Warning -->
-                        <div
-                          v-if="form.country && !shippingValidation.isShippable"
-                          class="px-4 py-1.5 md:py-4 bg-red-500/10 border border-red-500/30 rounded-lg"
-                        >
-                          <div class="flex items-start gap-3">
-                            <svg class="w-6 h-6 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <div class="flex-1">
-                              <p class="text-red-400 font-medium">{{ shippingValidation.reason }}</p>
-                              <p class="text-white/60 text-sm mt-2">Don't worry, we have options for you:</p>
-                              <div class="mt-3 space-y-2">
-                                <button
-                                  type="button"
-                                  @click="openContactSupport"
-                                  class="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                                >
-                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                  </svg>
-                                  Contact us for special shipping arrangements
-                                </button>
-                                <button
-                                  type="button"
-                                  @click="openFreightForwarder"
-                                  class="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
-                                >
-                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                  </svg>
-                                  Use a freight forwarder service
-                                </button>
-                                <button
-                                  type="button"
-                                  @click="saveCartForLater"
-                                  class="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
-                                >
-                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                  </svg>
-                                  Save cart and check back later
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Estimated Delivery -->
-                        <div
-                          v-if="form.country && shippingValidation.isShippable && estimatedDelivery"
-                          class="px-2 py-1.5 md:py-2 bg-green-500/10 border border-green-500/30 rounded-lg"
-                        >
-                          <p class="text-green-400 text-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Estimated delivery: {{ estimatedDelivery }}
-                          </p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2.5">
-                          <div>
-                            <label class="block text-sm font-medium text-white/80 mb-1">City <span class="text-red-400">*</span></label>
-                            <input
-                              v-model="form.city"
-                              type="text"
-                              placeholder="City"
-                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                            />
-                          </div>
-                          <div>
-                            <label class="block text-sm font-medium text-white/80 mb-1">Zip Code</label>
-                            <input
-                              v-model="form.zip"
-                              type="text"
-                              :placeholder="zipPlaceholder"
-                              class="w-full px-4 py-1.5 rounded-lg border-none text-white placeholder:text-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.85)]"
-                            />
-                            <p v-if="zipHint" class="text-xs text-white/50 mt-1">{{ zipHint }}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 现有 Order Summary 卡片：暂时代表各 Tab 的金额汇总，布局随 Bank / WorldFirst 自适应 -->
-                    <div
-                      :class="[
-                        activePaymentTab === 'bank' || activePaymentTab === 'worldfirst' ? 'md:col-span-6' : 'md:col-span-3',
-                        'md:h-[460px] rounded-xl px-4 py-1.5 md:py-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] flex flex-col'
-                      ]"
-                    >
-                      <h3 class="text-xs md:text-sm font-semibold text-white mb-0.5 md:mb-1 flex items-center gap-1 leading-tight">
-                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        Order Summary
-                      </h3>
-
-                      <!-- 商品列表 -->
-                      <div class="space-y-3 mb-4 max-h-40 overflow-y-auto">
-                        <div
-                          v-for="item in cartItems"
-                          :key="item.id"
-                          class="flex gap-3 p-3 rounded-lg bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_6px_18px_-10px_rgba(0,0,0,0.95)]"
-                        >
-                          <div class="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_4px_12px_-6px_rgba(0,0,0,0.95)]">
-                            <img
-                              v-if="item.thumbnail"
-                              :src="item.thumbnail"
-                              :alt="item.title"
-                              class="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-white truncate">{{ item.title }}</p>
-                            <p class="text-xs text-white/60 mt-1">Qty: {{ item.quantity }}</p>
-                            <p class="text-sm font-semibold text-white mt-1">
-                              {{ formatPrice(item.price * item.quantity) }}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- 费用明细 -->
-                      <div class="space-y-2 pt-4 border-t border-white/10">
-                        <div class="flex justify-between text-sm">
-                          <span class="text-white/70">Subtotal</span>
-                          <span class="font-medium text-white">{{ formatPrice(priceBreakdown.subtotal) }}</span>
-                        </div>
-                        
-                        <div class="flex justify-between text-sm">
-                          <span class="text-white/70">
-                            Shipping
-                            <span v-if="form.country && shippingValidation.matchedRule?.service_label" class="text-xs text-white/50">
-                              ({{ shippingValidation.matchedRule.service_label }})
-                            </span>
-                          </span>
-                          <span class="font-medium text-white">
-                            <template v-if="!form.country">
-                              <span class="text-white/50 text-xs">Select country</span>
-                            </template>
-                            <template v-else-if="!shippingValidation.isShippable">
-                              <span class="text-red-400 text-xs">Unavailable</span>
-                            </template>
-                            <template v-else>
-                              {{ regionShippingFee === 0 ? 'Free' : formatPrice(regionShippingFee) }}
-                            </template>
-                          </span>
-                        </div>
-                        <!-- 免运费进度 -->
-                        <div
-                          v-if="form.country && shippingValidation.isShippable && shippingValidation.matchedRule?.free_over && regionShippingFee > 0"
-                          class="text-xs text-green-400 mt-1"
-                        >
-                          Add {{ formatPrice(shippingValidation.matchedRule.free_over - priceBreakdown.subtotal) }} more for free shipping!
-                        </div>
-                        <div class="flex justify-between text-sm">
-                          <span class="text-white/70">Tax</span>
-                          <span class="font-medium text-white">{{ formatPrice(priceBreakdown.tax) }}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                          <span class="text-white/70">Points discount</span>
-                          <span class="font-medium text-emerald-300">- {{ formatPrice(0) }}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                          <span class="text-white/70">Gift card discount</span>
-                          <span class="font-medium text-emerald-300">- {{ formatPrice(0) }}</span>
-                        </div>
-                        <div class="flex justify-between text-lg font-bold pt-3 border-t border-white/20">
-                          <span class="text-white">Total Amount</span>
-                          <span class="text-[#6b73ff]">{{ formatPrice(priceBreakdown.total) }}</span>
-                        </div>
-                      </div>
-
-                      <div class="mt-4 space-y-2 hidden md:block">
-                        <ChatStartButton
-                          class="w-full text-sm"
-                          :label="
-                            activePaymentTab === 'card'
-                              ? 'Continue to secure payment'
-                              : activePaymentTab === 'paypal'
-                                ? 'Continue to PayPal'
-                                : activePaymentTab === 'stripe'
-                                  ? 'Continue to Stripe'
-                                  : 'Pay now'
-                          "
-                          :disabled="isSubmitting"
-                          @click="handleSubmit"
-                        />
-                        <p
-                          v-if="activePaymentTab === 'card'"
-                          class="text-[11px] text-white/60 text-center"
-                        >
-                          You'll enter your card details on a secure payment page provided by our payment partner. We never
-                          store your card number or CVC.
-                        </p>
-                        <p
-                          v-else-if="activePaymentTab === 'paypal'"
-                          class="text-[11px] text-white/60 text-center"
-                        >
-                          You'll be redirected to PayPal to complete your payment. We never see or store your PayPal password
-                          or card details.
-                        </p>
-                        <p
-                          v-else-if="activePaymentTab === 'stripe'"
-                          class="text-[11px] text-white/60 text-center"
-                        >
-                          You'll be taken to Stripe's secure checkout to enter your card details. We never store your card
-                          number or CVC.
-                        </p>
-                        <p
-                          v-else-if="activePaymentTab === 'alipay'"
-                          class="text-[11px] text-white/60 text-center"
-                        >
-                          You'll complete payment via your usual local wallet (Alipay / WeChat / UnionPay). We do not store
-                          your wallet login details.
-                        </p>
-                        <p
-                          v-else-if="activePaymentTab === 'bank'"
-                          class="text-[11px] text-white/60 text-center"
-                        >
-                          You'll complete payment by bank transfer using the account details we provide. We do not have access
-                          to your online banking login.
-                        </p>
-                        <p
-                          v-else-if="activePaymentTab === 'worldfirst'"
-                          class="text-[11px] text-white/60 text-center"
-                        >
-                          You'll send the payment from your local bank to a WorldFirst account as usual. We never see your full
-                          bank credentials.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-            <!-- Mobile bottom CTA -->
-            <div
-              class="md:hidden absolute inset-x-0 bottom-0 px-3 pb-3 pt-3 space-y-3 bg-[radial-gradient(circle_at_bottom,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] border-t border-white/10 shadow-[0_-10px_25px_-20px_rgba(0,0,0,0.95)]"
-            >
-              <div class="text-center">
-                <p class="text-xs font-semibold text-white">{{ mobilePaymentTitle }}</p>
-                <p class="text-[11px] text-white/60 mt-1">{{ mobilePaymentDescription }}</p>
-              </div>
-              <ChatStartButton
-                class="w-full justify-center text-xs"
-                size="md"
-                :label="paymentCtaLabel"
-                :disabled="isSubmitting"
-                @click="handleSubmit"
-              />
-            </div>
           </div>
         </transition>
       </div>
@@ -1170,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ChatStartButton from '~/components/ChatStartButton.vue'
 import { COUNTRIES } from '~/data/countries'
 import { useShippingValidation } from '~/composables/useShippingValidation'
@@ -1222,8 +169,10 @@ const paymentMethods = [
 ]
 
 type PaymentTab = 'card' | 'paypal' | 'alipay' | 'stripe' | 'bank' | 'worldfirst'
+type StepperStep = 1 | 2 | 3
 
 const activePaymentTab = ref<PaymentTab>('card')
+const currentStepperStep = ref<StepperStep>(1)
 
 const paymentCopy: Record<PaymentTab, { title: string; description: string; cta: string }> = {
   card: {
@@ -1264,6 +213,8 @@ type StepperOption = {
   subtitle: string
   description: string
 }
+
+type ShippingField = 'country' | 'name' | 'phone' | 'address' | 'city' | 'zip' | 'paymentMethod' | 'notes'
 
 const stepperOptions = computed<StepperOption[]>(() => {
   const priceText = `≈ ${formatPrice(priceBreakdown.value.total)}`
@@ -1319,6 +270,19 @@ const setActivePaymentTab = (tab: PaymentTab) => {
 
 const handleStepperSelect = (tab: PaymentTab) => {
   setActivePaymentTab(tab)
+  currentStepperStep.value = 1
+}
+
+const handleStepperStepChange = (step: StepperStep) => {
+  currentStepperStep.value = step
+}
+
+const handleStepperShippingField = ({ field, value }: { field: ShippingField; value: string }) => {
+  form.value[field] = value
+}
+
+const handleStepperCountrySearch = (value: string) => {
+  countrySearch.value = value
 }
 
 const mobilePaymentTitle = computed(() => paymentCopy[activePaymentTab.value].title)
@@ -1414,6 +378,12 @@ const saveCartForLater = () => {
   // 可以保存到 localStorage 或用户账户
   alert('Your cart has been saved. We\'ll notify you when shipping becomes available to your region.')
 }
+
+watch(isCheckoutOpen, value => {
+  if (!value) {
+    currentStepperStep.value = 1
+  }
+})
 
 // 基于地区的运费计算
 const regionShippingFee = computed(() => {

@@ -1,29 +1,32 @@
 <template>
-  <section class="space-y-4 px-2 md:px-6 py-3">
+  <section class="flex flex-col gap-3 h-full px-1.5 md:px-6 py-2 md:py-3 max-w-none md:max-w-[720px] mx-auto w-full">
     <!-- Stepper header -->
     <div class="flex items-center gap-2 text-[10px] md:text-xs uppercase tracking-[0.2em] text-white/60">
       <StepperDot :active="currentStep === 1">1</StepperDot>
-      <div :class="currentStep === 1 ? 'text-white/90' : 'text-white/60'">Choose payment method</div>
+      <div class="hidden md:block" :class="currentStep === 1 ? 'text-white/90' : 'text-white/60'">Choose payment method</div>
       <div class="flex-1 h-px bg-white/10"></div>
       <StepperDot :active="currentStep === 2">2</StepperDot>
-      <div :class="currentStep === 2 ? 'text-white/90' : 'text-white/60'">Shipping &amp; details</div>
+      <div class="hidden md:block" :class="currentStep === 2 ? 'text-white/90' : 'text-white/60'">Shipping info</div>
+      <div class="flex-1 h-px bg-white/10"></div>
+      <StepperDot :active="currentStep === 3">3</StepperDot>
+      <div class="hidden md:block" :class="currentStep === 3 ? 'text-white/90' : 'text-white/60'">Review &amp; pay</div>
     </div>
 
     <!-- Step 1 -->
-    <div v-if="currentStep === 1" class="space-y-3">
+    <div v-if="currentStep === 1" class="flex flex-col gap-3 flex-1">
       <header class="flex items-center justify-between">
         <div class="text-xs font-semibold text-white/80 flex items-center gap-2">
           Pick a provider
-          <span class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.2em] bg-white/10 text-white/70">Step 1 of 2</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.2em] bg-white/10 text-white/70">Step 1 of 3</span>
         </div>
         <span class="text-[11px] text-white/60">Tap a card to view details</span>
       </header>
 
-      <div class="space-y-2">
+      <div class="space-y-2 flex-1 overflow-y-auto pr-1 md:pr-2 max-w-[620px] mx-auto w-full">
         <article
           v-for="option in paymentOptions"
           :key="option.id"
-          class="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_15px_44px_-30px_rgba(2,6,23,0.9)] overflow-hidden transition-colors"
+          class="rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[6px_10px_30px_rgba(0,0,0,0.55)] overflow-hidden transition-colors"
         >
           <button
             type="button"
@@ -36,8 +39,8 @@
               <span class="text-[11px] text-white/60">{{ option.subtitle }}</span>
             </div>
             <div
-              class="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]"
-              :class="activeMethod === option.id ? 'bg-white text-slate-900' : 'border border-white/30 text-white/50'"
+              class="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] shadow-[3px_3px_12px_rgba(0,0,0,0.35)]"
+              :class="activeMethod === option.id ? 'bg-white text-slate-900' : 'bg-white/10 text-white/60'"
             >
               {{ activeMethod === option.id ? 'Selected' : 'Tap to view' }}
             </div>
@@ -69,7 +72,7 @@
     </div>
 
     <!-- Step 2 -->
-    <div v-else class="space-y-4">
+    <div v-else-if="currentStep === 2" class="flex flex-col gap-3 flex-1">
       <button
         type="button"
         class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70 hover:text-white transition"
@@ -81,93 +84,10 @@
         Change payment method
       </button>
 
-      <div class="space-y-3 overflow-y-auto max-h-[60vh] pr-1 md:pr-2">
-        <div class="grid gap-3 md:grid-cols-3">
-          <section class="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[0_15px_44px_-30px_rgba(2,6,23,0.9)] space-y-3">
-            <header class="text-sm font-semibold text-white flex items-center gap-2">
-              Coupon
-              <span class="text-[11px] text-white/50">Optional</span>
-            </header>
-            <div class="flex gap-2">
-              <input
-                :value="couponInput"
-                type="text"
-                placeholder="Enter code"
-                class="flex-1 px-3 py-2 rounded-xl bg-white/5 text-sm text-white placeholder:text-white/40 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
-                @input="handleCouponInput"
-              />
-              <button
-                type="button"
-                class="px-3 py-2 rounded-xl text-sm font-semibold bg-white text-slate-900 hover:brightness-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="!couponInput || isApplyingCoupon"
-                @click="handleApplyCouponClick"
-              >
-                {{ isApplyingCoupon ? 'Applying…' : 'Apply' }}
-              </button>
-            </div>
-            <p v-if="appliedCoupon" class="text-xs text-emerald-300 flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              Coupon applied: {{ appliedCoupon.code ?? appliedCoupon.label ?? appliedCoupon }}
-            </p>
-          </section>
-
-          <section
-            class="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[0_15px_44px_-30px_rgba(2,6,23,0.9)] space-y-3"
-          >
-            <header class="text-sm font-semibold text-white flex items-center gap-2">
-              Use Points Discount
-              <span class="text-[11px] text-white/50">
-                {{ pointsAvailable > 0 ? `Available: ${pointsAvailable} pts` : 'No points available yet' }}
-              </span>
-            </header>
-            <div class="flex items-center gap-2.5 mb-1 text-sm text-white/80">
-              <input
-                type="checkbox"
-                class="w-4 h-4 rounded border-white/30 bg-white/10 text-[#6b73ff]"
-                :checked="isUsingPoints"
-                @change="handlePointsToggle"
-              />
-              <span>{{ pointsAvailable > 0 ? 'Use points' : 'Points unavailable' }}</span>
-            </div>
-            <div v-if="isUsingPoints" class="space-y-2">
-              <label class="block text-xs text-white/70">Points to use</label>
-              <input
-                :value="pointsToUse"
-                type="number"
-                min="0"
-                :max="maxPointsToUse"
-                class="w-full px-3 py-2 rounded-xl bg-white/5 text-sm text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
-                @input="handlePointsInputChange"
-              />
-              <p class="text-xs text-white/60">{{ pointsHint }}</p>
-            </div>
-            <p v-if="pointsAvailable <= 0" class="text-xs text-white/50">
-              Earn points on your next order and apply them here for instant discounts.
-            </p>
-          </section>
-
-          <section class="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[0_15px_44px_-30px_rgba(2,6,23,0.9)] space-y-3">
-            <header class="text-sm font-semibold text-white flex items-center gap-2">
-              <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 16c0 3.866-4.03 7-9 7s-9-3.134-9-7V8a4 4 0 014-4h10a4 4 0 014 4v8z" />
-              </svg>
-              Order notes <span class="text-[11px] text-white/50">(optional)</span>
-            </header>
-            <textarea
-              :value="shippingForm?.notes || ''"
-              rows="2"
-              placeholder="Add any delivery instructions or special requests…"
-              class="w-full px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 resize-none"
-              @input="handleShippingInput('notes', $event)"
-            ></textarea>
-          </section>
-        </div>
-
+      <div class="space-y-3 flex-1 overflow-y-auto pr-1 md:pr-2 max-w-[620px] mx-auto w-full">
         <section
           v-if="showShippingForm"
-          class="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[0_15px_44px_-30px_rgba(2,6,23,0.9)] space-y-3"
+          class="rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[6px_10px_30px_rgba(0,0,0,0.55)] space-y-3"
         >
           <header class="text-sm font-semibold text-white flex items-center gap-2">
             <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -315,8 +235,137 @@
                 <p v-if="zipHint" class="text-xs text-white/50 mt-1">{{ zipHint }}</p>
               </div>
             </div>
+
+            <div class="flex justify-center md:justify-end pt-2">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-xl text-sm font-semibold transition w-full max-w-[280px] md:w-auto md:max-w-none"
+                :class="[
+                  canProceedToReview ? 'bg-white text-slate-900 hover:brightness-95' : 'bg-white/10 text-white/40 cursor-not-allowed'
+                ]"
+                :disabled="!canProceedToReview"
+                @click="handleContinueToReview"
+              >
+                {{ canProceedToReview ? 'Continue to review →' : 'Complete shipping info first' }}
+              </button>
+            </div>
           </div>
         </section>
+        <div v-else class="rounded-2xl border border-dashed border-white/20 px-4 py-6 text-center text-sm text-white/60 bg-white/5">
+          Shipping details are not required for this method.
+          <div class="mt-4 flex justify-center md:justify-end">
+            <button
+              type="button"
+              class="px-4 py-2 rounded-xl text-sm font-semibold transition w-full max-w-[280px] md:w-auto md:max-w-none"
+              :class="[
+                canProceedToReview ? 'bg-white text-slate-900 hover:brightness-95' : 'bg-white/10 text-white/40 cursor-not-allowed'
+              ]"
+              :disabled="!canProceedToReview"
+              @click="handleContinueToReview"
+            >
+              {{ canProceedToReview ? 'Continue to review →' : 'Complete shipping info first' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div v-else-if="currentStep === 3" class="flex flex-col gap-3 flex-1">
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70 hover:text-white transition"
+        @click="handleBackToShipping"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
+        </svg>
+        Back to shipping
+      </button>
+
+      <div class="space-y-3 flex-1 overflow-y-auto pr-1 md:pr-2">
+        <div class="grid gap-3 md:grid-cols-3">
+          <section class="rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[6px_10px_30px_rgba(0,0,0,0.55)] space-y-3">
+            <header class="text-sm font-semibold text-white flex items-center gap-2">
+              Coupon
+              <span class="text-[11px] text-white/50">Optional</span>
+            </header>
+            <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+              <input
+                :value="couponInput"
+                type="text"
+                placeholder="Enter code"
+                class="flex-1 px-3 py-2 rounded-xl bg-white/5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]"
+                @input="handleCouponInput"
+              />
+              <button
+                type="button"
+                class="px-3 py-2 rounded-xl text-sm font-semibold bg-white text-slate-900 hover:brightness-95 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto sm:flex-none"
+                :disabled="!couponInput || isApplyingCoupon"
+                @click="handleApplyCouponClick"
+              >
+                {{ isApplyingCoupon ? 'Applying…' : 'Apply' }}
+              </button>
+            </div>
+            <p v-if="appliedCoupon" class="text-xs text-emerald-300 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Coupon applied: {{ appliedCoupon.code ?? appliedCoupon.label ?? appliedCoupon }}
+            </p>
+          </section>
+
+          <section
+            class="rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[6px_10px_30px_rgba(0,0,0,0.55)] space-y-3"
+          >
+            <header class="text-sm font-semibold text-white flex items-center gap-2">
+              Use Points Discount
+              <span class="text-[11px] text-white/50">
+                {{ pointsAvailable > 0 ? `Available: ${pointsAvailable} pts` : 'No points available yet' }}
+              </span>
+            </header>
+            <div class="flex items-center gap-2.5 mb-1 text-sm text-white/80">
+              <input
+                type="checkbox"
+                class="w-4 h-4 rounded border-white/30 bg-white/10 text-[#6b73ff]"
+                :checked="isUsingPoints"
+                @change="handlePointsToggle"
+              />
+              <span>{{ pointsAvailable > 0 ? 'Use points' : 'Points unavailable' }}</span>
+            </div>
+            <div v-if="isUsingPoints" class="space-y-2">
+              <label class="block text-xs text-white/70">Points to use</label>
+              <input
+                :value="pointsToUse"
+                type="number"
+                min="0"
+                :max="maxPointsToUse"
+                class="w-full px-3 py-2 rounded-xl bg-white/5 text-sm text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+                @input="handlePointsInputChange"
+              />
+              <p class="text-xs text-white/60">{{ pointsHint }}</p>
+            </div>
+            <p v-if="pointsAvailable <= 0" class="text-xs text-white/50">
+              Earn points on your next order and apply them here for instant discounts.
+            </p>
+          </section>
+
+          <section class="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-6 text-center text-sm text-white/60 shadow-[6px_10px_30px_rgba(0,0,0,0.55)]">
+            <header class="text-sm font-semibold text-white flex items-center gap-2">
+              <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 16c0 3.866-4.03 7-9 7s-9-3.134-9-7V8a4 4 0 014-4h10a4 4 0 014 4v8z" />
+              </svg>
+              Order notes <span class="text-[11px] text-white/50">(optional)</span>
+            </header>
+            <textarea
+              :value="shippingForm?.notes || ''"
+              rows="3"
+              placeholder="Add any delivery instructions or special requests…"
+              class="w-full px-4 py-3 rounded-xl bg-white/5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 resize-none min-h-[96px] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]"
+              @input="handleShippingInput('notes', $event)"
+            ></textarea>
+          </section>
+        </div>
 
         <section class="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[0_15px_44px_-30px_rgba(2,6,23,0.9)] space-y-3">
           <header class="text-sm font-semibold text-white flex items-center gap-2">
@@ -393,7 +442,7 @@
           </div>
         </section>
 
-        <div class="rounded-2xl border border-white/5 bg-[radial-gradient(circle_at_bottom,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] px-4 py-4 space-y-2 hidden md:block">
+        <div class="rounded-2xl bg-[radial-gradient(circle_at_bottom,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] px-4 py-4 space-y-2 hidden md:block shadow-[6px_10px_30px_rgba(0,0,0,0.55)]">
           <ChatStartButton
             class="w-full text-sm"
             :label="desktopCtaLabel"
@@ -406,7 +455,7 @@
         </div>
       </div>
 
-      <div class="rounded-2xl border border-white/5 bg-[radial-gradient(circle_at_bottom,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] px-4 py-4 space-y-2 md:hidden">
+      <div class="rounded-2xl bg-[radial-gradient(circle_at_bottom,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] px-4 py-4 space-y-2 md:hidden shadow-[6px_10px_30px_rgba(0,0,0,0.55)]">
         <div class="text-center">
           <p class="text-xs font-semibold text-white">{{ mobilePaymentTitle }}</p>
           <p v-if="mobilePaymentDescription" class="text-[11px] text-white/60 mt-1">
@@ -430,7 +479,7 @@ import { ref, computed } from 'vue'
 import StepperDot from './StepperDot.vue'
 import ChatStartButton from '~/components/ChatStartButton.vue'
 
-type Step = 1 | 2
+type Step = 1 | 2 | 3
 
 interface PaymentOption {
   id: string
@@ -596,6 +645,27 @@ const mobilePaymentTitle = computed(() => props.mobilePaymentTitle ?? 'Continue 
 const mobilePaymentDescription = computed(() => props.mobilePaymentDescription ?? '')
 const isSubmitting = computed(() => props.isSubmitting ?? false)
 
+const isShippingComplete = computed(() => {
+  if (!showShippingForm.value) return true
+  const form = shippingForm.value
+  if (!form) return false
+  const requiredFields: Array<keyof ShippingForm> = ['country', 'name', 'phone', 'address', 'city']
+  return requiredFields.every(field => {
+    const value = form[field]
+    if (typeof value === 'string') {
+      return value.trim().length > 0
+    }
+    return Boolean(value)
+  })
+})
+
+const canProceedToReview = computed(() => {
+  if (!showShippingForm.value) return true
+  if (!isShippingComplete.value) return false
+  if (shippingValidation.value && shippingValidation.value.isShippable === false) return false
+  return true
+})
+
 const setStep = (step: Step) => {
   currentStep.value = step
   emit('update:step', step)
@@ -615,8 +685,16 @@ const handleContinueFromStepOne = () => {
   setStep(2)
 }
 
+const handleContinueToReview = () => {
+  setStep(3)
+}
+
 const handleBackToMethods = () => {
   setStep(1)
+}
+
+const handleBackToShipping = () => {
+  setStep(2)
 }
 
 const handleCouponInput = (event: Event) => {

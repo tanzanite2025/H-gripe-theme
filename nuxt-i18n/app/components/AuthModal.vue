@@ -5,9 +5,7 @@
         v-if="modelValue"
         :class="[
           'fixed inset-0 flex justify-center p-0 md:p-4',
-          props.embedded
-            ? 'items-end z-[12000] pointer-events-none'
-            : 'items-end md:items-center z-[13000]'
+          props.embedded ? 'items-end z-[12000] pointer-events-none' : containerPlacementClass
         ]"
         aria-modal="true"
         role="dialog"
@@ -23,7 +21,7 @@
         <!-- 弹窗卡片：对齐 Checkout 弹窗的暗色玻璃风格 -->
         <div
           :class="[
-            'relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-t-3xl md:rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden',
+            'auth-modal__panel relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-t-3xl md:rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden',
             props.embedded ? 'rounded-2xl' : ''
           ]"
         >
@@ -38,7 +36,7 @@
           </button>
 
           <!-- 主体内容 -->
-          <div class="flex-1 w-full overflow-y-auto px-4 md:px-12 pt-16 pb-10">
+          <div class="auth-modal__body flex-1 w-full overflow-y-auto px-4 md:px-12 pt-16 pb-10">
             <div class="w-full max-w-[520px] mx-auto">
               <!-- 登录 / 注册 表单状态 -->
               <div v-if="!completionState" class="space-y-6">
@@ -186,14 +184,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   defaultMode: { type: String as () => 'login' | 'register', default: 'login' },
-  embedded: { type: Boolean, default: false }
+  embedded: { type: Boolean, default: false },
+  placement: { type: String as () => 'auto' | 'center' | 'bottom', default: 'auto' }
 })
 
 const emit = defineEmits<{
@@ -204,6 +203,20 @@ const emit = defineEmits<{
 
 const { t: $t } = useI18n()
 const auth = useAuth()
+
+const containerPlacementClass = computed(() => {
+  if (props.embedded) {
+    return 'items-end z-[12000] pointer-events-none'
+  }
+  switch (props.placement) {
+    case 'center':
+      return 'items-center z-[13000]'
+    case 'bottom':
+      return 'items-end z-[13000]'
+    default:
+      return 'items-end md:items-center z-[13000]'
+  }
+})
 
 const mode = ref<'login' | 'register'>(props.defaultMode)
 const loginForm = ref({ username: '', password: '', remember: false, loading: false, error: '' })
@@ -401,5 +414,26 @@ const handleCompletionCta = async () => {
     0 8px 20px -12px rgba(0, 0, 0, 1),
     0 0 14px rgba(15, 23, 42, 0.95);
   transform: translateY(-1px);
+}
+
+@media (max-width: 420px) {
+  .auth-modal__panel {
+    height: 94vh;
+    max-height: 94vh;
+    border-radius: 24px;
+  }
+
+  .auth-modal__body {
+    padding: 2.5rem 1.25rem 1.25rem;
+  }
+
+  .auth-modal__body .space-y-6 {
+    gap: 1rem;
+  }
+
+  .social-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
 }
 </style>
