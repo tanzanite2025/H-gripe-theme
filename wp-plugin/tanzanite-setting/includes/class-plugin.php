@@ -73,22 +73,23 @@ class Tanzanite_Plugin {
 	}
 
 	/**
-	 * 构造函数（私有，防止直接实例化）
-	 *
-	 * @since 0.2.0
+	 * 私有构造函数（防止直接实例化）
 	 */
 	private function __construct() {
 		// 私有构造函数
 	}
 
 	/**
-	 * 杩愯鎻掍欢
+	 * 	权限检查
 	 *
 	 * @since 0.2.0
 	 */
 	public function run() {
 		$this->define_constants();
 		$this->load_dependencies();
+		if ( class_exists( 'Tanzanite_Suggestion_Feedback_Database' ) ) {
+			Tanzanite_Suggestion_Feedback_Database::maybe_upgrade();
+		}
 		$this->load_legacy_pages();
 		$this->init_hooks();
 	}
@@ -209,6 +210,16 @@ class Tanzanite_Plugin {
 		$attributes_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-attributes-admin.php';
 		if ( file_exists( $attributes_admin ) ) {
 			require_once $attributes_admin;
+		}
+
+		$suggestion_db = TANZANITE_PLUGIN_DIR . 'includes/database/class-suggestion-feedback-database.php';
+		if ( file_exists( $suggestion_db ) ) {
+			require_once $suggestion_db;
+		}
+
+		$suggestion_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-suggestion-feedback-admin.php';
+		if ( file_exists( $suggestion_admin ) ) {
+			require_once $suggestion_admin;
 		}
 	}
 
@@ -353,6 +364,7 @@ class Tanzanite_Plugin {
 			'Tanzanite_REST_Spoke_Products_Controller',
 			// 新增：用户反馈 / 留言控制器
 			'Tanzanite_REST_Feedback_Controller',
+			'Tanzanite_REST_Suggestion_Feedback_Controller',
 			// 新增：辐条长度历史搜索控制器
 			'Tanzanite_REST_Spoke_History_Controller',
 		);
@@ -594,6 +606,15 @@ class Tanzanite_Plugin {
 			'tanzanite-settings-markdown-templates',
 			array( $this, 'render_markdown_templates' )
 		);
+
+		add_submenu_page(
+			$root_slug,
+			__( 'Suggestion Feedback', 'tanzanite-settings' ),
+			__( 'Suggestion Feedback', 'tanzanite-settings' ),
+			$root_capability,
+			'tanzanite-settings-suggestion-feedback',
+			array( $this, 'render_suggestion_feedback' )
+		);
 	}
 
 	/**
@@ -680,8 +701,9 @@ class Tanzanite_Plugin {
 	 * @since 0.2.0
 	 */
 	public static function activate() {
-		// 鍒涘缓鏁版嵁搴撹〃
-		// Tanzanite_Database::create_tables();
+		if ( class_exists( 'Tanzanite_Suggestion_Feedback_Database' ) ) {
+			Tanzanite_Suggestion_Feedback_Database::ensure_tables();
+		}
 		
 		// 鍒涘缓瑙掕壊鍜屾潈闄?		// Tanzanite_Permissions::create_roles();
 		
@@ -1357,6 +1379,19 @@ class Tanzanite_Plugin {
 	private function call_legacy_method( $method ) {
 		if ( $this->legacy_plugin && method_exists( $this->legacy_plugin, $method ) ) {
 			$this->legacy_plugin->$method();
+		}
+	}
+
+	/**
+	 * 渲染 Suggestion Feedback 后台页面
+	 *
+	 * @since 0.2.0
+	 */
+	public function render_suggestion_feedback() {
+		if ( class_exists( 'Tanzanite_Suggestion_Feedback_Admin' ) ) {
+			Tanzanite_Suggestion_Feedback_Admin::render_page();
+		} else {
+			wp_die( esc_html__( 'Suggestion feedback admin class not found.', 'tanzanite-settings' ) );
 		}
 	}
 
