@@ -25,4 +25,9 @@ export const companyNavItems: ProductsNavItem[] = [
     labelKey: 'company.nav.pictureWarehouse',
     to: '/company/picture-warehouse',
   },
+  {
+    id: 'contact',
+    labelKey: 'company.nav.contact',
+    to: '/company/contact',
+  },
 ]

@@ -53,7 +53,7 @@
           <!-- Moved buttons here for better layout grouping -->
           <div class="footer-info__buttons">
             <NuxtLink
-              to="/privacy"
+              to="/policies/privacy"
               class="footer-info__link"
               target="_blank"
               rel="noopener noreferrer"
@@ -62,7 +62,7 @@
             </NuxtLink>
             <span class="footer-info__sep">|</span>
             <NuxtLink
-              to="/cookie-policy"
+              to="/policies/cookie"
               class="footer-info__link"
               target="_blank"
               rel="noopener noreferrer"
@@ -71,7 +71,16 @@
             </NuxtLink>
             <span class="footer-info__sep">|</span>
             <NuxtLink
-              to="/terms"
+              to="/policies/refund-return"
+              class="footer-info__link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Refund &amp; Return
+            </NuxtLink>
+            <span class="footer-info__sep">|</span>
+            <NuxtLink
+              to="/policies/terms"
               class="footer-info__link"
               target="_blank"
               rel="noopener noreferrer"

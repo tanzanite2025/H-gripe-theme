@@ -7,13 +7,15 @@
       "@/*": ["./*"],
       "~/composables/*": ["app/composables/*"],
       "~/types/*": ["types/*"],
-      "@/types/*": ["types/*"]
+      "@/types/*": ["types/*"],
+      "#imports": [".nuxt/imports"]
     },
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "types": [
       "./types/shims-nuxt",
-      "@types/node"
+      "@types/node",
+      ".nuxt/nuxt"
     ]
   },
   "files": [],

@@ -1,9 +1,8 @@
 <template>
   <div>
-    <h2 class="company-page__title">Company</h2>
+    <h2 class="company-page__title">Policies</h2>
     <p class="company-page__intro">
-      Learn more about Tanzanite, our story, membership & points program, and the
-      picture warehouse. Choose a section below to explore.
+      Review our cookie, privacy, refund & return, and terms of service policies.
     </p>
 
     <section class="company-grid">
@@ -39,39 +38,32 @@ const localePath = useLocalePath()
 
 const sections = [
   {
-    to: '/company/about',
-    icon: 'A',
-    title: 'About Us',
-    description: 'Learn about our mission, values, and the team behind Tanzanite.',
-    cta: 'About Tanzanite',
-  },
-  {
-    to: '/company/ourstory',
-    icon: 'O',
-    title: 'Our Story',
-    description: 'Background of Tanzanite and the vision behind our products.',
-    cta: 'Read our story',
-  },
-  {
-    to: '/company/membershipandpoints',
-    icon: 'M',
-    title: 'Membership and Points',
-    description: 'Overview of the membership program, benefits, and earning points.',
-    cta: 'View membership info',
-  },
-  {
-    to: '/company/picture-warehouse',
-    icon: 'P',
-    title: 'Picture warehouse',
-    description: 'Central library for Tanzanite product and lifestyle photos.',
-    cta: 'Open picture warehouse',
-  },
-  {
-    to: '/company/contact',
+    to: '/policies/cookie',
     icon: 'C',
-    title: 'Contact Us',
-    description: 'Get in touch with the Tanzanite team for enquiries and support.',
-    cta: 'Contact us',
+    title: 'Cookie',
+    description: 'Learn how we use cookies and similar technologies.',
+    cta: 'Cookie policy',
+  },
+  {
+    to: '/policies/privacy',
+    icon: 'P',
+    title: 'Privacy',
+    description: 'How we collect, use, and protect your personal data.',
+    cta: 'Privacy policy',
+  },
+  {
+    to: '/policies/refund-return',
+    icon: 'R',
+    title: 'Refund & Return',
+    description: 'Returns, refunds, and exchanges for your orders.',
+    cta: 'Refund & return policy',
+  },
+  {
+    to: '/policies/terms',
+    icon: 'T',
+    title: 'Terms',
+    description: 'Terms of service for browsing and purchasing.',
+    cta: 'Terms of service',
   },
 ]
 
@@ -80,7 +72,7 @@ definePageMeta({
 })
 
 useHead({
-  title: 'Company',
+  title: 'Policies',
 })
 </script>
 

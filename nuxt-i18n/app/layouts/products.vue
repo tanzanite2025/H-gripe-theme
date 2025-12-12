@@ -4,7 +4,11 @@
       <!-- Products hero / banner (copy support spacing & background) -->
       <!-- Top horizontal Products navigation (same style as Support) -->
       <div class="products-header-spacer" aria-hidden="true"></div>
-      <ProductsTopNav />
+      <ProductsTopNav
+        v-if="isPolicies"
+        :items-override="policiesNavItems"
+      />
+      <ProductsTopNav v-else />
 
       <!-- Products page content -->
       <section class="products-content">
@@ -20,9 +24,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
 import ProductsTopNav from '~/components/ProductsTopNav.vue'
+
+const route = useRoute()
+const isPolicies = computed(() => {
+  const path = route.path || ''
+  return path.split('/').includes('policies')
+})
+
+const policiesNavItems = [
+  { id: 'policies-cookie', to: '/policies/cookie', labelKey: 'cookie' },
+  { id: 'policies-privacy', to: '/policies/privacy', labelKey: 'privacy' },
+  { id: 'policies-refund-return', to: '/policies/refund-return', labelKey: 'refund-return' },
+  { id: 'policies-terms', to: '/policies/terms', labelKey: 'terms' },
+]
 </script>
 
 <style scoped>

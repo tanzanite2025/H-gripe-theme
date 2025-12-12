@@ -91,7 +91,7 @@
                 :country-search="countrySearch"
                 :shippable-countries="filteredShippableCountries"
                 :non-shippable-countries="filteredNonShippableCountries"
-                :shipping-validation="shippingValidation"
+                :shipping-validation="normalizedShippingValidation"
                 :estimated-delivery="estimatedDelivery"
                 :zip-placeholder="zipPlaceholder"
                 :zip-hint="zipHint"
@@ -120,11 +120,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, type ComputedRef } from 'vue'
+import { useCart } from '#imports'
+import type { useCartCalculation } from '~/composables/useCartCalculation'
 import ChatStartButton from '~/components/ChatStartButton.vue'
 import { COUNTRIES } from '~/data/countries'
 import { useShippingValidation } from '~/composables/useShippingValidation'
 import { useChatWidget } from '~/composables/useChatWidget'
+
+type CartCalculation = ReturnType<typeof useCartCalculation>
+type CartPriceBreakdownBase = ReturnType<CartCalculation['calculateTotal']>
+type CartPriceBreakdown = CartPriceBreakdownBase & {
+  shippingLabel?: string
+  shippingState?: 'select' | 'available' | 'unavailable' | 'checking'
+  pointsDiscount?: number
+  couponDiscount?: number
+  giftCardDiscount?: number
+}
 
 const {
   cartItems,
@@ -137,6 +149,42 @@ const {
   calculation,
   openCartFromCheckout,
 } = useCart()
+
+const typedPriceBreakdown = priceBreakdown as ComputedRef<CartPriceBreakdown>
+
+const shippingState = computed<CartPriceBreakdown['shippingState']>(() => {
+  if (!form.value.country) return 'select'
+  if (!shippingValidation.value?.isShippable) return 'unavailable'
+  return 'available'
+})
+
+const stepperOrderSummary = computed(() => {
+  const items = (cartItems.value || []).map((item: any) => ({
+    id: item.id ?? item.sku ?? item.title ?? '',
+    title: item.title ?? 'Item',
+    quantity: item.quantity ?? 1,
+    price: item.price ?? 0,
+    thumbnail: item.thumbnail ?? null,
+  }))
+
+  const totals = typedPriceBreakdown.value || ({} as CartPriceBreakdown)
+  const matchedRule = shippingValidation.value?.matchedRule as { service_label?: string } | undefined
+
+  return {
+    items,
+    totals: {
+      subtotal: totals.subtotal ?? 0,
+      shipping: totals.shipping ?? null,
+      shippingLabel: matchedRule?.service_label,
+      shippingState: shippingState.value,
+      tax: totals.tax ?? 0,
+      pointsDiscount: totals.pointsDiscount ?? 0,
+      couponDiscount: totals.couponDiscount ?? 0,
+      giftCardDiscount: 0,
+      total: totals.total ?? 0,
+    },
+  }
+})
 
 // 配送验证
 const {
@@ -291,6 +339,23 @@ const handleStepperCountrySearch = (value: string) => {
 const mobilePaymentTitle = computed(() => paymentCopy[activePaymentTab.value].title)
 const mobilePaymentDescription = computed(() => paymentCopy[activePaymentTab.value].description)
 const paymentCtaLabel = computed(() => paymentCopy[activePaymentTab.value].cta)
+const desktopCtaDescription = computed(() => paymentCopy[activePaymentTab.value].description)
+
+const handleStepperCouponInput = (value: string) => {
+  couponCode.value = value
+}
+
+const handleStepperTogglePoints = (value: boolean) => {
+  if (calculation?.usePointsDiscount) {
+    calculation.usePointsDiscount.value = value
+  }
+}
+
+const handleStepperPointsInput = (value: number) => {
+  if (calculation?.pointsToUse) {
+    calculation.pointsToUse.value = value
+  }
+}
 
 // 表单数据
 const form = ref({
@@ -311,6 +376,24 @@ const isApplyingCoupon = ref(false)
 // 配送验证结果
 const shippingValidation = computed(() => {
   return validateShipping(form.value.country, form.value.zip)
+})
+
+const normalizedShippingValidation = computed(() => {
+  const val = shippingValidation.value
+  if (!val) return null
+  const rule = val.matchedRule
+  const matchedRule =
+    rule && typeof rule === 'object'
+      ? {
+          service_label: (rule as any).service_label,
+          free_over: (rule as any).free_over,
+        }
+      : undefined
+  return {
+    isShippable: Boolean(val.isShippable),
+    reason: val.reason,
+    matchedRule,
+  }
 })
 
 // 可配送国家列表
@@ -368,7 +451,7 @@ const zipHint = computed(() => {
 
 // 联系客服
 const openContactSupport = () => {
-  window.open('/contact', '_blank')
+  window.open('/company/contact', '_blank')
 }
 
 // 货运代理服务
