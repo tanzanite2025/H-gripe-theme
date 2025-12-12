@@ -215,7 +215,7 @@
           <div
             v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
-            class="sidebar-panel relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto"
+            class="sidebar-panel chat-modal-shell relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto"
           >
             <!-- 背景装饰 -->
             <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
@@ -338,7 +338,7 @@
           <div
             v-else
             key="chat"
-            class="sidebar-panel relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] transition-colors duration-300 pointer-events-auto"
+            class="sidebar-panel chat-modal-shell relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] transition-colors duration-300 pointer-events-auto"
           >
             <!-- 背景装饰 -->
             <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none"></div>
@@ -1307,7 +1307,7 @@
         @click.self="handleHistoryDrawerClose"
       >
         <div
-          class="pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]
+          class="pointer-events-auto chat-history-shell w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]
                  rounded-2xl border-2 border-[#6b73ff]/40
                  bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
                  backdrop-blur-md shadow-[0_0_30px_rgba(107,115,255,0.6)]
@@ -2818,6 +2818,62 @@ onMounted(async () => {
 .overflow-y-auto::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb.social-btn {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+}
+
+.chat-modal-shell {
+  height: 90vh;
+  max-height: 90vh;
+}
+
+.chat-history-shell {
+  height: 90vh;
+  max-height: 80vh;
+}
+
+@supports (height: 100dvh) {
+  .chat-modal-shell {
+    height: 90dvh;
+    max-height: 90dvh;
+  }
+
+  .chat-history-shell {
+    height: 90dvh;
+    max-height: 80dvh;
+  }
+}
+
+@media (min-width: 768px) {
+  .chat-modal-shell {
+    height: min(85vh, 720px);
+    max-height: 85vh;
+  }
+
+  .chat-history-shell {
+    height: min(700px, 85vh);
+    max-height: 85vh;
+  }
+
+  @supports (height: 100dvh) {
+    .chat-modal-shell {
+      height: min(85dvh, 720px);
+      max-height: 85dvh;
+    }
+
+    .chat-history-shell {
+      height: min(700px, 85dvh);
+      max-height: 85dvh;
+    }
+  }
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {

@@ -3,20 +3,31 @@
     <!-- SEO Title: Visually hidden but present for search engines and screen readers -->
     <h1 class="sr-only">Picture warehouse</h1>
 
-    <!-- 两栏照片墙：左侧用户照片，右侧品牌/官方照片（使用 mock 数据） -->
-    <section
-      class="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start"
-    >
-      <!-- 左栏：用户照片 -->
+    <!-- Tabs -->
+    <div class="company-tabs" role="tablist">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        type="button"
+        class="company-tabs__item"
+        :class="{ 'company-tabs__item--active': activeTab === tab.id }"
+        @click="activeTab = tab.id"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- Riders Tab -->
+    <section v-show="activeTab === 'riders'" class="mt-4 space-y-3">
       <div>
-        <h3 class="mb-1 text-sm font-semibold text-white">Riders photos</h3>
+        <h2 class="mb-1 text-sm font-semibold text-white">Riders photos</h2>
         <p class="mb-3 text-xs text-slate-400">
           Real builds from riders around the world.
         </p>
 
         <div class="min-h-[60px]">
           <!-- Riders 加载状态 -->
-          <div v-if="userLoading" class="grid gap-3 sm:grid-cols-2">
+          <div v-if="userLoading" class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             <div
               v-for="n in 3"
               :key="n"
@@ -38,7 +49,7 @@
 
             <!-- Riders 数据（真实或占位） -->
             <div v-if="userPhotos.length" class="space-y-2">
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 <button
                   v-for="(photo, index) in visibleUserPhotos"
                   :key="photo.id"
@@ -73,17 +84,19 @@
           </template>
         </div>
       </div>
+    </section>
 
-      <!-- 右栏：品牌/官方照片 -->
+    <!-- Brand Tab -->
+    <section v-show="activeTab === 'brand'" class="mt-4 space-y-3">
       <div>
-        <h3 class="mb-1 text-sm font-semibold text-white">Tanzanite photos</h3>
+        <h2 class="mb-1 text-sm font-semibold text-white">Tanzanite photos</h2>
         <p class="mb-3 text-xs text-slate-400">
           Official product and detail shots curated by the Tanzanite team.
         </p>
 
         <div class="min-h-[60px]">
           <!-- 加载状态 -->
-          <div v-if="brandLoading" class="grid gap-3 sm:grid-cols-2">
+          <div v-if="brandLoading" class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             <div
               v-for="n in 3"
               :key="n"
@@ -105,7 +118,7 @@
 
             <!-- 数据（真实或占位） -->
             <div v-if="brandPhotos.length" class="space-y-2">
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 <button
                   v-for="(photo, index) in visibleBrandPhotos"
                   :key="photo.id"
@@ -517,6 +530,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { definePageMeta, useHead } from '#imports'
 
 definePageMeta({
   layout: 'products',
@@ -803,6 +817,12 @@ const activeKind = ref<PhotoKind | null>(null)
 const activeIndex = ref<number | null>(null)
 const currentGalleryIndex = ref(0)
 
+const tabs: Array<{ id: 'riders' | 'brand'; label: string }> = [
+  { id: 'riders', label: 'Riders photos' },
+  { id: 'brand', label: 'Tanzanite photos' },
+]
+const activeTab = ref<'riders' | 'brand'>('riders')
+
 const isLightboxOpen = computed(() => activeKind.value !== null && activeIndex.value !== null)
 
 const activeList = computed<PicturePhoto[] | null>(() => {
@@ -1059,5 +1079,73 @@ const copyShareLink = async () => {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
   color: rgba(148, 163, 184, 0.9);
+}
+
+/* Tabs 样式（对齐 ourstory） */
+.company-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 4px 16px;
+  margin: 0 -16px 1rem;
+  max-width: calc(100% + 32px);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.company-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.company-tabs__item {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 9999px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(31, 41, 55, 0.9);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 3px 9px -6px rgba(0, 0, 0, 0.9),
+    0 0 9px rgba(0, 0, 0, 0.85);
+}
+
+.company-tabs__item:active {
+  transform: scale(0.96);
+}
+
+.company-tabs__item:hover {
+  background: rgba(51, 65, 85, 0.95);
+  color: #ffffff;
+}
+
+.company-tabs__item--active {
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #000000;
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+}
+
+@media (min-width: 768px) {
+  .company-tabs {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0 0 1rem;
+    padding: 4px 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .company-tabs {
+    justify-content: flex-start;
+  }
 }
 </style>

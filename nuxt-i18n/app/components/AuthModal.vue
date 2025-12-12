@@ -21,7 +21,7 @@
         <!-- 弹窗卡片：对齐 Checkout 弹窗的暗色玻璃风格 -->
         <div
           :class="[
-            'auth-modal__panel relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-t-3xl md:rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden',
+            'auth-modal__panel auth-modal-shell relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-t-3xl md:rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden',
             props.embedded ? 'rounded-2xl' : ''
           ]"
         >
@@ -310,6 +310,31 @@ const handleCompletionCta = async () => {
 </script>
 
 <style scoped>
+.auth-modal-shell {
+  height: 90vh;
+  max-height: 80vh;
+}
+
+@supports (height: 100dvh) {
+  .auth-modal-shell {
+    height: 90dvh;
+    max-height: 80dvh;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-modal-shell {
+    height: 700px;
+    max-height: 85vh;
+  }
+
+  @supports (height: 100dvh) {
+    .auth-modal-shell {
+      height: min(700px, 85dvh);
+    }
+  }
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;

@@ -35,7 +35,20 @@
             @click="handleSelect(option.id)"
           >
             <div class="flex flex-col gap-1">
-              <span class="text-sm font-semibold">{{ option.title }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold">{{ option.title }}</span>
+                <div v-if="optionIcons[option.id]?.length" class="flex items-center gap-1">
+                  <img
+                    v-for="icon in optionIcons[option.id]"
+                    :key="icon"
+                    :src="icon"
+                    :alt="`${option.title} icon`"
+                    class="h-4 w-6 object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </div>
               <span class="text-[11px] text-white/60">{{ option.subtitle }}</span>
             </div>
             <div
@@ -307,11 +320,11 @@
                 {{ isApplyingCoupon ? 'Applying…' : 'Apply' }}
               </button>
             </div>
-            <p v-if="appliedCoupon" class="text-xs text-emerald-300 flex items-center gap-1">
+            <p v-if="appliedCouponDisplay" class="text-xs text-emerald-300 flex items-center gap-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
-              Coupon applied: {{ appliedCoupon.code ?? appliedCoupon.label ?? appliedCoupon }}
+              Coupon applied: {{ appliedCouponDisplay }}
             </p>
           </section>
 
@@ -433,7 +446,7 @@
             </div>
             <div class="flex justify-between text-white/60">
               <span>Gift card discount</span>
-              <span>- {{ formatPrice(orderSummary?.totals?.giftCardDiscount ?? 0) }}</span>
+              <span>- {{ formatPrice(giftCardDiscount) }}</span>
             </div>
             <div class="flex justify-between text-lg font-bold pt-3 border-t border-white/20">
               <span>Total</span>
@@ -511,10 +524,11 @@ interface OrderSummaryTotals {
   subtotal: number
   shipping: number | null
   shippingLabel?: string
-  shippingState?: 'select' | 'unavailable' | 'ok'
+  shippingState?: 'available' | 'unavailable' | 'checking' | 'select'
   tax: number
   pointsDiscount?: number
   couponDiscount?: number
+  giftCardDiscount?: number
   total: number
 }
 
@@ -617,12 +631,41 @@ const paymentOptions: PaymentOption[] = [
   },
 ]
 
+const optionIcons: Record<string, string[]> = {
+  card: [
+    '/checkoutstepper/step1/credit-debit-cards/visa.svg',
+    '/checkoutstepper/step1/credit-debit-cards/mastercard.svg',
+    '/checkoutstepper/step1/credit-debit-cards/amex.svg',
+    '/checkoutstepper/step1/credit-debit-cards/applepay.svg',
+    '/checkoutstepper/step1/credit-debit-cards/diners.svg',
+    '/checkoutstepper/step1/credit-debit-cards/discover.svg',
+    '/checkoutstepper/step1/credit-debit-cards/jcb.svg',
+  ],
+  alipay: [
+    '/checkoutstepper/step1/alipay-wechat/alipay.svg',
+    '/checkoutstepper/step1/alipay-wechat/wechatpay.svg',
+    '/checkoutstepper/step1/alipay-wechat/unionpay.svg',
+  ],
+  bank: ['/checkoutstepper/step1/bank-transfer/bank-transfer.svg'],
+  paypal: ['/checkoutstepper/step1/paypal/paypal.svg'],
+  stripe: ['/checkoutstepper/step1/stripe/stripe.svg'],
+  worldfirst: [],
+}
+
 const couponInput = computed({
   get: () => props.couponInput ?? '',
   set: value => emit('coupon-input', value),
 })
 const isApplyingCoupon = computed(() => props.isApplyingCoupon ?? false)
 const appliedCoupon = computed(() => props.appliedCoupon ?? null)
+const appliedCouponDisplay = computed(() => {
+  const coupon = appliedCoupon.value
+  if (coupon && typeof coupon === 'object') {
+    const obj = coupon as { code?: string; label?: string }
+    return obj.code ?? obj.label ?? ''
+  }
+  return typeof coupon === 'string' ? coupon : ''
+})
 const pointsAvailable = computed(() => props.pointsAvailable ?? 0)
 const isUsingPoints = computed(() => props.isUsingPoints ?? false)
 const pointsToUse = computed(() => props.pointsToUse ?? 0)
@@ -644,6 +687,11 @@ const ctaDescription = computed(() => props.ctaDescription ?? '')
 const mobilePaymentTitle = computed(() => props.mobilePaymentTitle ?? 'Continue to checkout')
 const mobilePaymentDescription = computed(() => props.mobilePaymentDescription ?? '')
 const isSubmitting = computed(() => props.isSubmitting ?? false)
+const giftCardDiscount = computed(() => {
+  const totals = orderSummary.value?.totals as unknown as { giftCardDiscount?: number } | undefined
+  const val = totals?.giftCardDiscount
+  return typeof val === 'number' ? val : 0
+})
 
 const isShippingComplete = computed(() => {
   if (!showShippingForm.value) return true
