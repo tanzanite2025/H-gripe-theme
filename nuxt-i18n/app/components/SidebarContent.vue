@@ -215,9 +215,7 @@ const guidesNavLinks = [
   background: radial-gradient(circle at top left, rgba(31,41,55,0.9), rgba(15,23,42,0.98));
   border-radius: 24px;
   border: none;
-  box-shadow:
-    0 6px 18px -10px rgba(0,0,0,0.9),
-    0 0 16px rgba(15,23,42,0.85);
+  box-shadow: 0 14px 32px -14px rgba(0,0,0,0.9);
 }
 .dock-item {
   flex: 1;
@@ -236,9 +234,7 @@ const guidesNavLinks = [
 }
 .dock-item:hover {
   background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(15,23,42,0.8));
-  box-shadow:
-    0 3px 9px -6px rgba(0,0,0,0.9),
-    0 0 9px rgba(15,23,42,0.8);
+  box-shadow: 0 16px 28px -12px rgba(0,0,0,0.9);
 }
 .dock-item.active {
   background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
@@ -283,9 +279,7 @@ const guidesNavLinks = [
   position: relative;
   overflow: hidden;
   text-decoration: none;
-  box-shadow:
-    0 4px 14px -10px rgba(0,0,0,0.9),
-    0 0 12px rgba(15,23,42,0.85);
+  box-shadow: 0 16px 36px -14px rgba(0,0,0,0.95);
 }
 .hybrid-card::after {
   content: '';
@@ -297,25 +291,21 @@ const guidesNavLinks = [
   background: var(--card-color);
   opacity: 0.85;
   transition: all 0.3s ease;
-  box-shadow: 0 0 6px var(--card-color), 0 0 12px var(--card-color-dim);
+  box-shadow: none;
 }
 .hybrid-card:hover {
   background: linear-gradient(90deg, rgba(31,41,55,0.98), rgba(15,23,42,0.99));
   transform: translateY(-2px);
-  box-shadow:
-    0 5px 16px -10px rgba(0,0,0,0.95),
-    0 0 12px rgba(15,23,42,0.8);
+  box-shadow: 0 20px 42px -14px rgba(0,0,0,0.95);
 }
 .hybrid-card:active {
   transform: translateY(2px) scale(0.99);
-  box-shadow:
-    0 3px 10px -8px rgba(0,0,0,0.9),
-    0 0 10px rgba(15,23,42,0.8);
+  box-shadow: 0 12px 28px -12px rgba(0,0,0,0.9);
 }
 .hybrid-card:hover::after {
   opacity: 1;
   width: 6px;
-  box-shadow: 0 0 12px var(--card-color), 0 0 25px var(--card-color);
+  box-shadow: none;
 }
 
 /* 卡片颜色变体 */
@@ -360,7 +350,7 @@ const guidesNavLinks = [
 .hybrid-card:hover .hybrid-icon {
   background: var(--card-color);
   color: #000;
-  box-shadow: 0 0 15px var(--card-color);
+  box-shadow: 0 14px 24px -12px rgba(0,0,0,0.88);
   transform: scale(1.1) rotate(-5deg);
 }
 
@@ -412,16 +402,12 @@ const guidesNavLinks = [
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow:
-    0 3px 9px -6px rgba(0,0,0,0.9),
-    0 0 10px rgba(15,23,42,0.9);
+  box-shadow: 0 12px 26px -12px rgba(0,0,0,0.9);
 }
 .hybrid-btn:hover {
   background: linear-gradient(135deg, var(--btn-bg), rgba(15,23,42,0.96));
   color: var(--btn-color);
-  box-shadow:
-    0 4px 12px -8px rgba(0,0,0,0.95),
-    0 0 12px rgba(15,23,42,0.85);
+  box-shadow: 0 14px 30px -12px rgba(0,0,0,0.95);
   transform: translateY(-1px);
 }
 

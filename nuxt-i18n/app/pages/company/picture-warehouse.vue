@@ -1111,9 +1111,7 @@ const copyShareLink = async () => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   backdrop-filter: blur(4px);
-  box-shadow:
-    0 3px 9px -6px rgba(0, 0, 0, 0.9),
-    0 0 9px rgba(0, 0, 0, 0.85);
+  box-shadow: 6px 8px 18px -12px rgba(0, 0, 0, 0.85);
 }
 
 .company-tabs__item:active {
@@ -1126,11 +1124,11 @@ const copyShareLink = async () => {
 }
 
 .company-tabs__item--active {
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-  color: #000000;
+  background: #ffffff;
+  color: #0f172a;
   border: none;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+  box-shadow: 8px 10px 22px -10px rgba(0, 0, 0, 0.9);
 }
 
 @media (min-width: 768px) {
