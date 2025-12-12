@@ -496,6 +496,29 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
+  // Policies 页面：Home / Policies (/ + 子页)
+  const policiesHub = localePath('/policies')
+  if (currentPath === policiesHub) {
+    items.push({ label: 'Policies' })
+    return items
+  }
+
+  if (currentPath.startsWith(policiesHub + '/')) {
+    items.push({ label: 'Policies', to: policiesHub })
+
+    const segments = currentPath.split('/').filter(Boolean)
+    const last = segments[segments.length - 1] || ''
+    const policiesLabels: Record<string, string> = {
+      privacy: 'Privacy Policy',
+      cookie: 'Cookie Policy',
+      'refund-return': 'Refund & Return',
+      terms: 'Terms of Service',
+    }
+
+    items.push({ label: policiesLabels[last] || last })
+    return items
+  }
+
   // Products layout 子页面：Home / Products / {具体页面}
   const productMatch = matchNavItemForPath(productsNavItems)
   if (productMatch) {
