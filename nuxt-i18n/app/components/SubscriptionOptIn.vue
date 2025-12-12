@@ -8,14 +8,14 @@
         type="email"
         v-model="email"
         :placeholder="placeholder"
-        class="flex-1 h-9 px-4 rounded-full bg-[#0b1020]/60 border border-white/10 text-white placeholder:text-slate-500 text-sm focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-all"
+        class="flex-1 h-9 px-4 rounded-full bg-[#0b1020]/60 border-none text-white placeholder:text-slate-500 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.6)] focus:shadow-[0_0_0_2px_rgba(0,0,0,0.9)] focus:outline-none transition-all"
         :disabled="loading"
         required
         autocomplete="email"
       />
       <button
         type="submit"
-        class="h-9 px-5 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[#0b1020] font-semibold text-sm shadow-lg shadow-[#40ffaa]/10 hover:shadow-[#40ffaa]/30 active:scale-[0.98] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
+        class="h-9 px-5 rounded-full bg-white text-[#0b1020] font-semibold text-sm shadow-[0_4px_14px_rgba(0,0,0,0.45)] hover:shadow-[0_5px_16px_rgba(0,0,0,0.5)] active:scale-[0.98] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
         :disabled="loading"
       >
         <span v-if="loading" class="flex items-center gap-1.5">

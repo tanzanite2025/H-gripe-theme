@@ -72,7 +72,7 @@
         <article class="support-card">
           <h4 class="support-card__title">
             <span class="support-card__icon">
-              <img src="/icons/payment/credit-card.svg?v=4" alt="Credit &amp; debit cards" class="support-card__icon-image" />
+              <img src="/icons/payment/default.svg" alt="Credit & debit cards" class="support-card__icon-image" />
             </span>
             <span>Credit &amp; debit cards</span>
           </h4>
@@ -372,13 +372,13 @@ const openQuickFromPayment = () => {
 .support-card__icon {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.9);
+  justify-content: flex-start;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
   border: none;
-  font-size: 0.8rem;
+  padding: 0;
   margin-right: 0.4rem;
 }
 

@@ -17,15 +17,14 @@
           
           <!-- Payment Icons -->
           <div class="footer-subscription__payment">
-            <img src="/icons/payment/paypal.svg?v=4" alt="PayPal" loading="lazy" />
-            <img src="/icons/payment/visa.svg?v=4" alt="Visa" loading="lazy" />
-            <img src="/icons/payment/mastercard.svg?v=4" alt="Mastercard" loading="lazy" />
-            <img src="/icons/payment/amex.svg?v=4" alt="American Express" loading="lazy" />
-            <img src="/icons/payment/discover.svg?v=4" alt="Discover" loading="lazy" />
-            <img src="/icons/payment/jcb.svg?v=4" alt="JCB" loading="lazy" />
-            <img src="/icons/payment/diners.svg?v=4" alt="Diners Club" loading="lazy" />
-            <img src="/icons/payment/alipay.svg?v=4" alt="Alipay" loading="lazy" />
-            <img src="/icons/payment/stripe.svg?v=4" alt="Stripe" loading="lazy" />
+            <img
+              v-for="icon in paymentIcons"
+              :key="icon.src"
+              :src="icon.src"
+              :alt="icon.alt"
+              loading="lazy"
+              decoding="async"
+            />
           </div>
         </div>
 
@@ -129,14 +128,35 @@ const footerSocialItems: FooterSocialItem[] = [
     size: 24,
   },
 ]
+
+interface PaymentIcon {
+  src: string
+  alt: string
+}
+
+const paymentIcons: PaymentIcon[] = [
+  { src: '/icons/payment/paypal.svg', alt: 'PayPal' },
+  { src: '/icons/payment/visa.svg', alt: 'Visa' },
+  { src: '/icons/payment/mastercard.svg', alt: 'Mastercard' },
+  { src: '/icons/payment/amex.svg', alt: 'American Express' },
+  { src: '/icons/payment/discover.svg', alt: 'Discover' },
+  { src: '/icons/payment/jcb.svg', alt: 'JCB' },
+  { src: '/icons/payment/diners.svg', alt: 'Diners Club' },
+  { src: '/icons/payment/alipay.svg', alt: 'Alipay' },
+  { src: '/icons/payment/unionpay.svg', alt: 'UnionPay' },
+  { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay' },
+  { src: '/icons/payment/applepay.svg', alt: 'Apple Pay' },
+  { src: '/icons/payment/stripe.svg', alt: 'Stripe' },
+  { src: '/icons/payment/default.svg', alt: 'Card Payment' },
+]
 </script>
 
 <style scoped>
 .app-footer {
   /* 增大底部 padding，预留空间给底部浮动 Dock (Desktop: 8rem, Mobile: 6rem) */
   padding: 1.5rem 1.5rem 8rem;
-  background: rgba(0, 0, 0, 0.85);
-  color: #f9fafb;
+  background: linear-gradient(140deg, #0c0f17 0%, #141925 45%, #1b2230 100%);
+  color: #f5f6fa;
 }
 
 .footer-content {
@@ -183,14 +203,15 @@ const footerSocialItems: FooterSocialItem[] = [
 }
 
 .footer-subscription__payment img {
-  height: 32px;
-  width: auto;
+  width: 44px;
+  height: 26px;
   display: block;
+  object-fit: contain;
 }
 
 .footer-bottom__info {
   font-size: 0.875rem;
-  color: rgba(249, 250, 251, 0.7);
+  color: rgba(245, 246, 250, 0.78);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -211,7 +232,7 @@ const footerSocialItems: FooterSocialItem[] = [
 }
 
 .footer-info__link {
-  color: rgba(249, 250, 251, 0.6);
+  color: rgba(245, 246, 250, 0.65);
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -222,7 +243,7 @@ const footerSocialItems: FooterSocialItem[] = [
 }
 
 .footer-info__sep {
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(245, 246, 250, 0.35);
 }
 
 .footer-site {
@@ -304,7 +325,7 @@ const footerSocialItems: FooterSocialItem[] = [
     display: flex;
     margin-top: 0;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .footer-bottom__info {
