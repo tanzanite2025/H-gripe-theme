@@ -295,39 +295,39 @@
 
 			</div>
 		</div>
-	</div>
 
-	<!-- LeverAndPoint 弹窗 -->
-	<teleport to="body">
-		<transition
-			enter-active-class="transition-opacity duration-300 ease-out"
-			leave-active-class="transition-opacity duration-200 ease-in"
-			enter-from-class="opacity-0"
-			leave-to-class="opacity-0"
-		>
-			<div
-				v-if="shareOpen"
-				class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none"
+		<!-- LeverAndPoint 弹窗 -->
+		<teleport to="body">
+			<transition
+				enter-active-class="transition-opacity duration-300 ease-out"
+				leave-active-class="transition-opacity duration-200 ease-in"
+				enter-from-class="opacity-0"
+				leave-to-class="opacity-0"
 			>
-				<!-- 不透明背景遮罩 -->
 				<div
-					class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
-					@click="shareOpen = false"
-				></div>
-				<!-- 弹窗内容：自下而上的 slide-up 动画，与其它弹窗保持一致 -->
-				<Transition name="slide-up" appear>
+					v-if="shareOpen"
+					class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none"
+				>
+					<!-- 不透明背景遮罩 -->
 					<div
-						class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto"
-						aria-modal="true"
-						role="dialog"
-						aria-label="Membership"
-					>
-						<LeverAndPoint @close="shareOpen = false" />
-					</div>
-				</Transition>
-			</div>
-		</transition>
-	</teleport>
+						class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
+						@click="shareOpen = false"
+					></div>
+					<!-- 弹窗内容：自下而上的 slide-up 动画，与其它弹窗保持一致 -->
+					<Transition name="slide-up" appear>
+						<div
+							class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto leverandpoint-modal-shell"
+							aria-modal="true"
+							role="dialog"
+							aria-label="Membership"
+						>
+							<LeverAndPoint @close="shareOpen = false" />
+						</div>
+					</Transition>
+				</div>
+			</transition>
+		</teleport>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -773,6 +773,27 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 .slide-up-leave-from {
 	transform: translateY(0%);
 	opacity: 1;
+}
+
+@media (max-width: 767px) {
+	.leverandpoint-modal-shell {
+		height: min(95vh, calc(100vh - 16px));
+		max-height: min(95vh, calc(100vh - 16px));
+	}
+
+	@supports (height: 100svh) {
+		.leverandpoint-modal-shell {
+			height: min(95svh, calc(100svh - 16px));
+			max-height: min(95svh, calc(100svh - 16px));
+		}
+	}
+
+	@supports (height: 100dvh) {
+		.leverandpoint-modal-shell {
+			height: min(95dvh, calc(100dvh - 16px));
+			max-height: min(95dvh, calc(100dvh - 16px));
+		}
+	}
 }
 
 /* tablet-820: 820x1180 等宽度段，限制 SiteHeader 高度为 130px */

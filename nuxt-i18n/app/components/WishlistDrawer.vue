@@ -15,7 +15,7 @@
           class="absolute inset-0 bg-black/80 backdrop-blur-sm"
         ></div>
         <div
-          class="sidebar-panel relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh]
+          class="sidebar-panel wishlist-drawer-shell relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh]
                  rounded-2xl border-2 border-[#6b73ff]/40 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)]
                  flex flex-col overflow-hidden"
         >
@@ -199,5 +199,26 @@ const handleRemove = async (id: number) => {
 .whatsapp-product-drawer-leave-from {
   transform: translateY(0%);
   opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .wishlist-drawer-shell {
+    height: min(95vh, calc(100vh - 16px));
+    max-height: min(95vh, calc(100vh - 16px));
+  }
+
+  @supports (height: 100svh) {
+    .wishlist-drawer-shell {
+      height: min(95svh, calc(100svh - 16px));
+      max-height: min(95svh, calc(100svh - 16px));
+    }
+  }
+
+  @supports (height: 100dvh) {
+    .wishlist-drawer-shell {
+      height: min(95dvh, calc(100dvh - 16px));
+      max-height: min(95dvh, calc(100dvh - 16px));
+    }
+  }
 }
 </style>

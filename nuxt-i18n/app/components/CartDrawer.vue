@@ -23,7 +23,7 @@
         <!-- 弹窗内容 -->
         <Transition name="slide-up" appear>
           <div
-            class="sidebar-panel relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
+            class="sidebar-panel cart-drawer-shell relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
             aria-modal="true"
             role="dialog"
             aria-label="Shopping Cart"
@@ -329,5 +329,26 @@ const onQuantityInput = (id: number, event: Event) => {
 .slide-up-leave-from {
 	transform: translateY(0%);
 	opacity: 1;
+}
+
+@media (max-width: 767px) {
+	.cart-drawer-shell {
+		height: min(95vh, calc(100vh - 16px));
+		max-height: min(95vh, calc(100vh - 16px));
+	}
+
+	@supports (height: 100svh) {
+		.cart-drawer-shell {
+			height: min(95svh, calc(100svh - 16px));
+			max-height: min(95svh, calc(100svh - 16px));
+		}
+	}
+
+	@supports (height: 100dvh) {
+		.cart-drawer-shell {
+			height: min(95dvh, calc(100dvh - 16px));
+			max-height: min(95dvh, calc(100dvh - 16px));
+		}
+	}
 }
 </style>

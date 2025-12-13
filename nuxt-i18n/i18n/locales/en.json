@@ -50,6 +50,15 @@
     "about": "About",
     "contact": "Contact"
   },
+  "contactLocation": {
+    "title": "Our Location",
+    "getDirections": "Get directions",
+    "openGoogle": "Open Google Maps",
+    "openApple": "Open Apple Maps",
+    "loadMap": "Load interactive map",
+    "previewAlt": "Map preview",
+    "iframeTitle": "Google map"
+  },
   "menu": {
     "shop": {
       "label": "Shop",
@@ -145,6 +154,13 @@
       "membershipPoints": "Membership and Points",
       "pictureWarehouse": "Picture warehouse",
       "contact": "Contact Us"
+    }
+  },
+  "member": {
+    "tabs": {
+      "myInfo": "My info",
+      "levers": "Levers",
+      "exchange": "Exchange"
     }
   },
   "support": {

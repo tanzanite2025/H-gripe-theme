@@ -215,7 +215,7 @@
           <div
             v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
-            class="sidebar-panel chat-modal-shell relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto"
+            class="sidebar-panel chat-modal-shell relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[95vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto"
           >
             <!-- 背景装饰 -->
             <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
@@ -233,20 +233,25 @@
             <!-- 可滚动内容区域 -->
             <div class="flex-1 overflow-y-auto p-4 md:p-8 relative z-10">
               <div class="w-full">
-                <!-- Logo -->
-                <div class="mb-2 md:mb-4">
-                  <img src="/images/chat-logo.webp" alt="Tanzanite" class="w-12 h-12 rounded-xl object-cover" />
-                </div>
+                <div class="mb-3 md:mb-5">
+                  <!-- Logo -->
+                  <div class="flex items-center gap-3 mb-2">
+                    <img
+                      src="/images/chat-logo.webp"
+                      alt="Tanzanite"
+                      class="w-12 h-12 rounded-xl object-cover shrink-0"
+                    />
 
-              <!-- 欢迎语 -->
-              <div class="mb-3 md:mb-5">
-                <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">
-                  Hi there! <span class="inline-block animate-wave">👋</span>
-                </h1>
-                <p class="text-sm md:text-base text-white/70 leading-relaxed">
-                  Chat with our team, track your orders, or find answers in our FAQ.
-                </p>
-              </div>
+                    <!-- 欢迎语 -->
+                    <h1 class="text-2xl md:text-3xl font-bold text-white">
+                      Hi there! <span class="inline-block animate-wave">👋</span>
+                    </h1>
+                  </div>
+
+                  <p class="text-sm md:text-base text-white/70 leading-relaxed">
+                    Chat with our team, track your orders, or find answers in our FAQ.
+                  </p>
+                </div>
 
               <!-- 客服状态 & 在线团队 -->
               <div class="space-y-4 mb-6">
@@ -258,35 +263,11 @@
                 </div>
 
                 <!-- 客服头像列表：更柔和的方形卡片 + 网格布局 -->
-                <div class="grid grid-cols-4 gap-2 md:gap-3">
-                  <button
-                    v-for="agent in agents"
-                    :key="agent.id"
-                    type="button"
-                    class="flex flex-col items-center group cursor-pointer"
-                    @click="selectAgentFromWelcome(agent)"
-                  >
-                    <div class="relative mb-2">
-                      <div
-                        class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xs font-semibold text-white/80 overflow-hidden shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)] group-hover:bg-white/30 group-hover:text-white transition-all"
-                        :class="selectedAgent?.id === agent.id
-                          ? 'bg-white/30 text-white shadow-[0_0_6px_rgba(15,23,42,1),0_0_14px_rgba(45,212,191,1),0_0_20px_rgba(255,255,255,0.9)] ring-2 ring-emerald-400/80 ring-offset-2 ring-offset-slate-950/90 scale-105'
-                          : ''"
-                      >
-                        <template v-if="agent.avatar">
-                          <img :src="agent.avatar" :alt="agent.name" class="w-full h-full rounded-full object-cover" />
-                        </template>
-                        <template v-else>
-                          {{ getInitials(agent.name) }}
-                        </template>
-                      </div>
-                      <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-[3px] border-slate-950/90"></div>
-                    </div>
-                    <span class="text-xs font-medium text-white/70 group-hover:text-white transition-colors truncate max-w-[60px]">
-                      {{ agent.name }}
-                    </span>
-                  </button>
-                </div>
+                <ChatWelcomeAgentSelector
+                  :agents="welcomeAgents"
+                  :selected-agent="selectedAgent"
+                  @select="selectAgentFromWelcome"
+                />
 
                 <p class="text-[10px] text-white/40 leading-relaxed text-center px-2">
                   {{ onlineAgentsCount }} agent{{ onlineAgentsCount > 1 ? 's' : '' }} online · Our team typically replies in a few minutes.
@@ -338,7 +319,7 @@
           <div
             v-else
             key="chat"
-            class="sidebar-panel chat-modal-shell relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[90vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] transition-colors duration-300 pointer-events-auto"
+            class="sidebar-panel chat-modal-shell relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[95vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] transition-colors duration-300 pointer-events-auto"
           >
             <!-- 背景装饰 -->
             <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none"></div>
@@ -1344,6 +1325,7 @@ import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearc
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
 import ChatStartButton from '~/components/ChatStartButton.vue'
+import ChatWelcomeAgentSelector from '~/components/ChatWelcomeAgentSelector.vue'
 import WarrantyCheckPanel from '~/components/WarrantyCheckPanel.vue'
 import AuthModal from '~/components/AuthModal.vue'
 
@@ -1471,10 +1453,23 @@ const agents = ref<any[]>([])
 const selectedAgent = ref<any>(null)
 const isLoadingAgents = ref(false)
 
+const welcomeAgents = computed(() => agents.value.slice(0, 3))
+
 // 在线客服数量
 const onlineAgentsCount = computed(() => agents.value.length)
 
 const isDesktopSearchFocused = ref(false)
+
+watch([showWelcomeScreen, welcomeAgents], () => {
+  if (!showWelcomeScreen.value) return
+  if (!welcomeAgents.value.length) return
+
+  const ids = welcomeAgents.value.map(agent => String(agent?.id ?? ''))
+  const currentId = selectedAgent.value?.id != null ? String(selectedAgent.value.id) : ''
+  if (!currentId || !ids.includes(currentId)) {
+    selectedAgent.value = welcomeAgents.value[1] || welcomeAgents.value[0]
+  }
+}, { immediate: true })
 
 const matchingAgents = computed<any[]>(() => {
   const query = desktopSearchQuery.value.trim().toLowerCase()
@@ -2831,8 +2826,8 @@ onMounted(async () => {
 }
 
 .chat-modal-shell {
-  height: 90vh;
-  max-height: 90vh;
+  height: min(95vh, calc(100vh - 16px));
+  max-height: min(95vh, calc(100vh - 16px));
 }
 
 .chat-history-shell {
@@ -2842,8 +2837,8 @@ onMounted(async () => {
 
 @supports (height: 100dvh) {
   .chat-modal-shell {
-    height: 90dvh;
-    max-height: 90dvh;
+    height: min(95dvh, calc(100dvh - 16px));
+    max-height: min(95dvh, calc(100dvh - 16px));
   }
 
   .chat-history-shell {

@@ -15,12 +15,17 @@
     <div class="mt-2 lg:mt-0">
       <HomeFaqPreview :max-items-per-category="4" />
     </div>
+
+    <section class="max-w-5xl mx-auto px-4 pb-10 lg:pb-16">
+      <ContactLocationMap variant="compact" title-tag="h2" />
+    </section>
   </main>
 </template>
 
 <script setup>
 import TWCarousel from '~/components/TWCarousel.vue'
 import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
+import ContactLocationMap from '~/components/ContactLocationMap.vue'
 const { t } = useI18n()
 
 // SEO Meta Tags
