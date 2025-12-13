@@ -47,6 +47,7 @@ const policiesNavItems = [
 <style scoped>
 .layout--products {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: radial-gradient(circle at top, #020617 0, #020617 24%, #000000 100%);
