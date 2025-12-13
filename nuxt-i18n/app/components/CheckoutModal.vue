@@ -14,14 +14,12 @@
         <transition name="scale">
           <div
             v-if="isCheckoutOpen"
-            class="relative flex flex-col w-full max-w-[1400px] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] checkout-modal-shell h-[92vh] md:h-[780px] max-h-[95vh]"
+            class="relative flex flex-col w-full max-w-[1400px] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] checkout-modal-shell h-[95vh] md:h-[780px] max-h-[95vh]"
           >
             <!-- 头部：再次压缩高度，为下方内容留出更多空间 -->
-            <div class="relative flex items-center justify-center px-2 md:px-6 py-2.5 md:py-3 border-b border-transparent bg-[rgba(4,7,20,0.92)] backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:border-transparent md:bg-transparent md:backdrop-blur-0 md:shadow-none">
+            <div class="relative flex items-center justify-center px-2 md:px-6 py-3.5 border-b border-transparent bg-[rgba(4,7,20,0.92)] backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:border-transparent md:bg-transparent md:backdrop-blur-0 md:shadow-none">
               <div class="flex items-center gap-2 md:gap-3">
-                <h2 class="text-lg font-bold text-white">
-                  Checkout
-                </h2>
+                <h2 class="sr-only">Checkout</h2>
                 <div class="flex items-center gap-2 overflow-x-auto sm:overflow-visible">
                   <button
                     type="button"
@@ -586,8 +584,8 @@ const handleSubmit = async () => {
 
 <style scoped>
 .checkout-modal-shell {
-  height: 92vh;
-  max-height: 95vh;
+  height: min(95vh, calc(100vh - 16px));
+  max-height: min(95vh, calc(100vh - 16px));
 }
 
 .checkout-modal-ssl-banner {
@@ -602,8 +600,8 @@ const handleSubmit = async () => {
 
 @supports (height: 100dvh) {
   .checkout-modal-shell {
-    height: 92dvh;
-    max-height: 95dvh;
+    height: min(95dvh, calc(100dvh - 16px));
+    max-height: min(95dvh, calc(100dvh - 16px));
   }
 }
 

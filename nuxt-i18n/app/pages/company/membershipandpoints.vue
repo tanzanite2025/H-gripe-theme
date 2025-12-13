@@ -1,9 +1,21 @@
 <template>
   <div class="membership-page">
-    <h2 class="sr-only">{{ $t('member.pageTitle', 'Membership and Points') }}</h2>
-    <p class="company-page__intro">
-      {{ $t('member.pageIntro', 'Manage your membership, view benefits, and redeem points.') }}
-    </p>
+    <h1 class="sr-only">{{ $t('member.pageTitle', 'Membership and Points') }}</h1>
+
+    <div class="company-tabs" role="tablist">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        type="button"
+        class="company-tabs__item"
+        :class="{ 'company-tabs__item--active': activeTab === tab.id }"
+        @click="setActiveTab(tab.id)"
+      >
+        {{ $t(tab.labelKey, tab.fallback) }}
+      </button>
+    </div>
+
+    <div v-show="activeTab === 'myinfo'">
 
     <!-- 保修查询入口卡片 -->
     <div class="warranty-card">
@@ -22,7 +34,7 @@
     <section class="membership-section">
       <div class="membership-grid">
         <!-- 左侧：会员信息 -->
-        <div class="membership-info">
+        <div class="membership-info membership-info--full">
           <!-- 头像和登录状态 -->
           <div class="member-header">
             <div class="member-avatar">
@@ -131,105 +143,6 @@
             </div>
           </div>
         </div>
-
-        <!-- 右侧：等级说明和积分规则 -->
-        <div class="membership-details">
-          <!-- 等级说明 -->
-          <div class="tier-table">
-            <h4>{{ $t('member.levels.title', 'Membership Levels') }}</h4>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{{ $t('member.levels.header.level', 'Level') }}</th>
-                    <th>{{ $t('member.levels.header.pointsRequired', 'Points Required') }}</th>
-                    <th>{{ $t('member.levels.header.productDiscount', 'Product Discount') }}</th>
-                    <th>{{ $t('member.levels.header.pointsDiscount', 'Points Discount') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="tier in tierConfigs" :key="tier.key">
-                    <td>{{ tier.name }}</td>
-                    <td>{{ tier.min }}{{ tier.max !== null ? '–' + tier.max : '+' }}</td>
-                    <td>{{ tier.discount }}%</td>
-                    <td>{{ tier.pointsDiscount }}%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- 积分规则 -->
-          <div class="points-rules">
-            <h4>{{ $t('member.points.title', 'How to Earn Points?') }}</h4>
-            <div class="rule-list">
-              <div class="rule-item">
-                <div class="rule-title">{{ $t('member.points.invite', 'Invite new users') }}</div>
-                <div class="rule-desc">{{ $t('member.points.inviteDesc', '50 Points (invitee gets 30 Points)') }}</div>
-              </div>
-              <div class="rule-item invite-action">
-                <button class="btn-gradient" @click="handleCopyInviteLink" :disabled="inviteLoading">
-                  {{ inviteLoading ? '...' : $t('member.copyLink', 'Copy Invite Link') }}
-                </button>
-                <span class="invite-msg" v-if="inviteMsg">{{ inviteMsg }}</span>
-              </div>
-              <div class="rule-item">
-                <div class="rule-title">{{ $t('member.points.consume', 'Consumption') }}</div>
-                <div class="rule-desc">{{ $t('member.points.consumeDesc', '1 Dollar = 1 Point') }}</div>
-              </div>
-              <div class="rule-item">
-                <div class="rule-title">{{ $t('member.points.daily', 'Daily login') }}</div>
-                <div class="rule-desc">{{ $t('member.points.dailyDesc', '1 Point (30 days validity)') }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 礼品卡兑换 -->
-          <div class="giftcard-section">
-            <h4>{{ $t('giftcards.title', 'Redeem Points for Gift Cards') }}</h4>
-            
-            <div v-if="giftcardsLoading" class="loading-state">
-              {{ $t('common.loading', 'Loading...') }}
-            </div>
-            
-            <div v-else-if="giftcardsError" class="error-state">
-              {{ giftcardsError }}
-            </div>
-            
-            <div v-else-if="availableGiftcards.length > 0" class="giftcard-grid">
-              <div v-for="card in availableGiftcards" :key="card.id" class="giftcard-item">
-                <div class="giftcard-header">
-                  <span class="giftcard-icon">💳</span>
-                  <div class="giftcard-info">
-                    <div class="giftcard-code">{{ card.card_code }}</div>
-                    <div class="giftcard-label">{{ $t('giftcards.balance', 'Balance') }}</div>
-                  </div>
-                  <div class="giftcard-value">${{ card.balance }}</div>
-                </div>
-                <div class="giftcard-footer">
-                  <span class="giftcard-points">
-                    {{ $t('giftcards.pointsRequired', 'Points required') }}: {{ card.points_spent || 0 }}
-                  </span>
-                  <button 
-                    class="btn-redeem"
-                    @click="handleRedeemGiftcard(card)"
-                    :disabled="(isLogged && points < (card.points_spent || 0)) || redeemingCardId === card.id"
-                  >
-                    {{ redeemingCardId === card.id ? $t('giftcards.redeeming', 'Redeeming...') : $t('giftcards.redeem', 'Redeem') }}
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div v-else class="empty-state">
-              {{ $t('giftcards.noCards', 'No gift cards available') }}
-            </div>
-
-            <div v-if="redeemMessage" class="redeem-message" :class="{ success: redeemSuccess, error: !redeemSuccess }">
-              {{ redeemMessage }}
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -250,11 +163,116 @@
       @mode-change="authMode = $event"
       @success="handleAuthSuccess"
     />
+	</div>
+
+	<section v-show="activeTab === 'levers'" class="company-section membership-section">
+		<!-- 右侧：等级说明和积分规则 -->
+		<div class="membership-details">
+			<!-- 等级说明 -->
+			<div class="tier-table">
+				<h4>{{ $t('member.levels.title', 'Membership Levels') }}</h4>
+				<div class="table-wrapper">
+					<table>
+						<thead>
+							<tr>
+								<th>{{ $t('member.levels.header.level', 'Level') }}</th>
+								<th>{{ $t('member.levels.header.pointsRequired', 'Points Required') }}</th>
+								<th>{{ $t('member.levels.header.productDiscount', 'Product Discount') }}</th>
+								<th>{{ $t('member.levels.header.pointsDiscount', 'Points Discount') }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="tier in tierConfigs" :key="tier.key">
+								<td>{{ tier.name }}</td>
+								<td>{{ tier.min }}{{ tier.max !== null ? '–' + tier.max : '+' }}</td>
+								<td>{{ tier.discount }}%</td>
+								<td>{{ tier.pointsDiscount }}%</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- 积分规则 -->
+			<div class="points-rules">
+				<h4>{{ $t('member.points.title', 'How to Earn Points?') }}</h4>
+				<div class="rule-list">
+					<div class="rule-item">
+						<div class="rule-title">{{ $t('member.points.invite', 'Invite new users') }}</div>
+						<div class="rule-desc">{{ $t('member.points.inviteDesc', '50 Points (invitee gets 30 Points)') }}</div>
+					</div>
+					<div class="rule-item invite-action">
+						<button class="btn-gradient" @click="handleCopyInviteLink" :disabled="inviteLoading">
+							{{ inviteLoading ? '...' : $t('member.copyLink', 'Copy Invite Link') }}
+						</button>
+						<span class="invite-msg" v-if="inviteMsg">{{ inviteMsg }}</span>
+					</div>
+					<div class="rule-item">
+						<div class="rule-title">{{ $t('member.points.consume', 'Consumption') }}</div>
+						<div class="rule-desc">{{ $t('member.points.consumeDesc', '1 Dollar = 1 Point') }}</div>
+					</div>
+					<div class="rule-item">
+						<div class="rule-title">{{ $t('member.points.daily', 'Daily login') }}</div>
+						<div class="rule-desc">{{ $t('member.points.dailyDesc', '1 Point (30 days validity)') }}</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<section v-show="activeTab === 'exchange'" class="company-section membership-section">
+		<div class="membership-details">
+			<!-- 礼品卡兑换 -->
+			<div class="giftcard-section">
+				<h4>{{ $t('giftcards.title', 'Redeem Points for Gift Cards') }}</h4>
+				
+				<div v-if="giftcardsLoading" class="loading-state">
+					{{ $t('common.loading', 'Loading...') }}
+				</div>
+				
+				<div v-else-if="giftcardsError" class="error-state">
+					{{ giftcardsError }}
+				</div>
+				
+				<div v-else-if="availableGiftcards.length > 0" class="giftcard-grid">
+					<div v-for="card in availableGiftcards" :key="card.id" class="giftcard-item">
+						<div class="giftcard-header">
+							<span class="giftcard-icon">💳</span>
+							<div class="giftcard-info">
+								<div class="giftcard-code">{{ card.card_code }}</div>
+								<div class="giftcard-label">{{ $t('giftcards.balance', 'Balance') }}</div>
+							</div>
+							<div class="giftcard-value">${{ card.balance }}</div>
+						</div>
+						<div class="giftcard-footer">
+							<span class="giftcard-points">
+								{{ $t('giftcards.pointsRequired', 'Points required') }}: {{ card.points_spent || 0 }}
+							</span>
+							<button
+								class="btn-redeem"
+								@click="handleRedeemGiftcard(card)"
+								:disabled="(isLogged && pointsNumber < (card.points_spent || 0)) || redeemingCardId === card.id"
+							>
+								{{ redeemingCardId === card.id ? $t('giftcards.redeeming', 'Redeeming...') : $t('giftcards.redeem', 'Redeem') }}
+							</button>
+						</div>
+					</div>
+				</div>
+				
+				<div v-else class="empty-state">
+					{{ $t('giftcards.noCards', 'No gift cards available') }}
+				</div>
+				
+				<div v-if="redeemMessage" class="redeem-message" :class="{ success: redeemSuccess, error: !redeemSuccess }">
+					{{ redeemMessage }}
+				</div>
+			</div>
+		</div>
+	</section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useLocalePath } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import PageFaq from '~/components/PageFaq.vue'
@@ -270,6 +288,20 @@ useHead({
 })
 
 const localePath = useLocalePath()
+
+type MembershipTabId = 'myinfo' | 'levers' | 'exchange'
+
+const tabs: { id: MembershipTabId; labelKey: string; fallback: string }[] = [
+  { id: 'myinfo', labelKey: 'member.tabs.myInfo', fallback: 'My info' },
+  { id: 'levers', labelKey: 'member.tabs.levers', fallback: 'Levers' },
+  { id: 'exchange', labelKey: 'member.tabs.exchange', fallback: 'Exchange' },
+]
+
+const activeTab = ref<MembershipTabId>('myinfo')
+
+const setActiveTab = (id: MembershipTabId) => {
+  activeTab.value = id
+}
 
 // 使用会员 composable
 const {
@@ -297,6 +329,8 @@ const {
   initMembership,
   refreshData
 } = useMembership()
+
+const pointsNumber = computed(() => Number(points.value ?? 0))
 
 // 认证弹窗
 const showAuthModal = ref(false)
@@ -334,6 +368,71 @@ onMounted(() => {
   margin: 0 0 1rem;
   font-size: 0.95rem;
   color: rgba(148, 163, 184, 0.9);
+}
+
+.company-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 4px 16px;
+  margin: 0 -16px 1rem;
+  max-width: calc(100% + 32px);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.company-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.company-tabs__item {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 9999px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(31, 41, 55, 0.9);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  box-shadow: 6px 8px 18px -12px rgba(0, 0, 0, 0.85);
+}
+
+.company-tabs__item:active {
+  transform: scale(0.96);
+}
+
+.company-tabs__item:hover {
+  background: rgba(51, 65, 85, 0.95);
+  color: #ffffff;
+}
+
+.company-tabs__item--active {
+  background: #ffffff;
+  color: #0f172a;
+  border: none;
+  font-weight: 600;
+  box-shadow: 8px 10px 22px -10px rgba(0, 0, 0, 0.9);
+}
+
+@media (min-width: 768px) {
+  .company-tabs {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0 0 1rem;
+    padding: 4px 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .company-tabs {
+    justify-content: flex-start;
+  }
 }
 
 /* 保修查询卡片 */
@@ -401,14 +500,6 @@ onMounted(() => {
   transform: translateX(2px);
 }
 
-.warranty-card__btn .arrow {
-  transition: transform 0.2s;
-}
-
-.warranty-card__btn:hover .arrow {
-  transform: translateX(3px);
-}
-
 @media (max-width: 600px) {
   .warranty-card {
     flex-direction: column;
@@ -444,6 +535,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.membership-info--full {
+	grid-column: 1 / -1;
 }
 
 .member-header {

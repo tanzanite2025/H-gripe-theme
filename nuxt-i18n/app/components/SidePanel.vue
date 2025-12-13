@@ -16,11 +16,11 @@
 
     <!-- 左侧面板 (Sidebar) -->
     <aside 
-      class="fixed left-0 top-0 h-screen pointer-events-none z-[9999]"
+      class="fixed left-0 top-0 sidepanel-shell pointer-events-none z-[9999]"
       aria-label="Sidebar"
     >
       <section
-        class="sidebar-panel relative w-[85vw] md:w-[45vw] h-full max-md:h-[90vh] flex border border-white/20 rounded-2xl shadow-[0_18px_60px_-24px_rgba(0,0,0,1)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
+        class="sidebar-panel relative w-[85vw] md:w-[45vw] h-full flex border border-white/20 rounded-none md:rounded-2xl shadow-[0_18px_60px_-24px_rgba(0,0,0,1)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
         :class="{
           'translate-x-0': leftOpen,
           '-translate-x-full': !leftOpen
@@ -45,7 +45,7 @@
         </button>
         
         <!-- 左侧内容 -->
-        <div class="w-full h-full box-border m-0 relative overflow-y-auto pt-10 px-2 pb-2 md:pt-12 md:px-4 md:pb-4 rounded-2xl">
+        <div class="w-full h-full box-border m-0 relative overflow-y-auto pt-10 px-2 pb-0 md:pt-12 md:px-4 md:pb-4 rounded-none md:rounded-2xl">
           <slot name="left" />
         </div>
       </section>
@@ -125,6 +125,22 @@ onBeforeUnmount(() => {
 .sidebar-panel {
   background: radial-gradient(circle at 50% 0%, #0f172a 0%, #000000 100%);
 }
+
+ .sidepanel-shell {
+   height: 100vh;
+ }
+
+ @supports (height: 100svh) {
+   .sidepanel-shell {
+     height: 100svh;
+   }
+ }
+
+ @supports (height: 100dvh) {
+   .sidepanel-shell {
+     height: 100dvh;
+   }
+ }
 
 body.hide-sidebar-handles .sidebar-handle {
   opacity: 0;

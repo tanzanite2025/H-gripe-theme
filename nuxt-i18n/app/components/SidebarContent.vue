@@ -1,5 +1,5 @@
 <template>
-  <div class="sidebar-content w-full h-full flex flex-col p-3 md:p-4">
+  <div class="sidebar-content w-full h-full flex flex-col p-3 md:p-4 max-md:pb-2">
     <!-- 搜索组件（移动端隐藏，桌面端显示） -->
     <div class="shrink-0 mb-3 hidden md:block">
       <ProductSearchPanel />
@@ -40,7 +40,7 @@
     </div>
 
     <!-- 可滚动内容区 -->
-    <div class="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+    <div class="flex-1 overflow-y-auto flex flex-col gap-2 md:gap-4 pr-1 scrollbar-hide">
       <!-- Quick Access -->
       <div>
         <div class="space-y-2">
@@ -57,7 +57,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="hybrid-title">Payment Methods</div>
-              <div class="hybrid-desc">Wallet, Cards & Crypto</div>
+              <div class="hybrid-desc max-md:truncate">Wallet, Cards & Crypto</div>
             </div>
             <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -76,7 +76,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="hybrid-title">Shipping Info</div>
-              <div class="hybrid-desc">Track & Trace</div>
+              <div class="hybrid-desc max-md:truncate">Track & Trace</div>
             </div>
             <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -95,7 +95,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="hybrid-title">Warranty Policy</div>
-              <div class="hybrid-desc">Protection Plan</div>
+              <div class="hybrid-desc max-md:truncate">Protection Plan</div>
             </div>
             <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -114,7 +114,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="hybrid-title">After Sales</div>
-              <div class="hybrid-desc">24/7 Support</div>
+              <div class="hybrid-desc max-md:truncate">24/7 Support</div>
             </div>
             <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -133,7 +133,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="hybrid-title">Policies</div>
-              <div class="hybrid-desc">cookie, refund-return, terms and more</div>
+              <div class="hybrid-desc max-md:truncate">cookie, refund-return, terms and more</div>
             </div>
             <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -152,7 +152,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="hybrid-title">About us</div>
-              <div class="hybrid-desc">Factory Facilities Detection OEM/ODM</div>
+              <div class="hybrid-desc max-md:truncate">Factory Facilities Detection OEM/ODM</div>
             </div>
             <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -456,6 +456,33 @@ const guidesNavLinks = [
   --btn-color: #818cf8;
   --btn-bg: rgba(129,140,248,0.1);
   --btn-dim: rgba(129,140,248,0.2);
+}
+
+@media (max-width: 767px) {
+  .hybrid-card {
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .hybrid-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .hybrid-title {
+    font-size: 13px;
+    margin-bottom: 1px;
+  }
+
+  .hybrid-desc {
+    font-size: 10px;
+  }
+
+  .hybrid-arrow {
+    margin-right: 6px;
+  }
 }
 </style>
 
