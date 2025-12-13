@@ -39,4 +39,11 @@ useHead({
 .policies-content {
   margin-top: 0.5rem;
 }
+
+@media (max-width: 640px) {
+  .company-page {
+    max-width: 100%;
+    padding: 0 1px;
+  }
+}
 </style>

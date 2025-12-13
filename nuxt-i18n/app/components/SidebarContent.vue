@@ -43,10 +43,6 @@
     <div class="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
       <!-- Quick Access -->
       <div>
-        <div class="section-label">
-          <span class="dot bg-indigo-500"></span>
-          Quick Access
-        </div>
         <div class="space-y-2">
           <!-- Payment -->
           <NuxtLink 
@@ -124,15 +120,49 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </NuxtLink>
+
+          <NuxtLink
+            :to="localePath('/policies')"
+            class="hybrid-card card-teal"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m-7 4h8a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">Policies</div>
+              <div class="hybrid-desc">cookie, refund-return, terms and more</div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
+
+          <NuxtLink
+            :to="localePath('/company/about')"
+            class="hybrid-card card-sky"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 21h8m-4-4v4m-7-7h14M5 10h14M5 6h14M6 10v11m12-11v11" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">About us</div>
+              <div class="hybrid-desc">Factory Facilities Detection OEM/ODM</div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
         </div>
       </div>
 
       <!-- Tools & Resources -->
       <div>
-        <div class="section-label">
-          <span class="dot bg-teal-400"></span>
-          Tools & Resources
-        </div>
         <div class="flex flex-wrap gap-2">
           <!-- Support -->
           <NuxtLink
@@ -212,7 +242,7 @@ const guidesNavLinks = [
 
 /* Dock 导航 */
 .dock-nav {
-  background: radial-gradient(circle at top left, rgba(31,41,55,0.9), rgba(15,23,42,0.98));
+  background: radial-gradient(circle at top left, rgba(45,55,72,0.9), rgba(25,32,52,0.94));
   border-radius: 24px;
   border: none;
   box-shadow: 0 14px 32px -14px rgba(0,0,0,0.9);
@@ -272,7 +302,7 @@ const guidesNavLinks = [
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: radial-gradient(circle at top left, rgba(31,41,55,0.95), rgba(15,23,42,0.98));
+  background: radial-gradient(circle at top left, rgba(48,62,86,0.96), rgba(28,38,60,0.96));
   border-radius: 16px;
   border: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -386,7 +416,7 @@ const guidesNavLinks = [
 
 /* 工具按钮 */
 .hybrid-btn {
-  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96)),
+  background: linear-gradient(135deg, rgba(28,38,58,0.95), rgba(24,33,52,0.93)),
     radial-gradient(circle at top left, var(--btn-bg), transparent 65%);
   border: none;
   height: 32px;

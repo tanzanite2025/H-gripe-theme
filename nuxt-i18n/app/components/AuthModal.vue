@@ -444,7 +444,9 @@ const handleCompletionCta = async () => {
 @media (max-width: 420px) {
   .auth-modal__panel {
     height: 94vh;
+    height: 94dvh;
     max-height: 94vh;
+    max-height: 94dvh;
     border-radius: 24px;
   }
 

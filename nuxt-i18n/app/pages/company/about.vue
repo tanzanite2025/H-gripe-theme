@@ -621,9 +621,8 @@ useHead({
   aspect-ratio: 1 / 1;
   border-radius: 0.9rem;
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.35);
   background: #020617;
-  box-shadow: 0 0 25px rgba(15, 23, 42, 0.9);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 1);
 }
 
 .factory-flow-card__image {

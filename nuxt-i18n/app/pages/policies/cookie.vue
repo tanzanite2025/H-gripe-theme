@@ -18,7 +18,7 @@
         <section>
           <h2 class="text-lg font-semibold text-white mb-3">Types of Cookies We Use</h2>
           <div class="space-y-4">
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+            <div class="rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
               <h3 class="text-base font-medium text-cyan-400 mb-2">Essential Cookies</h3>
               <p class="text-sm leading-relaxed mb-2">
                 These cookies are necessary for the website to function properly. They enable basic features like page navigation, secure areas access, and shopping cart functionality.
@@ -26,7 +26,7 @@
               <p class="text-xs text-slate-500">Cannot be disabled</p>
             </div>
 
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+            <div class="rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
               <h3 class="text-base font-medium text-cyan-400 mb-2">Performance Cookies</h3>
               <p class="text-sm leading-relaxed mb-2">
                 These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously. This helps us improve our website's performance.
@@ -34,7 +34,7 @@
               <p class="text-xs text-slate-500">Can be disabled</p>
             </div>
 
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+            <div class="rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
               <h3 class="text-base font-medium text-cyan-400 mb-2">Functional Cookies</h3>
               <p class="text-sm leading-relaxed mb-2">
                 These cookies enable enhanced functionality and personalization, such as remembering your language preference or region. They may be set by us or by third-party providers.
@@ -42,7 +42,7 @@
               <p class="text-xs text-slate-500">Can be disabled</p>
             </div>
 
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+            <div class="rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
               <h3 class="text-base font-medium text-cyan-400 mb-2">Advertising Cookies</h3>
               <p class="text-sm leading-relaxed mb-2">
                 These cookies are used to deliver advertisements that are more relevant to you and your interests. They also help limit the number of times you see an advertisement.
@@ -124,5 +124,12 @@ useHead({
 
 .policies-content {
   margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .company-page {
+    max-width: 100%;
+    padding: 0 1px;
+  }
 }
 </style>
