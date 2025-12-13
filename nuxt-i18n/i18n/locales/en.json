@@ -164,6 +164,39 @@
     },
     "viewAll": "View Full"
   },
+  "spokeCalculator": {
+    "tabs": {
+      "calculator": "Calculator",
+      "parameter": "Parameter"
+    },
+    "parameter": {
+      "title": "Parameter definitions",
+      "intro": "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.",
+      "items": {
+        "erd": {
+          "title": "ERD (Effective Rim Diameter)",
+          "desc": "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper."
+        },
+        "flangeDiameter": {
+          "title": "Flange diameter",
+          "desc": "The circle diameter through the spoke hole centers on the hub flange (left and right can be different)."
+        },
+        "centerToFlange": {
+          "title": "Center-to-flange",
+          "desc": "The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry."
+        },
+        "holeCount": {
+          "title": "Spoke hole count",
+          "desc": "Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear."
+        },
+        "crossPattern": {
+          "title": "Cross pattern",
+          "desc": "How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length."
+        }
+      },
+      "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
+    }
+  },
   "support": {
     "nav": {
       "faqs": "All FAQs",

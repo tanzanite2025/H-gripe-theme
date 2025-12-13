@@ -5,7 +5,7 @@
     <section class="flex gap-4">
       <!-- 桌面端左侧分类栏 -->
       <aside class="hidden md:block w-56 flex-shrink-0">
-        <section class="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
+        <section class="rounded-xl bg-white/5 p-4 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
           <CategorySidebar
             :categories="categories"
             :selected="selectedCategory"
@@ -27,7 +27,7 @@
           />
         </div>
 
-        <section class="rounded-xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
+        <section class="rounded-xl bg-white/5 p-6 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
           <div v-if="loading" class="flex items-center justify-center py-12">
             <p class="text-white/70 text-sm">Loading products...</p>
           </div>
@@ -47,7 +47,7 @@
             <div
               v-for="product in products"
               :key="product.id"
-              class="group border border-white/10 rounded-xl bg-black/40 hover:bg-black/60 transition-colors overflow-hidden flex flex-col"
+              class="group rounded-xl bg-black/40 hover:bg-black/60 transition-colors overflow-hidden flex flex-col shadow-[8px_8px_22px_rgba(0,0,0,0.92)]"
             >
               <div class="aspect-square bg-white/5">
                 <img

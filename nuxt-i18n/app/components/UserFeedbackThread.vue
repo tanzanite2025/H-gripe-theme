@@ -62,14 +62,14 @@
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-black shadow-md hover:brightness-110"
+            class="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-[8px_8px_22px_rgba(0,0,0,0.92)] hover:bg-white/90 hover:shadow-[10px_10px_26px_rgba(0,0,0,0.95)] transition-all"
             @click="showAuth = true"
           >
             {{ $t('feedback.loginCta', 'Sign in or create an account') }}
           </button>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-black shadow-md hover:brightness-110"
+            class="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-[8px_8px_22px_rgba(0,0,0,0.92)] hover:bg-white/90 hover:shadow-[10px_10px_26px_rgba(0,0,0,0.95)] transition-all"
             @click="openWhatsApp"
           >
             {{ $t('feedback.liveChatCta', 'To live chat') }}

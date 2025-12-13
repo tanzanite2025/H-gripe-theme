@@ -194,17 +194,15 @@ onMounted(() => {
   border: none;
 }
 .search-btn-c.primary {
-  background: linear-gradient(135deg, rgba(45, 212, 191, 0.7), rgba(59, 130, 246, 0.85));
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   box-shadow:
-    0 4px 14px -8px rgba(59,130,246,0.8),
-    0 0 14px rgba(45,212,191,0.55);
+    8px 8px 22px rgba(0,0,0,0.92);
 }
 .search-btn-c.primary:hover {
   transform: translateY(-1px);
   box-shadow:
-    0 6px 18px -10px rgba(59,130,246,0.9),
-    0 0 18px rgba(45,212,191,0.7);
+    10px 10px 26px rgba(0,0,0,0.95);
 }
 .search-btn-c.secondary {
   background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
