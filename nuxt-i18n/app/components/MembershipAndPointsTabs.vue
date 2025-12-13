@@ -344,7 +344,8 @@ onMounted(() => {
    flex: 1;
    min-height: 0;
    overflow-y: auto;
-   padding-right: 6px;
+   padding-left: 12px;
+   padding-right: 12px;
  }
 
  .membership-tabs--sticky .company-tabs {
@@ -540,6 +541,10 @@ onMounted(() => {
 
  @media (max-width: 900px) {
    .membership-grid {
+     grid-template-columns: 1fr;
+   }
+
+   .membership-tabs--modal .membership-grid {
      grid-template-columns: 1fr;
    }
  }
@@ -916,6 +921,16 @@ onMounted(() => {
  @media (max-width: 900px) {
    .membership-levers .membership-details {
      grid-template-columns: 1fr;
+   }
+
+   .membership-levers .membership-details {
+     justify-items: stretch;
+   }
+
+   .membership-levers .tier-table,
+   .membership-levers .points-rules {
+     width: 100%;
+     box-sizing: border-box;
    }
  }
 
