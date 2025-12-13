@@ -4,7 +4,7 @@
       <!-- 背景装饰，与聊天欢迎页一致 -->
       <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
       <button class="absolute right-2 top-2 z-50 w-7 h-7 inline-flex items-center justify-center border border-[rgba(124,117,255,0.6)] rounded-md bg-[rgba(30,27,75,0.6)] text-[#e8e9ff] pointer-events-auto hover:brightness-110 transition-all" type="button" @click="$emit('close')">×</button>
-      <div class="flex-1 flex p-4 px-5 pointer-events-auto overflow-hidden box-border">
+      <div class="flex-1 flex py-4 px-0 md:p-4 md:px-5 pointer-events-auto overflow-hidden box-border">
         <div class="w-full h-full overflow-hidden pt-6">
           <MembershipAndPointsTabs variant="modal" class="h-full" />
         </div>
@@ -12,32 +12,32 @@
       <div class="flex flex-col items-center justify-center py-3 pb-4 pointer-events-auto gap-3">
         <div class="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm font-semibold pointer-events-auto hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-black text-sm pointer-events-auto hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
             type="button"
             @click="handleMemberCenter"
           >
-            {{ $t('member.viewAll', 'Member Center') }}
+            {{ $t('member.viewAll', 'View Full') }}
           </button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
             @click="handleSelectProducts"
           >
             Products
           </button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
             @click="handleViewCart"
           >
             Cart
           </button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
             @click="handleWishlist"
           >
             Wishlist
           </button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-semibold pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
             type="button"
             @click="handlePrivacy"
           >
@@ -61,7 +61,7 @@
           v-if="showPrivacyModal"
           class="fixed inset-0 z-[12000] flex items-end justify-center p-0 md:p-4 pointer-events-none"
         >
-          <div class="pointer-events-none w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]">
+          <div class="pointer-events-none w-full max-w-[1400px]">
             <PrivacyStatementModal class="pointer-events-auto" @close="closePrivacy" />
           </div>
         </div>
