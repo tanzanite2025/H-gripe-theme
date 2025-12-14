@@ -19,19 +19,9 @@ export const productsNavItems: ProductsNavItem[] = [
     to: '/shop',
   },
   {
-    id: 'about-tools',
-    labelKey: 'products.nav.aboutTools',
-    to: '/guides/tools',
-  },
-  {
     id: 'tire-size-charts',
     labelKey: 'products.nav.tireSizeCharts',
     to: '/guides/sizecharts',
-  },
-  {
-    id: 'wheelsbuild-blog',
-    labelKey: 'products.nav.wheelsbuildBlog',
-    to: '/wheelsbuild',
   },
   {
     id: 'technical-docs',
