@@ -127,7 +127,17 @@
     "productSearch": "Product Search",
     "searchProductPlaceholder": "Enter product name...",
     "searchProducts": "Search Products",
-    "search": "Search"
+    "search": "Search",
+    "wheelsbuildBlog": {
+      "desc": "Wheelbuilding articles & updates"
+    }
+  },
+  "blog": {
+    "nav": {
+      "all": "All",
+      "news": "News",
+      "wheelsbuild": "Wheelbuild"
+    }
   },
   "products": {
     "searchResults": "Search Results",
@@ -311,7 +321,9 @@
     }
   },
   "breadcrumbs": {
-    "home": "Home"
+    "home": "Home",
+    "guides": "Guides",
+    "blog": "Blog"
   },
   "feedback": {
     "defaultSubtitle": "Help us improve this page and the tools you use every day.",

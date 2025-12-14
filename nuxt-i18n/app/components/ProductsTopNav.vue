@@ -6,7 +6,7 @@
         :key="item.id"
         class="products-top-nav__link"
         :class="{ 'products-top-nav__link--active': isActive(item) }"
-        :to="localePath(item.to)"
+        :to="getTo(item)"
       >
         {{ $t(item.labelKey) }}
       </NuxtLink>
@@ -52,41 +52,88 @@ const guidesNavItems: ProductsNavItem[] = [
   },
 ]
 
-const isPathOrChildPath = (path: string, basePath: string) => {
-  return path === basePath || path.startsWith(`${basePath}/`)
-}
+const blogNavItems: ProductsNavItem[] = [
+  {
+    id: 'blog',
+    labelKey: 'blog.nav.all',
+    to: '/blog',
+  },
+  {
+    id: 'blog-news',
+    labelKey: 'blog.nav.news',
+    to: '/blog/news',
+  },
+  {
+    id: 'blog-wheelsbuild',
+    labelKey: 'blog.nav.wheelsbuild',
+    to: '/blog/wheelsbuild',
+  },
+]
+
+type NavContext = 'company' | 'guides' | 'products' | 'blog'
+
+const navContext = computed<NavContext>(() => {
+  const path = route.path || ''
+
+  if (path === '/company' || path.startsWith('/company/')) {
+    return 'company'
+  }
+
+  if (path === '/blog' || path.startsWith('/blog/')) {
+    return 'blog'
+  }
+
+  const navQuery = route.query.nav
+  const forcedProducts =
+    typeof navQuery === 'string' && navQuery.toLowerCase() === 'products'
+
+  if (!forcedProducts && (path === '/guides' || path.startsWith('/guides/'))) {
+    return 'guides'
+  }
+
+  return 'products'
+})
 
 const items = computed<ProductsNavItem[]>(() => {
   if (props.itemsOverride && props.itemsOverride.length) {
     return props.itemsOverride
   }
 
-  const path = route.path || ''
-
-  // 当处于 /company 下的页面时，使用 Company 导航（Our Story / Membership and Points / Picture warehouse）
-  if (path === '/company' || path.startsWith('/company/')) {
+  if (navContext.value === 'company') {
     return companyNavItems
   }
 
-  if (path === '/guides' || path.startsWith('/guides/')) {
+  if (navContext.value === 'guides') {
     return guidesNavItems
   }
 
-  if (
-    isPathOrChildPath(path, '/products') ||
-    isPathOrChildPath(path, '/shop') ||
-    isPathOrChildPath(path, '/spoke-calculator') ||
-    isPathOrChildPath(path, '/wheelsbuild')
-  ) {
-    return productsNavItems
+  if (navContext.value === 'blog') {
+    return blogNavItems
   }
 
   return productsNavItems
 })
 
+const getTo = (item: ProductsNavItem) => {
+  const target = localePath(item.to)
+
+  if (
+    navContext.value === 'products' &&
+    (item.to.startsWith('/guides/') || item.to.startsWith('/support/'))
+  ) {
+    return `${target}?nav=products`
+  }
+
+  return target
+}
+
 const isActive = (item: ProductsNavItem) => {
   const targetPath = localePath(item.to)
   const currentPath = route.path
+
+  if (item.to === '/blog') {
+    return currentPath === targetPath
+  }
 
   return (
     currentPath === targetPath ||

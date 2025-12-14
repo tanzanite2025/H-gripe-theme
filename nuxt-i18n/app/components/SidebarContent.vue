@@ -158,6 +158,33 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </NuxtLink>
+
+          <NuxtLink
+            :to="localePath('/blog')"
+            class="hybrid-card card-indigo"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v8a2 2 0 01-2 2z"
+                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 4v6h6" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">{{ $t('products.nav.wheelsbuildBlog') }}</div>
+              <div class="hybrid-desc max-md:truncate">
+                {{ $t('sidebar.wheelsbuildBlog.desc') }}
+              </div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
         </div>
       </div>
 

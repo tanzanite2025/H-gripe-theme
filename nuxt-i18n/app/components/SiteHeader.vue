@@ -410,6 +410,33 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
+  // Blog hub: Home / Wheelsbuild blog
+  const blogHub = localePath('/blog')
+  if (currentPath === blogHub) {
+    items.push({ label: t('breadcrumbs.blog', 'Blog') as string })
+    return items
+  }
+
+  // Blog 子页面：Home / Wheelsbuild blog / {具体页面}
+  if (currentPath.startsWith(blogHub + '/')) {
+    items.push({
+      label: t('breadcrumbs.blog', 'Blog') as string,
+      to: blogHub,
+    })
+
+    if (currentPath === localePath('/blog/news')) {
+      items.push({ label: t('blog.nav.news', 'News') as string })
+    } else if (currentPath === localePath('/blog/wheelsbuild')) {
+      items.push({ label: t('blog.nav.wheelsbuild', 'Wheelbuild') as string })
+    } else {
+      const segments = currentPath.split('/').filter(Boolean)
+      const last = segments[segments.length - 1] || ''
+      items.push({ label: last })
+    }
+
+    return items
+  }
+
   // Products hub: Home / Products
   const productsHub = localePath('/products')
   if (currentPath === productsHub) {
@@ -465,13 +492,6 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const shopPath = localePath('/shop')
   if (currentPath === shopPath) {
     items.push({ label: t('products.nav.shop', 'Shop') as string })
-    return items
-  }
-
-  // Wheelsbuild blog 作为独立页面：直接显示 Home / Wheelsbuild blog
-  const wheelsbuildPath = localePath('/wheelsbuild')
-  if (currentPath === wheelsbuildPath) {
-    items.push({ label: t('products.nav.wheelsbuildBlog', 'Wheelsbuild blog') as string })
     return items
   }
 

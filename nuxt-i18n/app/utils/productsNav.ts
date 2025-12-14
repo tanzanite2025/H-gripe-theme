@@ -38,4 +38,9 @@ export const productsNavItems: ProductsNavItem[] = [
     labelKey: 'support.nav.spokeCalculator',
     to: '/spoke-calculator',
   },
+  {
+    id: 'test-report',
+    labelKey: 'support.nav.testReport',
+    to: '/support/test-report',
+  },
 ]
