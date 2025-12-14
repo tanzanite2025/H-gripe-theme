@@ -29,6 +29,33 @@ const props = defineProps<{
 const route = useRoute()
 const localePath = useLocalePath()
 
+const guidesNavItems: ProductsNavItem[] = [
+  {
+    id: 'about-tools',
+    labelKey: 'products.nav.aboutTools',
+    to: '/guides/tools',
+  },
+  {
+    id: 'tire-size-charts',
+    labelKey: 'products.nav.tireSizeCharts',
+    to: '/guides/sizecharts',
+  },
+  {
+    id: 'technical-docs',
+    labelKey: 'products.nav.technicalDocs',
+    to: '/guides/technical',
+  },
+  {
+    id: 'wheelset-buyers',
+    labelKey: 'products.nav.wheelsetBuyersGuide',
+    to: '/guides/wheelset-buyers',
+  },
+]
+
+const isPathOrChildPath = (path: string, basePath: string) => {
+  return path === basePath || path.startsWith(`${basePath}/`)
+}
+
 const items = computed<ProductsNavItem[]>(() => {
   if (props.itemsOverride && props.itemsOverride.length) {
     return props.itemsOverride
@@ -41,24 +68,20 @@ const items = computed<ProductsNavItem[]>(() => {
     return companyNavItems
   }
 
-  let base: ProductsNavItem[]
-
-  // 仅在 /guides 总览页精简为 Guides 子分类入口；/guides/* 仍使用完整 Products 导航
-  if (path === '/guides') {
-    base = productsNavItems.filter((item) => item.to.startsWith('/guides/'))
-  } else {
-    base = productsNavItems
+  if (path === '/guides' || path.startsWith('/guides/')) {
+    return guidesNavItems
   }
 
-  // 只要当前导航中包含 Shop，就隐藏 About Tools 与 Wheelsbuild blog 两个入口，
-  // 保持其它 Products 布局页面导航一致。
-  if (base.some((item) => item.id === 'shop')) {
-    return base.filter(
-      (item) => item.id !== 'about-tools' && item.id !== 'wheelsbuild-blog'
-    )
+  if (
+    isPathOrChildPath(path, '/products') ||
+    isPathOrChildPath(path, '/shop') ||
+    isPathOrChildPath(path, '/spoke-calculator') ||
+    isPathOrChildPath(path, '/wheelsbuild')
+  ) {
+    return productsNavItems
   }
 
-  return base
+  return productsNavItems
 })
 
 const isActive = (item: ProductsNavItem) => {
