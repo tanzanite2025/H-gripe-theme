@@ -4,7 +4,8 @@
       <!-- Support hero / banner -->
       <!-- Top horizontal Support navigation -->
       <div class="support-header-spacer" aria-hidden="true"></div>
-      <SupportTopNav />
+      <ProductsTopNav v-if="isProductsNavForced" />
+      <SupportTopNav v-else />
 
       <!-- Support page content -->
       <section class="support-content">
@@ -20,9 +21,17 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
+import ProductsTopNav from '~/components/ProductsTopNav.vue'
 import SupportTopNav from '~/components/SupportTopNav.vue'
+
+const route = useRoute()
+const isProductsNavForced = computed(() => {
+  return typeof route.query.nav === 'string' && route.query.nav === 'products'
+})
 </script>
 
 <style scoped>

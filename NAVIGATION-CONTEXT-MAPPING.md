@@ -38,6 +38,7 @@
 - `company`
 - `support`
 - `guides`
+- `blog`
 - `products`
 
 ### 映射表（草案）
@@ -51,14 +52,14 @@
 | `/products` | `products` | Products 聚合页 |
 | `/shop` | `products` | 虽是根路由，但必须保持 products 菜单 |
 | `/spoke-calculator` | `products` | 虽是根路由，但必须保持 products 菜单 |
-| `/wheelsbuild` | `products` | 虽是根路由，但必须保持 products 菜单 |
+| `/blog` 与 `/blog/*` | `blog` | Blog 区域，必须稳定显示 Blog 菜单，不得显示 Products 菜单 |
 
 ## Products 菜单内容（草案）
 你希望 products 横向菜单主要解决“用户不知道怎么选商品”的问题（选型/指南/工具入口）。
 购买辅助的更重内容（售后/支付/物流等）将放在商品详情页的说明与侧边栏快捷入口中。
 
 ### 已确认结论（2025-12-14）
-- Products 横向菜单：保留选型相关入口（Shop + Tire Size Charts + Technical + Wheelset Guide + Spoke Calculator），不承载 Wheelsbuild blog。
+- Products 横向菜单：保留选型相关入口（Shop + Tire Size Charts + Technical + Wheelset Guide + Spoke Calculator + Test Report），不承载 Wheelsbuild blog。
 - Products 横向菜单：本期不放 Support 售后入口（Warranty/After sales/Shipping/Payment）。
 - Guides 横向菜单：进入 `/guides` 或任意 `/guides/*` 时，必须稳定显示 Guides 菜单，不得切回 Products 菜单。
 
@@ -75,7 +76,8 @@
 - [yes] Technical（`/guides/technical`）（id: `technical-docs`）
 - [yes] Wheelset Guide（`/guides/wheelset-buyers`）（id: `wheelset-buyers`）
 - [yes] Spoke Calculator（`/spoke-calculator`）（id: `spoke-calculator`）
-- [no] Wheelsbuild blog（`/wheelsbuild`）（id: `wheelsbuild-blog`）[这个单独放一边，把它从里面剔除，这个不是太重要，这个到时候会另外的入口去放，先从里面剔除】
+- [yes] Test Report（`/support/test-report`）（id: `test-report`）【从 Products 进入需保持 Products 横向菜单】
+- [no] Wheelsbuild blog（`/blog`）（id: `wheelsbuild-blog`）[这个单独放一边，把它从里面剔除，这个不是太重要，这个到时候会另外的入口去放，先从里面剔除】
 
 ### 候选“购买辅助”的 Support 入口（当前不在 productsNavItems）
 （仅当你希望它们显示在 Products 菜单时才勾选。）
@@ -86,12 +88,9 @@
 
 需要决策：
 - 当用户从 Products 菜单点击 Support 相关链接时：
-  - 当前已决定：Products 横向菜单不展示 Support 入口，因此该决策**本期不适用（N/A）**。
-  - 若未来需要在 Products 横向菜单加入 Support 入口，可再在此处决策：
-    - 我们是否允许进入 Support 上下文（横向菜单切换为 Support 那套）？
-    - 或者我们需要一个“products 上下文包装页”（例如 `/products/warranty`）来保持 products 菜单不变？
-    - [ ] 允许切换到 Support 上下文
-    - [ ] 保持 Products 菜单可见（需要包装页或路由调整）
+  - 当前已决定：Products 横向菜单加入 `Test Report`，但从 Products 进入 `/support/test-report` 时必须保持 Products 横向菜单。
+    - 实现方式：沿用统一 query 标记 `?nav=products`（避免出现多套实现方式）。
+  - 其它 Support 售后入口（Warranty/After sales/Shipping/Payment）本期仍不放进 Products 横向菜单。
 
 ## Guides 菜单内容（草案）
 Guides 菜单需要在所有 `/guides/*` 路由下保持稳定。
@@ -101,6 +100,62 @@ Guides 菜单需要在所有 `/guides/*` 路由下保持稳定。
 - [yes] Tire Size Charts（`/guides/sizecharts`）
 - [yes] Technical（`/guides/technical`）
 - [yes] Wheelset Buyers Guide（`/guides/wheelset-buyers`）
+
+## Blog 菜单内容（草案）
+Blog 菜单需要在所有 `/blog/*` 路由下保持稳定。
+
+请确认 Blog 下应该显示哪些菜单项：
+- [yes] All / Blog home（`/blog`）
+- [yes] News（`/blog/news`）
+- [yes] Wheelsbuild（`/blog/wheelsbuild`）
+
+## 特殊规则：Products -> Guides 页面仍保持 Products 横向菜单
+需求背景：
+- `/guides/*` 默认属于 Guides 上下文，因此直接访问 `/guides/sizecharts` 时应显示 Guides 横向菜单。
+- 但当用户从 Products 横向菜单点击进入这些指南页时（它们被当作“选型/怎么选”的入口），希望仍保持 Products 横向菜单，避免中断。
+
+实现方式（已落地）：
+- 当 `ProductsTopNav` 处于 Products 上下文且菜单项 `to` 以 `/guides/` 开头时，跳转链接会自动拼接 query：`?nav=products`。
+- `ProductsTopNav` 会读取 `route.query.nav`：
+  - 如果 `nav=products`，则即使当前路径是 `/guides/*`，也强制使用 Products 菜单。
+  - 如果没有该 query，则 `/guides/*` 仍按 Guides 上下文显示 Guides 菜单。
+
+示例：
+- 从 Products 菜单点击 Tire Size Charts：
+  - `/guides/sizecharts?nav=products`（保持 Products 横向菜单）
+- 直接访问或从顶部主导航进入 Guides：
+  - `/guides/sizecharts`（显示 Guides 横向菜单）
+
+维护注意事项（以后往 Products 横向菜单新增入口时）：
+- 如果新增入口指向 `/guides/*`，并且你希望它在“从 Products 进入”时保持 Products 横向菜单：
+  - 确保该入口是通过 `ProductsTopNav` 渲染（会自动加 `?nav=products`）。
+- 如果新增入口指向 `/support/*`（例如 Test Report），并且你希望它在“从 Products 进入”时保持 Products 横向菜单：
+  - 同样使用 `?nav=products`（保持机制统一，不引入第二套实现方式）。
+
+## 特殊规则：Products -> Support Test Report 仍保持 Products 横向菜单
+需求背景：
+- `Test Report` 页面在 `/support/test-report`，默认使用 support layout，并展示 Support 横向菜单。
+- 但该入口同时出现在 Products 横向菜单中，且要求“从 Products 进入时横向菜单仍保持 Products”。
+
+实现方式（已落地，沿用同一个 query 机制）：
+- Products 横向菜单里的 `Test Report` 指向 `/support/test-report?nav=products`。
+- 在 support layout 中：
+  - 当 `route.query.nav=products` 时，顶部渲染 `ProductsTopNav`；
+  - 否则仍渲染 `SupportTopNav`（Support 分区内正常浏览不受影响）。
+
+示例：
+- 从 Products 横向菜单点击 Test Report：
+  - `/support/test-report?nav=products`（保持 Products 横向菜单）
+- 从 Support 横向菜单点击 Test Report：
+  - `/support/test-report`（保持 Support 横向菜单）
+
+维护注意事项：
+- 仅当你明确希望“从 Products 进入某个 Support 页面也保持 Products 横向菜单”时，才使用 `?nav=products`。
+- Support 分区内部链接保持不带该 query，以避免 Support 用户路径被 Products 横向菜单覆盖。
+- 如果新增入口本来就应该属于 Guides 分区（希望进入后显示 Guides 横向菜单）：
+  - 不要从 Products 横向菜单里放该入口，或在实现上避免自动拼接 `?nav=products`。
+- 如果未来要扩展类似“从 A 上下文进入 B 页面仍保持 A 菜单”的需求：
+  - 建议沿用 query 标记方式，并在本文档记录对应的 query key/value。
 
 ## 实施计划（在本文件确认之后再执行）
 1. 引入一个小函数（放在 `ProductsTopNav.vue` 内或抽到 `app/utils/…`），将 `route.path` 映射到 `navContext`。
@@ -120,7 +175,7 @@ Guides 菜单需要在所有 `/guides/*` 路由下保持稳定。
 - [ ] `/products` 横向菜单符合 Products 规范
 - [ ] `/shop` 横向菜单符合 Products 规范
 - [ ] `/spoke-calculator` 横向菜单符合 Products 规范
-- [ ] `/wheelsbuild` 横向菜单符合 Products 规范
+- [ ] `/blog` 横向菜单符合 Products 规范
 - [ ] `/guides` 横向菜单符合 Guides 规范
 - [ ] `/guides/tools` 横向菜单符合 Guides 规范
 - [ ] `/guides/sizecharts` 横向菜单符合 Guides 规范
