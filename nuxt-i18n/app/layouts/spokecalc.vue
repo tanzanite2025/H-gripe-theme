@@ -2,9 +2,9 @@
   <div class="layout">
     <main id="main-content" class="layout-main" role="main">
       <!-- Dedicated layout for the spoke calculator page.
-           We intentionally do NOT render TWCarousel / Briefanswer here
+           We intentionally do NOT render the homepage hero content here
            so that the calculator UI can take the full viewport without
-           being pushed down by the global hero carousel. -->
+           being pushed down by the global header content. -->
       <slot />
     </main>
 

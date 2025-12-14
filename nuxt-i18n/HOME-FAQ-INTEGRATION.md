@@ -8,7 +8,7 @@
 
 ## 一、需求背景
 
-在主页 `TwCarousel.vue` 组件下方添加 FAQ 预览区域，让用户快速浏览常见问题。
+在主页主内容区块下方添加 FAQ 预览区域，让用户快速浏览常见问题。
 
 ### 设计要求
 - 控制高度，避免内容过长
@@ -50,7 +50,7 @@
 
 ### 步骤 2：集成到主页 ✅
 - [x] 找到主页文件：`app/pages/index.vue`
-- [x] 在 `TWCarousel` 下方添加 `HomeFaqPreview` 组件
+- [x] 在主页内容区块下方添加 `HomeFaqPreview` 组件
 - [x] 设置 `max-items-per-category="4"`
 
 ### 步骤 3：测试和调整

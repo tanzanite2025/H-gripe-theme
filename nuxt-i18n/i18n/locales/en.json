@@ -50,6 +50,24 @@
     "about": "About",
     "contact": "Contact"
   },
+  "home": {
+    "meta": {
+      "title": "Factory-Direct Carbon Rims & Wheelsets",
+      "description": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability."
+    },
+    "hero": {
+      "title": "Factory-Direct Carbon Rims & Wheelsets",
+      "subtitle": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability.",
+      "cta": {
+        "shop": "Shop",
+        "about": "About",
+        "pictureWarehouse": "Gallery"
+      }
+    },
+    "trust": {
+      "title": "Why Choose Us"
+    }
+  },
   "contactLocation": {
     "title": "Our Location",
     "getDirections": "Get directions",

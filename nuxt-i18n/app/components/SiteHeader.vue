@@ -1,5 +1,5 @@
 <template>
-	<div class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[110] site-header-root">
+	<div ref="headerRootRef" class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[110] site-header-root">
 		<div
 			class="relative w-full rounded-none md:rounded-[30px] bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:py-2"
 		>
@@ -347,6 +347,19 @@ const titleText = computed(() => {
   const fromProp = (props.title ?? '').toString().trim()
   return fromProp.length ? fromProp : siteTitle.value
 })
+
+const headerRootRef = ref<HTMLElement | null>(null)
+let headerResizeObserver: ResizeObserver | null = null
+
+const updateHeaderOffset = () => {
+  if (typeof window === 'undefined') return
+  const el = headerRootRef.value
+  if (!el) return
+
+  const rect = el.getBoundingClientRect()
+  const offset = Math.max(0, Math.ceil(rect.bottom))
+  document.documentElement.style.setProperty('--site-header-offset', `${offset}px`)
+}
 
 // Share button (Membership panel)
 const shareOpen = ref(false)
@@ -702,6 +715,18 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+
+  nextTick(() => {
+    updateHeaderOffset()
+    window.addEventListener('resize', updateHeaderOffset)
+    if ('ResizeObserver' in window) {
+      headerResizeObserver = new ResizeObserver(() => updateHeaderOffset())
+      if (headerRootRef.value) {
+        headerResizeObserver.observe(headerRootRef.value)
+      }
+    }
+  })
+
   const onGlobalPopup = (event: Event) => {
     try {
       const custom = event as CustomEvent<{ id?: string }>
@@ -719,6 +744,15 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateHeaderOffset)
+  }
+
+  if (headerResizeObserver) {
+    headerResizeObserver.disconnect()
+    headerResizeObserver = null
+  }
 })
 
 const flagFilenameFromISO = (entry: LocaleOption | null | undefined) => {
