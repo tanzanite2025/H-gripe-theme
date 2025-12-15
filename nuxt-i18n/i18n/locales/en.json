@@ -65,7 +65,67 @@
       }
     },
     "trust": {
-      "title": "Why Choose Us"
+      "title": "Shop with Confidence"
+    },
+    "whyChooseUs": {
+      "title": "Why Choose Us",
+      "subtitle": "Factory-built carbon rims and hand-built wheelsets with documented processes, consistent quality, and OEM-ready support.",
+      "items": {
+        "0": {
+          "title": "OEM-Ready Manufacturing",
+          "description": "Built for brands and builders who need stable output, clear communication, and repeatable results.",
+          "bullets": {
+            "0": "OEM/ODM support for rims and wheelsets",
+            "1": "Spec-driven production and revision control",
+            "2": "Consistent finishes across batches"
+          }
+        },
+        "1": {
+          "title": "Documented QC Workflow",
+          "description": "Quality is a process. We run checkpoints that help catch issues early and keep consistency high.",
+          "bullets": {
+            "0": "Incoming material checks and in-process inspection",
+            "1": "Final inspection before packing and shipment",
+            "2": "Records and traceability for key steps"
+          }
+        },
+        "2": {
+          "title": "Custom Layup & Finishes",
+          "description": "Choose stiffness targets, ride feel, and brand look—without compromising reliability.",
+          "bullets": {
+            "0": "Layup tuning for road, gravel, and MTB use cases",
+            "1": "Finish options: decal, paint, and surface treatments",
+            "2": "Clear spec confirmation before production"
+          }
+        },
+        "3": {
+          "title": "Tested Standards & Lead Times",
+          "description": "We validate performance and provide lead time ranges upfront so you can plan builds and launches.",
+          "bullets": {
+            "0": "Testing equipment and internal standards",
+            "1": "Clear quoting for sampling and production schedules",
+            "2": "Packaging and shipping practices built for transit safety"
+          }
+        },
+        "4": {
+          "title": "Precision Wheel Building",
+          "description": "Carbon wheelsets built by experienced builders—focused on balance, durability, and a clean final finish.",
+          "bullets": {
+            "0": "Spoke tension balancing and stress-relief steps",
+            "1": "Support for popular hubs and multiple lacing patterns",
+            "2": "Build consistency designed for real riding conditions"
+          }
+        },
+        "5": {
+          "title": "Tools, Standards & Benchmarking",
+          "description": "We use modern equipment and hands-on know-how from top-tier hub and wheelset teardowns.",
+          "bullets": {
+            "0": "Calibrated truing and tension measurement tools",
+            "1": "Build standards informed by premium component teardown experience",
+            "2": "Process discipline that improves repeatability at scale"
+          }
+        }
+      }
     },
     "features": {
       "title": "Performance, Built In-House",
@@ -140,24 +200,36 @@
         }
       }
     },
-    "testimonials": {
-      "title": "Trusted by Builders",
-      "subtitle": "Short feedback snippets—placeholders for now. We'll replace with real reviews later.",
+    "innovationRd": {
+      "title": "Innovation & R&D",
+      "subtitle": "A look at what we’re building next—hub concepts, protected design work, and our next-generation carbon wheel platforms.",
       "items": {
         "0": {
-          "quote": "Consistent quality and fast communication. Easy to work with from first sample to production.",
-          "name": "OEM Partner",
-          "meta": "Carbon wheelset project"
+          "title": "Protected Design Work",
+          "description": "We develop original solutions across multiple programs. Details aren’t public, but our work is IP-aware and documentation-driven.",
+          "bullets": {
+            "0": "Original concepts developed with long-term product roadmaps",
+            "1": "Design iterations tracked with clear revisions and validation notes",
+            "2": "Selective sharing—public copy stays accurate and non-sensitive"
+          }
         },
         "1": {
-          "quote": "Great balance of weight and stiffness. Builds came out straight and repeatable.",
-          "name": "Wheel Builder",
-          "meta": "Workshop feedback"
+          "title": "Silent Near‑Zero Engagement Hub",
+          "description": "A hub direction focused on quiet, near-instant engagement—balanced with low weight and long-term durability.",
+          "bullets": {
+            "0": "Engagement concept tuned for responsiveness without harsh sound",
+            "1": "Balance targets: weight, durability, and serviceability",
+            "2": "Benchmarking informed by teardown work on premium hubs and wheelsets"
+          }
         },
         "2": {
-          "quote": "Clean finishing and reliable QC. We feel confident shipping to customers.",
-          "name": "Brand Team",
-          "meta": "Production batch"
+          "title": "Next‑Gen Carbon Wheel Platforms",
+          "description": "Our 6–12 month focus: pushing lighter rims further, and developing a more stable integrated carbon wheelset platform.",
+          "bullets": {
+            "0": "Lighter rim development with strict stability and consistency goals",
+            "1": "Integrated carbon wheelset direction for improved structural stability",
+            "2": "Prototypes validated through build feedback and in-house test workflows"
+          }
         }
       }
     },

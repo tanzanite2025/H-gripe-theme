@@ -6,18 +6,18 @@
           <h2 class="text-xl font-semibold text-white/90 sm:text-2xl">{{ t('home.factoryStories.title') }}</h2>
           <div class="mt-[6px] h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
           <p class="mt-[3px] mx-auto max-w-2xl text-sm text-white/70 sm:text-base">{{ t('home.factoryStories.subtitle') }}</p>
-        </div>
 
-        <NuxtLink
-          to="/blog"
-          class="hidden items-center text-sm font-semibold text-white/80 transition-colors hover:text-white sm:inline-flex sm:absolute sm:right-0 sm:bottom-0"
-          aria-label="View all factory stories"
-        >
-          {{ t('home.factoryStories.viewAll') }}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="ml-2 h-5 w-5" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6l6 6-6 6" />
-          </svg>
-        </NuxtLink>
+          <NuxtLink
+            to="/blog"
+            class="mt-[6px] inline-flex items-center text-sm font-semibold text-white/80 transition-colors hover:text-white"
+            aria-label="View all factory stories"
+          >
+            {{ t('home.factoryStories.viewAll') }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="ml-2 h-5 w-5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6l6 6-6 6" />
+            </svg>
+          </NuxtLink>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 gap-[9px] sm:grid-cols-2 lg:grid-cols-4">
@@ -49,19 +49,6 @@
               </div>
             </div>
           </div>
-        </NuxtLink>
-      </div>
-
-      <div class="mt-[9px] sm:hidden">
-        <NuxtLink
-          to="/blog"
-          class="inline-flex items-center text-sm font-semibold text-white/80 transition-colors hover:text-white"
-          aria-label="View all factory stories"
-        >
-          {{ t('home.factoryStories.viewAll') }}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="ml-2 h-5 w-5" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6l6 6-6 6" />
-          </svg>
         </NuxtLink>
       </div>
     </div>

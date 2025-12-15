@@ -9,13 +9,15 @@
       <TrustCards layout="row" size="lg" :show-title="false" />
     </section>
 
+    <HomeWhyChooseUs />
+
     <HomeFeatures />
 
     <HomeFactoryStories />
 
     <HomeFeaturedProducts />
 
-    <HomeTestimonials />
+    <HomeInnovationRd />
 
     <!-- FAQ Preview Section -->
     <div class="pt-[21px] pb-0">
@@ -32,10 +34,11 @@
 
 <script setup>
 import HomeHero from '~/components/home/HomeHero.vue'
+import HomeWhyChooseUs from '~/components/home/HomeWhyChooseUs.vue'
 import HomeFeatures from '~/components/home/HomeFeatures.vue'
 import HomeFactoryStories from '~/components/home/HomeFactoryStories.vue'
 import HomeFeaturedProducts from '~/components/home/HomeFeaturedProducts.vue'
-import HomeTestimonials from '~/components/home/HomeTestimonials.vue'
+import HomeInnovationRd from '~/components/home/HomeInnovationRd.vue'
 import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
 import ContactLocationMap from '~/components/ContactLocationMap.vue'
 import HomeFinalCta from '~/components/home/HomeFinalCta.vue'
