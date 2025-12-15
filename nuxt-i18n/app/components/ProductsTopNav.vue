@@ -1,6 +1,6 @@
 <template>
   <nav class="products-top-nav" aria-label="Products navigation">
-    <div class="products-top-nav__scroll">
+    <div ref="scrollContainer" class="products-top-nav__scroll">
       <NuxtLink
         v-for="item in items"
         :key="item.id"
@@ -8,14 +8,14 @@
         :class="{ 'products-top-nav__link--active': isActive(item) }"
         :to="getTo(item)"
       >
-        {{ $t(item.labelKey) }}
+        {{ $t(getLabelKey(item)) }}
       </NuxtLink>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useLocalePath, useRoute } from '#imports'
 import type { ProductsNavItem } from '~/utils/productsNav'
 import { productsNavItems } from '~/utils/productsNav'
@@ -28,6 +28,8 @@ const props = defineProps<{
 
 const route = useRoute()
 const localePath = useLocalePath()
+
+const scrollContainer = ref<HTMLElement | null>(null)
 
 const guidesNavItems: ProductsNavItem[] = [
   {
@@ -114,6 +116,17 @@ const items = computed<ProductsNavItem[]>(() => {
   return productsNavItems
 })
 
+const getLabelKey = (item: ProductsNavItem) => {
+  if (navContext.value !== 'products') return item.labelKey
+
+  if (item.id === 'tire-size-charts') return 'products.navShort.tireSize'
+  if (item.id === 'spoke-calculator') return 'products.navShort.calculator'
+  if (item.id === 'membership-and-points') return 'products.navShort.points'
+  if (item.id === 'picture-warehouse') return 'products.navShort.picture'
+
+  return item.labelKey
+}
+
 const getTo = (item: ProductsNavItem) => {
   const target = localePath(item.to)
 
@@ -140,6 +153,37 @@ const isActive = (item: ProductsNavItem) => {
     (currentPath.startsWith(targetPath) && currentPath[targetPath.length] === '/')
   )
 }
+
+const syncScrollPosition = async () => {
+  if (typeof window === 'undefined') return
+
+  await nextTick()
+
+  const container = scrollContainer.value
+  if (!container) return
+
+  const activeEl = container.querySelector(
+    '.products-top-nav__link--active',
+  ) as HTMLElement | null
+
+  if (activeEl) {
+    activeEl.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    return
+  }
+
+  container.scrollTo({ left: 0 })
+}
+
+onMounted(() => {
+  syncScrollPosition()
+})
+
+watch(
+  () => route.fullPath,
+  () => {
+    syncScrollPosition()
+  },
+)
 </script>
 
 <style scoped>
@@ -157,7 +201,7 @@ const isActive = (item: ProductsNavItem) => {
   padding: 0.75rem 1.25rem;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 1.5rem;
   overflow-x: auto;
   scrollbar-width: thin;

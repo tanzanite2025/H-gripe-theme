@@ -28,7 +28,7 @@
         <span>Shop</span>
       </NuxtLink>
       <NuxtLink 
-        :to="localePath('/company/picture-warehouse')"
+        :to="localePath('/picture-warehouse')"
         class="dock-item"
         @click="closeSidebar"
       >
@@ -258,7 +258,7 @@ const guidesLinks = [
 const guidesNavLinks = [
   { id: 'technical', label: 'Technical', to: '/guides/technical' },
   { id: 'our-story', label: 'Our Story', to: '/company/ourstory' },
-  { id: 'membership', label: 'Membership', to: '/company/membershipandpoints' },
+  { id: 'membership', label: 'Membership', to: '/membershipandpoints' },
 ]
 </script>
 

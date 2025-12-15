@@ -1,14 +1,14 @@
 # Picture warehouse 功能设计草案（草稿）
 
-> 目标：在 /company/picture-warehouse 下实现一个两栏照片墙页面，一栏展示用户上传的照片，一栏展示品牌/官方上传的商品图；支持用户上传但必须经过后台审核，通过后才展示。后台逻辑放在一个新的独立插件中，而不是继续堆在 tanzanite-setting 里。
+> 目标：在 /picture-warehouse 下实现一个两栏照片墙页面，一栏展示用户上传的照片，一栏展示品牌/官方上传的商品图；支持用户上传但必须经过后台审核，通过后才展示。后台逻辑放在一个新的独立插件中，而不是继续堆在 tanzanite-setting 里。
 
 ---
 
-## 1. 页面信息架构（/company/picture-warehouse）
+## 1. 页面信息架构（/picture-warehouse）
 
 ### 1.1 顶部结构
 - 复用 `products` 布局：
-  - 顶部 Company 导航（三项：Our Story / Membership and Points / Picture warehouse）。
+  - 顶部 Products 横向导航（Shop / Guides / Tools / Test Report + Membership and Points / Picture warehouse 等）。
   - 下方内容区域专用于图片展示与说明。
 
 - 页面标题 & 简要说明：

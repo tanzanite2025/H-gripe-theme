@@ -52,6 +52,8 @@
 | `/products` | `products` | Products 聚合页 |
 | `/shop` | `products` | 虽是根路由，但必须保持 products 菜单 |
 | `/spoke-calculator` | `products` | 虽是根路由，但必须保持 products 菜单 |
+| `/membershipandpoints` | `products` | 根路由，但必须保持 products 菜单 |
+| `/picture-warehouse` | `products` | 根路由，但必须保持 products 菜单 |
 | `/blog` 与 `/blog/*` | `blog` | Blog 区域，必须稳定显示 Blog 菜单，不得显示 Products 菜单 |
 
 ## Products 菜单内容（草案）
@@ -59,7 +61,7 @@
 购买辅助的更重内容（售后/支付/物流等）将放在商品详情页的说明与侧边栏快捷入口中。
 
 ### 已确认结论（2025-12-14）
-- Products 横向菜单：保留选型相关入口（Shop + Tire Size Charts + Technical + Wheelset Guide + Spoke Calculator + Test Report），不承载 Wheelsbuild blog。
+- Products 横向菜单：保留选型相关入口（Shop + Tire Size Charts + Technical + Wheelset Guide + Spoke Calculator + Test Report + Membership and Points + Picture warehouse），不承载 Wheelsbuild blog。
 - Products 横向菜单：本期不放 Support 售后入口（Warranty/After sales/Shipping/Payment）。
 - Guides 横向菜单：进入 `/guides` 或任意 `/guides/*` 时，必须稳定显示 Guides 菜单，不得切回 Products 菜单。
 
@@ -77,6 +79,8 @@
 - [yes] Wheelset Guide（`/guides/wheelset-buyers`）（id: `wheelset-buyers`）
 - [yes] Spoke Calculator（`/spoke-calculator`）（id: `spoke-calculator`）
 - [yes] Test Report（`/support/test-report`）（id: `test-report`）【从 Products 进入需保持 Products 横向菜单】
+- [yes] Membership and Points（`/membershipandpoints`）（id: `membership-and-points`）
+- [yes] Picture warehouse（`/picture-warehouse`）（id: `picture-warehouse`）
 - [no] Wheelsbuild blog（`/blog`）（id: `wheelsbuild-blog`）[这个单独放一边，把它从里面剔除，这个不是太重要，这个到时候会另外的入口去放，先从里面剔除】
 
 ### 候选“购买辅助”的 Support 入口（当前不在 productsNavItems）
