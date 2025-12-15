@@ -35,13 +35,15 @@
               <h3 class="text-base font-semibold text-white/90">{{ t(card.titleKey) }}</h3>
               <p class="mt-2 text-sm leading-relaxed text-white/70">{{ t(card.descriptionKey) }}</p>
 
-              <div class="mt-4 inline-flex items-center text-sm font-semibold text-white/80">
+              <div
+                class="mt-4 inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 transition-colors group-hover:bg-white/15 group-hover:text-white"
+              >
                 {{ t('home.factoryStories.readMore') }}
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  class="ml-2 h-5 w-5 transition-transform duration-200 group-hover:translate-x-1"
+                  class="ml-2 h-5 w-5"
                   aria-hidden="true"
                 >
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6l6 6-6 6" />

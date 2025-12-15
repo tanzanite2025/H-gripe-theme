@@ -20,11 +20,12 @@
 目前首页主要是这些块：
 
 - Hero：`HomeHero` ✅
-- Trust Cards：`Why Choose Us` + `TrustCards`
+- Shop with Confidence：`HomeShopWithConfidence` ✅
+- Why Choose Us：`HomeWhyChooseUs` ✅
 - Features：`HomeFeatures` ✅
 - Factory Stories：`HomeFactoryStories` ✅
 - Featured Products：`HomeFeaturedProducts` ✅
-- Testimonials：`HomeTestimonials` ✅
+- Innovation & R&D：`HomeInnovationRd` ✅
 - FAQ 预览：`HomeFaqPreview`
 - 联系/地图：`ContactLocationMap`
 - Final CTA：`HomeFinalCta` ✅
@@ -59,7 +60,7 @@
 3. **Features / Why Choose Us**（核心卖点要点化）
 4. **Factory Stories（你的 4 卡片块）**
 5. **Featured Products / Categories**（主转化入口：精选产品/分类）
-6. **Testimonials / Reviews**（评价/评分/真实用户）
+6. **Innovation & R&D**（研发与方向：与 Why Choose Us 不重复）
 7. **FAQ Preview**（减少疑虑）
 8. **Contact / Location**（门店/联系/地图）
 9. **Final CTA**（最后一次行动召唤）
@@ -151,7 +152,7 @@
   - 文案：`Gallery`
   - 建议样式：桌面端文本链接；移动端可与主/次同排显示（按钮更紧凑）
 
-### 2) Trust / Social Proof（你现有的 TrustCards 很适合）
+### 2) Trust / Social Proof（Shop with Confidence）
 
 - **语义结构**
   - `section` + `h2`
@@ -206,13 +207,14 @@
   - 内链到产品详情是 SEO 的核心资产
   - 价格/库存这种动态内容：SSR/SSG 需权衡（后期可做 ISR/SSR）
 
-### 6) Testimonials / Reviews
+### 6) Innovation & R&D（替代 Testimonials）
 
 - **语义结构**
   - `section` + `h2`
-  - 引用：`blockquote` + 用户/来源
+  - 3 个研发卡：每张卡 `h3` + `p` + bullets
 - **SEO要点**
-  - 避免虚假评分结构化数据；如无真实聚合评分先不要上 `AggregateRating`
+  - 该区块更适合“方向与能力展示”，避免与 Why Choose Us 重复
+  - 若后续要做详情页，建议把卡片底部的 “Read more” 改为 `NuxtLink` 指向真实页面（纯 `button` 对 SEO 内链没有帮助）
 
 ### 7) FAQ Preview（你已存在 HomeFaqPreview）
 
@@ -243,11 +245,12 @@
 建议新增一组首页专用组件（名称仅建议，可调整）：
 
 - `app/components/home/HomeHero.vue`
-- `app/components/home/HomeTrust.vue`（或复用 `TrustCards`）
+- `app/components/home/HomeShopWithConfidence.vue`
+- `app/components/home/HomeWhyChooseUs.vue`
 - `app/components/home/HomeFeatures.vue`
-- `app/components/home/HomeCaseStudies.vue`（4 卡片块）
+- `app/components/home/HomeFactoryStories.vue`
 - `app/components/home/HomeFeaturedProducts.vue`
-- `app/components/home/HomeTestimonials.vue`
+- `app/components/home/HomeInnovationRd.vue`
 - `app/components/home/HomeFaq.vue`（或复用 `HomeFaqPreview`）
 - `app/components/home/HomeContact.vue`（复用 `ContactLocationMap`）
 - `app/components/home/HomeFinalCta.vue`
@@ -281,13 +284,13 @@
 
 1. **先搭骨架与语义**（不追求最终图片）
    - 补 Hero（H1）
-   - TrustCards 移到 Hero 下
-   - 插入 HomeCaseStudies（4 卡片块）
+   - 插入 Shop with Confidence（4 卡片，占位文案可后改）
+   - 插入 Factory Stories（4 卡片块）
    - 保留 FAQ 与 Contact
    - 清理 Demo 内容（已移除 TWCarousel）
 
 2. **再补齐模板 A 的其余块**
-   - Features / Featured Products / Testimonials / Final CTA
+   - Features / Featured Products / Innovation & R&D / Final CTA
 
 3. **最后做内容运营化**
    - 把内容抽到 data/i18n

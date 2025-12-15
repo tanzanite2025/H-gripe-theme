@@ -3,11 +3,7 @@
     <HomeHero />
 
     <!-- Trust Cards Section -->
-    <section class="max-w-5xl mx-auto px-1 sm:px-4 pt-[3px] pb-0">
-      <h2 class="text-lg lg:text-xl font-semibold text-white/90 text-center">{{ t('home.trust.title') }}</h2>
-      <div class="mt-[6px] mb-[9px] h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
-      <TrustCards layout="row" size="lg" :show-title="false" />
-    </section>
+    <HomeShopWithConfidence />
 
     <HomeWhyChooseUs />
 
@@ -34,6 +30,7 @@
 
 <script setup>
 import HomeHero from '~/components/home/HomeHero.vue'
+import HomeShopWithConfidence from '~/components/home/HomeShopWithConfidence.vue'
 import HomeWhyChooseUs from '~/components/home/HomeWhyChooseUs.vue'
 import HomeFeatures from '~/components/home/HomeFeatures.vue'
 import HomeFactoryStories from '~/components/home/HomeFactoryStories.vue'
