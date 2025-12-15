@@ -11,3 +11,13 @@
   font-style: normal;
   font-display: block;
 }
+
+@layer base {
+  html {
+    @apply overflow-x-hidden overscroll-x-none;
+  }
+
+  body {
+    @apply overflow-x-hidden overscroll-x-none bg-black;
+  }
+}
