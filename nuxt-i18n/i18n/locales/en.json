@@ -66,6 +66,106 @@
     },
     "trust": {
       "title": "Why Choose Us"
+    },
+    "features": {
+      "title": "Performance, Built In-House",
+      "subtitle": "A carbon rim factory mindset—focused on quality, consistency, and real-world performance.",
+      "items": {
+        "qc": {
+          "title": "Consistent QC, Reliable Results",
+          "description": "In-house quality control for repeatable builds, tight tolerances, and dependable delivery."
+        },
+        "options": {
+          "title": "Road / Gravel / MTB Options",
+          "description": "Choose the right specs for your riding—built to match real routes and real conditions."
+        },
+        "oem": {
+          "title": "OEM/ODM & Custom Layup",
+          "description": "Support for custom projects—from layup tuning to brand-ready manufacturing workflows."
+        },
+        "lightweight": {
+          "title": "Lightweight Without Compromise",
+          "description": "Balanced weight, stiffness, and durability—engineered to perform without trade-offs."
+        }
+      }
+    },
+    "factoryStories": {
+      "title": "Factory Stories",
+      "subtitle": "A behind-the-scenes look at our process, materials, testing, and the builds that leave our workshop.",
+      "readMore": "Read more",
+      "viewAll": "View all",
+      "items": {
+        "0": {
+          "title": "Carbon Layup in Action",
+          "description": "How we tune layup schedules for strength, stiffness, and consistency."
+        },
+        "1": {
+          "title": "Quality Control Checklist",
+          "description": "A practical look at the QC steps we run before every shipment."
+        },
+        "2": {
+          "title": "From Mold to Finish",
+          "description": "A tour of our process—from molding to finishing details."
+        },
+        "3": {
+          "title": "Built for Real Riding",
+          "description": "What we prioritize when building for road, gravel, and MTB conditions."
+        }
+      }
+    },
+    "featuredProducts": {
+      "title": "Featured Products",
+      "subtitle": "Explore our carbon rims and wheelsets. More categories and components will be added over time.",
+      "viewAll": "Shop all",
+      "items": {
+        "0": {
+          "title": "Carbon Rim Set",
+          "description": "A lightweight rim option designed for consistent builds.",
+          "price": "From $—"
+        },
+        "1": {
+          "title": "Carbon Wheelset",
+          "description": "A complete wheelset built for speed and reliability.",
+          "price": "From $—"
+        },
+        "2": {
+          "title": "Gravel-Ready Build",
+          "description": "Specs tuned for mixed terrain and real-world durability.",
+          "price": "From $—"
+        },
+        "3": {
+          "title": "MTB Option",
+          "description": "Rugged configurations for trail and off-road use.",
+          "price": "From $—"
+        }
+      }
+    },
+    "testimonials": {
+      "title": "Trusted by Builders",
+      "subtitle": "Short feedback snippets—placeholders for now. We'll replace with real reviews later.",
+      "items": {
+        "0": {
+          "quote": "Consistent quality and fast communication. Easy to work with from first sample to production.",
+          "name": "OEM Partner",
+          "meta": "Carbon wheelset project"
+        },
+        "1": {
+          "quote": "Great balance of weight and stiffness. Builds came out straight and repeatable.",
+          "name": "Wheel Builder",
+          "meta": "Workshop feedback"
+        },
+        "2": {
+          "quote": "Clean finishing and reliable QC. We feel confident shipping to customers.",
+          "name": "Brand Team",
+          "meta": "Production batch"
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Ready to Build Your Next Set?",
+      "subtitle": "Browse our products now, or explore the gallery to see more builds and details.",
+      "primary": "Shop",
+      "secondary": "Gallery"
     }
   },
   "contactLocation": {

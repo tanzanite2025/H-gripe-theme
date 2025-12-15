@@ -365,7 +365,7 @@ useHead(() => ({
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #000;
+  background: radial-gradient(circle at top, #020617 0, #020617 24%, #000000 100%);
 }
 
 .layout-main {
