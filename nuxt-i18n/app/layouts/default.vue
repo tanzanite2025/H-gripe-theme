@@ -1,6 +1,6 @@
 <template>
-  <div class="layout">
-    <main id="main-content" class="layout-main" role="main">
+  <div class="layout overflow-x-hidden overscroll-x-none">
+    <main id="main-content" class="layout-main overflow-x-hidden overscroll-x-none" role="main">
       <slot />
     </main>
 
@@ -330,6 +330,12 @@ const xDefaultLink = computed(() => {
 })
 
 useHead(() => ({
+  htmlAttrs: {
+    class: 'overflow-x-hidden overscroll-x-none'
+  },
+  bodyAttrs: {
+    class: 'overflow-x-hidden overscroll-x-none bg-black'
+  },
   titleTemplate: (chunk?: string) => (chunk ? `${chunk} · ${siteTitle.value}` : siteTitle.value),
   link: [
     { rel: 'canonical', href: canonicalUrl.value },

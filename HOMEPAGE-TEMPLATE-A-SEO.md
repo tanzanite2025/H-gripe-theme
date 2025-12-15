@@ -29,6 +29,13 @@
 - 联系/地图：`ContactLocationMap`
 - Final CTA：`HomeFinalCta` ✅
 
+### SEO/H1 校验结果（2025-12-15）
+
+- 首页仅保留一个主 `h1`：`HomeHero`（作为页面唯一 H1）
+- `SiteHeader` 的站点 Logo 不再使用 `h1`（改为普通容器元素），避免全站每个页面额外出现一个 H1
+- 首页各大板块标题使用 `h2`；卡片标题使用 `h3`（层级递进清晰）
+- `title/description` 由首页 `useHead` 提供；canonical/alternate 等全局链接与 `titleTemplate` 由 `layouts/default.vue` 的 `useHead` 统一管理
+
 当前仍待补齐的块（按模板 A）：
 
 （首页骨架已补齐，后续进入逐块调样式与填充真实内容/链接）
@@ -75,6 +82,7 @@
 - 首页必须有且仅有一个核心 `h1`（Hero）
 - 每个大板块标题用 `h2`
 - 板块里的卡片标题用 `h3`
+- 全局 `SiteHeader` 的 Logo 不使用 `h1`（已落实），避免每个页面出现额外的 H1
 
 ### 链接策略
 

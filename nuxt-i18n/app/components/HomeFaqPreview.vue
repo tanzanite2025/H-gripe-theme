@@ -2,7 +2,7 @@
   <section class="home-faq" :class="{ 'home-faq--wide': wide }">
     <div class="home-faq__header">
       <h2 class="home-faq__title">Frequently Asked Questions</h2>
-      <div class="mt-[6px] mb-[3px] h-[3px] w-48 mx-auto rounded-full bg-[linear-gradient(90deg,transparent,#2dd4bf,#3b82f6,transparent)]"></div>
+      <div class="mt-[6px] mb-[3px] h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
       <p class="home-faq__subtitle">Quick answers to common questions</p>
     </div>
 
@@ -157,6 +157,13 @@ const displayItems = computed<FlatItem[]>(() => {
 
 .home-faq--wide {
   max-width: 1152px;
+  padding: 2rem 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .home-faq--wide {
+    padding: 2rem 1rem;
+  }
 }
 
 .home-faq__header {

@@ -3,9 +3,9 @@
     <HomeHero />
 
     <!-- Trust Cards Section -->
-    <section class="max-w-5xl mx-auto px-4 pt-[3px] pb-0">
+    <section class="max-w-5xl mx-auto px-1 sm:px-4 pt-[3px] pb-0">
       <h2 class="text-lg lg:text-xl font-semibold text-white/90 text-center">{{ t('home.trust.title') }}</h2>
-      <div class="mt-[6px] mb-[9px] h-[3px] w-48 mx-auto rounded-full bg-[linear-gradient(90deg,transparent,#2dd4bf,#3b82f6,transparent)]"></div>
+      <div class="mt-[6px] mb-[9px] h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
       <TrustCards layout="row" size="lg" :show-title="false" />
     </section>
 
@@ -22,7 +22,7 @@
       <HomeFaqPreview :max-items-per-category="4" wide />
     </div>
 
-    <section class="max-w-6xl mx-auto px-4 pt-[21px] pb-0">
+    <section class="max-w-6xl mx-auto px-1 sm:px-4 pt-[21px] pb-0">
       <ContactLocationMap variant="compact" title-tag="h2" layout="split" />
     </section>
 
