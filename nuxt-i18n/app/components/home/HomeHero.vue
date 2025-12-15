@@ -1,11 +1,12 @@
 <template>
-  <section class="bg-neutral-950 text-white pt-[var(--site-header-offset,140px)] md:pt-[var(--site-header-offset,96px)]">
+  <section class="bg-transparent text-white pt-[var(--site-header-offset,140px)] md:pt-[var(--site-header-offset,96px)]">
     <div class="mx-auto grid max-w-6xl grid-cols-1 gap-5 px-4 pb-6 pt-2 lg:grid-cols-12 lg:gap-7 lg:pb-8 lg:pt-3">
       <div class="flex flex-col lg:col-span-5">
         <h1 class="text-2xl font-semibold leading-[1.05] tracking-tight sm:text-3xl lg:text-4xl">
           {{ t('home.hero.title') }}
         </h1>
-        <p class="mt-3 w-full text-base leading-relaxed text-white/70 sm:text-lg lg:max-w-xl">
+        <div class="mt-[6px] h-[3px] w-48 rounded-full bg-[linear-gradient(90deg,transparent,#2dd4bf,#3b82f6,transparent)]"></div>
+        <p class="mt-[3px] w-full text-base leading-relaxed text-white/70 sm:text-lg lg:max-w-xl">
           {{ t('home.hero.subtitle') }}
         </p>
 
@@ -38,21 +39,21 @@
           <div class="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-row sm:items-center">
             <NuxtLink
               to="/shop"
-              class="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-neutral-950 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/90 sm:w-auto sm:px-6 sm:py-3"
+              class="inline-flex w-full items-center justify-center rounded-full bg-white px-3 py-2 text-[13px] font-semibold text-neutral-950 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/90 sm:w-auto sm:px-6 sm:py-3 sm:text-sm"
             >
               {{ t('home.hero.cta.shop') }}
             </NuxtLink>
 
             <NuxtLink
               to="/company/about"
-              class="inline-flex w-full items-center justify-center rounded-full bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10 sm:w-auto sm:px-6 sm:py-3"
+              class="inline-flex w-full items-center justify-center rounded-full bg-white/5 px-3 py-2 text-[13px] font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10 sm:w-auto sm:px-6 sm:py-3 sm:text-sm"
             >
               {{ t('home.hero.cta.about') }}
             </NuxtLink>
 
             <NuxtLink
               to="/picture-warehouse"
-              class="inline-flex w-full items-center justify-center rounded-full bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10 sm:hidden"
+              class="inline-flex w-full items-center justify-center rounded-full bg-white/5 px-3 py-2 text-[13px] font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10 sm:hidden"
             >
               {{ t('home.hero.cta.pictureWarehouse') }}
             </NuxtLink>

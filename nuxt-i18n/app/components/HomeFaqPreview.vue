@@ -1,7 +1,8 @@
 <template>
-  <section class="home-faq">
+  <section class="home-faq" :class="{ 'home-faq--wide': wide }">
     <div class="home-faq__header">
       <h2 class="home-faq__title">Frequently Asked Questions</h2>
+      <div class="mt-[6px] mb-[3px] h-[3px] w-48 mx-auto rounded-full bg-[linear-gradient(90deg,transparent,#2dd4bf,#3b82f6,transparent)]"></div>
       <p class="home-faq__subtitle">Quick answers to common questions</p>
     </div>
 
@@ -74,12 +75,16 @@ import { getAllFaqData } from '~/data/faq'
 interface Props {
   maxItemsPerCategory?: number
   defaultCategory?: string
+  wide?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxItemsPerCategory: 3,
   defaultCategory: '',
+  wide: false,
 })
+
+const wide = computed(() => props.wide)
 
 // 获取所有 FAQ 数据
 const allPages = computed(() => getAllFaqData())
@@ -148,6 +153,10 @@ const displayItems = computed<FlatItem[]>(() => {
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem 1rem;
+}
+
+.home-faq--wide {
+  max-width: 1152px;
 }
 
 .home-faq__header {

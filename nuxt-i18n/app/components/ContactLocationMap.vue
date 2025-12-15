@@ -1,45 +1,48 @@
 <template>
   <div class="w-full">
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-col gap-1">
-        <component
-          :is="titleTag"
-          class="text-white/90 font-semibold"
-          :class="variant === 'compact' ? 'text-base' : 'text-lg'"
-        >
-          {{ t('contactLocation.title') }}
-        </component>
-        <p class="text-white/70 leading-relaxed break-words" :class="variant === 'compact' ? 'text-sm' : 'text-base'">
-          {{ contactLocation.addressText }}
-        </p>
-      </div>
+    <div :class="containerClass">
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col">
+          <component
+            :is="titleTag"
+            class="text-white/90 font-semibold"
+            :class="variant === 'compact' ? 'text-base' : 'text-lg'"
+          >
+            {{ t('contactLocation.title') }}
+          </component>
+          <div class="mt-[6px] h-[3px] w-48 rounded-full bg-[linear-gradient(90deg,transparent,#2dd4bf,#3b82f6,transparent)]"></div>
+          <p class="mt-[3px] text-white/70 leading-relaxed break-words" :class="variant === 'compact' ? 'text-sm' : 'text-base'">
+            {{ contactLocation.addressText }}
+          </p>
+        </div>
 
-      <div class="flex flex-wrap gap-2">
-        <a
-          :href="contactLocation.openGoogleDirectionsUrl || contactLocation.openGoogleMapsUrl"
-          target="_blank"
-          rel="noopener"
-          class="px-4 py-2 rounded-full text-sm font-semibold bg-white text-slate-950 hover:bg-white/90 transition-all"
-        >
-          {{ t('contactLocation.getDirections') }}
-        </a>
-        <a
-          :href="contactLocation.openGoogleMapsUrl"
-          target="_blank"
-          rel="noopener"
-          class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/90 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
-        >
-          {{ t('contactLocation.openGoogle') }}
-        </a>
-        <a
-          v-if="contactLocation.openAppleMapsUrl"
-          :href="contactLocation.openAppleMapsUrl"
-          target="_blank"
-          rel="noopener"
-          class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/90 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
-        >
-          {{ t('contactLocation.openApple') }}
-        </a>
+        <div class="flex flex-wrap gap-2">
+          <a
+            :href="contactLocation.openGoogleDirectionsUrl || contactLocation.openGoogleMapsUrl"
+            target="_blank"
+            rel="noopener"
+            class="px-4 py-2 rounded-full text-sm font-semibold bg-white text-slate-950 hover:bg-white/90 transition-all"
+          >
+            {{ t('contactLocation.getDirections') }}
+          </a>
+          <a
+            :href="contactLocation.openGoogleMapsUrl"
+            target="_blank"
+            rel="noopener"
+            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/90 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+          >
+            {{ t('contactLocation.openGoogle') }}
+          </a>
+          <a
+            v-if="contactLocation.openAppleMapsUrl"
+            :href="contactLocation.openAppleMapsUrl"
+            target="_blank"
+            rel="noopener"
+            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/90 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+          >
+            {{ t('contactLocation.openApple') }}
+          </a>
+        </div>
       </div>
 
       <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_4px_14px_-10px_rgba(0,0,0,0.9),0_0_12px_rgba(15,23,42,0.85)]">
@@ -91,9 +94,10 @@ import { computed, ref } from 'vue'
 import { useI18n } from '#imports'
 import { contactLocation } from '~/utils/contactLocation'
 
-const props = withDefaults(defineProps<{ variant?: 'default' | 'compact'; titleTag?: 'h2' | 'h3' }>(), {
+const props = withDefaults(defineProps<{ variant?: 'default' | 'compact'; titleTag?: 'h2' | 'h3'; layout?: 'stack' | 'split' }>(), {
   variant: 'default',
   titleTag: 'h2',
+  layout: 'stack',
 })
 
 const { t } = useI18n()
@@ -105,6 +109,13 @@ const mapHeightClass = computed(() => {
   return props.variant === 'compact'
     ? 'h-[220px] sm:h-[260px]'
     : 'h-[280px] sm:h-[340px] lg:h-[380px]'
+})
+
+const containerClass = computed(() => {
+  if (props.layout === 'split') {
+    return 'grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start'
+  }
+  return 'flex flex-col gap-4'
 })
 
 const handleOpenInteractive = () => {

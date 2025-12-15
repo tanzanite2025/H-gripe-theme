@@ -114,7 +114,7 @@
                 <img src="/icons/payment/wechatpay.svg?v=4" alt="WeChat Pay" class="support-card__icon-image" />
               </span>
               <span class="support-card__icon">
-                <img src="/icons/payment/alipay.svg?v=4" alt="Alipay" class="support-card__icon-image" />
+                <img src="/icons/payment/alipay.svg?v=6" alt="Alipay" class="support-card__icon-image" />
               </span>
             </span>
             <span>WeChat / Alipay</span>

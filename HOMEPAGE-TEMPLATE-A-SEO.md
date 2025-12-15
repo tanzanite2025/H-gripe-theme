@@ -19,20 +19,27 @@
 
 目前首页主要是这些块：
 
+- Hero：`HomeHero` ✅
 - Trust Cards：`Why Choose Us` + `TrustCards`
+- Features：`HomeFeatures` ✅
+- Factory Stories：`HomeFactoryStories` ✅
+- Featured Products：`HomeFeaturedProducts` ✅
+- Testimonials：`HomeTestimonials` ✅
 - FAQ 预览：`HomeFaqPreview`
 - 联系/地图：`ContactLocationMap`
+- Final CTA：`HomeFinalCta` ✅
 
-当前结构存在的典型问题：
+当前仍待补齐的块（按模板 A）：
 
-- **缺少明确的首屏 Hero**
-  - 用户/爬虫第一眼无法快速理解：你是谁、卖什么、核心价值是什么
-- **标题语义层级不完整**
-  - 首页应该有明确的 `h1`（通常放在 Hero）
-  - 其他板块统一用 `h2`，卡片标题用 `h3`
-- **样式实现方式不统一**
-  - `index.vue` 当前使用了大量 `<style scoped>`，这会增加维护成本
-  - 项目规范里更推荐 Tailwind 工具类（减少自定义 CSS）
+（首页骨架已补齐，后续进入逐块调样式与填充真实内容/链接）
+
+已处理的关键实现点（与布局相关）：
+
+- Hero 顶部避让：通过 `SiteHeader` 自动计算高度并写入 `--site-header-offset`，`HomeHero` 使用该变量作为顶部 padding，避免遮挡
+- Hero 右侧媒体：桌面端两张图占位；移动端媒体上移到 CTA 之前
+- CTA：移动端 3 按钮同一行（Shop / About / Gallery）；桌面端保持主/次按钮 + 第三入口（Gallery 文本链接）
+- 视觉：按钮/图片去掉白色边框，使用右下偏移纯黑色硬阴影（范围已收紧）
+- Features / Factory Stories：已接入首页作为占位块（文案走 `en.json`，链接后续补齐）
 
 ---
 
@@ -43,7 +50,7 @@
 1. **Hero 首屏**（H1 + 核心卖点 + CTA）
 2. **Trust / Social Proof**（信任背书：支付/物流/质保/口碑/媒体等）
 3. **Features / Why Choose Us**（核心卖点要点化）
-4. **Case Studies / Guides（你做的 4 卡片块）**
+4. **Factory Stories（你的 4 卡片块）**
 5. **Featured Products / Categories**（主转化入口：精选产品/分类）
 6. **Testimonials / Reviews**（评价/评分/真实用户）
 7. **FAQ Preview**（减少疑虑）
@@ -111,9 +118,9 @@
 
 - **桌面端（lg+）**
   - 左侧：`h1` + 描述 + CTA
-  - 右侧：单张强视觉大图（可加渐变遮罩确保与页面风格统一）
+  - 右侧：两张图占位（后续替换为真实图片），并与左侧文案区域等高
 - **移动端（<lg）**
-  - 建议文案与 CTA 优先显示（单列），图片作为下方媒体区
+  - 文案优先显示（单列），图片位于 CTA 之前（两张图一行两列）
   - 不要分裂成两套文案；如需要差异化，仅对“媒体区”做分端布局
 
 #### Hero 文案（已定稿）
@@ -133,7 +140,8 @@
   - 建议样式：描边/幽灵按钮
 - **第三入口（Tertiary）**
   - 目标：`/picture-warehouse`
-  - 建议样式：文本链接或小号按钮（不要与主/次同权重）
+  - 文案：`Gallery`
+  - 建议样式：桌面端文本链接；移动端可与主/次同排显示（按钮更紧凑）
 
 ### 2) Trust / Social Proof（你现有的 TrustCards 很适合）
 

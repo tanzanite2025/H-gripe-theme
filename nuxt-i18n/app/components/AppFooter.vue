@@ -17,14 +17,15 @@
           
           <!-- Payment Icons -->
           <div class="footer-subscription__payment">
-            <img
-              v-for="icon in paymentIcons"
-              :key="icon.src"
-              :src="icon.src"
-              :alt="icon.alt"
-              loading="lazy"
-              decoding="async"
-            />
+            <span v-for="icon in paymentIcons" :key="icon.src" class="payment-icon-tile">
+              <img
+                :src="icon.src"
+                :alt="icon.alt"
+                :class="['payment-icon-tile__img', icon.className]"
+                loading="lazy"
+                decoding="async"
+              />
+            </span>
           </div>
         </div>
 
@@ -35,7 +36,7 @@
 
       </div>
 
-      <div class="footer-widgets">
+      <div v-if="$slots.widgets" class="footer-widgets">
         <slot name="widgets" />
       </div>
 
@@ -141,6 +142,7 @@ const footerSocialItems: FooterSocialItem[] = [
 interface PaymentIcon {
   src: string
   alt: string
+  className?: string
 }
 
 const paymentIcons: PaymentIcon[] = [
@@ -151,10 +153,10 @@ const paymentIcons: PaymentIcon[] = [
   { src: '/icons/payment/discover.svg', alt: 'Discover' },
   { src: '/icons/payment/jcb.svg', alt: 'JCB' },
   { src: '/icons/payment/diners.svg', alt: 'Diners Club' },
-  { src: '/icons/payment/alipay.svg', alt: 'Alipay' },
+  { src: '/icons/payment/alipay.svg?v=6', alt: 'Alipay', className: 'payment-icon--alipay' },
   { src: '/icons/payment/unionpay.svg', alt: 'UnionPay' },
   { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay' },
-  { src: '/icons/payment/applepay.svg', alt: 'Apple Pay' },
+  { src: '/icons/payment/Applepay.svg?v=6', alt: 'Apple Pay', className: 'payment-icon--applepay' },
   { src: '/icons/payment/stripe.svg', alt: 'Stripe' },
   { src: '/icons/payment/default.svg', alt: 'Card Payment' },
 ]
@@ -163,7 +165,7 @@ const paymentIcons: PaymentIcon[] = [
 <style scoped>
 .app-footer {
   /* 增大底部 padding，预留空间给底部浮动 Dock (Desktop: 8rem, Mobile: 6rem) */
-  padding: 1.5rem 1.5rem 8rem;
+  padding: 1rem 1.5rem 8rem;
   background: linear-gradient(140deg, #0c0f17 0%, #141925 45%, #1b2230 100%);
   color: #f5f6fa;
 }
@@ -173,7 +175,7 @@ const paymentIcons: PaymentIcon[] = [
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   /* Mobile: centered text */
   text-align: center;
 }
@@ -183,8 +185,8 @@ const paymentIcons: PaymentIcon[] = [
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
-  margin-bottom: 1rem;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .footer-subscription {
@@ -211,11 +213,33 @@ const paymentIcons: PaymentIcon[] = [
   flex-wrap: wrap;
 }
 
-.footer-subscription__payment img {
+.payment-icon-tile {
   width: 44px;
   height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+}
+
+.payment-icon-tile__img {
+  width: 100%;
+  height: 100%;
   display: block;
   object-fit: contain;
+}
+
+.payment-icon-tile__img.payment-icon--alipay {
+  transform: scale(1.28);
+  transform-origin: center;
+}
+
+.payment-icon-tile__img.payment-icon--applepay {
+  transform: scale(1.18);
+  transform-origin: center;
 }
 
 .footer-bottom__info {
@@ -333,7 +357,7 @@ const paymentIcons: PaymentIcon[] = [
   .footer-bottom {
     display: flex;
     margin-top: 0;
-    padding-top: 1rem;
+    padding-top: 0.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
@@ -349,7 +373,7 @@ const paymentIcons: PaymentIcon[] = [
 @media (max-width: 768px) {
   .app-footer {
     /* 移动端 Dock 通常更高，底部多留一些空间 */
-    padding: 1.5rem 1.25rem 6rem;
+    padding: 1rem 1.25rem 6rem;
   }
   
   .footer-main-row {
