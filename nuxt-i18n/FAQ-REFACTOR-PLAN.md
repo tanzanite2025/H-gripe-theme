@@ -175,7 +175,7 @@ export interface PageFaqDataI18n {
   - ✅ `/support/warranty`
   - ✅ `/support/product-feedback`
   - ✅ `/support/test-report`
-  - ✅ `/company/membershipandpoints` - 9 个 FAQ 条目
+  - ✅ `/membershipandpoints` - 9 个 FAQ 条目
   - ✅ `/guides/wheelset-buyers` - 7 个 FAQ 条目（放在所有 tab 内容之后）
 
 ### 第五阶段：汇总页面 ✅ 已完成
@@ -212,7 +212,7 @@ export interface PageFaqDataI18n {
     - `/support/warranty` - PageFaq 组件
     - `/support/product-feedback` - PageFaq 组件
     - `/support/test-report` - PageFaq 组件
-    - `/company/membershipandpoints` - PageFaq 组件
+    - `/membershipandpoints` - PageFaq 组件
     - `/guides/wheelset-buyers` - PageFaq 组件
     - `/support/faqs` - 汇总页面（搜索 + 筛选）
 

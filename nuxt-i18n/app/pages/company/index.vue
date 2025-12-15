@@ -2,8 +2,7 @@
   <div>
     <h2 class="company-page__title">Company</h2>
     <p class="company-page__intro">
-      Learn more about Tanzanite, our story, membership & points program, and the
-      picture warehouse. Choose a section below to explore.
+      Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.
     </p>
 
     <section class="company-grid">
@@ -51,20 +50,6 @@ const sections = [
     title: 'Our Story',
     description: 'Background of Tanzanite and the vision behind our products.',
     cta: 'Read our story',
-  },
-  {
-    to: '/company/membershipandpoints',
-    icon: 'M',
-    title: 'Membership and Points',
-    description: 'Overview of the membership program, benefits, and earning points.',
-    cta: 'View membership info',
-  },
-  {
-    to: '/company/picture-warehouse',
-    icon: 'P',
-    title: 'Picture warehouse',
-    description: 'Central library for Tanzanite product and lifestyle photos.',
-    cta: 'Open picture warehouse',
   },
   {
     to: '/company/contact',

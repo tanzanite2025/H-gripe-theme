@@ -386,6 +386,12 @@
       "wheelsbuildBlog": "Wheelsbuild blog",
       "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Guide"
+    },
+    "navShort": {
+      "tireSize": "Tire size",
+      "calculator": "Calculator",
+      "points": "Points",
+      "picture": "Picture"
     }
   },
   "company": {

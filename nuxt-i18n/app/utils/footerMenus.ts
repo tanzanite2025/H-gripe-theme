@@ -37,6 +37,8 @@ export const footerMenus: FooterSection[] = [
       { labelKey: 'footer.links.wheelsbuildBlog', to: '/blog' },
       { labelKey: 'footer.links.technicalDocs', to: '/guides/technical' },
       { labelKey: 'footer.links.wheelsetBuyersGuide', to: '/guides/wheelset-buyers' },
+      { labelKey: 'footer.links.membershipPoints', to: '/membershipandpoints' },
+      { labelKey: 'footer.links.pictureWarehouse', to: '/picture-warehouse' },
     ],
   },
   {
@@ -53,8 +55,6 @@ export const footerMenus: FooterSection[] = [
     links: [
       { labelKey: 'footer.links.aboutUs', to: '/company/about' },
       { labelKey: 'footer.links.ourStory', to: '/company/ourstory' },
-      { labelKey: 'footer.links.membershipPoints', to: '/company/membershipandpoints' },
-      { labelKey: 'footer.links.pictureWarehouse', to: '/company/picture-warehouse' },
     ],
   },
   {

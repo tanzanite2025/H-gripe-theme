@@ -16,16 +16,6 @@ export const companyNavItems: ProductsNavItem[] = [
     to: '/company/ourstory',
   },
   {
-    id: 'membership-and-points',
-    labelKey: 'company.nav.membershipPoints',
-    to: '/company/membershipandpoints',
-  },
-  {
-    id: 'picture-warehouse',
-    labelKey: 'company.nav.pictureWarehouse',
-    to: '/company/picture-warehouse',
-  },
-  {
     id: 'contact',
     labelKey: 'company.nav.contact',
     to: '/company/contact',

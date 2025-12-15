@@ -137,7 +137,7 @@ const handleWishlist = () => {
 
 // Member Center - 跳转到会员中心页面
 const handleMemberCenter = () => {
-  const target = localePath('/company/membershipandpoints')
+  const target = localePath('/membershipandpoints')
   if (typeof window !== 'undefined' && target) {
     window.location.href = String(target)
   }

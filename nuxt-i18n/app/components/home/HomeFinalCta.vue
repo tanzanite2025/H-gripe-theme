@@ -15,7 +15,7 @@
           </NuxtLink>
 
           <NuxtLink
-            :to="localePath('/company/picture-warehouse')"
+            :to="localePath('/picture-warehouse')"
             class="inline-flex items-center justify-center rounded-full bg-white/5 px-6 py-3 text-sm font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10"
           >
             {{ t('home.finalCta.secondary') }}

@@ -43,4 +43,14 @@ export const productsNavItems: ProductsNavItem[] = [
     labelKey: 'support.nav.testReport',
     to: '/support/test-report',
   },
+  {
+    id: 'membership-and-points',
+    labelKey: 'company.nav.membershipPoints',
+    to: '/membershipandpoints',
+  },
+  {
+    id: 'picture-warehouse',
+    labelKey: 'company.nav.pictureWarehouse',
+    to: '/picture-warehouse',
+  },
 ]

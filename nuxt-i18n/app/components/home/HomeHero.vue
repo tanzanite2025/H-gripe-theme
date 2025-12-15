@@ -40,7 +40,7 @@
                 </NuxtLink>
 
                 <NuxtLink
-                  :to="localePath('/company/picture-warehouse')"
+                  :to="localePath('/picture-warehouse')"
                   class="inline-flex w-full items-center justify-center rounded-full bg-white/5 px-3 py-2 text-[13px] font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10 sm:w-auto sm:px-6 sm:py-3 sm:text-sm"
                 >
                   {{ t('home.hero.cta.pictureWarehouse') }}
