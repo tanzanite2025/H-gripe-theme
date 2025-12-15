@@ -67,6 +67,46 @@
     "trust": {
       "title": "Shop with Confidence"
     },
+    "shopWithConfidence": {
+      "items": {
+        "0": {
+          "title": "Secure Payment",
+          "description": "Placeholder copy. Add your payment and checkout trust message here.",
+          "bullets": {
+            "0": "Placeholder bullet",
+            "1": "Placeholder bullet",
+            "2": "Placeholder bullet"
+          }
+        },
+        "1": {
+          "title": "Worldwide Shipping",
+          "description": "Placeholder copy. Add delivery, tracking, and packaging details here.",
+          "bullets": {
+            "0": "Placeholder bullet",
+            "1": "Placeholder bullet",
+            "2": "Placeholder bullet"
+          }
+        },
+        "2": {
+          "title": "Warranty Coverage",
+          "description": "Placeholder copy. Add warranty terms and verification details here.",
+          "bullets": {
+            "0": "Placeholder bullet",
+            "1": "Placeholder bullet",
+            "2": "Placeholder bullet"
+          }
+        },
+        "3": {
+          "title": "After‑Sales Support",
+          "description": "Placeholder copy. Add support response and service coverage details here.",
+          "bullets": {
+            "0": "Placeholder bullet",
+            "1": "Placeholder bullet",
+            "2": "Placeholder bullet"
+          }
+        }
+      }
+    },
     "whyChooseUs": {
       "title": "Why Choose Us",
       "subtitle": "Factory-built carbon rims and hand-built wheelsets with documented processes, consistent quality, and OEM-ready support.",
@@ -203,6 +243,7 @@
     "innovationRd": {
       "title": "Innovation & R&D",
       "subtitle": "A look at what we’re building next—hub concepts, protected design work, and our next-generation carbon wheel platforms.",
+      "readMore": "Read more",
       "items": {
         "0": {
           "title": "Protected Design Work",
