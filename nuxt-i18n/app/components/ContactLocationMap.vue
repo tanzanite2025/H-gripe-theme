@@ -10,7 +10,7 @@
           >
             {{ t('contactLocation.title') }}
           </component>
-          <div class="mt-[6px] h-[3px] w-48 rounded-full bg-[linear-gradient(90deg,transparent,#2dd4bf,#3b82f6,transparent)]"></div>
+          <div class="mt-[6px] h-1 w-14 rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
           <p class="mt-[3px] text-white/70 leading-relaxed break-words" :class="variant === 'compact' ? 'text-sm' : 'text-base'">
             {{ contactLocation.addressText }}
           </p>

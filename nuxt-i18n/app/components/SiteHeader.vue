@@ -10,9 +10,9 @@
 					
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
-						<h1 class="m-0 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none italic cursor-default">
+						<div class="m-0 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none italic cursor-default">
 							{{ titleText }}
-						</h1>
+						</div>
 					</div>
 
 					<!-- Nav (Centered) -->
@@ -185,9 +185,9 @@
 				<!-- 第一行：Logo (左) + 工具图标 (右) -->
 				<div class="flex items-center justify-between px-1">
 					<!-- Logo -->
-					<h1 class="m-0 text-2xl phone-390:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none">
+					<div class="m-0 text-2xl phone-390:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none">
 						{{ titleText }}
-					</h1>
+					</div>
 
 					<!-- 右侧工具图标组 -->
 					<div class="flex items-center gap-3 phone-390:gap-4">
