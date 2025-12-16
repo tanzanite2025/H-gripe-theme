@@ -16,6 +16,21 @@ export const companyNavItems: ProductsNavItem[] = [
     to: '/company/ourstory',
   },
   {
+    id: 'global-partners',
+    labelKey: 'company.nav.globalPartners',
+    to: '/company/global-partners',
+  },
+  {
+    id: 'oem-odm',
+    labelKey: 'company.nav.oemOdm',
+    to: '/company/oem-odm',
+  },
+  {
+    id: 'certificates',
+    labelKey: 'company.nav.certificates',
+    to: '/company/certificates',
+  },
+  {
     id: 'contact',
     labelKey: 'company.nav.contact',
     to: '/company/contact',

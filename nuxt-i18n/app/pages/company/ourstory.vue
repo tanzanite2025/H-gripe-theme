@@ -3,97 +3,35 @@
 
     <h1 class="company-page__title company-page__title--sr-only">Our Story</h1>
 
-    <div class="company-tabs" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        type="button"
-        class="company-tabs__item"
-        :class="{ 'company-tabs__item--active': activeTab === tab.id }"
-        @click="setActiveTab(tab.id)"
+    <section
+      id="story"
+      class="company-section"
+    >
+      <h2 class="company-section__title">{{ t('company.ourStory.story.title') }}</h2>
+      <div class="pt-1 pb-3">
+        <NuxtLink
+          class="company-tabs__item inline-flex items-center"
+          :to="factoryTabTo"
+        >
+          {{ t('company.ourStory.story.factoryButton') }}
+        </NuxtLink>
+      </div>
+      <div class="pb-6">
+        <div class="aspect-[2/1] w-full overflow-hidden rounded-2xl bg-slate-950">
+          <img
+            class="h-full w-full object-cover"
+            src="/company/ourstory/ourstory/tanzanite-ourstory.webp"
+            alt="Tanzanite Our Story"
+            loading="lazy"
+          />
+        </div>
+      </div>
+      <p
+        v-for="(paragraph, index) in storyParagraphs"
+        :key="index"
+        class="company-section__body"
       >
-        {{ tab.label }}
-      </button>
-    </div>
-
-    <section
-      v-show="activeTab === 'factory'"
-      id="factory"
-      class="company-section"
-    >
-      <h2 class="company-section__title">Factory</h2>
-      <p class="company-section__body">
-        后续将在此 tab 展示工厂介绍、产线流程和照片等内容。目前为占位文案，结构已保留，后续直接替换即可。
-      </p>
-      <p class="company-section__body">
-        你可以在这里继续添加步骤卡片、图库或数据列表，TAB 结构已经固定，填充内容不会影响切换。
-      </p>
-    </section>
-
-    <section
-      v-show="activeTab === 'appearance'"
-      id="appearance"
-      class="company-section"
-    >
-      <h3 class="company-section__title">Appearance</h3>
-      <p class="company-section__body">
-        Use this tab to highlight the visual details of Tanzanite rims and wheelsets: finishes, decals, logo styles, and paint or paintless options.
-      </p>
-      <p class="company-section__body">
-        Later you can replace this placeholder with your own photos and descriptions of different appearance packages so riders can quickly understand what their wheels will look like on the bike.
-      </p>
-    </section>
-
-    <section
-      v-show="activeTab === 'facility'"
-      id="facility"
-      class="company-section"
-    >
-      <h3 class="company-section__title">Facility</h3>
-      <p class="company-section__body">
-        Describe the key facilities that support the factory: warehousing, assembly
-        areas, test labs, packing zones, and any dedicated spaces for training or
-        demonstrations.
-      </p>
-      <p class="company-section__body">
-        You can later replace this placeholder text with concrete details about
-        climate control, storage systems, and how the layout helps keep builds
-        organized and predictable.
-      </p>
-    </section>
-
-    <section
-      v-show="activeTab === 'manufacture'"
-      id="manufacture"
-      class="company-section"
-    >
-      <h3 class="company-section__title">Manufacture</h3>
-      <p class="company-section__body">
-        Use this tab to walk visitors through how a Tanzanite wheel is manufactured,
-        from selecting rims and hubs to lacing, tensioning, truing, and final
-        inspection.
-      </p>
-      <p class="company-section__body">
-        Later you can add step-by-step photos, short videos, or diagrams so
-        builders understand what level of craftsmanship and tooling goes into
-        every wheel.
-      </p>
-    </section>
-
-    <section
-      v-show="activeTab === 'qualitycontrol'"
-      id="qualitycontrol"
-      class="company-section"
-    >
-      <h3 class="company-section__title">Quality control</h3>
-      <p class="company-section__body">
-        Summarize how quality control works at Tanzanite: incoming material checks,
-        in-process measurements, and final wheel verification before shipping.
-      </p>
-      <p class="company-section__body">
-        This placeholder can later be replaced with your actual test procedures,
-        measurement tolerances, and any certifications or standards that the
-        factory follows.
+        {{ paragraph }}
       </p>
     </section>
 
@@ -107,25 +45,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useHead, definePageMeta } from '#imports'
+import { computed } from 'vue'
+import { useHead, definePageMeta, useI18n, useLocalePath } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
-type OurStoryTabId = 'factory' | 'appearance' | 'facility' | 'manufacture' | 'qualitycontrol'
+const { t } = useI18n()
+const localePath = useLocalePath()
 
-const tabs: { id: OurStoryTabId; label: string }[] = [
-  { id: 'factory', label: 'Factory' },
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'facility', label: 'Facility' },
-  { id: 'manufacture', label: 'Manufacture' },
-  { id: 'qualitycontrol', label: 'Quality control' },
-]
+const storyParagraphs = computed(() => {
+  const body = t('company.ourStory.story.body')
+  return body.split('\n\n').filter(Boolean)
+})
 
-const activeTab = ref<OurStoryTabId>('factory')
-
-const setActiveTab = (id: OurStoryTabId) => {
-  activeTab.value = id
-}
+const factoryTabTo = computed(() => {
+  return `${localePath('/company/about')}#factory`
+})
 
 definePageMeta({
   layout: 'products',
