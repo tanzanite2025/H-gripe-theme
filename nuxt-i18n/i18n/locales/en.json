@@ -398,9 +398,22 @@
     "nav": {
       "about": "About Us",
       "ourStory": "Our Story",
+      "globalPartners": "Global Partners",
+      "oemOdm": "OEM & ODM",
+      "certificates": "Certificates",
       "membershipPoints": "Membership and Points",
       "pictureWarehouse": "Picture warehouse",
       "contact": "Contact Us"
+    },
+    "pages": {
+      "placeholder": "Content coming soon."
+    },
+    "ourStory": {
+      "story": {
+        "title": "Story",
+        "factoryButton": "Factory",
+        "body": "Our story began with a clear belief:\nhigh-performance carbon components require more than good materials —\nthey require full control.\n\nAs engineers and riders, we saw too many products built through fragmented processes,\nwhere design, manufacturing, and quality control were separated.\nThe result was inconsistency, delayed communication, and avoidable risk.\n\nWe started with carbon rims, one of the most technically demanding components in cycling.\nFrom layup structure and resin control to impact resistance,\nevery decision was made with performance and safety in mind.\n\nAs our capabilities expanded, we naturally moved into complete wheelsets\nand carbon handlebars.\nNot to chase a broader product range,\nbut to ensure that every component works together as a complete system.\n\nToday, our OEM and ODM solutions are trusted by partners around the world.\nFrom design and engineering to manufacturing and testing,\neverything is built in-house.\nThis allows us to deliver consistent quality, reliable lead times,\nand products that meet the expectations of global markets.\n\nWe believe long-term partnerships are built on transparency,\nstable quality, and accountability.\nThat principle continues to guide how we work with brands,\ndistributors, and riders worldwide.  Whether developing a new product or scaling an existing design,\nwe work as an extension of our partners’ teams."
+      }
     }
   },
   "member": {
