@@ -2,7 +2,15 @@
   <div v-if="post">
     <header class="flex flex-col gap-2">
       <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
-        {{ t(postCategory === 'news' ? 'blog.nav.news' : 'blog.nav.wheelsbuild') }}
+        {{
+          t(
+            postCategory === 'news'
+              ? 'blog.nav.news'
+              : postCategory === 'wheelsbuild'
+                ? 'blog.nav.wheelsbuild'
+                : 'blog.nav.all'
+          )
+        }}
       </p>
       <h1 class="text-2xl font-semibold text-slate-50">
         {{ post.title }}
@@ -26,12 +34,9 @@
 
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
-import { useRoute, useI18n, useHead, useLocalePath, useState } from '#imports'
-import {
-  getBlogPostBySlug,
-  getBlogCategoryFromPost,
-  type BlogCategory,
-} from '~/utils/blogMock'
+import { useRoute, useI18n, useHead, useLocalePath, useState, useAsyncData } from '#imports'
+import { useBlogApi } from '~/composables/useBlogApi'
+import type { BlogCategory, BlogPostDetail } from '~/utils/blogMock'
 
 definePageMeta({
   layout: 'products',
@@ -41,15 +46,32 @@ const route = useRoute()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 
+const blogApi = useBlogApi()
+
 const slug = computed(() => String(route.params.slug || ''))
 
-const post = computed(() =>
-  getBlogPostBySlug({ lang: String(locale.value || 'en'), slug: slug.value })
+const lang = computed(() => String(locale.value || 'en'))
+
+const { data: postData } = await useAsyncData(
+  `blog-post-${lang.value}-${slug.value}`,
+  async () => {
+    try {
+      return await blogApi.getPost({ lang: lang.value, slug: slug.value })
+    } catch {
+      return null
+    }
+  }
 )
+
+const post = computed(() => (postData.value || null) as BlogPostDetail | null)
 
 const postCategory = computed<BlogCategory | null>(() => {
   if (!post.value) return null
-  return getBlogCategoryFromPost(post.value)
+
+  const categories = Array.isArray(post.value.categories) ? post.value.categories : []
+  if (categories.includes('news')) return 'news'
+  if (categories.includes('wheelsbuild')) return 'wheelsbuild'
+  return null
 })
 
 const alternateLinksOverride = useState<{ code: string; path: string }[] | null>(
@@ -64,10 +86,13 @@ watchEffect(() => {
 
   const translations = post.value.translations as Record<string, { id: number; slug: string }>
 
+  const category = postCategory.value
+  const prefix = category ? `/blog/${category}` : '/blog'
+
   const entries = Object.entries(translations).map(([code, entry]) => {
     return {
       code,
-      path: localePath(`/blog/${entry.slug}`, code as any),
+      path: localePath(`${prefix}/${entry.slug}`, code as any),
     }
   })
 

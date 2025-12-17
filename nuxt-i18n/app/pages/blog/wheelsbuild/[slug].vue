@@ -26,8 +26,9 @@
 
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
-import { useRoute, useI18n, useHead, useLocalePath, useState } from '#imports'
-import { getBlogPostBySlug } from '~/utils/blogMock'
+import { useRoute, useI18n, useHead, useLocalePath, useState, useAsyncData } from '#imports'
+import { useBlogApi } from '~/composables/useBlogApi'
+import type { BlogPostDetail } from '~/utils/blogMock'
 
 definePageMeta({
   layout: 'products',
@@ -37,15 +38,28 @@ const route = useRoute()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 
+const blogApi = useBlogApi()
+
 const slug = computed(() => String(route.params.slug || ''))
 
-const post = computed(() =>
-  getBlogPostBySlug({
-    lang: String(locale.value || 'en'),
-    slug: slug.value,
-    category: 'wheelsbuild',
-  })
+const lang = computed(() => String(locale.value || 'en'))
+
+const { data: postData } = await useAsyncData(
+  `blog-post-wheelsbuild-${lang.value}-${slug.value}`,
+  async () => {
+    try {
+      return await blogApi.getPost({ lang: lang.value, slug: slug.value })
+    } catch {
+      return null
+    }
+  }
 )
+
+const post = computed(() => {
+  const resolved = (postData.value || null) as BlogPostDetail | null
+  const categories = resolved && Array.isArray(resolved.categories) ? resolved.categories : []
+  return categories.includes('wheelsbuild') ? resolved : null
+})
 
 const alternateLinksOverride = useState<{ code: string; path: string }[] | null>(
   'alternateLinksOverride'

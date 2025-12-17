@@ -46,16 +46,17 @@
       </button>
     </div>
 
-    <p v-else-if="allPosts.length === 0" class="mt-6 text-sm text-slate-300">
+    <p v-else-if="visiblePosts.length === 0" class="mt-6 text-sm text-slate-300">
       {{ t('blog.empty') }}
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n, useLocalePath, useHead, useState } from '#imports'
-import { listBlogPosts } from '~/utils/blogMock'
+import { computed, ref, watchEffect } from 'vue'
+import { useI18n, useLocalePath, useHead, useState, useAsyncData } from '#imports'
+import { useBlogApi } from '~/composables/useBlogApi'
+import type { BlogPostSummary } from '~/utils/blogMock'
 
 definePageMeta({
   layout: 'products',
@@ -66,16 +67,46 @@ useState('alternateLinksOverride').value = null
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 
-const allPosts = computed(() =>
-  listBlogPosts({ lang: String(locale.value || 'en'), category: 'wheelsbuild' })
+const blogApi = useBlogApi()
+const lang = computed(() => String(locale.value || 'en'))
+
+const PER_PAGE = 5
+
+const page = ref(1)
+const total = ref(0)
+const posts = ref<BlogPostSummary[]>([])
+const loadingMore = ref(false)
+
+const { data: initialResponse } = await useAsyncData(
+  `blog-posts-wheelsbuild-${lang.value}`,
+  () => blogApi.listPosts({ lang: lang.value, category: 'wheelsbuild', page: 1, perPage: PER_PAGE })
 )
 
-const visibleCount = ref(5)
-const visiblePosts = computed(() => allPosts.value.slice(0, visibleCount.value))
-const canLoadMore = computed(() => visibleCount.value < allPosts.value.length)
+watchEffect(() => {
+  posts.value = (initialResponse.value?.items || []) as BlogPostSummary[]
+  page.value = initialResponse.value?.page || 1
+  total.value = initialResponse.value?.total || 0
+})
 
-const loadMore = () => {
-  visibleCount.value += 5
+const visiblePosts = computed(() => posts.value)
+const canLoadMore = computed(() => posts.value.length < total.value)
+
+const loadMore = async () => {
+  if (!canLoadMore.value || loadingMore.value) return
+  loadingMore.value = true
+  try {
+    const next = await blogApi.listPosts({
+      lang: lang.value,
+      category: 'wheelsbuild',
+      page: page.value + 1,
+      perPage: PER_PAGE,
+    })
+    posts.value = [...posts.value, ...((next.items || []) as BlogPostSummary[])]
+    page.value = next.page
+    total.value = next.total
+  } finally {
+    loadingMore.value = false
+  }
 }
 
 const formatDate = (value: string) => {
