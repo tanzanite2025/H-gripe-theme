@@ -13,7 +13,7 @@
       <NuxtLink
         v-for="post in visiblePosts"
         :key="post.id"
-        :to="localePath(`/blog/${post.slug}`)"
+        :to="localePath(getPostLink(post))"
         class="group rounded-2xl border border-slate-700/60 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] p-4 shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] transition-all duration-200 hover:-translate-y-[1px] hover:border-slate-600/70 hover:bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.99))] hover:shadow-[0_14px_32px_-16px_rgba(0,0,0,1)]"
       >
         <div class="flex items-start justify-between gap-4">
@@ -46,16 +46,17 @@
       </button>
     </div>
 
-    <p v-else-if="allPosts.length === 0" class="mt-6 text-sm text-slate-300">
+    <p v-else-if="visiblePosts.length === 0" class="mt-6 text-sm text-slate-300">
       {{ t('blog.empty') }}
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n, useLocalePath, useHead, useState } from '#imports'
-import { listBlogPosts } from '~/utils/blogMock'
+import { computed, ref, watchEffect } from 'vue'
+import { useI18n, useLocalePath, useHead, useState, useAsyncData } from '#imports'
+import { useBlogApi } from '~/composables/useBlogApi'
+import type { BlogPostSummary } from '~/utils/blogMock'
 
 definePageMeta({
   layout: 'products',
@@ -66,14 +67,52 @@ useState('alternateLinksOverride').value = null
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 
-const allPosts = computed(() => listBlogPosts({ lang: String(locale.value || 'en') }))
+const blogApi = useBlogApi()
+const lang = computed(() => String(locale.value || 'en'))
 
-const visibleCount = ref(5)
-const visiblePosts = computed(() => allPosts.value.slice(0, visibleCount.value))
-const canLoadMore = computed(() => visibleCount.value < allPosts.value.length)
+const PER_PAGE = 5
 
-const loadMore = () => {
-  visibleCount.value += 5
+const page = ref(1)
+const total = ref(0)
+const posts = ref<BlogPostSummary[]>([])
+const loadingMore = ref(false)
+
+const { data: initialResponse } = await useAsyncData(
+  `blog-posts-all-${lang.value}`,
+  () => blogApi.listPosts({ lang: lang.value, page: 1, perPage: PER_PAGE })
+)
+
+watchEffect(() => {
+  posts.value = (initialResponse.value?.items || []) as BlogPostSummary[]
+  page.value = initialResponse.value?.page || 1
+  total.value = initialResponse.value?.total || 0
+})
+
+const getPostLink = (post: BlogPostSummary) => {
+  const categories = Array.isArray(post.categories) ? post.categories : []
+  if (categories.includes('news')) return `/blog/news/${post.slug}`
+  if (categories.includes('wheelsbuild')) return `/blog/wheelsbuild/${post.slug}`
+  return `/blog/${post.slug}`
+}
+
+const visiblePosts = computed(() => posts.value)
+const canLoadMore = computed(() => posts.value.length < total.value)
+
+const loadMore = async () => {
+  if (!canLoadMore.value || loadingMore.value) return
+  loadingMore.value = true
+  try {
+    const next = await blogApi.listPosts({
+      lang: lang.value,
+      page: page.value + 1,
+      perPage: PER_PAGE,
+    })
+    posts.value = [...posts.value, ...((next.items || []) as BlogPostSummary[])]
+    page.value = next.page
+    total.value = next.total
+  } finally {
+    loadingMore.value = false
+  }
 }
 
 const formatDate = (value: string) => {

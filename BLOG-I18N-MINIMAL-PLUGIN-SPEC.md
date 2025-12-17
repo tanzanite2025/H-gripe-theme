@@ -40,7 +40,7 @@
   - 自动创建语言 terms：与 Nuxt locales 一致
   - transient 缓存 + 版本号失效（发布/更新文章后自动失效）
 
-- Nuxt 前端（已落地：先用 mock 数据，后续替换为 WP REST）
+- Nuxt 前端（已落地：已替换为 WP REST）
   - 路由与页面：
     - `/:locale/blog`（All 列表）
     - `/:locale/blog/news`（News 列表）
@@ -59,11 +59,16 @@
   - i18n
     - `en.json` 已补齐 Blog 页面标题/简介/按钮/空状态文案
   - 相关文件（Nuxt）
-    - `tanzanite-theme/nuxt-i18n/app/utils/blogMock.ts`（mock 数据与查询函数）
+    - `tanzanite-theme/nuxt-i18n/app/composables/useBlogApi.ts`（WP REST 请求封装）
+    - `tanzanite-theme/nuxt-i18n/app/utils/blogMock.ts`（类型定义；mock 数据不再作为数据源）
     - `tanzanite-theme/nuxt-i18n/app/pages/blog/*`（列表与详情页）
     - `tanzanite-theme/nuxt-i18n/app/components/ProductsTopNav.vue`（Tab 高亮逻辑）
     - `tanzanite-theme/nuxt-i18n/app/layouts/default.vue`（`hreflang` override 支持）
     - `tanzanite-theme/nuxt-i18n/i18n/locales/en.json`（Blog 文案）
+
+  - Nuxt 配置（WP API Base）
+    - `runtimeConfig.public.wpApiBase`（默认：`https://tanzanite.site/wp-json`）
+    - 环境变量：`WP_API_BASE` 可覆盖
 
 ---
 
@@ -313,6 +318,7 @@ Query：
 - [x] Nuxt 前端：二级 Tab 高亮在详情页保持正确
 - [x] Nuxt 前端：详情页 `hreflang` 按 `translations` 生成（slug 可不同）
 - [x] Nuxt 前端：补齐 `en.json` Blog 文案 key
+- [x] Nuxt 前端：mock 已替换为 WP REST（列表与详情）
 
 ### 待做（如需要再加，暂不影响 Nuxt 承接页）
 
@@ -328,11 +334,14 @@ Query：
 - [ ] Nuxt 切换语言时能跳到对应语言文章
 - [ ] 无草稿/私密内容泄露
 
+- [ ] Nuxt 列表页默认展示 5 条，点击 `Read more` 每次追加 5 条（URL 不变）
+- [ ] Nuxt 详情页 `hreflang` 链接指向正确的跨语言 slug
+
 ---
 
 ## 13. 下一步（先做 Nuxt 承接页，再统一联调）
 
-- Nuxt 承接页（已完成：目前使用 mock 数据，待替换为 WP 插件 API）：
+- Nuxt 承接页（已完成：已接入 WP 插件 REST API）：
   - `/:locale/blog`
   - `/:locale/blog/news`
   - `/:locale/blog/wheelsbuild`
@@ -340,7 +349,21 @@ Query：
   - `/:locale/blog/wheelsbuild/:slug`
   - `/:locale/blog/:slug`
 
-- 下一步：替换 mock 为真实 WP REST + 联调验收：
-  - 列表：`/wp-json/tanzanite/v1/posts?lang=en&category=news`
-  - 详情：`/wp-json/tanzanite/v1/post?lang=en&slug=xxx`
-  - 翻译映射：`/wp-json/tanzanite/v1/translations?group=xxx`
+- 联调验收接口清单（建议直接在浏览器/命令行访问验证 HTTP 状态码与字段）：
+  - 列表（News）：
+    - `${WP_API_BASE}/tanzanite/v1/posts?lang=en&category=news&page=1&per_page=5`
+    - 期望：200，返回 `{ page, per_page, total, items: [...] }`
+  - 列表（Wheelsbuild）：
+    - `${WP_API_BASE}/tanzanite/v1/posts?lang=en&category=wheelsbuild&page=1&per_page=5`
+  - 列表（All，仅允许 news/wheelsbuild 文章）：
+    - `${WP_API_BASE}/tanzanite/v1/posts?lang=en&page=1&per_page=5`
+  - 详情（按语言 + slug）：
+    - `${WP_API_BASE}/tanzanite/v1/post?lang=en&slug=xxx`
+    - 期望：200，返回包含 `contentHtml`、`canonicalUrl`、`translations`
+  - 翻译映射（按 group）：
+    - `${WP_API_BASE}/tanzanite/v1/translations?group=xxx`
+
+- 联调验收要点（前端行为）：
+  - 进入 `/:locale/blog/news`：首屏 5 条；点击 `Read more` 后加载第 2 页（请求 `page=2`），URL 不变
+  - 进入 `/:locale/blog/news/:slug`：页面 `hreflang` 链接与语言切换都使用 `translations` 对应 slug
+  - `lang` 非白名单 / `category` 非 news|wheelsbuild / `slug` 为空时：返回 400（WP_Error）
