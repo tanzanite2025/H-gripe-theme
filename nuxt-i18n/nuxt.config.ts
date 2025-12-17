@@ -13,16 +13,6 @@ export default defineNuxtConfig({
         'cache-control': 'public, max-age=31536000, immutable'
       }
     },
-
-    // Legacy paths for the spoke calculator page. Keep these so that
-    // previously shared links continue to work and are redirected to
-    // the canonical /spoke-calculator URL under the products layout.
-    '/spokecalculator': {
-      redirect: '/spoke-calculator'
-    },
-    '/support/spoke-calculator': {
-      redirect: '/spoke-calculator'
-    }
   },
   
   modules: ['@nuxtjs/i18n'],

@@ -89,8 +89,22 @@ const navContext = computed<NavContext>(() => {
   const forcedProducts =
     typeof navQuery === 'string' && navQuery.toLowerCase() === 'products'
 
-  if (!forcedProducts && (path === '/guides' || path.startsWith('/guides/'))) {
+  if (path === '/guides' || path.startsWith('/guides/')) {
+    const productsGuidesRoutes = new Set([
+      '/guides/sizecharts',
+      '/guides/technical',
+      '/guides/wheelset-buyers',
+    ])
+
+    if (forcedProducts || productsGuidesRoutes.has(path)) {
+      return 'products'
+    }
+
     return 'guides'
+  }
+
+  if (path === '/support/test-report') {
+    return 'products'
   }
 
   return 'products'
@@ -129,14 +143,6 @@ const getLabelKey = (item: ProductsNavItem) => {
 
 const getTo = (item: ProductsNavItem) => {
   const target = localePath(item.to)
-
-  if (
-    navContext.value === 'products' &&
-    (item.to.startsWith('/guides/') || item.to.startsWith('/support/'))
-  ) {
-    return `${target}?nav=products`
-  }
-
   return target
 }
 
@@ -145,7 +151,14 @@ const isActive = (item: ProductsNavItem) => {
   const currentPath = route.path
 
   if (item.to === '/blog') {
-    return currentPath === targetPath
+    if (currentPath === targetPath) return true
+
+    const prefix = `${targetPath}/`
+    if (!currentPath.startsWith(prefix)) return false
+
+    const remainder = currentPath.slice(prefix.length)
+    const firstSegment = remainder.split('/')[0] || ''
+    return firstSegment !== 'news' && firstSegment !== 'wheelsbuild'
   }
 
   return (

@@ -332,7 +332,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type ComponentPublicInstance } from 'vue'
-import { useLocalePath, useRoute } from '#imports'
+import { useLocalePath, useRoute, useState } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
@@ -383,6 +383,11 @@ const { locale, locales, setLocale, t } = useI18n()
 const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
+
+const alternateLinksOverride = useState<{ code: string; path: string }[] | null>(
+  'alternateLinksOverride',
+  () => null
+)
 
 interface BreadcrumbItem {
   label: string
@@ -688,12 +693,16 @@ const onListKeydown = (e: KeyboardEvent) => {
 const switchLanguage = async (code: string) => {
   try {
     if (!code || !isLocaleCode(code) || code === locale.value) { isOpen.value = false; return }
+
+    const overrideTargetPath = alternateLinksOverride.value?.find((entry) => entry.code === code)?.path
+    const currentFullPath = router.currentRoute.value?.fullPath || ''
+    const fallbackTargetPath = switchLocalePath(code as any)
+    const targetPath = overrideTargetPath || fallbackTargetPath
+
     locale.value = code
     await nextTick()
     try { await setLocale(code) } catch {}
-    const targetPath = switchLocalePath(code as any)
-    const current = router.currentRoute.value?.fullPath || ''
-    if (targetPath && targetPath !== current) {
+    if (targetPath && targetPath !== currentFullPath) {
       try {
         await router.push(targetPath)
       } catch {

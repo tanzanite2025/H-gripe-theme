@@ -10,14 +10,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   useRuntimeConfig,
   useRoute,
   useHead,
   useSwitchLocalePath,
   useI18n,
-  useAsyncData
+  useAsyncData,
+  useState
 } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
@@ -263,6 +264,24 @@ const route = useRoute()
 const { locales, defaultLocale, locale } = useI18n()
 const switchLocalePath = useSwitchLocalePath()
 
+type AlternateLinkOverrideEntry = {
+  code: string
+  path: string
+}
+
+const alternateLinksOverride = useState<AlternateLinkOverrideEntry[] | null>(
+  'alternateLinksOverride',
+  () => null
+)
+
+watch(
+  () => route.fullPath,
+  () => {
+    alternateLinksOverride.value = null
+  },
+  { immediate: true }
+)
+
 type RawLocale = string | { code: string; iso?: string }
 
 interface LocaleEntry {
@@ -301,6 +320,16 @@ const makeAbsoluteUrl = (path: string) => {
 const canonicalUrl = computed(() => makeAbsoluteUrl(route.fullPath || '/'))
 
 const alternateLinks = computed(() => {
+  if (Array.isArray(alternateLinksOverride.value) && alternateLinksOverride.value.length) {
+    return alternateLinksOverride.value.map((override) => {
+      const localeEntry = resolvedLocales.value.find((entry) => entry.code === override.code)
+      return {
+        hreflang: localeEntry?.iso || override.code,
+        href: makeAbsoluteUrl(override.path)
+      }
+    })
+  }
+
   return resolvedLocales.value.map((entry) => {
     const targetPath = switchLocalePath(entry.code as any) || '/'
     return {
@@ -325,6 +354,13 @@ const defaultLocaleCode = computed(() => {
 })
 
 const xDefaultLink = computed(() => {
+  if (Array.isArray(alternateLinksOverride.value) && alternateLinksOverride.value.length) {
+    const override = alternateLinksOverride.value.find((entry) => entry.code === defaultLocaleCode.value)
+    if (override?.path) {
+      return makeAbsoluteUrl(override.path)
+    }
+  }
+
   const targetPath = switchLocalePath(defaultLocaleCode.value as any) || '/'
   return makeAbsoluteUrl(targetPath)
 })

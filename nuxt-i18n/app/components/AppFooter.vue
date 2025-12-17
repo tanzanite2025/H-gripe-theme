@@ -156,7 +156,8 @@ const paymentIcons: PaymentIcon[] = [
   { src: '/icons/payment/alipay.svg?v=6', alt: 'Alipay', className: 'payment-icon--alipay' },
   { src: '/icons/payment/unionpay.svg', alt: 'UnionPay' },
   { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay' },
-  { src: '/icons/payment/Applepay.svg?v=6', alt: 'Apple Pay', className: 'payment-icon--applepay' },
+  { src: '/icons/payment/applepay.svg?v=7', alt: 'Apple Pay' },
+  { src: '/icons/payment/googlepay.svg', alt: 'Google Pay' },
   { src: '/icons/payment/stripe.svg', alt: 'Stripe' },
   { src: '/icons/payment/default.svg', alt: 'Card Payment' },
 ]
@@ -234,11 +235,6 @@ const paymentIcons: PaymentIcon[] = [
 
 .payment-icon-tile__img.payment-icon--alipay {
   transform: scale(1.28);
-  transform-origin: center;
-}
-
-.payment-icon-tile__img.payment-icon--applepay {
-  transform: scale(1.18);
   transform-origin: center;
 }
 

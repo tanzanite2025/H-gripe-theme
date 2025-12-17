@@ -368,7 +368,34 @@
       "all": "All",
       "news": "News",
       "wheelsbuild": "Wheelbuild"
-    }
+    },
+    "pages": {
+      "all": {
+        "title": "Blog",
+        "intro": "Updates, announcements, and wheelbuilding articles.",
+        "metaTitle": "Blog"
+      },
+      "news": {
+        "title": "News",
+        "intro": "Product updates, announcements, and quick guides.",
+        "metaTitle": "Blog · News"
+      },
+      "wheelsbuild": {
+        "title": "Wheelbuild",
+        "intro": "Wheelbuilding workflow, checks, and practical tips.",
+        "metaTitle": "Blog · Wheelbuild"
+      },
+      "detail": {
+        "metaTitle": "Blog",
+        "metaDescription": "Read the latest article from Tanzanite."
+      }
+    },
+    "actions": {
+      "readMore": "Read more",
+      "openArticle": "Open article"
+    },
+    "empty": "No articles yet.",
+    "notFound": "Article not found."
   },
   "products": {
     "searchResults": "Search Results",
@@ -404,6 +431,36 @@
       "membershipPoints": "Membership and Points",
       "pictureWarehouse": "Picture warehouse",
       "contact": "Contact Us"
+    },
+    "index": {
+      "title": "Company",
+      "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
+      "cards": {
+        "about": {
+          "description": "Learn about our mission, values, and the team behind Tanzanite.",
+          "cta": "About Tanzanite"
+        },
+        "ourStory": {
+          "description": "Background of Tanzanite and the vision behind our products.",
+          "cta": "Read our story"
+        },
+        "globalPartners": {
+          "description": "Explore our global network of partners and collaborations.",
+          "cta": "View partners"
+        },
+        "oemOdm": {
+          "description": "Discover how we support OEM and ODM programs from design to delivery.",
+          "cta": "Learn about OEM & ODM"
+        },
+        "certificates": {
+          "description": "Review certifications and standards that support our quality commitments.",
+          "cta": "View certificates"
+        },
+        "contact": {
+          "description": "Get in touch with the Tanzanite team for enquiries and support.",
+          "cta": "Contact us"
+        }
+      }
     },
     "pages": {
       "placeholder": "Content coming soon."
@@ -549,7 +606,11 @@
       "about": "About",
       "aboutUs": "About Us",
       "contact": "Contact",
+      "contactUs": "Contact Us",
       "ourStory": "Our Story",
+      "globalPartners": "Global Partners",
+      "oemOdm": "OEM & ODM",
+      "certificates": "Certificates",
       "membershipPoints": "Membership and Points",
       "pictureWarehouse": "Picture warehouse"
     },
