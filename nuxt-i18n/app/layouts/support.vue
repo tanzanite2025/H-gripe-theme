@@ -30,7 +30,7 @@ import SupportTopNav from '~/components/SupportTopNav.vue'
 
 const route = useRoute()
 const isProductsNavForced = computed(() => {
-  return typeof route.query.nav === 'string' && route.query.nav === 'products'
+  return route.path === '/support/test-report'
 })
 </script>
 

@@ -26,13 +26,21 @@
           />
         </div>
       </div>
-      <p
-        v-for="(paragraph, index) in storyParagraphs"
-        :key="index"
-        class="company-section__body"
-      >
-        {{ paragraph }}
-      </p>
+      <ul class="flex flex-col gap-3">
+        <li
+          v-for="(paragraph, index) in storyParagraphs"
+          :key="index"
+          class="flex gap-3"
+        >
+          <span
+            class="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/40"
+            aria-hidden="true"
+          ></span>
+          <p class="company-section__body m-0">
+            {{ paragraph }}
+          </p>
+        </li>
+      </ul>
     </section>
 
     <div class="company-feedback">

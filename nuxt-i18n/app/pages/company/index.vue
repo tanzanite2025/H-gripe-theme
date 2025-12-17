@@ -1,8 +1,8 @@
 <template>
   <div>
-    <h2 class="company-page__title">Company</h2>
+    <h2 class="company-page__title">{{ t('company.index.title') }}</h2>
     <p class="company-page__intro">
-      Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.
+      {{ t('company.index.intro') }}
     </p>
 
     <section class="company-grid">
@@ -32,40 +32,63 @@
 </template>
 
 <script setup lang="ts">
-import { definePageMeta, useHead, useLocalePath } from '#imports'
+import { computed } from 'vue'
+import { definePageMeta, useHead, useI18n, useLocalePath } from '#imports'
 
 const localePath = useLocalePath()
+const { t } = useI18n()
 
-const sections = [
+const sections = computed(() => [
   {
     to: '/company/about',
     icon: 'A',
-    title: 'About Us',
-    description: 'Learn about our mission, values, and the team behind Tanzanite.',
-    cta: 'About Tanzanite',
+    title: t('company.nav.about'),
+    description: t('company.index.cards.about.description'),
+    cta: t('company.index.cards.about.cta'),
   },
   {
     to: '/company/ourstory',
     icon: 'O',
-    title: 'Our Story',
-    description: 'Background of Tanzanite and the vision behind our products.',
-    cta: 'Read our story',
+    title: t('company.nav.ourStory'),
+    description: t('company.index.cards.ourStory.description'),
+    cta: t('company.index.cards.ourStory.cta'),
+  },
+  {
+    to: '/company/global-partners',
+    icon: 'G',
+    title: t('company.nav.globalPartners'),
+    description: t('company.index.cards.globalPartners.description'),
+    cta: t('company.index.cards.globalPartners.cta'),
+  },
+  {
+    to: '/company/oem-odm',
+    icon: 'O',
+    title: t('company.nav.oemOdm'),
+    description: t('company.index.cards.oemOdm.description'),
+    cta: t('company.index.cards.oemOdm.cta'),
+  },
+  {
+    to: '/company/certificates',
+    icon: 'C',
+    title: t('company.nav.certificates'),
+    description: t('company.index.cards.certificates.description'),
+    cta: t('company.index.cards.certificates.cta'),
   },
   {
     to: '/company/contact',
     icon: 'C',
-    title: 'Contact Us',
-    description: 'Get in touch with the Tanzanite team for enquiries and support.',
-    cta: 'Contact us',
+    title: t('company.nav.contact'),
+    description: t('company.index.cards.contact.description'),
+    cta: t('company.index.cards.contact.cta'),
   },
-]
+])
 
 definePageMeta({
   layout: 'products',
 })
 
 useHead({
-  title: 'Company',
+  title: t('company.index.title'),
 })
 </script>
 
