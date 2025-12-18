@@ -1,6 +1,6 @@
 <template>
   <section class="bg-transparent text-white">
-    <div class="mx-auto max-w-6xl px-1 sm:px-4 pt-[3px] pb-0">
+    <div class="mx-auto max-w-5xl px-1 sm:px-4 pt-[3px] pb-0">
       <div class="mb-[9px] text-center">
         <h2 class="text-lg font-semibold text-white/90 lg:text-xl">{{ t('home.trust.title') }}</h2>
         <div

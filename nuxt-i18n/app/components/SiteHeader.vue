@@ -73,7 +73,7 @@
 					<div class="flex items-center justify-end gap-4">
 						<!-- Search -->
 						<button
-							class="w-9 h-9 rounded-full bg-slate-900/70 flex items-center justify-center text-slate-200 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-sky-300 hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
+							class="w-9 h-9 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-[#0b1020] hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
 							@click="openSidebar"
 							aria-label="Search"
 						>
@@ -193,7 +193,7 @@
 					<div class="flex items-center gap-3 phone-390:gap-4">
 						<!-- Search (Icon) -->
 						<button
-							class="text-white/70 hover:text-white transition-colors p-1"
+							class="w-9 h-9 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-[0_4px_14px_rgba(0,0,0,0.9)]"
 							@click="openSidebar"
 							aria-label="Search"
 						>
@@ -332,8 +332,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type ComponentPublicInstance } from 'vue'
-import { useLocalePath, useRoute, useState } from '#imports'
+import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
+import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { productsNavItems } from '~/utils/productsNav'
@@ -373,10 +374,10 @@ const toggleShare = () => {
 
 // Open Sidebar (Search)
 const openSidebar = () => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:sidebar-open', { detail: { side: 'left' } }))
-  }
+  openShopSearch()
 }
+
+const { open: openShopSearch } = useShopSearchSheet()
 
 // Language Switcher
 const { locale, locales, setLocale, t } = useI18n()

@@ -17,6 +17,7 @@
     <!-- 购物车和结账弹窗 -->
     <CartDrawer />
     <CheckoutModal />
+    <ShopSearchSheet />
     
     <!-- 全局聊天弹窗 -->
     <WhatsAppChatModal
@@ -35,6 +36,7 @@ import { ref } from 'vue'
 import SidePanel from './components/SidePanel.vue'
 import SidebarContent from './components/SidebarContent.vue'
 import ProductSearchResults from './components/ProductSearchResults.vue'
+import ShopSearchSheet from './components/ShopSearchSheet.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import { useChatWidget } from '~/composables/useChatWidget'

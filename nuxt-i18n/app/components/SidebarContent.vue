@@ -1,10 +1,5 @@
 <template>
   <div class="sidebar-content w-full h-full flex flex-col p-3 md:p-4 max-md:pb-2">
-    <!-- 搜索组件（移动端隐藏，桌面端显示） -->
-    <div class="shrink-0 mb-3 hidden md:block">
-      <ProductSearchPanel />
-    </div>
-
     <!-- Dock 导航 -->
     <div class="shrink-0 dock-nav flex gap-1 p-1.5 rounded-3xl bg-white/[0.03] border border-white/5 mb-3">
       <NuxtLink 
@@ -229,7 +224,6 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import { useLocalePath } from '#imports'
-import ProductSearchPanel from '~/components/ProductSearchPanel.vue'
 
 const localePath = useLocalePath()
 
