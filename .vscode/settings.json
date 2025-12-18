@@ -1,0 +1,4 @@
+{
+  "vetur.useWorkspaceDependencies": true,
+  "typescript.tsdk": "nuxt-i18n/node_modules/typescript/lib"
+}
