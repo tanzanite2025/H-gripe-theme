@@ -3,15 +3,22 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "~/*": ["./*"],
-      "@/*": ["./*"],
-      "~/composables/*": ["app/composables/*"],
+      "~/*": ["./app/*"],
+      "@/*": ["./app/*"],
+      "~/components/*": ["./app/components/*"],
+      "~/composables/*": ["./app/composables/*"],
+      "~/utils/*": ["./app/utils/*"],
       "~/types/*": ["types/*"],
       "@/types/*": ["types/*"],
-      "#imports": [".nuxt/imports"]
+      "#imports": ["./.nuxt/imports.d.ts"]
     },
     "strict": true,
     "forceConsistentCasingInFileNames": true,
+    "typeRoots": [
+      "./.nuxt/types",
+      "./types",
+      "./node_modules/@types"
+    ],
     "types": [
       "./types/shims-nuxt",
       "@types/node",
@@ -19,6 +26,12 @@
     ]
   },
   "files": [],
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.vue",
+    "types/**/*.d.ts",
+    ".nuxt/**/*.d.ts"
+  ],
   "references": [
     {
       "path": "./.nuxt/tsconfig.app.json"

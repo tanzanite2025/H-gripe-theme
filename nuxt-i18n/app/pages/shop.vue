@@ -1,6 +1,35 @@
 <template>
   <main class="shop-page max-w-5xl mx-auto pt-0 pb-16 space-y-6">
-    <ProductSearchPanel @search="handleSearch" />
+    <section class="rounded-xl bg-white/5 p-4 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
+      <div class="flex flex-wrap gap-2">
+        <input
+          v-model="quickSearchQuery"
+          type="text"
+          :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
+          class="flex-1 min-w-0 h-[38px] px-4 rounded-lg bg-slate-900/70 text-white placeholder:text-slate-400 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+        />
+
+        <button
+          type="button"
+          class="h-[38px] px-4 rounded-lg bg-white text-black font-semibold shadow-[8px_8px_22px_rgba(0,0,0,0.92)] hover:shadow-[10px_10px_26px_rgba(0,0,0,0.95)] transition-all"
+          @click="runQuickSearch"
+        >
+          {{ $t('sidebar.search', 'Search') }}
+        </button>
+
+        <button
+          type="button"
+          class="h-[38px] px-4 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/40 text-white font-semibold transition-all inline-flex items-center gap-2"
+          :aria-label="$t('filter.filters', 'Filters')"
+          @click="openFilters"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-.553.894l-4 2A1 1 0 019 21v-8.586L3.293 6.707A1 1 0 013 6V4z" />
+          </svg>
+          <span>{{ $t('filter.filters', 'Filters') }}</span>
+        </button>
+      </div>
+    </section>
 
     <section class="flex gap-4">
       <!-- 桌面端左侧分类栏 -->
@@ -109,14 +138,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import ProductSearchPanel from '~/components/ProductSearchPanel.vue'
+import { ref, onMounted, watch } from 'vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import CategorySidebar from '~/components/CategorySidebar.vue'
 import CategoryChips from '~/components/CategoryChips.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useShopCategories } from '~/composables/useShopCategories'
 import type { ShopCategory } from '~/composables/useShopCategories'
+import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 
 definePageMeta({
   layout: 'products',
@@ -133,6 +162,8 @@ interface ShopProduct {
 const products = ref<ShopProduct[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+
+const quickSearchQuery = ref('')
 
 // 商品心愿单
 const { addToWishlist } = useWishlist()
@@ -153,6 +184,24 @@ interface ProductSearchPayload {
 }
 
 const currentSearch = ref<ProductSearchPayload | null>(null)
+
+const DEFAULT_QUICK_FILTERS: ProductSearchFiltersPayload = {
+  priceRange: [0, 5000],
+  attributes: {},
+}
+
+const { open: openShopSearchSheet, pendingSearch } = useShopSearchSheet()
+
+const openFilters = () => {
+  openShopSearchSheet()
+}
+
+const runQuickSearch = () => {
+  handleSearch({
+    query: quickSearchQuery.value,
+    filters: { ...DEFAULT_QUICK_FILTERS },
+  })
+}
 
 const buildProductQueryParams = (payload?: ProductSearchPayload) => {
   const params: Record<string, any> = {
@@ -265,7 +314,19 @@ const onCategorySelect = (category: ShopCategory | null) => {
 
 onMounted(() => {
   loadCategories()
+  const initialPending = pendingSearch.value
+  if (initialPending) {
+    pendingSearch.value = null
+    handleSearch(initialPending as unknown as ProductSearchPayload)
+    return
+  }
   loadProducts()
+})
+
+watch(pendingSearch, (payload) => {
+  if (!payload) return
+  pendingSearch.value = null
+  handleSearch(payload as unknown as ProductSearchPayload)
 })
 
 const handleAddToWishlist = async (product: ShopProduct) => {

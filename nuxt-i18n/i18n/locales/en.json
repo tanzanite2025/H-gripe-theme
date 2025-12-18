@@ -20,12 +20,18 @@
     "usernameOrEmail": "Username or Email",
     "rememberMe": "Remember me"
   },
+  "common": {
+    "close": "Close",
+    "previous": "Previous",
+    "next": "Next"
+  },
   "search": {
     "placeholder": "Search...",
     "button": "Search"
   },
   "filter": {
     "title": "Advanced Filters",
+    "filters": "Filters",
     "priceRange": "Price Range",
     "price": "Price",
     "stockStatus": "Stock Status",
@@ -58,6 +64,19 @@
     "hero": {
       "title": "Factory-Direct Carbon Rims & Wheelsets",
       "subtitle": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability.",
+      "stackAriaLabel": "Hero image cards",
+      "dotAriaLabel": "Go to card {index}",
+      "cards": {
+        "0": {
+          "alt": "Factory-direct carbon rims and wheelsets"
+        },
+        "1": {
+          "alt": "Carbon pre-mold layup workshop"
+        },
+        "2": {
+          "alt": "Final inspection and packing"
+        }
+      },
       "cta": {
         "shop": "Shop",
         "about": "About",
