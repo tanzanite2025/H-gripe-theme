@@ -2,6 +2,14 @@
   // https://nuxt.com/docs/guide/concepts/typescript
   "compilerOptions": {
     "baseUrl": ".",
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "paths": {
       "~/*": ["./app/*"],
       "@/*": ["./app/*"],
@@ -18,32 +26,12 @@
       "./.nuxt/types",
       "./types",
       "./node_modules/@types"
-    ],
-    "types": [
-      "./types/shims-nuxt",
-      "@types/node",
-      ".nuxt/nuxt"
     ]
   },
-  "files": [],
   "include": [
     "app/**/*.ts",
     "app/**/*.vue",
     "types/**/*.d.ts",
     ".nuxt/**/*.d.ts"
-  ],
-  "references": [
-    {
-      "path": "./.nuxt/tsconfig.app.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.server.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.shared.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.node.json"
-    }
   ]
 }

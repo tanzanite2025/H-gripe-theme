@@ -125,7 +125,7 @@
 												role="option"
 												:aria-selected="locale.code === currentLocale.code"
 												:tabindex="-1"
-												:ref="el => setOptionRef(el, index)"
+												:ref="setOptionRefAt(index)"
 												@click="switchLanguage(locale.code)"
 											>
 												<span class="w-[1.2em] inline-block" aria-hidden="true">
@@ -380,7 +380,7 @@ const openSidebar = () => {
 const { open: openShopSearch } = useShopSearchSheet()
 
 // Language Switcher
-const { locale, locales, setLocale, t } = useI18n()
+const { locale, locales, setLocale, t } = useI18n() as any
 const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
@@ -627,19 +627,19 @@ const normalizedLocales = computed<LocaleOption[]>(() => {
 
 type LocaleCode = typeof locale.value
 const isLocaleCode = (value: string): value is LocaleCode => {
-  return normalizedLocales.value.some(item => item.code === value)
+  return normalizedLocales.value.some((item: LocaleOption) => item.code === value)
 }
 
 const currentLocale = computed<LocaleOption>(() => {
   return (
-    normalizedLocales.value.find(l => l.code === locale.value) ||
+    normalizedLocales.value.find((l: LocaleOption) => l.code === locale.value) ||
     normalizedLocales.value[0] ||
     { code: locale.value }
   )
 })
 
 const availableLocales = computed<LocaleOption[]>(() => {
-  return normalizedLocales.value.filter(l => l.code !== locale.value)
+  return normalizedLocales.value.filter((l: LocaleOption) => l.code !== locale.value)
 })
 
 const buttonId = 'lang-switcher-button'
@@ -652,6 +652,10 @@ const setOptionRef = (el: Element | ComponentPublicInstance | null, index: numbe
     : (el as HTMLElement | null)
   if (!target) return
   optionRefs.value[index] = target
+}
+
+const setOptionRefAt = (index: number) => {
+  return (el: Element | ComponentPublicInstance | null) => setOptionRef(el, index)
 }
 
 const toggleDropdown = () => {
@@ -695,7 +699,7 @@ const switchLanguage = async (code: string) => {
   try {
     if (!code || !isLocaleCode(code) || code === locale.value) { isOpen.value = false; return }
 
-    const overrideTargetPath = alternateLinksOverride.value?.find((entry) => entry.code === code)?.path
+    const overrideTargetPath = alternateLinksOverride.value?.find((entry: { code: string; path: string }) => entry.code === code)?.path
     const currentFullPath = router.currentRoute.value?.fullPath || ''
     const fallbackTargetPath = switchLocalePath(code as any)
     const targetPath = overrideTargetPath || fallbackTargetPath
