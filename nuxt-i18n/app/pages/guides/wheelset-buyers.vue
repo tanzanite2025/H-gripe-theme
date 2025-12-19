@@ -102,6 +102,13 @@
             <p class="wheelset-safety-item">
               <strong>Spoke Tension:</strong>
               Regularly check spoke tension to ensure even distribution and prevent structural imbalance.
+              <button
+                type="button"
+                class="wheelset-inline-button"
+                @click="goToTechnicalTension"
+              >
+                Check out our targeted settings for spoke tension
+              </button>
             </p>
             <p class="wheelset-safety-item">
               <strong>Cleaning Method:</strong>
@@ -147,6 +154,20 @@
         class="wheelset-section"
       >
         <h3 class="wheelset-section__title">Mullet wheelsets</h3>
+        <p class="products-page__intro">
+          Many mountain bikers have fallen in love with the combination of a 29-inch front wheel paired with a 27.5-inch rear
+          wheel, or a 27.5-inch front wheel with a 26-inch rear wheel. This wheel size mix is particularly well-suited for
+          off-road riding. It offers easy handling on steep descents, agile and responsive cornering, and the ability to roll
+          smoothly over rough terrain. This setup is commonly known as the “mullet”—and for good reason: the front wheel
+          provides stability and reliability, while the rear wheel delivers agility and performance!
+        </p>
+        <button
+          type="button"
+          class="wheelset-inline-button"
+          @click="openQuickBuy"
+        >
+          You can use our quick customization to match
+        </button>
       </section>
 
       <!-- Sample assembly -->
@@ -229,11 +250,12 @@
         class="wheelset-section"
       >
         <h3 class="wheelset-section__title">Optional</h3>
+        <p>Here is some new content.</p>
       </section>
 
       <!-- FAQ Section - 放在所有 tab 内容之后 -->
       <section class="wheelset-section wheelset-faq">
-        <PageFaq 
+        <PageFaq
           page-id="guides-wheelset-buyers"
           theme="dark"
           :show-categories="true"
@@ -241,6 +263,7 @@
       </section>
     </div>
   </div>
+  <QuickBuyModal v-if="quickOpen" :config="null" @close="quickOpen = false" />
 </template>
 
 <script setup lang="ts">
@@ -248,6 +271,7 @@ import { ref } from 'vue'
 import { useLocalePath, useRouter } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
+import QuickBuyModal from '@/components/QuickBuy.vue'
 
 definePageMeta({
   layout: 'products',
@@ -275,6 +299,7 @@ const tabs: { id: WheelsetTabId; label: string }[] = [
 ]
 
 const activeTab = ref<WheelsetTabId>('safety-instructions')
+const quickOpen = ref(false)
 
 const setActiveTab = (id: WheelsetTabId) => {
   activeTab.value = id
@@ -297,6 +322,17 @@ const goToTubelessInstallation = async () => {
 
 const goToAfterSales = async () => {
   await router.push(localePath('/support/after-sales'))
+}
+
+const goToTechnicalTension = async () => {
+  await router.push(`${localePath('/guides/technical')}#tension`)
+}
+
+const openQuickBuy = () => {
+  quickOpen.value = true
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'wheelset-quick' } }))
+  }
 }
 </script>
 
