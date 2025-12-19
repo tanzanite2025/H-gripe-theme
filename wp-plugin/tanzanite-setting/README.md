@@ -462,7 +462,7 @@ ALTER TABLE wp_tanz_products ADD INDEX idx_status (post_status);
 
 - **文档**: [完整文档](./docs/)
 - **问题反馈**: GitHub Issues
-- **邮箱**: support@tanzanite.com
+- **邮箱**: support@tanzanite.site
 
 ### 贡献指南
 

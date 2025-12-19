@@ -363,7 +363,7 @@ curl -X GET "https://example.com/wp-json/tanzanite/v1/products" \
 
 - **文档**: 本文档库
 - **GitHub**: [Issues](https://github.com/tanzanite/issues)
-- **邮箱**: support@tanzanite.com
+- **邮箱**: support@tanzanite.site
 
 ### 社区资源
 

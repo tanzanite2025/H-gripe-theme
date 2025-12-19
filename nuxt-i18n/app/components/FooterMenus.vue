@@ -56,10 +56,10 @@
             {{ $t('footer.brand.xmLabel', 'Xiamen:') }}
             <br />
             <a
-              href="mailto:support@tanzanite.com"
+              href="mailto:support@tanzanite.site"
               class="footer-menus__link"
             >
-              support@tanzanite.com
+              support@tanzanite.site
             </a>
           </p>
         </div>

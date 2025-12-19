@@ -55,8 +55,8 @@
         <h2 class="text-lg font-semibold text-white mb-3">Contact</h2>
         <p class="text-sm leading-relaxed">
           For refund or return questions, email
-          <a href="mailto:support@tanzanite.com" class="text-cyan-400 hover:text-cyan-300 underline">
-            support@tanzanite.com
+          <a href="mailto:support@tanzanite.site" class="text-cyan-400 hover:text-cyan-300 underline">
+            support@tanzanite.site
           </a>.
         </p>
       </section>
