@@ -140,8 +140,8 @@ onMounted(() => {
   border: none;
   padding: 14px;
   box-shadow:
-    0 8px 24px -12px rgba(0,0,0,0.9),
-    0 0 18px rgba(15,23,42,0.9);
+    0 10px 28px -14px rgba(0,0,0,0.92),
+    0 0 24px rgba(0,0,0,0.85);
 }
 
 /* 搜索行 */
@@ -221,14 +221,5 @@ onMounted(() => {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
   margin: 12px 0;
-}
-
-@media (max-width: 768px) {
-  /* 移动端隐藏 Color、Diameter、Brake 下拉筛选按钮 */
-  :deep(.sidebar-advanced-filter .attribute-top-row),
-  :deep(.sidebar-advanced-filter .attribute-inline-row),
-  :deep(.sidebar-advanced-filter [class*="attribute-filter"]) {
-    display: none !important;
-  }
 }
 </style>

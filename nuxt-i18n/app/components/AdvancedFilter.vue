@@ -49,12 +49,11 @@
         </div>
       </div>
 
-      <!-- 动态属性下拉（Color / Diameter / Brake） -->
-      <div v-if="attributeFilters.length" class="attribute-top-row">
+      <div v-if="attributeFilters.length" class="attribute-accordion-row">
         <div
           v-for="attr in attributeFilters"
           :key="attr.id"
-          class="attribute-inline-row"
+          class="attribute-accordion-item"
         >
           <button
             type="button"
@@ -63,8 +62,7 @@
           >
             <span class="attribute-label">
               {{ attr.name }}
-              <span v-if="getAttributeSummary(attr) !== 'All'" class="ml-0.5">({{ getAttributeSummary(attr) }})</span>
-              <span v-else class="hidden md:inline ml-0.5">({{ getAttributeSummary(attr) }})</span>
+              <span class="ml-0.5">({{ getAttributeSummary(attr) }})</span>
             </span>
             <span
               class="attribute-toggle-icon"
@@ -84,6 +82,7 @@
                   v-for="value in attr.values"
                   :key="value.id"
                   class="checkbox-item"
+                  :class="{ 'is-selected': isAttributeSelected(getAttributeKey(attr), value.slug) }"
                 >
                   <input
                     type="checkbox"
@@ -95,7 +94,7 @@
                   <span class="checkbox-label">
                     <span
                       v-if="attr.type === 'color' && value.value"
-                      class="inline-block w-4 h-4 rounded mr-2 align-middle border border-white/20"
+                      class="color-swatch"
                       :style="{ backgroundColor: value.value as string }"
                     />
                     {{ formatAttributeValueLabel(attr.slug, value.name) }}
@@ -292,14 +291,21 @@ const getAttributeKey = (attr: AttributeFilterConfig): string => {
 const expandedGroups = ref<Record<string, boolean>>({})
 
 const ensureExpandedDefaults = () => {
+  if (typeof window === 'undefined') return
+
   const map: Record<string, boolean> = { ...expandedGroups.value }
   let changed = false
 
-  attributeFilters.value.forEach((attr) => {
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false
+    return !!window.matchMedia && window.matchMedia('(max-width: 768px)').matches
+  }
+
+  attributeFilters.value.forEach((attr, index) => {
     const key = getAttributeKey(attr)
     if (!key) return
     if (typeof map[key] === 'undefined') {
-      map[key] = false // 默认收起
+      map[key] = isMobile() ? false : index === 0
       changed = true
     }
   })
@@ -572,6 +578,24 @@ watch(() => props.initialFilters, (newFilters) => {
   gap: 0.75rem;
 }
 
+.attribute-accordion-row {
+  flex: 1 1 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attribute-accordion-item {
+  border-radius: 0.75rem;
+  background: rgba(2, 6, 23, 0.75);
+  border: none;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.9),
+    0 2px 12px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
 /* Price range 行内布局：标题 + 输入框一行展示 */
 .price-range-inline {
   display: flex;
@@ -670,11 +694,13 @@ watch(() => props.initialFilters, (newFilters) => {
   background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
   color: #ffffff;
   cursor: pointer;
-  padding: 0.4rem 0.75rem;
-  display: inline-flex;
+  padding: 0.6rem 0.85rem;
+  width: 100%;
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
-  border-radius: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 0;
   font-size: 0.8125rem;
   transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
   box-shadow:
@@ -704,20 +730,14 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 属性下拉浮层 */
 .attribute-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0; /* 统一从容器右侧对齐，避免在右边按钮时向外溢出 */
-  left: auto;
-  margin-top: 0.25rem;
-  z-index: 20;
+  position: static;
+  margin: 0;
+  padding: 0.5rem 0.85rem 0.75rem;
   box-sizing: border-box;
-  min-width: min(220px, 80vw);
-  max-width: min(320px, 80vw);
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  background: rgba(15, 23, 42, 0.98);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.75);
+  width: 100%;
+  background: rgba(30, 41, 59, 0.35);
+  border-top: none;
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.85);
 }
 
 /* 下拉动效 */
@@ -760,30 +780,66 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .advanced-filter .checkbox-item {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
   cursor: pointer;
-  padding: 0.3rem 0.45rem;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(15,23,42,0.92), rgba(15,23,42,0.72));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.55);
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.08s ease;
 }
 
 .advanced-filter .checkbox-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(31,41,55,0.92), rgba(15,23,42,0.75));
 }
 
 .advanced-filter .checkbox-input {
-  width: 1.125rem;
-  height: 1.125rem;
-  cursor: pointer;
-  accent-color: #6b73ff;
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
 }
 
 .advanced-filter .checkbox-label {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.9);
   user-select: none;
+}
+
+.advanced-filter .checkbox-item.is-selected {
+  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.7);
+}
+
+.advanced-filter .checkbox-item.is-selected .checkbox-label {
+  color: rgba(0, 0, 0, 0.92);
+}
+
+.advanced-filter .checkbox-input:focus-visible + .checkbox-label {
+  outline: 2px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+
+.advanced-filter .color-swatch {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  margin-right: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.advanced-filter .checkbox-item.is-selected .color-swatch {
+  border-color: rgba(0, 0, 0, 0.25);
 }
 
 .advanced-filter.theme-light .checkbox-label {

@@ -274,7 +274,7 @@ refunded (已退款)
 
 ### 支持
 - GitHub Issues
-- 邮箱: support@tanzanite.com
+- 邮箱: support@tanzanite.site
 - 论坛: forum.tanzanite.com
 
 ---

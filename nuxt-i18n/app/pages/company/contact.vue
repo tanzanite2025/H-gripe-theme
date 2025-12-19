@@ -9,7 +9,7 @@
         entry to reach customer service, send product enquiries, or follow future social links.
       </p>
       <p class="company-section__body">
-        For urgent support, please email <a class="company-section__link" href="mailto:support@tanzanite.com">support@tanzanite.com</a>.
+        For urgent support, please email <a class="company-section__link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>.
       </p>
 
       <div class="mt-6">
@@ -37,7 +37,7 @@ useHead({
         '@context': 'https://schema.org',
         '@type': 'LocalBusiness',
         name: contactLocation.name,
-        email: 'support@tanzanite.com',
+        email: 'support@tanzanite.site',
         address: {
           '@type': 'PostalAddress',
           streetAddress: contactLocation.addressText,
