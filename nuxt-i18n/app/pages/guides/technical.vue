@@ -434,8 +434,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useLocalePath } from '#imports'
+import { ref, watch } from 'vue'
+import { useLocalePath, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 definePageMeta({
@@ -449,6 +449,7 @@ useHead({
 type TechnicalTabId = 'rims' | 'spokes' | 'spoke-length' | 'hubs' | 'tension'
 
 const localePath = useLocalePath()
+const route = useRoute()
 
 const tabs: { id: TechnicalTabId; label: string }[] = [
   { id: 'rims', label: 'Rims' },
@@ -459,6 +460,21 @@ const tabs: { id: TechnicalTabId; label: string }[] = [
 ]
 
 const activeTab = ref<TechnicalTabId>('rims')
+
+const getTabFromHash = (hash: string): TechnicalTabId | null => {
+  const raw = String(hash || '').replace(/^#/, '')
+  const allowed: TechnicalTabId[] = ['rims', 'spokes', 'spoke-length', 'hubs', 'tension']
+  return (allowed as string[]).includes(raw) ? (raw as TechnicalTabId) : null
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const next = getTabFromHash(hash)
+    if (next) activeTab.value = next
+  },
+  { immediate: true }
+)
 
 const setActiveTab = (id: TechnicalTabId) => {
   activeTab.value = id
