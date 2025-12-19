@@ -365,7 +365,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute } from '#imports'
 import TubelessProducts from '~/components/TubelessProducts.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
@@ -387,6 +388,23 @@ const tabs: { id: SizeChartsTabId; label: string }[] = [
 ]
 
 const activeTab = ref<SizeChartsTabId>('tubeless')
+
+const route = useRoute()
+
+const getTabFromHash = (hash: string): SizeChartsTabId | null => {
+  const raw = String(hash || '').replace(/^#/, '')
+  const allowed: SizeChartsTabId[] = ['tubeless', 'installation', 'choose', 'rims']
+  return (allowed as string[]).includes(raw) ? (raw as SizeChartsTabId) : null
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const next = getTabFromHash(hash)
+    if (next) activeTab.value = next
+  },
+  { immediate: true }
+)
 
 const setActiveTab = (id: SizeChartsTabId) => {
   activeTab.value = id
