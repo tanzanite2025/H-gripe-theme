@@ -128,6 +128,16 @@
             </p>
           </li>
         </ol>
+
+        <div class="wheelset-safety-footer">
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="goToAfterSales"
+          >
+            Check out our after-sales instructions for rims, wheelsets and more
+          </button>
+        </div>
       </section>
 
       <!-- Mullet wheelsets -->
@@ -283,6 +293,10 @@ const openWhatsAppChat = () => {
 
 const goToTubelessInstallation = async () => {
   await router.push(`${localePath('/guides/sizecharts')}#installation`)
+}
+
+const goToAfterSales = async () => {
+  await router.push(localePath('/support/after-sales'))
 }
 </script>
 
@@ -477,6 +491,10 @@ const goToTubelessInstallation = async () => {
 
 .wheelset-inline-button:active {
   transform: scale(0.98);
+}
+
+.wheelset-safety-footer {
+  margin-top: 0.85rem;
 }
 
 @media (min-width: 768px) {
