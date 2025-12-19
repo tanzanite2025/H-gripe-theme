@@ -23,6 +23,111 @@
         class="wheelset-section"
       >
         <h3 class="wheelset-section__title">Safety instructions</h3>
+        <p class="products-page__intro">
+          Improper installation, use, or maintenance may cause serious damage to the wheels and pose a danger to the rider.
+          To ensure a reliable riding experience with TANZANITE products, please read and follow the instructions below.
+          Even if you have years of cycling or wheelset assembly experience, these instructions and recommendations apply only
+          to TANZANITE carbon fiber products. Therefore, please carefully read them before your first ride or wheel assembly.
+        </p>
+        <p class="products-page__intro">
+          If you have any questions, feel free to contact us at
+          <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
+          or
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="openWhatsAppChat"
+          >
+            leave a message
+          </button>
+          on any page of our website.
+        </p>
+        <ol class="wheelset-section__list wheelset-section__list--ordered">
+          <li>
+            <strong>Installation &amp; Inspection</strong>
+            <p class="wheelset-safety-item">
+              <strong>Professional Installation:</strong>
+              Have the wheelset installed by a qualified mechanic or experienced user, ensuring compatibility with the braking and
+              drivetrain systems. Incompatibility may reduce performance and damage the wheels or the frame/fork.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Tire Installation:</strong>
+              We provide professional tire levers for installing tires. Do not use metal tire levers, as they will permanently damage
+              the rim.
+              <button
+                type="button"
+                class="wheelset-inline-button"
+                @click="goToTubelessInstallation"
+              >
+                Tubeless tire installation instructions
+              </button>
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Torque Specifications:</strong>
+              All bolts, quick releases, or thru-axles must be tightened according to the manufacturer’s recommended torque values to
+              avoid being too tight or too loose.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Brake Pad Compatibility:</strong>
+              Use only carbon-specific brake pads to prevent rim damage from metal or incompatible materials.
+            </p>
+          </li>
+          <li>
+            <strong>Usage &amp; Riding</strong>
+            <p class="wheelset-safety-item">
+              <strong>Weight Limit:</strong>
+              Follow the manufacturer’s specified maximum rider weight and load limits. Our wheels are designed and tested for
+              specific riding purposes. Improper use may shorten product lifespan or even cause rim cracking, leading to rider
+              injury. Always ensure the product you purchase suits your riding needs.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Road Conditions:</strong>
+              Avoid riding on severe potholes, gravel, or extremely rough terrain to reduce impact damage. After a strong impact or
+              collision, failure may not be immediately visible. Wipe the rim clean, consider removing the tire for inspection, and
+              report any potential serious damage to us.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Braking Technique:</strong>
+              On long descents, avoid continuous braking. Use intermittent braking to prevent overheating of the carbon fiber.
+            </p>
+          </li>
+          <li>
+            <strong>Regular Maintenance</strong>
+            <p class="wheelset-safety-item">
+              <strong>Surface Inspection:</strong>
+              Before each ride, check the rims for cracks, bulges, or delamination. Regularly inspect brake pads and remove
+              contaminants such as metal shavings or stones, which can damage the braking surface. Do not use excessively worn brake
+              pads.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Spoke Tension:</strong>
+              Regularly check spoke tension to ensure even distribution and prevent structural imbalance.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Cleaning Method:</strong>
+              Clean with a neutral detergent and soft cloth. Avoid strong acids, strong alkalis, or high-pressure water jets.
+            </p>
+          </li>
+          <li>
+            <strong>Prohibited Actions</strong>
+            <p class="wheelset-safety-item">Do not use non-original parts or modify the braking system.</p>
+            <p class="wheelset-safety-item">Do not sand or grind carbon rims with sandpaper or metal tools.</p>
+            <p class="wheelset-safety-item">
+              Do not store or use wheels in extreme temperature environments (e.g., ovens or freezing conditions).
+            </p>
+          </li>
+          <li>
+            <strong>Emergency Handling</strong>
+            <p class="wheelset-safety-item">
+              <strong>Damage Detection:</strong>
+              If cracks or abnormal noises are found, stop using the wheel immediately and seek professional repair.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Post-Accident Inspection:</strong>
+              After a crash or collision, conduct a thorough inspection even if no visible damage is present.
+            </p>
+          </li>
+        </ol>
       </section>
 
       <!-- Mullet wheelsets -->
@@ -130,7 +235,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useLocalePath, useRouter } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
+import { useChatWidget } from '~/composables/useChatWidget'
 
 definePageMeta({
   layout: 'products',
@@ -161,6 +268,21 @@ const activeTab = ref<WheelsetTabId>('safety-instructions')
 
 const setActiveTab = (id: WheelsetTabId) => {
   activeTab.value = id
+}
+
+const { openChat } = useChatWidget()
+const router = useRouter()
+const localePath = useLocalePath()
+
+const openWhatsAppChat = () => {
+  openChat({ showAgentList: true })
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
+  }
+}
+
+const goToTubelessInstallation = async () => {
+  await router.push(`${localePath('/guides/sizecharts')}#installation`)
 }
 </script>
 
@@ -276,6 +398,14 @@ const setActiveTab = (id: WheelsetTabId) => {
   color: rgba(148, 163, 184, 0.9);
 }
 
+.wheelset-section__list--ordered {
+  list-style-type: decimal;
+}
+
+.wheelset-safety-item {
+  margin: 0.25rem 0 0;
+}
+
 .wheelset-section__list ul {
   margin-top: 0.15rem;
   padding-left: 1.1rem;
@@ -307,6 +437,46 @@ const setActiveTab = (id: WheelsetTabId) => {
   display: block;
   aspect-ratio: 2 / 1;
   object-fit: cover;
+}
+
+.wheelset-link {
+  color: #2dd4bf;
+  text-decoration: underline;
+}
+
+.wheelset-link:hover {
+  color: #60a5fa;
+}
+
+.wheelset-inline-note {
+  margin-left: 0.25rem;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.wheelset-inline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.65rem;
+  margin: 0 0.25rem;
+  border-radius: 9999px;
+  border: none;
+  background: rgba(31, 41, 55, 0.65);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.85);
+  transition: background-color 0.15s ease, transform 0.08s ease;
+}
+
+.wheelset-inline-button:hover {
+  background: rgba(51, 65, 85, 0.75);
+}
+
+.wheelset-inline-button:active {
+  transform: scale(0.98);
 }
 
 @media (min-width: 768px) {
