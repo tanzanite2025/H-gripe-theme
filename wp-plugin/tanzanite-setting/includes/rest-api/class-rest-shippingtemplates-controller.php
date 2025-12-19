@@ -136,6 +136,44 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 			)
 		);
 
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>\d+)/options',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_options' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'id'       => array(
+						'validate_callback' => array( $this, 'validate_numeric_param' ),
+					),
+					'country'  => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'zip'      => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'weight'   => array(
+						'type' => 'number',
+					),
+					'quantity' => array(
+						'type' => 'integer',
+					),
+					'items'    => array(
+						'type' => 'integer',
+					),
+					'amount'   => array(
+						'type' => 'number',
+					),
+					'subtotal' => array(
+						'type' => 'number',
+					),
+				),
+			)
+		);
+
 		// 获取、更新、删除单个配送模板
 		register_rest_route(
 			$this->namespace,
@@ -211,6 +249,234 @@ class Tanzanite_REST_ShippingTemplates_Controller extends Tanzanite_REST_Control
 		}
 
 		return $this->respond_success( $this->format_shipping_template_row( $row ) );
+	}
+
+	public function get_options( $request ) {
+		global $wpdb;
+
+		$template_id = (int) $request['id'];
+		$row         = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->shipping_templates_table} WHERE id = %d", $template_id ), ARRAY_A );
+		if ( ! $row ) {
+			return $this->respond_error( 'shipping_template_not_found', __( 'Shipping template not found.', 'tanzanite-settings' ), 404 );
+		}
+
+		$is_active = (bool) $row['is_active'];
+		if ( ! $is_active ) {
+			return $this->respond_success(
+				array(
+					'template' => array(
+						'id'            => (int) $row['id'],
+						'template_name' => $row['template_name'],
+						'description'   => $row['description'],
+						'is_active'     => false,
+						'meta'          => $this->decode_shipping_meta( isset( $row['meta'] ) ? $row['meta'] : null ),
+					),
+					'options'  => array(),
+				)
+			);
+		}
+
+		$country  = $request->get_param( 'country' );
+		$country  = $country ? strtoupper( sanitize_text_field( (string) $country ) ) : '';
+		$zip      = $request->get_param( 'zip' );
+		$zip      = $zip ? sanitize_text_field( (string) $zip ) : '';
+		$weight   = null !== $request->get_param( 'weight' ) ? (float) $request->get_param( 'weight' ) : null;
+		$quantity = null !== $request->get_param( 'quantity' ) ? (int) $request->get_param( 'quantity' ) : null;
+		$items    = null !== $request->get_param( 'items' ) ? (int) $request->get_param( 'items' ) : null;
+		$amount   = null !== $request->get_param( 'amount' ) ? (float) $request->get_param( 'amount' ) : null;
+		$subtotal = null !== $request->get_param( 'subtotal' ) ? (float) $request->get_param( 'subtotal' ) : null;
+
+		$rules = $this->decode_shipping_rules( $row['rules'] );
+		$meta  = $this->decode_shipping_meta( isset( $row['meta'] ) ? $row['meta'] : null );
+
+		if ( '' === $country || empty( $rules ) ) {
+			return $this->respond_success(
+				array(
+					'template' => array(
+						'id'            => (int) $row['id'],
+						'template_name' => $row['template_name'],
+						'description'   => $row['description'],
+						'is_active'     => true,
+						'meta'          => $meta,
+					),
+					'options'  => array(),
+				)
+			);
+		}
+
+		$options_by_key = array();
+		foreach ( $rules as $index => $rule ) {
+			$regions = isset( $rule['regions'] ) && is_array( $rule['regions'] ) ? $rule['regions'] : array();
+			if ( empty( $regions ) || ! in_array( $country, $regions, true ) ) {
+				continue;
+			}
+
+			$zip_ranges = isset( $rule['zip_ranges'] ) && is_array( $rule['zip_ranges'] ) ? $rule['zip_ranges'] : array();
+			if ( ! empty( $zip_ranges ) ) {
+				if ( '' === $zip ) {
+					continue;
+				}
+				if ( ! $this->zip_matches_ranges( $zip, $zip_ranges ) ) {
+					continue;
+				}
+			}
+
+			$type = isset( $rule['type'] ) ? (string) $rule['type'] : '';
+			$value_to_check = null;
+			if ( 'weight' === $type || 'volume' === $type ) {
+				$value_to_check = $weight;
+			} elseif ( 'quantity' === $type ) {
+				$value_to_check = $quantity;
+			} elseif ( 'items' === $type ) {
+				$value_to_check = null !== $items ? $items : $quantity;
+			} elseif ( 'amount' === $type ) {
+				$value_to_check = null !== $subtotal ? $subtotal : $amount;
+			}
+			if ( null === $value_to_check ) {
+				continue;
+			}
+
+			$min = isset( $rule['min'] ) ? $rule['min'] : null;
+			$max = isset( $rule['max'] ) ? $rule['max'] : null;
+			$min = null === $min ? 0.0 : (float) $min;
+			$max = null === $max ? null : (float) $max;
+			if ( $value_to_check < $min ) {
+				continue;
+			}
+			if ( null !== $max && $value_to_check > $max ) {
+				continue;
+			}
+
+			$fee       = isset( $rule['fee'] ) ? (float) $rule['fee'] : 0.0;
+			$priority  = isset( $rule['priority'] ) ? (int) $rule['priority'] : 0;
+			$free_over = isset( $rule['free_over'] ) ? (float) $rule['free_over'] : null;
+			if ( null !== $free_over && null !== $subtotal && $subtotal >= $free_over ) {
+				$fee = 0.0;
+			}
+
+			$service       = isset( $rule['service'] ) ? sanitize_key( (string) $rule['service'] ) : '';
+			$service_label = isset( $rule['service_label'] ) ? sanitize_text_field( (string) $rule['service_label'] ) : '';
+			if ( '' === $service_label ) {
+				$service_label = $service ? $service : __( '默认方式', 'tanzanite-settings' );
+			}
+
+			$key = $service ? $service : 'rule_' . (string) $index;
+			$item = array(
+				'key'          => $key,
+				'service'      => $service,
+				'service_label' => $service_label,
+				'fee'          => $fee,
+				'priority'     => $priority,
+				'eta_min_days' => isset( $rule['eta_min_days'] ) ? (int) $rule['eta_min_days'] : null,
+				'eta_max_days' => isset( $rule['eta_max_days'] ) ? (int) $rule['eta_max_days'] : null,
+				'type'         => $type,
+				'min'          => $min,
+				'max'          => $max,
+				'free_over'    => $free_over,
+				'carrier'      => isset( $meta['carrier'] ) ? $meta['carrier'] : null,
+				'rule_index'   => (int) $index,
+			);
+
+			if ( ! isset( $options_by_key[ $key ] ) ) {
+				$options_by_key[ $key ] = $item;
+				continue;
+			}
+
+			$existing = $options_by_key[ $key ];
+			if ( (int) $item['priority'] > (int) $existing['priority'] ) {
+				$options_by_key[ $key ] = $item;
+				continue;
+			}
+			if ( (int) $item['priority'] === (int) $existing['priority'] && (float) $item['fee'] < (float) $existing['fee'] ) {
+				$options_by_key[ $key ] = $item;
+			}
+		}
+
+		$options = array_values( $options_by_key );
+		usort(
+			$options,
+			function( $a, $b ) {
+				$pa = (int) ( $a['priority'] ?? 0 );
+				$pb = (int) ( $b['priority'] ?? 0 );
+				if ( $pa !== $pb ) {
+					return $pb <=> $pa;
+				}
+				$fa = (float) ( $a['fee'] ?? 0 );
+				$fb = (float) ( $b['fee'] ?? 0 );
+				if ( $fa !== $fb ) {
+					return $fa <=> $fb;
+				}
+				$ea = isset( $a['eta_min_days'] ) && null !== $a['eta_min_days'] ? (int) $a['eta_min_days'] : 9999;
+				$eb = isset( $b['eta_min_days'] ) && null !== $b['eta_min_days'] ? (int) $b['eta_min_days'] : 9999;
+				return $ea <=> $eb;
+			}
+		);
+
+		return $this->respond_success(
+			array(
+				'template' => array(
+					'id'            => (int) $row['id'],
+					'template_name' => $row['template_name'],
+					'description'   => $row['description'],
+					'is_active'     => true,
+					'meta'          => $meta,
+				),
+				'input'    => array(
+					'country'  => $country,
+					'zip'      => $zip,
+					'weight'   => $weight,
+					'quantity' => $quantity,
+					'items'    => $items,
+					'amount'   => $amount,
+					'subtotal' => $subtotal,
+				),
+				'options'  => $options,
+			)
+		);
+	}
+
+	private function zip_matches_ranges( $zip, $ranges ) {
+		if ( '' === $zip ) {
+			return false;
+		}
+
+		$normalized_zip = strtoupper( preg_replace( '/\s+/', '', (string) $zip ) );
+		foreach ( $ranges as $range ) {
+			$range = strtoupper( preg_replace( '/\s+/', '', (string) $range ) );
+			if ( '' === $range ) {
+				continue;
+			}
+
+			if ( false !== strpos( $range, '-' ) ) {
+				$parts = explode( '-', $range );
+				$start = isset( $parts[0] ) ? $parts[0] : '';
+				$end   = isset( $parts[1] ) ? $parts[1] : '';
+				if ( '' === $start || '' === $end ) {
+					continue;
+				}
+
+				if ( ctype_digit( $normalized_zip ) && ctype_digit( $start ) && ctype_digit( $end ) ) {
+					$zip_num   = (int) $normalized_zip;
+					$start_num = (int) $start;
+					$end_num   = (int) $end;
+					if ( $zip_num >= $start_num && $zip_num <= $end_num ) {
+						return true;
+					}
+					continue;
+				}
+
+				if ( $normalized_zip >= $start && $normalized_zip <= $end ) {
+					return true;
+				}
+				continue;
+			}
+
+			if ( $normalized_zip === $range ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

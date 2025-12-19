@@ -467,6 +467,23 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			update_post_meta( $post_id, $meta_key, $value );
 		}
 
+		if ( $request->has_param( 'shipping_template_ids' ) ) {
+			$ids = $request->get_param( 'shipping_template_ids' );
+			if ( is_array( $ids ) ) {
+				$ids = array_values( array_filter( array_map( 'absint', $ids ) ) );
+				$ids = array_values( array_unique( $ids ) );
+				update_post_meta( $post_id, '_tanz_shipping_template_ids', $ids );
+				update_post_meta( $post_id, '_tanz_shipping_template_id', ! empty( $ids ) ? (int) $ids[0] : 0 );
+			}
+		} elseif ( $request->has_param( 'shipping_template_id' ) ) {
+			$single_id = (int) $request->get_param( 'shipping_template_id' );
+			if ( $single_id > 0 ) {
+				update_post_meta( $post_id, '_tanz_shipping_template_ids', array( $single_id ) );
+			} else {
+				update_post_meta( $post_id, '_tanz_shipping_template_ids', array() );
+			}
+		}
+
 		// 数组类型的 Meta
 		if ( $request->has_param( 'tier_pricing' ) ) {
 			$tier_pricing = $request->get_param( 'tier_pricing' );
@@ -759,6 +776,15 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 		$points_limit  = (int) get_post_meta( $post->ID, '_tanz_points_limit', true );
 		$featured_image_id = (int) get_post_meta( $post->ID, '_tanz_featured_image_id', true );
 		$is_sticky     = (bool) get_post_meta( $post->ID, '_tanz_is_sticky', true );
+		$shipping_template_id = (int) get_post_meta( $post->ID, '_tanz_shipping_template_id', true );
+		$shipping_template_ids = get_post_meta( $post->ID, '_tanz_shipping_template_ids', true );
+		if ( ! is_array( $shipping_template_ids ) ) {
+			$shipping_template_ids = array();
+		}
+		$shipping_template_ids = array_values( array_filter( array_map( 'absint', $shipping_template_ids ) ) );
+		if ( empty( $shipping_template_ids ) && $shipping_template_id > 0 ) {
+			$shipping_template_ids = array( $shipping_template_id );
+		}
 
 		// 获取缩略图
 		$thumbnail = '';
@@ -786,6 +812,8 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			'excerpt'    => $post->post_excerpt,
 			'slug'       => $post->post_name,
 			'thumbnail'  => $thumbnail,
+			'shipping_template_id' => $shipping_template_id,
+			'shipping_template_ids' => $shipping_template_ids,
 			'prices'     => array(
 				'regular' => $price_regular,
 				'sale'    => $price_sale,

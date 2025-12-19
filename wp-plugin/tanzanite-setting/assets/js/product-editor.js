@@ -38,9 +38,9 @@
 
         // DOM 元素引用
         const elements = {
-            notice: document.getElementById('tz-product-notice'),
+            notice: document.getElementById('tz-product-editor-notice') || document.getElementById('tz-product-notice'),
             form: document.getElementById('tz-product-editor-form'),
-            saveBtn: document.getElementById('tz-product-save'),
+            saveBtn: document.getElementById('tz-product-submit') || document.getElementById('tz-product-save'),
             resetBtn: document.getElementById('tz-product-reset'),
             skuTable: document.querySelector('#tz-product-sku-table tbody'),
             skuForm: document.getElementById('tz-product-sku-form'),
@@ -103,6 +103,53 @@
                 .split(/\r?\n/)
                 .map((line) => line.trim())
                 .filter(Boolean);
+        }
+
+        function parseDelimitedValues(raw) {
+            if (!raw) return [];
+            return String(raw)
+                .split(/[,;\n\r]+/)
+                .map((item) => item.trim())
+                .filter(Boolean);
+        }
+
+        function parseMaybeJsonOrCsv(raw) {
+            const text = (raw || '').trim();
+            if (!text) return [];
+            if (text.startsWith('[')) {
+                try {
+                    const decoded = JSON.parse(text);
+                    if (Array.isArray(decoded)) {
+                        return decoded.map((item) => String(item)).filter(Boolean);
+                    }
+                } catch (e) {
+                    return [];
+                }
+            }
+            return parseDelimitedValues(text);
+        }
+
+        function parseSkuAttributesInput(input) {
+            const result = {};
+            const pairs = parseDelimitedValues(input);
+            pairs.forEach((pair) => {
+                const idx = pair.indexOf('=');
+                if (idx <= 0) return;
+                const key = pair.slice(0, idx).trim();
+                const value = pair.slice(idx + 1).trim();
+                if (!key || !value) return;
+
+                if (Object.prototype.hasOwnProperty.call(result, key)) {
+                    if (Array.isArray(result[key])) {
+                        result[key].push(value);
+                    } else {
+                        result[key] = [result[key], value];
+                    }
+                } else {
+                    result[key] = value;
+                }
+            });
+            return result;
         }
 
         function parseGalleryIds(idsInput) {
@@ -219,7 +266,7 @@
 
                 mediaFrameFeatured = wp.media({
                     title: strings.mediaSelectTitle || '选择图片',
-                    button: { text: strings.mediaSelectButton || '使用所选' },
+                    button: { text: strings.mediaSelectButton || strings.mediaSelectBtn || '使用所选' },
                     multiple: false,
                     library: { type: ['image'] }
                 });
@@ -269,7 +316,7 @@
 
                     mediaFrameGallery = wp.media({
                         title: strings.mediaSelectTitle || '选择图片',
-                        button: { text: strings.mediaSelectButton || '使用所选' },
+                        button: { text: strings.mediaSelectButton || strings.mediaSelectBtn || '使用所选' },
                         multiple: true,
                         library: { type: ['image'] }
                     });
@@ -321,7 +368,7 @@
 
                     mediaFrameVideo = wp.media({
                         title: strings.mediaSelectTitle || '选择媒体',
-                        button: { text: strings.mediaSelectButton || '使用所选' },
+                        button: { text: strings.mediaSelectButton || strings.mediaSelectBtn || '使用所选' },
                         multiple: false
                     });
 
@@ -376,13 +423,13 @@
             skuRows.forEach(function(row, index) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.code || ''}</td>
+                    <td>${row.sku_code || ''}</td>
                     <td>${row.attributes_input || ''}</td>
-                    <td>${row.price_regular || ''}</td>
-                    <td>${row.price_sale || ''}</td>
-                    <td>${row.stock || ''}</td>
+                    <td>${row.price_regular ?? ''}</td>
+                    <td>${row.price_sale ?? ''}</td>
+                    <td>${row.stock_qty ?? ''}</td>
                     <td>${row.barcode || ''}</td>
-                    <td>${row.weight || ''}</td>
+                    <td>${row.weight ?? ''}</td>
                     <td>
                         <button type="button" class="button-link sku-edit" data-index="${index}">${strings.skuEdit || '编辑'}</button> | 
                         <button type="button" class="button-link-delete sku-delete" data-index="${index}">${strings.skuDelete || '删除'}</button>
@@ -397,7 +444,7 @@
                 skuRows[editIndex] = skuData;
             } else {
                 // 检查重复
-                const exists = skuRows.some(row => row.code === skuData.code);
+                const exists = skuRows.some(row => row.sku_code === skuData.sku_code);
                 if (exists) {
                     showNotice(elements.notice, 'error', strings.skuDuplicate || 'SKU 编码已存在');
                     return false;
@@ -529,14 +576,31 @@
             const select = document.getElementById('tz-product-shipping-template');
             if (!select) return;
 
+            const initialSelected = Array.isArray(config.initialShippingTemplateIds)
+                ? config.initialShippingTemplateIds
+                    .map((id) => parseInt(id, 10))
+                    .filter((id) => Number.isFinite(id) && id > 0)
+                : [];
+
             try {
                 const result = await apiRequest(config.shippingTemplatesEndpoint);
                 
                 if (result.ok && result.data.items) {
-                    result.data.items.filter(t => t.is_active).forEach(function(template) {
+                    select.innerHTML = '';
+                    result.data.items.forEach(function(template) {
+                        const templateId = parseInt(template.id, 10);
+                        if (!template.is_active && !initialSelected.includes(templateId)) {
+                            return;
+                        }
+
                         const option = document.createElement('option');
                         option.value = template.id;
-                        option.textContent = template.template_name + (template.description ? ' - ' + template.description : '');
+                        const inactiveSuffix = strings.inactiveTemplateSuffix || '（已停用）';
+                        const baseLabel = template.template_name + (template.description ? ' - ' + template.description : '');
+                        option.textContent = template.is_active ? baseLabel : baseLabel + inactiveSuffix;
+                        if (initialSelected.includes(templateId)) {
+                            option.selected = true;
+                        }
                         select.appendChild(option);
                     });
                 }
@@ -705,14 +769,14 @@
                 const attrString = attrParts.join(';');
 
                 skuRows.push({
-                    code: skuCode,
+                    sku_code: skuCode,
                     attributes_input: attrString,
                     attributes: combo,
-                    price_regular: '',
-                    price_sale: '',
-                    stock: 100,
+                    price_regular: 0,
+                    price_sale: 0,
+                    stock_qty: 0,
                     barcode: '',
-                    weight: ''
+                    weight: null
                 });
             });
 
@@ -746,17 +810,55 @@
          */
 
         function collectProductPayload() {
+            const editorId = 'tz-product-content';
+            const editor = window.tinymce ? window.tinymce.get(editorId) : null;
+            const editorTextarea = document.getElementById(editorId);
+            const content = editor && !editor.isHidden()
+                ? editor.getContent()
+                : (editorTextarea ? editorTextarea.value : '');
+
             const payload = {
                 title: getInputValue('tz-product-title').trim(),
                 excerpt: getInputValue('tz-product-excerpt').trim(),
                 slug: getInputValue('tz-product-slug').trim(),
                 urllink_custom_path: getInputValue('tz-product-urllink-path').trim(),
                 status: getInputValue('tz-product-status') || 'draft',
-                content_markdown: getInputValue('tz-product-content-markdown'),
+                content: content,
                 price_regular: parseFloat(getInputValue('tz-product-price-regular')) || 0,
                 price_sale: parseFloat(getInputValue('tz-product-price-sale')) || 0,
-                stock: parseInt(getInputValue('tz-product-stock')) || 0,
-                sku_data: skuRows
+                price_member: parseFloat(getInputValue('tz-product-price-member')) || 0,
+                stock_qty: parseInt(getInputValue('tz-product-stock'), 10) || 0,
+                purchase_limit: parseInt(getInputValue('tz-product-limit'), 10) || 0,
+                min_purchase: parseInt(getInputValue('tz-product-min-purchase'), 10) || 0,
+                backorders_allowed: getCheckboxValue('tz-product-backorders'),
+                featured_image_id: parseInt(getInputValue('tz-product-featured-id'), 10) || 0,
+                featured_image_url: getInputValue('tz-product-featured-url').trim(),
+                featured_video_id: parseInt(getInputValue('tz-product-video-id'), 10) || 0,
+                featured_video_url: getInputValue('tz-product-video-url').trim(),
+                gallery_media_ids: parseGalleryIds(document.getElementById('tz-product-gallery-ids')),
+                gallery_external_urls: parseTextareaLines(document.getElementById('tz-product-gallery-externals')),
+                free_shipping: getCheckboxValue('tz-product-free-shipping'),
+                shipping_time: getInputValue('tz-product-shipping-time').trim(),
+                logistics_tags: parseDelimitedValues(getInputValue('tz-product-logistics-tags')),
+                channels: parseMaybeJsonOrCsv(getInputValue('tz-product-channels')),
+                is_sticky: getCheckboxValue('tz-product-sticky'),
+                tier_pricing: tierRows,
+                skus: skuRows.map((row) => {
+                    const attributesInput = row.attributes_input || '';
+                    const attributes = row.attributes && typeof row.attributes === 'object'
+                        ? row.attributes
+                        : parseSkuAttributesInput(attributesInput);
+                    return {
+                        sku_code: String(row.sku_code || '').trim(),
+                        attributes: attributes,
+                        price_regular: parseFloat(row.price_regular) || 0,
+                        price_sale: parseFloat(row.price_sale) || 0,
+                        stock_qty: parseInt(row.stock_qty, 10) || 0,
+                        weight: row.weight === null || row.weight === undefined || row.weight === '' ? null : parseFloat(row.weight),
+                        barcode: row.barcode ? String(row.barcode) : '',
+                        sort_order: row.sort_order !== undefined ? parseInt(row.sort_order, 10) : undefined
+                    };
+                }).filter((row) => row.sku_code)
             };
 
             // 收集税率
@@ -774,9 +876,21 @@
             payload.membership_levels = membershipLevels;
 
             // 配送模板
-            const shippingTemplate = getInputValue('tz-product-shipping-template');
-            if (shippingTemplate) {
-                payload.shipping_template_id = parseInt(shippingTemplate);
+            const shippingSelect = document.getElementById('tz-product-shipping-template');
+            let shippingTemplateIds = [];
+
+            if (shippingSelect && shippingSelect instanceof HTMLSelectElement) {
+                shippingTemplateIds = Array.from(shippingSelect.selectedOptions)
+                    .map((opt) => parseInt(opt.value, 10))
+                    .filter((id) => Number.isFinite(id) && id > 0);
+            }
+
+            payload.shipping_template_ids = shippingTemplateIds;
+
+            if (shippingTemplateIds.length) {
+                payload.shipping_template_id = shippingTemplateIds[0];
+            } else {
+                payload.shipping_template_id = 0;
             }
 
             return payload;
@@ -786,7 +900,9 @@
             if (e) e.preventDefault();
 
             const payload = collectProductPayload();
-            const url = config.productId ? config.singleEndpoint : config.createEndpoint;
+            const url = config.productId
+                ? (config.detailEndpoint || (config.singleEndpoint + config.productId))
+                : config.createEndpoint;
             const method = config.productId ? 'PUT' : 'POST';
 
             try {
@@ -807,7 +923,7 @@
                 // 如果是新建，跳转到编辑页
                 if (!config.productId && result.data.id) {
                     setTimeout(function() {
-                        window.location.href = '?page=tanzanite-settings-add-product&id=' + result.data.id;
+                        window.location.href = '?page=tanzanite-settings-add-product&product_id=' + result.data.id;
                     }, 1000);
                 }
 
@@ -837,9 +953,8 @@
             });
         }
 
-        // 保存按钮
-        if (elements.saveBtn) {
-            elements.saveBtn.addEventListener('click', saveProduct);
+        if (elements.form) {
+            elements.form.addEventListener('submit', saveProduct);
         }
 
         // 重置按钮
