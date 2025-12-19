@@ -39,11 +39,16 @@ class Tanzanite_Carriers_Admin {
 	 * 渲染物流商管理页面
 	 */
 	public static function render_page() {
-		$active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'config'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$nonce      = wp_create_nonce( 'wp_rest' );
 		$list_url   = esc_url_raw( rest_url( 'tanzanite/v1/carriers' ) );
 		$single_url = esc_url_raw( rest_url( 'tanzanite/v1/carriers/' ) );
 		$can_manage = current_user_can( 'manage_options' );
+
+		if ( 'list' === $active_tab ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=tanzanite-settings-carriers&tab=config' ) );
+			exit;
+		}
 
 		// 版本号
 		$version = defined( 'TANZANITE_VERSION' ) ? TANZANITE_VERSION : '0.2.3';
@@ -186,7 +191,6 @@ class Tanzanite_Carriers_Admin {
 			echo '  </div>';
 
 			echo '  <nav class="nav-tab-wrapper">';
-			echo '      <a href="?page=tanzanite-settings-carriers&tab=list" class="nav-tab">' . esc_html__( '物流公司管理', 'tanzanite-settings' ) . '</a>';
 			echo '      <a href="?page=tanzanite-settings-carriers&tab=config" class="nav-tab nav-tab-active">' . esc_html__( 'API 配置', 'tanzanite-settings' ) . '</a>';
 			echo '  </nav>';
 

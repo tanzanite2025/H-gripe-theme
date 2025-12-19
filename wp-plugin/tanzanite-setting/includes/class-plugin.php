@@ -319,6 +319,9 @@ class Tanzanite_Plugin {
 		// Spoke Length History 导入处理
 		add_action( 'admin_post_tanz_spoke_history_import', array( $this, 'handle_spoke_history_import' ) );
 
+		add_action( 'admin_post_tanz_save_tracking_settings', array( $this, 'handle_save_tracking_settings' ) );
+		add_action( 'admin_post_tanz_test_tracking', array( $this, 'handle_test_tracking' ) );
+
 		// 商品几何参数 meta box（仅在后台商品编辑页使用）
 		if ( is_admin() && class_exists( 'Tanzanite_Product_Geometry_Admin' ) ) {
 			Tanzanite_Product_Geometry_Admin::init();
@@ -331,6 +334,133 @@ class Tanzanite_Plugin {
 		add_filter( 'admin_body_class', array( $this, 'filter_admin_body_class' ) );
 
 		error_log( 'Tanzanite Plugin: init_hooks() called, rest_api_init hook registered' );
+	}
+
+	public function handle_save_tracking_settings() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( '无权限执行此操作。', 'tanzanite-settings' ) );
+		}
+
+		$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'tanz_tracking_settings' ) ) {
+			wp_die( __( '安全验证失败。', 'tanzanite-settings' ) );
+		}
+
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '17track';
+		$settings = isset( $_POST['settings'] ) && is_array( $_POST['settings'] ) ? (array) wp_unslash( $_POST['settings'] ) : array();
+
+		$providers = array( '17track' );
+		if ( class_exists( 'Tanzanite_Carriers_Admin' ) && defined( 'Tanzanite_Carriers_Admin::TRACKING_PROVIDERS' ) ) {
+			$providers = array_keys( Tanzanite_Carriers_Admin::TRACKING_PROVIDERS );
+		}
+
+		if ( ! in_array( $provider, $providers, true ) ) {
+			$provider = $providers[0] ?? '17track';
+		}
+
+		$allowed_fields = array();
+		if ( class_exists( 'Tanzanite_Carriers_Admin' ) && defined( 'Tanzanite_Carriers_Admin::TRACKING_PROVIDERS' ) ) {
+			$allowed_fields = Tanzanite_Carriers_Admin::TRACKING_PROVIDERS[ $provider ]['fields'] ?? array();
+		}
+
+		$sanitized_settings = array();
+		if ( is_array( $allowed_fields ) && ! empty( $allowed_fields ) ) {
+			foreach ( $allowed_fields as $field_key => $field_config ) {
+				if ( ! array_key_exists( $field_key, $settings ) ) {
+					continue;
+				}
+
+				$value = is_scalar( $settings[ $field_key ] ) ? (string) $settings[ $field_key ] : '';
+				$value = trim( $value );
+				if ( '' === $value ) {
+					continue;
+				}
+
+				if ( 'endpoint' === $field_key ) {
+					$sanitized_settings[ $field_key ] = esc_url_raw( $value );
+				} else {
+					$sanitized_settings[ $field_key ] = sanitize_text_field( $value );
+				}
+			}
+		} else {
+			foreach ( $settings as $field_key => $value ) {
+				if ( ! is_scalar( $value ) ) {
+					continue;
+				}
+				$sanitized_settings[ sanitize_key( $field_key ) ] = sanitize_text_field( (string) $value );
+			}
+		}
+
+		update_option(
+			'tanzanite_tracking_settings',
+			array(
+				'provider'  => $provider,
+				'settings'  => array(
+					$provider => $sanitized_settings,
+				),
+				'updated_at' => current_time( 'mysql', true ),
+			),
+			false
+		);
+
+		wp_safe_redirect( admin_url( 'admin.php?page=tanzanite-settings-carriers&tab=config&updated=1' ) );
+		exit;
+	}
+
+	public function handle_test_tracking() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( '无权限执行此操作。', 'tanzanite-settings' ), 403 );
+		}
+
+		$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'tanz_tracking_settings' ) ) {
+			wp_send_json_error( __( '安全验证失败。', 'tanzanite-settings' ), 403 );
+		}
+
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '17track';
+		$settings = isset( $_POST['settings'] ) && is_array( $_POST['settings'] ) ? (array) wp_unslash( $_POST['settings'] ) : array();
+
+		$providers = array( '17track' );
+		if ( class_exists( 'Tanzanite_Carriers_Admin' ) && defined( 'Tanzanite_Carriers_Admin::TRACKING_PROVIDERS' ) ) {
+			$providers = array_keys( Tanzanite_Carriers_Admin::TRACKING_PROVIDERS );
+		}
+
+		if ( ! in_array( $provider, $providers, true ) ) {
+			wp_send_json_error( __( '追踪服务商无效。', 'tanzanite-settings' ), 400 );
+		}
+
+		$required = array();
+		if ( class_exists( 'Tanzanite_Carriers_Admin' ) && defined( 'Tanzanite_Carriers_Admin::TRACKING_PROVIDERS' ) ) {
+			$fields = Tanzanite_Carriers_Admin::TRACKING_PROVIDERS[ $provider ]['fields'] ?? array();
+			foreach ( $fields as $field_key => $field_config ) {
+				$required[] = $field_key;
+			}
+		}
+
+		$missing = array();
+		foreach ( $required as $field_key ) {
+			$value = isset( $settings[ $field_key ] ) && is_scalar( $settings[ $field_key ] ) ? trim( (string) $settings[ $field_key ] ) : '';
+			if ( '' === $value ) {
+				$missing[] = $field_key;
+			}
+		}
+
+		if ( ! empty( $missing ) ) {
+			wp_send_json_error(
+				sprintf(
+					__( '缺少配置字段：%s', 'tanzanite-settings' ),
+					implode( ', ', array_map( 'sanitize_key', $missing ) )
+				),
+				400
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'provider' => $provider,
+				'message'  => __( '配置已通过校验（未执行外部网络请求）。', 'tanzanite-settings' ),
+			)
+		);
 	}
 
 	/**

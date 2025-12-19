@@ -311,7 +311,7 @@ class Tanzanite_Add_Product_Admin {
 		echo '          <div class="tz-settings-section">';
 		echo '              <div class="tz-section-title">' . esc_html__( '物流与配送', 'tanzanite-settings' ) . '</div>';
 		echo '              <div class="tz-section-body" style="display:grid;gap:12px;">';
-		echo '                  <label>' . esc_html__( '配送模板', 'tanzanite-settings' ) . '<select id="tz-product-shipping-template" class="widefat"><option value="">无</option></select></label>';
+		echo '                  <label>' . esc_html__( '配送模板', 'tanzanite-settings' ) . '<select id="tz-product-shipping-template" class="widefat" multiple size="6"></select></label>';
 		echo '                  <label><input type="checkbox" id="tz-product-free-shipping" /> ' . esc_html__( '是否包邮', 'tanzanite-settings' ) . '</label>';
 		echo '                  <label>' . esc_html__( '发货时效描述', 'tanzanite-settings' ) . '<input type="text" id="tz-product-shipping-time" class="regular-text" /></label>';
 		echo '                  <textarea id="tz-product-logistics-tags" rows="2" class="widefat" placeholder="' . esc_attr__( '跨境 / 冷链标签等', 'tanzanite-settings' ) . '"></textarea>';
@@ -377,13 +377,28 @@ class Tanzanite_Add_Product_Admin {
 			$initial_payload = self::get_initial_payload( $product_id );
 		}
 
+		$initial_shipping_template_ids = array();
+		if ( $product_id ) {
+			$stored_ids = get_post_meta( $product_id, '_tanz_shipping_template_ids', true );
+			if ( is_array( $stored_ids ) ) {
+				$initial_shipping_template_ids = array_values( array_filter( array_map( 'absint', $stored_ids ) ) );
+			}
+
+			if ( empty( $initial_shipping_template_ids ) ) {
+				$single_id = (int) get_post_meta( $product_id, '_tanz_shipping_template_id', true );
+				if ( $single_id > 0 ) {
+					$initial_shipping_template_ids = array( $single_id );
+				}
+			}
+		}
+
 		// 版本号
 		$version = defined( 'TANZANITE_VERSION' ) ? TANZANITE_VERSION : '0.2.12';
 
 		// 加载 Add Product JS
 		wp_enqueue_script(
-			'tz-add-product',
-			TANZANITE_PLUGIN_URL . 'assets/js/add-product.js',
+			'tz-product-editor',
+			TANZANITE_PLUGIN_URL . 'assets/js/product-editor.js',
 			array( 'jquery', 'wp-media', 'wp-editor', 'tz-admin-common' ),
 			$version,
 			true
@@ -391,8 +406,8 @@ class Tanzanite_Add_Product_Admin {
 
 		// 传递配置到 JS
 		wp_localize_script(
-			'tz-add-product',
-			'TzAddProductConfig',
+			'tz-product-editor',
+			'TzProductEditorConfig',
 			array(
 				'nonce'             => $nonce,
 				'createEndpoint'    => $create_endpoint,
@@ -401,12 +416,33 @@ class Tanzanite_Add_Product_Admin {
 				'detailEndpoint'    => $detail_endpoint,
 				'seoEndpoint'       => $seo_endpoint,
 				'productId'         => $product_id,
-				'initialSkus'       => $initial_skus,
+				'initialSkuRows'    => $initial_skus,
 				'markdownRules'     => $markdown_rules,
 				'markdownTemplates' => $markdown_templates,
 				'initialMeta'       => $initial_meta,
 				'initialPayload'    => $initial_payload,
-				'memberTiers'       => $member_tiers,
+				'initialShippingTemplateIds' => $initial_shipping_template_ids,
+				'membershipTiers'   => $member_tiers,
+				'taxRatesEndpoint'  => esc_url_raw( rest_url( 'tanzanite/v1/tax-rates' ) ),
+				'shippingTemplatesEndpoint' => esc_url_raw( rest_url( 'tanzanite/v1/shipping-templates' ) ),
+				'attributesEndpoint' => esc_url_raw( rest_url( 'tanzanite/v1/attributes' ) ),
+				'strings'           => array(
+					'saveSuccess'       => __( '商品已保存。', 'tanzanite-settings' ),
+					'saveFailed'        => __( '保存失败，请稍后重试。', 'tanzanite-settings' ),
+					'draftSuccess'      => __( '草稿已保存。', 'tanzanite-settings' ),
+					'resetConfirm'      => __( '确定要重置表单吗？未保存的更改将丢失。', 'tanzanite-settings' ),
+					'skuDuplicate'      => __( '检测到重复的 SKU 属性组合。', 'tanzanite-settings' ),
+					'skuCodeRequired'   => __( '请填写 SKU 编码。', 'tanzanite-settings' ),
+					'skuPriceRequired'  => __( '请填写 SKU 价格。', 'tanzanite-settings' ),
+					'mediaSelectTitle'  => __( '选择图片', 'tanzanite-settings' ),
+					'mediaSelectBtn'    => __( '使用此图片', 'tanzanite-settings' ),
+					'loadingSeo'        => __( '正在加载 SEO 数据...', 'tanzanite-settings' ),
+					'seoLoaded'         => __( 'SEO 数据已加载。', 'tanzanite-settings' ),
+					'seoFailed'         => __( 'SEO 数据加载失败。', 'tanzanite-settings' ),
+					'generatingSkus'    => __( '正在生成 SKU...', 'tanzanite-settings' ),
+					'skusGenerated'     => __( '已生成 %d 个 SKU 组合。', 'tanzanite-settings' ),
+					'noAttributes'      => __( '请先选择至少一个属性值。', 'tanzanite-settings' ),
+				),
 				'i18n'              => array(
 					'saveSuccess'       => __( '商品已保存。', 'tanzanite-settings' ),
 					'saveFailed'        => __( '保存失败，请稍后重试。', 'tanzanite-settings' ),
