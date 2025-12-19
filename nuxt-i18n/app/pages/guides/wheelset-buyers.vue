@@ -170,6 +170,29 @@
         </button>
       </section>
 
+      <!-- Custom Front & Rear Wheels -->
+      <section
+        v-show="activeTab === 'custom-front-rear-wheels'"
+        id="custom-front-rear-wheels"
+        class="wheelset-section"
+      >
+        <h3 class="wheelset-section__title">Custom Front &amp; Rear Wheels</h3>
+        <p class="products-page__intro">
+          We specialize in customized services, including building individual wheels tailored to your specific needs. While we only
+          showcase complete wheelsets online, single wheels can be custom-made upon request. Please contact us at
+          <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
+          for special orders—or
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="openWhatsAppChat"
+          >
+            use our faster Instant Chat option
+          </button>
+          !
+        </p>
+      </section>
+
       <!-- Sample assembly -->
       <section
         v-show="activeTab === 'sample-assembly'"
@@ -261,6 +284,14 @@
           :show-categories="true"
         />
       </section>
+
+      <!-- Feedback / Leave a message -->
+      <section class="wheelset-feedback">
+        <UserFeedbackThread
+          threadKey="guides-wheelset-buyers"
+          title="Share your feedback or leave a message about the Wheelset Buyers Guide"
+        />
+      </section>
     </div>
   </div>
   <QuickBuyModal v-if="quickOpen" :config="null" @close="quickOpen = false" />
@@ -272,6 +303,7 @@ import { useLocalePath, useRouter } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import QuickBuyModal from '@/components/QuickBuy.vue'
+import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 definePageMeta({
   layout: 'products',
@@ -284,6 +316,7 @@ useHead({
 type WheelsetTabId =
   | 'safety-instructions'
   | 'mullet-wheelsets'
+  | 'custom-front-rear-wheels'
   | 'sample-assembly'
   | 'mixed-rim'
   | 'appearance-logo'
@@ -292,6 +325,7 @@ type WheelsetTabId =
 const tabs: { id: WheelsetTabId; label: string }[] = [
   { id: 'safety-instructions', label: 'Safety instructions' },
   { id: 'mullet-wheelsets', label: 'Mullet wheelsets' },
+  { id: 'custom-front-rear-wheels', label: 'Custom Front & Rear Wheels' },
   { id: 'sample-assembly', label: 'Sample assembly' },
   { id: 'mixed-rim', label: 'Mixed rim' },
   { id: 'appearance-logo', label: 'Appearance Logo' },
