@@ -200,6 +200,81 @@
         class="wheelset-section"
       >
         <h3 class="wheelset-section__title">Sample assembly</h3>
+        <p class="products-page__intro">
+          We provide professional assembly services, supporting customers who wish to send in carbon fiber rims, wheelsets, and bicycle components. Our skilled technicians will complete the assembly to the highest standards.
+        </p>
+        <p class="products-page__intro">
+          Please contact our sales team at
+          <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
+          to begin the quotation process, or
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="openWhatsAppChat"
+          >
+            reach us directly via online chat
+          </button>
+          .
+        </p>
+        <p class="products-page__intro">
+          <strong style="color: #38bdf8;">Assembly Fee: USD 30 per set</strong>
+        </p>
+
+        <ol class="wheelset-section__list wheelset-section__list--ordered">
+          <li>
+            <strong>Service Process</strong>
+            <p class="wheelset-safety-item">
+              <strong>Shipping:</strong> Customers send their components to the designated address.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Confirmation:</strong> Upon receipt, we will check and confirm all items.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Assembly:</strong> Professional technicians perform installation and adjustment.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Testing:</strong> Safety and performance checks are conducted to ensure compliance with riding standards.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Delivery:</strong> The assembled product will be shipped back or made available for pickup.
+            </p>
+          </li>
+          <li>
+            <strong>Accepted Components</strong>
+            <ul class="wheelset-section__list">
+              <li>Wheelsets (including hubs)</li>
+              <li>Other related accessories (please confirm with us in advance)</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Important Notes</strong>
+            <ul class="wheelset-section__list">
+              <li>Please ensure that all components sent are new or in good condition.</li>
+              <li>A detailed packing list is recommended to avoid missing items.</li>
+              <li>Special customization requests should be communicated in advance.</li>
+              <li>Typical assembly time is 3–7 business days, depending on actual circumstances.</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Value Proposition</strong>
+            <p class="wheelset-safety-item">
+              <strong>Expert Technicians:</strong> Years of experience in carbon fiber wheelset and complete bike assembly.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Safety Assurance:</strong> Rigorous testing procedures to guarantee riding safety.
+            </p>
+            <p class="wheelset-safety-item">
+              <strong>Efficient Delivery:</strong> Fast assembly and return shipping, saving customers valuable time.
+            </p>
+          </li>
+        </ol>
+
+        <p class="products-page__intro" style="margin-top: 1rem;">
+          For smooth service, shipping costs for sending and returning components are the responsibility of the customer. We will assist by recommending reliable logistics options to ensure your parts arrive safely.
+        </p>
+        <p class="products-page__intro" style="margin-top: 1rem; color: #38bdf8;">
+          If you wish to assemble your own wheels and purchase parts exclusively from TANZANITE , we are happy to assist you. We will guide you through every step of the assembly process, including spoke length calculation, assembly methods, and tire installation.
+        </p>
       </section>
 
       <!-- Mixed rim -->

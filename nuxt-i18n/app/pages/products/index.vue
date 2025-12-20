@@ -73,6 +73,27 @@ const sections = [
     description: 'Use the spoke calculator to estimate spoke lengths for your wheel builds.',
     cta: 'Open spoke calculator',
   },
+  {
+    to: '/support/test-report',
+    icon: 'T',
+    title: 'Test report',
+    description: 'View our rigorous testing standards and performance reports.',
+    cta: 'View test reports',
+  },
+  {
+    to: '/membershipandpoints',
+    icon: 'P',
+    title: 'Points',
+    description: 'Join our membership program to earn points and exclusive rewards.',
+    cta: 'View membership details',
+  },
+  {
+    to: '/picture-warehouse',
+    icon: 'P',
+    title: 'Picture',
+    description: 'Explore our gallery of custom builds and wheelset photography.',
+    cta: 'Browse picture warehouse',
+  },
 ]
 
 definePageMeta({
