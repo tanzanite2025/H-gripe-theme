@@ -217,6 +217,18 @@
         </div>
       </section>
 
+      <!-- Spoke pattern -->
+      <section
+        v-show="activeTab === 'spoke-pattern'"
+        id="spoke-pattern"
+        class="technical-section"
+      >
+        <h3 class="technical-section__title">Spoke pattern</h3>
+        <p class="technical-section__intro">
+          Content coming soon...
+        </p>
+      </section>
+
       <!-- Spoke length -->
       <section
         v-show="activeTab === 'spoke-length'"
@@ -446,7 +458,7 @@ useHead({
   title: 'Technical',
 })
 
-type TechnicalTabId = 'rims' | 'spokes' | 'spoke-length' | 'hubs' | 'tension'
+type TechnicalTabId = 'rims' | 'spokes' | 'spoke-pattern' | 'spoke-length' | 'hubs' | 'tension'
 
 const localePath = useLocalePath()
 const route = useRoute()
@@ -454,6 +466,7 @@ const route = useRoute()
 const tabs: { id: TechnicalTabId; label: string }[] = [
   { id: 'rims', label: 'Rims' },
   { id: 'spokes', label: 'Spokes' },
+  { id: 'spoke-pattern', label: 'Spoke pattern' },
   { id: 'spoke-length', label: 'Spoke length' },
   { id: 'hubs', label: 'Hubs' },
   { id: 'tension', label: 'Tension' },
@@ -463,7 +476,7 @@ const activeTab = ref<TechnicalTabId>('rims')
 
 const getTabFromHash = (hash: string): TechnicalTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')
-  const allowed: TechnicalTabId[] = ['rims', 'spokes', 'spoke-length', 'hubs', 'tension']
+  const allowed: TechnicalTabId[] = ['rims', 'spokes', 'spoke-pattern', 'spoke-length', 'hubs', 'tension']
   return (allowed as string[]).includes(raw) ? (raw as TechnicalTabId) : null
 }
 

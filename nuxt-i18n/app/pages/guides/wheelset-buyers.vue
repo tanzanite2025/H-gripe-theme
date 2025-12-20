@@ -274,6 +274,20 @@
         </p>
         <p class="products-page__intro" style="margin-top: 1rem; color: #38bdf8;">
           If you wish to assemble your own wheels and purchase parts exclusively from TANZANITE , we are happy to assist you. We will guide you through every step of the assembly process, including spoke length calculation, assembly methods, and tire installation.
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="goToTechnicalSpokePattern"
+          >
+            Click to view documentation on spoke weaving
+          </button>
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="goToHolePatterns"
+          >
+            Check out the rim weaving holes we can customize
+          </button>
         </p>
       </section>
 
@@ -435,6 +449,14 @@ const goToAfterSales = async () => {
 
 const goToTechnicalTension = async () => {
   await router.push(`${localePath('/guides/technical')}#tension`)
+}
+
+const goToTechnicalSpokePattern = async () => {
+  await router.push(`${localePath('/guides/technical')}#spoke-pattern`)
+}
+
+const goToHolePatterns = async () => {
+  await router.push(`${localePath('/company/about')}#hole-patterns`)
 }
 
 const openQuickBuy = () => {
