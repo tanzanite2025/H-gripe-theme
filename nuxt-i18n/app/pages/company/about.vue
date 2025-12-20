@@ -408,6 +408,20 @@
     </section>
 
     <section
+      v-show="activeTab === 'hole-patterns'"
+      id="hole-patterns"
+      class="company-section"
+    >
+      <h2 class="company-section__title">Hole Patterns</h2>
+      <p class="company-section__body">
+        Placeholder content for Hole Patterns.
+      </p>
+      <p class="company-section__body">
+        Here you can describe the various drilling patterns available for the rims.
+      </p>
+    </section>
+
+    <section
       v-show="activeTab === 'facility'"
       id="facility"
       class="company-section"
@@ -470,21 +484,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useHead, definePageMeta } from '#imports'
+import { ref, watch } from 'vue'
+import { useHead, definePageMeta, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
-type OurStoryTabId = 'factory' | 'appearance' | 'facility' | 'manufacture' | 'qualitycontrol'
+type OurStoryTabId = 'factory' | 'appearance' | 'hole-patterns' | 'facility' | 'manufacture' | 'qualitycontrol'
 
 const tabs: { id: OurStoryTabId; label: string }[] = [
   { id: 'factory', label: 'Factory' },
   { id: 'appearance', label: 'Appearance' },
+  { id: 'hole-patterns', label: 'Hole Patterns' },
   { id: 'facility', label: 'Facility' },
   { id: 'manufacture', label: 'Manufacture' },
   { id: 'qualitycontrol', label: 'Quality control' },
 ]
 
 const activeTab = ref<OurStoryTabId>('factory')
+const route = useRoute()
+
+const getTabFromHash = (hash: string): OurStoryTabId | null => {
+  const raw = String(hash || '').replace(/^#/, '')
+  const allowed: OurStoryTabId[] = ['factory', 'appearance', 'hole-patterns', 'facility', 'manufacture', 'qualitycontrol']
+  return (allowed as string[]).includes(raw) ? (raw as OurStoryTabId) : null
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const next = getTabFromHash(hash)
+    if (next) activeTab.value = next
+  },
+  { immediate: true }
+)
 
 const setActiveTab = (id: OurStoryTabId) => {
   activeTab.value = id
