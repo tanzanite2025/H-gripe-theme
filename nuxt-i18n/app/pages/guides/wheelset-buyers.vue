@@ -307,6 +307,17 @@
         class="wheelset-section"
       >
         <h3 class="wheelset-section__title">Appearance Logo</h3>
+        <h4 class="wheelset-section__title">Why we recommend laser-engraved logos for most builds</h4>
+        <p class="products-page__intro">
+          For standard wheelset orders we usually recommend laser-engraved logos because they are fast to produce, eco-friendly and very reliable for shipping schedules. Compared with custom paint or complex decal work, a laser logo can typically shorten the overall lead time by around 5&ndash;7 days.
+        </p>
+        <button
+          type="button"
+          class="wheelset-inline-button"
+          @click="goToAboutAppearance"
+        >
+          Explore all weave &amp; finish options
+        </button>
         <ul class="wheelset-section__list">
           <li>
             <strong>Customized decals</strong>
@@ -335,16 +346,37 @@
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO.webp"
             alt="Carbon rim with customized laser engraved logo detail"
             :zoomOnClick="true"
+            caption="Carbon fiber rim laser engraving process 1"
           />
           <GuideImage
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO1.webp"
             alt="Close-up of carbon rim laser engraving process"
             :zoomOnClick="true"
+            caption="Carbon fiber rim laser engraving process 2"
           />
           <GuideImage
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO2.webp"
             alt="Different examples of carbon rim laser engraved graphics"
             :zoomOnClick="true"
+            caption="Carbon fiber rim laser engraving effect"
+          />
+        </div>
+        <p class="products-page__intro">
+          If you are planning a long-term build, OEM project or team order, you can also go beyond the standard logo and choose specific carbon weaves and surface finishes for your rims.
+        </p>
+
+        <div class="wheelset-appearance-images">
+          <GuideImage
+            src="/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp"
+            alt="Tanzanite carbon rim surface finish detail 1"
+            :zoomOnClick="true"
+            caption="Matte carbon rim finish"
+          />
+          <GuideImage
+            src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
+            alt="Tanzanite carbon rim surface finish detail 2"
+            :zoomOnClick="true"
+            caption="Glossy carbon rim finish"
           />
         </div>
       </section>
@@ -459,6 +491,10 @@ const openQuickBuy = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'wheelset-quick' } }))
   }
+}
+
+const goToAboutAppearance = async () => {
+  await router.push(`${localePath('/company/about')}#appearance`)
 }
 </script>
 

@@ -400,10 +400,118 @@
     >
       <h2 class="company-section__title">Appearance</h2>
       <p class="company-section__body">
-        Use this tab to highlight the visual details of Tanzanite rims and wheelsets: finishes, decals, logo styles, and paint or paintless options.
+        Carbon Fiber Weave &amp; Surface Finish Options
       </p>
       <p class="company-section__body">
-        Later you can replace this placeholder with your own photos and descriptions of different appearance packages so riders can quickly understand what their wheels will look like on the bike.
+        We offer a wide range of carbon fiber weave patterns and surface finishes to meet the aesthetic and performance preferences of every rider.
+      </p>
+      <div class="company-appearance-images">
+        <GuideImage
+          src="/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp"
+          alt="Tanzanite carbon rim surface finish detail 1"
+          :zoomOnClick="true"
+          caption="Matte carbon rim finish"
+        />
+        <GuideImage
+          src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
+          alt="Tanzanite carbon rim surface finish detail 2"
+          :zoomOnClick="true"
+          caption="Glossy carbon rim finish"
+        />
+      </div>
+
+      <h3 class="company-section__title">Weave patterns</h3>
+      <ul class="company-section__list">
+        <li><strong>UD (Unidirectional)</strong> &mdash; Matte &mdash; Minimal straight grain, ultra-light.</li>
+        <li><strong>Butterfly</strong> &mdash; Matte &mdash; Unique organic pattern, high visual impact.</li>
+        <li><strong>Marble</strong> &mdash; Matte &mdash; Stone-like texture, bold and distinctive.</li>
+        <li><strong>3K</strong> &mdash; Satin &mdash; Classic checkerboard, balanced look.</li>
+        <li><strong>3K Twill (Vertical)</strong> &mdash; Satin &mdash; Diagonal weave, dynamic appearance.</li>
+        <li><strong>3K Twill (Horizontal)</strong> &mdash; Satin &mdash; Horizontal twill, modern aesthetic.</li>
+        <li><strong>12K</strong> &mdash; Satin &mdash; Coarse weave, powerful visual texture.</li>
+        <li><strong>12K Twill (Vertical)</strong> &mdash; Satin &mdash; Bold diagonal weave, vertical layout.</li>
+        <li><strong>12K Twill (Horizontal)</strong> &mdash; Satin &mdash; Horizontal twill, aggressive styling.</li>
+      </ul>
+      <p class="company-section__body">
+        All weaves are structural carbon fiber, not printed or laminated, ensuring both strength and visual integrity.
+      </p>
+
+      <h3 class="company-section__title">Brake track surface options (rim brake models only)</h3>
+      <p class="company-section__body">
+        We provide multiple brake track surface treatments to enhance braking performance and heat resistance:
+      </p>
+      <ul class="company-section__list">
+        <li>High TG Resin UD Brake Track (UD weave only).</li>
+        <li>High TG Resin Graphene Brake Track.</li>
+        <li>AC3 Grooved Brake Track (two groove styles available).</li>
+        <li>UD C-Grooved Brake Track (UD weave only).</li>
+        <li>C-Grooved Graphene Brake Track.</li>
+      </ul>
+      <p class="company-section__body">
+        All brake tracks are heat-treated and abrasion-tested for compatibility with mainstream brake pads.
+      </p>
+
+      <h3 class="company-section__title">Finish &amp; painting effects</h3>
+      <p class="company-section__body">
+        Choose from a variety of surface gloss levels and special paint effects to personalize your rims:
+      </p>
+      <p class="company-section__body">
+        <strong>Gloss levels</strong>
+      </p>
+      <ul class="company-section__list">
+        <li><strong>Matte:</strong> Subtle, scratch-resistant.</li>
+        <li><strong>Satin:</strong> Soft sheen, balanced texture.</li>
+        <li><strong>Glossy:</strong> High shine, premium look.</li>
+        <li><strong>Paintless:</strong> Raw carbon fiber, ultra-lightweight.</li>
+      </ul>
+      <p class="company-section__body">
+        <strong>Crystal effect finishes</strong>
+      </p>
+      <ul class="company-section__list">
+        <li>Crystal Effect Black.</li>
+        <li>Crystal Effect Silver.</li>
+        <li>Crystal Effect Orange.</li>
+        <li>Crystal Effect Purple.</li>
+        <li>Crystal Effect Blue.</li>
+      </ul>
+      <p class="company-section__body">
+        Crystal finishes use micro-layer coating technology for unique light reflection and color depth.
+      </p>
+
+      <h3 class="company-section__title">Laser-engraved logos: faster and more sustainable</h3>
+      <p class="company-section__body">
+        In addition to traditional decals and painted graphics, we also support laser-engraved logos as a more sustainable appearance option.
+      </p>
+      <p class="company-section__body">
+        Laser logos remove the need for large vinyl decals and extra paint masks, which helps reduce plastic waste and speeds up production. For many standard builds, choosing a laser-engraved logo can typically shorten the overall lead time by about 5&ndash;7 days compared to complex custom paint or multi-layer decals.
+      </p>
+      <p class="company-section__body">
+        For practical guidance on when to choose laser engraving versus decals for a specific wheelset, please see the Appearance Logo section in our Wheelset Buyers Guide.
+      </p>
+      <div
+        class="company-video-thumbnail"
+        @click="showLaserVideo = true"
+      >
+        <img
+          class="company-video-thumbnail__image"
+          src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
+          alt="Play laser engraving video showing Tanzanite carbon rim logo finish"
+          loading="lazy"
+        />
+        <div class="company-video-thumbnail__overlay">
+          <span class="company-video-thumbnail__icon">▶</span>
+          <span class="company-video-thumbnail__label">Watch laser engraving video</span>
+        </div>
+      </div>
+
+      <h3 class="company-section__title">Presentation suggestions</h3>
+      <ul class="company-section__list">
+        <li>Organize options into three clear sections: Weave, Brake Track, Finish.</li>
+        <li>Pair each option with a high-resolution image and concise label.</li>
+        <li>Include &ldquo;Recommended combinations&rdquo; or &ldquo;Customer favorites&rdquo; to guide decision-making.</li>
+      </ul>
+      <p class="company-section__body">
+        For OEM clients, team orders, or custom branding requests, we offer logo integration, laser etching, and color matching services. Contact us for tailored solutions.
       </p>
     </section>
 
@@ -480,6 +588,31 @@
         title="Share your feedback about Our Story and the factory"
       />
     </div>
+
+    <div
+      v-if="showLaserVideo"
+      class="company-video-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="company-video-modal__backdrop" @click="showLaserVideo = false" />
+      <div class="company-video-modal__content">
+        <button
+          type="button"
+          class="company-video-modal__close"
+          @click="showLaserVideo = false"
+        >
+          ×
+        </button>
+        <video
+          class="company-video-modal__video"
+          controls
+          preload="metadata"
+        >
+          <source src="/company/aboutus/appearance/tanzanite-carbonrim-appearancelogo.mp4" type="video/mp4" />
+        </video>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -487,6 +620,7 @@
 import { ref, watch } from 'vue'
 import { useHead, definePageMeta, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import GuideImage from '~/components/GuideImage.vue'
 
 type OurStoryTabId = 'factory' | 'appearance' | 'hole-patterns' | 'facility' | 'manufacture' | 'qualitycontrol'
 
@@ -501,6 +635,7 @@ const tabs: { id: OurStoryTabId; label: string }[] = [
 
 const activeTab = ref<OurStoryTabId>('factory')
 const route = useRoute()
+const showLaserVideo = ref(false)
 
 const getTabFromHash = (hash: string): OurStoryTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')
@@ -638,6 +773,109 @@ useHead({
 
 .company-section__list li + li {
   margin-top: 0.25rem;
+}
+
+.company-video-button {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.company-video-thumbnail {
+  margin-top: 0.75rem;
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.85);
+}
+
+.company-video-thumbnail__image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.company-video-thumbnail__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  background: linear-gradient(
+    to top,
+    rgba(15, 23, 42, 0.85),
+    rgba(15, 23, 42, 0.45)
+  );
+  color: #e5e7eb;
+}
+
+.company-video-thumbnail__icon {
+  font-size: 1.8rem;
+}
+
+.company-video-thumbnail__label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.company-video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.company-video-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.company-video-modal__content {
+  position: relative;
+  z-index: 41;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 1rem;
+  background: #020617;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+.company-video-modal__close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.6rem;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.company-video-modal__video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.company-appearance-images {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
 }
 
 .factory-flow-grid {
