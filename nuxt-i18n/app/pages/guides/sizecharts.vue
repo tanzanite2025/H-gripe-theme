@@ -30,22 +30,20 @@
         <TubelessProducts />
 
         <div class="sizecharts-installation-images sizecharts-installation-images--tubeless">
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires1.webp"
-              alt="Comparison of tubeless, inner tube and tubular tires 1"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires2.webp"
-              alt="Comparison of tubeless, inner tube and tubular tires 2"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires1.webp"
+            alt="Comparison of tubeless, inner tube and tubular road bike tires with their construction and basic features"
+            :zoomOnClick="true"
+            caption="The overview above shows the basic construction differences between tubeless, inner tube and tubular tires. Understanding how each system seals air and interfaces with the rim helps you choose the right setup for your riding style and maintenance preferences."
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires2.webp"
+            alt="Pros and cons chart comparing tubeless, inner tube and tubular tires for puncture protection, rolling resistance and comfort"
+            :zoomOnClick="true"
+            caption="This comparison chart summarizes the main pros and cons of tubeless vs inner tube vs tubular tires, focusing on puncture protection, rolling resistance, comfort and ease of installation. Use it as a quick reference when deciding which tire system best matches your daily rides and performance goals."
+          />
         </div>
 
         <h3 class="sizecharts-section__subheading">What is an inner tube tire?</h3>
@@ -369,6 +367,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from '#imports'
 import TubelessProducts from '~/components/TubelessProducts.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import GuideImage from '~/components/GuideImage.vue'
 
 type SizeChartsTabId = 'tubeless' | 'installation' | 'choose' | 'rims'
 
@@ -608,10 +607,23 @@ const setActiveTab = (id: SizeChartsTabId) => {
   height: 140px;
   object-fit: cover;
   border-radius: 0.5rem;
-  border: 1px solid rgba(30, 64, 175, 0.7);
+  border: none;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.sizecharts-installation-images--tubeless {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.sizecharts-installation-images--tubeless .sizecharts-installation-images__item {
+  flex: 1 1 0;
 }
 
 .sizecharts-installation-images--tubeless .sizecharts-installation-images__img {
+  height: auto;
+  aspect-ratio: 16 / 9;
   object-fit: contain;
 }
 

@@ -33,7 +33,7 @@
 
       <!-- 3. Checkout (Main Action) -->
       <button 
-        class="h-10 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center shadow-lg shadow-[#40ffaa]/20 hover:shadow-[#40ffaa]/40 transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
+        class="h-10 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center border border-black shadow-[3px_3px_2px_rgba(0,0,0,0.95)] hover:shadow-[4px_4px_3px_rgba(0,0,0,1)] transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
         @click="openCheckoutFromDock"
       >
         <span>{{ priceDisplay }}</span>
