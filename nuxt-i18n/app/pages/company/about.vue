@@ -494,8 +494,8 @@
       >
         <img
           class="company-video-thumbnail__image"
-          src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
-          alt="Play laser engraving video showing Tanzanite carbon rim logo finish"
+          src="/company/aboutus/appearance/tanzanite-carbon-rim-laser-engraving-LOGO.webp"
+          alt="Play laser engraving video showing Tanzanite carbon rim laser-engraved logo process"
           loading="lazy"
         />
         <div class="company-video-thumbnail__overlay">
