@@ -331,27 +331,21 @@
           </li>
         </ul>
         <div class="wheelset-appearance-images">
-          <div class="wheelset-appearance-images__item">
-            <img
-              src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO.webp"
-              alt="Carbon rim with customized laser engraved logo detail"
-              class="wheelset-appearance-images__image"
-            />
-          </div>
-          <div class="wheelset-appearance-images__item">
-            <img
-              src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO1.webp"
-              alt="Close-up of carbon rim laser engraving process"
-              class="wheelset-appearance-images__image"
-            />
-          </div>
-          <div class="wheelset-appearance-images__item">
-            <img
-              src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO2.webp"
-              alt="Different examples of carbon rim laser engraved graphics"
-              class="wheelset-appearance-images__image"
-            />
-          </div>
+          <GuideImage
+            src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO.webp"
+            alt="Carbon rim with customized laser engraved logo detail"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO1.webp"
+            alt="Close-up of carbon rim laser engraving process"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO2.webp"
+            alt="Different examples of carbon rim laser engraved graphics"
+            :zoomOnClick="true"
+          />
         </div>
       </section>
 
@@ -393,6 +387,7 @@ import PageFaq from '~/components/PageFaq.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import GuideImage from '~/components/GuideImage.vue'
 
 definePageMeta({
   layout: 'products',
@@ -598,26 +593,10 @@ const openQuickBuy = () => {
 }
 
 .wheelset-appearance-images {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 0.75rem;
   margin-top: 0.75rem;
-}
-
-.wheelset-appearance-images__item {
-  flex: 1 1 260px;
-  max-width: 100%;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  background: rgba(15, 23, 42, 0.9);
-}
-
-.wheelset-appearance-images__image {
-  width: 100%;
-  height: auto;
-  display: block;
-  aspect-ratio: 2 / 1;
-  object-fit: cover;
 }
 
 .wheelset-link {

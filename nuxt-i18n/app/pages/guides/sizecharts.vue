@@ -157,31 +157,25 @@
           See details of the vacuum accessories you need
         </button>
 
-        <div class="sizecharts-installation-images">
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/Bicycle tubeless tire pad.webp"
-              alt="Bicycle tubeless tire pad"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/Bicycle vacuum self-replenishing fluid.webp"
-              alt="Bicycle vacuum self-replenishing fluid"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/Bicycle vacuum valve.webp"
-              alt="Bicycle vacuum valve"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
+        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/Bicycle tubeless tire pad.webp"
+            alt="Bicycle tubeless tire pad"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/Bicycle vacuum self-replenishing fluid.webp"
+            alt="Bicycle vacuum self-replenishing fluid"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/Bicycle vacuum valve.webp"
+            alt="Bicycle vacuum valve"
+            :zoomOnClick="true"
+          />
         </div>
 
         <ul class="sizecharts-section__list">
@@ -193,31 +187,25 @@
           </li>
         </ul>
 
-        <div class="sizecharts-installation-images">
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/tanzanite-Bicycle-tubeless-tire-pads.webp"
-              alt="Tanzanite bicycle tubeless tire pads"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/tanzanite-howtoopenthe vacuumnozzle.webp"
-              alt="Tanzanite how to open the vacuum nozzle"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/tanzanite-tubeless-tirepad-interface-overlaps.webp"
-              alt="Tanzanite tubeless tire pad interface overlaps"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
+        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/tanzanite-Bicycle-tubeless-tire-pads.webp"
+            alt="Tanzanite bicycle tubeless tire pads"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/tanzanite-howtoopenthe vacuumnozzle.webp"
+            alt="Tanzanite how to open the vacuum nozzle"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/tanzanite-tubeless-tirepad-interface-overlaps.webp"
+            alt="Tanzanite tubeless tire pad interface overlaps"
+            :zoomOnClick="true"
+          />
         </div>
 
         <ul class="sizecharts-section__list">
@@ -248,31 +236,25 @@
           </li>
         </ul>
 
-        <div class="sizecharts-installation-images">
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/3/first-step-to-install-tubelesstires.webp"
-              alt="First step to install tubeless tires"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/3/Tubelesstire-installation-diagram-2.webp"
-              alt="Tubeless tire installation diagram 2"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/3/Picture-of-whether-the-vacuum-nozzle-is-installed-properly.webp"
-              alt="Picture of whether the vacuum nozzle is installed properly"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
+        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/3/first-step-to-install-tubelesstires.webp"
+            alt="First step to install tubeless tires"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/3/Tubelesstire-installation-diagram-2.webp"
+            alt="Tubeless tire installation diagram 2"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/3/Picture-of-whether-the-vacuum-nozzle-is-installed-properly.webp"
+            alt="Picture of whether the vacuum nozzle is installed properly"
+            :zoomOnClick="true"
+          />
         </div>
 
         <h3 class="sizecharts-section__subheading">2. Fill the tire with tire repair fluid.</h3>
@@ -283,31 +265,25 @@
           </li>
         </ul>
 
-        <div class="sizecharts-installation-images">
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant1.webp"
-              alt="Pour vacuum tire sealant 1"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant2.webp"
-              alt="Pour vacuum tire sealant 2"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
-          <figure class="sizecharts-installation-images__item">
-            <img
-              src="/public/tiresizecharts/installation/4/Separate-vacuum-nozzle-tool.webp"
-              alt="Separate vacuum nozzle tool"
-              class="sizecharts-installation-images__img"
-              loading="lazy"
-            />
-          </figure>
+        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant1.webp"
+            alt="Pour vacuum tire sealant 1"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant2.webp"
+            alt="Pour vacuum tire sealant 2"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/installation/4/Separate-vacuum-nozzle-tool.webp"
+            alt="Separate vacuum nozzle tool"
+            :zoomOnClick="true"
+          />
         </div>
 
         <h3 class="sizecharts-section__subheading">3. Cheer up</h3>
@@ -612,8 +588,16 @@ const setActiveTab = (id: SizeChartsTabId) => {
 }
 
 .sizecharts-installation-images--tubeless {
+  /* AUTO-FIT GRID for GuideImage rows: 1 image = full row, 2 images = two equal columns */
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.5rem;
+}
+
+.sizecharts-installation-images--installation {
+  /* AUTO-FIT GRID for GuideImage rows: 1–3 images share the row evenly */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 0.5rem;
 }
 

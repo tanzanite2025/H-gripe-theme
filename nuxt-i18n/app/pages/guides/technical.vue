@@ -51,13 +51,17 @@
           <li>
             Common spoke diameters and shapes (straight / J-bend, round / bladed).
             <div class="technical-inline-image technical-inline-image--spoke-shapes">
-              <img
+              <GuideImage
                 src="/public/technical/j-bend-spokeandstraightpull-spoke.webp"
                 alt="Comparison of J-bend and straight-pull bicycle spokes"
+                :zoomOnClick="true"
+                caption="This illustration compares J-bend and straight-pull spoke heads and how they seat in the hub flange."
               />
-              <img
+              <GuideImage
                 src="/public/technical/Sapim-black-stainless-steel-straight-gauge-2.0mm-spoke-double-butted-2.0-1.8-2.0mm-spoke-aero-flat-bladed-spoke.webp"
                 alt="Examples of Sapim stainless steel spokes in different shapes and profiles"
+                :zoomOnClick="true"
+                caption="Examples of stainless steel spokes in straight gauge, double-butted and aero bladed profiles used on performance wheelsets."
               />
             </div>
           </li>
@@ -242,9 +246,11 @@
           measurements.
         </p>
         <div class="technical-inline-image technical-inline-image--spoke-length">
-          <img
+          <GuideImage
             src="/public/technical/spoke-length.webp"
             alt="Overview illustration for calculating bicycle spoke length"
+            :zoomOnClick="true"
+            caption="Overview illustration showing which rim and hub measurements are needed to calculate bicycle spoke length."
           />
         </div>
         <ul class="technical-section__list">
@@ -278,9 +284,11 @@
                 rim, where the spoke ends and nipples seat. This is a crucial
                 measurement.
                 <div class="technical-inline-image technical-inline-image--erd">
-                  <img
+                  <GuideImage
                     src="/public/technical/what-is-erd.webp"
                     alt="Diagram showing how Effective Rim Diameter (ERD) is measured"
+                    :zoomOnClick="true"
+                    caption="Diagram showing how Effective Rim Diameter (ERD) is measured using two spokes, nipples and a caliper."
                   />
                 </div>
               </li>
@@ -449,6 +457,7 @@
 import { ref, watch } from 'vue'
 import { useLocalePath, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import GuideImage from '~/components/GuideImage.vue'
 
 definePageMeta({
   layout: 'products',
@@ -698,13 +707,23 @@ const setActiveTab = (id: TechnicalTabId) => {
   max-width: 380px;
 }
 
-.technical-inline-image--spoke-shapes img {
-  max-width: 260px;
+.technical-inline-image--spoke-shapes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-.technical-inline-image--spoke-shapes {
-  display: flex;
-  flex-wrap: wrap;
+.technical-inline-image--spoke-length {
+  /* AUTO-FIT GRID for GuideImage rows: 1 image = full row, 2 images = two equal columns */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.75rem;
+}
+
+.technical-inline-image--erd {
+  /* AUTO-FIT GRID for GuideImage rows: 1 image = full row, 2 images = two equal columns */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 0.75rem;
 }
 
