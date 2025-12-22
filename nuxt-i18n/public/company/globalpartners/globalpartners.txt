@@ -1,0 +1,14 @@
+  这里插入一张图片  C:\Users\P16V\Desktop\Wordpress\tanzanite-theme\nuxt-i18n\public\company\globalpartners\tanzanite-carbonrim-globalpartners.webp
+【应用我们之前做的点击大图的】
+Become a partner/Contact us  
+Our global partnership network
+【这里预留位置给后面我给出地图】
+【数字卡片，预留位置等我选好】
+Partners and cases
+【LOGO墙，等我选好】
+Why choose us
+【三列卡片，第一列 Stable delivery，加上简短描述。第二列  Continuous research and development，加上简短描述。第三列，Cross-regional services，加上简短描述】
+公司信息，联系方式，社交媒体占位
+
+
+
