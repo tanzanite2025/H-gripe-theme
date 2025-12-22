@@ -245,7 +245,7 @@ const supportLinks = [
 // Guides 快捷链接
 const guidesLinks = [
   { id: 'wheelset-buyers', labelKey: 'products.nav.wheelsetBuyersGuide', to: '/guides/wheelset-buyers', fallback: 'Wheelset guide' },
-  { id: 'tire-size-charts', labelKey: 'products.nav.tireSizeCharts', to: '/guides/sizecharts', fallback: 'Tire Size' },
+  { id: 'tire-size-charts', labelKey: 'products.nav.tireSizeCharts', to: '/guides/tireguides', fallback: 'Tire Guides' },
 ]
 
 // Guides 快捷链接

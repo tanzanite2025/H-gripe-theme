@@ -477,8 +477,8 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     // 根据具体路径映射更友好的标题
     if (currentPath === localePath('/guides/tools')) {
       items.push({ label: t('products.nav.aboutTools', 'About Tools') as string })
-    } else if (currentPath === localePath('/guides/sizecharts')) {
-      items.push({ label: t('products.nav.tireSizeCharts', 'Tire Size Charts') as string })
+    } else if (currentPath === localePath('/guides/tireguides')) {
+      items.push({ label: t('products.nav.tireSizeCharts', 'Tire Guides') as string })
     } else if (currentPath === localePath('/guides/technical')) {
       items.push({ label: t('products.nav.technicalDocs', 'Technical') as string })
     } else if (currentPath === localePath('/guides/wheelset-buyers')) {

@@ -428,13 +428,13 @@
     "nav": {
       "shop": "Shop",
       "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Size Charts",
+      "tireSizeCharts": "Tire Guides",
       "wheelsbuildBlog": "Wheelsbuild blog",
       "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Guide"
     },
     "navShort": {
-      "tireSize": "Tire size",
+      "tireSize": "Tire guides",
       "calculator": "Calculator",
       "points": "Points",
       "picture": "Picture"
@@ -618,7 +618,7 @@
     "links": {
       "shop": "Shop",
       "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Size Charts",
+      "tireSizeCharts": "Tire Guides",
       "wheelsbuildBlog": "Wheelsbuild blog",
       "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Guide",

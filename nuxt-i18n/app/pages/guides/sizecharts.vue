@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="products-page__title products-page__title--sr-only">Tire Size Charts</h1>
+    <h1 class="products-page__title products-page__title--sr-only">Tire Guides</h1>
     <p class="products-page__intro products-page__intro--sr-only">
       Reference charts for common tire and rim sizes. Detailed data will be added here later.
     </p>
@@ -498,8 +498,8 @@
 
       <div class="sizecharts-feedback">
         <UserFeedbackThread
-          threadKey="guides-sizecharts"
-          title="Share your feedback about this Tire Size Charts guide"
+          threadKey="guides-tireguides"
+          title="Share your feedback about this Tire Guides guide"
         />
       </div>
     </div>
@@ -529,10 +529,11 @@ type SizeChartsTabId = 'size' | 'tubeless' | 'installation' | 'choose' | 'rims' 
 
 definePageMeta({
   layout: 'products',
+  path: '/guides/tireguides',
 })
 
 useHead({
-  title: 'Tire Size Charts',
+  title: 'Tire Guides',
 })
 
 const tabs: { id: SizeChartsTabId; label: string }[] = [

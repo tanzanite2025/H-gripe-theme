@@ -21,7 +21,7 @@ export const productsNavItems: ProductsNavItem[] = [
   {
     id: 'tire-size-charts',
     labelKey: 'products.nav.tireSizeCharts',
-    to: '/guides/sizecharts',
+    to: '/guides/tireguides',
   },
   {
     id: 'technical-docs',

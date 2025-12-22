@@ -40,7 +40,7 @@ const guidesNavItems: ProductsNavItem[] = [
   {
     id: 'tire-size-charts',
     labelKey: 'products.nav.tireSizeCharts',
-    to: '/guides/sizecharts',
+    to: '/guides/tireguides',
   },
   {
     id: 'technical-docs',
@@ -91,7 +91,7 @@ const navContext = computed<NavContext>(() => {
 
   if (path === '/guides' || path.startsWith('/guides/')) {
     const productsGuidesRoutes = new Set([
-      '/guides/sizecharts',
+      '/guides/tireguides',
       '/guides/technical',
       '/guides/wheelset-buyers',
     ])
