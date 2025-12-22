@@ -46,11 +46,11 @@ const sections = [
     cta: 'Open shop',
   },
   {
-    to: '/guides/sizecharts',
+    to: '/guides/tireguides',
     icon: 'C',
-    title: 'Tire Size Charts',
-    description: 'Reference charts for common tire and rim sizes.',
-    cta: 'View size charts',
+    title: 'Tire Guides',
+    description: 'Guides for matching tire and rim sizes, pressure and inner tubes.',
+    cta: 'Open tire guides',
   },
   {
     to: '/guides/technical',

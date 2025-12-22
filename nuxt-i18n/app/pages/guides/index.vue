@@ -49,12 +49,12 @@ const guides = [
     cta: 'Open tools guide',
   },
   {
-    to: '/guides/sizecharts',
+    to: '/guides/tireguides',
     icon: 'C',
-    title: 'Tire Size Charts',
+    title: 'Tire Guides',
     description:
-      'Reference charts for common tire and rim sizes, to be expanded with detailed data.',
-    cta: 'View size charts',
+      'Guides for tire sizing, pressure, inner tubes and tubeless setups, built on Schwalbe references.',
+    cta: 'Open tire guides',
   },
   {
     to: '/guides/technical',

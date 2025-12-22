@@ -467,7 +467,7 @@ const openWhatsAppChat = () => {
 }
 
 const goToTubelessInstallation = async () => {
-  await router.push(`${localePath('/guides/sizecharts')}#installation`)
+  await router.push(`${localePath('/guides/tireguides')}#installation`)
 }
 
 const goToAfterSales = async () => {
