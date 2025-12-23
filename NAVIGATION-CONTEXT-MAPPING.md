@@ -81,14 +81,8 @@
 - [yes] Test Report（`/support/test-report`）（id: `test-report`）【从 Products 进入需保持 Products 横向菜单】
 - [yes] Membership and Points（`/membershipandpoints`）（id: `membership-and-points`）
 - [yes] Picture warehouse（`/picture-warehouse`）（id: `picture-warehouse`）
-- [no] Wheelsbuild blog（`/blog`）（id: `wheelsbuild-blog`）[这个单独放一边，把它从里面剔除，这个不是太重要，这个到时候会另外的入口去放，先从里面剔除】
 
-### 候选“购买辅助”的 Support 入口（当前不在 productsNavItems）
-（仅当你希望它们显示在 Products 菜单时才勾选。）
-- [no] Warranty（`/support/warranty`）  
-- [no] After sales（`/support/after-sales`）
-- [no] Shipping（`/support/shipping`）
-- [no] Payment（`/support/payment`）
+
 
 需要决策：
 - 当用户从 Products 菜单点击 Support 相关链接时：
@@ -167,8 +161,7 @@ Blog 菜单需要在所有 `/blog/*` 路由下保持稳定。
    - `company` 上下文返回 `companyNavItems`。
    - `guides` 上下文返回仅 guides 的菜单项列表。
    - `products` 上下文返回配置好的“购买辅助”菜单列表。
-3. 如果你希望显示 blog，则移除或调整“当存在 `shop` 时隐藏 `wheelsbuild-blog`”的规则。
-4. 人工回归检查：
+3. 人工回归检查：
    - `/products` 显示 products 购买辅助菜单。
    - `/shop` 保持同一套 products 菜单。
    - `/guides` 显示 guides 菜单。
@@ -179,7 +172,6 @@ Blog 菜单需要在所有 `/blog/*` 路由下保持稳定。
 - [ ] `/products` 横向菜单符合 Products 规范
 - [ ] `/shop` 横向菜单符合 Products 规范
 - [ ] `/spoke-calculator` 横向菜单符合 Products 规范
-- [ ] `/blog` 横向菜单符合 Products 规范
 - [ ] `/guides` 横向菜单符合 Guides 规范
 - [ ] `/guides/tools` 横向菜单符合 Guides 规范
 - [ ] `/guides/sizecharts` 横向菜单符合 Guides 规范

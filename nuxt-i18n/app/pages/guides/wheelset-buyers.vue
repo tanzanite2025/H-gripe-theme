@@ -20,16 +20,16 @@
       <section
         v-show="activeTab === 'safety-instructions'"
         id="safety-instructions"
-        class="wheelset-section"
+        class="wheelset-section sizecharts-section"
       >
-        <h3 class="wheelset-section__title">Safety instructions</h3>
-        <p class="products-page__intro">
+        <h2 class="sizecharts-section__title">Safety instructions</h2>
+        <p class="sizecharts-section__intro">
           Improper installation, use, or maintenance may cause serious damage to the wheels and pose a danger to the rider.
           To ensure a reliable riding experience with TANZANITE products, please read and follow the instructions below.
           Even if you have years of cycling or wheelset assembly experience, these instructions and recommendations apply only
           to TANZANITE carbon fiber products. Therefore, please carefully read them before your first ride or wheel assembly.
         </p>
-        <p class="products-page__intro">
+        <p class="sizecharts-section__intro">
           If you have any questions, feel free to contact us at
           <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
           or
@@ -42,7 +42,7 @@
           </button>
           on any page of our website.
         </p>
-        <ol class="wheelset-section__list wheelset-section__list--ordered">
+        <ol class="sizecharts-section__list sizecharts-section__list--numbered">
           <li>
             <strong>Installation &amp; Inspection</strong>
             <p class="wheelset-safety-item">
@@ -151,10 +151,10 @@
       <section
         v-show="activeTab === 'mullet-wheelsets'"
         id="mullet-wheelsets"
-        class="wheelset-section"
+        class="wheelset-section sizecharts-section"
       >
-        <h3 class="wheelset-section__title">Mullet wheelsets</h3>
-        <p class="products-page__intro">
+        <h2 class="sizecharts-section__title">Mullet wheelsets</h2>
+        <p class="sizecharts-section__intro">
           Many mountain bikers have fallen in love with the combination of a 29-inch front wheel paired with a 27.5-inch rear
           wheel, or a 27.5-inch front wheel with a 26-inch rear wheel. This wheel size mix is particularly well-suited for
           off-road riding. It offers easy handling on steep descents, agile and responsive cornering, and the ability to roll
@@ -174,10 +174,10 @@
       <section
         v-show="activeTab === 'custom-front-rear-wheels'"
         id="custom-front-rear-wheels"
-        class="wheelset-section"
+        class="wheelset-section sizecharts-section"
       >
-        <h3 class="wheelset-section__title">Custom Front &amp; Rear Wheels</h3>
-        <p class="products-page__intro">
+        <h2 class="sizecharts-section__title">Custom Front &amp; Rear Wheels</h2>
+        <p class="sizecharts-section__intro">
           We specialize in customized services, including building individual wheels tailored to your specific needs. While we only
           showcase complete wheelsets online, single wheels can be custom-made upon request. Please contact us at
           <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
@@ -197,13 +197,13 @@
       <section
         v-show="activeTab === 'sample-assembly'"
         id="sample-assembly"
-        class="wheelset-section"
+        class="wheelset-section sizecharts-section wheelset-section--sample"
       >
-        <h3 class="wheelset-section__title">Sample assembly</h3>
-        <p class="products-page__intro">
+        <h2 class="sizecharts-section__title">Sample assembly</h2>
+        <p>
           We provide professional assembly services, supporting customers who wish to send in carbon fiber rims, wheelsets, and bicycle components. Our skilled technicians will complete the assembly to the highest standards.
         </p>
-        <p class="products-page__intro">
+        <p>
           Please contact our sales team at
           <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
           to begin the quotation process, or
@@ -216,39 +216,41 @@
           </button>
           .
         </p>
-        <p class="products-page__intro">
+        <p>
           <strong style="color: #38bdf8;">Assembly Fee: USD 30 per set</strong>
         </p>
 
-        <ol class="wheelset-section__list wheelset-section__list--ordered">
+        <ol class="sizecharts-section__list sizecharts-section__list--numbered">
           <li>
             <strong>Service Process</strong>
-            <p class="wheelset-safety-item">
-              <strong>Shipping:</strong> Customers send their components to the designated address.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Confirmation:</strong> Upon receipt, we will check and confirm all items.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Assembly:</strong> Professional technicians perform installation and adjustment.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Testing:</strong> Safety and performance checks are conducted to ensure compliance with riding standards.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Delivery:</strong> The assembled product will be shipped back or made available for pickup.
-            </p>
+            <ul class="sizecharts-section__list">
+              <li>
+                <strong>Shipping:</strong> Customers send their components to the designated address.
+              </li>
+              <li>
+                <strong>Confirmation:</strong> Upon receipt, we will check and confirm all items.
+              </li>
+              <li>
+                <strong>Assembly:</strong> Professional technicians perform installation and adjustment.
+              </li>
+              <li>
+                <strong>Testing:</strong> Safety and performance checks are conducted to ensure compliance with riding standards.
+              </li>
+              <li>
+                <strong>Delivery:</strong> The assembled product will be shipped back or made available for pickup.
+              </li>
+            </ul>
           </li>
           <li>
             <strong>Accepted Components</strong>
-            <ul class="wheelset-section__list">
+            <ul class="sizecharts-section__list">
               <li>Wheelsets (including hubs)</li>
               <li>Other related accessories (please confirm with us in advance)</li>
             </ul>
           </li>
           <li>
             <strong>Important Notes</strong>
-            <ul class="wheelset-section__list">
+            <ul class="sizecharts-section__list">
               <li>Please ensure that all components sent are new or in good condition.</li>
               <li>A detailed packing list is recommended to avoid missing items.</li>
               <li>Special customization requests should be communicated in advance.</li>
@@ -257,22 +259,24 @@
           </li>
           <li>
             <strong>Value Proposition</strong>
-            <p class="wheelset-safety-item">
-              <strong>Expert Technicians:</strong> Years of experience in carbon fiber wheelset and complete bike assembly.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Safety Assurance:</strong> Rigorous testing procedures to guarantee riding safety.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Efficient Delivery:</strong> Fast assembly and return shipping, saving customers valuable time.
-            </p>
+            <ul class="sizecharts-section__list">
+              <li>
+                <strong>Expert Technicians:</strong> Years of experience in carbon fiber wheelset and complete bike assembly.
+              </li>
+              <li>
+                <strong>Safety Assurance:</strong> Rigorous testing procedures to guarantee riding safety.
+              </li>
+              <li>
+                <strong>Efficient Delivery:</strong> Fast assembly and return shipping, saving customers valuable time.
+              </li>
+            </ul>
           </li>
         </ol>
 
-        <p class="products-page__intro" style="margin-top: 1rem;">
+        <p style="margin-top: 1rem;">
           For smooth service, shipping costs for sending and returning components are the responsibility of the customer. We will assist by recommending reliable logistics options to ensure your parts arrive safely.
         </p>
-        <p class="products-page__intro" style="margin-top: 1rem; color: #38bdf8;">
+        <p style="margin-top: 1rem; color: #38bdf8;">
           If you wish to assemble your own wheels and purchase parts exclusively from TANZANITE , we are happy to assist you. We will guide you through every step of the assembly process, including spoke length calculation, assembly methods, and tire installation.
           <button
             type="button"
@@ -295,20 +299,20 @@
       <section
         v-show="activeTab === 'mixed-rim'"
         id="mixed-rim"
-        class="wheelset-section"
+        class="wheelset-section sizecharts-section"
       >
-        <h3 class="wheelset-section__title">Mixed rim</h3>
+        <h2 class="sizecharts-section__title">Mixed rim</h2>
       </section>
 
       <!-- Appearance Logo -->
       <section
         v-show="activeTab === 'appearance-logo'"
         id="appearance-logo"
-        class="wheelset-section"
+        class="wheelset-section sizecharts-section"
       >
-        <h3 class="wheelset-section__title">Appearance Logo</h3>
-        <h4 class="wheelset-section__title">Why we recommend laser-engraved logos for most builds</h4>
-        <p class="products-page__intro">
+        <h2 class="sizecharts-section__title">Appearance Logo</h2>
+        <h3 class="sizecharts-section__subheading">Why we recommend laser-engraved logos for most builds</h3>
+        <p class="sizecharts-section__intro">
           For standard wheelset orders we usually recommend laser-engraved logos because they are fast to produce, eco-friendly and very reliable for shipping schedules. Compared with custom paint or complex decal work, a laser logo can typically shorten the overall lead time by around 5&ndash;7 days.
         </p>
         <button
@@ -318,7 +322,7 @@
         >
           Explore all weave &amp; finish options
         </button>
-        <ul class="wheelset-section__list">
+        <ul class="sizecharts-section__list">
           <li>
             <strong>Customized decals</strong>
             <p>
@@ -361,7 +365,7 @@
             caption="Carbon fiber rim laser engraving effect"
           />
         </div>
-        <p class="products-page__intro">
+        <p class="sizecharts-section__intro">
           If you are planning a long-term build, OEM project or team order, you can also go beyond the standard logo and choose specific carbon weaves and surface finishes for your rims.
         </p>
 
@@ -385,10 +389,10 @@
       <section
         v-show="activeTab === 'optional'"
         id="optional"
-        class="wheelset-section"
+        class="wheelset-section sizecharts-section"
       >
-        <h3 class="wheelset-section__title">Optional</h3>
-        <p>Here is some new content.</p>
+        <h2 class="sizecharts-section__title">Optional</h2>
+        <p class="sizecharts-section__intro">Here is some new content.</p>
       </section>
 
       <!-- FAQ Section - 放在所有 tab 内容之后 -->
@@ -595,37 +599,19 @@ const goToAboutAppearance = async () => {
   margin-top: 0.75rem;
 }
 
-.wheelset-section__title {
-  margin: 0 0 0.35rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #e5e7eb;
-}
-
-.wheelset-section__list {
-  margin: 0;
-  padding-left: 1.1rem;
-  list-style-type: disc;
-  font-size: 0.88rem;
-  color: rgba(148, 163, 184, 0.9);
-}
-
-.wheelset-section__list--ordered {
-  list-style-type: decimal;
+.wheelset-section--sample > p {
+  color: #f9fafb;
+  text-align: center;
 }
 
 .wheelset-safety-item {
   margin: 0.25rem 0 0;
 }
 
-.wheelset-section__list ul {
+.wheelset-section .sizecharts-section__list ul {
   margin-top: 0.15rem;
   padding-left: 1.1rem;
-  list-style-type: disc;
-}
-
-.wheelset-section__list li + li {
-  margin-top: 0.25rem;
+  list-style-type: none;
 }
 
 .wheelset-appearance-images {

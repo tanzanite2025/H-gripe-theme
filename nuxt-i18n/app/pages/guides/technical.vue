@@ -20,14 +20,14 @@
       <section
         v-show="activeTab === 'rims'"
         id="rims"
-        class="technical-section"
+        class="technical-section sizecharts-section"
       >
-        <h3 class="technical-section__title">Rims</h3>
-        <p class="technical-section__intro">
+        <h2 class="sizecharts-section__title">Rims</h2>
+        <p class="sizecharts-section__intro">
           Overview of Tanzanite rims and how rim dimensions relate to tire
           compatibility and spoke length.
         </p>
-        <ul class="technical-section__list">
+        <ul class="sizecharts-section__list">
           <li>Rim diameter standards (ISO / ETRTO such as 622, 584, etc.).</li>
           <li>Internal / external width and their impact on tire choice.</li>
           <li>Spoke hole count (28H / 32H / 36H …) and recommended use cases.</li>
@@ -40,14 +40,14 @@
       <section
         v-show="activeTab === 'spokes'"
         id="spokes"
-        class="technical-section"
+        class="technical-section sizecharts-section"
       >
-        <h3 class="technical-section__title">Spokes</h3>
-        <p class="technical-section__intro">
+        <h2 class="sizecharts-section__title">Spokes</h2>
+        <p class="sizecharts-section__intro">
           Basic spoke concepts: dimensions, materials and typical use cases for
           different riding styles.
         </p>
-        <ul class="technical-section__list">
+        <ul class="sizecharts-section__list">
           <li>
             Common spoke diameters and shapes (straight / J-bend, round / bladed).
             <div class="technical-inline-image technical-inline-image--spoke-shapes">
@@ -67,10 +67,10 @@
           </li>
         </ul>
         <div class="technical-materials">
-          <p class="technical-section__intro">
+          <p class="sizecharts-section__intro">
             The following is a detailed introduction to different spoke materials:
           </p>
-          <ul class="technical-section__list">
+          <ul class="sizecharts-section__list">
             <li>
               <strong class="technical-materials__heading">1. Stainless Steel</strong>
               <p>
@@ -214,7 +214,7 @@
               </p>
             </li>
           </ul>
-          <p class="technical-section__intro">
+          <p class="sizecharts-section__intro">
             Which material you choose ultimately depends on your budget, riding style and
             specific performance needs such as weight, stiffness and comfort.
           </p>
@@ -225,10 +225,10 @@
       <section
         v-show="activeTab === 'spoke-pattern'"
         id="spoke-pattern"
-        class="technical-section"
+        class="sizecharts-section"
       >
-        <h3 class="technical-section__title">Spoke pattern</h3>
-        <p class="technical-section__intro">
+        <h2 class="sizecharts-section__title">Spoke pattern</h2>
+        <p class="sizecharts-section__intro">
           Content coming soon...
         </p>
       </section>
@@ -237,10 +237,10 @@
       <section
         v-show="activeTab === 'spoke-length'"
         id="spoke-length"
-        class="technical-section"
+        class="sizecharts-section"
       >
-        <h3 class="technical-section__title">Spoke length</h3>
-        <p class="technical-section__intro">
+        <h2 class="sizecharts-section__title">Spoke length</h2>
+        <p class="sizecharts-section__intro">
           The easiest and most accurate way to calculate bicycle spoke length is to
           use a spoke length calculator together with your own rim and hub
           measurements.
@@ -253,7 +253,7 @@
             caption="Overview illustration showing which rim and hub measurements are needed to calculate bicycle spoke length."
           />
         </div>
-        <ul class="technical-section__list">
+        <ul class="sizecharts-section__list">
           <li>
             <strong>Use a spoke length calculator</strong>
             <ul>
@@ -402,14 +402,14 @@
       <section
         v-show="activeTab === 'hubs'"
         id="hubs"
-        class="technical-section"
+        class="sizecharts-section"
       >
-        <h3 class="technical-section__title">Hubs</h3>
-        <p class="technical-section__intro">
+        <h2 class="sizecharts-section__title">Hubs</h2>
+        <p class="sizecharts-section__intro">
           Hub geometry concepts that matter for spoke length and wheel
           behaviour.
         </p>
-        <ul class="technical-section__list">
+        <ul class="sizecharts-section__list">
           <li>Left / right flange distance from the hub centerline.</li>
           <li>Flange diameter and how it interacts with rim ERD.</li>
           <li>Matching hub hole count with rim hole count.</li>
@@ -424,14 +424,14 @@
       <section
         v-show="activeTab === 'tension'"
         id="tension"
-        class="technical-section"
+        class="sizecharts-section"
       >
-        <h3 class="technical-section__title">Tension &amp; formulas</h3>
-        <p class="technical-section__intro">
+        <h2 class="sizecharts-section__title">Tension &amp; formulas</h2>
+        <p class="sizecharts-section__intro">
           Placeholder notes for recommended tension ranges and simple
           relationships between tension, geometry and load.
         </p>
-        <ul class="technical-section__list">
+        <ul class="sizecharts-section__list">
           <li>Indicative tension ranges for front and rear wheels.</li>
           <li>Differences between drive-side and non-drive-side tension.</li>
           <li>
@@ -599,49 +599,18 @@ const setActiveTab = (id: TechnicalTabId) => {
   margin-top: 0.75rem;
 }
 
-.technical-section__title {
-  margin: 0 0 0.35rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #e5e7eb;
-}
-
-.technical-section__intro {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  color: rgba(148, 163, 184, 0.9);
-}
-
-.technical-section__list {
-  margin: 0;
-  padding-left: 1.1rem;
-  list-style-type: disc;
-  font-size: 0.88rem;
-  color: rgba(148, 163, 184, 0.9);
-}
-
-.technical-section__list ul {
-  margin-top: 0.15rem;
-  padding-left: 1.1rem;
-  list-style-type: disc;
-}
-
-.technical-section__list li + li {
-  margin-top: 0.25rem;
-}
-
 .technical-materials {
   margin-top: 0.75rem;
 }
 
-.technical-materials > .technical-section__list > li {
+.technical-materials > .sizecharts-section__list > li {
   padding: 0.75rem 0.85rem;
   border-radius: 0.75rem;
   background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
-.technical-materials > .technical-section__list > li + li {
+.technical-materials > .sizecharts-section__list > li + li {
   margin-top: 0.6rem;
 }
 
@@ -729,6 +698,13 @@ const setActiveTab = (id: TechnicalTabId) => {
 
 .technical-feedback {
   margin-top: 2.5rem;
+}
+
+/* Nested lists inside shared guide lists on this page */
+.technical-page .sizecharts-section__list ul {
+  margin-top: 0.15rem;
+  padding-left: 1.1rem;
+  list-style-type: disc;
 }
 
 @media (min-width: 768px) {
