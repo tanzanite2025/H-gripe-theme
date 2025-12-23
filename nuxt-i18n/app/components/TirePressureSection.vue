@@ -1,18 +1,18 @@
 <template>
   <div class="tire-pressure-section">
     <div class="mt-1 space-y-4 text-sm text-slate-100">
-      <p class="sizecharts-section__intro">
+      <p>
         For safety and performance, the tire and rim on the bike must be perfectly matched. This applies all the more to tubeless
         tires. In addition to the classic hooked rims (crotched type), so-called "hookless" rims (straight side) are becoming
         increasingly popular on current model bikes. Hookless rims in particular place high demands on tubeless tires for safe
         operation. The Schwalbe TLR/TLE models (from model year 2020) are designed to meet these special requirements, especially in
         the bead core area, and are therefore generally compatible.
       </p>
-      <p class="sizecharts-section__intro">
+      <p>
         Rim manufacturers often use wider inner bead widths for their hookless rims. The air pressure should therefore be reduced
         accordingly, as the real volume of the tire increases with wider inner rim widths.
       </p>
-      <p class="sizecharts-section__intro">
+      <p>
         According to the ETRTO (European Tyre and Rim Technical Organisation), hookless rims have a maximum pressure of 5 bar for
         road bikes. This maximum tire pressure must be adhered to, or less if the maximum pressure stated by the rim/wheel
         manufacturer is lower, even if the maximum pressure printed or embossed on the tire is higher. Therefore, if the specified
@@ -22,7 +22,7 @@
         problems.
       </p>
 
-      <div class="mt-1">
+      <p class="guide-section__cta-wrapper">
         <button
           type="button"
           class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
@@ -30,10 +30,10 @@
         >
           Check out tires
         </button>
-      </div>
+      </p>
 
       <div>
-        <h3 class="text-sm font-semibold text-slate-100">
+        <h3 class="text-sm font-semibold text-sky-400 text-center">
           1. Why tire pressure matters
         </h3>
         <ul class="sizecharts-section__list mt-1">
@@ -53,7 +53,7 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-slate-100">
+        <h3 class="text-sm font-semibold text-sky-400 text-center">
           2. Key factors affecting pressure
         </h3>
         <div class="mt-2 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/40">
@@ -97,7 +97,7 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-slate-100">
+        <h3 class="text-sm font-semibold text-sky-400 text-center">
           3. Typical pressure ranges (approximate)
         </h3>
         <ul class="sizecharts-section__list mt-1">
@@ -108,7 +108,7 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-slate-100">
+        <h3 class="text-sm font-semibold text-sky-400 text-center">
           4. Practical tips
         </h3>
         <ul class="sizecharts-section__list mt-1">
@@ -121,7 +121,7 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-slate-100">
+        <h3 class="text-sm font-semibold text-sky-400 text-center">
           5. Risks &amp; warnings
         </h3>
         <ul class="sizecharts-section__list mt-1">

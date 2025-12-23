@@ -27,28 +27,16 @@
   margin: 0 0 0.5rem;
   font-size: 0.9rem;
   color: rgba(148, 163, 184, 0.9);
-  position: relative;
-  padding-left: 1rem;
-  text-align: center;
-}
-
-/* Decorator bullet before intro paragraphs */
-.sizecharts-section__intro::before {
-  content: '\2022'; /* bullet dot */
-  position: absolute;
-  left: 0;
-  top: 0.45rem;
-  font-size: 0.7rem;
-  color: #38bdf8;
 }
 
 /* Generic lists used inside sections (text lists only) */
 .sizecharts-section__list {
-  margin: 0;
+  margin: 0 auto;
   padding-left: 0;
   list-style-type: none;
   font-size: 0.88rem;
   color: rgba(148, 163, 184, 0.9);
+  text-align: center;
 }
 
 .sizecharts-section__list > li {
@@ -73,6 +61,7 @@
 .sizecharts-section__list--numbered {
   list-style-type: decimal;
   padding-left: 1.1rem;
+  text-align: center;
 }
 
 .sizecharts-section__list--numbered > li {
@@ -82,4 +71,15 @@
 
 .sizecharts-section__list--numbered > li::before {
   content: none;
+}
+
+/* Shared wrapper for standalone CTA buttons in guides */
+.guide-section__cta-wrapper {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* Default: center all paragraph text inside guide sections */
+.sizecharts-section p {
+  text-align: center;
 }

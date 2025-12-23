@@ -171,3 +171,64 @@
 
 3. **纯说明正文（无蓝点，可左对齐或局部居中）**
    - 使用普通 `<p>`，必要时在 section 上加局部类设置对齐和颜色。
+
+---
+
+## 七、CTA 按钮使用规范
+
+### 7.1 独立 CTA 按钮（单行居中）
+
+- 典型场景：
+  - Appearance Logo TAB 中的「Explore all weave & finish options」。
+  - Technical / Tire Guides 中类似「View full chart」「Go to calculator」等主要操作。
+- 推荐结构：
+
+```html
+<section class="sizecharts-section">
+  <h2 class="sizecharts-section__title">Appearance Logo</h2>
+  <p class="sizecharts-section__intro">
+    Why we recommend laser-engraved logos for most builds.
+  </p>
+  <p class="guide-section__cta-wrapper">
+    <button class="wheelset-inline-button">Explore all weave &amp; finish options</button>
+  </p>
+</section>
+```
+
+- 推荐样式（示例）：
+
+```css
+.guide-section__cta-wrapper {
+  text-align: center;
+}
+```
+
+或直接给按钮添加一个居中容器，总体原则是：**独立 CTA 按钮单独占一行，并在水平方向居中**，在桌面和移动端都方便点击。
+
+### 7.2 句子内部的按钮（保持内联）
+
+- 典型场景：
+  - Sample assembly TAB 中句子里的「Click to view documentation on spoke weaving」按钮。
+- 推荐结构：
+
+```html
+<p>
+  If you wish to assemble your own wheels and purchase parts exclusively from TANZANITE, we are happy to assist you.
+  <button class="wheelset-inline-button">
+    Click to view documentation on spoke weaving
+  </button>
+  <button class="wheelset-inline-button">
+    Check out the rim weaving holes we can customize
+  </button>
+</p>
+```
+
+- 规则：
+  - 这类按钮视为句子的一部分，**跟随文本在同一行/同一段落内排版**。
+  - 不额外做整体居中，避免把句子“拆成几段漂浮的按钮块”。
+  - 在移动端由浏览器自然换行即可。
+
+总结：
+
+- **独立 CTA**：单独一行，居中对齐。
+- **内联按钮**：作为句子一部分，跟随文本对齐方式（通常左对齐）。
