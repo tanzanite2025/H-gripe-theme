@@ -1,9 +1,24 @@
 <template>
   <div>
-    <h2 class="sizecharts-section__title text-slate-100">Tire pressure</h2>
+    <h2 class="sizecharts-section__title text-slate-100 font-semibold">TIRE PRESSURE</h2>
     <div class="mt-1 space-y-4 text-sm text-slate-100">
-      <p class="sizecharts-section__intro font-semibold">
-        🚴 Bicycle tire pressure guide
+      <p class="sizecharts-section__intro">
+        • For safety and performance, the tire and rim on the bike must be perfectly matched. This applies all the more to tubeless
+        tires. In addition to the classic hooked rims (crotched type), so-called "hookless" rims (straight side) are becoming
+        increasingly popular on current model bikes. Hookless rims in particular place high demands on tubeless tires for safe
+        operation. The Schwalbe TLR/TLE models (from model year 2020) are designed to meet these special requirements, especially in
+        the bead core area, and are therefore generally compatible.
+        <br />
+        • Rim manufacturers often use wider inner bead widths for their hookless rims. The air pressure should therefore be reduced
+        accordingly, as the real volume of the tire increases with wider inner rim widths.
+        <br />
+        • According to the ETRTO (European Tyre and Rim Technical Organisation), hookless rims have a maximum pressure of 5 bar for
+        road bikes. This maximum tire pressure must be adhered to, or less if the maximum pressure stated by the rim/wheel
+        manufacturer is lower, even if the maximum pressure printed or embossed on the tire is higher. Therefore, if the specified
+        maximum pressure of the rim is lower than that of the tire, the maximum pressure of the rim must be observed. There are also
+        restrictions imposed by the rim manufacturer with regard to the choice of tire, which must also be observed. Many rim and
+        wheel manufacturers recommend a minimum tire width of 28 mm in order to be able to ride the low air pressure without any
+        problems.
       </p>
 
       <div class="mt-1">
