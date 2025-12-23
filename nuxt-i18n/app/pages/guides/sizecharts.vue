@@ -23,18 +23,66 @@
       <section
         v-show="activeTab === 'size'"
         id="size"
-        class="sizecharts-section text-slate-100"
+        class="sizecharts-section text-slate-100 [&_h3.sizecharts-section__subheading]:text-sky-400 [&_h3.sizecharts-section__subheading]:font-semibold"
       >
         <TireSizeSection @openTireProducts="openTireProductsDrawer" />
+      </section>
 
-        <div
-          class="mt-2 rounded-2xl bg-slate-900/80 shadow-[4px_4px_18px_rgba(0,0,0,1)] overflow-hidden"
-        >
-          <img
-            src="/public/tiresizecharts/tiresize/what-tire-sizes-are-available-schwalbe.svg"
-            alt="Overview table comparing ETRTO, inch and French tire size designations"
-            class="block h-auto w-[110%] max-w-none -translate-x-[4.5%]"
-            loading="lazy"
+      <!-- Match (tire & rim matching helpers) -->
+      <section
+        v-show="activeTab === 'match'"
+        id="match"
+        class="sizecharts-section"
+      >
+        <h2 class="sizecharts-section__title">DOES THE TIRE FIT MY FRAME?</h2>
+        <p class="sizecharts-section__intro">
+          With our particularly wide tires, the question often arises as to whether the tires will still fit in the frame. Please
+          understand that due to the large number of bicycle models, we cannot check all frames for compatibility with the various
+          tires. Below we provide the exact diameters and widths of our extra-wide tires. You can use this information to check
+          whether the installation dimensions of your frame offer enough space for the desired tire.
+        </p>
+
+        <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/match/schwalbe-tire-fit-frame1.webp"
+            alt="Frame clearance overview 1 for checking whether wide tires fit in the frame"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/match/schwalbe-tire-fit-frame2.webp"
+            alt="Frame clearance overview 2 showing dimensions for wide tires"
+            :zoomOnClick="true"
+          />
+          <GuideImage
+            class="sizecharts-installation-images__item md:col-span-2"
+            src="/public/tiresizecharts/match/schwalbe-tire-fit-frame3.webp"
+            alt="Frame clearance overview 3 with detailed extra-wide tire measurements"
+            :zoomOnClick="true"
+          />
+        </div>
+
+        <h3 class="sizecharts-section__subheading mt-4">
+          WHAT IS THE EXACT CIRCUMFERENCE OF MY TIRE【Schwalbe Tire】?
+        </h3>
+        <p class="sizecharts-section__intro">
+          Exact tire circumferences are often required for precise programming of the bike computer. The wheel circumference varies
+          depending on the inner rim width, puncture protection in the tire, air pressure and weight load. For this reason, we cannot
+          specify the exact wheel circumferences. For precise programming of a wheel computer, we recommend a simple rolling test with
+          the rider in the saddle: Align the valve from the front wheel at the bottom 6 o’clock position, make a mark on the floor or
+          lay the end of a tape measure at this point, roll the bike forward in as straight a line as possible until the front has done
+          one full rotation and the valve is once again the 6 o’clock position. Then take the distance measurement directly from the
+          tape measure or mark the floor at this point and measure between the two marks. This distance will give you a fairly precise
+          rolling circumference for the front wheel which can be entered into your computer.
+        </p>
+
+        <div class="mt-3">
+          <GuideImage
+            class="sizecharts-installation-images__item"
+            src="/public/tiresizecharts/match/exact-circumference-of-tire.webp"
+            alt="Example chart for determining the exact circumference of a Schwalbe tire for bike computer setup"
+            :zoomOnClick="true"
           />
         </div>
       </section>
@@ -420,7 +468,7 @@ import TirePressureSection from '~/components/TirePressureSection.vue'
 import TireSizeSection from '~/components/TireSizeSection.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 
-type SizeChartsTabId = 'size' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
+type SizeChartsTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
 
 definePageMeta({
   layout: 'products',
@@ -433,6 +481,7 @@ useHead({
 
 const tabs: { id: SizeChartsTabId; label: string }[] = [
   { id: 'size', label: 'Tire size' },
+  { id: 'match', label: 'Match' },
   { id: 'tubeless', label: 'Tubeless tires' },
   { id: 'installation', label: 'Installation' },
   { id: 'choose', label: 'How to choose' },
@@ -446,7 +495,7 @@ const route = useRoute()
 
 const getTabFromHash = (hash: string): SizeChartsTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')
-  const allowed: SizeChartsTabId[] = ['size', 'tubeless', 'installation', 'choose', 'rims', 'tube']
+  const allowed: SizeChartsTabId[] = ['size', 'match', 'tubeless', 'installation', 'choose', 'rims', 'tube']
   return (allowed as string[]).includes(raw) ? (raw as SizeChartsTabId) : null
 }
 
