@@ -135,14 +135,15 @@
           carbon fiber) bead and compatible rim, which locks into the rim and creates an airtight seal that maintains
           pressure.
         </p>
-
-        <button
-          type="button"
-          class="sizecharts-brand-button"
-          @click="setActiveTab('choose')"
-        >
-          How to choose and specific specifications
-        </button>
+        <p class="guide-section__cta-wrapper">
+          <button
+            type="button"
+            class="sizecharts-brand-button"
+            @click="setActiveTab('choose')"
+          >
+            How to choose and specific specifications
+          </button>
+        </p>
 
         <h3 class="sizecharts-section__subheading">
           Am I suitable for tubeless or tubeless use?
@@ -154,13 +155,15 @@
         </p>
 
         <h3 class="sizecharts-section__subheading">How to install tubeless wheels?</h3>
-        <button
-          type="button"
-          class="sizecharts-brand-button"
-          @click="setActiveTab('installation')"
-        >
-          View graphic installation details
-        </button>
+        <p class="guide-section__cta-wrapper">
+          <button
+            type="button"
+            class="sizecharts-brand-button"
+            @click="setActiveTab('installation')"
+          >
+            View graphic installation details
+          </button>
+        </p>
 
         <h3 class="sizecharts-section__subheading">
           The difference between tubeless and tubeless systems
@@ -179,13 +182,15 @@
           be above 100psi. The best rolling resistance and riding comfort can be obtained at around 80psi.
         </p>
 
-        <button
-          type="button"
-          class="sizecharts-brand-button"
-          @click="setActiveTab('choose')"
-        >
-          Check the tire pressure limits of different models of tubeless tires
-        </button>
+        <p class="guide-section__cta-wrapper">
+          <button
+            type="button"
+            class="sizecharts-brand-button"
+            @click="setActiveTab('choose')"
+          >
+            Check the tire pressure limits of different models of tubeless tires
+          </button>
+        </p>
       </section>
 
       <!-- Installation -->
@@ -210,13 +215,15 @@
         <p class="sizecharts-section__intro">
           Compared with ordinary clincher tires, there is one less step to insert the inner tube. But there are some differences before installation.
         </p>
-        <button
-          type="button"
-          class="sizecharts-brand-button"
-          @click="setActiveTab('tubeless')"
-        >
-          See details of the vacuum accessories you need
-        </button>
+        <p class="guide-section__cta-wrapper">
+          <button
+            type="button"
+            class="sizecharts-brand-button"
+            @click="setActiveTab('tubeless')"
+          >
+            See details of the vacuum accessories you need
+          </button>
+        </p>
 
         <div class="sizecharts-installation-images sizecharts-installation-images--installation">
           <GuideImage

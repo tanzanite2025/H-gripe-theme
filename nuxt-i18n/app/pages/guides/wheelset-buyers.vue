@@ -137,13 +137,15 @@
         </ol>
 
         <div class="wheelset-safety-footer">
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="goToAfterSales"
-          >
-            Check out our after-sales instructions for rims, wheelsets and more
-          </button>
+          <p class="guide-section__cta-wrapper">
+            <button
+              type="button"
+              class="wheelset-inline-button"
+              @click="goToAfterSales"
+            >
+              Check out our after-sales instructions for rims, wheelsets and more
+            </button>
+          </p>
         </div>
       </section>
 
@@ -161,13 +163,15 @@
           smoothly over rough terrain. This setup is commonly known as the “mullet”—and for good reason: the front wheel
           provides stability and reliability, while the rear wheel delivers agility and performance!
         </p>
-        <button
-          type="button"
-          class="wheelset-inline-button"
-          @click="openQuickBuy"
-        >
-          You can use our quick customization to match
-        </button>
+        <p class="guide-section__cta-wrapper">
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="openQuickBuy"
+          >
+            You can use our quick customization to match
+          </button>
+        </p>
       </section>
 
       <!-- Custom Front & Rear Wheels -->
@@ -315,13 +319,15 @@
         <p class="sizecharts-section__intro">
           For standard wheelset orders we usually recommend laser-engraved logos because they are fast to produce, eco-friendly and very reliable for shipping schedules. Compared with custom paint or complex decal work, a laser logo can typically shorten the overall lead time by around 5&ndash;7 days.
         </p>
-        <button
-          type="button"
-          class="wheelset-inline-button"
-          @click="goToAboutAppearance"
-        >
-          Explore all weave &amp; finish options
-        </button>
+        <p class="guide-section__cta-wrapper">
+          <button
+            type="button"
+            class="wheelset-inline-button"
+            @click="goToAboutAppearance"
+          >
+            Explore all weave &amp; finish options
+          </button>
+        </p>
         <ul class="sizecharts-section__list">
           <li>
             <strong>Customized decals</strong>
