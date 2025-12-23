@@ -85,18 +85,12 @@ const navContext = computed<NavContext>(() => {
     return 'blog'
   }
 
-  const navQuery = route.query.nav
-  const forcedProducts =
-    typeof navQuery === 'string' && navQuery.toLowerCase() === 'products'
-
   if (path === '/guides' || path.startsWith('/guides/')) {
-    const productsGuidesRoutes = new Set([
-      '/guides/tireguides',
-      '/guides/technical',
-      '/guides/wheelset-buyers',
-    ])
+    const navQuery = route.query.nav
+    const forcedProducts =
+      typeof navQuery === 'string' && navQuery.toLowerCase() === 'products'
 
-    if (forcedProducts || productsGuidesRoutes.has(path)) {
+    if (forcedProducts) {
       return 'products'
     }
 
@@ -142,8 +136,16 @@ const getLabelKey = (item: ProductsNavItem) => {
 }
 
 const getTo = (item: ProductsNavItem) => {
-  const target = localePath(item.to)
-  return target
+  // 当处于 products 上下文，并从 Products 菜单跳转到 Guides 或 Test Report 时，
+  // 通过 query 标记 `nav=products`，让目标页也保持 Products 顶部导航。
+  if (
+    navContext.value === 'products' &&
+    (item.to.startsWith('/guides/') || item.to === '/support/test-report')
+  ) {
+    return localePath({ path: item.to, query: { nav: 'products' } })
+  }
+
+  return localePath(item.to)
 }
 
 const isActive = (item: ProductsNavItem) => {

@@ -23,9 +23,12 @@
       <section
         v-show="activeTab === 'size'"
         id="size"
-        class="sizecharts-section text-slate-100 [&_h3.sizecharts-section__subheading]:text-sky-400 [&_h3.sizecharts-section__subheading]:font-semibold"
+        class="sizecharts-section text-slate-100"
       >
-        <TireSizeSection @openTireProducts="openTireProductsDrawer" />
+        <h2 class="sizecharts-section__title">Tire size</h2>
+        <div class="tire-size-card mt-1 rounded-2xl bg-slate-900/70 p-4 md:p-5 shadow-[4px_4px_18px_rgba(0,0,0,1)]">
+          <TireSizeSection @openTireProducts="openTireProductsDrawer" />
+        </div>
       </section>
 
       <!-- Match (tire & rim matching helpers) -->
@@ -93,7 +96,7 @@
         id="tubeless"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title sizecharts-section__title--sr-only">Tubeless tires</h2>
+        <h2 class="sizecharts-section__title">Tubeless tires</h2>
 
         <TubelessProducts />
 
@@ -191,27 +194,17 @@
         id="installation"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title sizecharts-section__title--sr-only">Installation</h2>
+        <h2 class="sizecharts-section__title">Installation</h2>
+        <h3 class="sizecharts-section__subheading">Before installation:</h3>
         <p class="sizecharts-section__intro">
-          <strong>Before installation:</strong>
-        </p>
-        <ul class="sizecharts-section__list">
-          <li>
-            Before starting the first step, one thing to know is, what is the difference between using tubeless tires and clincher tires? The biggest difference is of course the lack of inner tubes.
-          </li>
-        </ul>
-        <p class="sizecharts-section__intro">
+          Before starting the first step, one thing to know is, what is the difference between using tubeless tires and clincher tires? The biggest difference is of course the lack of inner tubes.
+          <br />
           Not having a tube means the entire tubeless system is airtight and inflated differently.
         </p>
+        <h3 class="sizecharts-section__subheading">So focus on this first</h3>
         <p class="sizecharts-section__intro">
-          <strong>So focus on this first</strong>
-        </p>
-        <ul class="sizecharts-section__list">
-          <li>
-            The air tightness of clincher tires relies on the inner tube, while the air tightness of tubeless tires relies on the tubeless tire pad.
-          </li>
-        </ul>
-        <p class="sizecharts-section__intro">
+          The air tightness of clincher tires relies on the inner tube, while the air tightness of tubeless tires relies on the tubeless tire pad.
+          <br />
           The overall process is divided into three steps. The first step is to install tubeless tires. The second step is to fill the tire with tire sealant. The third step is to cheer up.
         </p>
         <p class="sizecharts-section__intro">
@@ -369,15 +362,6 @@
         class="sizecharts-section"
       >
         <h2 class="sizecharts-section__title">How to choose</h2>
-        <p class="sizecharts-section__intro">
-          Simple guidelines for selecting tire size based on usage and frame clearance.
-        </p>
-        <ul class="sizecharts-section__list">
-          <li>Match tire width to riding style: road, gravel, XC, trail, city.</li>
-          <li>Consider rider weight, terrain and comfort preferences.</li>
-          <li>Use the size charts to see compatible width ranges per rim.</li>
-        </ul>
-
         <div class="mt-4">
           <h3 class="sizecharts-section__subheading">
             Reference charts from DT Swiss
@@ -417,7 +401,10 @@
         id="rims"
         class="sizecharts-section"
       >
-        <TirePressureSection @openTireProducts="openTireProductsDrawer" />
+        <h2 class="sizecharts-section__title">Tire pressure</h2>
+        <div class="tire-pressure-card">
+          <TirePressureSection @openTireProducts="openTireProductsDrawer" />
+        </div>
       </section>
 
       <!-- Inner tube (placeholder) -->
@@ -688,46 +675,6 @@ const setActiveTab = (id: SizeChartsTabId) => {
   }
 }
 
-
-.sizecharts-section {
-  margin-top: 0.75rem;
-}
-
-.sizecharts-section__title {
-  margin: 0 0 0.35rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #e5e7eb;
-}
-
-.sizecharts-section__intro {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  color: rgba(148, 163, 184, 0.9);
-}
-
-.sizecharts-section__subheading {
-  margin: 0.85rem 0 0.35rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #38bdf8;
-}
-
-.sizecharts-section__list {
-  margin: 0;
-  padding-left: 1.1rem;
-  list-style-type: disc;
-  font-size: 0.88rem;
-  color: rgba(148, 163, 184, 0.9);
-}
-
-.sizecharts-section__list li + li {
-  margin-top: 0.25rem;
-}
-
-.sizecharts-section__list--numbered {
-  list-style-type: decimal;
-}
 
 .sizecharts-brand-button {
   margin-left: 0.5rem;

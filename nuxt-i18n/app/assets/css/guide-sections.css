@@ -1,0 +1,85 @@
+/* Shared section layout and typography for guide-style content blocks */
+
+.sizecharts-section {
+  margin-top: 0.75rem;
+}
+
+/* Main section title (tab-level heading) */
+.sizecharts-section__title {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  text-align: center;
+}
+
+/* Subheading inside a section */
+.sizecharts-section__subheading {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #38bdf8;
+  text-align: center;
+}
+
+/* Intro / body paragraphs (text only) */
+.sizecharts-section__intro {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: rgba(148, 163, 184, 0.9);
+  position: relative;
+  padding-left: 1rem;
+  text-align: center;
+}
+
+/* Decorator bullet before intro paragraphs */
+.sizecharts-section__intro::before {
+  content: '\2022'; /* bullet dot */
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  font-size: 0.7rem;
+  color: #38bdf8;
+}
+
+/* Generic lists used inside sections (text lists only) */
+.sizecharts-section__list {
+  margin: 0;
+  padding-left: 0;
+  list-style-type: none;
+  font-size: 0.88rem;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.sizecharts-section__list > li {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.sizecharts-section__list > li::before {
+  content: '\2022';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  font-size: 0.7rem;
+  color: #38bdf8;
+}
+
+.sizecharts-section__list li + li {
+  margin-top: 0.25rem;
+}
+
+/* Numbered lists: keep numeric markers, no custom bullets */
+.sizecharts-section__list--numbered {
+  list-style-type: decimal;
+  padding-left: 1.1rem;
+}
+
+.sizecharts-section__list--numbered > li {
+  position: static;
+  padding-left: 0;
+}
+
+.sizecharts-section__list--numbered > li::before {
+  content: none;
+}
