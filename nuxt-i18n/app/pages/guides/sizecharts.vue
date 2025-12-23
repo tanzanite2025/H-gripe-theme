@@ -23,115 +23,9 @@
       <section
         v-show="activeTab === 'size'"
         id="size"
-        class="sizecharts-section"
+        class="sizecharts-section text-slate-100"
       >
-        <h2 class="sizecharts-section__title">Tire size</h2>
-
-        <div class="mt-1">
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
-            @click="openTireProductsDrawer"
-          >
-            Check out tires
-          </button>
-        </div>
-
-        <div class="mt-4">
-          <GuideImage
-            src="/public/tiresizecharts/tiresize/tanzanite-schwalbe-tiresize.webp"
-            alt="Tanzanite and Schwalbe tire size chart overview"
-            :zoomOnClick="true"
-          />
-        </div>
-        <ul class="sizecharts-section__list space-y-2">
-          <li>
-            The sizes of bicycle tires are now designated according to the European tire and rim standard ETRTO
-            (European Tire and Rim Technical Organization). In practice, however, the older English and French names are
-            also used.
-          </li>
-          <li>
-            The ETRTO size designation (e.g. 37-622) indicates the width (37 mm) and the inner diameter of the tire
-            (622 mm). This designation is unambiguous and allows a clear assignment to the rim size.
-          </li>
-          <li>
-            The inch designation (e.g. 28 x 1.40) indicates the approximate outside diameter (28 inches) and the tire
-            width (1.40 inches). There is also the inch designation in the form 28 x 1 5⁄8 x 1 3⁄8 (approximate outer
-            diameter x tire height x tire width). The inch information is not precise and not clear. For example,
-            diameters of 559 mm (MTB), 571 mm (triathlon) and 590 mm (Dutch touring bikes) are all labeled 26-inch.
-            Tires with a diameter of 622 and 635 mm are both referred to as 28 inches. Curiously, tires with an inner
-            diameter of 630 mm are called 27 inches. These designations have their origin – and their meaning – from the
-            times of the tire brake that acted directly onto the tire. At that time, the exact outer diameter of the
-            wheel and tire was dictated by the brake. Depending on the tire width, there were different standards for
-            the inner diameter. In English-language regions and in MTB sports, the inch designations are still
-            widespread.
-          </li>
-          <li>
-            The French sizing (e.g. 700 x 35C) indicates the approximate outside diameter (700 mm) and tire width
-            (35 mm). The letter at the end gives an indication of the inside diameter of the tire. In this case, the C
-            stands for 622 mm. The French designation does not exist for all tire sizes. For example, B is not used for
-            MTB sizes in the 700 series.
-          </li>
-        </ul>
-
-        <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/40">
-          <table class="min-w-full text-left text-xs sm:text-sm text-slate-100">
-            <thead class="bg-slate-900/80">
-              <tr>
-                <th class="px-3 py-2 font-semibold"></th>
-                <th class="px-3 py-2 font-semibold">ETRTO</th>
-                <th class="px-3 py-2 font-semibold">Inch</th>
-                <th class="px-3 py-2 font-semibold">French</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-              <tr>
-                <td class="px-3 py-2 font-semibold align-top">Sizes</td>
-                <td class="px-3 py-2 align-top">37-622</td>
-                <td class="px-3 py-2 align-top">
-                  28 x 1,40<br />
-                  28 x 1 5⁄8 x 1 3⁄8
-                </td>
-                <td class="px-3 py-2 align-top">700 x 35C</td>
-              </tr>
-              <tr>
-                <td class="px-3 py-2 font-semibold align-top">Outer diameter</td>
-                <td class="px-3 py-2 align-top">-</td>
-                <td class="px-3 py-2 align-top">approx. 28 Inch</td>
-                <td class="px-3 py-2 align-top">approx. 700 mm</td>
-              </tr>
-              <tr>
-                <td class="px-3 py-2 font-semibold align-top">Inner diameter</td>
-                <td class="px-3 py-2 align-top">622 mm</td>
-                <td class="px-3 py-2 align-top">-</td>
-                <td class="px-3 py-2 align-top">-</td>
-              </tr>
-              <tr>
-                <td class="px-3 py-2 font-semibold align-top">Tire width</td>
-                <td class="px-3 py-2 align-top">approx. 37 mm</td>
-                <td class="px-3 py-2 align-top">
-                  ca. 1 3⁄8 Inch<br />
-                  bzw. 1,40 Inch
-                </td>
-                <td class="px-3 py-2 align-top">approx. 35 mm</td>
-              </tr>
-              <tr>
-                <td class="px-3 py-2 font-semibold align-top">Tire height</td>
-                <td class="px-3 py-2 align-top">-</td>
-                <td class="px-3 py-2 align-top">approx. 1 5⁄8 Inch</td>
-                <td class="px-3 py-2 align-top">-</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h3 class="sizecharts-section__subheading mt-4">WHAT TIRE SIZES ARE THERE?</h3>
-        <p class="sizecharts-section__intro">
-          You should find almost every known size designation in this list. We have tried to include all size
-          designations that are used in the market or have been used in the past. Tire sizes with a classic fractional
-          size designation are often found on old Schwalbe tires, and sometimes even on current models if that size
-          designation is still in common usage.
-        </p>
+        <TireSizeSection @openTireProducts="openTireProductsDrawer" />
 
         <div
           class="mt-2 rounded-2xl bg-slate-900/80 shadow-[4px_4px_18px_rgba(0,0,0,1)] overflow-hidden"
@@ -523,6 +417,7 @@ import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import TireRimHelper from '~/components/TireRimHelper.vue'
 import TirePressureSection from '~/components/TirePressureSection.vue'
+import TireSizeSection from '~/components/TireSizeSection.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 
 type SizeChartsTabId = 'size' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
