@@ -11,9 +11,16 @@ export interface ShopSearchPayload {
   filters: ShopSearchFiltersPayload
 }
 
+export interface ShopSearchOpenOptions {
+  presetCategorySlug?: string | null
+  presetKeywords?: string[]
+}
+
 export const useShopSearchSheet = () => {
   const isOpen = useState<boolean>('shopSearchSheetOpen', () => false)
   const pendingSearch = useState<ShopSearchPayload | null>('shopSearchSheetPending', () => null)
+  const presetCategorySlug = useState<string | null>('shopSearchSheetPresetCategory', () => null)
+  const presetKeywords = useState<string[]>('shopSearchSheetPresetKeywords', () => [])
 
   const localePath = useLocalePath()
   const router = useRouter()
@@ -23,7 +30,19 @@ export const useShopSearchSheet = () => {
     isOpen.value = false
   }
 
-  const open = () => {
+  const open = (options?: ShopSearchOpenOptions) => {
+    if (options && typeof options.presetCategorySlug !== 'undefined') {
+      presetCategorySlug.value = options.presetCategorySlug || null
+    } else {
+      presetCategorySlug.value = null
+    }
+
+    if (options && Array.isArray(options.presetKeywords)) {
+      presetKeywords.value = [...options.presetKeywords]
+    } else {
+      presetKeywords.value = []
+    }
+
     isOpen.value = true
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'shop-search' } }))
@@ -53,6 +72,8 @@ export const useShopSearchSheet = () => {
   return {
     isOpen,
     pendingSearch,
+    presetCategorySlug,
+    presetKeywords,
     open,
     close,
     submit,

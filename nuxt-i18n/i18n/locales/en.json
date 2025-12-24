@@ -380,6 +380,9 @@
     "search": "Search",
     "wheelsbuildBlog": {
       "desc": "Wheelbuilding articles & updates"
+    },
+    "tireGuides": {
+      "desc": "Tire width to rim inner width helper"
     }
   },
   "blog": {

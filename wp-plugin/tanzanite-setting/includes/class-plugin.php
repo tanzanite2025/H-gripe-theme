@@ -90,6 +90,9 @@ class Tanzanite_Plugin {
 		if ( class_exists( 'Tanzanite_Suggestion_Feedback_Database' ) ) {
 			Tanzanite_Suggestion_Feedback_Database::maybe_upgrade();
 		}
+		if ( class_exists( 'Tanzanite_Tube_Specs_Database' ) ) {
+			Tanzanite_Tube_Specs_Database::maybe_upgrade();
+		}
 		$this->load_legacy_pages();
 		$this->init_hooks();
 	}
@@ -220,6 +223,17 @@ class Tanzanite_Plugin {
 		$suggestion_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-suggestion-feedback-admin.php';
 		if ( file_exists( $suggestion_admin ) ) {
 			require_once $suggestion_admin;
+		}
+
+		// Tube specs 数据库与后台页面
+		$tube_specs_db = TANZANITE_PLUGIN_DIR . 'includes/database/class-tube-specs-database.php';
+		if ( file_exists( $tube_specs_db ) ) {
+			require_once $tube_specs_db;
+		}
+
+		$tube_specs_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-tube-specs-admin.php';
+		if ( file_exists( $tube_specs_admin ) ) {
+			require_once $tube_specs_admin;
 		}
 	}
 
@@ -737,6 +751,16 @@ class Tanzanite_Plugin {
 			array( $this, 'render_markdown_templates' )
 		);
 
+		// Tube Specs
+		add_submenu_page(
+			$root_slug,
+			__( 'Tube Specs', 'tanzanite-settings' ),
+			__( 'Tube Specs', 'tanzanite-settings' ),
+			$root_capability,
+			'tanzanite-settings-tube-specs',
+			array( $this, 'render_tube_specs' )
+		);
+
 		add_submenu_page(
 			$root_slug,
 			__( 'Suggestion Feedback', 'tanzanite-settings' ),
@@ -1026,6 +1050,17 @@ class Tanzanite_Plugin {
 			Tanzanite_Rewards_Admin::render_page();
 		} else {
 			$this->call_legacy_method( 'render_rewards' );
+		}
+	}
+
+	/**
+	 * 渲染 Tube Specs 后台页面
+	 *
+	 * @since 0.3.0
+	 */
+	public function render_tube_specs() {
+		if ( class_exists( 'Tanzanite_Tube_Specs_Admin' ) ) {
+			Tanzanite_Tube_Specs_Admin::render_page();
 		}
 	}
 
