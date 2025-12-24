@@ -286,6 +286,49 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			}
 		}
 
+		// Tube specs 筛选（基于 tanz_tube_specs 表）
+		$tube_filters = array();
+		$tube_execution = $request->get_param( 'tube_execution' );
+		if ( is_string( $tube_execution ) && '' !== trim( $tube_execution ) ) {
+			$tube_filters['execution'] = sanitize_text_field( $tube_execution );
+		}
+
+		$tube_valve_family = $request->get_param( 'tube_valve_family' );
+		if ( is_string( $tube_valve_family ) && '' !== trim( $tube_valve_family ) ) {
+			$tube_filters['valve_family'] = sanitize_text_field( $tube_valve_family );
+		}
+
+		// 角度和长度为可选的数值型过滤条件
+		if ( $request->has_param( 'tube_valve_angle' ) ) {
+			$angle_raw = $request->get_param( 'tube_valve_angle' );
+			if ( '' !== $angle_raw && null !== $angle_raw ) {
+				$tube_filters['valve_angle_deg'] = (int) $angle_raw;
+			}
+		}
+
+		if ( $request->has_param( 'tube_valve_length' ) ) {
+			$length_raw = $request->get_param( 'tube_valve_length' );
+			if ( '' !== $length_raw && null !== $length_raw ) {
+				$tube_filters['valve_length_mm'] = (int) $length_raw;
+			}
+		}
+
+		if ( ! empty( $tube_filters ) ) {
+			$tube_product_ids = $this->find_product_ids_by_tube_specs( $tube_filters );
+			if ( empty( $tube_product_ids ) ) {
+				$args['post__in'] = array( 0 );
+			} else {
+				if ( isset( $args['post__in'] ) && is_array( $args['post__in'] ) ) {
+					$args['post__in'] = array_values( array_intersect( $args['post__in'], $tube_product_ids ) );
+					if ( empty( $args['post__in'] ) ) {
+						$args['post__in'] = array( 0 );
+					}
+				} else {
+					$args['post__in'] = $tube_product_ids;
+				}
+			}
+		}
+
 		// 排序
 		if ( 'price_regular' === $sort ) {
 			$args['meta_key'] = '_tanz_price_regular';
@@ -805,6 +848,39 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			}
 		}
 
+		// Tube specs（从 tanz_tube_specs 表按 product_id 读取）
+		$tube_specs = array();
+		if ( property_exists( $this, 'table_prefix' ) ) {
+			global $wpdb;
+			$table = $this->table_prefix . 'tube_specs';
+			// 使用最小字段集，避免前端解析过重
+			// 如果数据表不存在或查询失败，静默返回空数组
+			$results = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT size_label, etrto_range, valve_family, valve_angle_deg, valve_length_mm, execution, segment, notes
+					 FROM {$table}
+					 WHERE product_id = %d
+					 ORDER BY id ASC",
+					$post->ID
+				),
+				ARRAY_A
+			);
+			if ( is_array( $results ) ) {
+				foreach ( $results as $row ) {
+					$tube_specs[] = array(
+						'size_label'      => isset( $row['size_label'] ) ? (string) $row['size_label'] : '',
+						'etrto_range'     => isset( $row['etrto_range'] ) ? (string) $row['etrto_range'] : '',
+						'valve_family'    => isset( $row['valve_family'] ) ? (string) $row['valve_family'] : '',
+						'valve_angle_deg' => isset( $row['valve_angle_deg'] ) ? (int) $row['valve_angle_deg'] : 0,
+						'valve_length_mm' => array_key_exists( 'valve_length_mm', $row ) && '' !== $row['valve_length_mm'] ? (int) $row['valve_length_mm'] : null,
+						'execution'       => isset( $row['execution'] ) ? (string) $row['execution'] : '',
+						'segment'         => isset( $row['segment'] ) ? (string) $row['segment'] : '',
+						'notes'           => isset( $row['notes'] ) ? (string) $row['notes'] : '',
+					);
+				}
+			}
+		}
+
 		return array(
 			'id'         => $post->ID,
 			'title'      => get_the_title( $post ),
@@ -832,6 +908,7 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			'updated_at' => $post->post_modified_gmt,
 			'created_at' => $post->post_date_gmt,
 			'preview_url' => get_permalink( $post ),
+			'tubeSpecs'  => $tube_specs,
 		);
 	}
 
@@ -1168,6 +1245,66 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 		}
 
 		return array_keys( $matched_product_ids );
+	}
+
+	/**
+	 * 根据 tube_specs 表筛选匹配的商品 ID
+	 *
+	 * @since 0.3.0
+	 * @param array $tube_filters 形如 ['execution' => 'STANDARD', 'valve_family' => 'SV', 'valve_angle_deg' => 0, 'valve_length_mm' => 60]
+	 * @return array 匹配的商品 ID 数组
+	 */
+	private function find_product_ids_by_tube_specs( $tube_filters ) {
+		if ( empty( $tube_filters ) || ! is_array( $tube_filters ) ) {
+			return array();
+		}
+
+		// 基类 Tanzanite_REST_Controller 中定义了 $table_prefix = $wpdb->prefix . 'tanz_'
+		if ( ! property_exists( $this, 'table_prefix' ) || empty( $this->table_prefix ) ) {
+			return array();
+		}
+
+		global $wpdb;
+		$table = $this->table_prefix . 'tube_specs'; // e.g. wp_tanz_tube_specs
+
+		$where  = array();
+		$params = array();
+
+		if ( ! empty( $tube_filters['execution'] ) ) {
+			$where[]  = 'execution = %s';
+			$params[] = (string) $tube_filters['execution'];
+		}
+
+		if ( ! empty( $tube_filters['valve_family'] ) ) {
+			$where[]  = 'valve_family = %s';
+			$params[] = (string) $tube_filters['valve_family'];
+		}
+
+		if ( array_key_exists( 'valve_angle_deg', $tube_filters ) && null !== $tube_filters['valve_angle_deg'] && '' !== $tube_filters['valve_angle_deg'] ) {
+			$where[]  = 'valve_angle_deg = %d';
+			$params[] = (int) $tube_filters['valve_angle_deg'];
+		}
+
+		if ( array_key_exists( 'valve_length_mm', $tube_filters ) && null !== $tube_filters['valve_length_mm'] && '' !== $tube_filters['valve_length_mm'] ) {
+			$where[]  = 'valve_length_mm = %d';
+			$params[] = (int) $tube_filters['valve_length_mm'];
+		}
+
+		if ( empty( $where ) ) {
+			return array();
+		}
+
+		$sql = 'SELECT DISTINCT product_id FROM ' . $table . ' WHERE ' . implode( ' AND ', $where );
+		if ( ! empty( $params ) ) {
+			$sql = $wpdb->prepare( $sql, $params );
+		}
+
+		$product_ids = $wpdb->get_col( $sql );
+		if ( empty( $product_ids ) ) {
+			return array();
+		}
+
+		return array_map( 'intval', $product_ids );
 	}
 
 	/**

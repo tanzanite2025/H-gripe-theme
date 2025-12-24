@@ -180,6 +180,31 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </NuxtLink>
+          <NuxtLink
+            :to="`${localePath('/guides/tireguides')}#choose`"
+            class="hybrid-card card-indigo"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M4 6h16M4 12h10M4 18h6"
+                />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">{{ $t('products.nav.tireSizeCharts') }}</div>
+              <div class="hybrid-desc max-md:truncate">
+                {{ $t('sidebar.tireGuides.desc') }}
+              </div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
         </div>
       </div>
 
@@ -245,7 +270,6 @@ const supportLinks = [
 // Guides 快捷链接
 const guidesLinks = [
   { id: 'wheelset-buyers', labelKey: 'products.nav.wheelsetBuyersGuide', to: '/guides/wheelset-buyers', fallback: 'Wheelset guide' },
-  { id: 'tire-size-charts', labelKey: 'products.nav.tireSizeCharts', to: '/guides/tireguides', fallback: 'Tire Guides' },
 ]
 
 // Guides 快捷链接

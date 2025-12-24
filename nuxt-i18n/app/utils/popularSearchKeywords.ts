@@ -3,4 +3,5 @@ export const popularSearchKeywords = [
   'Sapim',
   'Spoke',
   'Carbon Wheels',
+  'Inner tube',
 ]

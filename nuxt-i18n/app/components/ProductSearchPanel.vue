@@ -73,6 +73,7 @@ import AdvancedFilter from '~/components/AdvancedFilter.vue'
 import PopularSearchChips from '~/components/PopularSearchChips.vue'
 import { popularSearchKeywords } from '~/utils/popularSearchKeywords'
 import { useProductAttributes } from '~/composables/useProductAttributes'
+import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 
 interface ProductSearchFilters {
   priceRange: [number, number]
@@ -106,6 +107,7 @@ const searchingProducts = ref(false)
 const filterResetKey = ref(0)
 
 const { colorAttributes, loadFilterableColorAttributes } = useProductAttributes()
+const { presetKeywords } = useShopSearchSheet()
 
 const syncProductSearchQuery = () => {
   const parts: string[] = []
@@ -178,6 +180,11 @@ const searchProducts = async () => {
 
 onMounted(() => {
   loadFilterableColorAttributes()
+
+  if (Array.isArray(presetKeywords.value) && presetKeywords.value.length) {
+    selectedKeywords.value = [...presetKeywords.value]
+    syncProductSearchQuery()
+  }
 })
 
 watch(freeTextQuery, () => {
@@ -229,8 +236,8 @@ watch(freeTextQuery, () => {
   font-size: 11px;
   font-weight: 500;
   border: none;
-  background: rgba(30, 64, 175, 0.2);
-  color: rgba(226, 232, 240, 0.92);
+  background: #ffffff;
+  color: #000000;
   cursor: pointer;
 }
 

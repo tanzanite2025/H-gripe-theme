@@ -421,6 +421,15 @@
         class="sizecharts-section"
       >
         <h2 class="sizecharts-section__title">Inner tube</h2>
+        <div class="mt-2 flex justify-center">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
+            @click="openInnerTubeSearch"
+          >
+            Search inner tubes with advanced filters
+          </button>
+        </div>
         <p class="sizecharts-section__intro">
           Overview and best practices for selecting and installing inner tubes. Detailed content
           will be added here in a future update.
@@ -461,6 +470,7 @@ import TireRimHelper from '~/components/TireRimHelper.vue'
 import TirePressureSection from '~/components/TirePressureSection.vue'
 import TireSizeSection from '~/components/TireSizeSection.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
+import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 
 type SizeChartsTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
 
@@ -486,6 +496,15 @@ const tabs: { id: SizeChartsTabId; label: string }[] = [
 const activeTab = ref<SizeChartsTabId>('tubeless')
 
 const route = useRoute()
+
+const { open: openShopSearchSheet } = useShopSearchSheet()
+
+const openInnerTubeSearch = () => {
+  openShopSearchSheet({
+    presetCategorySlug: 'inner-tube',
+    presetKeywords: ['Inner tube'],
+  })
+}
 
 const getTabFromHash = (hash: string): SizeChartsTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')

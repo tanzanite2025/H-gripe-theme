@@ -213,7 +213,7 @@ const DEFAULT_QUICK_FILTERS: ProductSearchFiltersPayload = {
   attributes: {},
 }
 
-const { open: openShopSearchSheet, pendingSearch } = useShopSearchSheet()
+const { open: openShopSearchSheet, pendingSearch, presetCategorySlug } = useShopSearchSheet()
 
 const openFilters = () => {
   openShopSearchSheet()
@@ -359,20 +359,45 @@ const onCategorySelect = (category: ShopCategory | null) => {
   loadProducts(next)
 }
 
-onMounted(() => {
-  loadCategories()
+const applyPresetCategoryFromSlug = () => {
+  const slug = presetCategorySlug.value
+  if (!slug || !Array.isArray(categories.value) || !categories.value.length) return
+
+  const match = categories.value.find((cat) => cat.slug === slug)
+  if (match) {
+    selectedCategory.value = match
+  }
+
+  // 只用于入口预设，消费一次后清空，避免影响后续手动选择
+  presetCategorySlug.value = null
+}
+
+onMounted(async () => {
+  await loadCategories()
+
+  // 页面首次挂载时，如果是从 Inner tube 等入口过来，先根据 slug 预设分类
+  applyPresetCategoryFromSlug()
+
   const initialPending = pendingSearch.value
   if (initialPending) {
     pendingSearch.value = null
     handleSearch(initialPending as unknown as ProductSearchPayload)
     return
   }
+
   loadProducts()
 })
 
-watch(pendingSearch, (payload) => {
+watch(pendingSearch, async (payload) => {
   if (!payload) return
   pendingSearch.value = null
+
+  // 确保分类已加载，再根据 slug 预设分类
+  if (!categories.value.length) {
+    await loadCategories()
+  }
+  applyPresetCategoryFromSlug()
+
   handleSearch(payload as unknown as ProductSearchPayload)
 })
 
@@ -431,8 +456,8 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   font-size: 11px;
   font-weight: 500;
   border: none;
-  background: rgba(30, 64, 175, 0.2);
-  color: rgba(226, 232, 240, 0.92);
+  background: #ffffff;
+  color: #000000;
   cursor: pointer;
 }
 
