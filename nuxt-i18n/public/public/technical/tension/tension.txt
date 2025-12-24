@@ -1,0 +1,78 @@
+ 先删除如下占位文本
+Placeholder notes for recommended tension ranges and simple relationships between tension, geometry and load.
+
+Indicative tension ranges for front and rear wheels.
+Differences between drive-side and non-drive-side tension.
+Mapping tensiometer readings to approximate spoke tension using simple tables.
+How rim diameter, hub spacing and dish influence tension balance.
+
+然后以下是需要加入的文本
+Wheel Spoke Tension and Rider Weight/Usage (Workshop Standard)  【蓝色文本标题】
+1. Effect of Rider Weight   【黄色文本】
+Static load: For example, when a 75 kg rider sits on the bike, the tension in the upper spokes increases by about 15%, while the tension in the lower spokes decreases.
+Dynamic riding: During pedaling, the drive-side spokes gain tension while the braking-side spokes lose tension. The distribution changes continuously with rider movement.
+Heavier riders: Require higher overall spoke tension and thicker spokes to prevent the wheel from deforming or losing stiffness under load.
+
+2. Differences by Usage  【黄色文本】
+Road racing【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Focus on light weight and stiffness.
+Drive-side tension typically 120–130kgf, non-drive side lower, with a ratio around 10:6–10:7.
+Mountain biking【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Emphasis on durability and shock absorption.
+Tension is set slightly lower to reduce risk of breakage.
+Rim offset (about 2.6–3mm) is often used to balance spoke tension between sides.
+Touring/commuting 【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Prioritize stability and long-term durability.
+Tension is kept moderate, with thicker spokes and a more balanced tension ratio.
+
+3. Design and Building Considerations  【黄色文本】
+Rim geometry 【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Offset designs improve tension balance between drive and non-drive sides.
+Spoke gauge【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+14G (2.0mm) is stronger than 15G (1.8mm), recommended for heavier riders or off-road use.
+Tension vs. stiffness【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Too low → wheel feels loose, lacks stiffness.
+ Too high → risk of metal fatigue or reduced rim stiffness, especially in lightweight carbon rims.
+
+在这里添加IDE对话中的表格！
+
+⚠️ Risks and Precautions  【蓝色文本标题】
+Excessive tension【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Can cause rim deformation or fatigue cracks.
+Insufficient tension【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Leads to loose spokes, wheel wobble, and safety issues.
+Weight differences【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Heavy riders need higher tension and stronger spokes; lighter riders can use lighter setups.
+
+Key Notes   【蓝色文本标题】
+Non-drive side tension【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Usually 20–40% lower than drive side, depending on hub flange spacing and rim geometry.
+Carbon vs. alloy rims【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Carbon rims can handle higher tension (up to 130–135kgf). Alloy rims should be limited to 120–125kgf.
+ Spoke choice【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Light riders can use 15G spokes; heavy riders or off-road use should stick to 14G.
+Usage summary【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Road racing = stiffness and responsiveness; mountain biking = durability and cushioning; touring = stability and balance.
+
+Our Workshop Process (Practical Standard)  【蓝色文本标题】
+When building wheels, we strictly follow this workflow:
+Weight classification → Determine the baseline tension range.
+Usage adjustment → Modify tension according to riding purpose【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+Road racing → higher tension for stiffness.
+Mountain biking → slightly lower tension for durability.
+Touring → balanced tension for stability.
+ Material limits →【前面已经有了蓝色与黄色文本，如果再加颜色会显得很难看，是否在左右加个比如这种大括号】
+ Carbon rims → allow higher tension (up to 135kgf).
+Alloy rims → capped at 120–125kgf.
+Spoke selection → Match spoke gauge to rider weight and usage.
+Final build → Ensure proper drive/non-drive tension ratio (about 10:6–10:7,Some hub geometries may only be 10:4) and use rim offset to balance.
+
+ Conclusion  【蓝色文本标题】
+This is our actual workshop standard, not just theory:
+Rider weight sets the baseline tension.
+Usage defines the adjustment.
+Rim material sets the upper limit.
+Spoke gauge ensures durability and safety.
+
+By following this process, every wheel we build achieves the best balance of performance, reliability, and safety for its rider.
+
