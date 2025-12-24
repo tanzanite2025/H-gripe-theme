@@ -322,12 +322,28 @@ const loadProducts = async (payload?: ProductSearchPayload) => {
   }
 }
 
+interface ProductSearchPayload {
+  query: string
+  filters: ProductSearchFiltersPayload
+  chipCategorySlug?: string
+}
+
 const handleSearch = (payload: ProductSearchPayload) => {
+  let categoryId: number | null = selectedCategory.value?.id ?? null
+
+  if (payload.chipCategorySlug && Array.isArray(categories.value) && categories.value.length) {
+    const match = categories.value.find(cat => cat.slug === payload.chipCategorySlug)
+    if (match) {
+      selectedCategory.value = match
+      categoryId = match.id
+    }
+  }
+
   const next: ProductSearchPayload = {
     ...payload,
     filters: {
       ...payload.filters,
-      categoryId: selectedCategory.value?.id ?? null,
+      categoryId,
     },
   }
 

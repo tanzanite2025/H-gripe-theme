@@ -9,6 +9,7 @@ export type ShopSearchFiltersPayload = Record<string, any> & {
 export interface ShopSearchPayload {
   query: string
   filters: ShopSearchFiltersPayload
+  chipCategorySlug?: string
 }
 
 export interface ShopSearchOpenOptions {
