@@ -25,7 +25,7 @@
         id="size"
         class="sizecharts-section text-slate-100"
       >
-        <h2 class="sizecharts-section__title">Tire size</h2>
+        <h2 class="sizecharts-section__title">Tire Size</h2>
         <div class="tire-size-card mt-1 rounded-2xl bg-slate-900/70 p-4 md:p-5 shadow-[4px_4px_18px_rgba(0,0,0,1)]">
           <TireSizeSection @openTireProducts="openTireProductsDrawer" />
         </div>
@@ -37,7 +37,7 @@
         id="match"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">DOES THE TIRE FIT MY FRAME?</h2>
+        <h2 class="sizecharts-section__title">Tire and Frame Clearance Guide</h2>
         <p class="sizecharts-section__intro">
           With our particularly wide tires, the question often arises as to whether the tires will still fit in the frame. Please
           understand that due to the large number of bicycle models, we cannot check all frames for compatibility with the various
@@ -96,7 +96,7 @@
         id="tubeless"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Tubeless tires</h2>
+        <h2 class="sizecharts-section__title">Tubeless Tires</h2>
 
         <TubelessProducts />
 
@@ -368,7 +368,7 @@
         id="choose"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">How to choose</h2>
+        <h2 class="sizecharts-section__title">How to Choose</h2>
         <!-- Tire width -> rim internal width helper placed directly under title -->
         <TireRimHelper />
 
@@ -408,7 +408,7 @@
         id="rims"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Tire pressure</h2>
+        <h2 class="sizecharts-section__title">Tire Pressure</h2>
         <div class="tire-pressure-card">
           <TirePressureSection @openTireProducts="openTireProductsDrawer" />
         </div>
@@ -420,7 +420,7 @@
         id="tube"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Inner tube</h2>
+        <h2 class="sizecharts-section__title">Inner Tube</h2>
         <div class="mt-2 flex justify-center">
           <button
             type="button"
@@ -482,6 +482,7 @@
       </section>
 
       <section class="mt-6">
+        <h2 class="products-page__title products-page__title--sr-only">Tire Guides FAQ</h2>
         <PageFaq
           page-id="guides-tireguides"
           theme="dark"
