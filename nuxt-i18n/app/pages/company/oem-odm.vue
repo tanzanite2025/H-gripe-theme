@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-5">
     <h1 class="sr-only">{{ t('company.nav.oemOdm') }}</h1>
 
-    <section class="rounded-2xl border border-slate-700/40 bg-slate-950/60 p-6 shadow-lg">
+    <section class="rounded-2xl border border-slate-700/40 bg-slate-950/60 p-6 text-center shadow-lg">
       <h2 class="mb-3 text-lg font-semibold text-slate-100">
         {{ t('company.nav.oemOdm') }}
       </h2>

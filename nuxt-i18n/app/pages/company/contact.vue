@@ -81,6 +81,7 @@ useHead({
   font-size: 1.1rem;
   font-weight: 700;
   color: #ffffff;
+  text-align: center;
 }
 
 .company-section__body {
@@ -88,6 +89,7 @@ useHead({
   font-size: 0.95rem;
   line-height: 1.6;
   color: rgba(226, 232, 240, 0.9);
+  text-align: center;
 }
 
 .company-section__link {

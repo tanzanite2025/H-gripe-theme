@@ -2,14 +2,14 @@
   <div class="flex flex-col gap-5">
     <h1 class="sr-only">{{ t('company.nav.globalPartners') }}</h1>
 
-    <section class="rounded-2xl bg-slate-950/60 p-6 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
+    <section class="rounded-2xl bg-slate-950/60 p-6 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
       <h2 class="mb-1 text-lg font-semibold text-slate-100">
         {{ t('company.nav.globalPartners') }}
       </h2>
       <p class="mb-4 text-sm text-slate-400">
         Trusted by leading brands worldwide
       </p>
-      <div class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="mb-4 flex flex-wrap items-center justify-center gap-3">
         <NuxtLink
           to="/company/contact"
           class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition hover:brightness-110"
@@ -78,7 +78,7 @@
 
       <!-- Confidentiality notice for partner brands -->
       <div
-        class="mt-4 rounded-2xl bg-slate-900/80 p-3 text-sm text-sky-300 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+        class="mt-4 rounded-2xl bg-slate-900/80 p-3 text-sm text-sky-300 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
       >
         <p class="m-0">
           Out of respect for confidentiality agreements, we do not list partner brands publicly.
@@ -89,13 +89,13 @@
 
       <!-- Value proposition: Why partner with us -->
       <section class="mt-8">
-        <h3 class="mb-3 text-sm font-semibold text-slate-100">
+        <h3 class="mb-3 text-sm font-semibold text-slate-100 text-center">
           Why Partner With Us
         </h3>
         <div class="grid gap-4 sm:grid-cols-3">
           <!-- Long-term trust -->
           <div
-            class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+            class="rounded-2xl bg-slate-900/70 p-4 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
           >
             <div
               class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-sky-300"

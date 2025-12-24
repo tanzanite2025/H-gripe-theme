@@ -23,11 +23,13 @@ useHead({
   font-size: 1.5rem;
   font-weight: 600;
   color: #f9fafb;
+  text-align: center;
 }
 
 .products-page__intro {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
   color: rgba(148, 163, 184, 0.9);
+  text-align: center;
 }
 </style>

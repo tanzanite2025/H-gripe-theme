@@ -420,7 +420,7 @@
         />
       </div>
 
-      <h3 class="company-section__title">Weave patterns</h3>
+      <h3 class="company-section__title" style="color: #38bdf8;">Weave patterns</h3>
       <ul class="company-section__list">
         <li><strong>UD (Unidirectional)</strong> &mdash; Matte &mdash; Minimal straight grain, ultra-light.</li>
         <li><strong>Butterfly</strong> &mdash; Matte &mdash; Unique organic pattern, high visual impact.</li>
@@ -436,7 +436,7 @@
         All weaves are structural carbon fiber, not printed or laminated, ensuring both strength and visual integrity.
       </p>
 
-      <h3 class="company-section__title">Brake track surface options (rim brake models only)</h3>
+      <h3 class="company-section__title" style="color: #38bdf8;">Brake track surface options (rim brake models only)</h3>
       <p class="company-section__body">
         We provide multiple brake track surface treatments to enhance braking performance and heat resistance:
       </p>
@@ -451,7 +451,7 @@
         All brake tracks are heat-treated and abrasion-tested for compatibility with mainstream brake pads.
       </p>
 
-      <h3 class="company-section__title">Finish &amp; painting effects</h3>
+      <h3 class="company-section__title" style="color: #38bdf8;">Finish &amp; painting effects</h3>
       <p class="company-section__body">
         Choose from a variety of surface gloss levels and special paint effects to personalize your rims:
       </p>
@@ -478,7 +478,7 @@
         Crystal finishes use micro-layer coating technology for unique light reflection and color depth.
       </p>
 
-      <h3 class="company-section__title">Laser-engraved logos: faster and more sustainable</h3>
+      <h3 class="company-section__title" style="color: #38bdf8;">Laser-engraved logos: faster and more sustainable</h3>
       <p class="company-section__body">
         In addition to traditional decals and painted graphics, we also support laser-engraved logos as a more sustainable appearance option.
       </p>
@@ -504,7 +504,7 @@
         </div>
       </div>
 
-      <h3 class="company-section__title">Presentation suggestions</h3>
+      <h3 class="company-section__title" style="color: #38bdf8;">Presentation suggestions</h3>
       <ul class="company-section__list">
         <li>Organize options into three clear sections: Weave, Brake Track, Finish.</li>
         <li>Pair each option with a high-resolution image and concise label.</li>
@@ -755,20 +755,23 @@ useHead({
   font-size: 1.1rem;
   font-weight: 600;
   color: #e5e7eb;
+  text-align: center;
 }
 
 .company-section__body {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
   color: rgba(148, 163, 184, 0.95);
+  text-align: center;
 }
 
 .company-section__list {
-  margin: 0;
-  padding-left: 1.1rem;
-  list-style-type: disc;
+  margin: 0.25rem auto 0;
+  padding-left: 0;
+  list-style-type: none;
   font-size: 0.95rem;
   color: rgba(148, 163, 184, 0.95);
+  text-align: center;
 }
 
 .company-section__list li + li {
