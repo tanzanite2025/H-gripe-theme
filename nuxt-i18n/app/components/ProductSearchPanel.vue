@@ -86,7 +86,7 @@ interface ProductSearchFilters {
 }
 
 const emit = defineEmits<{
-  (e: 'search', payload: { query: string; filters: ProductSearchFilters }): void
+  (e: 'search', payload: { query: string; filters: ProductSearchFilters; chipCategorySlug?: string }): void
 }>()
 
 const selectedKeywords = ref<string[]>([])
@@ -119,6 +119,14 @@ const syncProductSearchQuery = () => {
     parts.push(free)
   }
   productSearchQuery.value = parts.join(' ')
+}
+
+const buildChipCategorySlug = () => {
+  // 目前只为 Inner tube chip 提供分类 slug 映射，后续可扩展为基于配置表的多 chip 映射
+  if (selectedKeywords.value.includes('Inner tube')) {
+    return 'inner-tube'
+  }
+  return undefined
 }
 
 const toggleKeyword = (keyword: string) => {
@@ -168,9 +176,12 @@ const searchProducts = async () => {
   console.log('Product search query:', query || '(empty)')
   console.log('Product search filters:', filters.value)
 
+  const chipCategorySlug = buildChipCategorySlug()
+
   emit('search', {
     query,
     filters: { ...filters.value },
+    ...(chipCategorySlug ? { chipCategorySlug } : {}),
   })
 
   setTimeout(() => {

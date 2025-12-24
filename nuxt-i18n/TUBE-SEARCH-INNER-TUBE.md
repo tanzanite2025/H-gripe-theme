@@ -272,8 +272,8 @@
     - 每个 chip 至少包含：`id`、`label`、可选的 `categorySlug`、可选的 `tube_*` 预设；
   - 在 `ProductSearchPanel` 中：
     - 选中 `Inner tube` chip 时：
-      - 前端追加一个「入口预设分类」字段（推荐使用 `category_slug: 'inner-tube'` 或在前端通过 slug → categoryId 映射得到 `categoryId`）；
-      - 将来如需按 `tube_execution` / `tube_valve_*` 过滤时，也从 chip 配置表中读取并合并到 filters；
+      - 通过 payload 中的 `chipCategorySlug: 'inner-tube'` 将入口预设分类 slug 传递到 `/shop` 页面，由 `/shop.vue` 结合 `useShopCategories()` 的分类列表做 slug → categoryId 映射；
+      - 将来如需按 `tube_execution` / `tube_valve_*` 过滤时，也从 chip 配置表中读取并合并到 filters（目前尚未启用 tube_* 预设，仅使用分类 slug）；
     - 取消 `Inner tube` chip 时：
       - 同时清除它所附带的 `category_slug` / `categoryId` 与所有 tube_* 预设，避免影响轮圈等其他搜索场景；
   - 其它 chip（如 `Carbon rim`）也走同样的映射路径，只是挂接到不同的分类 / 属性。
