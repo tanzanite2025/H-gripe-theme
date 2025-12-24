@@ -44,7 +44,7 @@
         </p>
         <ol class="sizecharts-section__list sizecharts-section__list--numbered">
           <li>
-            <strong>Installation &amp; Inspection</strong>
+            <strong style="color: #38bdf8;">Installation &amp; Inspection</strong>
             <p class="wheelset-safety-item">
               <strong>Professional Installation:</strong>
               Have the wheelset installed by a qualified mechanic or experienced user, ensuring compatibility with the braking and
@@ -73,7 +73,7 @@
             </p>
           </li>
           <li>
-            <strong>Usage &amp; Riding</strong>
+            <strong style="color: #38bdf8;">Usage &amp; Riding</strong>
             <p class="wheelset-safety-item">
               <strong>Weight Limit:</strong>
               Follow the manufacturer’s specified maximum rider weight and load limits. Our wheels are designed and tested for
@@ -92,7 +92,7 @@
             </p>
           </li>
           <li>
-            <strong>Regular Maintenance</strong>
+            <strong style="color: #38bdf8;">Regular Maintenance</strong>
             <p class="wheelset-safety-item">
               <strong>Surface Inspection:</strong>
               Before each ride, check the rims for cracks, bulges, or delamination. Regularly inspect brake pads and remove
@@ -116,7 +116,7 @@
             </p>
           </li>
           <li>
-            <strong>Prohibited Actions</strong>
+            <strong style="color: #38bdf8;">Prohibited Actions</strong>
             <p class="wheelset-safety-item">Do not use non-original parts or modify the braking system.</p>
             <p class="wheelset-safety-item">Do not sand or grind carbon rims with sandpaper or metal tools.</p>
             <p class="wheelset-safety-item">
@@ -124,7 +124,7 @@
             </p>
           </li>
           <li>
-            <strong>Emergency Handling</strong>
+            <strong style="color: #38bdf8;">Emergency Handling</strong>
             <p class="wheelset-safety-item">
               <strong>Damage Detection:</strong>
               If cracks or abnormal noises are found, stop using the wheel immediately and seek professional repair.
@@ -226,7 +226,7 @@
 
         <ol class="sizecharts-section__list sizecharts-section__list--numbered">
           <li>
-            <strong>Service Process</strong>
+            <strong style="color: #38bdf8;">Service Process</strong>
             <ul class="sizecharts-section__list">
               <li>
                 <strong>Shipping:</strong> Customers send their components to the designated address.
@@ -246,14 +246,14 @@
             </ul>
           </li>
           <li>
-            <strong>Accepted Components</strong>
+            <strong style="color: #38bdf8;">Accepted Components</strong>
             <ul class="sizecharts-section__list">
               <li>Wheelsets (including hubs)</li>
               <li>Other related accessories (please confirm with us in advance)</li>
             </ul>
           </li>
           <li>
-            <strong>Important Notes</strong>
+            <strong style="color: #38bdf8;">Important Notes</strong>
             <ul class="sizecharts-section__list">
               <li>Please ensure that all components sent are new or in good condition.</li>
               <li>A detailed packing list is recommended to avoid missing items.</li>
@@ -262,7 +262,7 @@
             </ul>
           </li>
           <li>
-            <strong>Value Proposition</strong>
+            <strong style="color: #38bdf8;">Value Proposition</strong>
             <ul class="sizecharts-section__list">
               <li>
                 <strong>Expert Technicians:</strong> Years of experience in carbon fiber wheelset and complete bike assembly.
@@ -330,7 +330,7 @@
         </p>
         <ul class="sizecharts-section__list">
           <li>
-            <strong>Customized decals</strong>
+            <strong style="color: #38bdf8;">Customized decals</strong>
             <p>
               Our skilled graphics department uses the latest technology to design and execute any
               custom decal or rim personalization you can imagine! Our most popular options are
@@ -341,7 +341,7 @@
             </p>
           </li>
           <li>
-            <strong>Laser engraving: Eco-friendly personalization</strong>
+            <strong style="color: #38bdf8;">Laser engraving: Eco-friendly personalization</strong>
             <p>
               Staying true to our sustainability mission by substantially reducing our plastic
               waste, we’re ecstatic about our new laser engraved graphic option. Our engraving

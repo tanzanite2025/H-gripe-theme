@@ -8,7 +8,7 @@
       class="company-section"
     >
       <h2 class="company-section__title">{{ t('company.ourStory.story.title') }}</h2>
-      <div class="pt-1 pb-3">
+      <div class="pt-1 pb-3 text-center">
         <NuxtLink
           class="company-tabs__item inline-flex items-center"
           :to="factoryTabTo"
@@ -30,12 +30,7 @@
         <li
           v-for="(paragraph, index) in storyParagraphs"
           :key="index"
-          class="flex gap-3"
         >
-          <span
-            class="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/40"
-            aria-hidden="true"
-          ></span>
           <p class="company-section__body m-0">
             {{ paragraph }}
           </p>
@@ -168,12 +163,14 @@ useHead({
   font-size: 1.1rem;
   font-weight: 600;
   color: #e5e7eb;
+  text-align: center;
 }
 
 .company-section__body {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
   color: rgba(148, 163, 184, 0.95);
+  text-align: center;
 }
 
 .company-section__list {

@@ -40,12 +40,12 @@
 }
 
 .sizecharts-section__list > li {
-  position: relative;
-  padding-left: 1rem;
+  position: static;
+  padding-left: 0;
 }
 
 .sizecharts-section__list > li::before {
-  content: '\2022';
+  content: none;
   position: absolute;
   left: 0;
   top: 0.45rem;

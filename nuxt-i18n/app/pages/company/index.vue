@@ -98,12 +98,14 @@ useHead({
   font-size: 1.5rem;
   font-weight: 600;
   color: #f9fafb;
+  text-align: center;
 }
 
 .company-page__intro {
   margin: 0 0 1.25rem;
   font-size: 0.95rem;
   color: rgba(148, 163, 184, 0.9);
+  text-align: center;
 }
 
 .company-grid {
