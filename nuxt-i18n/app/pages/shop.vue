@@ -1,33 +1,52 @@
 <template>
   <main class="shop-page max-w-5xl mx-auto pt-0 pb-16 space-y-6">
     <section class="rounded-xl bg-white/5 p-4 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
-      <div class="flex flex-wrap gap-2">
-        <input
-          v-model="quickSearchQuery"
-          type="text"
-          :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
-          class="flex-1 min-w-0 h-[38px] px-4 rounded-lg bg-slate-900/70 text-white placeholder:text-slate-400 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+      <div class="flex flex-col gap-2">
+        <div class="shop-search-row">
+          <div class="shop-search-input-shell">
+            <button
+              v-for="keyword in quickSelectedKeywords"
+              :key="keyword"
+              type="button"
+              class="shop-search-chip-in-input"
+              @click="toggleQuickKeyword(keyword)"
+            >
+              <span class="shop-search-chip-in-input__label">{{ keyword }}</span>
+              <span class="shop-search-chip-in-input__close" aria-hidden="true">×</span>
+            </button>
+            <input
+              v-model="quickFreeTextQuery"
+              type="text"
+              :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
+              class="shop-search-input-inner"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="h-[38px] px-4 rounded-lg bg-white text-black font-semibold shadow-[8px_8px_22px_rgba(0,0,0,0.92)] hover:shadow-[10px_10px_26px_rgba(0,0,0,0.95)] transition-all"
+            @click="runQuickSearch"
+          >
+            {{ $t('sidebar.search', 'Search') }}
+          </button>
+
+          <button
+            type="button"
+            class="h-[38px] px-4 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/40 text-white font-semibold transition-all inline-flex items-center gap-2"
+            :aria-label="$t('filter.filters', 'Filters')"
+            @click="openFilters"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-.553.894l-4 2A1 1 0 019 21v-8.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+            <span>{{ $t('filter.filters', 'Filters') }}</span>
+          </button>
+        </div>
+
+        <PopularSearchChips
+          v-model="quickSelectedKeywords"
+          :keywords="popularSearchKeywords"
         />
-
-        <button
-          type="button"
-          class="h-[38px] px-4 rounded-lg bg-white text-black font-semibold shadow-[8px_8px_22px_rgba(0,0,0,0.92)] hover:shadow-[10px_10px_26px_rgba(0,0,0,0.95)] transition-all"
-          @click="runQuickSearch"
-        >
-          {{ $t('sidebar.search', 'Search') }}
-        </button>
-
-        <button
-          type="button"
-          class="h-[38px] px-4 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/40 text-white font-semibold transition-all inline-flex items-center gap-2"
-          :aria-label="$t('filter.filters', 'Filters')"
-          @click="openFilters"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-.553.894l-4 2A1 1 0 019 21v-8.586L3.293 6.707A1 1 0 013 6V4z" />
-          </svg>
-          <span>{{ $t('filter.filters', 'Filters') }}</span>
-        </button>
       </div>
     </section>
 
@@ -142,10 +161,12 @@ import { ref, onMounted, watch } from 'vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import CategorySidebar from '~/components/CategorySidebar.vue'
 import CategoryChips from '~/components/CategoryChips.vue'
+import PopularSearchChips from '~/components/PopularSearchChips.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useShopCategories } from '~/composables/useShopCategories'
 import type { ShopCategory } from '~/composables/useShopCategories'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import { popularSearchKeywords } from '~/utils/popularSearchKeywords'
 
 definePageMeta({
   layout: 'products',
@@ -163,6 +184,8 @@ const products = ref<ShopProduct[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+const quickSelectedKeywords = ref<string[]>([])
+const quickFreeTextQuery = ref('')
 const quickSearchQuery = ref('')
 
 // 商品心愿单
@@ -194,6 +217,30 @@ const { open: openShopSearchSheet, pendingSearch } = useShopSearchSheet()
 
 const openFilters = () => {
   openShopSearchSheet()
+}
+
+const syncQuickSearchQuery = () => {
+  const parts: string[] = []
+  if (quickSelectedKeywords.value.length) {
+    parts.push(...quickSelectedKeywords.value)
+  }
+  const free = quickFreeTextQuery.value.trim()
+  if (free) {
+    parts.push(free)
+  }
+  quickSearchQuery.value = parts.join(' ')
+}
+
+const toggleQuickKeyword = (keyword: string) => {
+  const current = [...quickSelectedKeywords.value]
+  const index = current.indexOf(keyword)
+  if (index === -1) {
+    current.push(keyword)
+  } else {
+    current.splice(index, 1)
+  }
+  quickSelectedKeywords.value = current
+  syncQuickSearchQuery()
 }
 
 const runQuickSearch = () => {
@@ -329,6 +376,10 @@ watch(pendingSearch, (payload) => {
   handleSearch(payload as unknown as ProductSearchPayload)
 })
 
+watch(quickFreeTextQuery, () => {
+  syncQuickSearchQuery()
+})
+
 const handleAddToWishlist = async (product: ShopProduct) => {
   if (!product?.id) return
   try {
@@ -348,6 +399,60 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   .shop-page {
     padding-inline: 0;
   }
+}
+
+.shop-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shop-search-input-shell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 4px;
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+  border-radius: 10px;
+  box-shadow:
+    0 2px 6px -3px rgba(0,0,0,0.9),
+    0 0 6px rgba(15,23,42,0.7);
+}
+
+.shop-search-chip-in-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: rgba(30, 64, 175, 0.2);
+  color: rgba(226, 232, 240, 0.92);
+  cursor: pointer;
+}
+
+.shop-search-chip-in-input__close {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.shop-search-input-inner {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+}
+
+.shop-search-input-inner::placeholder {
+  color: rgba(148,163,184,0.7);
 }
 
 @media (max-width: 400px) {

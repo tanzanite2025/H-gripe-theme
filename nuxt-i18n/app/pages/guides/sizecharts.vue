@@ -369,6 +369,9 @@
         class="sizecharts-section"
       >
         <h2 class="sizecharts-section__title">How to choose</h2>
+        <!-- Tire width -> rim internal width helper placed directly under title -->
+        <TireRimHelper />
+
         <div class="mt-4">
           <h3 class="sizecharts-section__subheading">
             Reference charts from DT Swiss
@@ -397,9 +400,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Tire width -> rim internal width helper -->
-        <TireRimHelper />
       </section>
 
       <!-- Tire pressure -->

@@ -1,13 +1,25 @@
 <template>
   <section class="search-panel-c">
-    <!-- 搜索输入行 -->
+    <!-- 搜索输入行：外壳 + 已选热门 TAB 胶囊 + 输入框 -->
     <div class="search-row-c">
-      <input
-        v-model="productSearchQuery"
-        type="text"
-        :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
-        class="search-input-c"
-      />
+      <div class="search-input-shell">
+        <button
+          v-for="keyword in selectedKeywords"
+          :key="keyword"
+          type="button"
+          class="search-chip-in-input"
+          @click="toggleKeyword(keyword)"
+        >
+          <span class="search-chip-in-input__label">{{ keyword }}</span>
+          <span class="search-chip-in-input__close" aria-hidden="true">×</span>
+        </button>
+        <input
+          v-model="freeTextQuery"
+          type="text"
+          :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
+          class="search-input-inner"
+        />
+      </div>
       <div class="btn-group">
         <button
           type="button"
@@ -25,6 +37,12 @@
         </button>
       </div>
     </div>
+
+    <!-- 热门搜索 TAB 区域 -->
+    <PopularSearchChips
+      v-model="selectedKeywords"
+      :keywords="popularSearchKeywords"
+    />
 
     <!-- 分隔线 -->
     <div class="filter-divider-c"></div>
@@ -50,8 +68,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import AdvancedFilter from '~/components/AdvancedFilter.vue'
+import PopularSearchChips from '~/components/PopularSearchChips.vue'
+import { popularSearchKeywords } from '~/utils/popularSearchKeywords'
 import { useProductAttributes } from '~/composables/useProductAttributes'
 
 interface ProductSearchFilters {
@@ -68,6 +88,8 @@ const emit = defineEmits<{
   (e: 'search', payload: { query: string; filters: ProductSearchFilters }): void
 }>()
 
+const selectedKeywords = ref<string[]>([])
+const freeTextQuery = ref('')
 const productSearchQuery = ref('')
 
 const filters = ref<ProductSearchFilters>({
@@ -85,12 +107,38 @@ const filterResetKey = ref(0)
 
 const { colorAttributes, loadFilterableColorAttributes } = useProductAttributes()
 
+const syncProductSearchQuery = () => {
+  const parts: string[] = []
+  if (selectedKeywords.value.length) {
+    parts.push(...selectedKeywords.value)
+  }
+  const free = freeTextQuery.value.trim()
+  if (free) {
+    parts.push(free)
+  }
+  productSearchQuery.value = parts.join(' ')
+}
+
+const toggleKeyword = (keyword: string) => {
+  const current = [...selectedKeywords.value]
+  const index = current.indexOf(keyword)
+  if (index === -1) {
+    current.push(keyword)
+  } else {
+    current.splice(index, 1)
+  }
+  selectedKeywords.value = current
+  syncProductSearchQuery()
+}
+
 const handleFilterChange = (newFilters: ProductSearchFilters) => {
   filters.value = newFilters
   console.log('Product search filters changed:', newFilters)
 }
 
 const handleReset = () => {
+  selectedKeywords.value = []
+  freeTextQuery.value = ''
   productSearchQuery.value = ''
   filters.value = {
     priceRange: [0, 5000],
@@ -113,6 +161,7 @@ const handleReset = () => {
 const searchProducts = async () => {
   if (searchingProducts.value) return
   searchingProducts.value = true
+  syncProductSearchQuery()
   const query = productSearchQuery.value.trim()
   console.log('Product search query:', query || '(empty)')
   console.log('Product search filters:', filters.value)
@@ -129,6 +178,10 @@ const searchProducts = async () => {
 
 onMounted(() => {
   loadFilterableColorAttributes()
+})
+
+watch(freeTextQuery, () => {
+  syncProductSearchQuery()
 })
 </script>
 
@@ -149,38 +202,64 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
+
+.search-input-shell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 4px;
+  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+  border-radius: 10px;
+  box-shadow:
+    0 2px 6px -3px rgba(0,0,0,0.9),
+    0 0 6px rgba(15,23,42,0.7);
+}
+
+.search-chip-in-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: rgba(30, 64, 175, 0.2);
+  color: rgba(226, 232, 240, 0.92);
+  cursor: pointer;
+}
+
+.search-chip-in-input__close {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.search-input-inner {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+}
+
+.search-input-inner::placeholder {
+  color: rgba(148,163,184,0.7);
+}
+
 .btn-group {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
 }
 
-/* 搜索输入框 */
-.search-input-c {
-  flex: 1;
-  min-width: 0;
-  height: 38px;
-  padding: 0 14px;
-  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
-  border: none;
-  border-radius: 10px;
-  color: #ffffff;
-  font-size: 13px;
-  outline: none;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 2px 6px -3px rgba(0,0,0,0.9),
-    0 0 6px rgba(15,23,42,0.7);
-}
-.search-input-c::placeholder { color: rgba(148,163,184,0.7); }
-.search-input-c:focus {
-  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.98));
-  box-shadow:
-    0 0 0 1px rgba(45,212,191,0.75),
-    0 0 14px rgba(45,212,191,0.35);
-}
+/* 搜索输入框原有样式合并到 search-input-shell / search-input-inner */
 
 /* 搜索按钮 */
 .search-btn-c {
