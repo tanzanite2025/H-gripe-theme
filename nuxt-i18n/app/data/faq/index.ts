@@ -17,6 +17,7 @@ import { supportProductFeedbackFaq } from './pages/support-product-feedback'
 import { supportTestReportFaq } from './pages/support-test-report'
 import { companyMembershipFaq } from './pages/company-membership'
 import { guidesWheelsetBuyersFaq } from './pages/guides-wheelset-buyers'
+import { guidesTireguidesFaq } from './pages/guides-tireguides'
 
 /**
  * FAQ Registry - maps pageId to FAQ data
@@ -31,6 +32,7 @@ export const faqRegistry: FaqRegistry = {
   'support-test-report': supportTestReportFaq,
   'company-membership': companyMembershipFaq,
   'guides-wheelset-buyers': guidesWheelsetBuyersFaq,
+  'guides-tireguides': guidesTireguidesFaq,
 }
 
 /**
