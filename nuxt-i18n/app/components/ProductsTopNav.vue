@@ -20,6 +20,7 @@ import { useLocalePath, useRoute } from '#imports'
 import type { ProductsNavItem } from '~/utils/productsNav'
 import { productsNavItems } from '~/utils/productsNav'
 import { companyNavItems } from '~/utils/companyNav'
+import { getNavContextFromRoute, type AppNavContext } from '~/utils/navContext'
 
 const props = defineProps<{
   /** Optional override for products nav items. */
@@ -72,36 +73,12 @@ const blogNavItems: ProductsNavItem[] = [
   },
 ]
 
-type NavContext = 'company' | 'guides' | 'products' | 'blog'
+type NavContext = Exclude<AppNavContext, 'support'>
 
 const navContext = computed<NavContext>(() => {
-  const path = route.path || ''
-
-  if (path === '/company' || path.startsWith('/company/')) {
-    return 'company'
-  }
-
-  if (path === '/blog' || path.startsWith('/blog/')) {
-    return 'blog'
-  }
-
-  if (path === '/guides' || path.startsWith('/guides/')) {
-    const navQuery = route.query.nav
-    const forcedProducts =
-      typeof navQuery === 'string' && navQuery.toLowerCase() === 'products'
-
-    if (forcedProducts) {
-      return 'products'
-    }
-
-    return 'guides'
-  }
-
-  if (path === '/support/test-report') {
-    return 'products'
-  }
-
-  return 'products'
+  const ctx = getNavContextFromRoute(route)
+  if (ctx === 'support') return 'products'
+  return ctx
 })
 
 const items = computed<ProductsNavItem[]>(() => {

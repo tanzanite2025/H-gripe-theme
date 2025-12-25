@@ -154,8 +154,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useLocalePath, useRouter } from '#imports'
+import { onMounted, ref, watch } from 'vue'
+import { useLocalePath, useRouter, useRoute } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
 import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
@@ -199,11 +199,36 @@ const quickOpen = ref(false)
 
 const setActiveTab = (id: WheelsetTabId) => {
   activeTab.value = id
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    url.hash = `#${id}`
+    window.history.replaceState(null, '', url.toString())
+  }
 }
 
 const { openChat } = useChatWidget()
 const router = useRouter()
+const route = useRoute()
 const localePath = useLocalePath()
+
+const syncTabWithHash = (hash: string | null | undefined) => {
+  if (!hash) return
+  const clean = hash.startsWith('#') ? hash.slice(1) : hash
+  if (tabs.some((tab) => tab.id === clean)) {
+    activeTab.value = clean as WheelsetTabId
+  }
+}
+
+onMounted(() => {
+  syncTabWithHash(route.hash)
+})
+
+watch(
+  () => route.hash,
+  (newHash) => {
+    syncTabWithHash(newHash)
+  }
+)
 
 const openWhatsAppChat = () => {
   openChat({ showAgentList: true })

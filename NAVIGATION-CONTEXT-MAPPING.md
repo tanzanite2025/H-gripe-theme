@@ -21,14 +21,8 @@
 - 渲染横向菜单的布局（layouts）：
   - `nuxt-i18n/app/layouts/products.vue`（渲染 `ProductsTopNav`）
   - `nuxt-i18n/app/layouts/support.vue`（渲染 `SupportTopNav`）
-
-## 当前问题（Observed）
-1. 访问 `/products` 时会显示属于 guides 的入口（这是当前设计导致的，因为 `productsNavItems` 本身包含了 `/guides/*`）。
-2. Guides 的表现不一致：
-   - `/guides`（首页）显示的是“偏 guides 的过滤菜单”。
-   - `/guides/*`（子页，例如 `/guides/sizecharts`）会回退到完整的 products 菜单。
-3. products 横向菜单里看不到 `wheelsbuild blog`，原因是：
-   - `ProductsTopNav.vue` 目前在菜单中存在 `shop` 时，会过滤掉 `wheelsbuild-blog`（以及 `about-tools`）。
+ - 导航上下文映射 helper（唯一数据源）：
+   - `nuxt-i18n/app/utils/navContext.ts`（`getNavContextFromRoute`）
 
 ## 期望的“导航上下文（Navigation Context）”规则
 不要再依赖单一的路由相等判断来推断菜单（例如仅在 `path === '/guides'` 时才认为是 guides）。
@@ -47,8 +41,8 @@
 | 路由模式 | 期望上下文 | 备注 |
 | --- | --- | --- |
 | `/company` 与 `/company/*` | `company` | 使用 `companyNavItems` |
-| `/support` 与 `/support/*` | `support` | 使用 `supportNavItems` + support layout |
-| `/guides` 与 `/guides/*` | `guides` | 在 guides 内**必须**始终保持 guides 菜单，不得切回 products 菜单 |
+| `/support` 与 `/support/*` | `support` | 默认使用 `supportNavItems` + `support` layout；特殊情况见下文 Test Report 规则 |
+| `/guides` 与 `/guides/*` | `guides` | 默认在 guides 内保持 Guides 菜单；从 Products 带 `?nav=products` 进入时视为 `products` 上下文 |
 | `/products` | `products` | Products 聚合页 |
 | `/shop` | `products` | 虽是根路由，但必须保持 products 菜单 |
 | `/spoke-calculator` | `products` | 虽是根路由，但必须保持 products 菜单 |
@@ -64,10 +58,6 @@
 - Products 横向菜单：保留选型相关入口（Shop + Tire Size Charts + Technical + Wheelset Guide + Spoke Calculator + Test Report + Membership and Points + Picture warehouse），不承载 Wheelsbuild blog。
 - Products 横向菜单：本期不放 Support 售后入口（Warranty/After sales/Shipping/Payment）。
 - Guides 横向菜单：进入 `/guides` 或任意 `/guides/*` 时，必须稳定显示 Guides 菜单，不得切回 Products 菜单。
-
-实现注意点：
-- 现有 `ProductsTopNav.vue` 存在“当菜单中存在 `shop` 时过滤 `about-tools` 与 `wheelsbuild-blog`”的规则。
-  - 本期规范中这两项都不在 Products 横向菜单里，因此该过滤规则属于冗余逻辑，建议直接删除以保持代码清晰。
 
 请确认 Products 下应该显示哪些菜单项（标记 Keep/Remove/Add）：
 
@@ -127,8 +117,6 @@ Blog 菜单需要在所有 `/blog/*` 路由下保持稳定。
 维护注意事项（以后往 Products 横向菜单新增入口时）：
 - 如果新增入口指向 `/guides/*`，并且你希望它在“从 Products 进入”时保持 Products 横向菜单：
   - 确保该入口是通过 `ProductsTopNav` 渲染（会自动加 `?nav=products`）。
-- 如果新增入口指向 `/support/*`（例如 Test Report），并且你希望它在“从 Products 进入”时保持 Products 横向菜单：
-  - 同样使用 `?nav=products`（保持机制统一，不引入第二套实现方式）。
 
 ## 特殊规则：Products -> Support Test Report 仍保持 Products 横向菜单
 需求背景：
@@ -150,23 +138,13 @@ Blog 菜单需要在所有 `/blog/*` 路由下保持稳定。
 维护注意事项：
 - 仅当你明确希望“从 Products 进入某个 Support 页面也保持 Products 横向菜单”时，才使用 `?nav=products`。
 - Support 分区内部链接保持不带该 query，以避免 Support 用户路径被 Products 横向菜单覆盖。
-- 如果新增入口本来就应该属于 Guides 分区（希望进入后显示 Guides 横向菜单）：
-  - 不要从 Products 横向菜单里放该入口，或在实现上避免自动拼接 `?nav=products`。
-- 如果未来要扩展类似“从 A 上下文进入 B 页面仍保持 A 菜单”的需求：
-  - 建议沿用 query 标记方式，并在本文档记录对应的 query key/value。
 
-## 实施计划（在本文件确认之后再执行）
-1. 引入一个小函数（放在 `ProductsTopNav.vue` 内或抽到 `app/utils/…`），将 `route.path` 映射到 `navContext`。
-2. 更新 `ProductsTopNav.vue` 里的 `items` 计算逻辑：
-   - `company` 上下文返回 `companyNavItems`。
-   - `guides` 上下文返回仅 guides 的菜单项列表。
-   - `products` 上下文返回配置好的“购买辅助”菜单列表。
-3. 人工回归检查：
-   - `/products` 显示 products 购买辅助菜单。
-   - `/shop` 保持同一套 products 菜单。
-   - `/guides` 显示 guides 菜单。
-   - `/guides/sizecharts` 保持 guides 菜单。
-   - 在 guides 各页面之间跳转时，横向菜单不再切回 products。
+## 实现概览（navContext helper 已落地）
+1. 在 `app/utils/navContext.ts` 中引入 `getNavContextFromRoute`，统一根据 `route.path` 与 `route.query.nav` 计算 `navContext`（`company/support/guides/products/blog`）。
+2. 在 `ProductsTopNav.vue` 中使用 `getNavContextFromRoute`，根据 `navContext` 在 `companyNavItems` / Guides 菜单 / Blog 菜单 / Products 购买辅助菜单之间切换。
+3. 在 `layouts/support.vue` 中同样使用 `getNavContextFromRoute`：
+   - 当 `navContext === 'products'` 时强制渲染 `ProductsTopNav`；
+   - 其余情况渲染 `SupportTopNav`，保证从 SUPPORT 顶部进入时始终看到 Support 横向菜单。
 
 ## 回归检查清单（测试时填写）
 - [ ] `/products` 横向菜单符合 Products 规范

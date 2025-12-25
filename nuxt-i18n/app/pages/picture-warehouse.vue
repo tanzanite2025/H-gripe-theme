@@ -11,7 +11,7 @@
         type="button"
         class="company-tabs__item"
         :class="{ 'company-tabs__item--active': activeTab === tab.id }"
-        @click="activeTab = tab.id"
+        @click="setActiveTab(tab.id)"
       >
         {{ tab.label }}
       </button>
@@ -529,8 +529,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { definePageMeta, useHead } from '#imports'
+import { computed, onMounted, ref, watch } from 'vue'
+import { definePageMeta, useHead, useRoute } from '#imports'
 
 definePageMeta({
   layout: 'products',
@@ -817,11 +817,40 @@ const activeKind = ref<PhotoKind | null>(null)
 const activeIndex = ref<number | null>(null)
 const currentGalleryIndex = ref(0)
 
-const tabs: Array<{ id: 'riders' | 'brand'; label: string }> = [
+type PictureWarehouseTabId = 'riders' | 'brand'
+
+const tabs: Array<{ id: PictureWarehouseTabId; label: string }> = [
   { id: 'riders', label: 'Riders photos' },
   { id: 'brand', label: 'Tanzanite photos' },
 ]
-const activeTab = ref<'riders' | 'brand'>('riders')
+const activeTab = ref<PictureWarehouseTabId>('riders')
+
+const route = useRoute()
+
+const getTabFromHash = (hash: string | null | undefined): PictureWarehouseTabId | null => {
+  if (!hash) return null
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash
+  const allowed: PictureWarehouseTabId[] = ['riders', 'brand']
+  return (allowed as string[]).includes(raw) ? (raw as PictureWarehouseTabId) : null
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const next = getTabFromHash(hash)
+    if (next) activeTab.value = next
+  },
+  { immediate: true }
+)
+
+const setActiveTab = (id: PictureWarehouseTabId) => {
+  activeTab.value = id
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    url.hash = `#${id}`
+    window.history.replaceState(null, '', url.toString())
+  }
+}
 
 const isLightboxOpen = computed(() => activeKind.value !== null && activeIndex.value !== null)
 
