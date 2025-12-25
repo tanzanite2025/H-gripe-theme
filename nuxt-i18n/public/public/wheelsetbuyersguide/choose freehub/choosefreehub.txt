@@ -1,0 +1,15 @@
+Different freehub bodies correspond to specific groupsets with clear compatibility ranges. For example:  【应用之前的蓝色文本小标题】
+• 	MS (Micro Spline 12-speed) → Shimano MTB 12-speed groupsets (such as Deore M6100, SLX M7100, XT M8100, XTR M9100).
+• 	HG 8-speed → Shimano Claris, Altus, Acera and other entry-level road/MTB groupsets.
+• 	HG 9–11 speed → Shimano Sora, Tiagra, 105, Ultegra, Dura-Ace, as well as MTB groupsets like Deore, SLX, XT.
+• 	XD → SRAM MTB 11/12-speed groupsets (such as GX Eagle, X01 Eagle, XX1 Eagle).
+• 	XDR → SRAM road 12-speed groupsets (such as Force eTap AXS, Red eTap AXS).
+• 	N3W → Campagnolo Ekar 13-speed, and also compatible with 10–12-speed Record, Super Record, Chorus.
+• 	CP (Campagnolo original freehub) → Campagnolo 11-speed road groupsets (such as Super Record 11, Record 11, Chorus 11).
+
+⚠️ Notes【应用之前的蓝色文本小标题】
+- MS freehub is only compatible with Shimano MTB 12-speed and not with older HG systems.
+- HG freehub is the most universal, covering 8–11 speed road and MTB.
+- XD/XDR freehubs are mainly used for SRAM; XD is MTB-oriented, while XDR is road-oriented.
+- N3W is Campagnolo’s latest standard, offering the best compatibility and backward support.
+- CP freehub is Campagnolo’s traditional design, supporting only 11-speed road.
