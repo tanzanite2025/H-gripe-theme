@@ -119,10 +119,7 @@
         class="wheelset-section sizecharts-section"
       >
         <h2 class="sizecharts-section__title">Choose freehub</h2>
-        <p class="sizecharts-section__intro">
-          We are preparing a step-by-step guide to help you choose the right freehub body for your drivetrain.
-          This section will explain compatibility between HG, MS, XD, XDR and different cassette setups.
-        </p>
+        <WheelsetChooseFreehubSection />
       </section>
 
       <!-- Optional -->
@@ -163,6 +160,7 @@ import PageFaq from '~/components/PageFaq.vue'
 import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
 import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
+import WheelsetChooseFreehubSection from '~/components/WheelsetChooseFreehubSection.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
