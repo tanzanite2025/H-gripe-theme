@@ -1,0 +1,61 @@
+删除以下文本
+Hub geometry concepts that matter for spoke length and wheel behaviour.
+Left / right flange distance from the hub centerline.
+Flange diameter and how it interacts with rim ERD.
+Matching hub hole count with rim hole count.
+Basic hub standards (axle type, freehub, brake interface) as context for choosing the right hub.
+
+
+文本全居中【全局文本样式有，如果不清楚可以查看/guides/technical页面下TENSION TAB应用的全局样式】
+加入以下文本，注意中文的描述的需要注意的事项
+Bicycle Hub Key Specifications
+1. Spoke Type【蓝色全局小标题，可以查看一下/spoke-calculator PARAMETER TAB下的小标题蓝色样式】
+J-bend (Elbowed Spokes)
+-The spoke head is bent to fit into the hub flange holes.
+-Advantages: Highly compatible, easy to service.
+-Disadvantages: Slightly lower spoke tension, more traditional appearance.
+Straight-pull
+-The spokes are inserted directly into the hub without bending.
+-Common hole count: 24H (arranged in 1:1 or 2:1 patterns).
+Advantages: Higher spoke tension, cleaner aesthetics.
+Disadvantages: Limited compatibility when replacing spokes, less convenient for long-distance maintenance.
+
+C:\Users\P16V\Desktop\Wordpress\tanzanite-theme\nuxt-i18n\public\public\technical\hubs\hubs\这个路径下有4张图片，应用我们之前的大图的样式，
+但是我们之前做的是3张图片一行的，看这个4张是否可以2张一行，图片下方的简介可以直接用图片名
+
+2. Hole Count【蓝色全局小标题，可以查看一下/spoke-calculator PARAMETER TAB下的小标题蓝色样式】
+Common specifications: 【单独一行，黄色字体，可以查看下/guides/technical TENSION下的黄色字体样式复用】
+16H, 18H, 21H, 24H, 28H, 32H, 36H, etc.
+Selection logic:【单独一行，黄色字体，可以查看下/guides/technical TENSION下的黄色字体样式复用】
+- Fewer holes (e.g., 24H): Lightweight, suitable for racing. (Similarly, 16H and 18H are generally used for riders with lighter body weight and lower riding intensity, typically on road bikes. Mountain bikes rarely use such a low spoke count.)
+- More holes (e.g., 36H): Higher strength, suitable for touring or heavy load requirements. (Currently, MTB hubs are most commonly 28–32H. With appropriate spokes, 36H is more often applied in BMX wheels.Common road disc brake hubs are 24H / 28H)
+
+
+3. Freehub Body【蓝色全局小标题，可以查看一下/spoke-calculator PARAMETER TAB下的小标题蓝色样式】
+- HG (Shimano HyperGlide): Compatible with 8–11 speed cassettes.
+- MS (Micro Spline): MTB-specific, compatible with 12-speed cassettes.
+- XD (SRAM XD): Compatible with 11–12 speed cassettes.
+- XDR (SRAM XDR): Road-specific, 1.85mm longer than XD; can be converted to XD with a spacer.
+
+增加一个HOW TO CHOOSE按钮居中【全局样式有按钮居中的】，用/guides/tireguides 页面 TIRE PRESSURE TAB下一致的按钮样式，先不做跳转逻辑，先做好按钮样式，以后再加逻辑
+Click to learn how to choose the right freehub body 这句文本在按钮下方居中，最好可以用块包一下，突出显示。
+
+4. Brake Interface【蓝色全局小标题，可以查看一下/spoke-calculator PARAMETER TAB下的小标题蓝色样式】
+- 6-bolt: Common, secured with six bolts.
+- Center Lock: Fixed with splines and a lockring, faster installation.
+
+5. Axle Specifications【蓝色全局小标题，可以查看一下/spoke-calculator PARAMETER TAB下的小标题蓝色样式】
+- Front hubs: 【单独一行，黄色字体，可以查看下/guides/technical TENSION下的黄色字体样式复用】
+Φ9×100mm (quick release), Φ15×100mm, Φ15×110mm [BOOST], Φ20×110mm, etc.
+- Rear hubs: 【单独一行，黄色字体，可以查看下/guides/technical TENSION下的黄色字体样式复用】
+Φ9×135mm, Φ12×142mm, Φ12×148mm [BOOST], etc.
+- Quick release vs thru-axle: Quick release is lighter and more convenient, while thru-axle provides greater stiffness and stability.
+Currently, the most commonly used standards are MTB BOOST 15×110mm front and 12×148mm rear thru-axles. For road disc brakes, 12×100mm front and 12×142mm rear thru-axles are typical.
+
+6. Ratchet System【蓝色全局小标题，可以查看一下/spoke-calculator PARAMETER TAB下的小标题蓝色样式】
+At present, most ratchet systems on the market are DT-style. As shown in the illustration, our shop also sells the full range of DT hubs, with upgrade options available. Please refer to the product detail page for specific upgrade information
+- Common tooth counts (such as 18T, 36T, 54T). A higher tooth count provides a faster engagement angle, resulting in quicker pedaling response.
+- From a purely physical perspective, with the same radius, more teeth mean each tooth is smaller, which leads to faster wear.
+- If you are a high‑power rider, it is recommended to choose 36T as a balance between durability and performance.
+- The design intent of these products is always to ensure good stability and longevity; the discussion here is relative, comparing 18T, 36T, 54T, or even larger options such as 60T.
+
