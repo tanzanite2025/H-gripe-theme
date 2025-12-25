@@ -5,6 +5,8 @@
       This section will explain compatibility between HG, MS, XD, XDR and different cassette setups.
     </p>
 
+    <FreehubGroupsetHelper />
+
     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <GuideImage
         src="/public/wheelsetbuyersguide/choose%20freehub/shimano-micro-spline-11-12-speed-mountain-freehub.webp"
@@ -77,11 +79,12 @@
         XDR &rarr; SRAM road 12-speed groupsets (such as Force eTap AXS, Red eTap AXS).
       </li>
       <li>
-        N3W &rarr; Campagnolo Ekar 13-speed, and also compatible with 10&ndash;12-speed Record, Super Record, Chorus.
+        N3W &rarr; Campagnolo Ekar 13-speed; with the appropriate adapter it can also run Record, Super Record and
+        Chorus 10&ndash;12-speed cassettes (new standard with backward compatibility).
       </li>
       <li>
-        CP (Campagnolo classic freehub) &rarr; Campagnolo 11-speed road groupsets (such as Super Record 11, Record 11,
-        Chorus 11).
+        CP (Campagnolo classic freehub) &rarr; supports only Campagnolo 11-speed road groupsets (such as Super Record 11,
+        Record 11, Chorus 11) and does not support 12/13-speed.
       </li>
     </ul>
 
@@ -172,10 +175,12 @@
           <tr class="border-b border-slate-800/70">
             <td class="px-3 py-2 align-top">N3W</td>
             <td class="px-3 py-2 align-top">
-              Campagnolo Ekar 13-speed; compatible with Record, Super Record, Chorus 10&ndash;12 speed
+              Campagnolo Ekar 13-speed; with adapter also compatible with Record, Super Record and Chorus
+              10&ndash;12-speed cassettes
             </td>
             <td class="px-3 py-2 align-top">
-              New 13-speed body that can also fit 9&ndash;12 speed Campagnolo cassettes with an adapter.
+              New 13-speed freehub platform designed for Ekar with backward compatibility to selected 10&ndash;12-speed
+              Campagnolo road cassettes via adapter.
             </td>
           </tr>
           <tr>
@@ -184,7 +189,7 @@
               Campagnolo Super Record 11, Record 11, Chorus 11
             </td>
             <td class="px-3 py-2 align-top">
-              Traditional Campagnolo 11-speed road freehub standard.
+              Traditional Campagnolo 11-speed-only road freehub standard (not compatible with 12/13-speed cassettes).
             </td>
           </tr>
         </tbody>
@@ -412,4 +417,5 @@
 
 <script setup lang="ts">
 import GuideImage from '~/components/GuideImage.vue'
+import FreehubGroupsetHelper from '~/components/FreehubGroupsetHelper.vue'
 </script>
