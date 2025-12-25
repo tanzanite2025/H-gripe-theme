@@ -23,130 +23,12 @@
         class="wheelset-section sizecharts-section"
       >
         <h2 class="sizecharts-section__title">Safety instructions</h2>
-        <p class="sizecharts-section__intro">
-          Improper installation, use, or maintenance may cause serious damage to the wheels and pose a danger to the rider.
-          To ensure a reliable riding experience with TANZANITE products, please read and follow the instructions below.
-          Even if you have years of cycling or wheelset assembly experience, these instructions and recommendations apply only
-          to TANZANITE carbon fiber products. Therefore, please carefully read them before your first ride or wheel assembly.
-        </p>
-        <p class="sizecharts-section__intro">
-          If you have any questions, feel free to contact us at
-          <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
-          or
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="openWhatsAppChat"
-          >
-            leave a message
-          </button>
-          on any page of our website.
-        </p>
-        <ol class="sizecharts-section__list sizecharts-section__list--numbered">
-          <li>
-            <strong style="color: #38bdf8;">Installation &amp; Inspection</strong>
-            <p class="wheelset-safety-item">
-              <strong>Professional Installation:</strong>
-              Have the wheelset installed by a qualified mechanic or experienced user, ensuring compatibility with the braking and
-              drivetrain systems. Incompatibility may reduce performance and damage the wheels or the frame/fork.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Tire Installation:</strong>
-              We provide professional tire levers for installing tires. Do not use metal tire levers, as they will permanently damage
-              the rim.
-              <button
-                type="button"
-                class="wheelset-inline-button"
-                @click="goToTubelessInstallation"
-              >
-                Tubeless tire installation instructions
-              </button>
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Torque Specifications:</strong>
-              All bolts, quick releases, or thru-axles must be tightened according to the manufacturer’s recommended torque values to
-              avoid being too tight or too loose.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Brake Pad Compatibility:</strong>
-              Use only carbon-specific brake pads to prevent rim damage from metal or incompatible materials.
-            </p>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Usage &amp; Riding</strong>
-            <p class="wheelset-safety-item">
-              <strong>Weight Limit:</strong>
-              Follow the manufacturer’s specified maximum rider weight and load limits. Our wheels are designed and tested for
-              specific riding purposes. Improper use may shorten product lifespan or even cause rim cracking, leading to rider
-              injury. Always ensure the product you purchase suits your riding needs.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Road Conditions:</strong>
-              Avoid riding on severe potholes, gravel, or extremely rough terrain to reduce impact damage. After a strong impact or
-              collision, failure may not be immediately visible. Wipe the rim clean, consider removing the tire for inspection, and
-              report any potential serious damage to us.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Braking Technique:</strong>
-              On long descents, avoid continuous braking. Use intermittent braking to prevent overheating of the carbon fiber.
-            </p>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Regular Maintenance</strong>
-            <p class="wheelset-safety-item">
-              <strong>Surface Inspection:</strong>
-              Before each ride, check the rims for cracks, bulges, or delamination. Regularly inspect brake pads and remove
-              contaminants such as metal shavings or stones, which can damage the braking surface. Do not use excessively worn brake
-              pads.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Spoke Tension:</strong>
-              Regularly check spoke tension to ensure even distribution and prevent structural imbalance.
-              <button
-                type="button"
-                class="wheelset-inline-button"
-                @click="goToTechnicalTension"
-              >
-                Check out our targeted settings for spoke tension
-              </button>
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Cleaning Method:</strong>
-              Clean with a neutral detergent and soft cloth. Avoid strong acids, strong alkalis, or high-pressure water jets.
-            </p>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Prohibited Actions</strong>
-            <p class="wheelset-safety-item">Do not use non-original parts or modify the braking system.</p>
-            <p class="wheelset-safety-item">Do not sand or grind carbon rims with sandpaper or metal tools.</p>
-            <p class="wheelset-safety-item">
-              Do not store or use wheels in extreme temperature environments (e.g., ovens or freezing conditions).
-            </p>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Emergency Handling</strong>
-            <p class="wheelset-safety-item">
-              <strong>Damage Detection:</strong>
-              If cracks or abnormal noises are found, stop using the wheel immediately and seek professional repair.
-            </p>
-            <p class="wheelset-safety-item">
-              <strong>Post-Accident Inspection:</strong>
-              After a crash or collision, conduct a thorough inspection even if no visible damage is present.
-            </p>
-          </li>
-        </ol>
-
-        <div class="wheelset-safety-footer">
-          <p class="guide-section__cta-wrapper">
-            <button
-              type="button"
-              class="wheelset-inline-button"
-              @click="goToAfterSales"
-            >
-              Check out our after-sales instructions for rims, wheelsets and more
-            </button>
-          </p>
-        </div>
+        <WheelsetSafetyInstructionsSection
+          :openWhatsAppChat="openWhatsAppChat"
+          :goToTubelessInstallation="goToTubelessInstallation"
+          :goToTechnicalTension="goToTechnicalTension"
+          :goToAfterSales="goToAfterSales"
+        />
       </section>
 
       <!-- Mullet wheelsets -->
@@ -204,99 +86,11 @@
         class="wheelset-section sizecharts-section wheelset-section--sample"
       >
         <h2 class="sizecharts-section__title">Sample assembly</h2>
-        <p>
-          We provide professional assembly services, supporting customers who wish to send in carbon fiber rims, wheelsets, and bicycle components. Our skilled technicians will complete the assembly to the highest standards.
-        </p>
-        <p>
-          Please contact our sales team at
-          <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
-          to begin the quotation process, or
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="openWhatsAppChat"
-          >
-            reach us directly via online chat
-          </button>
-          .
-        </p>
-        <p>
-          <strong style="color: #38bdf8;">Assembly Fee: USD 30 per set</strong>
-        </p>
-
-        <ol class="sizecharts-section__list sizecharts-section__list--numbered">
-          <li>
-            <strong style="color: #38bdf8;">Service Process</strong>
-            <ul class="sizecharts-section__list">
-              <li>
-                <strong>Shipping:</strong> Customers send their components to the designated address.
-              </li>
-              <li>
-                <strong>Confirmation:</strong> Upon receipt, we will check and confirm all items.
-              </li>
-              <li>
-                <strong>Assembly:</strong> Professional technicians perform installation and adjustment.
-              </li>
-              <li>
-                <strong>Testing:</strong> Safety and performance checks are conducted to ensure compliance with riding standards.
-              </li>
-              <li>
-                <strong>Delivery:</strong> The assembled product will be shipped back or made available for pickup.
-              </li>
-            </ul>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Accepted Components</strong>
-            <ul class="sizecharts-section__list">
-              <li>Wheelsets (including hubs)</li>
-              <li>Other related accessories (please confirm with us in advance)</li>
-            </ul>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Important Notes</strong>
-            <ul class="sizecharts-section__list">
-              <li>Please ensure that all components sent are new or in good condition.</li>
-              <li>A detailed packing list is recommended to avoid missing items.</li>
-              <li>Special customization requests should be communicated in advance.</li>
-              <li>Typical assembly time is 3–7 business days, depending on actual circumstances.</li>
-            </ul>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Value Proposition</strong>
-            <ul class="sizecharts-section__list">
-              <li>
-                <strong>Expert Technicians:</strong> Years of experience in carbon fiber wheelset and complete bike assembly.
-              </li>
-              <li>
-                <strong>Safety Assurance:</strong> Rigorous testing procedures to guarantee riding safety.
-              </li>
-              <li>
-                <strong>Efficient Delivery:</strong> Fast assembly and return shipping, saving customers valuable time.
-              </li>
-            </ul>
-          </li>
-        </ol>
-
-        <p style="margin-top: 1rem;">
-          For smooth service, shipping costs for sending and returning components are the responsibility of the customer. We will assist by recommending reliable logistics options to ensure your parts arrive safely.
-        </p>
-        <p style="margin-top: 1rem; color: #38bdf8;">
-          If you wish to assemble your own wheels and purchase parts exclusively from TANZANITE , we are happy to assist you. We will guide you through every step of the assembly process, including spoke length calculation, assembly methods, and tire installation.
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="goToTechnicalSpokePattern"
-          >
-            Click to view documentation on spoke weaving
-          </button>
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="goToHolePatterns"
-          >
-            Check out the rim weaving holes we can customize
-          </button>
-        </p>
+        <WheelsetSampleAssemblySection
+          :openWhatsAppChat="openWhatsAppChat"
+          :goToTechnicalSpokePattern="goToTechnicalSpokePattern"
+          :goToHolePatterns="goToHolePatterns"
+        />
       </section>
 
       <!-- Mixed rim -->
@@ -315,80 +109,20 @@
         class="wheelset-section sizecharts-section"
       >
         <h2 class="sizecharts-section__title">Appearance Logo</h2>
-        <h3 class="sizecharts-section__subheading">Why we recommend laser-engraved logos for most builds</h3>
-        <p class="sizecharts-section__intro">
-          For standard wheelset orders we usually recommend laser-engraved logos because they are fast to produce, eco-friendly and very reliable for shipping schedules. Compared with custom paint or complex decal work, a laser logo can typically shorten the overall lead time by around 5&ndash;7 days.
-        </p>
-        <p class="guide-section__cta-wrapper">
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="goToAboutAppearance"
-          >
-            Explore all weave &amp; finish options
-          </button>
-        </p>
-        <ul class="sizecharts-section__list">
-          <li>
-            <strong style="color: #38bdf8;">Customized decals</strong>
-            <p>
-              Our skilled graphics department uses the latest technology to design and execute any
-              custom decal or rim personalization you can imagine! Our most popular options are
-              laser engraving, waterslide decals, or removable laser-cut vinyl stickers. Our team
-              will work closely with you to design the perfect size, location, font, and color of
-              your custom graphics. Whether you're looking for a bold statement or subtle
-              customization, we'll help you achieve the look you want.
-            </p>
-          </li>
-          <li>
-            <strong style="color: #38bdf8;">Laser engraving: Eco-friendly personalization</strong>
-            <p>
-              Staying true to our sustainability mission by substantially reducing our plastic
-              waste, we’re ecstatic about our new laser engraved graphic option. Our engraving
-              machine delivers precision designs in a sleek light gray color, all while preserving
-              the structural integrity of your carbon rim and reducing the need for plastic/vinyl
-              graphics.
-            </p>
-          </li>
-        </ul>
-        <div class="wheelset-appearance-images">
-          <GuideImage
-            src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO.webp"
-            alt="Carbon rim with customized laser engraved logo detail"
-            :zoomOnClick="true"
-            caption="Carbon fiber rim laser engraving process 1"
-          />
-          <GuideImage
-            src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO1.webp"
-            alt="Close-up of carbon rim laser engraving process"
-            :zoomOnClick="true"
-            caption="Carbon fiber rim laser engraving process 2"
-          />
-          <GuideImage
-            src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO2.webp"
-            alt="Different examples of carbon rim laser engraved graphics"
-            :zoomOnClick="true"
-            caption="Carbon fiber rim laser engraving effect"
-          />
-        </div>
-        <p class="sizecharts-section__intro">
-          If you are planning a long-term build, OEM project or team order, you can also go beyond the standard logo and choose specific carbon weaves and surface finishes for your rims.
-        </p>
+        <WheelsetAppearanceLogoSection :goToAboutAppearance="goToAboutAppearance" />
+      </section>
 
-        <div class="wheelset-appearance-images">
-          <GuideImage
-            src="/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp"
-            alt="Tanzanite carbon rim surface finish detail 1"
-            :zoomOnClick="true"
-            caption="Matte carbon rim finish"
-          />
-          <GuideImage
-            src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
-            alt="Tanzanite carbon rim surface finish detail 2"
-            :zoomOnClick="true"
-            caption="Glossy carbon rim finish"
-          />
-        </div>
+      <!-- Choose freehub -->
+      <section
+        v-show="activeTab === 'choose-freehub'"
+        id="choose-freehub"
+        class="wheelset-section sizecharts-section"
+      >
+        <h2 class="sizecharts-section__title">Choose freehub</h2>
+        <p class="sizecharts-section__intro">
+          We are preparing a step-by-step guide to help you choose the right freehub body for your drivetrain.
+          This section will explain compatibility between HG, MS, XD, XDR and different cassette setups.
+        </p>
       </section>
 
       <!-- Optional -->
@@ -426,10 +160,12 @@
 import { ref } from 'vue'
 import { useLocalePath, useRouter } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
+import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
+import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
+import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import GuideImage from '~/components/GuideImage.vue'
 
 definePageMeta({
   layout: 'products',
@@ -446,6 +182,7 @@ type WheelsetTabId =
   | 'sample-assembly'
   | 'mixed-rim'
   | 'appearance-logo'
+  | 'choose-freehub'
   | 'optional'
 
 const tabs: { id: WheelsetTabId; label: string }[] = [
@@ -455,6 +192,7 @@ const tabs: { id: WheelsetTabId; label: string }[] = [
   { id: 'sample-assembly', label: 'Sample assembly' },
   { id: 'mixed-rim', label: 'Mixed rim' },
   { id: 'appearance-logo', label: 'Appearance Logo' },
+  { id: 'choose-freehub', label: 'Choose freehub' },
   { id: 'optional', label: 'Optional' },
 ]
 

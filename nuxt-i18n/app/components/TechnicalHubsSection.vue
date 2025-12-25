@@ -96,6 +96,7 @@
       <button
         type="button"
         class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
+        @click="goToChooseFreehub"
       >
         How to choose
       </button>
@@ -169,5 +170,13 @@
 </template>
 
 <script setup lang="ts">
+import { useLocalePath, useRouter } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+
+const router = useRouter()
+const localePath = useLocalePath()
+
+const goToChooseFreehub = async () => {
+  await router.push(`${localePath('/guides/wheelset-buyers')}#choose-freehub`)
+}
 </script>
