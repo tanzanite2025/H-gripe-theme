@@ -193,7 +193,8 @@ import SpokeCalculatorCore from '~/components/SpokeCalculatorCore.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import SpokeHistorySearch from '~/components/SpokeHistorySearch.vue'
 import GuideImage from '~/components/GuideImage.vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute } from '#imports'
 
 type SpokeCalculatorTabId = 'calculator' | 'parameter'
 
@@ -203,9 +204,31 @@ const tabs: { id: SpokeCalculatorTabId; labelKey: string; fallback: string }[] =
 ]
 
 const activeTab = ref<SpokeCalculatorTabId>('calculator')
+const route = useRoute()
+
+const getTabFromHash = (hash: string | null | undefined): SpokeCalculatorTabId | null => {
+  if (!hash) return null
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash
+  const allowed: SpokeCalculatorTabId[] = ['calculator', 'parameter']
+  return (allowed as string[]).includes(raw) ? (raw as SpokeCalculatorTabId) : null
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const next = getTabFromHash(hash)
+    if (next) activeTab.value = next
+  },
+  { immediate: true }
+)
 
 const setActiveTab = (id: SpokeCalculatorTabId) => {
   activeTab.value = id
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    url.hash = `#${id}`
+    window.history.replaceState(null, '', url.toString())
+  }
 }
 
 definePageMeta({

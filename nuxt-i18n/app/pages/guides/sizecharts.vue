@@ -631,6 +631,11 @@ watch(
 
 const setActiveTab = (id: SizeChartsTabId) => {
   activeTab.value = id
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    url.hash = `#${id}`
+    window.history.replaceState(null, '', url.toString())
+  }
 }
 </script>
 

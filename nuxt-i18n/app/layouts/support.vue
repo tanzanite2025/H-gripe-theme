@@ -27,11 +27,13 @@ import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
 import ProductsTopNav from '~/components/ProductsTopNav.vue'
 import SupportTopNav from '~/components/SupportTopNav.vue'
+import { getNavContextFromRoute } from '~/utils/navContext'
 
 const route = useRoute()
-const isProductsNavForced = computed(() => {
-  return route.path === '/support/test-report'
-})
+
+const navContext = computed(() => getNavContextFromRoute(route))
+
+const isProductsNavForced = computed(() => navContext.value === 'products')
 </script>
 
 <style scoped>
