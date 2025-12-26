@@ -31,54 +31,6 @@
         />
       </section>
 
-      <!-- Mullet wheelsets -->
-      <section
-        v-show="activeTab === 'mullet-wheelsets'"
-        id="mullet-wheelsets"
-        class="wheelset-section sizecharts-section"
-      >
-        <h2 class="sizecharts-section__title">Mullet wheelsets</h2>
-        <p class="sizecharts-section__intro">
-          Many mountain bikers have fallen in love with the combination of a 29-inch front wheel paired with a 27.5-inch rear
-          wheel, or a 27.5-inch front wheel with a 26-inch rear wheel. This wheel size mix is particularly well-suited for
-          off-road riding. It offers easy handling on steep descents, agile and responsive cornering, and the ability to roll
-          smoothly over rough terrain. This setup is commonly known as the “mullet”—and for good reason: the front wheel
-          provides stability and reliability, while the rear wheel delivers agility and performance!
-        </p>
-        <p class="guide-section__cta-wrapper">
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="openQuickBuy"
-          >
-            You can use our quick customization to match
-          </button>
-        </p>
-      </section>
-
-      <!-- Custom Front & Rear Wheels -->
-      <section
-        v-show="activeTab === 'custom-front-rear-wheels'"
-        id="custom-front-rear-wheels"
-        class="wheelset-section sizecharts-section"
-      >
-        <h2 class="sizecharts-section__title">Custom Front &amp; Rear Wheels</h2>
-        <p class="sizecharts-section__intro">
-          We specialize in customized services, including building individual wheels tailored to your specific needs. While we only
-          showcase complete wheelsets online, single wheels can be custom-made upon request. Please contact us at
-          <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
-          for special orders—or
-          <button
-            type="button"
-            class="wheelset-inline-button"
-            @click="openWhatsAppChat"
-          >
-            use our faster Instant Chat option
-          </button>
-          !
-        </p>
-      </section>
-
       <!-- Sample assembly -->
       <section
         v-show="activeTab === 'sample-assembly'"
@@ -93,17 +45,68 @@
         />
       </section>
 
-      <!-- Mixed rim -->
+      <!-- Special order (Mullet, Custom Front & Rear, Mixed rim) -->
       <section
-        v-show="activeTab === 'mixed-rim'"
-        id="mixed-rim"
+        v-show="activeTab === 'special-order'"
+        id="special-order"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Mixed rim</h2>
-        <WheelsetMixedRimSection
-          :openQuickBuy="openQuickBuy"
-          :openWhatsAppChat="openWhatsAppChat"
-        />
+        <h2 class="sizecharts-section__title">Special order</h2>
+
+        <!-- Mullet wheelsets subsection -->
+        <div class="mt-4 rounded-xl bg-slate-800/70 p-4 space-y-2 wheelset-special-card">
+          <h3 class="sizecharts-section__subheading text-sky-300 font-semibold">
+            Mullet wheelsets
+          </h3>
+          <p class="sizecharts-section__intro">
+            Many mountain bikers have fallen in love with the combination of a 29-inch front wheel paired with a 27.5-inch rear
+            wheel, or a 27.5-inch front wheel with a 26-inch rear wheel. This wheel size mix is particularly well-suited for
+            off-road riding. It offers easy handling on steep descents, agile and responsive cornering, and the ability to roll
+            smoothly over rough terrain. This setup is commonly known as the "mullet", and for good reason: the front wheel
+            provides stability and reliability, while the rear wheel delivers agility and performance!
+          </p>
+          <p class="guide-section__cta-wrapper">
+            <button
+              type="button"
+              class="wheelset-inline-button"
+              @click="openQuickBuy"
+            >
+              You can use our quick customization to match
+            </button>
+          </p>
+        </div>
+
+        <!-- Custom Front & Rear Wheels subsection -->
+        <div class="mt-4 rounded-xl bg-slate-800/70 p-4 space-y-2 wheelset-special-card">
+          <h3 class="sizecharts-section__subheading text-sky-300 font-semibold">
+            Custom Front &amp; Rear Wheels
+          </h3>
+          <p class="sizecharts-section__intro">
+            We specialize in customized services, including building individual wheels tailored to your specific needs. While we only
+            showcase complete wheelsets online, single wheels can be custom-made upon request. Please contact us at
+            <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
+            for special orders or
+            <button
+              type="button"
+              class="wheelset-inline-button"
+              @click="openWhatsAppChat"
+            >
+              use our faster Instant Chat option
+            </button>
+            !
+          </p>
+        </div>
+
+        <!-- Mixed rim subsection -->
+        <div class="mt-4 rounded-xl bg-slate-800/70 p-4 space-y-2 wheelset-special-card">
+          <h3 class="sizecharts-section__subheading text-sky-300 font-semibold">
+            Mixed rim
+          </h3>
+          <WheelsetMixedRimSection
+            :openQuickBuy="openQuickBuy"
+            :openWhatsAppChat="openWhatsAppChat"
+          />
+        </div>
       </section>
 
       <!-- Appearance Logo -->
@@ -180,20 +183,16 @@ useHead({
 
 type WheelsetTabId =
   | 'safety-instructions'
-  | 'mullet-wheelsets'
-  | 'custom-front-rear-wheels'
   | 'sample-assembly'
-  | 'mixed-rim'
+  | 'special-order'
   | 'appearance-logo'
   | 'choose-freehub'
   | 'optional'
 
 const tabs: { id: WheelsetTabId; label: string }[] = [
   { id: 'safety-instructions', label: 'Safety instructions' },
-  { id: 'mullet-wheelsets', label: 'Mullet wheelsets' },
-  { id: 'custom-front-rear-wheels', label: 'Custom Front & Rear Wheels' },
   { id: 'sample-assembly', label: 'Sample assembly' },
-  { id: 'mixed-rim', label: 'Mixed rim' },
+  { id: 'special-order', label: 'Special order' },
   { id: 'appearance-logo', label: 'Appearance Logo' },
   { id: 'choose-freehub', label: 'Choose freehub' },
   { id: 'optional', label: 'Optional' },
@@ -440,6 +439,11 @@ const goToAboutAppearance = async () => {
 /* Make Mixed rim CTA text readable on dark background */
 .wheelset-section .guide-section__cta-wrapper {
   color: #e5e7eb;
+}
+
+.wheelset-special-card {
+  box-shadow:
+    4px 6px 18px rgba(0, 0, 0, 0.9);
 }
 
 @media (min-width: 768px) {
