@@ -1,5 +1,3 @@
-Test Item 
-
 Lateral Load Test        【应用我们之前的全局CSS蓝色文本小标题】 
  | Tests wheelset stability and stiffness under lateral forces. |
 Torsional Stiffness Test 【应用我们之前的全局CSS蓝色文本小标题】 
@@ -15,7 +13,7 @@ Braking Performance Test  【应用我们之前的全局CSS蓝色文本小标题
 C:\Users\P16V\Desktop\Wordpress\tanzanite-theme\nuxt-i18n\public\testreport\wheelsettestreport\tanzanite-wheelsettestroport.webm  放在下面
 查看/company/about#appearance下的视频的点击单独播放的设置，做成一致
 
-下面的内容看是否用块包起来，显眼一点，因为这个比较重要。
+下面的内容看保持 amber 边框 + 深色背景 + 黄色文字的样式。与RIMTESTREPORT下方的一致
 Disclaimer
 We pick only one sample for every test report and the results will likely vary as the rim diameters change. Please note that the differences between models in test results are specially designed by our engineers for the intended uses.
 
