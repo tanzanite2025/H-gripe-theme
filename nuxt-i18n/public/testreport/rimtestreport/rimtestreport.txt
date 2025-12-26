@@ -1,0 +1,28 @@
+## Rim Testing
+
+| Test Item (中文) | Test Item (English)       | Description |
+|------------------|---------------------------|-------------|
+| 强度测试         | Strength Test             | Evaluates rim ability to withstand static or dynamic loads. |
+| 疲劳测试         | Fatigue Test              | Simulates repeated loads over long-term riding to verify rim durability. |
+| 冲击测试         | Impact Test               | Simulates external impacts (e.g., rock strike, landing) to test rim resistance. |
+| 径向载荷测试     | Radial Load Test          | Tests rim deformation and load capacity under vertical forces. |
+
+---
+
+## Wheelset Testing
+
+| Test Item (中文) | Test Item (English)       | Description |
+|------------------|---------------------------|-------------|
+| 侧向载荷测试     | Lateral Load Test         | Tests wheelset stability and stiffness under lateral forces. |
+| 扭转刚性测试     | Torsional Stiffness Test  | Evaluates stiffness and response when transmitting torque. |
+| 制动性能测试     | Braking Performance Test  | For disc brake wheelsets, tests stability and heat resistance during braking. |
+| 环境耐候测试     | Environmental Durability Test | Simulates humidity, temperature, salt spray, and other environmental conditions. |
+| 动态平衡测试     | Dynamic Balance Test      | Tests wheelset balance and stability during high-speed rotation. |
+
+
+
+
+Disclaimer
+We pick only one sample for every test report and the results will likely vary as the rim diameters change. Please note that the differences between models in test results are specially designed by our engineers for the intended uses.
+
+All the test results of this section are based on the lab criteria of TANZANITE and are implemented at our well-established testing facilities. TANZANITE is only responsible for the test results themselves which are not set for any comparison to other brands or such regards.
