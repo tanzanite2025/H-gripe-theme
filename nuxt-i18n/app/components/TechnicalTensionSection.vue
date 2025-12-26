@@ -4,6 +4,15 @@
       Wheel Spoke Tension and Rider Weight/Usage (Workshop Standard)
     </h3>
 
+    <div class="mt-3 flex justify-center">
+      <GuideImage
+        src="/public/technical/tension/tanzanite-wheel-spoke-tension.webp"
+        alt="Diagram showing Tanzanite wheel spoke tension distribution and reference values"
+        :zoomOnClick="true"
+        caption="Reference illustration of Tanzanite wheel spoke tension and how it relates to rider weight and usage."
+      />
+    </div>
+
     <h3 class="sizecharts-section__subheading mt-2">
       <span class="text-amber-300 font-semibold">1. Effect of Rider Weight</span>
     </h3>
@@ -172,5 +181,5 @@
 </template>
 
 <script setup lang="ts">
-// no extra imports needed
+import GuideImage from '~/components/GuideImage.vue'
 </script>
