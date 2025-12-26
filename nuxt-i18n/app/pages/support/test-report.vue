@@ -32,9 +32,114 @@
       class="support-section"
     >
       <h3 class="support-section__title text-center">Wheelset Test Report</h3>
+      <p class="support-section__body mt-4 text-center">
+        This section summarises how TANZANITE wheelsets are validated in our in-house lab,
+        covering lateral load, torsional stiffness, environmental durability, dynamic balance,
+        fatigue, and braking performance tests.
+      </p>
+      <div class="mt-3 flex justify-center">
+        <div
+          class="inline-flex items-center rounded-full border border-sky-500/70 bg-sky-500/5 px-3 py-1 text-xs sm:text-sm text-sky-300"
+        >
+          <span>To learn more about wheelset shipping and assembly tests,</span>
+          <button
+            type="button"
+            class="ml-1 underline decoration-sky-400/80 underline-offset-2 hover:text-sky-200 hover:decoration-sky-200 transition-colors duration-150"
+            @click="setActiveTab('wheelset-assembly')"
+          >
+            see Wheelset Assembly.
+          </button>
+        </div>
+      </div>
+
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-6">
+        Lateral Load Test
+      </h4>
+      <p class="support-section__body">
+        Tests wheelset stability and stiffness under lateral forces.
+      </p>
+
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
+        Torsional Stiffness Test
+      </h4>
+      <p class="support-section__body">
+        Evaluates stiffness and response when transmitting torque.
+      </p>
+
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
+        Environmental Durability Test
+      </h4>
+      <p class="support-section__body">
+        Simulates humidity, temperature, salt spray, and other environmental conditions.
+      </p>
+
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
+        Dynamic Balance Test
+      </h4>
+      <p class="support-section__body">
+        Tests wheelset balance and stability during high-speed rotation.
+      </p>
+
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
+        Fatigue Test
+      </h4>
+      <p class="support-section__body">
+        Simulates repeated loads over long-term riding to verify rim durability.
+      </p>
+
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
+        Braking Performance Test
+      </h4>
+      <p class="support-section__body">
+        For V-brake and disc brake wheelsets, tests stability and heat resistance during braking.
+      </p>
+
+      <div class="mt-4 flex justify-center">
+        <div
+          class="support-video-thumbnail"
+          @click="openWheelsetVideo"
+        >
+          <img
+            class="support-video-thumbnail__image"
+            src="/testreport/wheelsettestreport/tanzanite-wheelssettestroport-video-firstpicture.webp"
+            alt="Play wheelset test report video for Tanzanite wheelsets"
+            loading="lazy"
+          />
+          <div class="support-video-thumbnail__overlay">
+            <span class="support-video-thumbnail__icon">▶</span>
+            <span class="support-video-thumbnail__label">Watch wheelset test report video</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="mt-6 rounded-lg border border-amber-300/80 bg-slate-900/80 px-4 py-3 text-sm leading-relaxed text-amber-100"
+      >
+        <h4 class="mb-1 font-semibold text-amber-300">
+          Disclaimer
+        </h4>
+        <p class="mb-2">
+          We pick only one sample for every test report and the results will likely vary as the rim diameters change.
+          Please note that the differences between models in test results are specially designed by our engineers for
+          the intended uses.
+        </p>
+        <p>
+          All the test results of this section are based on the lab criteria of TANZANITE and are implemented at our
+          well-established testing facilities. TANZANITE is only responsible for the test results themselves which are
+          not set for any comparison to other brands or such regards.
+        </p>
+      </div>
+    </section>
+
+    <!-- Wheelset Assembly -->
+    <section
+      v-show="activeTab === 'wheelset-assembly'"
+      id="wheelset-assembly"
+      class="support-section"
+    >
+      <h3 class="support-section__title text-center">Wheelset Assembly</h3>
       <p class="support-section__body text-center">
-        Wheelset Test Report content placeholder. Detailed wheelset test data and
-        downloadable reports will be added here.
+        Wheelset Assembly content placeholder. Detailed assembly guides and checklists will be added here.
       </p>
     </section>
 
@@ -72,6 +177,34 @@
         </video>
       </div>
     </div>
+
+    <div
+      v-if="showWheelsetVideo"
+      class="support-video-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="support-video-modal__backdrop" @click="showWheelsetVideo = false" />
+      <div class="support-video-modal__content">
+        <button
+          type="button"
+          class="support-video-modal__close"
+          @click="showWheelsetVideo = false"
+        >
+          ×
+        </button>
+        <video
+          class="support-video-modal__video"
+          controls
+          preload="metadata"
+        >
+          <source
+            src="/testreport/wheelsettestreport/tanzanite-wheelsettestroport.webm"
+            type="video/webm"
+          />
+        </video>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -89,18 +222,24 @@ useHead({
   title: 'Test report',
 })
 
-type TestReportTabId = 'rim-test-report' | 'wheelset-test-report'
+type TestReportTabId = 'rim-test-report' | 'wheelset-test-report' | 'wheelset-assembly'
 
 const tabs: { id: TestReportTabId; label: string }[] = [
   { id: 'rim-test-report', label: 'Rim Test Report' },
   { id: 'wheelset-test-report', label: 'Wheelset Test Report' },
+  { id: 'wheelset-assembly', label: 'Wheelset Assembly' },
 ]
 
 const activeTab = ref<TestReportTabId>('rim-test-report')
 const showSpokeHoleVideo = ref(false)
+const showWheelsetVideo = ref(false)
 
 const openSpokeHoleVideo = () => {
   showSpokeHoleVideo.value = true
+}
+
+const openWheelsetVideo = () => {
+  showWheelsetVideo.value = true
 }
 
 const setActiveTab = (id: TestReportTabId) => {
