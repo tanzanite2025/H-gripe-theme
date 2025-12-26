@@ -55,51 +55,218 @@
     </div>
 
     <!-- Test descriptions with global blue subtitles -->
-    <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-6">
-      Strength Test
-    </h4>
-    <p class="support-section__body">
-      Evaluates rim ability to withstand static or dynamic loads.
-    </p>
+    <div class="rim-test-card mt-6">
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+        Strength Test
+      </h4>
+      <p class="support-section__body">
+        <strong>Purpose:</strong>
+        Verify the rim's ability to withstand static and dynamic loads, ensuring no structural failure occurs during
+        riding.
+      </p>
+      <p class="support-section__body mt-2">
+        <strong>Test Method (referencing ISO 4210-7:2023):</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>Fix the rim or complete wheelset in the testing fixture.</li>
+        <li>
+          Apply a vertical static load to the rim, typically in the range of 600-1000 N (approximately 60-100 kgf),
+          and maintain for a specified duration (e.g., 1 minute).
+        </li>
+        <li>
+          Conduct dynamic cyclic loading, for example applying alternating forces of 300-400 N over 100,000 cycles to
+          simulate long-term riding conditions.
+        </li>
+      </ul>
+      <p class="support-section__body mt-2">
+        <strong>Criteria for Evaluation:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>The rim must not exhibit cracks, fractures, or permanent structural failure.</li>
+        <li>
+          Permissible deformation must remain within the specified limits (e.g., radial deviation ≤ 1.0 mm, lateral
+          deviation ≤ 1.5 mm).
+        </li>
+        <li>After testing, the rim must retain full functional integrity.</li>
+      </ul>
+    </div>
 
-    <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
-      Impact Test
-    </h4>
-    <p class="support-section__body">
-      Simulates external impacts (for example rock strikes or landings) to test rim resistance.
-    </p>
+    <div class="rim-test-card mt-4">
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+        Impact Test
+      </h4>
+      <p class="support-section__body">
+        <strong>Purpose:</strong>
+        Simulates external impacts (e.g., rock strikes or landings) to assess rim resistance and structural integrity.
+      </p>
+      <p class="support-section__body mt-2">
+        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>Secure the rim or complete wheelset in the testing fixture.</li>
+        <li>Drop a standardized impact body (e.g., a 22.5 kg steel mass) from a height of 300 mm onto the rim.</li>
+        <li>
+          Position the impact point between spoke holes or at a representative weak section of the rim to replicate
+          real-world riding impacts.
+        </li>
+      </ul>
+      <p class="support-section__body mt-2">
+        <strong>Evaluation Criteria:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>The rim must not exhibit cracks, fractures, or severe deformation.</li>
+        <li>Local dents or scratches must remain within specified limits (e.g., dent depth ≤ 2.0 mm).</li>
+        <li>
+          After impact, the rim must retain full functionality, ensuring safe tire mounting and riding.
+        </li>
+      </ul>
+    </div>
 
-    <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
-      Radial Load Test
-    </h4>
-    <p class="support-section__body">
-      Tests rim deformation and load capacity under vertical forces.
-    </p>
+    <div class="rim-test-card mt-4">
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+        Radial Load Test
+      </h4>
+      <p class="support-section__body">
+        <strong>Purpose:</strong>
+        Tests rim deformation and load capacity under vertical forces to ensure safety and durability.
+      </p>
+      <p class="support-section__body mt-2">
+        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>Secure the rim or complete wheelset in the testing fixture.</li>
+        <li>
+          Apply a vertical static load, typically 1000-1200 N (approximately 100-120 kgf), and maintain for a specified
+          duration (e.g., 1 minute).
+        </li>
+        <li>
+          Conduct dynamic cyclic loading, for example applying alternating forces of 600-800 N over 100,000 cycles to
+          simulate long-term vertical stresses during riding.
+        </li>
+      </ul>
+      <p class="support-section__body mt-2">
+        <strong>Evaluation Criteria:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>The rim must not exhibit cracks, fractures, or permanent structural failure.</li>
+        <li>Radial deformation must remain within specified limits (e.g., radial deviation ≤ 1.0 mm).</li>
+        <li>
+          After testing, the rim must retain full functionality, ensuring safe tire mounting and riding performance.
+        </li>
+      </ul>
+    </div>
 
-    <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
-      Hole Tension Test
-    </h4>
-    <p class="support-section__body">
-      Evaluates rim ability to withstand spoke-hole tension under static and dynamic loads.
-    </p>
+    <div class="rim-test-card mt-4">
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+        Hole Tension Test
+      </h4>
+      <p class="support-section__body">
+        <strong>Purpose:</strong>
+        Evaluates rim ability to withstand spoke-hole tension under static and dynamic loads, ensuring durability and
+        safety of spoke interfaces.
+      </p>
+      <p class="support-section__body mt-2">
+        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>
+          Secure the rim in the testing fixture and apply standardized bolts or tensile devices at spoke-hole
+          positions.
+        </li>
+        <li>
+          Apply a static tensile load to each spoke hole, typically 1000-1200 N (approximately 100-120 kgf), and
+          maintain for a specified duration (e.g., 1 minute).
+        </li>
+        <li>
+          Conduct dynamic cyclic tensile loading, for example applying alternating forces of 600-800 N over 100,000
+          cycles to simulate long-term variations in spoke tension during riding.
+        </li>
+      </ul>
+      <p class="support-section__body mt-2">
+        <strong>Evaluation Criteria:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>No cracks, fractures, or permanent structural failures should occur around spoke holes.</li>
+        <li>Local deformation must remain within specified limits (e.g., hole diameter change ≤ 0.2 mm).</li>
+        <li>
+          After testing, the rim must retain full functionality, ensuring safe spoke installation and use.
+        </li>
+      </ul>
+    </div>
 
-    <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
-      Rim Cutting Pieces Test
-    </h4>
-    <p class="support-section__body">
-      The rim cutting pieces test involves analyzing cross-sections of the rim by cutting a portion to evaluate
-      internal and external features. This inspection focuses on identifying any burrs, irregularities, or deviations
-      in dimensional specifications to ensure the rim meets our stringent quality standards.
-    </p>
+    <div class="rim-test-card mt-4">
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+        Rim Cutting Pieces Test
+      </h4>
+      <p class="support-section__body">
+        <strong>Purpose:</strong>
+        Analyze rim cross-sections by cutting a portion to evaluate both internal and external features, ensuring
+        compliance with dimensional and quality standards.
+      </p>
+      <p class="support-section__body mt-2">
+        <strong>Test Method:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>
+          Cut representative sections of the rim at critical points (e.g., spoke hole area, joint section, braking
+          surface).
+        </li>
+        <li>Examine the cross-sections under magnification or with precision measuring tools.</li>
+        <li>
+          Identify any burrs, sharp edges, irregularities, or deviations in wall thickness, material distribution, or
+          dimensional specifications.
+        </li>
+        <li>Compare measurements against design tolerances (e.g., wall thickness ±0.1 mm, hole diameter ±0.05 mm).</li>
+      </ul>
+      <p class="support-section__body mt-2">
+        <strong>Evaluation Criteria:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>No burrs or sharp edges that could compromise spoke or tire safety.</li>
+        <li>Dimensional deviations must remain within specified tolerances.</li>
+        <li>Internal and external surfaces must be smooth and consistent, with no voids, cracks, or inclusions.</li>
+        <li>
+          Rim sections must demonstrate uniformity and compliance with quality standards before approval for mass
+          production.
+        </li>
+      </ul>
+    </div>
 
-    <h4 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
-      X-ray Flatness Inspection
-    </h4>
-    <p class="support-section__body">
-      Uses high-resolution X-ray imaging to assess the internal flatness and structural uniformity of the rim. This
-      non-destructive test detects internal inconsistencies, warping, or voids that may compromise performance or
-      safety.
-    </p>
+    <div class="rim-test-card mt-4">
+      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+        X-ray Flatness Inspection
+      </h4>
+      <p class="support-section__body">
+        <strong>Purpose:</strong>
+        Assess the internal flatness and structural uniformity of the rim using high-resolution X-ray imaging. This
+        non-destructive test ensures that hidden defects do not compromise performance or safety.
+      </p>
+      <p class="support-section__body mt-2">
+        <strong>Test Method:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>Place the rim in a high-resolution X-ray inspection system.</li>
+        <li>Capture cross-sectional and full-profile images of the rim to evaluate internal geometry.</li>
+        <li>
+          Analyze images for inconsistencies such as warping, voids, inclusions, or uneven material distribution.
+        </li>
+        <li>
+          Compare results against design specifications (e.g., flatness tolerance ≤ 0.2 mm, uniform wall thickness
+          within ± 0.1 mm).
+        </li>
+      </ul>
+      <p class="support-section__body mt-2">
+        <strong>Evaluation Criteria:</strong>
+      </p>
+      <ul class="sizecharts-section__list support-section__body">
+        <li>No internal voids, cracks, or inclusions that could weaken the rim structure.</li>
+        <li>Flatness deviations must remain within specified tolerances.</li>
+        <li>Material distribution must be uniform, ensuring consistent strength and durability.</li>
+        <li>
+          Rim must pass inspection without requiring destructive sampling, confirming production quality.
+        </li>
+      </ul>
+    </div>
 
     <!-- Spoke-hole strength test video thumbnail (positioned above disclaimer) -->
     <div class="mt-4 flex justify-center">
@@ -162,6 +329,13 @@ const { openSpokeHoleVideo } = defineProps<{
   font-size: 0.9rem;
   line-height: 1.6;
   color: rgba(148, 163, 184, 0.9);
+}
+
+.rim-test-card {
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 6px 10px 16px rgba(0, 0, 0, 0.9);
 }
 
 .support-video-thumbnail {
