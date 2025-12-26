@@ -1,0 +1,22 @@
+Test Item 
+
+Lateral Load Test        【应用我们之前的全局CSS蓝色文本小标题】 
+ | Tests wheelset stability and stiffness under lateral forces. |
+Torsional Stiffness Test 【应用我们之前的全局CSS蓝色文本小标题】 
+ | Evaluates stiffness and response when transmitting torque. |
+Environmental Durability Test【应用我们之前的全局CSS蓝色文本小标题】 
+ | Simulates humidity, temperature, salt spray, and other environmental conditions. |
+Dynamic Balance Test     【应用我们之前的全局CSS蓝色文本小标题】 
+ | Tests wheelset balance and stability during high-speed rotation. |
+Fatigue Test   【应用我们之前的全局CSS蓝色文本小标题】            
+ | Simulates repeated loads over long-term riding to verify rim durability. |
+Braking Performance Test  【应用我们之前的全局CSS蓝色文本小标题】 
+| For disc brake wheelsets, tests stability and heat resistance during braking. |
+C:\Users\P16V\Desktop\Wordpress\tanzanite-theme\nuxt-i18n\public\testreport\wheelsettestreport\tanzanite-wheelsettestroport.webm  放在下面
+查看/company/about#appearance下的视频的点击单独播放的设置，做成一致
+
+下面的内容看是否用块包起来，显眼一点，因为这个比较重要。
+Disclaimer
+We pick only one sample for every test report and the results will likely vary as the rim diameters change. Please note that the differences between models in test results are specially designed by our engineers for the intended uses.
+
+All the test results of this section are based on the lab criteria of TANZANITE and are implemented at our well-established testing facilities. TANZANITE is only responsible for the test results themselves which are not set for any comparison to other brands or such regards.

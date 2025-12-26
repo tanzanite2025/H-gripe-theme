@@ -129,6 +129,18 @@
         <WheelsetChooseFreehubSection />
       </section>
 
+      <!-- Wheel Components -->
+      <section
+        v-show="activeTab === 'wheel-components'"
+        id="wheel-components"
+        class="wheelset-section sizecharts-section"
+      >
+        <h2 class="sizecharts-section__title">Wheel Components</h2>
+        <p class="sizecharts-section__intro">
+          Detailed guidance on rims, hubs, spokes, and other wheel components will be added here.
+        </p>
+      </section>
+
       <!-- Optional -->
       <section
         v-show="activeTab === 'optional'"
@@ -187,6 +199,7 @@ type WheelsetTabId =
   | 'special-order'
   | 'appearance-logo'
   | 'choose-freehub'
+  | 'wheel-components'
   | 'optional'
 
 const tabs: { id: WheelsetTabId; label: string }[] = [
@@ -195,6 +208,7 @@ const tabs: { id: WheelsetTabId; label: string }[] = [
   { id: 'special-order', label: 'Special order' },
   { id: 'appearance-logo', label: 'Appearance Logo' },
   { id: 'choose-freehub', label: 'Choose freehub' },
+  { id: 'wheel-components', label: 'Wheel Components' },
   { id: 'optional', label: 'Optional' },
 ]
 
