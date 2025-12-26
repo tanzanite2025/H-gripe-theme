@@ -100,6 +100,10 @@
         class="wheelset-section sizecharts-section"
       >
         <h2 class="sizecharts-section__title">Mixed rim</h2>
+        <WheelsetMixedRimSection
+          :openQuickBuy="openQuickBuy"
+          :openWhatsAppChat="openWhatsAppChat"
+        />
       </section>
 
       <!-- Appearance Logo -->
@@ -161,6 +165,7 @@ import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstru
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
 import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
 import WheelsetChooseFreehubSection from '~/components/WheelsetChooseFreehubSection.vue'
+import WheelsetMixedRimSection from '~/components/WheelsetMixedRimSection.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
@@ -430,6 +435,11 @@ const goToAboutAppearance = async () => {
 
 .wheelset-safety-footer {
   margin-top: 0.85rem;
+}
+
+/* Make Mixed rim CTA text readable on dark background */
+.wheelset-section .guide-section__cta-wrapper {
+  color: #e5e7eb;
 }
 
 @media (min-width: 768px) {
