@@ -431,6 +431,7 @@
                 @shareOrder="shareOrderToChat"
                 @openAuth="openMemberAuth"
                 @loginRequest="handleWarrantyLoginRequest"
+                @openTestReport="handleOpenTestReport"
               />
             </div>
           </div>
@@ -524,6 +525,11 @@
       @select="shareProductToChat"
     />
 
+    <TestReportDrawer
+      v-model="testReportDrawerVisible"
+      :agent="selectedAgent"
+    />
+
     <WishlistDrawer
       v-model="wishlistDrawerVisible"
       variant="bottom"
@@ -587,6 +593,7 @@ import ChatWelcomeAgentSelector from '~/components/ChatWelcomeAgentSelector.vue'
 import WarrantyCheckPanel from '~/components/WarrantyCheckPanel.vue'
 import AuthModal from '~/components/AuthModal.vue'
 import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
+import TestReportDrawer from '~/components/whatsapp/TestReportDrawer.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -615,8 +622,11 @@ const {
 } = useMembership()
 const config = useRuntimeConfig()
 
-// Desktop-only搜索占位
-const desktopSearchQuery = ref('')
+// Test Report Drawer
+const testReportDrawerVisible = ref(false)
+const handleOpenTestReport = () => {
+  testReportDrawerVisible.value = true
+}
 
 // 客服模式状态
 const agentMode = computed(() => isAgent.value)
@@ -729,6 +739,8 @@ watch([showWelcomeScreen, welcomeAgents], () => {
     selectedAgent.value = welcomeAgents.value[1] || welcomeAgents.value[0]
   }
 }, { immediate: true })
+// Desktop-only搜索占位
+const desktopSearchQuery = ref('')
 
 const matchingAgents = computed<any[]>(() => {
   const query = desktopSearchQuery.value.trim().toLowerCase()
@@ -756,7 +768,7 @@ const emailSettings = ref({
   afterSalesEmail: ''
 })
 
-type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member'
+type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member' | 'test'
 interface ChatRoomState {
   messages: any[]
   activeTab: ChatTab
@@ -806,10 +818,26 @@ const messages = computed<any[]>(
   }
 )
 
-const activeTab = computed<ChatTab>({
+const activeTab = computed({
   get: () => currentChatRoom.value?.activeTab || 'chat',
-  set: (val) => {
-    if (currentChatRoom.value) currentChatRoom.value.activeTab = val
+  set: (val: ChatTab) => {
+    if (currentChatRoom.value) {
+      currentChatRoom.value.activeTab = val
+    }
+  }
+})
+
+// 监听弹窗关闭，自动切回聊天 Tab
+watch(testReportDrawerVisible, (visible) => {
+  if (!visible && activeTab.value === 'test') {
+    activeTab.value = 'chat'
+  }
+})
+
+// 监听 Tab 切换，如果切走则关闭弹窗
+watch(activeTab, (newTab) => {
+  if (newTab !== 'test' && testReportDrawerVisible.value) {
+    testReportDrawerVisible.value = false
   }
 })
 
