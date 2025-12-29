@@ -1,6 +1,6 @@
 <template>
   <!-- Tire width -> rim internal width helper -->
-  <div class="mt-5 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
+  <div class="mt-5 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)] text-center">
     <h3 class="mb-2 text-sm font-semibold text-slate-100">
       Tire width to rim internal width helper
     </h3>
@@ -10,7 +10,7 @@
       hooked shifts the suggested range. Always cross-check with brand charts and the specific
       recommendations from your rim and tire manufacturers.
     </p>
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end justify-center items-center">
       <div class="sm:w-40">
         <label class="block text-xs font-medium text-slate-300" for="tire-width-mm">
           Tire width (mm)
@@ -56,7 +56,10 @@
           </button>
         </div>
       </div>
+    </div>
 
+    <!-- Suggestion / Hint Text (Moved outside flex container to ensure new line) -->
+    <div class="mt-3">
       <p
         v-if="!tireRimSuggestion"
         class="text-xs text-slate-500"
@@ -79,11 +82,11 @@
       </div>
     </div>
 
-    <div class="mt-4 flex justify-start">
+    <div v-if="!hideSearchButton" class="mt-4 flex justify-center">
       <button
         type="button"
         class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
-        @click="openShopSearch"
+        @click="() => openShopSearch()"
       >
         Search for suitable width rims
       </button>
@@ -101,6 +104,12 @@ const tireWidthInput = ref<string>('')
 const rimType = ref<RimType>('hooked')
 
 const { open: openShopSearch } = useShopSearchSheet()
+
+const props = withDefaults(defineProps<{
+  hideSearchButton?: boolean
+}>(), {
+  hideSearchButton: false
+})
 
 interface TireRimSuggestion {
   minRim: number

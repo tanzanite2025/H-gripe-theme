@@ -768,7 +768,7 @@ const emailSettings = ref({
   afterSalesEmail: ''
 })
 
-type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member' | 'test'
+type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member' | 'test' | 'tire'
 interface ChatRoomState {
   messages: any[]
   activeTab: ChatTab

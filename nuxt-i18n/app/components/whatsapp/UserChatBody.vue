@@ -76,6 +76,11 @@
           @open-auth="$emit('openAuth', $event)"
         />
 
+        <!-- Tire Tab -->
+        <div v-else-if="activeTab === 'tire'" class="h-full overflow-y-auto p-4 custom-scrollbar">
+          <TireRimHelper :hide-search-button="true" />
+        </div>
+
         <!-- FAQ Tab -->
         <FaqTab v-else-if="activeTab === 'faq'" />
 
@@ -98,6 +103,7 @@ import OrderTab from './OrderTab.vue'
 import MemberTab from './MemberTab.vue'
 import FaqTab from './FaqTab.vue'
 import WarrantyTab from './WarrantyTab.vue'
+import TireRimHelper from '~/components/TireRimHelper.vue'
 
 const props = defineProps<{
   activeTab: string
@@ -155,6 +161,7 @@ const tabs = [
   { id: 'share', label: 'Products' },
   { id: 'orders', label: 'Orders' },
   { id: 'test', label: 'Test' },
+  { id: 'tire', label: 'Tire' },
   { id: 'faq', label: 'FAQ' },
   { id: 'warranty', label: 'Warranty' },
   { id: 'member', label: 'Member' },
