@@ -3,6 +3,13 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "c8c318e30296096c",
+      "timestamp": "2025-12-29T16:57:00.956Z",
+      "description": "✅ 12 个任务完成: **阶段一：分析**, 分析 `components/SupportTopNav.vue` 以确定导航项的\"单一事实来源\"。...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "91b2b4f9f7ec00b9",
       "timestamp": "2025-12-29T16:43:14.027Z",
       "description": "✅ 3 个任务完成: **Phase 8: Company About Page (User Request)**, **Refactor `about.vue`** (`/company/about`) to use `nav.css`...",

@@ -1,5 +1,10 @@
 # 🛡️ Global Antigravity Rules
 
+> 🛑 **CRITICAL LANGUAGE RULE (关键原则)**:
+> 所有生成的 Artifacts文档 (.md) 、Commit Message 以及用户对话 **必须强制使用中文**。
+> 严禁生成英文文档（代码片段除外）。
+> Before saving any .md file, ASK YOURSELF: "Is this written in Chinese?"
+
 > 此文件定义 Gemini Code Assist 的全局行为约束。AI 必须严格对齐 Antigravity 插件的防护逻辑。
 
 ## 🔒 双层安全保障体系
