@@ -12,7 +12,7 @@
           <button
             v-for="tab in tabs"
             :key="tab.id"
-            @click="$emit('update:activeTab', tab.id)"
+            @click="handleTabClick(tab.id)"
             class="flex-1 md:flex-none h-10 md:h-8 md:px-4 rounded-full text-[11px] md:text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center"
             :class="activeTab === tab.id
               ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
@@ -127,7 +127,7 @@ const props = defineProps<{
   isLoggedInForWarranty: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:activeTab': [value: string]
   // Chat Emits
   'update:newMessage': [value: string]
@@ -147,15 +147,26 @@ defineEmits<{
   'openAuth': [mode: 'login' | 'register']
   // Warranty Emits
   'loginRequest': []
+  // Test Report Emits
+  'openTestReport': []
 }>()
 
 const tabs = [
   { id: 'share', label: 'Products' },
   { id: 'orders', label: 'Orders' },
+  { id: 'test', label: 'Test' },
   { id: 'faq', label: 'FAQ' },
   { id: 'warranty', label: 'Warranty' },
   { id: 'member', label: 'Member' },
 ]
+
+const handleTabClick = (id: string) => {
+  emit('update:activeTab', id)
+  if (id === 'test') {
+    emit('openTestReport')
+  }
+}
+
 
 const isDesktop = ref(false)
 const checkDesktop = () => {
