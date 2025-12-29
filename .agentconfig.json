@@ -1,0 +1,57 @@
+{
+  "security": {
+    "secureMode": true,
+    "reviewPolicy": "RequestReview",
+    "terminalExecution": "RequestReview",
+    "scopeLocking": true,
+    "maxCommandHistory": 100
+  },
+  "terminal": {
+    "allowList": [
+      "npm run lint",
+      "git status",
+      "ls",
+      "pwd"
+    ],
+    "denyList": [
+      "rm -rf",
+      "git reset --hard"
+    ]
+  },
+  "fileAccess": {
+    "gitignoreAccess": false,
+    "nonWorkspaceAccess": false,
+    "autoOpenEditedFiles": true
+  },
+  "artifacts": {
+    "language": "zh-CN",
+    "structure": [
+      "IMPLEMENTATION PLAN",
+      "TASK",
+      "WALKTHROUGH"
+    ],
+    "batchMode": {
+      "enabled": true,
+      "threshold": 5,
+      "categories": [
+        "lint",
+        "format",
+        "minor-refactor"
+      ]
+    }
+  },
+  "quickScripts": [
+    {
+      "label": "Build",
+      "command": "npm run build"
+    },
+    {
+      "label": "Test",
+      "command": "npm test"
+    },
+    {
+      "label": "Check",
+      "command": "npm run lint"
+    }
+  ]
+}

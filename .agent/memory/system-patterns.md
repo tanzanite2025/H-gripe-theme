@@ -1,0 +1,20 @@
+# System Patterns (系统模式)
+
+## 🏗️ 核心架构与工作流
+
+Antigravity 插件要求严格遵循 "Planning -> Execution -> Verification" 的线性工作流。
+
+1. **Planning (规划)**: 所有变更始于 `task.md` 和 `implementation_plan.md`。
+2. **Execution (执行)**: 严格按计划执行，不得随意偏离。
+3. **Verification (验证)**: 输出 `walkthrough.md` 作为完工证明。
+
+## 🧩 系统组件关键约定
+
+- **Artifacts**: 所有生成的文档 (.md) 存放在 `.agent/` 或项目根目录。
+- **Language**: 所有用户面文档必须使用 **中文**。
+- **Safety**: 始终假设插件拦截可能失效，主动进行风险评估。
+
+## 🔄 状态同步
+
+- 每次 `task_boundary` 调用更新任务状态。
+- 保持 `task.md` 与实际进度同步。

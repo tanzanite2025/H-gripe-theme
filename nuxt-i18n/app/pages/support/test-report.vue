@@ -3,13 +3,13 @@
     <h1 class="support-page__title support-page__title--sr-only">Test report</h1>
 
     <!-- Tabs header -->
-    <div class="support-tabs" role="tablist">
+    <div class="nav-pill-tabs" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
-        class="support-tabs__item"
-        :class="{ 'support-tabs__item--active': activeTab === tab.id }"
+        class="nav-pill-item"
+        :class="{ 'nav-pill-item--active': activeTab === tab.id }"
         @click="setActiveTab(tab.id)"
       >
         {{ tab.label }}
@@ -230,36 +230,7 @@ watch(
 }
 
 /* Tabs – 结构参考 /guides/wheelset-buyers */
-.support-tabs {
-  display: flex;
-  overflow-x: auto;
-  gap: 12px;
-  padding: 4px 0;
-  margin: 0 0 1rem;
-  justify-content: center;
-}
-
-.support-tabs__item {
-  flex-shrink: 0;
-  border: none;
-  border-radius: 9999px;
-  padding: 8px 18px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #ffffff;
-  background: rgba(31, 41, 55, 0.9);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-
-.support-tabs__item--active {
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-  color: #000000;
-  border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
-}
+/* .support-tabs styles removed in favor of global .nav-pill-tabs */
 
 .support-video-thumbnail {
   margin-top: 0.75rem;

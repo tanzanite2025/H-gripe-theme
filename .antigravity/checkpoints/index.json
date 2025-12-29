@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "maxCheckpoints": 20,
+  "checkpoints": [
+    {
+      "id": "91b2b4f9f7ec00b9",
+      "timestamp": "2025-12-29T16:43:14.027Z",
+      "description": "✅ 3 个任务完成: **Phase 8: Company About Page (User Request)**, **Refactor `about.vue`** (`/company/about`) to use `nav.css`...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "852923bc7dc39c3b",
+      "timestamp": "2025-12-29T16:41:40.563Z",
+      "description": "✅ 4 个任务完成: **Phase 7: Final Sweep (Additional Pages)**, **Refactor `wheelset-buyers.vue`** (`/guides/wheelset-buyers`)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "0deac16c14eedd1e",
+      "timestamp": "2025-12-29T16:39:53.834Z",
+      "description": "✅ 任务完成: **Phase 6: Technical Guide Unification**",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "cc2c0766a9ba56cc",
+      "timestamp": "2025-12-29T16:38:28.675Z",
+      "description": "✅ 3 个任务完成: **Phase 6: Technical Guide Unification (Added)**, **Refactor `technical.vue` to use global `nav.css`**...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "844c4a79d5551fe9",
+      "timestamp": "2025-12-29T16:36:27.062Z",
+      "description": "✅ 3 个任务完成: **Phase 5: Investigation & Unification**, **Refactor `sizecharts.vue` to use global `nav.css` (Option A)**...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "80aabc247774993e",
+      "timestamp": "2025-12-29T16:35:57.663Z",
+      "description": "✅ 7 个任务完成: **Phase 4: Cleanup**, Remove redundant styles from `ProductsTopNav.vue`...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "7aac8d252bc11018",
+      "timestamp": "2025-12-29T16:33:21.780Z",
+      "description": "✅ 3 个任务完成: **Phase 3: Verification**, Verify visual consistency for each component...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "9035f0172606051b",
+      "timestamp": "2025-12-29T16:25:37.283Z",
+      "description": "✅ 8 个任务完成: **Phase 1: Preparation (Safe Mode)**, Register new CSS file in `nuxt.config.ts`...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "bfd63ec62e7f5ca4",
+      "timestamp": "2025-12-29T16:23:55.480Z",
+      "description": "✅ 任务完成: Create `app/assets/css/components/nav.css` with new component classes",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "b31d6e3669f0dccc",
+      "timestamp": "2025-12-29T16:16:37.477Z",
+      "description": "✅ 6 个任务完成: **Phase 4: Style Consistency Analysis**, Inspect properties in `ProductsTopNav.vue` vs `SupportTopNav.vue`...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "15384cb51788034b",
+      "timestamp": "2025-12-29T16:04:03.161Z",
+      "description": "✅ 2 个任务完成: **Phase 3: Reporting**, Summarize findings",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "cb9fbebcf880561f",
+      "timestamp": "2025-12-29T16:03:25.074Z",
+      "description": "✅ 8 个任务完成: **Phase 1: Knowledge Acquisition**, Read `NAVIGATION-CONTEXT-MAPPING.md`...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "8247062ef234b2ca",
+      "timestamp": "2025-12-29T15:51:31.612Z",
+      "description": "✅ 11 个任务完成: **阶段一：规划与任务拆解**, 等待用户确认规划...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "0449d26cffbadb04",
+      "timestamp": "2025-12-29T15:46:11.713Z",
+      "description": "✅ 3 个任务完成: 分析当前目录结构, 创建 `task.md` (本文件)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    }
+  ]
+}
