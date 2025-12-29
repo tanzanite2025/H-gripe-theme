@@ -3,6 +3,20 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "10856ab13a2b15b7",
+      "timestamp": "2025-12-29T18:45:00.405Z",
+      "description": "✅ 任务完成: 隐藏聊天组件中的 Tire Search 按钮 (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "58445a8dfb963681",
+      "timestamp": "2025-12-29T18:40:50.965Z",
+      "description": "✅ 任务完成: 集成 `TireRimHelper` 到聊天组件 (新增 TIRE Tab) (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "b631420bc09424ee",
       "timestamp": "2025-12-29T18:32:02.586Z",
       "description": "✅ 任务完成: 修复 Quick Action Menu 弹窗被聊天窗口遮挡的问题 (Z-Index) (已完成)",
@@ -125,20 +139,6 @@
       "id": "7aac8d252bc11018",
       "timestamp": "2025-12-29T16:33:21.780Z",
       "description": "✅ 3 个任务完成: **Phase 3: Verification**, Verify visual consistency for each component...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "9035f0172606051b",
-      "timestamp": "2025-12-29T16:25:37.283Z",
-      "description": "✅ 8 个任务完成: **Phase 1: Preparation (Safe Mode)**, Register new CSS file in `nuxt.config.ts`...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "bfd63ec62e7f5ca4",
-      "timestamp": "2025-12-29T16:23:55.480Z",
-      "description": "✅ 任务完成: Create `app/assets/css/components/nav.css` with new component classes",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }
