@@ -3,13 +3,13 @@
 
     <h1 class="company-page__title company-page__title--sr-only">About us</h1>
 
-    <div class="company-tabs" role="tablist">
+    <div class="nav-pill-tabs" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
-        class="company-tabs__item"
-        :class="{ 'company-tabs__item--active': activeTab === tab.id }"
+        class="nav-pill-item"
+        :class="{ 'nav-pill-item--active': activeTab === tab.id }"
         @click="setActiveTab(tab.id)"
       >
         {{ tab.label }}
@@ -702,54 +702,7 @@ useHead({
   color: rgba(148, 163, 184, 0.9);
 }
 
-.company-tabs {
-  display: flex;
-  overflow-x: auto;
-  gap: 12px;
-  padding: 4px 16px;
-  margin: 0 -16px 1rem;
-  max-width: calc(100% + 32px);
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  touch-action: pan-x;
-}
-
-.company-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.company-tabs__item {
-  flex-shrink: 0;
-  border: none;
-  border-radius: 9999px;
-  padding: 8px 18px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #ffffff;
-  background: rgba(31, 41, 55, 0.9);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  backdrop-filter: blur(4px);
-  box-shadow: 6px 8px 18px -12px rgba(0, 0, 0, 0.85);
-}
-
-.company-tabs__item:active {
-  transform: scale(0.96);
-}
-
-.company-tabs__item:hover {
-  background: rgba(51, 65, 85, 0.95);
-  color: #ffffff;
-}
-
-.company-tabs__item--active {
-  background: #ffffff;
-  color: #0f172a;
-  border: none;
-  font-weight: 600;
-  box-shadow: 8px 10px 22px -10px rgba(0, 0, 0, 0.9);
-}
+/* .company-tabs styles removed in favor of global .nav-pill-tabs */
 
 .company-section {
   margin-top: 0;

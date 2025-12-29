@@ -247,6 +247,7 @@ export default defineNuxtConfig({
   css: [
     '~/assets/css/tailwind.css',
     '~/assets/css/guide-sections.css',
+    '~/assets/css/components/nav.css',
   ],
 
   postcss: {

@@ -1,12 +1,12 @@
 <template>
   <div class="membership-tabs" :class="{ 'membership-tabs--modal': isModal, 'membership-tabs--sticky': isModal }">
-    <div class="company-tabs" role="tablist">
+    <div class="nav-pill-tabs" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
-        class="company-tabs__item"
-        :class="{ 'company-tabs__item--active': activeTab === tab.id }"
+        class="nav-pill-item"
+        :class="{ 'nav-pill-item--active': activeTab === tab.id }"
         @click="setActiveTab(tab.id)"
       >
         {{ $t(tab.labelKey, tab.fallback) }}
@@ -362,76 +362,12 @@ onMounted(() => {
    box-shadow: 8px 8px 22px rgba(0, 0, 0, 0.92);
  }
 
- .company-tabs {
-   display: flex;
-   overflow-x: auto;
-   gap: 12px;
-   padding: 4px 16px;
-   margin: 0 -16px 1rem;
-   max-width: calc(100% + 32px);
-   -webkit-overflow-scrolling: touch;
-   scrollbar-width: none;
-   touch-action: pan-x;
- }
-
  .membership-tabs--sticky .company-tabs {
    padding: 10px 56px 10px 16px;
    margin: 0 0 1rem;
    max-width: 100%;
  }
-
- .company-tabs::-webkit-scrollbar {
-   display: none;
- }
-
- .company-tabs__item {
-   flex-shrink: 0;
-   border: none;
-   border-radius: 9999px;
-   padding: 8px 18px;
-   font-size: 0.85rem;
-   font-weight: 500;
-   color: #ffffff;
-   background: rgba(31, 41, 55, 0.9);
-   cursor: pointer;
-   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-   white-space: nowrap;
-   backdrop-filter: blur(4px);
-   box-shadow: 6px 8px 18px -12px rgba(0, 0, 0, 0.85);
- }
-
- .company-tabs__item:active {
-   transform: scale(0.96);
- }
-
- .company-tabs__item:hover {
-   background: rgba(51, 65, 85, 0.95);
-   color: #ffffff;
- }
-
- .company-tabs__item--active {
-   background: #ffffff;
-   color: #0f172a;
-   border: none;
-   font-weight: 600;
-   box-shadow: 8px 10px 22px -10px rgba(0, 0, 0, 0.9);
- }
-
- @media (min-width: 768px) {
-   .company-tabs {
-     flex-wrap: wrap;
-     justify-content: center;
-     margin: 0 0 1rem;
-     padding: 4px 0;
-     max-width: 100%;
-   }
- }
-
- @media (max-width: 768px) {
-   .company-tabs {
-     justify-content: flex-start;
-   }
- }
+ /* Style clean up: .company-tabs and .company-tabs__item definitions are now in global nav.css */
 
  /* 保修查询卡片 */
  .warranty-card {
