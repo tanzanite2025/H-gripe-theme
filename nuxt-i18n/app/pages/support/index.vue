@@ -34,51 +34,12 @@
 
 <script setup lang="ts">
 import { useLocalePath } from '#imports'
+import { supportNavItems } from '~/utils/supportNav'
 
 const localePath = useLocalePath()
 
-const sections = [
-  {
-    to: '/support/faqs',
-    icon: 'Q',
-    title: "All FAQ'S",
-    description:
-      'Browse common questions and quick answers about orders, products, and service.',
-    cta: 'Browse FAQs',
-  },
-  {
-    to: '/support/payment',
-    icon: 'P',
-    title: 'Payment',
-    description:
-      'Available payment methods, processing times, and basic checkout tips.',
-    cta: 'View payment info',
-  },
-  {
-    to: '/support/after-sales',
-    icon: 'A',
-    title: 'After sales',
-    description:
-      'Returns, exchanges, repairs, and other after-sales support options.',
-    cta: 'View after-sales options',
-  },
-  {
-    to: '/support/warranty',
-    icon: 'W',
-    title: 'Warranty',
-    description:
-      'Overview of Tanzanite warranty coverage, terms, and claim process.',
-    cta: 'Read warranty details',
-  },
-  {
-    to: '/support/product-feedback',
-    icon: 'F',
-    title: 'Product Feedback',
-    description:
-      'Share feedback about products and your riding experience with Tanzanite.',
-    cta: 'Give feedback',
-  },
-]
+// Use the shared configuration as the source for the cards
+const sections = supportNavItems
 
 definePageMeta({
   layout: 'support',

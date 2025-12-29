@@ -23,3 +23,8 @@ Antigravity 插件要求严格遵循 "Planning -> Execution -> Verification" 的
 
 - 每次 `task_boundary` 调用更新任务状态。
 - 保持 `task.md` 与实际进度同步。
+
+## 📝 Artifact Generation Protocol
+
+- **Language**: 🇨🇳 CHINESE (Mandatory).
+- **Self-Correction**: If you find yourself writing English headers (e.g., # Implementation Plan), STOP and translate immediately.
