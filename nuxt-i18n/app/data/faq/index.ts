@@ -18,6 +18,7 @@ import { supportTestReportFaq } from './pages/support-test-report'
 import { companyMembershipFaq } from './pages/company-membership'
 import { guidesWheelsetBuyersFaq } from './pages/guides-wheelset-buyers'
 import { guidesTireguidesFaq } from './pages/guides-tireguides'
+import { productsSpokeCalculatorFaq } from './pages/products-spoke-calculator'
 
 /**
  * FAQ Registry - maps pageId to FAQ data
@@ -33,6 +34,7 @@ export const faqRegistry: FaqRegistry = {
   'company-membership': companyMembershipFaq,
   'guides-wheelset-buyers': guidesWheelsetBuyersFaq,
   'guides-tireguides': guidesTireguidesFaq,
+  'products-spoke-calculator': productsSpokeCalculatorFaq,
 }
 
 /**

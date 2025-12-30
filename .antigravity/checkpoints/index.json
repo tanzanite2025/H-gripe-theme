@@ -3,6 +3,13 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "b5139f1a89ee8c85",
+      "timestamp": "2025-12-30T17:32:56.819Z",
+      "description": "✅ 任务完成: 功能新增: 实现 FAQ 模块 (参照 Wheelset Buyers Guide)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "04f572a34cf13363",
       "timestamp": "2025-12-30T16:17:49.756Z",
       "description": "✅ 任务完成: UI 优化: 移除未使用的 Tools 下拉菜单",
@@ -132,13 +139,6 @@
       "id": "93cb7cc248ed301b",
       "timestamp": "2025-12-30T10:59:24.682Z",
       "description": "✅ 任务完成: SEO 优化: 分析页面的 H1 标题隐藏方式 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "3f065513124458c6",
-      "timestamp": "2025-12-29T19:07:55.909Z",
-      "description": "✅ 3 个任务完成: SEO 优化: 安装并配置 `@nuxtjs/sitemap` (已完成), SEO 优化: 配置 `i18n.baseUrl` (已完成)...",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }
