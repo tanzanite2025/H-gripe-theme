@@ -3,6 +3,55 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "6ccc84b8126769aa",
+      "timestamp": "2025-12-30T16:06:14.497Z",
+      "description": "✅ 任务完成: 数据清理: 移除 API 中的 Demo 数据，并禁用无数据的下拉菜单",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "e0e397156759f9e4",
+      "timestamp": "2025-12-30T15:59:39.550Z",
+      "description": "✅ 任务完成: 功能更新: 增加 Spoke Count (16, 18, 20) 和 Lacing Pattern (0-cross, 1-cross) 选项",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "57b4e49587738e2f",
+      "timestamp": "2025-12-30T15:56:38.461Z",
+      "description": "✅ 任务完成: UI 优化: 修复 Hidden 类型选择时的页面抖动 (Side-by-side layout)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "f6d533bea48ca5d0",
+      "timestamp": "2025-12-30T15:53:19.835Z",
+      "description": "✅ 2 个任务完成: UI 优化: Nipple Length 改为数字输入框, UI 修复: 修复下拉菜单在白色背景下文字不可见的问题",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "d1d380b2fa680773",
+      "timestamp": "2025-12-30T15:48:52.029Z",
+      "description": "✅ 任务完成: 修正 Hidden Nipple 计算逻辑 (改为增加长度: nippleLength - 3mm)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "a69c1dec8c6c5198",
+      "timestamp": "2025-12-30T15:38:22.801Z",
+      "description": "✅ 任务完成: 功能修复: 辐条计算器前端计算逻辑重构 <!-- id: 10 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "b1c383425501e9fd",
+      "timestamp": "2025-12-30T15:32:12.088Z",
+      "description": "✅ 28 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "2eda940e8edc5947",
       "timestamp": "2025-12-30T14:31:52.187Z",
       "description": "✅ 任务完成: 内容更新: 优化 Tire Guides FAQ 内容 <!-- id: 9 --> (已完成)",
@@ -90,55 +139,6 @@
       "id": "10856ab13a2b15b7",
       "timestamp": "2025-12-29T18:45:00.405Z",
       "description": "✅ 任务完成: 隐藏聊天组件中的 Tire Search 按钮 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "58445a8dfb963681",
-      "timestamp": "2025-12-29T18:40:50.965Z",
-      "description": "✅ 任务完成: 集成 `TireRimHelper` 到聊天组件 (新增 TIRE Tab) (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "b631420bc09424ee",
-      "timestamp": "2025-12-29T18:32:02.586Z",
-      "description": "✅ 任务完成: 修复 Quick Action Menu 弹窗被聊天窗口遮挡的问题 (Z-Index) (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "8270a8a9ddfff972",
-      "timestamp": "2025-12-29T18:31:31.845Z",
-      "description": "✅ 任务完成: 验证 TEST 弹窗样式与动画一致性 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "4ee7a737c454e6f2",
-      "timestamp": "2025-12-29T18:20:52.333Z",
-      "description": "✅ 2 个任务完成: 更新 `WhatsAppChatModal.vue` 集成组件 (已完成), 验证 TEST 弹窗样式与动画一致性 (已完成)阅读 `ChatWelcomeAgentSelector.vue` 内容",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "6c5f6cb2cdd0340f",
-      "timestamp": "2025-12-29T18:20:16.163Z",
-      "description": "✅ 任务完成: 更新 `UserChatBody.vue` 添加 TEST 按钮 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "814431adc3d06607",
-      "timestamp": "2025-12-29T18:19:11.310Z",
-      "description": "✅ 任务完成: 创建 `TestReportDrawer.vue` 组件 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "0e1e5acb7460c197",
-      "timestamp": "2025-12-29T18:18:09.044Z",
-      "description": "✅ 任务完成: 分析 `/support/test-report` 页面结构 (已完成)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }

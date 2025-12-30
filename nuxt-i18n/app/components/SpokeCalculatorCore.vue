@@ -22,10 +22,13 @@
                 v-model.number="frontConfig.spokeCount"
                 class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
               >
-                <option :value="24">24</option>
-                <option :value="28">28</option>
-                <option :value="32">32</option>
-                <option :value="36">36</option>
+                <option :value="16" class="bg-slate-900 text-slate-50">16</option>
+                <option :value="18" class="bg-slate-900 text-slate-50">18</option>
+                <option :value="20" class="bg-slate-900 text-slate-50">20</option>
+                <option :value="24" class="bg-slate-900 text-slate-50">24</option>
+                <option :value="28" class="bg-slate-900 text-slate-50">28</option>
+                <option :value="32" class="bg-slate-900 text-slate-50">32</option>
+                <option :value="36" class="bg-slate-900 text-slate-50">36</option>
               </select>
             </div>
 
@@ -37,23 +40,44 @@
                 v-model.number="frontConfig.crossing"
                 class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
               >
-                <option :value="2">2-cross</option>
-                <option :value="3">3-cross</option>
-                <option :value="4">4-cross</option>
+                <option :value="0" class="bg-slate-900 text-slate-50">0-cross (Radial)</option>
+                <option :value="1" class="bg-slate-900 text-slate-50">1-cross</option>
+                <option :value="2" class="bg-slate-900 text-slate-50">2-cross</option>
+                <option :value="3" class="bg-slate-900 text-slate-50">3-cross</option>
+                <option :value="4" class="bg-slate-900 text-slate-50">4-cross</option>
               </select>
             </div>
 
-            <!-- Nipple type -->
-            <div class="space-y-1.5">
-              <label for="front-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
-              <select
-                id="front-nipple"
-                v-model="frontConfig.nippleType"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-              >
-                <option value="standard">Standard external</option>
-                <option value="hidden">Hidden / aero</option>
-              </select>
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Nipple type -->
+              <div class="space-y-1.5">
+                <label for="front-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
+                <select
+                  id="front-nipple"
+                  v-model="frontConfig.nippleType"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                >
+                  <option value="standard" class="bg-slate-900 text-slate-50">Standard external</option>
+                  <option value="hidden" class="bg-slate-900 text-slate-50">Hidden / aero</option>
+                </select>
+              </div>
+
+              <!-- Nipple length (hidden nipples only) -->
+              <div v-if="frontConfig.nippleType === 'hidden'" class="space-y-1.5">
+                <label for="front-nipple-length" class="block text-xs font-medium text-slate-200">Nipple length</label>
+                <div class="flex items-center gap-2">
+                  <input
+                    id="front-nipple-length"
+                    v-model.number="frontConfig.nippleLength"
+                    type="number"
+                    min="0"
+                    max="30"
+                    placeholder="e.g. 12"
+                    class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                  />
+                  <span class="text-[11px] text-slate-400">mm</span>
+                </div>
+              </div>
             </div>
 
             <!-- Rim -->
@@ -64,10 +88,11 @@
               <select
                 id="front-rim"
                 v-model="frontConfig.rimId"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                :disabled="!rimOptions.length"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option v-if="!rimOptions.length" value="" disabled>No rim products configured yet</option>
-                <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id">{{ rim.label }}</option>
+                <option v-if="!rimOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No rim products configured yet</option>
+                <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.label }}</option>
               </select>
             </div>
 
@@ -82,8 +107,8 @@
                 :disabled="!frontHubOptions.length"
                 class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option v-if="!frontHubOptions.length" value="" disabled>No hubs available</option>
-                <option v-for="hub in frontHubOptions" :key="hub.id" :value="hub.id">{{ hub.label }}</option>
+                <option v-if="!frontHubOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No hubs available</option>
+                <option v-for="hub in frontHubOptions" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.label }}</option>
               </select>
             </div>
 
@@ -134,6 +159,38 @@
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
+
+            <!-- Left flange PCD -->
+            <div class="space-y-1.5">
+              <label for="front-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="front-left-flange-pcd"
+                  v-model.number="frontConfig.leftFlangePcd"
+                  type="number"
+                  min="30"
+                  max="80"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
+                <span class="text-[11px] text-slate-400">mm</span>
+              </div>
+            </div>
+
+            <!-- Right flange PCD -->
+            <div class="space-y-1.5">
+              <label for="front-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="front-right-flange-pcd"
+                  v-model.number="frontConfig.rightFlangePcd"
+                  type="number"
+                  min="30"
+                  max="80"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
+                <span class="text-[11px] text-slate-400">mm</span>
+              </div>
+            </div>
           </div>
 
           <!-- ========== REAR WHEEL COLUMN ========== -->
@@ -148,10 +205,13 @@
                 v-model.number="rearConfig.spokeCount"
                 class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
               >
-                <option :value="24">24</option>
-                <option :value="28">28</option>
-                <option :value="32">32</option>
-                <option :value="36">36</option>
+                <option :value="16" class="bg-slate-900 text-slate-50">16</option>
+                <option :value="18" class="bg-slate-900 text-slate-50">18</option>
+                <option :value="20" class="bg-slate-900 text-slate-50">20</option>
+                <option :value="24" class="bg-slate-900 text-slate-50">24</option>
+                <option :value="28" class="bg-slate-900 text-slate-50">28</option>
+                <option :value="32" class="bg-slate-900 text-slate-50">32</option>
+                <option :value="36" class="bg-slate-900 text-slate-50">36</option>
               </select>
             </div>
 
@@ -163,23 +223,44 @@
                 v-model.number="rearConfig.crossing"
                 class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
               >
-                <option :value="2">2-cross</option>
-                <option :value="3">3-cross</option>
-                <option :value="4">4-cross</option>
+                <option :value="0" class="bg-slate-900 text-slate-50">0-cross (Radial)</option>
+                <option :value="1" class="bg-slate-900 text-slate-50">1-cross</option>
+                <option :value="2" class="bg-slate-900 text-slate-50">2-cross</option>
+                <option :value="3" class="bg-slate-900 text-slate-50">3-cross</option>
+                <option :value="4" class="bg-slate-900 text-slate-50">4-cross</option>
               </select>
             </div>
 
-            <!-- Nipple type -->
-            <div class="space-y-1.5">
-              <label for="rear-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
-              <select
-                id="rear-nipple"
-                v-model="rearConfig.nippleType"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-              >
-                <option value="standard">Standard external</option>
-                <option value="hidden">Hidden / aero</option>
-              </select>
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Nipple type -->
+              <div class="space-y-1.5">
+                <label for="rear-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
+                <select
+                  id="rear-nipple"
+                  v-model="rearConfig.nippleType"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                >
+                  <option value="standard" class="bg-slate-900 text-slate-50">Standard external</option>
+                  <option value="hidden" class="bg-slate-900 text-slate-50">Hidden / aero</option>
+                </select>
+              </div>
+
+              <!-- Nipple length (hidden nipples only) -->
+              <div v-if="rearConfig.nippleType === 'hidden'" class="space-y-1.5">
+                <label for="rear-nipple-length" class="block text-xs font-medium text-slate-200">Nipple length</label>
+                <div class="flex items-center gap-2">
+                  <input
+                    id="rear-nipple-length"
+                    v-model.number="rearConfig.nippleLength"
+                    type="number"
+                    min="0"
+                    max="30"
+                    placeholder="e.g. 12"
+                    class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                  />
+                  <span class="text-[11px] text-slate-400">mm</span>
+                </div>
+              </div>
             </div>
 
             <!-- Rim -->
@@ -190,10 +271,11 @@
               <select
                 id="rear-rim"
                 v-model="rearConfig.rimId"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                :disabled="!rimOptions.length"
+                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option v-if="!rimOptions.length" value="" disabled>No rim products configured yet</option>
-                <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id">{{ rim.label }}</option>
+                <option v-if="!rimOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No rim products configured yet</option>
+                <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.label }}</option>
               </select>
             </div>
 
@@ -208,8 +290,8 @@
                 :disabled="!rearHubOptions.length"
                 class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option v-if="!rearHubOptions.length" value="" disabled>No hubs available</option>
-                <option v-for="hub in rearHubOptions" :key="hub.id" :value="hub.id">{{ hub.label }}</option>
+                <option v-if="!rearHubOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No hubs available</option>
+                <option v-for="hub in rearHubOptions" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.label }}</option>
               </select>
             </div>
 
@@ -260,6 +342,38 @@
                 <span class="text-[11px] text-slate-400">mm</span>
               </div>
             </div>
+
+            <!-- Left flange PCD -->
+            <div class="space-y-1.5">
+              <label for="rear-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="rear-left-flange-pcd"
+                  v-model.number="rearConfig.leftFlangePcd"
+                  type="number"
+                  min="30"
+                  max="80"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
+                <span class="text-[11px] text-slate-400">mm</span>
+              </div>
+            </div>
+
+            <!-- Right flange PCD -->
+            <div class="space-y-1.5">
+              <label for="rear-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="rear-right-flange-pcd"
+                  v-model.number="rearConfig.rightFlangePcd"
+                  type="number"
+                  min="30"
+                  max="80"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                />
+                <span class="text-[11px] text-slate-400">mm</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -271,10 +385,10 @@
             v-model="selectedTool"
             class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
           >
-            <option value="spoke-wrench">Spoke wrench</option>
-            <option value="truing-stand">Truing stand</option>
-            <option value="tension-meter">Tension meter</option>
-            <option value="dishing-tool">Dishing tool</option>
+            <option value="spoke-wrench" class="bg-slate-900 text-slate-50">Spoke wrench</option>
+            <option value="truing-stand" class="bg-slate-900 text-slate-50">Truing stand</option>
+            <option value="tension-meter" class="bg-slate-900 text-slate-50">Tension meter</option>
+            <option value="dishing-tool" class="bg-slate-900 text-slate-50">Dishing tool</option>
           </select>
         </div>
 
@@ -392,7 +506,6 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useSpokeCalculator } from '~/composables/useSpokeCalculator'
 
 interface RimOption {
   id: string
@@ -415,11 +528,14 @@ interface WheelConfig {
   spokeCount: number
   crossing: number
   nippleType: 'standard' | 'hidden'
+  nippleLength: number | null  // Hidden nipple length in mm (e.g., 9, 12)
   rimId: string | null
   hubId: string | null
   erd: number | null
   leftFlange: number | null
   rightFlange: number | null
+  leftFlangePcd: number | null
+  rightFlangePcd: number | null
 }
 
 // Front wheel configuration
@@ -427,11 +543,14 @@ const frontConfig = reactive<WheelConfig>({
   spokeCount: 32,
   crossing: 3,
   nippleType: 'standard',
+  nippleLength: 12,
   rimId: null,
   hubId: null,
   erd: 622,
   leftFlange: 35,
   rightFlange: 35,
+  leftFlangePcd: 50,
+  rightFlangePcd: 50,
 })
 
 // Rear wheel configuration
@@ -439,11 +558,14 @@ const rearConfig = reactive<WheelConfig>({
   spokeCount: 32,
   crossing: 3,
   nippleType: 'standard',
+  nippleLength: 12,
   rimId: null,
   hubId: null,
   erd: 622,
   leftFlange: 35,
-  rightFlange: 35,
+  rightFlange: 20,
+  leftFlangePcd: 55,
+  rightFlangePcd: 55,
 })
 
 const selectedTool = ref<string>('spoke-wrench')
@@ -517,9 +639,52 @@ watch(
   { immediate: true },
 )
 
-// Use composable for calculations
-const { loading, error, result: frontResult, calculate: calculateFront } = useSpokeCalculator()
-const { result: rearResult, calculate: calculateRear } = useSpokeCalculator()
+// Frontend-only spoke length calculation
+// Formula: L = sqrt((ERD/2)^2 + (PCD/2)^2 + flange^2 - ERD * PCD/2 * cos(cross_angle))
+// where cross_angle = 4 * PI * crossing / spokeCount
+function computeSpokeLength(
+  erd: number,
+  flangePcd: number,
+  flangeDistance: number,
+  spokeCount: number,
+  crossing: number,
+  nippleType: 'standard' | 'hidden' = 'standard',
+  nippleLength: number | null = null
+): number {
+  const erdRadius = erd / 2
+  const pcdRadius = flangePcd / 2
+  const crossAngle = (4 * Math.PI * crossing) / spokeCount
+
+  // Standard spoke length formula based on triangle geometry
+  const lengthSquared =
+    erdRadius * erdRadius +
+    pcdRadius * pcdRadius +
+    flangeDistance * flangeDistance -
+    2 * erdRadius * pcdRadius * Math.cos(crossAngle)
+
+  let length = Math.sqrt(lengthSquared)
+
+  // Hidden nipple correction: ADD length based on nipple depth
+  // 9mm nipple → +6mm, 12mm nipple → +9mm (nipple length - 3)
+  if (nippleType === 'hidden' && nippleLength) {
+    const correction = nippleLength - 3
+    length += correction
+  }
+
+  return Number(length.toFixed(1))
+}
+
+// Local state for calculation results (no API)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+interface SpokeResult {
+  leftLengthMm: number
+  rightLengthMm: number
+}
+
+const frontResult = ref<SpokeResult | null>(null)
+const rearResult = ref<SpokeResult | null>(null)
 
 // Display values for front wheel
 const frontLeftDisplay = computed(() => (frontResult.value?.leftLengthMm ?? 0).toFixed(1))
@@ -529,27 +694,64 @@ const frontRightDisplay = computed(() => (frontResult.value?.rightLengthMm ?? 0)
 const rearLeftDisplay = computed(() => (rearResult.value?.leftLengthMm ?? 0).toFixed(1))
 const rearRightDisplay = computed(() => (rearResult.value?.rightLengthMm ?? 0).toFixed(1))
 
-const onCalculate = async () => {
-  // Calculate both wheels
-  await Promise.all([
-    frontConfig.rimId && frontConfig.hubId
-      ? calculateFront({
-          rimId: frontConfig.rimId,
-          hubId: frontConfig.hubId,
-          wheelPosition: 'front',
-          spokeCount: frontConfig.spokeCount,
-          crossing: frontConfig.crossing,
-        })
-      : Promise.resolve(),
-    rearConfig.rimId && rearConfig.hubId
-      ? calculateRear({
-          rimId: rearConfig.rimId,
-          hubId: rearConfig.hubId,
-          wheelPosition: 'rear',
-          spokeCount: rearConfig.spokeCount,
-          crossing: rearConfig.crossing,
-        })
-      : Promise.resolve(),
-  ])
+const onCalculate = () => {
+  error.value = null
+  loading.value = true
+
+  try {
+    // Validate front wheel inputs
+    if (frontConfig.erd && frontConfig.leftFlangePcd && frontConfig.rightFlangePcd &&
+        frontConfig.leftFlange != null && frontConfig.rightFlange != null) {
+      frontResult.value = {
+        leftLengthMm: computeSpokeLength(
+          frontConfig.erd,
+          frontConfig.leftFlangePcd,
+          frontConfig.leftFlange,
+          frontConfig.spokeCount,
+          frontConfig.crossing,
+          frontConfig.nippleType,
+          frontConfig.nippleLength
+        ),
+        rightLengthMm: computeSpokeLength(
+          frontConfig.erd,
+          frontConfig.rightFlangePcd,
+          frontConfig.rightFlange,
+          frontConfig.spokeCount,
+          frontConfig.crossing,
+          frontConfig.nippleType,
+          frontConfig.nippleLength
+        ),
+      }
+    }
+
+    // Validate rear wheel inputs
+    if (rearConfig.erd && rearConfig.leftFlangePcd && rearConfig.rightFlangePcd &&
+        rearConfig.leftFlange != null && rearConfig.rightFlange != null) {
+      rearResult.value = {
+        leftLengthMm: computeSpokeLength(
+          rearConfig.erd,
+          rearConfig.leftFlangePcd,
+          rearConfig.leftFlange,
+          rearConfig.spokeCount,
+          rearConfig.crossing,
+          rearConfig.nippleType,
+          rearConfig.nippleLength
+        ),
+        rightLengthMm: computeSpokeLength(
+          rearConfig.erd,
+          rearConfig.rightFlangePcd,
+          rearConfig.rightFlange,
+          rearConfig.spokeCount,
+          rearConfig.crossing,
+          rearConfig.nippleType,
+          rearConfig.nippleLength
+        ),
+      }
+    }
+  } catch (e: any) {
+    error.value = e?.message || 'Calculation failed'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
