@@ -3,6 +3,62 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "2eda940e8edc5947",
+      "timestamp": "2025-12-30T14:31:52.187Z",
+      "description": "✅ 任务完成: 内容更新: 优化 Tire Guides FAQ 内容 <!-- id: 9 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "133f8b49549c073a",
+      "timestamp": "2025-12-30T14:22:52.643Z",
+      "description": "✅ 任务完成: 代码重构: 抽离 `TirePressureGuide.vue` 组件 <!-- id: 8 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "b369435675d72378",
+      "timestamp": "2025-12-30T14:20:51.802Z",
+      "description": "✅ 任务完成: 代码重构: 抽离 `HowToChooseGuide.vue` 组件 <!-- id: 7 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "ddc69da6d08e2554",
+      "timestamp": "2025-12-30T14:18:49.087Z",
+      "description": "✅ 任务完成: 代码重构: 抽离 `TubelessGuide.vue` 组件 <!-- id: 6 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "4032c3cf3fb6a475",
+      "timestamp": "2025-12-30T14:16:20.802Z",
+      "description": "✅ 任务完成: 代码重构: 抽离 `MatchGuide.vue` 组件 <!-- id: 5 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "8ae74232a9ba26c6",
+      "timestamp": "2025-12-30T14:14:16.347Z",
+      "description": "✅ 任务完成: 代码重构: 抽离 `TireSizeGuide.vue` 组件 <!-- id: 4 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "672e78f57f529085",
+      "timestamp": "2025-12-30T14:09:13.046Z",
+      "description": "✅ 任务完成: 代码重构: 抽离 `InstallationGuide.vue` 组件 <!-- id: 3 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "18e4168645e5adb4",
+      "timestamp": "2025-12-30T14:03:24.242Z",
+      "description": "✅ 任务完成: 代码重构: 抽离 `InnerTubeGuide.vue` 组件 <!-- id: 2 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "caf423f20dda18ed",
       "timestamp": "2025-12-30T13:52:34.490Z",
       "description": "✅ 任务完成: 内容更新: 更新 Inner Tube 指南 (文字 + 表格) <!-- id: 1 --> (已完成)",
@@ -83,62 +139,6 @@
       "id": "0e1e5acb7460c197",
       "timestamp": "2025-12-29T18:18:09.044Z",
       "description": "✅ 任务完成: 分析 `/support/test-report` 页面结构 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "792159d7c72a44e3",
-      "timestamp": "2025-12-29T18:10:49.290Z",
-      "description": "✅ 任务完成: 验证功能与多客服状态 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "3a38a5f8bf621a34",
-      "timestamp": "2025-12-29T17:54:46.326Z",
-      "description": "✅ 6 个任务完成: 分析 `WhatsAppChatModal.vue` 结构 (已完成), 创建 `nuxt-i18n/app/components/whatsapp/` 目录 (已完成)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "f56b9bf5599b5653",
-      "timestamp": "2025-12-29T17:22:10.750Z",
-      "description": "✅ 6 个任务完成: 搜索 WhatsApp 相关组件, 阅读 `WhatsAppChatModal.vue` 内容...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "e94678388434260c",
-      "timestamp": "2025-12-29T17:20:19.503Z",
-      "description": "✅ 6 个任务完成: Search for WhatsApp related components, Read content of `WhatsAppChatModal.vue`...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "c8c318e30296096c",
-      "timestamp": "2025-12-29T16:57:00.956Z",
-      "description": "✅ 12 个任务完成: **阶段一：分析**, 分析 `components/SupportTopNav.vue` 以确定导航项的\"单一事实来源\"。...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "91b2b4f9f7ec00b9",
-      "timestamp": "2025-12-29T16:43:14.027Z",
-      "description": "✅ 3 个任务完成: **Phase 8: Company About Page (User Request)**, **Refactor `about.vue`** (`/company/about`) to use `nav.css`...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "852923bc7dc39c3b",
-      "timestamp": "2025-12-29T16:41:40.563Z",
-      "description": "✅ 4 个任务完成: **Phase 7: Final Sweep (Additional Pages)**, **Refactor `wheelset-buyers.vue`** (`/guides/wheelset-buyers`)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "0deac16c14eedd1e",
-      "timestamp": "2025-12-29T16:39:53.834Z",
-      "description": "✅ 任务完成: **Phase 6: Technical Guide Unification**",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }

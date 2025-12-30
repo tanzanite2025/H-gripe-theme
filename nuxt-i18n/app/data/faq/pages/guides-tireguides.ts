@@ -21,22 +21,47 @@ export const guidesTireguidesFaq: PageFaqData = {
         },
         {
           id: 'size-2',
-          question: 'Which valve type should I pick for my rim?',
-          answer: `Match the valve hole and use case:<ul>
-            <li><strong>AV (Schrader)</strong> - common on many rims; larger hole.</li>
-            <li><strong>DV (Dunlop/Woods)</strong> - traditional bicycle valve.</li>
-            <li><strong>SV (Presta)</strong> - narrow hole, popular on road/MTB.</li>
-            <li><strong>SV Extra long</strong> - for deep rims; choose 50/60/80 mm as needed.</li>
+          question: 'Which valve type and length should I pick?',
+          answer: `First, match the valve type to your rim hole (Presta/SV for road/MTB, Schrader/AV for wider holes).
+          <br><br>
+          <strong>Rule of thumb for length:</strong> The valve should extend at least 15mm above the rim.
+          <ul>
+            <li><strong>Low profile (≤30mm)</strong>: Standard 40mm valves.</li>
+            <li><strong>Mid profile (30-45mm)</strong>: 60mm valves.</li>
+            <li><strong>Deep profile (50-65mm)</strong>: 80mm valves.</li>
+            <li><strong>Ultra deep (>70mm)</strong>: Use an 80mm valve with an extender.</li>
           </ul>`,
-          tags: ['valve', 'presta', 'schrader', 'rim'],
+          tags: ['valve', 'presta', 'schrader', 'rim', 'length'],
+        },
+        {
+          id: 'size-3',
+          question: 'When do I need a valve extender and which type?',
+          answer: `If your rims are deeper than 50-60mm, standard valves might be too short to pump.
+          <ul>
+            <li><strong>Internal (Core Removable)</strong>: Best choice. You remove the valve core, screw the extender into the valve shaft, and put the core back on top. Allows for easier pumping and pressure adjustments.</li>
+            <li><strong>External</strong>: Screws onto the valve tip. Easier to install but requires the valve to remain open, which can sometimes leak air.</li>
+          </ul>`,
+          tags: ['valve extender', 'deep rim', 'components'],
         },
       ],
     },
     {
-      id: 'pressure',
-      name: 'Tire pressure & setup',
-      icon: '⚙️',
+      id: 'installation',
+      name: 'Installation & Setup',
+      icon: '🔧',
       items: [
+        {
+          id: 'installation-1',
+          question: 'Tips for seating difficult tubeless tires?',
+          answer: `Seating tubeless tires can be tricky. Try these steps:
+          <ol>
+            <li><strong>Use soapy water</strong>: Apply generously to the tire beads and rim hook to help them slide into place.</li>
+            <li><strong>Remove valve core</strong>: This allows air to enter much faster, creating the sudden pressure needed to "pop" the beads into place.</li>
+            <li><strong>Massage the tire</strong>: Ensure the tire beads are sitting in the center channel (the lowest part) of the rim before inflating.</li>
+            <li><strong>Use a booster</strong>: If a floor pump fails, use a compressor or a tubeless booster canister.</li>
+          </ol>`,
+          tags: ['tubeless', 'installation', 'tips'],
+        },
         {
           id: 'pressure-1',
           question: 'How should I set tire pressure for road vs gravel?',
