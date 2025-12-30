@@ -1,0 +1,11 @@
+🔧 Pump Compatibility
+- Standard pumps: Suitable for ≤45mm rims, 40–60mm valves work fine.
+- Locking-head pumps: Better for mid/high rims, securely grip shorter valves.
+- Valve extenders: Essential for ≥70mm rims, especially inner-type extenders for airtightness.
+
+⚠️ Notes
+- Rule of thumb: Valve length should exceed rim height by at least 15mm to ensure secure pump connection.
+- Valve extenders:
+- External type: Easy to install, but less airtight.
+- Internal type: Requires removing valve core, better airtightness, recommended for tubeless setups.
+- Brand differences: Continental and Schwalbe support internal extenders; cheaper inner tubes often do not.

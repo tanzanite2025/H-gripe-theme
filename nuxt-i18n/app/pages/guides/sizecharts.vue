@@ -414,71 +414,13 @@
         </div>
       </section>
 
-      <!-- Inner tube (placeholder) -->
+      <!-- Inner Tube -->
       <section
         v-show="activeTab === 'tube'"
         id="tube"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Inner Tube</h2>
-        <div class="mt-2 flex justify-center">
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
-            @click="openInnerTubeSearch"
-          >
-            Search inner tubes with advanced filters
-          </button>
-        </div>
-        <h3 class="sizecharts-section__subheading mt-3">Step 1: Choose your tire size</h3>
-        <p class="sizecharts-section__intro">
-          All information can be found on your tire.
-        </p>
-
-        <h3 class="sizecharts-section__subheading mt-4">Step 2: Choose your valve type</h3>
-        <ul class="sizecharts-section__list">
-          <li><strong>AV</strong> Schrader, Auto, Moto. Length 40 mm.</li>
-          <li><strong>DV</strong> Bicycle, Woods, Hollands. Length 32 mm or 40 mm.</li>
-          <li><strong>SV</strong> Presta, Sclaverand, French. Length 40 mm.</li>
-          <li><strong>SV Extra long</strong> Presta, Sclaverand, French. Length 50 mm / 60 mm / 80 mm.</li>
-        </ul>
-
-        <div class="mt-3">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/innertube/tanzanite-schwalbe-innertube-valve.webp"
-            alt="Schwalbe inner tube valve types and lengths overview"
-            :zoomOnClick="true"
-          />
-        </div>
-
-        <h3 class="sizecharts-section__subheading mt-4">Step 3: Choose your execution.</h3>
-        <ul class="sizecharts-section__list">
-          <li>
-            <div><strong class="text-amber-300">Standard</strong></div>
-            <div>A standard Schwalbe tube holds air considerably longer. Due to the purity of the rubber compound and the uniform wall thickness.</div>
-          </li>
-          <li>
-            <div><strong class="text-amber-300">Air Plus "NEW"</strong></div>
-            <div>Holds air even longer thanks to greater wall thickness. Less frequent re-inflation is necessary. Also provides above-average protection against punctures.</div>
-          </li>
-          <li>
-            <div><strong class="text-amber-300">Extralight</strong></div>
-            <div>Reduced weight. Same reliability as the standard version. Not available in all sizes.</div>
-          </li>
-          <li>
-            <div><strong class="text-amber-300">XXLight</strong></div>
-            <div>Extremely light. Only for a very few sizes.</div>
-          </li>
-          <li>
-            <div><strong class="text-amber-300">Freeride</strong></div>
-            <div>Large volume. Low Weight.</div>
-          </li>
-          <li>
-            <div><strong class="text-amber-300">Downhill</strong></div>
-            <div>Extremely robust. A reinforced rubber base protects against the dreaded valve shear off. Only in Downhill sizes. If you want large volume with low weight, choose Extralight.</div>
-          </li>
-        </ul>
+        <InnerTubeGuide />
       </section>
 
       <section class="mt-6">
@@ -519,7 +461,7 @@ import TireRimHelper from '~/components/TireRimHelper.vue'
 import TirePressureSection from '~/components/TirePressureSection.vue'
 import TireSizeSection from '~/components/TireSizeSection.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
-import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
 
 type SizeChartsTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
 
@@ -545,15 +487,6 @@ const tabs: { id: SizeChartsTabId; label: string }[] = [
 const activeTab = ref<SizeChartsTabId>('tubeless')
 
 const route = useRoute()
-
-const { open: openShopSearchSheet } = useShopSearchSheet()
-
-const openInnerTubeSearch = () => {
-  openShopSearchSheet({
-    presetCategorySlug: 'inner-tube',
-    presetKeywords: ['Inner tube'],
-  })
-}
 
 const getTabFromHash = (hash: string): SizeChartsTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')
