@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   // 使用 app 作为源码目录，启用 app/pages 与 app/components
   srcDir: 'app',
-  
+
   // Long cache for local Twemoji flags
   routeRules: {
     '/twemoji/svg/**': {
@@ -14,210 +14,214 @@ export default defineNuxtConfig({
       }
     },
   },
-  
-  modules: ['@nuxtjs/i18n'],
-  
+
+  site: {
+    url: 'https://tanzanite.site',
+  },
+
+  modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap'],
+
   i18n: {
     locales: [
-      { 
-        code: 'en', 
-        iso: 'en-US', 
+      {
+        code: 'en',
+        iso: 'en-US',
         name: 'English',
         file: 'en.json'
       },
-      { 
-        code: 'fr', 
-        iso: 'fr-FR', 
+      {
+        code: 'fr',
+        iso: 'fr-FR',
         name: 'Français',
         file: 'fr.json'
       },
-      { 
-        code: 'de', 
-        iso: 'de-DE', 
+      {
+        code: 'de',
+        iso: 'de-DE',
         name: 'Deutsch',
         file: 'de.json'
       },
-      { 
-        code: 'es', 
-        iso: 'es-ES', 
+      {
+        code: 'es',
+        iso: 'es-ES',
         name: 'Español',
         file: 'es.json'
       },
-      { 
-        code: 'ja', 
-        iso: 'ja-JP', 
+      {
+        code: 'ja',
+        iso: 'ja-JP',
         name: '日本語',
         file: 'ja.json'
       },
-      { 
-        code: 'ko', 
-        iso: 'ko-KR', 
+      {
+        code: 'ko',
+        iso: 'ko-KR',
         name: '한국어',
         file: 'ko.json'
       },
-      { 
-        code: 'it', 
-        iso: 'it-IT', 
+      {
+        code: 'it',
+        iso: 'it-IT',
         name: 'Italiano',
         file: 'it.json'
       },
-      { 
-        code: 'pt', 
-        iso: 'pt-PT', 
+      {
+        code: 'pt',
+        iso: 'pt-PT',
         name: 'Português',
         file: 'pt.json'
       },
-      { 
-        code: 'ru', 
-        iso: 'ru-RU', 
+      {
+        code: 'ru',
+        iso: 'ru-RU',
         name: 'Русский',
         file: 'ru.json'
       },
-      { 
-        code: 'ar', 
-        iso: 'ar-SA', 
+      {
+        code: 'ar',
+        iso: 'ar-SA',
         name: 'العربية',
         file: 'ar.json',
         dir: 'rtl'
       },
-      { 
-        code: 'fi', 
-        iso: 'fi-FI', 
+      {
+        code: 'fi',
+        iso: 'fi-FI',
         name: 'Suomi',
         file: 'fi.json'
       },
-      { 
-        code: 'da', 
-        iso: 'da-DK', 
+      {
+        code: 'da',
+        iso: 'da-DK',
         name: 'Dansk',
         file: 'da.json'
       },
-      { 
-        code: 'th', 
-        iso: 'th-TH', 
+      {
+        code: 'th',
+        iso: 'th-TH',
         name: 'ไทย',
         file: 'th.json'
       },
-      { 
-        code: 'sv', 
-        iso: 'sv-SE', 
+      {
+        code: 'sv',
+        iso: 'sv-SE',
         name: 'Svenska',
         file: 'sv.json'
       },
-      { 
-        code: 'id', 
-        iso: 'id-ID', 
+      {
+        code: 'id',
+        iso: 'id-ID',
         name: 'Bahasa Indonesia',
         file: 'id.json'
       },
-      { 
-        code: 'ms', 
-        iso: 'ms-MY', 
+      {
+        code: 'ms',
+        iso: 'ms-MY',
         name: 'Bahasa Melayu',
         file: 'ms.json'
       },
-      { 
-        code: 'be', 
-        iso: 'be-BY', 
+      {
+        code: 'be',
+        iso: 'be-BY',
         name: 'Беларуская',
         file: 'be.json'
       },
-      { 
-        code: 'tr', 
-        iso: 'tr-TR', 
+      {
+        code: 'tr',
+        iso: 'tr-TR',
         name: 'Türkçe',
         file: 'tr.json'
       },
-      { 
-        code: 'bn', 
-        iso: 'bn-BD', 
+      {
+        code: 'bn',
+        iso: 'bn-BD',
         name: 'বাংলা',
         file: 'bn.json'
       },
-      { 
-        code: 'fa', 
-        iso: 'fa-IR', 
+      {
+        code: 'fa',
+        iso: 'fa-IR',
         name: 'فارسی',
         file: 'fa.json',
         dir: 'rtl'
       },
-      { 
-        code: 'nl', 
-        iso: 'nl-NL', 
+      {
+        code: 'nl',
+        iso: 'nl-NL',
         name: 'Nederlands',
         file: 'nl.json'
       },
-      { 
-        code: 'hi', 
-        iso: 'hi-IN', 
+      {
+        code: 'hi',
+        iso: 'hi-IN',
         name: 'हिन्दी',
         file: 'hi.json'
       },
-      { 
-        code: 'ur', 
-        iso: 'ur-PK', 
+      {
+        code: 'ur',
+        iso: 'ur-PK',
         name: 'اردو',
         file: 'ur.json',
         dir: 'rtl'
       },
-      { 
-        code: 'mr', 
-        iso: 'mr-IN', 
+      {
+        code: 'mr',
+        iso: 'mr-IN',
         name: 'मराठी',
         file: 'mr.json'
       },
-      { 
-        code: 'pcm', 
-        iso: 'pcm-NG', 
+      {
+        code: 'pcm',
+        iso: 'pcm-NG',
         name: 'Nigerian Pidgin',
         file: 'pcm.json'
       },
-      { 
-        code: 'fil', 
-        iso: 'fil-PH', 
+      {
+        code: 'fil',
+        iso: 'fil-PH',
         name: 'Filipino',
         file: 'fil.json'
       },
-      { 
-        code: 'te', 
-        iso: 'te-IN', 
+      {
+        code: 'te',
+        iso: 'te-IN',
         name: 'తెలుగు',
         file: 'te.json'
       },
-      { 
-        code: 'ha', 
-        iso: 'ha-NG', 
+      {
+        code: 'ha',
+        iso: 'ha-NG',
         name: 'Hausa',
         file: 'ha.json'
       },
-      { 
-        code: 'ps', 
-        iso: 'ps-AF', 
+      {
+        code: 'ps',
+        iso: 'ps-AF',
         name: 'پښتو',
         file: 'ps.json',
         dir: 'rtl'
       },
-      { 
-        code: 'sw', 
-        iso: 'sw-KE', 
+      {
+        code: 'sw',
+        iso: 'sw-KE',
         name: 'Kiswahili',
         file: 'sw.json'
       },
-      { 
-        code: 'tl', 
-        iso: 'tl-PH', 
+      {
+        code: 'tl',
+        iso: 'tl-PH',
         name: 'Tagalog',
         file: 'tl.json'
       },
-      { 
-        code: 'ta', 
-        iso: 'ta-IN', 
+      {
+        code: 'ta',
+        iso: 'ta-IN',
         name: 'தமிழ்',
         file: 'ta.json'
       },
-      { 
-        code: 'jv', 
-        iso: 'jv-ID', 
+      {
+        code: 'jv',
+        iso: 'jv-ID',
         name: 'Basa Jawa',
         file: 'jv.json'
       },
@@ -241,9 +245,10 @@ export default defineNuxtConfig({
     },
     bundle: {
       optimizeTranslationDirective: false
-    }
+    },
+    baseUrl: 'https://tanzanite.site',
   },
-  
+
   css: [
     '~/assets/css/tailwind.css',
     '~/assets/css/guide-sections.css',
@@ -267,10 +272,10 @@ export default defineNuxtConfig({
       ],
     }
   },
-  
+
   // 启用默认的 SSR + 预渲染，以便生成完整静态 HTML
   ssr: true,
-  
+
   nitro: {
     preset: 'static'
   },

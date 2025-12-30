@@ -28,3 +28,14 @@ Antigravity 插件要求严格遵循 "Planning -> Execution -> Verification" 的
 
 - **Language**: 🇨🇳 CHINESE (Mandatory).
 - **Self-Correction**: If you find yourself writing English headers (e.g., # Implementation Plan), STOP and translate immediately.
+
+## 语言协议 (Language Protocols)
+
+- **强制中文**: 所有 Artifacts (task.md, implementation_plan.md 等) 必须使用 **中文** 编写。
+- **违规后果**: 系统已部署自动拦截器，检测到非中文内容将导致写入失败或报错。
+同步: 修改保存后，MemoryBankManager 会自动将其同步到 .agent/rules/system-patterns.md，立即生效。
+验证计划
+手动验证
+修改文件: 更新 memory 中的 system-patterns.md。
+检查同步: 确认 .agent/rules/system-patterns.md 内容已更新。
+新建 Agent 会话: 询问 Agent "我应该用什么语言编写文档？"，预期回答 "必须使用中文"。

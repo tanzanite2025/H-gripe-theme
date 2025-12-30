@@ -3,6 +3,34 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "caf423f20dda18ed",
+      "timestamp": "2025-12-30T13:52:34.490Z",
+      "description": "✅ 任务完成: 内容更新: 更新 Inner Tube 指南 (文字 + 表格) <!-- id: 1 --> (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "7db863b6ad472350",
+      "timestamp": "2025-12-30T13:50:38.324Z",
+      "description": "✅ 19 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "93cb7cc248ed301b",
+      "timestamp": "2025-12-30T10:59:24.682Z",
+      "description": "✅ 任务完成: SEO 优化: 分析页面的 H1 标题隐藏方式 (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "3f065513124458c6",
+      "timestamp": "2025-12-29T19:07:55.909Z",
+      "description": "✅ 3 个任务完成: SEO 优化: 安装并配置 `@nuxtjs/sitemap` (已完成), SEO 优化: 配置 `i18n.baseUrl` (已完成)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "10856ab13a2b15b7",
       "timestamp": "2025-12-29T18:45:00.405Z",
       "description": "✅ 任务完成: 隐藏聊天组件中的 Tire Search 按钮 (已完成)",
@@ -111,34 +139,6 @@
       "id": "0deac16c14eedd1e",
       "timestamp": "2025-12-29T16:39:53.834Z",
       "description": "✅ 任务完成: **Phase 6: Technical Guide Unification**",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "cc2c0766a9ba56cc",
-      "timestamp": "2025-12-29T16:38:28.675Z",
-      "description": "✅ 3 个任务完成: **Phase 6: Technical Guide Unification (Added)**, **Refactor `technical.vue` to use global `nav.css`**...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "844c4a79d5551fe9",
-      "timestamp": "2025-12-29T16:36:27.062Z",
-      "description": "✅ 3 个任务完成: **Phase 5: Investigation & Unification**, **Refactor `sizecharts.vue` to use global `nav.css` (Option A)**...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "80aabc247774993e",
-      "timestamp": "2025-12-29T16:35:57.663Z",
-      "description": "✅ 7 个任务完成: **Phase 4: Cleanup**, Remove redundant styles from `ProductsTopNav.vue`...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "7aac8d252bc11018",
-      "timestamp": "2025-12-29T16:33:21.780Z",
-      "description": "✅ 3 个任务完成: **Phase 3: Verification**, Verify visual consistency for each component...",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }

@@ -63,25 +63,7 @@ const policiesNavItems = [
   height: 145px;
 }
 
-.products-hero {
-  margin-top: 0;
-  padding: 1.5rem 1.5rem 0.75rem;
-  background: transparent !important;
-}
 
-.products-hero__inner {
-  max-width: 960px;
-  margin: 0 auto;
-}
-
-.products-hero__title {
-  margin: 0 0 0.5rem;
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #f9fafb;
-  display: none !important;
-}
 
 .products-content {
   padding: 1rem 1.5rem 3rem;
@@ -93,10 +75,7 @@ const policiesNavItems = [
 }
 
 @media (max-width: 768px) {
-  .products-hero {
-    margin-top: 0;
-    padding: 1.25rem 1.25rem 0.75rem;
-  }
+
 
   .products-content {
     padding-inline: 1rem;
