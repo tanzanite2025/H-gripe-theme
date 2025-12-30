@@ -25,10 +25,7 @@
         id="size"
         class="sizecharts-section text-slate-100"
       >
-        <h2 class="sizecharts-section__title">Tire Size</h2>
-        <div class="tire-size-card mt-1 rounded-2xl bg-slate-900/70 p-4 md:p-5 shadow-[4px_4px_18px_rgba(0,0,0,1)]">
-          <TireSizeSection @openTireProducts="openTireProductsDrawer" />
-        </div>
+        <TireSizeGuide @open-tire-products="openTireProductsDrawer" />
       </section>
 
       <!-- Match (tire & rim matching helpers) -->
@@ -37,160 +34,15 @@
         id="match"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Tire and Frame Clearance Guide</h2>
-        <p class="sizecharts-section__intro">
-          With our particularly wide tires, the question often arises as to whether the tires will still fit in the frame. Please
-          understand that due to the large number of bicycle models, we cannot check all frames for compatibility with the various
-          tires. Below we provide the exact diameters and widths of our extra-wide tires. You can use this information to check
-          whether the installation dimensions of your frame offer enough space for the desired tire.
-        </p>
-
-        <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/match/schwalbe-tire-fit-frame1.webp"
-            alt="Frame clearance overview 1 for checking whether wide tires fit in the frame"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/match/schwalbe-tire-fit-frame2.webp"
-            alt="Frame clearance overview 2 showing dimensions for wide tires"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item md:col-span-2"
-            src="/public/tiresizecharts/match/schwalbe-tire-fit-frame3.webp"
-            alt="Frame clearance overview 3 with detailed extra-wide tire measurements"
-            :zoomOnClick="true"
-          />
-        </div>
-
-        <h3 class="sizecharts-section__subheading mt-4">
-          WHAT IS THE EXACT CIRCUMFERENCE OF MY TIRE【Schwalbe Tire】?
-        </h3>
-        <p class="sizecharts-section__intro">
-          Exact tire circumferences are often required for precise programming of the bike computer. The wheel circumference varies
-          depending on the inner rim width, puncture protection in the tire, air pressure and weight load. For this reason, we cannot
-          specify the exact wheel circumferences. For precise programming of a wheel computer, we recommend a simple rolling test with
-          the rider in the saddle: Align the valve from the front wheel at the bottom 6 o’clock position, make a mark on the floor or
-          lay the end of a tape measure at this point, roll the bike forward in as straight a line as possible until the front has done
-          one full rotation and the valve is once again the 6 o’clock position. Then take the distance measurement directly from the
-          tape measure or mark the floor at this point and measure between the two marks. This distance will give you a fairly precise
-          rolling circumference for the front wheel which can be entered into your computer.
-        </p>
-
-        <div class="mt-3">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/match/exact-circumference-of-tire.webp"
-            alt="Example chart for determining the exact circumference of a Schwalbe tire for bike computer setup"
-            :zoomOnClick="true"
-          />
-        </div>
+        <MatchGuide />
       </section>
 
-      <!-- Tubeless tires -->
       <section
         v-show="activeTab === 'tubeless'"
         id="tubeless"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Tubeless Tires</h2>
-
-        <TubelessProducts />
-
-        <div class="sizecharts-installation-images sizecharts-installation-images--tubeless">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires1.webp"
-            alt="Comparison of tubeless, inner tube and tubular road bike tires with their construction and basic features"
-            :zoomOnClick="true"
-            caption="The overview above shows the basic construction differences between tubeless, inner tube and tubular tires. Understanding how each system seals air and interfaces with the rim helps you choose the right setup for your riding style and maintenance preferences."
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/tubelesstires/tubelesstires-innertubes-tubulartires2.webp"
-            alt="Pros and cons chart comparing tubeless, inner tube and tubular tires for puncture protection, rolling resistance and comfort"
-            :zoomOnClick="true"
-            caption="This comparison chart summarizes the main pros and cons of tubeless vs inner tube vs tubular tires, focusing on puncture protection, rolling resistance, comfort and ease of installation. Use it as a quick reference when deciding which tire system best matches your daily rides and performance goals."
-          />
-        </div>
-
-        <h3 class="sizecharts-section__subheading">What is an inner tube tire?</h3>
-        <p class="sizecharts-section__intro">
-          Tires with inner tubes are like the bicycle tires we rode when we were children. The tires are composed of
-          &quot;inner tube + outer tire&quot;. There is a frame on the outside and a pneumatic tire in the inner
-          cavity. It can be applied to any type of bicycle.
-        </p>
-
-        <h3 class="sizecharts-section__subheading">What is tubeless?</h3>
-        <p class="sizecharts-section__intro">
-          As the name suggests, tubeless tubes are clincher tires that are inflated on a rim without a tube. Unlike
-          tubeless tubes, which need to keep air inside the tire, the tubeless tire, rim, and valve create a closed
-          air-tight space, just like a car or motorcycle tire.
-        </p>
-        <p class="sizecharts-section__intro">
-          The airtight chamber of a tubeless tire is made from a specialized tire using a specially made (usually
-          carbon fiber) bead and compatible rim, which locks into the rim and creates an airtight seal that maintains
-          pressure.
-        </p>
-        <p class="guide-section__cta-wrapper">
-          <button
-            type="button"
-            class="sizecharts-brand-button"
-            @click="setActiveTab('choose')"
-          >
-            How to choose and specific specifications
-          </button>
-        </p>
-
-        <h3 class="sizecharts-section__subheading">
-          Am I suitable for tubeless or tubeless use?
-        </h3>
-        <p class="sizecharts-section__intro">
-          It depends on your usage needs and habits. If you are doing daily commuting or relaxing holiday riding,
-          tubeless tires are enough; but if you often ride on soft and slippery roads, or require more advanced,
-          high-speed riding enjoyment, then tubeless tires are a good choice.
-        </p>
-
-        <h3 class="sizecharts-section__subheading">How to install tubeless wheels?</h3>
-        <p class="guide-section__cta-wrapper">
-          <button
-            type="button"
-            class="sizecharts-brand-button"
-            @click="setActiveTab('installation')"
-          >
-            View graphic installation details
-          </button>
-        </p>
-
-        <h3 class="sizecharts-section__subheading">
-          The difference between tubeless and tubeless systems
-        </h3>
-        <p class="sizecharts-section__intro">
-          The biggest difference between the two is that tubeless tires do not require inner tubes, while both clincher
-          and tubular tires require the support of an inner tube structure. When some small punctures occur, the tire
-          sealing fluid in the tubeless tire will fill it up on its own. However, once the puncture is larger, it
-          cannot be repaired. At this time, there is no need to worry. You can plug an inner tube in to solve the
-          problem. At the same time, since there is no inner tube, there is no risk of snake bite and puncture in
-          tubeless tires, so the chance of puncture will be greatly reduced.
-        </p>
-        <p class="sizecharts-section__intro">
-          Compared with ordinary tires, tubeless tires are wider and can hold more air inside. The safe tire pressure
-          required to maintain the shape is relatively small, so the tire pressure of tubeless tires does not need to
-          be above 100psi. The best rolling resistance and riding comfort can be obtained at around 80psi.
-        </p>
-
-        <p class="guide-section__cta-wrapper">
-          <button
-            type="button"
-            class="sizecharts-brand-button"
-            @click="setActiveTab('choose')"
-          >
-            Check the tire pressure limits of different models of tubeless tires
-          </button>
-        </p>
+        <TubelessGuide @change-tab="setActiveTab" />
       </section>
 
       <!-- Installation -->
@@ -199,167 +51,7 @@
         id="installation"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Installation</h2>
-        <h3 class="sizecharts-section__subheading">Before installation:</h3>
-        <p class="sizecharts-section__intro">
-          Before starting the first step, one thing to know is, what is the difference between using tubeless tires and clincher tires? The biggest difference is of course the lack of inner tubes.
-          <br />
-          Not having a tube means the entire tubeless system is airtight and inflated differently.
-        </p>
-        <h3 class="sizecharts-section__subheading">So focus on this first</h3>
-        <p class="sizecharts-section__intro">
-          The air tightness of clincher tires relies on the inner tube, while the air tightness of tubeless tires relies on the tubeless tire pad.
-          <br />
-          The overall process is divided into three steps. The first step is to install tubeless tires. The second step is to fill the tire with tire sealant. The third step is to cheer up.
-        </p>
-        <p class="sizecharts-section__intro">
-          Compared with ordinary clincher tires, there is one less step to insert the inner tube. But there are some differences before installation.
-        </p>
-        <p class="guide-section__cta-wrapper">
-          <button
-            type="button"
-            class="sizecharts-brand-button"
-            @click="setActiveTab('tubeless')"
-          >
-            See details of the vacuum accessories you need
-          </button>
-        </p>
-
-        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/Bicycle tubeless tire pad.webp"
-            alt="Bicycle tubeless tire pad"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/Bicycle vacuum self-replenishing fluid.webp"
-            alt="Bicycle vacuum self-replenishing fluid"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/Bicycle vacuum valve.webp"
-            alt="Bicycle vacuum valve"
-            :zoomOnClick="true"
-          />
-        </div>
-
-        <ul class="sizecharts-section__list">
-          <li>So you need to carefully attach the tubeless tire pad to the rim first.</li>
-          <li>Carefully attach the tubeless tire pad to the tire bed of the wheel set to seal the spoke holes.</li>
-          <li>Overlap the interface by about 10CM, and then carefully press the vacuum tire pad to ensure a tight fit between the tire pad and the rim.</li>
-          <li>
-            Then use an awl or utility knife to make a hole at the air nozzle position and install the vacuum air nozzle. If it is a holeless vacuum ring design similar to CP wheels, you can skip the step of installing tire pads and install the valve directly.
-          </li>
-        </ul>
-
-        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/tanzanite-Bicycle-tubeless-tire-pads.webp"
-            alt="Tanzanite bicycle tubeless tire pads"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/tanzanite-howtoopenthe vacuumnozzle.webp"
-            alt="Tanzanite how to open the vacuum nozzle"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/tanzanite-tubeless-tirepad-interface-overlaps.webp"
-            alt="Tanzanite tubeless tire pad interface overlaps"
-            :zoomOnClick="true"
-          />
-        </div>
-
-        <ul class="sizecharts-section__list">
-          <li>
-            This is the second difference between vacuum and opening, the way of inflating. The valve of clincher tires is installed on the inner tube, while the valve of tubeless tires is installed on the rim.
-          </li>
-          <li>
-            When installing the vacuum valve, make sure that the root of the vacuum valve is tightly connected to the rim. The fixing screw of the valve only needs to be tightened by hand. Do not use a wrench or other tools to tighten it hard enough to cause miracles!
-          </li>
-        </ul>
-
-        <h3 class="sizecharts-section__subheading">1. Install tubeless tires</h3>
-        <ul class="sizecharts-section__list">
-          <li>
-            Then install the tire on the rim just like a clincher tire. Generally speaking, tubeless tires are tighter and more difficult to install than clincher tires of the same type, requiring a certain amount of strength and a lot of patience. Here's a trick: Push all the bead into the concave center of the rim to make the tire easier to install.
-          </li>
-          <li>
-            After all the tire beads on both sides are installed, use your hands to "massage" the tire from the opposite side of the valve to ensure that every position of the tire is well embedded in the rim. At the same time, push all the tire beads on both sides into the grooves of the rim, which will make it easier to inflate. Finally, carefully check the position of the valve to ensure that the bead completely covers the valve.
-          </li>
-          <li>
-            Then it’s time to inflate. It’s also difficult to inflate a tubeless tire for the first time because the tire is not stuck in place at this time and is leaking air. You need to use an air pump with a large air intake to inflate quickly or an air pump with an air storage function. Or a CO2 cylinder can also be used. The principle is to allow a large amount of air to quickly enter the tire and push the tire into place. When I was decorating my home, I used an ordinary vertical air pump that worked wonders.
-          </li>
-          <li>
-            After inflating, check whether the bead line is completely exposed on the rim. If the tire is not easy to place, sometimes it is necessary to lubricate the bead line.
-          </li>
-          <li>
-            Use soapy water, dishwashing liquid, and special lubricant to apply to the bead. Or SCHWABLE has special tire fluid.
-          </li>
-        </ul>
-
-        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/3/first-step-to-install-tubelesstires.webp"
-            alt="First step to install tubeless tires"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/3/Tubelesstire-installation-diagram-2.webp"
-            alt="Tubeless tire installation diagram 2"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/3/Picture-of-whether-the-vacuum-nozzle-is-installed-properly.webp"
-            alt="Picture of whether the vacuum nozzle is installed properly"
-            :zoomOnClick="true"
-          />
-        </div>
-
-        <h3 class="sizecharts-section__subheading">2. Fill the tire with tire repair fluid.</h3>
-        <ul class="sizecharts-section__list">
-          <li>Use special tools to remove the core of the valve.</li>
-          <li>
-            Then pour the self-hydrating fluid into the wheel through the valve. For the amount of self-replenishing solution, refer to the instruction manual of the self-replenishing solution you purchased. The consumption of a road car is about 30-60ML per wheel.
-          </li>
-        </ul>
-
-        <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant1.webp"
-            alt="Pour vacuum tire sealant 1"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant2.webp"
-            alt="Pour vacuum tire sealant 2"
-            :zoomOnClick="true"
-          />
-          <GuideImage
-            class="sizecharts-installation-images__item"
-            src="/public/tiresizecharts/installation/4/Separate-vacuum-nozzle-tool.webp"
-            alt="Separate vacuum nozzle tool"
-            :zoomOnClick="true"
-          />
-        </div>
-
-        <h3 class="sizecharts-section__subheading">3. Cheer up</h3>
-        <ul class="sizecharts-section__list">
-          <li>
-            Inflate the same as ordinary clincher tires. Because the tires have been installed in place in the previous step. Pump up the air, hold your wheel up, down, left, and right, and shake the tire sealant evenly, and you're done.
-          </li>
-        </ul>
+        <InstallationGuide @change-tab="setActiveTab" />
       </section>
 
       <!-- How to choose -->
@@ -368,38 +60,7 @@
         id="choose"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">How to Choose</h2>
-        <!-- Tire width -> rim internal width helper placed directly under title -->
-        <TireRimHelper />
-
-        <div class="mt-4">
-          <h3 class="sizecharts-section__subheading">
-            Reference charts from DT Swiss
-          </h3>
-          <p class="sizecharts-section__intro">
-            The following hookless (TSS) and hooked (TC) rim inner width charts from DT Swiss
-            show recommended (dark) and possible (light) combinations. Always stay within the
-            limits specified by your tire and rim manufacturers.
-          </p>
-          <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div class="rounded-xl bg-slate-900/70 p-2 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
-              <img
-                src="/public/tiresizecharts/howtochoose/dtswiss-hookless-tss-rim-table.webp"
-                alt="DT Swiss hookless TSS rim inner width recommendation chart"
-                class="block h-auto w-full"
-                loading="lazy"
-              />
-            </div>
-            <div class="rounded-xl bg-slate-900/70 p-2 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
-              <img
-                src="/public/tiresizecharts/howtochoose/dtswiss-hooked-tc-rim-table.webp"
-                alt="DT Swiss hooked TC rim inner width recommendation chart"
-                class="block h-auto w-full"
-                loading="lazy"
-              />
-            </div>
-          </div>
-        </div>
+        <HowToChooseGuide />
       </section>
 
       <!-- Tire pressure -->
@@ -408,10 +69,7 @@
         id="rims"
         class="sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Tire Pressure</h2>
-        <div class="tire-pressure-card">
-          <TirePressureSection @openTireProducts="openTireProductsDrawer" />
-        </div>
+        <TirePressureGuide @open-tire-products="openTireProductsDrawer" />
       </section>
 
       <!-- Inner Tube -->
@@ -454,14 +112,17 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRoute } from '#imports'
-import TubelessProducts from '~/components/TubelessProducts.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import GuideImage from '~/components/GuideImage.vue'
-import TireRimHelper from '~/components/TireRimHelper.vue'
-import TirePressureSection from '~/components/TirePressureSection.vue'
 import TireSizeSection from '~/components/TireSizeSection.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
+import MatchGuide from '~/components/tireguides/MatchGuide.vue'
+import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
+import HowToChooseGuide from '~/components/tireguides/HowToChooseGuide.vue'
+import TirePressureGuide from '~/components/tireguides/TirePressureGuide.vue'
 import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
+import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
+import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 
 type SizeChartsTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
 
