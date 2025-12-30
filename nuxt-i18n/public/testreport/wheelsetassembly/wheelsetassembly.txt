@@ -1,3 +1,4 @@
+ 在 Settings 里把 archive.autoArchive 设为 true，以后完成任务就自动消失，干净利落。
 1. Overview / 页面概览
 This section outlines the complete wheelset assembly process, from spoke lacing to final inspection, ensuring durability and performance.
 2. Assembly Process / 组装流程
