@@ -377,20 +377,7 @@
           </div>
         </div>
 
-        <!-- Tools row (spans full width) -->
-        <div class="mt-6 space-y-1.5">
-          <label for="tools" class="block text-xs font-medium text-slate-200">Tools</label>
-          <select
-            id="tools"
-            v-model="selectedTool"
-            class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-          >
-            <option value="spoke-wrench" class="bg-slate-900 text-slate-50">Spoke wrench</option>
-            <option value="truing-stand" class="bg-slate-900 text-slate-50">Truing stand</option>
-            <option value="tension-meter" class="bg-slate-900 text-slate-50">Tension meter</option>
-            <option value="dishing-tool" class="bg-slate-900 text-slate-50">Dishing tool</option>
-          </select>
-        </div>
+
 
         <!-- Action row -->
         <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t border-slate-800 pt-4">
@@ -568,7 +555,7 @@ const rearConfig = reactive<WheelConfig>({
   rightFlangePcd: 55,
 })
 
-const selectedTool = ref<string>('spoke-wrench')
+
 
 // Load rim / hub / nipple options from backend JSON API.
 const {

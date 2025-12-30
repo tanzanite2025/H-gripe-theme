@@ -3,6 +3,13 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "04f572a34cf13363",
+      "timestamp": "2025-12-30T16:17:49.756Z",
+      "description": "✅ 任务完成: UI 优化: 移除未使用的 Tools 下拉菜单",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "6ccc84b8126769aa",
       "timestamp": "2025-12-30T16:06:14.497Z",
       "description": "✅ 任务完成: 数据清理: 移除 API 中的 Demo 数据，并禁用无数据的下拉菜单",
@@ -132,13 +139,6 @@
       "id": "3f065513124458c6",
       "timestamp": "2025-12-29T19:07:55.909Z",
       "description": "✅ 3 个任务完成: SEO 优化: 安装并配置 `@nuxtjs/sitemap` (已完成), SEO 优化: 配置 `i18n.baseUrl` (已完成)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "10856ab13a2b15b7",
-      "timestamp": "2025-12-29T18:45:00.405Z",
-      "description": "✅ 任务完成: 隐藏聊天组件中的 Tire Search 按钮 (已完成)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }
