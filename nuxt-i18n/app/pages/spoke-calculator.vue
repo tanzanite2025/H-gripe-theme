@@ -184,6 +184,15 @@
           </ul>
         </div>
       </section>
+
+      <!-- FAQ Section -->
+      <section class="spoke-faq mt-8">
+        <PageFaq
+          page-id="products-spoke-calculator"
+          theme="dark"
+          :show-categories="true"
+        />
+      </section>
     </div>
   </div>
 </template>
@@ -192,6 +201,7 @@
 import SpokeCalculatorCore from '~/components/SpokeCalculatorCore.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import SpokeHistorySearch from '~/components/SpokeHistorySearch.vue'
+import PageFaq from '~/components/PageFaq.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import { ref, watch } from 'vue'
 import { useRoute } from '#imports'
