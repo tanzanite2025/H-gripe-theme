@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
     <h3 class="support-section__title text-center">Wheelset Test Report</h3>
 
     <p class="support-section__body mt-4 text-center">
@@ -33,7 +33,13 @@
         impacts.
       </p>
       <p class="support-section__body mt-2">
-        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+        <strong>Test Method:</strong>
+        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          ISO 4210-7:2023
+        </span>
       </p>
       <ul class="sizecharts-section__list support-section__body">
         <li>Secure the complete wheelset in the testing fixture.</li>
@@ -68,7 +74,13 @@
         reliability during acceleration, braking, and climbing.
       </p>
       <p class="support-section__body mt-2">
-        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+        <strong>Test Method:</strong>
+        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          ISO 4210-7:2023
+        </span>
       </p>
       <ul class="sizecharts-section__list support-section__body">
         <li>Secure the complete wheelset in the testing fixture, simulating hub drive conditions.</li>
@@ -105,7 +117,13 @@
         durability, ensuring long-term reliability in harsh environments.
       </p>
       <p class="support-section__body mt-2">
-        <strong>Test Method (ISO 9227 & ISO 4210-7:2023 reference):</strong>
+        <strong>Test Method:</strong>
+        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          ISO 9227 & ISO 4210-7:2023
+        </span>
       </p>
       <ul class="sizecharts-section__list support-section__body">
         <li>Place the rim or complete wheelset in an environmental chamber.</li>
@@ -146,7 +164,13 @@
         safety.
       </p>
       <p class="support-section__body mt-2">
-        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+        <strong>Test Method:</strong>
+        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          ISO 4210-7:2023
+        </span>
       </p>
       <ul class="sizecharts-section__list support-section__body">
         <li>Mount the complete wheelset on a high-speed rotation testing rig.</li>
@@ -176,7 +200,13 @@
         Simulates repeated loads over long-term riding to verify rim durability and structural reliability.
       </p>
       <p class="support-section__body mt-2">
-        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+        <strong>Test Method:</strong>
+        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          ISO 4210-7:2023
+        </span>
       </p>
       <ul class="sizecharts-section__list support-section__body">
         <li>Mount the complete wheelset on a fatigue testing machine.</li>
@@ -212,7 +242,13 @@
         reliable performance.
       </p>
       <p class="support-section__body mt-2">
-        <strong>Test Method (ISO 4210-7:2023 reference):</strong>
+        <strong>Test Method:</strong>
+        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          ISO 4210-7:2023
+        </span>
       </p>
       <ul class="sizecharts-section__list support-section__body">
         <li>Mount the complete wheelset on a braking performance testing rig.</li>
@@ -301,10 +337,11 @@ const { openWheelsetVideo, goToWheelsetAssembly } = defineProps<{
 }
 
 .rim-test-card {
-  padding: 0.9rem 1rem;
+  padding: 1.25rem;
   border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.8);
-  box-shadow: 6px 10px 16px rgba(0, 0, 0, 0.9);
+  background: rgba(2, 6, 23, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .support-video-thumbnail {

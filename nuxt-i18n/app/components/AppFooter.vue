@@ -170,7 +170,7 @@ const paymentIcons: PaymentIcon[] = [
 <style scoped>
 .app-footer {
   /* 增大底部 padding，预留空间给底部浮动 Dock (Desktop: 8rem, Mobile: 6rem) */
-  padding: 1rem 1.5rem 8rem;
+    padding: 1rem 1.5rem 6.5rem;
   background: linear-gradient(140deg, #0c0f17 0%, #141925 45%, #1b2230 100%);
   color: #f5f6fa;
 }
@@ -196,8 +196,13 @@ const paymentIcons: PaymentIcon[] = [
 
 .footer-subscription {
   width: 100%;
-  max-width: 480px;
-  padding: 0 1rem;
+  max-width: 100%; /* Fill the grid column */
+  padding: 1.5rem;
+  background: #11151e; /* Global Premium Card BG */
+  /* Remove border as requested */
+  border-radius: 16px;
+  /* Global Deep Shadow */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
 .footer-menus-wrapper {
@@ -208,10 +213,11 @@ const paymentIcons: PaymentIcon[] = [
   margin-top: 1.5rem;
   display: flex;
   justify-content: center; /* Mobile center */
+  gap: 1rem; /* More space */
 }
 
 .footer-subscription__payment {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   display: flex;
   justify-content: center; /* Mobile center */
   gap: 0.5rem;
@@ -220,14 +226,20 @@ const paymentIcons: PaymentIcon[] = [
 
 .payment-icon-tile {
   width: 44px;
-  height: 26px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  overflow: hidden;
+  /* Revert to simple style */
   background: transparent;
-  border: 0;
+  border: none;
+  border-radius: 4px; /* Optional, for image corners if needed */
+  transition: transform 0.2s;
+}
+
+.payment-icon-tile:hover {
+  transform: translateY(-2px);
+  background: transparent;
 }
 
 .payment-icon-tile__img {
@@ -235,10 +247,20 @@ const paymentIcons: PaymentIcon[] = [
   height: 100%;
   display: block;
   object-fit: contain;
+  padding: 0; /* Remove internal padding */
 }
 
+/* ... existing media query ... */
+  .footer-main-row {
+    display: grid;
+    grid-template-columns: 480px 1fr; /* Increased to 480px */
+    align-items: start;
+    gap: 4rem;
+    margin-bottom: 0;
+  }
+
 .payment-icon-tile__img.payment-icon--alipay {
-  transform: scale(1.28);
+  transform: scale(1.2);
   transform-origin: center;
 }
 
@@ -338,24 +360,30 @@ const paymentIcons: PaymentIcon[] = [
 
   .footer-main-row {
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 480px 1fr;
     align-items: start;
     gap: 4rem;
     margin-bottom: 0;
   }
 
   .footer-subscription {
-    max-width: 100%;
-    padding: 0;
+    max-width: 100%; /* Card matches grid column width (480px) */
+    padding: 1.5rem; /* Restore padding */
     text-align: left;
   }
   
+  .footer-subscription :deep(form) {
+    max-width: 340px; /* Limit input width prevents it from stretching too wide */
+  }
+
   .footer-subscription__social {
     justify-content: flex-start;
   }
 
   .footer-subscription__payment {
     justify-content: flex-start;
+    /* Allow icons to use full width of the card if needed */
+    max-width: 100%; 
   }
   
   .footer-subscription :deep(label) {
@@ -385,14 +413,24 @@ const paymentIcons: PaymentIcon[] = [
 @media (max-width: 768px) {
   .app-footer {
     /* 移动端 Dock 通常更高，底部多留一些空间 */
-    padding: 1rem 1.25rem 6rem;
+    padding: 1rem 1.25rem 4.5rem;
   }
   
   .footer-main-row {
-    gap: 1.5rem;
-    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Ensure children take full width */
+    gap: 2rem; /* Increase gap */
+    margin-bottom: 2rem;
   }
   
+  .footer-subscription {
+    max-width: 100% !important; /* Force full width on mobile */
+    width: 100%;
+    box-sizing: border-box;
+    margin-right: 0;
+  }
+
   .footer-content {
     gap: 0.5rem;
   }

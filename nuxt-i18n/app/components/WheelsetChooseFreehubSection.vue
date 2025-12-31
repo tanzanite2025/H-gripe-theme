@@ -1,416 +1,316 @@
 <template>
-  <div>
-    <p class="sizecharts-section__intro">
-      We are preparing a step-by-step guide to help you choose the right freehub body for your drivetrain.
-      This section will explain compatibility between HG, MS, XD, XDR and different cassette setups.
-    </p>
+  <div class="space-y-8">
+    <!-- Intro Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
+       <div class="flex flex-col items-center">
 
-    <FreehubGroupsetHelper />
-
-    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <GuideImage
-        src="/public/wheelsetbuyersguide/choose%20freehub/shimano-micro-spline-11-12-speed-mountain-freehub.webp"
-        alt="Shimano Micro Spline 11/12-speed mountain freehub body"
-        :zoomOnClick="true"
-        caption="Shimano Micro Spline 11/12-speed MTB freehub"
-      />
-      <GuideImage
-        src="/public/wheelsetbuyersguide/choose%20freehub/shimano-8-9-10-11-speed-road-hyper-freehub.webp"
-        alt="Shimano 8/9/10/11-speed road HG freehub body"
-        :zoomOnClick="true"
-        caption="Shimano 8/9/10/11-speed road HG freehub"
-      />
-      <GuideImage
-        src="/public/wheelsetbuyersguide/choose%20freehub/shimano-8-9-10-11-speed-mountain-hyper-freehub.webp"
-        alt="Shimano 8/9/10/11-speed mountain HG freehub body"
-        :zoomOnClick="true"
-        caption="Shimano 8/9/10/11-speed MTB HG freehub"
-      />
-      <GuideImage
-        src="/public/wheelsetbuyersguide/choose%20freehub/sram-xd-11-12-speed-mountain-freehub.webp"
-        alt="SRAM XD 11/12-speed mountain freehub body"
-        :zoomOnClick="true"
-        caption="SRAM XD 11/12-speed MTB freehub"
-      />
-      <GuideImage
-        src="/public/wheelsetbuyersguide/choose%20freehub/sram-xdr-road-11-12-speed-freehub.webp"
-        alt="SRAM XDR 11/12-speed road freehub body"
-        :zoomOnClick="true"
-        caption="SRAM XDR 11/12-speed road freehub"
-      />
-      <GuideImage
-        src="/public/wheelsetbuyersguide/choose%20freehub/Campagnolo-8-9-10-11-N3W-freehub.webp"
-        alt="Campagnolo N3W freehub body for 13-speed and 9–12-speed cassettes"
-        :zoomOnClick="true"
-        caption="Campagnolo N3W 13-speed and 9–12-speed freehub"
-      />
-      <GuideImage
-        src="/public/wheelsetbuyersguide/choose%20freehub/Campagnolo-8-9-10-11-spd-freehub.webp"
-        alt="Campagnolo 8/9/10/11-speed classic freehub body"
-        :zoomOnClick="true"
-        caption="Campagnolo classic 8/9/10/11-speed freehub"
-      />
+         <h3 class="text-lg font-bold text-slate-100 mb-2">Select Your Freehub Body</h3>
+         <p class="text-sm text-slate-400 leading-relaxed max-w-2xl mx-auto mb-4">
+            A comprehensive guide to matching your freehub with your drivetrain cassettes (Shimano, SRAM, Campagnolo).
+         </p>
+         <FreehubGroupsetHelper />
+       </div>
     </div>
 
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-3"
-    >
-      Freehub types and matching groupsets
-    </h3>
-    <p class="mt-2 text-center text-slate-100 text-sm">
-      Different freehub bodies correspond to specific groupsets with clear compatibility ranges. For example:
-    </p>
-    <ul class="mt-2 space-y-1 text-center text-slate-100 text-xs sm:text-sm">
-      <li>
-        MS (Micro Spline 12-speed) &rarr; Shimano MTB 12-speed groupsets (such as Deore M6100, SLX M7100, XT M8100,
-        XTR M9100).
-      </li>
-      <li>
-        HG 8-speed &rarr; Shimano Claris, Altus, Acera and other entry-level road / MTB groupsets.
-      </li>
-      <li>
-        HG 9&ndash;11 speed &rarr; Shimano Sora, Tiagra, 105, Ultegra, Dura-Ace, as well as MTB groupsets like Deore,
-        SLX, XT.
-      </li>
-      <li>
-        XD &rarr; SRAM MTB 11/12-speed groupsets (such as GX Eagle, X01 Eagle, XX1 Eagle).
-      </li>
-      <li>
-        XDR &rarr; SRAM road 12-speed groupsets (such as Force eTap AXS, Red eTap AXS).
-      </li>
-      <li>
-        N3W &rarr; Campagnolo Ekar 13-speed; with the appropriate adapter it can also run Record, Super Record and
-        Chorus 10&ndash;12-speed cassettes (new standard with backward compatibility).
-      </li>
-      <li>
-        CP (Campagnolo classic freehub) &rarr; supports only Campagnolo 11-speed road groupsets (such as Super Record 11,
-        Record 11, Chorus 11) and does not support 12/13-speed.
-      </li>
-    </ul>
+    <!-- 1. Shimano Ecosystem (Blue) -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="flex items-center gap-3 mb-6 pb-3 border-b border-blue-500/10">
+          <h3 class="text-lg font-bold text-slate-200">Shimano Ecosystem</h3>
+       </div>
 
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-4"
-    >
-      Notes
-    </h3>
-    <ul class="mt-2 space-y-1 text-center text-slate-100 text-xs sm:text-sm">
-      <li>
-        MS freehub is Shimano&rsquo;s newer MTB spline standard designed around 12-speed cassettes and is not
-        backward-compatible with HG freehubs.
-      </li>
-      <li>
-        HG freehub is the most widely used standard across 8&ndash;11 speed road and MTB (some combinations may require
-        spacers).
-      </li>
-      <li>
-        XD / XDR freehubs are mainly used for SRAM; XD is MTB-oriented, while XDR is road-oriented.
-      </li>
-      <li>
-        N3W is Campagnolo&rsquo;s latest standard, offering strong compatibility and good backward support.
-      </li>
-      <li>
-        CP freehub is Campagnolo&rsquo;s traditional design, supporting only 11-speed road.
-      </li>
-    </ul>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div class="bg-blue-500/5 rounded-xl p-3 border border-blue-500/10">
+              <GuideImage
+                src="/public/wheelsetbuyersguide/choose%20freehub/shimano-micro-spline-11-12-speed-mountain-freehub.webp"
+                alt="Shimano Micro Spline 11/12-speed mountain freehub body"
+                :zoomOnClick="true"
+                caption="For MTB 12-Speed"
+                class="rounded-lg mb-2"
+              />
+              <strong class="block text-blue-400 text-sm mb-1 text-center">Micro Spline (MS)</strong>
+              <p class="text-xs text-slate-400 text-center">Deore M6100, XT M8100, XTR M9100</p>
+          </div>
+          <div class="bg-blue-500/5 rounded-xl p-3 border border-blue-500/10">
+              <GuideImage
+                src="/public/wheelsetbuyersguide/choose%20freehub/shimano-8-9-10-11-speed-road-hyper-freehub.webp"
+                alt="Shimano road HG freehub body"
+                :zoomOnClick="true"
+                caption="For Road 11/12-Speed"
+                class="rounded-lg mb-2"
+              />
+              <strong class="block text-blue-400 text-sm mb-1 text-center">HG Road (HG-11)</strong>
+              <p class="text-xs text-slate-400 text-center">105, Ultegra, Dura-Ace (8-12sp)</p>
+          </div>
+          <div class="bg-blue-500/5 rounded-xl p-3 border border-blue-500/10">
+              <GuideImage
+                src="/public/wheelsetbuyersguide/choose%20freehub/shimano-8-9-10-11-speed-mountain-hyper-freehub.webp"
+                alt="Shimano mountain HG freehub body"
+                :zoomOnClick="true"
+                caption="For MTB 8-11 Speed"
+                class="rounded-lg mb-2"
+              />
+              <strong class="block text-blue-400 text-sm mb-1 text-center">HG Mountain</strong>
+              <p class="text-xs text-slate-400 text-center">Older MTB & Entry Road setups</p>
+          </div>
+       </div>
 
-    <!-- Freehub type vs groupset overview (translated from Chinese chart) -->
-    <div class="mt-4 overflow-x-auto">
-      <table
-        class="min-w-full border-separate border-spacing-0 rounded-xl overflow-hidden bg-slate-900/70 text-slate-100 text-xs sm:text-sm"
-      >
-        <thead>
-          <tr class="bg-slate-800/90 font-semibold text-slate-50">
-            <th class="px-3 py-2 text-left border-b border-slate-700">Freehub type</th>
-            <th class="px-3 py-2 text-left border-b border-slate-700">Example compatible groupsets</th>
-            <th class="px-3 py-2 text-left border-b border-slate-700">Key features</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">MS (Micro Spline 12-speed)</td>
-            <td class="px-3 py-2 align-top">
-              Shimano Deore M6100, SLX M7100, XT M8100, XTR M9100
-            </td>
-            <td class="px-3 py-2 align-top">
-              Designed specifically for MTB 12-speed; supports 10T smallest cog.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">HG 8-speed</td>
-            <td class="px-3 py-2 align-top">
-              Shimano Claris R2000, Altus M310, Acera M360
-            </td>
-            <td class="px-3 py-2 align-top">
-              Entry-level road / MTB setups, typically with 11&ndash;32T cassettes.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">HG 9&ndash;11 speed</td>
-            <td class="px-3 py-2 align-top">
-              Shimano Sora R3000, Tiagra 4700, 105 R7000, Ultegra R8000, Dura-Ace R9100;
-              MTB Deore M6000, SLX M7000, XT M8000
-            </td>
-            <td class="px-3 py-2 align-top">
-              Most widely used standard with strong cross-compatibility.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">XD</td>
-            <td class="px-3 py-2 align-top">
-              SRAM GX Eagle, X01 Eagle, XX1 Eagle (MTB 12-speed)
-            </td>
-            <td class="px-3 py-2 align-top">
-              Supports 10T smallest cog; focused on lightweight MTB performance.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">XDR</td>
-            <td class="px-3 py-2 align-top">
-              SRAM Force eTap AXS, Red eTap AXS (road 12-speed)
-            </td>
-            <td class="px-3 py-2 align-top">
-              Road-specific version of XD, 1.85 mm longer than XD.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">N3W</td>
-            <td class="px-3 py-2 align-top">
-              Campagnolo Ekar 13-speed; with adapter also compatible with Record, Super Record and Chorus
-              10&ndash;12-speed cassettes
-            </td>
-            <td class="px-3 py-2 align-top">
-              New 13-speed freehub platform designed for Ekar with backward compatibility to selected 10&ndash;12-speed
-              Campagnolo road cassettes via adapter.
-            </td>
-          </tr>
-          <tr>
-            <td class="px-3 py-2 align-top">CP (Campagnolo classic)</td>
-            <td class="px-3 py-2 align-top">
-              Campagnolo Super Record 11, Record 11, Chorus 11
-            </td>
-            <td class="px-3 py-2 align-top">
-              Traditional Campagnolo 11-speed-only road freehub standard (not compatible with 12/13-speed cassettes).
-            </td>
-          </tr>
-        </tbody>
-      </table>
+       <div class="bg-slate-800/50 rounded-xl p-4">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Compatibility Cheatsheet</h4>
+          <ul class="space-y-3">
+             <li class="flex items-start gap-3 text-xs text-slate-300">
+                <span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                <span><strong>MS (Micro Spline):</strong> Necessary for Shimano 12-speed MTB cassettes (10T start). Not backward compatible.</span>
+             </li>
+             <li class="flex items-start gap-3 text-xs text-slate-300">
+                <span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                <span><strong>HG (HyperGlide):</strong> The gold standard for decades. Fits 8-11sp MTB and 8-12sp Road cassettes. *Note: Road 11sp HG freehubs are longer; require 1.85mm spacer for MTB cassettes.*</span>
+             </li>
+          </ul>
+       </div>
     </div>
 
-    <div class="mt-4 overflow-x-auto">
-      <table
-        class="min-w-full border-separate border-spacing-0 rounded-xl overflow-hidden bg-slate-900/70 text-slate-100 text-xs sm:text-sm"
-      >
-        <thead>
-          <tr class="bg-slate-800/90 font-semibold text-slate-50">
-            <th class="px-3 py-2 text-left border-b border-slate-700">Brand</th>
-            <th class="px-3 py-2 text-left border-b border-slate-700">Freehub</th>
-            <th class="px-3 py-2 text-left border-b border-slate-700">Cassette</th>
-            <th class="px-3 py-2 text-left border-b border-slate-700">Spacer(s) needed</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Shimano -->
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">8/9/11 speed mountain cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">10 speed cassette</td>
-            <td class="px-3 py-2">1 mm spacer</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">11-speed road cassette</td>
-            <td class="px-3 py-2">not compatible</td>
-          </tr>
+    <!-- 2. SRAM Ecosystem (Red) -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="flex items-center gap-3 mb-6 pb-3 border-b border-red-500/10">
+          <h3 class="text-lg font-bold text-slate-200">SRAM Ecosystem</h3>
+       </div>
 
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 10-speed ONLY</td>
-            <td class="px-3 py-2">10 speed cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 10-speed ONLY</td>
-            <td class="px-3 py-2">other-speed cassettes</td>
-            <td class="px-3 py-2">not compatible</td>
-          </tr>
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="bg-red-500/5 rounded-xl p-3 border border-red-500/10">
+              <GuideImage
+                src="/public/wheelsetbuyersguide/choose%20freehub/sram-xd-11-12-speed-mountain-freehub.webp"
+                alt="SRAM XD freehub body"
+                :zoomOnClick="true"
+                caption="For MTB 11/12-Speed"
+                class="rounded-lg mb-2"
+              />
+              <strong class="block text-red-400 text-sm mb-1 text-center">XD Driver</strong>
+              <p class="text-xs text-slate-400 text-center">GX Eagle, X01, XX1 (10T start)</p>
+          </div>
+          <div class="bg-red-500/5 rounded-xl p-3 border border-red-500/10">
+              <GuideImage
+                src="/public/wheelsetbuyersguide/choose%20freehub/sram-xdr-road-11-12-speed-freehub.webp"
+                alt="SRAM XDR freehub body"
+                :zoomOnClick="true"
+                caption="For Road 12-Speed"
+                class="rounded-lg mb-2"
+              />
+              <strong class="block text-red-400 text-sm mb-1 text-center">XDR Driver</strong>
+              <p class="text-xs text-slate-400 text-center">Rival, Force, Red eTap AXS</p>
+          </div>
+       </div>
 
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 11/12 speed road freehub</td>
-            <td class="px-3 py-2">8/9/11 speed mountain cassette</td>
-            <td class="px-3 py-2">1.85 mm spacer</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 11/12 speed road freehub</td>
-            <td class="px-3 py-2">10 speed cassette</td>
-            <td class="px-3 py-2">1.85 mm + 1 mm spacers</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 11/12 speed road freehub</td>
-            <td class="px-3 py-2">11-speed road cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG 11/12 speed road freehub</td>
-            <td class="px-3 py-2">12-speed road cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
+       <div class="bg-slate-800/50 rounded-xl p-4">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Compatibility Cheatsheet</h4>
+          <ul class="space-y-3">
+             <li class="flex items-start gap-3 text-xs text-slate-300">
+                <span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+                <span><strong>XD:</strong> Compact design for MTB cassettes with a 10T small cog.</span>
+             </li>
+             <li class="flex items-start gap-3 text-xs text-slate-300">
+                <span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+                <span><strong>XDR:</strong> "Road" version of XD, 1.85mm longer. Can run XD cassettes with a 1.85mm spacer. Designed for 12-speed AXS road groups.</span>
+             </li>
+          </ul>
+       </div>
+    </div>
 
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">MS 11/12 speed mountain freehub</td>
-            <td class="px-3 py-2">11/12 speed cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
+    <!-- 3. Campagnolo Ecosystem (Indigo) -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="flex items-center gap-3 mb-6 pb-3 border-b border-indigo-500/10">
+          <h3 class="text-lg font-bold text-slate-200">Campagnolo Ecosystem</h3>
+       </div>
 
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG L2 12-speed road only freehub</td>
-            <td class="px-3 py-2">11-speed road cassette</td>
-            <td class="px-3 py-2">not compatible</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Shimano</td>
-            <td class="px-3 py-2 align-top">HG L2 12-speed road only freehub</td>
-            <td class="px-3 py-2">12-speed road cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="bg-indigo-500/5 rounded-xl p-3 border border-indigo-500/10">
+              <GuideImage
+                src="/public/wheelsetbuyersguide/choose%20freehub/Campagnolo-8-9-10-11-N3W-freehub.webp"
+                alt="Campagnolo N3W freehub"
+                :zoomOnClick="true"
+                caption="For 13-Speed / Gravel"
+                class="rounded-lg mb-2"
+              />
+              <strong class="block text-indigo-400 text-sm mb-1 text-center">N3W</strong>
+              <p class="text-xs text-slate-400 text-center">Ekar 13sp (Backward compatible w/ adapter)</p>
+          </div>
+          <div class="bg-indigo-500/5 rounded-xl p-3 border border-indigo-500/10">
+              <GuideImage
+                src="/public/wheelsetbuyersguide/choose%20freehub/Campagnolo-8-9-10-11-spd-freehub.webp"
+                alt="Campagnolo Classic freehub"
+                :zoomOnClick="true"
+                caption="Classic Road"
+                class="rounded-lg mb-2"
+              />
+              <strong class="block text-indigo-400 text-sm mb-1 text-center">Classic (ED/CP)</strong>
+              <p class="text-xs text-slate-400 text-center">9/10/11/12 Speed Road</p>
+          </div>
+       </div>
 
-          <!-- SRAM -->
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">HG-style 9/10 speed freehub</td>
-            <td class="px-3 py-2">SRAM 9 speed</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">HG-style 9/10 speed freehub</td>
-            <td class="px-3 py-2">SRAM 10 speed</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">HG-style 9/10 speed freehub</td>
-            <td class="px-3 py-2">NX Eagle 12 speed cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
+       <div class="bg-slate-800/50 rounded-xl p-4">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Compatibility Cheatsheet</h4>
+          <ul class="space-y-3">
+             <li class="flex items-start gap-3 text-xs text-slate-300">
+                <span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                <span><strong>N3W:</strong> The future standard. Native for Ekar 13sp. Fits older 10-12sp cassettes with an adapter.</span>
+             </li>
+             <li class="flex items-start gap-3 text-xs text-slate-300">
+                <span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                <span><strong>Classic:</strong> The traditional spline for Super Record, Record, Chorus (11/12sp).</span>
+             </li>
+          </ul>
+       </div>
+    </div>
 
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">HG-style 11-speed road freehub</td>
-            <td class="px-3 py-2">SRAM 9 speed</td>
-            <td class="px-3 py-2">1.85 mm spacer</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">HG-style 11-speed road freehub</td>
-            <td class="px-3 py-2">SRAM 10 speed</td>
-            <td class="px-3 py-2">1.85 mm spacer</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">HG-style 11-speed road freehub</td>
-            <td class="px-3 py-2">SRAM 11 speed</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
+    <!-- SEO & Technical Reference Tables (Restored) -->
+    <div class="pt-6 border-t border-slate-800/50">
+       <h3 class="text-base font-bold text-slate-200 mb-4 px-2 border-l-4 border-slate-500">
+         Technical Reference: Freehub Standards & Groupsets
+       </h3>
+       <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[#11151e]">
+          <table class="min-w-full text-left text-xs sm:text-sm text-slate-400">
+            <thead class="bg-slate-800/50 font-bold text-slate-200 uppercase tracking-wider text-[10px] sm:text-xs">
+              <tr>
+                <th class="px-4 py-3">Type</th>
+                <th class="px-4 py-3">Example Groupsets</th>
+                <th class="px-4 py-3">Features</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/50">
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-300">MS (Micro Spline 12s)</td>
+                <td class="px-4 py-3">Shimano Deore M6100, SLX M7100, XT M8100, XTR M9100</td>
+                <td class="px-4 py-3">MTB 12-speed specific; supports 10T cog.</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-300">HG 8s</td>
+                <td class="px-4 py-3">Claris R2000, Altus M310, Acera M360</td>
+                <td class="px-4 py-3">Entry-level Road/MTB (11-32T).</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-300">HG 9-11s</td>
+                <td class="px-4 py-3">Sora, Tiagra, 105, Ultegra, Dura-Ace; MTB Deore/SLX/XT</td>
+                <td class="px-4 py-3">Most common standard. Strong cross-compatibility.</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-300">XD</td>
+                <td class="px-4 py-3">SRAM GX Eagle, X01 Eagle, XX1 Eagle</td>
+                <td class="px-4 py-3">MTB 11/12s, supports 10T cog, lightweight.</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-300">XDR</td>
+                <td class="px-4 py-3">SRAM Force/Red eTap AXS</td>
+                <td class="px-4 py-3">Road 12s specific, 1.85mm longer than XD.</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-300">N3W</td>
+                <td class="px-4 py-3">Campagnolo Ekar 13s</td>
+                <td class="px-4 py-3">Native 13s. Fits 10-12s w/ adapter.</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-300">CP (Classic)</td>
+                <td class="px-4 py-3">Super Record 11, Record 11, Chorus 11</td>
+                <td class="px-4 py-3">Traditional 11s Road only. No 12/13s support.</td>
+              </tr>
+            </tbody>
+          </table>
+       </div>
 
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">XD 11 &amp; 12 speed freehub</td>
-            <td class="px-3 py-2">
-              SRAM 11 &amp; 12 speed mountain XD cassettes
-              <span class="block text-[0.7rem] text-slate-300">
-                (SRAM XX1, XX1 Eagle, X01, X01 Eagle, X1, GX, GX Eagle)
-              </span>
-            </td>
-            <td class="px-3 py-2">no</td>
-          </tr>
+       <h3 class="text-base font-bold text-slate-200 mt-8 mb-4 px-2 border-l-4 border-slate-500">
+         Technical Reference: Compatibility & Spacer Matrix
+       </h3>
+       <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[#11151e]">
+          <table class="min-w-full text-left text-xs sm:text-sm text-slate-400">
+            <thead class="bg-slate-800/50 font-bold text-slate-200 uppercase tracking-wider text-[10px] sm:text-xs">
+              <tr>
+                <th class="px-4 py-3">Brand</th>
+                <th class="px-4 py-3">Freehub Body</th>
+                <th class="px-4 py-3">Cassette</th>
+                <th class="px-4 py-3">Spacer Needed?</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/50">
+              <!-- Shimano -->
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-blue-400">Shimano</td>
+                 <td class="px-4 py-3">HG 8-11s MTB</td>
+                 <td class="px-4 py-3">8/9/11s MTB</td>
+                 <td class="px-4 py-3 text-emerald-400">No</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-blue-400">Shimano</td>
+                 <td class="px-4 py-3">HG 8-11s MTB</td>
+                 <td class="px-4 py-3">10s Cassette</td>
+                 <td class="px-4 py-3 text-amber-400">1mm</td>
+              </tr>
+               <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-blue-400">Shimano</td>
+                 <td class="px-4 py-3">HG 11/12s Road</td>
+                 <td class="px-4 py-3">8/9/11s MTB</td>
+                 <td class="px-4 py-3 text-amber-400">1.85mm</td>
+              </tr>
+               <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-blue-400">Shimano</td>
+                 <td class="px-4 py-3">HG 11/12s Road</td>
+                 <td class="px-4 py-3">11/12s Road</td>
+                 <td class="px-4 py-3 text-emerald-400">No</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-blue-400">Shimano</td>
+                 <td class="px-4 py-3">MS 12s MTB</td>
+                 <td class="px-4 py-3">11/12s MS Cassette</td>
+                 <td class="px-4 py-3 text-emerald-400">No</td>
+              </tr>
+              
+              <!-- SRAM -->
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-red-400">SRAM</td>
+                 <td class="px-4 py-3">HG-Style 9/10s</td>
+                 <td class="px-4 py-3">SRAM 9/10s / NX Eagle</td>
+                 <td class="px-4 py-3 text-emerald-400">No</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-red-400">SRAM</td>
+                 <td class="px-4 py-3">XD 11/12s</td>
+                 <td class="px-4 py-3">SRAM PhD/Eagle (GX+)</td>
+                 <td class="px-4 py-3 text-emerald-400">No</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-red-400">SRAM</td>
+                 <td class="px-4 py-3">XDR 12s Road</td>
+                 <td class="px-4 py-3">SRAM AXS Road</td>
+                 <td class="px-4 py-3 text-emerald-400">No</td>
+              </tr>
+               <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-red-400">SRAM</td>
+                 <td class="px-4 py-3">XDR 12s Road</td>
+                 <td class="px-3 py-2">SRAM XD Cassette</td>
+                 <td class="px-3 py-2 text-amber-400">1.85mm</td>
+              </tr>
 
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">XDR 11 &amp; 12 speed freehub</td>
-            <td class="px-3 py-2">SRAM 11/12 speed road XDR cassette</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">SRAM</td>
-            <td class="px-3 py-2 align-top">XDR 11 &amp; 12 speed freehub</td>
-            <td class="px-3 py-2">SRAM XD cassette</td>
-            <td class="px-3 py-2">1.85 mm spacer</td>
-          </tr>
+              <!-- Campy -->
+               <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-indigo-400">Campagnolo</td>
+                 <td class="px-4 py-3">N3W 13s</td>
+                 <td class="px-4 py-3">Ekar 13s (9/10t start)</td>
+                 <td class="px-4 py-3 text-emerald-400">No</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-indigo-400">Campagnolo</td>
+                 <td class="px-4 py-3">N3W 13s</td>
+                 <td class="px-4 py-3">Classic 10-12s</td>
+                 <td class="px-4 py-3 text-amber-400">AC21-N3W Adapter</td>
+              </tr>
 
-          <!-- Campagnolo -->
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Campagnolo</td>
-            <td class="px-3 py-2 align-top">9/10/11/12 speed freehub</td>
-            <td class="px-3 py-2">9/10/11/12 speed Ultra-Drive cassettes</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Campagnolo</td>
-            <td class="px-3 py-2 align-top">N3W 13 speed freehub</td>
-            <td class="px-3 py-2">12/13 speed cassettes (9t/10t cog)</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Campagnolo</td>
-            <td class="px-3 py-2 align-top">N3W 13 speed freehub</td>
-            <td class="px-3 py-2">9/10/11/12 speed cassettes (11t starting cog)</td>
-            <td class="px-3 py-2">AC21-N3W adapter</td>
-          </tr>
-
-          <!-- Mavic -->
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Mavic</td>
-            <td class="px-3 py-2 align-top">Shimano HG-style 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">Shimano/SRAM 9-speed cassette</td>
-            <td class="px-3 py-2">1.75 mm Mavic adapter</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Mavic</td>
-            <td class="px-3 py-2 align-top">Shimano HG-style 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">Shimano/SRAM 10-speed cassette</td>
-            <td class="px-3 py-2">1.75 mm Mavic spacer</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Mavic</td>
-            <td class="px-3 py-2 align-top">Shimano HG-style 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">SRAM 9 speed</td>
-            <td class="px-3 py-2">1.75 mm Mavic spacer</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Mavic</td>
-            <td class="px-3 py-2 align-top">Shimano HG-style 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">Shimano 10 speed</td>
-            <td class="px-3 py-2">1 mm + 1.75 mm Mavic spacer</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-3 py-2 align-top">Mavic</td>
-            <td class="px-3 py-2 align-top">Shimano HG-style 8&ndash;11 speed mountain freehub</td>
-            <td class="px-3 py-2">Shimano/SRAM 11 speed</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-          <tr>
-            <td class="px-3 py-2 align-top">Mavic</td>
-            <td class="px-3 py-2 align-top">Campy-style freehub</td>
-            <td class="px-3 py-2">Campy 9/10/11/12 speed</td>
-            <td class="px-3 py-2">no</td>
-          </tr>
-        </tbody>
-      </table>
+               <!-- Mavic -->
+               <tr class="hover:bg-slate-800/30 transition-colors">
+                 <td class="px-4 py-3 font-medium text-yellow-400">Mavic</td>
+                 <td class="px-4 py-3">HG-Style 8-11s</td>
+                 <td class="px-4 py-3">Shimano/SRAM 9s</td>
+                 <td class="px-4 py-3 text-amber-400">1.75mm Mavic</td>
+              </tr>
+            </tbody>
+          </table>
+       </div>
     </div>
   </div>
 </template>

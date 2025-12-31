@@ -1,140 +1,118 @@
 <template>
-  <div>
-    <p class="sizecharts-section__intro">
-      Example front and rear rim combinations for different riding scenarios when using mixed rim profiles.
-    </p>
-
-    <h3 class="sizecharts-section__subheading text-sky-300 font-semibold mt-3">
-      1. Different rim models/specifications for front and rear
-    </h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        Refers to using different rims for the front and rear wheels (for example, a lightweight front rim and a
-        more durable or higher-profile rear rim).
-      </li>
-      <li>
-        This approach is common in custom wheelsets or testing and is used to balance weight, aerodynamics, and
-        strength.
-      </li>
-    </ul>
-
-    <h3 class="sizecharts-section__subheading text-sky-300 font-semibold mt-4">
-      2. Different rim heights or widths within the same wheelset
-    </h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        For example, a 50 mm high-profile rim on the front and a 60 mm high-profile rim on the rear; this setup is
-        sometimes referred to as a mixed rim setup.
-      </li>
-      <li>
-        Purpose: the front wheel offers easier handling, while the rear wheel provides greater stiffness and
-        aerodynamic advantage.
-      </li>
-    </ul>
-
-    <p class="guide-section__cta-wrapper mt-3">
-      You can customize your purchase through
-      <button
-        type="button"
-        class="wheelset-inline-button"
-        @click="openQuickBuy"
-      >
-        Quick buy
-      </button>
-      , or send us an email at
-      <a
-        class="wheelset-link"
-        href="mailto:support@tanzanit.site"
-      >
-        support@tanzanit.site
-      </a>
-      . You can also use
-      <button
-        type="button"
-        class="wheelset-inline-button"
-        @click="openWhatsAppChat"
-      >
-        Live chat
-      </button>
-      to contact us.
-    </p>
-
-    <div class="mt-4 overflow-x-auto">
-      <table
-        class="min-w-full border-separate border-spacing-0 rounded-xl overflow-hidden bg-slate-900/70 text-slate-100 text-xs sm:text-sm"
-      >
-        <thead>
-          <tr class="bg-slate-800/90 text-sm font-semibold text-slate-50">
-            <th class="px-4 py-3 text-left border-b border-slate-700">Scenario</th>
-            <th class="px-4 py-3 text-left border-b border-slate-700">Front rim choice</th>
-            <th class="px-4 py-3 text-left border-b border-slate-700">Rear rim choice</th>
-            <th class="px-4 py-3 text-left border-b border-slate-700">Purpose</th>
-          </tr>
-        </thead>
-        <tbody class="text-sm">
-          <tr class="border-b border-slate-800/70">
-            <td class="px-4 py-3 font-semibold align-top">Lightweight climbing</td>
-            <td class="px-4 py-3 align-top">
-              Low-profile lightweight rim (30–40 mm, lower height, reduced weight)
-            </td>
-            <td class="px-4 py-3 align-top">
-              Mid-profile or higher rim (40–50 mm, balances stiffness)
-            </td>
-            <td class="px-4 py-3 align-top">
-              Front wheel reduces weight and improves handling; rear wheel maintains stiffness and efficiency,
-              ideal for climbing routes.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-4 py-3 font-semibold align-top">Aerodynamics</td>
-            <td class="px-4 py-3 align-top">
-              Mid-to-high profile rim (50–60 mm, aerodynamic gain)
-            </td>
-            <td class="px-4 py-3 align-top">
-              High-profile rim (60–80 mm, maximum aero advantage)
-            </td>
-            <td class="px-4 py-3 align-top">
-              Front wheel balances handling and aerodynamics; rear wheel maximizes aero benefit, ideal for flat
-              high-speed riding.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-4 py-3 font-semibold align-top">Durability / training</td>
-            <td class="px-4 py-3 align-top">
-              Mid-profile alloy or carbon rim (stable and durable)
-            </td>
-            <td class="px-4 py-3 align-top">
-              High-profile or wider rim (enhanced strength and stability)
-            </td>
-            <td class="px-4 py-3 align-top">
-              Front wheel ensures comfort and durability; rear wheel bears more load, suitable for daily training
-              or endurance rides.
-            </td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-4 py-3 font-semibold align-top">Mixed purpose</td>
-            <td class="px-4 py-3 align-top">
-              Mid-profile rim (40–50 mm, balance of weight and aero)
-            </td>
-            <td class="px-4 py-3 align-top">
-              Higher-profile rim (55–65 mm, added stiffness and aero)
-            </td>
-            <td class="px-4 py-3 align-top">
-              Balanced setup for versatile riding (racing + training).
-            </td>
-          </tr>
-          <tr>
-            <td class="px-4 py-3 font-semibold align-top">Special customization</td>
-            <td class="px-4 py-3 align-top">Lightweight carbon rim</td>
-            <td class="px-4 py-3 align-top">Durable alloy rim</td>
-            <td class="px-4 py-3 align-top">
-              Front wheel focuses on lightweight performance; rear wheel on durability, suitable for
-              budget-conscious or special needs.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="space-y-6">
+    <!-- Intro Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center">
+       <div class="flex flex-col items-center">
+         <p class="text-slate-200 text-sm leading-relaxed max-w-2xl mx-auto">
+            Example riding scenarios where "Mixed Rim Profiles" (different front/rear specs) provide a tactical advantage.
+            This approach balances aerodynamics, handling, and durability.
+         </p>
+         
+         <div class="mt-4 flex flex-wrap justify-center gap-3">
+             <button
+               type="button"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-600 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider transition-colors"
+               @click="openQuickBuy"
+             >
+               Quick Custom
+             </button>
+             <button
+               type="button"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-lg"
+               @click="openWhatsAppChat"
+             >
+               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+               Consult Expert
+             </button>
+         </div>
+       </div>
     </div>
+
+    <!-- Scenarios Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <!-- 1. Diff Models -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-fuchsia-500/10">
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Different Models</h3>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+             Using completely different rim models (e.g., Lightweight Front + Heavy Duty Rear). Common in custom builds to balance specific performance needs.
+          </p>
+       </div>
+
+       <!-- 2. Diff Heights -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-fuchsia-500/10">
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Different Heights</h3>
+          </div>
+           <p class="text-xs text-slate-400 leading-relaxed">
+             E.g., 50mm Front (handling) + 60mm Rear (aero/stiffness). The most common "Mixed" setup to optimize crosswind stability and speed.
+          </p>
+       </div>
+    </div>
+
+    <!-- Mobile-First Comparison Cards (Replacing Table) -->
+    <div class="space-y-4">
+       <div class="flex items-center gap-2 mb-2 px-2">
+          <div class="h-4 w-1 bg-fuchsia-500 rounded-full"></div>
+          <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Configuration Cheatsheet</h3>
+       </div>
+
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Card 1 -->
+          <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+             <div class="flex justify-between items-start mb-2">
+                <strong class="text-fuchsia-400 text-sm">Climbing</strong>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Lightweight</span>
+             </div>
+             <div class="grid grid-cols-2 gap-4 text-xs text-slate-400 mb-2">
+                <div><span class="block text-slate-500 text-[10px] uppercase">Front</span> 30-40mm</div>
+                <div><span class="block text-slate-500 text-[10px] uppercase">Rear</span> 40-50mm</div>
+             </div>
+             <p class="text-xs text-slate-500 italic">Front for handling/weight, Rear for stiffness.</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+             <div class="flex justify-between items-start mb-2">
+                <strong class="text-fuchsia-400 text-sm">Aerodynamics</strong>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Speed</span>
+             </div>
+             <div class="grid grid-cols-2 gap-4 text-xs text-slate-400 mb-2">
+                <div><span class="block text-slate-500 text-[10px] uppercase">Front</span> 50-60mm</div>
+                <div><span class="block text-slate-500 text-[10px] uppercase">Rear</span> 60-80mm</div>
+             </div>
+             <p class="text-xs text-slate-500 italic">Front balances crosswinds, Rear maxes speed.</p>
+          </div>
+
+           <!-- Card 3 -->
+           <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+             <div class="flex justify-between items-start mb-2">
+                <strong class="text-fuchsia-400 text-sm">Training / Durability</strong>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Stable</span>
+             </div>
+             <div class="grid grid-cols-2 gap-4 text-xs text-slate-400 mb-2">
+                <div><span class="block text-slate-500 text-[10px] uppercase">Front</span> Mid Alloy/Carbon</div>
+                <div><span class="block text-slate-500 text-[10px] uppercase">Rear</span> High/Wide Profile</div>
+             </div>
+             <p class="text-xs text-slate-500 italic">Rear bears load, Front ensures comfort.</p>
+          </div>
+
+           <!-- Card 4 -->
+           <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+             <div class="flex justify-between items-start mb-2">
+                <strong class="text-fuchsia-400 text-sm">Mixed / Versatile</strong>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">All-around</span>
+             </div>
+             <div class="grid grid-cols-2 gap-4 text-xs text-slate-400 mb-2">
+                <div><span class="block text-slate-500 text-[10px] uppercase">Front</span> 40-50mm</div>
+                <div><span class="block text-slate-500 text-[10px] uppercase">Rear</span> 55-65mm</div>
+             </div>
+             <p class="text-xs text-slate-500 italic">A great balance for racing and training.</p>
+          </div>
+       </div>
+    </div>
+
   </div>
 </template>
 

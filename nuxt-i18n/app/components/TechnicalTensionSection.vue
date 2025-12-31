@@ -1,182 +1,153 @@
 <template>
-  <div>
-    <h3 class="sizecharts-section__subheading text-sky-300 font-semibold">
-      Wheel Spoke Tension and Rider Weight/Usage (Workshop Standard)
-    </h3>
-
-    <div class="mt-3 flex justify-center">
-      <GuideImage
-        src="/public/technical/tension/tanzanite-wheel-spoke-tension.webp"
-        alt="Diagram showing Tanzanite wheel spoke tension distribution and reference values"
-        :zoomOnClick="true"
-        caption="Reference illustration of Tanzanite wheel spoke tension and how it relates to rider weight and usage."
-      />
+  <div class="space-y-8">
+    <!-- Intro Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-amber-500">
+       <h3 class="text-lg font-bold text-slate-100 mb-2">Wheel Spoke Tension Standard</h3>
+       <p class="text-sm text-slate-400 leading-relaxed max-w-2xl mx-auto mb-6">
+          Tension is the soul of a wheel. We customize tension based on **Rider Weight**, **Usage**, and **Rim Material** to balance stiffness, durability, and comfort.
+       </p>
+       <div class="flex justify-center">
+         <GuideImage
+            src="/public/technical/tension/tanzanite-wheel-spoke-tension.webp"
+            alt="Wheel Spoke Tension Distribution"
+            :zoomOnClick="true"
+            caption="Tanzanite Workshop: Tension Distribution Reference"
+            class="rounded-xl max-w-lg w-full"
+         />
+       </div>
     </div>
 
-    <h3 class="sizecharts-section__subheading mt-2">
-      <span class="text-amber-300 font-semibold">1. Effect of Rider Weight</span>
-    </h3>
-    <ul class="sizecharts-section__list">
-      <li>Static load: A 75 kg rider increases upper spoke tension by ~15%, while lower spokes lose tension.</li>
-      <li>Dynamic riding: Pedaling raises drive-side tension and lowers braking-side tension; distribution keeps changing.</li>
-      <li>Heavier riders: Need higher overall tension and thicker spokes to avoid deformation or stiffness loss.</li>
-    </ul>
+    <!-- 1. Key Factors Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <!-- Rider Weight -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-amber-500 mb-4 flex items-center gap-2">
+              Effect of Rider Weight
+           </h3>
+           <ul class="space-y-3 text-sm text-slate-300">
+              <li class="flex items-start gap-3">
+                 <span class="mt-1 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                 <span><strong>Static Load:</strong> A 75kg rider increases upper spoke tension by ~15%, while lower spokes lose tension. (De-tensioning cycle).</span>
+              </li>
+              <li class="flex items-start gap-3">
+                 <span class="mt-1 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                 <span><strong>Heavy Riders:</strong> Need higher base tension and thicker spokes (14G) to prevent spokes from going slack, which causes fatigue failure.</span>
+              </li>
+           </ul>
+       </div>
 
-    <h3 class="sizecharts-section__subheading mt-4">
-      <span class="text-amber-300 font-semibold">2. Differences by Usage</span>
-    </h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        <div>{Road racing}</div>
-        <div>Focus on light weight and stiffness.</div>
-        <div>Drive-side tension typically 120–130 kgf, non-drive side lower, with a ratio around 10:6–10:7.</div>
-      </li>
-      <li>
-        <div>{Mountain biking}</div>
-        <div>Emphasis on durability and shock absorption.</div>
-        <div>Tension is set slightly lower to reduce risk of breakage.</div>
-        <div>Rim offset (about 2.6–3 mm) is often used to balance spoke tension between sides.</div>
-      </li>
-      <li>
-        <div>{Touring/commuting}</div>
-        <div>Prioritize stability and long-term durability.</div>
-        <div>Tension is kept moderate, with thicker spokes and a more balanced tension ratio.</div>
-      </li>
-    </ul>
-
-    <h3 class="sizecharts-section__subheading mt-4">
-      <span class="text-amber-300 font-semibold">3. Design and Building Considerations</span>
-    </h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        <div>{Rim geometry}</div>
-        <div>Offset designs improve tension balance between drive and non-drive sides.</div>
-      </li>
-      <li>
-        <div>{Spoke gauge}</div>
-        <div>14G (2.0 mm) is stronger than 15G (1.8 mm), recommended for heavier riders or off-road use.</div>
-      </li>
-      <li>
-        <div>{Tension vs. stiffness}</div>
-        <div>Too low → wheel feels loose, lacks stiffness.</div>
-        <div>Too high → risk of metal fatigue or reduced rim stiffness, especially in lightweight carbon rims.</div>
-      </li>
-    </ul>
-
-    <div class="mt-4 overflow-x-auto">
-      <table class="min-w-full border-separate border-spacing-0 rounded-xl overflow-hidden bg-slate-900/70 text-slate-100">
-        <thead>
-          <tr class="bg-slate-800/90 text-sm font-semibold text-slate-50">
-            <th class="px-4 py-3 text-left border-b border-slate-700">Rider weight range</th>
-            <th class="px-4 py-3 text-left border-b border-slate-700">Road racing recommended tension (kgf)</th>
-            <th class="px-4 py-3 text-left border-b border-slate-700">MTB recommended tension (kgf)</th>
-            <th class="px-4 py-3 text-left border-b border-slate-700">Touring/commute recommended tension (kgf)</th>
-          </tr>
-        </thead>
-        <tbody class="text-sm">
-          <tr class="border-b border-slate-800/70">
-            <td class="px-4 py-3">≤ 60 kg</td>
-            <td class="px-4 py-3">115–120</td>
-            <td class="px-4 py-3">95–105</td>
-            <td class="px-4 py-3">90–100</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-4 py-3">60–80 kg</td>
-            <td class="px-4 py-3">120–125</td>
-            <td class="px-4 py-3">100–115</td>
-            <td class="px-4 py-3">95–105</td>
-          </tr>
-          <tr class="border-b border-slate-800/70">
-            <td class="px-4 py-3">80–100 kg</td>
-            <td class="px-4 py-3">125–130</td>
-            <td class="px-4 py-3">110–120</td>
-            <td class="px-4 py-3">100–110</td>
-          </tr>
-          <tr>
-            <td class="px-4 py-3">≥ 100 kg</td>
-            <td class="px-4 py-3">130–135</td>
-            <td class="px-4 py-3">115–125</td>
-            <td class="px-4 py-3">105–115</td>
-          </tr>
-        </tbody>
-      </table>
+       <!-- Usage Scenarios -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-sky-500 mb-4 flex items-center gap-2">
+              Standard by Usage
+           </h3>
+           <div class="space-y-3 text-sm">
+              <div class="p-2 rounded-lg bg-indigo-500/10 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                 <strong class="block text-indigo-400">Road Racing</strong>
+                 <span class="text-slate-400 text-xs">High stiffness Focus. 120-130kgf (Drive Side).</span>
+              </div>
+              <div class="p-2 rounded-lg bg-emerald-500/10 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                 <strong class="block text-emerald-400">MTB / Gravel</strong>
+                 <span class="text-slate-400 text-xs">Durability Focus. Slightly lower tension for compliance and impact absorption.</span>
+              </div>
+              <div class="p-2 rounded-lg bg-teal-500/10 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                 <strong class="block text-teal-400">Touring / Commuting</strong>
+                 <span class="text-slate-400 text-xs">Reliability Focus. Moderate tension, thicker spokes.</span>
+              </div>
+           </div>
+       </div>
     </div>
 
-    <div
-      class="mt-4 rounded-lg border border-amber-300/80 bg-slate-900/80 px-4 py-3 text-sm leading-relaxed text-amber-100"
-    >
-      The above is a reference value, which is based on the geometrically
-      excellent tension ratio of the hub at 10:7 or better and the value
-      after the stress is completely released. The actual situation may
-      depend on the number of spokes and spoke type of each hub (for
-      example, flat spokes will be relatively weak laterally and need to be
-      moderately increased).
+    <!-- 2. Tension Chart -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] overflow-hidden">
+       <div class="p-4 bg-slate-800/50 border-b border-slate-700/50 flex items-center justify-between">
+          <h3 class="font-bold text-slate-200">Recommended Drive-Side Tension (kgf)</h3>
+          <span class="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-1 rounded">Unit: kgf</span>
+       </div>
+       <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm text-slate-400">
+            <thead class="bg-slate-800/30 font-semibold text-slate-300">
+              <tr>
+                <th class="px-5 py-3">Rider Weight</th>
+                <th class="px-5 py-3 text-indigo-300">Road Racing</th>
+                <th class="px-5 py-3 text-emerald-300">MTB</th>
+                <th class="px-5 py-3 text-teal-300">Touring</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/50">
+              <tr class="hover:bg-slate-800/20 transition-colors">
+                <td class="px-5 py-3 font-medium text-slate-200">≤ 60 kg</td>
+                <td class="px-5 py-3">115–120</td>
+                <td class="px-5 py-3">95–105</td>
+                <td class="px-5 py-3">90–100</td>
+              </tr>
+              <tr class="hover:bg-slate-800/20 transition-colors">
+                <td class="px-5 py-3 font-medium text-slate-200">60–80 kg</td>
+                <td class="px-5 py-3">120–125</td>
+                <td class="px-5 py-3">100–115</td>
+                <td class="px-5 py-3">95–105</td>
+              </tr>
+              <tr class="hover:bg-slate-800/20 transition-colors">
+                <td class="px-5 py-3 font-medium text-slate-200">80–100 kg</td>
+                <td class="px-5 py-3">125–130</td>
+                <td class="px-5 py-3">110–120</td>
+                <td class="px-5 py-3">100–110</td>
+              </tr>
+              <tr class="hover:bg-slate-800/20 transition-colors">
+                <td class="px-5 py-3 font-medium text-slate-200">≥ 100 kg</td>
+                <td class="px-5 py-3">130–135</td>
+                <td class="px-5 py-3">115–125</td>
+                <td class="px-5 py-3">105–115</td>
+              </tr>
+            </tbody>
+          </table>
+       </div>
+       <div class="p-4 bg-amber-500/5 border-t border-amber-500/10 text-xs text-amber-200/80 leading-relaxed">
+         <strong>Note:</strong> These are baseline values for Drive-Side spokes. Non-Drive Side tension is typically 60-70% of Drive Side, determined by hub geometry. Max tension for Carbon rims is usually ~135kgf; Alloy rims ~125kgf.
+       </div>
     </div>
 
-    <h3 class="sizecharts-section__subheading mt-4">
-      Risks and Precautions
-    </h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        <div>{Excessive tension}</div>
-        <div>Can cause rim deformation or fatigue cracks.</div>
-      </li>
-      <li>
-        <div>{Insufficient tension}</div>
-        <div>Leads to loose spokes, wheel wobble, and safety issues.</div>
-      </li>
-      <li>
-        <div>{Weight differences}</div>
-        <div>Heavy riders need higher tension and stronger spokes; lighter riders can use lighter setups.</div>
-      </li>
-    </ul>
-
-    <h3 class="sizecharts-section__subheading mt-4">Key Notes</h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        <div>{Non-drive side tension}</div>
-        <div>Usually 20–40% lower than drive side, depending on hub flange spacing and rim geometry.</div>
-      </li>
-      <li>
-        <div>{Carbon vs. alloy rims}</div>
-        <div>Carbon rims can handle higher tension (up to 130–135 kgf). Alloy rims should be limited to 120–125 kgf.</div>
-      </li>
-      <li>
-        <div>{Spoke choice}</div>
-        <div>Light riders can use 15G spokes; heavy riders or off-road use should stick to 14G.</div>
-      </li>
-      <li>
-        <div>{Usage summary}</div>
-        <div>Road racing = stiffness and responsiveness; mountain biking = durability and cushioning; touring = stability and balance.</div>
-      </li>
-    </ul>
-
-    <h3 class="sizecharts-section__subheading mt-4">Our Workshop Process (Practical Standard)</h3>
-    <ul class="sizecharts-section__list">
-      <li>Weight classification → determine baseline tension range.</li>
-      <li>
-        <div>{Usage adjustment}</div>
-        <div>Road racing → higher tension for stiffness.</div>
-        <div>Mountain biking → slightly lower tension for durability.</div>
-        <div>Touring → balanced tension for stability.</div>
-      </li>
-      <li>
-        <div>{Material limits}</div>
-        <div>Carbon rims → allow higher tension (up to 135 kgf).</div>
-        <div>Alloy rims → capped at 120–125 kgf.</div>
-      </li>
-      <li>Spoke selection → match spoke gauge to rider weight and usage.</li>
-      <li>Final build → ensure proper drive/non-drive tension ratio (about 10:6–10:7; some hub geometries may only be 10:4) and use rim offset to balance.</li>
-    </ul>
-
-    <h3 class="sizecharts-section__subheading mt-4">Conclusion</h3>
-    <ul class="sizecharts-section__list">
-      <li>Rider weight sets the baseline tension.</li>
-      <li>Usage defines the adjustment.</li>
-      <li>Rim material sets the upper limit.</li>
-      <li>Spoke gauge ensures durability and safety.</li>
-      <li>Following this flow balances performance, reliability, and safety for each rider.</li>
-    </ul>
+    <!-- 3. Workshop Process (Timeline) -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
+       <h3 class="text-lg font-bold text-fuchsia-500 mb-6 flex items-center gap-2">
+          Our Workshop Building Process
+       </h3>
+       
+       <div class="relative pl-6 border-l-2 border-slate-700 space-y-8">
+          <!-- Step 1 -->
+          <div class="relative">
+             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+                <span class="w-3 h-3 rounded-full bg-slate-500 block"></span>
+             </span>
+             <h4 class="text-sm font-bold text-slate-200">1. Baseline Calculation</h4>
+             <p class="text-xs text-slate-400 mt-1">Determine base tension range based on Rider Weight classification.</p>
+          </div>
+          <!-- Step 2 -->
+          <div class="relative">
+             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+                <span class="w-3 h-3 rounded-full bg-indigo-500 block"></span>
+             </span>
+             <h4 class="text-sm font-bold text-slate-200">2. Usage Adjustment</h4>
+             <p class="text-xs text-slate-400 mt-1">Adjust for stiffness (Road) or compliance (MTB).</p>
+          </div>
+          <!-- Step 3 -->
+          <div class="relative">
+             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+                <span class="w-3 h-3 rounded-full bg-rose-500 block"></span>
+             </span>
+             <h4 class="text-sm font-bold text-slate-200">3. Safety Cap Check</h4>
+             <p class="text-xs text-slate-400 mt-1">Ensure target does not exceed Rim Limits (Carbon 135kgf / Alloy 125kgf).</p>
+          </div>
+          <!-- Step 4 -->
+          <div class="relative">
+             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 block"></span>
+             </span>
+             <h4 class="text-sm font-bold text-slate-200">4. Stress Relief & Balancing</h4>
+             <p class="text-xs text-slate-400 mt-1">Repeated de-stressing cycles to ensure tension does not drop after first ride.</p>
+          </div>
+       </div>
+    </div>
   </div>
 </template>
 

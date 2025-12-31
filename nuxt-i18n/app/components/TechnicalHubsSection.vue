@@ -1,171 +1,186 @@
 <template>
-  <div>
-    <p class="sizecharts-section__intro text-center">
-      Bicycle Hub Key Specifications
-    </p>
-
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-2"
-    >
-      1. Spoke Type
-    </h3>
-    <div class="mt-2 text-sm text-slate-100">
-      <div class="text-center font-semibold">J-bend (Elbowed spokes)</div>
-      <ul class="sizecharts-section__list mt-1">
-        <li>The spoke head is bent to fit into the hub flange holes.</li>
-        <li>Advantages: Highly compatible, easy to service.</li>
-        <li>Disadvantages: Slightly lower spoke tension, more traditional appearance.</li>
-      </ul>
-
-      <div class="mt-3 text-center font-semibold">Straight-pull</div>
-      <ul class="sizecharts-section__list mt-1">
-        <li>The spokes are inserted directly into the hub without bending.</li>
-        <li>Common hole count: 24H (arranged in 1:1 or 2:1 patterns).</li>
-        <li>Advantages: Higher spoke tension, cleaner aesthetics.</li>
-        <li>Disadvantages: Limited compatibility when replacing spokes, less convenient for long-distance maintenance.</li>
-      </ul>
+  <div class="space-y-8">
+    <!-- Intro Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
+       <h3 class="text-lg font-bold text-slate-100 mb-2">Bicycle Hub Key Specifications</h3>
+       <p class="text-sm text-slate-400 leading-relaxed max-w-2xl mx-auto">
+          Understanding the core specifications of your hubs is critical for wheel building and frame compatibility.
+       </p>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-      <GuideImage
-        src="/public/technical/hubs/hubs/tanzanite-dt240-6bolt-jbend-hub.webp"
-        alt="Tanzanite DT240 6-bolt J-bend hub"
-        :zoomOnClick="true"
-        caption="tanzanite-dt240-6bolt-jbend-hub"
-      />
-      <GuideImage
-        src="/public/technical/hubs/hubs/tanzanite-dt240-6bolt-straightpull-hub.webp"
-        alt="Tanzanite DT240 6-bolt straight-pull hub"
-        :zoomOnClick="true"
-        caption="tanzanite-dt240-6bolt-straightpull-hub"
-      />
-      <GuideImage
-        src="/public/technical/hubs/hubs/tanzanite-dt240-centerlock-jbend-hub.webp"
-        alt="Tanzanite DT240 Center Lock J-bend hub"
-        :zoomOnClick="true"
-        caption="tanzanite-dt240-centerlock-jbend-hub"
-      />
-      <GuideImage
-        src="/public/technical/hubs/hubs/tanzanite-dt240-centerlock-straightpull-hub.webp"
-        alt="Tanzanite DT240 Center Lock straight-pull hub"
-        :zoomOnClick="true"
-        caption="tanzanite-dt240-centerlock-straightpull-hub"
-      />
+    <!-- 1. Spoke Interface Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
+       <div class="flex items-center gap-3 mb-6 pb-3 border-b border-sky-500/10">
+          <h3 class="text-lg font-bold text-slate-200">1. Spoke Type: J-Bend vs. Straight-Pull</h3>
+       </div>
+
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- J-Bend -->
+          <div class="bg-indigo-500/5 rounded-xl p-4 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+              <h4 class="text-indigo-400 font-bold mb-3 flex items-center gap-2">
+                 J-Bend (Classic)
+              </h4>
+              <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                 <li>• Spoke head is bent (elbow) to fit flange.</li>
+                 <li>• <strong>Pros:</strong> Easy to service, replacement spokes widely available.</li>
+                 <li>• <strong>Cons:</strong> Traditional look, stress concentration at elbow.</li>
+              </ul>
+              <div class="grid grid-cols-2 gap-3">
+                <GuideImage
+                    src="/public/technical/hubs/hubs/tanzanite-dt240-6bolt-jbend-hub.webp"
+                    alt="Tanzanite DT240 6-bolt J-bend hub"
+                    :zoomOnClick="true"
+                    caption="6-Bolt J-Bend"
+                    class="rounded-lg"
+                />
+                <GuideImage
+                    src="/public/technical/hubs/hubs/tanzanite-dt240-centerlock-jbend-hub.webp"
+                    alt="Tanzanite DT240 Center Lock J-bend hub"
+                    :zoomOnClick="true"
+                    caption="Center Lock J-Bend"
+                    class="rounded-lg"
+                />
+              </div>
+          </div>
+
+          <!-- Straight-Pull -->
+          <div class="bg-emerald-500/5 rounded-xl p-4 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+              <h4 class="text-emerald-400 font-bold mb-3 flex items-center gap-2">
+                 Straight-Pull (Modern)
+              </h4>
+               <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                 <li>• Spokes are straight, no elbow.</li>
+                 <li>• <strong>Pros:</strong> Higher tension potential, sleek aesthetic.</li>
+                 <li>• <strong>Cons:</strong> Harder to find specific replacements on the road.</li>
+              </ul>
+              <div class="grid grid-cols-2 gap-3">
+                <GuideImage
+                    src="/public/technical/hubs/hubs/tanzanite-dt240-6bolt-straightpull-hub.webp"
+                    alt="Tanzanite DT240 6-bolt straight-pull hub"
+                    :zoomOnClick="true"
+                    caption="6-Bolt SP"
+                    class="rounded-lg"
+                />
+                <GuideImage
+                    src="/public/technical/hubs/hubs/tanzanite-dt240-centerlock-straightpull-hub.webp"
+                    alt="Tanzanite DT240 Center Lock straight-pull hub"
+                    :zoomOnClick="true"
+                    caption="Center Lock SP"
+                    class="rounded-lg"
+                />
+              </div>
+          </div>
+       </div>
     </div>
 
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-6"
-    >
-      2. Hole Count
-    </h3>
-    <div class="mt-2 text-sm text-slate-100 text-center">
-      <div>
-        <span class="font-semibold text-amber-300">Common specifications:</span>
-      </div>
-      <div class="mt-1">16H, 18H, 21H, 24H, 28H, 32H, 36H, etc.</div>
-      <div class="mt-3">
-        <span class="font-semibold text-amber-300">Selection logic:</span>
-      </div>
+    <!-- 2. Tech Specs Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <!-- Axle Specs -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-amber-500 mb-4 flex items-center gap-2">
+              Axle Standards
+           </h3>
+           <div class="space-y-4 text-sm text-slate-300">
+              <div class="bg-slate-800/50 p-3 rounded-lg">
+                 <strong class="block text-slate-200 mb-1">Front Hubs</strong>
+                 <p>QR (9x100), 12x100 (Road/Gravel), 15x100, <strong>15x110 (Boost)</strong></p>
+              </div>
+              <div class="bg-slate-800/50 p-3 rounded-lg">
+                 <strong class="block text-slate-200 mb-1">Rear Hubs</strong>
+                 <p>QR (135mm), 12x142, <strong>12x148 (Boost)</strong></p>
+              </div>
+              <p class="text-xs text-slate-500 mt-2 italic">
+                 Note: Thru-axles (12mm/15mm) provide superior stiffness compared to Quick Release.
+              </p>
+           </div>
+       </div>
+
+       <!-- Brake Interface -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-rose-500 mb-4 flex items-center gap-2">
+              Brake Interface
+           </h3>
+           <ul class="space-y-3 text-sm text-slate-300">
+              <li class="flex items-start gap-3">
+                 <span class="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                 <div>
+                    <strong class="text-slate-200 block">6-Bolt (IS)</strong>
+                    Rotor attached via 6 Torx bolts. Universal and robust.
+                 </div>
+              </li>
+              <li class="flex items-start gap-3">
+                 <span class="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                 <div>
+                    <strong class="text-slate-200 block">Center Lock (CL)</strong>
+                    Splined interface with a lockring. Faster installation, lighter, favored by Shimano/Road.
+                 </div>
+              </li>
+           </ul>
+       </div>
     </div>
-    <ul class="sizecharts-section__list mt-1 text-sm text-slate-100">
-      <li>
-        Fewer holes (e.g., 24H): Lightweight, suitable for racing. Similarly, 16H and 18H are generally
-        used for riders with lighter body weight and lower riding intensity, typically on road bikes.
-        Mountain bikes rarely use such a low spoke count.
-      </li>
-      <li>
-        More holes (e.g., 36H): Higher strength, suitable for touring or heavy load requirements. Currently,
-        MTB hubs are most commonly 28-32H. With appropriate spokes, 36H is more often applied in BMX wheels.
-        Common road disc brake hubs are 24H / 28H.
-      </li>
-    </ul>
 
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-6"
-    >
-      3. Freehub Body
-    </h3>
-    <ul class="sizecharts-section__list mt-2 text-sm text-slate-100">
-      <li>HG (Shimano HyperGlide): Compatible with 8-11 speed cassettes.</li>
-      <li>MS (Micro Spline): MTB-specific, compatible with 12-speed cassettes.</li>
-      <li>XD (SRAM XD): Compatible with 11-12 speed cassettes.</li>
-      <li>XDR (SRAM XDR): Road-specific, 1.85 mm longer than XD; can be converted to XD with a spacer.</li>
-    </ul>
+    <!-- 3. Ratchet & Holes -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <!-- Hole Count -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-fuchsia-500 mb-4 flex items-center gap-2">
+              Hole Count Logic
+           </h3>
+           <div class="space-y-4">
+              <div class="flex items-center justify-between text-sm border-b border-white/5 pb-2">
+                  <span class="text-slate-400">Lightweight / Road</span>
+                  <span class="text-slate-200 font-bold">20H / 24H</span>
+              </div>
+              <div class="flex items-center justify-between text-sm border-b border-white/5 pb-2">
+                  <span class="text-slate-400">Standard MTB / Gravel</span>
+                  <span class="text-slate-200 font-bold">28H / 32H</span>
+              </div>
+              <div class="flex items-center justify-between text-sm pb-2">
+                  <span class="text-slate-400">Heavy Duty / E-Bike</span>
+                  <span class="text-slate-200 font-bold">32H / 36H</span>
+              </div>
+           </div>
+       </div>
 
-    <p class="guide-section__cta-wrapper mt-3">
-      <button
+       <!-- Ratchet System -->
+       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-cyan-500 mb-4 flex items-center gap-2">
+              Ratchet Engagement
+           </h3>
+           <p class="text-sm text-slate-300 mb-4">
+              Higher tooth counts = faster engagement (less lag when you start pedaling).
+           </p>
+           <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                 <div class="text-lg font-bold text-cyan-400">18T</div>
+                 <div class="text-[10px] text-slate-400">Standard</div>
+              </div>
+              <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                 <div class="text-lg font-bold text-cyan-400">36T</div>
+                 <div class="text-[10px] text-slate-400">Balanced</div>
+              </div>
+              <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                 <div class="text-lg font-bold text-cyan-400">54T</div>
+                 <div class="text-[10px] text-slate-400">Instant</div>
+              </div>
+           </div>
+       </div>
+    </div>
+
+    <!-- 4. Freehub Summary Card (Link) -->
+    <div class="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+       <div class="text-center md:text-left">
+          <h3 class="text-lg font-bold text-slate-100 mb-1">Freehub Body Compatibility</h3>
+          <p class="text-sm text-slate-400">HG vs MS vs XD vs XDR vs N3W? Check our detailed guide.</p>
+       </div>
+       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
+        class="shrink-0 inline-flex items-center justify-center rounded-full bg-sky-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-sky-400 hover:shadow-sky-500/25 transition-all"
         @click="goToChooseFreehub"
       >
-        How to choose
+        View Guide
       </button>
-    </p>
-    <p class="mt-1 text-center text-xs text-sky-200">
-      Click to learn how to choose the right freehub body
-    </p>
-
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-6"
-    >
-      4. Brake Interface
-    </h3>
-    <ul class="sizecharts-section__list mt-2 text-sm text-slate-100">
-      <li>6-bolt: Common, secured with six bolts.</li>
-      <li>Center Lock: Fixed with splines and a lockring, faster installation.</li>
-    </ul>
-
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-6"
-    >
-      5. Axle Specifications
-    </h3>
-    <ul class="sizecharts-section__list mt-2 text-sm text-slate-100">
-      <li>
-        <div><span class="font-semibold text-amber-300">Front hubs:</span></div>
-        <div>
-          Φ9×100 mm (quick release), Φ15×100 mm, Φ15×110 mm [BOOST], Φ20×110 mm, etc.
-        </div>
-      </li>
-      <li class="mt-2">
-        <div><span class="font-semibold text-amber-300">Rear hubs:</span></div>
-        <div>
-          Φ9×135 mm, Φ12×142 mm, Φ12×148 mm [BOOST], etc.
-        </div>
-      </li>
-      <li class="mt-2">
-        Quick release vs thru-axle: Quick release is lighter and more convenient, while thru-axle provides greater
-        stiffness and stability. Currently, the most commonly used standards are MTB BOOST 15×110 mm front and
-        12×148 mm rear thru-axles. For road disc brakes, 12×100 mm front and 12×142 mm rear thru-axles are typical.
-      </li>
-    </ul>
-
-    <h3
-      class="sizecharts-section__subheading text-sky-300 font-semibold text-center mt-6"
-    >
-      6. Ratchet System
-    </h3>
-    <ul class="sizecharts-section__list mt-2 text-sm text-slate-100">
-      <li>
-        At present, most ratchet systems on the market are DT-style. As shown in typical illustrations, many modern wheels
-        use this structure, and our shop also sells the full range of DT hubs, with upgrade options available.
-      </li>
-      <li>
-        Common tooth counts include 18T, 36T, 54T (and even larger options such as 60T). A higher tooth count provides a
-        faster engagement angle, resulting in quicker pedaling response.
-      </li>
-      <li>
-        From a purely physical perspective, with the same radius, more teeth mean each tooth is smaller, which leads to
-        faster wear.
-      </li>
-      <li>
-        If you are a high-power rider, it is recommended to choose 36T as a balance between durability and performance.
-      </li>
-      <li>
-        The design intent of these products is always to ensure good stability and longevity; the discussion here is
-        relative, comparing 18T, 36T, 54T, or even larger options.
-      </li>
-    </ul>
+    </div>
   </div>
 </template>
 

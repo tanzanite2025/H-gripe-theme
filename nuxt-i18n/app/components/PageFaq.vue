@@ -6,61 +6,63 @@
       'py-4 md:py-6'
     ]"
   >
-    <div class="max-w-4xl mx-auto">
-      <!-- Header -->
-      <div class="text-center mb-4 md:mb-5">
+    <div class="w-full max-w-[960px] mx-auto">
+      <!-- Main Page Header (Optional, if page title not sufficient) -->
+      <div v-if="displayTitle || faqData?.subtitle" class="text-center mb-8">
         <h3 
-          class="text-base md:text-lg font-semibold mb-1"
+          v-if="displayTitle"
+          class="text-xl md:text-2xl font-bold mb-2 hidden"
           :class="theme === 'dark' ? 'text-white/90' : 'text-gray-800'"
         >
           {{ displayTitle }}
         </h3>
         <p 
           v-if="faqData?.subtitle"
-          class="text-xs md:text-sm"
-          :class="theme === 'dark' ? 'text-white/50' : 'text-gray-500'"
+          class="text-sm md:text-base max-w-2xl mx-auto"
+          :class="theme === 'dark' ? 'text-slate-400' : 'text-gray-500'"
         >
           {{ faqData.subtitle }}
         </p>
       </div>
 
       <!-- FAQ Content -->
-      <div v-if="faqData && displayCategories.length > 0" class="space-y-4">
-        <!-- Category Loop -->
+      <div v-if="faqData && displayCategories.length > 0" class="space-y-8">
+        <!-- Category Loop (Each category is a Premium Card) -->
         <div 
           v-for="category in displayCategories" 
           :key="category.id"
-          class="faq-category"
+          class="faq-category-card rounded-2xl p-3 md:p-4"
+          :class="theme === 'dark' ? 'bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)]' : 'bg-white shadow-lg'"
         >
           <!-- Category Header -->
           <div 
-            v-if="showCategories && displayCategories.length > 1"
-            class="flex items-center gap-1.5 mb-2"
+            v-if="showCategories"
+            class="flex items-center justify-center gap-3 mb-6 pb-4 border-b"
+            :class="theme === 'dark' ? 'border-slate-800/50' : 'border-gray-100'"
           >
-            <span v-if="category.icon" class="text-sm">{{ category.icon }}</span>
             <h4 
-              class="text-sm font-medium"
-              :class="theme === 'dark' ? 'text-white/80' : 'text-gray-700'"
+              class="text-lg font-bold uppercase tracking-wider"
+              :class="theme === 'dark' ? 'text-slate-200' : 'text-gray-800'"
             >
               {{ category.name }}
             </h4>
           </div>
 
-          <!-- FAQ Items (Accordion) -->
+          <!-- FAQ Items (Accordion Wrapper) -->
           <div 
-            class="space-y-1 rounded-lg overflow-hidden"
-            :class="theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-sm'"
+            class="space-y-0 rounded-xl overflow-hidden border"
+            :class="theme === 'dark' ? 'bg-slate-900/40 border-slate-800/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-sm'"
           >
             <div 
               v-for="item in getCategoryItems(category)" 
               :key="item.id"
               class="faq-item border-b last:border-b-0"
-              :class="theme === 'dark' ? 'border-white/10' : 'border-gray-100'"
+              :class="theme === 'dark' ? 'border-slate-800/50' : 'border-gray-100'"
             >
               <!-- Question (Accordion Header) -->
               <button
                 type="button"
-                class="w-full flex items-center justify-between gap-3 px-3 md:px-4 py-2.5 text-left transition-colors"
+                class="w-full flex items-center justify-between gap-3 px-3 py-3 text-left transition-colors group"
                 :class="[
                   theme === 'dark' 
                     ? 'hover:bg-white/5' 
@@ -72,23 +74,26 @@
                 @click="toggleItem(item.id)"
               >
                 <span 
-                  class="text-xs md:text-sm font-medium flex-1"
-                  :class="theme === 'dark' ? 'text-white/90' : 'text-gray-800'"
+                  class="text-sm font-semibold flex-1 transition-colors"
+                  :class="[
+                    theme === 'dark' ? 'text-slate-300' : 'text-gray-800',
+                    expandedItems.has(item.id) ? (theme === 'dark' ? 'text-sky-400' : 'text-blue-600') : 'group-hover:text-sky-400'
+                  ]"
                 >
                   {{ item.question }}
                 </span>
-                <svg 
-                  class="w-4 h-4 flex-shrink-0 transition-transform duration-200"
+                <span 
+                  class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full transition-all duration-200"
                   :class="[
-                    theme === 'dark' ? 'text-white/50' : 'text-gray-400',
-                    expandedItems.has(item.id) ? 'rotate-180' : ''
+                    expandedItems.has(item.id) 
+                      ? (theme === 'dark' ? 'bg-sky-500/10 text-sky-400 rotate-180' : 'bg-blue-100 text-blue-600 rotate-180')
+                      : (theme === 'dark' ? 'text-slate-500 bg-transparent' : 'text-gray-400 bg-transparent')
                   ]"
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
                 >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
               </button>
 
               <!-- Answer (Accordion Content) -->
@@ -102,11 +107,12 @@
               >
                 <div 
                   v-if="expandedItems.has(item.id)"
-                  class="overflow-hidden"
+                  class="overflow-hidden bg-opacity-30"
+                  :class="theme === 'dark' ? 'bg-slate-950/30' : 'bg-gray-50/50'"
                 >
                   <div 
-                    class="px-3 md:px-4 pb-3 text-xs md:text-sm leading-relaxed"
-                    :class="theme === 'dark' ? 'text-white/60' : 'text-gray-600'"
+                    class="px-4 pb-4 pt-1 text-sm leading-relaxed"
+                    :class="theme === 'dark' ? 'text-slate-400' : 'text-gray-600'"
                     v-html="item.answer"
                   />
                 </div>
@@ -119,26 +125,26 @@
       <!-- Empty State -->
       <div 
         v-else
-        class="text-center py-6"
-        :class="theme === 'dark' ? 'text-white/40' : 'text-gray-400'"
+        class="text-center py-12 rounded-2xl border-2 border-dashed"
+        :class="theme === 'dark' ? 'border-slate-800 text-slate-500' : 'border-gray-200 text-gray-400'"
       >
-        <p class="text-xs">No FAQs available for this page.</p>
+        <p class="text-sm">No FAQs available for this section.</p>
       </div>
 
       <!-- View All Link -->
       <div 
         v-if="showViewAllLink && hasMoreItems"
-        class="text-center mt-4"
+        class="text-center mt-8"
       >
         <NuxtLink
           :to="localePath('/support/faqs')"
-          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all"
+          class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5"
           :class="theme === 'dark' 
-            ? 'bg-white/10 text-white/80 hover:bg-white/15 border border-white/20' 
+            ? 'bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-slate-900/50' 
             : 'bg-gray-800 text-white hover:bg-gray-700'"
         >
           View All FAQs
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </NuxtLink>
@@ -234,12 +240,13 @@ const hasMoreItems = computed(() => {
 
 /* Ensure answer content links are styled */
 .faq-item :deep(a) {
-  color: #6b73ff;
+  color: #38bdf8; /* sky-400 */
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .faq-item :deep(a:hover) {
-  color: #40ffaa;
+  color: #22d3ee; /* cyan-400 */
 }
 
 /* List styling in answers */
@@ -251,5 +258,10 @@ const hasMoreItems = computed(() => {
 
 .faq-item :deep(li) {
   margin: 0.25rem 0;
+}
+
+.faq-item :deep(strong) {
+  color: inherit;
+  font-weight: 600;
 }
 </style>
