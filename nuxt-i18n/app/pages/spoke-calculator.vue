@@ -20,9 +20,7 @@
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorCore />
 
-          <div class="mt-8">
-            <SpokeHistorySearch />
-          </div>
+
         </div>
 
         <div class="mt-10">
@@ -200,7 +198,7 @@
 <script setup lang="ts">
 import SpokeCalculatorCore from '~/components/SpokeCalculatorCore.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import SpokeHistorySearch from '~/components/SpokeHistorySearch.vue'
+
 import PageFaq from '~/components/PageFaq.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import { ref, watch } from 'vue'

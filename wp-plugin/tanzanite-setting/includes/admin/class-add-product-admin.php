@@ -309,6 +309,50 @@ class Tanzanite_Add_Product_Admin {
 		echo '          </div>';
 		echo '      </section>';
 		echo '          <div class="tz-settings-section">';
+		echo '              <div class="tz-section-title">' . esc_html__( 'Spoke / Hub Geometry', 'tanzanite-settings' ) . '</div>';
+		echo '              <p class="description" style="margin-bottom:12px;">' . esc_html__( '仅用于辐条计算器 (Rim/Hub)。非相关商品请留空。', 'tanzanite-settings' ) . '</p>';
+		echo '              <div class="tz-section-body" style="display:grid;gap:12px;">';
+		
+		echo '                  <div class="tz-form-group">';
+		echo '                      <strong style="display:block;margin-bottom:8px;font-size:13px;border-bottom:1px solid #eee;padding-bottom:4px;">' . esc_html__( 'Rim / Common', 'tanzanite-settings' ) . '</strong>';
+		echo '                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+		echo '                          <label>' . esc_html__( 'ERD (mm)', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-spoke-erd" class="tiny-text" /></label>';
+		echo '                          <label>' . esc_html__( 'Holes (Rim)', 'tanzanite-settings' ) . '<input type="number" id="tz-spoke-holes-rim" class="tiny-text" /></label>';
+		echo '                      </div>';
+		echo '                  </div>';
+
+		echo '                  <div class="tz-form-group">';
+		echo '                      <strong style="display:block;margin-bottom:8px;font-size:13px;border-bottom:1px solid #eee;padding-bottom:4px;">' . esc_html__( 'Hub Common', 'tanzanite-settings' ) . '</strong>';
+		echo '                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+		echo '                          <label>' . esc_html__( 'Holes (Hub)', 'tanzanite-settings' ) . '<input type="number" id="tz-spoke-holes-hub" class="tiny-text" /></label>';
+		echo '                          <label>' . esc_html__( 'Axle (OLD)', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-axle-width" class="tiny-text" /></label>';
+		echo '                      </div>';
+		echo '                  </div>';
+
+		echo '                  <div class="tz-form-group">';
+		echo '                      <strong style="display:block;margin-bottom:8px;font-size:13px;border-bottom:1px solid #eee;padding-bottom:4px;">' . esc_html__( 'Front Hub Geometry', 'tanzanite-settings' ) . '</strong>';
+		echo '                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+		echo '                          <label>' . esc_html__( 'L-PCD', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-front-left-pcd" class="tiny-text" title="Left Flange PCD" /></label>';
+		echo '                          <label>' . esc_html__( 'R-PCD', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-front-right-pcd" class="tiny-text" title="Right Flange PCD" /></label>';
+		echo '                          <label>' . esc_html__( 'L-Center', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-front-left-center" class="tiny-text" title="Left Flange to Center" /></label>';
+		echo '                          <label>' . esc_html__( 'R-Center', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-front-right-center" class="tiny-text" title="Right Flange to Center" /></label>';
+		echo '                      </div>';
+		echo '                  </div>';
+
+		echo '                  <div class="tz-form-group">';
+		echo '                      <strong style="display:block;margin-bottom:8px;font-size:13px;border-bottom:1px solid #eee;padding-bottom:4px;">' . esc_html__( 'Rear Hub Geometry', 'tanzanite-settings' ) . '</strong>';
+		echo '                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+		echo '                          <label>' . esc_html__( 'L-PCD', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-rear-left-pcd" class="tiny-text" title="Left Flange PCD" /></label>';
+		echo '                          <label>' . esc_html__( 'R-PCD', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-rear-right-pcd" class="tiny-text" title="Right Flange PCD" /></label>';
+		echo '                          <label>' . esc_html__( 'L-Center', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-rear-left-center" class="tiny-text" title="Left Flange to Center" /></label>';
+		echo '                          <label>' . esc_html__( 'R-Center', 'tanzanite-settings' ) . '<input type="number" step="0.1" id="tz-rear-right-center" class="tiny-text" title="Right Flange to Center" /></label>';
+		echo '                      </div>';
+		echo '                  </div>';
+
+		echo '              </div>';
+		echo '          </div>';
+
+		echo '          <div class="tz-settings-section">';
 		echo '              <div class="tz-section-title">' . esc_html__( '物流与配送', 'tanzanite-settings' ) . '</div>';
 		echo '              <div class="tz-section-body" style="display:grid;gap:12px;">';
 		echo '                  <label>' . esc_html__( '配送模板', 'tanzanite-settings' ) . '<select id="tz-product-shipping-template" class="widefat" multiple size="6"></select></label>';
@@ -523,10 +567,37 @@ class Tanzanite_Add_Product_Admin {
 	 */
 	private static function get_product_meta_payload( $product_id ): array {
 		$meta = get_post_meta( $product_id, 'tanz_product_meta', true );
+		$data = [];
 		if ( ! empty( $meta ) && is_string( $meta ) ) {
-			return json_decode( $meta, true ) ?: [];
+			$data = json_decode( $meta, true ) ?: [];
+		} elseif ( is_array( $meta ) ) {
+			$data = $meta;
 		}
-		return is_array( $meta ) ? $meta : [];
+
+		// 合并 Hub & Spoke 几何属性 (独立 Meta Keys)
+		$hub_keys = array(
+			'_tanz_erd',
+			'_tanz_spoke_holes',
+			'_tanz_spoke_holes_hub',
+			'_tanz_axle_width_mm',
+			'_tanz_front_left_flange_pcd_mm',
+			'_tanz_front_right_flange_pcd_mm',
+			'_tanz_front_left_flange_to_center_mm',
+			'_tanz_front_right_flange_to_center_mm',
+			'_tanz_rear_left_flange_pcd_mm',
+			'_tanz_rear_right_flange_pcd_mm',
+			'_tanz_rear_left_flange_to_center_mm',
+			'_tanz_rear_right_flange_to_center_mm',
+		);
+
+		foreach ( $hub_keys as $key ) {
+			$val = get_post_meta( $product_id, $key, true );
+			if ( '' !== $val ) {
+				$data[ $key ] = $val;
+			}
+		}
+
+		return $data;
 	}
 
 	/**
