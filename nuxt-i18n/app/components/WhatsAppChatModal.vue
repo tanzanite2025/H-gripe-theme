@@ -545,33 +545,33 @@
       @success="handleChatAuthSuccess"
     />
 
-    <Transition name="slide-up">
+    <Transition name="wa-drawer">
       <div
         v-if="historyDrawerVisible"
-        class="fixed inset-0 z-[10001] flex items-end justify-center p-0 md:p-4 pointer-events-none"
+        class="wa-drawer-mask"
         @click.self="handleHistoryDrawerClose"
       >
-        <div
-          class="pointer-events-auto chat-history-shell w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh]
-                 rounded-2xl border-2 border-[#6b73ff]/40
-                 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
-                 backdrop-blur-md shadow-[0_0_30px_rgba(107,115,255,0.6)]
-                 flex flex-col overflow-hidden"
-        >
-          <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <div class="text-sm font-semibold text-white/90">
+        <!-- Backdrop -->
+        <div 
+          class="wa-drawer-backdrop md:hidden"
+          @click="handleHistoryDrawerClose"
+        />
+
+        <div class="wa-drawer-shell">
+          <div class="wa-drawer-header">
+            <div class="wa-drawer-title">
               Browsing history
             </div>
             <button
               type="button"
-              class="w-8 h-8 rounded-full border border-white/40 text-white flex items-center justify-center hover:bg-white/10 transition-colors"
+              class="wa-drawer-close-btn"
               @click="handleHistoryDrawerClose"
             >
               <span class="text-lg leading-none">x</span>
             </button>
           </div>
 
-          <div class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+          <div class="wa-drawer-content">
             <BrowsingHistoryDark @share-to-chat="handleShareProductFromHistory" />
           </div>
         </div>

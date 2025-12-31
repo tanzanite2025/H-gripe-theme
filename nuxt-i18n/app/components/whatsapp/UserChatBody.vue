@@ -4,12 +4,12 @@
     <div class="flex flex-col h-full min-h-0">
       <!-- 二级导航栏 (Products, Orders, etc.) - 不包含 Chat -->
       <div class="flex-none px-2 pt-3 pb-2 md:py-3 md:px-4 md:border-b md:border-white/[0.08] md:bg-white/[0.02]">
-        <div class="flex flex-wrap gap-1 md:gap-2 justify-center">
+        <div class="grid grid-cols-4 md:flex md:flex-wrap gap-1 md:gap-2 justify-center">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             @click="handleTabClick(tab.id)"
-            class="flex-1 md:flex-none h-10 md:h-8 md:px-4 rounded-full text-[11px] md:text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center"
+            class="h-9 md:h-8 px-0 md:px-4 rounded-full text-[10px] sm:text-[11px] md:text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center"
             :class="activeTab === tab.id
               ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
               : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
@@ -86,6 +86,11 @@
           :is-logged-in="isLoggedInForWarranty"
           @login-request="$emit('loginRequest')"
         />
+
+        <!-- Calculator Tab -->
+        <div v-else-if="activeTab === 'calculator'" class="h-full overflow-y-auto p-4 custom-scrollbar">
+          <SpokeSmartSearch />
+        </div>
       </div>
     </div>
   </div>
@@ -99,6 +104,7 @@ import MemberTab from './MemberTab.vue'
 import FaqTab from './FaqTab.vue'
 import WarrantyTab from './WarrantyTab.vue'
 import TireRimHelper from '~/components/TireRimHelper.vue'
+import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 
 const props = defineProps<{
   activeTab: string
@@ -160,6 +166,7 @@ const tabs = [
   { id: 'faq', label: 'FAQ' },
   { id: 'warranty', label: 'Warranty' },
   { id: 'member', label: 'Member' },
+  { id: 'calculator', label: 'Calculator' },
 ]
 
 const handleTabClick = (id: string) => {

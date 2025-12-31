@@ -253,6 +253,7 @@ export default defineNuxtConfig({
     '~/assets/css/tailwind.css',
     '~/assets/css/guide-sections.css',
     '~/assets/css/components/nav.css',
+    '~/assets/css/components/whatsapp-mobile-drawer.css',
   ],
 
   postcss: {
