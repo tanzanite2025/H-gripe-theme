@@ -42,14 +42,18 @@
 
       <div class="footer-bottom">
         <div class="footer-bottom__info">
-          <p class="footer-info__text">
-            &copy;
-            <span>{{ currentYear }}</span>
-            <span class="footer-site">
-              Top Sports Co., Limited. All Rights Reserved. Tanzanite® is a registered
-              trademark.
-            </span>
-          </p>
+          <div class="footer-info__text-wrapper">
+            <p class="footer-info__text">
+              &copy; {{ currentYear }} Tanzanite®. All pages use HTTPS with SSL encryption. Payments are securely processed; no card data stored.
+            </p>
+            <svg class="footer-secure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="SSL Secure">
+              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#10B981" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23" fill="#10B981" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="sans-serif">SSL</text>
+              <rect x="10.5" y="14" width="3" height="2" rx="0.5" fill="#F59E0B" />
+              <path d="M10.5 14V13C10.5 12.4477 10.9477 12 11.5 12C12.0523 12 12.5 12.4477 12.5 13V14" stroke="#F59E0B" stroke-width="0.5"/>
+            </svg>
+          </div>
           
           <!-- Moved buttons here for better layout grouping -->
           <div class="footer-info__buttons">
@@ -253,6 +257,18 @@ const paymentIcons: PaymentIcon[] = [
   line-height: 1.5;
 }
 
+.footer-info__text-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.footer-secure-icon {
+  margin-top: -2px; /* Visual alignment */
+}
+
 .footer-info__buttons {
   display: flex;
   align-items: center;
@@ -358,11 +374,11 @@ const paymentIcons: PaymentIcon[] = [
   }
 
   .footer-bottom__info {
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
     align-items: center;
-    text-align: left;
-    gap: 1rem;
+    text-align: center;
+    justify-content: center;
+    gap: 0.75rem;
   }
 }
 
