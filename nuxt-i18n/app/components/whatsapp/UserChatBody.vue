@@ -1,11 +1,7 @@
 <template>
   <div class="flex flex-col h-full min-h-0">
-    <!-- 移动端样式容器 / 桌面端普通容器 -->
-    <div 
-      class="flex flex-col h-full min-h-0 md:rounded-none md:border-none md:bg-transparent md:shadow-none transition-all duration-300"
-      :class="!isDesktop ? 'rounded-[28px] border-2 overflow-hidden' : ''"
-      :style="!isDesktop ? mobilePanelStyle : {}"
-    >
+    <!-- Container -->
+    <div class="flex flex-col h-full min-h-0">
       <!-- 二级导航栏 (Products, Orders, etc.) - 不包含 Chat -->
       <div class="flex-none px-2 pt-3 pb-2 md:py-3 md:px-4 md:border-b md:border-white/[0.08] md:bg-white/[0.02]">
         <div class="flex flex-wrap gap-1 md:gap-2 justify-center">
@@ -96,7 +92,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
 import ChatTab from './ChatTab.vue'
 import ProductTab from './ProductTab.vue'
 import OrderTab from './OrderTab.vue'
@@ -173,28 +168,4 @@ const handleTabClick = (id: string) => {
     emit('openTestReport')
   }
 }
-
-
-const isDesktop = ref(false)
-const checkDesktop = () => {
-  isDesktop.value = window.innerWidth >= 768
-}
-
-onMounted(() => {
-  checkDesktop()
-  window.addEventListener('resize', checkDesktop)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkDesktop)
-})
-
-const mobilePanelStyle = computed(() => {
-  const color = props.currentThemeColor
-  return {
-    borderColor: color,
-    background: `linear-gradient(180deg, ${color}33 0%, rgba(0,0,0,0.85) 100%)`,
-    boxShadow: `0 15px 40px ${color}40`
-  }
-})
 </script>
