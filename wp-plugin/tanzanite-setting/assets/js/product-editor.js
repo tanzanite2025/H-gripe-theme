@@ -7,10 +7,10 @@
  * 注意：这是一个大型文件，包含商品编辑的所有功能
  */
 
-(function() {
+(function () {
     'use strict';
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // 检查配置是否存在
         if (typeof TzProductEditorConfig === 'undefined') {
             console.error('Product Editor config not found');
@@ -25,10 +25,10 @@
 
         const config = TzProductEditorConfig;
         const strings = config.strings || {};
-        
+
         // 设置全局 nonce
         window.TanzaniteAdmin.nonce = config.nonce;
-        
+
         const { showNotice, apiRequest, scrollToElement } = window.TanzaniteAdmin;
 
         // 全局变量
@@ -420,7 +420,7 @@
                 elements.skuEmpty.style.display = 'none';
             }
 
-            skuRows.forEach(function(row, index) {
+            skuRows.forEach(function (row, index) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${row.sku_code || ''}</td>
@@ -476,18 +476,18 @@
 
             try {
                 const result = await apiRequest(config.taxRatesEndpoint);
-                
+
                 if (result.ok && result.data.items) {
                     container.innerHTML = '';
-                    result.data.items.filter(r => r.is_active).forEach(function(rate) {
+                    result.data.items.filter(r => r.is_active).forEach(function (rate) {
                         const label = document.createElement('label');
                         label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:1px solid #d1d5db;border-radius:6px;';
-                        
+
                         const checkbox = document.createElement('input');
                         checkbox.type = 'checkbox';
                         checkbox.value = rate.id;
                         checkbox.className = 'tz-tax-rate-checkbox';
-                        
+
                         label.appendChild(checkbox);
                         label.appendChild(document.createTextNode(rate.name + ' (' + rate.rate + '% - ' + rate.region + ')'));
                         container.appendChild(label);
@@ -507,35 +507,35 @@
             if (!container) return;
 
             const tiers = config.membershipTiers || [];
-            
+
             if (!tiers.length) {
                 container.innerHTML = '<p style="color:#6b7280;margin:0;">暂无会员等级，请先在 Loyalty & Points 页面配置。</p>';
                 return;
             }
-            
+
             // 获取已保存的会员等级
             const savedLevels = (config.initialPayload && config.initialPayload.preview && config.initialPayload.preview.membership && config.initialPayload.preview.membership.levels) || [];
-            
+
             container.innerHTML = '';
-            tiers.forEach(function(tier) {
+            tiers.forEach(function (tier) {
                 const label = document.createElement('label');
                 label.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;transition:all 0.2s;';
-                label.onmouseover = function() { this.style.borderColor = '#3b82f6'; };
-                label.onmouseout = function() { this.style.borderColor = '#e5e7eb'; };
-                
+                label.onmouseover = function () { this.style.borderColor = '#3b82f6'; };
+                label.onmouseout = function () { this.style.borderColor = '#e5e7eb'; };
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = tier.code;
                 checkbox.className = 'tz-membership-checkbox';
-                
+
                 // 如果该等级已保存，则勾选
                 if (savedLevels.includes(tier.code)) {
                     checkbox.checked = true;
                 }
-                
+
                 const span = document.createElement('span');
                 span.textContent = tier.label;
-                
+
                 label.appendChild(checkbox);
                 label.appendChild(span);
                 container.appendChild(label);
@@ -545,10 +545,10 @@
         // 会员等级全选按钮
         const memberSelectAllBtn = document.getElementById('tz-member-select-all');
         if (memberSelectAllBtn) {
-            memberSelectAllBtn.addEventListener('click', function(e) {
+            memberSelectAllBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const checkboxes = document.querySelectorAll('.tz-membership-checkbox');
-                checkboxes.forEach(function(cb) {
+                checkboxes.forEach(function (cb) {
                     cb.checked = true;
                 });
             });
@@ -557,10 +557,10 @@
         // 会员等级清除按钮
         const memberSelectClearBtn = document.getElementById('tz-member-select-clear');
         if (memberSelectClearBtn) {
-            memberSelectClearBtn.addEventListener('click', function(e) {
+            memberSelectClearBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const checkboxes = document.querySelectorAll('.tz-membership-checkbox');
-                checkboxes.forEach(function(cb) {
+                checkboxes.forEach(function (cb) {
                     cb.checked = false;
                 });
             });
@@ -584,10 +584,10 @@
 
             try {
                 const result = await apiRequest(config.shippingTemplatesEndpoint);
-                
+
                 if (result.ok && result.data.items) {
                     select.innerHTML = '';
-                    result.data.items.forEach(function(template) {
+                    result.data.items.forEach(function (template) {
                         const templateId = parseInt(template.id, 10);
                         if (!template.is_active && !initialSelected.includes(templateId)) {
                             return;
@@ -624,7 +624,7 @@
 
             try {
                 const result = await apiRequest(config.attributesEndpoint + '?per_page=100');
-                
+
                 if (!result.ok) {
                     if (attributesLoading) attributesLoading.style.display = 'none';
                     if (attributesEmpty) attributesEmpty.style.display = 'block';
@@ -653,7 +653,7 @@
 
                 loadedAttributes = skuAttributes;
                 renderAttributeSelectors(skuAttributes);
-                
+
                 if (attributesLoading) attributesLoading.style.display = 'none';
                 if (generateSkusBtn) generateSkusBtn.style.display = 'inline-block';
 
@@ -664,17 +664,17 @@
 
         function renderAttributeSelectors(attributes) {
             if (!attributesList) return;
-            
+
             attributesList.innerHTML = '';
 
-            attributes.forEach(function(attr) {
+            attributes.forEach(function (attr) {
                 const attrDiv = document.createElement('div');
                 attrDiv.className = 'tz-attribute-item';
                 attrDiv.style.cssText = 'padding:12px;background:#fff;border:1px solid #d1d5db;border-radius:6px;';
 
                 const header = document.createElement('div');
                 header.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
-                
+
                 const toggle = document.createElement('input');
                 toggle.type = 'checkbox';
                 toggle.className = 'attr-toggle';
@@ -695,22 +695,22 @@
                 valuesDiv.dataset.attrId = attr.id;
                 valuesDiv.style.cssText = 'display:none;margin-top:8px;padding-left:24px;flex-direction:column;gap:6px;';
 
-                (attr.values || []).forEach(function(val) {
+                (attr.values || []).forEach(function (val) {
                     const valueLabel = document.createElement('label');
                     // 强制一行展示：checkbox + 文本水平排列
                     valueLabel.style.cssText = 'display:flex;flex-direction:row;align-items:center;gap:6px;';
-                    
+
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.value = val.slug;
                     checkbox.dataset.name = val.name;
-                    
+
                     valueLabel.appendChild(checkbox);
                     valueLabel.appendChild(document.createTextNode(val.name));
                     valuesDiv.appendChild(valueLabel);
                 });
 
-                toggle.addEventListener('change', function() {
+                toggle.addEventListener('change', function () {
                     valuesDiv.style.display = this.checked ? 'flex' : 'none';
                 });
 
@@ -723,12 +723,12 @@
         function generateSKUCombinations() {
             const selectedAttrs = {};
 
-            document.querySelectorAll('.attr-toggle:checked').forEach(function(toggle) {
+            document.querySelectorAll('.attr-toggle:checked').forEach(function (toggle) {
                 const attrId = toggle.dataset.attrId;
                 const attrName = toggle.dataset.attrName;
                 const values = [];
 
-                document.querySelectorAll(`.attr-values[data-attr-id="${attrId}"] input[type="checkbox"]:checked`).forEach(function(checkbox) {
+                document.querySelectorAll(`.attr-values[data-attr-id="${attrId}"] input[type="checkbox"]:checked`).forEach(function (checkbox) {
                     values.push({
                         slug: checkbox.value,
                         name: checkbox.dataset.name
@@ -747,7 +747,7 @@
             }
 
             const combinations = cartesianProduct(selectedAttrs);
-            
+
             if (combinations.length > 100) {
                 if (!confirm('将生成 ' + combinations.length + ' 个 SKU 组合，是否继续？')) {
                     return;
@@ -756,11 +756,11 @@
 
             skuRows = [];
 
-            combinations.forEach(function(combo) {
+            combinations.forEach(function (combo) {
                 const attrParts = [];
                 const codeParts = [];
-                
-                Object.entries(combo).forEach(function([key, value]) {
+
+                Object.entries(combo).forEach(function ([key, value]) {
                     attrParts.push(key + '=' + value);
                     codeParts.push(value.toUpperCase());
                 });
@@ -790,10 +790,10 @@
 
             let result = [{}];
 
-            keys.forEach(function(key) {
+            keys.forEach(function (key) {
                 const temp = [];
-                result.forEach(function(item) {
-                    attrs[key].forEach(function(value) {
+                result.forEach(function (item) {
+                    attrs[key].forEach(function (value) {
                         const newItem = Object.assign({}, item);
                         newItem[key] = value.slug;
                         temp.push(newItem);
@@ -803,6 +803,29 @@
             });
 
             return result;
+        }
+
+        /**
+         * ========== Hub / Spoke Geometry Population ==========
+         */
+        function populateHubAttributes() {
+            const meta = config.initialMeta || {};
+            // 如果 meta 为空，不做任何填充 (保持 input 默认空状态)
+
+            fillInputValue('tz-spoke-erd', meta['_tanz_erd']);
+            fillInputValue('tz-spoke-holes-rim', meta['_tanz_spoke_holes']);
+            fillInputValue('tz-spoke-holes-hub', meta['_tanz_spoke_holes_hub']);
+            fillInputValue('tz-axle-width', meta['_tanz_axle_width_mm']);
+
+            fillInputValue('tz-front-left-pcd', meta['_tanz_front_left_flange_pcd_mm']);
+            fillInputValue('tz-front-right-pcd', meta['_tanz_front_right_flange_pcd_mm']);
+            fillInputValue('tz-front-left-center', meta['_tanz_front_left_flange_to_center_mm']);
+            fillInputValue('tz-front-right-center', meta['_tanz_front_right_flange_to_center_mm']);
+
+            fillInputValue('tz-rear-left-pcd', meta['_tanz_rear_left_flange_pcd_mm']);
+            fillInputValue('tz-rear-right-pcd', meta['_tanz_rear_right_flange_pcd_mm']);
+            fillInputValue('tz-rear-left-center', meta['_tanz_rear_left_flange_to_center_mm']);
+            fillInputValue('tz-rear-right-center', meta['_tanz_rear_right_flange_to_center_mm']);
         }
 
         /**
@@ -841,7 +864,25 @@
                 shipping_time: getInputValue('tz-product-shipping-time').trim(),
                 logistics_tags: parseDelimitedValues(getInputValue('tz-product-logistics-tags')),
                 channels: parseMaybeJsonOrCsv(getInputValue('tz-product-channels')),
+                channels: parseMaybeJsonOrCsv(getInputValue('tz-product-channels')),
                 is_sticky: getCheckboxValue('tz-product-sticky'),
+
+                // Hub & Spoke Attributes
+                spoke_erd: getInputValue('tz-spoke-erd'),
+                spoke_holes_rim: getInputValue('tz-spoke-holes-rim'),
+                spoke_holes_hub: getInputValue('tz-spoke-holes-hub'),
+                axle_width: getInputValue('tz-axle-width'),
+
+                front_left_pcd: getInputValue('tz-front-left-pcd'),
+                front_right_pcd: getInputValue('tz-front-right-pcd'),
+                front_left_center: getInputValue('tz-front-left-center'),
+                front_right_center: getInputValue('tz-front-right-center'),
+
+                rear_left_pcd: getInputValue('tz-rear-left-pcd'),
+                rear_right_pcd: getInputValue('tz-rear-right-pcd'),
+                rear_left_center: getInputValue('tz-rear-left-center'),
+                rear_right_center: getInputValue('tz-rear-right-center'),
+
                 tier_pricing: tierRows,
                 skus: skuRows.map((row) => {
                     const attributesInput = row.attributes_input || '';
@@ -863,14 +904,14 @@
 
             // 收集税率
             const taxRateIds = [];
-            document.querySelectorAll('.tz-tax-rate-checkbox:checked').forEach(function(cb) {
+            document.querySelectorAll('.tz-tax-rate-checkbox:checked').forEach(function (cb) {
                 taxRateIds.push(parseInt(cb.value));
             });
             payload.tax_rate_ids = taxRateIds;
 
             // 收集会员等级
             const membershipLevels = [];
-            document.querySelectorAll('.tz-membership-checkbox:checked').forEach(function(cb) {
+            document.querySelectorAll('.tz-membership-checkbox:checked').forEach(function (cb) {
                 membershipLevels.push(cb.value);
             });
             payload.membership_levels = membershipLevels;
@@ -919,10 +960,10 @@
                 }
 
                 showNotice(elements.notice, 'success', strings.saveSuccess || '保存成功');
-                
+
                 // 如果是新建，跳转到编辑页
                 if (!config.productId && result.data.id) {
-                    setTimeout(function() {
+                    setTimeout(function () {
                         window.location.href = '?page=tanzanite-settings-add-product&product_id=' + result.data.id;
                     }, 1000);
                 }
@@ -938,14 +979,14 @@
 
         // SKU 表格事件
         if (elements.skuTable) {
-            elements.skuTable.addEventListener('click', function(e) {
+            elements.skuTable.addEventListener('click', function (e) {
                 const target = e.target;
-                
+
                 if (target.classList.contains('sku-edit')) {
                     const index = parseInt(target.dataset.index);
                     // TODO: 填充 SKU 表单进行编辑
                 }
-                
+
                 if (target.classList.contains('sku-delete')) {
                     const index = parseInt(target.dataset.index);
                     deleteSku(index);
@@ -959,7 +1000,7 @@
 
         // 重置按钮
         if (elements.resetBtn) {
-            elements.resetBtn.addEventListener('click', function(e) {
+            elements.resetBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 if (confirm(strings.resetConfirm || '确定重置？')) {
                     location.reload();
@@ -979,7 +1020,7 @@
         // 修复 WordPress 编辑器的 "Add Media" 按钮
         function initMediaButtons() {
             console.log('Initializing media buttons...');
-            
+
             if (typeof wp === 'undefined' || !wp.media) {
                 console.error('WordPress media library not loaded');
                 return;
@@ -987,26 +1028,26 @@
 
             // 创建媒体 frame
             let mediaFrame;
-            
+
             // 监听所有 "Add Media" 按钮点击
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 const target = e.target;
-                
+
                 // 检查是否是 "Add Media" 按钮
-                if (target.classList.contains('insert-media') || 
+                if (target.classList.contains('insert-media') ||
                     target.closest('.insert-media')) {
-                    
+
                     e.preventDefault();
                     e.stopPropagation();
-                    
+
                     console.log('Add Media button clicked');
-                    
+
                     // 如果 frame 已存在，直接打开
                     if (mediaFrame) {
                         mediaFrame.open();
                         return;
                     }
-                    
+
                     // 创建新的 media frame
                     mediaFrame = wp.media({
                         title: '选择或上传图片',
@@ -1015,16 +1056,16 @@
                         },
                         multiple: false
                     });
-                    
+
                     // 选择图片后的回调
-                    mediaFrame.on('select', function() {
+                    mediaFrame.on('select', function () {
                         const attachment = mediaFrame.state().get('selection').first().toJSON();
                         console.log('Image selected:', attachment);
-                        
+
                         // 获取当前编辑器
                         const editorId = 'tz-product-content';
                         const editor = window.tinymce ? window.tinymce.get(editorId) : null;
-                        
+
                         if (editor && !editor.isHidden()) {
                             // 可视化模式
                             const imgHtml = '<img src="' + attachment.url + '" alt="' + (attachment.alt || attachment.title || '') + '" />';
@@ -1040,12 +1081,12 @@
                             }
                         }
                     });
-                    
+
                     // 打开媒体库
                     mediaFrame.open();
                 }
             }, true); // 使用捕获阶段
-            
+
             console.log('Media buttons initialized');
         }
 
@@ -1058,26 +1099,26 @@
         function insertMarkdownTemplate(templateKey) {
             console.log('insertMarkdownTemplate called with:', templateKey);
             console.log('config.markdownTemplates:', config.markdownTemplates);
-            
+
             const templates = config.markdownTemplates || {};
             const templateContent = templates[templateKey];
-            
+
             if (!templateContent) {
                 console.error('Template not found:', templateKey);
                 console.error('Available templates:', Object.keys(templates));
                 alert('未找到模板：' + templateKey);
                 return;
             }
-            
+
             console.log('Template content:', templateContent);
-            
+
             // 获取编辑器
             const editorId = 'tz-product-content';
             const editor = window.tinymce ? window.tinymce.get(editorId) : null;
-            
+
             console.log('Editor:', editor);
             console.log('Editor hidden:', editor ? editor.isHidden() : 'N/A');
-            
+
             if (editor && !editor.isHidden()) {
                 // 可视化模式 - 将 Markdown 转换为 HTML
                 const htmlContent = convertMarkdownToHtml(templateContent);
@@ -1102,41 +1143,41 @@
                 }
             }
         }
-        
+
         /**
          * 简单的 Markdown 转 HTML
          */
         function convertMarkdownToHtml(markdown) {
             let html = markdown;
-            
+
             // 标题
             html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
             html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
             html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-            
+
             // 列表
             html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
             html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
-            
+
             // 包裹列表项
             html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-            
+
             // 引用
             html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-            
+
             // 表格（简单处理）
             html = html.replace(/\|/g, '</td><td>');
-            html = html.replace(/^(.+)$/gim, function(match) {
+            html = html.replace(/^(.+)$/gim, function (match) {
                 if (match.includes('</td>')) {
                     return '<tr><td>' + match + '</tr>';
                 }
                 return match;
             });
-            
+
             // 段落
             html = html.replace(/\n\n/g, '</p><p>');
             html = '<p>' + html + '</p>';
-            
+
             // 清理
             html = html.replace(/<p><\/p>/g, '');
             html = html.replace(/<p>(<h[1-6]>)/g, '$1');
@@ -1145,13 +1186,13 @@
             html = html.replace(/(<\/ul>)<\/p>/g, '$1');
             html = html.replace(/<p>(<blockquote>)/g, '$1');
             html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-            
+
             return html;
         }
-        
+
         // 绑定模板按钮事件
-        document.querySelectorAll('[data-markdown-template]').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
+        document.querySelectorAll('[data-markdown-template]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const templateKey = this.getAttribute('data-markdown-template');
                 insertMarkdownTemplate(templateKey);
@@ -1298,7 +1339,7 @@
 
         // 阶梯价表单提交
         if (tierSubmitBtn) {
-            tierSubmitBtn.addEventListener('click', function(e) {
+            tierSubmitBtn.addEventListener('click', function (e) {
                 e.preventDefault();
 
                 const min = parseInt(tierMinInput.value, 10);
@@ -1343,7 +1384,7 @@
 
         // 清空阶梯价表单
         if (tierResetBtn) {
-            tierResetBtn.addEventListener('click', function(e) {
+            tierResetBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 clearTierForm();
             });
@@ -1351,7 +1392,7 @@
 
         // 应用阶梯价模板
         if (tierTemplateBtn) {
-            tierTemplateBtn.addEventListener('click', function(e) {
+            tierTemplateBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 if (tierRows.length && !window.confirm(strings.tierTemplateConfirm || '此操作将覆盖现有阶梯价配置，是否继续？')) {
                     return;
@@ -1392,7 +1433,7 @@
 
         // SKU 表单提交
         if (skuFormSubmitBtn) {
-            skuFormSubmitBtn.addEventListener('click', function(e) {
+            skuFormSubmitBtn.addEventListener('click', function (e) {
                 e.preventDefault();
 
                 const code = skuFormCodeInput ? skuFormCodeInput.value.trim() : '';
@@ -1436,7 +1477,7 @@
 
         // SKU 表单重置
         if (skuFormResetBtn) {
-            skuFormResetBtn.addEventListener('click', function(e) {
+            skuFormResetBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 if (elements.skuForm) {
                     elements.skuForm.reset();
@@ -1448,6 +1489,7 @@
         loadTaxRates();
         loadShippingTemplates();
         loadProductAttributes();
+        populateHubAttributes(); // 初始化 Hub 属性
         renderMembershipTiers();
         renderSkuTable();
         renderFeaturedMedia();

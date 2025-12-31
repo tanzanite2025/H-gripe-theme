@@ -3,6 +3,48 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "457b9e0a8d874388",
+      "timestamp": "2025-12-31T09:16:52.542Z",
+      "description": "✅ 10 个任务完成: 功能重构: 辐条数据静态化 (Frontend Database), 数据: 创建 `app/data/spoke-calculator/database.ts` 并录入基础数据 (Brands/Rims/Hubs)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "a248e69519c9f113",
+      "timestamp": "2025-12-31T09:08:51.714Z",
+      "description": "✅ 任务完成: 规划: 编写前端 Spoke 数据库结构分析报告 (已完成)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "d928412b54b0382f",
+      "timestamp": "2025-12-31T08:54:54.032Z",
+      "description": "✅ 任务完成: 功能新增: 实现 FAQ 模块 (参照 Wheelset Buyers Guide)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "1ef6d6e9f90d0ee3",
+      "timestamp": "2025-12-31T08:54:38.142Z",
+      "description": "✅ 3 个任务完成: 功能开发: Hub Attributes 集成, 后端: 在 class-add-product-admin.php 中渲染 Spoke Geometry 输入区域...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "38181d3816b4a233",
+      "timestamp": "2025-12-31T08:49:15.070Z",
+      "description": "✅ 任务完成: 后端: 在 REST Products Controller 中添加 Meta 字段白名单",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "802786a43998a446",
+      "timestamp": "2025-12-31T08:22:09.554Z",
+      "description": "✅ 36 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "b5139f1a89ee8c85",
       "timestamp": "2025-12-30T17:32:56.819Z",
       "description": "✅ 任务完成: 功能新增: 实现 FAQ 模块 (参照 Wheelset Buyers Guide)",
@@ -97,48 +139,6 @@
       "id": "4032c3cf3fb6a475",
       "timestamp": "2025-12-30T14:16:20.802Z",
       "description": "✅ 任务完成: 代码重构: 抽离 `MatchGuide.vue` 组件 <!-- id: 5 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "8ae74232a9ba26c6",
-      "timestamp": "2025-12-30T14:14:16.347Z",
-      "description": "✅ 任务完成: 代码重构: 抽离 `TireSizeGuide.vue` 组件 <!-- id: 4 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "672e78f57f529085",
-      "timestamp": "2025-12-30T14:09:13.046Z",
-      "description": "✅ 任务完成: 代码重构: 抽离 `InstallationGuide.vue` 组件 <!-- id: 3 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "18e4168645e5adb4",
-      "timestamp": "2025-12-30T14:03:24.242Z",
-      "description": "✅ 任务完成: 代码重构: 抽离 `InnerTubeGuide.vue` 组件 <!-- id: 2 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "caf423f20dda18ed",
-      "timestamp": "2025-12-30T13:52:34.490Z",
-      "description": "✅ 任务完成: 内容更新: 更新 Inner Tube 指南 (文字 + 表格) <!-- id: 1 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "7db863b6ad472350",
-      "timestamp": "2025-12-30T13:50:38.324Z",
-      "description": "✅ 19 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "93cb7cc248ed301b",
-      "timestamp": "2025-12-30T10:59:24.682Z",
-      "description": "✅ 任务完成: SEO 优化: 分析页面的 H1 标题隐藏方式 (已完成)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }

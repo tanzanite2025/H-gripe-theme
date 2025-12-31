@@ -80,36 +80,72 @@
               </div>
             </div>
 
-            <!-- Rim -->
-            <div class="space-y-1.5">
-              <label for="front-rim" class="block text-xs font-medium text-slate-200">
-                Rim <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop rims)</span>
-              </label>
-              <select
-                id="front-rim"
-                v-model="frontConfig.rimId"
-                :disabled="!rimOptions.length"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option v-if="!rimOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No rim products configured yet</option>
-                <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.label }}</option>
-              </select>
+            <!-- Rim Selection -->
+            <div class="space-y-3">
+               <!-- Brand -->
+               <div class="space-y-1.5">
+                <label for="front-rim-brand" class="block text-xs font-medium text-slate-200">
+                  Rim Brand
+                </label>
+                <select
+                  id="front-rim-brand"
+                  v-model="frontConfig.rimBrandId"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                >
+                  <option value="" disabled>Select Brand</option>
+                  <option v-for="brand in RIM_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
+                </select>
+              </div>
+
+               <!-- Model -->
+              <div class="space-y-1.5">
+                <label for="front-rim-model" class="block text-xs font-medium text-slate-200">
+                  Rim Model
+                </label>
+                <select
+                  id="front-rim-model"
+                  v-model="frontConfig.rimModelId"
+                   :disabled="!frontRimModels.length"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="" disabled>Select Model</option>
+                  <option v-for="rim in frontRimModels" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.name }}</option>
+                </select>
+               </div>
             </div>
 
-            <!-- Hub -->
-            <div class="space-y-1.5">
-              <label for="front-hub" class="block text-xs font-medium text-slate-200">
-                Hub <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop hubs)</span>
-              </label>
-              <select
-                id="front-hub"
-                v-model="frontConfig.hubId"
-                :disabled="!frontHubOptions.length"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option v-if="!frontHubOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No hubs available</option>
-                <option v-for="hub in frontHubOptions" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.label }}</option>
-              </select>
+            <!-- Hub Selection -->
+            <div class="space-y-3">
+               <!-- Brand -->
+               <div class="space-y-1.5">
+                <label for="front-hub-brand" class="block text-xs font-medium text-slate-200">
+                  Hub Brand
+                </label>
+                <select
+                  id="front-hub-brand"
+                  v-model="frontConfig.hubBrandId"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                >
+                  <option value="" disabled>Select Brand</option>
+                  <option v-for="brand in HUB_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
+                </select>
+              </div>
+
+               <!-- Model -->
+              <div class="space-y-1.5">
+                <label for="front-hub-model" class="block text-xs font-medium text-slate-200">
+                  Hub Model
+                </label>
+                <select
+                  id="front-hub-model"
+                  v-model="frontConfig.hubModelId"
+                   :disabled="!frontHubModels.length"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="" disabled>Select Model</option>
+                  <option v-for="hub in frontHubModels" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.name }}</option>
+                </select>
+               </div>
             </div>
 
             <!-- ERD -->
@@ -263,36 +299,72 @@
               </div>
             </div>
 
-            <!-- Rim -->
-            <div class="space-y-1.5">
-              <label for="rear-rim" class="block text-xs font-medium text-slate-200">
-                Rim <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop rims)</span>
-              </label>
-              <select
-                id="rear-rim"
-                v-model="rearConfig.rimId"
-                :disabled="!rimOptions.length"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option v-if="!rimOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No rim products configured yet</option>
-                <option v-for="rim in rimOptions" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.label }}</option>
-              </select>
+            <!-- Rim Selection -->
+            <div class="space-y-3">
+               <!-- Brand -->
+               <div class="space-y-1.5">
+                <label for="rear-rim-brand" class="block text-xs font-medium text-slate-200">
+                  Rim Brand
+                </label>
+                <select
+                  id="rear-rim-brand"
+                  v-model="rearConfig.rimBrandId"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                >
+                  <option value="" disabled>Select Brand</option>
+                  <option v-for="brand in RIM_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
+                </select>
+              </div>
+
+               <!-- Model -->
+              <div class="space-y-1.5">
+                <label for="rear-rim-model" class="block text-xs font-medium text-slate-200">
+                  Rim Model
+                </label>
+                <select
+                  id="rear-rim-model"
+                  v-model="rearConfig.rimModelId"
+                   :disabled="!rearRimModels.length"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="" disabled>Select Model</option>
+                  <option v-for="rim in rearRimModels" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.name }}</option>
+                </select>
+               </div>
             </div>
 
-            <!-- Hub -->
-            <div class="space-y-1.5">
-              <label for="rear-hub" class="block text-xs font-medium text-slate-200">
-                Hub <span class="ml-1 text-[10px] font-normal text-slate-400">(select from shop hubs)</span>
-              </label>
-              <select
-                id="rear-hub"
-                v-model="rearConfig.hubId"
-                :disabled="!rearHubOptions.length"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option v-if="!rearHubOptions.length" value="" disabled class="bg-slate-900 text-slate-50">No hubs available</option>
-                <option v-for="hub in rearHubOptions" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.label }}</option>
-              </select>
+            <!-- Hub Selection -->
+            <div class="space-y-3">
+               <!-- Brand -->
+               <div class="space-y-1.5">
+                <label for="rear-hub-brand" class="block text-xs font-medium text-slate-200">
+                  Hub Brand
+                </label>
+                <select
+                  id="rear-hub-brand"
+                  v-model="rearConfig.hubBrandId"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                >
+                  <option value="" disabled>Select Brand</option>
+                  <option v-for="brand in HUB_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
+                </select>
+              </div>
+
+               <!-- Model -->
+              <div class="space-y-1.5">
+                <label for="rear-hub-model" class="block text-xs font-medium text-slate-200">
+                  Hub Model
+                </label>
+                <select
+                  id="rear-hub-model"
+                  v-model="rearConfig.hubModelId"
+                   :disabled="!rearHubModels.length"
+                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="" disabled>Select Model</option>
+                  <option v-for="hub in rearHubModels" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.name }}</option>
+                </select>
+               </div>
             </div>
 
             <!-- ERD -->
@@ -376,8 +448,6 @@
             </div>
           </div>
         </div>
-
-
 
         <!-- Action row -->
         <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t border-slate-800 pt-4">
@@ -492,32 +562,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-
-interface RimOption {
-  id: string
-  label: string
-}
-
-interface HubOption {
-  id: string
-  label: string
-  position: 'front' | 'rear' | 'front-rear-compatible'
-}
-
-interface SpokeProductsResponse {
-  rims: RimOption[]
-  hubs: HubOption[]
-  nipples: { id: string; label: string }[]
-}
+import { computed, reactive, watch } from 'vue'
+import { RIM_DATABASE, HUB_DATABASE, type RimModel, type HubModel } from '~/data/spoke-calculator/database'
 
 interface WheelConfig {
   spokeCount: number
   crossing: number
   nippleType: 'standard' | 'hidden'
-  nippleLength: number | null  // Hidden nipple length in mm (e.g., 9, 12)
-  rimId: string | null
-  hubId: string | null
+  nippleLength: number | null
+  
+  // Selection State
+  rimBrandId: string | null
+  rimModelId: string | null
+  hubBrandId: string | null
+  hubModelId: string | null
+
+  // Geometry Data
   erd: number | null
   leftFlange: number | null
   rightFlange: number | null
@@ -531,8 +591,10 @@ const frontConfig = reactive<WheelConfig>({
   crossing: 3,
   nippleType: 'standard',
   nippleLength: 12,
-  rimId: null,
-  hubId: null,
+  rimBrandId: null,
+  rimModelId: null,
+  hubBrandId: null,
+  hubModelId: null,
   erd: 622,
   leftFlange: 35,
   rightFlange: 35,
@@ -546,8 +608,10 @@ const rearConfig = reactive<WheelConfig>({
   crossing: 3,
   nippleType: 'standard',
   nippleLength: 12,
-  rimId: null,
-  hubId: null,
+  rimBrandId: null,
+  rimModelId: null,
+  hubBrandId: null,
+  hubModelId: null,
   erd: 622,
   leftFlange: 35,
   rightFlange: 20,
@@ -555,77 +619,98 @@ const rearConfig = reactive<WheelConfig>({
   rightFlangePcd: 55,
 })
 
+// --- Computed Models based on Brand Selection ---
 
+// Front Rim Models
+const frontRimModels = computed<RimModel[]>(() => {
+  if (!frontConfig.rimBrandId) return []
+  const brand = RIM_DATABASE.find(b => b.id === frontConfig.rimBrandId)
+  return brand ? brand.items : []
+})
 
-// Load rim / hub / nipple options from backend JSON API.
-const {
-  data: productsData,
-  pending: productsLoading,
-  error: productsError,
-} = await useFetch<SpokeProductsResponse>('/api/spoke-products')
+// Front Hub Models
+const frontHubModels = computed<HubModel[]>(() => {
+  if (!frontConfig.hubBrandId) return []
+  const brand = HUB_DATABASE.find(b => b.id === frontConfig.hubBrandId)
+  return brand ? brand.items : []
+})
 
-const rimOptions = computed<RimOption[]>(() => productsData.value?.rims ?? [])
-const hubOptions = computed<HubOption[]>(() => productsData.value?.hubs ?? [])
+// Rear Rim Models
+const rearRimModels = computed<RimModel[]>(() => {
+  if (!rearConfig.rimBrandId) return []
+  const brand = RIM_DATABASE.find(b => b.id === rearConfig.rimBrandId)
+  return brand ? brand.items : []
+})
 
-// Filter hubs by wheel position
-const frontHubOptions = computed(() =>
-  hubOptions.value.filter((h) => h.position === 'front' || h.position === 'front-rear-compatible'),
-)
-const rearHubOptions = computed(() =>
-  hubOptions.value.filter((h) => h.position === 'rear' || h.position === 'front-rear-compatible'),
-)
+// Rear Hub Models
+const rearHubModels = computed<HubModel[]>(() => {
+  if (!rearConfig.hubBrandId) return []
+  const brand = HUB_DATABASE.find(b => b.id === rearConfig.hubBrandId)
+  return brand ? brand.items : []
+})
 
-// Sync rim selection when options load
+// --- Watchers for Auto-Population ---
+
+// Front Rim Change
 watch(
-  rimOptions,
-  (list) => {
-    const safe = list ?? []
-    if (!safe.length) {
-      frontConfig.rimId = null
-      rearConfig.rimId = null
-      return
+  () => frontConfig.rimModelId,
+  (newId) => {
+    if (!newId) return
+    const model = frontRimModels.value.find(m => m.id === newId)
+    if (model) {
+      frontConfig.erd = model.erd
     }
-    if (!safe.some((r) => r.id === frontConfig.rimId)) {
-      frontConfig.rimId = safe[0].id
-    }
-    if (!safe.some((r) => r.id === rearConfig.rimId)) {
-      rearConfig.rimId = safe[0].id
-    }
-  },
-  { immediate: true },
+  }
 )
 
-// Sync hub selection when options load
+// Front Hub Change
 watch(
-  frontHubOptions,
-  (list) => {
-    const safe = list ?? []
-    if (!safe.length) {
-      frontConfig.hubId = null
-      return
+  () => frontConfig.hubModelId,
+  (newId) => {
+    if (!newId) return
+    const model = frontHubModels.value.find(m => m.id === newId)
+    if (model && model.front) {
+      frontConfig.leftFlange = model.front.leftFlange
+      frontConfig.rightFlange = model.front.rightFlange
+      frontConfig.leftFlangePcd = model.front.leftFlangePcd
+      frontConfig.rightFlangePcd = model.front.rightFlangePcd
+    } else if (model && model.rear) {
+       // Fallback if user selects a rear hub for front (unlikely but possible logic)
+       // Or handle front/rear compatible logic here
     }
-    if (!safe.some((h) => h.id === frontConfig.hubId)) {
-      frontConfig.hubId = safe[0].id
-    }
-  },
-  { immediate: true },
+  }
 )
 
+// Rear Rim Change
 watch(
-  rearHubOptions,
-  (list) => {
-    const safe = list ?? []
-    if (!safe.length) {
-      rearConfig.hubId = null
-      return
+  () => rearConfig.rimModelId,
+  (newId) => {
+    if (!newId) return
+    const model = rearRimModels.value.find(m => m.id === newId)
+    if (model) {
+      rearConfig.erd = model.erd
     }
-    if (!safe.some((h) => h.id === rearConfig.hubId)) {
-      rearConfig.hubId = safe[0].id
-    }
-  },
-  { immediate: true },
+  }
 )
 
+// Rear Hub Change
+watch(
+  () => rearConfig.hubModelId,
+  (newId) => {
+    if (!newId) return
+    const model = rearHubModels.value.find(m => m.id === newId)
+    if (model && model.rear) {
+      rearConfig.leftFlange = model.rear.leftFlange
+      rearConfig.rightFlange = model.rear.rightFlange
+      rearConfig.leftFlangePcd = model.rear.leftFlangePcd
+      rearConfig.rightFlangePcd = model.rear.rightFlangePcd
+    } else if (model && model.front) {
+        // Fallback
+    }
+  }
+)
+
+// --- Calculation Logic (Existing) ---
 // Frontend-only spoke length calculation
 // Formula: L = sqrt((ERD/2)^2 + (PCD/2)^2 + flange^2 - ERD * PCD/2 * cos(cross_angle))
 // where cross_angle = 4 * PI * crossing / spokeCount

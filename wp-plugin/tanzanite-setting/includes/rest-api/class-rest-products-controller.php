@@ -487,6 +487,19 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			'free_shipping'        => '_tanz_free_shipping',
 			'shipping_time'        => '_tanz_shipping_time',
 			'is_sticky'            => '_tanz_is_sticky',
+			// Hub & Spoke Geometry
+			'spoke_erd'           => '_tanz_erd',
+			'spoke_holes_rim'     => '_tanz_spoke_holes',
+			'spoke_holes_hub'     => '_tanz_spoke_holes_hub',
+			'axle_width'          => '_tanz_axle_width_mm',
+			'front_left_pcd'      => '_tanz_front_left_flange_pcd_mm',
+			'front_right_pcd'     => '_tanz_front_right_flange_pcd_mm',
+			'front_left_center'   => '_tanz_front_left_flange_to_center_mm',
+			'front_right_center'  => '_tanz_front_right_flange_to_center_mm',
+			'rear_left_pcd'       => '_tanz_rear_left_flange_pcd_mm',
+			'rear_right_pcd'      => '_tanz_rear_right_flange_pcd_mm',
+			'rear_left_center'    => '_tanz_rear_left_flange_to_center_mm',
+			'rear_right_center'   => '_tanz_rear_right_flange_to_center_mm',
 		);
 
 		foreach ( $meta_fields as $param => $meta_key ) {
@@ -496,10 +509,18 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 
 			$value = $request->get_param( $param );
 
+			// 针对 Spoke/Hub 属性的严格空值检查：如果为空字符串或null，则删除 Meta
+			if ( in_array( $param, array( 'spoke_erd', 'axle_width', 'front_left_pcd', 'front_right_pcd', 'front_left_center', 'front_right_center', 'rear_left_pcd', 'rear_right_pcd', 'rear_left_center', 'rear_right_center', 'spoke_holes_rim', 'spoke_holes_hub' ), true ) ) {
+				if ( $value === '' || $value === null ) {
+					delete_post_meta( $post_id, $meta_key );
+					continue;
+				}
+			}
+
 			// 类型转换
-			if ( in_array( $param, array( 'price_regular', 'price_sale', 'price_member' ), true ) ) {
+			if ( in_array( $param, array( 'price_regular', 'price_sale', 'price_member', 'spoke_erd', 'axle_width', 'front_left_pcd', 'front_right_pcd', 'front_left_center', 'front_right_center', 'rear_left_pcd', 'rear_right_pcd', 'rear_left_center', 'rear_right_center' ), true ) ) {
 				$value = (float) $value;
-			} elseif ( in_array( $param, array( 'stock_qty', 'stock_alert', 'points_reward', 'points_limit', 'purchase_limit', 'min_purchase', 'featured_image_id', 'featured_video_id', 'shipping_template_id' ), true ) ) {
+			} elseif ( in_array( $param, array( 'stock_qty', 'stock_alert', 'points_reward', 'points_limit', 'purchase_limit', 'min_purchase', 'featured_image_id', 'featured_video_id', 'shipping_template_id', 'spoke_holes_rim', 'spoke_holes_hub' ), true ) ) {
 				$value = (int) $value;
 			} elseif ( in_array( $param, array( 'backorders_allowed', 'free_shipping', 'is_sticky' ), true ) ) {
 				$value = (bool) $value;
