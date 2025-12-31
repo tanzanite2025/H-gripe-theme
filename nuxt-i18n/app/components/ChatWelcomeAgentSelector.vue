@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="displayAgents.length === 3" class="relative h-[252px]">
+    <div v-if="displayAgents.length === 3" class="relative h-[230px]">
       <button
         v-for="agent in displayAgents"
         :key="agent.id"
@@ -11,6 +11,8 @@
       >
         <div class="h-full flex items-center gap-3 px-3" :class="getInnerClass(agent)">
           <span class="relative shrink-0 w-14 h-14">
+<!-- ... (middle content remains same) ... -->
+
             <span
               class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden"
               :class="isSelected(agent) ? 'text-black/80' : 'text-white/85'"
@@ -134,7 +136,7 @@ const handleSelect = (agent: any) => {
   emit('select', agent)
 }
 
-const translateClasses = ['translate-y-0', 'translate-y-[84px]', 'translate-y-[180px]'] as const
+const translateClasses = ['translate-y-0', 'translate-y-[76px]', 'translate-y-[156px]'] as const
 
 const getRowClass = (agent: any) => {
   const selected = isSelected(agent)
@@ -143,7 +145,7 @@ const getRowClass = (agent: any) => {
 
   return [
     translate,
-    selected ? 'w-full h-[84px]' : 'w-[92%] h-[72px]',
+    selected ? 'w-full h-[76px]' : 'w-[92%] h-[66px]',
     selected
       ? 'bg-[linear-gradient(135deg,rgba(203,213,225,0.95),rgba(148,163,184,0.95))] hover:brightness-95'
       : 'bg-white/[0.10] hover:bg-white/[0.14]',

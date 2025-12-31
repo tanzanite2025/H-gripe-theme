@@ -231,30 +231,30 @@
             </button>
             
             <!-- 可滚动内容区域 -->
-            <div class="flex-1 overflow-y-auto p-4 md:p-8 relative z-10">
+            <div class="flex-1 overflow-y-auto p-3 md:p-4 relative z-10 welcome-scroll-area">
               <div class="w-full">
-                <div class="mb-3 md:mb-5">
+                <div class="mb-2 md:mb-3 welcome-header">
                   <!-- Logo -->
-                  <div class="flex items-center gap-3 mb-2">
+                  <div class="flex items-center gap-3 mb-2 welcome-logo-row">
                     <img
                       src="/images/chat-logo.webp"
                       alt="Tanzanite"
-                      class="w-12 h-12 rounded-xl object-cover shrink-0"
+                      class="w-12 h-12 rounded-xl object-cover shrink-0 welcome-logo"
                     />
 
                     <!-- 欢迎语 -->
-                    <h1 class="text-2xl md:text-3xl font-bold text-white">
+                    <h1 class="text-2xl md:text-3xl font-bold text-white welcome-title">
                       Hi there! <span class="inline-block animate-wave">👋</span>
                     </h1>
                   </div>
 
-                  <p class="text-sm md:text-base text-white/70 leading-relaxed">
+                  <p class="text-sm md:text-base text-white/70 leading-relaxed welcome-desc">
                     Chat with our team, track your orders, or find answers in our FAQ.
                   </p>
                 </div>
 
               <!-- 客服状态 & 在线团队 -->
-              <div class="space-y-4 mb-6">
+              <div class="space-y-2 mb-0">
                 <div class="flex items-center gap-2 mb-2 pl-1">
                   <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
                   <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
@@ -279,7 +279,7 @@
             </div>
 
             <!-- 底部操作：Start / WhatsApp / Email 固定在欢迎容器底部 -->
-            <div class="p-4 md:px-8 md:pb-6 shrink-0 z-20 bg-white/[0.02] border-t border-white/[0.08]">
+            <div class="p-2 md:px-5 md:pb-3 shrink-0 z-20 bg-white/[0.02] border-t border-white/[0.08]">
               <!-- 开始对话按钮 -->
               <ChatStartButton
                 class="w-full text-sm"
@@ -289,7 +289,7 @@
               />
 
               <!-- 快捷联系 -->
-              <div class="flex gap-2.5 mt-3">
+              <div class="flex gap-2.5 mt-2">
                 <a
                   v-if="selectedAgent?.whatsapp"
                   :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
@@ -2136,24 +2136,24 @@ onMounted(async () => {
 
 @media (min-width: 768px) {
   .chat-modal-shell {
-    height: min(85vh, 720px);
-    max-height: 85vh;
+    height: 850px;
+    max-height: 92vh;
   }
 
   .chat-history-shell {
-    height: min(700px, 85vh);
-    max-height: 85vh;
+    height: 850px;
+    max-height: 92vh;
   }
 
   @supports (height: 100dvh) {
     .chat-modal-shell {
-      height: min(85dvh, 720px);
-      max-height: 85dvh;
+      height: 850px;
+      max-height: 92dvh;
     }
 
     .chat-history-shell {
-      height: min(700px, 85dvh);
-      max-height: 85dvh;
+      height: 850px;
+      max-height: 92dvh;
     }
   }
 }
