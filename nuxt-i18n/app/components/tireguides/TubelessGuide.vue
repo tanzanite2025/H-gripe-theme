@@ -79,6 +79,16 @@
            <br class="mb-2 block content-['']" />
            If you ride on <strong>rough terrain</strong>, desire <strong>lower rolling resistance</strong>, or want <strong>advanced puncture protection</strong>, then <strong>Tubeless</strong> is the superior choice.
         </p>
+
+        <!-- Compatibility Note -->
+        <div class="mt-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-left max-w-3xl mx-auto">
+          <strong class="block text-orange-400 text-sm mb-2">⚠️ Note:</strong>
+          <p class="text-slate-400 text-xs leading-relaxed">
+            If you previously used an aluminum rim with a traditional inner tube and tire setup, and now plan to upgrade to a tubeless system, please first refer to the rim cross-section diagram above.
+            <br/><br/>
+            Rims designed for tubeless compatibility can support both inner tube setups and tubeless tires. However, if your rim matches the first example shown above—designed only for standard inner tube use—it is not compatible with tubeless tires and must be replaced.
+          </p>
+        </div>
      </div>
 
     <!-- 4. Key Differences Card -->
@@ -87,17 +97,14 @@
        
        <div class="grid gap-4 md:grid-cols-3">
           <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-             <div class="text-2xl mb-2">🛡️</div>
              <strong class="block text-slate-200 text-sm mb-2">Self-Sealing</strong>
              <p class="text-xs text-slate-400 leading-relaxed">Sealant fills small punctures automatically instantly. No snake bites.</p>
           </div>
           <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-             <div class="text-2xl mb-2">☁️</div>
              <strong class="block text-slate-200 text-sm mb-2">Lower Pressure</strong>
              <p class="text-xs text-slate-400 leading-relaxed">Can run ~80psi (Road) or lower for better grip and comfort without pinch flats.</p>
           </div>
           <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-             <div class="text-2xl mb-2">⚡</div>
              <strong class="block text-slate-200 text-sm mb-2">Rolling Resistance</strong>
              <p class="text-xs text-slate-400 leading-relaxed">No internal friction between tube and tire means faster rolling speed.</p>
           </div>

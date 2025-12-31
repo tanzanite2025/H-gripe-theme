@@ -11,7 +11,7 @@
         </p>
 
         <div class="mt-2 w-full">
-          <div class="relative mx-auto w-full max-w-5xl">
+          <div class="relative mx-auto w-full">
             <div
               class="relative rounded-3xl pt-[72px] sm:pt-[92px]"
               :aria-label="t('home.hero.stackAriaLabel')"

@@ -90,11 +90,11 @@
       "items": {
         "0": {
           "title": "Secure Payment",
-          "description": "Placeholder copy. Add your payment and checkout trust message here.",
+          "description": "All transactions are protected by industry-standard HTTPS encryption.",
           "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
+            "0": "Verified SSL Security",
+            "1": "Major Cards via Stripe",
+            "2": "PayPal, WeChat & Alipay"
           }
         },
         "1": {
