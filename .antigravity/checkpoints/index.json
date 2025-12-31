@@ -3,6 +3,27 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "a6d27ba3778c3798",
+      "timestamp": "2025-12-31T18:16:40.649Z",
+      "description": "✅ 任务完成: Add View More button to Secure Payment card",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "178027f6f7dc7f77",
+      "timestamp": "2025-12-31T18:10:28.592Z",
+      "description": "✅ 任务完成: Update Home Page Secure Payment Card (Content + Inline Icons)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "2a0d2f61d855e63b",
+      "timestamp": "2025-12-31T17:40:10.385Z",
+      "description": "✅ 57 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "f185ef7404945199",
       "timestamp": "2025-12-31T16:15:51.743Z",
       "description": "✅ 4 个任务完成: **Support & Global Styles**, Optimize FAQ Components (Width 960px, Premium Card Style)...",
@@ -118,27 +139,6 @@
       "id": "a69c1dec8c6c5198",
       "timestamp": "2025-12-30T15:38:22.801Z",
       "description": "✅ 任务完成: 功能修复: 辐条计算器前端计算逻辑重构 <!-- id: 10 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "b1c383425501e9fd",
-      "timestamp": "2025-12-30T15:32:12.088Z",
-      "description": "✅ 28 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "2eda940e8edc5947",
-      "timestamp": "2025-12-30T14:31:52.187Z",
-      "description": "✅ 任务完成: 内容更新: 优化 Tire Guides FAQ 内容 <!-- id: 9 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "133f8b49549c073a",
-      "timestamp": "2025-12-30T14:22:52.643Z",
-      "description": "✅ 任务完成: 代码重构: 抽离 `TirePressureGuide.vue` 组件 <!-- id: 8 --> (已完成)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }
