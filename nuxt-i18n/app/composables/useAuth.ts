@@ -195,9 +195,39 @@ export function useAuth() {
     }
   }
 
+  /**
+   * 使用 Google ID Token 登录
+   * @param idToken - Google Identity Services 返回的 JWT token
+   */
+  const loginWithGoogle = async (idToken: string) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await request<ApiResponse<{ user: AuthUser }>>(
+        '/tanzanite/v1/chat/google-login',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ id_token: idToken })
+        },
+        'Google login failed'
+      )
+      const data = response?.data?.user || null
+      user.value = data
+      return data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Google login failed'
+      error.value = message
+      throw new Error(message)
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 计算属性：是否是客服
   const isAgent = computed(() => !!user.value?.is_agent)
-  
+
   // 计算属性：客服 ID
   const agentId = computed(() => user.value?.agent_id || null)
 
@@ -210,6 +240,7 @@ export function useAuth() {
     agentId,
     ensureSession,
     login,
+    loginWithGoogle,
     register,
     logout
   }

@@ -56,7 +56,7 @@
           </button>
 
           <!-- Body -->
-          <div class="auth-modal__body flex-1 w-full overflow-y-auto px-4 md:px-12 pt-16 pb-10 relative z-10 custom-scrollbar">
+          <div class="auth-modal__body flex-1 w-full overflow-y-auto px-4 md:px-12 pt-10 pb-6 relative z-10 custom-scrollbar">
             <div class="w-full max-w-[520px] mx-auto">
               <!-- 登录 / 注册 表单状态 -->
               <div v-if="!completionState" class="space-y-6">
@@ -84,6 +84,14 @@
                   </button>
                 </div>
 
+                <!-- Privacy Notice -->
+                <div class="mt-3 px-4 py-3 rounded-xl bg-[rgba(15,23,42,0.6)] backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <p class="text-center text-xs text-slate-400 leading-relaxed">
+                    <span class="inline-block mr-1">🛡️</span>
+                    {{ $t('auth.privacyNotice', 'We take your privacy seriously. All connections are encrypted and your data stays yours.') }}
+                  </p>
+                </div>
+
                 <div class="space-y-4">
                   <!-- 顶部说明文字 -->
                   <div class="text-center text-sm text-white/70">
@@ -94,19 +102,22 @@
 
                   <!-- 社交登录按钮 -->
                   <div class="flex justify-center gap-3">
-                    <button type="button" class="social-btn" aria-label="Continue with Google">
-                      <svg viewBox="0 0 48 48" class="w-5 h-5"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.565 32.664 29.177 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.156 7.961 3.039l5.657-5.657C33.797 6.053 29.139 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-9 20-20c0-1.341-.138-2.651-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 19 12 24 12c3.059 0 5.842 1.156 7.961 3.039l5.657-5.657C33.797 6.053 29.139 4 24 4 15.322 4 8.135 9.069 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.114 0 9.725-1.961 13.261-5.174l-6.132-5.198C29.16 34.488 26.715 35.5 24 35.5c-5.139 0-9.479-3.335-11.029-8.014l-6.57 5.055C8.122 38.897 15.348 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.685 2.316-2.172 4.285-4.134 5.628l.003-.001 6.132 5.198C39.846 35.896 44 30.5 44 24c0-1.341-.138-2.651-.389-3.917z"/></svg>
+                    <button 
+                      type="button" 
+                      class="social-btn" 
+                      aria-label="Continue with Google"
+                      :disabled="googleAuthLoading"
+                      @click="handleGoogleLogin"
+                    >
+                      <span v-if="googleAuthLoading" class="animate-spin">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25"/>
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                      </span>
+                      <svg v-else viewBox="0 0 48 48" class="w-5 h-5"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.565 32.664 29.177 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.156 7.961 3.039l5.657-5.657C33.797 6.053 29.139 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-9 20-20c0-1.341-.138-2.651-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 19 12 24 12c3.059 0 5.842 1.156 7.961 3.039l5.657-5.657C33.797 6.053 29.139 4 24 4 15.322 4 8.135 9.069 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.114 0 9.725-1.961 13.261-5.174l-6.132-5.198C29.16 34.488 26.715 35.5 24 35.5c-5.139 0-9.479-3.335-11.029-8.014l-6.57 5.055C8.122 38.897 15.348 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.685 2.316-2.172 4.285-4.134 5.628l.003-.001 6.132 5.198C39.846 35.896 44 30.5 44 24c0-1.341-.138-2.651-.389-3.917z"/></svg>
                     </button>
-                    <button type="button" class="social-btn" aria-label="Continue with X (Twitter)">
-                      <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor">
-                        <path d="M18.244 2h3.308l-7.227 8.26L22 22h-6.146l-4.807-6.266L5.484 22H2.174l7.73-8.838L2 2h6.277l4.353 5.724L18.244 2z" />
-                      </svg>
-                    </button>
-                    <button type="button" class="social-btn" aria-label="Continue with Facebook">
-                      <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor">
-                        <path d="M22 12.073C22 6.505 17.523 2 12 2S2 6.505 2 12.073c0 4.991 3.657 9.128 8.438 9.878v-6.987H7.898V12.07h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.463h-1.261c-1.243 0-1.631.771-1.631 1.562v1.941h2.773l-.443 2.894h-2.33v6.987C18.343 21.201 22 17.064 22 12.073z" />
-                      </svg>
-                    </button>
+                    <p v-if="googleAuthError" class="text-red-400 text-xs text-center mt-1">{{ googleAuthError }}</p>
                   </div>
 
                   <div class="flex items-center gap-2 text-white/40 text-xs uppercase tracking-[0.2em] justify-center">
@@ -204,9 +215,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
+import { useGoogleAuth } from '~/composables/useGoogleAuth'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -272,6 +284,61 @@ const close = () => {
 const setMode = (next: 'login' | 'register') => {
   mode.value = next
   emit('mode-change', next)
+}
+
+// ============ Google Sign-In Logic ============
+const googleAuth = useGoogleAuth()
+const googleAuthLoading = ref(false)
+const googleAuthError = ref<string | null>(null)
+
+// 处理 Google 登录响应
+const handleGoogleCredentialResponse = async (response: { credential: string }) => {
+  googleAuthLoading.value = true
+  googleAuthError.value = null
+  
+  try {
+    // 发送 ID Token 到后端验证
+    await auth.loginWithGoogle(response.credential)
+    await auth.ensureSession?.()
+    
+    // 登录成功
+    completionState.value = {
+      type: 'login',
+      title: $t('auth.loginSuccessTitle', '登录成功'),
+      message: $t('auth.googleLoginSuccess', 'Google 账户登录成功，数据已同步。'),
+      ctaLabel: $t('auth.loginSuccessCta', '好的，返回')
+    }
+  } catch (err) {
+    googleAuthError.value = err instanceof Error ? err.message : 'Google 登录失败'
+    console.error('[AuthModal] Google login failed:', err)
+  } finally {
+    googleAuthLoading.value = false
+  }
+}
+
+// 点击 Google 按钮
+const handleGoogleLogin = async () => {
+  googleAuthError.value = null
+  googleAuthLoading.value = true
+  
+  try {
+    const initialized = await googleAuth.initialize(handleGoogleCredentialResponse)
+    if (initialized) {
+      googleAuth.prompt()
+    } else {
+      googleAuthError.value = googleAuth.error.value || 'Google 登录初始化失败'
+    }
+  } catch (err) {
+    googleAuthError.value = err instanceof Error ? err.message : 'Google 登录初始化失败'
+  } finally {
+    // 注意：loading 状态将在 handleGoogleCredentialResponse 中关闭
+    // 如果用户关闭弹窗，需要手动关闭 loading
+    setTimeout(() => {
+      if (googleAuthLoading.value && !completionState.value) {
+        googleAuthLoading.value = false
+      }
+    }, 10000) // 10 秒超时
+  }
 }
 
 const handleLogin = async () => {

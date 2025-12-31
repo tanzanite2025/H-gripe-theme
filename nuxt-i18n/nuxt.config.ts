@@ -287,6 +287,7 @@ export default defineNuxtConfig({
       wpApiBase: env.WP_API_BASE || 'https://tanzanite.site/wp-json',
       siteTitle: env.NUXT_SITE_TITLE || 'Tanzanite',
       siteUrl: env.NUXT_SITE_URL || 'https://tanzanite.site',
+      googleClientId: env.GOOGLE_CLIENT_ID || '',
       socialLinks: env.NUXT_SOCIAL_LINKS
         ? JSON.parse(env.NUXT_SOCIAL_LINKS)
         : []
