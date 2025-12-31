@@ -1,42 +1,62 @@
 <template>
   <Teleport to="body">
-    <Transition :name="props.embedded ? 'whatsapp-product-drawer' : 'fade'">
+    <Transition :name="props.embedded ? 'wa-drawer' : 'fade'">
       <div
         v-if="modelValue"
-        :class="[
-          'fixed inset-0 flex justify-center p-0 md:p-4',
-          props.embedded ? 'items-end z-[12000] pointer-events-none' : containerPlacementClass
-        ]"
+        :class="props.embedded ? 'wa-drawer-mask' : 'fixed inset-0 z-[13000] flex items-center justify-center p-0 md:p-4'"
         aria-modal="true"
         role="dialog"
         @keydown.esc.prevent="close"
+        @click.self="!props.embedded && close()"
       >
-        <!-- 非 embedded 模式：黑色蒙版 -->
+        <!-- Backdrop -->
+        <!-- Embedded (Mobile Drawer): md:hidden via wa-drawer-backdrop -->
+        <!-- Standalone: Visible (bg-black/80) -->
         <div
-          v-if="!props.embedded"
+          v-if="props.embedded"
+          class="wa-drawer-backdrop md:hidden"
+          @click="close"
+        ></div>
+        <div
+          v-else
           class="absolute inset-0 bg-black/80 backdrop-blur-sm"
           @click="close"
         ></div>
 
-        <!-- 弹窗卡片：对齐 Checkout 弹窗的暗色玻璃风格 -->
+        <!-- Shell -->
         <div
           :class="[
-            'auth-modal__panel auth-modal-shell relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-t-3xl md:rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden',
-            props.embedded ? 'rounded-2xl' : ''
+            props.embedded 
+              ? 'wa-drawer-shell' 
+              : 'auth-modal__panel auth-modal-shell relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden'
           ]"
         >
-          <!-- 右上角关闭按钮 -->
+          <!-- Background Decoration matches other drawers if embedded, or keep original if standalone -->
+          <div v-if="props.embedded" class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
+
+          <!-- Close Button -->
           <button
-            class="absolute right-4 top-4 w-9 h-9 rounded-full border border-white/20 hover:bg-white/10 flex items-center justify-center"
+            v-if="!props.embedded"
+            class="absolute right-4 top-4 w-9 h-9 rounded-full border border-white/20 hover:bg-white/10 flex items-center justify-center z-20"
             type="button"
             aria-label="Close"
             @click="close"
           >
             x
           </button>
+          
+          <button
+            v-else
+            class="absolute right-4 top-4 wa-drawer-close-btn z-20 bg-black/20 backdrop-blur-md"
+            type="button"
+            aria-label="Close"
+            @click="close"
+          >
+            <span class="text-lg leading-none">x</span>
+          </button>
 
-          <!-- 主体内容 -->
-          <div class="auth-modal__body flex-1 w-full overflow-y-auto px-4 md:px-12 pt-16 pb-10">
+          <!-- Body -->
+          <div class="auth-modal__body flex-1 w-full overflow-y-auto px-4 md:px-12 pt-16 pb-10 relative z-10 custom-scrollbar">
             <div class="w-full max-w-[520px] mx-auto">
               <!-- 登录 / 注册 表单状态 -->
               <div v-if="!completionState" class="space-y-6">
@@ -310,6 +330,7 @@ const handleCompletionCta = async () => {
 </script>
 
 <style scoped>
+/* Standard styles for non-embedded mode */
 .auth-modal-shell {
   height: 90vh;
   max-height: 80vh;
@@ -344,21 +365,16 @@ const handleCompletionCta = async () => {
   opacity: 0;
 }
 
-.whatsapp-product-drawer-enter-active,
-.whatsapp-product-drawer-leave-active {
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+/* Custom Scrollbar for Auth Body */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
-
-.whatsapp-product-drawer-enter-from,
-.whatsapp-product-drawer-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-.whatsapp-product-drawer-enter-to,
-.whatsapp-product-drawer-leave-from {
-  transform: translateY(0%);
-  opacity: 1;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 99px;
 }
 
 .form-input {

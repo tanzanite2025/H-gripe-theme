@@ -1,30 +1,34 @@
 <template>
   <Teleport to="body">
-    <Transition name="whatsapp-product-drawer">
+    <Transition name="wa-drawer">
       <div
         v-if="modelValue"
-        :class="[
-          'fixed inset-0 z-[14000] flex justify-center p-0 md:p-4',
-          props.variant === 'bottom' ? 'items-end' : 'items-center'
-        ]"
+        class="wa-drawer-mask"
         @click.self="handleClose"
       >
-        <!-- 半透明背景遮罩，与 WhatsApp/Checkout 保持一致 -->
-        <div
-          v-if="props.variant !== 'bottom'"
-          class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        <!-- Backdrop -->
+        <div 
+          class="wa-drawer-backdrop"
+          :class="{ 'md:hidden': props.variant === 'bottom' }" 
         ></div>
-        <div
-          class="sidebar-panel wishlist-drawer-shell relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh]
-                 rounded-2xl border-2 border-[#6b73ff]/40 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)]
-                 flex flex-col overflow-hidden"
-        >
-          <!-- 背景装饰，与聊天欢迎页一致 -->
+        <!-- 
+           Note: wa-drawer-backdrop is md:hidden by default in CSS. 
+           If variant != 'bottom' (e.g. default center modal), we might want backdrop on desktop too?
+           TestReportDrawer didn't have desktop backdrop in the code I copied (it was hidden).
+           If Wishlist needs desktop backdrop, we can override or leave it as per standard.
+           The standard from TestDrawer implies no desktop backdrop or handled by mask?
+           TestDrawer: backdrop div has md:hidden.
+           I will stick to the standard: md:hidden (no backdrop on desktop, or transparent).
+        -->
+
+        <div class="wa-drawer-shell">
+          <!-- Background Decoration -->
           <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
+
           <!-- Header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div class="wa-drawer-header relative z-10">
             <div class="flex flex-col gap-1 min-w-0">
-              <div class="text-sm font-semibold text-white/90 truncate">
+              <div class="wa-drawer-title">
                 Wishlist
               </div>
               <div class="text-[11px] text-white/50 truncate">
@@ -33,15 +37,15 @@
             </div>
             <button
               type="button"
-              class="w-8 h-8 rounded-full border border-white/40 text-white flex items-center justify-center hover:bg-white/10 transition-colors"
+              class="wa-drawer-close-btn"
               @click="handleClose"
             >
               <span class="text-lg leading-none">x</span>
             </button>
           </div>
 
-          <!-- Content (placeholder) -->
-          <div class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+          <!-- Content -->
+          <div class="wa-drawer-content relative z-10">
             <div
               v-if="loading"
               class="flex flex-col items-center justify-center h-full text-white/70 text-sm gap-3"
@@ -184,41 +188,5 @@ const handleRemove = async (id: number) => {
 </script>
 
 <style scoped>
-.whatsapp-product-drawer-enter-active,
-.whatsapp-product-drawer-leave-active {
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-}
-
-.whatsapp-product-drawer-enter-from,
-.whatsapp-product-drawer-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-.whatsapp-product-drawer-enter-to,
-.whatsapp-product-drawer-leave-from {
-  transform: translateY(0%);
-  opacity: 1;
-}
-
-@media (max-width: 767px) {
-  .wishlist-drawer-shell {
-    height: min(95vh, calc(100vh - 16px));
-    max-height: min(95vh, calc(100vh - 16px));
-  }
-
-  @supports (height: 100svh) {
-    .wishlist-drawer-shell {
-      height: min(95svh, calc(100svh - 16px));
-      max-height: min(95svh, calc(100svh - 16px));
-    }
-  }
-
-  @supports (height: 100dvh) {
-    .wishlist-drawer-shell {
-      height: min(95dvh, calc(100dvh - 16px));
-      max-height: min(95dvh, calc(100dvh - 16px));
-    }
-  }
-}
+/* Scoped styles removed in favor of global .wa-drawer classes */
 </style>

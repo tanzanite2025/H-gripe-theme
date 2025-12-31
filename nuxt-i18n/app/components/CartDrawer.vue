@@ -1,53 +1,49 @@
 <template>
   <Teleport to="body">
     <!-- 购物车弹窗 -->
-    <Transition
-      enter-active-class="transition-opacity duration-300 ease-out"
-      leave-active-class="transition-opacity duration-200 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
+    <Transition name="wa-drawer">
       <div
         v-if="isCartOpen"
-        :class="[
-          'fixed inset-0 z-[14000] flex justify-center p-0 md:p-4',
-          cartVariant === 'default' ? 'items-center' : 'items-end'
-        ]"
+        class="wa-drawer-mask"
         @click.self="closeCart"
       >
-        <!-- 半透明背景遮罩：默认模式使用，Checkout 专用底部模式不再叠加第二层遮罩 -->
+        <!-- Backdrop -->
+        <!-- 
+             Standard wa-drawer-backdrop is md:hidden. 
+             If cartVariant === 'default', we likely want a backdrop on desktop too (modal mode).
+             We can add 'md:block' if variant is default.
+        -->
         <div
-          v-if="cartVariant === 'default'"
-          class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          class="wa-drawer-backdrop"
+          :class="{ 'md:block': cartVariant === 'default' }"
         ></div>
+
         <!-- 弹窗内容 -->
-        <Transition name="slide-up" appear>
-          <div
-            class="sidebar-panel cart-drawer-shell relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
-            aria-modal="true"
-            role="dialog"
-            aria-label="Shopping Cart"
-          >
-        <!-- 背景装饰，与聊天欢迎页一致 -->
+        <div
+          class="wa-drawer-shell"
+          aria-modal="true"
+          role="dialog"
+          aria-label="Shopping Cart"
+        >
+        <!-- 背景装饰 -->
         <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
+        
         <!-- 头部 -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <h2 class="text-xl font-semibold text-white">
+        <div class="wa-drawer-header relative z-10">
+          <h2 class="wa-drawer-title text-base sm:text-xl">
             🛒 Cart ({{ cartCount }})
           </h2>
           <button
             @click="closeCart"
-            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            class="wa-drawer-close-btn"
             aria-label="Close cart"
           >
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <span class="text-lg leading-none">x</span>
           </button>
         </div>
 
         <!-- 购物车内容 -->
-        <div v-if="cartItems.length > 0" class="flex-1 overflow-y-auto px-6 py-4">
+        <div v-if="cartItems.length > 0" class="wa-drawer-content relative z-10">
           <div class="space-y-4">
             <div
               v-for="item in cartItems"
@@ -140,7 +136,7 @@
         </div>
 
         <!-- 空购物车 -->
-        <div v-else class="flex-1 overflow-y-auto px-6 py-4">
+        <div v-else class="wa-drawer-content relative z-10 flex flex-col">
           <div class="flex flex-col items-center justify-center py-12">
             <svg class="w-24 h-24 text-white/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -162,7 +158,7 @@
         </div>
 
         <!-- 底部汇总 -->
-        <div v-if="cartItems.length > 0" class="border-t border-white/10 px-6 py-4 bg-white/[0.03]">
+        <div v-if="cartItems.length > 0" class="border-t border-white/10 px-6 py-4 bg-white/[0.03] relative z-10">
           <!-- 免运费进度条 -->
           <div v-if="freeShippingThreshold > 0 && subtotal < freeShippingThreshold" class="mb-4">
             <div class="flex justify-between text-xs text-white/70 mb-1">
@@ -228,7 +224,6 @@
           </div>
         </div>
           </div>
-        </Transition>
       </div>
     </Transition>
   </Teleport>
@@ -239,6 +234,7 @@ import { ref, watch, onBeforeUnmount } from 'vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { useWishlist } from '~/composables/useWishlist'
 import { useCart } from '~/composables/useCart'
+import BrowsingHistoryDark from '~/components/BrowsingHistoryDark.vue'
 
 const {
   cartItems,
@@ -291,64 +287,5 @@ const onQuantityInput = (id: number, event: Event) => {
 </script>
 
 <style scoped>
-/* 淡入淡出动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* 右侧滑入动画 */
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: transform 0.3s ease;
-}
-
-.slide-right-enter-from,
-.slide-right-leave-to {
-  transform: translateX(100%);
-}
-
-/* 自下而上的模态滑入动画：与 WishlistDrawer/QuickBuy 保持一致 */
-.slide-up-enter-active,
-.slide-up-leave-active {
-	transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-	transform: translateY(100%);
-	opacity: 0;
-}
-
-.slide-up-enter-to,
-.slide-up-leave-from {
-	transform: translateY(0%);
-	opacity: 1;
-}
-
-@media (max-width: 767px) {
-	.cart-drawer-shell {
-		height: min(95vh, calc(100vh - 16px));
-		max-height: min(95vh, calc(100vh - 16px));
-	}
-
-	@supports (height: 100svh) {
-		.cart-drawer-shell {
-			height: min(95svh, calc(100svh - 16px));
-			max-height: min(95svh, calc(100svh - 16px));
-		}
-	}
-
-	@supports (height: 100dvh) {
-		.cart-drawer-shell {
-			height: min(95dvh, calc(100dvh - 16px));
-			max-height: min(95dvh, calc(100dvh - 16px));
-		}
-	}
-}
+/* Inline styles removed in favor of global .wa-drawer classes */
 </style>
