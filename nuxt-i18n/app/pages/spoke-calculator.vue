@@ -20,6 +20,14 @@
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorCore />
 
+          <div class="mt-16 pt-10 border-t border-slate-800/50">
+             <div class="text-center mb-8">
+               <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Smart Search</h3>
+               <p class="text-sm text-slate-400 mt-2">Instantly find spoke lengths for verified official builds</p>
+             </div>
+             <SpokeSmartSearch />
+          </div>
+
 
         </div>
 
@@ -197,6 +205,7 @@
 
 <script setup lang="ts">
 import SpokeCalculatorCore from '~/components/SpokeCalculatorCore.vue'
+import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import PageFaq from '~/components/PageFaq.vue'

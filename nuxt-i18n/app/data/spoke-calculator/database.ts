@@ -117,3 +117,65 @@ export const HUB_DATABASE: Brand<HubModel>[] = [
         ],
     },
 ]
+
+export interface WheelBuildPreset {
+    id: string
+    name: string
+    keywords: string[]
+    description?: string
+
+    // Configuration
+    rimBrandId: string
+    rimModelId: string
+    hubBrandId: string
+    hubModelId: string
+    spokeCount: number
+    crossing: number
+    nippleType: 'standard' | 'hidden'
+    nippleLength: number | null
+}
+
+export const PRESET_BUILDS: WheelBuildPreset[] = [
+    {
+        id: 'tz_ar45_dt350_fr',
+        name: 'Tanzanite AR 45 Disc + DT Swiss 350',
+        description: 'Popular all-rounder build. Reliable ratchet hub with aero rim.',
+        keywords: ['350', '240', 'dt swiss', '45mm', 'ar45', 'disc', 'road'],
+        rimBrandId: 'dt_swiss', // Demo: using DT rim as proxy for "Tanzanite" in this demo phase
+        rimModelId: 'rr411_db', // Demo: using RR411 as proxy
+        hubBrandId: 'dt_swiss',
+        hubModelId: '350_road_db_cl',
+        spokeCount: 24,
+        crossing: 2,
+        nippleType: 'standard',
+        nippleLength: 14,
+    },
+    {
+        id: 'tz_ar50_dt240_fr',
+        name: 'Tanzanite AR 50 Disc + DT Swiss 240 EXP',
+        description: 'Lightweight racing build. Top-tier hub performance.',
+        keywords: ['240', 'dt swiss', '50mm', 'ar50', 'exp', 'racing'],
+        rimBrandId: 'dt_swiss',
+        rimModelId: 'rr511_db', // Demo proxy
+        hubBrandId: 'dt_swiss',
+        hubModelId: '240_exp_db_cl', // Existing hub in DB
+        spokeCount: 24,
+        crossing: 2,
+        nippleType: 'hidden',
+        nippleLength: 12,
+    },
+    {
+        id: 'mavic_open_dt350',
+        name: 'Mavic Open Pro UST + DT Swiss 350',
+        description: 'Classic training wheelset. Bombproof reliability.',
+        keywords: ['mavic', 'open pro', '350', 'training'],
+        rimBrandId: 'mavic',
+        rimModelId: 'open_pro_ust_disc',
+        hubBrandId: 'dt_swiss',
+        hubModelId: '350_road_db_cl',
+        spokeCount: 28,
+        crossing: 3,
+        nippleType: 'standard',
+        nippleLength: 12,
+    }
+]

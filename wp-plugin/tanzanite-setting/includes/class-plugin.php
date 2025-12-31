@@ -502,6 +502,7 @@ class Tanzanite_Plugin {
 			// 新增：用户反馈 / 留言控制器
 			'Tanzanite_REST_Feedback_Controller',
 			'Tanzanite_REST_Suggestion_Feedback_Controller',
+			'Tanzanite_REST_SpokeExport_Controller', // New Export Controller
 
 		);
 		

@@ -3,6 +3,13 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "fbe3d810a7c76321",
+      "timestamp": "2025-12-31T10:05:22.979Z",
+      "description": "✅ 2 个任务完成: 集成: 在 `spoke-calculator.vue` 页面底部引入搜索组件, 验证: 验证搜索关键词匹配和结果计算准确性",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "457b9e0a8d874388",
       "timestamp": "2025-12-31T09:16:52.542Z",
       "description": "✅ 10 个任务完成: 功能重构: 辐条数据静态化 (Frontend Database), 数据: 创建 `app/data/spoke-calculator/database.ts` 并录入基础数据 (Brands/Rims/Hubs)...",
@@ -132,13 +139,6 @@
       "id": "ddc69da6d08e2554",
       "timestamp": "2025-12-30T14:18:49.087Z",
       "description": "✅ 任务完成: 代码重构: 抽离 `TubelessGuide.vue` 组件 <!-- id: 6 --> (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "4032c3cf3fb6a475",
-      "timestamp": "2025-12-30T14:16:20.802Z",
-      "description": "✅ 任务完成: 代码重构: 抽离 `MatchGuide.vue` 组件 <!-- id: 5 --> (已完成)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }
