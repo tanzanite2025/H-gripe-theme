@@ -96,6 +96,19 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 			)
 		);
 
+		// Google 登录
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/google-login',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'google_login' ),
+					'permission_callback' => '__return_true',
+				),
+			)
+		);
+
 		// 获取当前用户信息
 		register_rest_route(
 			$this->namespace,
@@ -348,6 +361,202 @@ class Tanzanite_REST_Chat_Controller extends Tanzanite_REST_Controller {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Google 登录
+	 *
+	 * 验证 Google ID Token 并创建/登录用户
+	 *
+	 * @param WP_REST_Request $request REST 请求对象
+	 * @return WP_REST_Response
+	 */
+	public function google_login( $request ) {
+		$id_token = $request->get_param( 'id_token' );
+
+		if ( empty( $id_token ) ) {
+			return $this->respond_error( 'missing_token', '缺少 Google ID Token', 400 );
+		}
+
+		// 验证 Google ID Token
+		$google_user = $this->verify_google_id_token( $id_token );
+
+		if ( is_wp_error( $google_user ) ) {
+			return $this->respond_error(
+				$google_user->get_error_code(),
+				$google_user->get_error_message(),
+				401
+			);
+		}
+
+		$google_email = sanitize_email( $google_user['email'] );
+		$google_name  = sanitize_text_field( $google_user['name'] ?? '' );
+		$google_sub   = sanitize_text_field( $google_user['sub'] ); // Google User ID
+
+		if ( empty( $google_email ) ) {
+			return $this->respond_error( 'invalid_email', 'Google 账户缺少邮箱信息', 400 );
+		}
+
+		// 检查用户是否已存在
+		$user = get_user_by( 'email', $google_email );
+
+		if ( ! $user ) {
+			// 创建新用户
+			$username = $this->generate_unique_username( $google_email, $google_name );
+			$password = wp_generate_password( 24, true, true );
+
+			$user_id = wp_create_user( $username, $password, $google_email );
+
+			if ( is_wp_error( $user_id ) ) {
+				return $this->respond_error(
+					'user_creation_failed',
+					$user_id->get_error_message(),
+					500
+				);
+			}
+
+			// 更新用户显示名称
+			wp_update_user(
+				array(
+					'ID'           => $user_id,
+					'display_name' => $google_name ?: $username,
+				)
+			);
+
+			// 保存 Google User ID 以便未来关联
+			update_user_meta( $user_id, 'google_user_id', $google_sub );
+			update_user_meta( $user_id, 'registered_via', 'google' );
+
+			$user = get_userdata( $user_id );
+		} else {
+			// 已存在的用户，更新 Google User ID（如果尚未关联）
+			$existing_google_id = get_user_meta( $user->ID, 'google_user_id', true );
+			if ( empty( $existing_google_id ) ) {
+				update_user_meta( $user->ID, 'google_user_id', $google_sub );
+			}
+		}
+
+		// 设置登录状态
+		wp_set_current_user( $user->ID );
+		wp_set_auth_cookie( $user->ID, true );
+
+		// 更新最后活动时间
+		update_user_meta( $user->ID, 'last_activity', time() );
+		update_user_meta( $user->ID, 'last_login_via', 'google' );
+
+		return $this->respond_success(
+			array(
+				'user' => array(
+					'id'           => $user->ID,
+					'username'     => $user->user_login,
+					'display_name' => $user->display_name,
+					'email'        => $user->user_email,
+					'avatar'       => get_avatar_url( $user->ID ),
+					'roles'        => $user->roles,
+				),
+				'is_new_user' => empty( $existing_google_id ) && get_user_meta( $user->ID, 'registered_via', true ) === 'google',
+			)
+		);
+	}
+
+	/**
+	 * 验证 Google ID Token
+	 *
+	 * @param string $id_token Google ID Token (JWT)
+	 * @return array|WP_Error 用户信息或错误
+	 */
+	private function verify_google_id_token( $id_token ) {
+		// Google 公开的 Token 信息端点
+		$url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode( $id_token );
+
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => 10,
+				'sslverify' => true,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error(
+				'google_api_error',
+				'Google API 请求失败: ' . $response->get_error_message()
+			);
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$body        = wp_remote_retrieve_body( $response );
+		$data        = json_decode( $body, true );
+
+		if ( 200 !== $status_code || empty( $data ) ) {
+			return new WP_Error(
+				'invalid_token',
+				'Google ID Token 无效或已过期'
+			);
+		}
+
+		// 验证 Token 是否针对我们的 Client ID
+		$expected_client_id = get_option( 'tanzanite_google_client_id', '' );
+		if ( ! empty( $expected_client_id ) && isset( $data['aud'] ) && $data['aud'] !== $expected_client_id ) {
+			return new WP_Error(
+				'invalid_audience',
+				'Google Token 的 audience 不匹配'
+			);
+		}
+
+		// 检查邮箱是否已验证
+		if ( empty( $data['email_verified'] ) || 'true' !== $data['email_verified'] ) {
+			return new WP_Error(
+				'email_not_verified',
+				'Google 账户邮箱未验证'
+			);
+		}
+
+		return array(
+			'sub'     => $data['sub'] ?? '',
+			'email'   => $data['email'] ?? '',
+			'name'    => $data['name'] ?? '',
+			'picture' => $data['picture'] ?? '',
+		);
+	}
+
+	/**
+	 * 生成唯一用户名
+	 *
+	 * @param string $email 邮箱
+	 * @param string $name 姓名
+	 * @return string 唯一用户名
+	 */
+	private function generate_unique_username( $email, $name = '' ) {
+		// 尝试使用邮箱前缀
+		$base_username = sanitize_user( explode( '@', $email )[0], true );
+
+		// 如果邮箱前缀太短，尝试使用姓名
+		if ( strlen( $base_username ) < 3 && ! empty( $name ) ) {
+			$base_username = sanitize_user( str_replace( ' ', '', $name ), true );
+		}
+
+		// 确保用户名至少 3 个字符
+		if ( strlen( $base_username ) < 3 ) {
+			$base_username = 'user';
+		}
+
+		$username = $base_username;
+		$suffix   = 1;
+
+		// 检查用户名是否已存在，如果存在则添加数字后缀
+		while ( username_exists( $username ) ) {
+			$username = $base_username . $suffix;
+			$suffix++;
+
+			// 防止无限循环
+			if ( $suffix > 9999 ) {
+				$username = 'user_' . wp_generate_password( 8, false );
+				break;
+			}
+		}
+
+		return $username;
 	}
 
 	/**
