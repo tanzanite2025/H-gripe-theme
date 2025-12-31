@@ -64,11 +64,12 @@ const handleAuthSuccess = () => {
 <style>
 .warranty-check {
   min-height: 60vh;
-  padding: 2rem 1rem;
+  /* Removed padding to align with global support layout (padding handled by layout) */
 }
 
 .warranty-check__faq {
-  max-width: 800px;
+  width: 100%;
+  max-width: 960px; /* Aligned with standard content width */
   margin: 3rem auto 0;
   padding-top: 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);

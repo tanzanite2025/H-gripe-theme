@@ -53,59 +53,72 @@
       >
         <h2 class="sizecharts-section__title">Special order</h2>
 
-        <!-- Mullet wheelsets subsection -->
-        <div class="mt-4 rounded-xl bg-slate-800/70 p-4 space-y-2 wheelset-special-card">
-          <h3 class="sizecharts-section__subheading text-sky-300 font-semibold">
-            Mullet wheelsets
-          </h3>
-          <p class="sizecharts-section__intro">
-            Many mountain bikers have fallen in love with the combination of a 29-inch front wheel paired with a 27.5-inch rear
-            wheel, or a 27.5-inch front wheel with a 26-inch rear wheel. This wheel size mix is particularly well-suited for
-            off-road riding. It offers easy handling on steep descents, agile and responsive cornering, and the ability to roll
-            smoothly over rough terrain. This setup is commonly known as the "mullet", and for good reason: the front wheel
-            provides stability and reliability, while the rear wheel delivers agility and performance!
-          </p>
-          <p class="guide-section__cta-wrapper">
-            <button
-              type="button"
-              class="wheelset-inline-button"
-              @click="openQuickBuy"
-            >
-              You can use our quick customization to match
-            </button>
-          </p>
-        </div>
+        <div class="space-y-6">
+           <!-- Mullet wheelsets (Amber) -->
+           <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+               <div class="flex items-center gap-3 mb-4 pb-3 border-b border-amber-500/10">
+                  <h3 class="text-lg font-bold text-slate-200">Mullet Wheelsets (Mixed Size)</h3>
+               </div>
+               
+               <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                 The perfect setup for modern MTB riding: <strong>29" Front + 27.5" Rear</strong> (or 27.5" + 26"). 
+                 This "Mullet" configuration offers the best of both worlds:
+               </p>
+               
+               <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div class="bg-amber-500/5 rounded-lg p-3 text-xs text-slate-400 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                     <strong class="block text-amber-500 uppercase tracking-wider mb-1">Front Wheel</strong>
+                     Provides rollover capability, grip, and stability.
+                  </div>
+                  <div class="bg-amber-500/5 rounded-lg p-3 text-xs text-slate-400 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                     <strong class="block text-amber-500 uppercase tracking-wider mb-1">Rear Wheel</strong>
+                     Delivers agility, acceleration, and clearance.
+                  </div>
+               </div>
 
-        <!-- Custom Front & Rear Wheels subsection -->
-        <div class="mt-4 rounded-xl bg-slate-800/70 p-4 space-y-2 wheelset-special-card">
-          <h3 class="sizecharts-section__subheading text-sky-300 font-semibold">
-            Custom Front &amp; Rear Wheels
-          </h3>
-          <p class="sizecharts-section__intro">
-            We specialize in customized services, including building individual wheels tailored to your specific needs. While we only
-            showcase complete wheelsets online, single wheels can be custom-made upon request. Please contact us at
-            <a class="wheelset-link" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
-            for special orders or
-            <button
-              type="button"
-              class="wheelset-inline-button"
-              @click="openWhatsAppChat"
-            >
-              use our faster Instant Chat option
-            </button>
-            !
-          </p>
-        </div>
+               <button
+                  type="button"
+                  class="w-full md:w-auto px-6 py-2 rounded-full border border-amber-500/30 text-amber-500 text-xs font-bold uppercase tracking-wider hover:bg-amber-500/10 transition-colors"
+                  @click="openQuickBuy"
+                >
+                  Customize Mullet Setup
+                </button>
+           </div>
 
-        <!-- Mixed rim subsection -->
-        <div class="mt-4 rounded-xl bg-slate-800/70 p-4 space-y-2 wheelset-special-card">
-          <h3 class="sizecharts-section__subheading text-sky-300 font-semibold">
-            Mixed rim
-          </h3>
-          <WheelsetMixedRimSection
-            :openQuickBuy="openQuickBuy"
-            :openWhatsAppChat="openWhatsAppChat"
-          />
+           <!-- Custom Front & Rear Wheels (Sky) -->
+           <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+               <div class="flex items-center gap-3 mb-4 pb-3 border-b border-sky-500/10">
+                  <h3 class="text-lg font-bold text-slate-200">Single Wheel Customization</h3>
+               </div>
+               
+               <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                 Need just a front or rear replacement? We specialize in single-wheel builds tailored to your specific needs.
+                 While our website showcases complete sets, we fully support individual custom orders.
+               </p>
+
+               <div class="flex flex-wrap gap-3">
+                  <a class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-sky-500/30 text-sky-400 text-xs font-bold uppercase tracking-wider hover:bg-sky-500/10 transition-colors" href="mailto:support@tanzanite.site">
+                    Email Support
+                  </a>
+                   <button
+                    type="button"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-lg"
+                    @click="openWhatsAppChat"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2-2z"/></svg>
+                    Chat for Single Wheel
+                  </button>
+               </div>
+           </div>
+
+           <!-- Mixed rim subsection -->
+           <div class="mt-8">
+              <WheelsetMixedRimSection
+                :openQuickBuy="openQuickBuy"
+                :openWhatsAppChat="openWhatsAppChat"
+              />
+           </div>
+
         </div>
       </section>
 

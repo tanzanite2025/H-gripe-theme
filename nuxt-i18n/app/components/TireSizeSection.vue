@@ -1,143 +1,182 @@
 <template>
-  <div>
+  <div class="space-y-8">
+    <!-- 1. Intro Card: Basics & Definitions -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+      <div class="mb-6 flex justify-center">
+         <button
+          type="button"
+          class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-6 py-2 text-xs font-bold uppercase tracking-wider text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
+          @click="emit('openTireProducts')"
+        >
+          Check out tires
+        </button>
+      </div>
 
-    <p class="guide-section__cta-wrapper">
-      <button
-        type="button"
-        class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
-        @click="emit('openTireProducts')"
+      <div class="w-full mb-8 max-w-4xl mx-auto">
+        <GuideImage
+          src="/public/tiresizecharts/tiresize/tanzanite-schwalbe-tiresize.webp"
+          alt="Tanzanite and Schwalbe tire size chart overview"
+          :zoomOnClick="true"
+          class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+        />
+      </div>
+
+      <div class="mb-8">
+         <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
+           Tire Size Standards
+         </h3>
+         <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-2xl mx-auto">
+           Bicycle tires use various sizing standards. Understanding the difference between ETRTO, Inch, and French notations is key to finding the perfect fit.
+         </p>
+
+         <!-- Definitions Grid -->
+         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left md:text-center">
+            <!-- ETRTO -->
+            <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+               <strong class="block text-sky-400 text-sm font-bold uppercase tracking-wider mb-2">ETRTO (ISO)</strong>
+               <div class="text-xs text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded mb-3">e.g. 37-622</div>
+               <p class="text-xs text-slate-400 leading-relaxed">
+                 The modern European standard. Indicates <strong>Width (37mm)</strong> and <strong>Inner Diameter (622mm)</strong>. This is the most unambiguous and recommended method.
+               </p>
+            </div>
+
+            <!-- Inch -->
+            <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+               <strong class="block text-amber-400 text-sm font-bold uppercase tracking-wider mb-2">Inch (Imperial)</strong>
+               <div class="text-xs text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded mb-3">e.g. 28 x 1.40</div>
+               <p class="text-xs text-slate-400 leading-relaxed">
+                 Traditional notation. Indicates approx. <strong>Outer Diameter (28")</strong> and <strong>Width (1.40")</strong>. Often imprecise (e.g., 26" can refer to multiple different diameters).
+               </p>
+            </div>
+
+            <!-- French -->
+            <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+               <strong class="block text-indigo-400 text-sm font-bold uppercase tracking-wider mb-2">French</strong>
+               <div class="text-xs text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded mb-3">e.g. 700 x 35C</div>
+               <p class="text-xs text-slate-400 leading-relaxed">
+                 Indicates approx. <strong>Outer Diameter (700mm)</strong> and <strong>Width (35mm)</strong>. The letter (C) hints at the inner diameter (622mm). Common in Road/Gravel.
+               </p>
+            </div>
+         </div>
+      </div>
+    </div>
+
+    <!-- 2. Comparison Table Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+       <h3 class="text-lg font-bold text-slate-100 mb-6 flex items-center justify-center gap-2">
+         Notation Comparison Table
+       </h3>
+       <div class="overflow-x-auto rounded-xl bg-slate-950/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)] inline-block w-full max-w-4xl">
+        <table class="min-w-full text-left text-xs sm:text-sm text-slate-100">
+          <thead class="bg-slate-900/80">
+            <tr>
+              <th class="px-4 py-3 font-bold text-slate-400 text-center">Dimension</th>
+              <th class="px-4 py-3 font-bold text-sky-400 text-center">ETRTO</th>
+              <th class="px-4 py-3 font-bold text-amber-400 text-center">Inch</th>
+              <th class="px-4 py-3 font-bold text-indigo-400 text-center">French</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 bg-slate-800/20">
+            <tr class="hover:bg-slate-800/40 transition-colors">
+              <td class="px-4 py-3 font-semibold text-slate-300 text-center">Example Size</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">37-622</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">
+                28 x 1.40<br />
+                <span class="text-[10px] text-slate-600">or 28 x 1 5/8 x 1 3/8</span>
+              </td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">700 x 35C</td>
+            </tr>
+            <tr class="hover:bg-slate-800/40 transition-colors">
+              <td class="px-4 py-3 font-semibold text-slate-300 text-center">Outer Diameter</td>
+              <td class="px-4 py-3 text-center text-slate-500">-</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">~ 28 Inch</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">~ 700 mm</td>
+            </tr>
+            <tr class="hover:bg-slate-800/40 transition-colors">
+              <td class="px-4 py-3 font-semibold text-slate-300 text-center">Inner Diameter</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">622 mm</td>
+              <td class="px-4 py-3 text-center text-slate-500">-</td>
+              <td class="px-4 py-3 text-center text-slate-500">-</td>
+            </tr>
+            <tr class="hover:bg-slate-800/40 transition-colors">
+              <td class="px-4 py-3 font-semibold text-slate-300 text-center">Tire Width</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">~ 37 mm</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">
+                ~ 1 3/8 Inch<br />
+                <span class="text-[10px] text-slate-600">(1.40 Inch)</span>
+              </td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">~ 35 mm</td>
+            </tr>
+            <tr class="hover:bg-slate-800/40 transition-colors">
+              <td class="px-4 py-3 font-semibold text-slate-300 text-center">Tire Height</td>
+              <td class="px-4 py-3 text-center text-slate-500">-</td>
+              <td class="px-4 py-3 text-center font-mono text-slate-400">~ 1 5/8 Inch</td>
+              <td class="px-4 py-3 text-center text-slate-500">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. Market Sizes Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+       <div class="flex items-center justify-center gap-2 mb-4">
+         <div class="h-px w-8 bg-slate-700"></div>
+         <h3 class="text-lg font-bold text-slate-100 uppercase tracking-wider">Market Landscape</h3>
+         <div class="h-px w-8 bg-slate-700"></div>
+       </div>
+
+      <p class="sizecharts-section__intro max-w-3xl mx-auto mb-6 text-center">
+        This list encompasses almost every known size designation found in the market, including historical and modern standards.
+        Classic fractional sizes are often found on vintage Schwalbe tires or specific heritage models.
+      </p>
+
+      <div
+        class="rounded-2xl bg-slate-900/80 shadow-[0_4px_16px_rgba(0,0,0,0.5)] overflow-hidden inline-block"
       >
-        Check out tires
-      </button>
-    </p>
-
-    <div class="mt-4">
-      <GuideImage
-        src="/public/tiresizecharts/tiresize/tanzanite-schwalbe-tiresize.webp"
-        alt="Tanzanite and Schwalbe tire size chart overview"
-        :zoomOnClick="true"
-      />
+        <img
+          src="/public/tiresizecharts/tiresize/what-tire-sizes-are-available-schwalbe.svg"
+          alt="Overview table comparing ETRTO, inch and French tire size designations"
+          class="block h-auto w-full max-w-4xl"
+          loading="lazy"
+        />
+      </div>
     </div>
 
-    <ul class="sizecharts-section__list">
-      <li>
-        The sizes of bicycle tires are now designated according to the European tire and rim standard ETRTO
-        (European Tire and Rim Technical Organization). In practice, however, the older English and French names are
-        also used.
-      </li>
-      <li>
-        The ETRTO size designation (e.g. 37-622) indicates the width (37 mm) and the inner diameter of the tire
-        (622 mm). This designation is unambiguous and allows a clear assignment to the rim size.
-      </li>
-      <li>
-        The inch designation (e.g. 28 x 1.40) indicates the approximate outside diameter (28 inches) and the tire
-        width (1.40 inches). There is also the inch designation in the form 28 x 1 5/8 x 1 3/8 (approximate outer
-        diameter x tire height x tire width). The inch information is not precise and not clear. For example,
-        diameters of 559 mm (MTB), 571 mm (triathlon) and 590 mm (Dutch touring bikes) are all labeled 26-inch.
-        Tires with a diameter of 622 and 635 mm are both referred to as 28 inches. Curiously, tires with an inner
-        diameter of 630 mm are called 27 inches. These designations have their origin 13 and their meaning 13 from the
-        times of the tire brake that acted directly onto the tire. At that time, the exact outer diameter of the
-        wheel and tire was dictated by the brake. Depending on the tire width, there were different standards for
-        the inner diameter. In English-language regions and in MTB sports, the inch designations are still
-        widespread.
-      </li>
-      <li>
-        The French sizing (e.g. 700 x 35C) indicates the approximate outside diameter (700 mm) and tire width
-        (35 mm). The letter at the end gives an indication of the inside diameter of the tire. In this case, the C
-        stands for 622 mm. The French designation does not exist for all tire sizes. For example, B is not used for
-        MTB sizes in the 700 series.
-      </li>
-    </ul>
+    <!-- 4. 28 vs 29 Comparison Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-t-4 border-indigo-500">
+       <h3 class="text-xl font-bold text-slate-100 mb-6">
+         The "28 Inch" vs "29 Inch" Mystery
+       </h3>
 
-    <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/40">
-      <table class="min-w-full text-left text-xs sm:text-sm text-slate-100">
-        <thead class="bg-slate-900/80">
-          <tr>
-            <th class="px-3 py-2 font-semibold"></th>
-            <th class="px-3 py-2 font-semibold">ETRTO</th>
-            <th class="px-3 py-2 font-semibold">Inch</th>
-            <th class="px-3 py-2 font-semibold">French</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-800">
-          <tr>
-            <td class="px-3 py-2 font-semibold align-top">Sizes</td>
-            <td class="px-3 py-2 align-top">37-622</td>
-            <td class="px-3 py-2 align-top">
-              28 x 1,40<br />
-              28 x 1 5/8 x 1 3/8
-            </td>
-            <td class="px-3 py-2 align-top">700 x 35C</td>
-          </tr>
-          <tr>
-            <td class="px-3 py-2 font-semibold align-top">Outer diameter</td>
-            <td class="px-3 py-2 align-top">-</td>
-            <td class="px-3 py-2 align-top">approx. 28 Inch</td>
-            <td class="px-3 py-2 align-top">approx. 700 mm</td>
-          </tr>
-          <tr>
-            <td class="px-3 py-2 font-semibold align-top">Inner diameter</td>
-            <td class="px-3 py-2 align-top">622 mm</td>
-            <td class="px-3 py-2 align-top">-</td>
-            <td class="px-3 py-2 align-top">-</td>
-          </tr>
-          <tr>
-            <td class="px-3 py-2 font-semibold align-top">Tire width</td>
-            <td class="px-3 py-2 align-top">approx. 37 mm</td>
-            <td class="px-3 py-2 align-top">
-              ca. 1 3/8 Inch<br />
-              bzw. 1,40 Inch
-            </td>
-            <td class="px-3 py-2 align-top">approx. 35 mm</td>
-          </tr>
-          <tr>
-            <td class="px-3 py-2 font-semibold align-top">Tire height</td>
-            <td class="px-3 py-2 align-top">-</td>
-            <td class="px-3 py-2 align-top">approx. 1 5/8 Inch</td>
-            <td class="px-3 py-2 align-top">-</td>
-          </tr>
-        </tbody>
-      </table>
+       <div class="grid md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto">
+          <div class="bg-indigo-500/5 rounded-xl p-5 shadow-[0_4px_16px_rgba(0,0,0,0.5)] h-full flex flex-col justify-center">
+             <strong class="block text-indigo-400 text-3xl font-bold mb-2">SAME</strong>
+             <span class="text-xs uppercase tracking-widest text-slate-500 mb-3">Inner Diameter</span>
+             <p class="text-slate-300 font-mono text-lg">622 mm</p>
+             <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                Both 28" (Touring/Road) and 29" (MTB) tires fit on the same 622mm rim diameter.
+             </p>
+          </div>
+
+          <div class="text-left space-y-4">
+             <div class="space-y-2">
+                <strong class="text-sky-400 text-sm font-bold uppercase tracking-wider block">History & Context</strong>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                   <strong>28 Inches:</strong> The traditional European size for touring bikes.
+                   <br>
+                   <strong>29 Inches:</strong> A marketing term introduced in the US for voluminous MTB tires that, when mounted, have an approx. outer diameter of 29".
+                </p>
+             </div>
+             <div class="space-y-2">
+                <strong class="text-rose-400 text-sm font-bold uppercase tracking-wider block">Reality Check</strong>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                   Both designations are imprecise. A narrow 28" road tire (23mm) is actually ~26" outer diameter. A wide MTB tire (60mm+) is almost 30".
+                </p>
+             </div>
+          </div>
+       </div>
     </div>
-
-    <h3 class="sizecharts-section__subheading mt-4">WHAT TIRE SIZES ARE THERE?</h3>
-    <p class="sizecharts-section__intro">
-      You should find almost every known size designation in this list. We have tried to include all size
-      designations that are used in the market or have been used in the past. Tire sizes with a classic fractional
-      size designation are often found on old Schwalbe tires, and sometimes even on current models if that size
-      designation is still in common usage.
-    </p>
-
-    <div
-      class="mt-2 rounded-2xl bg-slate-900/80 shadow-[4px_4px_18px_rgba(0,0,0,1)] overflow-hidden"
-    >
-      <img
-        src="/public/tiresizecharts/tiresize/what-tire-sizes-are-available-schwalbe.svg"
-        alt="Overview table comparing ETRTO, inch and French tire size designations"
-        class="block h-auto w-[110%] max-w-none -translate-x-[4.5%]"
-        loading="lazy"
-      />
-    </div>
-
-    <h3 class="sizecharts-section__subheading mt-4">
-      DIFFERENCES BETWEEN 28" AND 29" INCHES
-    </h3>
-    <p class="sizecharts-section__intro">
-      Both tire sizes use the same inner diameter of 622 mm and can therefore theoretically be mounted on the same rims. In Europe,
-      28 inches is a traditional size for touring bikes. In many countries it is even the most common tire size.
-    </p>
-    <p class="sizecharts-section__intro">
-      Outside of Europe, the rim diameter size designation of 622 mm was rarely used. Cyclists trying to get replacement tires for
-      a 28" touring bike in some parts of the world sometimes encountered problems finding the correct tire size. 29" was
-      introduced in America some years ago as a new wheel size for mountain bikes. The name came about because MTB tires are more
-      voluminous and the outside diameter is approximately 29 inches. However, both 28" and 29" size designations are very
-      imprecise.
-    </p>
-    <p class="sizecharts-section__intro">
-      A narrow 28" tire, for example with a tire width of 23 mm, as might be found on racing bikes, actually has an outside
-      diameter of just over 26 inches. With a tire width of 40 mm, it is approximately correct that the outer diameter is 28
-      inches. With very wide tires of 60 mm or more, the actual outer diameter is almost 30 inches.
-    </p>
   </div>
 </template>
 

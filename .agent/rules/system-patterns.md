@@ -24,6 +24,10 @@ Antigravity 插件要求严格遵循 "Planning -> Execution -> Verification" 的
 - 每次 `task_boundary` 调用更新任务状态。
 - 保持 `task.md` 与实际进度同步。
 
+## 🎨 前端视觉规范 (Visual Identity)
+
+- **Inner Card Aesthetic**: 所有深色模式下的嵌套卡片（如 Pros/Cons, Brands）不再使用边框分割，而是统一采用 **纯黑弥散阴影** (`shadow-[0_4px_16px_rgba(0,0,0,0.5)]`) 制造层级感，构建 "无界、深邃" 的高级感。
+
 ## 📝 Artifact Generation Protocol
 
 - **Language**: 🇨🇳 CHINESE (Mandatory).

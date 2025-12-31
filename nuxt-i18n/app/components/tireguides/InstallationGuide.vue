@@ -1,166 +1,197 @@
 <template>
-  <div class="installation-guide">
-    <h2 class="sizecharts-section__title">Installation</h2>
-    <h3 class="sizecharts-section__subheading">Before installation:</h3>
-    <p class="sizecharts-section__intro">
-      Before starting the first step, one thing to know is, what is the difference between using tubeless tires and clincher tires? The biggest difference is of course the lack of inner tubes.
-      <br />
-      Not having a tube means the entire tubeless system is airtight and inflated differently.
-    </p>
-    <h3 class="sizecharts-section__subheading">So focus on this first</h3>
-    <p class="sizecharts-section__intro">
-      The air tightness of clincher tires relies on the inner tube, while the air tightness of tubeless tires relies on the tubeless tire pad.
-      <br />
-      The overall process is divided into three steps. The first step is to install tubeless tires. The second step is to fill the tire with tire sealant. The third step is to cheer up.
-    </p>
-    <p class="sizecharts-section__intro">
-      Compared with ordinary clincher tires, there is one less step to insert the inner tube. But there are some differences before installation.
-    </p>
-    <p class="guide-section__cta-wrapper">
-      <button
-        type="button"
-        class="sizecharts-brand-button"
-        @click="$emit('changeTab', 'tubeless')"
-      >
-        See details of the vacuum accessories you need
-      </button>
-    </p>
+  <div class="installation-guide space-y-12">
+    <!-- Intro / Overview Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+      <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
+        Tubeless Installation Guide
+      </h2>
+      <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
+         The tubeless system relies on an airtight seal between the tire, rim, and valve, replacing the traditional inner tube.
+         <br>
+         The process involves 3 main steps: <strong>Installation</strong>, <strong>Sealant Filling</strong>, and <strong>Inflation</strong>.
+      </p>
+      
+      <div class="flex justify-center mb-4">
+         <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-full bg-slate-800 border border-slate-700 px-6 py-2 text-xs font-bold uppercase tracking-wider text-slate-300 hover:bg-slate-700 transition-colors"
+            @click="$emit('changeTab', 'tubeless')"
+          >
+            View Required Accessories
+          </button>
+      </div>
 
-    <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/Bicycle tubeless tire pad.webp"
-        alt="Bicycle tubeless tire pad"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/Bicycle vacuum self-replenishing fluid.webp"
-        alt="Bicycle vacuum self-replenishing fluid"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/Bicycle vacuum valve.webp"
-        alt="Bicycle vacuum valve"
-        :zoomOnClick="true"
-      />
+       <div class="mt-8">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Essential Components</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <GuideImage
+            class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            src="/public/tiresizecharts/installation/Bicycle tubeless tire pad.webp"
+            alt="Bicycle tubeless tire pad"
+            :zoomOnClick="true"
+            caption="Tire Pad"
+          />
+          <GuideImage
+            class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            src="/public/tiresizecharts/installation/Bicycle vacuum self-replenishing fluid.webp"
+            alt="Bicycle cycling sealant"
+            :zoomOnClick="true"
+            caption="Sealant"
+          />
+          <GuideImage
+            class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            src="/public/tiresizecharts/installation/Bicycle vacuum valve.webp"
+            alt="Bicycle tubeless valve"
+            :zoomOnClick="true"
+             caption="Tubeless Valve"
+          />
+        </div>
+      </div>
     </div>
+    
+    <!-- Timeline Steps -->
+    <div class="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-gradient-to-b before:from-transparent before:via-slate-800 before:to-transparent md:before:mx-auto md:before:translate-x-0">
+      
+      <!-- Step 0: Preparation -->
+      <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+         <!-- Icon/Marker -->
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-slate-800 text-slate-300 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+            <span class="font-bold text-sm">0</span>
+         </div>
+         <!-- Card -->
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+            <h3 class="text-lg font-bold text-slate-100 mb-3">Preparation & Rim Taping</h3>
+            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+               <ul class="space-y-2 list-none pl-0">
+                 <li class="flex gap-2"><span class="text-sky-500">1.</span> Clean the rim bed thoroughly.</li>
+                 <li class="flex gap-2"><span class="text-sky-500">2.</span> Apply tubeless tape tightly, covering spoke holes.</li>
+                 <li class="flex gap-2"><span class="text-sky-500">3.</span> Overlap tape by ~10cm at the valve hole.</li>
+                 <li class="flex gap-2"><span class="text-sky-500">4.</span> Pierce a small hole for the valve and tighten the nut by hand only.</li>
+               </ul>
 
-    <ul class="sizecharts-section__list">
-      <li>So you need to carefully attach the tubeless tire pad to the rim first.</li>
-      <li>Carefully attach the tubeless tire pad to the tire bed of the wheel set to seal the spoke holes.</li>
-      <li>Overlap the interface by about 10CM, and then carefully press the vacuum tire pad to ensure a tight fit between the tire pad and the rim.</li>
-      <li>
-        Then use an awl or utility knife to make a hole at the air nozzle position and install the vacuum air nozzle. If it is a holeless vacuum ring design similar to CP wheels, you can skip the step of installing tire pads and install the valve directly.
-      </li>
-    </ul>
+               <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/tanzanite-Bicycle-tubeless-tire-pads.webp"
+                    alt="Taping the rim"
+                    :zoomOnClick="true"
+                  />
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/tanzanite-howtoopenthe vacuumnozzle.webp"
+                    alt="Valve hole preparation"
+                    :zoomOnClick="true"
+                  />
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/tanzanite-tubeless-tirepad-interface-overlaps.webp"
+                    alt="Tape overlap"
+                    :zoomOnClick="true"
+                  />
+               </div>
+            </div>
+         </div>
+      </div>
 
-    <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/tanzanite-Bicycle-tubeless-tire-pads.webp"
-        alt="Tanzanite bicycle tubeless tire pads"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/tanzanite-howtoopenthe vacuumnozzle.webp"
-        alt="Tanzanite how to open the vacuum nozzle"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/tanzanite-tubeless-tirepad-interface-overlaps.webp"
-        alt="Tanzanite tubeless tire pad interface overlaps"
-        :zoomOnClick="true"
-      />
+       <!-- Step 1: Install Tire -->
+      <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+         <!-- Icon/Marker -->
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+            <span class="font-bold text-sm">1</span>
+         </div>
+         <!-- Card -->
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+            <h3 class="text-lg font-bold text-slate-100 mb-3">Install the Tire</h3>
+            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+               <p>Install the tire like a standard clincher. Push the bead into the center channel (drop center) of the rim to make mounting easier. "Massage" the tire to ensure even seating.</p>
+               <div class="bg-indigo-500/10 p-3 rounded-lg border border-indigo-500/20 text-xs">
+                  <strong>Pro Tip:</strong> Use soapy water or mounting fluid on the bead to help it slip into place.
+               </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/3/first-step-to-install-tubelesstires.webp"
+                    alt="Installing tire bead"
+                    :zoomOnClick="true"
+                  />
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/3/Tubelesstire-installation-diagram-2.webp"
+                    alt="Seating the tire"
+                    :zoomOnClick="true"
+                  />
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/3/Picture-of-whether-the-vacuum-nozzle-is-installed-properly.webp"
+                    alt="Valve check"
+                    :zoomOnClick="true"
+                  />
+               </div>
+            </div>
+         </div>
+      </div>
+
+       <!-- Step 2: Add Sealant -->
+      <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+         <!-- Icon/Marker -->
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+            <span class="font-bold text-sm">2</span>
+         </div>
+         <!-- Card -->
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+            <h3 class="text-lg font-bold text-slate-100 mb-3">Inject Sealant</h3>
+            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+               <ul class="space-y-2 list-none pl-0">
+                 <li class="flex gap-2"><span class="text-indigo-400">1.</span> Remove the valve core.</li>
+                 <li class="flex gap-2"><span class="text-indigo-400">2.</span> Inject ~30-60ml (Road) of sealant through the valve.</li>
+                 <li class="flex gap-2"><span class="text-indigo-400">3.</span> Re-install the valve core.</li>
+               </ul>
+
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant1.webp"
+                    alt="Remove valve core"
+                    :zoomOnClick="true"
+                  />
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant2.webp"
+                    alt="Inject sealant"
+                    :zoomOnClick="true"
+                  />
+                  <GuideImage
+                    class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
+                    src="/public/tiresizecharts/installation/4/Separate-vacuum-nozzle-tool.webp"
+                    alt="Valve tool"
+                    :zoomOnClick="true"
+                  />
+               </div>
+            </div>
+         </div>
+      </div>
+
+       <!-- Step 3: Inflate -->
+      <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+         <!-- Icon/Marker -->
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-emerald-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+            <span class="font-bold text-sm">3</span>
+         </div>
+         <!-- Card -->
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+            <h3 class="text-lg font-bold text-slate-100 mb-3">Inflate & Shake</h3>
+            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+               <p>Inflate quickly (using a pump with a reservoir or CO2 helps) to snap the beads into place. You should hear a satisfying "pop".</p>
+               <p>Shake the wheel to distribute sealant evenly.</p>
+               <div class="flex items-center justify-center gap-2 text-emerald-400 font-bold mt-2">
+                  <span>✓</span> <span>Ready to Roll!</span>
+               </div>
+            </div>
+         </div>
+      </div>
+
     </div>
-
-    <ul class="sizecharts-section__list">
-      <li>
-        This is the second difference between vacuum and opening, the way of inflating. The valve of clincher tires is installed on the inner tube, while the valve of tubeless tires is installed on the rim.
-      </li>
-      <li>
-        When installing the vacuum valve, make sure that the root of the vacuum valve is tightly connected to the rim. The fixing screw of the valve only needs to be tightened by hand. Do not use a wrench or other tools to tighten it hard enough to cause miracles!
-      </li>
-    </ul>
-
-    <h3 class="sizecharts-section__subheading">1. Install tubeless tires</h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        Then install the tire on the rim just like a clincher tire. Generally speaking, tubeless tires are tighter and more difficult to install than clincher tires of the same type, requiring a certain amount of strength and a lot of patience. Here's a trick: Push all the bead into the concave center of the rim to make the tire easier to install.
-      </li>
-      <li>
-        After all the tire beads on both sides are installed, use your hands to "massage" the tire from the opposite side of the valve to ensure that every position of the tire is well embedded in the rim. At the same time, push all the tire beads on both sides into the grooves of the rim, which will make it easier to inflate. Finally, carefully check the position of the valve to ensure that the bead completely covers the valve.
-      </li>
-      <li>
-        Then it’s time to inflate. It’s also difficult to inflate a tubeless tire for the first time because the tire is not stuck in place at this time and is leaking air. You need to use an air pump with a large air intake to inflate quickly or an air pump with an air storage function. Or a CO2 cylinder can also be used. The principle is to allow a large amount of air to quickly enter the tire and push the tire into place. When I was decorating my home, I used an ordinary vertical air pump that worked wonders.
-      </li>
-      <li>
-        After inflating, check whether the bead line is completely exposed on the rim. If the tire is not easy to place, sometimes it is necessary to lubricate the bead line.
-      </li>
-      <li>
-        Use soapy water, dishwashing liquid, and special lubricant to apply to the bead. Or SCHWABLE has special tire fluid.
-      </li>
-    </ul>
-
-    <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/3/first-step-to-install-tubelesstires.webp"
-        alt="First step to install tubeless tires"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/3/Tubelesstire-installation-diagram-2.webp"
-        alt="Tubeless tire installation diagram 2"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/3/Picture-of-whether-the-vacuum-nozzle-is-installed-properly.webp"
-        alt="Picture of whether the vacuum nozzle is installed properly"
-        :zoomOnClick="true"
-      />
-    </div>
-
-    <h3 class="sizecharts-section__subheading">2. Fill the tire with tire repair fluid.</h3>
-    <ul class="sizecharts-section__list">
-      <li>Use special tools to remove the core of the valve.</li>
-      <li>
-        Then pour the self-hydrating fluid into the wheel through the valve. For the amount of self-replenishing solution, refer to the instruction manual of the self-replenishing solution you purchased. The consumption of a road car is about 30-60ML per wheel.
-      </li>
-    </ul>
-
-    <div class="sizecharts-installation-images sizecharts-installation-images--installation">
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant1.webp"
-        alt="Pour vacuum tire sealant 1"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant2.webp"
-        alt="Pour vacuum tire sealant 2"
-        :zoomOnClick="true"
-      />
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/installation/4/Separate-vacuum-nozzle-tool.webp"
-        alt="Separate vacuum nozzle tool"
-        :zoomOnClick="true"
-      />
-    </div>
-
-    <h3 class="sizecharts-section__subheading">3. Cheer up</h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        Inflate the same as ordinary clincher tires. Because the tires have been installed in place in the previous step. Pump up the air, hold your wheel up, down, left, and right, and shake the tire sealant evenly, and you're done.
-      </li>
-    </ul>
   </div>
 </template>
 
@@ -174,8 +205,3 @@ defineEmits<{
   (e: 'changeTab', tab: GuideTabId): void
 }>()
 </script>
-
-<style scoped>
-/* Scoped styles specific to this component can go here if needed */
-/* Most styles are global via .sizecharts-section classes in guide-sections.css */
-</style>

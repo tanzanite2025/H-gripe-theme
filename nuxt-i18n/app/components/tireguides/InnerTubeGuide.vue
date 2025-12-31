@@ -1,133 +1,159 @@
 <template>
-  <div class="inner-tube-guide">
-    <h2 class="sizecharts-section__title">Inner Tube</h2>
-    <div class="mt-2 flex justify-center">
-      <button
-        type="button"
-        class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
-        @click="openInnerTubeSearch"
-      >
-        Search inner tubes with advanced filters
-      </button>
-    </div>
-    <h3 class="sizecharts-section__subheading mt-3">Step 1: Choose your tire size</h3>
-    <p class="sizecharts-section__intro">
-      All information can be found on your tire.
-    </p>
+  <div class="inner-tube-guide space-y-8">
+    <!-- Step 1: Search / Intro Card -->
+     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+       <div class="flex items-center justify-center gap-3 mb-6">
+         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 text-lg font-bold">1</span>
+           <h3 class="text-xl font-bold text-slate-100 uppercase tracking-wide">
+             Choose Your Size
+           </h3>
+        </div>
+      
+       <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
+         All necessary size information (ETRTO or Inch) can be found on your tire sidewall.
+       </p>
 
-    <h3 class="sizecharts-section__subheading mt-4">Step 2: Choose your valve type</h3>
-    <ul class="sizecharts-section__list">
-      <li><strong>AV</strong> Schrader, Auto, Moto. Length 40 mm.</li>
-      <li><strong>DV</strong> Bicycle, Woods, Hollands. Length 32 mm or 40 mm.</li>
-      <li><strong>SV</strong> Presta, Sclaverand, French. Length 40 mm.</li>
-      <li><strong>SV Extra long</strong> Presta, Sclaverand, French. Length 50 mm / 60 mm / 80 mm.</li>
-    </ul>
-
-    <div class="mt-3">
-      <GuideImage
-        class="sizecharts-installation-images__item"
-        src="/public/tiresizecharts/innertube/tanzanite-schwalbe-innertube-valve.webp"
-        alt="Schwalbe inner tube valve types and lengths overview"
-        :zoomOnClick="true"
-      />
+       <div class="flex justify-center">
+         <button
+          type="button"
+          class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-8 py-3 text-sm font-bold uppercase tracking-wider text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
+          @click="openInnerTubeSearch"
+        >
+          Find My Tube
+        </button>
+       </div>
     </div>
 
-    <div class="mt-6 space-y-6">
-      <div>
-        <h4 class="sizecharts-section__subheading flex justify-center items-center gap-2 text-sky-400">
-          <span>🔧</span> Pump Compatibility
-        </h4>
-        <ul class="sizecharts-section__list">
-          <li><strong>Standard pumps</strong>: Suitable for ≤45mm rims, 40–60mm valves work fine.</li>
-          <li><strong>Locking-head pumps</strong>: Better for mid/high rims, securely grip shorter valves.</li>
-          <li><strong>Valve extenders</strong>: Essential for ≥70mm rims, especially inner-type extenders for airtightness.</li>
-        </ul>
-      </div>
 
-      <div class="overflow-x-auto rounded-lg border border-slate-700/50 shadow-lg">
-        <table class="w-full text-sm text-left text-slate-300">
-          <thead class="text-xs uppercase bg-slate-800/80 text-slate-200">
-            <tr>
-              <th scope="col" class="px-4 py-3 font-semibold whitespace-nowrap">Rim Height</th>
-              <th scope="col" class="px-4 py-3 font-semibold whitespace-nowrap">Rec. Valve Length</th>
-              <th scope="col" class="px-4 py-3 font-semibold">Pump Compatibility</th>
-              <th scope="col" class="px-4 py-3 font-semibold min-w-[200px]">Notes</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-700/50 bg-slate-900/40">
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="px-4 py-3 font-medium text-white whitespace-nowrap">≤25mm</td>
-              <td class="px-4 py-3 text-sky-300 font-mono">40mm</td>
-              <td class="px-4 py-3">Compatible with most pumps</td>
-              <td class="px-4 py-3 text-slate-400 text-xs">Standard low-profile rims, regular valves are sufficient</td>
-            </tr>
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="px-4 py-3 font-medium text-white whitespace-nowrap">30–45mm</td>
-              <td class="px-4 py-3 text-sky-300 font-mono">60mm</td>
-              <td class="px-4 py-3">Recommended to use pumps with locking heads</td>
-              <td class="px-4 py-3 text-slate-400 text-xs">Mid-profile rims, standard valves may be too short</td>
-            </tr>
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="px-4 py-3 font-medium text-white whitespace-nowrap">50–65mm</td>
-              <td class="px-4 py-3 text-sky-300 font-mono">80mm</td>
-              <td class="px-4 py-3">Some pumps require valve extenders</td>
-              <td class="px-4 py-3 text-slate-400 text-xs">High-profile rims, longer valves needed</td>
-            </tr>
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="px-4 py-3 font-medium text-white whitespace-nowrap">≥70mm</td>
-              <td class="px-4 py-3 text-amber-300 font-mono">80mm + extender</td>
-              <td class="px-4 py-3">Extender required, inner type recommended</td>
-              <td class="px-4 py-3 text-slate-400 text-xs">Ultra-high rims, no extra-long inner tube valves available</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- Step 2: Valve Selection Card -->
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+       <div class="flex items-center justify-center gap-3 mb-8">
+         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 text-lg font-bold">2</span>
+           <h3 class="text-xl font-bold text-slate-100 uppercase tracking-wide">
+             Select Valve Type
+           </h3>
+       </div>
 
-      <div>
-        <h4 class="sizecharts-section__subheading flex justify-center items-center gap-2 text-amber-400">
-          <span>⚠️</span> Notes
-        </h4>
-        <ul class="sizecharts-section__list">
-          <li><strong>Rule of thumb</strong>: Valve length should exceed rim height by at least 15mm to ensure secure pump connection.</li>
-          <li>
-            <strong>Valve extenders</strong>:
-            <span class="block mt-1 text-xs text-slate-400">
-              • <strong>External type</strong>: Easy to install, but less airtight.<br>
-              • <strong>Internal type</strong>: Requires removing valve core, better airtightness, recommended for tubeless setups.
-            </span>
-          </li>
-          <li><strong>Brand differences</strong>: Continental and Schwalbe support internal extenders; cheaper inner tubes often do not.</li>
-        </ul>
-      </div>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <!-- AV -->
+          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+             <strong class="text-sky-400 text-lg font-bold mb-1">AV</strong>
+             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Auto / Schrader</span>
+             <p class="text-xs text-slate-400">Standard car valve. Length typical 40mm.</p>
+          </div>
+          <!-- DV -->
+          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+             <strong class="text-sky-400 text-lg font-bold mb-1">DV</strong>
+             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Dunlop / Woods</span>
+             <p class="text-xs text-slate-400">Classic bicycle valve. Length 32/40mm.</p>
+          </div>
+          <!-- SV -->
+          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center border border-sky-500/30">
+             <strong class="text-sky-400 text-lg font-bold mb-1">SV</strong>
+             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Presta / French</span>
+             <p class="text-xs text-slate-400">Sport valve. Available in 40/50/60/80mm.</p>
+          </div>
+       </div>
+
+        <div class="w-full max-w-2xl mx-auto mb-8">
+           <GuideImage
+            class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            src="/public/tiresizecharts/innertube/tanzanite-schwalbe-innertube-valve.webp"
+            alt="Schwalbe inner tube valve types and lengths overview"
+            :zoomOnClick="true"
+          />
+        </div>
+
+        <!-- Compatibility Table -->
+         <h4 class="text-base font-bold text-slate-200 mb-4 flex items-center justify-center gap-2">
+            <span>🔧</span> Pump & Rim Compatibility
+         </h4>
+        <div class="overflow-x-auto rounded-xl bg-slate-950/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)] inline-block w-full max-w-4xl">
+           <table class="min-w-full text-center text-xs sm:text-sm text-slate-100">
+            <thead class="bg-slate-900/80">
+              <tr>
+                <th class="px-4 py-3 font-bold text-slate-400">Rim Height</th>
+                <th class="px-4 py-3 font-bold text-sky-400">Rec. Valve</th>
+                <th class="px-4 py-3 font-bold text-slate-400">Notes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-800/20">
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="px-4 py-3 font-semibold text-slate-300">≤25mm</td>
+                <td class="px-4 py-3 text-sky-300 font-mono">40mm</td>
+                <td class="px-4 py-3 text-slate-400 text-xs">Standard</td>
+              </tr>
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="px-4 py-3 font-semibold text-slate-300">30–45mm</td>
+                <td class="px-4 py-3 text-sky-300 font-mono">60mm</td>
+                <td class="px-4 py-3 text-slate-400 text-xs">Deep rim</td>
+              </tr>
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="px-4 py-3 font-semibold text-slate-300">50–65mm</td>
+                <td class="px-4 py-3 text-sky-300 font-mono">80mm</td>
+                <td class="px-4 py-3 text-slate-400 text-xs">Aero rim</td>
+              </tr>
+               <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="px-4 py-3 font-semibold text-slate-300">≥70mm</td>
+                <td class="px-4 py-3 text-amber-300 font-mono">Extender</td>
+                <td class="px-4 py-3 text-slate-400 text-xs">Valve extender needed</td>
+              </tr>
+            </tbody>
+           </table>
+        </div>
     </div>
 
-    <h3 class="sizecharts-section__subheading mt-4">Step 3: Choose your execution.</h3>
-    <ul class="sizecharts-section__list">
-      <li>
-        <div><strong class="text-amber-300">Standard</strong></div>
-        <div>A standard Schwalbe tube holds air considerably longer. Due to the purity of the rubber compound and the uniform wall thickness.</div>
-      </li>
-      <li>
-        <div><strong class="text-amber-300">Air Plus "NEW"</strong></div>
-        <div>Holds air even longer thanks to greater wall thickness. Less frequent re-inflation is necessary. Also provides above-average protection against punctures.</div>
-      </li>
-      <li>
-        <div><strong class="text-amber-300">Extralight</strong></div>
-        <div>Reduced weight. Same reliability as the standard version. Not available in all sizes.</div>
-      </li>
-      <li>
-        <div><strong class="text-amber-300">XXLight</strong></div>
-        <div>Extremely light. Only for a very few sizes.</div>
-      </li>
-      <li>
-        <div><strong class="text-amber-300">Freeride</strong></div>
-        <div>Large volume. Low Weight.</div>
-      </li>
-      <li>
-        <div><strong class="text-amber-300">Downhill</strong></div>
-        <div>Extremely robust. A reinforced rubber base protects against the dreaded valve shear off. Only in Downhill sizes. If you want large volume with low weight, choose Extralight.</div>
-      </li>
-    </ul>
+    <!-- Step 3: Tube Type Selection -->
+     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+       <div class="flex items-center justify-center gap-3 mb-8">
+         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 text-lg font-bold">3</span>
+           <h3 class="text-xl font-bold text-slate-100 uppercase tracking-wide">
+             Choose Model Type
+           </h3>
+       </div>
+
+       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Standard -->
+          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-slate-200 text-sm font-bold mb-2">Standard</strong>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Reliable hold. Good purity rubber. Uniform wall thickness.
+              </p>
+          </div>
+
+          <!-- Air Plus -->
+          <div class="bg-indigo-500/10 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-indigo-500/20">
+              <strong class="block text-indigo-400 text-sm font-bold mb-2">Air Plus</strong>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Thicker walls. Holds air longer. Better puncture protection.
+              </p>
+          </div>
+
+          <!-- Extralight -->
+          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-amber-400 text-sm font-bold mb-2">Extralight / XXLight</strong>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Reduced weight for racing. Available in select sizes.
+              </p>
+          </div>
+
+           <!-- Freeride -->
+          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-slate-200 text-sm font-bold mb-2">Freeride</strong>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Large volume, low weight.
+              </p>
+          </div>
+
+           <!-- Downhill -->
+          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-slate-200 text-sm font-bold mb-2">Downhill</strong>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Extremely robust. Reinforced base. Valve shear protection.
+              </p>
+          </div>
+       </div>
+    </div>
   </div>
 </template>
 
@@ -144,8 +170,3 @@ const openInnerTubeSearch = () => {
   })
 }
 </script>
-
-<style scoped>
-/* Scoped styles specific to this component can go here if needed */
-/* Most styles are global via .sizecharts-section classes in guide-sections.css */
-</style>

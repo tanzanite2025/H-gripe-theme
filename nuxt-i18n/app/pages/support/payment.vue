@@ -5,9 +5,8 @@
       <p class="support-intro-banner__text">
         All pages on this site use HTTPS with an SSL certificate issued by a trusted certificate
         authority. All payment information is transmitted over encrypted channels to prevent it from
-        being intercepted or tampered with. Actual charges are processed by reputable payment providers
-        such as PayPal, Stripe, Alipay / WeChat Pay / UnionPay. We only receive the payment result and do
-        not store your card number, CVV, or other sensitive data.
+        being intercepted or tampered with. Actual charges are processed by reputable payment providers.
+        We only receive the payment result and do not store your card number, CVV, or other sensitive data.
       </p>
       <div class="support-card__actions support-intro-banner__actions">
         <NuxtLink
@@ -77,9 +76,16 @@
             <span>Credit &amp; debit cards</span>
           </h4>
           <p class="support-card__body">
-            We accept major cards such as Visa and MasterCard. Your card will only be charged after the
-            order has been confirmed. In some regions additional 3D Secure verification may be required.
+            We accept major cards such as Visa and MasterCard.
           </p>
+          <div class="mt-4 pt-4 border-t border-slate-800/50 flex items-start gap-3">
+             <div class="flex-shrink-0 pt-1">
+                <img src="/icons/payment/stripe.svg?v=4" alt="Stripe" class="h-5 w-auto opacity-80" />
+             </div>
+             <p class="text-xs text-slate-400 leading-relaxed">
+               Payments are securely processed by <strong>Stripe</strong>. Your payment data is encrypted and secure. We do not store your card details.
+             </p>
+          </div>
         </article>
         <article class="support-card">
           <h4 class="support-card__title">
@@ -124,30 +130,6 @@
             payment page, or ask customer service for the payment code.
           </p>
         </article>
-        <article class="support-card">
-          <h4 class="support-card__title">
-            <span class="support-card__icon">
-              <img src="/icons/payment/stripe.svg?v=4" alt="Stripe" class="support-card__icon-image" />
-            </span>
-            <span>Stripe</span>
-          </h4>
-          <p class="support-card__body">
-            Pay securely with major credit and debit cards through Stripe. Stripe handles the payment
-            processing on our behalf, and your card details are never stored on our servers. Additional
-            verification (3D Secure) may be required depending on your card issuer.
-          </p>
-        </article>
-        <article class="support-card">
-          <h4 class="support-card__title">
-            <span class="support-card__icon">🌍</span>
-            <span>WorldFirst</span>
-          </h4>
-          <p class="support-card__body">
-            For selected international or business orders we can accept payment via WorldFirst. You pay
-            from your local bank to a WorldFirst account in a supported currency, and WorldFirst handles
-            the currency conversion and settlement to us.
-          </p>
-        </article>
       </div>
     </section>
 
@@ -174,30 +156,6 @@
           </p>
         </article>
       </div>
-    </section>
-
-    <section class="support-section">
-      <h3 class="support-section__title">Example total order cost</h3>
-      <article class="support-card">
-        <p class="support-card__body">
-          The following example is for illustration only. Actual amounts will depend on your currency,
-          shipping destination, payment method, and local taxes.
-        </p>
-        <ul class="support-list support-list--example">
-          <li class="support-list__item">
-            <strong>Product subtotal</strong>: $1,000
-          </li>
-          <li class="support-list__item">
-            <strong>Shipping cost</strong>: $60
-          </li>
-          <li class="support-list__item">
-            <strong>Estimated duties &amp; tax</strong>: $120
-          </li>
-        </ul>
-        <p class="support-card__body support-card__highlight">
-          Approximate total: $1,215
-        </p>
-      </article>
     </section>
 
     <section class="support-section">
@@ -317,54 +275,64 @@ const openQuickFromPayment = () => {
 
 .support-intro-banner {
   margin: 0 0 1.25rem;
-  padding: 0.85rem 1rem;
-  border-radius: 0.9rem;
-  background-image: linear-gradient(135deg, rgba(34, 211, 238, 0.26), rgba(59, 130, 246, 0.35));
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: #11151e;
   border: none;
-  box-shadow: 0 10px 26px -16px rgba(0, 0, 0, 0.95);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
 .support-intro-banner__text {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: #e5e7eb;
+  color: #94a3b8;
 }
 
 .support-section {
-  margin-top: 1.75rem;
+  margin-top: 2rem;
 }
 
 .support-section__title {
-  margin: 0 0 0.75rem;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #e5e7eb;
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
 }
 
 .support-section__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.9rem;
+  gap: 1.5rem;
 }
 
 .support-section__grid--two {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+/* Premium Card Styling */
 .support-card {
-  border-radius: 0.75rem;
-  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  border-radius: 1rem;
+  background: #11151e;
   border: none;
-  padding: 0.9rem 1rem;
-  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.95);
+  padding: 1.5rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.support-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
 }
 
 .support-card__title {
-  margin: 0 0 0.35rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #f9fafb;
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f1f5f9;
   display: flex;
   align-items: center;
 }
@@ -375,21 +343,20 @@ const openQuickFromPayment = () => {
   justify-content: flex-start;
   width: auto;
   height: auto;
-  border-radius: 0;
   background: transparent;
   border: none;
   padding: 0;
-  margin-right: 0.4rem;
+  margin-right: 0.75rem;
 }
 
 .support-card__icon-image {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 2rem;
+  height: 2rem;
   object-fit: contain;
 }
 
 .support-card__icon-image + .support-card__icon-image {
-  margin-left: 0.12rem;
+  margin-left: 0.25rem;
 }
 
 .support-card__icon-group {
@@ -398,30 +365,26 @@ const openQuickFromPayment = () => {
 }
 
 .support-card__icon-group .support-card__icon {
-  margin-right: 0.2rem;
-}
-
-.support-card__icon-group .support-card__icon:last-child {
-  margin-right: 0.4rem;
+  margin-right: 0.25rem;
 }
 
 .support-card__body {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.55;
-  color: rgba(148, 163, 184, 0.9);
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #94a3b8;
 }
 
 .support-card__highlight {
-  color: #fbbf24;
+  color: #2dd4bf; /* Teal for highlights instead of amber */
   font-weight: 600;
 }
 
 .support-card__actions {
-  margin-top: 0.8rem;
+  margin-top: 1.5rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .support-card__button {
@@ -429,55 +392,64 @@ const openQuickFromPayment = () => {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  padding: 0.4rem 0.9rem;
+  padding: 0.5rem 1.25rem;
   font-size: 0.85rem;
   font-weight: 600;
-  border: none;
-  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
-  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(30, 41, 59, 0.5);
+  color: #e2e8f0;
   cursor: pointer;
   text-decoration: none;
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
 }
 
 .support-card__button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
+  background: rgba(51, 65, 85, 0.8);
+  color: #fff;
+  border-color: rgba(148, 163, 184, 0.3);
 }
 
 .support-card__button-icon {
-  margin-right: 0.3rem;
+  margin-right: 0.4rem;
   font-size: 1rem;
 }
 
 .support-card__button--primary {
-  background-image: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-  color: #020617;
+  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  color: #fff;
+  border: none;
   box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+}
+
+.support-card__button--primary:hover {
+  box-shadow: 0 6px 16px rgba(45, 212, 191, 0.5);
+  transform: translateY(-1px);
 }
 
 .support-list {
   margin: 0;
-  padding-left: 1.1rem;
-  font-size: 0.9rem;
-  color: rgba(148, 163, 184, 0.9);
+  padding-left: 1.25rem;
+  font-size: 0.95rem;
+  color: #94a3b8;
 }
 
 .support-list__item + .support-list__item {
-  margin-top: 0.45rem;
+  margin-top: 0.5rem;
 }
 
 .support-section__note {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.6;
-  color: rgba(148, 163, 184, 0.9);
+  color: #94a3b8;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 @media (min-width: 768px) {
   .support-section {
-    margin-top: 2rem;
+    margin-top: 3rem;
   }
 }
 </style>
