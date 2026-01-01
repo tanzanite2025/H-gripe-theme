@@ -41,10 +41,7 @@
       id="wheelset-assembly"
       class="support-section"
     >
-      <h3 class="support-section__title text-center">Wheelset Assembly</h3>
-      <p class="support-section__body text-center">
-        Wheelset Assembly content placeholder. Detailed assembly guides and checklists will be added here.
-      </p>
+      <SupportWheelsetAssemblySection />
     </section>
 
     <!-- Spoke-hole strength test video modal -->
@@ -108,6 +105,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from '#imports'
 import SupportRimTestReportSection from '~/components/SupportRimTestReportSection.vue'
 import SupportWheelsetTestReportSection from '~/components/SupportWheelsetTestReportSection.vue'
+import SupportWheelsetAssemblySection from '~/components/SupportWheelsetAssemblySection.vue'
 
 const props = defineProps<{
   syncWithUrl?: boolean
@@ -174,6 +172,7 @@ watch(
   text-align: center;
 }
 
+/* Titles are now handled within components mostly, but keeping global styles just in case */
 .support-section__title {
   margin: 0 0 0.5rem;
   font-size: 1.05rem;

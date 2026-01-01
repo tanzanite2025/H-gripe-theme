@@ -84,5 +84,36 @@ export const supportTestReportFaq: PageFaqData = {
         },
       ],
     },
+    {
+      id: 'assembly',
+      name: 'Wheel Assembly',
+      icon: '🔧',
+      items: [
+        {
+          id: 'asm-1',
+          question: 'What is the recommended spoke tension?',
+          answer: `We recommend a spoke tension range of <strong>100–135 kgf</strong>. Tension should be as uniform as possible, with variations on the same side kept within ±5%.`,
+          tags: ['tension', 'spokes', 'building'],
+        },
+        {
+          id: 'asm-2',
+          question: 'What tools do I need for wheel assembly?',
+          answer: `Essential tools include a <strong>truing stand</strong>, a <strong>spoke tension meter</strong>, and a suitable <strong>spoke nipple wrench</strong>. We also use custom-developed tools in our factory for maximum precision.`,
+          tags: ['tools', 'assembly', 'equipment'],
+        },
+        {
+          id: 'asm-3',
+          question: 'Should I use threadlocker on spoke nipples?',
+          answer: `Yes, we recommend applying a <strong>low-strength threadlocker</strong> (like Loctite 222) to the spoke threads during the final truing stage. This prevents nipples from loosening over time due to vibration.`,
+          tags: ['threadlocker', 'glue', 'nipples'],
+        },
+        {
+          id: 'asm-4',
+          question: 'What are the standard build tolerances?',
+          answer: `Our standard tolerances are strict: <strong>Lateral/Radial runout ≤ 0.2mm</strong>, and <strong>Center (Dish) offset ≤ 0.5mm</strong>.`,
+          tags: ['tolerances', 'true', 'runout'],
+        },
+      ],
+    },
   ],
 }
