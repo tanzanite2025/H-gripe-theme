@@ -184,7 +184,7 @@ watch(
 
 <style scoped>
 .support-warranty {
-  /* margin-top: -1rem; similar to test-report if needed, but let's see */
+  margin-top: -1rem;
 }
 
 .support-page__title {
