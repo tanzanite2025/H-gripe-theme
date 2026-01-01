@@ -76,6 +76,16 @@ class Tanzanite_PR_Admin_Menu {
 			array( $this, 'render_records_page' )
 		);
 
+		// 保修申请 (NEW)
+		add_submenu_page(
+			'tanzanite-pr',
+			'保修申请',
+			'保修申请',
+			'manage_options',
+			'tanzanite-pr-warranty-claims',
+			array( $this, 'render_warranty_claims_page' )
+		);
+
 		// 批量导入/导出
 		add_submenu_page(
 			'tanzanite-pr',
@@ -113,6 +123,22 @@ class Tanzanite_PR_Admin_Menu {
 	 */
 	public function render_records_page() {
 		include TANZANITE_PR_PLUGIN_DIR . 'includes/admin/views/warranty-records.php';
+	}
+
+	/**
+	 * 渲染保修申请页面
+	 */
+	public function render_warranty_claims_page() {
+		// 路由到列表或详情
+		$action = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : 'list';
+		
+		$admin = new Tanzanite_PR_Warranty_Claims_Admin();
+		
+		if ( 'view' === $action ) {
+			$admin->render_detail_page();
+		} else {
+			$admin->render_list_page();
+		}
 	}
 
 	/**

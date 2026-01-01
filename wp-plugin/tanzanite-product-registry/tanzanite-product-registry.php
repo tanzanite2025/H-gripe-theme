@@ -76,11 +76,13 @@ final class Tanzanite_Product_Registry {
 			require_once TANZANITE_PR_PLUGIN_DIR . 'includes/admin/class-product-types-admin.php';
 			require_once TANZANITE_PR_PLUGIN_DIR . 'includes/admin/class-products-admin.php';
 			require_once TANZANITE_PR_PLUGIN_DIR . 'includes/admin/class-warranty-records-admin.php';
+			require_once TANZANITE_PR_PLUGIN_DIR . 'includes/admin/class-warranty-claims-admin.php'; // NEW
 			require_once TANZANITE_PR_PLUGIN_DIR . 'includes/admin/class-import-export.php';
 		}
 		
 		// REST API
 		require_once TANZANITE_PR_PLUGIN_DIR . 'includes/rest-api/class-rest-warranty-controller.php';
+		require_once TANZANITE_PR_PLUGIN_DIR . 'includes/rest-api/class-rest-warranty-claims-controller.php'; // NEW
 	}
 
 	/**
@@ -131,6 +133,7 @@ final class Tanzanite_Product_Registry {
 			new Tanzanite_PR_Product_Types_Admin();
 			new Tanzanite_PR_Products_Admin();
 			new Tanzanite_PR_Warranty_Records_Admin();
+			new Tanzanite_PR_Warranty_Claims_Admin(); // NEW
 			new Tanzanite_PR_Import_Export();
 		}
 	}
@@ -141,6 +144,9 @@ final class Tanzanite_Product_Registry {
 	public function register_rest_routes() {
 		$controller = new Tanzanite_REST_Warranty_Controller();
 		$controller->register_routes();
+
+		$claims_controller = new Tanzanite_REST_Warranty_Claims_Controller(); // NEW
+		$claims_controller->register_routes();
 	}
 
 	/**
