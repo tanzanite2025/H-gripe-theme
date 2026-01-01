@@ -48,14 +48,16 @@
 }
 
 .nav-pill-item {
-  @apply premium-button;
+  @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold text-slate-300 bg-slate-800/50 cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .nav-pill-item:hover {
-  @apply opacity-100;
-  /* reset or inherit */
+  @apply bg-slate-700/80 text-white -translate-y-px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
 .nav-pill-item--active {
-  @apply premium-button--active;
+  @apply bg-white text-slate-900 font-semibold;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
