@@ -27,7 +27,8 @@
           :openWhatsAppChat="openWhatsAppChat"
           :goToTubelessInstallation="goToTubelessInstallation"
           :goToTechnicalTension="goToTechnicalTension"
-          :goToAfterSales="goToAfterSales"
+          :goToWarranty="goToWarranty"
+
         />
       </section>
 
@@ -272,8 +273,8 @@ const goToTubelessInstallation = async () => {
   await router.push(`${localePath('/guides/tireguides')}#installation`)
 }
 
-const goToAfterSales = async () => {
-  await router.push(localePath('/support/after-sales'))
+const goToWarranty = async () => {
+  await router.push(localePath('/support/warranty'))
 }
 
 const goToTechnicalTension = async () => {

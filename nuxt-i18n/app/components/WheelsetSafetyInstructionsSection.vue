@@ -163,10 +163,11 @@
                  <button
                     type="button"
                     class="w-full py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-bold uppercase tracking-wider transition-colors"
-                    @click="goToAfterSales"
+                    @click="goToWarranty"
                   >
-                    View After-sales Instructions
+                    View Warranty Policy
                   </button>
+
              </div>
          </div>
       </div>
@@ -176,10 +177,10 @@
 </template>
 
 <script setup lang="ts">
-const { openWhatsAppChat, goToTubelessInstallation, goToTechnicalTension, goToAfterSales } = defineProps<{
+const { openWhatsAppChat, goToTubelessInstallation, goToTechnicalTension, goToWarranty } = defineProps<{
   openWhatsAppChat: () => void | Promise<void>
   goToTubelessInstallation: () => void | Promise<void>
   goToTechnicalTension: () => void | Promise<void>
-  goToAfterSales: () => void | Promise<void>
+  goToWarranty: () => void | Promise<void>
   }>()
 </script>
