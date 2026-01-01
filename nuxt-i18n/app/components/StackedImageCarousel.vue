@@ -1,13 +1,13 @@
 <template>
-  <div class="relative w-full max-w-4xl mx-auto px-4 sm:px-0">
+  <div class="relative w-full max-w-4xl mx-auto px-0">
     <div
-      class="relative rounded-3xl pt-[60px]"
+      class="relative rounded-3xl pt-9 sm:pt-[60px]"
       tabindex="0"
       @keydown.left.prevent="prev"
       @keydown.right.prevent="next"
     >
       <!-- Navigation Dots -->
-      <div class="absolute inset-x-0 top-[14px] z-40 flex justify-center gap-2 px-4">
+      <div class="absolute inset-x-0 top-2 sm:top-[14px] z-40 flex justify-center gap-2 px-4">
         <button
           v-for="(_, index) in items"
           :key="index"
