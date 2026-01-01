@@ -3,6 +3,55 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "34836fa1dfe6e2aa",
+      "timestamp": "2026-01-01T19:39:56.053Z",
+      "description": "✅ 任务完成: Refine `/company/ourstory` (Add FAQ & Optimize Spacing)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "898a545be4b42ef8",
+      "timestamp": "2026-01-01T19:33:24.218Z",
+      "description": "✅ 任务完成: Refine `/company/global-partners` (Add FAQ & Feedback)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "bb5f55d38b6d54dc",
+      "timestamp": "2026-01-01T19:30:15.475Z",
+      "description": "✅ 任务完成: Refine Footer Address (Simplify Layout, Remove Labels)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "27f8a2e3323042a9",
+      "timestamp": "2026-01-01T19:22:27.340Z",
+      "description": "✅ 任务完成: Refine `/company/contact` (Dual Addresses & Safe Payment Info)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "3c02111926c3ffcd",
+      "timestamp": "2026-01-01T19:13:54.303Z",
+      "description": "✅ 6 个任务完成: **Company Page Refinements**, Create `/company/certificates` with Premium Design & FAQ...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "a925110733639ebe",
+      "timestamp": "2026-01-01T18:46:20.348Z",
+      "description": "✅ 2 个任务完成: 前端: 编写 `scripts/sync-spoke-data.mjs` 同步脚本, Optimize `/company/ourstory` (Premium Style, Mobile Friendly).",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "a11168529f27eb95",
+      "timestamp": "2026-01-01T18:23:27.248Z",
+      "description": "✅ 任务完成: Update Hole Patterns Tab (Video + Content)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "ca4a8614ce910776",
       "timestamp": "2026-01-01T18:05:12.987Z",
       "description": "✅ 任务完成: Update Warranty FAQs (Exclusions & Discontinued Items)",
@@ -90,55 +139,6 @@
       "id": "52d07b5cf3237c0f",
       "timestamp": "2025-12-31T15:01:17.982Z",
       "description": "✅ 52 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "fbe3d810a7c76321",
-      "timestamp": "2025-12-31T10:05:22.979Z",
-      "description": "✅ 2 个任务完成: 集成: 在 `spoke-calculator.vue` 页面底部引入搜索组件, 验证: 验证搜索关键词匹配和结果计算准确性",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "457b9e0a8d874388",
-      "timestamp": "2025-12-31T09:16:52.542Z",
-      "description": "✅ 10 个任务完成: 功能重构: 辐条数据静态化 (Frontend Database), 数据: 创建 `app/data/spoke-calculator/database.ts` 并录入基础数据 (Brands/Rims/Hubs)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "a248e69519c9f113",
-      "timestamp": "2025-12-31T09:08:51.714Z",
-      "description": "✅ 任务完成: 规划: 编写前端 Spoke 数据库结构分析报告 (已完成)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "d928412b54b0382f",
-      "timestamp": "2025-12-31T08:54:54.032Z",
-      "description": "✅ 任务完成: 功能新增: 实现 FAQ 模块 (参照 Wheelset Buyers Guide)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "1ef6d6e9f90d0ee3",
-      "timestamp": "2025-12-31T08:54:38.142Z",
-      "description": "✅ 3 个任务完成: 功能开发: Hub Attributes 集成, 后端: 在 class-add-product-admin.php 中渲染 Spoke Geometry 输入区域...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "38181d3816b4a233",
-      "timestamp": "2025-12-31T08:49:15.070Z",
-      "description": "✅ 任务完成: 后端: 在 REST Products Controller 中添加 Meta 字段白名单",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "802786a43998a446",
-      "timestamp": "2025-12-31T08:22:09.554Z",
-      "description": "✅ 36 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }

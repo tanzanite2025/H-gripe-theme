@@ -19,6 +19,11 @@ import { companyMembershipFaq } from './pages/company-membership'
 import { guidesWheelsetBuyersFaq } from './pages/guides-wheelset-buyers'
 import { guidesTireguidesFaq } from './pages/guides-tireguides'
 import { productsSpokeCalculatorFaq } from './pages/products-spoke-calculator'
+import { companyOemOdmFaq } from './pages/company-oem-odm'
+import { companyCertificatesFaq } from './pages/company-certificates'
+import { companyContactFaq } from './pages/company-contact'
+import { companyGlobalPartnersFaq } from './pages/company-global-partners'
+import { companyOurStoryFaq } from './pages/company-ourstory'
 
 /**
  * FAQ Registry - maps pageId to FAQ data
@@ -35,6 +40,11 @@ export const faqRegistry: FaqRegistry = {
   'guides-wheelset-buyers': guidesWheelsetBuyersFaq,
   'guides-tireguides': guidesTireguidesFaq,
   'products-spoke-calculator': productsSpokeCalculatorFaq,
+  'company-oem-odm': companyOemOdmFaq,
+  'company-certificates': companyCertificatesFaq,
+  'company-contact': companyContactFaq,
+  'company-global-partners': companyGlobalPartnersFaq,
+  'company-ourstory': companyOurStoryFaq,
 }
 
 /**
