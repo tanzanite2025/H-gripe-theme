@@ -43,6 +43,13 @@ class Tanzanite_PR_Database {
 	public $warranty_records_table;
 
 	/**
+	 * 保修申请表名
+	 *
+	 * @var string
+	 */
+	public $warranty_claims_table;
+
+	/**
 	 * 构造函数
 	 */
 	public function __construct() {
@@ -51,6 +58,7 @@ class Tanzanite_PR_Database {
 		$this->product_types_table    = $this->prefix . 'product_types';
 		$this->products_table         = $this->prefix . 'products';
 		$this->warranty_records_table = $this->prefix . 'warranty_records';
+		$this->warranty_claims_table  = $this->prefix . 'warranty_claims';
 	}
 
 	/**
@@ -115,10 +123,31 @@ class Tanzanite_PR_Database {
 			KEY record_date (record_date)
 		) $charset_collate;";
 
+		// 保修申请表
+		$sql_warranty_claims = "CREATE TABLE IF NOT EXISTS {$this->warranty_claims_table} (
+			id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+			order_number VARCHAR(100) NOT NULL,
+			email VARCHAR(100) NOT NULL,
+			tire_pressure VARCHAR(50),
+			is_tubeless TINYINT(1) DEFAULT 0,
+			images JSON,
+			video_url VARCHAR(500),
+			issue_description TEXT,
+			status ENUM('pending', 'processing', 'approved', 'rejected') DEFAULT 'pending',
+			admin_notes TEXT,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY email (email),
+			KEY order_number (order_number),
+			KEY status (status)
+		) $charset_collate;";
+
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql_product_types );
 		dbDelta( $sql_products );
 		dbDelta( $sql_warranty_records );
+		dbDelta( $sql_warranty_claims );
 	}
 
 	/**
@@ -443,5 +472,132 @@ class Tanzanite_PR_Database {
 			)
 		);
 		return intval( $total );
+	}
+
+	/**
+	 * 保存保修申请
+	 *
+	 * @param array $data 申请数据
+	 * @return int|false
+	 */
+	public function save_warranty_claim( $data ) {
+		global $wpdb;
+
+		$id = isset( $data['id'] ) ? intval( $data['id'] ) : 0;
+		unset( $data['id'] );
+
+		// 序列化图片数组
+		if ( isset( $data['images'] ) && is_array( $data['images'] ) ) {
+			$data['images'] = json_encode( $data['images'] );
+		}
+
+		if ( $id > 0 ) {
+			$data['updated_at'] = current_time( 'mysql' );
+			$wpdb->update( $this->warranty_claims_table, $data, array( 'id' => $id ) );
+			return $id;
+		} else {
+			$wpdb->insert( $this->warranty_claims_table, $data );
+			return $wpdb->insert_id;
+		}
+	}
+
+	/**
+	 * 获取保修申请列表
+	 *
+	 * @param array $args 查询参数
+	 * @return array
+	 */
+	public function get_warranty_claims( $args = array() ) {
+		global $wpdb;
+
+		$defaults = array(
+			'search'   => '',
+			'status'   => '',
+			'page'     => 1,
+			'per_page' => 20,
+			'orderby'  => 'created_at',
+			'order'    => 'DESC',
+		);
+		$args = wp_parse_args( $args, $defaults );
+
+		$where = array( '1=1' );
+		$values = array();
+
+		if ( ! empty( $args['search'] ) ) {
+			$where[] = '(order_number LIKE %s OR email LIKE %s)';
+			$search = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+			$values = array_merge( $values, array( $search, $search ) );
+		}
+
+		if ( ! empty( $args['status'] ) ) {
+			$where[] = 'status = %s';
+			$values[] = $args['status'];
+		}
+
+		$where_sql = implode( ' AND ', $where );
+		$offset = ( $args['page'] - 1 ) * $args['per_page'];
+
+		$orderby = sanitize_sql_orderby( $args['orderby'] . ' ' . $args['order'] );
+		if ( ! $orderby ) {
+			$orderby = 'created_at DESC';
+		}
+
+		$sql = "SELECT * FROM {$this->warranty_claims_table}
+				WHERE {$where_sql}
+				ORDER BY {$orderby}
+				LIMIT %d OFFSET %d";
+
+		$values[] = $args['per_page'];
+		$values[] = $offset;
+
+		$items = $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
+
+		// 处理 JSON 数据
+		foreach ( $items as &$item ) {
+			if ( ! empty( $item['images'] ) ) {
+				$item['images'] = json_decode( $item['images'], true );
+			}
+		}
+
+		// 获取总数
+		$count_sql = "SELECT COUNT(*) FROM {$this->warranty_claims_table} WHERE {$where_sql}";
+		$total = $wpdb->get_var( $wpdb->prepare( $count_sql, array_slice( $values, 0, -2 ) ) );
+
+		return array(
+			'items' => $items,
+			'total' => intval( $total ),
+			'pages' => ceil( $total / $args['per_page'] ),
+		);
+	}
+
+	/**
+	 * 获取单个保修申请
+	 *
+	 * @param int $id 申请ID
+	 * @return array|null
+	 */
+	public function get_warranty_claim( $id ) {
+		global $wpdb;
+		$item = $wpdb->get_row(
+			$wpdb->prepare( "SELECT * FROM {$this->warranty_claims_table} WHERE id = %d", $id ),
+			ARRAY_A
+		);
+
+		if ( $item && ! empty( $item['images'] ) ) {
+			$item['images'] = json_decode( $item['images'], true );
+		}
+
+		return $item;
+	}
+
+	/**
+	 * 删除保修申请
+	 *
+	 * @param int $id 申请ID
+	 * @return bool
+	 */
+	public function delete_warranty_claim( $id ) {
+		global $wpdb;
+		return $wpdb->delete( $this->warranty_claims_table, array( 'id' => $id ) ) !== false;
 	}
 }

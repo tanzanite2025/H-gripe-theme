@@ -9,86 +9,79 @@ export const supportWarrantyFaq: PageFaqData = {
   subtitle: 'Common questions about warranty coverage and claims',
   categories: [
     {
-      id: 'coverage',
-      name: 'Warranty Coverage',
+      id: 'policy',
+      name: 'Warranty Policy',
       icon: '🛡️',
       items: [
         {
           id: 'war-1',
-          question: 'What is covered under warranty?',
-          answer: `Our warranty covers manufacturing defects in materials and workmanship. This includes:
+          question: 'What is the warranty period for Tanzanite wheels?',
+          answer: `We offer two coverage options for all Tanzanite series Wheels/Rims:
             <ul>
-              <li>Rim structural failures under normal use</li>
-              <li>Hub bearing defects</li>
-              <li>Spoke breakage due to manufacturing defects</li>
-              <li>Freehub mechanism failures</li>
-            </ul>
-            Normal wear and tear, crash damage, and improper use are not covered.`,
-          tags: ['warranty', 'coverage', 'defects'],
-        },
-        {
-          id: 'war-2',
-          question: 'How long is the warranty period?',
-          answer: `Our standard warranty periods are:
-            <ul>
-              <li><strong>Carbon rims</strong>: 3 years from purchase date</li>
-              <li><strong>Aluminum rims</strong>: 2 years from purchase date</li>
-              <li><strong>Hubs</strong>: 2 years from purchase date</li>
-              <li><strong>Spokes & nipples</strong>: 1 year from purchase date</li>
-            </ul>
-            Please keep your purchase receipt as proof of purchase date.`,
+              <li><strong>Standard Warranty</strong>: 5 Years from the date of purchase (included by default).</li>
+              <li><strong>Lifetime Warranty</strong>: Available as an upgrade for USD $100 per rim.</li>
+            </ul>`,
           tags: ['warranty', 'period', 'duration'],
         },
         {
+          id: 'war-2',
+          question: 'What does the warranty cover?',
+          answer: `Our warranty covers <strong>manufacturing defects</strong> in materials and workmanship. If a structural failure occurs due to a defect within the warranty period, we will replace the rim.`,
+          tags: ['coverage', 'defects'],
+        },
+        {
           id: 'war-3',
-          question: 'What is NOT covered under warranty?',
-          answer: `The following are not covered:
-            <ul>
-              <li>Damage from crashes, accidents, or impacts</li>
-              <li>Normal wear and tear (brake tracks, bearings, etc.)</li>
-              <li>Damage from improper installation or maintenance</li>
-              <li>Modifications or repairs by unauthorized parties</li>
-              <li>Cosmetic damage that doesn't affect function</li>
-            </ul>`,
-          tags: ['warranty', 'exclusions', 'not covered'],
+          question: 'Is the warranty transferable?',
+          answer: `No, the warranty applies only to the <strong>original purchaser</strong> and is non-transferable. Valid proof of purchase is required for all claims.`,
+          tags: ['transferable', 'original owner'],
+        },
+      ],
+    },
+    {
+      id: 'crash',
+      name: 'Accidental Damage',
+      icon: '💥',
+      items: [
+        {
+          id: 'crash-1',
+          question: 'Do you offer crash replacement?',
+          answer: `Yes, we offer a <strong>Crash Replacement Policy</strong> for accidental damage (e.g., crashes, jumps, rock impacts) that is not covered under the standard warranty.`,
+          tags: ['crash replacement', 'accidental'],
+        },
+        {
+          id: 'crash-2',
+          question: 'What are the terms for crash replacement?',
+          answer: `This coverage is valid for <strong>3 years</strong> from the date of purchase. You can receive a replacement rim at a <strong>10% discount</strong>.`,
+          tags: ['discount', 'crash terms'],
         },
       ],
     },
     {
       id: 'claims',
-      name: 'Warranty Claims',
+      name: 'Claims & Process',
       icon: '📋',
       items: [
         {
           id: 'claim-1',
-          question: 'How do I make a warranty claim?',
-          answer: `To make a warranty claim:
-            <ol>
-              <li>Contact our support team with your order number</li>
-              <li>Provide photos of the defect and the product</li>
-              <li>Describe when and how the issue occurred</li>
-              <li>Wait for our team to review and respond (usually within 2-3 business days)</li>
-            </ol>
-            If approved, we will provide instructions for return or replacement.`,
-          tags: ['claim', 'process', 'how to'],
+          question: 'How do I submit a warranty claim?',
+          answer: `You can submit a claim directly on this page under the <strong>"Submit Warranty"</strong> tab. Please have your order number, photos, and a description of the issue ready.`,
+          tags: ['submit claim', 'process'],
         },
         {
           id: 'claim-2',
-          question: 'What happens if my warranty claim is approved?',
-          answer: `If your claim is approved, we will either repair or replace the defective component at no charge. In some cases, we may offer a partial refund or credit toward a new product. Shipping costs for warranty replacements are covered by us.`,
-          tags: ['claim', 'approved', 'replacement'],
+          question: 'Who covers shipping costs?',
+          answer: `Shipping responsibility depends on when the claim is made:
+            <ul>
+              <li><strong>Within 30 days</strong> of receipt: Tanzanite covers shipping costs.</li>
+              <li><strong>After 30 days</strong>: The customer is responsible for shipping costs.</li>
+            </ul>`,
+          tags: ['shipping', 'costs'],
         },
         {
           id: 'claim-3',
-          question: 'How long does the warranty claim process take?',
-          answer: `The typical timeline is:
-            <ul>
-              <li><strong>Initial review</strong>: 2-3 business days</li>
-              <li><strong>Return shipping</strong>: Varies by location</li>
-              <li><strong>Inspection & decision</strong>: 3-5 business days after receipt</li>
-              <li><strong>Replacement shipping</strong>: 2-3 business days after approval</li>
-            </ul>`,
-          tags: ['claim', 'time', 'duration'],
+          question: 'Do I need to return the damaged product?',
+          answer: `In most cases, <strong>no</strong>. We typically require clear photos and videos of the damage. If we do need the item returned for inspection, we will issue a return authorization.`,
+          tags: ['return', 'damaged item'],
         },
       ],
     },
