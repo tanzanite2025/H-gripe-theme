@@ -82,21 +82,21 @@
           <div class="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-row sm:items-center sm:justify-center">
             <NuxtLink
               :to="localePath('/shop')"
-              class="inline-flex w-full items-center justify-center rounded-full bg-white px-3 py-2 text-[13px] font-semibold text-neutral-950 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/90 sm:w-auto sm:px-6 sm:py-3 sm:text-sm"
+              class="premium-button premium-button--active w-full sm:w-auto justify-center"
             >
               {{ t('home.hero.cta.shop') }}
             </NuxtLink>
 
             <NuxtLink
               :to="localePath('/company/about')"
-              class="inline-flex w-full items-center justify-center rounded-full bg-white/5 px-3 py-2 text-[13px] font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10 sm:w-auto sm:px-6 sm:py-3 sm:text-sm"
+              class="premium-button w-full sm:w-auto justify-center"
             >
               {{ t('home.hero.cta.about') }}
             </NuxtLink>
 
             <NuxtLink
               :to="localePath('/picture-warehouse')"
-              class="inline-flex w-full items-center justify-center rounded-full bg-white/5 px-3 py-2 text-[13px] font-semibold text-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)] transition-colors hover:bg-white/10 sm:w-auto sm:px-6 sm:py-3 sm:text-sm"
+              class="premium-button w-full sm:w-auto justify-center"
             >
               {{ t('home.hero.cta.pictureWarehouse') }}
             </NuxtLink>

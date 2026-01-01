@@ -32,39 +32,30 @@
   .nav-top-bar__scroll {
     @apply justify-start px-3;
   }
+
   .nav-top-bar__link {
     @apply text-sm;
   }
 }
 
 /* -------------------------------------------------------------
-   Pill Tabs (Membership / Policies / Company)
-   Original Reference: .company-tabs, .company-tabs__item
+   Pill Tabs (Membership / Policies / Company / FAQs)
+   Global Standard: Pill shape + Soft Diffuse Shadow
+   Strictly implements .premium-button from tailwind.css
 ------------------------------------------------------------- */
 .nav-pill-tabs {
-  @apply mb-4 -mx-4 flex max-w-[calc(100%+32px)] touch-pan-x gap-3 overflow-x-auto px-4 py-1;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.nav-pill-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-/* Modifier for modal usage or larger screens */
-@screen md {
-  .nav-pill-tabs {
-    @apply mx-0 mb-4 max-w-full flex-wrap justify-center p-1;
-  }
+  @apply mb-8 flex flex-wrap justify-center gap-2;
 }
 
 .nav-pill-item {
-  @apply shrink-0 cursor-pointer whitespace-nowrap rounded-full border-none bg-gray-800/90 px-[18px] py-2 text-[0.85rem] font-medium text-white shadow-sm transition-all duration-300 backdrop-blur-sm hover:bg-slate-700/95 hover:text-white active:scale-95 no-underline;
-  /* Original bg: rgba(31, 41, 55, 0.9) (gray-800 is #1f2937) */
-  /* Original shadow: 6px 8px 18px -12px rgba(0, 0, 0, 0.85) */
+  @apply premium-button;
+}
+
+.nav-pill-item:hover {
+  @apply opacity-100;
+  /* reset or inherit */
 }
 
 .nav-pill-item--active {
-  @apply border-none bg-white text-slate-900 font-semibold shadow-md;
-  /* Original shadow: 8px 10px 22px -10px rgba(0, 0, 0, 0.9) */
+  @apply premium-button--active;
 }

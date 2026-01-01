@@ -3,6 +3,13 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "c0466bb9228b7c47",
+      "timestamp": "2026-01-01T01:49:13.241Z",
+      "description": "✅ 任务完成: Update Home FAQ Button Styles (Remove borders, use global black shadow)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "a6d27ba3778c3798",
       "timestamp": "2025-12-31T18:16:40.649Z",
       "description": "✅ 任务完成: Add View More button to Secure Payment card",
@@ -132,13 +139,6 @@
       "id": "d1d380b2fa680773",
       "timestamp": "2025-12-30T15:48:52.029Z",
       "description": "✅ 任务完成: 修正 Hidden Nipple 计算逻辑 (改为增加长度: nippleLength - 3mm)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "a69c1dec8c6c5198",
-      "timestamp": "2025-12-30T15:38:22.801Z",
-      "description": "✅ 任务完成: 功能修复: 辐条计算器前端计算逻辑重构 <!-- id: 10 --> (已完成)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }

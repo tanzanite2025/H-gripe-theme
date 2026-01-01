@@ -6,7 +6,7 @@
 @font-face {
   font-family: 'AerialFaster';
   src: url('../fonts/AerialFasterRegular.woff2') format('woff2'),
-       url('../fonts/AerialFasterRegular.woff') format('woff');
+    url('../fonts/AerialFasterRegular.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -19,5 +19,33 @@
 
   body {
     @apply overflow-x-hidden overscroll-x-none bg-black;
+  }
+}
+
+@layer components {
+
+  /* 全局统一的高级卡片样式 */
+  /* 背景色参考 FAQ 组件: #11151e */
+  /* 阴影参考全局柔和阴影标准 */
+  .premium-card {
+    @apply border-none bg-[#11151e];
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+
+  /* 全局统一的高级按钮样式 (Pill Button) */
+  /* 用于 Read More, View All, Tabs 等 */
+  .premium-button {
+    @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold text-slate-300 bg-slate-800/50 cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+
+  .premium-button:hover {
+    @apply bg-slate-700/80 text-white -translate-y-px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  }
+
+  .premium-button--active {
+    @apply bg-white text-slate-900 font-semibold;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   }
 }

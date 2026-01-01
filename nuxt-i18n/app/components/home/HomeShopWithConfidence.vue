@@ -12,7 +12,7 @@
         <div
           v-for="(card, index) in cards"
           :key="card.titleKey"
-          class="rounded-2xl bg-white/5 p-5 shadow-[6px_6px_0_rgba(0,0,0,1)]"
+          class="rounded-2xl premium-card p-5"
         >
           <h3 class="text-base font-semibold text-white/95">{{ t(card.titleKey) }}</h3>
           <p class="mt-2 text-sm leading-relaxed text-white/70">{{ t(card.descriptionKey) }}</p>
@@ -49,7 +49,7 @@
           <div v-if="index === 0" class="mt-5 text-center">
             <NuxtLink
               to="/support/payment"
-              class="inline-flex items-center justify-center rounded-full border-none bg-[rgba(15,23,42,0.6)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] px-6 py-1.5 text-xs font-semibold text-white/90 transition-all hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(0,0,0,0.6)]"
+              class="premium-button"
             >
               View More
             </NuxtLink>
