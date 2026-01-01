@@ -25,7 +25,7 @@
           v-for="card in cards"
           :key="card.titleKey"
           to="/shop"
-          class="group block overflow-hidden rounded-2xl bg-white/5 shadow-[6px_6px_0_rgba(0,0,0,1)]"
+          class="group block overflow-hidden rounded-2xl premium-card"
         >
           <div class="relative aspect-[4/3]">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>

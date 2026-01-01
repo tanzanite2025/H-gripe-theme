@@ -11,7 +11,7 @@
         <div
           v-for="card in cards"
           :key="card.titleKey"
-          class="flex h-full flex-col rounded-2xl bg-white/5 p-5 shadow-[6px_6px_0_rgba(0,0,0,1)]"
+          class="flex h-full flex-col rounded-2xl premium-card p-5"
         >
           <h3 class="text-base font-semibold text-white/95">{{ t(card.titleKey) }}</h3>
           <p class="mt-2 text-sm leading-relaxed text-white/70">{{ t(card.descriptionKey) }}</p>
@@ -26,7 +26,7 @@
           <div class="mt-auto pt-6 text-center">
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/15 hover:text-white"
+              class="premium-button"
             >
               {{ t('home.innovationRd.readMore') }}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="ml-2 h-5 w-5" aria-hidden="true">

@@ -9,7 +9,7 @@
 
           <NuxtLink
             to="/blog"
-            class="mt-[6px] inline-flex items-center text-sm font-semibold text-white/80 transition-colors hover:text-white"
+            class="mt-[6px] premium-button"
             aria-label="View all factory stories"
           >
             {{ t('home.factoryStories.viewAll') }}
@@ -25,7 +25,7 @@
           v-for="card in cards"
           :key="card.titleKey"
           to="/blog"
-          class="group relative overflow-hidden rounded-2xl bg-white/5 shadow-[6px_6px_0_rgba(0,0,0,1)]"
+          class="group relative overflow-hidden rounded-2xl premium-card"
         >
           <div class="relative aspect-[4/3]">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
@@ -36,7 +36,7 @@
               <p class="mt-2 text-sm leading-relaxed text-white/70">{{ t(card.descriptionKey) }}</p>
 
               <div
-                class="mt-4 inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 transition-colors group-hover:bg-white/15 group-hover:text-white"
+                class="mt-4 premium-button"
               >
                 {{ t('home.factoryStories.readMore') }}
                 <svg

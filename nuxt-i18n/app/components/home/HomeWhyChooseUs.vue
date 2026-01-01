@@ -13,7 +13,7 @@
         <div
           v-for="card in cards"
           :key="card.titleKey"
-          class="rounded-2xl bg-white/5 p-5 shadow-[6px_6px_0_rgba(0,0,0,1)]"
+          class="rounded-2xl premium-card p-5"
         >
           <h3 class="text-base font-semibold text-white/95">{{ t(card.titleKey) }}</h3>
           <p class="mt-2 text-sm leading-relaxed text-white/70">{{ t(card.descriptionKey) }}</p>

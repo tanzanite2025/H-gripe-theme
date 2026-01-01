@@ -1,7 +1,7 @@
 <template>
   <section class="home-faq" :class="{ 'home-faq--wide': wide }">
     <!-- Premium Card Container -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-4">
+    <div class="rounded-2xl premium-card p-3 md:p-4">
       
       <div class="home-faq__header">
         <h2 class="home-faq__title">Frequently Asked Questions</h2>
@@ -10,13 +10,13 @@
       </div>
 
       <!-- 分类标签 -->
-      <div class="home-faq__tabs">
+      <div class="nav-pill-tabs">
         <button
           v-for="page in allPages"
           :key="page.pageId"
           type="button"
-          class="home-faq__tab"
-          :class="{ 'home-faq__tab--active': activePageId === page.pageId }"
+          class="nav-pill-item"
+          :class="{ 'nav-pill-item--active': activePageId === page.pageId }"
           @click="activePageId = page.pageId"
         >
           {{ page.title || page.pageId }}
@@ -190,38 +190,7 @@ const displayItems = computed<FlatItem[]>(() => {
   color: #94a3b8;
 }
 
-.home-faq__tabs {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-}
-
-.home-faq__tab {
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 9999px;
-  padding: 0.4rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #cbd5e1;
-  background: rgba(30, 41, 59, 0.5);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.home-faq__tab:hover {
-  background: rgba(51, 65, 85, 0.8);
-  color: #ffffff;
-  border-color: rgba(148, 163, 184, 0.3);
-}
-
-.home-faq__tab--active {
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
-}
+/* Global classes .nav-pill-tabs and .nav-pill-item are used now */
 
 .home-faq__question {
   width: 100%;
