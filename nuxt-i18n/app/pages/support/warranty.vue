@@ -64,6 +64,13 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
+import WarrantyChangeCancelTab from '~/components/warranty/ChangeCancelTab.vue'
+import WarrantyDamagedLostTab from '~/components/warranty/DamagedLostTab.vue'
+import WarrantyReturnsTab from '~/components/warranty/ReturnsTab.vue'
+import WarrantyWarrantyPolicyTab from '~/components/warranty/WarrantyPolicyTab.vue'
+import WarrantyAccidentalDamageTab from '~/components/warranty/AccidentalDamageTab.vue'
+import WarrantyProtectionTab from '~/components/warranty/ProtectionTab.vue'
+import WarrantySubmitClaimTab from '~/components/warranty/SubmitClaimTab.vue'
 
 definePageMeta({
   layout: 'support',

@@ -3,6 +3,13 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "ca4a8614ce910776",
+      "timestamp": "2026-01-01T18:05:12.987Z",
+      "description": "✅ 任务完成: Update Warranty FAQs (Exclusions & Discontinued Items)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "1689e90bc0602d13",
       "timestamp": "2026-01-01T17:46:17.507Z",
       "description": "✅ 任务完成: Update Test Report FAQs with Assembly Q&A",
@@ -132,13 +139,6 @@
       "id": "802786a43998a446",
       "timestamp": "2025-12-31T08:22:09.554Z",
       "description": "✅ 36 个任务完成: 搜索 WhatsApp 相关组件, 分析 `WhatsAppChatModal.vue` 结构 (已完成)...",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "b5139f1a89ee8c85",
-      "timestamp": "2025-12-30T17:32:56.819Z",
-      "description": "✅ 任务完成: 功能新增: 实现 FAQ 模块 (参照 Wheelset Buyers Guide)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }

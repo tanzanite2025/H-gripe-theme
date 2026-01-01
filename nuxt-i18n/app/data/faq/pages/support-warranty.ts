@@ -35,6 +35,18 @@ export const supportWarrantyFaq: PageFaqData = {
           answer: `No, the warranty applies only to the <strong>original purchaser</strong> and is non-transferable. Valid proof of purchase is required for all claims.`,
           tags: ['transferable', 'original owner'],
         },
+        {
+          id: 'war-4',
+          question: 'What isn\'t covered by the warranty?',
+          answer: `The warranty does not cover damage caused by <strong>improper assembly</strong>, use of incompatible parts, unauthorized modifications, or normal wear and tear. Accidental damage (crashes) is covered under our Crash Replacement Policy.`,
+          tags: ['exclusions', 'coverage', 'not covered'],
+        },
+        {
+          id: 'war-5',
+          question: 'What happens if my rim is discontinued?',
+          answer: `If a warranty replacement is approved but your specific rim model is discontinued, we will upgrade you to the <strong>latest equivalent model</strong> at no additional cost.`,
+          tags: ['discontinued', 'upgrade', 'replacement'],
+        },
       ],
     },
     {
