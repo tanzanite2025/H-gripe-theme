@@ -3,7 +3,7 @@
     <div class="mx-auto max-w-6xl px-1 sm:px-4">
       
       <!-- Tab Navigation -->
-      <div class="flex justify-center mb-8">
+      <div class="flex justify-center mb-4 sm:mb-8">
         <div class="bg-slate-900/50 p-1 rounded-full border border-white/10 inline-flex">
           <button
             v-for="tab in tabs"
@@ -18,17 +18,17 @@
       </div>
 
       <!-- Main Content Area -->
-      <div class="grid lg:grid-cols-12 gap-6 items-start">
+      <div class="grid lg:grid-cols-12 gap-3 sm:gap-6 items-start">
         
         <!-- Left Column: Interactive List (Summary) -->
         <div class="lg:col-span-4 lg:pr-4 order-1 lg:self-center">
           <!-- Mobile Title (optional, since tabs show it) -->
           
-          <ul class="space-y-2">
+          <ul class="space-y-1 sm:space-y-2">
             <li
               v-for="(item, index) in currentTabItems"
               :key="index"
-              class="group cursor-pointer rounded-xl p-3 transition-all duration-200 border border-transparent"
+              class="group cursor-pointer rounded-xl p-2 sm:p-3 transition-all duration-200 border border-transparent"
               :class="activeIndex === index ? 'bg-slate-800/60 border-slate-700/50 shadow-sm' : 'hover:bg-slate-800/30'"
               @click="activeIndex = index"
               @mouseenter="activeIndex = index"

@@ -1,5 +1,5 @@
 <template>
-  <main class="min-h-screen text-white">
+  <main class="min-h-[100dvh] text-white">
     <HomeHero />
 
     <!-- Unified Features Tabs (Trust & Why Us) -->
@@ -7,11 +7,11 @@
 
     <HomeFeatures />
 
-    <HomeFactoryStories />
+
 
     <HomeFeaturedProducts />
 
-    <HomeInnovationRd />
+    <HomeBrandTabs />
 
     <!-- FAQ Preview Section -->
     <div class="pt-[21px] pb-0">
@@ -30,9 +30,8 @@
 import HomeHero from '~/components/home/HomeHero.vue'
 import HomeFeaturesTabs from '~/components/home/HomeFeaturesTabs.vue'
 import HomeFeatures from '~/components/home/HomeFeatures.vue'
-import HomeFactoryStories from '~/components/home/HomeFactoryStories.vue'
+import HomeBrandTabs from '~/components/home/HomeBrandTabs.vue'
 import HomeFeaturedProducts from '~/components/home/HomeFeaturedProducts.vue'
-import HomeInnovationRd from '~/components/home/HomeInnovationRd.vue'
 import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
 import ContactLocationMap from '~/components/ContactLocationMap.vue'
 import HomeFinalCta from '~/components/home/HomeFinalCta.vue'
