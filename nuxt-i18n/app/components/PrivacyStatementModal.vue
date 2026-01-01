@@ -1,10 +1,6 @@
 <template>
   <div
-    class="privacy-statement-shell max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] md:max-h-[85vh]
-           rounded-2xl border-2 border-[#6b73ff]/40
-           bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))]
-           backdrop-blur-md shadow-[0_0_30px_rgba(107,115,255,0.6)]
-           overflow-hidden flex flex-col"
+    class="wa-drawer-shell"
   >
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-3 md:py-4 border-b border-white/10">
@@ -39,25 +35,4 @@ import PrivacyStatementContent from '~/components/PrivacyStatementContent.vue'
 const emit = defineEmits<{ (e: 'close'): void }>()
 </script>
 
-<style scoped>
-@media (max-width: 767px) {
-  .privacy-statement-shell {
-    height: min(95vh, calc(100vh - 16px));
-    max-height: min(95vh, calc(100vh - 16px));
-  }
 
-  @supports (height: 100svh) {
-    .privacy-statement-shell {
-      height: min(95svh, calc(100svh - 16px));
-      max-height: min(95svh, calc(100svh - 16px));
-    }
-  }
-
-  @supports (height: 100dvh) {
-    .privacy-statement-shell {
-      height: min(95dvh, calc(100dvh - 16px));
-      max-height: min(95dvh, calc(100dvh - 16px));
-    }
-  }
-}
-</style>

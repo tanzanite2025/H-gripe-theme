@@ -61,7 +61,8 @@
           v-if="showPrivacyModal"
           class="fixed inset-0 z-[12000] flex items-end justify-center p-0 md:p-4 pointer-events-none"
         >
-          <div class="pointer-events-none w-full max-w-[1400px]">
+          <div class="wa-drawer-backdrop" @click="closePrivacy"></div>
+          <div class="relative z-10 pointer-events-none w-full max-w-[1400px]">
             <PrivacyStatementModal class="pointer-events-auto" @close="closePrivacy" />
           </div>
         </div>
