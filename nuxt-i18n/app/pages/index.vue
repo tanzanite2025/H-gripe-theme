@@ -2,10 +2,8 @@
   <main class="min-h-screen text-white">
     <HomeHero />
 
-    <!-- Trust Cards Section -->
-    <HomeShopWithConfidence />
-
-    <HomeWhyChooseUs />
+    <!-- Unified Features Tabs (Trust & Why Us) -->
+    <HomeFeaturesTabs />
 
     <HomeFeatures />
 
@@ -30,8 +28,7 @@
 
 <script setup>
 import HomeHero from '~/components/home/HomeHero.vue'
-import HomeShopWithConfidence from '~/components/home/HomeShopWithConfidence.vue'
-import HomeWhyChooseUs from '~/components/home/HomeWhyChooseUs.vue'
+import HomeFeaturesTabs from '~/components/home/HomeFeaturesTabs.vue'
 import HomeFeatures from '~/components/home/HomeFeatures.vue'
 import HomeFactoryStories from '~/components/home/HomeFactoryStories.vue'
 import HomeFeaturedProducts from '~/components/home/HomeFeaturedProducts.vue'
