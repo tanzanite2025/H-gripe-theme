@@ -57,6 +57,61 @@ class Tanzanite_REST_Warranty_Claims_Controller {
 				),
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/warranty/verify-order',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'verify_order' ),
+					'permission_callback' => '__return_true',
+				),
+			)
+		);
+	}
+
+	/**
+	 * 验证订单
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function verify_order( $request ) {
+		global $wpdb;
+
+		$order_number = sanitize_text_field( $request->get_param( 'order_number' ) );
+		$email        = sanitize_email( $request->get_param( 'email' ) );
+
+		if ( empty( $order_number ) || empty( $email ) ) {
+			return new WP_Error( 'missing_params', 'Order Number and Email are required.', array( 'status' => 400 ) );
+		}
+
+		// 1. 查找订单
+		// 查询 wp_tanz_orders 表
+		$table_orders = $wpdb->prefix . 'tanz_orders';
+		$order = $wpdb->get_row( $wpdb->prepare(
+			"SELECT id, user_id FROM {$table_orders} WHERE order_number = %s",
+			$order_number
+		) );
+
+		if ( ! $order ) {
+			return new WP_Error( 'invalid_order', 'Order not found.', array( 'status' => 404 ) );
+		}
+
+		// 2. 验证邮箱
+		// 检查 wp_users 表中的邮箱
+		$user_id = (int) $order->user_id;
+		$user = get_userdata( $user_id );
+
+		if ( ! $user || strtolower( $user->user_email ) !== strtolower( $email ) ) {
+			return new WP_Error( 'invalid_email', 'Email does not match order record.', array( 'status' => 400 ) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => 'Order verified successfully.',
+		) );
 	}
 
 	/**

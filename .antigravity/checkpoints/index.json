@@ -3,6 +3,34 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "d23ff838fb920857",
+      "timestamp": "2026-01-01T15:06:25.723Z",
+      "description": "✅ 10 个任务完成: **Refactor Warranty Page Components**, Create directory `app/components/warranty/`...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "ffda6481ed0f541f",
+      "timestamp": "2026-01-01T15:02:23.362Z",
+      "description": "✅ 任务完成: Verify: Test invalid/valid order scenarios",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "cd5c91d66756bf5c",
+      "timestamp": "2026-01-01T14:57:12.947Z",
+      "description": "✅ 4 个任务完成: **Secure Warranty Submission (Order Verification)**, Backend: Add `verify_order` REST endpoint to check WooCommerce orders...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "2d476292f1b33c7c",
+      "timestamp": "2026-01-01T11:20:05.843Z",
+      "description": "✅ 5 个任务完成: **Warranty Page Refinements**, Custom File Input UI (English text)...",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "c0466bb9228b7c47",
       "timestamp": "2026-01-01T01:49:13.241Z",
       "description": "✅ 任务完成: Update Home FAQ Button Styles (Remove borders, use global black shadow)",
@@ -111,34 +139,6 @@
       "id": "6ccc84b8126769aa",
       "timestamp": "2025-12-30T16:06:14.497Z",
       "description": "✅ 任务完成: 数据清理: 移除 API 中的 Demo 数据，并禁用无数据的下拉菜单",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "e0e397156759f9e4",
-      "timestamp": "2025-12-30T15:59:39.550Z",
-      "description": "✅ 任务完成: 功能更新: 增加 Spoke Count (16, 18, 20) 和 Lacing Pattern (0-cross, 1-cross) 选项",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "57b4e49587738e2f",
-      "timestamp": "2025-12-30T15:56:38.461Z",
-      "description": "✅ 任务完成: UI 优化: 修复 Hidden 类型选择时的页面抖动 (Side-by-side layout)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "f6d533bea48ca5d0",
-      "timestamp": "2025-12-30T15:53:19.835Z",
-      "description": "✅ 2 个任务完成: UI 优化: Nipple Length 改为数字输入框, UI 修复: 修复下拉菜单在白色背景下文字不可见的问题",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "d1d380b2fa680773",
-      "timestamp": "2025-12-30T15:48:52.029Z",
-      "description": "✅ 任务完成: 修正 Hidden Nipple 计算逻辑 (改为增加长度: nippleLength - 3mm)",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }
