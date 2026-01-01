@@ -23,10 +23,50 @@
       id="change-cancel"
       class="support-section"
     >
-      <h3 class="support-section__title text-center">Change / Cancel</h3>
-      <p class="support-section__body text-center">
-        Content placeholder for Change / Cancel.
-      </p>
+      <h3 class="support-section__title text-center mb-8">Change / Cancel</h3>
+      
+      <div class="max-w-3xl mx-auto text-left space-y-8">
+        <ul class="space-y-6">
+          <li class="flex gap-4 items-start">
+              <span class="shrink-0 w-1.5 h-1.5 rounded-full bg-teal-400 mt-2 shadow-[0_0_8px_rgba(45,212,191,0.6)]"></span>
+              <div class="text-slate-300 text-sm leading-relaxed">
+                  <strong class="text-slate-100 block mb-1.5 text-base">Scope of Application</strong>
+                  Customers may request to cancel all or part of an order before the item has shipped, regardless of whether payment has been partially or fully completed.
+              </div>
+          </li>
+          <li class="flex gap-4 items-start">
+              <span class="shrink-0 w-1.5 h-1.5 rounded-full bg-teal-400 mt-2 shadow-[0_0_8px_rgba(45,212,191,0.6)]"></span>
+              <div class="text-slate-300 text-sm leading-relaxed">
+                  <strong class="text-slate-100 block mb-1.5 text-base">Cancellation After Shipment</strong>
+                  If the product has already shipped, any cancellation request will be treated as a "return" and subject to the return process and applicable fees. Please refer to our 
+                  <a href="#" @click.prevent="setActiveTab('returns')" class="text-teal-400 hover:text-teal-300 transition-colors border-b border-teal-400/30 hover:border-teal-300 pb-0.5">Product Return Policy</a> 
+                  for details.
+              </div>
+          </li>
+          <li class="flex gap-4 items-start">
+              <span class="shrink-0 w-1.5 h-1.5 rounded-full bg-teal-400 mt-2 shadow-[0_0_8px_rgba(45,212,191,0.6)]"></span>
+              <div class="text-slate-300 text-sm leading-relaxed">
+                  <strong class="text-slate-100 block mb-1.5 text-base">Authorization Requirement</strong>
+                  Any order amendment or cancellation must be confirmed and authorized by TANZANITE.
+              </div>
+          </li>
+          <li class="flex gap-4 items-start">
+              <span class="shrink-0 w-1.5 h-1.5 rounded-full bg-teal-400 mt-2 shadow-[0_0_8px_rgba(45,212,191,0.6)]"></span>
+              <div class="text-slate-300 text-sm leading-relaxed">
+                  <strong class="text-slate-100 block mb-1.5 text-base">Fee Policy</strong>
+                  Once authorized, a cancellation may incur a charge of <strong class="text-white bg-white/5 px-1.5 py-0.5 rounded text-xs font-bold border border-white/10">10% of the order value (minimum USD $50)</strong> to cover re-stocking and operational costs.
+              </div>
+          </li>
+        </ul>
+
+        <!-- Note Box -->
+        <div class="relative pl-5 py-3 border-l-2 border-slate-600 bg-slate-800/20 rounded-r-lg">
+            <p class="text-slate-400 text-xs italic leading-relaxed">
+              <strong class="text-slate-300 not-italic uppercase tracking-wider text-[10px] mr-1">Note:</strong> 
+              Please carefully review product specifications and quantities before placing an order to avoid unnecessary fees and procedures.
+            </p>
+        </div>
+      </div>
     </section>
 
     <!-- 2. Damaged or Lost Goods -->
@@ -35,10 +75,62 @@
       id="damaged-lost"
       class="support-section"
     >
-      <h3 class="support-section__title text-center">Damaged or Lost Goods</h3>
-      <p class="support-section__body text-center">
-        Content placeholder for Damaged or Lost Goods.
-      </p>
+      <h3 class="support-section__title text-center mb-8">Damaged or Lost Goods</h3>
+
+      <div class="max-w-3xl mx-auto text-left space-y-8">
+        <!-- Intro Alert -->
+        <div class="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+          <p class="text-indigo-200 font-medium">Please carefully inspect the package before signing for it.</p>
+        </div>
+
+        <div class="space-y-10">
+          <!-- 1. Normal Acceptance -->
+          <div class="relative pl-12">
+            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">1</div>
+            <h4 class="text-slate-100 font-bold text-lg mb-3 pt-0.5">Normal Acceptance</h4>
+            <ul class="space-y-3 text-slate-400 text-sm leading-relaxed list-disc pl-4 marker:text-teal-500/60">
+              <li>If the package is intact, please sign for it.</li>
+              <li>If you notice damage, note it on the delivery slip or refuse the package. The goods will be returned to Tanzanite.</li>
+              <li>
+                If you need to file a claim with the carrier, they will issue a claim number. Please provide this number to Tanzanite so we can track the shipment. Once the returned goods are received, we will arrange re-shipment within <strong class="text-white">10 business days</strong>.
+              </li>
+            </ul>
+          </div>
+
+          <!-- 2. Damaged but Accepted -->
+          <div class="relative pl-12">
+            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">2</div>
+            <h4 class="text-slate-100 font-bold text-lg mb-3 pt-0.5">Damaged but Accepted</h4>
+            <!-- Warning Box for this critical section -->
+            <div class="bg-rose-500/5 rounded-lg p-4 border border-rose-500/10">
+                <ul class="space-y-3 text-slate-400 text-sm leading-relaxed list-disc pl-4 marker:text-rose-500">
+                  <li>If the goods are damaged upon delivery but you still accept them without reporting, the carrier cannot be held responsible.</li>
+                  <li>In this case, you will be responsible for purchasing any replacement products.</li>
+                </ul>
+            </div>
+          </div>
+
+          <!-- 3. Damage During Transit -->
+          <div class="relative pl-12">
+            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">3</div>
+            <h4 class="text-slate-100 font-bold text-lg mb-3 pt-0.5">Damage During Transit</h4>
+            <ul class="space-y-3 text-slate-400 text-sm leading-relaxed list-disc pl-4 marker:text-teal-500/60">
+              <li>If the package appears intact but the product is seriously damaged during transit, please keep the waybill, packaging, and related materials.</li>
+              <li>Contact us within <strong class="text-white">7 days of receipt</strong> at <a href="mailto:support@tanzanite.site" class="text-teal-400 hover:text-teal-300 transition-colors">support@tanzanite.site</a>.</li>
+            </ul>
+          </div>
+
+          <!-- 4. Lost Shipment -->
+          <div class="relative pl-12">
+            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">4</div>
+            <h4 class="text-slate-100 font-bold text-lg mb-3 pt-0.5">Lost Shipment</h4>
+            <ul class="space-y-3 text-slate-400 text-sm leading-relaxed list-disc pl-4 marker:text-teal-500/60">
+              <li>If the goods are lost during transit, please contact us immediately at <a href="mailto:support@tanzanite.site" class="text-teal-400 hover:text-teal-300 transition-colors">support@tanzanite.site</a>.</li>
+              <li>All Tanzanite shipments are insured, and we will assist you with the claim process.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- 3. Returns -->
