@@ -6,7 +6,7 @@
        <p class="text-sm text-slate-400 leading-relaxed max-w-2xl mx-auto mb-6">
           Tension is the soul of a wheel. We customize tension based on **Rider Weight**, **Usage**, and **Rim Material** to balance stiffness, durability, and comfort.
        </p>
-       <div class="flex justify-center">
+       <div class="flex justify-center flex-col items-center gap-4">
          <GuideImage
             src="/public/technical/tension/tanzanite-wheel-spoke-tension.webp"
             alt="Wheel Spoke Tension Distribution"
@@ -14,6 +14,12 @@
             caption="Tanzanite Workshop: Tension Distribution Reference"
             class="rounded-xl max-w-lg w-full"
          />
+         <NuxtLink
+           :to="localePath('/support/test-report') + '#wheelset-assembly'"
+           class="premium-button"
+         >
+           Check the wheelset assembly guide
+         </NuxtLink>
        </div>
     </div>
 
@@ -152,5 +158,8 @@
 </template>
 
 <script setup lang="ts">
+import { useLocalePath } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+
+const localePath = useLocalePath()
 </script>

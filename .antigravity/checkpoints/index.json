@@ -3,6 +3,20 @@
   "maxCheckpoints": 20,
   "checkpoints": [
     {
+      "id": "1689e90bc0602d13",
+      "timestamp": "2026-01-01T17:46:17.507Z",
+      "description": "✅ 任务完成: Update Test Report FAQs with Assembly Q&A",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
+      "id": "8a410a6b4f94a175",
+      "timestamp": "2026-01-01T17:44:39.948Z",
+      "description": "✅ 任务完成: Implement \"Wheelset Assembly\" Tab (Steps 0-6)",
+      "actionType": "manual",
+      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
+    },
+    {
       "id": "d23ff838fb920857",
       "timestamp": "2026-01-01T15:06:25.723Z",
       "description": "✅ 10 个任务完成: **Refactor Warranty Page Components**, Create directory `app/components/warranty/`...",
@@ -125,20 +139,6 @@
       "id": "b5139f1a89ee8c85",
       "timestamp": "2025-12-30T17:32:56.819Z",
       "description": "✅ 任务完成: 功能新增: 实现 FAQ 模块 (参照 Wheelset Buyers Guide)",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "04f572a34cf13363",
-      "timestamp": "2025-12-30T16:17:49.756Z",
-      "description": "✅ 任务完成: UI 优化: 移除未使用的 Tools 下拉菜单",
-      "actionType": "manual",
-      "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
-    },
-    {
-      "id": "6ccc84b8126769aa",
-      "timestamp": "2025-12-30T16:06:14.497Z",
-      "description": "✅ 任务完成: 数据清理: 移除 API 中的 Demo 数据，并禁用无数据的下拉菜单",
       "actionType": "manual",
       "workspaceRoot": "c:\\Users\\P16V\\Desktop\\Wordpress\\tanzanite-theme"
     }
