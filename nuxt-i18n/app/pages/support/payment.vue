@@ -13,7 +13,7 @@
           to="/company/ourstory"
           target="_blank"
           rel="noopener"
-          class="support-card__button"
+          class="premium-button"
         >
           Our Story
         </NuxtLink>
@@ -21,7 +21,7 @@
           to="/support/shipping"
           target="_blank"
           rel="noopener"
-          class="support-card__button"
+          class="premium-button"
         >
           Shipping instructions
         </NuxtLink>
@@ -29,11 +29,11 @@
           to="/support/test-report"
           target="_blank"
           rel="noopener"
-          class="support-card__button"
+          class="premium-button"
         >
           Test report
         </NuxtLink>
-        <button type="button" class="support-card__button">
+        <button type="button" class="premium-button">
           <span class="support-card__button-icon">📧</span>
           <span>Send email</span>
         </button>
@@ -53,10 +53,10 @@
           webpage.
         </p>
         <div class="support-card__actions">
-          <NuxtLink to="/shop" target="_blank" rel="noopener" class="support-card__button">
+          <NuxtLink to="/shop" target="_blank" rel="noopener" class="premium-button">
             Go Shopping
           </NuxtLink>
-          <button type="button" class="support-card__button support-card__button--primary" @click="openQuickFromPayment">
+          <button type="button" class="premium-button support-card__button--primary" @click="openQuickFromPayment">
             Quickbuy
           </button>
         </div>
@@ -387,27 +387,7 @@ const openQuickFromPayment = () => {
   gap: 0.75rem;
 }
 
-.support-card__button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  padding: 0.5rem 1.25rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  background: rgba(30, 41, 59, 0.5);
-  color: #e2e8f0;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
 
-.support-card__button:hover {
-  background: rgba(51, 65, 85, 0.8);
-  color: #fff;
-  border-color: rgba(148, 163, 184, 0.3);
-}
 
 .support-card__button-icon {
   margin-right: 0.4rem;

@@ -9,49 +9,9 @@
     </p>
 
     <!-- Rim test photo grid: 4 images per row, second row with 3 images -->
-    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-      <GuideImage
-        src="/testreport/rimtestreport/tanzanite-rim-testreport.webp"
-        alt="Overview of Tanzanite rim laboratory test setup"
-        :zoomOnClick="true"
-        caption="Overall view of the rim test setup used in TANZANITE's lab."
-      />
-      <GuideImage
-        src="/testreport/rimtestreport/tanzanite-carbonrim-strength-test1.webp"
-        alt="Tanzanite carbon rim strength test under static load"
-        :zoomOnClick="true"
-        caption="Strength Test – evaluating rim performance under static and dynamic loads."
-      />
-      <GuideImage
-        src="/testreport/rimtestreport/tanzanite-carbonrim-strength-test1 (2).webp"
-        alt="Additional view of Tanzanite carbon rim strength testing"
-        :zoomOnClick="true"
-        caption="Strength Test – additional view of clamping and load application."
-      />
-      <GuideImage
-        src="/testreport/rimtestreport/tanzanite-carbonrim-radialload-test.webp"
-        alt="Tanzanite carbon rim radial load test showing vertical loading"
-        :zoomOnClick="true"
-        caption="Radial Load Test – checking deformation and load capacity under vertical forces."
-      />
-      <GuideImage
-        src="/testreport/rimtestreport/tanzanite-hole-tension-test.webp"
-        alt="Spoke hole tension test setup for a Tanzanite carbon rim"
-        :zoomOnClick="true"
-        caption="Hole Tension Test – measuring how spoke holes withstand spoke tension and repeated loading."
-      />
-      <GuideImage
-        src="/testreport/rimtestreport/tanznaite-rim-cutting-pieces-Test.webp"
-        alt="Cross-section cutting piece of a Tanzanite carbon rim"
-        :zoomOnClick="true"
-        caption="Rim Cutting Pieces Test – inspecting internal layup, wall thickness, and burrs."
-      />
-      <GuideImage
-        src="/testreport/rimtestreport/tanzanite-xray-flatness-Inspection-test.webp"
-        alt="X-ray flatness inspection of a Tanzanite carbon rim"
-        :zoomOnClick="true"
-        caption="X-ray Flatness Inspection – non-destructive check for internal uniformity and flatness."
-      />
+    <!-- Rim Test Carousel -->
+    <div class="mt-8 mb-12">
+      <StackedImageCarousel :items="cards" />
     </div>
 
     <!-- Test descriptions with global blue subtitles -->
@@ -333,11 +293,53 @@
 </template>
 
 <script setup lang="ts">
-import GuideImage from '~/components/GuideImage.vue'
+import { ref } from 'vue'
 
 const { openSpokeHoleVideo } = defineProps<{
   openSpokeHoleVideo: () => void | Promise<void>
 }>()
+
+// --- Stacked Carousel Logic ---
+
+const cards = [
+  {
+    src: '/testreport/rimtestreport/tanzanite-rim-testreport.webp',
+    alt: 'Overview of Tanzanite rim laboratory test setup',
+    caption: "Overall view of the rim test setup used in TANZANITE's lab."
+  },
+  {
+    src: '/testreport/rimtestreport/tanzanite-carbonrim-strength-test1.webp',
+    alt: 'Tanzanite carbon rim strength test under static load',
+    caption: "Strength Test – evaluating rim performance under static and dynamic loads."
+  },
+  {
+    src: '/testreport/rimtestreport/tanzanite-carbonrim-strength-test1 (2).webp',
+    alt: 'Additional view of Tanzanite carbon rim strength testing',
+    caption: "Strength Test – additional view of clamping and load application."
+  },
+  {
+    src: '/testreport/rimtestreport/tanzanite-carbonrim-radialload-test.webp',
+    alt: 'Tanzanite carbon rim radial load test showing vertical loading',
+    caption: "Radial Load Test – checking deformation and load capacity under vertical forces."
+  },
+  {
+    src: '/testreport/rimtestreport/tanzanite-hole-tension-test.webp',
+    alt: 'Spoke hole tension test setup for a Tanzanite carbon rim',
+    caption: "Hole Tension Test – measuring how spoke holes withstand spoke tension and repeated loading."
+  },
+  {
+    src: '/testreport/rimtestreport/tanznaite-rim-cutting-pieces-Test.webp',
+    alt: 'Cross-section cutting piece of a Tanzanite carbon rim',
+    caption: "Rim Cutting Pieces Test – inspecting internal layup, wall thickness, and burrs."
+  },
+  {
+    src: '/testreport/rimtestreport/tanzanite-xray-flatness-Inspection-test.webp',
+    alt: 'X-ray flatness inspection of a Tanzanite carbon rim',
+    caption: "X-ray Flatness Inspection – non-destructive check for internal uniformity and flatness."
+  }
+]
+
+
 </script>
 
 <style scoped>

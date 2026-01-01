@@ -20,8 +20,8 @@
     <div class="faqs-tabs">
       <button
         type="button"
-        class="faqs-tabs__item"
-        :class="{ 'faqs-tabs__item--active': activePageId === 'all' }"
+        class="premium-button"
+        :class="{ 'premium-button--active': activePageId === 'all' }"
         @click="activePageId = 'all'"
       >
         All
@@ -30,8 +30,8 @@
         v-for="page in allPages"
         :key="page.pageId"
         type="button"
-        class="faqs-tabs__item"
-        :class="{ 'faqs-tabs__item--active': activePageId === page.pageId }"
+        class="premium-button"
+        :class="{ 'premium-button--active': activePageId === page.pageId }"
         @click="activePageId = page.pageId"
       >
         {{ page.title || page.pageId }}
@@ -354,30 +354,7 @@ const loadMoreGroups = () => {
   justify-content: center;
 }
 
-.faqs-tabs__item {
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 9999px;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #cbd5e1;
-  background: rgba(15, 23, 42, 0.6);
-  cursor: pointer;
-  transition: all 0.2s;
-}
 
-.faqs-tabs__item:hover {
-  background: rgba(30, 41, 59, 0.8);
-  color: #f1f5f9;
-  border-color: rgba(148, 163, 184, 0.3);
-}
-
-.faqs-tabs__item--active {
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.25);
-}
 
 /* FAQ Item inner styles */
 :deep(.faqs-item__answer ul),
