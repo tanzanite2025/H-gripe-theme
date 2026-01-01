@@ -1,20 +1,31 @@
 <template>
-  <div class="flex flex-col gap-5">
+  <div class="w-full pt-4 md:pt-8 pb-6">
     <h1 class="sr-only">{{ t('company.nav.oemOdm') }}</h1>
+    
+    <div class="max-w-7xl mx-auto">
+      <OemOdmServices />
+    </div>
 
-    <section class="rounded-2xl border border-slate-700/40 bg-slate-950/60 p-6 text-center shadow-lg">
-      <h2 class="mb-3 text-lg font-semibold text-slate-100">
-        {{ t('company.nav.oemOdm') }}
-      </h2>
-      <p class="text-slate-300">
-        {{ t('company.pages.placeholder') }}
-      </p>
-    </section>
+    <!-- FAQ Section -->
+    <div class="max-w-[960px] mx-auto mt-4 px-0">
+      <PageFaq pageId="company-oem-odm" />
+    </div>
+
+    <!-- Feedback Section -->
+    <div class="max-w-4xl mx-auto px-0 mt-4">
+      <UserFeedbackThread
+        threadKey="company-oem-odm"
+        title="Share your feedback about our OEM/ODM Services"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { definePageMeta, useHead, useI18n } from '#imports'
+import OemOdmServices from '~/components/company/OemOdmServices.vue'
+import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import PageFaq from '~/components/PageFaq.vue'
 
 const { t } = useI18n()
 

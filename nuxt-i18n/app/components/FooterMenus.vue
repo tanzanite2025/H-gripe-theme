@@ -61,10 +61,6 @@
             }}
           </p>
           <p class="footer-menus__brand-paragraph">
-            {{ $t('footer.brand.hkLabel', 'Hongkong:') }}
-            <br />
-            {{ $t('footer.brand.xmLabel', 'Xiamen:') }}
-            <br />
             <a
               href="mailto:support@tanzanite.site"
               class="footer-menus__link"

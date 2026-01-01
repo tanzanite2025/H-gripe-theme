@@ -24,19 +24,9 @@
       v-show="activeTab === 'appearance'"
     />
 
-    <section
+    <AboutHolePatterns
       v-show="activeTab === 'hole-patterns'"
-      id="hole-patterns"
-      class="company-section"
-    >
-      <h2 class="company-section__title">Hole Patterns</h2>
-      <p class="company-section__body">
-        Placeholder content for Hole Patterns.
-      </p>
-      <p class="company-section__body">
-        Here you can describe the various drilling patterns available for the rims.
-      </p>
-    </section>
+    />
 
     <section
       v-show="activeTab === 'facility'"
@@ -108,6 +98,7 @@ import { useHead, definePageMeta, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import AboutFactory from '~/components/company/AboutFactory.vue'
 import AboutAppearance from '~/components/company/AboutAppearance.vue'
+import AboutHolePatterns from '~/components/company/AboutHolePatterns.vue'
 
 type OurStoryTabId = 'factory' | 'appearance' | 'hole-patterns' | 'facility' | 'manufacture' | 'qualitycontrol'
 
