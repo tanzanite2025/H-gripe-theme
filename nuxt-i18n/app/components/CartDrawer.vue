@@ -5,6 +5,7 @@
       <div
         v-if="isCartOpen"
         class="wa-drawer-mask"
+        :class="{ '!items-end': cartVariant === 'lever-bottom' }"
         @click.self="closeCart"
       >
         <!-- Backdrop -->

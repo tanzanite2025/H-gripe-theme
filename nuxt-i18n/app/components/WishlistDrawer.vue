@@ -4,6 +4,7 @@
       <div
         v-if="modelValue"
         class="wa-drawer-mask"
+        :class="{ '!items-end': props.variant === 'bottom' }"
         @click.self="handleClose"
       >
         <!-- Backdrop -->
