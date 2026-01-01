@@ -24,25 +24,28 @@
         <ul class="absolute inset-0 overflow-visible p-0 m-0 list-none">
           <li
             v-for="(item, index) in items"
-            :key="item.src"
+            :key="index"
             class="absolute inset-0 origin-center will-change-transform transition-[transform,filter,opacity] duration-[400ms] ease-[cubic-bezier(0.2,0,0.2,1)]"
             :class="cardClass(index)"
           >
-            <img
-              :src="item.src"
-              :alt="item.alt || ''"
-              class="h-full w-full object-cover rounded-2xl bg-slate-900 shadow-2xl"
-              loading="lazy"
-            />
-            <!-- Caption Overlay -->
-            <div
-              v-if="item.caption"
-              class="absolute bottom-0 inset-x-0 p-6 pt-12 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white text-center rounded-b-2xl"
-            >
-              <p class="text-sm sm:text-base font-medium text-slate-100 drop-shadow-md">
-                {{ item.caption }}
-              </p>
-            </div>
+            <slot name="card" :item="item" :index="index">
+              <img
+                v-if="item.src"
+                :src="item.src"
+                :alt="item.alt || ''"
+                class="h-full w-full object-cover rounded-2xl bg-slate-900 shadow-2xl"
+                loading="lazy"
+              />
+              <!-- Caption Overlay -->
+              <div
+                v-if="item.caption"
+                class="absolute bottom-0 inset-x-0 p-6 pt-12 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white text-center rounded-b-2xl"
+              >
+                <p class="text-sm sm:text-base font-medium text-slate-100 drop-shadow-md">
+                  {{ item.caption }}
+                </p>
+              </div>
+            </slot>
           </li>
         </ul>
 
@@ -75,32 +78,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 export interface CarouselItem {
-  src: string
+  src?: string
   alt?: string
   caption?: string
+  [key: string]: any
 }
 
 const props = defineProps<{
   items: CarouselItem[]
+  modelValue?: number
 }>()
 
-const activeIndex = ref(0)
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: number): void
+}>()
+
+const activeIndex = ref(props.modelValue ?? 0)
+
+watch(() => props.modelValue, (val) => {
+  if (val !== undefined) activeIndex.value = val
+})
+
+const updateIndex = (val: number) => {
+  activeIndex.value = val
+  emit('update:modelValue', val)
+}
 
 const next = () => {
   if (props.items.length === 0) return
-  activeIndex.value = (activeIndex.value + 1) % props.items.length
+  const nextVal = (activeIndex.value + 1) % props.items.length
+  updateIndex(nextVal)
 }
 
 const prev = () => {
   if (props.items.length === 0) return
-  activeIndex.value = (activeIndex.value - 1 + props.items.length) % props.items.length
+  const nextVal = (activeIndex.value - 1 + props.items.length) % props.items.length
+  updateIndex(nextVal)
 }
 
 const goTo = (index: number) => {
-  activeIndex.value = index
+  updateIndex(index)
 }
 
 const relativeSlot = (index: number) => {
@@ -120,7 +140,7 @@ const cardClass = (index: number) => {
   }
 
   if (slot === 1) {
-    // Second card (behind visual hint)
+    // Second card
     return 'z-20 opacity-80 -translate-y-[8%] scale-[0.92] brightness-[0.7]'
   }
 
@@ -132,4 +152,10 @@ const cardClass = (index: number) => {
   // Others (stacked at back)
   return 'z-10 opacity-0 -translate-y-[15%] scale-[0.85] brightness-[0.5]'
 }
+
+defineExpose({
+  next,
+  prev,
+  goTo
+})
 </script>
