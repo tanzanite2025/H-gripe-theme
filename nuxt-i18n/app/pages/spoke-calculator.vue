@@ -39,155 +39,150 @@
         </div>
       </section>
 
-      <section v-show="activeTab === 'parameter'" class="spoke-parameter sizecharts-section">
-        <h3 class="spoke-parameter__title">{{ $t('spokeCalculator.parameter.title', 'Parameter definitions') }}</h3>
-        <div class="spoke-parameter__content">
-          <p>{{ $t('spokeCalculator.parameter.intro', "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.") }}</p>
-          <ul class="sizecharts-section__list">
-            <li>
-              <strong>{{ $t('spokeCalculator.parameter.items.erd.title', 'ERD (Effective Rim Diameter)') }}</strong>: {{ $t('spokeCalculator.parameter.items.erd.desc', "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper.") }}
-            </li>
-            <li>
-              <strong>{{ $t('spokeCalculator.parameter.items.flangeDiameter.title', 'Flange diameter') }}</strong>: {{ $t('spokeCalculator.parameter.items.flangeDiameter.desc', 'The circle diameter through the spoke hole centers on the hub flange (left and right can be different).') }}
-            </li>
-            <li>
-              <strong>{{ $t('spokeCalculator.parameter.items.centerToFlange.title', 'Center-to-flange') }}</strong>: {{ $t('spokeCalculator.parameter.items.centerToFlange.desc', 'The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry.') }}
-            </li>
-            <li>
-              <strong>{{ $t('spokeCalculator.parameter.items.holeCount.title', 'Spoke hole count') }}</strong>: {{ $t('spokeCalculator.parameter.items.holeCount.desc', 'Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear.') }}
-            </li>
-            <li>
-              <strong>{{ $t('spokeCalculator.parameter.items.crossPattern.title', 'Cross pattern') }}</strong>: {{ $t('spokeCalculator.parameter.items.crossPattern.desc', 'How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length.') }}
-            </li>
-          </ul>
-          <p class="spoke-parameter__note">{{ $t('spokeCalculator.parameter.note', "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm).") }}</p>
+      <section
+        v-show="activeTab === 'parameter'"
+        class="spoke-parameter sizecharts-section rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
+      >
+        <h3 class="spoke-parameter__title text-lg font-bold text-slate-200 mb-2">{{ $t('spokeCalculator.parameter.title', 'Parameter definitions') }}</h3>
+        
+        <div class="spoke-parameter__content text-left">
+          <p class="text-slate-400 text-sm mb-6 text-center max-w-2xl mx-auto">
+            {{ $t('spokeCalculator.parameter.intro', "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.") }}
+          </p>
 
-          <!-- Detailed spoke length workflow moved from /guides/technical -->
-          <h4 class="spoke-parameter__subtitle">Spoke length workflow</h4>
+          <!-- Definitions Grid -->
+          <div class="grid gap-4 md:grid-cols-2 mb-8">
+            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
+              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+                {{ $t('spokeCalculator.parameter.items.erd.title', 'ERD (Effective Rim Diameter)') }}
+              </h4>
+              <p class="text-sm text-slate-400 leading-relaxed">
+                {{ $t('spokeCalculator.parameter.items.erd.desc', "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper.") }}
+              </p>
+            </div>
+            
+            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
+              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+                {{ $t('spokeCalculator.parameter.items.flangeDiameter.title', 'Flange diameter') }}
+              </h4>
+              <p class="text-sm text-slate-400 leading-relaxed">
+                {{ $t('spokeCalculator.parameter.items.flangeDiameter.desc', 'The circle diameter through the spoke hole centers on the hub flange (left and right can be different).') }}
+              </p>
+            </div>
 
-          <div class="spoke-parameter__image spoke-parameter__image--spoke-length">
-            <GuideImage
-              src="/public/technical/spoke-length.webp"
-              alt="Overview illustration for calculating bicycle spoke length"
-              :zoomOnClick="true"
-              caption="Overview illustration showing which rim and hub measurements are needed to calculate bicycle spoke length."
-            />
+            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
+              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+                {{ $t('spokeCalculator.parameter.items.centerToFlange.title', 'Center-to-flange') }}
+              </h4>
+              <p class="text-sm text-slate-400 leading-relaxed">
+                {{ $t('spokeCalculator.parameter.items.centerToFlange.desc', 'The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry.') }}
+              </p>
+            </div>
+
+            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
+              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+                {{ $t('spokeCalculator.parameter.items.holeCount.title', 'Spoke hole count') }}
+              </h4>
+              <p class="text-sm text-slate-400 leading-relaxed">
+                {{ $t('spokeCalculator.parameter.items.holeCount.desc', 'Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear.') }}
+              </p>
+            </div>
+
+            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors md:col-span-2">
+              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+                {{ $t('spokeCalculator.parameter.items.crossPattern.title', 'Cross pattern') }}
+              </h4>
+              <p class="text-sm text-slate-400 leading-relaxed">
+                {{ $t('spokeCalculator.parameter.items.crossPattern.desc', 'How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length.') }}
+              </p>
+            </div>
           </div>
 
-          <ul>
-            <li>
-              <strong class="spoke-parameter__heading">Use a spoke length calculator</strong>
-              <ul>
-                <li>
-                  Enter your specific rim and hub measurements into an online spoke length calculator to get precise results based on
-                  established formulas.
-                </li>
-                <li>
-                  TANZANITE provides an official spoke length calculator, with internal data for thousands of rims and hubs to
-                  simplify input and avoid mistakes.
-                </li>
-              </ul>
-            </li>
-            <li>
-              <strong class="spoke-parameter__heading">Required measurement data</strong>
-              <ul>
-                <li>
-                  <strong>Effective Rim Diameter (ERD)</strong> &mdash; the diameter between the spoke junctions on opposite sides inside
-                  the rim, where the spoke ends and nipples seat. This is a crucial measurement.
-                </li>
-                <li>
-                  <strong>Flange Diameter</strong> &mdash; the diameter between the centers of the spoke holes on each hub flange. Left
-                  and right sides may be different and should be measured separately.
-                </li>
-                <li>
-                  <strong>Center to Flange</strong> &mdash; the horizontal distance from the hub centerline to the center of each
-                  flange, measured separately for left and right.
-                </li>
-                <li>
-                  <strong>Lacing pattern / cross count</strong> &mdash; how many times each spoke crosses other spokes (0-cross /
-                  straight pull, 1-cross, 2-cross, 3-cross, etc.). 3-cross is the most common standard pattern.
-                </li>
-              </ul>
-              <div class="spoke-parameter__image spoke-parameter__image--erd">
-                <GuideImage
-                  src="/public/technical/what-is-erd.webp"
-                  alt="Diagram showing how Effective Rim Diameter (ERD) is measured"
-                  :zoomOnClick="true"
-                  caption="Diagram showing how Effective Rim Diameter (ERD) is measured using two spokes, nipples and a caliper."
-                />
+          <!-- Note Alert -->
+          <div class="bg-slate-800/40 rounded-lg p-4 mb-10 flex gap-3 text-sm text-slate-300 border border-slate-700/30">
+             <span class="text-lg">💡</span>
+             <p>{{ $t('spokeCalculator.parameter.note', "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm).") }}</p>
+          </div>
+
+          <!-- Workflow Section -->
+          <div class="border-t border-slate-800/50 pt-8">
+            <h4 class="text-emerald-400 font-bold mb-6 text-center text-base uppercase tracking-wider">Spoke length workflow</h4>
+
+            <div class="mb-8 rounded-xl overflow-hidden shadow-lg border border-slate-800/50 bg-slate-950">
+              <GuideImage
+                src="/public/technical/spoke-length.webp"
+                alt="Overview illustration for calculating bicycle spoke length"
+                :zoomOnClick="true"
+                caption="Overview illustration showing which rim and hub measurements are needed to calculate bicycle spoke length."
+              />
+            </div>
+
+            <div class="space-y-8">
+              <!-- Step 1: Measure ERD -->
+              <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
+                <h5 class="text-slate-200 font-bold mb-3 flex items-center gap-2">
+                  <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">1</span>
+                  Measure ERD (Effective Rim Diameter)
+                </h5>
+                
+                <div class="grid md:grid-cols-2 gap-6 items-start">
+                   <div class="text-sm text-slate-400 space-y-2 leading-relaxed">
+                      <p>Compute <strong>ERD = spoke 1 length + spoke 2 length + measured distance</strong>.</p>
+                      <ul class="list-disc list-inside space-y-1 ml-1 text-slate-500">
+                        <li>Prepare two old spokes of known length, two nipples, and a caliper.</li>
+                        <li>Insert spokes through opposite holes in the rim.</li>
+                        <li>Screw nipples until flush with the nipple groove bottom (ideal final position).</li>
+                        <li>Measure distance between the J-bends.</li>
+                      </ul>
+                      <p class="text-xs italic mt-2 text-slate-500">
+                        * This method compensates for rim manufacturing tolerances.
+                      </p>
+                   </div>
+                   <div class="rounded-lg overflow-hidden border border-slate-800/50">
+                      <GuideImage
+                        src="/public/technical/what-is-erd.webp"
+                        alt="Diagram showing how Effective Rim Diameter (ERD) is measured"
+                        :zoomOnClick="true"
+                        caption="Diagram showing how Effective Rim Diameter (ERD) is measured using two spokes, nipples and a caliper."
+                      />
+                   </div>
+                </div>
               </div>
-            </li>
-            <li>
-              <strong class="spoke-parameter__heading">Measurement method (general)</strong>
-              <ul>
-                <li>
-                  You can measure with a tape measure or calipers, but for best accuracy it is recommended to follow the dedicated ERD
-                  and hub measurement steps below.
-                </li>
-              </ul>
-            </li>
-            <li>
-              <strong class="spoke-parameter__heading">Measure ERD</strong>
-              <ul>
-                <li>
-                  Prepare two old spokes of known length, two nipples, and a caliper.
-                </li>
-                <li>
-                  Insert the two spokes through opposite holes in the rim.
-                </li>
-                <li>
-                  Screw on the nipples until the spoke ends just reach the bottom of the nipple groove &mdash; the ideal final position
-                  when the wheel is built.
-                </li>
-                <li>
-                  Measure the distance between the inside of the J-bends of the two spokes.
-                </li>
-                <li>
-                  Compute <strong>ERD = spoke&nbsp;1 length + spoke&nbsp;2 length + measured distance</strong>.
-                </li>
-                <li>
-                  This method compensates for manufacturing tolerances between rims from different factories, materials, and wall
-                  thicknesses, which can easily change ERD by 2&nbsp;mm or more and strongly affect the correct spoke length.
-                </li>
-              </ul>
-            </li>
-            <li>
-              <strong class="spoke-parameter__heading">Measure hub size</strong>
-              <ul>
-                <li>
-                  <strong>Flange Diameter</strong> &mdash; use calipers to measure the distance between opposing spoke hole centers on
-                  the same flange.
-                </li>
-                <li>
-                  <strong>Center to Flange distance</strong> &mdash; remove the hub axle if needed, or use a straight edge (for
-                  example, the edge of a table) to help measure from the flange to the hub centerline.
-                </li>
-              </ul>
-            </li>
-            <li>
-              <strong class="spoke-parameter__heading">Use an online calculator</strong>
-              <ul>
-                <li>
-                  Once all measurements are collected, enter them into an online calculator.
-                </li>
-                <li>
-                  Besides our own tool, many major spoke manufacturers (such as DT Swiss or Sapim) also provide free online spoke
-                  length calculators.
-                </li>
-                <li>
-                  Input your measurements, number of spokes, and desired lacing pattern; the calculator will output spoke lengths for the
-                  left and right sides.
-                </li>
-                <li>
-                  Spokes are usually sold in whole millimeters, so round to the nearest available length. Being about 1&nbsp;mm longer
-                  is usually safer than 1&nbsp;mm shorter.
-                </li>
-                <li>
-                  Following these steps will help you obtain reliable spoke lengths for a custom wheelset build.
-                </li>
-              </ul>
-            </li>
-          </ul>
+
+               <!-- Step 2: Measure Hub -->
+              <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
+                <h5 class="text-slate-200 font-bold mb-3 flex items-center gap-2">
+                  <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">2</span>
+                  Measure Hub Dimensions
+                </h5>
+                <div class="text-sm text-slate-400 space-y-3 leading-relaxed">
+                  <div>
+                    <strong class="text-slate-300">Flange Diameter:</strong> Use calipers to measure the distance between opposing spoke hole centers on the same flange.
+                  </div>
+                  <div>
+                    <strong class="text-slate-300">Center to Flange:</strong> Remove the hub axle if needed. Measure from the flange center to the hub centerline (or locknut face and subtract).
+                  </div>
+                </div>
+              </div>
+
+               <!-- Step 3: Calculation -->
+              <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
+                <h5 class="text-slate-200 font-bold mb-3 flex items-center gap-2">
+                  <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">3</span>
+                  Calculate & Round
+                </h5>
+                <div class="text-sm text-slate-400 space-y-2 leading-relaxed">
+                  <p>
+                    Enter measurements into the calculator. If the result is between standard sizes (e.g. 288.4mm), you usually round to the nearest available 1mm increment.
+                  </p>
+                  <p>
+                    <strong class="text-slate-300">Tip:</strong> Being 1mm longer is generally safer than 1mm shorter to ensure full thread engagement.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       </section>
 
