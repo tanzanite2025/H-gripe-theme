@@ -47,15 +47,7 @@ export const supportNavItems: SupportNavItem[] = [
     description: 'Track your order, view shipping rates, delivery times, and global shipping policies.',
     cta: 'Check shipping details',
   },
-  {
-    id: 'after-sales',
-    labelKey: 'support.nav.afterSales',
-    to: '/support/after-sales',
-    icon: 'A',
-    title: 'After sales',
-    description: 'Returns, exchanges, repairs, and other after-sales support options.',
-    cta: 'View after-sales options',
-  },
+
   {
     id: 'warranty',
     labelKey: 'support.nav.warranty',

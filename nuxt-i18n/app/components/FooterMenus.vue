@@ -92,14 +92,7 @@
               {{ $t('footer.support.payment', 'Payment') }}
             </NuxtLink>
           </li>
-          <li class="footer-menus__item">
-            <NuxtLink
-              :to="localePath('/support/after-sales')"
-              class="footer-menus__link"
-            >
-              {{ $t('footer.support.afterSales', 'After sales') }}
-            </NuxtLink>
-          </li>
+
           <li class="footer-menus__item">
             <NuxtLink
               :to="localePath('/support/warranty')"

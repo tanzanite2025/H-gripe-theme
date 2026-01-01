@@ -10,7 +10,7 @@ import type { FaqRegistry, PageFaqData } from './types'
 // Import page-specific FAQ data
 import { supportPaymentFaq } from './pages/support-payment'
 import { supportShippingFaq } from './pages/support-shipping'
-import { supportAfterSalesFaq } from './pages/support-after-sales'
+
 import { supportWarrantyFaq } from './pages/support-warranty'
 import { supportWarrantyCheckFaq } from './pages/support-warranty-check'
 import { supportProductFeedbackFaq } from './pages/support-product-feedback'
@@ -26,7 +26,7 @@ import { productsSpokeCalculatorFaq } from './pages/products-spoke-calculator'
 export const faqRegistry: FaqRegistry = {
   'support-payment': supportPaymentFaq,
   'support-shipping': supportShippingFaq,
-  'support-after-sales': supportAfterSalesFaq,
+
   'support-warranty': supportWarrantyFaq,
   'support-warranty-check': supportWarrantyCheckFaq,
   'support-product-feedback': supportProductFeedbackFaq,
