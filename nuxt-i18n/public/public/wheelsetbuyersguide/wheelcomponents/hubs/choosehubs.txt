@@ -1,0 +1,24 @@
+Hub Selection Guide
+1. J-bend Hub
+• 	Structure: The hub flange holes are designed for J-bend spokes, which have a 90° bend at the hub.
+• 	Advantages: Traditional design, spokes are easier to source and replace, convenient for maintenance.
+• 	Compatible Spokes: J-bend spokes.
+• 	Best for: Riders who value universality and ease of future maintenance.
+
+2. Straight-pull Hub
+• 	Structure: The hub flange holes are designed for straight-pull spokes, which insert directly without bending.
+• 	Advantages: Stiffer structure, more even spoke tension, commonly used in high-performance wheelsets.
+• 	Compatible Spokes: Straight-pull spokes.
+• 	Best for: Riders seeking lightweight performance and rigidity, suitable for racing or high-performance use.
+
+3. Hole Count
+• 	Common Options: 20H, 24H, 28H, 32H
+• 	Selection Tips:
+• 	Fewer holes (20H / 24H) → Lighter weight, suitable for road bikes and climbing wheelsets, but requires higher spoke tension.
+• 	More holes (28H / 32H) → More durable, suitable for MTB or touring, stronger load-bearing capacity.
+• 	Matching Principle: Hub hole count must match rim hole count, otherwise assembly is not possible.
+
+⚠️ Notes
+• 	Hub type must match spoke type: J-bend hubs with J-bend spokes, straight-pull hubs with straight-pull spokes.
+• 	Hole count should be chosen based on riding scenario: lightweight vs durability.
+• 	High-performance wheelsets often use straight-pull hubs with fewer holes; durable wheelsets often use J-bend hubs with more holes.
