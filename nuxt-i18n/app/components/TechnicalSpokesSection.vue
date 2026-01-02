@@ -1,5 +1,27 @@
 <template>
   <div>
+    <!-- Tabs Header -->
+    <div class="nav-pill-tabs mb-6" role="tablist">
+      <button
+        type="button"
+        class="nav-pill-item"
+        :class="{ 'nav-pill-item--active': activeTab === 'basic-concepts' }"
+        @click="activeTab = 'basic-concepts'"
+      >
+        Basic Concepts
+      </button>
+      <button
+        type="button"
+        class="nav-pill-item"
+        :class="{ 'nav-pill-item--active': activeTab === 'choose-spoke' }"
+        @click="activeTab = 'choose-spoke'"
+      >
+        Choose spoke
+      </button>
+    </div>
+
+    <!-- Tab: Basic Concepts -->
+    <div v-show="activeTab === 'basic-concepts'">
     <!-- Intro Card -->
     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center mb-8">
       <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
@@ -386,9 +408,263 @@
         specific performance needs such as weight, stiffness and comfort.
       </p>
     </div>
+    </div>
+
+    <!-- Tab: Choose spoke -->
+    <div v-show="activeTab === 'choose-spoke'">
+       <div class="space-y-8">
+         <div class="bg-[#11151e] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] border-t-4 border-emerald-500 p-6 text-center">
+            <h3 class="text-xl font-bold text-slate-100 mb-2">Spoke Selection Matrix</h3>
+            <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+               Compare our supported spoke models to find the perfect match for your building goals—whether it's maximum durability, lightweight performance, or aerodynamic efficiency.
+            </p>
+         </div>
+
+         <div class="overflow-x-auto rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800">
+            <table class="w-full text-sm text-left text-slate-400">
+               <thead class="text-xs text-slate-200 uppercase bg-slate-800/80">
+                  <tr>
+                     <th scope="col" class="px-6 py-4 font-bold">Brand / Model</th>
+                     <th scope="col" class="px-6 py-4 font-bold text-center">Type</th>
+                     <th scope="col" class="px-6 py-4 font-bold text-center">Weight</th>
+                     <th scope="col" class="px-6 py-4 font-bold text-center">Section (mm)</th>
+                     <th scope="col" class="px-6 py-4 font-bold">Details</th>
+                  </tr>
+               </thead>
+               <tbody class="divide-y divide-slate-800">
+                  
+                  <!-- SAPIM Models -->
+                   <!-- 1. Leader -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                     <td class="px-6 py-4">
+                        <strong class="block text-slate-200 text-base">SAPIM Leader</strong>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700">Straight</span>
+                     </td>
+                     <td class="px-6 py-4 text-center font-mono text-slate-300">6.8g</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs">2.0</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
+                        <strong>Stainless (18/8)</strong>. Strength: 1080-1180 N/mm². Durable straight gauge choice.
+                     </td>
+                  </tr>
+
+                  <!-- 2. Race -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                     <td class="px-6 py-4">
+                        <strong class="block text-slate-200 text-base">SAPIM Race</strong>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
+                     </td>
+                     <td class="px-6 py-4 text-center font-mono text-slate-300">5.7g</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.8 - 2.0</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
+                        <strong>Strength: 1300 N/mm²</strong>. Evolution of classic Competition. Good fatigue adaptability.
+                     </td>
+                  </tr>
+
+                   <!-- 3. D-Light -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                     <td class="px-6 py-4">
+                        <strong class="block text-slate-200 text-base">SAPIM D-Light</strong>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
+                     </td>
+                     <td class="px-6 py-4 text-center font-mono text-slate-300">4.8g</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.65 - 2.0</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
+                         <strong>Strength: 1370 N/mm²</strong>. Designed for top quality MTB/Disc wheels. Max strength, min weight.
+                     </td>
+                  </tr>
+
+                   <!-- 4. CX-Sprint -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                     <td class="px-6 py-4">
+                        <strong class="block text-slate-200 text-base">SAPIM CX-Sprint</strong>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
+                     </td>
+                     <td class="px-6 py-4 text-center font-mono text-slate-300">5.2g</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs">2.25 x 1.25</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
+                        <strong>Strength: 1430 N/mm²</strong>. Aero bladed. High stiffness for drive-side applications.
+                     </td>
+                  </tr>
+
+                   <!-- 5. CX-Ray -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                     <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <strong class="block text-slate-200 text-base">SAPIM CX-Ray</strong>
+                            <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold">TOP</span>
+                        </div>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
+                     </td>
+                     <td class="px-6 py-4 text-center font-mono text-emerald-400 font-bold">4.4g</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs">0.9 x 2.2</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
+                        <strong>Strength: 1600 N/mm²</strong>. The gold standard. Light as titanium, strong as steel. Highest fatigue life.
+                     </td>
+                  </tr>
+
+                   <!-- 6. Super-CX -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors opacity-75">
+                     <td class="px-6 py-4">
+                        <strong class="block text-slate-200 text-base">SAPIM Super-CX</strong>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
+                     </td>
+                     <td class="px-6 py-4 text-center font-mono text-emerald-400 font-bold">3.6g</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs">0.9 x 2.0</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
+                         <strong>Strength: 1430 N/mm²</strong>. Lightest stainless spoke ever. Extra light wheels.
+                     </td>
+                  </tr>
+
+                  <!-- DT Swiss Comp Race -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors border-t-4 border-slate-800">
+                     <td class="px-6 py-4">
+                        <strong class="block text-slate-200 text-base">DT Swiss Comp Race</strong>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
+                     </td>
+                     <td class="px-6 py-4 text-center font-mono text-slate-300">5.7g</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.6 - 2.0</td>
+                     <td class="px-6 py-4 text-xs italic text-slate-500">
+                        Coming Soon
+                     </td>
+                  </tr>
+
+                  <!-- YT Aero -->
+                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                     <td class="px-6 py-4">
+                        <strong class="block text-slate-200 text-base">YT Aero</strong>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">Aero</span>
+                     </td>
+                     <td class="px-6 py-4 text-center text-slate-500 italic">Coming Soon</td>
+                     <td class="px-6 py-4 text-center text-slate-500 italic">Coming Soon</td>
+                     <td class="px-6 py-4 text-xs italic text-slate-500">
+                        Coming Soon
+                     </td>
+                  </tr>
+
+                  <!-- TANZANITE Carbon -->
+                  <tr class="bg-[#0b0e14] hover:bg-slate-900 transition-colors relative overflow-hidden group border-t border-indigo-900/50">
+                     <td class="px-6 py-4 relative z-10">
+                        <div class="flex items-center gap-3">
+                           <div class="w-1 h-8 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+                           <div>
+                              <strong class="flex items-center gap-2 text-indigo-400 text-base uppercase tracking-wide">
+                                 TANZANITE Carbon
+                              </strong>
+                           </div>
+                        </div>
+                     </td>
+                     <td class="px-6 py-4 text-center relative z-10">
+                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/30">Aero</span>
+                     </td>
+                     <td class="px-6 py-4 text-center text-indigo-300 font-mono font-bold relative z-10">Coming Soon</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs text-indigo-300 relative z-10">Coming Soon</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed max-w-xs text-indigo-200/80 relative z-10 italic">
+                        Proprietary carbon manufacturing process. Provides 3x specificity stiffness of steel.
+                     </td>
+                     <!-- Shine effect -->
+                     <td class="absolute inset-0 bg-indigo-500/5 group-hover:bg-indigo-500/10 transition-colors pointer-events-none"></td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+
+         <!-- Additional Info Cards -->
+         <div class="grid md:grid-cols-2 gap-4">
+             <div class="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl flex gap-4 items-start">
+                <span class="bg-slate-700/50 p-2 rounded-lg text-slate-300 shrink-0">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                </span>
+                <div>
+                   <h5 class="text-slate-200 font-bold text-sm mb-1">Weight Calculation</h5>
+                   <p class="text-xs text-slate-400">Weights listed are approximations for typical 64pcs (2 wheels, 32H) lengths (260mm-270mm).</p>
+                </div>
+             </div>
+             <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl flex gap-4 items-start">
+                 <span class="bg-indigo-500/20 p-2 rounded-lg text-indigo-400 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                 </span>
+                <div>
+                   <h5 class="text-indigo-300 font-bold text-sm mb-1">Custom Requests</h5>
+                   <p class="text-xs text-indigo-300/70">Need a specific spoke not listed here? We can source Sapim CX-Ray or other premium options upon request.</p>
+                </div>
+             </div>
+         </div>
+
+         <!-- Need Help Section -->
+         <div class="mt-8 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-700/50">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+               <div class="space-y-2">
+                  <h4 class="text-lg font-bold text-slate-100">Need Spoke Length Help?</h4>
+                  <p class="text-sm text-slate-400 max-w-xl leading-relaxed">
+                     If you are looking to purchase individual replacement spokes or rebuild a previous TANZANITE wheelset, you may require assistance with spoke length calculations.
+                  </p>
+               </div>
+               <div class="flex flex-col sm:flex-row gap-3 shrink-0">
+                  <button
+                     type="button"
+                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all group"
+                     @click="goToSpokeCalculator"
+                  >
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="8" y1="18" x2="8.01" y2="18"></line><line x1="16" y1="18" x2="16.01" y2="18"></line><line x1="12" y1="14" x2="12.01" y2="14"></line><line x1="8" y1="14" x2="8.01" y2="14"></line><line x1="16" y1="14" x2="16.01" y2="14"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="8" y1="10" x2="8.01" y2="10"></line><line x1="16" y1="10" x2="16.01" y2="10"></line></svg>
+                     Spoke Calculator
+                  </button>
+
+                  <button
+                     type="button"
+                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-sky-500 hover:bg-sky-400 text-white text-sm font-bold shadow-lg shadow-sky-500/20 transition-all group"
+                     @click="openSupportChat"
+                  >
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                     Live Chat
+                  </button>
+
+                  <a
+                     href="mailto:support@tanzanite.site"
+                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold shadow-lg border border-slate-600 transition-all hover:border-slate-500"
+                  >
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                     Email Us
+                  </a>
+               </div>
+            </div>
+         </div>
+       </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useLocalePath, useRouter } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import { useChatWidget } from '~/composables/useChatWidget'
+
+const router = useRouter()
+const localePath = useLocalePath()
+const { openChat } = useChatWidget()
+const activeTab = ref<'basic-concepts' | 'choose-spoke'>('basic-concepts')
+
+const goToSpokeCalculator = async () => {
+  await router.push(localePath('/spoke-calculator'))
+}
+
+const openSupportChat = () => {
+  openChat({ showAgentList: true })
+}
 </script>

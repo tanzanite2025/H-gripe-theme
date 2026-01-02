@@ -156,28 +156,30 @@
           </AccordionItem>
           
           <AccordionItem id="rims" title="2. Rims">
-             <div class="space-y-6">
-                <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
-                  <h3 class="text-lg font-bold text-slate-200 mb-4">Rim Specifications</h3>
-                  <p class="text-sm text-slate-400 mb-4">
-                    Overview of Tanzanite rims and how rim dimensions relate to tire compatibility and spoke length.
-                  </p>
-                  <ul class="space-y-3 text-sm text-slate-300">
-                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>Rim diameter standards (ISO / ETRTO such as 622, 584, etc.).</li>
-                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>Internal / external width and their impact on tire choice.</li>
-                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>Spoke hole count (28H / 32H / 36H …) and recommended use cases.</li>
-                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>ERD (Effective Rim Diameter) definition and basic measurement notes.</li>
-                  </ul>
-                </div>
-             </div>
+             <TechnicalRimsSection />
           </AccordionItem>
 
           <AccordionItem id="spokes" title="3. Spokes">
              <TechnicalSpokesSection />
           </AccordionItem>
           
-          <AccordionItem id="tension" title="4. Tension & Formulas">
-             <TechnicalTensionSection />
+          <AccordionItem id="nipples" title="4. Nipples">
+             <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 mb-4">
+                <h3 class="text-lg font-bold text-slate-200 mb-4">Nipple Options</h3>
+                <p class="text-sm text-slate-400 mb-4">
+                  We offer Brass and Aluminum nipples. Secure-lock coating is standard on all our builds.
+                </p>
+                <div class="grid grid-cols-2 gap-4">
+                   <div class="bg-indigo-500/5 rounded-lg p-3 text-sm text-slate-300">
+                      <strong class="block text-indigo-400 mb-1">Brass</strong>
+                      Structure: Durable, corrosion-resistant. Recommended for heavy duty or winter riding.
+                   </div>
+                   <div class="bg-indigo-500/5 rounded-lg p-3 text-sm text-slate-300">
+                      <strong class="block text-indigo-400 mb-1">Aluminum</strong>
+                      Structure: Lightweight, anodized colors. Saves rotational weight.
+                   </div>
+                </div>
+             </div>
           </AccordionItem>
         </SmartAccordion>
       </section>
@@ -228,8 +230,9 @@ import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import SmartAccordion from '~/components/ui/SmartAccordion.vue'
 import AccordionItem from '~/components/ui/AccordionItem.vue'
 import TechnicalHubsSection from '~/components/TechnicalHubsSection.vue'
+import TechnicalRimsSection from '~/components/TechnicalRimsSection.vue'
 import TechnicalSpokesSection from '~/components/TechnicalSpokesSection.vue'
-import TechnicalTensionSection from '~/components/TechnicalTensionSection.vue'
+
 
 definePageMeta({
   layout: 'products',
@@ -310,9 +313,7 @@ const goToWarranty = async () => {
 }
 
 const goToTechnicalTension = async () => {
-  setActiveTab('wheel-components')
-  // Ideally we would also open the 'tension' accordion item here
-  // For now, switching the tab is sufficient
+  await router.push(localePath('/support/test-report') + '#tension')
 }
 
 const goToTechnicalSpokePattern = async () => {

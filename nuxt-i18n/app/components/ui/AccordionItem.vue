@@ -4,7 +4,7 @@
     <!-- Header -->
     <button
       type="button"
-      class="accordion-header w-full text-left px-5 py-4 flex items-center justify-between group transition-colors duration-200"
+      class="accordion-header w-full text-left p-3 md:p-4 flex items-center justify-between group transition-colors duration-200"
       :class="{ 'text-sky-400': isActive, 'text-slate-300 hover:bg-white/5': !isActive }"
       @click="toggleItem(id)"
     >
@@ -39,11 +39,10 @@
     <!-- Content -->
     <div
       v-show="isActive"
-      class="accordion-content border-t border-white/5"
+      :id="`accordion-content-${id}`"
+      class="border-t border-slate-700/50 bg-slate-900/20 p-4"
     >
-      <div class="p-5 md:p-6 text-slate-300">
-        <slot />
-      </div>
+      <slot />
     </div>
 
   </div>

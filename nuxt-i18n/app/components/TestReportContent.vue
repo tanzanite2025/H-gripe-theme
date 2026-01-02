@@ -35,6 +35,15 @@
       />
     </section>
 
+    <!-- Tension -->
+    <section
+      v-show="activeTab === 'tension'"
+      id="tension"
+      class="support-section"
+    >
+      <TechnicalTensionSection />
+    </section>
+
     <!-- Wheelset Assembly -->
     <section
       v-show="activeTab === 'wheelset-assembly'"
@@ -106,16 +115,18 @@ import { useRoute } from '#imports'
 import SupportRimTestReportSection from '~/components/SupportRimTestReportSection.vue'
 import SupportWheelsetTestReportSection from '~/components/SupportWheelsetTestReportSection.vue'
 import SupportWheelsetAssemblySection from '~/components/SupportWheelsetAssemblySection.vue'
+import TechnicalTensionSection from '~/components/TechnicalTensionSection.vue'
 
 const props = defineProps<{
   syncWithUrl?: boolean
 }>()
 
-type TestReportTabId = 'rim-test-report' | 'wheelset-test-report' | 'wheelset-assembly'
+type TestReportTabId = 'rim-test-report' | 'wheelset-test-report' | 'tension' | 'wheelset-assembly'
 
 const tabs: { id: TestReportTabId; label: string }[] = [
   { id: 'rim-test-report', label: 'Rim Test Report' },
   { id: 'wheelset-test-report', label: 'Wheelset Test Report' },
+  { id: 'tension', label: 'Tension' },
   { id: 'wheelset-assembly', label: 'Wheelset Assembly' },
 ]
 
