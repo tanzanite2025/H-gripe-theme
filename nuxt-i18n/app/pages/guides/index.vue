@@ -41,13 +41,7 @@ import { useLocalePath } from '#imports'
 const localePath = useLocalePath()
 
 const guides = [
-  {
-    to: '/guides/tools',
-    icon: 'T',
-    title: 'Tools',
-    description: 'Overview of tools and utilities that support your wheelbuilding workflow.',
-    cta: 'Open tools guide',
-  },
+
   {
     to: '/guides/tireguides',
     icon: 'C',

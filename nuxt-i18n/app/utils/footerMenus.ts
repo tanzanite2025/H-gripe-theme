@@ -32,7 +32,7 @@ export const footerMenus: FooterSection[] = [
     links: [
       // Products column: product- and guide-related links
       { labelKey: 'footer.links.shop', to: '/shop' },
-      { labelKey: 'footer.links.aboutTools', to: '/guides/tools' },
+
       { labelKey: 'footer.links.tireSizeCharts', to: '/guides/tireguides' },
       { labelKey: 'footer.links.wheelsbuildBlog', to: '/blog' },
       { labelKey: 'products.nav.technicalDocs', to: '/guides/wheelset-buyers#wheel-components' }, { labelKey: 'footer.links.wheelsetBuyersGuide', to: '/guides/wheelset-buyers' },

@@ -33,11 +33,7 @@ const localePath = useLocalePath()
 const scrollContainer = ref<HTMLElement | null>(null)
 
 const guidesNavItems: ProductsNavItem[] = [
-  {
-    id: 'about-tools',
-    labelKey: 'products.nav.aboutTools',
-    to: '/guides/tools',
-  },
+
   {
     id: 'tire-size-charts',
     labelKey: 'products.nav.tireSizeCharts',

@@ -187,6 +187,27 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </NuxtLink>
+
+          <NuxtLink
+            :to="`${localePath('/guides/wheelset-buyers')}#wheel-components`"
+            class="hybrid-card card-pink"
+            @click="closeSidebar"
+          >
+            <div class="hybrid-icon">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7l8-4 8 4-8 4-8-4zM4 17l8 4 8-4M4 12l8 4 8-4" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="hybrid-title">Wheel Components</div>
+              <div class="hybrid-desc max-md:truncate">
+                Hubs, Rims, Spokes & Nipples
+              </div>
+            </div>
+            <svg class="hybrid-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </NuxtLink>
         </div>
       </div>
 
@@ -256,12 +277,7 @@ const guidesLinks = [
 
 // Guides 快捷链接
 const guidesNavLinks = [
-  {
-        id: 'technical-docs',
-        labelKey: 'products.nav.technicalDocs',
-        to: '/guides/wheelset-buyers#wheel-components',
-        icon: 'D',
-      },
+
   { id: 'our-story', label: 'Our Story', to: '/company/ourstory' },
   { id: 'membership', label: 'Membership', to: '/membershipandpoints' },
 ]

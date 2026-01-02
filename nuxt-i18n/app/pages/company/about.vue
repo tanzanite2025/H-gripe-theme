@@ -51,17 +51,25 @@
       id="manufacture"
       class="company-section"
     >
-      <h2 class="company-section__title">Manufacture</h2>
-      <p class="company-section__body">
-        Use this tab to walk visitors through how a Tanzanite wheel is manufactured,
-        from selecting rims and hubs to lacing, tensioning, truing, and final
-        inspection.
-      </p>
-      <p class="company-section__body">
-        Later you can add step-by-step photos, short videos, or diagrams so
-        builders understand what level of craftsmanship and tooling goes into
-        every wheel.
-      </p>
+      <SmartAccordion default-id="rim-build">
+        <AccordionItem id="rim-build" title="1. RIM BUILD">
+           <div class="p-4 text-slate-400 text-sm">
+              Details about Rim Build...
+           </div>
+        </AccordionItem>
+
+        <AccordionItem id="wheelset-build" title="2. WHEELSET BUILD">
+           <div class="p-4 text-slate-400 text-sm">
+              Details about Wheelset Build...
+           </div>
+        </AccordionItem>
+
+        <AccordionItem id="carbon-spoke-build" title="3. CARBON SPOKE BUILD">
+           <div class="p-4 text-slate-400 text-sm">
+              Details about Carbon Spoke Build...
+           </div>
+        </AccordionItem>
+      </SmartAccordion>
     </section>
 
     <section
@@ -99,6 +107,8 @@ import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import AboutFactory from '~/components/company/AboutFactory.vue'
 import AboutAppearance from '~/components/company/AboutAppearance.vue'
 import AboutHolePatterns from '~/components/company/AboutHolePatterns.vue'
+import SmartAccordion from '~/components/ui/SmartAccordion.vue'
+import AccordionItem from '~/components/ui/AccordionItem.vue'
 
 type OurStoryTabId = 'factory' | 'appearance' | 'hole-patterns' | 'facility' | 'manufacture' | 'qualitycontrol'
 
@@ -322,6 +332,7 @@ useHead({
     max-width: 100%;
   }
 }
+
 
 
 </style>
