@@ -44,7 +44,7 @@ export function useMembership() {
     const tierList = tiers.value as any[]
     let current: any = null
     let next: any = null
-    
+
     for (let i = 0; i < tierList.length; i++) {
       const t = tierList[i]
       const min = Number(t.min)
@@ -56,12 +56,12 @@ export function useMembership() {
         break
       }
     }
-    
+
     if (!current && tierList.length) {
       current = tierList[0]
       next = tierList[1] || null
     }
-    
+
     let pct = 100
     if (current) {
       if (next && Number(next.min) > 0) {
@@ -76,7 +76,7 @@ export function useMembership() {
         pct = 100
       }
     }
-    
+
     return { current, next, pct }
   })
 
@@ -115,7 +115,7 @@ export function useMembership() {
   const levelDiscounts = computed(() => {
     const lvl = (levelName.value || '').toString().toLowerCase()
     if (!lvl || lvl === '—') return { product: 0, points: 0, stackable: false }
-    
+
     const config = tierConfigs.value.find(t => t.key === lvl)
     if (config) {
       return {
@@ -124,7 +124,7 @@ export function useMembership() {
         stackable: config.stackable
       }
     }
-    
+
     return { product: 0, points: 0, stackable: false }
   })
 
@@ -139,16 +139,16 @@ export function useMembership() {
       userPointCards.value = 0
       return
     }
-    
+
     assetsLoading.value = true
     try {
       const base = typeof window !== 'undefined' ? window.location.origin : ''
-      const res = await fetch(`${base}/wp-json/mytheme/v1/user/assets`, {
+      const res = await fetch(`${base}/wp-json/tanzanite/v1/user/assets`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       })
-      
+
       if (res.ok) {
         const data = await res.json()
         if (data.success) {
@@ -174,7 +174,7 @@ export function useMembership() {
   const fetchAvailableGiftcards = async () => {
     giftcardsLoading.value = true
     giftcardsError.value = ''
-    
+
     try {
       const base = typeof window !== 'undefined' ? window.location.origin : ''
       const res = await fetch(`${base}/wp-json/tanzanite/v1/giftcards`, {
@@ -182,7 +182,7 @@ export function useMembership() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       })
-      
+
       if (res.ok) {
         const data = await res.json()
         const allCards = data.items || data || []
@@ -200,18 +200,18 @@ export function useMembership() {
 
   const handleRedeemGiftcard = async (card: GiftCard) => {
     if (redeemingCardId.value) return
-    
+
     if (!isLogged.value) {
       redeemSuccess.value = false
       redeemMessage.value = 'Please login to redeem gift cards'
       setTimeout(() => { redeemMessage.value = '' }, 3000)
       return
     }
-    
+
     redeemingCardId.value = card.id
     redeemMessage.value = ''
     redeemSuccess.value = false
-    
+
     try {
       const base = typeof window !== 'undefined' ? window.location.origin : ''
       const res = await fetch(`${base}/wp-json/tanzanite/v1/redeem/exchange`, {
@@ -223,17 +223,17 @@ export function useMembership() {
           giftcard_value: parseFloat(card.balance)
         })
       })
-      
+
       const data = await res.json()
-      
+
       if (res.ok && data.success) {
         redeemSuccess.value = true
         redeemMessage.value = `Redeemed successfully! Card code: ${data.card_code}`
-        
+
         await auth.ensureSession()
         await fetchAvailableGiftcards()
         await fetchUserAssets()
-        
+
         setTimeout(() => { redeemMessage.value = '' }, 3000)
       } else {
         redeemSuccess.value = false
@@ -266,7 +266,7 @@ export function useMembership() {
       if (!res.ok) throw new Error((data && data.message) || 'Failed to generate referral link')
       const url = String(data && data.url)
       if (typeof navigator !== 'undefined' && navigator.share) {
-        try { await navigator.share({ url }) } catch {}
+        try { await navigator.share({ url }) } catch { }
       }
       if (typeof navigator !== 'undefined') {
         await navigator.clipboard.writeText(url)
@@ -284,7 +284,7 @@ export function useMembership() {
   const doLogout = async () => {
     try {
       await auth.logout()
-    } catch {}
+    } catch { }
   }
 
   // ========== 初始化 ==========
@@ -314,19 +314,19 @@ export function useMembership() {
     profileInfo,
     tiers,
     tierInfo,
-    
+
     // 等级配置
     tierConfigs,
     tierConfigsLoading,
     loadTierConfigs,
     levelDiscounts,
-    
+
     // 用户资产
     userCoupons,
     userPointCards,
     assetsLoading,
     fetchUserAssets,
-    
+
     // 礼品卡
     availableGiftcards,
     giftcardsLoading,
@@ -336,17 +336,17 @@ export function useMembership() {
     redeemSuccess,
     fetchAvailableGiftcards,
     handleRedeemGiftcard,
-    
+
     // 邀请
     inviteLoading,
     inviteMsg,
     handleCopyInviteLink,
-    
+
     // 操作
     doLogout,
     initMembership,
     refreshData,
-    
+
     // auth 透传
     auth
   }

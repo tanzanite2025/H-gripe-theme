@@ -1,7 +1,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRuntimeConfig, useAsyncData } from '#imports'
 
-export function useSiteTitle () {
+export function useSiteTitle() {
   const config = useRuntimeConfig()
 
   const normalizeBaseUrl = (value?: string) => (value ? value.replace(/\/$/, '') : '')
@@ -30,7 +30,7 @@ export function useSiteTitle () {
   const { data } = useAsyncData<SiteSettingsResponse | null>('mytheme-site-settings-title', async () => {
     if (!wpApiBase) return null
     try {
-      const res = await $fetch<SiteSettingsResponse>(`${wpApiBase}/mytheme/v1/settings`, { headers: { accept: 'application/json' } })
+      const res = await $fetch<SiteSettingsResponse>(`${wpApiBase}/tanzanite/v1/settings`, { headers: { accept: 'application/json' } })
       return res || null
     } catch {
       return null

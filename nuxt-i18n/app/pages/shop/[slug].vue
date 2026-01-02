@@ -169,7 +169,7 @@ const { data: productBundle, pending, error } = await useAsyncData<ProductPayloa
       if (apiBase.value) {
         try {
           seo = await $fetch<{ id: number; payload?: MyThemeSeoEntry }>(
-            `${apiBase.value}/mytheme/v1/seo/product/${product.id}`,
+            `${apiBase.value}/tanzanite/v1/seo/product/${product.id}`,
             { headers: { accept: 'application/json' } }
           )
         } catch (err) {

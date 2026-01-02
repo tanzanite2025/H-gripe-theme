@@ -1765,7 +1765,7 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			$plugin = \MyTheme_SEO_Plugin::instance();
 
 			if ( is_array( $payload ) ) {
-				$update_request = new WP_REST_Request( 'POST', '/mytheme/v1/seo/product/' . $post_id );
+				$update_request = new WP_REST_Request( 'POST', '/tanzanite/v1/seo/product/' . $post_id );
 				$update_request->set_param( 'id', $post_id );
 				$update_request->set_param( 'payload', $payload );
 				
@@ -1798,7 +1798,7 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 		if ( class_exists( '\\MyTheme_SEO_Plugin' ) ) {
 			$plugin = \MyTheme_SEO_Plugin::instance();
 
-			$seo_request = new WP_REST_Request( 'GET', '/mytheme/v1/seo/product/' . $post_id );
+			$seo_request = new WP_REST_Request( 'GET', '/tanzanite/v1/seo/product/' . $post_id );
 			$seo_request->set_param( 'id', $post_id );
 			
 			$payload = array();
@@ -1816,7 +1816,7 @@ class Tanzanite_REST_Products_Controller extends Tanzanite_REST_Controller {
 			// 获取可用语言
 			$languages = array();
 			if ( method_exists( $plugin, 'rest_get_languages' ) ) {
-				$languages_response = $plugin->rest_get_languages( new WP_REST_Request( 'GET', '/mytheme/v1/seo/languages' ) );
+				$languages_response = $plugin->rest_get_languages( new WP_REST_Request( 'GET', '/tanzanite/v1/seo/languages' ) );
 				if ( $languages_response instanceof WP_REST_Response ) {
 					$lang_data = $languages_response->get_data();
 					if ( is_array( $lang_data ) && isset( $lang_data['languages'] ) && is_array( $lang_data['languages'] ) ) {

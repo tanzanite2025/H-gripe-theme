@@ -51,7 +51,7 @@ const { data: settingsResponse } = await useAsyncData<SiteSettingsResponse | nul
       return null
     }
     try {
-      const result = await $fetch<SiteSettingsResponse>(`${initialWpApiBase}/mytheme/v1/settings`, {
+      const result = await $fetch<SiteSettingsResponse>(`${initialWpApiBase}/tanzanite/v1/settings`, {
         headers: { accept: 'application/json' }
       })
       return result || null
@@ -236,7 +236,7 @@ const { data: quickBuyResponse } = await useAsyncData<QuickBuyConfigProp | null>
     if (!base) {
       return null
     }
-    const endpoint = `${base}/mytheme/v1/settings/quick-buy`
+    const endpoint = `${base}/tanzanite/v1/settings/quick-buy`
     try {
       const result = await $fetch(endpoint, { headers: { accept: 'application/json' } })
       if (result && typeof result === 'object') {

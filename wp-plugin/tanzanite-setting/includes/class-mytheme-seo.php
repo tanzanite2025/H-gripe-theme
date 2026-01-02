@@ -118,118 +118,118 @@ if (!class_exists('MyTheme_SEO_Plugin')) {
         public function register_rest_routes(): void
         {
             // 404 logs
-            register_rest_route('mytheme/v1', '/seo/404-logs', [
+            register_rest_route('tanzanite/v1', '/seo/404-logs', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_404_logs'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/404-logs', [
+            register_rest_route('tanzanite/v1', '/seo/404-logs', [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'rest_update_404_logs'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
 
             // Homepage SEO
-            register_rest_route('mytheme/v1', '/seo/homepage', [
+            register_rest_route('tanzanite/v1', '/seo/homepage', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_homepage_meta'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/homepage', [
+            register_rest_route('tanzanite/v1', '/seo/homepage', [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'rest_update_homepage_meta'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
 
             // Settings
-            register_rest_route('mytheme/v1', '/seo/settings', [
+            register_rest_route('tanzanite/v1', '/seo/settings', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_settings'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/settings', [
+            register_rest_route('tanzanite/v1', '/seo/settings', [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'rest_update_settings'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/settings/public', [
+            register_rest_route('tanzanite/v1', '/seo/settings/public', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_settings_public'],
                 'permission_callback' => '__return_true'
             ]);
 
             // Languages
-            register_rest_route('mytheme/v1', '/seo/languages', [
+            register_rest_route('tanzanite/v1', '/seo/languages', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_languages'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/languages', [
+            register_rest_route('tanzanite/v1', '/seo/languages', [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'rest_update_languages'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/languages/import', [
+            register_rest_route('tanzanite/v1', '/seo/languages/import', [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'rest_import_languages'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
 
             // Category meta
-            register_rest_route('mytheme/v1', '/seo/category/(?P<id>\d+)', [
+            register_rest_route('tanzanite/v1', '/seo/category/(?P<id>\d+)', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_category_meta'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/category/(?P<id>\d+)', [
+            register_rest_route('tanzanite/v1', '/seo/category/(?P<id>\d+)', [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'rest_update_category_meta'],
                 'permission_callback' => function () { return current_user_can('manage_options'); }
             ]);
 
             // Product schema endpoints
-            register_rest_route('mytheme/v1', '/seo/schema/product/(?P<id>\d+)', [
+            register_rest_route('tanzanite/v1', '/seo/schema/product/(?P<id>\d+)', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_product_schema'],
                 'permission_callback' => '__return_true'
             ]);
-            register_rest_route('mytheme/v1', '/seo/schema/product/by-slug/(?P<slug>[a-z0-9\-\._]+)', [
+            register_rest_route('tanzanite/v1', '/seo/schema/product/by-slug/(?P<slug>[a-z0-9\-\._]+)', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_product_schema_by_slug'],
                 'permission_callback' => '__return_true'
             ]);
-            register_rest_route('mytheme/v1', '/seo/schema/product/resolve', [
+            register_rest_route('tanzanite/v1', '/seo/schema/product/resolve', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_resolve_product_schema'],
                 'permission_callback' => '__return_true'
             ]);
 
             // Public product basic
-            register_rest_route('mytheme/v1', '/seo/product/basic/(?P<id>\d+)', [
+            register_rest_route('tanzanite/v1', '/seo/product/basic/(?P<id>\d+)', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_product_basic'],
                 'permission_callback' => '__return_true'
             ]);
-            register_rest_route('mytheme/v1', '/seo/product/basic/by-slug/(?P<slug>[a-z0-9\-\._]+)', [
+            register_rest_route('tanzanite/v1', '/seo/product/basic/by-slug/(?P<slug>[a-z0-9\-\._]+)', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_product_basic_by_slug'],
                 'permission_callback' => '__return_true'
             ]);
 
             // Per-product overrides
-            register_rest_route('mytheme/v1', '/seo/product/overrides/(?P<id>\d+)', [
+            register_rest_route('tanzanite/v1', '/seo/product/overrides/(?P<id>\d+)', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_product_overrides'],
                 'permission_callback' => function () { return current_user_can('manage_options') || current_user_can('edit_products'); }
             ]);
-            register_rest_route('mytheme/v1', '/seo/product/overrides/(?P<id>\d+)', [
+            register_rest_route('tanzanite/v1', '/seo/product/overrides/(?P<id>\d+)', [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'rest_update_product_overrides'],
                 'permission_callback' => function (WP_REST_Request $request) { return current_user_can('manage_options') || current_user_can('edit_post', (int) $request['id']); }
             ]);
 
             // SEO 审核面板
-            register_rest_route('mytheme/v1', '/seo/audit', [
+            register_rest_route('tanzanite/v1', '/seo/audit', [
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => [$this, 'rest_get_seo_audit'],
                 'permission_callback' => function () {
