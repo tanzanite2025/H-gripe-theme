@@ -288,7 +288,7 @@
            </p>
            <div class="mt-4">
              <NuxtLink
-               :to="localePath('/guides/technical') + '#tension'"
+               :to="localePath('/guides/wheelset-buyers') + '#wheel-components'"
                class="premium-button"
              >
                Check the tension range of different wheel sets

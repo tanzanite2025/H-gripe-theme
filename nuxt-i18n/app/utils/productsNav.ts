@@ -23,11 +23,7 @@ export const productsNavItems: ProductsNavItem[] = [
     labelKey: 'products.nav.tireSizeCharts',
     to: '/guides/tireguides',
   },
-  {
-    id: 'technical-docs',
-    labelKey: 'products.nav.technicalDocs',
-    to: '/guides/technical',
-  },
+
   {
     id: 'wheelset-buyers',
     labelKey: 'products.nav.wheelsetBuyersGuide',

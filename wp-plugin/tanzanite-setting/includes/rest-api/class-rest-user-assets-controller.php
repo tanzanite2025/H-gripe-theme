@@ -43,7 +43,7 @@ class Tanzanite_REST_User_Assets_Controller extends Tanzanite_REST_Controller {
 	 */
 	public function register_routes() {
 		// 获取用户资产（优惠券和积分卡）
-		// 前端 Nuxt 使用：GET /wp-json/mytheme/v1/user/assets
+		// 前端 Nuxt 使用：GET /wp-json/tanzanite/v1/user/assets
 		// Headers: Cookie (自动携带)
 		register_rest_route(
 			$this->namespace,

@@ -150,9 +150,36 @@
         class="wheelset-section sizecharts-section"
       >
         <h2 class="sizecharts-section__title">Wheel Components</h2>
-        <p class="sizecharts-section__intro">
-          Detailed guidance on rims, hubs, spokes, and other wheel components will be added here.
-        </p>
+        <SmartAccordion default-id="hubs">
+          <AccordionItem id="hubs" title="1. Hubs">
+             <TechnicalHubsSection />
+          </AccordionItem>
+          
+          <AccordionItem id="rims" title="2. Rims">
+             <div class="space-y-6">
+                <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
+                  <h3 class="text-lg font-bold text-slate-200 mb-4">Rim Specifications</h3>
+                  <p class="text-sm text-slate-400 mb-4">
+                    Overview of Tanzanite rims and how rim dimensions relate to tire compatibility and spoke length.
+                  </p>
+                  <ul class="space-y-3 text-sm text-slate-300">
+                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>Rim diameter standards (ISO / ETRTO such as 622, 584, etc.).</li>
+                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>Internal / external width and their impact on tire choice.</li>
+                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>Spoke hole count (28H / 32H / 36H …) and recommended use cases.</li>
+                    <li class="flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>ERD (Effective Rim Diameter) definition and basic measurement notes.</li>
+                  </ul>
+                </div>
+             </div>
+          </AccordionItem>
+
+          <AccordionItem id="spokes" title="3. Spokes">
+             <TechnicalSpokesSection />
+          </AccordionItem>
+          
+          <AccordionItem id="tension" title="4. Tension & Formulas">
+             <TechnicalTensionSection />
+          </AccordionItem>
+        </SmartAccordion>
       </section>
 
       <!-- Optional -->
@@ -198,6 +225,11 @@ import WheelsetMixedRimSection from '~/components/WheelsetMixedRimSection.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import SmartAccordion from '~/components/ui/SmartAccordion.vue'
+import AccordionItem from '~/components/ui/AccordionItem.vue'
+import TechnicalHubsSection from '~/components/TechnicalHubsSection.vue'
+import TechnicalSpokesSection from '~/components/TechnicalSpokesSection.vue'
+import TechnicalTensionSection from '~/components/TechnicalTensionSection.vue'
 
 definePageMeta({
   layout: 'products',
@@ -278,11 +310,13 @@ const goToWarranty = async () => {
 }
 
 const goToTechnicalTension = async () => {
-  await router.push(`${localePath('/guides/technical')}#tension`)
+  setActiveTab('wheel-components')
+  // Ideally we would also open the 'tension' accordion item here
+  // For now, switching the tab is sufficient
 }
 
 const goToTechnicalSpokePattern = async () => {
-  await router.push(`${localePath('/guides/technical')}#spoke-pattern`)
+  setActiveTab('wheel-components')
 }
 
 const goToHolePatterns = async () => {

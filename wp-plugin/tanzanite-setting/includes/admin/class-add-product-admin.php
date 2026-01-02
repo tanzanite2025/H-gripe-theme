@@ -37,7 +37,7 @@ class Tanzanite_Add_Product_Admin {
 		$single_endpoint  = esc_url_raw( rest_url( 'tanzanite/v1/products/' ) );
 		$media_endpoint   = esc_url_raw( rest_url( 'wp/v2/media' ) );
 		$detail_endpoint  = $product_id ? esc_url_raw( trailingslashit( $single_endpoint ) . $product_id ) : '';
-		$seo_endpoint     = esc_url_raw( rest_url( 'mytheme/v1/seo/product/' ) );
+		$seo_endpoint     = esc_url_raw( rest_url( 'tanzanite/v1/seo/product/' ) );
 		
 		// 获取会员等级设置
 		$member_tiers = self::get_member_tiers();

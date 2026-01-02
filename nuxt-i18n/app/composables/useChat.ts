@@ -47,7 +47,7 @@ export const useChat = () => {
   const loadConversations = async () => {
     try {
       const response = await $fetch<{ conversations: Conversation[] }>(
-        `${apiBase.value}/mytheme/v1/chat/conversations`,
+        `${apiBase.value}/tanzanite/v1/chat/conversations`,
         {
           credentials: 'include',
           headers: { accept: 'application/json' }
@@ -65,14 +65,14 @@ export const useChat = () => {
   const loadMessages = async (conversationId: number) => {
     try {
       const response = await $fetch<{ messages: ChatMessage[] }>(
-        `${apiBase.value}/mytheme/v1/chat/messages/${conversationId}`,
+        `${apiBase.value}/tanzanite/v1/chat/messages/${conversationId}`,
         {
           credentials: 'include',
           headers: { accept: 'application/json' }
         }
       )
       messages.value = response.messages || []
-      
+
       // 标记为已读
       await markAsRead(conversationId)
     } catch (error) {
@@ -86,11 +86,11 @@ export const useChat = () => {
   const sendMessage = async (conversationId: number, message: string, attachmentUrl?: string) => {
     try {
       const response = await $fetch<{ message: ChatMessage }>(
-        `${apiBase.value}/mytheme/v1/chat/send`,
+        `${apiBase.value}/tanzanite/v1/chat/send`,
         {
           method: 'POST',
           credentials: 'include',
-          headers: { 
+          headers: {
             accept: 'application/json',
             'Content-Type': 'application/json'
           },
@@ -101,12 +101,12 @@ export const useChat = () => {
           }
         }
       )
-      
+
       // 添加到消息列表
       if (response.message) {
         messages.value.push(response.message)
       }
-      
+
       return { success: true, message: response.message }
     } catch (error) {
       console.error('Failed to send message:', error)
@@ -120,14 +120,14 @@ export const useChat = () => {
   const markAsRead = async (conversationId: number) => {
     try {
       await $fetch(
-        `${apiBase.value}/mytheme/v1/chat/mark-read/${conversationId}`,
+        `${apiBase.value}/tanzanite/v1/chat/mark-read/${conversationId}`,
         {
           method: 'POST',
           credentials: 'include',
           headers: { accept: 'application/json' }
         }
       )
-      
+
       // 更新本地未读数
       const conv = conversations.value.find(c => c.id === conversationId)
       if (conv) {

@@ -5,7 +5,7 @@ export interface RuntimeSocialLink { network: string; url: string }
 export interface ApiSocialLink extends RuntimeSocialLink { label?: string; size?: number }
 export interface SocialLinkViewModel { network: string; url: string; label: string; size: number }
 
-export function useSocialLinks () {
+export function useSocialLinks() {
   const config = useRuntimeConfig()
   const normalizeBaseUrl = (value?: string) => (value ? value.replace(/\/$/, '') : '')
   const wpApiBase = normalizeBaseUrl((config.public as { wpApiBase?: string }).wpApiBase)
@@ -44,7 +44,7 @@ export function useSocialLinks () {
   const { data } = useAsyncData<SiteSettingsResponse | null>('mytheme-site-settings-social', async () => {
     if (!wpApiBase) return null
     try {
-      const res = await $fetch<SiteSettingsResponse>(`${wpApiBase}/mytheme/v1/settings`, { headers: { accept: 'application/json' } })
+      const res = await $fetch<SiteSettingsResponse>(`${wpApiBase}/tanzanite/v1/settings`, { headers: { accept: 'application/json' } })
       return res || null
     } catch {
       return null

@@ -107,7 +107,7 @@ if (!function_exists('mytheme_vue_register_rest_routes')) {
             'permission_callback' => '__return_true',
         ));
 
-        $namespaces = array('mytheme/v1', 'tanzanite/v1');
+        $namespaces = array('tanzanite/v1');
 
         foreach ($namespaces as $namespace) {
             register_rest_route($namespace, '/settings/site', array(
@@ -2109,7 +2109,7 @@ add_action('after_switch_theme', 'mytheme_chat_create_tables');
  */
 function mytheme_chat_register_rest_routes() {
     // 1. 获取会话列表
-    register_rest_route('mytheme/v1', '/chat/conversations', array(
+    register_rest_route('tanzanite/v1', '/chat/conversations', array(
         'methods'  => 'GET',
         'callback' => 'mytheme_chat_get_conversations',
         'permission_callback' => 'mytheme_vue_permission_logged_in_with_nonce',
@@ -2139,7 +2139,7 @@ function mytheme_chat_register_rest_routes() {
     ));
     
     // 2. 获取会话消息列表
-    register_rest_route('mytheme/v1', '/chat/messages/(?P<conversation_id>[a-zA-Z0-9_-]+)', array(
+    register_rest_route('tanzanite/v1', '/chat/messages/(?P<conversation_id>[a-zA-Z0-9_-]+)', array(
         'methods'  => 'GET',
         'callback' => 'mytheme_chat_get_messages',
         'permission_callback' => 'mytheme_vue_permission_logged_in_with_nonce',
@@ -2162,7 +2162,7 @@ function mytheme_chat_register_rest_routes() {
     ));
     
     // 3. 发送消息
-    register_rest_route('mytheme/v1', '/chat/send', array(
+    register_rest_route('tanzanite/v1', '/chat/send', array(
         'methods'  => 'POST',
         'callback' => 'mytheme_chat_send_message',
         'permission_callback' => 'mytheme_vue_permission_logged_in_with_nonce',
@@ -2197,7 +2197,7 @@ function mytheme_chat_register_rest_routes() {
     ));
     
     // 4. 标记消息为已读
-    register_rest_route('mytheme/v1', '/chat/mark-read/(?P<conversation_id>[a-zA-Z0-9_-]+)', array(
+    register_rest_route('tanzanite/v1', '/chat/mark-read/(?P<conversation_id>[a-zA-Z0-9_-]+)', array(
         'methods'  => 'POST',
         'callback' => 'mytheme_chat_mark_read',
         'permission_callback' => 'mytheme_vue_permission_logged_in_with_nonce',
@@ -2209,7 +2209,7 @@ function mytheme_chat_register_rest_routes() {
     ));
     
     // 5. 获取未读消息数
-    register_rest_route('mytheme/v1', '/chat/unread-count', array(
+    register_rest_route('tanzanite/v1', '/chat/unread-count', array(
         'methods'  => 'GET',
         'callback' => 'mytheme_chat_get_unread_count',
         'permission_callback' => 'mytheme_vue_permission_logged_in_with_nonce'
@@ -2333,10 +2333,16 @@ function mytheme_chat_get_messages($request) {
         $user_data = get_userdata($message->sender_id);
         $message->sender = array(
             'id' => $message->sender_id,
-            'name' => $user_data->display_name,
+            'name' => $user_data ? $user_data->display_name : 'Unknown',
             'avatar' => get_avatar_url($message->sender_id),
             'role' => $message->sender_role
         );
+        // Compatibility fields
+        $message->sender_type = $message->sender_role;
+        $message->is_agent = ($message->sender_role === 'agent');
+        
+        // Ensure ID is numeric if possible, though PHP json_encode might keep it string if it's string in DB
+        $message->id = intval($message->id);
     }
     
     return rest_ensure_response(array(
@@ -2426,10 +2432,14 @@ function mytheme_chat_send_message($request) {
     $user_data = get_userdata($user_id);
     $message->sender = array(
         'id' => $user_id,
-        'name' => $user_data->display_name,
+        'name' => $user_data ? $user_data->display_name : 'Unknown',
         'avatar' => get_avatar_url($user_id),
         'role' => $sender_role
     );
+    // Compatibility fields
+    $message->sender_type = $sender_role;
+    $message->is_agent = ($sender_role === 'agent');
+    $message->id = intval($message->id);
     
     return rest_ensure_response(array(
         'success' => true,

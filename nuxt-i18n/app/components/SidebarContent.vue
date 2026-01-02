@@ -256,7 +256,12 @@ const guidesLinks = [
 
 // Guides 快捷链接
 const guidesNavLinks = [
-  { id: 'technical', label: 'Technical', to: '/guides/technical' },
+  {
+        id: 'technical-docs',
+        labelKey: 'products.nav.technicalDocs',
+        to: '/guides/wheelset-buyers#wheel-components',
+        icon: 'D',
+      },
   { id: 'our-story', label: 'Our Story', to: '/company/ourstory' },
   { id: 'membership', label: 'Membership', to: '/membershipandpoints' },
 ]

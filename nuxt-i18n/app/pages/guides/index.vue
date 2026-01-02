@@ -57,7 +57,7 @@ const guides = [
     cta: 'Open tire guides',
   },
   {
-    to: '/guides/technical',
+    to: '/guides/wheelset-buyers#wheel-components',
     icon: 'D',
     title: 'Technical',
     description: 'Technical notes, formulas, and reference docs for advanced wheelbuilding.',

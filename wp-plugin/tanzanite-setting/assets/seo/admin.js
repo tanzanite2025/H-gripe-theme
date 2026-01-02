@@ -1,5 +1,5 @@
 (function () {
-    const { createElement: h, Fragment, useState, useEffect, useMemo } = wp.element
+  const { createElement: h, Fragment, useState, useEffect, useMemo } = wp.element
   const { __ } = wp.i18n
   const {
     Button,
@@ -65,7 +65,7 @@
       setSaving(true)
       setNote(null)
       try {
-        await apiFetch({ path: '/mytheme/v1/seo/settings', method: 'POST', data: { settings: { schema: { product: { mappings } } } } })
+        await apiFetch({ path: '/tanzanite/v1/seo/settings', method: 'POST', data: { settings: { schema: { product: { mappings } } } } })
         setNote({ status: 'success', message: __('已保存字段映射。', 'mytheme-seo') })
       } catch (e) {
         console.error(e)
@@ -78,7 +78,7 @@
     const fillRecommended = () => {
       const rec = [
         { field: 'name', source: { type: 'wc', wc: 'name' }, transforms: ['trim'] },
-        { field: 'description', source: { type: 'core', key: 'post_excerpt' }, transforms: ['strip_tags','trim'] },
+        { field: 'description', source: { type: 'core', key: 'post_excerpt' }, transforms: ['strip_tags', 'trim'] },
         { field: 'image', source: { type: 'wc', wc: 'image_id' }, transforms: ['id_to_url'] },
         { field: 'sku', source: { type: 'wc', wc: 'sku' }, transforms: ['trim'] },
         { field: 'gtin', source: { type: 'meta', key: '_gtin' }, transforms: ['trim'] },
@@ -102,13 +102,13 @@
       setPvOver(null)
       try {
         let schemaPath = ''
-        if (pvId && String(pvId).trim() !== '') schemaPath = `/mytheme/v1/seo/schema/product/${encodeURIComponent(pvId)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
-        else if (pvSlug && String(pvSlug).trim() !== '') schemaPath = `/mytheme/v1/seo/schema/product/by-slug/${encodeURIComponent(pvSlug)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
+        if (pvId && String(pvId).trim() !== '') schemaPath = `/tanzanite/v1/seo/schema/product/${encodeURIComponent(pvId)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
+        else if (pvSlug && String(pvSlug).trim() !== '') schemaPath = `/tanzanite/v1/seo/schema/product/by-slug/${encodeURIComponent(pvSlug)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
         if (!schemaPath) { setLoading(false); return }
         const res = await apiFetch({ path: schemaPath })
         setPvData(res && res.schema ? res.schema : res)
         if (pvId) {
-          try { setPvOver(await apiFetch({ path: `/mytheme/v1/seo/product/overrides/${encodeURIComponent(pvId)}` })) } catch {}
+          try { setPvOver(await apiFetch({ path: `/tanzanite/v1/seo/product/overrides/${encodeURIComponent(pvId)}` })) } catch { }
         }
       } catch (e) {
         console.error(e)
@@ -142,7 +142,7 @@
             h(SelectControl, {
               label: __('来源类型', 'mytheme-seo'),
               value: src.type || 'none',
-              onChange: (v) => setRow(def.key, (r) => ({ ...r, source: { type: v } })) ,
+              onChange: (v) => setRow(def.key, (r) => ({ ...r, source: { type: v } })),
               options: [
                 { label: '—', value: 'none' },
                 { label: 'Core', value: 'core' },
@@ -266,7 +266,7 @@
       setSaving(true)
       setNote(null)
       try {
-        await apiFetch({ path: '/mytheme/v1/seo/settings', method: 'POST', data: { settings: { schema: { product: cfg } } } })
+        await apiFetch({ path: '/tanzanite/v1/seo/settings', method: 'POST', data: { settings: { schema: { product: cfg } } } })
         setNote({ status: 'success', message: __('已保存 Product Schema 设置。', 'mytheme-seo') })
       } catch (e) {
         console.error(e)
@@ -282,9 +282,9 @@
       try {
         let path = ''
         if (previewId && String(previewId).trim() !== '') {
-          path = `/mytheme/v1/seo/schema/product/${encodeURIComponent(previewId)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
+          path = `/tanzanite/v1/seo/schema/product/${encodeURIComponent(previewId)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
         } else if (previewSlug && String(previewSlug).trim() !== '') {
-          path = `/mytheme/v1/seo/schema/product/by-slug/${encodeURIComponent(previewSlug)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
+          path = `/tanzanite/v1/seo/schema/product/by-slug/${encodeURIComponent(previewSlug)}${pvLocale ? `?locale=${encodeURIComponent(pvLocale)}` : ''}`
         } else {
           setPvLoading(false)
           setNote({ status: 'error', message: __('请填写 ID 或 slug 进行预览。', 'mytheme-seo') })
@@ -305,10 +305,12 @@
       h(CardBody, null,
         h(CheckboxControl, { label: __('启用 Product JSON-LD', 'mytheme-seo'), checked: !!cfg.enabled, onChange: (v) => setCfg((c) => ({ ...c, enabled: !!v })) }),
         h(TextControl, { label: __('默认品牌（可选）', 'mytheme-seo'), value: cfg.brand, onChange: (v) => setCfg((c) => ({ ...c, brand: v })) }),
-        h(SelectControl, { label: __('价格来源', 'mytheme-seo'), value: cfg.priceSource, onChange: (v) => setCfg((c) => ({ ...c, priceSource: v })), options: [
-          { label: __('促销价优先（有则用促销价，否则用常规价）', 'mytheme-seo'), value: 'sale_or_regular' },
-          { label: __('仅用常规价', 'mytheme-seo'), value: 'regular_only' }
-        ] }),
+        h(SelectControl, {
+          label: __('价格来源', 'mytheme-seo'), value: cfg.priceSource, onChange: (v) => setCfg((c) => ({ ...c, priceSource: v })), options: [
+            { label: __('促销价优先（有则用促销价，否则用常规价）', 'mytheme-seo'), value: 'sale_or_regular' },
+            { label: __('仅用常规价', 'mytheme-seo'), value: 'regular_only' }
+          ]
+        }),
         // Multilingual brand editor
         languages.length > 0 && h('div', { style: { marginTop: '8px' } },
           h('h4', null, __('多语言品牌', 'mytheme-seo')),
@@ -335,37 +337,43 @@
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '8px', alignItems: 'end' } },
           h(TextControl, { label: 'Product ID', value: ovId, onChange: setOvId }),
           h(TextControl, { label: __('覆盖品牌（可选）', 'mytheme-seo'), value: ovBrand, onChange: setOvBrand }),
-          h(SelectControl, { label: __('覆盖价格来源', 'mytheme-seo'), value: ovPriceSource, onChange: setOvPriceSource, options: [
-            { label: __('促销价优先', 'mytheme-seo'), value: 'sale_or_regular' },
-            { label: __('仅用常规价', 'mytheme-seo'), value: 'regular_only' }
-          ] }),
-          h(Button, { variant: 'secondary', onClick: async () => {
-            try {
-              const idNum = parseInt(ovId, 10)
-              if (!idNum) { setOvNote({ status: 'error', message: __('请输入有效 Product ID', 'mytheme-seo') }); return }
-              const res = await apiFetch({ path: `/mytheme/v1/seo/product/overrides/${idNum}`, method: 'POST', data: { overrides: { brand: ovBrand, priceSource: ovPriceSource } } })
-              setOvNote({ status: 'success', message: __('已保存覆盖。', 'mytheme-seo') })
-            } catch (e) {
-              console.error(e)
-              setOvNote({ status: 'error', message: __('保存覆盖失败。', 'mytheme-seo') })
+          h(SelectControl, {
+            label: __('覆盖价格来源', 'mytheme-seo'), value: ovPriceSource, onChange: setOvPriceSource, options: [
+              { label: __('促销价优先', 'mytheme-seo'), value: 'sale_or_regular' },
+              { label: __('仅用常规价', 'mytheme-seo'), value: 'regular_only' }
+            ]
+          }),
+          h(Button, {
+            variant: 'secondary', onClick: async () => {
+              try {
+                const idNum = parseInt(ovId, 10)
+                if (!idNum) { setOvNote({ status: 'error', message: __('请输入有效 Product ID', 'mytheme-seo') }); return }
+                const res = await apiFetch({ path: `/tanzanite/v1/seo/product/overrides/${idNum}`, method: 'POST', data: { overrides: { brand: ovBrand, priceSource: ovPriceSource } } })
+                setOvNote({ status: 'success', message: __('已保存覆盖。', 'mytheme-seo') })
+              } catch (e) {
+                console.error(e)
+                setOvNote({ status: 'error', message: __('保存覆盖失败。', 'mytheme-seo') })
+              }
             }
-          } }, __('保存覆盖', 'mytheme-seo')),
+          }, __('保存覆盖', 'mytheme-seo')),
         ),
         h('div', { style: { marginTop: '6px', display: 'flex', gap: '8px' } },
-          h(Button, { variant: 'secondary', onClick: async () => {
-            try {
-              const idNum = parseInt(ovId, 10)
-              if (!idNum) { setOvNote({ status: 'error', message: __('请输入有效 Product ID', 'mytheme-seo') }); return }
-              const res = await apiFetch({ path: `/mytheme/v1/seo/product/overrides/${idNum}` })
-              const data = res && res.data ? res.data : {}
-              setOvBrand(data.brand || '')
-              setOvPriceSource(data.priceSource || 'sale_or_regular')
-              setOvNote({ status: 'success', message: __('已加载覆盖。', 'mytheme-seo') })
-            } catch (e) {
-              console.error(e)
-              setOvNote({ status: 'error', message: __('加载覆盖失败。', 'mytheme-seo') })
+          h(Button, {
+            variant: 'secondary', onClick: async () => {
+              try {
+                const idNum = parseInt(ovId, 10)
+                if (!idNum) { setOvNote({ status: 'error', message: __('请输入有效 Product ID', 'mytheme-seo') }); return }
+                const res = await apiFetch({ path: `/tanzanite/v1/seo/product/overrides/${idNum}` })
+                const data = res && res.data ? res.data : {}
+                setOvBrand(data.brand || '')
+                setOvPriceSource(data.priceSource || 'sale_or_regular')
+                setOvNote({ status: 'success', message: __('已加载覆盖。', 'mytheme-seo') })
+              } catch (e) {
+                console.error(e)
+                setOvNote({ status: 'error', message: __('加载覆盖失败。', 'mytheme-seo') })
+              }
             }
-          } }, __('读取覆盖', 'mytheme-seo')),
+          }, __('读取覆盖', 'mytheme-seo')),
           ovNote && h(Notice, { status: ovNote.status, onRemove: () => setOvNote(null), isDismissible: true }, ovNote.message)
         )
       )
@@ -428,7 +436,7 @@
       setBusy(true)
       setNote(null)
       try {
-        await apiFetch({ path: '/mytheme/v1/seo/settings', method: 'POST', data: { settings: { sitemaps: cfg } } })
+        await apiFetch({ path: '/tanzanite/v1/seo/settings', method: 'POST', data: { settings: { sitemaps: cfg } } })
         setNote({ status: 'success', message: __('Sitemaps 设置已保存。', 'mytheme-seo') })
         // 保存后自动检测一次
         await checkExternalUrls()
@@ -445,7 +453,7 @@
       setResult(null)
       setNote(null)
       try {
-        const res = await apiFetch({ path: '/mytheme/v1/seo/sitemaps/rebuild', method: 'POST', data: { full: true } })
+        const res = await apiFetch({ path: '/tanzanite/v1/seo/sitemaps/rebuild', method: 'POST', data: { full: true } })
         setResult(res)
         setNote({ status: 'success', message: __('已触发重建。', 'mytheme-seo') })
       } catch (e) {
@@ -460,7 +468,7 @@
       setBusy(true)
       setNote(null)
       try {
-        const res = await apiFetch({ path: '/mytheme/v1/seo/sitemaps/ping', method: 'POST', data: { engines: ['google','bing'] } })
+        const res = await apiFetch({ path: '/tanzanite/v1/seo/sitemaps/ping', method: 'POST', data: { engines: ['google', 'bing'] } })
         setResult(res)
         setNote({ status: 'success', message: __('已提交 Ping 请求。', 'mytheme-seo') })
       } catch (e) {
@@ -475,7 +483,7 @@
       setBusy(true)
       const urls = (cfg.externalUrls || []).filter(Boolean)
       const newStatus = {}
-      
+
       for (const url of urls) {
         try {
           const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' })
@@ -485,7 +493,7 @@
           newStatus[url] = 'FAIL'
         }
       }
-      
+
       setExtStatus(newStatus)
       setBusy(false)
     }
@@ -530,7 +538,7 @@
           (cfg.externalUrls || []).filter(Boolean).map((u, i) =>
             h('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: '8px' } },
               h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u),
-              h('span', { 'data-url': u, className: 'ext-sitemap-status', style: { fontSize: '12px', color: (extStatus[u]==='OK'?'#059669': extStatus[u]==='FAIL'?'#d14343':'#6b7280') } }, extStatus[u] || '…')
+              h('span', { 'data-url': u, className: 'ext-sitemap-status', style: { fontSize: '12px', color: (extStatus[u] === 'OK' ? '#059669' : extStatus[u] === 'FAIL' ? '#d14343' : '#6b7280') } }, extStatus[u] || '…')
             )
           )
         ),
@@ -555,7 +563,7 @@
     try {
       const list = Array.isArray(urls) ? urls.filter(Boolean) : []
       if (!list.length) return
-      await apiFetch({ path: '/mytheme/v1/seo/indexnow/push', method: 'POST', data: { urls: list } })
+      await apiFetch({ path: '/tanzanite/v1/seo/indexnow/push', method: 'POST', data: { urls: list } })
     } catch (e) {
       // silent fail; backend may not be ready
       console.error(e)
@@ -563,7 +571,7 @@
   }
 
   // Templates settings panel (MVP) - use function declaration to hoist
-  function TemplatesPanel () {
+  function TemplatesPanel() {
     const initial = MyThemeSEO.settings?.templates || {}
     const [tpls, setTpls] = useState({
       post: { title_template: initial.post?.title_template || '{title} - {site}', description_template: initial.post?.description_template || '{title} | {site}' },
@@ -584,7 +592,7 @@
       setSaving(true)
       setNote(null)
       try {
-        await apiFetch({ path: '/mytheme/v1/seo/settings', method: 'POST', data: { settings: { templates: tpls } } })
+        await apiFetch({ path: '/tanzanite/v1/seo/settings', method: 'POST', data: { settings: { templates: tpls } } })
         setNote({ status: 'success', message: __('Templates saved.', 'mytheme-seo') })
       } catch (e) {
         console.error(e)
@@ -657,7 +665,7 @@
 
     const saveSettings = async (next) => {
       try {
-        await apiFetch({ path: '/mytheme/v1/seo/settings', method: 'POST', data: { settings: { indexnow: next } } })
+        await apiFetch({ path: '/tanzanite/v1/seo/settings', method: 'POST', data: { settings: { indexnow: next } } })
         setNote({ status: 'success', message: __('IndexNow 设置已保存。', 'mytheme-seo') })
       } catch (e) {
         console.error(e)
@@ -699,7 +707,7 @@
       try {
         const locales = (pvLocales || '').split(/[,\s]+/).filter(Boolean)
         const data = { type: pvType, id: pvType === 'homepage' ? 0 : idNum, taxonomy: pvType === 'taxonomy' ? pvTax : undefined, locales }
-        const res = await apiFetch({ path: '/mytheme/v1/seo/indexnow/preview-ids', method: 'POST', data })
+        const res = await apiFetch({ path: '/tanzanite/v1/seo/indexnow/preview-ids', method: 'POST', data })
         const urls = Array.isArray(res?.urls) ? res.urls : []
         setPvResult(urls)
         if (!urls.length) setNote({ status: 'warning', message: __('未生成任何 URL，请检查模板或对象/语言。', 'mytheme-seo') })
@@ -737,20 +745,26 @@
         h(Button, { variant: 'secondary', onClick: async () => { await pushIndexNow([testingUrl]) } }, __('立即测试推送', 'mytheme-seo')),
         h('hr'),
         h('h4', null, __('预览按对象推送将生成的 URL（后端解析）', 'mytheme-seo')),
-        h(NextSelect, { label: __('对象类型', 'mytheme-seo'), value: pvType, onChange: setPvType, options: [
-          { label: 'Post', value: 'post' },
-          { label: 'Page', value: 'page' },
-          { label: 'Product', value: 'product' },
-          { label: 'Taxonomy', value: 'taxonomy' },
-          { label: 'Homepage', value: 'homepage' }
-        ]}),
+        h(NextSelect, {
+          label: __('对象类型', 'mytheme-seo'), value: pvType, onChange: setPvType, options: [
+            { label: 'Post', value: 'post' },
+            { label: 'Page', value: 'page' },
+            { label: 'Product', value: 'product' },
+            { label: 'Taxonomy', value: 'taxonomy' },
+            { label: 'Homepage', value: 'homepage' }
+          ]
+        }),
         pvType !== 'homepage' && h(NextText, { label: __('对象 ID（Homepage 可留空或 0）', 'mytheme-seo'), value: pvId, onChange: setPvId }),
-        pvType === 'taxonomy' && h(NextSelect, { label: __('Taxonomy'), value: pvTax, onChange: setPvTax, options: [
-          { label: 'category', value: 'category' },
-          { label: 'product_cat', value: 'product_cat' }
-        ]}),
-        h(NextText, { label: __('Locales（逗号或空格分隔；留空按设置）', 'mytheme-seo'), value: pvLocales, onChange: setPvLocales,
-          help: __('示例：en zh fr；留空表示按“保存后推送全部语言”设置决定。', 'mytheme-seo') }),
+        pvType === 'taxonomy' && h(NextSelect, {
+          label: __('Taxonomy'), value: pvTax, onChange: setPvTax, options: [
+            { label: 'category', value: 'category' },
+            { label: 'product_cat', value: 'product_cat' }
+          ]
+        }),
+        h(NextText, {
+          label: __('Locales（逗号或空格分隔；留空按设置）', 'mytheme-seo'), value: pvLocales, onChange: setPvLocales,
+          help: __('示例：en zh fr；留空表示按“保存后推送全部语言”设置决定。', 'mytheme-seo')
+        }),
         h(Button, { variant: 'secondary', onClick: previewByIds, disabled: pvLoading, style: { marginBottom: '8px' } }, pvLoading ? __('预览中…', 'mytheme-seo') : __('预览 URL', 'mytheme-seo')),
         pvResult.length > 0 && h('div', { style: { border: '1px solid #dcdcde', borderRadius: '6px', padding: '8px', marginTop: '6px' } },
           h('div', { style: { marginBottom: '8px', display: 'flex', gap: '8px' } },
@@ -782,7 +796,7 @@
         if (logTo) qs.set('to', logTo)
         if (logType !== 'any') qs.set('type', logType)
         if (logStatus !== 'any') qs.set('status', logStatus)
-        const res = await apiFetch({ path: `/mytheme/v1/seo/indexnow/logs?${qs.toString()}` })
+        const res = await apiFetch({ path: `/tanzanite/v1/seo/indexnow/logs?${qs.toString()}` })
         setLogItems(Array.isArray(res?.items) ? res.items : [])
       } catch (e) {
         console.error(e)
@@ -794,7 +808,7 @@
 
     const retryLog = async (id) => {
       try {
-        await apiFetch({ path: `/mytheme/v1/seo/indexnow/retry/${id}`, method: 'POST' })
+        await apiFetch({ path: `/tanzanite/v1/seo/indexnow/retry/${id}`, method: 'POST' })
         setNote({ status: 'success', message: __('已加入重试队列。', 'mytheme-seo') })
         await loadLogs()
       } catch (e) {
@@ -804,7 +818,7 @@
     }
 
     const exportCSV = () => {
-      const headers = ['id','type','status','locales','urls','object_id','taxonomy','created_at','attempts']
+      const headers = ['id', 'type', 'status', 'locales', 'urls', 'object_id', 'taxonomy', 'created_at', 'attempts']
       const rows = (logItems || []).map((it) => [
         it.id,
         it.type || '',
@@ -816,7 +830,7 @@
         it.created_at || '',
         it.attempts ?? ''
       ])
-      const csv = [headers.join(','), ...rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g,'""') + '"').join(','))].join('\n')
+      const csv = [headers.join(','), ...rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(','))].join('\n')
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -834,19 +848,23 @@
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto auto', gap: '8px', alignItems: 'end', marginBottom: '8px' } },
           h(NextText, { label: __('开始日期 (YYYY-MM-DD)', 'mytheme-seo'), value: logFrom, onChange: setLogFrom }),
           h(NextText, { label: __('结束日期 (YYYY-MM-DD)', 'mytheme-seo'), value: logTo, onChange: setLogTo }),
-          h(NextSelect, { label: __('对象类型', 'mytheme-seo'), value: logType, onChange: setLogType, options: [
-            { label: __('全部', 'mytheme-seo'), value: 'any' },
-            { label: 'Post', value: 'post' },
-            { label: 'Page', value: 'page' },
-            { label: 'Product', value: 'product' },
-            { label: 'Taxonomy', value: 'taxonomy' },
-            { label: 'Homepage', value: 'homepage' }
-          ]}),
-          h(NextSelect, { label: __('状态', 'mytheme-seo'), value: logStatus, onChange: setLogStatus, options: [
-            { label: __('全部', 'mytheme-seo'), value: 'any' },
-            { label: __('成功', 'mytheme-seo'), value: 'success' },
-            { label: __('失败', 'mytheme-seo'), value: 'error' }
-          ]}),
+          h(NextSelect, {
+            label: __('对象类型', 'mytheme-seo'), value: logType, onChange: setLogType, options: [
+              { label: __('全部', 'mytheme-seo'), value: 'any' },
+              { label: 'Post', value: 'post' },
+              { label: 'Page', value: 'page' },
+              { label: 'Product', value: 'product' },
+              { label: 'Taxonomy', value: 'taxonomy' },
+              { label: 'Homepage', value: 'homepage' }
+            ]
+          }),
+          h(NextSelect, {
+            label: __('状态', 'mytheme-seo'), value: logStatus, onChange: setLogStatus, options: [
+              { label: __('全部', 'mytheme-seo'), value: 'any' },
+              { label: __('成功', 'mytheme-seo'), value: 'success' },
+              { label: __('失败', 'mytheme-seo'), value: 'error' }
+            ]
+          }),
           h(Button, { variant: 'secondary', onClick: loadLogs, disabled: logLoading }, logLoading ? __('加载中…', 'mytheme-seo') : __('加载日志', 'mytheme-seo')),
           h(Button, { variant: 'secondary', onClick: exportCSV, disabled: !logItems.length }, __('导出 CSV', 'mytheme-seo'))
         ),
@@ -878,7 +896,7 @@
     const normalizedPayload = useMemo(() => normalizePayload(payload, languages), [payload, languages])
 
     const taxLabel = taxonomy === 'product_cat' ? __('产品分类 SEO', 'mytheme-seo') : __('分类 SEO', 'mytheme-seo')
-    const apiPathFor = (id) => `/mytheme/v1/seo/taxonomy/${taxonomy}/${id}`
+    const apiPathFor = (id) => `/tanzanite/v1/seo/taxonomy/${taxonomy}/${id}`
     const wpRouteForTax = () => (taxonomy === 'product_cat' ? '/wp/v2/product_cat' : '/wp/v2/categories')
 
     const fetchSeo = async () => {
@@ -977,37 +995,38 @@
           searching ? __('Searching…', 'mytheme-seo') : __('Search', 'mytheme-seo')
         ),
         results.length > 0 &&
-          h(
-            'div',
-            { style: { marginTop: '12px', border: '1px solid #dcdcde', borderRadius: '6px', padding: '8px' } },
-            results.map((r) =>
-              h(
-                Button,
-                {
-                  key: r.id,
-                  variant: 'secondary',
-                  onClick: async () => { setSelectedTerm(r); setTermIdInput(String(r.id)); await fetchSeo() },
-                  style: { display: 'block', width: '100%', textAlign: 'left', marginBottom: '6px' }
-                },
-                `#${r.id} — ${r.title}`
-              )
+        h(
+          'div',
+          { style: { marginTop: '12px', border: '1px solid #dcdcde', borderRadius: '6px', padding: '8px' } },
+          results.map((r) =>
+            h(
+              Button,
+              {
+                key: r.id,
+                variant: 'secondary',
+                onClick: async () => { setSelectedTerm(r); setTermIdInput(String(r.id)); await fetchSeo() },
+                style: { display: 'block', width: '100%', textAlign: 'left', marginBottom: '6px' }
+              },
+              `#${r.id} — ${r.title}`
             )
-          ),
+          )
+        ),
         h(
           Button,
           { variant: 'secondary', onClick: fetchSeo, disabled: !languages.length || loading },
           loading ? __('Loading…', 'mytheme-seo') : __('Fetch SEO data', 'mytheme-seo')
         ),
         notice &&
-          h(Notice, { status: notice.status, onRemove: () => setNotice(null), isDismissible: true }, notice.message),
+        h(Notice, { status: notice.status, onRemove: () => setNotice(null), isDismissible: true }, notice.message),
         loading && h(Spinner, null),
         !loading && !hasLanguages &&
-          h('p', { className: 'mytheme-seo-empty' }, __('Add locales before editing payload.', 'mytheme-seo')),
+        h('p', { className: 'mytheme-seo-empty' }, __('Add locales before editing payload.', 'mytheme-seo')),
         !loading && hasLanguages &&
-          h(Fragment, null,
-            h(LocaleForm, { locale: activeLocale, value: activeValue, onChange: updateLocale }),
-            h('div', { style: { marginTop: '8px' } },
-              h(Button, { variant: 'secondary', onClick: () => {
+        h(Fragment, null,
+          h(LocaleForm, { locale: activeLocale, value: activeValue, onChange: updateLocale }),
+          h('div', { style: { marginTop: '8px' } },
+            h(Button, {
+              variant: 'secondary', onClick: () => {
                 const site = (typeof window !== 'undefined' ? window.location.hostname : '')
                 const key = taxonomy === 'product_cat' ? 'product_cat' : 'category'
                 const tplCfg = (MyThemeSEO.settings?.templates || {})[key] || {}
@@ -1016,8 +1035,10 @@
                 if (tplCfg.title_template) next.title = renderTemplate(tplCfg.title_template, ctx)
                 if (tplCfg.description_template) next.description = renderTemplate(tplCfg.description_template, ctx)
                 updateLocale(activeLocale, next)
-              } }, __('按模板回填（当前语言）', 'mytheme-seo')),
-              h(Button, { variant: 'secondary', style: { marginLeft: '8px' }, onClick: () => {
+              }
+            }, __('按模板回填（当前语言）', 'mytheme-seo')),
+            h(Button, {
+              variant: 'secondary', style: { marginLeft: '8px' }, onClick: () => {
                 const site = (typeof window !== 'undefined' ? window.location.hostname : '')
                 const key = taxonomy === 'product_cat' ? 'product_cat' : 'category'
                 const tplCfg = (MyThemeSEO.settings?.templates || {})[key] || {}
@@ -1033,9 +1054,10 @@
                   })
                   return out
                 })
-              } }, __('按模板回填（全部语言）', 'mytheme-seo'))
-            )
-          ),
+              }
+            }, __('按模板回填（全部语言）', 'mytheme-seo'))
+          )
+        ),
         h(
           Button,
           { variant: 'primary', onClick: handleSave, disabled: saving || !hasLanguages },
@@ -1150,7 +1172,7 @@
         __('新增图片条目', 'mytheme-seo')
       ),
       list.length === 0 &&
-        h('p', { className: 'mytheme-seo-empty' }, __('暂无图片条目。', 'mytheme-seo')),
+      h('p', { className: 'mytheme-seo-empty' }, __('暂无图片条目。', 'mytheme-seo')),
       list.map((entry, index) =>
         h(
           Card,
@@ -1246,7 +1268,7 @@
         __('新增视频条目', 'mytheme-seo')
       ),
       list.length === 0 &&
-        h('p', { className: 'mytheme-seo-empty' }, __('暂无视频条目。', 'mytheme-seo')),
+      h('p', { className: 'mytheme-seo-empty' }, __('暂无视频条目。', 'mytheme-seo')),
       list.map((entry, index) =>
         h(
           Card,
@@ -1602,7 +1624,7 @@
           saving ? __('Saving…', 'mytheme-seo') : __('保存 Robots 设置', 'mytheme-seo')
         ),
         notice &&
-          h(Notice, { status: notice.status, onRemove: notice.onDismiss, isDismissible: true }, notice.message)
+        h(Notice, { status: notice.status, onRemove: notice.onDismiss, isDismissible: true }, notice.message)
       )
     )
   }
@@ -1630,9 +1652,9 @@
     const normalizedPayload = useMemo(() => normalizePayload(payload, languages), [payload, languages])
 
     const apiPathFor = (type, id) => {
-      if (type === 'product') return `/mytheme/v1/seo/product/${id}`
+      if (type === 'product') return `/tanzanite/v1/seo/product/${id}`
       // post/page 目前共用同一端点，根据后端实现需要可拆分
-      return `/mytheme/v1/seo/${id}`
+      return `/tanzanite/v1/seo/${id}`
     }
 
     const wpRouteForType = (type) => {
@@ -1792,48 +1814,57 @@
             ),
             h('hr'),
             hasLanguages && h('h4', null, __('批量编辑器', 'mytheme-seo')),
-            hasLanguages && h(NextSelect, { label: __('字段', 'mytheme-seo'), value: bulkField, onChange: setBulkField, options: [
-              { label: 'Title', value: 'title' },
-              { label: 'Description', value: 'description' }
-            ]}),
-            hasLanguages && h(NextSelect, { label: __('操作', 'mytheme-seo'), value: bulkOp, onChange: setBulkOp, options: [
-              { label: __('追加', 'mytheme-seo'), value: 'append' },
-              { label: __('前置', 'mytheme-seo'), value: 'prepend' },
-              { label: __('替换', 'mytheme-seo'), value: 'replace' }
-            ]}),
-            hasLanguages && h(NextSelect, { label: __('作用范围', 'mytheme-seo'), value: bulkScope, onChange: setBulkScope, options: [
-              { label: __('全部语言', 'mytheme-seo'), value: 'all' },
-              { label: __('仅当前语言', 'mytheme-seo'), value: 'current' }
-            ]}),
+            hasLanguages && h(NextSelect, {
+              label: __('字段', 'mytheme-seo'), value: bulkField, onChange: setBulkField, options: [
+                { label: 'Title', value: 'title' },
+                { label: 'Description', value: 'description' }
+              ]
+            }),
+            hasLanguages && h(NextSelect, {
+              label: __('操作', 'mytheme-seo'), value: bulkOp, onChange: setBulkOp, options: [
+                { label: __('追加', 'mytheme-seo'), value: 'append' },
+                { label: __('前置', 'mytheme-seo'), value: 'prepend' },
+                { label: __('替换', 'mytheme-seo'), value: 'replace' }
+              ]
+            }),
+            hasLanguages && h(NextSelect, {
+              label: __('作用范围', 'mytheme-seo'), value: bulkScope, onChange: setBulkScope, options: [
+                { label: __('全部语言', 'mytheme-seo'), value: 'all' },
+                { label: __('仅当前语言', 'mytheme-seo'), value: 'current' }
+              ]
+            }),
             hasLanguages && h(NextText, { label: __('文本', 'mytheme-seo'), value: bulkText, onChange: setBulkText }),
-            hasLanguages && h(Button, { variant: 'secondary', onClick: () => {
-              if (!bulkText && bulkOp !== 'replace') return
-              setPayload((current) => {
-                const next = { ...(current || {}) }
-                const applyTo = bulkScope === 'all' ? languages : [activeLocale]
-                applyTo.forEach((loc) => {
-                  const base = normalizePayload(current || {}, languages)[loc] || emptyPayload()
-                  const currentVal = String(base[bulkField] || '')
-                  let newVal = currentVal
-                  if (bulkOp === 'append') newVal = currentVal + bulkText
-                  else if (bulkOp === 'prepend') newVal = bulkText + currentVal
-                  else if (bulkOp === 'replace') newVal = bulkText
-                  next[loc] = { ...base, [bulkField]: newVal }
+            hasLanguages && h(Button, {
+              variant: 'secondary', onClick: () => {
+                if (!bulkText && bulkOp !== 'replace') return
+                setPayload((current) => {
+                  const next = { ...(current || {}) }
+                  const applyTo = bulkScope === 'all' ? languages : [activeLocale]
+                  applyTo.forEach((loc) => {
+                    const base = normalizePayload(current || {}, languages)[loc] || emptyPayload()
+                    const currentVal = String(base[bulkField] || '')
+                    let newVal = currentVal
+                    if (bulkOp === 'append') newVal = currentVal + bulkText
+                    else if (bulkOp === 'prepend') newVal = bulkText + currentVal
+                    else if (bulkOp === 'replace') newVal = bulkText
+                    next[loc] = { ...base, [bulkField]: newVal }
+                  })
+                  return next
                 })
-                return next
-              })
-            }, style: { marginBottom: '12px' } }, __('应用', 'mytheme-seo')),
-            
+              }, style: { marginBottom: '12px' }
+            }, __('应用', 'mytheme-seo')),
+
             notice &&
-              h(Notice, { status: notice.status, onRemove: () => setNotice(null), isDismissible: true }, notice.message),
+            h(Notice, { status: notice.status, onRemove: () => setNotice(null), isDismissible: true }, notice.message),
             loading && h(Spinner, null),
             !loading && !hasLanguages &&
-              h('p', { className: 'mytheme-seo-empty' }, __('Add locales before editing payload.', 'mytheme-seo')),
+            h('p', { className: 'mytheme-seo-empty' }, __('Add locales before editing payload.', 'mytheme-seo')),
             !loading && hasLanguages &&
-              h(Fragment, null,
-                h(LocaleForm, { locale: activeLocale, value: activeValue, onChange: updateLocale }),
-                h('div', { style: { marginTop: '8px' } },
-                  h(Button, { variant: 'secondary', onClick: () => {
+            h(Fragment, null,
+              h(LocaleForm, { locale: activeLocale, value: activeValue, onChange: updateLocale }),
+              h('div', { style: { marginTop: '8px' } },
+                h(Button, {
+                  variant: 'secondary', onClick: () => {
                     const site = (typeof window !== 'undefined' ? window.location.hostname : '')
                     const tplCfg = (MyThemeSEO.settings?.templates || {})[objectType] || {}
                     const { brand, price } = extractBrandPrice(activeValue.jsonld)
@@ -1842,8 +1873,10 @@
                     if (tplCfg.title_template) next.title = renderTemplate(tplCfg.title_template, ctx)
                     if (tplCfg.description_template) next.description = renderTemplate(tplCfg.description_template, ctx)
                     updateLocale(activeLocale, next)
-                  }, style: { marginRight: '8px' } }, __('按模板回填（当前语言）', 'mytheme-seo')),
-                  h(Button, { variant: 'secondary', onClick: () => {
+                  }, style: { marginRight: '8px' }
+                }, __('按模板回填（当前语言）', 'mytheme-seo')),
+                h(Button, {
+                  variant: 'secondary', onClick: () => {
                     const site = (typeof window !== 'undefined' ? window.location.hostname : '')
                     const tplCfg = (MyThemeSEO.settings?.templates || {})[objectType] || {}
                     setPayload((cur) => {
@@ -1859,35 +1892,40 @@
                       })
                       return out
                     })
-                  } }, __('按模板回填（全部语言）', 'mytheme-seo'))
-                )
-              ),
+                  }
+                }, __('按模板回填（全部语言）', 'mytheme-seo'))
+              )
+            ),
             h(
               Button,
               { variant: 'primary', onClick: handleSave, disabled: saving || !hasLanguages },
               saving ? __('保存中…', 'mytheme-seo') : __('保存 SEO 负载', 'mytheme-seo')
             ),
-            h(Button, { variant: 'secondary', style: { marginLeft: '8px' }, onClick: async () => {
-              const postId = parseInt(postIdInput, 10)
-              if (!postId) return
-              await pushIndexNowIds({ type: objectType, id: postId, locales: [activeLocale] })
-              setNotice({ status: 'success', message: __('已推送当前语言到 IndexNow。', 'mytheme-seo') })
-            } }, __('推送当前语言', 'mytheme-seo')),
-            h(Button, { variant: 'secondary', style: { marginLeft: '8px' }, onClick: async () => {
-              const postId = parseInt(postIdInput, 10)
-              if (!postId) return
-              try {
-                const settings = MyThemeSEO.settings?.indexnow || {}
-                const pushAll = Boolean(settings.pushAllLocales ?? true)
-                const locales = pushAll ? languages : [activeLocale]
-                const res = await apiFetch({ path: '/mytheme/v1/seo/indexnow/preview-ids', method: 'POST', data: { type: objectType, id: postId, locales } })
-                const urls = Array.isArray(res?.urls) ? res.urls : []
-                alert(urls.length ? urls.join('\n') : __('未生成 URL，请检查模板与对象/语言设置。', 'mytheme-seo'))
-              } catch (e) {
-                console.error(e)
-                setNotice({ status: 'error', message: __('预览失败，请稍后再试。', 'mytheme-seo') })
+            h(Button, {
+              variant: 'secondary', style: { marginLeft: '8px' }, onClick: async () => {
+                const postId = parseInt(postIdInput, 10)
+                if (!postId) return
+                await pushIndexNowIds({ type: objectType, id: postId, locales: [activeLocale] })
+                setNotice({ status: 'success', message: __('已推送当前语言到 IndexNow。', 'mytheme-seo') })
               }
-            } }, __('预览 URL 列表', 'mytheme-seo'))
+            }, __('推送当前语言', 'mytheme-seo')),
+            h(Button, {
+              variant: 'secondary', style: { marginLeft: '8px' }, onClick: async () => {
+                const postId = parseInt(postIdInput, 10)
+                if (!postId) return
+                try {
+                  const settings = MyThemeSEO.settings?.indexnow || {}
+                  const pushAll = Boolean(settings.pushAllLocales ?? true)
+                  const locales = pushAll ? languages : [activeLocale]
+                  const res = await apiFetch({ path: '/tanzanite/v1/seo/indexnow/preview-ids', method: 'POST', data: { type: objectType, id: postId, locales } })
+                  const urls = Array.isArray(res?.urls) ? res.urls : []
+                  alert(urls.length ? urls.join('\n') : __('未生成 URL，请检查模板与对象/语言设置。', 'mytheme-seo'))
+                } catch (e) {
+                  console.error(e)
+                  setNotice({ status: 'error', message: __('预览失败，请稍后再试。', 'mytheme-seo') })
+                }
+              }
+            }, __('预览 URL 列表', 'mytheme-seo'))
           )
         )
       )
@@ -1906,7 +1944,7 @@
       setLoading(true)
       setNotice(null)
       try {
-        const res = await apiFetch({ path: '/mytheme/v1/seo/homepage' })
+        const res = await apiFetch({ path: '/tanzanite/v1/seo/homepage' })
         setPayload(res.payload || {})
       } catch (e) {
         console.error(e)
@@ -1920,7 +1958,7 @@
       setSaving(true)
       setNotice(null)
       try {
-        await apiFetch({ path: '/mytheme/v1/seo/homepage', method: 'POST', data: { payload: normalizedPayload } })
+        await apiFetch({ path: '/tanzanite/v1/seo/homepage', method: 'POST', data: { payload: normalizedPayload } })
         setNotice({ status: 'success', message: __('Homepage SEO saved.', 'mytheme-seo') })
         const settings = MyThemeSEO.settings?.indexnow || {}
         if (settings.enabled) {
@@ -1964,15 +2002,17 @@
         !loading && hasLanguages && h(Fragment, null,
           h(LocaleForm, { locale: activeLocale, value: activeValue, onChange: updateLocale }),
           h('div', { style: { marginTop: '8px' } },
-            h(Button, { variant: 'secondary', onClick: () => {
-              const site = (typeof window !== 'undefined' ? window.location.hostname : '')
-              const tplCfg = (MyThemeSEO.settings?.templates || {}).homepage || {}
-              const ctx = { title: activeValue.title || '', site, locale: activeLocale }
-              const next = { ...activeValue }
-              if (tplCfg.title_template) next.title = renderTemplate(tplCfg.title_template, ctx)
-              if (tplCfg.description_template) next.description = renderTemplate(tplCfg.description_template, ctx)
-              updateLocale(activeLocale, next)
-            } }, __('按模板回填（当前语言）', 'mytheme-seo'))
+            h(Button, {
+              variant: 'secondary', onClick: () => {
+                const site = (typeof window !== 'undefined' ? window.location.hostname : '')
+                const tplCfg = (MyThemeSEO.settings?.templates || {}).homepage || {}
+                const ctx = { title: activeValue.title || '', site, locale: activeLocale }
+                const next = { ...activeValue }
+                if (tplCfg.title_template) next.title = renderTemplate(tplCfg.title_template, ctx)
+                if (tplCfg.description_template) next.description = renderTemplate(tplCfg.description_template, ctx)
+                updateLocale(activeLocale, next)
+              }
+            }, __('按模板回填（当前语言）', 'mytheme-seo'))
           )
         ),
         h(
@@ -1980,19 +2020,21 @@
           { variant: 'primary', onClick: handleSave, disabled: saving || !hasLanguages },
           saving ? __('Saving…', 'mytheme-seo') : __('Save SEO payload', 'mytheme-seo')
         ),
-        h(Button, { variant: 'secondary', style: { marginLeft: '8px' }, onClick: async () => {
-          try {
-            const settings = MyThemeSEO.settings?.indexnow || {}
-            const pushAll = Boolean(settings.pushAllLocales ?? true)
-            const locales = pushAll ? languages : [activeLocale]
-            const res = await apiFetch({ path: '/mytheme/v1/seo/indexnow/preview-ids', method: 'POST', data: { type: 'homepage', id: 0, locales } })
-            const urls = Array.isArray(res?.urls) ? res.urls : []
-            alert(urls.length ? urls.join('\n') : __('未生成 URL，请检查模板与对象/语言设置。', 'mytheme-seo'))
-          } catch (e) {
-            console.error(e)
-            setNotice({ status: 'error', message: __('预览失败，请稍后再试。', 'mytheme-seo') })
+        h(Button, {
+          variant: 'secondary', style: { marginLeft: '8px' }, onClick: async () => {
+            try {
+              const settings = MyThemeSEO.settings?.indexnow || {}
+              const pushAll = Boolean(settings.pushAllLocales ?? true)
+              const locales = pushAll ? languages : [activeLocale]
+              const res = await apiFetch({ path: '/tanzanite/v1/seo/indexnow/preview-ids', method: 'POST', data: { type: 'homepage', id: 0, locales } })
+              const urls = Array.isArray(res?.urls) ? res.urls : []
+              alert(urls.length ? urls.join('\n') : __('未生成 URL，请检查模板与对象/语言设置。', 'mytheme-seo'))
+            } catch (e) {
+              console.error(e)
+              setNotice({ status: 'error', message: __('预览失败，请稍后再试。', 'mytheme-seo') })
+            }
           }
-        } }, __('Preview URLs', 'mytheme-seo'))
+        }, __('Preview URLs', 'mytheme-seo'))
       )
     )
   }
@@ -2006,7 +2048,7 @@
       setLoading(true)
       setNotice(null)
       try {
-        const res = await apiFetch({ path: '/mytheme/v1/seo/404-logs' })
+        const res = await apiFetch({ path: '/tanzanite/v1/seo/404-logs' })
         setLogs(Array.isArray(res?.logs) ? res.logs : (res || []))
       } catch (e) {
         console.error(e)
@@ -2018,7 +2060,7 @@
 
     const mutate = async (action, path) => {
       try {
-        await apiFetch({ path: '/mytheme/v1/seo/404-logs', method: 'POST', data: { action, path } })
+        await apiFetch({ path: '/tanzanite/v1/seo/404-logs', method: 'POST', data: { action, path } })
         if (action === 'clear_all') setLogs([])
         else setLogs((prev) => prev.filter((it) => it.path !== path))
       } catch (e) {
@@ -2049,38 +2091,38 @@
         notice && h(Notice, { status: notice.status, onRemove: () => setNotice(null), isDismissible: true }, notice.message),
         loading && h(Spinner, null),
         !loading && logs && logs.length > 0 &&
-          h(
-            'table',
-            { className: 'widefat striped', style: { marginTop: '12px' } },
-            h('thead', null,
-              h('tr', null,
-                h('th', null, __('Path', 'mytheme-seo')),
-                h('th', null, __('Count', 'mytheme-seo')),
-                h('th', null, __('First Seen', 'mytheme-seo')),
-                h('th', null, __('Last Seen', 'mytheme-seo')),
-                h('th', null, __('Referrer', 'mytheme-seo')),
-                h('th', null, __('Resolved', 'mytheme-seo')),
-                h('th', null, __('Actions', 'mytheme-seo'))
-              )
-            ),
-            h('tbody', null,
-              logs.map((entry) =>
-                h('tr', { key: entry.path },
-                  h('td', null, entry.path),
-                  h('td', null, entry.count || 0),
-                  h('td', null, entry.first_seen ? new Date(entry.first_seen * 1000).toLocaleString() : ''),
-                  h('td', null, entry.last_seen ? new Date(entry.last_seen * 1000).toLocaleString() : ''),
-                  h('td', null, entry.last_referrer ? h('a', { href: entry.last_referrer, target: '_blank', rel: 'noopener noreferrer' }, __('查看', 'mytheme-seo')) : __('无', 'mytheme-seo')),
-                  h('td', null, entry.resolved ? __('已解决', 'mytheme-seo') : __('未解决', 'mytheme-seo')),
-                  h('td', null,
-                    h(Button, { size: 'small', variant: 'secondary', onClick: () => mutate(entry.resolved ? 'mark_unresolved' : 'mark_resolved', entry.path), style: { marginRight: '6px' } }, entry.resolved ? __('标记未解决', 'mytheme-seo') : __('标记已解决', 'mytheme-seo')),
-                    h(Button, { size: 'small', variant: 'secondary', onClick: () => mutate('delete', entry.path), style: { marginRight: '6px' } }, __('删除', 'mytheme-seo')),
-                    h(Button, { size: 'small', variant: 'secondary', onClick: () => window.open(entry.path, '_blank') }, __('打开', 'mytheme-seo'))
-                  )
+        h(
+          'table',
+          { className: 'widefat striped', style: { marginTop: '12px' } },
+          h('thead', null,
+            h('tr', null,
+              h('th', null, __('Path', 'mytheme-seo')),
+              h('th', null, __('Count', 'mytheme-seo')),
+              h('th', null, __('First Seen', 'mytheme-seo')),
+              h('th', null, __('Last Seen', 'mytheme-seo')),
+              h('th', null, __('Referrer', 'mytheme-seo')),
+              h('th', null, __('Resolved', 'mytheme-seo')),
+              h('th', null, __('Actions', 'mytheme-seo'))
+            )
+          ),
+          h('tbody', null,
+            logs.map((entry) =>
+              h('tr', { key: entry.path },
+                h('td', null, entry.path),
+                h('td', null, entry.count || 0),
+                h('td', null, entry.first_seen ? new Date(entry.first_seen * 1000).toLocaleString() : ''),
+                h('td', null, entry.last_seen ? new Date(entry.last_seen * 1000).toLocaleString() : ''),
+                h('td', null, entry.last_referrer ? h('a', { href: entry.last_referrer, target: '_blank', rel: 'noopener noreferrer' }, __('查看', 'mytheme-seo')) : __('无', 'mytheme-seo')),
+                h('td', null, entry.resolved ? __('已解决', 'mytheme-seo') : __('未解决', 'mytheme-seo')),
+                h('td', null,
+                  h(Button, { size: 'small', variant: 'secondary', onClick: () => mutate(entry.resolved ? 'mark_unresolved' : 'mark_resolved', entry.path), style: { marginRight: '6px' } }, entry.resolved ? __('标记未解决', 'mytheme-seo') : __('标记已解决', 'mytheme-seo')),
+                  h(Button, { size: 'small', variant: 'secondary', onClick: () => mutate('delete', entry.path), style: { marginRight: '6px' } }, __('删除', 'mytheme-seo')),
+                  h(Button, { size: 'small', variant: 'secondary', onClick: () => window.open(entry.path, '_blank') }, __('打开', 'mytheme-seo'))
                 )
               )
             )
-          ),
+          )
+        ),
         !loading && (!logs || logs.length === 0) && h('p', { className: 'mytheme-seo-empty' }, __('No 404 logs yet.', 'mytheme-seo'))
       )
     )
@@ -2096,14 +2138,14 @@
         items.length === 0
           ? h('p', { style: { color: '#6b7280', margin: 0 } }, emptyMessage)
           : h('ul', {
-              style: {
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                display: 'grid',
-                gap: '8px'
-              }
-            },
+            style: {
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'grid',
+              gap: '8px'
+            }
+          },
             items.map((item) => h('li', {
               key: item.id,
               style: {
@@ -2114,31 +2156,31 @@
                 gap: '4px'
               }
             },
-            h('div', {
-              style: {
-                fontWeight: 600,
-                color: '#111827'
-              }
-            }, item.title || __('(未命名)', 'mytheme-seo')),
-            h('div', { style: { fontSize: '12px', color: '#6b7280' } }, `${__('类型', 'mytheme-seo')}: ${item.type || '-'}`),
-            h('div', {
-              style: {
-                display: 'flex',
-                gap: '8px',
-                flexWrap: 'wrap'
-              }
-            },
-            item.edit_url && h(Button, {
-              variant: 'secondary',
-              href: item.edit_url,
-              target: '_blank'
-            }, __('后台编辑', 'mytheme-seo')),
-            item.view_url && h(Button, {
-              variant: 'secondary',
-              href: item.view_url,
-              target: '_blank'
-            }, __('前台预览', 'mytheme-seo'))
-            )
+              h('div', {
+                style: {
+                  fontWeight: 600,
+                  color: '#111827'
+                }
+              }, item.title || __('(未命名)', 'mytheme-seo')),
+              h('div', { style: { fontSize: '12px', color: '#6b7280' } }, `${__('类型', 'mytheme-seo')}: ${item.type || '-'}`),
+              h('div', {
+                style: {
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }
+              },
+                item.edit_url && h(Button, {
+                  variant: 'secondary',
+                  href: item.edit_url,
+                  target: '_blank'
+                }, __('后台编辑', 'mytheme-seo')),
+                item.view_url && h(Button, {
+                  variant: 'secondary',
+                  href: item.view_url,
+                  target: '_blank'
+                }, __('前台预览', 'mytheme-seo'))
+              )
             ))
           )
       )
@@ -2156,7 +2198,7 @@
       setLoading(true)
       setError(null)
       try {
-        const res = await apiFetch({ path: '/mytheme/v1/seo/audit' })
+        const res = await apiFetch({ path: '/tanzanite/v1/seo/audit' })
         setSummary({
           products: res?.products || { count: 0, items: [] },
           content: res?.content || { count: 0, items: [] }
@@ -2177,7 +2219,7 @@
       setTesting(true)
       setError(null)
       try {
-        const res = await apiFetch({ path: '/mytheme/v1/seo/audit?scope=missing' })
+        const res = await apiFetch({ path: '/tanzanite/v1/seo/audit?scope=missing' })
         setMissing(res?.missing || { count: 0, items: [] })
       } catch (e) {
         console.error(e)
@@ -2194,59 +2236,59 @@
         gap: '16px'
       }
     },
-    h(Card, { className: 'mytheme-seo-card' },
-      h(CardHeader, null, __('SEO 状态总览', 'mytheme-seo')),
-      h(CardBody, null,
-        h('div', {
-          style: {
-            display: 'flex',
-            gap: '8px',
-            flexWrap: 'wrap'
-          }
-        },
-        h(Button, {
-          variant: 'secondary',
-          onClick: loadSummary,
-          disabled: loading
-        }, loading ? __('加载中…', 'mytheme-seo') : __('刷新概览', 'mytheme-seo')),
-        h(Button, {
-          variant: 'primary',
-          onClick: testMissing,
-          disabled: testing
-        }, testing ? __('测试中…', 'mytheme-seo') : __('测试未配置 SEO 的页面', 'mytheme-seo'))
-        ),
-        error && h(Notice, {
-          status: 'error',
-          onRemove: () => setError(null),
-          isDismissible: true,
-          style: { marginTop: '12px' }
-        }, error),
-        loading && h('div', { style: { marginTop: '12px' } }, h(Spinner, null)),
-        !loading && h('div', {
-          style: {
-            marginTop: '16px',
-            display: 'grid',
-            gap: '16px'
-          }
-        },
-        h(AuditList, {
-          title: __('已配置 SEO 的商品', 'mytheme-seo'),
-          data: summary.products,
-          emptyMessage: __('暂无已配置 SEO 的商品。', 'mytheme-seo')
-        }),
-        h(AuditList, {
-          title: __('已配置 SEO 的页面/文章', 'mytheme-seo'),
-          data: summary.content,
-          emptyMessage: __('暂无已配置 SEO 的页面或文章。', 'mytheme-seo')
-        })
-        ),
-        missing && h(AuditList, {
-          title: __('未配置 SEO 的内容', 'mytheme-seo'),
-          data: missing,
-          emptyMessage: __('很好！所有内容均已配置 SEO。', 'mytheme-seo')
-        })
+      h(Card, { className: 'mytheme-seo-card' },
+        h(CardHeader, null, __('SEO 状态总览', 'mytheme-seo')),
+        h(CardBody, null,
+          h('div', {
+            style: {
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap'
+            }
+          },
+            h(Button, {
+              variant: 'secondary',
+              onClick: loadSummary,
+              disabled: loading
+            }, loading ? __('加载中…', 'mytheme-seo') : __('刷新概览', 'mytheme-seo')),
+            h(Button, {
+              variant: 'primary',
+              onClick: testMissing,
+              disabled: testing
+            }, testing ? __('测试中…', 'mytheme-seo') : __('测试未配置 SEO 的页面', 'mytheme-seo'))
+          ),
+          error && h(Notice, {
+            status: 'error',
+            onRemove: () => setError(null),
+            isDismissible: true,
+            style: { marginTop: '12px' }
+          }, error),
+          loading && h('div', { style: { marginTop: '12px' } }, h(Spinner, null)),
+          !loading && h('div', {
+            style: {
+              marginTop: '16px',
+              display: 'grid',
+              gap: '16px'
+            }
+          },
+            h(AuditList, {
+              title: __('已配置 SEO 的商品', 'mytheme-seo'),
+              data: summary.products,
+              emptyMessage: __('暂无已配置 SEO 的商品。', 'mytheme-seo')
+            }),
+            h(AuditList, {
+              title: __('已配置 SEO 的页面/文章', 'mytheme-seo'),
+              data: summary.content,
+              emptyMessage: __('暂无已配置 SEO 的页面或文章。', 'mytheme-seo')
+            })
+          ),
+          missing && h(AuditList, {
+            title: __('未配置 SEO 的内容', 'mytheme-seo'),
+            data: missing,
+            emptyMessage: __('很好！所有内容均已配置 SEO。', 'mytheme-seo')
+          })
+        )
       )
-    )
     )
   }
 
@@ -2285,7 +2327,7 @@
       setRobotsNotice(null)
       try {
         await apiFetch({
-          path: '/mytheme/v1/seo/settings',
+          path: '/tanzanite/v1/seo/settings',
           method: 'POST',
           data: { settings: { robots: next } }
         })
@@ -2397,13 +2439,13 @@
     )
   }
 
-if (document.getElementById('mytheme-seo-admin-app')) {
-  wp.element.render(h(App), document.getElementById('mytheme-seo-admin-app'))
-}
+  if (document.getElementById('mytheme-seo-admin-app')) {
+    wp.element.render(h(App), document.getElementById('mytheme-seo-admin-app'))
+  }
 
-const auditRoot = document.getElementById('mytheme-seo-audit-root')
-if (auditRoot) {
-  wp.element.render(h(SeoAuditPanel), auditRoot)
-}
+  const auditRoot = document.getElementById('mytheme-seo-audit-root')
+  if (auditRoot) {
+    wp.element.render(h(SeoAuditPanel), auditRoot)
+  }
 
 })();
