@@ -164,22 +164,7 @@
           </AccordionItem>
           
           <AccordionItem id="nipples" title="4. Nipples">
-             <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 mb-4">
-                <h3 class="text-lg font-bold text-slate-200 mb-4">Nipple Options</h3>
-                <p class="text-sm text-slate-400 mb-4">
-                  We offer Brass and Aluminum nipples. Secure-lock coating is standard on all our builds.
-                </p>
-                <div class="grid grid-cols-2 gap-4">
-                   <div class="bg-indigo-500/5 rounded-lg p-3 text-sm text-slate-300">
-                      <strong class="block text-indigo-400 mb-1">Brass</strong>
-                      Structure: Durable, corrosion-resistant. Recommended for heavy duty or winter riding.
-                   </div>
-                   <div class="bg-indigo-500/5 rounded-lg p-3 text-sm text-slate-300">
-                      <strong class="block text-indigo-400 mb-1">Aluminum</strong>
-                      Structure: Lightweight, anodized colors. Saves rotational weight.
-                   </div>
-                </div>
-             </div>
+             <TechnicalNipplesSection />
           </AccordionItem>
         </SmartAccordion>
       </section>
@@ -232,6 +217,7 @@ import AccordionItem from '~/components/ui/AccordionItem.vue'
 import TechnicalHubsSection from '~/components/TechnicalHubsSection.vue'
 import TechnicalRimsSection from '~/components/TechnicalRimsSection.vue'
 import TechnicalSpokesSection from '~/components/TechnicalSpokesSection.vue'
+import TechnicalNipplesSection from '~/components/TechnicalNipplesSection.vue'
 
 
 definePageMeta({
