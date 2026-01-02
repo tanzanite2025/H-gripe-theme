@@ -1,0 +1,56 @@
+SAPIM Nipple Models Overview【Poyax,Double square,up side down，HM】
+
+Rim depth, nipple design, and why angles matter
+Deep-section rims change the geometry of how spokes meet the rim. Internal and double-square nipple designs can improve stability, but when rim depth increases, the spoke entry angle and tool access become constrained. Below is a detailed, plain-language explanation of what “angle anomalies” really mean, why they matter, and when to avoid certain setups.
+
+Spoke entry angle and rim depth
+• 	Concept: Spokes do not enter the rim vertically; they come from hub flanges offset left/right and must “aim” toward the rim holes. As rim depth increases, the path from hub to nipple becomes longer and more tilted relative to the rim bed.
+• 	Effect on nipple alignment:
+• 	Shallow rims: The nipple head can tilt enough inside the rim bed to align with the spoke, keeping load axial (in line) rather than bending.
+• 	Deep rims (≥40–50 mm): The nipple’s tilt is physically limited by the rim bed and hole geometry. If the nipple cannot tilt to match the spoke’s approach angle, the spoke is forced to bend near the nipple head, increasing local bending stress.
+• 	Result: Misalignment increases friction and stress during tensioning, promotes spoke wind-up and fatigue, and can cause premature cracking at the nipple bed.
+
+Double square and internal (“up side down”) nipples
+• 	What they are:
+• 	Double square: A nipple with an extended, square drive on the inside—torqued from the rim interior. It seats deeper into the rim, increases thread engagement and reduces head slot weakness.
+• 	Internal (up side down): A fully internal nipple accessed through the tire bed; visually cleaner, weight distribution slightly farther outboard.
+• 	Why they’re stabilizing:
+• 	More thread engagement: Longer engagement means better load sharing along the threads, reducing shear at the head.
+• 	Stiffer head geometry: No external slots; stronger under torque, less rounding, more consistent tensioning.
+• 	Better alignment (with proper rims): Rounded/Polyax-style seating lets the nipple self-align to the spoke angle, lowering bending stress.
+• 	The deep-rim limitation (the “anomaly”):
+• 	Tool access path: Internal adjustment requires tools to enter from the tire bed holes. On deep rims, the tool must approach at a steep angle; if drilling matches hub bracing angle perfectly, the tool path may intersect the left/right sides of the tire bed hole, making engagement unreliable.
+• 	Nipple tilt cap: The deeper the rim, the less freedom the nipple has to tilt. If the hub’s bracing angle is large (wide flange, short center-to-flange), the spoke approaches at a strong lateral angle the nipple cannot match.
+• 	Consequences: The spoke experiences a hard, permanent bend at the nipple; tensioning feels rough; long-term fatigue increases; removal after service can reveal pronounced spoke kinks.
+• 	Practical thresholds:
+• 	Double square: Generally avoid when rim depth > 40 mm unless rim drilling and countersink are explicitly designed for the hub and spoke path.
+• 	Internal (up side down): Generally avoid when rim depth > 50 mm for the same reasons; angle and tool access issues are magnified.
+• 	Relative, not absolute: These thresholds are guidelines. A rim with generous Polyax-style seats, correct offset drilling, and matched hub geometry may tolerate deeper sections, but custom validation is required.
+
+Drilling strategy and hub compatibility
+• 	Matched drilling (fully aligned to hub):
+• 	Benefit: Ideal spoke line, minimal bending, best tension consistency.
+• 	Risk with deep rims: The tool path to the nipple from the rim bed can collide with the hole edges; practical assembly becomes difficult or impossible without enlarging/countersinking both sides or using specialized tools.
+• 	Neutral drilling (less aggressive alignment):
+• 	Benefit: Easier tool access and assembly; reduced collision at the tire bed hole.
+• 	Trade-off: Slightly less ideal spoke line; modest increase in bending at the nipple, mitigated by Polyax heads and washers.
+
+Why washers matter
+• 	Load spreading: Washers increase the contact area under the nipple, reducing local bearing stress on the rim bed—especially important for hard nipple heads and high tensions.
+• 	Angle accommodation: A washer can act like a micro spherical seat. Combined with Polyax, it allows more self-alignment, reducing spoke bending near the nipple.
+• 	Durability gains: Lowers risk of rim bed indentation, micro-cracking around holes, and paint/clearcoat damage on carbon and alloy rims.
+• 	Recommendation:
+• 	Always-on policy: Use washers for most builds, especially deep rims, high tension, or internal/double-square nipples.
+• 	Material-agnostic: Beneficial for both carbon and alloy rims.
+
+Clear recommendations
+• 	For deep rims (≥40–50 mm):
+• 	Prefer: External nipples with Polyax heads; matched drilling validated for your hub; use washers.
+• 	Avoid: Internal (up side down) on >50 mm and double square on >40 mm unless the rim is explicitly engineered for those geometries and tool paths.
+• 	For performance stability (normal depths):
+• 	Choose: Double square or internal nipples for cleaner aesthetics and improved thread engagement; pair with Polyax seats and washers.
+• 	Always treat as relative:
+• 	Verify hub geometry: Flange width, center-to-flange distance, spoke count, and lacing pattern (e.g., 2x/3x) change the approach angle.
+• 	Check rim specs: Drilling offset, countersink shape, seat radius, and tire bed hole dimensions determine feasible tool access and nipple tilt.
+• 	Prototype if custom: For custom 2:1 or asymmetric drilling, request CAD review to ensure assembly access and long-term reliability.
+If you want, I can turn this into a compact, bilingual page section with an annotated diagram showing spoke approach angles at 30 mm, 45 mm, and 55 mm rim depths, plus recommended nipple types and washer use for each case.

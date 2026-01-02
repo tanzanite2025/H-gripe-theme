@@ -1,0 +1,34 @@
+Here’s the full English translation of your text:
+
+Brass vs. Alloy Nipples: How to Choose
+When configuring a wheelset, you can choose between brass or alloy nipples. Below we compare their differences in five aspects to help you make the right decision:
+
+1. Weight
+- Brass nipples: about 1 gram each
+- Alloy nipples: about 0.33 gram each
+- While the difference per nipple may seem small, a wheelset can have up to 72 nipples, and since they are positioned near the outer diameter of the wheel, the effect on rotational weight is significant.
+
+2. Color
+- Brass: cannot be anodized, limited color options (usually black or silver), black brass tends to fade more easily
+- Alloy: can be anodized, available in a wide range of colors, more vibrant appearance
+
+3. Strength
+- Standard 12mm brass nipples: traditional head design, generally stronger overall
+- Alloy nipples with extended heads (e.g., double square or hex head): much higher shear strength due to oversized head and no slot; 16mm versions can achieve full thread engagement, whereas traditional nipples typically only achieve about two-thirds engagement
+
+4. Building Performance
+- Alloy nipples have less friction when threading onto steel spokes, reducing spoke wind-up during assembly
+- Alloy is softer than brass, so nipples can round off more easily; using a 4-sided external wrench or internal tools (like DT Squorx) is recommended
+- High-end alloy nipples (e.g., Sapim Polyax) are made from heat-treated 7075 alloy, making them harder and more durable
+- Locking features (e.g., Sapim Secure Lock, DT Pro Lock) help prevent loosening and loss of tension
+- Tapered heads reduce stress at the nipple bed and align better with the spokes
+
+5. Corrosion Resistance
+- Brass: generally more resistant to corrosion
+- Alloy: more prone to galvanic corrosion when paired with carbon rims; only high-quality alloy nipples should be used
+- High-end alloy nipples (e.g., Sapim) receive special anti-corrosion treatment, and salt spray tests show even better results than nickel-plated brass nipples
+
+✅ Summary Recommendations
+- For lightweight and color options → Choose alloy nipples
+- For durability and corrosion resistance → Choose brass nipples
+- For carbon rims → Use high-quality alloy or brass nipples; avoid low-end alloy nipples due to corrosion risk
