@@ -8,7 +8,8 @@
     "generate": "cross-env NODE_OPTIONS=--max-old-space-size=8192 nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "sync-data": "node scripts/sync-spoke-data.mjs"
+    "sync-data": "node scripts/sync-spoke-data.mjs",
+    "check-locales": "node scripts/check-locales.mjs"
   },
   "dependencies": {
     "@nuxtjs/i18n": "^9.1.0",

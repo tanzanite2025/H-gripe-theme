@@ -42,6 +42,16 @@ class TZ_BLOG_REST
                 'permission_callback' => '__return_true'
             )
         );
+
+        register_rest_route(
+            'tanzanite/v1',
+            '/languages',
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'handle_languages'),
+                'permission_callback' => '__return_true'
+            )
+        );
     }
 
     private function build_featured_image($post_id)
@@ -286,6 +296,23 @@ class TZ_BLOG_REST
         return array(
             'group' => $group,
             'translations' => $this->get_translations_map($group)
+        );
+    }
+
+    public function handle_languages($request)
+    {
+        $locales = TZ_BLOG_Languages::get_locales();
+
+        $items = array();
+        foreach ($locales as $code => $name) {
+            $items[] = array(
+                'code' => (string) $code,
+                'name' => (string) $name,
+            );
+        }
+
+        return array(
+            'locales' => $items,
         );
     }
 }
