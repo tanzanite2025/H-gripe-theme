@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Mağaza",
+    "items": {
+      "0": {
+        "label": "Mağaza Kategorisi A"
+      },
+      "1": {
+        "label": "Mağaza Kategorisi B"
+      },
+      "2": {
+        "label": "Mağaza Kategorisi C"
+      }
+    }
+  },
+  "support": {
+    "label": "Destek",
+    "items": {
+      "0": {
+        "label": "SSS"
+      },
+      "1": {
+        "label": "Bize Ulaşın"
+      },
+      "2": {
+        "label": "Garanti"
+      }
+    }
+  },
+  "about": {
+    "label": "Hakkımızda",
+    "items": {
+      "0": {
+        "label": "Hikayemiz"
+      },
+      "1": {
+        "label": "Ekip"
+      },
+      "2": {
+        "label": "Kariyer"
+      }
+    }
+  },
+  "member": {
+    "label": "Üye",
+    "items": {
+      "0": {
+        "label": "Üyelik Planları"
+      },
+      "1": {
+        "label": "Puanlar ve Ödüller"
+      },
+      "2": {
+        "label": "Özel Teklifler"
+      }
+    }
+  }
+}

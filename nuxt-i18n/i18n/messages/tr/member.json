@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Üyelik seviyesi:",
+    "productDiscountRate": "Ürün indirim oranı:",
+    "pointsDiscountRate": "Puan indirim oranı:",
+    "canBeStacked": "Birleştirilebilir"
+  },
+  "common": {
+    "yes": "Evet",
+    "no": "Hayır"
+  },
+  "levels": {
+    "title": "Üyelik seviyeleri",
+    "header": {
+      "level": "Seviye",
+      "pointsRequired": "Gerekli puanlar",
+      "productDiscount": "Ürün indirimi",
+      "pointsDiscount": "Puan indirimi"
+    },
+    "rows": {
+      "ordinary": "Standart",
+      "bronze": "Bronz",
+      "silver": "Gümüş",
+      "gold": "Altın",
+      "supreme": "Üst"
+    }
+  },
+  "points": {
+    "title": "Puan nasıl kazanılır?",
+    "invite": "Yeni kullanıcıları davet et",
+    "inviteDesc": "50 puan (davet edilen 30 puan alır)",
+    "consume": "Para birimi",
+    "consumeDesc": "1 Dolar = 1 Puan",
+    "daily": "Günlük giriş",
+    "dailyDesc": "1 puan (30 gün geçerli)"
+  }
+}

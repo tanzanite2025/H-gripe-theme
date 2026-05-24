@@ -1,0 +1,18 @@
+{
+  "title": "Geavanceerde filters",
+  "priceRange": "Prijsbereik",
+  "stockStatus": "Voorraadstatus",
+  "sortBy": "Sorteer op",
+  "rating": "Beoordeling",
+  "inStock": "Op voorraad",
+  "preOrder": "Voorbestelling",
+  "andUp": "en hoger",
+  "reset": "Filters resetten",
+  "sort": {
+    "newest": "Nieuwste",
+    "priceLowToHigh": "Prijs: Laag naar Hoog",
+    "priceHighToLow": "Prijs: Hoog naar Laag",
+    "popular": "Meest populair",
+    "rating": "Beste beoordeling"
+  }
+}

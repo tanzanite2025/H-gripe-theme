@@ -1,0 +1,6 @@
+{
+  "register": "Registrarse",
+  "login": "Iniciar sesión",
+  "logout": "Cerrar sesión",
+  "points": "Punto: {count}"
+}

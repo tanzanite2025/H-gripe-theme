@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Winkel",
+    "items": {
+      "0": {
+        "label": "Winkelcategorie A"
+      },
+      "1": {
+        "label": "Winkelcategorie B"
+      },
+      "2": {
+        "label": "Winkelcategorie C"
+      }
+    }
+  },
+  "support": {
+    "label": "Ondersteuning",
+    "items": {
+      "0": {
+        "label": "Veelgestelde vragen"
+      },
+      "1": {
+        "label": "Neem contact op"
+      },
+      "2": {
+        "label": "Garantie"
+      }
+    }
+  },
+  "about": {
+    "label": "Over ons",
+    "items": {
+      "0": {
+        "label": "Ons verhaal"
+      },
+      "1": {
+        "label": "Team"
+      },
+      "2": {
+        "label": "Carrière"
+      }
+    }
+  },
+  "member": {
+    "label": "Lid",
+    "items": {
+      "0": {
+        "label": "Lidmaatschapsplannen"
+      },
+      "1": {
+        "label": "Punten en beloningen"
+      },
+      "2": {
+        "label": "Exclusieve aanbiedingen"
+      }
+    }
+  }
+}

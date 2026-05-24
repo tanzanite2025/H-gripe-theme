@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Узровень сяброўства:",
+    "productDiscountRate": "Зніжка на тавары:",
+    "pointsDiscountRate": "Зніжка па балах:",
+    "canBeStacked": "Можна суміраваць"
+  },
+  "common": {
+    "yes": "Так",
+    "no": "Не"
+  },
+  "levels": {
+    "title": "Узроўні сяброўства",
+    "header": {
+      "level": "Узровень",
+      "pointsRequired": "Неабходныя балы",
+      "productDiscount": "Зніжка на тавары",
+      "pointsDiscount": "Зніжка па балах"
+    },
+    "rows": {
+      "ordinary": "Звычайны",
+      "bronze": "Бронзавы",
+      "silver": "Сярэбраны",
+      "gold": "Залаты",
+      "supreme": "Вышэйшы"
+    }
+  },
+  "points": {
+    "title": "Як атрымаць балы?",
+    "invite": "Запрасіць новых карыстальнікаў",
+    "inviteDesc": "50 балаў (запрошаны атрымлівае 30 балаў)",
+    "consume": "Валюта выдаткаў",
+    "consumeDesc": "1 долар = 1 бал",
+    "daily": "Штодзённы ўваход",
+    "dailyDesc": "1 бал (дзеянне 30 дзён)"
+  }
+}

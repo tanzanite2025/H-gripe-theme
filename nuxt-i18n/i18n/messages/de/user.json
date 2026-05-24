@@ -1,0 +1,6 @@
+{
+  "register": "Registrieren",
+  "login": "Anmelden",
+  "logout": "Abmelden",
+  "points": "Punkt: {count}"
+}

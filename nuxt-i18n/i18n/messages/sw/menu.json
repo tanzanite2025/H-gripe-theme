@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Duka",
+    "items": {
+      "0": {
+        "label": "Aina ya Duka A"
+      },
+      "1": {
+        "label": "Aina ya Duka B"
+      },
+      "2": {
+        "label": "Aina ya Duka C"
+      }
+    }
+  },
+  "support": {
+    "label": "Msaada",
+    "items": {
+      "0": {
+        "label": "Maswali Yanayoulizwa Mara kwa Mara"
+      },
+      "1": {
+        "label": "Wasiliana Nasi"
+      },
+      "2": {
+        "label": "Dhamana"
+      }
+    }
+  },
+  "about": {
+    "label": "Kuhusu Sisi",
+    "items": {
+      "0": {
+        "label": "Hadithi Yetu"
+      },
+      "1": {
+        "label": "Timu"
+      },
+      "2": {
+        "label": "Kazi"
+      }
+    }
+  },
+  "member": {
+    "label": "Mwanachama",
+    "items": {
+      "0": {
+        "label": "Mipango ya Uanachama"
+      },
+      "1": {
+        "label": "Pointi na Zawadi"
+      },
+      "2": {
+        "label": "Ofa Maalum"
+      }
+    }
+  }
+}

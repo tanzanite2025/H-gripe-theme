@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Matsayin memba:",
+    "productDiscountRate": "Ragin farashin kaya:",
+    "pointsDiscountRate": "Ragin maki:",
+    "canBeStacked": "Ana iya hade su"
+  },
+  "common": {
+    "yes": "I",
+    "no": "A'a"
+  },
+  "levels": {
+    "title": "Matsayin memba",
+    "header": {
+      "level": "Matsayi",
+      "pointsRequired": "Maki da ake bukata",
+      "productDiscount": "Ragin kaya",
+      "pointsDiscount": "Ragin maki"
+    },
+    "rows": {
+      "ordinary": "Na al'ada",
+      "bronze": "Tagulla",
+      "silver": "Azurfa",
+      "gold": "Zinariya",
+      "supreme": "Mafi girma"
+    }
+  },
+  "points": {
+    "title": "Yadda ake samun maki?",
+    "invite": "Gaya wa sabbin masu amfani",
+    "inviteDesc": "Maki 50 (wanda aka gayyata zai samu Maki 30)",
+    "consume": "Kudi",
+    "consumeDesc": "Dala 1 = Maki 1",
+    "daily": "Shigar kowace rana",
+    "dailyDesc": "Maki 1 (yana aiki na kwanaki 30)"
+  }
+}

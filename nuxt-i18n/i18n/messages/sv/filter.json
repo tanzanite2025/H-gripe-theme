@@ -1,0 +1,18 @@
+{
+  "title": "Avancerade filter",
+  "priceRange": "Prisintervall",
+  "stockStatus": "Lagerstatus",
+  "sortBy": "Sortera efter",
+  "rating": "Betyg",
+  "inStock": "I lager",
+  "preOrder": "Förbeställning",
+  "andUp": "och uppåt",
+  "reset": "Återställ filter",
+  "sort": {
+    "newest": "Nyaste",
+    "priceLowToHigh": "Pris: Låg till Hög",
+    "priceHighToLow": "Pris: Hög till Låg",
+    "popular": "Mest populära",
+    "rating": "Bästa betyg"
+  }
+}

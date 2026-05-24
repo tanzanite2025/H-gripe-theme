@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "フィルターとその他",
+  "staticPages": "ページ",
+  "categories": "商品カテゴリー",
+  "categoriesPlaceholder": "商品カテゴリーツリー（実装予定）",
+  "quickSearch": "クイック検索",
+  "productSearch": "商品検索",
+  "searchProductPlaceholder": "商品名を入力...",
+  "searchProducts": "商品を検索"
+}

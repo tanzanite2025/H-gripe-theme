@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "مستوى العضوية:",
+    "productDiscountRate": "نسبة خصم المنتجات:",
+    "pointsDiscountRate": "نسبة خصم النقاط:",
+    "canBeStacked": "قابل للتجميع"
+  },
+  "common": {
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "levels": {
+    "title": "مستويات العضوية",
+    "header": {
+      "level": "المستوى",
+      "pointsRequired": "النقاط المطلوبة",
+      "productDiscount": "خصم المنتجات",
+      "pointsDiscount": "خصم النقاط"
+    },
+    "rows": {
+      "ordinary": "عادي",
+      "bronze": "برونزي",
+      "silver": "فضي",
+      "gold": "ذهبي",
+      "supreme": "فائق"
+    }
+  },
+  "points": {
+    "title": "كيف أحصل على النقاط؟",
+    "invite": "دعوة مستخدمين جدد",
+    "inviteDesc": "50 نقطة (المُدعو يحصل على 30 نقطة)",
+    "consume": "عملة الإنفاق",
+    "consumeDesc": "1 دولار = 1 نقطة",
+    "daily": "تسجيل الدخول اليومي",
+    "dailyDesc": "1 نقطة (صلاحية 30 يومًا)"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "筛选 & 更多",
+  "staticPages": "页面",
+  "categories": "商品分类",
+  "categoriesPlaceholder": "商品分类树（待实现）",
+  "quickSearch": "快速搜索",
+  "productSearch": "商品搜索",
+  "searchProductPlaceholder": "输入商品名称...",
+  "searchProducts": "搜索商品"
+}

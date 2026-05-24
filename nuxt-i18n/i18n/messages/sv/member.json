@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Medlemsnivå:",
+    "productDiscountRate": "Produktrabatt:",
+    "pointsDiscountRate": "Poängrabatt:",
+    "canBeStacked": "Kan kombineras"
+  },
+  "common": {
+    "yes": "Ja",
+    "no": "Nej"
+  },
+  "levels": {
+    "title": "Medlemsnivåer",
+    "header": {
+      "level": "Nivå",
+      "pointsRequired": "Krävda poäng",
+      "productDiscount": "Produktrabatt",
+      "pointsDiscount": "Poängrabatt"
+    },
+    "rows": {
+      "ordinary": "Ordinarie",
+      "bronze": "Brons",
+      "silver": "Silver",
+      "gold": "Guld",
+      "supreme": "Supreme"
+    }
+  },
+  "points": {
+    "title": "Hur får man poäng?",
+    "invite": "Bjud in nya användare",
+    "inviteDesc": "50 poäng (den inbjudna får 30 poäng)",
+    "consume": "Valuta",
+    "consumeDesc": "1 Dollar = 1 Poäng",
+    "daily": "Daglig inloggning",
+    "dailyDesc": "1 poäng (giltigt i 30 dagar)"
+  }
+}

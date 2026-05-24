@@ -1,0 +1,21 @@
+{
+  "title": "Advanced Filters",
+  "filters": "Filters",
+  "priceRange": "Price Range",
+  "price": "Price",
+  "stockStatus": "Stock Status",
+  "sortBy": "Sort By",
+  "rating": "Rating",
+  "inStock": "In Stock",
+  "preOrder": "Pre-order",
+  "andUp": "& Up",
+  "reset": "Reset Filters",
+  "resetShort": "Reset",
+  "sort": {
+    "newest": "Newest",
+    "priceLowToHigh": "Price: Low to High",
+    "priceHighToLow": "Price: High to Low",
+    "popular": "Most Popular",
+    "rating": "Best Rating"
+  }
+}

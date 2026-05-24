@@ -299,13 +299,16 @@ class TZ_CS_Agent_API {
             [
                 'conversation_id' => $conversation_id,
                 'sender_type'     => 'agent',
-                'sender_id'       => $agent['agent_id'],
-                'message'         => $message,
+                'sender_id'       => 0,
+                'sender_name'     => $agent['name'],
+                'sender_email'    => $agent['email'],
+                'agent_id'        => $agent['agent_id'],
                 'message_type'    => $message_type,
+                'message'         => $message,
                 'is_read'         => 0,
                 'created_at'      => current_time( 'mysql' ),
             ],
-            [ '%s', '%s', '%s', '%s', '%s', '%d', '%s' ]
+            [ '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s' ]
         );
         
         if ( ! $result ) {
@@ -322,7 +325,7 @@ class TZ_CS_Agent_API {
             $table_conversations,
             [
                 'last_message'    => $message,
-                'last_message_at' => current_time( 'mysql' ),
+                'last_message_time' => current_time( 'mysql' ),
                 'updated_at'      => current_time( 'mysql' ),
             ],
             [ 'id' => $conversation_id ],
@@ -679,7 +682,7 @@ class TZ_CS_Agent_API {
         $wpdb->update(
             $table_agents,
             [
-                'status'          => $status,
+                'online_status'   => $status,
                 'last_active_at'  => current_time( 'mysql' ),
             ],
             [ 'agent_id' => $agent['agent_id'] ],
@@ -706,10 +709,10 @@ class TZ_CS_Agent_API {
         
         // 获取所有在线客服（online, busy, away）
         $agents = $wpdb->get_results(
-            "SELECT agent_id, name, email, avatar, status, last_active_at 
+            "SELECT agent_id, name, email, avatar, online_status AS status, last_active_at 
              FROM $table_agents 
-             WHERE status IN ('online', 'busy', 'away') 
-             ORDER BY status ASC, last_active_at DESC"
+             WHERE status = 'active' AND online_status IN ('online', 'busy', 'away') 
+             ORDER BY online_status ASC, last_active_at DESC"
         );
         
         return new WP_REST_Response( [

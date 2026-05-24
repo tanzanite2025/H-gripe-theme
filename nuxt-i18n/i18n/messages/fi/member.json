@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Jäsenyystaso:",
+    "productDiscountRate": "Tuotealennusprosentti:",
+    "pointsDiscountRate": "Pistealennusprosentti:",
+    "canBeStacked": "Yhdistettävissä"
+  },
+  "common": {
+    "yes": "Kyllä",
+    "no": "Ei"
+  },
+  "levels": {
+    "title": "Jäsenyystasot",
+    "header": {
+      "level": "Taso",
+      "pointsRequired": "Vaaditut pisteet",
+      "productDiscount": "Tuotealennus",
+      "pointsDiscount": "Pistealennus"
+    },
+    "rows": {
+      "ordinary": "Tavallinen",
+      "bronze": "Pronssi",
+      "silver": "Hopea",
+      "gold": "Kulta",
+      "supreme": "Ylin"
+    }
+  },
+  "points": {
+    "title": "Miten saada pisteitä?",
+    "invite": "Kutsu uusia käyttäjiä",
+    "inviteDesc": "50 pistettä (kutsuttu saa 30 pistettä)",
+    "consume": "Valuutta",
+    "consumeDesc": "1 dollari = 1 piste",
+    "daily": "Päivittäinen kirjautuminen",
+    "dailyDesc": "1 piste (voimassa 30 päivää)"
+  }
+}

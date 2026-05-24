@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Kiwango cha uanachama:",
+    "productDiscountRate": "Kiwango cha punguzo la bidhaa:",
+    "pointsDiscountRate": "Kiwango cha punguzo la pointi:",
+    "canBeStacked": "Inaweza kuunganishwa"
+  },
+  "common": {
+    "yes": "Ndiyo",
+    "no": "Hapana"
+  },
+  "levels": {
+    "title": "Viwango vya uanachama",
+    "header": {
+      "level": "Kiwango",
+      "pointsRequired": "Pointi zinazohitajika",
+      "productDiscount": "Punguzo la bidhaa",
+      "pointsDiscount": "Punguzo la pointi"
+    },
+    "rows": {
+      "ordinary": "Kawaida",
+      "bronze": "Shaba",
+      "silver": "Fedha",
+      "gold": "Dhahabu",
+      "supreme": "Juu"
+    }
+  },
+  "points": {
+    "title": "Jinsi ya kupata pointi?",
+    "invite": "Alika watumiaji wapya",
+    "inviteDesc": "Pointi 50 (aliyealikwa anapata pointi 30)",
+    "consume": "Sarafu",
+    "consumeDesc": "Dola 1 = Pointi 1",
+    "daily": "Kuingia kila siku",
+    "dailyDesc": "Pointi 1 (inatumika kwa siku 30)"
+  }
+}

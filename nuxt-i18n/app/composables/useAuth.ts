@@ -117,7 +117,7 @@ export function useAuth() {
 
     initialized.value = true
     try {
-      const response = await request<ApiResponse<{ user: AuthUser }>>('/tanzanite/v1/chat/me', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
+      const response = await request<ApiResponse<{ user: AuthUser }>>('/tanzanite/v1/auth/me', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
       const data = response?.data?.user || null
       user.value = data
       error.value = null
@@ -134,7 +134,7 @@ export function useAuth() {
 
     try {
       const response = await request<ApiResponse<{ user: AuthUser }>>(
-        '/tanzanite/v1/chat/login',
+        '/tanzanite/v1/auth/login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -160,7 +160,7 @@ export function useAuth() {
 
     try {
       const response = await request<ApiResponse<{ user: AuthUser }>>(
-        '/tanzanite/v1/chat/register',
+        '/tanzanite/v1/auth/register',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -187,7 +187,7 @@ export function useAuth() {
     }
 
     try {
-      await request('/tanzanite/v1/chat/logout', { method: 'POST' }, 'Logout failed')
+      await request('/tanzanite/v1/auth/logout', { method: 'POST' }, 'Logout failed')
     } catch (err) {
       console.warn('Logout request failed:', err)
     } finally {
@@ -205,7 +205,7 @@ export function useAuth() {
 
     try {
       const response = await request<ApiResponse<{ user: AuthUser }>>(
-        '/tanzanite/v1/chat/google-login',
+        '/tanzanite/v1/auth/google-login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },

@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Kauppa",
+    "items": {
+      "0": {
+        "label": "Kategoria A"
+      },
+      "1": {
+        "label": "Kategoria B"
+      },
+      "2": {
+        "label": "Kategoria C"
+      }
+    }
+  },
+  "support": {
+    "label": "Tuki",
+    "items": {
+      "0": {
+        "label": "UKK"
+      },
+      "1": {
+        "label": "Ota yhteyttä"
+      },
+      "2": {
+        "label": "Takuu"
+      }
+    }
+  },
+  "about": {
+    "label": "Tietoa meistä",
+    "items": {
+      "0": {
+        "label": "Tarinmme"
+      },
+      "1": {
+        "label": "Tiimi"
+      },
+      "2": {
+        "label": "Urat"
+      }
+    }
+  },
+  "member": {
+    "label": "Jäsen",
+    "items": {
+      "0": {
+        "label": "Jäsensuunnitelmat"
+      },
+      "1": {
+        "label": "Pisteet ja palkinnot"
+      },
+      "2": {
+        "label": "Eksklusiiviset tarjoukset"
+      }
+    }
+  }
+}

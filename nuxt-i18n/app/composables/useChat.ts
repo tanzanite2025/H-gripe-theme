@@ -46,14 +46,14 @@ export const useChat = () => {
    */
   const loadConversations = async () => {
     try {
-      const response = await $fetch<{ conversations: Conversation[] }>(
-        `${apiBase.value}/tanzanite/v1/chat/conversations`,
+      const response = await $fetch<{ data?: { items?: Conversation[] }, conversations?: Conversation[] }>(
+        `${apiBase.value}/tanzanite/v1/customer-service/agent/conversations`,
         {
           credentials: 'include',
           headers: { accept: 'application/json' }
         }
       )
-      conversations.value = response.conversations || []
+      conversations.value = response.data?.items || response.conversations || []
     } catch (error) {
       console.error('Failed to load conversations:', error)
     }
@@ -64,14 +64,14 @@ export const useChat = () => {
    */
   const loadMessages = async (conversationId: number) => {
     try {
-      const response = await $fetch<{ messages: ChatMessage[] }>(
-        `${apiBase.value}/tanzanite/v1/chat/messages/${conversationId}`,
+      const response = await $fetch<{ data?: { items?: ChatMessage[] }, messages?: ChatMessage[] }>(
+        `${apiBase.value}/tanzanite/v1/customer-service/agent/conversations/${conversationId}/messages`,
         {
           credentials: 'include',
           headers: { accept: 'application/json' }
         }
       )
-      messages.value = response.messages || []
+      messages.value = response.data?.items || response.messages || []
 
       // 标记为已读
       await markAsRead(conversationId)
@@ -86,7 +86,7 @@ export const useChat = () => {
   const sendMessage = async (conversationId: number, message: string, attachmentUrl?: string) => {
     try {
       const response = await $fetch<{ message: ChatMessage }>(
-        `${apiBase.value}/tanzanite/v1/chat/send`,
+        `${apiBase.value}/tanzanite/v1/customer-service/agent/messages`,
         {
           method: 'POST',
           credentials: 'include',
@@ -120,11 +120,12 @@ export const useChat = () => {
   const markAsRead = async (conversationId: number) => {
     try {
       await $fetch(
-        `${apiBase.value}/tanzanite/v1/chat/mark-read/${conversationId}`,
+        `${apiBase.value}/tanzanite/v1/customer-service/agent/messages/read`,
         {
           method: 'POST',
           credentials: 'include',
-          headers: { accept: 'application/json' }
+          headers: { accept: 'application/json' },
+          body: { conversation_id: conversationId }
         }
       )
 

@@ -1,0 +1,9 @@
+{
+  "fullName": "氏名",
+  "company": "会社",
+  "country": "国/地域",
+  "phone": "電話",
+  "marketingOptIn": "マーケティング購読",
+  "marketingOptInLabel": "マーケティング配信を受け取る",
+  "notes": "備考"
+}

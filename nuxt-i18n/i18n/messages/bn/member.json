@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "সদস্যতার স্তর:",
+    "productDiscountRate": "পণ্যের ডিসকাউন্ট হার:",
+    "pointsDiscountRate": "পয়েন্ট ডিসকাউন্ট হার:",
+    "canBeStacked": "স্ট্যাক করা যাবে"
+  },
+  "common": {
+    "yes": "হ্যাঁ",
+    "no": "না"
+  },
+  "levels": {
+    "title": "সদস্যতার স্তর",
+    "header": {
+      "level": "স্তর",
+      "pointsRequired": "প্রয়োজনীয় পয়েন্ট",
+      "productDiscount": "পণ্যের ডিসকাউন্ট",
+      "pointsDiscount": "পয়েন্ট ডিসকাউন্ট"
+    },
+    "rows": {
+      "ordinary": "সাধারণ",
+      "bronze": "ব্রোঞ্জ",
+      "silver": "সিলভার",
+      "gold": "গোল্ড",
+      "supreme": "সুপ্রিম"
+    }
+  },
+  "points": {
+    "title": "পয়েন্ট কিভাবে পাবেন?",
+    "invite": "নতুন ব্যবহারকারী আমন্ত্রণ",
+    "inviteDesc": "৫০ পয়েন্ট (আমন্ত্রিত ৩০ পয়েন্ট পাবে)",
+    "consume": "কারেন্সি",
+    "consumeDesc": "১ ডলার = ১ পয়েন্ট",
+    "daily": "দৈনিক লগইন",
+    "dailyDesc": "১ পয়েন্ট (৩০ দিন বৈধ)"
+  }
+}

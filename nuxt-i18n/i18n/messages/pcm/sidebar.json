@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "Filter & More",
+  "staticPages": "Pages",
+  "categories": "Product Categories",
+  "categoriesPlaceholder": "Product Category Tree (Go implement am)",
+  "quickSearch": "Quick Search",
+  "productSearch": "Product Search",
+  "searchProductPlaceholder": "Enter product name...",
+  "searchProducts": "Search Products"
+}

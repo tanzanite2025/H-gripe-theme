@@ -1,0 +1,16 @@
+{
+  "defaultSubtitle": "Help us improve this page and the tools you use every day.",
+  "empty": "No feedback has been submitted for this page yet.",
+  "formIntro": "Share your thoughts or report a problem about this page.",
+  "messageLabel": "Message",
+  "messagePlaceholder": "Tell us what you think or what went wrong...",
+  "optionalName": "Your name (optional)",
+  "namePlaceholder": "Enter your name (optional)",
+  "optionalEmail": "Your email (optional)",
+  "emailPlaceholder": "Enter your email (optional)",
+  "submit": "Submit feedback",
+  "loading": "Loading feedback...",
+  "loginRequired": "Please sign in to leave feedback.",
+  "loginCta": "Sign in or create an account",
+  "liveChatCta": "To live chat"
+}

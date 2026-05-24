@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Kedai",
+    "items": {
+      "0": {
+        "label": "Kategori Kedai A"
+      },
+      "1": {
+        "label": "Kategori Kedai B"
+      },
+      "2": {
+        "label": "Kategori Kedai C"
+      }
+    }
+  },
+  "support": {
+    "label": "Sokongan",
+    "items": {
+      "0": {
+        "label": "Soalan Lazim"
+      },
+      "1": {
+        "label": "Hubungi Kami"
+      },
+      "2": {
+        "label": "Waranti"
+      }
+    }
+  },
+  "about": {
+    "label": "Tentang Kami",
+    "items": {
+      "0": {
+        "label": "Kisah Kami"
+      },
+      "1": {
+        "label": "Pasukan"
+      },
+      "2": {
+        "label": "Kerjaya"
+      }
+    }
+  },
+  "member": {
+    "label": "Ahli",
+    "items": {
+      "0": {
+        "label": "Pelan Keahlian"
+      },
+      "1": {
+        "label": "Mata & Ganjaran"
+      },
+      "2": {
+        "label": "Tawaran Eksklusif"
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "title": "고급 필터",
+  "priceRange": "가격 범위",
+  "stockStatus": "재고 상태",
+  "sortBy": "정렬 기준",
+  "rating": "평점",
+  "inStock": "재고 있음",
+  "preOrder": "예약 주문",
+  "andUp": "이상",
+  "reset": "필터 초기화",
+  "sort": {
+    "newest": "최신순",
+    "priceLowToHigh": "가격: 낮은순",
+    "priceHighToLow": "가격: 높은순",
+    "popular": "인기순",
+    "rating": "평점순"
+  }
+}

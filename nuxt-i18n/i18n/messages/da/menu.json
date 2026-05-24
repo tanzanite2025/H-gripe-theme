@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Butik",
+    "items": {
+      "0": {
+        "label": "Kategori A"
+      },
+      "1": {
+        "label": "Kategori B"
+      },
+      "2": {
+        "label": "Kategori C"
+      }
+    }
+  },
+  "support": {
+    "label": "Support",
+    "items": {
+      "0": {
+        "label": "FAQ"
+      },
+      "1": {
+        "label": "Kontakt os"
+      },
+      "2": {
+        "label": "Garanti"
+      }
+    }
+  },
+  "about": {
+    "label": "Om os",
+    "items": {
+      "0": {
+        "label": "Vores historie"
+      },
+      "1": {
+        "label": "Team"
+      },
+      "2": {
+        "label": "Karriere"
+      }
+    }
+  },
+  "member": {
+    "label": "Medlem",
+    "items": {
+      "0": {
+        "label": "Medlemsplaner"
+      },
+      "1": {
+        "label": "Point og belønninger"
+      },
+      "2": {
+        "label": "Eksklusive Tilbud"
+      }
+    }
+  }
+}

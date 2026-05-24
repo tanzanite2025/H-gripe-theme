@@ -1,0 +1,18 @@
+{
+  "title": "Gelişmiş Filtreler",
+  "priceRange": "Fiyat Aralığı",
+  "stockStatus": "Stok Durumu",
+  "sortBy": "Sırala",
+  "rating": "Değerlendirme",
+  "inStock": "Stokta",
+  "preOrder": "Ön Sipariş",
+  "andUp": "ve Üzeri",
+  "reset": "Filtreleri Sıfırla",
+  "sort": {
+    "newest": "En Yeni",
+    "priceLowToHigh": "Fiyat: Düşükten Yükseğe",
+    "priceHighToLow": "Fiyat: Yüksekten Düşüğe",
+    "popular": "En Popüler",
+    "rating": "En İyi Değerlendirme"
+  }
+}

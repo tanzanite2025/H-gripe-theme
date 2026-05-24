@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Niveau d'adhésion :",
+    "productDiscountRate": "Taux de remise produit :",
+    "pointsDiscountRate": "Taux de remise points :",
+    "canBeStacked": "Cumulable"
+  },
+  "common": {
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "levels": {
+    "title": "Niveaux d'adhésion",
+    "header": {
+      "level": "Niveau",
+      "pointsRequired": "Points requis",
+      "productDiscount": "Remise produit",
+      "pointsDiscount": "Remise points"
+    },
+    "rows": {
+      "ordinary": "Ordinaire",
+      "bronze": "Bronze",
+      "silver": "Argent",
+      "gold": "Or",
+      "supreme": "Suprême"
+    }
+  },
+  "points": {
+    "title": "Comment obtenir des points ?",
+    "invite": "Inviter de nouveaux utilisateurs",
+    "inviteDesc": "50 points (l'invité reçoit 30 points)",
+    "consume": "Devise de consommation",
+    "consumeDesc": "1 Dollar = 1 Point",
+    "daily": "Connexion quotidienne",
+    "dailyDesc": "1 point (validité de 30 jours)"
+  }
+}

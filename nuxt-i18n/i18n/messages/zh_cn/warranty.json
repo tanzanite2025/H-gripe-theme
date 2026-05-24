@@ -1,0 +1,43 @@
+{
+  "title": "保修查询",
+  "subtitle": "查询您的产品保修状态",
+  "login_required": "请登录后查询产品保修信息。",
+  "login_button": "登录",
+  "input_label": "请输入产品编码：",
+  "input_placeholder": "例如：ABC123",
+  "check_button": "查询",
+  "help_text": "产品编码可在产品包装或保修卡上找到。",
+  "months": "个月",
+  "days": "天",
+  "result": {
+    "valid": "保修有效",
+    "expired": "保修已过期",
+    "not_found": "未找到产品"
+  },
+  "actions": {
+    "check_another": "查询其他产品",
+    "contact_support": "联系客服"
+  },
+  "fields": {
+    "product_code": "产品编码",
+    "product_type": "产品类型",
+    "product_name": "产品名称",
+    "ship_date": "出货日期",
+    "warranty_period": "保修期限",
+    "warranty_until": "保修至",
+    "remaining": "剩余时间",
+    "expired_ago": "已过期 {days} 天"
+  },
+  "records": {
+    "title": "服务记录",
+    "no_records": "暂无服务记录"
+  },
+  "errors": {
+    "not_found_message": "未找到编码为 {code} 的产品",
+    "check_tips": [
+      "编码输入是否正确",
+      "是否为 Tanzanite 产品"
+    ],
+    "error_contact": "如有疑问，请联系我们。"
+  }
+}

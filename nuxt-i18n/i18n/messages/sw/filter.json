@@ -1,0 +1,18 @@
+{
+  "title": "Vichujio vya Juu",
+  "priceRange": "Kiwango cha Bei",
+  "stockStatus": "Hali ya Hifadhi",
+  "sortBy": "Panga Kwa",
+  "rating": "Ukadiriaji",
+  "inStock": "Ipo Hifadhini",
+  "preOrder": "Agiza Mapema",
+  "andUp": "na Zaidi",
+  "reset": "Weka Upya Vichujio",
+  "sort": {
+    "newest": "Mpya Zaidi",
+    "priceLowToHigh": "Bei: Chini hadi Juu",
+    "priceHighToLow": "Bei: Juu hadi Chini",
+    "popular": "Maarufu Zaidi",
+    "rating": "Ukadiriaji Bora"
+  }
+}

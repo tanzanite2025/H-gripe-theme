@@ -1,0 +1,8 @@
+{
+  "memberCenter": "Pusat Anggota",
+  "register": "Daftar",
+  "login": "Masuk",
+  "logout": "Keluar",
+  "closeLogin": "Tutup Login",
+  "points": "{count} poin"
+}

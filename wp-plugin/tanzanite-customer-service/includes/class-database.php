@@ -34,12 +34,14 @@ class TZ_CS_Database {
             agent_id varchar(100) DEFAULT '',
             message_type varchar(20) DEFAULT 'text',
             message text NOT NULL,
+            is_read tinyint(1) NOT NULL DEFAULT 0,
             metadata longtext DEFAULT NULL,
             created_at datetime NOT NULL,
             PRIMARY KEY  (id),
             KEY conversation_id (conversation_id),
             KEY sender_type (sender_type),
             KEY agent_id (agent_id),
+            KEY is_read (is_read),
             KEY created_at (created_at)
         ) $charset_collate;";
         
@@ -107,12 +109,15 @@ class TZ_CS_Database {
             pre_sales_email varchar(100) DEFAULT '',
             after_sales_email varchar(100) DEFAULT '',
             status varchar(20) DEFAULT 'active',
+            online_status varchar(20) DEFAULT 'offline',
+            last_active_at datetime DEFAULT NULL,
             last_login datetime,
             created_at datetime NOT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             UNIQUE KEY agent_id (agent_id),
             KEY status (status),
+            KEY online_status (online_status),
             KEY email (email)
         ) $charset_collate;";
         
@@ -187,7 +192,17 @@ class TZ_CS_Database {
             
             if ( empty( $status_column_exists ) ) {
                 $wpdb->query( 
-                    "ALTER TABLE $table_agents ADD COLUMN status VARCHAR(20) DEFAULT 'offline' AFTER role" 
+                    "ALTER TABLE $table_agents ADD COLUMN status VARCHAR(20) DEFAULT 'active'" 
+                );
+            }
+
+            $online_status_column_exists = $wpdb->get_results(
+                "SHOW COLUMNS FROM $table_agents LIKE 'online_status'"
+            );
+
+            if ( empty( $online_status_column_exists ) ) {
+                $wpdb->query(
+                    "ALTER TABLE $table_agents ADD COLUMN online_status VARCHAR(20) DEFAULT 'offline'"
                 );
             }
             
@@ -198,7 +213,7 @@ class TZ_CS_Database {
             
             if ( empty( $last_active_column_exists ) ) {
                 $wpdb->query( 
-                    "ALTER TABLE $table_agents ADD COLUMN last_active_at DATETIME DEFAULT NULL AFTER status" 
+                    "ALTER TABLE $table_agents ADD COLUMN last_active_at DATETIME DEFAULT NULL" 
                 );
             }
         }
@@ -272,7 +287,7 @@ class TZ_CS_Database {
         ] );
         
         // 记录版本号
-        update_option( 'tz_cs_db_version', '1.2.0' );
+        update_option( 'tz_cs_db_version', defined( 'TZ_CS_DB_VERSION' ) ? TZ_CS_DB_VERSION : '1.2.1' );
     }
     
     /**

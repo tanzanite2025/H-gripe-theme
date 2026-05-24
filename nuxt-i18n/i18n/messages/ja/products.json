@@ -1,0 +1,13 @@
+{
+  "searchResults": "検索結果",
+  "searchFor": "検索",
+  "allProducts": "すべての商品",
+  "loading": "読み込み中...",
+  "noResults": "商品が見つかりません",
+  "tryAdjustFilters": "フィルターを調整してください",
+  "loadMore": "もっと読み込む",
+  "items": "件",
+  "nav": {
+    "technicalDocs": "技術"
+  }
+}

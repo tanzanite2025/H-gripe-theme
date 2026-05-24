@@ -1,0 +1,6 @@
+{
+  "register": "Registrati",
+  "login": "Accedi",
+  "logout": "Esci",
+  "points": "Punto: {count}"
+}

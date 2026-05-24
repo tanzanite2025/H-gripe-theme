@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Mitgliedsstatus:",
+    "productDiscountRate": "Produkt-Rabattrate:",
+    "pointsDiscountRate": "Punkte-Rabattrate:",
+    "canBeStacked": "Kombinierbar"
+  },
+  "common": {
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "levels": {
+    "title": "Mitgliedsstufen",
+    "header": {
+      "level": "Stufe",
+      "pointsRequired": "Erforderliche Punkte",
+      "productDiscount": "Produktrabatt",
+      "pointsDiscount": "Punkterabatt"
+    },
+    "rows": {
+      "ordinary": "Standard",
+      "bronze": "Bronze",
+      "silver": "Silber",
+      "gold": "Gold",
+      "supreme": "Premium"
+    }
+  },
+  "points": {
+    "title": "Wie erhält man Punkte?",
+    "invite": "Neue Nutzer einladen",
+    "inviteDesc": "50 Punkte (Eingeladener erhält 30 Punkte)",
+    "consume": "Währung für Verbrauch",
+    "consumeDesc": "1 Dollar = 1 Punkt",
+    "daily": "Tägliche Anmeldung",
+    "dailyDesc": "1 Punkt (30 Tage Gültigkeit)"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "د غړیتوب کچه:",
+    "productDiscountRate": "د محصول د تخفیف کچه:",
+    "pointsDiscountRate": "د امتیاز تخفیف کچه:",
+    "canBeStacked": "د یوځای کېدو وړ"
+  },
+  "common": {
+    "yes": "هو",
+    "no": "نه"
+  },
+  "levels": {
+    "title": "د غړیتوب کچې",
+    "header": {
+      "level": "کچه",
+      "pointsRequired": "اړین امتیازونه",
+      "productDiscount": "د محصول تخفیف",
+      "pointsDiscount": "د امتیاز تخفیف"
+    },
+    "rows": {
+      "ordinary": "عادي",
+      "bronze": "برونز",
+      "silver": "سپين زر",
+      "gold": "زر",
+      "supreme": "لوړ"
+    }
+  },
+  "points": {
+    "title": "څنګه امتیازونه ترلاسه کړو؟",
+    "invite": "نوي کاروونکي راوبلل شئ",
+    "inviteDesc": "50 امتیاز (را بلل شوی 30 امتیاز ترلاسه کوي)",
+    "consume": "پيسې",
+    "consumeDesc": "1 ډالر = 1 امتیاز",
+    "daily": "ورځنۍ ننوتل",
+    "dailyDesc": "1 امتیاز (د 30 ورځو لپاره باوري)"
+  }
+}

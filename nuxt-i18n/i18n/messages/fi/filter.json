@@ -1,0 +1,18 @@
+{
+  "title": "Lisäsuodattimet",
+  "priceRange": "Hintahaarukka",
+  "stockStatus": "Varastotilanne",
+  "sortBy": "Lajittele",
+  "rating": "Arvostelu",
+  "inStock": "Varastossa",
+  "preOrder": "Ennakkotilaus",
+  "andUp": "ja ylöspäin",
+  "reset": "Nollaa suodattimet",
+  "sort": {
+    "newest": "Uusin",
+    "priceLowToHigh": "Hinta: Matala - Korkea",
+    "priceHighToLow": "Hinta: Korkea - Matala",
+    "popular": "Suosituin",
+    "rating": "Paras arvostelu"
+  }
+}

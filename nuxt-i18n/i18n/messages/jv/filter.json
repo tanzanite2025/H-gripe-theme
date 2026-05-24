@@ -1,0 +1,18 @@
+{
+  "title": "Filter Lanjut",
+  "priceRange": "Rentang Rega",
+  "stockStatus": "Status Stok",
+  "sortBy": "Urutake Miturut",
+  "rating": "Rating",
+  "inStock": "Ana Stok",
+  "preOrder": "Pre-order",
+  "andUp": "lan Munggah",
+  "reset": "Reset Filter",
+  "sort": {
+    "newest": "Paling Anyar",
+    "priceLowToHigh": "Rega: Murah menyang Larang",
+    "priceHighToLow": "Rega: Larang menyang Murah",
+    "popular": "Paling Populer",
+    "rating": "Rating Paling Apik"
+  }
+}
