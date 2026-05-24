@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "سطح عضویت:",
+    "productDiscountRate": "نرخ تخفیف محصول:",
+    "pointsDiscountRate": "نرخ تخفیف امتیاز:",
+    "canBeStacked": "قابل جمع شدن"
+  },
+  "common": {
+    "yes": "بله",
+    "no": "خیر"
+  },
+  "levels": {
+    "title": "سطوح عضویت",
+    "header": {
+      "level": "سطح",
+      "pointsRequired": "امتیاز موردنیاز",
+      "productDiscount": "تخفیف محصول",
+      "pointsDiscount": "تخفیف امتیاز"
+    },
+    "rows": {
+      "ordinary": "عادی",
+      "bronze": "برنزی",
+      "silver": "نقره‌ای",
+      "gold": "طلایی",
+      "supreme": "برتر"
+    }
+  },
+  "points": {
+    "title": "چگونه امتیاز بگیریم؟",
+    "invite": "دعوت از کاربران جدید",
+    "inviteDesc": "۵۰ امتیاز (کاربر دعوت‌شده ۳۰ امتیاز می‌گیرد)",
+    "consume": "ارز مصرف",
+    "consumeDesc": "۱ دلار = ۱ امتیاز",
+    "daily": "ورود روزانه",
+    "dailyDesc": "۱ امتیاز (اعتبار ۳۰ روز)"
+  }
+}

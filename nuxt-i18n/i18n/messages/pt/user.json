@@ -1,0 +1,6 @@
+{
+  "register": "Registrar",
+  "login": "Entrar",
+  "logout": "Sair",
+  "points": "Ponto: {count}"
+}

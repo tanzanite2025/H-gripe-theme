@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "필터 및 더보기",
+  "staticPages": "페이지",
+  "categories": "제품 카테고리",
+  "categoriesPlaceholder": "제품 카테고리 트리 (구현 예정)",
+  "quickSearch": "빠른 검색",
+  "productSearch": "제품 검색",
+  "searchProductPlaceholder": "제품명 입력...",
+  "searchProducts": "제품 검색"
+}

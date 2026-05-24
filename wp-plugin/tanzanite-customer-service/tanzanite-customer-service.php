@@ -3,7 +3,7 @@
  * Plugin Name: Tanzanite Customer Service
  * Plugin URI: https://tanzanite.site
  * Description: 客服管理插件 - 管理客服信息并提供 REST API
- * Version: 1.2.0
+ * Version: 1.2.2
  * Author: Tanzanite
  * Text Domain: tanzanite-cs
  * Domain Path: /languages
@@ -16,8 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // 定义插件常量
-define( 'TZ_CS_VERSION', '1.2.0' );
-define( 'TZ_CS_DB_VERSION', '1.2.0' );
+define( 'TZ_CS_VERSION', '1.2.2' );
+define( 'TZ_CS_DB_VERSION', '1.2.1' );
 define( 'TZ_CS_PLUGIN_FILE', __FILE__ );
 define( 'TZ_CS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TZ_CS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -33,6 +33,7 @@ require_once TZ_CS_PLUGIN_DIR . 'api/class-agent-api.php';
 
 // 引入自动回复API类
 require_once TZ_CS_PLUGIN_DIR . 'api/class-auto-reply-api.php';
+require_once TZ_CS_PLUGIN_DIR . 'api/class-wp-chat-api.php';
 
 /**
  * 客服管理插件主类
@@ -378,6 +379,7 @@ class Tanzanite_Customer_Service_Plugin {
         
         // 注册自动回复API路由
         TZ_CS_Auto_Reply_API::register_routes();
+        TZ_CS_WP_Chat_API::register_routes();
     }
     
     /**
@@ -389,7 +391,7 @@ class Tanzanite_Customer_Service_Plugin {
         
         // 只返回启用的客服
         $agents = $wpdb->get_results(
-            "SELECT agent_id, wp_user_id, name, email, avatar, whatsapp FROM $table WHERE status = 'active' ORDER BY created_at ASC"
+            "SELECT agent_id, wp_user_id, name, email, avatar, whatsapp, online_status FROM $table WHERE status = 'active' ORDER BY created_at ASC"
         );
         
         // 格式化输出
@@ -400,6 +402,7 @@ class Tanzanite_Customer_Service_Plugin {
             'email'      => $agent->email,
             'avatar'     => $agent->avatar,
             'whatsapp'   => $agent->whatsapp,
+            'status'     => $agent->online_status ?: 'offline',
         ], $agents );
         
         // 获取全局邮箱设置

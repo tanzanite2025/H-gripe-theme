@@ -1763,7 +1763,7 @@ async function handleTransfer() {
   isTransferring.value = true
   
   try {
-    const response = await fetch(`${config.public.apiBase}/wp-json/tanzanite/v1/agent/conversations/${conversationId.value}/transfer`, {
+    const response = await fetch(`/wp-json/tanzanite/v1/customer-service/agent/conversations/${selectedConversation.value.id}/transfer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1864,7 +1864,7 @@ const fetchAgentConversations = async () => {
   
   isLoadingConversations.value = true
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/conversations', {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/conversations', {
       credentials: 'include',
       headers: {
         'X-WP-Nonce': config.public?.wpNonce as string || ''
@@ -1891,7 +1891,7 @@ const selectConversation = (conversation: any) => {
 // 加载会话消息
 const loadConversationMessages = async (conversationId: string) => {
   try {
-    const response = await $fetch<any>(`/wp-json/tanzanite/v1/chat/messages/${conversationId}`, {
+    const response = await $fetch<any>(`/wp-json/tanzanite/v1/customer-service/agent/conversations/${conversationId}/messages`, {
       credentials: 'include',
       headers: {
         'X-WP-Nonce': config.public?.wpNonce as string || ''
@@ -1921,7 +1921,7 @@ const sendMessage = async () => {
   newMessage.value = ''
   
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/send', {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/messages', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -1958,7 +1958,7 @@ const fetchAgentStatus = async () => {
   if (!agentMode.value) return
   
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/agent-status', {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/status', {
       credentials: 'include',
       headers: {
         'X-WP-Nonce': config.public?.wpNonce as string || ''
@@ -1981,7 +1981,7 @@ const changeAgentStatus = async (status: string) => {
   currentAgentStatus.value = status // 乐观更新
   
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/chat/agent-status', {
+    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/status', {
       method: 'POST',
       credentials: 'include',
       headers: {

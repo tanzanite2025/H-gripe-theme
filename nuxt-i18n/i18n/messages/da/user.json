@@ -1,0 +1,6 @@
+{
+  "register": "Tilmeld",
+  "login": "Log ind",
+  "logout": "Log ud",
+  "points": "Point: {count}"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Filtri avanzati",
+  "priceRange": "Fascia di prezzo",
+  "stockStatus": "Stato delle scorte",
+  "sortBy": "Ordina per",
+  "rating": "Valutazione",
+  "inStock": "Disponibile",
+  "preOrder": "Pre-ordine",
+  "andUp": "e oltre",
+  "reset": "Reimposta filtri",
+  "sort": {
+    "newest": "Più recente",
+    "priceLowToHigh": "Prezzo: Basso ad Alto",
+    "priceHighToLow": "Prezzo: Alto a Basso",
+    "popular": "Più popolare",
+    "rating": "Migliore valutazione"
+  }
+}

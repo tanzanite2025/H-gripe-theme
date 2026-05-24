@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Negozio",
+    "items": {
+      "0": {
+        "label": "Categoria A"
+      },
+      "1": {
+        "label": "Categoria B"
+      },
+      "2": {
+        "label": "Categoria C"
+      }
+    }
+  },
+  "support": {
+    "label": "Supporto",
+    "items": {
+      "0": {
+        "label": "FAQ"
+      },
+      "1": {
+        "label": "Contattaci"
+      },
+      "2": {
+        "label": "Garanzia"
+      }
+    }
+  },
+  "about": {
+    "label": "Chi Siamo",
+    "items": {
+      "0": {
+        "label": "La Nostra Storia"
+      },
+      "1": {
+        "label": "Team"
+      },
+      "2": {
+        "label": "Carriere"
+      }
+    }
+  },
+  "member": {
+    "label": "Membro",
+    "items": {
+      "0": {
+        "label": "Piani di Abbonamento"
+      },
+      "1": {
+        "label": "Punti e Premi"
+      },
+      "2": {
+        "label": "Offerte Esclusive"
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Lidmaatschapsniveau:",
+    "productDiscountRate": "Productkortingspercentage:",
+    "pointsDiscountRate": "Puntenkortingspercentage:",
+    "canBeStacked": "Combineerbaar"
+  },
+  "common": {
+    "yes": "Ja",
+    "no": "Nee"
+  },
+  "levels": {
+    "title": "Lidmaatschapsniveaus",
+    "header": {
+      "level": "Niveau",
+      "pointsRequired": "Benodigde punten",
+      "productDiscount": "Productkorting",
+      "pointsDiscount": "Puntenkorting"
+    },
+    "rows": {
+      "ordinary": "Standaard",
+      "bronze": "Brons",
+      "silver": "Zilver",
+      "gold": "Goud",
+      "supreme": "Supreme"
+    }
+  },
+  "points": {
+    "title": "Hoe punten verdienen?",
+    "invite": "Nieuwe gebruikers uitnodigen",
+    "inviteDesc": "50 punten (genodigde ontvangt 30 punten)",
+    "consume": "Betaalmiddel",
+    "consumeDesc": "1 Dollar = 1 Punt",
+    "daily": "Dagelijks inloggen",
+    "dailyDesc": "1 punt (30 dagen geldig)"
+  }
+}

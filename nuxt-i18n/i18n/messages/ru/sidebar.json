@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "Фильтр и ещё",
+  "staticPages": "Страницы",
+  "categories": "Категории товаров",
+  "categoriesPlaceholder": "Дерево категорий товаров (в разработке)",
+  "quickSearch": "Быстрый поиск",
+  "productSearch": "Поиск товаров",
+  "searchProductPlaceholder": "Введите название товара...",
+  "searchProducts": "Искать товары"
+}

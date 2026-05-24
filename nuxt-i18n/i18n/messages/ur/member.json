@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "رکنیت کی سطح:",
+    "productDiscountRate": "مصنوعات کی رعایتی شرح:",
+    "pointsDiscountRate": "پوائنٹس کی رعایتی شرح:",
+    "canBeStacked": "جمع کی جا سکتی ہے"
+  },
+  "common": {
+    "yes": "ہاں",
+    "no": "نہیں"
+  },
+  "levels": {
+    "title": "رکنیت کی سطحیں",
+    "header": {
+      "level": "سطح",
+      "pointsRequired": "ضروری پوائنٹس",
+      "productDiscount": "مصنوعات کی رعایت",
+      "pointsDiscount": "پوائنٹس کی رعایت"
+    },
+    "rows": {
+      "ordinary": "عام",
+      "bronze": "کانسی",
+      "silver": "چاندی",
+      "gold": "سونا",
+      "supreme": "اعلیٰ"
+    }
+  },
+  "points": {
+    "title": "پوائنٹس کیسے حاصل کریں؟",
+    "invite": "نئے صارفین کو مدعو کریں",
+    "inviteDesc": "50 پوائنٹس (مدعو کو 30 پوائنٹس ملتے ہیں)",
+    "consume": "کرنسی",
+    "consumeDesc": "1 ڈالر = 1 پوائنٹ",
+    "daily": "روزانہ لاگ ان",
+    "dailyDesc": "1 پوائنٹ (30 دن تک مؤثر)"
+  }
+}

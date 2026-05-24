@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "Filter & Mer",
+  "staticPages": "Sidor",
+  "categories": "Produktkategorier",
+  "categoriesPlaceholder": "Produktkategoriträd (att implementeras)",
+  "quickSearch": "Snabbsökning",
+  "productSearch": "Produktsökning",
+  "searchProductPlaceholder": "Ange produktnamn...",
+  "searchProducts": "Sök produkter"
+}

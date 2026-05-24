@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Butik",
+    "items": {
+      "0": {
+        "label": "Butikskategori A"
+      },
+      "1": {
+        "label": "Butikskategori B"
+      },
+      "2": {
+        "label": "Butikskategori C"
+      }
+    }
+  },
+  "support": {
+    "label": "Support",
+    "items": {
+      "0": {
+        "label": "Vanliga frågor"
+      },
+      "1": {
+        "label": "Kontakta oss"
+      },
+      "2": {
+        "label": "Garanti"
+      }
+    }
+  },
+  "about": {
+    "label": "Om oss",
+    "items": {
+      "0": {
+        "label": "Vår historia"
+      },
+      "1": {
+        "label": "Team"
+      },
+      "2": {
+        "label": "Karriär"
+      }
+    }
+  },
+  "member": {
+    "label": "Medlem",
+    "items": {
+      "0": {
+        "label": "Medlemsplaner"
+      },
+      "1": {
+        "label": "Poäng & belöningar"
+      },
+      "2": {
+        "label": "Exklusiva erbjudanden"
+      }
+    }
+  }
+}

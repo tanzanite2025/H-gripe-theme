@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Membership level:",
+    "productDiscountRate": "Product discount rate:",
+    "pointsDiscountRate": "Points discount rate:",
+    "canBeStacked": "Fit join together"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "levels": {
+    "title": "Membership level",
+    "header": {
+      "level": "Level",
+      "pointsRequired": "Points wey you need",
+      "productDiscount": "Product discount",
+      "pointsDiscount": "Points discount"
+    },
+    "rows": {
+      "ordinary": "Ordinary",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "supreme": "Supreme"
+    }
+  },
+  "points": {
+    "title": "How you go take get points?",
+    "invite": "Invite new user",
+    "inviteDesc": "50 Points (person wey you invite go get 30 Points)",
+    "consume": "Money",
+    "consumeDesc": "1 Dollar = 1 Point",
+    "daily": "Everyday login",
+    "dailyDesc": "1 Point (e go last 30 days)"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "searchResults": "Resultados de búsqueda",
+  "searchFor": "Buscar",
+  "allProducts": "Todos los productos",
+  "loading": "Cargando...",
+  "noResults": "No se encontraron productos",
+  "tryAdjustFilters": "Intente ajustar los filtros",
+  "loadMore": "Cargar más",
+  "items": "artículos",
+  "nav": {
+    "technicalDocs": "Técnico"
+  }
+}

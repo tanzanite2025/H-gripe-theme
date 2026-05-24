@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Nivel de membresía:",
+    "productDiscountRate": "Tasa de descuento del producto:",
+    "pointsDiscountRate": "Tasa de descuento de puntos:",
+    "canBeStacked": "Acumulable"
+  },
+  "common": {
+    "yes": "Sí",
+    "no": "No"
+  },
+  "levels": {
+    "title": "Niveles de membresía",
+    "header": {
+      "level": "Nivel",
+      "pointsRequired": "Puntos requeridos",
+      "productDiscount": "Descuento del producto",
+      "pointsDiscount": "Descuento de puntos"
+    },
+    "rows": {
+      "ordinary": "Ordinario",
+      "bronze": "Bronce",
+      "silver": "Plata",
+      "gold": "Oro",
+      "supreme": "Supremo"
+    }
+  },
+  "points": {
+    "title": "¿Cómo obtener puntos?",
+    "invite": "Invitar a nuevos usuarios",
+    "inviteDesc": "50 puntos (el invitado recibe 30 puntos)",
+    "consume": "Moneda de consumo",
+    "consumeDesc": "1 Dólar = 1 Punto",
+    "daily": "Inicio de sesión diario",
+    "dailyDesc": "1 punto (validez de 30 días)"
+  }
+}

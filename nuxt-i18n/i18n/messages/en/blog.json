@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "all": "All",
+    "news": "News",
+    "wheelsbuild": "Wheelbuild"
+  },
+  "pages": {
+    "all": {
+      "title": "Blog",
+      "intro": "Updates, announcements, and wheelbuilding articles.",
+      "metaTitle": "Blog"
+    },
+    "news": {
+      "title": "News",
+      "intro": "Product updates, announcements, and quick guides.",
+      "metaTitle": "Blog · News"
+    },
+    "wheelsbuild": {
+      "title": "Wheelbuild",
+      "intro": "Wheelbuilding workflow, checks, and practical tips.",
+      "metaTitle": "Blog · Wheelbuild"
+    },
+    "detail": {
+      "metaTitle": "Blog",
+      "metaDescription": "Read the latest article from Tanzanite."
+    }
+  },
+  "actions": {
+    "readMore": "Read more",
+    "openArticle": "Open article"
+  },
+  "empty": "No articles yet.",
+  "notFound": "Article not found."
+}

@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Toko",
+    "items": {
+      "0": {
+        "label": "Kategori Toko A"
+      },
+      "1": {
+        "label": "Kategori Toko B"
+      },
+      "2": {
+        "label": "Kategori Toko C"
+      }
+    }
+  },
+  "support": {
+    "label": "Dukungan",
+    "items": {
+      "0": {
+        "label": "FAQ"
+      },
+      "1": {
+        "label": "Hubungi Kami"
+      },
+      "2": {
+        "label": "Garansi"
+      }
+    }
+  },
+  "about": {
+    "label": "Tentang Kami",
+    "items": {
+      "0": {
+        "label": "Kisah Kami"
+      },
+      "1": {
+        "label": "Tim"
+      },
+      "2": {
+        "label": "Karir"
+      }
+    }
+  },
+  "member": {
+    "label": "Anggota",
+    "items": {
+      "0": {
+        "label": "Paket Keanggotaan"
+      },
+      "1": {
+        "label": "Poin & Hadiah"
+      },
+      "2": {
+        "label": "Penawaran Eksklusif"
+      }
+    }
+  }
+}

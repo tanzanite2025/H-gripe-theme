@@ -1,0 +1,6 @@
+{
+  "register": "登録",
+  "login": "ログイン",
+  "logout": "ログアウト",
+  "points": "ポイント: {count}"
+}

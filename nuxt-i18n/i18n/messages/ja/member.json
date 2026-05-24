@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "会員ランク：",
+    "productDiscountRate": "商品割引率：",
+    "pointsDiscountRate": "ポイント割引率：",
+    "canBeStacked": "併用可"
+  },
+  "common": {
+    "yes": "はい",
+    "no": "いいえ"
+  },
+  "levels": {
+    "title": "会員ランク",
+    "header": {
+      "level": "ランク",
+      "pointsRequired": "必要ポイント",
+      "productDiscount": "商品割引",
+      "pointsDiscount": "ポイント割引"
+    },
+    "rows": {
+      "ordinary": "一般",
+      "bronze": "ブロンズ",
+      "silver": "シルバー",
+      "gold": "ゴールド",
+      "supreme": "最高位"
+    }
+  },
+  "points": {
+    "title": "ポイントの獲得方法",
+    "invite": "招待",
+    "inviteDesc": "招待リンクの共有で50ポイント（被招待者は30ポイント）",
+    "consume": "購入",
+    "consumeDesc": "1ドル＝1ポイント",
+    "daily": "デイリーログイン",
+    "dailyDesc": "1ポイント（有効期限30日）"
+  }
+}

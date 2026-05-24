@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "faqs": "常见问题",
+    "payment": "支付",
+    "shipping": "物流",
+    "afterSales": "售后",
+    "warranty": "保修政策",
+    "warrantyCheck": "保修查询",
+    "productFeedback": "产品反馈",
+    "spokeCalculator": "辐条计算器",
+    "testReport": "测试报告"
+  }
+}

@@ -482,6 +482,7 @@ class Tanzanite_Plugin {
 		
 		// 注册所有 REST API 控制器
 		$controller_classes = array(
+			'Tanzanite_REST_Auth_Controller',
 			'Tanzanite_REST_Orders_Controller',
 			'Tanzanite_REST_Products_Controller',
 			'Tanzanite_REST_Payments_Controller',

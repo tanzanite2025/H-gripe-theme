@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Tahap keahlian:",
+    "productDiscountRate": "Kadar diskaun produk:",
+    "pointsDiscountRate": "Kadar diskaun mata:",
+    "canBeStacked": "Boleh digabung"
+  },
+  "common": {
+    "yes": "Ya",
+    "no": "Tidak"
+  },
+  "levels": {
+    "title": "Tahap keahlian",
+    "header": {
+      "level": "Tahap",
+      "pointsRequired": "Mata diperlukan",
+      "productDiscount": "Diskaun produk",
+      "pointsDiscount": "Diskaun mata"
+    },
+    "rows": {
+      "ordinary": "Biasa",
+      "bronze": "Gangsa",
+      "silver": "Perak",
+      "gold": "Emas",
+      "supreme": "Tertinggi"
+    }
+  },
+  "points": {
+    "title": "Cara mendapatkan mata?",
+    "invite": "Jemput pengguna baharu",
+    "inviteDesc": "50 mata (yang dijemput menerima 30 mata)",
+    "consume": "Mata wang",
+    "consumeDesc": "1 Dolar = 1 Mata",
+    "daily": "Log masuk harian",
+    "dailyDesc": "1 mata (sah 30 hari)"
+  }
+}

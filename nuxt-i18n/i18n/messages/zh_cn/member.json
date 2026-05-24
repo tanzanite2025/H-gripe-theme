@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "会员等级：",
+    "productDiscountRate": "商品折扣率：",
+    "pointsDiscountRate": "积分折扣率：",
+    "canBeStacked": "可叠加"
+  },
+  "common": {
+    "yes": "是",
+    "no": "否"
+  },
+  "levels": {
+    "title": "会员等级",
+    "header": {
+      "level": "等级",
+      "pointsRequired": "所需积分",
+      "productDiscount": "商品折扣",
+      "pointsDiscount": "积分折扣"
+    },
+    "rows": {
+      "ordinary": "普通会员",
+      "bronze": "青铜会员",
+      "silver": "白银会员",
+      "gold": "黄金会员",
+      "supreme": "至尊会员"
+    }
+  },
+  "points": {
+    "title": "如何获得积分？",
+    "invite": "邀请新用户",
+    "inviteDesc": "邀请成功奖励 50 积分（被邀请者 30 积分）",
+    "consume": "消费换积分",
+    "consumeDesc": "1 美元 = 1 积分",
+    "daily": "每日登录",
+    "dailyDesc": "每日登录奖励 1 积分（有效期 30 天）"
+  }
+}

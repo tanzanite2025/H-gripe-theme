@@ -1,0 +1,18 @@
+{
+  "title": "Advanced na Mga Filter",
+  "priceRange": "Hanay ng Presyo",
+  "stockStatus": "Katayuan ng Stock",
+  "sortBy": "Ayusin Ayon sa",
+  "rating": "Rating",
+  "inStock": "May Stock",
+  "preOrder": "Pre-order",
+  "andUp": "at Pataas",
+  "reset": "I-reset ang Mga Filter",
+  "sort": {
+    "newest": "Pinakabago",
+    "priceLowToHigh": "Presyo: Mababa hanggang Mataas",
+    "priceHighToLow": "Presyo: Mataas hanggang Mababa",
+    "popular": "Pinakasikat",
+    "rating": "Pinakamahusay na Rating"
+  }
+}

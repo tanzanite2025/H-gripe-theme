@@ -1,0 +1,8 @@
+{
+  "memberCenter": "Member Center",
+  "register": "Register",
+  "login": "Login",
+  "logout": "Logout",
+  "closeLogin": "Close Login",
+  "points": "{count} points"
+}

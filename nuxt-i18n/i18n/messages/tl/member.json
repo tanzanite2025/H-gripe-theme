@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Antas ng pagiging miyembro:",
+    "productDiscountRate": "Rate ng diskwento sa produkto:",
+    "pointsDiscountRate": "Rate ng diskwento sa puntos:",
+    "canBeStacked": "Maaaring pagsamahin"
+  },
+  "common": {
+    "yes": "Oo",
+    "no": "Hindi"
+  },
+  "levels": {
+    "title": "Mga antas ng pagiging miyembro",
+    "header": {
+      "level": "Antas",
+      "pointsRequired": "Kailangang puntos",
+      "productDiscount": "Diskwento sa produkto",
+      "pointsDiscount": "Diskwento sa puntos"
+    },
+    "rows": {
+      "ordinary": "Karaniwan",
+      "bronze": "Bronse",
+      "silver": "Pilak",
+      "gold": "Ginto",
+      "supreme": "Pinakamataas"
+    }
+  },
+  "points": {
+    "title": "Paano makakakuha ng puntos?",
+    "invite": "Mag-imbita ng bagong user",
+    "inviteDesc": "50 Puntos (ang inimbitahan ay makakakuha ng 30 Puntos)",
+    "consume": "Pera",
+    "consumeDesc": "1 Dolyar = 1 Punto",
+    "daily": "Araw-araw na pag-login",
+    "dailyDesc": "1 Punto (balido ng 30 araw)"
+  }
+}

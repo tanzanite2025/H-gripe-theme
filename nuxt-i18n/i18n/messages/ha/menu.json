@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Shago",
+    "items": {
+      "0": {
+        "label": "Nau'in Shago A"
+      },
+      "1": {
+        "label": "Nau'in Shago B"
+      },
+      "2": {
+        "label": "Nau'in Shago C"
+      }
+    }
+  },
+  "support": {
+    "label": "Tallafi",
+    "items": {
+      "0": {
+        "label": "Tambayoyin da ake yawan yi"
+      },
+      "1": {
+        "label": "Tuntube Mu"
+      },
+      "2": {
+        "label": "Garanti"
+      }
+    }
+  },
+  "about": {
+    "label": "Game da Mu",
+    "items": {
+      "0": {
+        "label": "Labarin Mu"
+      },
+      "1": {
+        "label": "Kungiya"
+      },
+      "2": {
+        "label": "Ayyukan Yi"
+      }
+    }
+  },
+  "member": {
+    "label": "Memba",
+    "items": {
+      "0": {
+        "label": "Shirye-shiryen Memba"
+      },
+      "1": {
+        "label": "Maki da Kyautuka"
+      },
+      "2": {
+        "label": "Tayin Musamman"
+      }
+    }
+  }
+}

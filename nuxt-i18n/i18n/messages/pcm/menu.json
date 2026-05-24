@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Shop",
+    "items": {
+      "0": {
+        "label": "Shop Category A"
+      },
+      "1": {
+        "label": "Shop Category B"
+      },
+      "2": {
+        "label": "Shop Category C"
+      }
+    }
+  },
+  "support": {
+    "label": "Support",
+    "items": {
+      "0": {
+        "label": "FAQ"
+      },
+      "1": {
+        "label": "Contact Us"
+      },
+      "2": {
+        "label": "Warranty"
+      }
+    }
+  },
+  "about": {
+    "label": "About Us",
+    "items": {
+      "0": {
+        "label": "Our Story"
+      },
+      "1": {
+        "label": "Team"
+      },
+      "2": {
+        "label": "Careers"
+      }
+    }
+  },
+  "member": {
+    "label": "Member",
+    "items": {
+      "0": {
+        "label": "Membership Plans"
+      },
+      "1": {
+        "label": "Points & Rewards"
+      },
+      "2": {
+        "label": "Special Offers"
+      }
+    }
+  }
+}

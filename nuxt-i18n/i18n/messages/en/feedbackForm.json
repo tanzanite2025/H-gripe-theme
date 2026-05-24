@@ -1,0 +1,62 @@
+{
+  "pageEyebrow": "Product feedback",
+  "pageTitle": "Help Us Build Better Wheels",
+  "pageIntro": "Share your riding experience, product ideas, and issues. Every submission is reviewed by our product and service teams.",
+  "eyebrow": "Feedback & Suggestions",
+  "title": "Tell us about your experience",
+  "subtitle": "Detailed context helps us reproduce your setup faster.",
+  "stat": {
+    "responses": "Avg. monthly responses",
+    "responsesValue": "240+",
+    "reviewTime": "Review window",
+    "reviewTimeValue": "< 48 hrs"
+  },
+  "fields": {
+    "fullName": "Full name",
+    "email": "Email",
+    "country": "Country / Region",
+    "orderNumber": "Order number",
+    "productCategory": "Product category",
+    "requestType": "Feedback type",
+    "message": "Describe your feedback",
+    "attachments": "Attach photos",
+    "membersOnly": "Members only",
+    "consent": "I agree to share this information so the Tanzanite team can follow up."
+  },
+  "placeholders": {
+    "fullName": "e.g. Alex Chen",
+    "email": "alex\\u0040example.com",
+    "country": "Select a country",
+    "orderNumber": "e.g. TZ-45821",
+    "productCategory": "Select a category",
+    "message": "Describe what happened, which product you used, and what you’d like to improve."
+  },
+  "productCategories": {
+    "mtb": "MTB / Trail",
+    "road": "Road / All-road",
+    "gravel": "Gravel / CX",
+    "accessories": "Accessories",
+    "other": "Other / custom"
+  },
+  "requestTypes": {
+    "product": "Product suggestions",
+    "service": "Customer service",
+    "logistics": "Logistics / shipping",
+    "warranty": "Warranty / quality",
+    "other": "Other"
+  },
+  "upload": {
+    "prompt": "Drop images or click to upload (WEBP/JPG/PNG)",
+    "limit": "Max 3 files, 800×800 recommended."
+  },
+  "actions": {
+    "removeAttachment": "Remove",
+    "submit": "Send feedback",
+    "reset": "Start over"
+  },
+  "messages": {
+    "submitting": "Sending your feedback…",
+    "submitted": "Thanks! Your submission is queued for review."
+  },
+  "charactersLeft": "{count} characters left"
+}

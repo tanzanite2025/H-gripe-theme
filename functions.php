@@ -2052,6 +2052,10 @@ add_action('wp_head', 'mytheme_output_hreflang_and_canonical', 5);
  * 在主题激活时自动创建
  */
 function mytheme_chat_create_tables() {
+    if (defined('TZ_CS_VERSION') && class_exists('TZ_CS_WP_Chat_API')) {
+        return;
+    }
+
     global $wpdb;
     $charset_collate = $wpdb->get_charset_collate();
     $table_name = $wpdb->prefix . 'mytheme_chat_messages';
@@ -2108,6 +2112,10 @@ add_action('after_switch_theme', 'mytheme_chat_create_tables');
  * 注册聊天相关的 REST API 端点
  */
 function mytheme_chat_register_rest_routes() {
+    if (defined('TZ_CS_VERSION') && class_exists('TZ_CS_WP_Chat_API')) {
+        return;
+    }
+
     // 1. 获取会话列表
     register_rest_route('tanzanite/v1', '/chat/conversations', array(
         'methods'  => 'GET',

@@ -1,0 +1,18 @@
+{
+  "title": "Filter Lanjutan",
+  "priceRange": "Rentang Harga",
+  "stockStatus": "Status Stok",
+  "sortBy": "Urutkan Berdasarkan",
+  "rating": "Penilaian",
+  "inStock": "Tersedia",
+  "preOrder": "Pre-order",
+  "andUp": "& Ke Atas",
+  "reset": "Reset Filter",
+  "sort": {
+    "newest": "Terbaru",
+    "priceLowToHigh": "Harga: Rendah ke Tinggi",
+    "priceHighToLow": "Harga: Tinggi ke Rendah",
+    "popular": "Paling Populer",
+    "rating": "Penilaian Terbaik"
+  }
+}

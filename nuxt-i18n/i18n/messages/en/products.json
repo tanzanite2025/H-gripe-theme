@@ -1,0 +1,24 @@
+{
+  "searchResults": "Search Results",
+  "searchFor": "Search for",
+  "allProducts": "All Products",
+  "loading": "Loading...",
+  "noResults": "No products found",
+  "tryAdjustFilters": "Try adjusting filters",
+  "loadMore": "Load More",
+  "items": "items",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
+}

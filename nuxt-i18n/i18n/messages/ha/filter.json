@@ -1,0 +1,18 @@
+{
+  "title": "Matattara Matattara",
+  "priceRange": "Kewayon Farashi",
+  "stockStatus": "Matsayin Kaya",
+  "sortBy": "Tsara Ta",
+  "rating": "Kimanta",
+  "inStock": "A Cikin Kaya",
+  "preOrder": "Oda Ta Gaba",
+  "andUp": "da Sama",
+  "reset": "Sake Saita Matattara",
+  "sort": {
+    "newest": "Sabuwa",
+    "priceLowToHigh": "Farashi: Ƙasa zuwa Sama",
+    "priceHighToLow": "Farashi: Sama zuwa Ƙasa",
+    "popular": "Mafi Shahara",
+    "rating": "Mafi Kyawun Kimanta"
+  }
+}

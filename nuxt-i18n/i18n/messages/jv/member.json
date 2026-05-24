@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Tingkat keanggotaan:",
+    "productDiscountRate": "Tingkat diskon produk:",
+    "pointsDiscountRate": "Tingkat diskon poin:",
+    "canBeStacked": "Iso ditumpuk"
+  },
+  "common": {
+    "yes": "Ya",
+    "no": "Ora"
+  },
+  "levels": {
+    "title": "Tingkat keanggotaan",
+    "header": {
+      "level": "Tingkat",
+      "pointsRequired": "Poin sing dibutuhake",
+      "productDiscount": "Diskon produk",
+      "pointsDiscount": "Diskon poin"
+    },
+    "rows": {
+      "ordinary": "Biasa",
+      "bronze": "Perunggu",
+      "silver": "Perak",
+      "gold": "Emas",
+      "supreme": "Tertinggi"
+    }
+  },
+  "points": {
+    "title": "Carane entuk poin?",
+    "invite": "Undang pangguna anyar",
+    "inviteDesc": "50 Poin (sing diundang entuk 30 Poin)",
+    "consume": "Dhuwit",
+    "consumeDesc": "1 Dolar = 1 Poin",
+    "daily": "Login saben dina",
+    "dailyDesc": "1 Poin (valid 30 dina)"
+  }
+}

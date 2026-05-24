@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "Уровень членства:",
+    "productDiscountRate": "Скидка на товары:",
+    "pointsDiscountRate": "Скидка по баллам:",
+    "canBeStacked": "Можно суммировать"
+  },
+  "common": {
+    "yes": "Да",
+    "no": "Нет"
+  },
+  "levels": {
+    "title": "Уровни членства",
+    "header": {
+      "level": "Уровень",
+      "pointsRequired": "Необходимые баллы",
+      "productDiscount": "Скидка на товары",
+      "pointsDiscount": "Скидка по баллам"
+    },
+    "rows": {
+      "ordinary": "Обычный",
+      "bronze": "Бронзовый",
+      "silver": "Серебряный",
+      "gold": "Золотой",
+      "supreme": "Высший"
+    }
+  },
+  "points": {
+    "title": "Как получить баллы?",
+    "invite": "Пригласить новых пользователей",
+    "inviteDesc": "50 баллов (приглашённый получает 30 баллов)",
+    "consume": "Валюта расхода",
+    "consumeDesc": "1 доллар = 1 балл",
+    "daily": "Ежедневный вход",
+    "dailyDesc": "1 балл (срок действия 30 дней)"
+  }
+}

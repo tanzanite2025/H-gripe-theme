@@ -1,0 +1,6 @@
+{
+  "register": "Rekisteröidy",
+  "login": "Kirjaudu",
+  "logout": "Kirjaudu ulos",
+  "points": "Pisteet: {count}"
+}

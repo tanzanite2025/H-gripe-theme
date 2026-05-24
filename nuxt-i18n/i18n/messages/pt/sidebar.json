@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "Filtro e mais",
+  "staticPages": "Páginas",
+  "categories": "Categorias de produtos",
+  "categoriesPlaceholder": "Árvore de categorias de produtos (a ser implementado)",
+  "quickSearch": "Pesquisa rápida",
+  "productSearch": "Pesquisa de produtos",
+  "searchProductPlaceholder": "Digite o nome do produto...",
+  "searchProducts": "Pesquisar produtos"
+}

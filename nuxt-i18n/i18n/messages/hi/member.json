@@ -1,0 +1,37 @@
+{
+  "brief": {
+    "membershipLevel": "सदस्यता स्तर:",
+    "productDiscountRate": "उत्पाद छूट दर:",
+    "pointsDiscountRate": "प्वाइंट्स छूट दर:",
+    "canBeStacked": "स्टैक किया जा सकता है"
+  },
+  "common": {
+    "yes": "हाँ",
+    "no": "नहीं"
+  },
+  "levels": {
+    "title": "सदस्यता स्तर",
+    "header": {
+      "level": "स्तर",
+      "pointsRequired": "आवश्यक प्वाइंट्स",
+      "productDiscount": "उत्पाद छूट",
+      "pointsDiscount": "प्वाइंट्स छूट"
+    },
+    "rows": {
+      "ordinary": "साधारण",
+      "bronze": "कांस्य",
+      "silver": "रजत",
+      "gold": "स्वर्ण",
+      "supreme": "श्रेष्ठ"
+    }
+  },
+  "points": {
+    "title": "प्वाइंट्स कैसे प्राप्त करें?",
+    "invite": "नए उपयोगकर्ता आमंत्रित करें",
+    "inviteDesc": "50 प्वाइंट्स (आमंत्रित को 30 प्वाइंट्स मिलते हैं)",
+    "consume": "मुद्रा",
+    "consumeDesc": "1 डॉलर = 1 प्वाइंट",
+    "daily": "दैनिक लॉगिन",
+    "dailyDesc": "1 प्वाइंट (30 दिन वैध)"
+  }
+}

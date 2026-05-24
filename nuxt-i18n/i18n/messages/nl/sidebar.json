@@ -1,0 +1,11 @@
+{
+  "page1": "Category",
+  "page2": "Filter & Meer",
+  "staticPages": "Pagina's",
+  "categories": "Productcategorieën",
+  "categoriesPlaceholder": "Productcategorieboom (te implementeren)",
+  "quickSearch": "Snel zoeken",
+  "productSearch": "Producten zoeken",
+  "searchProductPlaceholder": "Voer productnaam in...",
+  "searchProducts": "Zoek producten"
+}

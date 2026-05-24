@@ -1,0 +1,58 @@
+{
+  "shop": {
+    "label": "Toko",
+    "items": {
+      "0": {
+        "label": "Kategori Toko A"
+      },
+      "1": {
+        "label": "Kategori Toko B"
+      },
+      "2": {
+        "label": "Kategori Toko C"
+      }
+    }
+  },
+  "support": {
+    "label": "Dhukungan",
+    "items": {
+      "0": {
+        "label": "Pitakon sing Kerep Ditakoni"
+      },
+      "1": {
+        "label": "Hubungi Kita"
+      },
+      "2": {
+        "label": "Garansi"
+      }
+    }
+  },
+  "about": {
+    "label": "Babagan Kita",
+    "items": {
+      "0": {
+        "label": "Crita Kita"
+      },
+      "1": {
+        "label": "Tim"
+      },
+      "2": {
+        "label": "Karir"
+      }
+    }
+  },
+  "member": {
+    "label": "Anggota",
+    "items": {
+      "0": {
+        "label": "Rencana Keanggotaan"
+      },
+      "1": {
+        "label": "Poin & Hadiah"
+      },
+      "2": {
+        "label": "Penawaran Eksklusif"
+      }
+    }
+  }
+}

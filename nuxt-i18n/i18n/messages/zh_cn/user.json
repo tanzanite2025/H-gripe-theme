@@ -1,0 +1,8 @@
+{
+  "memberCenter": "会员中心",
+  "register": "注册",
+  "login": "登录",
+  "logout": "登出",
+  "closeLogin": "关闭登录",
+  "points": "{count} 积分"
+}

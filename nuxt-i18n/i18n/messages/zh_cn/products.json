@@ -1,0 +1,13 @@
+{
+  "searchResults": "搜索结果",
+  "searchFor": "搜索",
+  "allProducts": "所有商品",
+  "loading": "加载中...",
+  "noResults": "未找到商品",
+  "tryAdjustFilters": "请尝试调整筛选条件",
+  "loadMore": "加载更多",
+  "items": "件",
+  "nav": {
+    "technicalDocs": "技术"
+  }
+}
