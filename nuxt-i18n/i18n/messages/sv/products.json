@@ -6,5 +6,19 @@
   "noResults": "Inga produkter hittades",
   "tryAdjustFilters": "Försök justera filter",
   "loadMore": "Ladda mer",
-  "items": "artiklar"
+  "items": "artiklar",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

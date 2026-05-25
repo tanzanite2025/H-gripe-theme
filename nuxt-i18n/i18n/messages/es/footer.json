@@ -1,5 +1,42 @@
 {
   "links": {
-    "technicalDocs": "Técnico"
+    "technicalDocs": "Técnico",
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "wheelsetBuyersGuide": "Wheelset Guide",
+    "about": "About",
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "contactUs": "Contact Us",
+    "ourStory": "Our Story",
+    "globalPartners": "Global Partners",
+    "oemOdm": "OEM & ODM",
+    "certificates": "Certificates",
+    "membershipPoints": "Membership and Points",
+    "pictureWarehouse": "Picture warehouse"
+  },
+  "menus": {
+    "products": "Products",
+    "support": "Support",
+    "company": "Company",
+    "resources": "RESOURCES"
+  },
+  "brand": {
+    "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
+    "line2": "Flat 1602, 16/F, Lucky Centre,",
+    "line3": "No.165-171 Wan Chai Road, Wan Chai",
+    "line4": "Hong Kong.",
+    "hkLabel": "Hongkong:",
+    "xmLabel": "Xiamen:"
+  },
+  "support": {
+    "allFaqs": "All FAQ'S",
+    "payment": "Payment",
+    "afterSales": "After sales",
+    "warranty": "Warranty",
+    "productFeedback": "Product Feedback",
+    "spokecalculator": "Spokecalculator"
   }
 }

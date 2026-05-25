@@ -3,7 +3,11 @@
     "membershipLevel": "Уровень членства:",
     "productDiscountRate": "Скидка на товары:",
     "pointsDiscountRate": "Скидка по баллам:",
-    "canBeStacked": "Можно суммировать"
+    "canBeStacked": "Можно суммировать",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Да",
@@ -32,6 +36,18 @@
     "consume": "Валюта расхода",
     "consumeDesc": "1 доллар = 1 балл",
     "daily": "Ежедневный вход",
-    "dailyDesc": "1 балл (срок действия 30 дней)"
-  }
+    "dailyDesc": "1 балл (срок действия 30 дней)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

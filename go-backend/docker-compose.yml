@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # Go 后端应用
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tanzanite-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # 数据库配置
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=tanzanite
+      - DB_PASSWORD=${DB_PASSWORD:-tanzanite_password}
+      - DB_NAME=tanzanite
+      - DB_SSLMODE=disable
+      # Redis 配置
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      # JWT 配置
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_change_in_production}
+      - JWT_EXPIRATION=24h
+      # 服务器配置
+      - SERVER_PORT=:8080
+      - SERVER_MODE=release
+      - SERVER_HOST=0.0.0.0
+      # 存储配置
+      - STORAGE_TYPE=local
+      - STORAGE_LOCAL_PATH=/app/uploads
+      - STORAGE_BASE_URL=http://localhost:8080
+      # 日志配置
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: tanzanite-postgres
+    environment:
+      - POSTGRES_USER=tanzanite
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-tanzanite_password}
+      - POSTGRES_DB=tanzanite
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tanzanite -d tanzanite"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: tanzanite-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Nginx 反向代理 (可选 - 生产环境)
+  nginx:
+    image: nginx:alpine
+    container_name: tanzanite-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./uploads:/usr/share/nginx/html/uploads:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Adminer 数据库管理工具 (开发环境)
+  adminer:
+    image: adminer:latest
+    container_name: tanzanite-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+  # Redis Commander (开发环境)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: tanzanite-redis-commander
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  tanzanite-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

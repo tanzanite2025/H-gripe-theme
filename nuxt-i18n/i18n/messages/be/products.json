@@ -6,5 +6,19 @@
   "noResults": "Прадукты не знойдзены",
   "tryAdjustFilters": "Паспрабуйце змяніць умовы фільтрацыі",
   "loadMore": "Загрузіць яшчэ",
-  "items": "шт"
+  "items": "шт",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

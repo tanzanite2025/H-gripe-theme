@@ -1,0 +1,100 @@
+# Tanzanite Go Backend Configuration
+
+server:
+  port: ":9000"
+  mode: "debug"  # debug, release, test
+  base_url: "https://tanzanite.site"  # 用于生成 Sitemap 和 URL
+  read_timeout: 60
+  write_timeout: 60
+
+database:
+  driver: "postgres"  # postgres or mysql
+  host: "localhost"
+  port: 5432
+  username: "tanzanite"
+  password: "your_password_here"
+  database: "tanzanite"
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600  # seconds
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+
+jwt:
+  secret: "your-secret-key-change-this-in-production"
+  expire_hours: 24
+  refresh_expire_hours: 168  # 7 days
+
+i18n:
+  default_locale: "en"
+  supported_locales:
+    - en
+    - zh
+    - fr
+    - de
+    - es
+    - ja
+    - ko
+    - it
+    - pt
+    - ru
+    - ar
+    - fi
+    - da
+    - th
+    - sv
+    - id
+    - ms
+    - nl
+    - tr
+    - fil
+    - tl
+    - jv
+    - hi
+    - ur
+    - mr
+    - ta
+    - te
+    - bn
+    - fa
+    - ps
+    - ha
+    - sw
+    - pcm
+    - be
+
+cors:
+  allowed_origins:
+    - "https://tanzanite.site"
+    - "http://localhost:3000"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allowed_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Authorization"
+    - "Accept-Language"
+  expose_headers:
+    - "Content-Length"
+  allow_credentials: true
+  max_age: 43200  # 12 hours
+
+cache:
+  default_ttl: 3600  # seconds
+  post_ttl: 3600
+  product_ttl: 1800
+  settings_ttl: 7200
+
+log:
+  level: "info"  # debug, info, warn, error
+  format: "json"  # json or console
+  output: "stdout"  # stdout or file path

@@ -6,5 +6,19 @@
   "noResults": "Nenhum produto encontrado",
   "tryAdjustFilters": "Tente ajustar os filtros",
   "loadMore": "Carregar mais",
-  "items": "itens"
+  "items": "itens",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

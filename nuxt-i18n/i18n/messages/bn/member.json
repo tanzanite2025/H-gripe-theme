@@ -3,7 +3,11 @@
     "membershipLevel": "সদস্যতার স্তর:",
     "productDiscountRate": "পণ্যের ডিসকাউন্ট হার:",
     "pointsDiscountRate": "পয়েন্ট ডিসকাউন্ট হার:",
-    "canBeStacked": "স্ট্যাক করা যাবে"
+    "canBeStacked": "স্ট্যাক করা যাবে",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "হ্যাঁ",
@@ -32,6 +36,18 @@
     "consume": "কারেন্সি",
     "consumeDesc": "১ ডলার = ১ পয়েন্ট",
     "daily": "দৈনিক লগইন",
-    "dailyDesc": "১ পয়েন্ট (৩০ দিন বৈধ)"
-  }
+    "dailyDesc": "১ পয়েন্ট (৩০ দিন বৈধ)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

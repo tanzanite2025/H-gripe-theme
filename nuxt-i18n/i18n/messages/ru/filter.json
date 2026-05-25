@@ -14,5 +14,15 @@
     "priceHighToLow": "Цена: По убыванию",
     "popular": "Популярные",
     "rating": "Лучший рейтинг"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

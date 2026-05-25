@@ -3,7 +3,11 @@
     "membershipLevel": "会員ランク：",
     "productDiscountRate": "商品割引率：",
     "pointsDiscountRate": "ポイント割引率：",
-    "canBeStacked": "併用可"
+    "canBeStacked": "併用可",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "はい",
@@ -32,6 +36,18 @@
     "consume": "購入",
     "consumeDesc": "1ドル＝1ポイント",
     "daily": "デイリーログイン",
-    "dailyDesc": "1ポイント（有効期限30日）"
-  }
+    "dailyDesc": "1ポイント（有効期限30日）",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

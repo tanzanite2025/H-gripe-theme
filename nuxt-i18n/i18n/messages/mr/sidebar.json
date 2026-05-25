@@ -7,5 +7,12 @@
   "quickSearch": "जलद शोध",
   "productSearch": "उत्पादन शोध",
   "searchProductPlaceholder": "उत्पादनाचे नाव प्रविष्ट करा...",
-  "searchProducts": "उत्पादने शोधा"
+  "searchProducts": "उत्पादने शोधा",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

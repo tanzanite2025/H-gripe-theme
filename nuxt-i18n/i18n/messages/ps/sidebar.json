@@ -7,5 +7,12 @@
   "quickSearch": "ګړندۍ لټون",
   "productSearch": "د محصول لټون",
   "searchProductPlaceholder": "د محصول نوم دننه کړئ...",
-  "searchProducts": "محصولات ولټوئ"
+  "searchProducts": "محصولات ولټوئ",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

@@ -3,7 +3,11 @@
     "membershipLevel": "सदस्यता स्तर:",
     "productDiscountRate": "उत्पाद छूट दर:",
     "pointsDiscountRate": "प्वाइंट्स छूट दर:",
-    "canBeStacked": "स्टैक किया जा सकता है"
+    "canBeStacked": "स्टैक किया जा सकता है",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "हाँ",
@@ -32,6 +36,18 @@
     "consume": "मुद्रा",
     "consumeDesc": "1 डॉलर = 1 प्वाइंट",
     "daily": "दैनिक लॉगिन",
-    "dailyDesc": "1 प्वाइंट (30 दिन वैध)"
-  }
+    "dailyDesc": "1 प्वाइंट (30 दिन वैध)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

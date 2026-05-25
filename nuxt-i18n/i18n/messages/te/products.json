@@ -6,5 +6,19 @@
   "noResults": "ఉత్పత్తులు కనుగొనబడలేదు",
   "tryAdjustFilters": "ఫిల్టర్‌లను సర్దుబాటు చేయడానికి ప్రయత్నించండి",
   "loadMore": "మరిన్ని లోడ్ చేయండి",
-  "items": "వస్తువులు"
+  "items": "వస్తువులు",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

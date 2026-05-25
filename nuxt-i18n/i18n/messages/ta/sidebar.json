@@ -7,5 +7,12 @@
   "quickSearch": "விரைவு தேடல்",
   "productSearch": "தயாரிப்பு தேடல்",
   "searchProductPlaceholder": "தயாரிப்பு பெயரை உள்ளிடவும்...",
-  "searchProducts": "தயாரிப்புகளைத் தேடு"
+  "searchProducts": "தயாரிப்புகளைத் தேடு",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

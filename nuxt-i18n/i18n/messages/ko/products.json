@@ -6,5 +6,19 @@
   "noResults": "제품을 찾을 수 없습니다",
   "tryAdjustFilters": "필터를 조정해 보세요",
   "loadMore": "더 보기",
-  "items": "개"
+  "items": "개",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

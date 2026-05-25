@@ -7,5 +7,12 @@
   "quickSearch": "Hızlı Arama",
   "productSearch": "Ürün Arama",
   "searchProductPlaceholder": "Ürün adını girin...",
-  "searchProducts": "Ürün Ara"
+  "searchProducts": "Ürün Ara",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

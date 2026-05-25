@@ -14,5 +14,15 @@
     "priceHighToLow": "قیمت: زیاد به کم",
     "popular": "محبوب ترین",
     "rating": "بهترین امتیاز"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

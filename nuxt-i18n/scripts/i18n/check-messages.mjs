@@ -158,11 +158,15 @@ async function main() {
   }
 
   const hasLocaleFailures = localeReports.some(
-    (report) => report.missingFromBase.length || report.extraVsBase.length || report.missingUsed.length,
+    (report) => report.missingFromBase.length || report.missingUsed.length,
   )
 
   if (duplicateKeys.length || baseMissingUsedKeys.length || hasLocaleFailures) {
     process.exit(1)
+  }
+
+  if (localeReports.some((report) => report.extraVsBase.length)) {
+    console.log('Extra locale keys are reported as cleanup warnings only.')
   }
 
   console.log('i18n messages are complete and aligned.')

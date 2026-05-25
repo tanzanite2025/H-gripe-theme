@@ -6,5 +6,19 @@
   "noResults": "কোনো পণ্য পাওয়া যায়নি",
   "tryAdjustFilters": "ফিল্টার সমন্বয় করার চেষ্টা করুন",
   "loadMore": "আরও লোড করুন",
-  "items": "টি"
+  "items": "টি",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

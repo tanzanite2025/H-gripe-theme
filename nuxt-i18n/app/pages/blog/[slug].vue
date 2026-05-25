@@ -25,6 +25,14 @@
     >
       <div class="space-y-4" v-html="post.contentHtml"></div>
     </article>
+
+    <!-- 文章翻译链接 -->
+    <PostTranslations 
+      v-if="post.id" 
+      :post-id="post.id" 
+      :title="t('blog.availableInOtherLanguages')"
+      class="mt-6"
+    />
   </div>
 
   <div v-else class="text-sm text-slate-300">

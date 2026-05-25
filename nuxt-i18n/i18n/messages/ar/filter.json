@@ -14,5 +14,15 @@
     "priceHighToLow": "السعر: من الأعلى إلى الأقل",
     "popular": "الأكثر شعبية",
     "rating": "أفضل تقييم"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

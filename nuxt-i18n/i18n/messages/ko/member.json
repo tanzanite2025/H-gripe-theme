@@ -3,7 +3,11 @@
     "membershipLevel": "회원 레벨:",
     "productDiscountRate": "상품 할인율:",
     "pointsDiscountRate": "포인트 할인율:",
-    "canBeStacked": "중복 적용 가능"
+    "canBeStacked": "중복 적용 가능",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "예",
@@ -32,6 +36,18 @@
     "consume": "소비 통화",
     "consumeDesc": "1 달러 = 1 포인트",
     "daily": "매일 로그인",
-    "dailyDesc": "1 포인트 (유효기간 30일)"
-  }
+    "dailyDesc": "1 포인트 (유효기간 30일)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

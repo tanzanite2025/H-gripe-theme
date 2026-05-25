@@ -2,5 +2,7 @@
   "register": "تسجيل",
   "login": "تسجيل الدخول",
   "logout": "تسجيل الخروج",
-  "points": "النقاط: {count}"
+  "points": "النقاط: {count}",
+  "memberCenter": "Member Center",
+  "closeLogin": "Close Login"
 }

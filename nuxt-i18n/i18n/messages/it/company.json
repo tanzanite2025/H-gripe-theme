@@ -1,0 +1,52 @@
+{
+  "nav": {
+    "about": "About Us",
+    "ourStory": "Our Story",
+    "globalPartners": "Global Partners",
+    "oemOdm": "OEM & ODM",
+    "certificates": "Certificates",
+    "membershipPoints": "Membership and Points",
+    "pictureWarehouse": "Picture warehouse",
+    "contact": "Contact Us"
+  },
+  "index": {
+    "title": "Company",
+    "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
+    "cards": {
+      "about": {
+        "description": "Learn about our mission, values, and the team behind Tanzanite.",
+        "cta": "About Tanzanite"
+      },
+      "ourStory": {
+        "description": "Background of Tanzanite and the vision behind our products.",
+        "cta": "Read our story"
+      },
+      "globalPartners": {
+        "description": "Explore our global network of partners and collaborations.",
+        "cta": "View partners"
+      },
+      "oemOdm": {
+        "description": "Discover how we support OEM and ODM programs from design to delivery.",
+        "cta": "Learn about OEM & ODM"
+      },
+      "certificates": {
+        "description": "Review certifications and standards that support our quality commitments.",
+        "cta": "View certificates"
+      },
+      "contact": {
+        "description": "Get in touch with the Tanzanite team for enquiries and support.",
+        "cta": "Contact us"
+      }
+    }
+  },
+  "pages": {
+    "placeholder": "Content coming soon."
+  },
+  "ourStory": {
+    "story": {
+      "title": "Story",
+      "factoryButton": "Factory",
+      "body": "Our story began with a clear belief:\nhigh-performance carbon components require more than good materials —\nthey require full control.\n\nAs engineers and riders, we saw too many products built through fragmented processes,\nwhere design, manufacturing, and quality control were separated.\nThe result was inconsistency, delayed communication, and avoidable risk.\n\nWe started with carbon rims, one of the most technically demanding components in cycling.\nFrom layup structure and resin control to impact resistance,\nevery decision was made with performance and safety in mind.\n\nAs our capabilities expanded, we naturally moved into complete wheelsets\nand carbon handlebars.\nNot to chase a broader product range,\nbut to ensure that every component works together as a complete system.\n\nToday, our OEM and ODM solutions are trusted by partners around the world.\nFrom design and engineering to manufacturing and testing,\neverything is built in-house.\nThis allows us to deliver consistent quality, reliable lead times,\nand products that meet the expectations of global markets.\n\nWe believe long-term partnerships are built on transparency,\nstable quality, and accountability.\nThat principle continues to guide how we work with brands,\ndistributors, and riders worldwide.  Whether developing a new product or scaling an existing design,\nwe work as an extension of our partners’ teams."
+    }
+  }
+}

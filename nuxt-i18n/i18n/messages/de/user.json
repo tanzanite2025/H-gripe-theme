@@ -2,5 +2,7 @@
   "register": "Registrieren",
   "login": "Anmelden",
   "logout": "Abmelden",
-  "points": "Punkt: {count}"
+  "points": "Punkt: {count}",
+  "memberCenter": "Member Center",
+  "closeLogin": "Close Login"
 }

@@ -14,5 +14,15 @@
     "priceHighToLow": "ราคา: สูงไปต่ำ",
     "popular": "ยอดนิยมสูงสุด",
     "rating": "คะแนนดีที่สุด"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

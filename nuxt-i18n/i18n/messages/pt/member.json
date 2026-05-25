@@ -3,7 +3,11 @@
     "membershipLevel": "Nível de associação:",
     "productDiscountRate": "Taxa de desconto do produto:",
     "pointsDiscountRate": "Taxa de desconto de pontos:",
-    "canBeStacked": "Acumulável"
+    "canBeStacked": "Acumulável",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Sim",
@@ -32,6 +36,18 @@
     "consume": "Moeda de consumo",
     "consumeDesc": "1 Dólar = 1 Ponto",
     "daily": "Login diário",
-    "dailyDesc": "1 ponto (validade de 30 dias)"
-  }
+    "dailyDesc": "1 ponto (validade de 30 dias)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

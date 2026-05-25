@@ -2,5 +2,7 @@
   "register": "Rekisteröidy",
   "login": "Kirjaudu",
   "logout": "Kirjaudu ulos",
-  "points": "Pisteet: {count}"
+  "points": "Pisteet: {count}",
+  "memberCenter": "Member Center",
+  "closeLogin": "Close Login"
 }

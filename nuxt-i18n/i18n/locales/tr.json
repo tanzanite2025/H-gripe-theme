@@ -1,12 +1,4 @@
-﻿{
-  "user": {
-    "memberCenter": "Üye Merkezi",
-    "register": "Kayıt Ol",
-    "login": "Giriş Yap",
-    "logout": "Çıkış Yap",
-    "closeLogin": "Girişi Kapat",
-    "points": "{count} puan"
-  },
+{
   "auth": {
     "registerTitle": "Kayıt Ol",
     "loginTitle": "Giriş Yap",
@@ -18,17 +10,607 @@
     "alreadyHaveAccount": "Zaten hesabınız var mı?",
     "dontHaveAccount": "Hesabınız yok mu?",
     "usernameOrEmail": "Kullanıcı Adı veya E-posta",
-    "rememberMe": "Beni hatırla"
+    "rememberMe": "Beni hatırla",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "privacyNotice": "We take your privacy seriously. All connections are encrypted and your data stays yours.",
+    "welcomeBack": "Welcome back! Choose a method to sign in:",
+    "joinToday": "Create an account in seconds:",
+    "orWithEmail": "or with email",
+    "signingIn": "Signing in...",
+    "signUpHere": "Sign up here",
+    "signingUp": "Signing up...",
+    "signInHere": "Sign in here",
+    "loginSuccessTitle": "登录成功",
+    "googleLoginSuccess": "Google 账户登录成功，数据已同步。",
+    "loginSuccessCta": "好的，返回",
+    "loginSuccessMessage": "Your account data has been synced, click below to continue.",
+    "registerSuccessTitle": "注册成功",
+    "registerSuccessMessage": "账户已创建，点击下方按钮一键登录并返回。",
+    "registerSuccessCta": "一键登录"
   },
-  "search": {
-    "placeholder": "Ara...",
-    "button": "Ara"
+  "blog": {
+    "nav": {
+      "all": "All",
+      "news": "News",
+      "wheelsbuild": "Wheelbuild"
+    },
+    "pages": {
+      "all": {
+        "title": "Blog",
+        "intro": "Updates, announcements, and wheelbuilding articles.",
+        "metaTitle": "Blog"
+      },
+      "news": {
+        "title": "News",
+        "intro": "Product updates, announcements, and quick guides.",
+        "metaTitle": "Blog · News"
+      },
+      "wheelsbuild": {
+        "title": "Wheelbuild",
+        "intro": "Wheelbuilding workflow, checks, and practical tips.",
+        "metaTitle": "Blog · Wheelbuild"
+      },
+      "detail": {
+        "metaTitle": "Blog",
+        "metaDescription": "Read the latest article from Tanzanite."
+      }
+    },
+    "actions": {
+      "readMore": "Read more",
+      "openArticle": "Open article"
+    },
+    "empty": "No articles yet.",
+    "notFound": "Article not found.",
+    "availableInOtherLanguages": "Available In Other Languages"
   },
-  "nav": {
-    "home": "Ana Sayfa",
-    "shop": "Mağaza",
-    "about": "Hakkımızda",
-    "contact": "İletişim"
+  "breadcrumbs": {
+    "home": "Home",
+    "guides": "Guides",
+    "blog": "Blog"
+  },
+  "cart": {
+    "summary": {
+      "items": "Items",
+      "price": "Price",
+      "openCart": "View cart summary"
+    }
+  },
+  "common": {
+    "close": "Close",
+    "previous": "Previous",
+    "next": "Next",
+    "loading": "Loading...",
+    "backToHome": "Back to Home"
+  },
+  "company": {
+    "nav": {
+      "about": "About Us",
+      "ourStory": "Our Story",
+      "globalPartners": "Global Partners",
+      "oemOdm": "OEM & ODM",
+      "certificates": "Certificates",
+      "membershipPoints": "Membership and Points",
+      "pictureWarehouse": "Picture warehouse",
+      "contact": "Contact Us"
+    },
+    "index": {
+      "title": "Company",
+      "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
+      "cards": {
+        "about": {
+          "description": "Learn about our mission, values, and the team behind Tanzanite.",
+          "cta": "About Tanzanite"
+        },
+        "ourStory": {
+          "description": "Background of Tanzanite and the vision behind our products.",
+          "cta": "Read our story"
+        },
+        "globalPartners": {
+          "description": "Explore our global network of partners and collaborations.",
+          "cta": "View partners"
+        },
+        "oemOdm": {
+          "description": "Discover how we support OEM and ODM programs from design to delivery.",
+          "cta": "Learn about OEM & ODM"
+        },
+        "certificates": {
+          "description": "Review certifications and standards that support our quality commitments.",
+          "cta": "View certificates"
+        },
+        "contact": {
+          "description": "Get in touch with the Tanzanite team for enquiries and support.",
+          "cta": "Contact us"
+        }
+      }
+    },
+    "pages": {
+      "placeholder": "Content coming soon."
+    },
+    "ourStory": {
+      "story": {
+        "title": "Story",
+        "factoryButton": "Factory",
+        "body": "Our story began with a clear belief:\nhigh-performance carbon components require more than good materials —\nthey require full control.\n\nAs engineers and riders, we saw too many products built through fragmented processes,\nwhere design, manufacturing, and quality control were separated.\nThe result was inconsistency, delayed communication, and avoidable risk.\n\nWe started with carbon rims, one of the most technically demanding components in cycling.\nFrom layup structure and resin control to impact resistance,\nevery decision was made with performance and safety in mind.\n\nAs our capabilities expanded, we naturally moved into complete wheelsets\nand carbon handlebars.\nNot to chase a broader product range,\nbut to ensure that every component works together as a complete system.\n\nToday, our OEM and ODM solutions are trusted by partners around the world.\nFrom design and engineering to manufacturing and testing,\neverything is built in-house.\nThis allows us to deliver consistent quality, reliable lead times,\nand products that meet the expectations of global markets.\n\nWe believe long-term partnerships are built on transparency,\nstable quality, and accountability.\nThat principle continues to guide how we work with brands,\ndistributors, and riders worldwide.  Whether developing a new product or scaling an existing design,\nwe work as an extension of our partners’ teams."
+      }
+    }
+  },
+  "contactLocation": {
+    "title": "Our Location",
+    "getDirections": "Get directions",
+    "openGoogle": "Open Google Maps",
+    "openApple": "Open Apple Maps",
+    "loadMap": "Load interactive map",
+    "previewAlt": "Map preview",
+    "iframeTitle": "Google map"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Find answers to common questions about our products and services"
+  },
+  "feedback": {
+    "defaultSubtitle": "Help us improve this page and the tools you use every day.",
+    "empty": "No feedback has been submitted for this page yet.",
+    "formIntro": "Share your thoughts or report a problem about this page.",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Tell us what you think or what went wrong...",
+    "optionalName": "Your name (optional)",
+    "namePlaceholder": "Enter your name (optional)",
+    "optionalEmail": "Your email (optional)",
+    "emailPlaceholder": "Enter your email (optional)",
+    "submit": "Submit feedback",
+    "loading": "Loading feedback...",
+    "loginRequired": "Please sign in to leave feedback.",
+    "loginCta": "Sign in or create an account",
+    "liveChatCta": "To live chat",
+    "searchLabel": "Search feedback",
+    "searchPlaceholder": "Type to filter comments on this page...",
+    "anonymous": "Member",
+    "submitting": "Submitting...",
+    "defaultTitle": "Share your feedback",
+    "required": "Please enter your feedback before submitting.",
+    "submitFailed": "Failed to submit feedback. Please try again.",
+    "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed."
+  },
+  "feedbackForm": {
+    "pageEyebrow": "Product feedback",
+    "pageTitle": "Help Us Build Better Wheels",
+    "pageIntro": "Share your riding experience, product ideas, and issues. Every submission is reviewed by our product and service teams.",
+    "eyebrow": "Feedback & Suggestions",
+    "title": "Tell us about your experience",
+    "subtitle": "Detailed context helps us reproduce your setup faster.",
+    "stat": {
+      "responses": "Avg. monthly responses",
+      "responsesValue": "240+",
+      "reviewTime": "Review window",
+      "reviewTimeValue": "< 48 hrs"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "email": "Email",
+      "country": "Country / Region",
+      "orderNumber": "Order number",
+      "productCategory": "Product category",
+      "requestType": "Feedback type",
+      "message": "Describe your feedback",
+      "attachments": "Attach photos",
+      "membersOnly": "Members only",
+      "consent": "I agree to share this information so the Tanzanite team can follow up."
+    },
+    "placeholders": {
+      "fullName": "e.g. Alex Chen",
+      "email": "alex\\u0040example.com",
+      "country": "Select a country",
+      "orderNumber": "e.g. TZ-45821",
+      "productCategory": "Select a category",
+      "message": "Describe what happened, which product you used, and what you’d like to improve."
+    },
+    "productCategories": {
+      "mtb": "MTB / Trail",
+      "road": "Road / All-road",
+      "gravel": "Gravel / CX",
+      "accessories": "Accessories",
+      "other": "Other / custom"
+    },
+    "requestTypes": {
+      "product": "Product suggestions",
+      "service": "Customer service",
+      "logistics": "Logistics / shipping",
+      "warranty": "Warranty / quality",
+      "other": "Other"
+    },
+    "upload": {
+      "prompt": "Drop images or click to upload (WEBP/JPG/PNG)",
+      "limit": "Max 3 files, 800×800 recommended."
+    },
+    "actions": {
+      "removeAttachment": "Remove",
+      "submit": "Send feedback",
+      "reset": "Start over"
+    },
+    "messages": {
+      "submitting": "Sending your feedback…",
+      "submitted": "Thanks! Your submission is queued for review.",
+      "loginRequired": "Log in to attach files.",
+      "membersOnly": "Attachments are available for eligible members.",
+      "submitError": "We could not submit your feedback. Please try again."
+    },
+    "charactersLeft": "{count} characters left"
+  },
+  "filter": {
+    "title": "Gelişmiş Filtreler",
+    "priceRange": "Fiyat Aralığı",
+    "stockStatus": "Stok Durumu",
+    "sortBy": "Sırala",
+    "rating": "Değerlendirme",
+    "inStock": "Stokta",
+    "preOrder": "Ön Sipariş",
+    "andUp": "ve Üzeri",
+    "reset": "Filtreleri Sıfırla",
+    "sort": {
+      "newest": "En Yeni",
+      "priceLowToHigh": "Fiyat: Düşükten Yükseğe",
+      "priceHighToLow": "Fiyat: Yüksekten Düşüğe",
+      "popular": "En Popüler",
+      "rating": "En İyi Değerlendirme"
+    },
+    "filters": "Filters",
+    "price": "Price",
+    "resetShort": "Reset",
+    "searchPlaceholder": "Search...",
+    "clearSearch": "Clear search",
+    "categories": "Categories",
+    "tags": "Tags",
+    "dateRange": "Date Range",
+    "from": "From",
+    "to": "To"
+  },
+  "footer": {
+    "menus": {
+      "products": "Products",
+      "support": "Support",
+      "company": "Company",
+      "resources": "RESOURCES"
+    },
+    "links": {
+      "shop": "Shop",
+      "aboutTools": "About Tools",
+      "tireSizeCharts": "Tire Guides",
+      "wheelsbuildBlog": "Wheelsbuild blog",
+      "technicalDocs": "Technical",
+      "wheelsetBuyersGuide": "Wheelset Guide",
+      "about": "About",
+      "aboutUs": "About Us",
+      "contact": "Contact",
+      "contactUs": "Contact Us",
+      "ourStory": "Our Story",
+      "globalPartners": "Global Partners",
+      "oemOdm": "OEM & ODM",
+      "certificates": "Certificates",
+      "membershipPoints": "Membership and Points",
+      "pictureWarehouse": "Picture warehouse"
+    },
+    "brand": {
+      "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
+      "line2": "Flat 1602, 16/F, Lucky Centre,",
+      "line3": "No.165-171 Wan Chai Road, Wan Chai",
+      "line4": "Hong Kong.",
+      "hkLabel": "Hongkong:",
+      "xmLabel": "Xiamen:"
+    },
+    "support": {
+      "allFaqs": "All FAQ'S",
+      "payment": "Payment",
+      "afterSales": "After sales",
+      "warranty": "Warranty",
+      "productFeedback": "Product Feedback",
+      "spokecalculator": "Spokecalculator"
+    }
+  },
+  "giftcards": {
+    "title": "Redeem Points for Gift Cards",
+    "balance": "Balance",
+    "pointsRequired": "Points required",
+    "redeeming": "Redeeming...",
+    "redeem": "Redeem",
+    "noCards": "No gift cards available"
+  },
+  "home": {
+    "meta": {
+      "title": "Factory-Direct Carbon Rims & Wheelsets",
+      "description": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability."
+    },
+    "hero": {
+      "title": "Factory-Direct Carbon Rims & Wheelsets",
+      "subtitle": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability.",
+      "stackAriaLabel": "Hero image cards",
+      "dotAriaLabel": "Go to card {index}",
+      "cards": {
+        "0": {
+          "alt": "Factory-direct carbon rims and wheelsets"
+        },
+        "1": {
+          "alt": "Carbon pre-mold layup workshop"
+        },
+        "2": {
+          "alt": "Final inspection and packing"
+        }
+      },
+      "cta": {
+        "shop": "Shop",
+        "about": "About",
+        "pictureWarehouse": "Gallery"
+      }
+    },
+    "trust": {
+      "title": "Shop with Confidence"
+    },
+    "shopWithConfidence": {
+      "items": {
+        "0": {
+          "title": "Secure Payment",
+          "description": "All transactions are protected by industry-standard HTTPS encryption.",
+          "bullets": {
+            "0": "Verified SSL Security",
+            "1": "Major Cards via Stripe",
+            "2": "PayPal, WeChat & Alipay"
+          }
+        },
+        "1": {
+          "title": "Worldwide Shipping",
+          "description": "Placeholder copy. Add delivery, tracking, and packaging details here.",
+          "bullets": {
+            "0": "Placeholder bullet",
+            "1": "Placeholder bullet",
+            "2": "Placeholder bullet"
+          }
+        },
+        "2": {
+          "title": "Warranty Coverage",
+          "description": "Placeholder copy. Add warranty terms and verification details here.",
+          "bullets": {
+            "0": "Placeholder bullet",
+            "1": "Placeholder bullet",
+            "2": "Placeholder bullet"
+          }
+        },
+        "3": {
+          "title": "After‑Sales Support",
+          "description": "Placeholder copy. Add support response and service coverage details here.",
+          "bullets": {
+            "0": "Placeholder bullet",
+            "1": "Placeholder bullet",
+            "2": "Placeholder bullet"
+          }
+        }
+      }
+    },
+    "whyChooseUs": {
+      "title": "Why Choose Us",
+      "subtitle": "Factory-built carbon rims and hand-built wheelsets with documented processes, consistent quality, and OEM-ready support.",
+      "items": {
+        "0": {
+          "title": "OEM-Ready Manufacturing",
+          "description": "Built for brands and builders who need stable output, clear communication, and repeatable results.",
+          "bullets": {
+            "0": "OEM/ODM support for rims and wheelsets",
+            "1": "Spec-driven production and revision control",
+            "2": "Consistent finishes across batches"
+          }
+        },
+        "1": {
+          "title": "Documented QC Workflow",
+          "description": "Quality is a process. We run checkpoints that help catch issues early and keep consistency high.",
+          "bullets": {
+            "0": "Incoming material checks and in-process inspection",
+            "1": "Final inspection before packing and shipment",
+            "2": "Records and traceability for key steps"
+          }
+        },
+        "2": {
+          "title": "Custom Layup & Finishes",
+          "description": "Choose stiffness targets, ride feel, and brand look—without compromising reliability.",
+          "bullets": {
+            "0": "Layup tuning for road, gravel, and MTB use cases",
+            "1": "Finish options: decal, paint, and surface treatments",
+            "2": "Clear spec confirmation before production"
+          }
+        },
+        "3": {
+          "title": "Tested Standards & Lead Times",
+          "description": "We validate performance and provide lead time ranges upfront so you can plan builds and launches.",
+          "bullets": {
+            "0": "Testing equipment and internal standards",
+            "1": "Clear quoting for sampling and production schedules",
+            "2": "Packaging and shipping practices built for transit safety"
+          }
+        },
+        "4": {
+          "title": "Precision Wheel Building",
+          "description": "Carbon wheelsets built by experienced builders—focused on balance, durability, and a clean final finish.",
+          "bullets": {
+            "0": "Spoke tension balancing and stress-relief steps",
+            "1": "Support for popular hubs and multiple lacing patterns",
+            "2": "Build consistency designed for real riding conditions"
+          }
+        },
+        "5": {
+          "title": "Tools, Standards & Benchmarking",
+          "description": "We use modern equipment and hands-on know-how from top-tier hub and wheelset teardowns.",
+          "bullets": {
+            "0": "Calibrated truing and tension measurement tools",
+            "1": "Build standards informed by premium component teardown experience",
+            "2": "Process discipline that improves repeatability at scale"
+          }
+        }
+      }
+    },
+    "features": {
+      "title": "Performance, Built In-House",
+      "subtitle": "A carbon rim factory mindset—focused on quality, consistency, and real-world performance.",
+      "items": {
+        "qc": {
+          "title": "Consistent QC, Reliable Results",
+          "description": "In-house quality control for repeatable builds, tight tolerances, and dependable delivery."
+        },
+        "options": {
+          "title": "Road / Gravel / MTB Options",
+          "description": "Choose the right specs for your riding—built to match real routes and real conditions."
+        },
+        "oem": {
+          "title": "OEM/ODM & Custom Layup",
+          "description": "Support for custom projects—from layup tuning to brand-ready manufacturing workflows."
+        },
+        "lightweight": {
+          "title": "Lightweight Without Compromise",
+          "description": "Balanced weight, stiffness, and durability—engineered to perform without trade-offs."
+        }
+      }
+    },
+    "factoryStories": {
+      "title": "Factory Stories",
+      "subtitle": "A behind-the-scenes look at our process, materials, testing, and the builds that leave our workshop.",
+      "readMore": "Read more",
+      "viewAll": "View all",
+      "items": {
+        "0": {
+          "title": "Carbon Layup in Action",
+          "description": "How we tune layup schedules for strength, stiffness, and consistency."
+        },
+        "1": {
+          "title": "Quality Control Checklist",
+          "description": "A practical look at the QC steps we run before every shipment."
+        },
+        "2": {
+          "title": "From Mold to Finish",
+          "description": "A tour of our process—from molding to finishing details."
+        },
+        "3": {
+          "title": "Built for Real Riding",
+          "description": "What we prioritize when building for road, gravel, and MTB conditions."
+        }
+      }
+    },
+    "featuredProducts": {
+      "title": "Featured Products",
+      "subtitle": "Explore our carbon rims and wheelsets. More categories and components will be added over time.",
+      "viewAll": "Shop all",
+      "items": {
+        "0": {
+          "title": "Carbon Rim Set",
+          "description": "A lightweight rim option designed for consistent builds.",
+          "price": "From $—"
+        },
+        "1": {
+          "title": "Carbon Wheelset",
+          "description": "A complete wheelset built for speed and reliability.",
+          "price": "From $—"
+        },
+        "2": {
+          "title": "Gravel-Ready Build",
+          "description": "Specs tuned for mixed terrain and real-world durability.",
+          "price": "From $—"
+        },
+        "3": {
+          "title": "MTB Option",
+          "description": "Rugged configurations for trail and off-road use.",
+          "price": "From $—"
+        }
+      }
+    },
+    "innovationRd": {
+      "title": "Innovation & R&D",
+      "subtitle": "A look at what we’re building next—hub concepts, protected design work, and our next-generation carbon wheel platforms.",
+      "readMore": "Read more",
+      "items": {
+        "0": {
+          "title": "Protected Design Work",
+          "description": "We develop original solutions across multiple programs. Details aren’t public, but our work is IP-aware and documentation-driven.",
+          "bullets": {
+            "0": "Original concepts developed with long-term product roadmaps",
+            "1": "Design iterations tracked with clear revisions and validation notes",
+            "2": "Selective sharing—public copy stays accurate and non-sensitive"
+          }
+        },
+        "1": {
+          "title": "Silent Near‑Zero Engagement Hub",
+          "description": "A hub direction focused on quiet, near-instant engagement—balanced with low weight and long-term durability.",
+          "bullets": {
+            "0": "Engagement concept tuned for responsiveness without harsh sound",
+            "1": "Balance targets: weight, durability, and serviceability",
+            "2": "Benchmarking informed by teardown work on premium hubs and wheelsets"
+          }
+        },
+        "2": {
+          "title": "Next‑Gen Carbon Wheel Platforms",
+          "description": "Our 6–12 month focus: pushing lighter rims further, and developing a more stable integrated carbon wheelset platform.",
+          "bullets": {
+            "0": "Lighter rim development with strict stability and consistency goals",
+            "1": "Integrated carbon wheelset direction for improved structural stability",
+            "2": "Prototypes validated through build feedback and in-house test workflows"
+          }
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Ready to Build Your Next Set?",
+      "subtitle": "Browse our products now, or explore the gallery to see more builds and details.",
+      "primary": "Shop",
+      "secondary": "Gallery"
+    }
+  },
+  "member": {
+    "brief": {
+      "membershipLevel": "Üyelik seviyesi:",
+      "productDiscountRate": "Ürün indirim oranı:",
+      "pointsDiscountRate": "Puan indirim oranı:",
+      "canBeStacked": "Birleştirilebilir",
+      "level": "Level",
+      "productDiscount": "Product Discount",
+      "pointsDiscount": "Points",
+      "stackable": "Stackable"
+    },
+    "common": {
+      "yes": "Evet",
+      "no": "Hayır"
+    },
+    "levels": {
+      "title": "Üyelik seviyeleri",
+      "header": {
+        "level": "Seviye",
+        "pointsRequired": "Gerekli puanlar",
+        "productDiscount": "Ürün indirimi",
+        "pointsDiscount": "Puan indirimi"
+      },
+      "rows": {
+        "ordinary": "Standart",
+        "bronze": "Bronz",
+        "silver": "Gümüş",
+        "gold": "Altın",
+        "supreme": "Üst"
+      }
+    },
+    "points": {
+      "title": "Puan nasıl kazanılır?",
+      "invite": "Yeni kullanıcıları davet et",
+      "inviteDesc": "50 puan (davet edilen 30 puan alır)",
+      "consume": "Para birimi",
+      "consumeDesc": "1 Dolar = 1 Puan",
+      "daily": "Günlük giriş",
+      "dailyDesc": "1 puan (30 gün geçerli)",
+      "unit": "pts"
+    },
+    "tabs": {
+      "myInfo": "My info",
+      "levers": "Levers",
+      "exchange": "Exchange"
+    },
+    "viewAll": "View Full",
+    "myBenefits": "My Benefits",
+    "coupons": "Coupons",
+    "pointCards": "Point Cards",
+    "copyLink": "Copy Invite Link",
+    "pageTitle": "Membership and Points"
   },
   "menu": {
     "shop": {
@@ -88,84 +670,17 @@
       }
     }
   },
-  "member": {
-    "brief": {
-      "membershipLevel": "Üyelik seviyesi:",
-      "productDiscountRate": "Ürün indirim oranı:",
-      "pointsDiscountRate": "Puan indirim oranı:",
-      "canBeStacked": "Birleştirilebilir"
-    },
-    "common": {
-      "yes": "Evet",
-      "no": "Hayır"
-    },
-    "levels": {
-      "title": "Üyelik seviyeleri",
-      "header": {
-        "level": "Seviye",
-        "pointsRequired": "Gerekli puanlar",
-        "productDiscount": "Ürün indirimi",
-        "pointsDiscount": "Puan indirimi"
-      },
-      "rows": {
-        "ordinary": "Standart",
-        "bronze": "Bronz",
-        "silver": "Gümüş",
-        "gold": "Altın",
-        "supreme": "Üst"
-      }
-    },
-    "points": {
-      "title": "Puan nasıl kazanılır?",
-      "invite": "Yeni kullanıcıları davet et",
-      "inviteDesc": "50 puan (davet edilen 30 puan alır)",
-      "consume": "Para birimi",
-      "consumeDesc": "1 Dolar = 1 Puan",
-      "daily": "Günlük giriş",
-      "dailyDesc": "1 puan (30 gün geçerli)"
-    }
+  "nav": {
+    "home": "Ana Sayfa",
+    "shop": "Mağaza",
+    "about": "Hakkımızda",
+    "contact": "İletişim"
   },
-  "promo": {
-    "memberCta": "Üyelere özel %50'ye varan indirim"
-  },
-  "filter": {
-    "title": "Gelişmiş Filtreler",
-    "priceRange": "Fiyat Aralığı",
-    "stockStatus": "Stok Durumu",
-    "sortBy": "Sırala",
-    "rating": "Değerlendirme",
-    "inStock": "Stokta",
-    "preOrder": "Ön Sipariş",
-    "andUp": "ve Üzeri",
-    "reset": "Filtreleri Sıfırla",
-    "sort": {
-      "newest": "En Yeni",
-      "priceLowToHigh": "Fiyat: Düşükten Yükseğe",
-      "priceHighToLow": "Fiyat: Yüksekten Düşüğe",
-      "popular": "En Popüler",
-      "rating": "En İyi Değerlendirme"
-    }
-  },
-  "sidebar": {
-    "page1": "Category",
-    "page2": "Filtre ve Daha Fazlası",
-    "staticPages": "Sayfalar",
-    "categories": "Ürün Kategorileri",
-    "categoriesPlaceholder": "Ürün Kategori Ağacı (uygulanacak)",
-    "quickSearch": "Hızlı Arama",
-    "productSearch": "Ürün Arama",
-    "searchProductPlaceholder": "Ürün adını girin...",
-    "searchProducts": "Ürün Ara"
-  },
-  "products": {
-    "searchResults": "Arama Sonuçları",
-    "searchFor": "Ara",
-    "allProducts": "Tüm Ürünler",
-    "loading": "Yükleniyor...",
-    "noResults": "Ürün bulunamadı",
-    "tryAdjustFilters": "Filtreleri ayarlamayı deneyin",
-    "loadMore": "Daha Fazla Yükle",
-    "items": "ürün"
+  "policyTabs": {
+    "cookie": "Cookie",
+    "privacy": "Privacy",
+    "refundReturn": "Refund & Return",
+    "terms": "Terms"
   },
   "privacy": {
     "button": "Gizlilik bildirimi",
@@ -218,5 +733,160 @@
     "section8Body": "[Ülkeniz] dışında bulunuyorsanız, verileriniz [Ülkeniz]'e aktarılabilir ve orada işlenebilir; bu durumda geçerli veri koruma yasaları kendi yargı bölgenizdekilerden farklı olabilir.",
     "section9Title": "9. Bu politikanın değiştirilmesi",
     "section9Body": "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Herhangi bir değişiklik, güncellenmiş yürürlük tarihi ile birlikte bu sayfada yayımlanacaktır."
+  },
+  "products": {
+    "searchResults": "Arama Sonuçları",
+    "searchFor": "Ara",
+    "allProducts": "Tüm Ürünler",
+    "loading": "Yükleniyor...",
+    "noResults": "Ürün bulunamadı",
+    "tryAdjustFilters": "Filtreleri ayarlamayı deneyin",
+    "loadMore": "Daha Fazla Yükle",
+    "items": "ürün",
+    "nav": {
+      "shop": "Shop",
+      "aboutTools": "About Tools",
+      "tireSizeCharts": "Tire Guides",
+      "wheelsbuildBlog": "Wheelsbuild blog",
+      "technicalDocs": "Technical",
+      "wheelsetBuyersGuide": "Wheelset Guide"
+    },
+    "navShort": {
+      "tireSize": "Tire guides",
+      "calculator": "Calculator",
+      "points": "Points",
+      "picture": "Picture"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "fullName": "Full Name",
+    "company": "Company",
+    "country": "Country/Region",
+    "phone": "Phone"
+  },
+  "promo": {
+    "memberCta": "Üyelere özel %50'ye varan indirim"
+  },
+  "search": {
+    "placeholder": "Ara...",
+    "button": "Ara"
+  },
+  "sidebar": {
+    "page1": "Category",
+    "page2": "Filtre ve Daha Fazlası",
+    "staticPages": "Sayfalar",
+    "categories": "Ürün Kategorileri",
+    "categoriesPlaceholder": "Ürün Kategori Ağacı (uygulanacak)",
+    "quickSearch": "Hızlı Arama",
+    "productSearch": "Ürün Arama",
+    "searchProductPlaceholder": "Ürün adını girin...",
+    "searchProducts": "Ürün Ara",
+    "search": "Search",
+    "wheelsbuildBlog": {
+      "desc": "Wheelbuilding articles & updates"
+    },
+    "tireGuides": {
+      "desc": "Tire width to rim inner width helper"
+    }
+  },
+  "spokeCalculator": {
+    "tabs": {
+      "calculator": "Calculator",
+      "parameter": "Parameter"
+    },
+    "parameter": {
+      "title": "Parameter definitions",
+      "intro": "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.",
+      "items": {
+        "erd": {
+          "title": "ERD (Effective Rim Diameter)",
+          "desc": "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper."
+        },
+        "flangeDiameter": {
+          "title": "Flange diameter",
+          "desc": "The circle diameter through the spoke hole centers on the hub flange (left and right can be different)."
+        },
+        "centerToFlange": {
+          "title": "Center-to-flange",
+          "desc": "The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry."
+        },
+        "holeCount": {
+          "title": "Spoke hole count",
+          "desc": "Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear."
+        },
+        "crossPattern": {
+          "title": "Cross pattern",
+          "desc": "How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length."
+        }
+      },
+      "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
+    }
+  },
+  "support": {
+    "nav": {
+      "faqs": "All FAQs",
+      "payment": "Payment",
+      "shipping": "Shipping",
+      "afterSales": "After sales",
+      "warranty": "Warranty",
+      "warrantyCheck": "Warranty Check",
+      "productFeedback": "Product Feedback",
+      "spokeCalculator": "Spoke Calculator",
+      "testReport": "Test report"
+    }
+  },
+  "user": {
+    "memberCenter": "Üye Merkezi",
+    "register": "Kayıt Ol",
+    "login": "Giriş Yap",
+    "logout": "Çıkış Yap",
+    "closeLogin": "Girişi Kapat",
+    "points": "{count} puan"
+  },
+  "warranty": {
+    "title": "Warranty Check",
+    "subtitle": "Check your product warranty status",
+    "login_required": "Please log in to check your product warranty.",
+    "login_button": "Log In",
+    "input_label": "Enter your product code:",
+    "input_placeholder": "e.g. ABC123",
+    "check_button": "Check",
+    "help_text": "Your product code can be found on the product packaging or warranty card.",
+    "months": "months",
+    "days": "days",
+    "result": {
+      "valid": "Warranty Valid",
+      "expired": "Warranty Expired",
+      "not_found": "Product Not Found"
+    },
+    "fields": {
+      "product_code": "Product Code",
+      "product_type": "Product Type",
+      "product_name": "Product Name",
+      "ship_date": "Ship Date",
+      "warranty_period": "Warranty Period",
+      "warranty_until": "Warranty Until",
+      "remaining": "Remaining",
+      "expired_ago": "Expired {days} days ago"
+    },
+    "records": {
+      "title": "Service Records",
+      "no_records": "No service records"
+    },
+    "actions": {
+      "check_another": "Check Another",
+      "contact_support": "Contact Support"
+    },
+    "errors": {
+      "not_found_message": "We couldn't find a product with code: {code}",
+      "check_tips": {
+        "0": "Check that the product code was entered exactly as printed.",
+        "1": "Contact support if your product code still cannot be found."
+      },
+      "error_contact": "If you believe this is an error, please contact us."
+    },
+    "cardDesc": "Enter your product code to check warranty status and history.",
+    "checkNow": "Check Now"
   }
 }

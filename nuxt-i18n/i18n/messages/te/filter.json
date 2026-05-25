@@ -14,5 +14,15 @@
     "priceHighToLow": "ధర: ఎక్కువ నుండి తక్కువ",
     "popular": "అత్యంత ప్రజాదరణ పొందినవి",
     "rating": "ఉత్తమ రేటింగ్"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

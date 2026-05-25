@@ -6,5 +6,19 @@
   "noResults": "Hakuna bidhaa zilizopatikana",
   "tryAdjustFilters": "Jaribu kurekebisha vichujio",
   "loadMore": "Pakia Zaidi",
-  "items": "vitu"
+  "items": "vitu",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

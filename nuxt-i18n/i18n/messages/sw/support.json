@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "faqs": "All FAQs",
+    "payment": "Payment",
+    "shipping": "Shipping",
+    "afterSales": "After sales",
+    "warranty": "Warranty",
+    "warrantyCheck": "Warranty Check",
+    "productFeedback": "Product Feedback",
+    "spokeCalculator": "Spoke Calculator",
+    "testReport": "Test report"
+  }
+}

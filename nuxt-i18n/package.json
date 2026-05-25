@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare",
     "sync-data": "node scripts/sync-spoke-data.mjs",
     "i18n:split": "node scripts/i18n/split-locales.mjs",
+    "i18n:fill-missing": "node scripts/i18n/fill-missing.mjs",
     "i18n:build": "node scripts/i18n/build-locales.mjs",
     "i18n:check": "node scripts/i18n/check-messages.mjs",
     "check-locales": "node scripts/check-locales.mjs"

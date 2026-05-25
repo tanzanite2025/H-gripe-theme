@@ -3,7 +3,11 @@
     "membershipLevel": "سطح عضویت:",
     "productDiscountRate": "نرخ تخفیف محصول:",
     "pointsDiscountRate": "نرخ تخفیف امتیاز:",
-    "canBeStacked": "قابل جمع شدن"
+    "canBeStacked": "قابل جمع شدن",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "بله",
@@ -32,6 +36,18 @@
     "consume": "ارز مصرف",
     "consumeDesc": "۱ دلار = ۱ امتیاز",
     "daily": "ورود روزانه",
-    "dailyDesc": "۱ امتیاز (اعتبار ۳۰ روز)"
-  }
+    "dailyDesc": "۱ امتیاز (اعتبار ۳۰ روز)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

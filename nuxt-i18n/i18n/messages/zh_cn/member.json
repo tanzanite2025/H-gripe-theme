@@ -3,7 +3,11 @@
     "membershipLevel": "会员等级：",
     "productDiscountRate": "商品折扣率：",
     "pointsDiscountRate": "积分折扣率：",
-    "canBeStacked": "可叠加"
+    "canBeStacked": "可叠加",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "是",
@@ -32,6 +36,18 @@
     "consume": "消费换积分",
     "consumeDesc": "1 美元 = 1 积分",
     "daily": "每日登录",
-    "dailyDesc": "每日登录奖励 1 积分（有效期 30 天）"
-  }
+    "dailyDesc": "每日登录奖励 1 积分（有效期 30 天）",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

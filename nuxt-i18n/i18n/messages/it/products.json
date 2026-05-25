@@ -8,6 +8,17 @@
   "loadMore": "Carica altro",
   "items": "articoli",
   "nav": {
-    "technicalDocs": "Tecnico"
+    "technicalDocs": "Tecnico",
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
   }
 }

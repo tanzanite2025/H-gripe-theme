@@ -1,0 +1,9 @@
+{
+  "title": "Our Location",
+  "getDirections": "Get directions",
+  "openGoogle": "Open Google Maps",
+  "openApple": "Open Apple Maps",
+  "loadMap": "Load interactive map",
+  "previewAlt": "Map preview",
+  "iframeTitle": "Google map"
+}

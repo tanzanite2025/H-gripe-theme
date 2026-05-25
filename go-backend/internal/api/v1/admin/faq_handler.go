@@ -1,0 +1,270 @@
+package admin
+
+import (
+	"net/http"
+	"strconv"
+	"tanzanite/internal/domain/faq"
+	"tanzanite/internal/repository"
+
+	"github.com/gin-gonic/gin"
+)
+
+type FAQHandler struct {
+	faqRepo *repository.FAQRepository
+}
+
+func NewFAQHandler(faqRepo *repository.FAQRepository) *FAQHandler {
+	return &FAQHandler{
+		faqRepo: faqRepo,
+	}
+}
+
+// ListFAQs 获取FAQ列表
+// GET /api/admin/faqs
+func (h *FAQHandler) ListFAQs(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	locale := c.Query("locale")
+	category := c.Query("category")
+	status := c.Query("status")
+	search := c.Query("search")
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	var faqs []faq.FAQ
+	var total int64
+	var err error
+
+	if search != "" {
+		offset := (page - 1) * pageSize
+		faqs, total, err = h.faqRepo.Search(search, locale, offset, pageSize)
+	} else {
+		offset := (page - 1) * pageSize
+		faqs, total, err = h.faqRepo.List(locale, category, status, offset, pageSize)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch FAQs"})
+		return
+	}
+
+	totalPages := (int(total) + pageSize - 1) / pageSize
+
+	c.JSON(http.StatusOK, gin.H{
+		"faqs": faqs,
+		"pagination": gin.H{
+			"page":        page,
+			"page_size":   pageSize,
+			"total":       total,
+			"total_pages": totalPages,
+		},
+	})
+}
+
+// GetFAQ 获取FAQ详情
+// GET /api/admin/faqs/:id
+func (h *FAQHandler) GetFAQ(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ ID"})
+		return
+	}
+
+	faqItem, err := h.faqRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "FAQ not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"faq": faqItem,
+	})
+}
+
+// CreateFAQ 创建FAQ
+// POST /api/admin/faqs
+func (h *FAQHandler) CreateFAQ(c *gin.Context) {
+	var req struct {
+		Question string `json:"question" binding:"required"`
+		Answer   string `json:"answer" binding:"required"`
+		Category string `json:"category" binding:"required"`
+		Locale   string `json:"locale" binding:"required"`
+		Status   string `json:"status" binding:"required,oneof=draft published"`
+		Order    int    `json:"order"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	newFAQ := &faq.FAQ{
+		Question: req.Question,
+		Answer:   req.Answer,
+		Category: req.Category,
+		Locale:   req.Locale,
+		Status:   req.Status,
+		Order:    req.Order,
+	}
+
+	if err := h.faqRepo.Create(newFAQ); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create FAQ"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "FAQ created successfully",
+		"faq":     newFAQ,
+	})
+}
+
+// UpdateFAQ 更新FAQ
+// PUT /api/admin/faqs/:id
+func (h *FAQHandler) UpdateFAQ(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ ID"})
+		return
+	}
+
+	var req struct {
+		Question string `json:"question"`
+		Answer   string `json:"answer"`
+		Category string `json:"category"`
+		Locale   string `json:"locale"`
+		Status   string `json:"status" binding:"omitempty,oneof=draft published"`
+		Order    int    `json:"order"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	existingFAQ, err := h.faqRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "FAQ not found"})
+		return
+	}
+
+	if req.Question != "" {
+		existingFAQ.Question = req.Question
+	}
+	if req.Answer != "" {
+		existingFAQ.Answer = req.Answer
+	}
+	if req.Category != "" {
+		existingFAQ.Category = req.Category
+	}
+	if req.Locale != "" {
+		existingFAQ.Locale = req.Locale
+	}
+	if req.Status != "" {
+		existingFAQ.Status = req.Status
+	}
+	existingFAQ.Order = req.Order
+
+	if err := h.faqRepo.Update(existingFAQ); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update FAQ"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "FAQ updated successfully",
+		"faq":     existingFAQ,
+	})
+}
+
+// DeleteFAQ 删除FAQ
+// DELETE /api/admin/faqs/:id
+func (h *FAQHandler) DeleteFAQ(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ ID"})
+		return
+	}
+
+	if err := h.faqRepo.Delete(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete FAQ"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "FAQ deleted successfully",
+	})
+}
+
+// GetCategories 获取所有分类
+// GET /api/admin/faqs/categories
+func (h *FAQHandler) GetCategories(c *gin.Context) {
+	locale := c.DefaultQuery("locale", "en")
+
+	categories, err := h.faqRepo.GetCategories(locale)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get categories"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"categories": categories,
+	})
+}
+
+// UpdateOrder 更新排序
+// PATCH /api/admin/faqs/:id/order
+func (h *FAQHandler) UpdateOrder(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ ID"})
+		return
+	}
+
+	var req struct {
+		Order int `json:"order" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.faqRepo.UpdateOrder(uint(id), req.Order); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update order"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Order updated successfully",
+	})
+}
+
+// BatchDelete 批量删除FAQ
+// POST /api/admin/faqs/batch-delete
+func (h *FAQHandler) BatchDelete(c *gin.Context) {
+	var req struct {
+		FAQIDs []uint `json:"faq_ids" binding:"required,min=1"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	deleted := 0
+	for _, id := range req.FAQIDs {
+		if err := h.faqRepo.Delete(id); err == nil {
+			deleted++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Batch delete completed",
+		"deleted": deleted,
+		"total":   len(req.FAQIDs),
+	})
+}

@@ -14,5 +14,15 @@
     "priceHighToLow": "Prijs: Hoog naar Laag",
     "popular": "Meest populair",
     "rating": "Beste beoordeling"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

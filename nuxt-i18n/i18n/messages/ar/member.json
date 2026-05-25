@@ -3,7 +3,11 @@
     "membershipLevel": "مستوى العضوية:",
     "productDiscountRate": "نسبة خصم المنتجات:",
     "pointsDiscountRate": "نسبة خصم النقاط:",
-    "canBeStacked": "قابل للتجميع"
+    "canBeStacked": "قابل للتجميع",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "نعم",
@@ -32,6 +36,18 @@
     "consume": "عملة الإنفاق",
     "consumeDesc": "1 دولار = 1 نقطة",
     "daily": "تسجيل الدخول اليومي",
-    "dailyDesc": "1 نقطة (صلاحية 30 يومًا)"
-  }
+    "dailyDesc": "1 نقطة (صلاحية 30 يومًا)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

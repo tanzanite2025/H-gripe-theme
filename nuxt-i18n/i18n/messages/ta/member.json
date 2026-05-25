@@ -3,7 +3,11 @@
     "membershipLevel": "உறுப்பினர் நிலை:",
     "productDiscountRate": "பொருள் தள்ளுபடி விகிதம்:",
     "pointsDiscountRate": "புள்ளி தள்ளுபடி விகிதம்:",
-    "canBeStacked": "சேர்த்துக் கொள்ளலாம்"
+    "canBeStacked": "சேர்த்துக் கொள்ளலாம்",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "ஆம்",
@@ -32,6 +36,18 @@
     "consume": "நாணயம்",
     "consumeDesc": "1 டாலர் = 1 புள்ளி",
     "daily": "தினசரி உள்நுழைவு",
-    "dailyDesc": "1 புள்ளி (30 நாட்கள் செல்லுபடியாகும்)"
-  }
+    "dailyDesc": "1 புள்ளி (30 நாட்கள் செல்லுபடியாகும்)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

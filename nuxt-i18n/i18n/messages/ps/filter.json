@@ -14,5 +14,15 @@
     "priceHighToLow": "قیمت: لوړ څخه ټیټ",
     "popular": "خورا مشهور",
     "rating": "غوره درجه بندي"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

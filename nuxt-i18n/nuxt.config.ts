@@ -3,6 +3,13 @@ import { defineNuxtConfig } from 'nuxt/config'
 import locales from './i18n/locales.manifest.js'
 
 const env = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) || {}
+const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
+const publicApiBase = trimTrailingSlash(
+  env.NUXT_PUBLIC_API_BASE || env.GO_API_BASE || env.API_BASE || ''
+)
+const wpApiBase = trimTrailingSlash(
+  env.NUXT_PUBLIC_WP_API_BASE || env.WP_API_BASE || (publicApiBase ? `${publicApiBase}/wp-json` : '/wp-json')
+)
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -86,7 +93,9 @@ export default defineNuxtConfig({
   // 配置 WordPress API 端点
   runtimeConfig: {
     public: {
-      wpApiBase: env.WP_API_BASE || 'https://tanzanite.site/wp-json',
+      apiBase: publicApiBase,
+      wpApiBase,
+      blogApiMode: env.NUXT_PUBLIC_BLOG_API_MODE || env.BLOG_API_MODE || 'auto',
       siteTitle: env.NUXT_SITE_TITLE || 'Tanzanite',
       siteUrl: env.NUXT_SITE_URL || 'https://tanzanite.site',
       googleClientId: env.GOOGLE_CLIENT_ID || '',

@@ -2,5 +2,7 @@
   "register": "ลงทะเบียน",
   "login": "เข้าสู่ระบบ",
   "logout": "ออกจากระบบ",
-  "points": "คะแนน: {count}"
+  "points": "คะแนน: {count}",
+  "memberCenter": "Member Center",
+  "closeLogin": "Close Login"
 }

@@ -3,7 +3,11 @@
     "membershipLevel": "Tingkat keanggotaan:",
     "productDiscountRate": "Tingkat diskon produk:",
     "pointsDiscountRate": "Tingkat diskon poin:",
-    "canBeStacked": "Iso ditumpuk"
+    "canBeStacked": "Iso ditumpuk",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Ya",
@@ -32,6 +36,18 @@
     "consume": "Dhuwit",
     "consumeDesc": "1 Dolar = 1 Poin",
     "daily": "Login saben dina",
-    "dailyDesc": "1 Poin (valid 30 dina)"
-  }
+    "dailyDesc": "1 Poin (valid 30 dina)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

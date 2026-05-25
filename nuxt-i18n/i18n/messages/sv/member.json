@@ -3,7 +3,11 @@
     "membershipLevel": "Medlemsnivå:",
     "productDiscountRate": "Produktrabatt:",
     "pointsDiscountRate": "Poängrabatt:",
-    "canBeStacked": "Kan kombineras"
+    "canBeStacked": "Kan kombineras",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Ja",
@@ -32,6 +36,18 @@
     "consume": "Valuta",
     "consumeDesc": "1 Dollar = 1 Poäng",
     "daily": "Daglig inloggning",
-    "dailyDesc": "1 poäng (giltigt i 30 dagar)"
-  }
+    "dailyDesc": "1 poäng (giltigt i 30 dagar)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

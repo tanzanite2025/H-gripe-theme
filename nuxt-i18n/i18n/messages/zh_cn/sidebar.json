@@ -7,5 +7,12 @@
   "quickSearch": "快速搜索",
   "productSearch": "商品搜索",
   "searchProductPlaceholder": "输入商品名称...",
-  "searchProducts": "搜索商品"
+  "searchProducts": "搜索商品",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

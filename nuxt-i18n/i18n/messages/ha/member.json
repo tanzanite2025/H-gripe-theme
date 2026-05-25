@@ -3,7 +3,11 @@
     "membershipLevel": "Matsayin memba:",
     "productDiscountRate": "Ragin farashin kaya:",
     "pointsDiscountRate": "Ragin maki:",
-    "canBeStacked": "Ana iya hade su"
+    "canBeStacked": "Ana iya hade su",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "I",
@@ -32,6 +36,18 @@
     "consume": "Kudi",
     "consumeDesc": "Dala 1 = Maki 1",
     "daily": "Shigar kowace rana",
-    "dailyDesc": "Maki 1 (yana aiki na kwanaki 30)"
-  }
+    "dailyDesc": "Maki 1 (yana aiki na kwanaki 30)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

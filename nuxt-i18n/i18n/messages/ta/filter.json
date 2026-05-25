@@ -14,5 +14,15 @@
     "priceHighToLow": "விலை: அதிகம் முதல் குறைவு",
     "popular": "மிகவும் பிரபலமானவை",
     "rating": "சிறந்த மதிப்பீடு"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

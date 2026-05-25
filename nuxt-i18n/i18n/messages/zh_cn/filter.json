@@ -14,5 +14,15 @@
     "priceHighToLow": "价格从高到低",
     "popular": "最受欢迎",
     "rating": "评分最高"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

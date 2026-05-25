@@ -6,5 +6,19 @@
   "noResults": "Geen producten gevonden",
   "tryAdjustFilters": "Probeer filters aan te passen",
   "loadMore": "Meer laden",
-  "items": "items"
+  "items": "items",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

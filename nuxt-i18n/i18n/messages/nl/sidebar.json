@@ -7,5 +7,12 @@
   "quickSearch": "Snel zoeken",
   "productSearch": "Producten zoeken",
   "searchProductPlaceholder": "Voer productnaam in...",
-  "searchProducts": "Zoek producten"
+  "searchProducts": "Zoek producten",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

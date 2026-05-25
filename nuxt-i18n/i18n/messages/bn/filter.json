@@ -14,5 +14,15 @@
     "priceHighToLow": "মূল্য: বেশি থেকে কম",
     "popular": "সবচেয়ে জনপ্রিয়",
     "rating": "সেরা রেটিং"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }
