@@ -7,5 +7,12 @@
   "quickSearch": "Хуткі пошук",
   "productSearch": "Пошук прадуктаў",
   "searchProductPlaceholder": "Увядзіце назву прадукту...",
-  "searchProducts": "Шукаць прадукты"
+  "searchProducts": "Шукаць прадукты",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

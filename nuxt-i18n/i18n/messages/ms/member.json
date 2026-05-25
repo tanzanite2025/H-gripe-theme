@@ -3,7 +3,11 @@
     "membershipLevel": "Tahap keahlian:",
     "productDiscountRate": "Kadar diskaun produk:",
     "pointsDiscountRate": "Kadar diskaun mata:",
-    "canBeStacked": "Boleh digabung"
+    "canBeStacked": "Boleh digabung",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Ya",
@@ -32,6 +36,18 @@
     "consume": "Mata wang",
     "consumeDesc": "1 Dolar = 1 Mata",
     "daily": "Log masuk harian",
-    "dailyDesc": "1 mata (sah 30 hari)"
-  }
+    "dailyDesc": "1 mata (sah 30 hari)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

@@ -6,5 +6,19 @@
   "noResults": "کوئی مصنوعات نہیں ملیں",
   "tryAdjustFilters": "فلٹرز کو ایڈجسٹ کرنے کی کوشش کریں",
   "loadMore": "مزید لوڈ کریں",
-  "items": "اشیاء"
+  "items": "اشیاء",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

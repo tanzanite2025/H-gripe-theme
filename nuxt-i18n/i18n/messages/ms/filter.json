@@ -14,5 +14,15 @@
     "priceHighToLow": "Harga: Tinggi ke Rendah",
     "popular": "Paling Popular",
     "rating": "Penilaian Terbaik"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

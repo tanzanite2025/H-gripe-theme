@@ -2,5 +2,7 @@
   "register": "Регистрация",
   "login": "Войти",
   "logout": "Выйти",
-  "points": "Баллы: {count}"
+  "points": "Баллы: {count}",
+  "memberCenter": "Member Center",
+  "closeLogin": "Close Login"
 }

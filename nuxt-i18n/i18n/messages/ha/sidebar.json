@@ -7,5 +7,12 @@
   "quickSearch": "Bincike Mai Sauri",
   "productSearch": "Binciken Kayayyaki",
   "searchProductPlaceholder": "Shigar da sunan kayayyaki...",
-  "searchProducts": "Bincika Kayayyaki"
+  "searchProducts": "Bincika Kayayyaki",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

@@ -6,5 +6,19 @@
   "noResults": "Ingen produkter fundet",
   "tryAdjustFilters": "Prøv at justere filtre",
   "loadMore": "Indlæs mere",
-  "items": "stk"
+  "items": "stk",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

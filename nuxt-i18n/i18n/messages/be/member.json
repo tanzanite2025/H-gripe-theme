@@ -3,7 +3,11 @@
     "membershipLevel": "Узровень сяброўства:",
     "productDiscountRate": "Зніжка на тавары:",
     "pointsDiscountRate": "Зніжка па балах:",
-    "canBeStacked": "Можна суміраваць"
+    "canBeStacked": "Можна суміраваць",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Так",
@@ -32,6 +36,18 @@
     "consume": "Валюта выдаткаў",
     "consumeDesc": "1 долар = 1 бал",
     "daily": "Штодзённы ўваход",
-    "dailyDesc": "1 бал (дзеянне 30 дзён)"
-  }
+    "dailyDesc": "1 бал (дзеянне 30 дзён)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

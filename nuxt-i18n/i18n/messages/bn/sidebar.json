@@ -7,5 +7,12 @@
   "quickSearch": "দ্রুত অনুসন্ধান",
   "productSearch": "পণ্য অনুসন্ধান",
   "searchProductPlaceholder": "পণ্যের নাম লিখুন...",
-  "searchProducts": "পণ্য খুঁজুন"
+  "searchProducts": "পণ্য খুঁজুন",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

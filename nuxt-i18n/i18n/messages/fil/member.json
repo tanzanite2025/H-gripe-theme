@@ -3,7 +3,11 @@
     "membershipLevel": "Antas ng pagiging miyembro:",
     "productDiscountRate": "Rate ng diskwento sa produkto:",
     "pointsDiscountRate": "Rate ng diskwento sa puntos:",
-    "canBeStacked": "Maaaring pagsamahin"
+    "canBeStacked": "Maaaring pagsamahin",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Oo",
@@ -32,6 +36,18 @@
     "consume": "Pera",
     "consumeDesc": "1 Dolyar = 1 Punto",
     "daily": "Araw-araw na pag-login",
-    "dailyDesc": "1 Punto (balido ng 30 araw)"
-  }
+    "dailyDesc": "1 Punto (balido ng 30 araw)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

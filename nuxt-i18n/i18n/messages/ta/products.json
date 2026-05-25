@@ -6,5 +6,19 @@
   "noResults": "தயாரிப்புகள் எதுவும் கிடைக்கவில்லை",
   "tryAdjustFilters": "வடிப்பான்களை சரிசெய்ய முயற்சிக்கவும்",
   "loadMore": "மேலும் ஏற்று",
-  "items": "பொருட்கள்"
+  "items": "பொருட்கள்",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

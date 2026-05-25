@@ -3,7 +3,11 @@
     "membershipLevel": "رکنیت کی سطح:",
     "productDiscountRate": "مصنوعات کی رعایتی شرح:",
     "pointsDiscountRate": "پوائنٹس کی رعایتی شرح:",
-    "canBeStacked": "جمع کی جا سکتی ہے"
+    "canBeStacked": "جمع کی جا سکتی ہے",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "ہاں",
@@ -32,6 +36,18 @@
     "consume": "کرنسی",
     "consumeDesc": "1 ڈالر = 1 پوائنٹ",
     "daily": "روزانہ لاگ ان",
-    "dailyDesc": "1 پوائنٹ (30 دن تک مؤثر)"
-  }
+    "dailyDesc": "1 پوائنٹ (30 دن تک مؤثر)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

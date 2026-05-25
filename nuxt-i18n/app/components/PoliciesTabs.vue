@@ -7,7 +7,7 @@
       class="nav-pill-item"
       :class="{ 'nav-pill-item--active': resolvedCurrentSlug === tab.slug }"
     >
-      {{ tab.label }}
+      {{ $t(tab.labelKey, tab.fallback) }}
     </NuxtLink>
   </div>
 </template>
@@ -24,10 +24,10 @@ const localePath = useLocalePath()
 const route = useRoute()
 
 const tabs = [
-  { slug: 'cookie', label: 'cookie' },
-  { slug: 'privacy', label: 'privacy' },
-  { slug: 'refund-return', label: 'refund-return' },
-  { slug: 'terms', label: 'terms' },
+  { slug: 'cookie', labelKey: 'policyTabs.cookie', fallback: 'Cookie' },
+  { slug: 'privacy', labelKey: 'policyTabs.privacy', fallback: 'Privacy' },
+  { slug: 'refund-return', labelKey: 'policyTabs.refundReturn', fallback: 'Refund & Return' },
+  { slug: 'terms', labelKey: 'policyTabs.terms', fallback: 'Terms' },
 ] as const
 
 const resolvedCurrentSlug = computed(() => {

@@ -3,7 +3,11 @@
     "membershipLevel": "Membership level:",
     "productDiscountRate": "Product discount rate:",
     "pointsDiscountRate": "Points discount rate:",
-    "canBeStacked": "Fit join together"
+    "canBeStacked": "Fit join together",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Yes",
@@ -32,6 +36,18 @@
     "consume": "Money",
     "consumeDesc": "1 Dollar = 1 Point",
     "daily": "Everyday login",
-    "dailyDesc": "1 Point (e go last 30 days)"
-  }
+    "dailyDesc": "1 Point (e go last 30 days)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

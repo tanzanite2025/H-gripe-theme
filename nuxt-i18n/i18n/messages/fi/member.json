@@ -3,7 +3,11 @@
     "membershipLevel": "Jäsenyystaso:",
     "productDiscountRate": "Tuotealennusprosentti:",
     "pointsDiscountRate": "Pistealennusprosentti:",
-    "canBeStacked": "Yhdistettävissä"
+    "canBeStacked": "Yhdistettävissä",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Kyllä",
@@ -32,6 +36,18 @@
     "consume": "Valuutta",
     "consumeDesc": "1 dollari = 1 piste",
     "daily": "Päivittäinen kirjautuminen",
-    "dailyDesc": "1 piste (voimassa 30 päivää)"
-  }
+    "dailyDesc": "1 piste (voimassa 30 päivää)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

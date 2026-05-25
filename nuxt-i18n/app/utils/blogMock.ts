@@ -277,6 +277,16 @@ export const getBlogPostBySlug = (params: {
   return post || null
 }
 
+export const getBlogTranslationsByGroup = (
+  group: string
+): { group: string; translations: BlogTranslationsMap } => {
+  const post = posts.find((item) => item.group === group)
+  return {
+    group,
+    translations: post?.translations || {},
+  }
+}
+
 export const getBlogCategoryFromPost = (post: BlogPostSummary): BlogCategory => {
   if (post.categories.includes('news')) return 'news'
   return 'wheelsbuild'

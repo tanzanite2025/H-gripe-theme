@@ -1,12 +1,4 @@
-﻿{
-  "user": {
-    "memberCenter": "Member Center",
-    "register": "Register",
-    "login": "Login",
-    "logout": "Logout",
-    "closeLogin": "Close Login",
-    "points": "{count} pts"
-  },
+{
   "auth": {
     "registerTitle": "Register",
     "loginTitle": "Login",
@@ -18,16 +10,232 @@
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
     "usernameOrEmail": "Username or Email",
-    "rememberMe": "Remember me"
+    "rememberMe": "Remember me",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "privacyNotice": "We take your privacy seriously. All connections are encrypted and your data stays yours.",
+    "welcomeBack": "Welcome back! Choose a method to sign in:",
+    "joinToday": "Create an account in seconds:",
+    "orWithEmail": "or with email",
+    "signingIn": "Signing in...",
+    "signUpHere": "Sign up here",
+    "signingUp": "Signing up...",
+    "signInHere": "Sign in here",
+    "loginSuccessTitle": "登录成功",
+    "googleLoginSuccess": "Google 账户登录成功，数据已同步。",
+    "loginSuccessCta": "好的，返回",
+    "loginSuccessMessage": "Your account data has been synced, click below to continue.",
+    "registerSuccessTitle": "注册成功",
+    "registerSuccessMessage": "账户已创建，点击下方按钮一键登录并返回。",
+    "registerSuccessCta": "一键登录"
+  },
+  "blog": {
+    "nav": {
+      "all": "All",
+      "news": "News",
+      "wheelsbuild": "Wheelbuild"
+    },
+    "pages": {
+      "all": {
+        "title": "Blog",
+        "intro": "Updates, announcements, and wheelbuilding articles.",
+        "metaTitle": "Blog"
+      },
+      "news": {
+        "title": "News",
+        "intro": "Product updates, announcements, and quick guides.",
+        "metaTitle": "Blog · News"
+      },
+      "wheelsbuild": {
+        "title": "Wheelbuild",
+        "intro": "Wheelbuilding workflow, checks, and practical tips.",
+        "metaTitle": "Blog · Wheelbuild"
+      },
+      "detail": {
+        "metaTitle": "Blog",
+        "metaDescription": "Read the latest article from Tanzanite."
+      }
+    },
+    "actions": {
+      "readMore": "Read more",
+      "openArticle": "Open article"
+    },
+    "empty": "No articles yet.",
+    "notFound": "Article not found.",
+    "availableInOtherLanguages": "Available In Other Languages"
+  },
+  "breadcrumbs": {
+    "home": "Home",
+    "guides": "Guides",
+    "blog": "Blog"
+  },
+  "cart": {
+    "summary": {
+      "items": "Items",
+      "price": "Price",
+      "openCart": "View cart summary"
+    }
   },
   "common": {
     "close": "Close",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "loading": "Loading...",
+    "backToHome": "Back to Home"
   },
-  "search": {
-    "placeholder": "Search...",
-    "button": "Search"
+  "company": {
+    "nav": {
+      "about": "About Us",
+      "ourStory": "Our Story",
+      "globalPartners": "Global Partners",
+      "oemOdm": "OEM & ODM",
+      "certificates": "Certificates",
+      "membershipPoints": "Membership and Points",
+      "pictureWarehouse": "Picture warehouse",
+      "contact": "Contact Us"
+    },
+    "index": {
+      "title": "Company",
+      "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
+      "cards": {
+        "about": {
+          "description": "Learn about our mission, values, and the team behind Tanzanite.",
+          "cta": "About Tanzanite"
+        },
+        "ourStory": {
+          "description": "Background of Tanzanite and the vision behind our products.",
+          "cta": "Read our story"
+        },
+        "globalPartners": {
+          "description": "Explore our global network of partners and collaborations.",
+          "cta": "View partners"
+        },
+        "oemOdm": {
+          "description": "Discover how we support OEM and ODM programs from design to delivery.",
+          "cta": "Learn about OEM & ODM"
+        },
+        "certificates": {
+          "description": "Review certifications and standards that support our quality commitments.",
+          "cta": "View certificates"
+        },
+        "contact": {
+          "description": "Get in touch with the Tanzanite team for enquiries and support.",
+          "cta": "Contact us"
+        }
+      }
+    },
+    "pages": {
+      "placeholder": "Content coming soon."
+    },
+    "ourStory": {
+      "story": {
+        "title": "Story",
+        "factoryButton": "Factory",
+        "body": "Our story began with a clear belief:\nhigh-performance carbon components require more than good materials —\nthey require full control.\n\nAs engineers and riders, we saw too many products built through fragmented processes,\nwhere design, manufacturing, and quality control were separated.\nThe result was inconsistency, delayed communication, and avoidable risk.\n\nWe started with carbon rims, one of the most technically demanding components in cycling.\nFrom layup structure and resin control to impact resistance,\nevery decision was made with performance and safety in mind.\n\nAs our capabilities expanded, we naturally moved into complete wheelsets\nand carbon handlebars.\nNot to chase a broader product range,\nbut to ensure that every component works together as a complete system.\n\nToday, our OEM and ODM solutions are trusted by partners around the world.\nFrom design and engineering to manufacturing and testing,\neverything is built in-house.\nThis allows us to deliver consistent quality, reliable lead times,\nand products that meet the expectations of global markets.\n\nWe believe long-term partnerships are built on transparency,\nstable quality, and accountability.\nThat principle continues to guide how we work with brands,\ndistributors, and riders worldwide.  Whether developing a new product or scaling an existing design,\nwe work as an extension of our partners’ teams."
+      }
+    }
+  },
+  "contactLocation": {
+    "title": "Our Location",
+    "getDirections": "Get directions",
+    "openGoogle": "Open Google Maps",
+    "openApple": "Open Apple Maps",
+    "loadMap": "Load interactive map",
+    "previewAlt": "Map preview",
+    "iframeTitle": "Google map"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Find answers to common questions about our products and services"
+  },
+  "feedback": {
+    "defaultSubtitle": "Help us improve this page and the tools you use every day.",
+    "empty": "No feedback has been submitted for this page yet.",
+    "formIntro": "Share your thoughts or report a problem about this page.",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Tell us what you think or what went wrong...",
+    "optionalName": "Your name (optional)",
+    "namePlaceholder": "Enter your name (optional)",
+    "optionalEmail": "Your email (optional)",
+    "emailPlaceholder": "Enter your email (optional)",
+    "submit": "Submit feedback",
+    "loading": "Loading feedback...",
+    "loginRequired": "Please sign in to leave feedback.",
+    "loginCta": "Sign in or create an account",
+    "liveChatCta": "To live chat",
+    "searchLabel": "Search feedback",
+    "searchPlaceholder": "Type to filter comments on this page...",
+    "anonymous": "Member",
+    "submitting": "Submitting...",
+    "defaultTitle": "Share your feedback",
+    "required": "Please enter your feedback before submitting.",
+    "submitFailed": "Failed to submit feedback. Please try again.",
+    "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed."
+  },
+  "feedbackForm": {
+    "pageEyebrow": "Product feedback",
+    "pageTitle": "Help Us Build Better Wheels",
+    "pageIntro": "Share your riding experience, product ideas, and issues. Every submission is reviewed by our product and service teams.",
+    "eyebrow": "Feedback & Suggestions",
+    "title": "Tell us about your experience",
+    "subtitle": "Detailed context helps us reproduce your setup faster.",
+    "stat": {
+      "responses": "Avg. monthly responses",
+      "responsesValue": "240+",
+      "reviewTime": "Review window",
+      "reviewTimeValue": "< 48 hrs"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "email": "Email",
+      "country": "Country / Region",
+      "orderNumber": "Order number",
+      "productCategory": "Product category",
+      "requestType": "Feedback type",
+      "message": "Describe your feedback",
+      "attachments": "Attach photos",
+      "membersOnly": "Members only",
+      "consent": "I agree to share this information so the Tanzanite team can follow up."
+    },
+    "placeholders": {
+      "fullName": "e.g. Alex Chen",
+      "email": "alex\\u0040example.com",
+      "country": "Select a country",
+      "orderNumber": "e.g. TZ-45821",
+      "productCategory": "Select a category",
+      "message": "Describe what happened, which product you used, and what you’d like to improve."
+    },
+    "productCategories": {
+      "mtb": "MTB / Trail",
+      "road": "Road / All-road",
+      "gravel": "Gravel / CX",
+      "accessories": "Accessories",
+      "other": "Other / custom"
+    },
+    "requestTypes": {
+      "product": "Product suggestions",
+      "service": "Customer service",
+      "logistics": "Logistics / shipping",
+      "warranty": "Warranty / quality",
+      "other": "Other"
+    },
+    "upload": {
+      "prompt": "Drop images or click to upload (WEBP/JPG/PNG)",
+      "limit": "Max 3 files, 800×800 recommended."
+    },
+    "actions": {
+      "removeAttachment": "Remove",
+      "submit": "Send feedback",
+      "reset": "Start over"
+    },
+    "messages": {
+      "submitting": "Sending your feedback…",
+      "submitted": "Thanks! Your submission is queued for review.",
+      "loginRequired": "Log in to attach files.",
+      "membersOnly": "Attachments are available for eligible members.",
+      "submitError": "We could not submit your feedback. Please try again."
+    },
+    "charactersLeft": "{count} characters left"
   },
   "filter": {
     "title": "Advanced Filters",
@@ -48,13 +256,64 @@
       "priceHighToLow": "Price: High to Low",
       "popular": "Most Popular",
       "rating": "Best Rating"
+    },
+    "searchPlaceholder": "Search...",
+    "clearSearch": "Clear search",
+    "categories": "Categories",
+    "tags": "Tags",
+    "dateRange": "Date Range",
+    "from": "From",
+    "to": "To"
+  },
+  "footer": {
+    "menus": {
+      "products": "Products",
+      "support": "Support",
+      "company": "Company",
+      "resources": "RESOURCES"
+    },
+    "links": {
+      "shop": "Shop",
+      "aboutTools": "About Tools",
+      "tireSizeCharts": "Tire Guides",
+      "wheelsbuildBlog": "Wheelsbuild blog",
+      "technicalDocs": "Technical",
+      "wheelsetBuyersGuide": "Wheelset Guide",
+      "about": "About",
+      "aboutUs": "About Us",
+      "contact": "Contact",
+      "contactUs": "Contact Us",
+      "ourStory": "Our Story",
+      "globalPartners": "Global Partners",
+      "oemOdm": "OEM & ODM",
+      "certificates": "Certificates",
+      "membershipPoints": "Membership and Points",
+      "pictureWarehouse": "Picture warehouse"
+    },
+    "brand": {
+      "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
+      "line2": "Flat 1602, 16/F, Lucky Centre,",
+      "line3": "No.165-171 Wan Chai Road, Wan Chai",
+      "line4": "Hong Kong.",
+      "hkLabel": "Hongkong:",
+      "xmLabel": "Xiamen:"
+    },
+    "support": {
+      "allFaqs": "All FAQ'S",
+      "payment": "Payment",
+      "afterSales": "After sales",
+      "warranty": "Warranty",
+      "productFeedback": "Product Feedback",
+      "spokecalculator": "Spokecalculator"
     }
   },
-  "nav": {
-    "home": "Home",
-    "shop": "Shop",
-    "about": "About",
-    "contact": "Contact"
+  "giftcards": {
+    "title": "Redeem Points for Gift Cards",
+    "balance": "Balance",
+    "pointsRequired": "Points required",
+    "redeeming": "Redeeming...",
+    "redeem": "Redeem",
+    "noCards": "No gift cards available"
   },
   "home": {
     "meta": {
@@ -300,14 +559,43 @@
       "secondary": "Gallery"
     }
   },
-  "contactLocation": {
-    "title": "Our Location",
-    "getDirections": "Get directions",
-    "openGoogle": "Open Google Maps",
-    "openApple": "Open Apple Maps",
-    "loadMap": "Load interactive map",
-    "previewAlt": "Map preview",
-    "iframeTitle": "Google map"
+  "member": {
+    "tabs": {
+      "myInfo": "My info",
+      "levers": "Levers",
+      "exchange": "Exchange"
+    },
+    "viewAll": "View Full",
+    "points": {
+      "unit": "pts",
+      "title": "How to Earn Points?",
+      "invite": "Invite new users",
+      "inviteDesc": "50 Points (invitee gets 30 Points)",
+      "consume": "Consumption",
+      "consumeDesc": "1 Dollar = 1 Point",
+      "daily": "Daily login",
+      "dailyDesc": "1 Point (30 days validity)"
+    },
+    "myBenefits": "My Benefits",
+    "brief": {
+      "level": "Level",
+      "productDiscount": "Product Discount",
+      "pointsDiscount": "Points",
+      "stackable": "Stackable"
+    },
+    "coupons": "Coupons",
+    "pointCards": "Point Cards",
+    "levels": {
+      "title": "Membership Levels",
+      "header": {
+        "level": "Level",
+        "pointsRequired": "Points Required",
+        "productDiscount": "Product Discount",
+        "pointsDiscount": "Points Discount"
+      }
+    },
+    "copyLink": "Copy Invite Link",
+    "pageTitle": "Membership and Points"
   },
   "menu": {
     "shop": {
@@ -367,312 +655,17 @@
       }
     }
   },
-  "sidebar": {
-    "page1": "Category",
-    "page2": "Filter & More",
-    "staticPages": "Pages",
-    "categories": "Product Categories",
-    "categoriesPlaceholder": "Product Category Tree (To be implemented)",
-    "quickSearch": "Quick Search",
-    "productSearch": "Product Search",
-    "searchProductPlaceholder": "Enter product name...",
-    "searchProducts": "Search Products",
-    "search": "Search",
-    "wheelsbuildBlog": {
-      "desc": "Wheelbuilding articles & updates"
-    },
-    "tireGuides": {
-      "desc": "Tire width to rim inner width helper"
-    }
-  },
-  "blog": {
-    "nav": {
-      "all": "All",
-      "news": "News",
-      "wheelsbuild": "Wheelbuild"
-    },
-    "pages": {
-      "all": {
-        "title": "Blog",
-        "intro": "Updates, announcements, and wheelbuilding articles.",
-        "metaTitle": "Blog"
-      },
-      "news": {
-        "title": "News",
-        "intro": "Product updates, announcements, and quick guides.",
-        "metaTitle": "Blog · News"
-      },
-      "wheelsbuild": {
-        "title": "Wheelbuild",
-        "intro": "Wheelbuilding workflow, checks, and practical tips.",
-        "metaTitle": "Blog · Wheelbuild"
-      },
-      "detail": {
-        "metaTitle": "Blog",
-        "metaDescription": "Read the latest article from Tanzanite."
-      }
-    },
-    "actions": {
-      "readMore": "Read more",
-      "openArticle": "Open article"
-    },
-    "empty": "No articles yet.",
-    "notFound": "Article not found."
-  },
-  "products": {
-    "searchResults": "Search Results",
-    "searchFor": "Search for",
-    "allProducts": "All Products",
-    "loading": "Loading...",
-    "noResults": "No products found",
-    "tryAdjustFilters": "Try adjusting filters",
-    "loadMore": "Load More",
-    "items": "items",
-    "nav": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "wheelsbuildBlog": "Wheelsbuild blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide"
-    },
-    "navShort": {
-      "tireSize": "Tire guides",
-      "calculator": "Calculator",
-      "points": "Points",
-      "picture": "Picture"
-    }
-  },
-  "company": {
-    "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us"
-    },
-    "index": {
-      "title": "Company",
-      "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
-      "cards": {
-        "about": {
-          "description": "Learn about our mission, values, and the team behind Tanzanite.",
-          "cta": "About Tanzanite"
-        },
-        "ourStory": {
-          "description": "Background of Tanzanite and the vision behind our products.",
-          "cta": "Read our story"
-        },
-        "globalPartners": {
-          "description": "Explore our global network of partners and collaborations.",
-          "cta": "View partners"
-        },
-        "oemOdm": {
-          "description": "Discover how we support OEM and ODM programs from design to delivery.",
-          "cta": "Learn about OEM & ODM"
-        },
-        "certificates": {
-          "description": "Review certifications and standards that support our quality commitments.",
-          "cta": "View certificates"
-        },
-        "contact": {
-          "description": "Get in touch with the Tanzanite team for enquiries and support.",
-          "cta": "Contact us"
-        }
-      }
-    },
-    "pages": {
-      "placeholder": "Content coming soon."
-    },
-    "ourStory": {
-      "story": {
-        "title": "Story",
-        "factoryButton": "Factory",
-        "body": "Our story began with a clear belief:\nhigh-performance carbon components require more than good materials —\nthey require full control.\n\nAs engineers and riders, we saw too many products built through fragmented processes,\nwhere design, manufacturing, and quality control were separated.\nThe result was inconsistency, delayed communication, and avoidable risk.\n\nWe started with carbon rims, one of the most technically demanding components in cycling.\nFrom layup structure and resin control to impact resistance,\nevery decision was made with performance and safety in mind.\n\nAs our capabilities expanded, we naturally moved into complete wheelsets\nand carbon handlebars.\nNot to chase a broader product range,\nbut to ensure that every component works together as a complete system.\n\nToday, our OEM and ODM solutions are trusted by partners around the world.\nFrom design and engineering to manufacturing and testing,\neverything is built in-house.\nThis allows us to deliver consistent quality, reliable lead times,\nand products that meet the expectations of global markets.\n\nWe believe long-term partnerships are built on transparency,\nstable quality, and accountability.\nThat principle continues to guide how we work with brands,\ndistributors, and riders worldwide.  Whether developing a new product or scaling an existing design,\nwe work as an extension of our partners’ teams."
-      }
-    }
-  },
-  "member": {
-    "tabs": {
-      "myInfo": "My info",
-      "levers": "Levers",
-      "exchange": "Exchange"
-    },
-    "viewAll": "View Full"
-  },
-  "spokeCalculator": {
-    "tabs": {
-      "calculator": "Calculator",
-      "parameter": "Parameter"
-    },
-    "parameter": {
-      "title": "Parameter definitions",
-      "intro": "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.",
-      "items": {
-        "erd": {
-          "title": "ERD (Effective Rim Diameter)",
-          "desc": "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper."
-        },
-        "flangeDiameter": {
-          "title": "Flange diameter",
-          "desc": "The circle diameter through the spoke hole centers on the hub flange (left and right can be different)."
-        },
-        "centerToFlange": {
-          "title": "Center-to-flange",
-          "desc": "The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry."
-        },
-        "holeCount": {
-          "title": "Spoke hole count",
-          "desc": "Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear."
-        },
-        "crossPattern": {
-          "title": "Cross pattern",
-          "desc": "How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length."
-        }
-      },
-      "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
-    }
-  },
-  "support": {
-    "nav": {
-      "faqs": "All FAQs",
-      "payment": "Payment",
-      "shipping": "Shipping",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "warrantyCheck": "Warranty Check",
-      "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator",
-      "testReport": "Test report"
-    }
-  },
-  "feedbackForm": {
-    "pageEyebrow": "Product feedback",
-    "pageTitle": "Help Us Build Better Wheels",
-    "pageIntro": "Share your riding experience, product ideas, and issues. Every submission is reviewed by our product and service teams.",
-    "eyebrow": "Feedback & Suggestions",
-    "title": "Tell us about your experience",
-    "subtitle": "Detailed context helps us reproduce your setup faster.",
-    "stat": {
-      "responses": "Avg. monthly responses",
-      "responsesValue": "240+",
-      "reviewTime": "Review window",
-      "reviewTimeValue": "< 48 hrs"
-    },
-    "fields": {
-      "fullName": "Full name",
-      "email": "Email",
-      "country": "Country / Region",
-      "orderNumber": "Order number",
-      "productCategory": "Product category",
-      "requestType": "Feedback type",
-      "message": "Describe your feedback",
-      "attachments": "Attach photos",
-      "membersOnly": "Members only",
-      "consent": "I agree to share this information so the Tanzanite team can follow up."
-    },
-    "placeholders": {
-      "fullName": "e.g. Alex Chen",
-      "email": "alex\\u0040example.com",
-      "country": "Select a country",
-      "orderNumber": "e.g. TZ-45821",
-      "productCategory": "Select a category",
-      "message": "Describe what happened, which product you used, and what you’d like to improve."
-    },
-    "productCategories": {
-      "mtb": "MTB / Trail",
-      "road": "Road / All-road",
-      "gravel": "Gravel / CX",
-      "accessories": "Accessories",
-      "other": "Other / custom"
-    },
-    "requestTypes": {
-      "product": "Product suggestions",
-      "service": "Customer service",
-      "logistics": "Logistics / shipping",
-      "warranty": "Warranty / quality",
-      "other": "Other"
-    },
-    "upload": {
-      "prompt": "Drop images or click to upload (WEBP/JPG/PNG)",
-      "limit": "Max 3 files, 800×800 recommended."
-    },
-    "actions": {
-      "removeAttachment": "Remove",
-      "submit": "Send feedback",
-      "reset": "Start over"
-    },
-    "messages": {
-      "submitting": "Sending your feedback…",
-      "submitted": "Thanks! Your submission is queued for review."
-    },
-    "charactersLeft": "{count} characters left"
-  },
-  "footer": {
-    "menus": {
-      "products": "Products",
-      "support": "Support",
-      "company": "Company",
-      "resources": "RESOURCES"
-    },
-    "links": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "wheelsbuildBlog": "Wheelsbuild blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
-      "about": "About",
-      "aboutUs": "About Us",
-      "contact": "Contact",
-      "contactUs": "Contact Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse"
-    },
-    "brand": {
-      "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
-      "line2": "Flat 1602, 16/F, Lucky Centre,",
-      "line3": "No.165-171 Wan Chai Road, Wan Chai",
-      "line4": "Hong Kong.",
-      "hkLabel": "Hongkong:",
-      "xmLabel": "Xiamen:"
-    },
-    "support": {
-      "allFaqs": "All FAQ'S",
-      "payment": "Payment",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "productFeedback": "Product Feedback",
-      "spokecalculator": "Spokecalculator"
-    }
-  },
-  "breadcrumbs": {
+  "nav": {
     "home": "Home",
-    "guides": "Guides",
-    "blog": "Blog"
+    "shop": "Shop",
+    "about": "About",
+    "contact": "Contact"
   },
-  "feedback": {
-    "defaultSubtitle": "Help us improve this page and the tools you use every day.",
-    "empty": "No feedback has been submitted for this page yet.",
-    "formIntro": "Share your thoughts or report a problem about this page.",
-    "messageLabel": "Message",
-    "messagePlaceholder": "Tell us what you think or what went wrong...",
-    "optionalName": "Your name (optional)",
-    "namePlaceholder": "Enter your name (optional)",
-    "optionalEmail": "Your email (optional)",
-    "emailPlaceholder": "Enter your email (optional)",
-    "submit": "Submit feedback",
-    "loading": "Loading feedback...",
-    "loginRequired": "Please sign in to leave feedback.",
-    "loginCta": "Sign in or create an account",
-    "liveChatCta": "To live chat"
+  "policyTabs": {
+    "cookie": "Cookie",
+    "privacy": "Privacy",
+    "refundReturn": "Refund & Return",
+    "terms": "Terms"
   },
   "privacy": {
     "button": "Privacy statement",
@@ -726,6 +719,113 @@
     "section9Title": "9. Changes to This Policy",
     "section9Body": "We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date."
   },
+  "products": {
+    "searchResults": "Search Results",
+    "searchFor": "Search for",
+    "allProducts": "All Products",
+    "loading": "Loading...",
+    "noResults": "No products found",
+    "tryAdjustFilters": "Try adjusting filters",
+    "loadMore": "Load More",
+    "items": "items",
+    "nav": {
+      "shop": "Shop",
+      "aboutTools": "About Tools",
+      "tireSizeCharts": "Tire Guides",
+      "wheelsbuildBlog": "Wheelsbuild blog",
+      "technicalDocs": "Technical",
+      "wheelsetBuyersGuide": "Wheelset Guide"
+    },
+    "navShort": {
+      "tireSize": "Tire guides",
+      "calculator": "Calculator",
+      "points": "Points",
+      "picture": "Picture"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "fullName": "Full Name",
+    "company": "Company",
+    "country": "Country/Region",
+    "phone": "Phone"
+  },
+  "search": {
+    "placeholder": "Search...",
+    "button": "Search"
+  },
+  "sidebar": {
+    "page1": "Category",
+    "page2": "Filter & More",
+    "staticPages": "Pages",
+    "categories": "Product Categories",
+    "categoriesPlaceholder": "Product Category Tree (To be implemented)",
+    "quickSearch": "Quick Search",
+    "productSearch": "Product Search",
+    "searchProductPlaceholder": "Enter product name...",
+    "searchProducts": "Search Products",
+    "search": "Search",
+    "wheelsbuildBlog": {
+      "desc": "Wheelbuilding articles & updates"
+    },
+    "tireGuides": {
+      "desc": "Tire width to rim inner width helper"
+    }
+  },
+  "spokeCalculator": {
+    "tabs": {
+      "calculator": "Calculator",
+      "parameter": "Parameter"
+    },
+    "parameter": {
+      "title": "Parameter definitions",
+      "intro": "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.",
+      "items": {
+        "erd": {
+          "title": "ERD (Effective Rim Diameter)",
+          "desc": "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper."
+        },
+        "flangeDiameter": {
+          "title": "Flange diameter",
+          "desc": "The circle diameter through the spoke hole centers on the hub flange (left and right can be different)."
+        },
+        "centerToFlange": {
+          "title": "Center-to-flange",
+          "desc": "The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry."
+        },
+        "holeCount": {
+          "title": "Spoke hole count",
+          "desc": "Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear."
+        },
+        "crossPattern": {
+          "title": "Cross pattern",
+          "desc": "How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length."
+        }
+      },
+      "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
+    }
+  },
+  "support": {
+    "nav": {
+      "faqs": "All FAQs",
+      "payment": "Payment",
+      "shipping": "Shipping",
+      "afterSales": "After sales",
+      "warranty": "Warranty",
+      "warrantyCheck": "Warranty Check",
+      "productFeedback": "Product Feedback",
+      "spokeCalculator": "Spoke Calculator",
+      "testReport": "Test report"
+    }
+  },
+  "user": {
+    "memberCenter": "Member Center",
+    "register": "Register",
+    "login": "Login",
+    "logout": "Logout",
+    "closeLogin": "Close Login",
+    "points": "{count} pts"
+  },
   "warranty": {
     "title": "Warranty Check",
     "subtitle": "Check your product warranty status",
@@ -762,11 +862,13 @@
     },
     "errors": {
       "not_found_message": "We couldn't find a product with code: {code}",
-      "check_tips": [
-        "The code is entered correctly",
-        "The code is from a Tanzanite product"
-      ],
+      "check_tips": {
+        "0": "Check that the product code was entered exactly as printed.",
+        "1": "Contact support if your product code still cannot be found."
+      },
       "error_contact": "If you believe this is an error, please contact us."
-    }
+    },
+    "cardDesc": "Enter your product code to check warranty status and history.",
+    "checkNow": "Check Now"
   }
 }

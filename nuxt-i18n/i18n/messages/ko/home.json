@@ -1,1 +1,244 @@
-"홈"
+{
+  "meta": {
+    "title": "Factory-Direct Carbon Rims & Wheelsets",
+    "description": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability."
+  },
+  "hero": {
+    "title": "Factory-Direct Carbon Rims & Wheelsets",
+    "subtitle": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability.",
+    "stackAriaLabel": "Hero image cards",
+    "dotAriaLabel": "Go to card {index}",
+    "cards": {
+      "0": {
+        "alt": "Factory-direct carbon rims and wheelsets"
+      },
+      "1": {
+        "alt": "Carbon pre-mold layup workshop"
+      },
+      "2": {
+        "alt": "Final inspection and packing"
+      }
+    },
+    "cta": {
+      "shop": "Shop",
+      "about": "About",
+      "pictureWarehouse": "Gallery"
+    }
+  },
+  "trust": {
+    "title": "Shop with Confidence"
+  },
+  "shopWithConfidence": {
+    "items": {
+      "0": {
+        "title": "Secure Payment",
+        "description": "All transactions are protected by industry-standard HTTPS encryption.",
+        "bullets": {
+          "0": "Verified SSL Security",
+          "1": "Major Cards via Stripe",
+          "2": "PayPal, WeChat & Alipay"
+        }
+      },
+      "1": {
+        "title": "Worldwide Shipping",
+        "description": "Placeholder copy. Add delivery, tracking, and packaging details here.",
+        "bullets": {
+          "0": "Placeholder bullet",
+          "1": "Placeholder bullet",
+          "2": "Placeholder bullet"
+        }
+      },
+      "2": {
+        "title": "Warranty Coverage",
+        "description": "Placeholder copy. Add warranty terms and verification details here.",
+        "bullets": {
+          "0": "Placeholder bullet",
+          "1": "Placeholder bullet",
+          "2": "Placeholder bullet"
+        }
+      },
+      "3": {
+        "title": "After‑Sales Support",
+        "description": "Placeholder copy. Add support response and service coverage details here.",
+        "bullets": {
+          "0": "Placeholder bullet",
+          "1": "Placeholder bullet",
+          "2": "Placeholder bullet"
+        }
+      }
+    }
+  },
+  "whyChooseUs": {
+    "title": "Why Choose Us",
+    "subtitle": "Factory-built carbon rims and hand-built wheelsets with documented processes, consistent quality, and OEM-ready support.",
+    "items": {
+      "0": {
+        "title": "OEM-Ready Manufacturing",
+        "description": "Built for brands and builders who need stable output, clear communication, and repeatable results.",
+        "bullets": {
+          "0": "OEM/ODM support for rims and wheelsets",
+          "1": "Spec-driven production and revision control",
+          "2": "Consistent finishes across batches"
+        }
+      },
+      "1": {
+        "title": "Documented QC Workflow",
+        "description": "Quality is a process. We run checkpoints that help catch issues early and keep consistency high.",
+        "bullets": {
+          "0": "Incoming material checks and in-process inspection",
+          "1": "Final inspection before packing and shipment",
+          "2": "Records and traceability for key steps"
+        }
+      },
+      "2": {
+        "title": "Custom Layup & Finishes",
+        "description": "Choose stiffness targets, ride feel, and brand look—without compromising reliability.",
+        "bullets": {
+          "0": "Layup tuning for road, gravel, and MTB use cases",
+          "1": "Finish options: decal, paint, and surface treatments",
+          "2": "Clear spec confirmation before production"
+        }
+      },
+      "3": {
+        "title": "Tested Standards & Lead Times",
+        "description": "We validate performance and provide lead time ranges upfront so you can plan builds and launches.",
+        "bullets": {
+          "0": "Testing equipment and internal standards",
+          "1": "Clear quoting for sampling and production schedules",
+          "2": "Packaging and shipping practices built for transit safety"
+        }
+      },
+      "4": {
+        "title": "Precision Wheel Building",
+        "description": "Carbon wheelsets built by experienced builders—focused on balance, durability, and a clean final finish.",
+        "bullets": {
+          "0": "Spoke tension balancing and stress-relief steps",
+          "1": "Support for popular hubs and multiple lacing patterns",
+          "2": "Build consistency designed for real riding conditions"
+        }
+      },
+      "5": {
+        "title": "Tools, Standards & Benchmarking",
+        "description": "We use modern equipment and hands-on know-how from top-tier hub and wheelset teardowns.",
+        "bullets": {
+          "0": "Calibrated truing and tension measurement tools",
+          "1": "Build standards informed by premium component teardown experience",
+          "2": "Process discipline that improves repeatability at scale"
+        }
+      }
+    }
+  },
+  "features": {
+    "title": "Performance, Built In-House",
+    "subtitle": "A carbon rim factory mindset—focused on quality, consistency, and real-world performance.",
+    "items": {
+      "qc": {
+        "title": "Consistent QC, Reliable Results",
+        "description": "In-house quality control for repeatable builds, tight tolerances, and dependable delivery."
+      },
+      "options": {
+        "title": "Road / Gravel / MTB Options",
+        "description": "Choose the right specs for your riding—built to match real routes and real conditions."
+      },
+      "oem": {
+        "title": "OEM/ODM & Custom Layup",
+        "description": "Support for custom projects—from layup tuning to brand-ready manufacturing workflows."
+      },
+      "lightweight": {
+        "title": "Lightweight Without Compromise",
+        "description": "Balanced weight, stiffness, and durability—engineered to perform without trade-offs."
+      }
+    }
+  },
+  "factoryStories": {
+    "title": "Factory Stories",
+    "subtitle": "A behind-the-scenes look at our process, materials, testing, and the builds that leave our workshop.",
+    "readMore": "Read more",
+    "viewAll": "View all",
+    "items": {
+      "0": {
+        "title": "Carbon Layup in Action",
+        "description": "How we tune layup schedules for strength, stiffness, and consistency."
+      },
+      "1": {
+        "title": "Quality Control Checklist",
+        "description": "A practical look at the QC steps we run before every shipment."
+      },
+      "2": {
+        "title": "From Mold to Finish",
+        "description": "A tour of our process—from molding to finishing details."
+      },
+      "3": {
+        "title": "Built for Real Riding",
+        "description": "What we prioritize when building for road, gravel, and MTB conditions."
+      }
+    }
+  },
+  "featuredProducts": {
+    "title": "Featured Products",
+    "subtitle": "Explore our carbon rims and wheelsets. More categories and components will be added over time.",
+    "viewAll": "Shop all",
+    "items": {
+      "0": {
+        "title": "Carbon Rim Set",
+        "description": "A lightweight rim option designed for consistent builds.",
+        "price": "From $—"
+      },
+      "1": {
+        "title": "Carbon Wheelset",
+        "description": "A complete wheelset built for speed and reliability.",
+        "price": "From $—"
+      },
+      "2": {
+        "title": "Gravel-Ready Build",
+        "description": "Specs tuned for mixed terrain and real-world durability.",
+        "price": "From $—"
+      },
+      "3": {
+        "title": "MTB Option",
+        "description": "Rugged configurations for trail and off-road use.",
+        "price": "From $—"
+      }
+    }
+  },
+  "innovationRd": {
+    "title": "Innovation & R&D",
+    "subtitle": "A look at what we’re building next—hub concepts, protected design work, and our next-generation carbon wheel platforms.",
+    "readMore": "Read more",
+    "items": {
+      "0": {
+        "title": "Protected Design Work",
+        "description": "We develop original solutions across multiple programs. Details aren’t public, but our work is IP-aware and documentation-driven.",
+        "bullets": {
+          "0": "Original concepts developed with long-term product roadmaps",
+          "1": "Design iterations tracked with clear revisions and validation notes",
+          "2": "Selective sharing—public copy stays accurate and non-sensitive"
+        }
+      },
+      "1": {
+        "title": "Silent Near‑Zero Engagement Hub",
+        "description": "A hub direction focused on quiet, near-instant engagement—balanced with low weight and long-term durability.",
+        "bullets": {
+          "0": "Engagement concept tuned for responsiveness without harsh sound",
+          "1": "Balance targets: weight, durability, and serviceability",
+          "2": "Benchmarking informed by teardown work on premium hubs and wheelsets"
+        }
+      },
+      "2": {
+        "title": "Next‑Gen Carbon Wheel Platforms",
+        "description": "Our 6–12 month focus: pushing lighter rims further, and developing a more stable integrated carbon wheelset platform.",
+        "bullets": {
+          "0": "Lighter rim development with strict stability and consistency goals",
+          "1": "Integrated carbon wheelset direction for improved structural stability",
+          "2": "Prototypes validated through build feedback and in-house test workflows"
+        }
+      }
+    }
+  },
+  "finalCta": {
+    "title": "Ready to Build Your Next Set?",
+    "subtitle": "Browse our products now, or explore the gallery to see more builds and details.",
+    "primary": "Shop",
+    "secondary": "Gallery"
+  }
+}

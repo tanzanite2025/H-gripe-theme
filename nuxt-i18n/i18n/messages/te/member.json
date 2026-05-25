@@ -3,7 +3,11 @@
     "membershipLevel": "సభ్యత్వ స్థాయి:",
     "productDiscountRate": "ఉత్పత్తి తగ్గింపు రేటు:",
     "pointsDiscountRate": "పాయింట్ల తగ్గింపు రేటు:",
-    "canBeStacked": "కలపవచ్చు"
+    "canBeStacked": "కలపవచ్చు",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "అవును",
@@ -32,6 +36,18 @@
     "consume": "కరెన్సీ",
     "consumeDesc": "1 డాలర్ = 1 పాయింట్",
     "daily": "దైనందిన లాగిన్",
-    "dailyDesc": "1 పాయింట్ (30 రోజులు చెల్లుతుంది)"
-  }
+    "dailyDesc": "1 పాయింట్ (30 రోజులు చెల్లుతుంది)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

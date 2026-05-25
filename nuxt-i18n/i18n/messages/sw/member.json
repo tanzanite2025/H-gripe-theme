@@ -3,7 +3,11 @@
     "membershipLevel": "Kiwango cha uanachama:",
     "productDiscountRate": "Kiwango cha punguzo la bidhaa:",
     "pointsDiscountRate": "Kiwango cha punguzo la pointi:",
-    "canBeStacked": "Inaweza kuunganishwa"
+    "canBeStacked": "Inaweza kuunganishwa",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Ndiyo",
@@ -32,6 +36,18 @@
     "consume": "Sarafu",
     "consumeDesc": "Dola 1 = Pointi 1",
     "daily": "Kuingia kila siku",
-    "dailyDesc": "Pointi 1 (inatumika kwa siku 30)"
-  }
+    "dailyDesc": "Pointi 1 (inatumika kwa siku 30)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

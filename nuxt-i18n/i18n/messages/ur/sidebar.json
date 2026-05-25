@@ -7,5 +7,12 @@
   "quickSearch": "فوری تلاش",
   "productSearch": "مصنوعات کی تلاش",
   "searchProductPlaceholder": "مصنوعات کا نام درج کریں...",
-  "searchProducts": "مصنوعات تلاش کریں"
+  "searchProducts": "مصنوعات تلاش کریں",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

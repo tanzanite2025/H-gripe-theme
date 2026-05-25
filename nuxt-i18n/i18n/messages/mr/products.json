@@ -6,5 +6,19 @@
   "noResults": "कोणतीही उत्पादने आढळली नाहीत",
   "tryAdjustFilters": "फिल्टर समायोजित करण्याचा प्रयत्न करा",
   "loadMore": "अधिक लोड करा",
-  "items": "वस्तू"
+  "items": "वस्तू",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

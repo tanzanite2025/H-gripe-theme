@@ -7,5 +7,12 @@
   "quickSearch": "Utafutaji wa Haraka",
   "productSearch": "Utafutaji wa Bidhaa",
   "searchProductPlaceholder": "Weka jina la bidhaa...",
-  "searchProducts": "Tafuta Bidhaa"
+  "searchProducts": "Tafuta Bidhaa",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

@@ -6,5 +6,19 @@
   "noResults": "Tidak ada produk ditemukan",
   "tryAdjustFilters": "Coba sesuaikan filter",
   "loadMore": "Muat Lebih Banyak",
-  "items": "item"
+  "items": "item",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

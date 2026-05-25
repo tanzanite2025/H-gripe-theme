@@ -6,5 +6,19 @@
   "noResults": "ไม่พบสินค้า",
   "tryAdjustFilters": "ลองปรับตัวกรอง",
   "loadMore": "โหลดเพิ่มเติม",
-  "items": "รายการ"
+  "items": "รายการ",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

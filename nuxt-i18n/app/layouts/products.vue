@@ -37,10 +37,10 @@ const isPolicies = computed(() => {
 })
 
 const policiesNavItems = [
-  { id: 'policies-cookie', to: '/policies/cookie', labelKey: 'cookie' },
-  { id: 'policies-privacy', to: '/policies/privacy', labelKey: 'privacy' },
-  { id: 'policies-refund-return', to: '/policies/refund-return', labelKey: 'refund-return' },
-  { id: 'policies-terms', to: '/policies/terms', labelKey: 'terms' },
+  { id: 'policies-cookie', to: '/policies/cookie', labelKey: 'policyTabs.cookie' },
+  { id: 'policies-privacy', to: '/policies/privacy', labelKey: 'policyTabs.privacy' },
+  { id: 'policies-refund-return', to: '/policies/refund-return', labelKey: 'policyTabs.refundReturn' },
+  { id: 'policies-terms', to: '/policies/terms', labelKey: 'policyTabs.terms' },
 ]
 </script>
 

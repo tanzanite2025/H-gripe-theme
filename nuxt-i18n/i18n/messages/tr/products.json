@@ -6,5 +6,19 @@
   "noResults": "Ürün bulunamadı",
   "tryAdjustFilters": "Filtreleri ayarlamayı deneyin",
   "loadMore": "Daha Fazla Yükle",
-  "items": "ürün"
+  "items": "ürün",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

@@ -3,7 +3,11 @@
     "membershipLevel": "د غړیتوب کچه:",
     "productDiscountRate": "د محصول د تخفیف کچه:",
     "pointsDiscountRate": "د امتیاز تخفیف کچه:",
-    "canBeStacked": "د یوځای کېدو وړ"
+    "canBeStacked": "د یوځای کېدو وړ",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "هو",
@@ -32,6 +36,18 @@
     "consume": "پيسې",
     "consumeDesc": "1 ډالر = 1 امتیاز",
     "daily": "ورځنۍ ننوتل",
-    "dailyDesc": "1 امتیاز (د 30 ورځو لپاره باوري)"
-  }
+    "dailyDesc": "1 امتیاز (د 30 ورځو لپاره باوري)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

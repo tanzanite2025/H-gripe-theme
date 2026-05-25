@@ -2,5 +2,7 @@
   "register": "등록",
   "login": "로그인",
   "logout": "로그아웃",
-  "points": "포인트: {count}"
+  "points": "포인트: {count}",
+  "memberCenter": "Member Center",
+  "closeLogin": "Close Login"
 }

@@ -34,10 +34,12 @@
   },
   "errors": {
     "not_found_message": "未找到编码为 {code} 的产品",
-    "check_tips": [
-      "编码输入是否正确",
-      "是否为 Tanzanite 产品"
-    ],
+    "check_tips": {
+      "0": "Check that the product code was entered exactly as printed.",
+      "1": "Contact support if your product code still cannot be found."
+    },
     "error_contact": "如有疑问，请联系我们。"
-  }
+  },
+  "cardDesc": "Enter your product code to check warranty status and history.",
+  "checkNow": "Check Now"
 }

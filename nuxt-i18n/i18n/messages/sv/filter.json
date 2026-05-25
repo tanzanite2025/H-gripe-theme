@@ -14,5 +14,15 @@
     "priceHighToLow": "Pris: Hög till Låg",
     "popular": "Mest populära",
     "rating": "Bästa betyg"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

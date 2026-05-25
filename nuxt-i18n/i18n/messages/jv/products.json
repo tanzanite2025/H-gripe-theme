@@ -6,5 +6,19 @@
   "noResults": "Ora ana produk ketemu",
   "tryAdjustFilters": "Coba atur filter",
   "loadMore": "Muat Luwih Akeh",
-  "items": "barang"
+  "items": "barang",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

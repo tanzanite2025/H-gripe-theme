@@ -29,7 +29,7 @@ export const MEMBER_TIERS: Record<string, MemberTier> = {
 }
 
 // 运费模板（扩展版）
-export interface ShippingTemplate {
+export interface CartShippingTemplate {
   id: number
   name: string
   template_name?: string
@@ -91,7 +91,7 @@ export const useCartCalculation = () => {
   })
 
   // 状态
-  const shippingTemplates = ref<ShippingTemplate[]>([])
+  const shippingTemplates = ref<CartShippingTemplate[]>([])
   const taxRates = ref<TaxRate[]>([])
   const userPoints = ref<UserPoints | null>(null)
   const appliedCoupon = ref<Coupon | null>(null)
@@ -106,7 +106,7 @@ export const useCartCalculation = () => {
    */
   const loadShippingTemplates = async () => {
     try {
-      const response = await $fetch<{ items: ShippingTemplate[] }>(
+      const response = await $fetch<{ items: CartShippingTemplate[] }>(
         `${apiBase.value}/tanzanite/v1/shipping-templates`,
         {
           headers: { accept: 'application/json' }
@@ -303,7 +303,7 @@ export const useCartCalculation = () => {
     items: Array<{ weight?: number; quantity: number; price: number }>,
     subtotal: number,
     address: ShippingAddressInfo
-  ): { fee: number; rule: ShippingTemplate['rules'][0] | null; template: ShippingTemplate | null } => {
+  ): { fee: number; rule: CartShippingTemplate['rules'][0] | null; template: CartShippingTemplate | null } => {
     const { country, zip } = address
     const normalizedCountry = country?.toUpperCase() || ''
 

@@ -3,7 +3,11 @@
     "membershipLevel": "Lidmaatschapsniveau:",
     "productDiscountRate": "Productkortingspercentage:",
     "pointsDiscountRate": "Puntenkortingspercentage:",
-    "canBeStacked": "Combineerbaar"
+    "canBeStacked": "Combineerbaar",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Ja",
@@ -32,6 +36,18 @@
     "consume": "Betaalmiddel",
     "consumeDesc": "1 Dollar = 1 Punt",
     "daily": "Dagelijks inloggen",
-    "dailyDesc": "1 punt (30 dagen geldig)"
-  }
+    "dailyDesc": "1 punt (30 dagen geldig)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

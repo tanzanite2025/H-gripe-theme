@@ -6,5 +6,19 @@
   "noResults": "Ba a sami kayayyaki ba",
   "tryAdjustFilters": "Gwada daidaita matattara",
   "loadMore": "Loda Kari",
-  "items": "kaya"
+  "items": "kaya",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

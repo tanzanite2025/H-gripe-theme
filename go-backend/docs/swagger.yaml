@@ -1,0 +1,642 @@
+openapi: 3.0.3
+info:
+  title: Tanzanite E-commerce API
+  description: |
+    完整的电商后端 API 系统，从 WordPress 迁移到 Go。
+    
+    ## 功能特性
+    - 用户认证和授权 (JWT)
+    - 产品和内容管理
+    - 购物车和订单系统
+    - 支付和物流管理
+    - 营销系统 (优惠券、积分、会员)
+    - 评价和客服系统
+    - 产品注册和保修
+    - 审计日志
+    
+    ## 认证
+    大部分 API 需要 JWT Token 认证。在请求头中添加：
+    ```
+    Authorization: Bearer <your_jwt_token>
+    ```
+    
+    ## 速率限制
+    - 默认: 100 请求/分钟
+    - 管理员: 200 请求/分钟
+    
+  version: 1.3.0
+  contact:
+    name: API Support
+    email: support@tanzanite.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: 开发环境
+  - url: https://api.tanzanite.com
+    description: 生产环境
+
+tags:
+  - name: Auth
+    description: 用户认证和授权
+  - name: Content
+    description: 内容管理 (文章、FAQ)
+  - name: Products
+    description: 产品管理
+  - name: Cart
+    description: 购物车管理
+  - name: Orders
+    description: 订单管理
+  - name: Payment
+    description: 支付管理
+  - name: Shipping
+    description: 物流管理
+  - name: Marketing
+    description: 营销系统 (优惠券、积分、会员)
+  - name: Reviews
+    description: 评价系统
+  - name: Tickets
+    description: 客服工单系统
+  - name: Gallery
+    description: 图片库管理
+  - name: Registration
+    description: 产品注册和保修
+  - name: Audit
+    description: 审计日志
+  - name: Settings
+    description: 系统设置
+  - name: Health
+    description: 健康检查
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Token 认证
+  
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 错误信息
+        code:
+          type: string
+          description: 错误代码
+      required:
+        - error
+    
+    Success:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 成功信息
+        data:
+          type: object
+          description: 返回数据
+    
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: 当前页码
+          example: 1
+        page_size:
+          type: integer
+          description: 每页数量
+          example: 20
+        total:
+          type: integer
+          description: 总记录数
+          example: 100
+        total_pages:
+          type: integer
+          description: 总页数
+          example: 5
+    
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 用户ID
+        email:
+          type: string
+          format: email
+          description: 邮箱
+        name:
+          type: string
+          description: 用户名
+        role:
+          type: string
+          enum: [user, admin]
+          description: 用户角色
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+    
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 产品ID
+        name:
+          type: string
+          description: 产品名称
+        slug:
+          type: string
+          description: URL别名
+        description:
+          type: string
+          description: 产品描述
+        price:
+          type: number
+          format: float
+          description: 价格
+        stock:
+          type: integer
+          description: 库存数量
+        images:
+          type: array
+          items:
+            type: string
+          description: 产品图片URL
+        created_at:
+          type: string
+          format: date-time
+    
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 订单ID
+        order_number:
+          type: string
+          description: 订单号
+        user_id:
+          type: integer
+          description: 用户ID
+        status:
+          type: string
+          enum: [pending, paid, processing, shipped, delivered, cancelled, refunded]
+          description: 订单状态
+        subtotal:
+          type: number
+          format: float
+          description: 小计
+        shipping_fee:
+          type: number
+          format: float
+          description: 运费
+        tax:
+          type: number
+          format: float
+          description: 税费
+        discount:
+          type: number
+          format: float
+          description: 折扣
+        total:
+          type: number
+          format: float
+          description: 总计
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        created_at:
+          type: string
+          format: date-time
+    
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: integer
+        product_name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+          format: float
+        subtotal:
+          type: number
+          format: float
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: 健康检查
+      description: 检查服务是否正常运行
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: 1.3.0
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: 用户注册
+      description: 创建新用户账号
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  example: password123
+                name:
+                  type: string
+                  example: John Doe
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User registered successfully
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    description: JWT Token
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 邮箱已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: 用户登录
+      description: 使用邮箱和密码登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Login successful
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    description: JWT Token
+        '401':
+          description: 认证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/products:
+    get:
+      tags:
+        - Products
+      summary: 获取产品列表
+      description: 获取所有产品，支持分页和筛选
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: 页码
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: 每页数量
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: 分类筛选
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: 搜索关键词
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /api/v1/orders:
+    post:
+      tags:
+        - Orders
+      summary: 创建订单
+      description: 从购物车创建新订单
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+                - shipping_address
+                - payment_method
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      product_id:
+                        type: integer
+                      quantity:
+                        type: integer
+                shipping_address:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    phone:
+                      type: string
+                    address:
+                      type: string
+                    city:
+                      type: string
+                    state:
+                      type: string
+                    country:
+                      type: string
+                    postal_code:
+                      type: string
+                payment_method:
+                  type: string
+                  enum: [credit_card, paypal, alipay]
+                shipping_method:
+                  type: string
+                coupon_code:
+                  type: string
+      responses:
+        '201':
+          description: 订单创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未认证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    get:
+      tags:
+        - Orders
+      summary: 获取订单列表
+      description: 获取当前用户的订单列表
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, paid, processing, shipped, delivered, cancelled]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: 未认证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketing/coupons/validate:
+    post:
+      tags:
+        - Marketing
+      summary: 验证优惠券
+      description: 验证优惠券是否可用
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - order_amount
+              properties:
+                code:
+                  type: string
+                  example: SUMMER2024
+                order_amount:
+                  type: number
+                  format: float
+                  example: 100.00
+      responses:
+        '200':
+          description: 优惠券有效
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  discount:
+                    type: number
+                    format: float
+                  coupon:
+                    type: object
+        '400':
+          description: 优惠券无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/reviews:
+    post:
+      tags:
+        - Reviews
+      summary: 创建评价
+      description: 为产品创建评价
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - rating
+                - content
+              properties:
+                product_id:
+                  type: integer
+                  example: 1
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                content:
+                  type: string
+                  example: 非常好的产品！
+                images:
+                  type: array
+                  items:
+                    type: string
+                  description: 评价图片URL
+      responses:
+        '201':
+          description: 评价创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  review:
+                    type: object
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未认证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+security:
+  - BearerAuth: []

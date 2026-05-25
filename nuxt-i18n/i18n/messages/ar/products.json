@@ -6,5 +6,19 @@
   "noResults": "لم يتم العثور على منتجات",
   "tryAdjustFilters": "يرجى محاولة تعديل معايير التصفية",
   "loadMore": "تحميل المزيد",
-  "items": "قطعة"
+  "items": "قطعة",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

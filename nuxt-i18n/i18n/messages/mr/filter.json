@@ -14,5 +14,15 @@
     "priceHighToLow": "किंमत: जास्त ते कमी",
     "popular": "सर्वात लोकप्रिय",
     "rating": "सर्वोत्तम रेटिंग"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

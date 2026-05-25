@@ -8,6 +8,17 @@
   "loadMore": "加载更多",
   "items": "件",
   "nav": {
-    "technicalDocs": "技术"
+    "technicalDocs": "技术",
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
   }
 }

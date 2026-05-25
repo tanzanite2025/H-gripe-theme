@@ -7,5 +7,12 @@
   "quickSearch": "Mabilis na Paghahanap",
   "productSearch": "Paghahanap ng Produkto",
   "searchProductPlaceholder": "Ilagay ang pangalan ng produkto...",
-  "searchProducts": "Maghanap ng Produkto"
+  "searchProducts": "Maghanap ng Produkto",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

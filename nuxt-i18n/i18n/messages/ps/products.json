@@ -6,5 +6,19 @@
   "noResults": "هیڅ محصول ونه موندل شو",
   "tryAdjustFilters": "فلټرونه تنظیم کړئ",
   "loadMore": "نور بار کړئ",
-  "items": "توکي"
+  "items": "توکي",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

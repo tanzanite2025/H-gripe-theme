@@ -7,5 +7,12 @@
   "quickSearch": "Carian Pantas",
   "productSearch": "Carian Produk",
   "searchProductPlaceholder": "Masukkan nama produk...",
-  "searchProducts": "Cari Produk"
+  "searchProducts": "Cari Produk",
+  "search": "Search",
+  "wheelsbuildBlog": {
+    "desc": "Wheelbuilding articles & updates"
+  },
+  "tireGuides": {
+    "desc": "Tire width to rim inner width helper"
+  }
 }

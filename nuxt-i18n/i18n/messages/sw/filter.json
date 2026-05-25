@@ -14,5 +14,15 @@
     "priceHighToLow": "Bei: Juu hadi Chini",
     "popular": "Maarufu Zaidi",
     "rating": "Ukadiriaji Bora"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

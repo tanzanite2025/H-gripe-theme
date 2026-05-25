@@ -3,7 +3,11 @@
     "membershipLevel": "Tingkat keanggotaan:",
     "productDiscountRate": "Tarif diskon produk:",
     "pointsDiscountRate": "Tarif diskon poin:",
-    "canBeStacked": "Dapat ditumpuk"
+    "canBeStacked": "Dapat ditumpuk",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Ya",
@@ -32,6 +36,18 @@
     "consume": "Mata uang",
     "consumeDesc": "1 Dolar = 1 Poin",
     "daily": "Masuk harian",
-    "dailyDesc": "1 poin (berlaku 30 hari)"
-  }
+    "dailyDesc": "1 poin (berlaku 30 hari)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

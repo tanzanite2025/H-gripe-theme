@@ -3,7 +3,11 @@
     "membershipLevel": "Niveau d'adhésion :",
     "productDiscountRate": "Taux de remise produit :",
     "pointsDiscountRate": "Taux de remise points :",
-    "canBeStacked": "Cumulable"
+    "canBeStacked": "Cumulable",
+    "level": "Level",
+    "productDiscount": "Product Discount",
+    "pointsDiscount": "Points",
+    "stackable": "Stackable"
   },
   "common": {
     "yes": "Oui",
@@ -32,6 +36,18 @@
     "consume": "Devise de consommation",
     "consumeDesc": "1 Dollar = 1 Point",
     "daily": "Connexion quotidienne",
-    "dailyDesc": "1 point (validité de 30 jours)"
-  }
+    "dailyDesc": "1 point (validité de 30 jours)",
+    "unit": "pts"
+  },
+  "tabs": {
+    "myInfo": "My info",
+    "levers": "Levers",
+    "exchange": "Exchange"
+  },
+  "viewAll": "View Full",
+  "myBenefits": "My Benefits",
+  "coupons": "Coupons",
+  "pointCards": "Point Cards",
+  "copyLink": "Copy Invite Link",
+  "pageTitle": "Membership and Points"
 }

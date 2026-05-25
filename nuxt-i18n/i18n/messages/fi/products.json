@@ -6,5 +6,19 @@
   "noResults": "Tuotteita ei löytynyt",
   "tryAdjustFilters": "Yritä säätää suodattimia",
   "loadMore": "Lataa lisää",
-  "items": "kpl"
+  "items": "kpl",
+  "nav": {
+    "shop": "Shop",
+    "aboutTools": "About Tools",
+    "tireSizeCharts": "Tire Guides",
+    "wheelsbuildBlog": "Wheelsbuild blog",
+    "technicalDocs": "Technical",
+    "wheelsetBuyersGuide": "Wheelset Guide"
+  },
+  "navShort": {
+    "tireSize": "Tire guides",
+    "calculator": "Calculator",
+    "points": "Points",
+    "picture": "Picture"
+  }
 }

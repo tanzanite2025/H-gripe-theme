@@ -14,5 +14,15 @@
     "priceHighToLow": "Prix: Élevé à Bas",
     "popular": "Plus populaire",
     "rating": "Meilleure évaluation"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }

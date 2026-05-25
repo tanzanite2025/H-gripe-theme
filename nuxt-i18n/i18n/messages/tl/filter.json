@@ -14,5 +14,15 @@
     "priceHighToLow": "Presyo: Mataas hanggang Mababa",
     "popular": "Pinakasikat",
     "rating": "Pinakamahusay na Rating"
-  }
+  },
+  "filters": "Filters",
+  "price": "Price",
+  "resetShort": "Reset",
+  "searchPlaceholder": "Search...",
+  "clearSearch": "Clear search",
+  "categories": "Categories",
+  "tags": "Tags",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To"
 }
