@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Tanzanite Settings Plugin Core Class
  *
@@ -163,17 +163,17 @@ class Tanzanite_Plugin {
 			require_once $members_admin;
 		}
 
-		// 鍔犺浇 Rewards Admin
-		$rewards_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-rewards-admin.php';
+		// 鍔犺浇 Rewards Admin - [迁移至 Go 后端，停止加载]
+		/* $rewards_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-rewards-admin.php';
 		if ( file_exists( $rewards_admin ) ) {
 			require_once $rewards_admin;
-		}
+		} */
 
-		// 鍔犺浇 Loyalty Admin
-		$loyalty_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-loyalty-admin.php';
+		// 鍔犺浇 Loyalty Admin - [迁移至 Go 后端，停止加载]
+		/* $loyalty_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-loyalty-admin.php';
 		if ( file_exists( $loyalty_admin ) ) {
 			require_once $loyalty_admin;
-		}
+		} */
 
 		// 鍔犺浇 Payment Admin
 		$payment_admin = TANZANITE_PLUGIN_DIR . 'includes/admin/class-payment-admin.php';
@@ -490,10 +490,10 @@ class Tanzanite_Plugin {
 			'Tanzanite_REST_Reviews_Controller',
 			'Tanzanite_REST_Members_Controller',
 			'Tanzanite_REST_Carriers_Controller',
-			'Tanzanite_REST_Coupons_Controller',
-			'Tanzanite_REST_Giftcards_Controller',
-			'Tanzanite_REST_Redeem_Controller',
-			'Tanzanite_REST_Loyalty_Controller',
+			// 'Tanzanite_REST_Coupons_Controller',   // 迁移至 Go 后端
+			// 'Tanzanite_REST_Giftcards_Controller', // 迁移至 Go 后端
+			// 'Tanzanite_REST_Redeem_Controller',    // 迁移至 Go 后端
+			// 'Tanzanite_REST_Loyalty_Controller',   // 迁移至 Go 后端
 			'Tanzanite_REST_Attributes_Controller',
 			// 'Tanzanite_REST_Audit_Controller',
 			'Tanzanite_REST_ShippingTemplates_Controller',
@@ -664,25 +664,25 @@ class Tanzanite_Plugin {
 			array( $this, 'render_member_profiles' )
 		);
 
-		// Rewards
-		add_submenu_page(
+		// Rewards - [迁移至 Go 后端，隐藏菜单]
+		/* add_submenu_page(
 			$root_slug,
 			__( 'Gift Cards & Coupons', 'tanzanite-settings' ),
 			__( 'Gift Cards & Coupons', 'tanzanite-settings' ),
 			$root_capability,
 			'tanzanite-settings-rewards',
 			array( $this, 'render_rewards' )
-		);
+		); */
 
-		// Loyalty
-		add_submenu_page(
+		// Loyalty - [迁移至 Go 后端，隐藏菜单]
+		/* add_submenu_page(
 			$root_slug,
 			__( 'Loyalty Settings', 'tanzanite-settings' ),
 			__( 'Loyalty & Points', 'tanzanite-settings' ),
 			$root_capability,
 			'tanzanite-settings-loyalty',
 			array( $this, 'render_loyalty_settings' )
-		);
+		); */
 
 		// Cart
 		add_submenu_page(
