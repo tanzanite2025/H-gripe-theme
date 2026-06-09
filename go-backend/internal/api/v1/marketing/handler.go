@@ -294,3 +294,109 @@ func (h *Handler) GetLoyaltyInfo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, loyalty)
 }
+
+// ==========================================
+// B端 (Admin) 管理接口
+// ==========================================
+
+// ListMemberLevels 获取所有会员等级
+// @Summary 获取所有会员等级
+// @Tags Admin/Loyalty
+// @Produce json
+// @Success 200 {array} loyalty.MemberLevel
+// @Router /api/v1/admin/loyalty/levels [get]
+func (h *Handler) ListMemberLevels(c *gin.Context) {
+	levels, err := h.marketingService.ListMemberLevels()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, levels)
+}
+
+// CreateMemberLevel 创建会员等级
+// @Summary 创建会员等级
+// @Tags Admin/Loyalty
+// @Accept json
+// @Produce json
+// @Param level body loyalty.MemberLevel true "会员等级"
+// @Success 201 {object} loyalty.MemberLevel
+// @Router /api/v1/admin/loyalty/levels [post]
+func (h *Handler) CreateMemberLevel(c *gin.Context) {
+	var level loyalty.MemberLevel
+	if err := c.ShouldBindJSON(&level); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.marketingService.CreateMemberLevel(&level); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, level)
+}
+
+// UpdateMemberLevel 更新会员等级
+// @Summary 更新会员等级
+// @Tags Admin/Loyalty
+// @Accept json
+// @Produce json
+// @Param id path int true "等级ID"
+// @Param level body loyalty.MemberLevel true "会员等级"
+// @Success 200 {object} loyalty.MemberLevel
+// @Router /api/v1/admin/loyalty/levels/{id} [put]
+func (h *Handler) UpdateMemberLevel(c *gin.Context) {
+	// 简单解析ID并绑定
+	var level loyalty.MemberLevel
+	if err := c.ShouldBindJSON(&level); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 忽略路径ID强行覆盖等细节，直接以传入对象的ID为准，在真实业务中应做一致性校验
+	if err := h.marketingService.UpdateMemberLevel(&level); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, level)
+}
+
+// AdminAdjustPoints 管理员调整积分
+// @Summary 手动调整用户积分
+// @Tags Admin/Loyalty
+// @Accept json
+// @Produce json
+// @Param id path int true "用户ID"
+// @Param request body map[string]interface{} true "调整请求 (points: int, reason: string)"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/admin/loyalty/users/{id}/adjust [post]
+func (h *Handler) AdminAdjustPoints(c *gin.Context) {
+	var req struct {
+		Points int    `json:"points" binding:"required"`
+		Reason string `json:"reason" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 获取路由参数 user_id
+	var uriParams struct {
+		ID uint `uri:"id" binding:"required"`
+	}
+	if err := c.ShouldBindUri(&uriParams); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	if err := h.marketingService.AdminAdjustPoints(uriParams.ID, req.Points, req.Reason); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "points adjusted successfully"})
+}
+

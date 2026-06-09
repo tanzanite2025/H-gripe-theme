@@ -337,6 +337,11 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 
 			// 营销管理
 			adminGroup.POST("/marketing/coupons", marketingHandler.CreateCoupon)
+			// 会员与积分管理
+			adminGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
+			adminGroup.POST("/loyalty/levels", marketingHandler.CreateMemberLevel)
+			adminGroup.PUT("/loyalty/levels/:id", marketingHandler.UpdateMemberLevel)
+			adminGroup.POST("/loyalty/users/:id/adjust", marketingHandler.AdminAdjustPoints)
 
 			// 评价管理
 			adminGroup.GET("/reviews/pending", reviewHandler.GetPendingReviews)
