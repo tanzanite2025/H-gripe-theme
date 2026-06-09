@@ -104,6 +104,21 @@ func (s *MarketingService) GetActiveCoupons() ([]coupon.Coupon, error) {
 	return s.couponRepo.FindActiveCoupons()
 }
 
+// GetAllCoupons 获取全部优惠券 (供管理端使用)
+func (s *MarketingService) GetAllCoupons(page, pageSize int) ([]coupon.Coupon, int64, error) {
+	return s.couponRepo.FindAllCoupons(page, pageSize)
+}
+
+// UpdateCoupon 更新优惠券
+func (s *MarketingService) UpdateCoupon(c *coupon.Coupon) error {
+	return s.couponRepo.UpdateCoupon(c)
+}
+
+// DeleteCoupon 删除优惠券
+func (s *MarketingService) DeleteCoupon(id uint) error {
+	return s.couponRepo.DeleteCoupon(id)
+}
+
 // GiftCard 相关方法
 
 // CreateGiftCard 创建礼品卡

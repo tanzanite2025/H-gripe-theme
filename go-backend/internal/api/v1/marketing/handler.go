@@ -96,6 +96,80 @@ func (h *Handler) CreateCoupon(c *gin.Context) {
 	c.JSON(http.StatusCreated, coupon)
 }
 
+// GetAllCoupons 获取全部优惠券 (管理员)
+// @Summary 获取全部优惠券
+// @Tags Admin/Marketing
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/admin/marketing/coupons/all [get]
+func (h *Handler) GetAllCoupons(c *gin.Context) {
+	page := 1
+	pageSize := 20
+	// 简单的分页解析省略细节，这里默认固定或者可从query获取
+
+	coupons, total, err := h.marketingService.GetAllCoupons(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":  coupons,
+		"total": total,
+		"page":  page,
+	})
+}
+
+// UpdateCoupon 更新优惠券
+// @Summary 更新优惠券
+// @Tags Admin/Marketing
+// @Accept json
+// @Produce json
+// @Param id path int true "优惠券ID"
+// @Param coupon body coupon.Coupon true "优惠券信息"
+// @Success 200 {object} coupon.Coupon
+// @Router /api/v1/admin/marketing/coupons/{id} [put]
+func (h *Handler) UpdateCoupon(c *gin.Context) {
+	var coupon coupon.Coupon
+	if err := c.ShouldBindJSON(&coupon); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.marketingService.UpdateCoupon(&coupon); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, coupon)
+}
+
+// DeleteCoupon 删除优惠券
+// @Summary 删除优惠券
+// @Tags Admin/Marketing
+// @Produce json
+// @Param id path int true "优惠券ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/admin/marketing/coupons/{id} [delete]
+func (h *Handler) DeleteCoupon(c *gin.Context) {
+	var uriParams struct {
+		ID uint `uri:"id" binding:"required"`
+	}
+	if err := c.ShouldBindUri(&uriParams); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid coupon id"})
+		return
+	}
+
+	if err := h.marketingService.DeleteCoupon(uriParams.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "coupon deleted successfully"})
+}
+
 // Gift Card 相关接口
 
 // CreateGiftCard 创建礼品卡
