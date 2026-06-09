@@ -2,8 +2,33 @@ node_modules/
 .nuxt/
 .output/
 .env
+.env.*
 .DS_Store
 dist/
 *.log
 .cache/
 vendor/
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+.gemini/
+
+# Archives & Large Files
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+
+# Databases
+*.sql
+*.sqlite
+*.db
+
+# Temporary & Build files
+tmp/
+temp/
+build/
+coverage/

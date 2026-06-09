@@ -2,15 +2,21 @@
 
 WordPress 到 Go 后端迁移项目 - 高性能、可扩展的 RESTful API 服务
 
-## 📋 项目概述
+## 📋 项目概述与新架构说明
 
-这是一个将 WordPress 后端迁移到 Go 的完整实现，提供：
-- 🚀 高性能 RESTful API
+本项目是 Tanzanite 电商系统的全新后端架构。以往采用 WordPress (PHP) 作为核心，通过插件提供 REST API 供 Nuxt 前端调用，同时依赖 WP 自带的后台面板（受限于当时的虚拟机方案）。
+现在，我们**彻底剥离了 WordPress**，全面升级为“Go 后端 + 独立管理后台”的现代化前后端分离架构：
+
+- **🖥️ 前端 (C端)**: Nuxt 3 (SSR 渲染，位于项目根目录等前端目录，负责前台展示与多语言 SEO)
+- **⚙️ 后端 (API服务)**: Go 1.21 + Gin + GORM (当前目录，负责提供给 C端 和 B端 的所有数据接口)
+- **🎛️ 管理后台 (B端)**: Vue 3 + Vite 单页应用 (位于 `admin-panel/` 目录，完全取代原有的 WP 后台)
+
+提供以下核心能力：
+- 🚀 高性能 RESTful API (130+ 个独立端点)
 - 🌍 34种语言国际化支持
-- 🔐 JWT 认证系统
-- 📦 Redis 缓存
-- 🗄️ PostgreSQL/MySQL 数据库
-- 🐳 Docker 容器化部署
+- 🔐 JWT 认证系统 (安全区分前台用户与后台管理员角色)
+- 📦 Redis 缓存 & PostgreSQL/MySQL 数据库支持
+- 🐳 Docker 容器化一键部署
 
 ## 🏗️ 项目结构
 
@@ -73,14 +79,18 @@ cd go-backend
 cp .env.example .env
 cp config/config.example.yaml config/config.yaml
 
-# 3. 启动所有服务
+# 3. 启动所有后端服务 (API, Postgres, Redis)
 docker-compose up -d
 
-# 4. 查看日志
-docker-compose logs -f api
+# 4. 启动管理后台 (Vue 3 Admin Panel)
+# 另开一个终端窗口执行：
+cd admin-panel
+npm install
+npm run dev
+# 管理后台将启动于类似 http://localhost:5173 的地址
 
-# 5. 访问健康检查
-curl http://localhost:9000/health
+# 5. 访问后端 API 健康检查
+curl http://localhost:8080/health
 ```
 
 ### 方式二：本地开发

@@ -318,3 +318,65 @@ func (s *MarketingService) GetUserLoyalty(userID uint) (*loyalty.UserLoyalty, er
 func (s *MarketingService) generateGiftCardCode() string {
 	return fmt.Sprintf("GC%s", uuid.New().String()[:12])
 }
+
+// ==========================================
+// B端 (Admin) 会员与积分管理方法
+// ==========================================
+
+// CreateMemberLevel 创建会员等级
+func (s *MarketingService) CreateMemberLevel(level *loyalty.MemberLevel) error {
+	return s.loyaltyRepo.CreateMemberLevel(level)
+}
+
+// UpdateMemberLevel 更新会员等级
+func (s *MarketingService) UpdateMemberLevel(level *loyalty.MemberLevel) error {
+	return s.loyaltyRepo.UpdateMemberLevel(level)
+}
+
+// DeleteMemberLevel 删除会员等级
+func (s *MarketingService) DeleteMemberLevel(id uint) error {
+	return s.loyaltyRepo.DeleteMemberLevel(id)
+}
+
+// ListMemberLevels 获取所有会员等级
+func (s *MarketingService) ListMemberLevels() ([]loyalty.MemberLevel, error) {
+	return s.loyaltyRepo.FindAllMemberLevels()
+}
+
+// AdminAdjustPoints 管理员手动调整用户积分
+func (s *MarketingService) AdminAdjustPoints(userID uint, points int, reason string) error {
+	// 获取当前余额
+	balance, err := s.loyaltyRepo.GetUserPointsBalance(userID)
+	if err != nil && err.Error() != "record not found" {
+		balance = 0
+	}
+
+	// 计算新余额
+	newBalance := balance + points
+	if newBalance < 0 {
+		return errors.New("insufficient points to deduct")
+	}
+
+	// 交易类型
+	txType := "earn"
+	if points < 0 {
+		txType = "spend"
+	}
+
+	transaction := &loyalty.LoyaltyTransaction{
+		UserID:      userID,
+		Type:        txType,
+		Points:      points,
+		Balance:     newBalance,
+		Source:      "admin",
+		SourceID:    0,
+		Description: fmt.Sprintf("Admin Adjustment: %s", reason),
+	}
+
+	if err := s.loyaltyRepo.CreateTransaction(transaction); err != nil {
+		return err
+	}
+
+	return s.loyaltyRepo.UpdateUserPoints(userID, points)
+}
+

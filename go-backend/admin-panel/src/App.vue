@@ -1,7 +1,7 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import LoyaltyManagement from './views/LoyaltyManagement.vue'
 </script>
 
 <template>
-  <HelloWorld />
+  <LoyaltyManagement />
 </template>
