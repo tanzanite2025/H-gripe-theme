@@ -79,6 +79,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 // ListFAQs 获取FAQ列表
 func (h *Handler) ListFAQs(c *gin.Context) {
 	locale := middleware.GetLocale(c)
+	pageID := c.Query("page_id")
 	category := c.Query("category")
 	status := c.DefaultQuery("status", "published")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -91,7 +92,7 @@ func (h *Handler) ListFAQs(c *gin.Context) {
 		pageSize = 20
 	}
 
-	faqs, total, err := h.faqService.List(locale, category, status, page, pageSize)
+	faqs, total, err := h.faqService.List(locale, pageID, category, status, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

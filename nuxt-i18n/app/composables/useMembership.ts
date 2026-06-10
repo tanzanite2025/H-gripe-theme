@@ -87,12 +87,12 @@ export function useMembership() {
   const loadTierConfigs = async () => {
     tierConfigsLoading.value = true
     try {
-      // 使用 Tanzanite_REST_Loyalty_Controller::get_config 提供的公开配置接口
-      // GET /wp-json/tanzanite/v1/loyalty/config
-      const response = await $fetch<{ tiers?: any[] }>('/wp-json/tanzanite/v1/loyalty/config')
+      // GET /api/v1/marketing/loyalty/levels (公开配置)
+      const response = await auth.request<any>('/marketing/loyalty/levels')
+      const tiers = Array.isArray(response) ? response : response?.tiers
 
-      if (Array.isArray(response?.tiers)) {
-        tierConfigs.value = response.tiers.map((tier: any) => ({
+      if (tiers) {
+        tierConfigs.value = tiers.map((tier: any) => ({
           key: tier.key,
           name: tier.name ?? tier.label ?? String(tier.key || '').toUpperCase(),
           min: Number(tier.min ?? 0),
@@ -142,19 +142,10 @@ export function useMembership() {
 
     assetsLoading.value = true
     try {
-      const base = typeof window !== 'undefined' ? window.location.origin : ''
-      const res = await fetch(`${base}/wp-json/tanzanite/v1/user/assets`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success) {
-          userCoupons.value = data.data?.coupons || 0
-          userPointCards.value = data.data?.point_cards || 0
-        }
+      const data = await auth.request<any>('/marketing/loyalty/assets')
+      if (data) {
+        userCoupons.value = data.coupons || 0
+        userPointCards.value = data.point_cards || 0
       }
     } catch (error) {
       console.error('获取用户资产失败:', error)
@@ -176,20 +167,9 @@ export function useMembership() {
     giftcardsError.value = ''
 
     try {
-      const base = typeof window !== 'undefined' ? window.location.origin : ''
-      const res = await fetch(`${base}/wp-json/tanzanite/v1/giftcards`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        const allCards = data.items || data || []
-        availableGiftcards.value = allCards.filter((card: any) => card.status === 'active')
-      } else {
-        giftcardsError.value = 'Failed to load gift cards'
-      }
+      const data = await auth.request<any>('/marketing/gift-cards')
+      const allCards = data.items || data || []
+      availableGiftcards.value = allCards.filter((card: any) => card.status === 'active')
     } catch (error) {
       console.error('Failed to fetch gift cards:', error)
       giftcardsError.value = 'Network error'
@@ -213,10 +193,8 @@ export function useMembership() {
     redeemSuccess.value = false
 
     try {
-      const base = typeof window !== 'undefined' ? window.location.origin : ''
-      const res = await fetch(`${base}/wp-json/tanzanite/v1/redeem/exchange`, {
+      const data = await auth.request<any>('/marketing/loyalty/spend', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           points_to_spend: card.points_spent,
@@ -224,9 +202,7 @@ export function useMembership() {
         })
       })
 
-      const data = await res.json()
-
-      if (res.ok && data.success) {
+      if (data && (data.success || data.card_code)) {
         redeemSuccess.value = true
         redeemMessage.value = `Redeemed successfully! Card code: ${data.card_code}`
 
@@ -256,14 +232,11 @@ export function useMembership() {
     try {
       inviteLoading.value = true
       inviteMsg.value = ''
-      const base = typeof window !== 'undefined' ? window.location.origin : ''
-      const res = await fetch(`${base}/wp-json/tanzanite/v1/loyalty/referral/generate`, {
+      const data = await auth.request<any>('/marketing/loyalty/referral', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error((data && data.message) || 'Failed to generate referral link')
+      if (!data || data.error) throw new Error((data && data.message) || 'Failed to generate referral link')
       const url = String(data && data.url)
       if (typeof navigator !== 'undefined' && navigator.share) {
         try { await navigator.share({ url }) } catch { }

@@ -26,6 +26,7 @@ func (h *FAQHandler) ListFAQs(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 	locale := c.Query("locale")
 	category := c.Query("category")
+	pageID := c.Query("page_id")
 	status := c.Query("status")
 	search := c.Query("search")
 
@@ -45,7 +46,7 @@ func (h *FAQHandler) ListFAQs(c *gin.Context) {
 		faqs, total, err = h.faqRepo.Search(search, locale, offset, pageSize)
 	} else {
 		offset := (page - 1) * pageSize
-		faqs, total, err = h.faqRepo.List(locale, category, status, offset, pageSize)
+		faqs, total, err = h.faqRepo.List(locale, pageID, category, status, offset, pageSize)
 	}
 
 	if err != nil {
@@ -92,6 +93,7 @@ func (h *FAQHandler) CreateFAQ(c *gin.Context) {
 	var req struct {
 		Question string `json:"question" binding:"required"`
 		Answer   string `json:"answer" binding:"required"`
+		PageID   string `json:"page_id"`
 		Category string `json:"category" binding:"required"`
 		Locale   string `json:"locale" binding:"required"`
 		Status   string `json:"status" binding:"required,oneof=draft published"`
@@ -106,6 +108,7 @@ func (h *FAQHandler) CreateFAQ(c *gin.Context) {
 	newFAQ := &faq.FAQ{
 		Question: req.Question,
 		Answer:   req.Answer,
+		PageID:   req.PageID,
 		Category: req.Category,
 		Locale:   req.Locale,
 		Status:   req.Status,
@@ -135,6 +138,7 @@ func (h *FAQHandler) UpdateFAQ(c *gin.Context) {
 	var req struct {
 		Question string `json:"question"`
 		Answer   string `json:"answer"`
+		PageID   string `json:"page_id"`
 		Category string `json:"category"`
 		Locale   string `json:"locale"`
 		Status   string `json:"status" binding:"omitempty,oneof=draft published"`
@@ -157,6 +161,9 @@ func (h *FAQHandler) UpdateFAQ(c *gin.Context) {
 	}
 	if req.Answer != "" {
 		existingFAQ.Answer = req.Answer
+	}
+	if req.PageID != "" {
+		existingFAQ.PageID = req.PageID
 	}
 	if req.Category != "" {
 		existingFAQ.Category = req.Category

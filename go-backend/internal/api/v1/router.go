@@ -17,10 +17,12 @@ import (
 	"tanzanite/internal/api/v1/review"
 	"tanzanite/internal/api/v1/settings"
 	"tanzanite/internal/api/v1/shipping"
+	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/api/v1/subscription"
 	"tanzanite/internal/api/v1/ticket"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
 
@@ -47,6 +49,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	galleryRepo := repository.NewGalleryRepository(db)
 	registrationRepo := repository.NewRegistrationRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
+	showcaseRepo := repository.NewShowcaseRepository(db)
 
 	// 初始化services
 	authService := service.NewAuthService(userRepo, cfg.JWT)
@@ -64,6 +67,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
 	subscriptionService := service.NewSubscriptionService(subscriptionRepo)
 	sitemapService := service.NewSitemapService(postRepo, cfg.Server.BaseURL)
+	
+	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
+	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
 
 	// 初始化handlers
 	authHandler := auth.NewHandler(authService)
@@ -83,6 +89,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	auditHandler := audit.NewHandler(auditRepo)
 	subscriptionHandler := subscription.NewHandler(subscriptionService)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
+	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	registerWordPressCompatRoutes(r, postService)
 
 	// API v1 路由组
@@ -157,6 +164,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		{
 			// 优惠券（公开）
 			marketingGroup.GET("/coupons", marketingHandler.ListCoupons)
+			
+			// 等级配置（公开）
+			marketingGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
 
 			// 需要认证的营销功能
 			authMarketing := marketingGroup.Group("")
@@ -166,10 +176,12 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 				authMarketing.POST("/coupons/validate", marketingHandler.ValidateCoupon)
 
 				// 礼品卡
+				authMarketing.GET("/gift-cards", marketingHandler.ListGiftCards)
 				authMarketing.POST("/gift-cards", marketingHandler.CreateGiftCard)
 				authMarketing.POST("/gift-cards/use", marketingHandler.UseGiftCard)
 
 				// 积分和会员
+				authMarketing.GET("/loyalty/assets", marketingHandler.GetUserAssets)
 				authMarketing.GET("/loyalty/points", marketingHandler.GetPoints)
 				authMarketing.GET("/loyalty/info", marketingHandler.GetLoyaltyInfo)
 				authMarketing.POST("/loyalty/checkin", marketingHandler.CheckIn)
@@ -210,6 +222,24 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			ticketGroup.POST("/:id/close", ticketHandler.CloseTicket)
 			ticketGroup.POST("/:id/messages", ticketHandler.AddMessage)
 			ticketGroup.GET("/:id/messages", ticketHandler.GetMessages)
+		}
+
+		// Showcase (Picture Warehouse)
+		showcaseGroup := v1.Group("/showcase")
+		{
+			showcaseGroup.GET("/gallery", showcaseHandler.List)
+			showcaseGroup.GET("/comments", showcaseHandler.ListComments)
+			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), showcaseHandler.Upload)
+			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), showcaseHandler.AddComment)
+		}
+
+		// Admin Showcase
+		adminShowcaseGroup := v1.Group("/admin/showcase")
+		adminShowcaseGroup.Use(middleware.AuthMiddleware(authService))
+		{
+			adminShowcaseGroup.GET("", showcaseHandler.List)
+			adminShowcaseGroup.PUT("/:id/approve", showcaseHandler.Approve)
+			adminShowcaseGroup.PUT("/:id/reject", showcaseHandler.Reject)
 		}
 
 		// 设置路由

@@ -3,6 +3,7 @@ package marketing
 import (
 	"net/http"
 	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -467,10 +468,28 @@ func (h *Handler) AdminAdjustPoints(c *gin.Context) {
 	}
 
 	if err := h.marketingService.AdminAdjustPoints(uriParams.ID, req.Points, req.Reason); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "points adjusted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Points adjusted successfully"})
 }
 
+// GetUserAssets 获取用户资产数量
+func (h *Handler) GetUserAssets(c *gin.Context) {
+	// userID, exists := c.Get("user_id")
+	// TODO: Count actual user coupons and gift cards from DB
+	c.JSON(http.StatusOK, gin.H{
+		"coupons":     0,
+		"point_cards": 0,
+	})
+}
+
+// ListGiftCards 获取当前用户的礼品卡
+func (h *Handler) ListGiftCards(c *gin.Context) {
+	// userID, exists := c.Get("user_id")
+	// TODO: Fetch from giftcard repo
+	c.JSON(http.StatusOK, gin.H{
+		"items": []interface{}{},
+	})
+}

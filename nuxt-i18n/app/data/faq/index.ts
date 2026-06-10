@@ -48,7 +48,7 @@ export const faqRegistry: FaqRegistry = {
 }
 
 /**
- * Get FAQ data for a specific page
+ * Get FAQ data for a specific page (Static fallback)
  * @param pageId - The page identifier
  * @returns The FAQ data for the page, or undefined if not found
  */
@@ -57,11 +57,104 @@ export function getFaqData(pageId: string): PageFaqData | undefined {
 }
 
 /**
- * Get all registered FAQ data
+ * Get all registered FAQ data (Static fallback)
  * @returns Array of all page FAQ data
  */
 export function getAllFaqData(): PageFaqData[] {
   return Object.values(faqRegistry)
+}
+
+/**
+ * Fetch FAQ data for a specific page from Go backend
+ */
+export async function fetchFaqData(pageId: string): Promise<PageFaqData | undefined> {
+  try {
+    const res = await $fetch<{ data: any[] }>(`http://localhost:8080/api/v1/content/faqs`, {
+      query: { page_id: pageId, page_size: 100 }
+    })
+    
+    const items = res.data || []
+    if (items.length === 0) return getFaqData(pageId) // Fallback
+
+    const categoriesMap = new Map<string, any>()
+    items.forEach(item => {
+      const catName = item.category || 'General'
+      if (!categoriesMap.has(catName)) {
+        categoriesMap.set(catName, {
+          id: catName.toLowerCase().replace(/\s+/g, '-'),
+          name: catName,
+          items: []
+        })
+      }
+      categoriesMap.get(catName).items.push({
+        id: item.id.toString(),
+        question: item.question,
+        answer: item.answer,
+        tags: []
+      })
+    })
+
+    return {
+      pageId,
+      title: `${pageId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')} FAQs`,
+      categories: Array.from(categoriesMap.values())
+    }
+  } catch (error) {
+    console.error("Failed to fetch FAQs from Go backend:", error)
+    return getFaqData(pageId)
+  }
+}
+
+/**
+ * Fetch all FAQ data from Go backend
+ */
+export async function fetchAllFaqData(): Promise<PageFaqData[]> {
+  try {
+    const res = await $fetch<{ data: any[] }>(`http://localhost:8080/api/v1/content/faqs`, {
+      query: { page_size: 1000 }
+    })
+    
+    const items = res.data || []
+    if (items.length === 0) return getAllFaqData()
+
+    const pagesMap = new Map<string, PageFaqData>()
+    
+    items.forEach(item => {
+      const pid = item.page_id || 'general'
+      if (!pagesMap.has(pid)) {
+        pagesMap.set(pid, {
+          pageId: pid,
+          title: `${pid.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')} FAQs`,
+          categories: []
+        })
+      }
+      
+      const pageData = pagesMap.get(pid)!
+      const catName = item.category || 'General'
+      
+      let category = pageData.categories.find(c => c.name === catName)
+      if (!category) {
+        category = {
+          id: catName.toLowerCase().replace(/\s+/g, '-'),
+          name: catName,
+          items: []
+        }
+        pageData.categories.push(category)
+      }
+      
+      category.items.push({
+        id: item.id.toString(),
+        question: item.question,
+        answer: item.answer,
+        tags: []
+      })
+    })
+
+    return Array.from(pagesMap.values())
+  } catch (error) {
+    console.error("Failed to fetch all FAQs from Go backend:", error)
+    return getAllFaqData()
+  }
 }
 
 /**

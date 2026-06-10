@@ -40,7 +40,7 @@ func (r *FAQRepository) Delete(id uint) error {
 }
 
 // List 获取FAQ列表
-func (r *FAQRepository) List(locale, category, status string, offset, limit int) ([]faq.FAQ, int64, error) {
+func (r *FAQRepository) List(locale, pageID, category, status string, offset, limit int) ([]faq.FAQ, int64, error) {
 	var faqs []faq.FAQ
 	var total int64
 
@@ -48,6 +48,9 @@ func (r *FAQRepository) List(locale, category, status string, offset, limit int)
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
+	}
+	if pageID != "" {
+		query = query.Where("page_id = ?", pageID)
 	}
 	if category != "" {
 		query = query.Where("category = ?", category)

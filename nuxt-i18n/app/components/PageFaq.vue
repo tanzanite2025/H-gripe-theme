@@ -155,8 +155,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useLocalePath } from '#imports'
-import { getFaqData } from '~/data/faq'
+import { useLocalePath, useAsyncData } from '#imports'
+import { fetchFaqData, getFaqData } from '~/data/faq'
 import type { PageFaqProps, FaqCategory } from '~/data/faq/types'
 
 const props = withDefaults(defineProps<PageFaqProps>(), {
@@ -167,8 +167,9 @@ const props = withDefaults(defineProps<PageFaqProps>(), {
 
 const localePath = useLocalePath()
 
-// Get FAQ data for the page
-const faqData = computed(() => getFaqData(props.pageId))
+// Get FAQ data for the page (Async from Go backend with static fallback)
+const { data: asyncFaqData } = await useAsyncData(`faq-${props.pageId}`, () => fetchFaqData(props.pageId))
+const faqData = computed(() => asyncFaqData.value || getFaqData(props.pageId))
 
 // Display title (prop override or from data)
 const displayTitle = computed(() => {

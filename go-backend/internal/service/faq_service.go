@@ -21,9 +21,9 @@ func (s *FAQService) GetByID(id uint) (*faq.FAQ, error) {
 }
 
 // List 获取FAQ列表
-func (s *FAQService) List(locale, category, status string, page, pageSize int) ([]faq.FAQ, int64, error) {
+func (s *FAQService) List(locale, pageID, category, status string, page, pageSize int) ([]faq.FAQ, int64, error) {
 	offset := (page - 1) * pageSize
-	return s.faqRepo.List(locale, category, status, offset, pageSize)
+	return s.faqRepo.List(locale, pageID, category, status, offset, pageSize)
 }
 
 // GetCategories 获取所有分类

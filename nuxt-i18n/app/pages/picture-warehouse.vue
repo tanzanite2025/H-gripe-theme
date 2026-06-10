@@ -647,7 +647,7 @@ const submitUpload = async () => {
       formData.append('bike_model', uploadBikeModel.value.trim())
     if (uploadNotes.value.trim()) formData.append('notes', uploadNotes.value.trim())
 
-    const response = await fetch('/wp-json/tanz-photo/v1/upload', {
+    const response = await fetch('/api/v1/showcase/upload', {
       method: 'POST',
       body: formData,
     })
@@ -766,7 +766,7 @@ const fetchUserPhotos = async () => {
     userLoading.value = true
     userError.value = null
 
-    const response = await fetch('/wp-json/tanz-photo/v1/gallery?type=user&status=approved')
+    const response = await fetch('/api/v1/showcase/gallery?type=user&status=approved')
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`)
     }
@@ -789,7 +789,7 @@ const fetchBrandPhotos = async () => {
     brandLoading.value = true
     brandError.value = null
 
-    const response = await fetch('/wp-json/tanz-photo/v1/gallery?type=brand&status=approved')
+    const response = await fetch('/api/v1/showcase/gallery?type=brand&status=approved')
 
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`)
@@ -918,7 +918,7 @@ const fetchCommentsForPhoto = async (photoId: string) => {
     commentsError.value = null
 
     const response = await fetch(
-      `/wp-json/tanz-photo/v1/comments?photo_id=${encodeURIComponent(photoId)}&per_page=20`
+      `/api/v1/showcase/comments?photo_id=${encodeURIComponent(photoId)}&per_page=20`
     )
 
     if (!response.ok) {
@@ -999,7 +999,7 @@ const submitComment = async () => {
       body.location = commentLocation.value.trim()
     }
 
-    const response = await fetch('/wp-json/tanz-photo/v1/comments', {
+    const response = await fetch('/api/v1/showcase/comments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

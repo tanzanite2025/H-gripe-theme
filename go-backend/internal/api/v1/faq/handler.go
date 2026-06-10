@@ -23,6 +23,7 @@ func NewHandler(faqService *service.FAQService) *Handler {
 type CreateFAQRequest struct {
 	Question string `json:"question" binding:"required"`
 	Answer   string `json:"answer" binding:"required"`
+	PageID   string `json:"page_id"`
 	Category string `json:"category" binding:"required"`
 	Locale   string `json:"locale"`
 	ParentID *uint  `json:"parent_id"`
@@ -34,6 +35,7 @@ type CreateFAQRequest struct {
 type UpdateFAQRequest struct {
 	Question string `json:"question"`
 	Answer   string `json:"answer"`
+	PageID   string `json:"page_id"`
 	Category string `json:"category"`
 	Locale   string `json:"locale"`
 	ParentID *uint  `json:"parent_id"`
@@ -70,6 +72,7 @@ func (h *Handler) CreateFAQ(c *gin.Context) {
 	f := &faq.FAQ{
 		Question: req.Question,
 		Answer:   req.Answer,
+		PageID:   req.PageID,
 		Category: req.Category,
 		Locale:   req.Locale,
 		ParentID: req.ParentID,
@@ -115,6 +118,9 @@ func (h *Handler) UpdateFAQ(c *gin.Context) {
 	}
 	if req.Answer != "" {
 		existingFAQ.Answer = req.Answer
+	}
+	if req.PageID != "" {
+		existingFAQ.PageID = req.PageID
 	}
 	if req.Category != "" {
 		existingFAQ.Category = req.Category
