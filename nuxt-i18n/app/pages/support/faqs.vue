@@ -139,7 +139,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getAllFaqData } from '~/data/faq'
+import { useHead, useAsyncData } from '#imports'
+import { fetchAllFaqData, getAllFaqData } from '~/data/faq'
 
 definePageMeta({
   layout: 'support',
@@ -149,8 +150,9 @@ useHead({
   title: "All FAQs",
 })
 
-// 获取所有 FAQ 数据
-const allPages = computed(() => getAllFaqData())
+// 获取所有 FAQ 数据 (从 Go API 获取)
+const { data: asyncAllPages } = await useAsyncData('faqs-all', () => fetchAllFaqData())
+const allPages = computed(() => asyncAllPages.value || getAllFaqData())
 
 // 搜索和筛选
 const searchQuery = ref('')

@@ -73,7 +73,11 @@ const extractMessage = (payload: MaybeJson, fallback: string) => {
 
 export function useAuth() {
   const config = useRuntimeConfig()
-  const baseURL = config.public?.wpApiBase as string | undefined
+  // 抛弃 wpApiBase，直连 Go 后端
+  const baseURL = config.public?.apiBase || '/api/v1'
+
+  // 使用 cookie 持久化 JWT token
+  const token = useCookie('auth_token', { maxAge: 60 * 60 * 24 * 7 }) // 7天
 
   const user = useState<AuthUser | null>('auth-user', () => null)
   const loading = useState<boolean>('auth-loading', () => false)
@@ -86,8 +90,8 @@ export function useAuth() {
     }
 
     const headers = new Headers(init.headers || undefined)
-    if (config.public?.wpNonce && !headers.has('X-WP-Nonce')) {
-      headers.set('X-WP-Nonce', String(config.public.wpNonce))
+    if (token.value) {
+      headers.set('Authorization', `Bearer ${token.value}`)
     }
 
     const finalInit: RequestInit = {
@@ -117,8 +121,8 @@ export function useAuth() {
 
     initialized.value = true
     try {
-      const response = await request<ApiResponse<{ user: AuthUser }>>('/tanzanite/v1/auth/me', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
-      const data = response?.data?.user || null
+      const response = await request<AuthUser>('/auth/profile', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
+      const data = response || null
       user.value = data
       error.value = null
       return data
@@ -133,8 +137,8 @@ export function useAuth() {
     error.value = null
 
     try {
-      const response = await request<ApiResponse<{ user: AuthUser }>>(
-        '/tanzanite/v1/auth/login',
+      const response = await request<{ token: string, user: AuthUser }>(
+        '/auth/login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -142,7 +146,12 @@ export function useAuth() {
         },
         'Login failed'
       )
-      const data = response?.data?.user || null
+      
+      if (response && response.token) {
+        token.value = response.token
+      }
+      
+      const data = response?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -159,8 +168,8 @@ export function useAuth() {
     error.value = null
 
     try {
-      const response = await request<ApiResponse<{ user: AuthUser }>>(
-        '/tanzanite/v1/auth/register',
+      const response = await request<{ message: string, user: AuthUser }>(
+        '/auth/register',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -168,7 +177,8 @@ export function useAuth() {
         },
         'Registration failed'
       )
-      const data = response?.data?.user || null
+      // 注册接口目前未返回token，需要在注册后让用户去登录，或后端改进返回token
+      const data = response?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -187,10 +197,11 @@ export function useAuth() {
     }
 
     try {
-      await request('/tanzanite/v1/auth/logout', { method: 'POST' }, 'Logout failed')
+      await request('/auth/logout', { method: 'POST' }, 'Logout failed')
     } catch (err) {
       console.warn('Logout request failed:', err)
     } finally {
+      token.value = null
       user.value = null
     }
   }
@@ -204,8 +215,8 @@ export function useAuth() {
     error.value = null
 
     try {
-      const response = await request<ApiResponse<{ user: AuthUser }>>(
-        '/tanzanite/v1/auth/google-login',
+      const response = await request<{ token: string, user: AuthUser }>(
+        '/auth/google-login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -213,7 +224,10 @@ export function useAuth() {
         },
         'Google login failed'
       )
-      const data = response?.data?.user || null
+      if (response && response.token) {
+        token.value = response.token
+      }
+      const data = response?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -242,6 +256,7 @@ export function useAuth() {
     login,
     loginWithGoogle,
     register,
-    logout
+    logout,
+    request // 暴露 request 方法以便其他 composable (如 useMembership) 调用
   }
 }

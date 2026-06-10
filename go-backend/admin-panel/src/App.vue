@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import LoyaltyManagement from './views/LoyaltyManagement.vue'
 import CouponManagement from './views/CouponManagement.vue'
+import PictureWarehouseApproval from './views/PictureWarehouseApproval.vue'
+import FaqManagement from './views/FaqManagement.vue'
 
 const currentView = ref('loyalty')
 </script>
@@ -20,9 +22,21 @@ const currentView = ref('loyalty')
         :class="['px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors', currentView === 'coupons' ? 'bg-white text-black' : 'text-white/50 hover:bg-white/10']">
         Coupons & Promos
       </button>
+      <button 
+        @click="currentView = 'showcase'"
+        :class="['px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors', currentView === 'showcase' ? 'bg-white text-black' : 'text-white/50 hover:bg-white/10']">
+        Picture Warehouse
+      </button>
+      <button 
+        @click="currentView = 'faq'"
+        :class="['px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors', currentView === 'faq' ? 'bg-white text-black' : 'text-white/50 hover:bg-white/10']">
+        FAQ Management
+      </button>
     </div>
 
     <LoyaltyManagement v-if="currentView === 'loyalty'" />
     <CouponManagement v-if="currentView === 'coupons'" />
+    <PictureWarehouseApproval v-if="currentView === 'showcase'" />
+    <FaqManagement v-if="currentView === 'faq'" />
   </div>
 </template>

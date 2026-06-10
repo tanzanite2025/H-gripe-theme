@@ -10,6 +10,7 @@ type FAQ struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
 	Question  string         `gorm:"not null;type:text" json:"question"`
 	Answer    string         `gorm:"not null;type:text" json:"answer"`
+	PageID    string         `gorm:"index" json:"page_id"`
 	Category  string         `gorm:"index" json:"category"`
 	Locale    string         `gorm:"default:'en';index" json:"locale"`
 	ParentID  *uint          `gorm:"index" json:"parent_id"` // 翻译关联
