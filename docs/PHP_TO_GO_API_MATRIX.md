@@ -4,7 +4,7 @@
 
 本文件只做 D1b 盘点和下一步拆分，不实现迁移。
 
-更新：根目录 WordPress 主题壳文件（`index.php`、`header.php`、`footer.php`、`page.php`、`single.php`、`functions.php`）已确认属于早期虚拟机限制下的历史文件并已删除。下表中来自 `removed root functions.php` 的 endpoint 只表示历史参考或 Nuxt 仍可能存在的旧调用目标，不能作为可恢复的 PHP 实现。
+更新：根目录 WordPress 主题壳文件和主题元数据（`index.php`、`header.php`、`footer.php`、`page.php`、`single.php`、`functions.php`、`style.css`）已确认属于早期虚拟机限制下的历史文件并已删除。下表中来自 `removed root functions.php` 的 endpoint 只表示历史参考或 Nuxt 仍可能存在的旧调用目标，不能作为可恢复的 PHP 实现。
 
 目标：
 
