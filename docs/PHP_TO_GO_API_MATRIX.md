@@ -125,13 +125,20 @@ M1.3 固定的 Blog 读取契约：
 | PHP endpoint | 来源 | Go 目标 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- |
 | `/wp-json/tanzanite/v1/wishlist`、`/wishlist/:id` | `class-rest-wishlist-controller.php` | 待定：`/api/v1/wishlist` | Go 缺口 | M2 wishlist |
-| `/wp-json/tanzanite/v1/reviews`、`/reviews/:id` | `class-rest-reviews-controller.php` | `/api/v1/reviews` | Go 已有 | M2 review：字段/权限映射 |
+| `/wp-json/tanzanite/v1/reviews`、`/reviews/:id` | `class-rest-reviews-controller.php` | `/api/v1/reviews`、`/api/v1/reviews/:id`、`/api/v1/reviews/my`、`/api/v1/reviews/summary/:product_id` | Go 已有 | M2 review 已固定 Go 契约；Nuxt 当前无旧 review REST 调用 |
 | `/wp-json/tanzanite/v1/feedback`、`/feedback/eligibility` | `class-rest-feedback-controller.php` | 待定：`/api/v1/feedback` | Go 缺口 | M2 feedback |
 | `/wp-json/tanzanite/v1/suggestion-feedback/**` | `class-rest-suggestion-feedback-controller.php` | 待定：`/api/v1/suggestion-feedback` | Go 缺口 | M2 suggestion feedback |
 | `/wp-json/tanzanite/v1/customer-service/**` | `tanzanite-customer-service/**` | 不能直接等同 `/api/v1/tickets`; 需新增 customer-service 或重设计为 tickets | Go 缺口 | M2/M3 customer service |
 | `/wp-json/tanzanite/v1/auto-reply/**` | `class-auto-reply-api.php` | 待定：customer-service auto-reply | Go 缺口 | 与 customer-service 同模块 |
 | `/wp-json/tanzanite/v1/agent/**` | `class-agent-api.php` | 待定：`/api/admin/customer-service/agent` | Go 缺口 | `web/admin` 客服工作台模块 |
 | removed root `functions.php` legacy `/chat/**` | removed root `functions.php` | 待定：customer-service 或 tickets | Go 缺口 | 不恢复旧 alias |
+
+M2 review 固定的 Go 契约：
+
+- Nuxt 当前没有调用旧 `/wp-json/tanzanite/v1/reviews*`；后续新增评价 UI 时直接走 Go `/api/v1/reviews*`。
+- 公开读取：`GET /api/v1/reviews?product_id=&page=&page_size=` 返回 `{ data, pagination }`，默认只返回 approved 评价；`GET /api/v1/reviews/summary/:product_id` 返回 rating 聚合。
+- 登录用户：`POST /api/v1/reviews` 使用 JWT，body 为 `{ product_id, rating, title, content, images }`，新评价进入 pending；`GET /api/v1/reviews/my` 读取当前用户评价；`DELETE /api/v1/reviews/:id` 只允许作者删除。
+- Admin 审核仍走 `/api/v1/admin/reviews/*`，不混入前台评价提交 PR。
 
 ### 9. Product registration / Warranty / Spoke
 
