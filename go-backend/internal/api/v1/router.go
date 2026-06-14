@@ -269,6 +269,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		customerServiceGroup := v1.Group("/customer-service")
 		{
 			customerServiceGroup.GET("/agents", ticketHandler.ListPublicCustomerServiceAgents)
+			customerServiceGroup.GET("/products", productHandler.ListPublicChatProducts)
 			customerServiceGroup.GET("/has-conversation", ticketHandler.HasPublicCustomerServiceConversation)
 			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), ticketHandler.SendPublicCustomerServiceMessage)
 			customerServiceGroup.GET("/messages/:conversation_id", ticketHandler.GetPublicCustomerServiceMessages)
