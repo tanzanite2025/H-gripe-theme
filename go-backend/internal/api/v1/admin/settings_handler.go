@@ -2,6 +2,9 @@ package admin
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
+	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/repository"
 
@@ -11,13 +14,87 @@ import (
 // SettingsHandler 系统设置处理器
 type SettingsHandler struct {
 	settingRepo *repository.SettingRepository
+	userRepo    *repository.UserRepository
 }
 
 // NewSettingsHandler 创建系统设置处理器
-func NewSettingsHandler(settingRepo *repository.SettingRepository) *SettingsHandler {
+func NewSettingsHandler(settingRepo *repository.SettingRepository, userRepo *repository.UserRepository) *SettingsHandler {
 	return &SettingsHandler{
 		settingRepo: settingRepo,
+		userRepo:    userRepo,
 	}
+}
+
+// GetPublicChatAgentCompatibility 获取 public chat 客服映射兼容检查
+func (h *SettingsHandler) GetPublicChatAgentCompatibility(c *gin.Context) {
+	agents, err := h.userRepo.FindCustomerServiceAgents(100)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取客服映射失败"})
+		return
+	}
+
+	stats, err := h.userRepo.GetStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取用户统计失败"})
+		return
+	}
+
+	items := make([]gin.H, 0, len(agents))
+	for _, agent := range agents {
+		normalizedRole := auth.NormalizeRole(agent.Role)
+		items = append(items, gin.H{
+			"id":              agent.ID,
+			"username":        agent.Username,
+			"email":           agent.Email,
+			"display_name":    displayName(agent.FirstName, agent.LastName, agent.Username, agent.Email),
+			"raw_role":        agent.Role,
+			"normalized_role": normalizedRole,
+			"status":          agent.Status,
+			"public_agent_id": strconv.FormatUint(uint64(agent.ID), 10),
+			"wp_user_id":      agent.ID,
+			"exposed":         agent.Status == "active" && auth.IsCustomerServiceAgentRole(agent.Role),
+		})
+	}
+
+	warnings := []string{
+		"Go users 表仍不保存 PHP wp_tz_cs_agents.whatsapp/avatar/online_status；精确线上 parity 仍需执行 PHP 源表 preflight。",
+	}
+	if len(agents) == 0 {
+		warnings = append(warnings, "当前 Go users 表未找到 active customer-service agent 候选，public chat 可能无法自动分配客服。")
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"summary": gin.H{
+			"compatible_agents":       len(items),
+			"go_user_role_buckets":    stats["by_role"],
+			"php_preflight_required":  true,
+			"missing_profile_columns": []string{"whatsapp", "avatar", "online_status"},
+		},
+		"agents": items,
+		"role_mappings": []gin.H{
+			{"source": "administrator", "normalized": "admin", "agent_visible": true},
+			{"source": "shop_manager", "normalized": "manager", "agent_visible": true},
+			{"source": "agent", "normalized": "support", "agent_visible": true},
+			{"source": "customer_service", "normalized": "support", "agent_visible": true},
+			{"source": "customer_support", "normalized": "support", "agent_visible": true},
+			{"source": "editor/viewer/user/subscriber", "normalized": "user/editor/viewer", "agent_visible": false},
+		},
+		"preflight_sql": []gin.H{
+			{
+				"title": "PHP active agents source of truth",
+				"sql":   "SELECT agent_id, wp_user_id, name, email, status, online_status FROM wp_tz_cs_agents WHERE status = 'active' ORDER BY created_at ASC;",
+			},
+			{
+				"title": "Go users projection candidates",
+				"sql":   "SELECT id, username, email, role, status FROM users WHERE status = 'active' AND (role IN ('admin', 'manager', 'support', 'agent', 'administrator', 'shop_manager', 'customer_service', 'customer_support') OR LOWER(role) LIKE '%administrator%' OR LOWER(role) LIKE '%shop_manager%' OR LOWER(role) LIKE '%customer_service%' OR LOWER(role) LIKE '%customer_support%' OR LOWER(role) LIKE '%support%' OR LOWER(role) LIKE '%agent%') ORDER BY role ASC, created_at ASC;",
+			},
+			{
+				"title": "Linked PHP agents missing Go user rows",
+				"sql":   "SELECT a.agent_id, a.wp_user_id, a.name, a.email, a.status, a.online_status FROM wp_tz_cs_agents a LEFT JOIN users u ON u.id = a.wp_user_id WHERE a.status = 'active' AND (a.wp_user_id IS NULL OR u.id IS NULL);",
+			},
+		},
+		"warnings": warnings,
+	})
 }
 
 // GetAllSettings 获取所有设置
@@ -210,4 +287,15 @@ func (h *SettingsHandler) GetPaymentSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"settings": settings})
+}
+
+func displayName(firstName, lastName, username, email string) string {
+	fullName := strings.TrimSpace(strings.TrimSpace(firstName) + " " + strings.TrimSpace(lastName))
+	if fullName != "" {
+		return fullName
+	}
+	if strings.TrimSpace(username) != "" {
+		return strings.TrimSpace(username)
+	}
+	return strings.TrimSpace(email)
 }
