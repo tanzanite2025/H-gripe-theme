@@ -20,6 +20,7 @@ import (
 	"tanzanite/internal/api/v1/shipping"
 	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/api/v1/subscription"
+	"tanzanite/internal/api/v1/suggestionfeedback"
 	"tanzanite/internal/api/v1/ticket"
 	"tanzanite/internal/api/v1/wishlist"
 	"tanzanite/internal/pkg/cache"
@@ -54,6 +55,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	showcaseRepo := repository.NewShowcaseRepository(db)
 	wishlistRepo := repository.NewWishlistRepository(db)
 	feedbackRepo := repository.NewFeedbackRepository(db)
+	suggestionFeedbackRepo := repository.NewSuggestionFeedbackRepository(db)
 
 	// 初始化services
 	authService := service.NewAuthService(userRepo, cfg.JWT)
@@ -76,6 +78,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
 	feedbackService := service.NewFeedbackService(feedbackRepo)
+	suggestionFeedbackService := service.NewSuggestionFeedbackService(suggestionFeedbackRepo)
 
 	// 初始化handlers
 	authHandler := auth.NewHandler(authService)
@@ -98,6 +101,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	wishlistHandler := wishlist.NewHandler(wishlistService)
 	feedbackHandler := feedback.NewHandler(feedbackService)
+	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService)
 	registerWordPressCompatRoutes(r, postService)
 
 	// API v1 路由组
@@ -168,6 +172,12 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			feedbackGroup.GET("", feedbackHandler.List)
 			feedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), feedbackHandler.Eligibility)
 			feedbackGroup.POST("", middleware.AuthMiddleware(authService), feedbackHandler.Create)
+		}
+
+		suggestionFeedbackGroup := v1.Group("/suggestion-feedback")
+		{
+			suggestionFeedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), suggestionFeedbackHandler.Eligibility)
+			suggestionFeedbackGroup.POST("", middleware.AuthMiddleware(authService), suggestionFeedbackHandler.Create)
 		}
 
 		// 订单路由（需要认证）
