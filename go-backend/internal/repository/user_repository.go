@@ -110,7 +110,17 @@ func (r *UserRepository) FindCustomerServiceAgents(limit int) ([]user.User, erro
 		limit = 50
 	}
 
-	err := r.db.Where("status = ? AND role IN ?", "active", []string{"admin", "agent", "support"}).
+	err := r.db.Where("status = ?", "active").
+		Where(
+			"role IN ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ?",
+			[]string{"admin", "manager", "support", "agent", "administrator", "shop_manager", "customer_service", "customer_support"},
+			"%administrator%",
+			"%shop_manager%",
+			"%customer_service%",
+			"%customer_support%",
+			"%support%",
+			"%agent%",
+		).
 		Order("role ASC, created_at ASC").
 		Limit(limit).
 		Find(&users).Error

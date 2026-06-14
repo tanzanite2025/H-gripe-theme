@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -87,10 +88,10 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 			return
 		}
 
-		roleStr := userRole.(string)
+		roleStr := string(auth.NormalizeRole(userRole.(string)))
 		allowed := false
 		for _, role := range roles {
-			if role == roleStr {
+			if string(auth.NormalizeRole(role)) == roleStr {
 				allowed = true
 				break
 			}
