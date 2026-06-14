@@ -177,7 +177,7 @@
         <el-tab-pane label="Public Chat 客服" name="public_chat">
           <div class="compatibility-panel">
             <el-alert
-              title="用于 M2.9/M3 前确认线上客服用户、状态与 Go users.role 映射是否兼容。"
+              title="用于 M2.9/M3 前确认 Go agent profile、用户状态与 users.role 映射是否兼容。"
               type="info"
               show-icon
               :closable="false"
@@ -202,7 +202,7 @@
               </el-col>
               <el-col :xs="24" :sm="8">
                 <el-card shadow="never">
-                  <div class="summary-label">仍需 PHP 源表 preflight</div>
+                  <div class="summary-label">是否仍依赖 PHP 对账</div>
                   <div class="summary-value">
                     <el-tag :type="compatSummary.php_preflight_required ? 'warning' : 'success'">
                       {{ compatSummary.php_preflight_required ? '需要' : '不需要' }}
@@ -212,7 +212,7 @@
               </el-col>
               <el-col :xs="24" :sm="8">
                 <el-card shadow="never">
-                  <div class="summary-label">Go 缺失 PHP profile 字段</div>
+                  <div class="summary-label">Go 缺失 profile 字段</div>
                   <div class="tag-list">
                     <el-tag
                       v-for="field in compatSummary.missing_profile_columns || []"
@@ -245,11 +245,15 @@
               empty-text="暂无 Go active customer-service agent 候选"
             >
               <el-table-column prop="id" label="User ID" width="90" />
+              <el-table-column prop="agent_id" label="Agent ID" width="120" />
               <el-table-column prop="display_name" label="Name" min-width="140" />
               <el-table-column prop="email" label="Email" min-width="180" />
+              <el-table-column prop="whatsapp" label="WhatsApp" width="140" />
               <el-table-column prop="raw_role" label="Raw role" width="150" />
               <el-table-column prop="normalized_role" label="Go role" width="120" />
-              <el-table-column prop="status" label="User status" width="120" />
+              <el-table-column prop="user_status" label="User status" width="120" />
+              <el-table-column prop="profile_status" label="Profile status" width="130" />
+              <el-table-column prop="online_status" label="Online" width="100" />
               <el-table-column label="Public exposed" width="130">
                 <template #default="{ row }">
                   <el-tag :type="row.exposed ? 'success' : 'danger'">
@@ -273,7 +277,7 @@
               </el-table-column>
             </el-table>
 
-            <h3>线上 DB preflight SQL</h3>
+            <h3>Go DB verification SQL</h3>
             <el-collapse>
               <el-collapse-item
                 v-for="item in compatPreflightSql"
