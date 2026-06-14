@@ -91,6 +91,17 @@ func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int) 
 	return tickets, total, err
 }
 
+func (r *TicketRepository) FindCustomerServiceConversationByTag(tag string) (*ticket.Ticket, error) {
+	var t ticket.Ticket
+	err := r.db.Preload("User").Preload("Messages", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at ASC")
+	}).Where("category = ? AND tags = ?", "customer_service", tag).First(&t).Error
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
 // FindTicketsByAssignedTo 查找分配给某客服的工单
 func (r *TicketRepository) FindTicketsByAssignedTo(assignedTo uint, page, pageSize int) ([]ticket.Ticket, int64, error) {
 	var tickets []ticket.Ticket

@@ -621,6 +621,10 @@ const {
   refreshData: refreshMembershipData,
 } = useMembership()
 const config = useRuntimeConfig()
+const publicApiBase = computed(() => {
+  const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
+  return base.replace(/\/$/, '')
+})
 
 // Test Report Drawer
 const testReportDrawerVisible = ref(false)
@@ -693,7 +697,7 @@ const checkApiHistoryChat = async (): Promise<boolean> => {
     
     const identifier = user.value ? `user_${user.value.id}` : visitorId
     
-    const response = await $fetch<{ hasConversation: boolean }>('/wp-json/tanzanite/v1/customer-service/has-conversation', {
+    const response = await $fetch<{ hasConversation: boolean }>(`${publicApiBase.value}/customer-service/has-conversation`, {
       params: { visitor_id: identifier }
     })
     
@@ -1209,19 +1213,27 @@ const saveMessagesToStorage = () => {
 // 发送消息到后端 API
 const sendMessageToAPI = async (messageData: any) => {
   try {
-    const response = await $fetch('/wp-json/tanzanite/v1/customer-service/messages', {
-      method: 'POST',
-      body: {
-        conversation_id: conversationId.value,
-        message: messageData.message,
-        sender_type: user.value ? 'user' : 'visitor',
-        sender_name: user.value?.display_name || '访客',
-        sender_email: user.value?.email || '',
-        agent_id: selectedAgent.value?.id || '',
-        message_type: messageData.message_type || 'text',
-        metadata: messageData.metadata || null
-      }
-    })
+    const response = await authRequest<any>(
+      '/customer-service/messages',
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          conversation_id: conversationId.value,
+          message: messageData.message,
+          sender_type: user.value ? 'user' : 'visitor',
+          sender_name: user.value?.display_name || '访客',
+          sender_email: user.value?.email || '',
+          agent_id: selectedAgent.value?.id || '',
+          message_type: messageData.message_type || 'text',
+          metadata: messageData.metadata || null
+        })
+      },
+      'Failed to send customer-service message'
+    )
     return response
   } catch (error) {
     console.error('发送消息到API失败:', error)
@@ -1547,7 +1559,7 @@ const fetchAgents = async () => {
     let agentsData: any[] = []
     
     try {
-      const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agents')
+      const response = await $fetch<any>(`${publicApiBase.value}/customer-service/agents`)
       if (response.success && response.data) {
         agentsData = response.data
       }
