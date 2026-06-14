@@ -17,6 +17,7 @@ import (
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/domain/shipping"
 	"tanzanite/internal/domain/showcase"
+	"tanzanite/internal/domain/spoke"
 	"tanzanite/internal/domain/subscription"
 	"tanzanite/internal/domain/suggestionfeedback"
 	"tanzanite/internal/domain/ticket"
@@ -74,5 +75,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&wishlist.Item{},
 		&feedback.Feedback{},
 		&suggestionfeedback.SuggestionFeedback{},
+		&spoke.History{},
 	)
 }

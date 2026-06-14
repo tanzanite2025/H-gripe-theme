@@ -19,6 +19,7 @@ import (
 	"tanzanite/internal/api/v1/settings"
 	"tanzanite/internal/api/v1/shipping"
 	"tanzanite/internal/api/v1/showcase"
+	"tanzanite/internal/api/v1/spoke"
 	"tanzanite/internal/api/v1/subscription"
 	"tanzanite/internal/api/v1/suggestionfeedback"
 	"tanzanite/internal/api/v1/ticket"
@@ -56,6 +57,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	wishlistRepo := repository.NewWishlistRepository(db)
 	feedbackRepo := repository.NewFeedbackRepository(db)
 	suggestionFeedbackRepo := repository.NewSuggestionFeedbackRepository(db)
+	spokeRepo := repository.NewSpokeRepository(db)
 
 	// 初始化services
 	authService := service.NewAuthService(userRepo, cfg.JWT)
@@ -102,6 +104,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	wishlistHandler := wishlist.NewHandler(wishlistService)
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService)
+	spokeHandler := spoke.NewHandler(spokeRepo)
 	registerWordPressCompatRoutes(r, postService)
 
 	// API v1 路由组
@@ -178,6 +181,12 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		{
 			suggestionFeedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), suggestionFeedbackHandler.Eligibility)
 			suggestionFeedbackGroup.POST("", middleware.AuthMiddleware(authService), suggestionFeedbackHandler.Create)
+		}
+
+		spokeGroup := v1.Group("/spoke")
+		{
+			spokeGroup.GET("/export", spokeHandler.GetExport)
+			spokeGroup.GET("/history", spokeHandler.ListHistory)
 		}
 
 		// 订单路由（需要认证）

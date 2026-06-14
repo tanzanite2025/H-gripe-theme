@@ -30,7 +30,7 @@
 | `/wp-json/tanzanite/v1/wishlist` | `app/composables/useWishlist.ts` | M2 已切到 Go `/api/v1/wishlist` | M2 wishlist |
 | `/wp-json/tanzanite/v1/warranty/*` | `app/components/warranty/SubmitClaimTab.vue`, `app/composables/useWarrantyCheck.ts` | M2 已切到 Go `/api/v1/registrations/warranty/*`；底层 registrations/warranty-claims 可继续复用 | M2 warranty/registration |
 | `/wp-json/tanzanite/v1/suggestion-feedback`、`/feedback` | `app/composables/useSuggestionFeedback.ts`, `app/composables/useFeedback.ts` | M2 已切到 Go `/api/v1/suggestion-feedback`、`/api/v1/feedback`；后台审核接口另迁 | M2 feedback |
-| `/wp-json/tanzanite/v1/spoke-history`、`/spoke-db-export` | `app/composables/useSpokeHistory.ts`, `scripts/sync-spoke-data.mjs` | Go 缺口 | M2 spoke |
+| `/wp-json/tanzanite/v1/spoke-history`、`/spoke-db-export` | `app/composables/useSpokeHistory.ts`, `scripts/sync-spoke-data.mjs` | M2 已切到 Go `/api/v1/spoke/history`、`/api/v1/spoke/export` | M2 spoke |
 | `/wp-json/tanzanite/v1/shipping-templates`、`/tax-rates`、`/packaging-rules` | `app/composables/useCartCalculation.ts`, `app/composables/useShippingValidation.ts`, `app/composables/usePackagingCalculation.ts` | Shipping/tax Go 已有但路径不同； packaging 缺口 | M3 cart calculation |
 | `/wp-json/tanzanite/v1/coupons/validate`、`/loyalty/points` | `app/composables/useCartCalculation.ts` | Go 已有 marketing routes，路径和 auth 需切换 | M3 coupon/loyalty |
 | `/wp-json/tanzanite/v1/customer-service/**`、`/auto-reply/**`、`/agent/**` | `app/components/WhatsAppChatModal.vue`, `app/composables/useChat.ts` | Go ticket 模块不能等同实时客服；customer-service/auto-reply/agent 是 Go 缺口 | M2/M3 customer service |
@@ -147,8 +147,8 @@ M2 review 固定的 Go 契约：
 | `/wp-json/tanzanite/v1/warranty/:code` | `tanzanite-product-registry/includes/rest-api/class-rest-warranty-controller.php` | `GET /api/v1/registrations/warranty/:code` | Go 已有 | Nuxt warranty check 已切流 |
 | `/wp-json/tanzanite/v1/warranty/verify-order` | Nuxt warranty form | `POST /api/v1/registrations/warranty/verify-order` | Go 已有 | 通过 Go orders 邮箱校验 |
 | `/wp-json/tanzanite/v1/warranty/claim` | `class-rest-warranty-claims-controller.php` | `POST /api/v1/registrations/warranty/claim` | Go 已有 | 前台 multipart claim 已切流；后台 claims 审核沿用 registrations 模块 |
-| `/wp-json/tanzanite/v1/spoke-db-export` | `class-rest-spoke-export-controller.php` | 待定：static generated data or `/api/v1/spoke/export` | Go 缺口 | Spoke data PR |
-| `/wp-json/tanzanite/v1/spoke-history` | Nuxt spoke history | 待定：`/api/v1/spoke/history` | Go 缺口 | Spoke history PR |
+| `/wp-json/tanzanite/v1/spoke-db-export` | `class-rest-spoke-export-controller.php` | `/api/v1/spoke/export` | Go 已有 | sync-data 已切 Go；当前导出静态轮圈/花鼓数据，后续后台数据源另迁 |
+| `/wp-json/tanzanite/v1/spoke-history` | Nuxt spoke history | `/api/v1/spoke/history` | Go 已有 | Nuxt history composable 已切流 |
 
 ### 10. Legacy admin/ajax/admin-post
 
