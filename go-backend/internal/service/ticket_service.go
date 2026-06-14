@@ -3,16 +3,21 @@ package service
 import (
 	"errors"
 	"tanzanite/internal/domain/ticket"
+	"tanzanite/internal/domain/user"
 	"tanzanite/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 type TicketService struct {
 	ticketRepo *repository.TicketRepository
+	userRepo   *repository.UserRepository
 }
 
-func NewTicketService(ticketRepo *repository.TicketRepository) *TicketService {
+func NewTicketService(ticketRepo *repository.TicketRepository, userRepo *repository.UserRepository) *TicketService {
 	return &TicketService{
 		ticketRepo: ticketRepo,
+		userRepo:   userRepo,
 	}
 }
 
@@ -57,6 +62,108 @@ func (s *TicketService) GetAllTickets(page, pageSize int, status, priority strin
 
 func (s *TicketService) GetCustomerServiceConversations(page, pageSize int) ([]ticket.Ticket, int64, error) {
 	return s.ticketRepo.FindCustomerServiceConversations(page, pageSize)
+}
+
+func (s *TicketService) HasPublicCustomerServiceConversation(conversationID string) (bool, uint, error) {
+	t, err := s.ticketRepo.FindCustomerServiceConversationByTag(customerServiceConversationTag(conversationID))
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, 0, nil
+	}
+	if err != nil {
+		return false, 0, err
+	}
+	return true, t.AssignedTo, nil
+}
+
+func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message string, userID, agentID uint) (*ticket.Ticket, *ticket.TicketMessage, error) {
+	persistedUserID := userID
+	if persistedUserID == 0 {
+		if agentID > 0 {
+			persistedUserID = agentID
+		} else {
+			agents, err := s.userRepo.FindCustomerServiceAgents(1)
+			if err != nil {
+				return nil, nil, err
+			}
+			if len(agents) == 0 {
+				return nil, nil, errors.New("no customer service agents configured")
+			}
+			persistedUserID = agents[0].ID
+		}
+	}
+
+	tag := customerServiceConversationTag(conversationID)
+	t, err := s.ticketRepo.FindCustomerServiceConversationByTag(tag)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		t = &ticket.Ticket{
+			UserID:     persistedUserID,
+			Subject:    "Customer service chat",
+			Category:   "customer_service",
+			Priority:   "medium",
+			Status:     "open",
+			AssignedTo: agentID,
+			Tags:       tag,
+		}
+		if err := s.CreateTicket(t); err != nil {
+			return nil, nil, err
+		}
+	} else if err != nil {
+		return nil, nil, err
+	} else {
+		t.Status = "open"
+		if agentID > 0 {
+			t.AssignedTo = agentID
+		}
+		if t.UserID == 0 {
+			t.UserID = persistedUserID
+		}
+		if err := s.ticketRepo.UpdateTicket(t); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	msg := &ticket.TicketMessage{
+		TicketID:   t.ID,
+		UserID:     persistedUserID,
+		IsStaff:    false,
+		Content:    message,
+		IsRead:     false,
+		IsInternal: false,
+	}
+	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
+		return nil, nil, err
+	}
+
+	return t, msg, nil
+}
+
+func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, limit, offset int) ([]ticket.TicketMessage, error) {
+	t, err := s.ticketRepo.FindCustomerServiceConversationByTag(customerServiceConversationTag(conversationID))
+	if err != nil {
+		return nil, err
+	}
+	messages, err := s.ticketRepo.FindMessagesByTicketID(t.ID)
+	if err != nil {
+		return nil, err
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+	if offset >= len(messages) {
+		return []ticket.TicketMessage{}, nil
+	}
+	end := offset + limit
+	if end > len(messages) {
+		end = len(messages)
+	}
+	return messages[offset:end], nil
+}
+
+func (s *TicketService) ListCustomerServiceAgents(limit int) ([]user.User, error) {
+	return s.userRepo.FindCustomerServiceAgents(limit)
 }
 
 // GetAssignedTickets 获取分配给客服的工单
@@ -217,6 +324,10 @@ func (s *TicketService) CountUnreadMessages(ticketID uint, isStaff bool) (int64,
 
 func (s *TicketService) MarkMessagesAsRead(ticketID uint, isStaff bool) error {
 	return s.ticketRepo.MarkMessagesAsRead(ticketID, isStaff)
+}
+
+func customerServiceConversationTag(conversationID string) string {
+	return "conversation_id:" + conversationID
 }
 
 // GetDashboard 获取客服仪表板数据

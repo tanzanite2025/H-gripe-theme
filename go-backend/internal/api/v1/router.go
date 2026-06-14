@@ -71,7 +71,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	orderService := service.NewOrderService(orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo)
 	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 	reviewService := service.NewReviewService(reviewRepo)
-	ticketService := service.NewTicketService(ticketRepo)
+	ticketService := service.NewTicketService(ticketRepo, userRepo)
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
 	subscriptionService := service.NewSubscriptionService(subscriptionRepo)
 	sitemapService := service.NewSitemapService(postRepo, cfg.Server.BaseURL)
@@ -267,10 +267,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		}
 
 		customerServiceGroup := v1.Group("/customer-service")
-		customerServiceGroup.Use(middleware.AuthMiddleware(authService))
 		{
+			customerServiceGroup.GET("/agents", ticketHandler.ListPublicCustomerServiceAgents)
+			customerServiceGroup.GET("/has-conversation", ticketHandler.HasPublicCustomerServiceConversation)
+			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), ticketHandler.SendPublicCustomerServiceMessage)
+			customerServiceGroup.GET("/messages/:conversation_id", ticketHandler.GetPublicCustomerServiceMessages)
+
 			agentGroup := customerServiceGroup.Group("/agent")
-			agentGroup.Use(middleware.RequireRole("admin", "agent"))
+			agentGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin", "agent", "support"))
 			{
 				agentGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
 				agentGroup.GET("/conversations/:id/messages", ticketHandler.GetCustomerServiceMessages)
