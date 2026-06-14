@@ -1,7 +1,11 @@
 package user
 
 import (
+	"strconv"
+	"strings"
 	"time"
+
+	"tanzanite/internal/domain/auth"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -59,28 +63,54 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 
 // UserResponse 用户响应结构（不包含敏感信息）
 type UserResponse struct {
-	ID        uint      `json:"id"`
-	Email     string    `json:"email"`
-	Username  string    `json:"username"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Role      string    `json:"role"`
-	Locale    string    `json:"locale"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
+	ID          uint      `json:"id"`
+	Email       string    `json:"email"`
+	Username    string    `json:"username"`
+	FirstName   string    `json:"first_name"`
+	LastName    string    `json:"last_name"`
+	DisplayName string    `json:"display_name"`
+	Role        string    `json:"role"`
+	Roles       []string  `json:"roles"`
+	Locale      string    `json:"locale"`
+	Status      string    `json:"status"`
+	IsAgent     bool      `json:"is_agent"`
+	AgentID     string    `json:"agent_id,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // ToResponse 转换为响应结构
 func (u *User) ToResponse() *UserResponse {
-	return &UserResponse{
-		ID:        u.ID,
-		Email:     u.Email,
-		Username:  u.Username,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Role:      u.Role,
-		Locale:    u.Locale,
-		Status:    u.Status,
-		CreatedAt: u.CreatedAt,
+	role := auth.NormalizeRole(u.Role)
+	isAgent := auth.IsCustomerServiceAgentRole(u.Role)
+	agentID := ""
+	if isAgent {
+		agentID = strconv.FormatUint(uint64(u.ID), 10)
 	}
+
+	return &UserResponse{
+		ID:          u.ID,
+		Email:       u.Email,
+		Username:    u.Username,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		DisplayName: displayName(u.FirstName, u.LastName, u.Username, u.Email),
+		Role:        string(role),
+		Roles:       []string{string(role)},
+		Locale:      u.Locale,
+		Status:      u.Status,
+		IsAgent:     isAgent,
+		AgentID:     agentID,
+		CreatedAt:   u.CreatedAt,
+	}
+}
+
+func displayName(firstName, lastName, username, email string) string {
+	fullName := strings.TrimSpace(strings.TrimSpace(firstName) + " " + strings.TrimSpace(lastName))
+	if fullName != "" {
+		return fullName
+	}
+	if strings.TrimSpace(username) != "" {
+		return strings.TrimSpace(username)
+	}
+	return strings.TrimSpace(email)
 }

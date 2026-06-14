@@ -39,7 +39,7 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 	}
 
 	// 检查用户角色（只允许管理员角色登录）
-	role := auth.Role(user.Role)
+	role := auth.NormalizeRole(user.Role)
 	if !role.IsValid() || role == auth.RoleViewer {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error":   "Access denied",

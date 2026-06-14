@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/pkg/config"
 
@@ -109,7 +110,7 @@ func (s *AuthService) GenerateToken(u *user.User) (string, error) {
 		UserID:   u.ID,
 		Email:    u.Email,
 		Username: u.Username,
-		Role:     u.Role,
+		Role:     string(auth.NormalizeRole(u.Role)),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.jwtCfg.GetJWTExpireDuration())),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
