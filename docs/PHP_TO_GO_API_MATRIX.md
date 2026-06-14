@@ -4,6 +4,8 @@
 
 本文件只做 D1b 盘点和下一步拆分，不实现迁移。
 
+更新：根目录 WordPress 主题壳文件（`index.php`、`header.php`、`footer.php`、`page.php`、`single.php`、`functions.php`）已确认属于早期虚拟机限制下的历史文件并已删除。下表中来自 `removed root functions.php` 的 endpoint 只表示历史参考或 Nuxt 仍可能存在的旧调用目标，不能作为可恢复的 PHP 实现。
+
 目标：
 
 - 找出仍在 PHP/WordPress 暴露或 Nuxt 调用的旧 API。
@@ -22,7 +24,7 @@
 | 旧入口 | 主要调用文件 | 当前判断 | 建议模块 |
 | --- | --- | --- | --- |
 | `runtimeConfig.public.wpApiBase` 默认 `/wp-json` | `nuxt-i18n/nuxt.config.ts` | 全局 WordPress 兼容入口仍存在 | 每个业务模块切完后逐步移除 |
-| `/wp-json/tanzanite/v1/settings`、`/settings/quick-buy` | `app/layouts/default.vue`, `app/composables/useSiteTitle.ts`, `app/composables/useSocialLinks.ts` | Go 已有 `/api/v1/settings/site`、`/api/v1/settings/quick-buy`，但旧 `/settings` 与 Go `/settings/site` 名称不一致 | M1.1 settings/quick-buy |
+| `/wp-json/tanzanite/v1/settings`、`/settings/quick-buy` | `app/layouts/default.vue`, `app/composables/useSiteTitle.ts`, `app/composables/useSocialLinks.ts` | 旧根目录 PHP 来源已删除；Go 已有 `/api/v1/settings/site`、`/api/v1/settings/quick-buy`，但旧 `/settings` 与 Go `/settings/site` 名称不一致 | M1.1 settings/quick-buy |
 | `/wp-json/tanzanite/v1/products`、`/product-categories`、`/attributes/filterable` | `app/pages/shop.vue`, `app/pages/shop/[slug].vue`, `app/components/CategoryProductsStrip.vue`, `app/composables/useShopCategories.ts`, `app/composables/useProductAttributes.ts` | 产品列表 Go 已有；分类/属性存在缺口或契约需核对 | M3 product catalog |
 | `/wp-json/tanzanite/v1/seo/product/*` | `app/pages/shop/[slug].vue` | Go 只有通用 settings SEO；产品 SEO/schema 缺口 | M3 product SEO |
 | `/wp-json/tanzanite/v1/wishlist` | `app/composables/useWishlist.ts` | Go 缺口 | M2 wishlist |
@@ -41,17 +43,17 @@
 
 | PHP endpoint | 来源 | Go 目标 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- |
-| `POST /wp-json/custom/v1/login` | `functions.php` | `POST /api/v1/auth/login` | Go 已有 | 前端 `useAuth` 已直连 Go；清理错误文案和旧 alias |
-| `POST /wp-json/custom/v1/logout` | `functions.php` | `POST /api/v1/auth/logout` | Go 已有 | 后续删除 PHP auth route 前确认 cookie/JWT 不混用 |
-| `POST /wp-json/custom/v1/register` | `functions.php` | `POST /api/v1/auth/register` | Go 已有 | 与用户数据迁移一起收尾 |
+| `POST /wp-json/custom/v1/login` | removed root `functions.php` | `POST /api/v1/auth/login` | Go 已有 | 前端 `useAuth` 已直连 Go；清理错误文案和旧 alias |
+| `POST /wp-json/custom/v1/logout` | removed root `functions.php` | `POST /api/v1/auth/logout` | Go 已有 | 后续删除 PHP auth route 前确认 cookie/JWT 不混用 |
+| `POST /wp-json/custom/v1/register` | removed root `functions.php` | `POST /api/v1/auth/register` | Go 已有 | 与用户数据迁移一起收尾 |
 | `POST /wp-json/tanzanite/v1/auth/*`、`/chat/*` auth alias | `wp-plugin/tanzanite-setting/includes/rest-api/class-rest-auth-controller.php` | `/api/v1/auth/*` | Go 已有 | 保持兼容直到所有 Nuxt 调用移除 |
 
 ### 2. Settings / SEO / 站点公共配置
 
 | PHP endpoint | 来源 | Go 目标 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- |
-| `GET /wp-json/tanzanite/v1/settings/site` | `functions.php` | `GET /api/v1/settings/site` | Go 已有 | M1.1 切 Nuxt 到 Go |
-| `GET /wp-json/tanzanite/v1/settings/quick-buy` | `functions.php` | `GET /api/v1/settings/quick-buy` | Go 已有 | M1.1 同步 QuickBuy 配置字段 |
+| `GET /wp-json/tanzanite/v1/settings/site` | removed root `functions.php` | `GET /api/v1/settings/site` | Go 已有 | M1.1 切 Nuxt 到 Go |
+| `GET /wp-json/tanzanite/v1/settings/quick-buy` | removed root `functions.php` | `GET /api/v1/settings/quick-buy` | Go 已有 | M1.1 同步 QuickBuy 配置字段 |
 | `GET/POST /wp-json/tanzanite/v1/seo/settings` | `wp-plugin/tanzanite-setting/includes/class-mytheme-seo.php` | `GET /api/v1/settings/seo`, admin `/api/admin/settings/seo` | Go 部分已有 | 分离 public SEO 与后台 SEO 管理 |
 | `GET/POST /wp-json/tanzanite/v1/seo/homepage` | `class-mytheme-seo.php` | `GET /api/v1/settings/seo` 或新增 content SEO | Go 部分已有 | 与产品 SEO 分开做 |
 | `GET /wp-json/tanzanite/v1/seo/product/*`、`/seo/schema/product/*` | `class-mytheme-seo.php` | 待定：`/api/v1/products/:id/seo` 或 `/api/v1/content/seo/product/:id` | Go 缺口 | 放入 Product SEO 单独 PR |
@@ -64,8 +66,8 @@
 | `GET /wp-json/tanzanite/v1/posts`、`/post`、`/translations` | `wp-plugin/tanzanite-blog-i18n/includes/class-blog-rest.php` | 当前兼容层 `/wp-json/tanzanite/v1/*`，最终 `/api/v1/content/posts` | Go 部分已有 | M1 blog：先固定响应契约，再切 Nuxt |
 | FAQ admin-post actions | `wp-plugin/tanzanite-faq-content/includes/class-faq-editor.php` | `/api/v1/content/faqs`、`/api/admin/content/faqs` | Go 已有 | Nuxt FAQ 当前已尝试 Go；后台迁到 `web/admin` |
 | `tanz-photo/v1/**` | `wp-plugin/tanzanite-photo-gallery/includes/class-tpg-rest.php` | `/api/v1/gallery`、`/api/admin/content/galleries` | Go 已有 | M1 gallery：核对图片字段和批量删除 |
-| `GET /wp-json/mytheme-vue/v1/menu/:location` | `functions.php` | 待定：`/api/v1/settings/public` 或新增 `/api/v1/content/menus/:location` | Go 缺口 | 与站点导航/菜单单独 PR |
-| `GET /wp-json/mytheme-vue/v1/search` | `functions.php` | 待定：跨 content/product search | Go 缺口 | 不并入 blog；另建 search 模块 |
+| `GET /wp-json/mytheme-vue/v1/menu/:location` | removed root `functions.php` | 待定：`/api/v1/settings/public` 或新增 `/api/v1/content/menus/:location` | Go 缺口 | 与站点导航/菜单单独 PR |
+| `GET /wp-json/mytheme-vue/v1/search` | removed root `functions.php` | 待定：跨 content/product search | Go 缺口 | 不并入 blog；另建 search 模块 |
 
 ### 4. Product catalog / 商品后台
 
@@ -81,12 +83,12 @@
 
 | PHP endpoint | 来源 | Go 目标 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- |
-| `GET /wp-json/mytheme-vue/v1/cart-summary` | `functions.php` | `GET /api/v1/cart/summary` | Go 已有 | M3 cart：响应字段核对 |
+| `GET /wp-json/mytheme-vue/v1/cart-summary` | removed root `functions.php` | `GET /api/v1/cart/summary` | Go 已有 | M3 cart：响应字段核对 |
 | Woo Store API via `storeApiBase` | `QuickBuy.vue` | `/api/v1/cart/add`、`/api/v1/orders` | Go 部分已有 | QuickBuy 不能和 settings PR 混做 |
 | `GET/POST/PUT /wp-json/tanzanite/v1/orders` | `class-rest-orders-controller.php` | `/api/v1/orders`; admin `/api/admin/orders` | Go 已有 | M3 orders：订单字段/状态映射 |
 | `GET/PUT/DELETE /wp-json/tanzanite/v1/orders/:id` | `class-rest-orders-controller.php` | `/api/v1/orders/:id`; admin `/api/admin/orders/:id` | Go 已有 | 同 orders 模块 |
 | `POST /wp-json/tanzanite/v1/orders/:id/tracking` | `class-rest-orders-controller.php` | `PATCH /api/admin/orders/:id/tracking` 或 `/api/v1/shipping/orders/:id/tracking` | Go 部分已有 | 与 shipping tracking 一起做 |
-| `GET /wp-json/mytheme-vue/v1/my-orders` | `functions.php` | `GET /api/v1/orders` | Go 已有 | 旧 WooCommerce order shape 需适配 |
+| `GET /wp-json/mytheme-vue/v1/my-orders` | removed root `functions.php` | `GET /api/v1/orders` | Go 已有 | 旧 WooCommerce order shape 需适配 |
 
 ### 6. Marketing / Loyalty / Gift card
 
@@ -121,7 +123,7 @@
 | `/wp-json/tanzanite/v1/customer-service/**` | `tanzanite-customer-service/**` | 不能直接等同 `/api/v1/tickets`; 需新增 customer-service 或重设计为 tickets | Go 缺口 | M2/M3 customer service |
 | `/wp-json/tanzanite/v1/auto-reply/**` | `class-auto-reply-api.php` | 待定：customer-service auto-reply | Go 缺口 | 与 customer-service 同模块 |
 | `/wp-json/tanzanite/v1/agent/**` | `class-agent-api.php` | 待定：`/api/admin/customer-service/agent` | Go 缺口 | `web/admin` 客服工作台模块 |
-| `functions.php` legacy `/chat/**` | `functions.php` | 待定：customer-service 或 tickets | Go 缺口 | 最后删除 alias |
+| removed root `functions.php` legacy `/chat/**` | removed root `functions.php` | 待定：customer-service 或 tickets | Go 缺口 | 不恢复旧 alias |
 
 ### 9. Product registration / Warranty / Spoke
 
