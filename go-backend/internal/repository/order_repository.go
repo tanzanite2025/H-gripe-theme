@@ -41,13 +41,22 @@ func (r *OrderRepository) FindByOrderNumber(orderNumber string) (*order.Order, e
 	return &o, nil
 }
 
+func (r *OrderRepository) FindByOrderNumberForVerification(orderNumber string) (*order.Order, error) {
+	var o order.Order
+	err := r.db.Where("order_number = ?", orderNumber).First(&o).Error
+	if err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
 // FindByUserID 查找用户的订单列表
 func (r *OrderRepository) FindByUserID(userID uint, page, pageSize int) ([]order.Order, int64, error) {
 	var orders []order.Order
 	var total int64
 
 	query := r.db.Model(&order.Order{}).Where("user_id = ?", userID)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -55,7 +64,7 @@ func (r *OrderRepository) FindByUserID(userID uint, page, pageSize int) ([]order
 	offset := (page - 1) * pageSize
 	err := query.Preload("Items").Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&orders).Error
-	
+
 	return orders, total, err
 }
 
@@ -65,7 +74,7 @@ func (r *OrderRepository) FindAll(page, pageSize int, status string) ([]order.Or
 	var total int64
 
 	query := r.db.Model(&order.Order{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -77,7 +86,7 @@ func (r *OrderRepository) FindAll(page, pageSize int, status string) ([]order.Or
 	offset := (page - 1) * pageSize
 	err := query.Preload("Items").Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&orders).Error
-	
+
 	return orders, total, err
 }
 
@@ -115,7 +124,7 @@ func (r *OrderRepository) Delete(id uint) error {
 // GetOrderStats 获取订单统计
 func (r *OrderRepository) GetOrderStats(userID uint) (map[string]int64, error) {
 	stats := make(map[string]int64)
-	
+
 	query := r.db.Model(&order.Order{})
 	if userID > 0 {
 		query = query.Where("user_id = ?", userID)
