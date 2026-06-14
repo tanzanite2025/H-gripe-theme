@@ -607,7 +607,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { user, isAgent, agentId } = useAuth()
+const { user, isAgent, agentId, request: authRequest } = useAuth()
 const { openCartFromChat } = useCart()
 const {
   isLogged: isMemberLogged,
@@ -1763,18 +1763,21 @@ async function handleTransfer() {
   isTransferring.value = true
   
   try {
-    const response = await fetch(`/wp-json/tanzanite/v1/customer-service/agent/conversations/${selectedConversation.value.id}/transfer`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const data = await authRequest<any>(
+      `/customer-service/agent/conversations/${selectedConversation.value.id}/transfer`,
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          to_agent_id: String(transferToAgent.value),
+          note: transferNote.value,
+        }),
       },
-      body: JSON.stringify({
-        to_agent_id: transferToAgent.value,
-        note: transferNote.value,
-      }),
-    })
-    
-    const data = await response.json()
+      'Transfer failed'
+    )
     
     if (data.success) {
       alert(`转接成功！会话已转接给 ${data.data.to_agent}`)
@@ -1864,12 +1867,11 @@ const fetchAgentConversations = async () => {
   
   isLoadingConversations.value = true
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/conversations', {
-      credentials: 'include',
-      headers: {
-        'X-WP-Nonce': config.public?.wpNonce as string || ''
-      }
-    })
+    const response = await authRequest<any>(
+      '/customer-service/agent/conversations',
+      { headers: { accept: 'application/json' } },
+      'Failed to load agent conversations'
+    )
     
     if (response?.ok && response?.data) {
       agentConversations.value = response.data.items || []
@@ -1891,12 +1893,11 @@ const selectConversation = (conversation: any) => {
 // 加载会话消息
 const loadConversationMessages = async (conversationId: string) => {
   try {
-    const response = await $fetch<any>(`/wp-json/tanzanite/v1/customer-service/agent/conversations/${conversationId}/messages`, {
-      credentials: 'include',
-      headers: {
-        'X-WP-Nonce': config.public?.wpNonce as string || ''
-      }
-    })
+    const response = await authRequest<any>(
+      `/customer-service/agent/conversations/${conversationId}/messages`,
+      { headers: { accept: 'application/json' } },
+      'Failed to load conversation messages'
+    )
     
     if (response?.ok && response?.data) {
       messages.value = response.data.items || []
@@ -1921,18 +1922,21 @@ const sendMessage = async () => {
   newMessage.value = ''
   
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/messages', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': config.public?.wpNonce as string || ''
+    const response = await authRequest<any>(
+      '/customer-service/agent/messages',
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          conversation_id: selectedConversation.value.id,
+          message: messageText
+        })
       },
-      body: {
-        conversation_id: selectedConversation.value.id,
-        message: messageText
-      }
-    })
+      'Failed to send agent message'
+    )
     
     if (response?.ok) {
       // 添加消息到列表
@@ -1958,12 +1962,11 @@ const fetchAgentStatus = async () => {
   if (!agentMode.value) return
   
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/status', {
-      credentials: 'include',
-      headers: {
-        'X-WP-Nonce': config.public?.wpNonce as string || ''
-      }
-    })
+    const response = await authRequest<any>(
+      '/customer-service/agent/status',
+      { headers: { accept: 'application/json' } },
+      'Failed to load agent status'
+    )
     
     if (response?.ok && response?.data?.status) {
       currentAgentStatus.value = response.data.status
@@ -1981,15 +1984,18 @@ const changeAgentStatus = async (status: string) => {
   currentAgentStatus.value = status // 乐观更新
   
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/customer-service/agent/status', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': config.public?.wpNonce as string || ''
+    const response = await authRequest<any>(
+      '/customer-service/agent/status',
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
       },
-      body: { status }
-    })
+      'Failed to update agent status'
+    )
     
     if (!response?.ok) {
       // 回滚
