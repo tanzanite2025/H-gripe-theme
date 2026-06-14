@@ -19,19 +19,19 @@ import (
 // RegistrationExportData WordPress 导出的注册数据结构
 type RegistrationExportData struct {
 	Registrations []struct {
-		ID              int        `json:"id"`
-		UserID          int        `json:"user_id"`
-		ProductID       int        `json:"product_id"`
-		SerialNumber    string     `json:"serial_number"`
-		PurchaseDate    time.Time  `json:"purchase_date"`
-		PurchaseProof   string     `json:"purchase_proof"`
-		Retailer        string     `json:"retailer"`
-		WarrantyPeriod  int        `json:"warranty_period"`
-		WarrantyExpires time.Time  `json:"warranty_expires"`
-		Status          string     `json:"status"`
-		Notes           string     `json:"notes"`
-		CreatedAt       time.Time  `json:"created_at"`
-		UpdatedAt       time.Time  `json:"updated_at"`
+		ID              int       `json:"id"`
+		UserID          int       `json:"user_id"`
+		ProductID       int       `json:"product_id"`
+		SerialNumber    string    `json:"serial_number"`
+		PurchaseDate    time.Time `json:"purchase_date"`
+		PurchaseProof   string    `json:"purchase_proof"`
+		Retailer        string    `json:"retailer"`
+		WarrantyPeriod  int       `json:"warranty_period"`
+		WarrantyExpires time.Time `json:"warranty_expires"`
+		Status          string    `json:"status"`
+		Notes           string    `json:"notes"`
+		CreatedAt       time.Time `json:"created_at"`
+		UpdatedAt       time.Time `json:"updated_at"`
 	} `json:"registrations"`
 	WarrantyClaims []struct {
 		ID             int        `json:"id"`
@@ -90,7 +90,8 @@ func main() {
 	fmt.Printf("导出时间: %s\n\n", data.Stats.ExportDate)
 
 	if *dryRun {
-		fmt.Println("=== 试运行模式 - 预览数据 ===\n")
+		fmt.Println("=== 试运行模式 - 预览数据 ===")
+		fmt.Println()
 		previewData(data)
 		fmt.Println("\n试运行完成，未写入数据库")
 		return

@@ -17,6 +17,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-tanzanite_password}
       - DB_NAME=tanzanite
       - DB_SSLMODE=disable
+      - DB_AUTO_MIGRATE=true
       # Redis 配置
       - REDIS_HOST=redis
       - REDIS_PORT=6379
