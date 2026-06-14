@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/repository"
@@ -81,14 +83,17 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message 
 		if agentID > 0 {
 			persistedUserID = agentID
 		} else {
-			agents, err := s.userRepo.FindCustomerServiceAgents(1)
+			agents, err := s.ListCustomerServiceAgentProfiles(1)
 			if err != nil {
 				return nil, nil, err
 			}
 			if len(agents) == 0 {
 				return nil, nil, errors.New("no customer service agents configured")
 			}
-			persistedUserID = agents[0].ID
+			if agents[0].UserID == nil {
+				return nil, nil, errors.New("customer service agent is not linked to a Go user")
+			}
+			persistedUserID = *agents[0].UserID
 		}
 	}
 
@@ -164,6 +169,48 @@ func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, 
 
 func (s *TicketService) ListCustomerServiceAgents(limit int) ([]user.User, error) {
 	return s.userRepo.FindCustomerServiceAgents(limit)
+}
+
+func (s *TicketService) ListCustomerServiceAgentProfiles(limit int) ([]user.AgentProfile, error) {
+	profiles, err := s.userRepo.FindCustomerServiceAgentProfiles(limit)
+	if err != nil {
+		return nil, err
+	}
+	if len(profiles) > 0 {
+		return profiles, nil
+	}
+
+	agents, err := s.userRepo.FindCustomerServiceAgents(limit)
+	if err != nil {
+		return nil, err
+	}
+	fallback := make([]user.AgentProfile, 0, len(agents))
+	for _, agent := range agents {
+		agentID := agent.ID
+		fallback = append(fallback, user.AgentProfile{
+			AgentID:      strconv.FormatUint(uint64(agent.ID), 10),
+			UserID:       &agentID,
+			User:         &agent,
+			Name:         displayName(agent.FirstName, agent.LastName, agent.Username, agent.Email),
+			Email:        agent.Email,
+			Status:       agent.Status,
+			OnlineStatus: "online",
+			CreatedAt:    agent.CreatedAt,
+			UpdatedAt:    agent.UpdatedAt,
+		})
+	}
+	return fallback, nil
+}
+
+func displayName(firstName, lastName, username, email string) string {
+	fullName := strings.TrimSpace(strings.TrimSpace(firstName) + " " + strings.TrimSpace(lastName))
+	if fullName != "" {
+		return fullName
+	}
+	if strings.TrimSpace(username) != "" {
+		return strings.TrimSpace(username)
+	}
+	return strings.TrimSpace(email)
 }
 
 // GetAssignedTickets 获取分配给客服的工单
