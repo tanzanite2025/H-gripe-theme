@@ -126,7 +126,7 @@ php scripts/wordpress-export/export-subscriptions.php
 ### 导入到 Go 后端
 
 ```bash
-go run cmd/import/subscriptions.go data/subscriptions.json
+go run ./cmd/import/subscriptions data/subscriptions.json
 ```
 
 ---

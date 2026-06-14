@@ -85,7 +85,8 @@ func main() {
 	fmt.Printf("导出时间: %s\n\n", data.Stats.ExportDate)
 
 	if *dryRun {
-		fmt.Println("=== 试运行模式 - 预览数据 ===\n")
+		fmt.Println("=== 试运行模式 - 预览数据 ===")
+		fmt.Println()
 		previewData(data)
 		fmt.Println("\n试运行完成，未写入数据库")
 		return

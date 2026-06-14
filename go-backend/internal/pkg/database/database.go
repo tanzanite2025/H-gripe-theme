@@ -55,3 +55,10 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	log.Println("Database connected successfully")
 	return db, nil
 }
+
+func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("database config is nil")
+	}
+	return Init(*cfg)
+}
