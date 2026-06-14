@@ -6,6 +6,7 @@
 
 - `README.md`：仓库级架构和 PHP 冻结规则。
 - `docs/PHP_TO_GO_MIGRATION_WORKFLOW.md`：PHP → Go 迁移执行顺序、单模块 PR 规则、下一步路线。
+- `docs/PHP_TO_GO_API_MATRIX.md`：PHP/WP API → Go API 迁移矩阵与下一批单模块 PR 建议。
 - `go-backend/README.md`：Go API 服务说明。
 - `go-backend/QUICK_START.md`：Go API 本地/Docker 启动说明。
 - `go-backend/DEPLOYMENT.md`：部署参考；实际发布前仍需按目标环境复核。
