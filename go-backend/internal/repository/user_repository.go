@@ -127,6 +127,35 @@ func (r *UserRepository) FindCustomerServiceAgents(limit int) ([]user.User, erro
 	return users, err
 }
 
+func (r *UserRepository) FindCustomerServiceAgentProfiles(limit int) ([]user.AgentProfile, error) {
+	var profiles []user.AgentProfile
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+
+	err := r.db.Preload("User").
+		Joins("JOIN users ON users.id = customer_service_agent_profiles.user_id").
+		Where("customer_service_agent_profiles.status = ?", "active").
+		Where("users.status = ?", "active").
+		Order("customer_service_agent_profiles.created_at ASC, customer_service_agent_profiles.id ASC").
+		Limit(limit).
+		Find(&profiles).Error
+	return profiles, err
+}
+
+func (r *UserRepository) FindAllCustomerServiceAgentProfiles(limit int) ([]user.AgentProfile, error) {
+	var profiles []user.AgentProfile
+	if limit < 1 || limit > 500 {
+		limit = 100
+	}
+
+	err := r.db.Preload("User").
+		Order("customer_service_agent_profiles.created_at ASC, customer_service_agent_profiles.id ASC").
+		Limit(limit).
+		Find(&profiles).Error
+	return profiles, err
+}
+
 // UpdateStatus 更新用户状态
 func (r *UserRepository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&user.User{}).Where("id = ?", id).Update("status", status).Error

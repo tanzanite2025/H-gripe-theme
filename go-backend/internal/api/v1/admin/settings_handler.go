@@ -2,10 +2,10 @@ package admin
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/setting"
+	"tanzanite/internal/domain/user"
 	"tanzanite/internal/repository"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +27,7 @@ func NewSettingsHandler(settingRepo *repository.SettingRepository, userRepo *rep
 
 // GetPublicChatAgentCompatibility 获取 public chat 客服映射兼容检查
 func (h *SettingsHandler) GetPublicChatAgentCompatibility(c *gin.Context) {
-	agents, err := h.userRepo.FindCustomerServiceAgents(100)
+	agents, err := h.userRepo.FindAllCustomerServiceAgentProfiles(100)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取客服映射失败"})
 		return
@@ -40,35 +40,55 @@ func (h *SettingsHandler) GetPublicChatAgentCompatibility(c *gin.Context) {
 	}
 
 	items := make([]gin.H, 0, len(agents))
+	compatibleAgents := 0
 	for _, agent := range agents {
-		normalizedRole := auth.NormalizeRole(agent.Role)
+		exposed := agent.UserID != nil && agent.Status == "active" && agent.User != nil && agent.User.Status == "active" && auth.IsCustomerServiceAgentRole(agent.User.Role)
+		if exposed {
+			compatibleAgents++
+		}
+		userID := uint(0)
+		rawRole := ""
+		normalizedRole := auth.RoleUser
+		userStatus := ""
+		if agent.UserID != nil {
+			userID = *agent.UserID
+		}
+		if agent.User != nil {
+			rawRole = agent.User.Role
+			normalizedRole = auth.NormalizeRole(agent.User.Role)
+			userStatus = agent.User.Status
+		}
 		items = append(items, gin.H{
-			"id":              agent.ID,
-			"username":        agent.Username,
-			"email":           agent.Email,
-			"display_name":    displayName(agent.FirstName, agent.LastName, agent.Username, agent.Email),
-			"raw_role":        agent.Role,
+			"id":              userID,
+			"agent_id":        agent.AgentID,
+			"username":        usernameFromProfile(agent),
+			"email":           agent.PublicEmail(),
+			"display_name":    agent.DisplayName(),
+			"raw_role":        rawRole,
 			"normalized_role": normalizedRole,
-			"status":          agent.Status,
-			"public_agent_id": strconv.FormatUint(uint64(agent.ID), 10),
-			"wp_user_id":      agent.ID,
-			"exposed":         agent.Status == "active" && auth.IsCustomerServiceAgentRole(agent.Role),
+			"user_status":     userStatus,
+			"profile_status":  agent.Status,
+			"online_status":   agent.OnlineStatus,
+			"avatar":          agent.Avatar,
+			"whatsapp":        agent.WhatsApp,
+			"public_agent_id": agent.AgentID,
+			"wp_user_id":      userID,
+			"exposed":         exposed,
 		})
 	}
 
-	warnings := []string{
-		"Go users 表仍不保存 PHP wp_tz_cs_agents.whatsapp/avatar/online_status；精确线上 parity 仍需执行 PHP 源表 preflight。",
-	}
+	warnings := []string{}
 	if len(agents) == 0 {
-		warnings = append(warnings, "当前 Go users 表未找到 active customer-service agent 候选，public chat 可能无法自动分配客服。")
+		warnings = append(warnings, "当前 Go agent profile 表未找到 customer-service agent，public chat 可能无法自动分配客服；请先运行 agent profile 导入。")
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"summary": gin.H{
-			"compatible_agents":       len(items),
+			"compatible_agents":       compatibleAgents,
 			"go_user_role_buckets":    stats["by_role"],
-			"php_preflight_required":  true,
-			"missing_profile_columns": []string{"whatsapp", "avatar", "online_status"},
+			"source_table":            "customer_service_agent_profiles",
+			"php_preflight_required":  false,
+			"missing_profile_columns": []string{},
 		},
 		"agents": items,
 		"role_mappings": []gin.H{
@@ -81,20 +101,23 @@ func (h *SettingsHandler) GetPublicChatAgentCompatibility(c *gin.Context) {
 		},
 		"preflight_sql": []gin.H{
 			{
-				"title": "PHP active agents source of truth",
-				"sql":   "SELECT agent_id, wp_user_id, name, email, status, online_status FROM wp_tz_cs_agents WHERE status = 'active' ORDER BY created_at ASC;",
+				"title": "Go agent profiles used by public chat",
+				"sql":   "SELECT p.agent_id, p.user_id AS wp_user_id, p.name, p.email, p.avatar, p.whatsapp, p.status, p.online_status, u.role, u.status AS user_status FROM customer_service_agent_profiles p JOIN users u ON u.id = p.user_id WHERE p.status = 'active' AND u.status = 'active' ORDER BY p.created_at ASC, p.id ASC;",
 			},
 			{
-				"title": "Go users projection candidates",
-				"sql":   "SELECT id, username, email, role, status FROM users WHERE status = 'active' AND (role IN ('admin', 'manager', 'support', 'agent', 'administrator', 'shop_manager', 'customer_service', 'customer_support') OR LOWER(role) LIKE '%administrator%' OR LOWER(role) LIKE '%shop_manager%' OR LOWER(role) LIKE '%customer_service%' OR LOWER(role) LIKE '%customer_support%' OR LOWER(role) LIKE '%support%' OR LOWER(role) LIKE '%agent%') ORDER BY role ASC, created_at ASC;",
-			},
-			{
-				"title": "Linked PHP agents missing Go user rows",
-				"sql":   "SELECT a.agent_id, a.wp_user_id, a.name, a.email, a.status, a.online_status FROM wp_tz_cs_agents a LEFT JOIN users u ON u.id = a.wp_user_id WHERE a.status = 'active' AND (a.wp_user_id IS NULL OR u.id IS NULL);",
+				"title": "Go agent profiles missing linked users",
+				"sql":   "SELECT p.agent_id, p.user_id, p.name, p.email, p.status, p.online_status FROM customer_service_agent_profiles p LEFT JOIN users u ON u.id = p.user_id WHERE p.status = 'active' AND (p.user_id IS NULL OR u.id IS NULL);",
 			},
 		},
 		"warnings": warnings,
 	})
+}
+
+func usernameFromProfile(agent user.AgentProfile) string {
+	if agent.User == nil {
+		return ""
+	}
+	return agent.User.Username
 }
 
 // GetAllSettings 获取所有设置

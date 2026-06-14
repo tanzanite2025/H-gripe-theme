@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"tanzanite/internal/domain/auth"
@@ -30,6 +32,24 @@ type WPUser struct {
 	Role       string `json:"role"`
 	Locale     string `json:"locale"`
 	Registered string `json:"registered"`
+}
+
+type WPAgentProfile struct {
+	ID              int     `json:"id"`
+	AgentID         string  `json:"agent_id"`
+	WPUserID        *uint   `json:"wp_user_id"`
+	Name            string  `json:"name"`
+	Email           string  `json:"email"`
+	Avatar          string  `json:"avatar"`
+	WhatsApp        string  `json:"whatsapp"`
+	Status          string  `json:"status"`
+	OnlineStatus    string  `json:"online_status"`
+	LastActiveAt    *string `json:"last_active_at"`
+	LastLogin       *string `json:"last_login"`
+	CreatedAt       *string `json:"created_at"`
+	UpdatedAt       *string `json:"updated_at"`
+	PreSalesEmail   string  `json:"pre_sales_email"`
+	AfterSalesEmail string  `json:"after_sales_email"`
 }
 
 type WPPost struct {
@@ -122,6 +142,10 @@ func main() {
 		log.Printf("⚠️  Failed to import users: %v", err)
 	}
 
+	if err := importAgentProfiles(db, exportDir); err != nil {
+		log.Printf("⚠️  Failed to import customer service agent profiles: %v", err)
+	}
+
 	if err := importPosts(db, exportDir); err != nil {
 		log.Printf("⚠️  Failed to import posts: %v", err)
 	}
@@ -174,6 +198,218 @@ func importUsers(db *gorm.DB, exportDir string) error {
 
 	fmt.Printf("✅ Imported %d users\n", len(wpUsers))
 	return nil
+}
+
+func importAgentProfiles(db *gorm.DB, exportDir string) error {
+	fmt.Println("📥 Importing customer service agent profiles...")
+
+	if err := db.AutoMigrate(&user.AgentProfile{}); err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadFile(exportDir + "/customer-service-agents.json")
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("⚠️  customer-service-agents.json not found, skipping")
+			return nil
+		}
+		return err
+	}
+
+	var wpAgents []WPAgentProfile
+	if err := json.Unmarshal(data, &wpAgents); err != nil {
+		return err
+	}
+
+	imported := 0
+	for _, wa := range wpAgents {
+		agentID := strings.TrimSpace(wa.AgentID)
+		if agentID == "" {
+			continue
+		}
+
+		userID, err := ensureAgentUser(db, wa)
+		if err != nil {
+			log.Printf("Failed to ensure user for agent %s: %v", agentID, err)
+			continue
+		}
+
+		createdAt := parseOptionalWPTime(wa.CreatedAt)
+		updatedAt := parseOptionalWPTime(wa.UpdatedAt)
+		profile := user.AgentProfile{
+			AgentID:      agentID,
+			UserID:       &userID,
+			Name:         strings.TrimSpace(wa.Name),
+			Email:        strings.TrimSpace(wa.Email),
+			Avatar:       strings.TrimSpace(wa.Avatar),
+			WhatsApp:     strings.TrimSpace(wa.WhatsApp),
+			Status:       defaultString(wa.Status, "active"),
+			OnlineStatus: defaultString(wa.OnlineStatus, "offline"),
+			LastActiveAt: parseOptionalWPTime(wa.LastActiveAt),
+			LastLogin:    parseOptionalWPTime(wa.LastLogin),
+		}
+		if createdAt != nil {
+			profile.CreatedAt = *createdAt
+		}
+		if updatedAt != nil {
+			profile.UpdatedAt = *updatedAt
+		}
+
+		var existing user.AgentProfile
+		err = db.Where("agent_id = ?", agentID).First(&existing).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := db.Create(&profile).Error; err != nil {
+				log.Printf("Failed to import agent profile %s: %v", agentID, err)
+				continue
+			}
+		} else if err != nil {
+			log.Printf("Failed to query agent profile %s: %v", agentID, err)
+			continue
+		} else {
+			profile.ID = existing.ID
+			if profile.CreatedAt.IsZero() {
+				profile.CreatedAt = existing.CreatedAt
+			}
+			if err := db.Save(&profile).Error; err != nil {
+				log.Printf("Failed to update agent profile %s: %v", agentID, err)
+				continue
+			}
+		}
+		imported++
+	}
+
+	fmt.Printf("✅ Imported %d customer service agent profiles\n", imported)
+	return nil
+}
+
+func ensureAgentUser(db *gorm.DB, agent WPAgentProfile) (uint, error) {
+	if agent.WPUserID != nil && *agent.WPUserID > 0 {
+		var existing user.User
+		err := db.First(&existing, *agent.WPUserID).Error
+		if err == nil {
+			return promoteAgentUser(db, &existing)
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, err
+		}
+
+		created := newAgentUser(agent)
+		created.ID = *agent.WPUserID
+		if err := db.Create(created).Error; err != nil {
+			return 0, err
+		}
+		return created.ID, nil
+	}
+
+	if strings.TrimSpace(agent.Email) != "" {
+		var existing user.User
+		err := db.Where("email = ?", strings.TrimSpace(agent.Email)).First(&existing).Error
+		if err == nil {
+			return promoteAgentUser(db, &existing)
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, err
+		}
+	}
+
+	created := newAgentUser(agent)
+	if err := db.Create(created).Error; err != nil {
+		return 0, err
+	}
+	return created.ID, nil
+}
+
+func promoteAgentUser(db *gorm.DB, existing *user.User) (uint, error) {
+	if !auth.IsCustomerServiceAgentRole(existing.Role) {
+		existing.Role = string(auth.RoleSupport)
+	}
+	if strings.TrimSpace(existing.Status) == "" {
+		existing.Status = "active"
+	}
+	if err := db.Save(existing).Error; err != nil {
+		return 0, err
+	}
+	return existing.ID, nil
+}
+
+func newAgentUser(agent WPAgentProfile) *user.User {
+	nameParts := strings.Fields(strings.TrimSpace(agent.Name))
+	firstName := ""
+	lastName := ""
+	if len(nameParts) > 0 {
+		firstName = nameParts[0]
+	}
+	if len(nameParts) > 1 {
+		lastName = strings.Join(nameParts[1:], " ")
+	}
+
+	return &user.User{
+		Email:     agentEmail(agent),
+		Username:  agentUsername(agent),
+		FirstName: firstName,
+		LastName:  lastName,
+		Role:      string(auth.RoleSupport),
+		Locale:    "en",
+		Status:    "active",
+		Password:  "$2a$10$placeholder",
+	}
+}
+
+func agentEmail(agent WPAgentProfile) string {
+	email := strings.TrimSpace(agent.Email)
+	if email != "" {
+		return email
+	}
+	return agentUsername(agent) + "@customer-service.local"
+}
+
+func agentUsername(agent WPAgentProfile) string {
+	raw := strings.ToLower(strings.TrimSpace(agent.AgentID))
+	if raw == "" {
+		raw = strings.ToLower(strings.TrimSpace(agent.Name))
+	}
+	raw = strings.ReplaceAll(raw, " ", "_")
+	var builder strings.Builder
+	for _, r := range raw {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-' || r == '.' {
+			builder.WriteRune(r)
+		}
+	}
+	username := strings.Trim(builder.String(), "_.-")
+	if username == "" {
+		return "customer_service_agent"
+	}
+	return username
+}
+
+func parseOptionalWPTime(value *string) *time.Time {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" || trimmed == "0000-00-00 00:00:00" || strings.EqualFold(trimmed, "null") {
+		return nil
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		time.RFC3339,
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		parsed, err := time.Parse(layout, trimmed)
+		if err == nil {
+			return &parsed
+		}
+	}
+	return nil
+}
+
+func defaultString(value, fallback string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return fallback
+	}
+	return trimmed
 }
 
 func importPosts(db *gorm.DB, exportDir string) error {

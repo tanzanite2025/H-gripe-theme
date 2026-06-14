@@ -416,7 +416,7 @@ func (h *Handler) ListCustomerServiceConversations(c *gin.Context) {
 
 func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
-	agents, err := h.ticketService.ListCustomerServiceAgents(limit)
+	agents, err := h.ticketService.ListCustomerServiceAgentProfiles(limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
@@ -424,14 +424,19 @@ func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 
 	items := make([]gin.H, 0, len(agents))
 	for _, agent := range agents {
+		if agent.UserID == nil {
+			continue
+		}
 		items = append(items, gin.H{
-			"id":         agent.ID,
-			"wp_user_id": agent.ID,
-			"name":       displayName(agent.FirstName, agent.LastName, agent.Username, agent.Email),
-			"email":      agent.Email,
-			"avatar":     "",
-			"whatsapp":   "",
-			"status":     "online",
+			"id":              *agent.UserID,
+			"agent_id":        agent.AgentID,
+			"legacy_agent_id": agent.AgentID,
+			"wp_user_id":      *agent.UserID,
+			"name":            agent.DisplayName(),
+			"email":           agent.PublicEmail(),
+			"avatar":          agent.Avatar,
+			"whatsapp":        agent.WhatsApp,
+			"status":          emptyToDefault(agent.OnlineStatus, "offline"),
 		})
 	}
 
@@ -443,6 +448,13 @@ func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 			"afterSalesEmail": "",
 		},
 	})
+}
+
+func emptyToDefault(value, defaultValue string) string {
+	if strings.TrimSpace(value) == "" {
+		return defaultValue
+	}
+	return strings.TrimSpace(value)
 }
 
 func (h *Handler) HasPublicCustomerServiceConversation(c *gin.Context) {

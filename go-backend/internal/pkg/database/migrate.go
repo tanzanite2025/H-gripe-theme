@@ -30,6 +30,7 @@ import (
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&user.User{},
+		&user.AgentProfile{},
 		&post.Post{},
 		&post.Category{},
 		&post.PostCategory{},
