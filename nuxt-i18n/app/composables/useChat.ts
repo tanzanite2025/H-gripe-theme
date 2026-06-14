@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 
 export interface ChatMessage {
   id: number
@@ -35,23 +36,17 @@ const isCustomerListOpen = ref(false)
 const isChatOpen = ref(false)
 
 export const useChat = () => {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-    return base.replace(/\/$/, '')
-  })
+  const auth = useAuth()
 
   /**
    * 加载客户列表（会话列表）
    */
   const loadConversations = async () => {
     try {
-      const response = await $fetch<{ data?: { items?: Conversation[] }, conversations?: Conversation[] }>(
-        `${apiBase.value}/tanzanite/v1/customer-service/agent/conversations`,
-        {
-          credentials: 'include',
-          headers: { accept: 'application/json' }
-        }
+      const response = await auth.request<{ data?: { items?: Conversation[] }, conversations?: Conversation[] }>(
+        '/customer-service/agent/conversations',
+        { headers: { accept: 'application/json' } },
+        'Failed to load conversations'
       )
       conversations.value = response.data?.items || response.conversations || []
     } catch (error) {
@@ -64,12 +59,10 @@ export const useChat = () => {
    */
   const loadMessages = async (conversationId: number) => {
     try {
-      const response = await $fetch<{ data?: { items?: ChatMessage[] }, messages?: ChatMessage[] }>(
-        `${apiBase.value}/tanzanite/v1/customer-service/agent/conversations/${conversationId}/messages`,
-        {
-          credentials: 'include',
-          headers: { accept: 'application/json' }
-        }
+      const response = await auth.request<{ data?: { items?: ChatMessage[] }, messages?: ChatMessage[] }>(
+        `/customer-service/agent/conversations/${conversationId}/messages`,
+        { headers: { accept: 'application/json' } },
+        'Failed to load messages'
       )
       messages.value = response.data?.items || response.messages || []
 
@@ -85,21 +78,21 @@ export const useChat = () => {
    */
   const sendMessage = async (conversationId: number, message: string, attachmentUrl?: string) => {
     try {
-      const response = await $fetch<{ message: ChatMessage }>(
-        `${apiBase.value}/tanzanite/v1/customer-service/agent/messages`,
+      const response = await auth.request<{ message: ChatMessage }>(
+        '/customer-service/agent/messages',
         {
           method: 'POST',
-          credentials: 'include',
           headers: {
             accept: 'application/json',
             'Content-Type': 'application/json'
           },
-          body: {
+          body: JSON.stringify({
             conversation_id: conversationId,
             message,
             attachment_url: attachmentUrl
-          }
-        }
+          })
+        },
+        'Failed to send message'
       )
 
       // 添加到消息列表
@@ -119,14 +112,17 @@ export const useChat = () => {
    */
   const markAsRead = async (conversationId: number) => {
     try {
-      await $fetch(
-        `${apiBase.value}/tanzanite/v1/customer-service/agent/messages/read`,
+      await auth.request(
+        '/customer-service/agent/messages/read',
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { accept: 'application/json' },
-          body: { conversation_id: conversationId }
-        }
+          headers: {
+            accept: 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ conversation_id: conversationId })
+        },
+        'Failed to mark conversation as read'
       )
 
       // 更新本地未读数
