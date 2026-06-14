@@ -29,7 +29,7 @@
 | `/wp-json/tanzanite/v1/seo/product/*` | `app/pages/shop/[slug].vue` | Go 只有通用 settings SEO；产品 SEO/schema 缺口 | M3 product SEO |
 | `/wp-json/tanzanite/v1/wishlist` | `app/composables/useWishlist.ts` | M2 已切到 Go `/api/v1/wishlist` | M2 wishlist |
 | `/wp-json/tanzanite/v1/warranty/*` | `app/components/warranty/SubmitClaimTab.vue`, `app/composables/useWarrantyCheck.ts` | Go 有 registrations/warranty-claims，但旧 warranty 查询/claim 契约需映射 | M2 warranty/registration |
-| `/wp-json/tanzanite/v1/suggestion-feedback`、`/feedback` | `app/composables/useSuggestionFeedback.ts`, `app/composables/useFeedback.ts` | Go 缺口 | M2 feedback |
+| `/wp-json/tanzanite/v1/suggestion-feedback`、`/feedback` | `app/composables/useSuggestionFeedback.ts`, `app/composables/useFeedback.ts` | M2 已切到 Go `/api/v1/suggestion-feedback`、`/api/v1/feedback`；后台审核接口另迁 | M2 feedback |
 | `/wp-json/tanzanite/v1/spoke-history`、`/spoke-db-export` | `app/composables/useSpokeHistory.ts`, `scripts/sync-spoke-data.mjs` | Go 缺口 | M2 spoke |
 | `/wp-json/tanzanite/v1/shipping-templates`、`/tax-rates`、`/packaging-rules` | `app/composables/useCartCalculation.ts`, `app/composables/useShippingValidation.ts`, `app/composables/usePackagingCalculation.ts` | Shipping/tax Go 已有但路径不同； packaging 缺口 | M3 cart calculation |
 | `/wp-json/tanzanite/v1/coupons/validate`、`/loyalty/points` | `app/composables/useCartCalculation.ts` | Go 已有 marketing routes，路径和 auth 需切换 | M3 coupon/loyalty |
@@ -127,7 +127,7 @@ M1.3 固定的 Blog 读取契约：
 | `/wp-json/tanzanite/v1/wishlist`、`/wishlist/:id` | `class-rest-wishlist-controller.php` | `/api/v1/wishlist`、`/api/v1/wishlist/:id` | Go 已有 | M2 wishlist 已补 Go API 并切 Nuxt；删除 PHP 前需验证数据迁移/代理 |
 | `/wp-json/tanzanite/v1/reviews`、`/reviews/:id` | `class-rest-reviews-controller.php` | `/api/v1/reviews`、`/api/v1/reviews/:id`、`/api/v1/reviews/my`、`/api/v1/reviews/summary/:product_id` | Go 已有 | M2 review 已固定 Go 契约；Nuxt 当前无旧 review REST 调用 |
 | `/wp-json/tanzanite/v1/feedback`、`/feedback/eligibility` | `class-rest-feedback-controller.php` | `/api/v1/feedback`、`/api/v1/feedback/eligibility` | Go 已有 | M2 feedback 已补 Go API 并切 Nuxt；后台 status 审核另行迁移 |
-| `/wp-json/tanzanite/v1/suggestion-feedback/**` | `class-rest-suggestion-feedback-controller.php` | 待定：`/api/v1/suggestion-feedback` | Go 缺口 | M2 suggestion feedback |
+| `/wp-json/tanzanite/v1/suggestion-feedback/**` | `class-rest-suggestion-feedback-controller.php` | `/api/v1/suggestion-feedback`、`/api/v1/suggestion-feedback/eligibility` | Go 已有 | M2 suggestion feedback 已补前台提交/资格检查并切 Nuxt；后台列表/status 审核另行迁移 |
 | `/wp-json/tanzanite/v1/customer-service/**` | `tanzanite-customer-service/**` | 不能直接等同 `/api/v1/tickets`; 需新增 customer-service 或重设计为 tickets | Go 缺口 | M2/M3 customer service |
 | `/wp-json/tanzanite/v1/auto-reply/**` | `class-auto-reply-api.php` | 待定：customer-service auto-reply | Go 缺口 | 与 customer-service 同模块 |
 | `/wp-json/tanzanite/v1/agent/**` | `class-agent-api.php` | 待定：`/api/admin/customer-service/agent` | Go 缺口 | `web/admin` 客服工作台模块 |
