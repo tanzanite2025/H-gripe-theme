@@ -1,5 +1,7 @@
 # Tanzanite Settings 文档清单
 
+> Legacy reference only: 本清单记录的是 WordPress 插件时代的文档。迁移实施前必须重新核对当前 Go/Nuxt 代码；不要把本目录文档当作新功能实现依据。
+
 **创建日期**: 2025-11-11  
 **文档版本**: 1.0  
 **插件版本**: 0.2.1
