@@ -46,16 +46,19 @@
 </template>
 
 <script setup lang="ts">
+interface SubscriptionSubmitResponse {
+  message?: string
+  data?: unknown
+  error?: string
+  success?: boolean
+}
+
 const props = withDefaults(
   defineProps<{
     label?: string
     placeholder?: string
     buttonLabel?: string
     loadingText?: string
-    /**
-     * 相对于 wpApiBase 的订阅接口路径。
-     * 默认指向 \"/tanz/v1/subscribe\"。
-     */
     endpointPath?: string
   }>(),
   {
@@ -63,15 +66,16 @@ const props = withDefaults(
     placeholder: 'Enter your email',
     buttonLabel: 'Subscribe',
     loadingText: 'Subscribing...',
-    endpointPath: '/tanz/v1/subscribe',
+    endpointPath: '/subscriptions',
   }
 )
 
 const emit = defineEmits<{
-  (e: 'subscribed', payload: any): void
+  (e: 'subscribed', payload: SubscriptionSubmitResponse): void
 }>()
 
 const config = useRuntimeConfig()
+const { locale } = useI18n()
 
 const email = ref('')
 const loading = ref(false)
@@ -93,31 +97,35 @@ async function handleSubmit() {
   loading.value = true
 
   try {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-    const wpBase = base.replace(/\/$/, '')
-    const endpoint = `${wpBase}${props.endpointPath}`
+    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
+    const apiBase = base.replace(/\/$/, '')
+    const endpoint = `${apiBase}${props.endpointPath}`
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email: value }),
+      body: JSON.stringify({
+        email: value,
+        source: 'website',
+        locale: locale.value,
+      }),
     })
 
-    const data = await response.json().catch(() => ({}))
+    const data = await response.json().catch(() => ({})) as SubscriptionSubmitResponse
 
     if (!response.ok || (data && data.success === false)) {
-      throw new Error(data?.message || '订阅失败，请稍后重试')
+      throw new Error(data?.message || data?.error || '订阅失败，请稍后重试')
     }
 
     successMessage.value = data?.message || '订阅成功，请前往邮箱确认'
     email.value = ''
 
     emit('subscribed', data)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Subscription failed', error)
-    errorMessage.value = error?.message || '订阅失败，请稍后重试'
+    errorMessage.value = error instanceof Error ? error.message : '订阅失败，请稍后重试'
   } finally {
     loading.value = false
   }
