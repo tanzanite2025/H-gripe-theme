@@ -3,7 +3,9 @@ package product
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"tanzanite/internal/api/middleware"
+	productdomain "tanzanite/internal/domain/product"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -41,11 +43,50 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       products,
-		"total":      total,
-		"page":       page,
-		"page_size":  pageSize,
+		"data":        products,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
 		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
+	})
+}
+
+func (h *Handler) ListPublicChatProducts(c *gin.Context) {
+	locale := middleware.GetLocale(c)
+	status := normalizePublicChatProductStatus(c.DefaultQuery("status", "active"))
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", c.DefaultQuery("page_size", "20")))
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	products, total, err := h.productService.SearchPublic(locale, status, keyword, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]gin.H, 0, len(products))
+	for _, item := range products {
+		items = append(items, makePublicChatProduct(item))
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"items":   items,
+		"meta": gin.H{
+			"page":        page,
+			"per_page":    pageSize,
+			"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
+			"total":       total,
+			"filters":     []string{"keyword", "status"},
+			"sorting":     []string{"updated_at"},
+		},
 	})
 }
 
@@ -73,4 +114,49 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, product)
+}
+
+func normalizePublicChatProductStatus(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "", "publish", "published", "active":
+		return "active"
+	case "any":
+		return ""
+	default:
+		return strings.ToLower(strings.TrimSpace(status))
+	}
+}
+
+func makePublicChatProduct(item productdomain.Product) gin.H {
+	thumbnail := ""
+	if len(item.Images) > 0 {
+		thumbnail = item.Images[0].URL
+	}
+
+	salePrice := 0.0
+	if item.SalePrice != nil {
+		salePrice = *item.SalePrice
+	}
+
+	return gin.H{
+		"id":        item.ID,
+		"title":     item.Name,
+		"status":    item.Status,
+		"excerpt":   item.ShortDesc,
+		"slug":      item.Slug,
+		"sku":       item.SKU,
+		"thumbnail": thumbnail,
+		"prices": gin.H{
+			"regular": item.Price,
+			"sale":    salePrice,
+			"member":  0,
+		},
+		"stock": gin.H{
+			"quantity": item.Stock,
+			"alert":    0,
+		},
+		"preview_url": "/shop/" + item.Slug,
+		"updated_at":  item.UpdatedAt,
+		"created_at":  item.CreatedAt,
+	}
 }

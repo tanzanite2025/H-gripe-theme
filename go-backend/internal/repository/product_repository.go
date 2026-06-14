@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"tanzanite/internal/domain/product"
 
 	"gorm.io/gorm"
@@ -87,6 +88,33 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	}
 
 	err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&products).Error
+	return products, total, err
+}
+
+func (r *ProductRepository) SearchPublic(locale, status, keyword string, offset, limit int) ([]product.Product, int64, error) {
+	var products []product.Product
+	var total int64
+
+	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_images.order ASC")
+	})
+
+	if locale != "" {
+		query = query.Where("locale = ?", locale)
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if keyword != "" {
+		pattern := "%" + strings.ToLower(keyword) + "%"
+		query = query.Where("LOWER(name) LIKE ? OR LOWER(sku) LIKE ? OR LOWER(short_desc) LIKE ? OR LOWER(description) LIKE ?", pattern, pattern, pattern, pattern)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.Order("updated_at DESC").Offset(offset).Limit(limit).Find(&products).Error
 	return products, total, err
 }
 

@@ -523,6 +523,7 @@
       :query="productDrawerQuery"
       @close="handleProductDrawerClose"
       @select="shareProductToChat"
+      @add-to-cart="handleAddProductToCart"
     />
 
     <TestReportDrawer
@@ -608,7 +609,7 @@ const emit = defineEmits<{
 }>()
 
 const { user, isAgent, agentId, request: authRequest } = useAuth()
-const { openCartFromChat } = useCart()
+const { addToCart, openCartFromChat } = useCart()
 const {
   isLogged: isMemberLogged,
   levelName,
@@ -1344,13 +1345,11 @@ const searchProducts = async () => {
   isSearching.value = true
   try {
     console.log('[WhatsAppChatModal] fetching products...')
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/products', {
+    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/products`, {
       params: {
         keyword: trimmedQuery,
-        per_page: 20,
-        status: 'publish'
-      },
-      credentials: 'include'
+        per_page: 20
+      }
     })
     
     // 转换数据格式以适配前端显示
@@ -1358,11 +1357,16 @@ const searchProducts = async () => {
       searchResults.value = response.items.map((item: any) => ({
         id: item.id,
         title: item.title,
+        name: item.title,
+        slug: item.slug,
+        sku: item.sku,
         url: item.preview_url || `/shop/${item.slug || item.id}`,
         thumbnail: item.thumbnail,
+        priceValue: item.prices?.sale > 0 ? item.prices.sale : (item.prices?.regular || 0),
         price: item.prices?.sale > 0 
           ? `$${item.prices.sale}` 
-          : (item.prices?.regular > 0 ? `$${item.prices.regular}` : '')
+          : (item.prices?.regular > 0 ? `$${item.prices.regular}` : ''),
+        maxStock: item.stock?.quantity || 0
       }))
       console.log('[WhatsAppChatModal] products loaded:', searchResults.value.length)
     } else {
@@ -1376,6 +1380,25 @@ const searchProducts = async () => {
   } finally {
     isSearching.value = false
     console.log('[WhatsAppChatModal] search finished')
+  }
+}
+
+const handleAddProductToCart = (product: any) => {
+  const result = addToCart({
+    id: product.id,
+    title: product.title || product.name || 'Product',
+    name: product.name || product.title || 'Product',
+    slug: product.slug,
+    sku: product.sku,
+    thumbnail: product.thumbnail,
+    price: Number(product.priceValue || 0),
+    maxStock: Number(product.maxStock || 0)
+  })
+
+  if (result.success) {
+    openCartFromChat()
+  } else {
+    productDrawerError.value = result.message || 'Unable to add this product to cart.'
   }
 }
 

@@ -93,6 +93,13 @@
                         <div class="mt-3 flex flex-wrap gap-2">
                           <button
                             type="button"
+                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-[#40ffaa]/90 text-[11px] text-[#07120b] border border-[#86efac]/70 hover:bg-[#86efac] transition-colors"
+                            @click="handleAddToCart(product)"
+                          >
+                            加入购物车
+                          </button>
+                          <button
+                            type="button"
                             class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-white/10 text-[11px] text-white/90 border border-white/30 hover:bg-white/20 transition-colors"
                             @click="handleShareToChat(product)"
                           >
@@ -204,6 +211,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'close'): void
   (e: 'select', product: any): void
+  (e: 'add-to-cart', product: any): void
 }>()
 
 const viewMode = ref<'list' | 'configConfirm'>('list')
@@ -216,6 +224,10 @@ const handleClose = () => {
 
 const handleShareToChat = (product: any) => {
   emit('select', product)
+}
+
+const handleAddToCart = (product: any) => {
+  emit('add-to-cart', product)
 }
 
 const openConfigConfirm = (product: any) => {

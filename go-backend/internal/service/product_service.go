@@ -1,10 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/repository"
-	"fmt"
 	"time"
 )
 
@@ -76,6 +76,11 @@ func (s *ProductService) GetBySlug(slug, locale string) (*product.Product, error
 func (s *ProductService) List(locale, status string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
 	offset := (page - 1) * pageSize
 	return s.productRepo.List(locale, status, featured, offset, pageSize)
+}
+
+func (s *ProductService) SearchPublic(locale, status, keyword string, page, pageSize int) ([]product.Product, int64, error) {
+	offset := (page - 1) * pageSize
+	return s.productRepo.SearchPublic(locale, status, keyword, offset, pageSize)
 }
 
 // Create 创建产品
