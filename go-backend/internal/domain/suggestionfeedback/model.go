@@ -41,46 +41,6 @@ type Attachment struct {
 	Size int64  `json:"size"`
 }
 
-type Response struct {
-	ID                  uint              `json:"id"`
-	UserID              uint              `json:"user_id"`
-	FullName            string            `json:"full_name"`
-	Email               string            `json:"email"`
-	Country             string            `json:"country"`
-	OrderNumber         string            `json:"order_number"`
-	ProductCategory     string            `json:"product_category"`
-	RequestType         string            `json:"request_type"`
-	Message             string            `json:"message"`
-	Attachments         []Attachment      `json:"attachments"`
-	CreatedAt           time.Time         `json:"created_at"`
-	UpdatedAt           time.Time         `json:"updated_at"`
-	Status              string            `json:"status"`
-	MemberLevelRequired string            `json:"member_level_required"`
-	MemberLevelMet      bool              `json:"member_level_met"`
-	Meta                map[string]string `json:"meta"`
-}
-
-func (s SuggestionFeedback) ToResponse() Response {
-	return Response{
-		ID:                  s.ID,
-		UserID:              s.UserID,
-		FullName:            s.FullName,
-		Email:               s.Email,
-		Country:             s.Country,
-		OrderNumber:         s.OrderNumber,
-		ProductCategory:     s.ProductCategory,
-		RequestType:         s.RequestType,
-		Message:             s.Message,
-		Attachments:         decodeAttachments(s.Attachments),
-		CreatedAt:           s.CreatedAt,
-		UpdatedAt:           s.UpdatedAt,
-		Status:              s.Status,
-		MemberLevelRequired: s.MemberLevelRequired,
-		MemberLevelMet:      s.MemberLevelMet,
-		Meta:                decodeMeta(s.Meta),
-	}
-}
-
 func JSONFromAttachments(attachments []Attachment) datatypes.JSON {
 	data, err := json.Marshal(attachments)
 	if err != nil {
@@ -95,26 +55,4 @@ func JSONFromMeta(meta map[string]string) datatypes.JSON {
 		return datatypes.JSON([]byte("{}"))
 	}
 	return datatypes.JSON(data)
-}
-
-func decodeAttachments(data datatypes.JSON) []Attachment {
-	if len(data) == 0 {
-		return []Attachment{}
-	}
-	var attachments []Attachment
-	if err := json.Unmarshal(data, &attachments); err != nil {
-		return []Attachment{}
-	}
-	return attachments
-}
-
-func decodeMeta(data datatypes.JSON) map[string]string {
-	if len(data) == 0 {
-		return map[string]string{}
-	}
-	var meta map[string]string
-	if err := json.Unmarshal(data, &meta); err != nil {
-		return map[string]string{}
-	}
-	return meta
 }

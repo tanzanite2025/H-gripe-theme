@@ -89,19 +89,6 @@ func (s *SuggestionFeedbackService) Create(item *suggestionfeedback.SuggestionFe
 	return s.suggestionRepo.Create(item)
 }
 
-func (s *SuggestionFeedbackService) List(status, search string, page, pageSize int) ([]suggestionfeedback.SuggestionFeedback, int64, error) {
-	if status != "" && !validSuggestionFeedbackStatus(status) {
-		return nil, 0, ErrSuggestionFeedbackInvalidStatus
-	}
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-	return s.suggestionRepo.List(status, strings.TrimSpace(search), page, pageSize)
-}
-
 func cleanSuggestionAttachments(attachments []suggestionfeedback.Attachment) []suggestionfeedback.Attachment {
 	clean := make([]suggestionfeedback.Attachment, 0, len(attachments))
 	for _, attachment := range attachments {
