@@ -266,6 +266,22 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			ticketGroup.GET("/:id/messages", ticketHandler.GetMessages)
 		}
 
+		customerServiceGroup := v1.Group("/customer-service")
+		customerServiceGroup.Use(middleware.AuthMiddleware(authService))
+		{
+			agentGroup := customerServiceGroup.Group("/agent")
+			agentGroup.Use(middleware.RequireRole("admin", "agent"))
+			{
+				agentGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
+				agentGroup.GET("/conversations/:id/messages", ticketHandler.GetCustomerServiceMessages)
+				agentGroup.POST("/conversations/:id/transfer", ticketHandler.TransferCustomerServiceConversation)
+				agentGroup.POST("/messages", ticketHandler.SendCustomerServiceMessage)
+				agentGroup.POST("/messages/read", ticketHandler.MarkCustomerServiceMessagesRead)
+				agentGroup.GET("/status", ticketHandler.GetCustomerServiceAgentStatus)
+				agentGroup.POST("/status", ticketHandler.UpdateCustomerServiceAgentStatus)
+			}
+		}
+
 		// Showcase (Picture Warehouse)
 		showcaseGroup := v1.Group("/showcase")
 		{
