@@ -94,7 +94,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	paymentHandler := payment.NewHandler(paymentRepo)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
-	registrationHandler := registration.NewHandler(registrationRepo)
+	registrationHandler := registration.NewHandler(registrationRepo, orderRepo, storageSvc)
 	auditHandler := audit.NewHandler(auditRepo)
 	subscriptionHandler := subscription.NewHandler(subscriptionService)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
@@ -375,11 +375,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		{
 			// 公开端点
 			registrationGroup.POST("/verify", registrationHandler.VerifySerialNumber)
+			registrationGroup.POST("/warranty/verify-order", registrationHandler.VerifyWarrantyOrder)
+			registrationGroup.POST("/warranty/claim", registrationHandler.SubmitWarrantyClaim)
 
 			// 需要认证的端点
 			authRegistration := registrationGroup.Group("")
 			authRegistration.Use(middleware.AuthMiddleware(authService))
 			{
+				authRegistration.GET("/warranty/:code", registrationHandler.GetWarrantyStatus)
 				authRegistration.POST("", registrationHandler.CreateRegistration)
 				authRegistration.GET("", registrationHandler.ListUserRegistrations)
 				authRegistration.GET("/:id", registrationHandler.GetRegistration)

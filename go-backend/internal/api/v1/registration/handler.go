@@ -1,21 +1,31 @@
 package registration
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	orderdomain "tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/registration"
+	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	registrationRepo *repository.RegistrationRepository
+	orderRepo        *repository.OrderRepository
+	storageService   storage.StorageService
 }
 
-func NewHandler(registrationRepo *repository.RegistrationRepository) *Handler {
+func NewHandler(registrationRepo *repository.RegistrationRepository, orderRepo *repository.OrderRepository, storageService storage.StorageService) *Handler {
 	return &Handler{
 		registrationRepo: registrationRepo,
+		orderRepo:        orderRepo,
+		storageService:   storageService,
 	}
 }
 
@@ -296,6 +306,93 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 	})
 }
 
+func (h *Handler) GetWarrantyStatus(c *gin.Context) {
+	code := strings.TrimSpace(c.Param("code"))
+	if code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_code", "message": "Product code is required."})
+		return
+	}
+
+	reg, err := h.registrationRepo.FindRegistrationBySerialNumber(code)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Product not found."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    warrantyStatusResponse(reg),
+	})
+}
+
+func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
+	var req struct {
+		OrderNumber string `json:"order_number" binding:"required"`
+		Email       string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_params", "message": "Order Number and Email are required."})
+		return
+	}
+
+	if _, err := h.findVerifiedWarrantyOrder(req.OrderNumber, req.Email); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "invalid_order", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Order verified successfully."})
+}
+
+func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
+	orderNumber := strings.TrimSpace(c.PostForm("order_number"))
+	email := strings.TrimSpace(c.PostForm("email"))
+	if orderNumber == "" || email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_params", "message": "Order Number and Email are required."})
+		return
+	}
+
+	order, err := h.findVerifiedWarrantyOrder(orderNumber, email)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "invalid_order", "message": err.Error()})
+		return
+	}
+
+	imageURLs, videoURL, err := h.uploadWarrantyClaimFiles(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "upload_failed", "message": err.Error()})
+		return
+	}
+	imagesJSON, err := json.Marshal(imageURLs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "encode_failed", "message": err.Error()})
+		return
+	}
+
+	claim := registration.WarrantyClaim{
+		UserID:       order.UserID,
+		IssueType:    "warranty",
+		Description:  strings.TrimSpace(c.PostForm("issue_description")),
+		Images:       string(imagesJSON),
+		OrderNumber:  orderNumber,
+		Email:        email,
+		TirePressure: strings.TrimSpace(c.PostForm("tire_pressure")),
+		IsTubeless:   c.PostForm("is_tubeless") == "yes",
+		VideoURL:     videoURL,
+		Status:       "pending",
+	}
+
+	if err := h.registrationRepo.CreateWarrantyClaim(&claim); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "db_error", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": "Claim submitted successfully.",
+		"id":      claim.ID,
+	})
+}
+
 // GetExpiringWarranties 获取即将过期的保修（管理员）
 // @Summary 获取即将过期的保修
 // @Tags Registration
@@ -530,4 +627,101 @@ func (h *Handler) UpdateWarrantyClaimStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "warranty claim status updated"})
+}
+
+var (
+	errWarrantyEmailMismatch      = errors.New("Email does not match order record.")
+	errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
+)
+
+func (h *Handler) findVerifiedWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
+	orderNumber = strings.TrimSpace(orderNumber)
+	email = strings.ToLower(strings.TrimSpace(email))
+	o, err := h.orderRepo.FindByOrderNumberForVerification(orderNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	shippingEmail := strings.ToLower(strings.TrimSpace(o.ShippingAddress.Email))
+	billingEmail := strings.ToLower(strings.TrimSpace(o.BillingAddress.Email))
+	if email == "" || (email != shippingEmail && email != billingEmail) {
+		return nil, errWarrantyEmailMismatch
+	}
+	return o, nil
+}
+
+func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, error) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return []string{}, "", nil
+	}
+
+	imageFiles := append(form.File["images[]"], form.File["images"]...)
+	videoFiles := form.File["video"]
+	hasFiles := len(imageFiles) > 0 || len(videoFiles) > 0
+	if hasFiles && h.storageService == nil {
+		return nil, "", errWarrantyStorageUnavailable
+	}
+
+	imageURLs := make([]string, 0, len(imageFiles))
+	for _, file := range imageFiles {
+		url, err := h.storageService.Upload(c.Request.Context(), file)
+		if err != nil {
+			return nil, "", err
+		}
+		imageURLs = append(imageURLs, url)
+	}
+
+	videoURL := ""
+	if len(videoFiles) > 0 {
+		url, err := h.storageService.Upload(c.Request.Context(), videoFiles[0])
+		if err != nil {
+			return nil, "", err
+		}
+		videoURL = url
+	}
+	return imageURLs, videoURL, nil
+}
+
+func warrantyStatusResponse(reg *registration.ProductRegistration) gin.H {
+	now := time.Now()
+	status := "expired"
+	if reg.WarrantyExpires.After(now) && reg.Status != "expired" {
+		status = "valid"
+	}
+
+	remaining := gin.H{"months": 0, "days": 0, "total_days": 0}
+	if status == "valid" {
+		days := int(reg.WarrantyExpires.Sub(now).Hours() / 24)
+		remaining["months"] = days / 30
+		remaining["days"] = days % 30
+		remaining["total_days"] = days
+	} else {
+		days := int(now.Sub(reg.WarrantyExpires).Hours() / 24)
+		if days < 0 {
+			days = 0
+		}
+		remaining["expired_days"] = days
+	}
+
+	productTypeCode := ""
+	productTypeName := ""
+	productName := ""
+	if reg.Product != nil {
+		productTypeCode = reg.Product.SKU
+		productTypeName = reg.Product.Name
+		productName = reg.Product.Name
+	}
+
+	return gin.H{
+		"product_code":    reg.SerialNumber,
+		"product_type":    gin.H{"code": productTypeCode, "name": productTypeName, "name_zh": productTypeName},
+		"product_name":    productName,
+		"ship_date":       reg.PurchaseDate.Format("2006-01"),
+		"warranty_months": reg.WarrantyPeriod,
+		"warranty_end":    reg.WarrantyExpires.Format("2006-01"),
+		"status":          status,
+		"remaining":       remaining,
+		"records":         []gin.H{},
+	}
 }
