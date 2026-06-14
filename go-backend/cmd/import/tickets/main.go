@@ -85,7 +85,8 @@ func main() {
 	fmt.Printf("导出时间: %s\n\n", data.Stats.ExportDate)
 
 	if *dryRun {
-		fmt.Println("=== 试运行模式 - 预览数据 ===\n")
+		fmt.Println("=== 试运行模式 - 预览数据 ===")
+		fmt.Println()
 		previewData(data)
 		fmt.Println("\n试运行完成，未写入数据库")
 		return
@@ -141,11 +142,11 @@ func previewData(data *TicketExportData) {
 
 // ImportStats 导入统计
 type ImportStats struct {
-	TicketsCreated   int
-	TicketsUpdated   int
-	TicketsSkipped   int
-	MessagesCreated  int
-	MessagesSkipped  int
+	TicketsCreated  int
+	TicketsUpdated  int
+	TicketsSkipped  int
+	MessagesCreated int
+	MessagesSkipped int
 }
 
 // importData 导入数据
@@ -240,7 +241,7 @@ func importData(db *gorm.DB, data *TicketExportData) ImportStats {
 
 		// 检查是否已存在（通过工单ID、用户ID和创建时间）
 		var existing ticket.TicketMessage
-		err := db.Where("ticket_id = ? AND user_id = ? AND created_at = ?", 
+		err := db.Where("ticket_id = ? AND user_id = ? AND created_at = ?",
 			goTicketID, msg.UserID, msg.CreatedAt).First(&existing).Error
 
 		if err == gorm.ErrRecordNotFound {

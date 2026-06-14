@@ -100,7 +100,7 @@ func main() {
 
 		// 检查是否已存在
 		existing, err := settingRepo.Get(importSetting.Key, importSetting.Locale)
-		
+
 		// 创建 Setting 对象
 		s := &setting.Setting{
 			Key:         importSetting.Key,

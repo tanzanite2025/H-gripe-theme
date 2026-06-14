@@ -10,10 +10,7 @@ import (
 
 	"tanzanite/internal/domain/subscription"
 	"tanzanite/internal/pkg/config"
-
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"tanzanite/internal/pkg/database"
 )
 
 type SubscriptionImport struct {
@@ -38,9 +35,7 @@ func main() {
 	}
 
 	// 连接数据库
-	db, err := gorm.Open(mysql.Open(cfg.Database.DSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	db, err := database.Init(cfg.Database)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -67,11 +62,11 @@ func main() {
 
 	// 统计
 	stats := map[string]int{
-		"total":    len(imports),
-		"created":  0,
-		"updated":  0,
-		"skipped":  0,
-		"errors":   0,
+		"total":   len(imports),
+		"created": 0,
+		"updated": 0,
+		"skipped": 0,
+		"errors":  0,
 	}
 
 	// 导入数据
@@ -91,7 +86,7 @@ func main() {
 			existing.Source = imp.Source
 			existing.Tags = imp.Tags
 			existing.UnsubToken = imp.UnsubToken
-			
+
 			if imp.SubscribedAt != nil {
 				existing.SubscribedAt = *imp.SubscribedAt
 			}
