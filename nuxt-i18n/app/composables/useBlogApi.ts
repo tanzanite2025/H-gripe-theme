@@ -16,12 +16,26 @@ type BlogPostsResponse = {
   items: BlogPostSummary[]
 }
 
+type BlogTranslationsResponse = {
+  group: string
+  translations: Record<string, { id: number; slug: string }>
+}
+
+const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
+
+const getGoOriginBase = (apiBase: string) => {
+  const normalized = trimTrailingSlash(apiBase || '/api/v1')
+  return normalized.endsWith('/api/v1')
+    ? normalized.slice(0, -'/api/v1'.length)
+    : normalized
+}
+
 export const useBlogApi = () => {
   const config = useRuntimeConfig()
 
-  const wpApiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-    return base.replace(/\/$/, '')
+  const blogCompatBase = computed(() => {
+    const apiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
+    return `${getGoOriginBase(apiBase)}/wp-json/tanzanite/v1`
   })
 
   const blogApiMode = computed(() => {
@@ -30,7 +44,7 @@ export const useBlogApi = () => {
 
   const useLocalBlog = computed(() => {
     if (['local', 'mock', 'disabled'].includes(blogApiMode.value)) return true
-    return import.meta.server && wpApiBase.value.startsWith('/')
+    return import.meta.server && blogCompatBase.value.startsWith('/')
   })
 
   const buildLocalPostsResponse = (params: {
@@ -59,10 +73,8 @@ export const useBlogApi = () => {
     const localResponse = () => buildLocalPostsResponse(params)
     if (useLocalBlog.value) return localResponse()
 
-    const base = wpApiBase.value
-
     try {
-      return await $fetch<BlogPostsResponse>(`${base}/tanzanite/v1/posts`, {
+      return await $fetch<BlogPostsResponse>(`${blogCompatBase.value}/posts`, {
         params: {
           lang: params.lang,
           category: params.category,
@@ -84,10 +96,8 @@ export const useBlogApi = () => {
       throw new Error('Blog post not found')
     }
 
-    const base = wpApiBase.value
-
     try {
-      return await $fetch<BlogPostDetail>(`${base}/tanzanite/v1/post`, {
+      return await $fetch<BlogPostDetail>(`${blogCompatBase.value}/post`, {
         params: {
           lang: params.lang,
           slug: params.slug,
@@ -103,15 +113,13 @@ export const useBlogApi = () => {
 
   const getTranslations = async (params: {
     group: string
-  }): Promise<{ group: string; translations: Record<string, { id: number; slug: string }> }> => {
+  }): Promise<BlogTranslationsResponse> => {
     const localTranslations = () => getBlogTranslationsByGroup(params.group)
     if (useLocalBlog.value) return localTranslations()
 
-    const base = wpApiBase.value
-
     try {
-      return await $fetch<{ group: string; translations: Record<string, { id: number; slug: string }> }>(
-        `${base}/tanzanite/v1/translations`,
+      return await $fetch<BlogTranslationsResponse>(
+        `${blogCompatBase.value}/translations`,
         {
           params: {
             group: params.group,
@@ -125,7 +133,7 @@ export const useBlogApi = () => {
   }
 
   return {
-    wpApiBase,
+    blogCompatBase,
     listPosts,
     getPost,
     getTranslations,
