@@ -1493,10 +1493,9 @@ const handleShareProductFromHistory = async (product: any) => {
 const loadOrders = async () => {
   isLoadingOrders.value = true
   try {
-    const response = await $fetch<any>('/wp-json/mytheme-vue/v1/my-orders', {
-      params: { limit: 10 },
-      credentials: 'include'
-    })
+    const response = await authRequest<any[]>('/customer-service/orders?limit=10', {
+      headers: { accept: 'application/json' }
+    }, 'Failed to load customer-service orders')
     ordersList.value = Array.isArray(response) ? response : []
   } catch (error) {
     console.error('加载订单失败:', error)

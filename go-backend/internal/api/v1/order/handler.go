@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/service"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,17 +36,17 @@ type OrderItemRequest struct {
 }
 
 type AddressRequest struct {
-	FirstName   string `json:"first_name" binding:"required"`
-	LastName    string `json:"last_name" binding:"required"`
-	Company     string `json:"company"`
-	Address1    string `json:"address1" binding:"required"`
-	Address2    string `json:"address2"`
-	City        string `json:"city" binding:"required"`
-	State       string `json:"state"`
-	PostalCode  string `json:"postal_code" binding:"required"`
-	Country     string `json:"country" binding:"required"`
-	Phone       string `json:"phone" binding:"required"`
-	Email       string `json:"email" binding:"required,email"`
+	FirstName  string `json:"first_name" binding:"required"`
+	LastName   string `json:"last_name" binding:"required"`
+	Company    string `json:"company"`
+	Address1   string `json:"address1" binding:"required"`
+	Address2   string `json:"address2"`
+	City       string `json:"city" binding:"required"`
+	State      string `json:"state"`
+	PostalCode string `json:"postal_code" binding:"required"`
+	Country    string `json:"country" binding:"required"`
+	Phone      string `json:"phone" binding:"required"`
+	Email      string `json:"email" binding:"required,email"`
 }
 
 // CreateOrder 创建订单
@@ -204,6 +205,32 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	})
 }
 
+func (h *Handler) ListPublicChatOrders(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", c.DefaultQuery("page_size", "10")))
+	if limit < 1 || limit > 50 {
+		limit = 10
+	}
+
+	orders, _, err := h.orderService.GetUserOrders(userID.(uint), 1, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]gin.H, 0, len(orders))
+	for _, item := range orders {
+		items = append(items, makePublicChatOrder(item))
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
 // ListAllOrders 获取所有订单（管理员）
 // @Summary 获取所有订单
 // @Tags Orders
@@ -322,4 +349,24 @@ func (h *Handler) GetOrderStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+func makePublicChatOrder(item order.Order) gin.H {
+	title := "Order #" + item.OrderNumber
+	if item.OrderNumber == "" {
+		title = "Order #" + strconv.FormatUint(uint64(item.ID), 10)
+	}
+
+	return gin.H{
+		"id":           item.ID,
+		"order_number": item.OrderNumber,
+		"title":        title,
+		"status":       item.Status,
+		"total":        item.TotalAmount,
+		"currency":     "USD",
+		"date":         item.CreatedAt.Format("2006-01-02"),
+		"created_at":   item.CreatedAt.Format(time.RFC3339),
+		"url":          "/orders/" + strconv.FormatUint(uint64(item.ID), 10),
+		"thumbnail":    "",
+	}
 }
