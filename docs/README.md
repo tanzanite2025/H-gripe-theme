@@ -5,6 +5,7 @@
 ## 当前有效文档
 
 - `README.md`：仓库级架构和 PHP 冻结规则。
+- `MIGRATION_PLAN.md`：根目录迁移规划、下一步模块顺序和 PR 边界。
 - `docs/PHP_TO_GO_MIGRATION_WORKFLOW.md`：PHP → Go 迁移执行顺序、单模块 PR 规则、下一步路线。
 - `docs/PHP_TO_GO_API_MATRIX.md`：PHP/WP API → Go API 迁移矩阵与下一批单模块 PR 建议。
 - `go-backend/README.md`：Go API 服务说明。
