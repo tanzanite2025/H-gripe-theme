@@ -1,4 +1,5 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 
 export interface FeedbackItem {
   id: number
@@ -36,13 +37,13 @@ export interface CreateFeedbackPayload {
   locale?: string
 }
 
-export const useFeedback = (threadKey: string) => {
-  const config = useRuntimeConfig()
+const feedbackMessage = (err: unknown, fallback: string) => {
+  if (err instanceof Error && err.message) return err.message
+  return fallback
+}
 
-  const apiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-    return base.replace(/\/$/, '')
-  })
+export const useFeedback = (threadKey: string) => {
+  const auth = useAuth()
 
   const items = ref<FeedbackItem[]>([])
   const pagination = ref<FeedbackPaginationMeta | null>(null)
@@ -52,44 +53,32 @@ export const useFeedback = (threadKey: string) => {
   const search = ref('')
   const eligibility = ref<FeedbackEligibility | null>(null)
 
-  const buildHeaders = (needsJson = false) => {
-    const headers: Record<string, string> = { accept: 'application/json' }
-    if (needsJson) {
-      headers['Content-Type'] = 'application/json'
-    }
-    const wpNonce = (config.public as { wpNonce?: string }).wpNonce
-    if (wpNonce) {
-      headers['X-WP-Nonce'] = String(wpNonce)
-    }
-    return headers
-  }
-
   const fetchList = async (page = 1) => {
     loadingList.value = true
     error.value = null
 
     try {
-      const response = await $fetch<FeedbackListResponse>(
-        `${apiBase.value}/tanzanite/v1/feedback`,
+      const params = new URLSearchParams({
+        thread: threadKey,
+        page: String(page),
+        per_page: '20',
+        status: 'approved',
+      })
+
+      const response = await auth.request<FeedbackListResponse>(
+        `/feedback?${params.toString()}`,
         {
-          method: 'GET',
-          credentials: 'include',
-          headers: buildHeaders(false),
-          query: {
-            thread: threadKey,
-            page,
-            per_page: 20,
-            status: 'approved',
-          },
-        }
+          headers: { accept: 'application/json' },
+        },
+        'Failed to load feedback'
       )
 
       items.value = response.data || []
       pagination.value = response.pagination
-    } catch (err: any) {
+    } catch (err: unknown) {
       // eslint-disable-next-line no-console
       console.error('Failed to load feedback:', err)
-      error.value = err?.message || 'Failed to load feedback'
+      error.value = feedbackMessage(err, 'Failed to load feedback')
     } finally {
       loadingList.value = false
     }
@@ -108,14 +97,17 @@ export const useFeedback = (threadKey: string) => {
         locale: payload.locale,
       }
 
-      const response = await $fetch<{ id: number; status: string; message?: string }>(
-        `${apiBase.value}/tanzanite/v1/feedback`,
+      const response = await auth.request<{ id: number; status: string; message?: string }>(
+        '/feedback',
         {
           method: 'POST',
-          credentials: 'include',
-          headers: buildHeaders(true),
-          body,
-        }
+          headers: {
+            accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        },
+        'Please log in to leave feedback.'
       )
 
       return {
@@ -124,10 +116,10 @@ export const useFeedback = (threadKey: string) => {
         status: response.status,
         message: response.message || 'Feedback submitted, pending review.',
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // eslint-disable-next-line no-console
       console.error('Failed to submit feedback:', err)
-      error.value = err?.message || 'Failed to submit feedback'
+      error.value = feedbackMessage(err, 'Failed to submit feedback')
       return {
         success: false as const,
         error: err,
@@ -139,16 +131,13 @@ export const useFeedback = (threadKey: string) => {
 
   const loadEligibility = async () => {
     try {
-      const response = await $fetch<FeedbackEligibility>(
-        `${apiBase.value}/tanzanite/v1/feedback/eligibility`,
+      const params = new URLSearchParams({ thread: threadKey })
+      const response = await auth.request<FeedbackEligibility>(
+        `/feedback/eligibility?${params.toString()}`,
         {
-          method: 'GET',
-          credentials: 'include',
-          headers: buildHeaders(false),
-          query: {
-            thread: threadKey,
-          },
-        }
+          headers: { accept: 'application/json' },
+        },
+        'Unable to determine eligibility'
       )
 
       eligibility.value = response
