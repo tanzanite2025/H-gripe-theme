@@ -1,9 +1,13 @@
-# Tanzanite 架构演进与开发规范 (Archived PHP -> Go/Vue3)
+# Tanzanite 架构演进与开发规范 (PHP -> Go/Vue3)
 
 > **⚠️ 核心警告 (CRITICAL WARNING)**
 > 本项目正在进行（或已完成）从传统 WordPress/PHP 架构向现代微服务架构的**全面迁移**。
 > **绝对禁止**在 PHP 端（包括 `functions.php` 和 `wp-plugin` 目录下的任何插件）中添加、修改或回调任何核心业务逻辑。
 > 所有的业务逻辑开发必须且只能在 **Go 后端**中进行！
+
+## 当前文档入口
+
+先读 `docs/README.md` 和 `docs/PHP_TO_GO_MIGRATION_WORKFLOW.md`。未被文档入口列为“当前有效”的历史文档，只能作为旧行为参考，不能作为新实现依据。
 
 ## 🏛️ 系统架构全景图 (System Architecture)
 
@@ -15,10 +19,11 @@
 - **数据流向**: 通过 RESTful API 直接与 Go 后端通信。
 
 ### 2. 管理后台 (ERP Admin Panel)
-- **目录**: `/go-backend/admin-panel`
-- **技术栈**: Vue 3 (SPA) + 原生 CSS (遵循 ERP 工业视觉系统规范 v1.0)
+- **当前主线目录**: `/go-backend/web/admin`
+- **历史目录**: `/go-backend/admin-panel` 仅作旧 demo 参考，不再作为迁移目标。
+- **技术栈**: Vue 3 + Vite + Element Plus
 - **职责**: 面向 B 端内部运营团队，替代原有臃肿的 WordPress wp-admin 后台。
-- **数据流向**: 通过 `/api/v1/admin/*` 接口与 Go 后端通信，受 Admin 鉴权保护。
+- **数据流向**: 通过 `/api/admin/*` 接口与 Go 后端通信，受 Admin 鉴权保护。
 
 ### 3. 核心接口与数据中枢 (Go Backend)
 - **目录**: `/go-backend`
@@ -36,10 +41,12 @@
 - **绞杀者模式 (Strangler Fig Pattern)**：当我们用 Go 后端完成某个模块（例如“积分系统”、“优惠券系统”）的重构并在前端对齐 API 后，必须**物理注释或删除**相应的 PHP 代码（例如 `class-plugin.php` 中引入的 `class-rewards-admin.php` 和旧控制器），以彻底切断 PHP 端的执行路径。
 - **防回退机制**：一旦在 Go 端接管的模块，决不允许因为“临时排错方便”等原因重新切回 PHP 插件，以免造成数据踩踏和幽灵 Bug。
 
-### 📝 已完成割接的模块清单
-*(更新于 2026-06)*
-- [x] **会员积分系统 (Loyalty & Points)**：已在 Go 端 `marketing_service` 实现，PHP 端 `tanzanite-setting` 插件中对应接口及面板已被物理屏蔽。
-- [x] **优惠券系统 (Gift Cards & Coupons)**：已在 Go 端及 Vue3 管理面板完成重构对接，PHP 端的旧接口和菜单已废除。
+### 迁移推进规则
+
+- 做完一个模块就停下来开 PR。
+- 一个 PR 只做一个业务模块或一个基础设施模块。
+- 不把 API 矩阵、前端切流、数据迁移、PHP 删除混在同一个 PR。
+- 模块顺序和验收标准见 `docs/PHP_TO_GO_MIGRATION_WORKFLOW.md`。
 
 ---
 
