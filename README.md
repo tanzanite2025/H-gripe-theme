@@ -2,7 +2,7 @@
 
 > **⚠️ 核心警告 (CRITICAL WARNING)**
 > 本项目正在进行（或已完成）从传统 WordPress/PHP 架构向现代微服务架构的**全面迁移**。
-> **绝对禁止**在 PHP 端（包括 `functions.php` 和 `wp-plugin` 目录下的任何插件）中添加、修改或回调任何核心业务逻辑。
+> **绝对禁止**在 PHP 端（包括 `wp-plugin` 目录下的任何插件）中添加、修改或回调任何核心业务逻辑。
 > 所有的业务逻辑开发必须且只能在 **Go 后端**中进行！
 
 ## 当前文档入口
@@ -35,11 +35,13 @@
 
 ## 🚫 PHP 历史包袱排雷指南 (Legacy PHP Deprecation)
 
-在早期的架构中，系统高度依赖 WordPress 的 `functions.php` 以及自定义插件（如 `tanzanite-setting`）。
+根目录曾保留一组 WordPress 主题壳文件（`index.php`、`header.php`、`footer.php`、`page.php`、`single.php`、`functions.php`），这是早期虚拟机限制下的历史包袱；当前 C 端前台主线是 `nuxt-i18n`。
+在早期的架构中，系统还高度依赖 WordPress 自定义插件（如 `tanzanite-setting`）。
 **当前规范要求：**
 - **冻结开发**：现存的 PHP 代码仅供**查阅逻辑参考**或**过渡期间的临时兼容**，禁止任何形式的新功能开发。
 - **绞杀者模式 (Strangler Fig Pattern)**：当我们用 Go 后端完成某个模块（例如“积分系统”、“优惠券系统”）的重构并在前端对齐 API 后，必须**物理注释或删除**相应的 PHP 代码（例如 `class-plugin.php` 中引入的 `class-rewards-admin.php` 和旧控制器），以彻底切断 PHP 端的执行路径。
 - **防回退机制**：一旦在 Go 端接管的模块，决不允许因为“临时排错方便”等原因重新切回 PHP 插件，以免造成数据踩踏和幽灵 Bug。
+- **根目录 PHP 壳已删除**：不要恢复根目录 WordPress 主题入口；前台页面和布局只应在 `nuxt-i18n` 维护。
 
 ### 迁移推进规则
 
