@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/faq"
 	"tanzanite/internal/domain/post"
 	"tanzanite/internal/domain/product"
@@ -51,25 +52,25 @@ type WPPost struct {
 }
 
 type WPProduct struct {
-	ID               int                  `json:"id"`
-	SKU              string               `json:"sku"`
-	Name             string               `json:"name"`
-	Slug             string               `json:"slug"`
-	Description      string               `json:"description"`
-	ShortDescription string               `json:"short_description"`
-	Price            float64              `json:"price"`
-	SalePrice        *float64             `json:"sale_price"`
-	Stock            int                  `json:"stock"`
-	WeightGrams      int                  `json:"weight_grams"`
-	Status           string               `json:"status"`
-	Locale           string               `json:"locale"`
-	ParentID         *int                 `json:"parent_id"`
-	Featured         bool                 `json:"featured"`
-	MetaTitle        string               `json:"meta_title"`
-	MetaDescription  string               `json:"meta_description"`
-	Images           []WPProductImage     `json:"images"`
-	CreatedAt        string               `json:"created_at"`
-	UpdatedAt        string               `json:"updated_at"`
+	ID               int              `json:"id"`
+	SKU              string           `json:"sku"`
+	Name             string           `json:"name"`
+	Slug             string           `json:"slug"`
+	Description      string           `json:"description"`
+	ShortDescription string           `json:"short_description"`
+	Price            float64          `json:"price"`
+	SalePrice        *float64         `json:"sale_price"`
+	Stock            int              `json:"stock"`
+	WeightGrams      int              `json:"weight_grams"`
+	Status           string           `json:"status"`
+	Locale           string           `json:"locale"`
+	ParentID         *int             `json:"parent_id"`
+	Featured         bool             `json:"featured"`
+	MetaTitle        string           `json:"meta_title"`
+	MetaDescription  string           `json:"meta_description"`
+	Images           []WPProductImage `json:"images"`
+	CreatedAt        string           `json:"created_at"`
+	UpdatedAt        string           `json:"updated_at"`
 }
 
 type WPProductImage struct {
@@ -87,16 +88,16 @@ type WPSetting struct {
 }
 
 type WPFAQ struct {
-	ID        int     `json:"id"`
-	Question  string  `json:"question"`
-	Answer    string  `json:"answer"`
-	Category  string  `json:"category"`
-	Locale    string  `json:"locale"`
-	ParentID  *int    `json:"parent_id"`
-	Order     int     `json:"order"`
-	Status    string  `json:"status"`
-	CreatedAt string  `json:"created_at"`
-	UpdatedAt string  `json:"updated_at"`
+	ID        int    `json:"id"`
+	Question  string `json:"question"`
+	Answer    string `json:"answer"`
+	Category  string `json:"category"`
+	Locale    string `json:"locale"`
+	ParentID  *int   `json:"parent_id"`
+	Order     int    `json:"order"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 func main() {
@@ -160,7 +161,7 @@ func importUsers(db *gorm.DB, exportDir string) error {
 			Username:  wu.Username,
 			FirstName: wu.FirstName,
 			LastName:  wu.LastName,
-			Role:      wu.Role,
+			Role:      string(auth.NormalizeRole(wu.Role)),
 			Locale:    wu.Locale,
 			Status:    "active",
 			Password:  "$2a$10$placeholder", // 需要用户重置密码
