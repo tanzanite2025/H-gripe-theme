@@ -63,11 +63,19 @@
 
 | PHP endpoint | 来源 | Go 目标 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- |
-| `GET /wp-json/tanzanite/v1/posts`、`/post`、`/translations` | `wp-plugin/tanzanite-blog-i18n/includes/class-blog-rest.php` | 当前兼容层 `/wp-json/tanzanite/v1/*`，最终 `/api/v1/content/posts` | Go 部分已有 | M1 blog：先固定响应契约，再切 Nuxt |
+| `GET /wp-json/tanzanite/v1/posts`、`/post`、`/translations` | `wp-plugin/tanzanite-blog-i18n/includes/class-blog-rest.php` | Go WP 兼容层 `/wp-json/tanzanite/v1/*`，最终 `/api/v1/content/posts` | Go 部分已有 | M1.3 已固定 Nuxt blog 走 Go WP 兼容层；直连 `/api/v1/content/posts` 等 Go content 契约补齐后再切 |
 | FAQ admin-post actions | `wp-plugin/tanzanite-faq-content/includes/class-faq-editor.php` | `/api/v1/content/faqs`、`/api/admin/content/faqs` | Go 已有 | Nuxt FAQ 当前已尝试 Go；后台迁到 `web/admin` |
 | `tanz-photo/v1/**` | `wp-plugin/tanzanite-photo-gallery/includes/class-tpg-rest.php` | `/api/v1/gallery`、`/api/admin/content/galleries` | Go 已有 | M1 gallery：核对图片字段和批量删除 |
 | `GET /wp-json/mytheme-vue/v1/menu/:location` | removed root `functions.php` | 待定：`/api/v1/settings/public` 或新增 `/api/v1/content/menus/:location` | Go 缺口 | 与站点导航/菜单单独 PR |
 | `GET /wp-json/mytheme-vue/v1/search` | removed root `functions.php` | 待定：跨 content/product search | Go 缺口 | 不并入 blog；另建 search 模块 |
+
+M1.3 固定的 Blog 读取契约：
+
+- Nuxt `useBlogApi` 使用 Go WP 兼容层，而不是 WordPress PHP 或直连 `/api/v1/content/posts`。
+- `GET /wp-json/tanzanite/v1/posts?lang=&category=&page=&per_page=` 返回 `{ page, per_page, total, items }`，`items[]` 使用 `id/lang/group/slug/title/excerpt/date/featuredImage/categories/translations`。
+- `GET /wp-json/tanzanite/v1/post?lang=&slug=` 返回列表字段加 `contentHtml`、`canonicalUrl`。
+- `GET /wp-json/tanzanite/v1/translations?group=` 返回 `{ group, translations }`，`translations` 是语言码到 `{ id, slug }` 的映射。
+- 暂不切到 `/api/v1/content/posts`：当前直接 Go content 响应缺少 Nuxt blog 需要的 `categories`、`contentHtml`、`translations` 兼容形状。
 
 ### 4. Product catalog / 商品后台
 
