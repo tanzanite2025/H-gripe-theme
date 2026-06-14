@@ -126,7 +126,7 @@ M1.3 固定的 Blog 读取契约：
 | --- | --- | --- | --- | --- |
 | `/wp-json/tanzanite/v1/wishlist`、`/wishlist/:id` | `class-rest-wishlist-controller.php` | `/api/v1/wishlist`、`/api/v1/wishlist/:id` | Go 已有 | M2 wishlist 已补 Go API 并切 Nuxt；删除 PHP 前需验证数据迁移/代理 |
 | `/wp-json/tanzanite/v1/reviews`、`/reviews/:id` | `class-rest-reviews-controller.php` | `/api/v1/reviews`、`/api/v1/reviews/:id`、`/api/v1/reviews/my`、`/api/v1/reviews/summary/:product_id` | Go 已有 | M2 review 已固定 Go 契约；Nuxt 当前无旧 review REST 调用 |
-| `/wp-json/tanzanite/v1/feedback`、`/feedback/eligibility` | `class-rest-feedback-controller.php` | 待定：`/api/v1/feedback` | Go 缺口 | M2 feedback |
+| `/wp-json/tanzanite/v1/feedback`、`/feedback/eligibility` | `class-rest-feedback-controller.php` | `/api/v1/feedback`、`/api/v1/feedback/eligibility` | Go 已有 | M2 feedback 已补 Go API 并切 Nuxt；后台 status 审核另行迁移 |
 | `/wp-json/tanzanite/v1/suggestion-feedback/**` | `class-rest-suggestion-feedback-controller.php` | 待定：`/api/v1/suggestion-feedback` | Go 缺口 | M2 suggestion feedback |
 | `/wp-json/tanzanite/v1/customer-service/**` | `tanzanite-customer-service/**` | 不能直接等同 `/api/v1/tickets`; 需新增 customer-service 或重设计为 tickets | Go 缺口 | M2/M3 customer service |
 | `/wp-json/tanzanite/v1/auto-reply/**` | `class-auto-reply-api.php` | 待定：customer-service auto-reply | Go 缺口 | 与 customer-service 同模块 |

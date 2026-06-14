@@ -4,6 +4,7 @@ import (
 	"tanzanite/internal/domain/audit"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/faq"
+	"tanzanite/internal/domain/feedback"
 	"tanzanite/internal/domain/gallery"
 	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/media"
@@ -70,5 +71,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&media.Media{},
 		&audit.AuditLog{},
 		&wishlist.Item{},
+		&feedback.Feedback{},
 	)
 }
