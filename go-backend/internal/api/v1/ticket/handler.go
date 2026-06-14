@@ -414,6 +414,135 @@ func (h *Handler) ListCustomerServiceConversations(c *gin.Context) {
 	})
 }
 
+func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	agents, err := h.ticketService.ListCustomerServiceAgents(limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	items := make([]gin.H, 0, len(agents))
+	for _, agent := range agents {
+		items = append(items, gin.H{
+			"id":         agent.ID,
+			"wp_user_id": 0,
+			"name":       displayName(agent.FirstName, agent.LastName, agent.Username, agent.Email),
+			"email":      agent.Email,
+			"avatar":     "",
+			"whatsapp":   "",
+			"status":     "online",
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    items,
+		"emailSettings": gin.H{
+			"preSalesEmail":   "",
+			"afterSalesEmail": "",
+		},
+	})
+}
+
+func (h *Handler) HasPublicCustomerServiceConversation(c *gin.Context) {
+	conversationID := strings.TrimSpace(c.Query("visitor_id"))
+	if conversationID == "" {
+		c.JSON(http.StatusOK, gin.H{"hasConversation": false})
+		return
+	}
+
+	hasConversation, lastAgentID, err := h.ticketService.HasPublicCustomerServiceConversation(conversationID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"hasConversation": hasConversation,
+		"lastAgentId":     zeroToNil(lastAgentID),
+	})
+}
+
+func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
+	var req struct {
+		ConversationID string      `json:"conversation_id" binding:"required"`
+		Message        string      `json:"message" binding:"required"`
+		SenderType     string      `json:"sender_type"`
+		SenderName     string      `json:"sender_name" binding:"required"`
+		SenderEmail    string      `json:"sender_email"`
+		AgentID        string      `json:"agent_id"`
+		MessageType    string      `json:"message_type"`
+		Metadata       interface{} `json:"metadata"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	conversationID := strings.TrimSpace(req.ConversationID)
+	message := strings.TrimSpace(req.Message)
+	senderName := strings.TrimSpace(req.SenderName)
+	if conversationID == "" || message == "" || senderName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "missing required parameters"})
+		return
+	}
+
+	var userID uint
+	if value, exists := c.Get("user_id"); exists {
+		if parsed, ok := value.(uint); ok {
+			userID = parsed
+		}
+	}
+
+	var agentID uint
+	if strings.TrimSpace(req.AgentID) != "" {
+		if parsed, err := strconv.ParseUint(strings.TrimSpace(req.AgentID), 10, 32); err == nil {
+			agentID = uint(parsed)
+		}
+	}
+
+	_, msg, err := h.ticketService.AddPublicCustomerServiceMessage(conversationID, message, userID, agentID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, req.MessageType, req.Metadata)
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"message_id": msg.ID,
+		"data":       response,
+	})
+}
+
+func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
+	conversationID := strings.TrimSpace(c.Param("conversation_id"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if conversationID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "missing conversation id"})
+		return
+	}
+
+	messages, err := h.ticketService.GetPublicCustomerServiceMessages(conversationID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": []gin.H{}, "total": 0})
+		return
+	}
+
+	items := make([]gin.H, 0, len(messages))
+	for _, item := range messages {
+		items = append(items, publicCustomerServiceMessageResponse(item, conversationID, "", "", nil))
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    items,
+		"total":   len(items),
+	})
+}
+
 func (h *Handler) GetCustomerServiceMessages(c *gin.Context) {
 	ticketID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -636,6 +765,11 @@ func ticketConversationResponse(item ticket.Ticket) gin.H {
 	if item.User != nil {
 		customerName = displayName(item.User.FirstName, item.User.LastName, item.User.Username, item.User.Email)
 	}
+	customerID := item.UserID
+	if item.Category == "customer_service" && strings.HasPrefix(item.Tags, "conversation_id:") {
+		customerName = "Customer"
+		customerID = 0
+	}
 
 	lastMessage := ""
 	lastMessageTime := item.UpdatedAt
@@ -653,7 +787,7 @@ func ticketConversationResponse(item ticket.Ticket) gin.H {
 
 	return gin.H{
 		"id":                item.ID,
-		"customer_id":       item.UserID,
+		"customer_id":       customerID,
 		"customer_name":     customerName,
 		"customer_avatar":   customerAvatar,
 		"agent_id":          zeroToNil(item.AssignedTo),
@@ -690,6 +824,35 @@ func ticketMessageResponse(item ticket.TicketMessage) gin.H {
 		"attachment_url":  attachmentURL,
 		"created_at":      item.CreatedAt,
 		"is_read":         item.IsRead,
+		"is_agent":        item.IsStaff,
+	}
+}
+
+func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversationID, senderName, messageType string, metadata interface{}) gin.H {
+	if strings.TrimSpace(senderName) == "" {
+		if item.IsStaff {
+			senderName = "Agent"
+		} else {
+			senderName = "Customer"
+		}
+		if item.User != nil {
+			senderName = displayName(item.User.FirstName, item.User.LastName, item.User.Username, item.User.Email)
+		}
+	}
+	if strings.TrimSpace(messageType) == "" {
+		messageType = "text"
+	}
+
+	return gin.H{
+		"id":              item.ID,
+		"conversation_id": conversationID,
+		"sender_id":       item.UserID,
+		"sender_name":     senderName,
+		"sender_email":    "",
+		"message":         item.Content,
+		"message_type":    messageType,
+		"metadata":        metadata,
+		"created_at":      item.CreatedAt,
 		"is_agent":        item.IsStaff,
 	}
 }

@@ -104,6 +104,19 @@ func (r *UserRepository) FindAllWithFilters(page, pageSize int, role, status, se
 	return users, total, err
 }
 
+func (r *UserRepository) FindCustomerServiceAgents(limit int) ([]user.User, error) {
+	var users []user.User
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+
+	err := r.db.Where("status = ? AND role IN ?", "active", []string{"admin", "agent", "support"}).
+		Order("role ASC, created_at ASC").
+		Limit(limit).
+		Find(&users).Error
+	return users, err
+}
+
 // UpdateStatus 更新用户状态
 func (r *UserRepository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&user.User{}).Where("id = ?", id).Update("status", status).Error
