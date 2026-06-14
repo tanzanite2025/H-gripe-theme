@@ -173,9 +173,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useFetch } from '#imports'
+import { useAuth } from '~/composables/useAuth'
 
-// --- Form Logic ---
+const auth = useAuth()
+
 const form = ref({
   order_number: '',
   email: '',
@@ -200,25 +201,28 @@ const verifyOrder = async () => {
   submitStatus.value = ''
 
   try {
-    const { data, error } = await useFetch('/wp-json/tanzanite/v1/warranty/verify-order', {
-      method: 'POST',
-      body: {
-        order_number: form.value.order_number,
-        email: form.value.email,
+    await auth.request<{ success: boolean; message?: string }>(
+      '/registrations/warranty/verify-order',
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          order_number: form.value.order_number,
+          email: form.value.email,
+        }),
       },
-    })
+      'Order verification failed'
+    )
 
-    if (error.value) {
-      throw new Error(error.value.message || 'Verification failed')
-    }
-    
-    // Assuming backend returns success: true
     isFormLocked.value = false
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(err)
     submitStatus.value = 'error'
-    submitMessage.value = err.message || 'Order verification failed. Please check your details.'
+    submitMessage.value = err instanceof Error ? err.message : 'Order verification failed. Please check your details.'
   } finally {
     isVerifying.value = false
   }
@@ -267,21 +271,18 @@ const submitClaim = async () => {
       formData.append('video', videoFile.value)
     }
 
-    // Assuming WP REST API is at /wp-json/
-    // Adjust base URL as needed for the environment
-    const { data, error } = await useFetch('/wp-json/tanzanite/v1/warranty/claim', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (error.value) {
-      throw new Error(error.value.message || 'Submission failed')
-    }
+    const response = await auth.request<{ success: boolean; message?: string; id?: number }>(
+      '/registrations/warranty/claim',
+      {
+        method: 'POST',
+        body: formData,
+      },
+      'Submission failed'
+    )
 
     submitStatus.value = 'success'
-    submitMessage.value = 'Your claim has been submitted successfully. We will contact you shortly.'
+    submitMessage.value = response.message || 'Your claim has been submitted successfully. We will contact you shortly.'
     
-    // Reset form
     form.value = {
       order_number: '',
       email: '',
@@ -291,14 +292,14 @@ const submitClaim = async () => {
     }
     imageFiles.value = []
     videoFile.value = null
-    isFormLocked.value = true // Re-lock after submission? Or keep unlocked? Re-lock makes sense for new claim.
+    isFormLocked.value = true
     if (imageInput.value) imageInput.value.value = ''
     if (videoInput.value) videoInput.value.value = ''
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(err)
     submitStatus.value = 'error'
-    submitMessage.value = err.message || 'An error occurred. Please try again.'
+    submitMessage.value = err instanceof Error ? err.message : 'An error occurred. Please try again.'
   } finally {
     isSubmitting.value = false
   }
