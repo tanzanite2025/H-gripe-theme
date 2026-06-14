@@ -17,74 +17,27 @@ import {
   useHead,
   useSwitchLocalePath,
   useI18n,
-  useAsyncData,
   useState
 } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useSiteTitle } from '~/composables/useSiteTitle'
+import {
+  type ApiSocialLink,
+  type QuickBuyConfigProp,
+  type RuntimeSocialLink,
+  useQuickBuySettings,
+  useSiteSettings
+} from '~/composables/usePublicSettings'
 const config = useRuntimeConfig()
 const auth = useAuth()
 const authUser = computed<Record<string, unknown> | null>(() => (auth.user.value as Record<string, unknown> | null) ?? null)
 
-const normalizeBaseUrl = (value?: string) => {
-  if (!value) {
-    return ''
-  }
-  return value.replace(/\/$/, '')
-}
-
-const initialWpApiBase = normalizeBaseUrl((config.public as { wpApiBase?: string }).wpApiBase)
-
-interface SiteSettingsResponse {
-  siteTitle?: string
-  siteDescription?: string
-  siteLogo?: string
-  socialLinks?: Array<RuntimeSocialLink | ApiSocialLink>
-}
-
-const { data: settingsResponse } = await useAsyncData<SiteSettingsResponse | null>(
-  'mytheme-site-settings',
-  async () => {
-    if (!initialWpApiBase) {
-      return null
-    }
-    try {
-      const result = await $fetch<SiteSettingsResponse>(`${initialWpApiBase}/tanzanite/v1/settings`, {
-        headers: { accept: 'application/json' }
-      })
-      return result || null
-    } catch (error) {
-      console.warn('Failed to load site settings:', error)
-      return null
-    }
-  },
-  {
-    server: false,
-    default: () => null
-  }
-)
-
-const resolvedSettings = computed<SiteSettingsResponse>(() => settingsResponse.value ?? {})
+const { siteSettings: resolvedSettings } = useSiteSettings()
 
 // Use a single source of truth for site title (Customizer preview -> API -> runtime config)
 const { siteTitle } = useSiteTitle()
-
-// Minimal quick buy config shape used by GradientDockMenu
-interface QuickBuyConfigProp {
-  steps?: unknown[]
-  storeApiBase?: string
-  cartUrl?: string
-  checkoutUrl?: string
-  taxonomy?: string
-  buttonText?: string
-  enabled?: boolean
-}
-
-// Minimal support config shape used for WhatsApp (component removed from layout)
-type SupportConfigProp = Record<string, unknown> | null
-
 
 const siteUrl = computed(() => {
   const value = (config.public as { siteUrl?: string }).siteUrl
@@ -114,26 +67,12 @@ const siteLogo = computed(() => {
   return value && value.trim().length ? value : `${siteUrl.value}/logo.png`
 })
 
-const wpApiBase = computed(() => {
-  return normalizeBaseUrl((config.public as { wpApiBase?: string }).wpApiBase)
-})
-
-interface RuntimeSocialLink {
-  network: string
-  url: string
-}
-
 interface SocialLinkViewModel {
   network: string
   url: string
   label: string
   iconPath: string
   iconSize: number
-}
-
-interface ApiSocialLink extends RuntimeSocialLink {
-  label?: string
-  size?: number
 }
 
 const socialNetworkLabels = new Map<string, string>([
@@ -229,36 +168,8 @@ const organizationSchema = computed(() => {
   }
 })
 
-const { data: quickBuyResponse } = await useAsyncData<QuickBuyConfigProp | null>(
-  'mytheme-quick-buy',
-  async () => {
-    const base = wpApiBase.value
-    if (!base) {
-      return null
-    }
-    const endpoint = `${base}/tanzanite/v1/settings/quick-buy`
-    try {
-      const result = await $fetch(endpoint, { headers: { accept: 'application/json' } })
-      if (result && typeof result === 'object') {
-        const raw = result as Record<string, unknown>
-        const steps = Array.isArray(raw.steps) ? (raw.steps as QuickBuyConfigProp extends null ? never : unknown[]) : []
-        return {
-          ...raw,
-          steps
-        } as QuickBuyConfigProp
-      }
-    } catch (error) {
-      console.warn('Failed to load quick buy config:', error)
-    }
-    return null
-  },
-  {
-    server: false,
-    default: () => null
-  }
-)
-
-const quickBuyConfig = computed<QuickBuyConfigProp | null>(() => quickBuyResponse.value)
+const { quickBuySettings } = useQuickBuySettings()
+const quickBuyConfig = computed<QuickBuyConfigProp | null>(() => quickBuySettings.value)
 
 const route = useRoute()
 const { locales, defaultLocale, locale } = useI18n()
