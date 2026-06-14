@@ -20,6 +20,7 @@ import (
 	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/api/v1/subscription"
 	"tanzanite/internal/api/v1/ticket"
+	"tanzanite/internal/api/v1/wishlist"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/storage"
@@ -50,6 +51,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	registrationRepo := repository.NewRegistrationRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
 	showcaseRepo := repository.NewShowcaseRepository(db)
+	wishlistRepo := repository.NewWishlistRepository(db)
 
 	// 初始化services
 	authService := service.NewAuthService(userRepo, cfg.JWT)
@@ -67,9 +69,10 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
 	subscriptionService := service.NewSubscriptionService(subscriptionRepo)
 	sitemapService := service.NewSitemapService(postRepo, cfg.Server.BaseURL)
-	
+
 	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
 	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
+	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
 
 	// 初始化handlers
 	authHandler := auth.NewHandler(authService)
@@ -90,6 +93,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	subscriptionHandler := subscription.NewHandler(subscriptionService)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
+	wishlistHandler := wishlist.NewHandler(wishlistService)
 	registerWordPressCompatRoutes(r, postService)
 
 	// API v1 路由组
@@ -147,6 +151,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			cartGroup.DELETE("/items/:id", cartHandler.RemoveFromCart)
 		}
 
+		wishlistGroup := v1.Group("/wishlist")
+		wishlistGroup.Use(middleware.AuthMiddleware(authService))
+		{
+			wishlistGroup.GET("", wishlistHandler.ListItems)
+			wishlistGroup.POST("", wishlistHandler.CreateItem)
+			wishlistGroup.DELETE("/:id", wishlistHandler.DeleteItem)
+		}
+
 		// 订单路由（需要认证）
 		orderGroup := v1.Group("/orders")
 		orderGroup.Use(middleware.AuthMiddleware(authService))
@@ -164,7 +176,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		{
 			// 优惠券（公开）
 			marketingGroup.GET("/coupons", marketingHandler.ListCoupons)
-			
+
 			// 等级配置（公开）
 			marketingGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
 
@@ -370,7 +382,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			adminGroup.POST("/marketing/coupons", marketingHandler.CreateCoupon)
 			adminGroup.PUT("/marketing/coupons/:id", marketingHandler.UpdateCoupon)
 			adminGroup.DELETE("/marketing/coupons/:id", marketingHandler.DeleteCoupon)
-			
+
 			// 会员与积分管理
 			adminGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
 			adminGroup.POST("/loyalty/levels", marketingHandler.CreateMemberLevel)
