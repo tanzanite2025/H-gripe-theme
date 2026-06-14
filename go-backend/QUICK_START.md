@@ -32,14 +32,14 @@ cp .env.example .env
 docker-compose up -d
 
 # 查看日志
-docker-compose logs -f api
+docker-compose logs -f app
 ```
 
 ### 步骤 3: 验证
 
 ```bash
 # 健康检查
-curl http://localhost:9000/health
+curl http://localhost:8080/health
 
 # 预期响应:
 # {"status":"ok","version":"1.0.0"}
@@ -47,7 +47,9 @@ curl http://localhost:9000/health
 
 ## ✅ 成功！
 
-你的 API 现在运行在: **http://localhost:9000**
+Docker 模式下 API 运行在: **http://localhost:8080**
+
+本地 `go run` 模式默认读取 `config/config.example.yaml` 中的 `:9000`，可通过 `SERVER_PORT` 覆盖。
 
 ---
 
@@ -191,7 +193,7 @@ docker-compose restart redis
 
 ```bash
 # Docker 日志
-docker-compose logs -f api
+docker-compose logs -f app
 
 # 应用日志
 tail -f /var/log/tanzanite/app.log
@@ -202,6 +204,7 @@ tail -f /var/log/tanzanite/app.log
 ## 📚 下一步
 
 - 📖 阅读 [API 文档](./API.md)
+- 🧭 阅读 [PHP → Go 迁移工作流](../docs/PHP_TO_GO_MIGRATION_WORKFLOW.md)
 - 🚀 查看 [部署指南](./DEPLOYMENT.md)
 - 🔧 了解 [配置选项](./config/config.example.yaml)
 - 🧪 运行测试: `make test`

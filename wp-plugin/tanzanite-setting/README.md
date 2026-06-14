@@ -1,5 +1,7 @@
 # Tanzanite Settings Plugin
 
+> Legacy reference only: 本插件属于 WordPress/PHP 旧后台。当前迁移规则禁止在这里新增或修改核心业务逻辑；这些文档只能用于理解旧行为、提取迁移字段和核对旧 REST API。新业务应进入 `go-backend` 和 `go-backend/web/admin`。
+
 **版本**: 0.2.1  
 **作者**: Tanzanite Team  
 **WordPress 版本**: 5.0+  

@@ -1,5 +1,5 @@
-# Vue 3 + Vite
+# Legacy admin-panel
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+此目录是早期 Vue/Vite demo 后台，不再作为当前迁移主线。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+当前管理后台在 `go-backend/web/admin/`，API 前缀为 `/api/admin`。新功能、修复和迁移对接应进入 `web/admin`，不要继续扩展本目录。
