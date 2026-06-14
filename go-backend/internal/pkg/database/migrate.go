@@ -19,6 +19,7 @@ import (
 	"tanzanite/internal/domain/subscription"
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
+	"tanzanite/internal/domain/wishlist"
 
 	"gorm.io/gorm"
 )
@@ -68,5 +69,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&showcase.Comment{},
 		&media.Media{},
 		&audit.AuditLog{},
+		&wishlist.Item{},
 	)
 }
