@@ -43,7 +43,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	subscriptionHandler := NewSubscriptionHandler(subscriptionRepo)
 	ticketHandler := NewTicketHandler(ticketRepo)
 	marketingHandler := NewMarketingHandler(couponRepo, loyaltyRepo)
-	settingsHandler := NewSettingsHandler(settingRepo)
+	settingsHandler := NewSettingsHandler(settingRepo, userRepo)
 	auditHandler := NewAuditHandler(auditRepo)
 
 	// 管理后台 API 路由组
@@ -169,7 +169,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				galleriesGroup.POST("", middleware.RequirePermission(auth.PermGalleryCreate), galleryHandler.CreateGallery)
 				galleriesGroup.PUT("/:id", middleware.RequirePermission(auth.PermGalleryEdit), galleryHandler.UpdateGallery)
 				galleriesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermGalleryDelete), galleryHandler.DeleteGallery)
-				
+
 				// 图片管理
 				galleriesGroup.GET("/:id/images", galleryHandler.ListImages)
 				galleriesGroup.POST("/:id/images", middleware.RequirePermission(auth.PermGalleryCreate), galleryHandler.CreateImage)
@@ -202,7 +202,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				ticketsGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.UpdateTicketStatus)
 				ticketsGroup.PATCH("/:id/assign", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.AssignTicket)
 				ticketsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermTicketDelete), ticketHandler.DeleteTicket)
-				
+
 				// 工单消息
 				ticketsGroup.GET("/:id/messages", ticketHandler.GetMessages)
 				ticketsGroup.POST("/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateMessage)
@@ -263,7 +263,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 			{
 				settingsGroup.GET("", settingsHandler.GetAllSettings)
 				settingsGroup.GET("/groups", settingsHandler.GetGroups)
-				settingsGroup.GET("/:key", settingsHandler.GetSetting)
+				settingsGroup.GET("/public-chat-agent-compatibility", settingsHandler.GetPublicChatAgentCompatibility)
 				settingsGroup.PUT("", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.UpdateSetting)
 				settingsGroup.POST("/batch", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.BatchUpdateSettings)
 				settingsGroup.DELETE("/:key", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.DeleteSetting)
@@ -274,6 +274,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				settingsGroup.GET("/seo", settingsHandler.GetSEOSettings)
 				settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 				settingsGroup.GET("/payment", settingsHandler.GetPaymentSettings)
+				settingsGroup.GET("/:key", settingsHandler.GetSetting)
 			}
 
 			// 审计日志（需要日志查看权限）
