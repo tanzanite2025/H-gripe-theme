@@ -11,309 +11,41 @@
         
         <!-- 客服模式 / 访客模式 切换 -->
         <Transition name="fade-scale" mode="out-in">
-          <!-- 客服模式：会话列表 -->
-          <div
-            v-if="agentMode && !selectedConversation"
-            key="agent-list"
-            class="relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
-          >
-            <!-- 头部 -->
-            <div class="border-b border-white/10 bg-black/70 backdrop-blur-md px-4 py-3 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center text-sm font-semibold text-black">
-                  {{ user?.display_name?.charAt(0) || 'A' }}
-                </div>
-                <div>
-                  <div class="text-white font-medium text-sm">{{ user?.display_name || 'Agent' }}</div>
-                  <!-- 状态切换下拉 -->
-                  <div class="relative">
-                    <button
-                      type="button"
-                      class="text-xs flex items-center gap-1 hover:opacity-80 transition-opacity"
-                      :class="agentStatusColors[currentAgentStatus]?.text || 'text-gray-400'"
-                      @click="showStatusDropdown = !showStatusDropdown"
-                    >
-                      <span 
-                        class="w-2 h-2 rounded-full"
-                        :class="[agentStatusColors[currentAgentStatus]?.dot || 'bg-gray-500', currentAgentStatus === 'online' ? 'animate-pulse' : '']"
-                      ></span>
-                      {{ agentStatusLabels[currentAgentStatus] || 'Offline' }}
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 9l6 6 6-6"/>
-                      </svg>
-                    </button>
-                    <!-- 下拉菜单 -->
-                    <div
-                      v-if="showStatusDropdown"
-                      class="absolute top-full left-0 mt-1 bg-black/95 border border-white/10 rounded-lg py-1 min-w-[120px] z-50 shadow-xl"
-                    >
-                      <button
-                        v-for="status in ['online', 'busy', 'away', 'offline']"
-                        :key="status"
-                        type="button"
-                        class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-white/5 transition-colors"
-                        :class="currentAgentStatus === status ? 'bg-white/10' : ''"
-                        @click="changeAgentStatus(status)"
-                      >
-                        <span 
-                          class="w-2 h-2 rounded-full"
-                          :class="agentStatusColors[status]?.dot || 'bg-gray-500'"
-                        ></span>
-                        <span :class="agentStatusColors[status]?.text || 'text-gray-400'">
-                          {{ agentStatusLabels[status] }}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="w-9 h-9 rounded-full border-2 border-white/20 text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
-                @click="handleClose"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            
-            <!-- 会话列表 -->
-            <div class="flex-1 overflow-y-auto p-4">
-              <div class="text-white/50 text-xs uppercase tracking-wider mb-3">Conversations</div>
-              
-              <!-- 加载中 -->
-              <div v-if="isLoadingConversations" class="flex items-center justify-center py-8">
-                <div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              
-              <!-- 空状态 -->
-              <div v-else-if="agentConversations.length === 0" class="text-center py-8">
-                <div class="text-white/30 text-4xl mb-2">💬</div>
-                <div class="text-white/50 text-sm">No conversations yet</div>
-              </div>
-              
-              <!-- 会话列表项 -->
-              <div v-else class="space-y-2">
-                <button
-                  v-for="conv in agentConversations"
-                  :key="conv.id"
-                  type="button"
-                  class="w-full p-3 rounded-xl border border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all text-left"
-                  @click="selectConversation(conv)"
-                >
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#6b73ff] to-[#40ffaa] flex items-center justify-center text-sm font-semibold text-black flex-shrink-0">
-                      {{ conv.customer_name?.charAt(0) || 'U' }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-center justify-between">
-                        <span class="text-white font-medium text-sm truncate">{{ conv.customer_name || 'Unknown' }}</span>
-                        <span class="text-white/40 text-xs">{{ formatTime(conv.updated_at) }}</span>
-                      </div>
-                      <div class="text-white/50 text-xs truncate">{{ conv.last_message || 'No messages' }}</div>
-                    </div>
-                    <div v-if="conv.unread_count > 0" class="w-5 h-5 rounded-full bg-emerald-500 text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
-                      {{ conv.unread_count > 9 ? '9+' : conv.unread_count }}
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-            
-            <!-- 刷新按钮 -->
-            <div class="border-t border-white/10 p-3">
-              <button
-                type="button"
-                class="w-full py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-colors"
-                @click="fetchAgentConversations"
-              >
-                Refresh Conversations
-              </button>
-            </div>
-          </div>
-
-          <!-- 客服模式：聊天界面 -->
-          <div
-            v-else-if="agentMode && selectedConversation"
-            key="agent-chat"
-            class="relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col bg-black pointer-events-auto"
-          >
-            <!-- 头部 - 显示客户信息 -->
-            <div class="border-b border-white/10 bg-black/70 backdrop-blur-md px-4 py-3 flex items-center gap-3">
-              <button
-                type="button"
-                class="w-9 h-9 rounded-full border border-white/20 text-white/60 flex items-center justify-center hover:border-white/40 hover:text-white transition-colors"
-                @click="backToConversationList"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-              </button>
-              <div
-                class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xs font-semibold text-white overflow-hidden shadow-[0_0_12px_rgba(15,23,42,0.95)] flex-shrink-0"
-              >
-                {{ selectedConversation.customer_name?.charAt(0) || 'U' }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-white font-medium text-sm truncate">{{ selectedConversation.customer_name || 'Customer' }}</div>
-                <div class="text-white/50 text-xs truncate">{{ selectedConversation.customer_email || '' }}</div>
-              </div>
-              <button
-                type="button"
-                class="w-9 h-9 rounded-full border-2 border-white/20 text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
-                @click="handleClose"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            
-            <!-- 消息区域 -->
-            <div ref="messagesContainerDesktop" class="flex-1 overflow-y-auto p-4 space-y-3">
-              <div
-                v-for="msg in messages"
-                :key="msg.id"
-                class="flex"
-                :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'"
-              >
-                <div
-                  class="max-w-[80%] px-4 py-2 rounded-2xl text-sm"
-                  :class="msg.sender_type === 'agent' ? 'bg-emerald-500 text-black' : 'bg-white/10 text-white'"
-                >
-                  {{ msg.message }}
-                </div>
-              </div>
-            </div>
-            
-            <!-- 输入区域 -->
-            <div class="border-t border-white/10 p-3">
-              <div class="flex gap-2">
-                <input
-                  v-model="newMessage"
-                  type="text"
-                  placeholder="Type a message..."
-                  class="flex-1 px-4 py-2 rounded-full text-white text-sm placeholder-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
-                  @keyup.enter="sendMessage"
-                />
-                <button
-                  type="button"
-                  class="w-10 h-10 rounded-full bg-emerald-500 text-black flex items-center justify-center hover:bg-emerald-400 transition-colors disabled:opacity-50"
-                  :disabled="!newMessage.trim() || isSending"
-                  @click="sendMessage"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
+          <AgentChatPanel
+            v-if="agentMode"
+            key="agent-mode"
+            v-model:show-status-dropdown="showStatusDropdown"
+            v-model:new-message="newMessage"
+            :user="user"
+            :selected-conversation="selectedConversation"
+            :is-loading-conversations="isLoadingConversations"
+            :agent-conversations="agentConversations"
+            :current-agent-status="currentAgentStatus"
+            :agent-status-colors="agentStatusColors"
+            :agent-status-labels="agentStatusLabels"
+            :messages="messages"
+            :is-sending="isSending"
+            @close="handleClose"
+            @change-status="changeAgentStatus"
+            @select-conversation="selectConversation"
+            @refresh-conversations="fetchAgentConversations"
+            @back-to-conversation-list="backToConversationList"
+            @send-message="sendMessage"
+          />
 
           <!-- 访客模式：欢迎页 -->
-          <div
+          <ChatWelcomePanel
             v-else-if="showWelcomeScreen && !agentMode"
             key="welcome"
-            class="sidebar-panel chat-modal-shell relative w-full md:w-[420px] max-w-full md:max-w-[calc(100vw-2rem)] h-[95vh] md:h-[85vh] max-h-[800px] rounded-2xl overflow-hidden flex flex-col border-2 border-[#6b73ff]/40 ring-1 ring-white/10 bg-slate-950/80 backdrop-blur-xl shadow-[0_0_30px_rgba(107,115,255,0.6)] pointer-events-auto"
-          >
-            <!-- 背景装饰 -->
-            <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
-            <!-- 关闭按钮 - 固定右上角 -->
-            <button
-              type="button"
-              class="absolute top-4 right-4 z-20 w-9 h-9 rounded-full border-2 border-white/20 bg-black/50 backdrop-blur-sm text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors pointer-events-auto"
-              @click="handleClose"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-            
-            <!-- 可滚动内容区域 -->
-            <div class="flex-1 overflow-y-auto p-3 md:p-4 relative z-10 welcome-scroll-area">
-              <div class="w-full">
-                <div class="mb-2 md:mb-3 welcome-header">
-                  <!-- Logo -->
-                  <div class="flex items-center gap-3 mb-2 welcome-logo-row">
-                    <img
-                      src="/images/chat-logo.webp"
-                      alt="Tanzanite"
-                      class="w-12 h-12 rounded-xl object-cover shrink-0 welcome-logo"
-                    />
-
-                    <!-- 欢迎语 -->
-                    <h1 class="text-2xl md:text-3xl font-bold text-white welcome-title">
-                      Hi there! <span class="inline-block animate-wave">👋</span>
-                    </h1>
-                  </div>
-
-                  <p class="text-sm md:text-base text-white/70 leading-relaxed welcome-desc">
-                    Chat with our team, track your orders, or find answers in our FAQ.
-                  </p>
-                </div>
-
-              <!-- 客服状态 & 在线团队 -->
-              <div class="space-y-2 mb-0">
-                <div class="flex items-center gap-2 mb-2 pl-1">
-                  <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
-                  <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                    Online support team
-                  </div>
-                </div>
-
-                <!-- 客服头像列表：更柔和的方形卡片 + 网格布局 -->
-                <ChatWelcomeAgentSelector
-                  :agents="welcomeAgents"
-                  :selected-agent="selectedAgent"
-                  @select="selectAgentFromWelcome"
-                />
-
-                <p class="text-[10px] text-white/40 leading-relaxed text-center px-2">
-                  {{ onlineAgentsCount }} agent{{ onlineAgentsCount > 1 ? 's' : '' }} online · Our team typically replies in a few minutes.
-                </p>
-              </div>
-
-              <!-- TODO: 后续可在这里加入 "Your chats" 动态列表，目前先保持简洁 -->
-              </div>
-            </div>
-
-            <!-- 底部操作：Start / WhatsApp / Email 固定在欢迎容器底部 -->
-            <div class="p-2 md:px-5 md:pb-3 shrink-0 z-20 bg-white/[0.02] border-t border-white/[0.08]">
-              <!-- 开始对话按钮 -->
-              <ChatStartButton
-                class="w-full text-sm"
-                :label="`${hasHistoryChat ? 'Continue' : 'Start'} — Chat, Orders & FAQ`"
-                :disabled="!selectedAgent"
-                @click="enterChat"
-              />
-
-              <!-- 快捷联系 -->
-              <div class="flex gap-2.5 mt-2">
-                <a
-                  v-if="selectedAgent?.whatsapp"
-                  :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
-                  target="_blank"
-                  class="flex-1 py-2.5 rounded-full bg-[#25D366] text-white text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_4px_12px_rgba(0,0,0,0.9)] hover:-translate-y-0.5 transition-transform"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
-                  </svg>
-                  WhatsApp
-                </a>
-                <a
-                  v-if="emailSettings.preSalesEmail"
-                  :href="`mailto:${emailSettings.preSalesEmail}`"
-                  class="flex-1 py-2.5 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] hover:-translate-y-0.5 transition-transform"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                  Email
-                </a>
-              </div>
-            </div>
-          </div>
+            :welcome-agents="welcomeAgents"
+            :selected-agent="selectedAgent"
+            :online-agents-count="onlineAgentsCount"
+            :has-history-chat="hasHistoryChat"
+            :email-settings="emailSettings"
+            @close="handleClose"
+            @select-agent="selectAgentFromWelcome"
+            @enter-chat="enterChat"
+          />
 
           <!-- 聊天窗口 - 简化布局 -->
           <div
@@ -439,71 +171,15 @@
       </div>
     </Transition>
     
-    <!-- 转接弹窗 -->
-    <Transition name="fade">
-      <div
-        v-if="showTransferModal"
-        class="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4"
-        @click.self="showTransferModal = false"
-      >
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-          <h3 class="text-xl font-bold text-gray-900 mb-4">转接会话</h3>
-          
-          <div class="space-y-4">
-            <!-- 选择客服 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                选择目标客服 *
-              </label>
-              <select
-                v-model="transferToAgent"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">请选择客服</option>
-                <option
-                  v-for="agent in agents.filter(a => a.id !== selectedAgent?.id)"
-                  :key="agent.id"
-                  :value="agent.id"
-                >
-                  {{ agent.name }} ({{ agent.email }})
-                </option>
-              </select>
-            </div>
-            
-            <!-- 转接备注 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                转接备注（可选）
-              </label>
-              <textarea
-                v-model="transferNote"
-                rows="3"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="例如：客户需要技术支持..."
-              ></textarea>
-            </div>
-          </div>
-          
-          <!-- 按钮 -->
-          <div class="flex gap-3 mt-6">
-            <button
-              @click="showTransferModal = false"
-              :disabled="isTransferring"
-              class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              取消
-            </button>
-            <button
-              @click="handleTransfer"
-              :disabled="isTransferring || !transferToAgent"
-              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ isTransferring ? '转接中...' : '确认转接' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
+    <ChatTransferModal
+      v-model="showTransferModal"
+      v-model:transfer-to-agent="transferToAgent"
+      v-model:transfer-note="transferNote"
+      :agents="agents"
+      :selected-agent="selectedAgent"
+      :is-transferring="isTransferring"
+      @submit="handleTransfer"
+    />
     <!-- Toast 提示 -->
     <Transition name="fade">
       <div
@@ -588,11 +264,10 @@ import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
-import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
-import ChatStartButton from '~/components/ChatStartButton.vue'
-import ChatWelcomeAgentSelector from '~/components/ChatWelcomeAgentSelector.vue'
-import WarrantyCheckPanel from '~/components/WarrantyCheckPanel.vue'
 import AuthModal from '~/components/AuthModal.vue'
+import AgentChatPanel from '~/components/whatsapp/AgentChatPanel.vue'
+import ChatTransferModal from '~/components/whatsapp/ChatTransferModal.vue'
+import ChatWelcomePanel from '~/components/whatsapp/ChatWelcomePanel.vue'
 import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
 import TestReportDrawer from '~/components/whatsapp/TestReportDrawer.vue'
 
@@ -789,7 +464,6 @@ const chatRooms = ref<Record<number, ChatRoomState>>({})
 const LAST_AGENT_STORAGE_KEY = 'tz_last_selected_agent'
 
 const messagesContainerMobile = ref<HTMLElement | null>(null)
-const messagesContainerDesktop = ref<HTMLElement | null>(null)
 const isSending = ref(false)
 
 const ensureChatRoom = (agentId: number): ChatRoomState => {
@@ -1123,7 +797,7 @@ const formatMessageTime = (time: string) => {
 // 滚动到底部
 const scrollToBottom = () => {
   nextTick(() => {
-    const containers = [messagesContainerMobile.value, messagesContainerDesktop.value]
+    const containers = [messagesContainerMobile.value]
     containers.forEach((container) => {
       if (container) {
         container.scrollTop = container.scrollHeight
@@ -1763,23 +1437,6 @@ const getInitials = (name: string) => {
     return (parts[0][0] + parts[1][0]).toUpperCase()
   }
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-
-// 格式化时间（客服模式会话列表用）
-const formatTime = (dateStr: string) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  
-  // 小于1分钟
-  if (diff < 60 * 1000) return 'Just now'
-  // 小于1小时
-  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)}m`
-  // 小于24小时
-  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)}h`
-  // 超过24小时显示日期
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 // 转接会话
