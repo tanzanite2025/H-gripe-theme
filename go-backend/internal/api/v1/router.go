@@ -7,6 +7,7 @@ import (
 	"tanzanite/internal/api/v1/cart"
 	"tanzanite/internal/api/v1/content"
 	"tanzanite/internal/api/v1/faq"
+	"tanzanite/internal/api/v1/feedback"
 	"tanzanite/internal/api/v1/gallery"
 	"tanzanite/internal/api/v1/i18n"
 	"tanzanite/internal/api/v1/marketing"
@@ -52,6 +53,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	auditRepo := repository.NewAuditRepository(db)
 	showcaseRepo := repository.NewShowcaseRepository(db)
 	wishlistRepo := repository.NewWishlistRepository(db)
+	feedbackRepo := repository.NewFeedbackRepository(db)
 
 	// 初始化services
 	authService := service.NewAuthService(userRepo, cfg.JWT)
@@ -73,6 +75,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
 	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
+	feedbackService := service.NewFeedbackService(feedbackRepo)
 
 	// 初始化handlers
 	authHandler := auth.NewHandler(authService)
@@ -94,6 +97,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	wishlistHandler := wishlist.NewHandler(wishlistService)
+	feedbackHandler := feedback.NewHandler(feedbackService)
 	registerWordPressCompatRoutes(r, postService)
 
 	// API v1 路由组
@@ -157,6 +161,13 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			wishlistGroup.GET("", wishlistHandler.ListItems)
 			wishlistGroup.POST("", wishlistHandler.CreateItem)
 			wishlistGroup.DELETE("/:id", wishlistHandler.DeleteItem)
+		}
+
+		feedbackGroup := v1.Group("/feedback")
+		{
+			feedbackGroup.GET("", feedbackHandler.List)
+			feedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), feedbackHandler.Eligibility)
+			feedbackGroup.POST("", middleware.AuthMiddleware(authService), feedbackHandler.Create)
 		}
 
 		// 订单路由（需要认证）
