@@ -27,7 +27,7 @@
 | `/wp-json/tanzanite/v1/settings`、`/settings/quick-buy` | `app/layouts/default.vue`, `app/composables/useSiteTitle.ts`, `app/composables/useSocialLinks.ts` | 旧根目录 PHP 来源已删除；Go 已有 `/api/v1/settings/site`、`/api/v1/settings/quick-buy`，但旧 `/settings` 与 Go `/settings/site` 名称不一致 | M1.1 settings/quick-buy |
 | `/wp-json/tanzanite/v1/products`、`/product-categories`、`/attributes/filterable` | `app/pages/shop.vue`, `app/pages/shop/[slug].vue`, `app/components/CategoryProductsStrip.vue`, `app/composables/useShopCategories.ts`, `app/composables/useProductAttributes.ts` | 产品列表 Go 已有；分类/属性存在缺口或契约需核对 | M3 product catalog |
 | `/wp-json/tanzanite/v1/seo/product/*` | `app/pages/shop/[slug].vue` | Go 只有通用 settings SEO；产品 SEO/schema 缺口 | M3 product SEO |
-| `/wp-json/tanzanite/v1/wishlist` | `app/composables/useWishlist.ts` | Go 缺口 | M2 wishlist |
+| `/wp-json/tanzanite/v1/wishlist` | `app/composables/useWishlist.ts` | M2 已切到 Go `/api/v1/wishlist` | M2 wishlist |
 | `/wp-json/tanzanite/v1/warranty/*` | `app/components/warranty/SubmitClaimTab.vue`, `app/composables/useWarrantyCheck.ts` | Go 有 registrations/warranty-claims，但旧 warranty 查询/claim 契约需映射 | M2 warranty/registration |
 | `/wp-json/tanzanite/v1/suggestion-feedback`、`/feedback` | `app/composables/useSuggestionFeedback.ts`, `app/composables/useFeedback.ts` | Go 缺口 | M2 feedback |
 | `/wp-json/tanzanite/v1/spoke-history`、`/spoke-db-export` | `app/composables/useSpokeHistory.ts`, `scripts/sync-spoke-data.mjs` | Go 缺口 | M2 spoke |
@@ -124,7 +124,7 @@ M1.3 固定的 Blog 读取契约：
 
 | PHP endpoint | 来源 | Go 目标 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- |
-| `/wp-json/tanzanite/v1/wishlist`、`/wishlist/:id` | `class-rest-wishlist-controller.php` | 待定：`/api/v1/wishlist` | Go 缺口 | M2 wishlist |
+| `/wp-json/tanzanite/v1/wishlist`、`/wishlist/:id` | `class-rest-wishlist-controller.php` | `/api/v1/wishlist`、`/api/v1/wishlist/:id` | Go 已有 | M2 wishlist 已补 Go API 并切 Nuxt；删除 PHP 前需验证数据迁移/代理 |
 | `/wp-json/tanzanite/v1/reviews`、`/reviews/:id` | `class-rest-reviews-controller.php` | `/api/v1/reviews` | Go 已有 | M2 review：字段/权限映射 |
 | `/wp-json/tanzanite/v1/feedback`、`/feedback/eligibility` | `class-rest-feedback-controller.php` | 待定：`/api/v1/feedback` | Go 缺口 | M2 feedback |
 | `/wp-json/tanzanite/v1/suggestion-feedback/**` | `class-rest-suggestion-feedback-controller.php` | 待定：`/api/v1/suggestion-feedback` | Go 缺口 | M2 suggestion feedback |

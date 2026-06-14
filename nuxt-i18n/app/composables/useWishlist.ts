@@ -1,41 +1,43 @@
 import { ref, computed } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 
 export interface WishlistItem {
   id: number
   product_id: number
   created_at: string
-  product: any
+  product?: unknown
 }
 
 const items = ref<WishlistItem[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-let loadedOnce = false
+const loadedOnce = ref(false)
+
+const wishlistMessage = (err: unknown, fallback: string) => {
+  if (err instanceof Error && err.message) return err.message
+  return fallback
+}
 
 export const useWishlist = () => {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-    return base.replace(/\/$/, '')
-  })
+  const auth = useAuth()
 
   const loadWishlist = async () => {
     if (loading.value) return
     loading.value = true
     error.value = null
     try {
-      const response = await $fetch<{ items: WishlistItem[] }>(
-        `${apiBase.value}/tanzanite/v1/wishlist`,
+      const response = await auth.request<{ items: WishlistItem[] }>(
+        '/wishlist',
         {
-          credentials: 'include',
           headers: { accept: 'application/json' },
         },
+        'Please log in to view your wishlist.'
       )
       items.value = Array.isArray(response?.items) ? response.items : []
-      loadedOnce = true
-    } catch (e: any) {
+      loadedOnce.value = true
+    } catch (e: unknown) {
       console.error('Failed to load wishlist:', e)
-      error.value = e?.data?.message || 'Failed to load wishlist.'
+      error.value = wishlistMessage(e, 'Failed to load wishlist.')
     } finally {
       loading.value = false
     }
@@ -45,17 +47,17 @@ export const useWishlist = () => {
     if (!productId) return { success: false, message: 'Invalid product id' }
     error.value = null
     try {
-      const response = await $fetch<{ item: WishlistItem }>(
-        `${apiBase.value}/tanzanite/v1/wishlist`,
+      const response = await auth.request<{ item: WishlistItem }>(
+        '/wishlist',
         {
           method: 'POST',
-          credentials: 'include',
           headers: {
             accept: 'application/json',
             'Content-Type': 'application/json',
           },
-          body: { product_id: productId },
+          body: JSON.stringify({ product_id: productId }),
         },
+        'Please log in to use wishlist.'
       )
       const item = response?.item
       if (item) {
@@ -65,9 +67,9 @@ export const useWishlist = () => {
         }
       }
       return { success: true, item }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to add to wishlist:', e)
-      const message = e?.data?.message || 'Failed to add to wishlist.'
+      const message = wishlistMessage(e, 'Failed to add to wishlist.')
       error.value = message
       return { success: false, message }
     }
@@ -77,19 +79,19 @@ export const useWishlist = () => {
     if (!wishlistId) return { success: false, message: 'Invalid wishlist id' }
     error.value = null
     try {
-      await $fetch(
-        `${apiBase.value}/tanzanite/v1/wishlist/${wishlistId}`,
+      await auth.request(
+        `/wishlist/${wishlistId}`,
         {
           method: 'DELETE',
-          credentials: 'include',
           headers: { accept: 'application/json' },
         },
+        'Please log in to use wishlist.'
       )
       items.value = items.value.filter((item) => item.id !== wishlistId)
       return { success: true }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to remove from wishlist:', e)
-      const message = e?.data?.message || 'Failed to remove from wishlist.'
+      const message = wishlistMessage(e, 'Failed to remove from wishlist.')
       error.value = message
       return { success: false, message }
     }
@@ -100,7 +102,7 @@ export const useWishlist = () => {
     items,
     loading,
     error,
-    loadedOnce: computed(() => loadedOnce),
+    loadedOnce: computed(() => loadedOnce.value),
 
     // actions
     loadWishlist,
