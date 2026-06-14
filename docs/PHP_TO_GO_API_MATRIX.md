@@ -2,9 +2,11 @@
 
 ## 范围
 
-本文件只做 D1b 盘点和下一步拆分，不实现迁移。
+本文件最初用于 D1b 盘点和下一步拆分；现在同步记录各模块切流后的最新状态，作为后续单模块 PR 的边界参考。
 
 更新：根目录 WordPress 主题壳文件和主题元数据（`index.php`、`header.php`、`footer.php`、`page.php`、`single.php`、`functions.php`、`style.css`）已确认属于早期虚拟机限制下的历史文件并已删除。下表中来自 `removed root functions.php` 的 endpoint 只表示历史参考或 Nuxt 仍可能存在的旧调用目标，不能作为可恢复的 PHP 实现。
+
+截至 2026-06-14，已合并的迁移 PR 为 #7-#16：Settings、Subscription、Blog/content、Wishlist、Review、Feedback、Suggestion feedback、Warranty、Spoke、Agent customer-service 已完成前台/agent-side 切流。仍需继续处理 public customer-service chat、auto-reply、agents list、chat order history、Product catalog、Cart calculation、Checkout/order/payment 等模块。
 
 目标：
 
