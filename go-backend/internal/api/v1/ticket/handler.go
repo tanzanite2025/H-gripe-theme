@@ -426,7 +426,7 @@ func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 	for _, agent := range agents {
 		items = append(items, gin.H{
 			"id":         agent.ID,
-			"wp_user_id": 0,
+			"wp_user_id": agent.ID,
 			"name":       displayName(agent.FirstName, agent.LastName, agent.Username, agent.Email),
 			"email":      agent.Email,
 			"avatar":     "",
