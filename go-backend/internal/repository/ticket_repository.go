@@ -37,14 +37,14 @@ func (r *TicketRepository) FindTicketsByUserID(userID uint, page, pageSize int) 
 	var total int64
 
 	query := r.db.Model(&ticket.Ticket{}).Where("user_id = ?", userID)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * pageSize
 	err := query.Order("updated_at DESC").Offset(offset).Limit(pageSize).Find(&tickets).Error
-	
+
 	return tickets, total, err
 }
 
@@ -54,11 +54,11 @@ func (r *TicketRepository) FindAllTickets(page, pageSize int, status, priority s
 	var total int64
 
 	query := r.db.Model(&ticket.Ticket{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
-	
+
 	if priority != "" {
 		query = query.Where("priority = ?", priority)
 	}
@@ -70,7 +70,24 @@ func (r *TicketRepository) FindAllTickets(page, pageSize int, status, priority s
 	offset := (page - 1) * pageSize
 	err := query.Preload("User").Order("updated_at DESC").
 		Offset(offset).Limit(pageSize).Find(&tickets).Error
-	
+
+	return tickets, total, err
+}
+
+func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int) ([]ticket.Ticket, int64, error) {
+	var tickets []ticket.Ticket
+	var total int64
+
+	query := r.db.Model(&ticket.Ticket{})
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := query.Preload("User").Preload("Messages", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at ASC")
+	}).Order("updated_at DESC").Offset(offset).Limit(pageSize).Find(&tickets).Error
+
 	return tickets, total, err
 }
 
@@ -80,7 +97,7 @@ func (r *TicketRepository) FindTicketsByAssignedTo(assignedTo uint, page, pageSi
 	var total int64
 
 	query := r.db.Model(&ticket.Ticket{}).Where("assigned_to = ?", assignedTo)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -88,7 +105,7 @@ func (r *TicketRepository) FindTicketsByAssignedTo(assignedTo uint, page, pageSi
 	offset := (page - 1) * pageSize
 	err := query.Preload("User").Order("updated_at DESC").
 		Offset(offset).Limit(pageSize).Find(&tickets).Error
-	
+
 	return tickets, total, err
 }
 
@@ -102,11 +119,11 @@ func (r *TicketRepository) UpdateTicketStatus(id uint, status string) error {
 	updates := map[string]interface{}{
 		"status": status,
 	}
-	
+
 	if status == "resolved" || status == "closed" {
 		updates["resolved_at"] = gorm.Expr("NOW()")
 	}
-	
+
 	return r.db.Model(&ticket.Ticket{}).Where("id = ?", id).Updates(updates).Error
 }
 
@@ -128,7 +145,7 @@ func (r *TicketRepository) DeleteTicket(id uint) error {
 // GetTicketStats 获取工单统计
 func (r *TicketRepository) GetTicketStats(userID uint) (map[string]int64, error) {
 	stats := make(map[string]int64)
-	
+
 	query := r.db.Model(&ticket.Ticket{})
 	if userID > 0 {
 		query = query.Where("user_id = ?", userID)
@@ -143,7 +160,7 @@ func (r *TicketRepository) GetTicketStats(userID uint) (map[string]int64, error)
 		}
 		stats[status] = count
 	}
-	
+
 	// 统计各优先级工单数量
 	priorities := []string{"low", "medium", "high", "urgent"}
 	for _, priority := range priorities {

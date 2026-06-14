@@ -21,7 +21,7 @@ func (s *TicketService) CreateTicket(t *ticket.Ticket) error {
 	// 设置默认状态
 	t.Status = "open"
 	t.Priority = "medium" // 默认优先级
-	
+
 	return s.ticketRepo.CreateTicket(t)
 }
 
@@ -31,17 +31,17 @@ func (s *TicketService) GetTicket(id uint, userID uint, isStaff bool) (*ticket.T
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 验证权限
 	if !isStaff && t.UserID != userID {
 		return nil, errors.New("unauthorized")
 	}
-	
+
 	// 标记消息为已读
 	if err := s.ticketRepo.MarkMessagesAsRead(id, isStaff); err != nil {
 		return nil, err
 	}
-	
+
 	return t, nil
 }
 
@@ -55,6 +55,10 @@ func (s *TicketService) GetAllTickets(page, pageSize int, status, priority strin
 	return s.ticketRepo.FindAllTickets(page, pageSize, status, priority)
 }
 
+func (s *TicketService) GetCustomerServiceConversations(page, pageSize int) ([]ticket.Ticket, int64, error) {
+	return s.ticketRepo.FindCustomerServiceConversations(page, pageSize)
+}
+
 // GetAssignedTickets 获取分配给客服的工单
 func (s *TicketService) GetAssignedTickets(assignedTo uint, page, pageSize int) ([]ticket.Ticket, int64, error) {
 	return s.ticketRepo.FindTicketsByAssignedTo(assignedTo, page, pageSize)
@@ -66,12 +70,12 @@ func (s *TicketService) UpdateTicket(t *ticket.Ticket, userID uint, isStaff bool
 	if err != nil {
 		return err
 	}
-	
+
 	// 验证权限
 	if !isStaff && existing.UserID != userID {
 		return errors.New("unauthorized")
 	}
-	
+
 	return s.ticketRepo.UpdateTicket(t)
 }
 
@@ -86,11 +90,11 @@ func (s *TicketService) UpdateTicketStatus(id uint, status string) error {
 			break
 		}
 	}
-	
+
 	if !isValid {
 		return errors.New("invalid status")
 	}
-	
+
 	return s.ticketRepo.UpdateTicketStatus(id, status)
 }
 
@@ -100,7 +104,7 @@ func (s *TicketService) AssignTicket(id, assignedTo uint) error {
 	if err := s.ticketRepo.AssignTicket(id, assignedTo); err != nil {
 		return err
 	}
-	
+
 	// 更新状态为处理中
 	return s.ticketRepo.UpdateTicketStatus(id, "in_progress")
 }
@@ -111,17 +115,17 @@ func (s *TicketService) CloseTicket(id uint, userID uint, isStaff bool) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// 验证权限
 	if !isStaff && t.UserID != userID {
 		return errors.New("unauthorized")
 	}
-	
+
 	// 只有resolved状态可以关闭
 	if t.Status != "resolved" {
 		return errors.New("only resolved tickets can be closed")
 	}
-	
+
 	return s.ticketRepo.UpdateTicketStatus(id, "closed")
 }
 
@@ -131,12 +135,12 @@ func (s *TicketService) DeleteTicket(id uint, userID uint, isStaff bool) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// 验证权限（只有管理员或工单所有者可以删除）
 	if !isStaff && t.UserID != userID {
 		return errors.New("unauthorized")
 	}
-	
+
 	return s.ticketRepo.DeleteTicket(id)
 }
 
@@ -154,25 +158,25 @@ func (s *TicketService) AddMessage(m *ticket.TicketMessage, userID uint, isStaff
 	if err != nil {
 		return err
 	}
-	
+
 	if !isStaff && t.UserID != userID {
 		return errors.New("unauthorized")
 	}
-	
+
 	m.UserID = userID
 	m.IsStaff = isStaff
-	
+
 	if err := s.ticketRepo.CreateTicketMessage(m); err != nil {
 		return err
 	}
-	
+
 	// 如果工单是关闭状态，重新打开
 	if t.Status == "closed" {
 		if err := s.ticketRepo.UpdateTicketStatus(t.ID, "open"); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -183,11 +187,11 @@ func (s *TicketService) GetMessages(ticketID uint, userID uint, isStaff bool) ([
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !isStaff && t.UserID != userID {
 		return nil, errors.New("unauthorized")
 	}
-	
+
 	return s.ticketRepo.FindMessagesByTicketID(ticketID)
 }
 
@@ -197,18 +201,22 @@ func (s *TicketService) DeleteMessage(id uint, userID uint, isStaff bool) error 
 	if err != nil {
 		return err
 	}
-	
+
 	// 验证权限（只有消息作者或管理员可以删除）
 	if !isStaff && m.UserID != userID {
 		return errors.New("unauthorized")
 	}
-	
+
 	return s.ticketRepo.DeleteTicketMessage(id)
 }
 
 // CountUnreadMessages 统计未读消息
 func (s *TicketService) CountUnreadMessages(ticketID uint, isStaff bool) (int64, error) {
 	return s.ticketRepo.CountUnreadMessages(ticketID, isStaff)
+}
+
+func (s *TicketService) MarkMessagesAsRead(ticketID uint, isStaff bool) error {
+	return s.ticketRepo.MarkMessagesAsRead(ticketID, isStaff)
 }
 
 // GetDashboard 获取客服仪表板数据

@@ -33,7 +33,7 @@
 | `/wp-json/tanzanite/v1/spoke-history`、`/spoke-db-export` | `app/composables/useSpokeHistory.ts`, `scripts/sync-spoke-data.mjs` | M2 已切到 Go `/api/v1/spoke/history`、`/api/v1/spoke/export` | M2 spoke |
 | `/wp-json/tanzanite/v1/shipping-templates`、`/tax-rates`、`/packaging-rules` | `app/composables/useCartCalculation.ts`, `app/composables/useShippingValidation.ts`, `app/composables/usePackagingCalculation.ts` | Shipping/tax Go 已有但路径不同； packaging 缺口 | M3 cart calculation |
 | `/wp-json/tanzanite/v1/coupons/validate`、`/loyalty/points` | `app/composables/useCartCalculation.ts` | Go 已有 marketing routes，路径和 auth 需切换 | M3 coupon/loyalty |
-| `/wp-json/tanzanite/v1/customer-service/**`、`/auto-reply/**`、`/agent/**` | `app/components/WhatsAppChatModal.vue`, `app/composables/useChat.ts` | Go ticket 模块不能等同实时客服；customer-service/auto-reply/agent 是 Go 缺口 | M2/M3 customer service |
+| `/wp-json/tanzanite/v1/customer-service/**`、`/auto-reply/**`、`/agent/**` | `app/components/WhatsAppChatModal.vue`, `app/composables/useChat.ts` | Agent customer list/status/transfer 已用 Go `/api/v1/customer-service/agent/*` ticket projection；公开聊天窗/auto-reply 仍是缺口 | M2/M3 customer service |
 | `/wp-json/mytheme-vue/v1/my-orders` | `app/components/WhatsAppChatModal.vue` | Go 有 `/api/v1/orders`，但旧 WooCommerce 响应需映射 | M3 orders |
 | `/tanz/v1/subscribe` | `app/components/SubscriptionOptIn.vue` | Go 已有 `/api/v1/subscriptions` | M1.2 subscription |
 
@@ -128,7 +128,8 @@ M1.3 固定的 Blog 读取契约：
 | `/wp-json/tanzanite/v1/reviews`、`/reviews/:id` | `class-rest-reviews-controller.php` | `/api/v1/reviews`、`/api/v1/reviews/:id`、`/api/v1/reviews/my`、`/api/v1/reviews/summary/:product_id` | Go 已有 | M2 review 已固定 Go 契约；Nuxt 当前无旧 review REST 调用 |
 | `/wp-json/tanzanite/v1/feedback`、`/feedback/eligibility` | `class-rest-feedback-controller.php` | `/api/v1/feedback`、`/api/v1/feedback/eligibility` | Go 已有 | M2 feedback 已补 Go API 并切 Nuxt；后台 status 审核另行迁移 |
 | `/wp-json/tanzanite/v1/suggestion-feedback/**` | `class-rest-suggestion-feedback-controller.php` | `/api/v1/suggestion-feedback`、`/api/v1/suggestion-feedback/eligibility` | Go 已有 | M2 suggestion feedback 已补前台提交/资格检查并切 Nuxt；后台列表/status 审核另行迁移 |
-| `/wp-json/tanzanite/v1/customer-service/**` | `tanzanite-customer-service/**` | 不能直接等同 `/api/v1/tickets`; 需新增 customer-service 或重设计为 tickets | Go 缺口 | M2/M3 customer service |
+| `/wp-json/tanzanite/v1/customer-service/agent/conversations**`、`/agent/messages**`、`/agent/status` | `tanzanite-customer-service/**` | `/api/v1/customer-service/agent/conversations`、`/conversations/:id/messages`、`/conversations/:id/transfer`、`/messages`、`/messages/read`、`/status` | Go 已有 | M2.7 agent customer-service 已切 Go；公开聊天窗另迁 |
+| `/wp-json/tanzanite/v1/customer-service/**` | `tanzanite-customer-service/**` | 不能直接等同 `/api/v1/tickets`; 需作为 customer-service projection 逐步接管 | Go 缺口 | 公开聊天窗、agents 列表后续 PR |
 | `/wp-json/tanzanite/v1/auto-reply/**` | `class-auto-reply-api.php` | 待定：customer-service auto-reply | Go 缺口 | 与 customer-service 同模块 |
 | `/wp-json/tanzanite/v1/agent/**` | `class-agent-api.php` | 待定：`/api/admin/customer-service/agent` | Go 缺口 | `web/admin` 客服工作台模块 |
 | removed root `functions.php` legacy `/chat/**` | removed root `functions.php` | 待定：customer-service 或 tickets | Go 缺口 | 不恢复旧 alias |
