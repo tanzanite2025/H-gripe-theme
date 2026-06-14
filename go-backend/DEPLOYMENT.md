@@ -142,13 +142,13 @@ EOF
 docker-compose up -d
 
 # 查看日志
-docker-compose logs -f api
+docker-compose logs -f app
 
 # 停止服务
 docker-compose down
 
 # 重启服务
-docker-compose restart api
+docker-compose restart app
 ```
 
 ### 4. 数据持久化
