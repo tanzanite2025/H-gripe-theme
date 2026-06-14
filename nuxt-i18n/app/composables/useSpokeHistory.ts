@@ -1,4 +1,5 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 
 export interface SpokeHistoryItem {
   id: number
@@ -35,27 +36,13 @@ export interface SpokeHistoryResponse {
 }
 
 export const useSpokeHistory = () => {
-  const config = useRuntimeConfig()
-
-  const apiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-    return base.replace(/\/$/, '')
-  })
+  const auth = useAuth()
 
   const items = ref<SpokeHistoryItem[]>([])
   const meta = ref<SpokeHistoryMeta | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const searchText = ref('')
-
-  const buildHeaders = () => {
-    const headers: Record<string, string> = { accept: 'application/json' }
-    const wpNonce = (config.public as { wpNonce?: string }).wpNonce
-    if (wpNonce) {
-      headers['X-WP-Nonce'] = String(wpNonce)
-    }
-    return headers
-  }
 
   const fetchHistory = async (options?: { search?: string; page?: number; perPage?: number; append?: boolean }) => {
     loading.value = true
@@ -67,18 +54,20 @@ export const useSpokeHistory = () => {
     const append = options?.append === true
 
     try {
-      const response = await $fetch<SpokeHistoryResponse>(
-        `${apiBase.value}/tanzanite/v1/spoke-history`,
+      const query = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage),
+      })
+      if (search) {
+        query.set('search', search)
+      }
+
+      const response = await auth.request<SpokeHistoryResponse>(
+        `/spoke/history?${query.toString()}`,
         {
-          method: 'GET',
-          credentials: 'include',
-          headers: buildHeaders(),
-          query: {
-            search: search || undefined,
-            page,
-            per_page: perPage,
-          },
+          headers: { accept: 'application/json' },
         },
+        'Failed to load spoke length history',
       )
 
       const nextItems = response?.items ?? []
@@ -93,10 +82,10 @@ export const useSpokeHistory = () => {
         items.value = nextItems
       }
       meta.value = nextMeta
-    } catch (err: any) {
+    } catch (err: unknown) {
       // eslint-disable-next-line no-console
       console.error('Failed to load spoke history:', err)
-      error.value = err?.message || 'Failed to load spoke length history'
+      error.value = err instanceof Error ? err.message : 'Failed to load spoke length history'
       // 保持现有 items，不抛出错误，避免打断页面
     } finally {
       loading.value = false

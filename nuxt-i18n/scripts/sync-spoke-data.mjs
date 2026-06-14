@@ -3,7 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Config
-const API_URL = process.env.WP_API_URL || 'https://tanzanite.site/wp-json/tanzanite/v1/spoke-db-export';
+const apiBase = (process.env.GO_API_URL || process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080/api/v1').replace(/\/$/, '');
+const API_URL = process.env.SPOKE_API_URL || `${apiBase}/spoke/export`;
 const TARGET_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '../app/data/spoke-calculator/database.ts');
 
 async function main() {
@@ -24,7 +25,7 @@ async function main() {
         // Let's generate the top part of the file.
 
         const fileHeader = `// AUTO-GENERATED FILE. DO NOT EDIT BRANDS MANUALLY.
-// Run "npm run sync-data" to update from WordPress.
+// Run "npm run sync-data" to update from Go.
 
 export interface SpokeGeometry {
   leftFlange: number
