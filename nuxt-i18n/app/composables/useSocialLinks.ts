@@ -1,16 +1,14 @@
 import { ref, computed, onMounted } from 'vue'
-import { useRuntimeConfig, useAsyncData } from '#imports'
+import {
+  normalizeRuntimeSocialLinks,
+  useSiteSettings
+} from '~/composables/usePublicSettings'
 
-export interface RuntimeSocialLink { network: string; url: string }
-export interface ApiSocialLink extends RuntimeSocialLink { label?: string; size?: number }
 export interface SocialLinkViewModel { network: string; url: string; label: string; size: number }
 
 export function useSocialLinks() {
-  const config = useRuntimeConfig()
-  const normalizeBaseUrl = (value?: string) => (value ? value.replace(/\/$/, '') : '')
-  const wpApiBase = normalizeBaseUrl((config.public as { wpApiBase?: string }).wpApiBase)
-
   const previewLinks = ref<SocialLinkViewModel[] | null>(null)
+  const { siteSettings } = useSiteSettings()
 
   if (import.meta.client) {
     onMounted(() => {
@@ -26,7 +24,7 @@ export function useSocialLinks() {
             const apply = (v: unknown) => {
               try {
                 const arr = Array.isArray(v) ? v : typeof v === 'string' ? JSON.parse(v) : []
-                previewLinks.value = normalize(arr as any)
+                previewLinks.value = normalize(arr)
               } catch {
                 previewLinks.value = null
               }
@@ -39,21 +37,8 @@ export function useSocialLinks() {
     })
   }
 
-  interface SiteSettingsResponse { socialLinks?: Array<RuntimeSocialLink | ApiSocialLink> }
-
-  const { data } = useAsyncData<SiteSettingsResponse | null>('mytheme-site-settings-social', async () => {
-    if (!wpApiBase) return null
-    try {
-      const res = await $fetch<SiteSettingsResponse>(`${wpApiBase}/tanzanite/v1/settings`, { headers: { accept: 'application/json' } })
-      return res || null
-    } catch {
-      return null
-    }
-  }, { server: false, default: () => null })
-
-  const normalize = (items: Array<RuntimeSocialLink | ApiSocialLink>) => {
-    return items
-      .filter((item): item is RuntimeSocialLink | ApiSocialLink => !!item && typeof item === 'object' && 'network' in item && 'url' in item)
+  const normalize = (items: unknown) => {
+    return normalizeRuntimeSocialLinks(items)
       .map((item) => {
         const network = String(item.network || '').toLowerCase()
         const url = String(item.url || '')
@@ -66,8 +51,7 @@ export function useSocialLinks() {
 
   const socialLinks = computed<SocialLinkViewModel[]>(() => {
     if (previewLinks.value && previewLinks.value.length) return previewLinks.value
-    const arr = Array.isArray(data.value?.socialLinks) ? data.value!.socialLinks! : []
-    return normalize(arr as any)
+    return normalize(siteSettings.value.socialLinks || [])
   })
 
   return { socialLinks }

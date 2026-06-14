@@ -1,11 +1,9 @@
 import { ref, computed, onMounted } from 'vue'
-import { useRuntimeConfig, useAsyncData } from '#imports'
+import { useRuntimeConfig } from '#imports'
+import { useSiteSettings } from '~/composables/usePublicSettings'
 
 export function useSiteTitle() {
   const config = useRuntimeConfig()
-
-  const normalizeBaseUrl = (value?: string) => (value ? value.replace(/\/$/, '') : '')
-  const wpApiBase = normalizeBaseUrl((config.public as { wpApiBase?: string }).wpApiBase)
 
   const previewSiteTitle = ref('')
 
@@ -25,22 +23,12 @@ export function useSiteTitle() {
     })
   }
 
-  interface SiteSettingsResponse { siteTitle?: string }
-
-  const { data } = useAsyncData<SiteSettingsResponse | null>('mytheme-site-settings-title', async () => {
-    if (!wpApiBase) return null
-    try {
-      const res = await $fetch<SiteSettingsResponse>(`${wpApiBase}/tanzanite/v1/settings`, { headers: { accept: 'application/json' } })
-      return res || null
-    } catch {
-      return null
-    }
-  }, { server: false, default: () => null })
+  const { siteSettings } = useSiteSettings()
 
   const siteTitle = computed(() => {
     const fromPreview = previewSiteTitle.value.trim()
     if (fromPreview) return fromPreview
-    const fromApi = (data.value?.siteTitle || '').toString().trim()
+    const fromApi = (siteSettings.value.siteTitle || '').toString().trim()
     if (fromApi) return fromApi
     const fromEnv = ((config.public as { siteTitle?: string }).siteTitle || '').trim()
     return fromEnv || 'Tanzanite'
