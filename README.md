@@ -7,7 +7,7 @@
 
 ## 当前文档入口
 
-先读 `docs/README.md` 和 `docs/PHP_TO_GO_MIGRATION_WORKFLOW.md`。未被文档入口列为“当前有效”的历史文档，只能作为旧行为参考，不能作为新实现依据。
+先读 `MIGRATION_PLAN.md`、`docs/README.md` 和 `docs/PHP_TO_GO_MIGRATION_WORKFLOW.md`。未被文档入口列为“当前有效”的历史文档，只能作为旧行为参考，不能作为新实现依据。
 
 ## 🏛️ 系统架构全景图 (System Architecture)
 
