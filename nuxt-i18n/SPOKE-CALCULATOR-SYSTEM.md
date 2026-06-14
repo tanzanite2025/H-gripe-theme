@@ -16,7 +16,7 @@
 
 ## 2. 数据管理与同步 (Data Management & Sync)
 
-虽然前端使用静态文件，但数据的"真理来源 (Source of Truth)" 依然是 **WordPress 后台**。
+虽然前端使用静态文件，但同步入口已迁移到 **Go 后端**。
 
 ### 2.1 数据结构
 
@@ -26,7 +26,7 @@
 
 ### 2.2 同步工作流 (Sync Workflow)
 
-当运营人员在 WordPress 后台添加了新的 Spoke Product (花鼓或轮圈) 后，开发人员需执行以下操作将数据同步到前端：
+当 Go 后端 Spoke 数据源更新后，开发人员需执行以下操作将数据同步到前端：
 
 1. **准备环境**: 确保本地前端项目 (`nuxt-i18n`) 已连通外网。
 2. **运行命令**:
@@ -36,7 +36,7 @@
     ```
 
 3. **脚本行为 (`scripts/sync-spoke-data.mjs`)**:
-    - 连接 WordPress API: `/wp-json/tanzanite/v1/spoke-db-export`
+    - 连接 Go API: `/api/v1/spoke/export`
     - 拉取最新的 `rims` 和 `hubs` 数据。
     - 读取本地 `database.ts`，**自动保留** 您手动维护的 `PRESET_BUILDS` 部分。
     - 生成新的 `database.ts` 文件并覆盖。
@@ -64,4 +64,4 @@
 - **数据**: `app/data/spoke-calculator/database.ts`
 - **同步脚本**: `scripts/sync-spoke-data.mjs`
 - **计算逻辑**: `app/utils/spokeMath.ts`
-- **WP 导出器**: `wp-plugin/tanzanite-setting/includes/rest-api/class-rest-spoke-export-controller.php`
+- **Go 导出器**: `go-backend/internal/api/v1/spoke/handler.go`
