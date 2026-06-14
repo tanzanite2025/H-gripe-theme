@@ -68,6 +68,8 @@
 
 ### D1b PHP API → Go API 迁移矩阵
 
+状态：当前文档在 `docs/PHP_TO_GO_API_MATRIX.md`。
+
 目标：
 
 - 建 PHP API → Go API 迁移矩阵。
