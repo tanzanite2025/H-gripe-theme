@@ -1,36 +1,54 @@
 import { ref } from 'vue'
+import { useAuth } from '~/composables/useAuth'
+
+interface WarrantyRemaining {
+  months: number
+  days: number
+  total_days: number
+  expired_days?: number
+}
+
+interface WarrantyResult {
+  product_code: string
+  product_type: {
+    code: string
+    name: string
+    name_zh: string
+  }
+  product_name: string
+  ship_date: string
+  warranty_months: number
+  warranty_end: string
+  status: 'valid' | 'expired'
+  remaining: WarrantyRemaining
+  records: Array<{
+    type: string
+    type_name: string
+    type_name_zh: string
+    date: string
+    description?: string
+  }>
+}
+
+interface WarrantyCheckResponse {
+  success: boolean
+  data?: WarrantyResult
+}
 
 // Warranty check composable: shared logic for querying warranty status
 export const useWarrantyCheck = () => {
   const { locale } = useI18n()
-  const config = useRuntimeConfig()
-
-  const apiBase = config.public?.apiBase || ''
+  const auth = useAuth()
 
   // 表单与结果状态
   const productCode = ref('')
   const searchedCode = ref('')
   const loading = ref(false)
   const error = ref(false)
-  const result = ref<any | null>(null)
-
-  const getWpNonce = (): string => {
-    const nonce = config.public?.wpNonce
-    if (typeof nonce === 'string') {
-      return nonce
-    }
-    return ''
-  }
+  const result = ref<WarrantyResult | null>(null)
 
   const checkWarranty = async () => {
     if (!productCode.value.trim()) return
-
-    if (!apiBase) {
-      // 没有配置 API 基础地址时，直接标记为错误但不中断页面
-      console.error('Missing runtimeConfig.public.apiBase for warranty check')
-      error.value = true
-      return
-    }
 
     loading.value = true
     error.value = false
@@ -38,22 +56,20 @@ export const useWarrantyCheck = () => {
     searchedCode.value = productCode.value.trim()
 
     try {
-      const response = await $fetch(
-        `${apiBase}/wp-json/tanzanite/v1/warranty/${encodeURIComponent(searchedCode.value)}`,
+      const response = await auth.request<WarrantyCheckResponse>(
+        `/registrations/warranty/${encodeURIComponent(searchedCode.value)}`,
         {
-          credentials: 'include',
-          headers: {
-            'X-WP-Nonce': getWpNonce(),
-          },
-        }
+          headers: { accept: 'application/json' },
+        },
+        'Warranty record not found'
       )
 
-      if (response && (response as any).success) {
-        result.value = (response as any).data
+      if (response.success && response.data) {
+        result.value = response.data
       } else {
         error.value = true
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       // eslint-disable-next-line no-console
       console.error('Warranty check error:', e)
       error.value = true
