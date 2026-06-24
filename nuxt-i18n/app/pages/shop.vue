@@ -288,13 +288,12 @@ const loadProducts = async (payload?: ProductSearchPayload) => {
   error.value = null
   try {
     const config = useRuntimeConfig()
-    const base = ((config.public as { wpApiBase?: string }).wpApiBase || '/wp-json').replace(/\/$/, '')
+    const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
 
     const params = buildProductQueryParams(payload || undefined)
 
-    const response = await $fetch<any>(`${base}/tanzanite/v1/products`, {
+    const response = await $fetch<any>(`${base}/customer-service/products`, {
       params,
-      credentials: 'include',
     })
 
     if (response && Array.isArray(response.items)) {

@@ -28,7 +28,7 @@ export interface AttributeWithValues {
 export const useProductAttributes = () => {
   const config = useRuntimeConfig()
   const apiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
+    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
     return base.replace(/\/$/, '')
   })
 
@@ -106,14 +106,14 @@ export const useProductAttributes = () => {
     error.value = null
 
     try {
-      const response = await $fetch<{ items: AttributeWithValues[] }>(
-        `${apiBase.value}/tanzanite/v1/attributes/filterable`,
+      const response = await $fetch<{ data: AttributeWithValues[] }>(
+        `${apiBase.value}/products/attributes/filterable`,
         {
           headers: { accept: 'application/json' },
         },
       )
 
-      const items = Array.isArray(response?.items) ? response.items : []
+      const items = Array.isArray(response?.data) ? response.data : []
       // eslint-disable-next-line no-console
       console.log('Loaded filterable attributes for AdvancedFilter:', items)
       colorAttributes.value = items
