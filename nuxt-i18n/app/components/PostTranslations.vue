@@ -27,7 +27,17 @@
 </template>
 
 <script setup lang="ts">
-import type { PostTranslation } from './useI18n'
+import { useBlogApi } from '~/composables/useBlogApi'
+import { useI18n } from '#imports'
+
+interface PostTranslation {
+  id: number
+  title: string
+  slug: string
+  locale: string
+  published_at: string
+  url: string
+}
 
 interface Props {
   postId: number
@@ -39,10 +49,10 @@ const props = withDefaults(defineProps<Props>(), {
   showCurrentLocale: true
 })
 
-const { locale: currentLocale, getPostTranslations, getLanguageName } = useI18n()
+const { locale: currentLocale, locales } = useI18n()
+const { getPostTranslations } = useBlogApi()
 
 const translations = ref<Record<string, PostTranslation>>({})
-const languageNames = ref<Record<string, string>>({})
 
 // 计算是否有翻译
 const hasTranslations = computed(() => {
@@ -53,16 +63,13 @@ const hasTranslations = computed(() => {
 // 加载翻译数据
 onMounted(async () => {
   translations.value = await getPostTranslations(props.postId)
-  
-  // 预加载所有语言名称
-  for (const locale of Object.keys(translations.value)) {
-    languageNames.value[locale] = await getLanguageName(locale)
-  }
 })
 
 // 获取语言名称
-const getLocaleName = (locale: string): string => {
-  return languageNames.value[locale] || locale
+const getLocaleName = (localeCode: string): string => {
+  const allLocales = locales.value as Array<{ code: string; name?: string; nativeName?: string }> | undefined
+  const found = allLocales?.find(l => l.code === localeCode)
+  return found?.name || found?.nativeName || localeCode
 }
 
 // 获取国旗 Emoji

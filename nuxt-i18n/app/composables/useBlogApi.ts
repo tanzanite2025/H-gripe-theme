@@ -132,10 +132,24 @@ export const useBlogApi = () => {
     }
   }
 
+  const getPostTranslations = async (postId: number): Promise<Record<string, any>> => {
+    const apiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
+    try {
+      const response = await $fetch<{ translations: Record<string, any> }>(
+        `${trimTrailingSlash(apiBase)}/api/v1/i18n/translations/${postId}`
+      )
+      return response.translations || {}
+    } catch (error) {
+      console.error('Failed to fetch post translations from Go backend:', error)
+      return {}
+    }
+  }
+
   return {
     blogCompatBase,
     listPosts,
     getPost,
     getTranslations,
+    getPostTranslations,
   }
 }

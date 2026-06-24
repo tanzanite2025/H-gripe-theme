@@ -963,7 +963,7 @@ const handleSendMessage = async () => {
 // 检查关键词自动回复
 const checkAutoReply = async (userMessage: string) => {
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/auto-reply/match', {
+    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/match`, {
       method: 'POST',
       body: {
         message: userMessage,
@@ -1337,7 +1337,7 @@ const initializeSelectedAgent = async () => {
 // 发送欢迎语
 const sendWelcomeMessage = async () => {
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/auto-reply/welcome', {
+    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/welcome`, {
       params: {
         conversation_id: conversationId.value
       }
