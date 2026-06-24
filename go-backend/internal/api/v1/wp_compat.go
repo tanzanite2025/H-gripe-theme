@@ -2,11 +2,15 @@ package v1
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"tanzanite/internal/api/middleware"
+	"tanzanite/internal/api/v1/i18n"
+	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/post"
+	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
 	"time"
 
@@ -44,7 +48,14 @@ type wpCompatPostDetail struct {
 	CanonicalURL string `json:"canonicalUrl"`
 }
 
-func registerWordPressCompatRoutes(r *gin.Engine, postService *service.PostService) {
+func registerWordPressCompatRoutes(
+	r *gin.Engine,
+	postService *service.PostService,
+	settingService *service.SettingService,
+	loyaltyRepo *repository.LoyaltyRepository,
+	marketingService *service.MarketingService,
+	authService *service.AuthService,
+) {
 	// Only expose compatibility routes for modules that have actually moved to Go.
 	// Other WordPress plugin routes should continue to be served by WordPress until migrated.
 	wp := r.Group("/wp-json/tanzanite/v1")
@@ -52,6 +63,19 @@ func registerWordPressCompatRoutes(r *gin.Engine, postService *service.PostServi
 		wp.GET("/posts", listCompatBlogPosts(postService))
 		wp.GET("/post", getCompatBlogPost(postService))
 		wp.GET("/translations", getCompatBlogTranslations(postService))
+
+		// 语言列表（公开）
+		wp.GET("/languages", getCompatLanguages())
+
+		// 积分兑换配置（公开）
+		wp.GET("/redeem/config", getCompatRedeemConfig(settingService))
+
+		// 查询用户积分余额（公开，挂载 OptionalAuthMiddleware，未登录返回0）
+		wp.GET("/loyalty/points", middleware.OptionalAuthMiddleware(authService), getCompatUserPoints(loyaltyRepo, settingService))
+
+		// 积分兑换礼品卡（需要登录授权）—— 调用 MarketingService 复用核心事务逻辑
+		wp.POST("/giftcards/redeem", middleware.AuthMiddleware(authService), redeemPointsToGiftCard(marketingService, settingService))
+		wp.POST("/redeem/exchange", middleware.AuthMiddleware(authService), redeemPointsToGiftCard(marketingService, settingService))
 	}
 }
 
@@ -307,3 +331,205 @@ func makeCompatTranslationMap(posts []post.Post) map[string]wpCompatTranslation 
 	}
 	return translations
 }
+
+// getCompatRedeemConfig 获取积分兑换配置
+func getCompatRedeemConfig(settingService *service.SettingService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		locale := middleware.GetLocale(c)
+		config, err := settingService.GetRedeemSettings(locale)
+		if err != nil {
+			// Fail Loudly: 直接返回 500 并附带 Critical 报错日志
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Failed to load redeem settings: %v", err)})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"enabled":            config.Enabled,
+			"exchange_rate":      config.ExchangeRate,
+			"min_points":         config.MinPoints,
+			"max_value_per_day":  config.MaxValuePerDay,
+			"card_expiry_days":   config.CardExpiryDays,
+			"preset_values":      config.PresetValues,
+		})
+	}
+}
+
+// getCompatUserPoints 获取用户积分余额
+func getCompatUserPoints(loyaltyRepo *repository.LoyaltyRepository, settingService *service.SettingService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDVal, exists := c.Get("user_id")
+		if !exists {
+			// 未登录时返回默认值
+			c.JSON(http.StatusOK, gin.H{
+				"user_id":              0,
+				"points":               0,
+				"total":                0,
+				"available":            0,
+				"tier":                 "Ordinary",
+				"can_redeem":           false,
+				"max_redeemable_value": 0,
+				"today_redeemed":       0,
+			})
+			return
+		}
+		userID := userIDVal.(uint)
+
+		// 1. 获取兑换配置
+		locale := middleware.GetLocale(c)
+		config, err := settingService.GetRedeemSettings(locale)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Failed to load redeem settings: %v", err)})
+			return
+		}
+
+		// 2. 获取用户积分汇总
+		userLoyalty, err := loyaltyRepo.FindUserLoyaltyByUserID(userID)
+		if err != nil {
+			// 若找不到但用户已登录，说明可能还未产生积分记录，默认初始化返回 0
+			c.JSON(http.StatusOK, gin.H{
+				"user_id":              userID,
+				"points":               0,
+				"total":                0,
+				"available":            0,
+				"tier":                 "Ordinary",
+				"can_redeem":           false,
+				"max_redeemable_value": 0,
+				"today_redeemed":       0,
+			})
+			return
+		}
+
+		// 3. 计算今日已兑换金额
+		var sumPoints int
+		todayStart := time.Now().Truncate(24 * time.Hour)
+		todayEnd := todayStart.Add(24 * time.Hour)
+		
+		err = loyaltyRepo.GetDB().Model(&loyalty.LoyaltyTransaction{}).
+			Where("user_id = ? AND type = ? AND source = ? AND created_at BETWEEN ? AND ?", 
+				userID, "spend", "giftcard", todayStart, todayEnd).
+			Select("COALESCE(SUM(points), 0)").
+			Scan(&sumPoints).Error
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Failed to calculate daily redeemed points: %v", err)})
+			return
+		}
+
+		// points 扣除是负数，所以取绝对值
+		todayRedeemedValue := math.Abs(float64(sumPoints)) / float64(config.ExchangeRate)
+
+		// 4. 计算最大可兑换金额
+		maxRedeemableByPoints := math.Floor(float64(userLoyalty.AvailablePoints) / float64(config.ExchangeRate))
+		maxRedeemableByLimit := math.Max(0, config.MaxValuePerDay-todayRedeemedValue)
+		if config.MaxValuePerDay <= 0 {
+			maxRedeemableByLimit = math.MaxFloat64
+		}
+		maxRedeemableValue := math.Min(maxRedeemableByPoints, maxRedeemableByLimit)
+
+		// 获取级别名称
+		tierName := "Ordinary"
+		if userLoyalty.MemberLevelID > 0 {
+			level, err := loyaltyRepo.FindMemberLevelByID(userLoyalty.MemberLevelID)
+			if err == nil && level != nil {
+				tierName = level.Name
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"user_id":              userID,
+			"points":               userLoyalty.AvailablePoints,
+			"total":                userLoyalty.TotalPoints,
+			"available":            userLoyalty.AvailablePoints,
+			"tier":                 tierName,
+			"can_redeem":           config.Enabled && userLoyalty.AvailablePoints >= config.MinPoints && maxRedeemableValue > 0,
+			"max_redeemable_value": maxRedeemableValue,
+			"today_redeemed":       todayRedeemedValue,
+		})
+	}
+}
+
+// redeemPointsToGiftCard 积分兑换礼品卡（兼容路由 - 委托 MarketingService）
+func redeemPointsToGiftCard(
+	marketingService *service.MarketingService,
+	settingService *service.SettingService,
+) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDVal, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "[CRITICAL] Unauthorized access"})
+			return
+		}
+		userID := userIDVal.(uint)
+
+		// 双字段容错：接受 points 和 points_to_spend
+		var req struct {
+			Points        int     `json:"points"`
+			PointsToSpend int     `json:"points_to_spend"`
+			GiftCardValue float64 `json:"giftcard_value" binding:"required"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("[CRITICAL] Invalid request arguments: %v", err)})
+			return
+		}
+
+		// 容错：优先 points, 其次 points_to_spend
+		pointsToSpend := req.Points
+		if pointsToSpend <= 0 {
+			pointsToSpend = req.PointsToSpend
+		}
+		if pointsToSpend <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "[CRITICAL] 'points' or 'points_to_spend' must be > 0"})
+			return
+		}
+
+		// 获取兑换配置
+		locale := middleware.GetLocale(c)
+		config, err := settingService.GetRedeemSettings(locale)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Failed to load redeem settings: %v", err)})
+			return
+		}
+
+		// 委托 MarketingService 核心事务方法
+		result, err := marketingService.RedeemPointsForGiftCard(userID, pointsToSpend, req.GiftCardValue, config)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"giftcard_id":      result.GiftCardID,
+			"card_code":        result.CardCode,
+			"balance":          result.Balance,
+			"points_spent":     result.PointsSpent,
+			"points_remaining": result.PointsRemaining,
+			"expires_at":       result.ExpiresAt,
+			"message":          "兑换成功",
+		})
+	}
+}
+
+// getCompatLanguages 获取语言列表（兼容旧 WP API 格式）
+func getCompatLanguages() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		type compatLangItem struct {
+			Code string `json:"code"`
+			Name string `json:"name"`
+		}
+
+		items := make([]compatLangItem, 0, len(i18n.SupportedLanguages))
+		for _, lang := range i18n.SupportedLanguages {
+			if lang.Enabled {
+				items = append(items, compatLangItem{
+					Code: lang.Code,
+					Name: lang.NativeName, // 旧 WP 的 name 指向本地化名称，如 "简体中文"
+				})
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"locales": items,
+		})
+	}
+}
+

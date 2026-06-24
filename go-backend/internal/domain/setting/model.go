@@ -43,6 +43,16 @@ type QuickBuySettings struct {
 	RequireLogin   bool   `json:"require_login"`
 }
 
+// RedeemSettings 积分兑换配置
+type RedeemSettings struct {
+	Enabled        bool      `json:"enabled"`
+	ExchangeRate   int       `json:"exchange_rate"`
+	MinPoints      int       `json:"min_points"`
+	MaxValuePerDay float64   `json:"max_value_per_day"`
+	CardExpiryDays int       `json:"card_expiry_days"`
+	PresetValues   []float64 `json:"preset_values"`
+}
+
 // EmailSettings 邮件设置
 type EmailSettings struct {
 	SMTPHost     string `json:"smtp_host"`

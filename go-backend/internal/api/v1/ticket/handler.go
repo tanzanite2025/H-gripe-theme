@@ -528,6 +528,63 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	})
 }
 
+func (h *Handler) GetWelcomeMessage(c *gin.Context) {
+	conversationID := strings.TrimSpace(c.Query("conversation_id"))
+	if conversationID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "conversation_id is required"})
+		return
+	}
+
+	reply, alreadySent, err := h.ticketService.GetWelcomeMessage(conversationID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"message":      reply,
+			"already_sent": alreadySent,
+		},
+	})
+}
+
+func (h *Handler) MatchKeywordMessage(c *gin.Context) {
+	var req struct {
+		Message        string `json:"message" binding:"required"`
+		ConversationID string `json:"conversation_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	reply, ruleID, err := h.ticketService.MatchKeywordMessage(req.ConversationID, req.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	if reply == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": gin.H{
+				"reply": "",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"reply":   reply,
+			"rule_id": ruleID,
+		},
+	})
+}
+
 func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 	conversationID := strings.TrimSpace(c.Param("conversation_id"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))

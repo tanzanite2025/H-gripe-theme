@@ -2,9 +2,13 @@ package admin
 
 import (
 	"tanzanite/internal/api/middleware"
+	"tanzanite/internal/api/v1/registration"
+	"tanzanite/internal/api/v1/shipping"
+	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
 
@@ -27,9 +31,14 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	loyaltyRepo := repository.NewLoyaltyRepository(db)
 	settingRepo := repository.NewSettingRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
+	showcaseRepo := repository.NewShowcaseRepository(db)
+	registrationRepo := repository.NewRegistrationRepository(db)
+	shippingRepo := repository.NewShippingRepository(db)
 
 	// 初始化 services
 	authService := service.NewAuthService(userRepo, cfg.JWT)
+	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
+	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
 
 	// 初始化 handlers
 	authHandler := NewAuthHandler(authService)
@@ -45,6 +54,9 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	marketingHandler := NewMarketingHandler(couponRepo, loyaltyRepo)
 	settingsHandler := NewSettingsHandler(settingRepo, userRepo)
 	auditHandler := NewAuditHandler(auditRepo)
+	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
+	registrationHandler := registration.NewHandler(registrationRepo, orderRepo, storageSvc)
+	shippingHandler := shipping.NewHandler(shippingRepo)
 
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")
@@ -106,6 +118,23 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				productsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProduct)
 				productsGroup.POST("/batch-status", middleware.RequirePermission(auth.PermProductEdit), productHandler.BatchUpdateStatus)
 				productsGroup.POST("/batch-delete", middleware.RequirePermission(auth.PermProductDelete), productHandler.BatchDelete)
+			}
+
+			// 属性管理（需要商品管理权限）
+			attributesGroup := authenticated.Group("/attributes")
+			attributesGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				attributesGroup.GET("", productHandler.ListAttributes)
+				attributesGroup.GET("/:id", productHandler.GetAttribute)
+				attributesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateAttribute)
+				attributesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateAttribute)
+				attributesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteAttribute)
+
+				// 属性值管理
+				attributesGroup.GET("/:id/values", productHandler.GetAttributeValues)
+				attributesGroup.POST("/:id/values", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateAttributeValue)
+				attributesGroup.PUT("/:id/values/:valueId", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateAttributeValue)
+				attributesGroup.DELETE("/:id/values/:valueId", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteAttributeValue)
 			}
 
 			// 订单管理（需要订单管理权限）
@@ -176,6 +205,27 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				galleriesGroup.PUT("/:id/images/:imageId", middleware.RequirePermission(auth.PermGalleryEdit), galleryHandler.UpdateImage)
 				galleriesGroup.DELETE("/:id/images/:imageId", middleware.RequirePermission(auth.PermGalleryDelete), galleryHandler.DeleteImage)
 				galleriesGroup.POST("/:id/images/batch-delete", middleware.RequirePermission(auth.PermGalleryDelete), galleryHandler.BatchDeleteImages)
+			}
+
+			// 买家秀审批管理（需要图库管理权限）
+			showcaseGroup := authenticated.Group("/showcase")
+			showcaseGroup.Use(middleware.RequirePermission(auth.PermGalleryView))
+			{
+				showcaseGroup.GET("", showcaseHandler.List)
+				showcaseGroup.PUT("/:id/approve", middleware.RequirePermission(auth.PermGalleryEdit), showcaseHandler.Approve)
+				showcaseGroup.PUT("/:id/reject", middleware.RequirePermission(auth.PermGalleryEdit), showcaseHandler.Reject)
+			}
+
+			// 产品注册与保修管理（需要商品管理权限）
+			registrationsGroup := authenticated.Group("/registrations")
+			registrationsGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				registrationsGroup.GET("", registrationHandler.ListAllRegistrations)
+				registrationsGroup.PUT("/:id/status", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.UpdateRegistrationStatus)
+				registrationsGroup.GET("/expiring", registrationHandler.GetExpiringWarranties)
+				registrationsGroup.GET("/stats", registrationHandler.GetRegistrationStats)
+				registrationsGroup.GET("/warranty-claims", registrationHandler.ListAllWarrantyClaims)
+				registrationsGroup.PUT("/warranty-claims/:id/status", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.UpdateWarrantyClaimStatus)
 			}
 
 			// 订阅管理（需要订阅管理权限）
@@ -275,6 +325,26 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 				settingsGroup.GET("/payment", settingsHandler.GetPaymentSettings)
 				settingsGroup.GET("/:key", settingsHandler.GetSetting)
+			}
+
+			// 物流包装箱规则与承运商管理（需要设置管理权限）
+			shippingGroup := authenticated.Group("/shipping")
+			shippingGroup.Use(middleware.RequirePermission(auth.PermSettingsView))
+			{
+				shippingGroup.GET("/packaging-rules", shippingHandler.ListPackagingRules)
+				shippingGroup.GET("/packaging-rules/:id", shippingHandler.GetPackagingRule)
+				shippingGroup.POST("/packaging-rules", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.CreatePackagingRule)
+				shippingGroup.PUT("/packaging-rules/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.UpdatePackagingRule)
+				shippingGroup.DELETE("/packaging-rules/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.DeletePackagingRule)
+				shippingGroup.POST("/packaging-rules/apply", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.CreatePackagingRuleApply)
+				shippingGroup.DELETE("/packaging-rules/apply/:applyId", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.DeletePackagingRuleApply)
+
+				// 承运商（Carriers）CRUD 管理端点
+				shippingGroup.GET("/carriers", shippingHandler.ListCarriers)
+				shippingGroup.GET("/carriers/:id", shippingHandler.GetCarrier)
+				shippingGroup.POST("/carriers", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.CreateCarrier)
+				shippingGroup.PUT("/carriers/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.UpdateCarrier)
+				shippingGroup.DELETE("/carriers/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.DeleteCarrier)
 			}
 
 			// 审计日志（需要日志查看权限）

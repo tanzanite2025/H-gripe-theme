@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import http from '@/api/http'
 
 const items = ref([])
 const loading = ref(true)
@@ -29,32 +30,18 @@ const commonPageIds = [
 const fetchFaqs = async () => {
   loading.value = true
   try {
-    const res = await fetch(`http://localhost:8080/api/admin/faqs?page_size=100`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
-    })
-    
-    const text = await res.text()
-    let json
+    let json;
     try {
-      json = JSON.parse(text)
+      json = await http('/faqs?page_size=100')
     } catch(e) {
-      // Endpoint might not exist on admin yet. Wait, admin FAQ is GET /api/v1/content/faqs?
-      // Ah, GET /api/v1/admin/faqs doesn't exist, we use /api/v1/content/faqs for GET
-      const fallbackRes = await fetch(`http://localhost:8080/api/v1/content/faqs?page_id=${selectedPageId.value}&page_size=100`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
-      })
-      json = await fallbackRes.json()
-      if (!fallbackRes.ok) throw new Error(json.error || "Failed to fetch")
+      json = await http(`/api/v1/content/faqs?page_id=${selectedPageId.value}&page_size=100`)
     }
-
-    // In case the response structure has data array
-    items.value = json.data || []
+    const faqsList = json.faqs || json.data
+    if (!faqsList || !Array.isArray(faqsList)) {
+      throw new Error("[CRITICAL] FAQs data not found or invalid format in response")
+    }
+    items.value = faqsList
   } catch (err) {
-    console.error(err)
     alert("[CRITICAL] Failed to load FAQs: " + err.message)
   } finally {
     loading.value = false
@@ -94,29 +81,19 @@ const saveFaq = async () => {
 
   const isCreate = modalMode.value === 'create'
   const url = isCreate 
-    ? 'http://localhost:8080/api/admin/faqs' 
-    : `http://localhost:8080/api/admin/faqs/${currentFaq.value.id}`
+    ? '/faqs' 
+    : `/faqs/${currentFaq.value.id}`
   const method = isCreate ? 'POST' : 'PUT'
 
   try {
-    const res = await fetch(url, {
+    await http(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
       body: JSON.stringify(currentFaq.value)
     })
-    
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || "Save failed")
-    }
     
     showModal.value = false
     fetchFaqs()
   } catch (err) {
-    console.error(err)
     alert("[CRITICAL] Save failed: " + err.message)
   }
 }
@@ -130,13 +107,9 @@ const deleteFaq = async (id) => {
   items.value = items.value.filter(i => i.id !== id)
   
   try {
-    const res = await fetch(`http://localhost:8080/api/admin/faqs/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+    await http(`/faqs/${id}`, {
+      method: 'DELETE'
     })
-    if (!res.ok) throw new Error("Delete failed")
   } catch (err) {
     console.error(err)
     alert("[CRITICAL] " + err.message)

@@ -137,3 +137,63 @@ func (s *ProductService) UpdateStock(id uint, quantity int) error {
 
 	return nil
 }
+
+// GetAttributeByID 根据ID获取属性
+func (s *ProductService) GetAttributeByID(id uint) (*product.ProductAttribute, error) {
+	return s.productRepo.FindAttributeByID(id)
+}
+
+// GetAttributeBySlug 根据Slug获取属性
+func (s *ProductService) GetAttributeBySlug(slug string) (*product.ProductAttribute, error) {
+	return s.productRepo.FindAttributeBySlug(slug)
+}
+
+// ListAttributes 获取属性分页列表
+func (s *ProductService) ListAttributes(page, pageSize int) ([]product.ProductAttribute, int64, error) {
+	return s.productRepo.FindAllAttributes(page, pageSize)
+}
+
+// CreateAttribute 创建属性
+func (s *ProductService) CreateAttribute(attr *product.ProductAttribute) error {
+	return s.productRepo.CreateAttribute(attr)
+}
+
+// UpdateAttribute 更新属性
+func (s *ProductService) UpdateAttribute(attr *product.ProductAttribute) error {
+	return s.productRepo.UpdateAttribute(attr)
+}
+
+// DeleteAttribute 删除属性
+func (s *ProductService) DeleteAttribute(id uint) error {
+	return s.productRepo.DeleteAttribute(id)
+}
+
+// GetFilterableAttributes 获取前台可过滤属性列表
+func (s *ProductService) GetFilterableAttributes() ([]product.ProductAttribute, error) {
+	return s.productRepo.FindFilterableAttributes()
+}
+
+// GetAttributeValueByID 获取属性值
+func (s *ProductService) GetAttributeValueByID(id uint) (*product.AttributeValue, error) {
+	return s.productRepo.FindAttributeValueByID(id)
+}
+
+// CreateAttributeValue 创建属性值
+func (s *ProductService) CreateAttributeValue(val *product.AttributeValue) error {
+	return s.productRepo.CreateAttributeValue(val)
+}
+
+// UpdateAttributeValue 更新属性值
+func (s *ProductService) UpdateAttributeValue(val *product.AttributeValue) error {
+	return s.productRepo.UpdateAttributeValue(val)
+}
+
+// DeleteAttributeValue 删除属性值
+func (s *ProductService) DeleteAttributeValue(id uint) error {
+	return s.productRepo.DeleteAttributeValue(id)
+}
+
+// GetValuesByAttributeID 获取属性对应的所有属性值
+func (s *ProductService) GetValuesByAttributeID(attrID uint) ([]product.AttributeValue, error) {
+	return s.productRepo.FindValuesByAttributeID(attrID)
+}

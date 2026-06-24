@@ -218,3 +218,105 @@ func (r *ProductRepository) GetStats() (map[string]interface{}, error) {
 
 	return stats, nil
 }
+
+// FindAttributeByID 根据ID查找属性
+func (r *ProductRepository) FindAttributeByID(id uint) (*product.ProductAttribute, error) {
+	var attr product.ProductAttribute
+	err := r.db.Preload("Values", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_attribute_values.sort_order ASC")
+	}).First(&attr, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &attr, nil
+}
+
+// FindAttributeBySlug 根据Slug查找属性
+func (r *ProductRepository) FindAttributeBySlug(slug string) (*product.ProductAttribute, error) {
+	var attr product.ProductAttribute
+	err := r.db.Preload("Values", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_attribute_values.sort_order ASC")
+	}).Where("slug = ?", slug).First(&attr).Error
+	if err != nil {
+		return nil, err
+	}
+	return &attr, nil
+}
+
+// FindAllAttributes 获取所有属性列表
+func (r *ProductRepository) FindAllAttributes(page, pageSize int) ([]product.ProductAttribute, int64, error) {
+	var attrs []product.ProductAttribute
+	var total int64
+
+	query := r.db.Model(&product.ProductAttribute{})
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := query.Preload("Values", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_attribute_values.sort_order ASC")
+	}).Order("sort_order ASC, id ASC").Offset(offset).Limit(pageSize).Find(&attrs).Error
+
+	return attrs, total, err
+}
+
+// CreateAttribute 创建属性
+func (r *ProductRepository) CreateAttribute(attr *product.ProductAttribute) error {
+	return r.db.Create(attr).Error
+}
+
+// UpdateAttribute 更新属性
+func (r *ProductRepository) UpdateAttribute(attr *product.ProductAttribute) error {
+	return r.db.Save(attr).Error
+}
+
+// DeleteAttribute 删除属性
+func (r *ProductRepository) DeleteAttribute(id uint) error {
+	// 先删除属性关联的属性值
+	if err := r.db.Where("attribute_id = ?", id).Delete(&product.AttributeValue{}).Error; err != nil {
+		return err
+	}
+	return r.db.Delete(&product.ProductAttribute{}, id).Error
+}
+
+// FindFilterableAttributes 获取前台可过滤的属性
+func (r *ProductRepository) FindFilterableAttributes() ([]product.ProductAttribute, error) {
+	var attrs []product.ProductAttribute
+	err := r.db.Preload("Values", func(db *gorm.DB) *gorm.DB {
+		return db.Where("is_enabled = ?", true).Order("product_attribute_values.sort_order ASC")
+	}).Where("is_filterable = ? AND is_enabled = ?", true, true).Order("sort_order ASC").Find(&attrs).Error
+	return attrs, err
+}
+
+// FindAttributeValueByID 根据ID获取属性值
+func (r *ProductRepository) FindAttributeValueByID(id uint) (*product.AttributeValue, error) {
+	var val product.AttributeValue
+	err := r.db.First(&val, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &val, nil
+}
+
+// CreateAttributeValue 创建属性值
+func (r *ProductRepository) CreateAttributeValue(val *product.AttributeValue) error {
+	return r.db.Create(val).Error
+}
+
+// UpdateAttributeValue 更新属性值
+func (r *ProductRepository) UpdateAttributeValue(val *product.AttributeValue) error {
+	return r.db.Save(val).Error
+}
+
+// DeleteAttributeValue 删除属性值
+func (r *ProductRepository) DeleteAttributeValue(id uint) error {
+	return r.db.Delete(&product.AttributeValue{}, id).Error
+}
+
+// FindValuesByAttributeID 根据属性ID查找属性值
+func (r *ProductRepository) FindValuesByAttributeID(attrID uint) ([]product.AttributeValue, error) {
+	var values []product.AttributeValue
+	err := r.db.Where("attribute_id = ?", attrID).Order("sort_order ASC").Find(&values).Error
+	return values, err
+}

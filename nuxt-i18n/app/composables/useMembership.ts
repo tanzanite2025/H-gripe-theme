@@ -193,10 +193,11 @@ export function useMembership() {
     redeemSuccess.value = false
 
     try {
-      const data = await auth.request<any>('/marketing/loyalty/spend', {
+      const data = await auth.request<any>('/marketing/loyalty/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          points: card.points_spent,
           points_to_spend: card.points_spent,
           giftcard_value: parseFloat(card.balance)
         })

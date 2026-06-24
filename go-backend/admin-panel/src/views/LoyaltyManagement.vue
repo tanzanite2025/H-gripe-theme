@@ -71,41 +71,38 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import http from '@/api/http'
 
 const levels = ref([])
 const newLevel = ref({ name: '', min_points: 0, max_points: 0 })
 
 const adjustForm = ref({ userId: null, points: 0, reason: '' })
 
-// Mock API Call mapping since axios isn't installed globally yet in the snippet
+// Fetch levels
 const fetchLevels = async () => {
   try {
-    const res = await fetch('/api/v1/admin/loyalty/levels')
-    if (res.ok) {
-      levels.value = await res.json()
-    } else {
-      console.error('Failed to fetch levels')
+    const data = await http('/marketing/levels')
+    if (!data || !Array.isArray(data.levels)) {
+      throw new Error("[CRITICAL] Invalid levels data structure from server")
     }
+    levels.value = data.levels
   } catch (err) {
-    console.error(err)
+    alert("Failed to load levels: " + err.message)
   }
 }
 
 const createLevel = async () => {
   if (!newLevel.value.name) return
   try {
-    const res = await fetch('/api/v1/admin/loyalty/levels', {
+    await http('/marketing/levels', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newLevel.value)
     })
-    if (res.ok) {
-      alert('Level Created!')
-      newLevel.value = { name: '', min_points: 0, max_points: 0 }
-      fetchLevels()
-    }
+    alert('Level Created!')
+    newLevel.value = { name: '', min_points: 0, max_points: 0 }
+    fetchLevels()
   } catch (err) {
-    console.error(err)
+    alert("Failed to create level: " + err.message)
   }
 }
 
@@ -115,23 +112,18 @@ const adjustPoints = async () => {
     return
   }
   try {
-    const res = await fetch(`/api/v1/admin/loyalty/users/${adjustForm.value.userId}/adjust`, {
+    await http('/marketing/loyalty/transactions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        points: adjustForm.value.points,
-        reason: adjustForm.value.reason
+        user_id: Number(adjustForm.value.userId),
+        points: Number(adjustForm.value.points),
+        description: adjustForm.value.reason
       })
     })
-    if (res.ok) {
-      alert('Points adjusted successfully!')
-      adjustForm.value = { userId: null, points: 0, reason: '' }
-    } else {
-      const data = await res.json()
-      alert('Error: ' + data.error)
-    }
+    alert('Points adjusted successfully!')
+    adjustForm.value = { userId: null, points: 0, reason: '' }
   } catch (err) {
-    console.error(err)
+    alert("Failed to adjust points: " + err.message)
   }
 }
 

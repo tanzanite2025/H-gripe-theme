@@ -2,7 +2,6 @@ package v1
 
 import (
 	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/api/v1/audit"
 	"tanzanite/internal/api/v1/auth"
 	"tanzanite/internal/api/v1/cart"
 	"tanzanite/internal/api/v1/content"
@@ -68,7 +67,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	faqService := service.NewFAQService(faqRepo)
 	galleryService := service.NewGalleryService(galleryRepo)
 	// registrationService := service.NewRegistrationService(registrationRepo, productRepo)
-	orderService := service.NewOrderService(orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo)
+	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo)
 	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 	reviewService := service.NewReviewService(reviewRepo)
 	ticketService := service.NewTicketService(ticketRepo, userRepo)
@@ -90,14 +89,13 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	cartHandler := cart.NewHandler(cartService)
 	settingsHandler := settings.NewHandler(settingService)
 	orderHandler := order.NewHandler(orderService)
-	marketingHandler := marketing.NewHandler(marketingService)
+	marketingHandler := marketing.NewHandler(marketingService, settingService)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService)
 	paymentHandler := payment.NewHandler(paymentRepo)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationRepo, orderRepo, storageSvc)
-	auditHandler := audit.NewHandler(auditRepo)
 	subscriptionHandler := subscription.NewHandler(subscriptionService)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
@@ -105,7 +103,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService)
 	spokeHandler := spoke.NewHandler(spokeRepo)
-	registerWordPressCompatRoutes(r, postService)
+	registerWordPressCompatRoutes(r, postService, settingService, loyaltyRepo, marketingService, authService)
 
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
@@ -133,22 +131,13 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			contentGroup.POST("/faqs/:id/view", faqHandler.IncrementFAQView)
 		}
 
-		// FAQ 管理路由（需要认证和管理员权限）
-		adminFAQGroup := v1.Group("/admin/faqs")
-		adminFAQGroup.Use(middleware.AuthMiddleware(authService))
-		// TODO: 添加 AdminMiddleware 检查用户角色
-		{
-			adminFAQGroup.POST("", faqHandler.CreateFAQ)
-			adminFAQGroup.PUT("/:id", faqHandler.UpdateFAQ)
-			adminFAQGroup.DELETE("/:id", faqHandler.DeleteFAQ)
-			adminFAQGroup.PUT("/:id/order", faqHandler.UpdateFAQOrder)
-			adminFAQGroup.POST("/batch-order", faqHandler.BatchUpdateFAQOrder)
-		}
+
 
 		// 产品路由（公开）
 		productGroup := v1.Group("/products")
 		{
 			productGroup.GET("", productHandler.ListProducts)
+			productGroup.GET("/attributes/filterable", productHandler.GetFilterableAttributes)
 			productGroup.GET("/:id", productHandler.GetProduct)
 		}
 
@@ -229,6 +218,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 				authMarketing.POST("/loyalty/checkin", marketingHandler.CheckIn)
 				authMarketing.POST("/loyalty/referral", marketingHandler.CreateReferral)
 				authMarketing.POST("/loyalty/spend", marketingHandler.SpendPoints)
+				authMarketing.POST("/loyalty/redeem", marketingHandler.RedeemPointsToGiftCard)
 			}
 		}
 
@@ -274,6 +264,8 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			customerServiceGroup.GET("/has-conversation", ticketHandler.HasPublicCustomerServiceConversation)
 			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), ticketHandler.SendPublicCustomerServiceMessage)
 			customerServiceGroup.GET("/messages/:conversation_id", ticketHandler.GetPublicCustomerServiceMessages)
+			customerServiceGroup.GET("/auto-reply/welcome", ticketHandler.GetWelcomeMessage)
+			customerServiceGroup.POST("/auto-reply/match", ticketHandler.MatchKeywordMessage)
 
 			agentGroup := customerServiceGroup.Group("/agent")
 			agentGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin", "manager", "support", "agent"))
@@ -297,15 +289,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), showcaseHandler.AddComment)
 		}
 
-		// Admin Showcase
-		adminShowcaseGroup := v1.Group("/admin/showcase")
-		adminShowcaseGroup.Use(middleware.AuthMiddleware(authService))
-		{
-			adminShowcaseGroup.GET("", showcaseHandler.List)
-			adminShowcaseGroup.PUT("/:id/approve", showcaseHandler.Approve)
-			adminShowcaseGroup.PUT("/:id/reject", showcaseHandler.Reject)
-		}
-
 		// 设置路由
 		settingsGroup := v1.Group("/settings")
 		{
@@ -318,18 +301,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)
 			settingsGroup.GET("/group/:group", settingsHandler.GetSettingsByGroup)
 			settingsGroup.GET("/:key", settingsHandler.GetSetting)
-		}
-
-		// 管理员设置路由（需要认证和管理员权限）
-		adminSettingsGroup := v1.Group("/admin/settings")
-		adminSettingsGroup.Use(middleware.AuthMiddleware(authService))
-		// TODO: 添加 AdminMiddleware 检查用户角色
-		{
-			adminSettingsGroup.GET("", settingsHandler.GetAllSettings)
-			adminSettingsGroup.GET("/email", settingsHandler.GetEmailSettings)
-			adminSettingsGroup.POST("", settingsHandler.UpdateSetting)
-			adminSettingsGroup.POST("/batch", settingsHandler.BatchUpdateSettings)
-			adminSettingsGroup.DELETE("/:key", settingsHandler.DeleteSetting)
 		}
 
 		// i18n 路由（公开）
@@ -388,6 +359,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			shippingGroup.GET("/zones/:id", shippingHandler.GetZone)
 			shippingGroup.GET("/track/:tracking_number", shippingHandler.TrackShipment)
 			shippingGroup.GET("/orders/:order_id/tracking", shippingHandler.GetOrderTracking)
+			shippingGroup.GET("/products/:id/packaging-rules", shippingHandler.GetProductPackagingRules)
 		}
 
 		// 图片库路由
@@ -424,97 +396,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			}
 		}
 
-		// 管理员路由
-		adminGroup := v1.Group("/admin")
-		adminGroup.Use(middleware.AuthMiddleware(authService))
-		// TODO: 添加管理员权限验证中间件
-		{
-			// 订单管理
-			adminGroup.GET("/orders", orderHandler.ListAllOrders)
 
-			// 营销管理
-			adminGroup.GET("/marketing/coupons/all", marketingHandler.GetAllCoupons)
-			adminGroup.POST("/marketing/coupons", marketingHandler.CreateCoupon)
-			adminGroup.PUT("/marketing/coupons/:id", marketingHandler.UpdateCoupon)
-			adminGroup.DELETE("/marketing/coupons/:id", marketingHandler.DeleteCoupon)
-
-			// 会员与积分管理
-			adminGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
-			adminGroup.POST("/loyalty/levels", marketingHandler.CreateMemberLevel)
-			adminGroup.PUT("/loyalty/levels/:id", marketingHandler.UpdateMemberLevel)
-			adminGroup.POST("/loyalty/users/:id/adjust", marketingHandler.AdminAdjustPoints)
-
-			// 评价管理
-			adminGroup.GET("/reviews/pending", reviewHandler.GetPendingReviews)
-			adminGroup.POST("/reviews/:id/approve", reviewHandler.ApproveReview)
-			adminGroup.POST("/reviews/:id/reject", reviewHandler.RejectReview)
-			adminGroup.PUT("/reviews/:id/featured", reviewHandler.SetFeatured)
-
-			// 工单管理
-			adminGroup.GET("/tickets", ticketHandler.ListAllTickets)
-			adminGroup.POST("/tickets/:id/assign", ticketHandler.AssignTicket)
-			adminGroup.GET("/tickets/dashboard", ticketHandler.GetDashboard)
-			adminGroup.GET("/tickets/recent", ticketHandler.GetRecentTickets)
-
-			// 支付管理
-			adminGroup.POST("/payment/methods", paymentHandler.CreatePaymentMethod)
-			adminGroup.PUT("/payment/methods/:id", paymentHandler.UpdatePaymentMethod)
-			adminGroup.DELETE("/payment/methods/:id", paymentHandler.DeletePaymentMethod)
-			adminGroup.POST("/payment/tax-rates", paymentHandler.CreateTaxRate)
-			adminGroup.PUT("/payment/tax-rates/:id", paymentHandler.UpdateTaxRate)
-			adminGroup.DELETE("/payment/tax-rates/:id", paymentHandler.DeleteTaxRate)
-			adminGroup.PUT("/payment/refunds/:id/status", paymentHandler.UpdateRefundStatus)
-
-			// 物流管理
-			adminGroup.POST("/shipping/templates", shippingHandler.CreateTemplate)
-			adminGroup.PUT("/shipping/templates/:id", shippingHandler.UpdateTemplate)
-			adminGroup.DELETE("/shipping/templates/:id", shippingHandler.DeleteTemplate)
-			adminGroup.POST("/shipping/carriers", shippingHandler.CreateCarrier)
-			adminGroup.PUT("/shipping/carriers/:id", shippingHandler.UpdateCarrier)
-			adminGroup.DELETE("/shipping/carriers/:id", shippingHandler.DeleteCarrier)
-			adminGroup.POST("/shipping/tracking", shippingHandler.CreateTrackingEvent)
-			adminGroup.POST("/shipping/zones", shippingHandler.CreateZone)
-			adminGroup.PUT("/shipping/zones/:id", shippingHandler.UpdateZone)
-			adminGroup.DELETE("/shipping/zones/:id", shippingHandler.DeleteZone)
-
-			// 图片库管理
-			adminGroup.POST("/galleries", galleryHandler.CreateGallery)
-			adminGroup.PUT("/galleries/:id", galleryHandler.UpdateGallery)
-			adminGroup.DELETE("/galleries/:id", galleryHandler.DeleteGallery)
-			adminGroup.POST("/galleries/:id/images", galleryHandler.CreateGalleryImage)
-			adminGroup.POST("/galleries/:id/images/batch", galleryHandler.BatchCreateImages)
-			adminGroup.PUT("/galleries/images/:id", galleryHandler.UpdateGalleryImage)
-			adminGroup.DELETE("/galleries/images/:id", galleryHandler.DeleteGalleryImage)
-			adminGroup.DELETE("/galleries/images/batch", galleryHandler.BatchDeleteImages)
-			adminGroup.POST("/galleries/images/batch-order", galleryHandler.BatchUpdateOrder)
-
-			// 产品注册管理
-			adminGroup.GET("/registrations", registrationHandler.ListAllRegistrations)
-			adminGroup.PUT("/registrations/:id/status", registrationHandler.UpdateRegistrationStatus)
-			adminGroup.GET("/registrations/expiring", registrationHandler.GetExpiringWarranties)
-			adminGroup.GET("/registrations/stats", registrationHandler.GetRegistrationStats)
-			adminGroup.GET("/registrations/warranty-claims", registrationHandler.ListAllWarrantyClaims)
-			adminGroup.PUT("/registrations/warranty-claims/:id/status", registrationHandler.UpdateWarrantyClaimStatus)
-
-			// 订阅管理
-			adminGroup.GET("/subscriptions", subscriptionHandler.GetAllSubscriptions)
-			adminGroup.GET("/subscriptions/tags", subscriptionHandler.GetSubscriptionsByTags)
-			adminGroup.GET("/subscriptions/stats", subscriptionHandler.GetStats)
-			adminGroup.DELETE("/subscriptions/:email", subscriptionHandler.DeleteSubscription)
-			adminGroup.GET("/subscriptions/export", subscriptionHandler.ExportEmails)
-
-			// 审计日志管理
-			adminGroup.GET("/audit/logs", auditHandler.ListAllAuditLogs)
-			adminGroup.GET("/audit/logs/:id", auditHandler.GetAuditLog)
-			adminGroup.GET("/audit/users/:user_id/logs", auditHandler.ListUserAuditLogs)
-			adminGroup.GET("/audit/entities/logs", auditHandler.ListEntityAuditLogs)
-			adminGroup.GET("/audit/logs/date-range", auditHandler.ListAuditLogsByDateRange)
-			adminGroup.GET("/audit/ip/:ip_address/logs", auditHandler.ListAuditLogsByIP)
-			adminGroup.GET("/audit/logs/search", auditHandler.SearchAuditLogs)
-			adminGroup.GET("/audit/stats", auditHandler.GetAuditStats)
-			adminGroup.GET("/audit/activities/recent", auditHandler.GetRecentActivities)
-			adminGroup.POST("/audit/logs/cleanup", auditHandler.DeleteOldAuditLogs)
-		}
 	}
 
 	// Sitemap 路由（根路径）

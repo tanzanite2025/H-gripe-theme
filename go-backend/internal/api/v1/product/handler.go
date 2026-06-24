@@ -160,3 +160,203 @@ func makePublicChatProduct(item productdomain.Product) gin.H {
 		"created_at":  item.CreatedAt,
 	}
 }
+
+// GetFilterableAttributes 获取可过滤属性列表 (公开端点)
+func (h *Handler) GetFilterableAttributes(c *gin.Context) {
+	attrs, err := h.productService.GetFilterableAttributes()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    attrs,
+	})
+}
+
+// ListAttributes 获取属性列表
+func (h *Handler) ListAttributes(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	attrs, total, err := h.productService.ListAttributes(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":        attrs,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
+		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
+	})
+}
+
+// GetAttribute 获取属性详情
+func (h *Handler) GetAttribute(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		return
+	}
+
+	attr, err := h.productService.GetAttributeByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "attribute not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, attr)
+}
+
+// CreateAttribute 创建属性
+func (h *Handler) CreateAttribute(c *gin.Context) {
+	var attr productdomain.ProductAttribute
+	if err := c.ShouldBindJSON(&attr); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.productService.CreateAttribute(&attr); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, attr)
+}
+
+// UpdateAttribute 更新属性
+func (h *Handler) UpdateAttribute(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		return
+	}
+
+	var attr productdomain.ProductAttribute
+	if err := c.ShouldBindJSON(&attr); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	attr.ID = uint(id)
+
+	if err := h.productService.UpdateAttribute(&attr); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, attr)
+}
+
+// DeleteAttribute 删除属性
+func (h *Handler) DeleteAttribute(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		return
+	}
+
+	if err := h.productService.DeleteAttribute(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "attribute deleted successfully"})
+}
+
+// GetAttributeValues 获取属性值列表
+func (h *Handler) GetAttributeValues(c *gin.Context) {
+	attrID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		return
+	}
+
+	values, err := h.productService.GetValuesByAttributeID(uint(attrID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, values)
+}
+
+// CreateAttributeValue 创建属性值
+func (h *Handler) CreateAttributeValue(c *gin.Context) {
+	attrID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		return
+	}
+
+	var val productdomain.AttributeValue
+	if err := c.ShouldBindJSON(&val); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	val.AttributeID = uint(attrID)
+
+	if err := h.productService.CreateAttributeValue(&val); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, val)
+}
+
+// UpdateAttributeValue 更新属性值
+func (h *Handler) UpdateAttributeValue(c *gin.Context) {
+	_, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		return
+	}
+	valID, err := strconv.ParseUint(c.Param("valueId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid value id"})
+		return
+	}
+
+	var val productdomain.AttributeValue
+	if err := c.ShouldBindJSON(&val); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	val.ID = uint(valID)
+
+	if err := h.productService.UpdateAttributeValue(&val); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, val)
+}
+
+// DeleteAttributeValue 删除属性值
+func (h *Handler) DeleteAttributeValue(c *gin.Context) {
+	_, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		return
+	}
+	valID, err := strconv.ParseUint(c.Param("valueId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid value id"})
+		return
+	}
+
+	if err := h.productService.DeleteAttributeValue(uint(valID)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "attribute value deleted successfully"})
+}

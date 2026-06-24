@@ -190,3 +190,58 @@ func (r *ShippingRepository) UpdateZone(z *shipping.ShippingZone) error {
 func (r *ShippingRepository) DeleteZone(id uint) error {
 	return r.db.Delete(&shipping.ShippingZone{}, id).Error
 }
+
+// FindPackagingRuleByID 根据ID查找包装规格规则
+func (r *ShippingRepository) FindPackagingRuleByID(id uint) (*shipping.PackagingRule, error) {
+	var pr shipping.PackagingRule
+	err := r.db.Preload("Applies").First(&pr, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &pr, nil
+}
+
+// FindAllPackagingRules 获取所有包装规格规则
+func (r *ShippingRepository) FindAllPackagingRules() ([]shipping.PackagingRule, error) {
+	var rules []shipping.PackagingRule
+	err := r.db.Preload("Applies").Find(&rules).Error
+	return rules, err
+}
+
+// CreatePackagingRule 创建包装规格规则
+func (r *ShippingRepository) CreatePackagingRule(rule *shipping.PackagingRule) error {
+	return r.db.Create(rule).Error
+}
+
+// UpdatePackagingRule 更新包装规格规则
+func (r *ShippingRepository) UpdatePackagingRule(rule *shipping.PackagingRule) error {
+	return r.db.Save(rule).Error
+}
+
+// DeletePackagingRule 删除包装规格规则
+func (r *ShippingRepository) DeletePackagingRule(id uint) error {
+	// 先删除应用关联的条目
+	if err := r.db.Where("rule_id = ?", id).Delete(&shipping.PackagingRuleApply{}).Error; err != nil {
+		return err
+	}
+	return r.db.Delete(&shipping.PackagingRule{}, id).Error
+}
+
+// CreatePackagingRuleApply 增加包装规则的应用产品记录
+func (r *ShippingRepository) CreatePackagingRuleApply(apply *shipping.PackagingRuleApply) error {
+	return r.db.Create(apply).Error
+}
+
+// DeletePackagingRuleApply 删除包装规则的应用产品记录
+func (r *ShippingRepository) DeletePackagingRuleApply(id uint) error {
+	return r.db.Delete(&shipping.PackagingRuleApply{}, id).Error
+}
+
+// FindPackagingRulesByProductID 根据产品ID查找匹配的激活包装规格规则
+func (r *ShippingRepository) FindPackagingRulesByProductID(productID uint) ([]shipping.PackagingRule, error) {
+	var rules []shipping.PackagingRule
+	err := r.db.Joins("JOIN shipping_packaging_rule_applies ON shipping_packaging_rule_applies.rule_id = shipping_packaging_rules.id").
+		Where("shipping_packaging_rule_applies.product_id = ? AND shipping_packaging_rules.is_active = ?", productID, true).
+		Find(&rules).Error
+	return rules, err
+}

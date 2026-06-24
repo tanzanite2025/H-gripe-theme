@@ -2,6 +2,7 @@ package repository
 
 import (
 	"tanzanite/internal/domain/ticket"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -283,4 +284,28 @@ func (r *TicketRepository) FindRecent(limit int) ([]ticket.Ticket, error) {
 	var tickets []ticket.Ticket
 	err := r.db.Order("created_at DESC").Limit(limit).Find(&tickets).Error
 	return tickets, err
+}
+
+// GetActiveAutoReplyRules 获取激活的自动回复规则
+func (r *TicketRepository) GetActiveAutoReplyRules(ruleType string) ([]ticket.AutoReplyRule, error) {
+	var rules []ticket.AutoReplyRule
+	query := r.db.Model(&ticket.AutoReplyRule{}).Where("type = ? AND is_active = ?", ruleType, true)
+	if ruleType == "welcome" {
+		err := query.Order("created_at DESC").Limit(1).Find(&rules).Error
+		return rules, err
+	}
+	err := query.Order("priority DESC, created_at DESC").Find(&rules).Error
+	return rules, err
+}
+
+// GetLastWelcomeMessageTime 获取特定工单下最新一条欢迎自动回复的发送时间
+func (r *TicketRepository) GetLastWelcomeMessageTime(ticketID uint, content string) (time.Time, error) {
+	var m ticket.TicketMessage
+	err := r.db.Model(&ticket.TicketMessage{}).
+		Where("ticket_id = ? AND user_id = ? AND content = ?", ticketID, 0, content).
+		Order("created_at DESC").First(&m).Error
+	if err != nil {
+		return time.Time{}, err
+	}
+	return m.CreatedAt, nil
 }
