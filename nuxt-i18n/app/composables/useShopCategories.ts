@@ -10,7 +10,7 @@ export interface ShopCategory {
 export const useShopCategories = () => {
   const config = useRuntimeConfig()
   const apiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
+    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
     return base.replace(/\/$/, '')
   })
 
@@ -33,14 +33,9 @@ export const useShopCategories = () => {
     error.value = null
 
     try {
-      // 预留给 Tanzanite Setting 插件的真实分类接口，例如：/tanzanite/v1/product-categories
-      const response = await $fetch<{ items?: ShopCategory[] }>(
-        `${apiBase.value}/tanzanite/v1/product-categories`,
-        { headers: { accept: 'application/json' } },
-      )
-
-      const items = Array.isArray(response?.items) ? response.items : []
-      categories.value = items.length ? items : fallbackCategories
+      // TODO: Implement /categories endpoint in Go backend.
+      // For now, immediately resolve to fallback categories to prevent 404 errors.
+      categories.value = fallbackCategories
     } catch (e: any) {
       // eslint-disable-next-line no-console
       console.error('Failed to load shop categories:', e)

@@ -18,8 +18,8 @@
     <section v-if="product.images?.length" class="product-gallery" aria-label="Product gallery">
       <h2>Gallery</h2>
       <ul class="gallery-list">
-        <li v-for="image in product.images" :key="image.id || image.src" class="gallery-item">
-          <img :src="image.src" :alt="image.alt || image.name || product.name || 'Product image'" loading="lazy" />
+        <li v-for="image in product.images" :key="image.id || image.url" class="gallery-item">
+          <img :src="image.url" :alt="image.alt || product.name || 'Product image'" loading="lazy" />
         </li>
       </ul>
     </section>
@@ -37,105 +37,31 @@
 import { computed } from 'vue'
 import { useRoute, useRuntimeConfig, useAsyncData, useHead } from '#imports'
 
-interface WooImage {
+interface ProductImage {
   id?: number | string
-  src: string
-  name?: string
+  url: string
   alt?: string
 }
 
-interface WooPriceInfo {
-  price?: string | number
-  regular_price?: string | number
-  sale_price?: string | number
-  currency_code?: string
-  currency_symbol?: string
-}
-
-interface WooProduct {
+interface GoProduct {
   id: number
-  title: string
-  name?: string
+  name: string
   slug: string
-  permalink?: string
-  preview_url?: string
-  excerpt?: string
   short_description?: string
   description?: string
-  content?: string
   sku?: string
-  price?: string | number
-  price_html?: string
-  prices?: WooPriceInfo & { regular?: number; sale?: number; member?: number }
-  images?: WooImage[]
+  price: number
+  sale_price?: number
+  images?: ProductImage[]
   thumbnail?: string
-  categories?: Array<{ id: number; name: string; slug: string }>
-}
-
-interface SeoImageEntry {
-  url?: string
-  alt?: string
-  title?: string
-  caption?: string
-  focus_keyword?: string
-  license?: string
-  creator?: string
-  credit_url?: string
-  active?: boolean
-}
-
-interface SeoVideoEntry {
-  title?: string
-  description?: string
-  focus_keyword?: string
-  url?: string
-  embed_url?: string
-  content_url?: string
-  thumbnail_url?: string
-  upload_date?: string
-  duration?: string
-  type?: string
-  active?: boolean
-}
-
-interface MyThemeSeoEntry {
-  title?: string
-  description?: string
-  focus_keyword?: string
-  images?: SeoImageEntry[]
-  video?: SeoVideoEntry[]
-  og?: {
-    title?: string
-    description?: string
-    image?: string
-  }
-  twitter?: {
-    card?: string
-    title?: string
-    description?: string
-    image?: string
-  }
-}
-
-interface ProductPayload {
-  product: WooProduct | null
-  seo: { id: number; payload?: MyThemeSeoEntry } | null
+  meta_title?: string
+  meta_description?: string
 }
 
 const route = useRoute()
 const config = useRuntimeConfig()
 
 const slug = computed(() => String(route.params.slug || ''))
-
-const apiBase = computed(() => {
-  const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-  return base.replace(/\/$/, '')
-})
-
-const wpApiBase = computed(() => {
-  const base = (config.public as { wpApiBase?: string }).wpApiBase || ''
-  return base.replace(/\/$/, '')
-})
 
 const siteOrigin = computed(() => {
   const value = (config.public as { siteUrl?: string }).siteUrl
@@ -145,75 +71,42 @@ const siteOrigin = computed(() => {
   return 'https://example.com'
 })
 
-const { data: productBundle, pending, error } = await useAsyncData<ProductPayload>(
-  () => `tanz-product:${slug.value}`,
+const { data: product, pending, error } = await useAsyncData<GoProduct | null>(
+  () => `go-product:${slug.value}`,
   async () => {
-    if (!slug.value || !apiBase.value) {
-      return { product: null, seo: null }
+    if (!slug.value) {
+      return null
     }
 
     try {
-      // 使用 Tanzanite API 通过 slug 搜索商品
-      const response = await $fetch<{ items: WooProduct[] }>(
-        `${apiBase.value}/tanzanite/v1/products?keyword=${encodeURIComponent(slug.value)}&per_page=1`,
+      const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+      const response = await $fetch<GoProduct>(
+        `${base}/products/${encodeURIComponent(slug.value)}`,
         { headers: { accept: 'application/json' } }
       )
-      // 从返回的商品列表中找到精确匹配 slug 的商品
-      const product = response.items?.find(p => p.slug === slug.value) || null
-
-      if (!product) {
-        return { product: null, seo: null }
-      }
-
-      let seo: ProductPayload['seo'] = null
-      if (apiBase.value) {
-        try {
-          seo = await $fetch<{ id: number; payload?: MyThemeSeoEntry }>(
-            `${apiBase.value}/tanzanite/v1/seo/product/${product.id}`,
-            { headers: { accept: 'application/json' } }
-          )
-        } catch (err) {
-          console.warn('Failed to load product SEO', err)
-        }
-      }
-
-      return { product, seo }
+      return response || null
     } catch (err) {
-      console.warn('Failed to load Tanzanite product', err)
-      return { product: null, seo: null }
+      console.warn('Failed to load product', err)
+      return null
     }
   },
   {
     server: true,
-    default: () => ({ product: null, seo: null }),
-    watch: [() => slug.value, () => apiBase.value]
+    default: () => null,
+    watch: [() => slug.value]
   }
 )
-
-const product = computed(() => {
-  const p = productBundle.value?.product ?? null
-  if (!p) return null
-  // 兼容处理：将 title 映射到 name，preview_url 映射到 permalink
-  return {
-    ...p,
-    name: p.name || p.title,
-    permalink: p.permalink || p.preview_url,
-    short_description: p.short_description || p.excerpt,
-    description: p.description || p.content,
-  }
-})
-const seoPayload = computed<MyThemeSeoEntry | null>(() => productBundle.value?.seo?.payload ?? null)
 
 const stripHtml = (value: string | null | undefined): string => {
   if (!value) return ''
   return value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
 }
 
-const metaTitle = computed(() => seoPayload.value?.title || product.value?.name || 'Product')
+const metaTitle = computed(() => product.value?.meta_title || product.value?.name || 'Product')
 
 const rawDescription = computed(() => {
-  if (seoPayload.value?.description) {
-    return seoPayload.value.description
+  if (product.value?.meta_description) {
+    return product.value.meta_description
   }
   return stripHtml(product.value?.short_description || product.value?.description || '')
 })
@@ -224,56 +117,32 @@ const metaDescription = computed(() => {
   return `${text.slice(0, 157)}...`
 })
 
-const seoImages = computed(() => {
-  if (!seoPayload.value?.images) return [] as SeoImageEntry[]
-  return seoPayload.value.images.filter((image) => image && image.active !== false)
-})
-
 const productImages = computed(() => product.value?.images || [])
 
 const primaryImage = computed(() => {
-  const seoImage = seoImages.value.find((img) => img.url)
-  if (seoImage?.url) {
-    return seoImage.url
-  }
-  // Tanzanite API 提供 thumbnail 字段
   if (product.value?.thumbnail) {
     return product.value.thumbnail
   }
-  const firstProductImage = productImages.value.find((img) => img.src)
-  return firstProductImage?.src || null
+  const firstProductImage = productImages.value.find((img) => img.url)
+  return firstProductImage?.url || null
 })
 
-const keywords = computed(() => {
-  const terms = new Set<string>()
-  if (seoPayload.value?.focus_keyword) terms.add(seoPayload.value.focus_keyword)
-  seoImages.value.forEach((img) => {
-    if (img.focus_keyword) terms.add(img.focus_keyword)
-  })
-  return Array.from(terms).join(', ')
-})
-
-const canonicalUrl = computed(() => product.value?.permalink || new URL(route.fullPath || '/', `${siteOrigin.value}/`).toString())
+const canonicalUrl = computed(() => `${siteOrigin.value}/shop/${product.value?.slug || slug.value}`)
 
 const formattedPrice = computed(() => {
-  const prices = product.value?.prices
-  if (!prices) return ''
-  // Tanzanite API 返回 regular, sale, member
-  const raw = prices.sale || prices.regular || prices.price || prices.regular_price || product.value?.price
+  const raw = product.value?.sale_price || product.value?.price
   if (raw == null) return ''
   const numeric = Number(raw)
   if (!Number.isFinite(numeric)) return ''
   try {
-    const currency = prices.currency_code || 'USD'
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
-      currency,
+      currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(numeric)
   } catch (err) {
-    const symbol = prices.currency_symbol || '$'
-    return `${symbol}${numeric.toFixed(2)}`
+    return `$${numeric.toFixed(2)}`
   }
 })
 
@@ -281,33 +150,22 @@ const productSchema = computed(() => {
   if (!product.value) return null
 
   const images: string[] = []
-  if (seoImages.value.length) {
-    seoImages.value.forEach((img) => {
-      if (img.url) images.push(img.url)
-    })
+  if (product.value.thumbnail) {
+    images.push(product.value.thumbnail)
   }
-  if (!images.length) {
-    // Tanzanite API 提供 thumbnail
-    if (product.value.thumbnail) {
-      images.push(product.value.thumbnail)
-    }
-    productImages.value.forEach((img) => {
-      if (img.src) images.push(img.src)
-    })
-  }
+  productImages.value.forEach((img) => {
+    if (img.url) images.push(img.url)
+  })
 
   const offers = (() => {
-    const prices = product.value?.prices
-    if (!prices) return null
-    const raw = prices.sale || prices.regular || prices.price || prices.regular_price || product.value?.price
+    const raw = product.value?.sale_price || product.value?.price
     if (raw == null) return null
     const numeric = Number(raw)
     if (!Number.isFinite(numeric)) return null
-    const currency = prices.currency_code || 'USD'
     return {
       '@type': 'Offer',
       price: numeric,
-      priceCurrency: currency,
+      priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
       url: canonicalUrl.value
     }
@@ -339,10 +197,6 @@ useHead(() => {
   if (primaryImage.value) {
     metaEntries.push({ property: 'og:image', content: primaryImage.value })
     metaEntries.push({ name: 'twitter:image', content: primaryImage.value })
-  }
-
-  if (keywords.value) {
-    metaEntries.push({ name: 'keywords', content: keywords.value })
   }
 
   if (formattedPrice.value) {

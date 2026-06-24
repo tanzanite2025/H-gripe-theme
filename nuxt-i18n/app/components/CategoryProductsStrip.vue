@@ -125,40 +125,15 @@ const loadProducts = async () => {
 
   try {
     const config = useRuntimeConfig()
-    const base = ((config.public as { wpApiBase?: string }).wpApiBase || '/wp-json').replace(/\/$/, '')
+    const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
 
-    // Step 1: resolve category ID by slug
-    let categoryId: number | null = null
-    try {
-      const categoryResponse = await $fetch<any>(`${base}/tanzanite/v1/product-categories`, {
-        params: {
-          per_page: 100,
-        },
-        credentials: 'include',
-      })
-
-      const items = Array.isArray(categoryResponse?.items) ? categoryResponse.items : []
-      const term = items.find((term: any) => term?.slug === props.categorySlug)
-      if (term && typeof term.term_id === 'number') {
-        categoryId = term.term_id
-      }
-    } catch (e) {
-      console.error('Failed to load category information for strip:', e)
-    }
-
-    // Step 2: fetch products filtered by that category (if resolved)
     const productParams: Record<string, any> = {
       per_page: perPage.value,
-      status: 'publish',
+      status: 'active',
     }
 
-    if (categoryId && categoryId > 0) {
-      productParams.category = categoryId
-    }
-
-    const response = await $fetch<any>(`${base}/tanzanite/v1/products`, {
+    const response = await $fetch<any>(`${base}/customer-service/products`, {
       params: productParams,
-      credentials: 'include',
     })
 
     if (response && Array.isArray(response.items)) {
