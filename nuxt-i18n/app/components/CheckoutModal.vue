@@ -125,6 +125,7 @@ import ChatStartButton from '~/components/ChatStartButton.vue'
 import { COUNTRIES } from '~/data/countries'
 import { useShippingValidation } from '~/composables/useShippingValidation'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { useAuth } from '~/composables/useAuth'
 
 type CartCalculation = ReturnType<typeof useCartCalculation>
 type CartPriceBreakdownBase = ReturnType<CartCalculation['calculateTotal']>
@@ -540,20 +541,39 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    // 这里调用你的订单 API
-    // const response = await $fetch('/wp-json/tanzanite/v1/orders', {
-    //   method: 'POST',
-    //   body: {
-    //     items: cartItems.value,
-    //     shipping: form.value,
-    //     payment_method: form.value.paymentMethod,
-    //     notes: form.value.notes,
-    //     total: total.value,
-    //   }
-    // })
+    // 调用 Go 后端订单 API
+    const auth = useAuth()
+    
+    // 适配后端 CreateOrderRequest 数据结构
+    const nameParts = form.value.name.trim().split(' ')
+    const firstName = nameParts[0] || 'Guest'
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User'
 
-    // 模拟 API 调用
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    const orderPayload = {
+      items: cartItems.value.map((item: any) => ({
+        product_id: item.id || 0,
+        quantity: item.quantity || 1
+      })),
+      shipping_address: {
+        first_name: firstName,
+        last_name: lastName,
+        address1: form.value.address || 'N/A',
+        city: form.value.city || 'N/A',
+        postal_code: form.value.zip || '000000',
+        country: form.value.country || 'US',
+        phone: form.value.phone || '00000000',
+        email: auth.user.value?.email || 'guest@example.com'
+      },
+      payment_method: form.value.paymentMethod || 'credit_card',
+      shipping_method: 'standard',
+      coupon_code: couponCode.value || ''
+    }
+
+    const response = await auth.request('/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderPayload)
+    })
 
     // 成功后清空购物车
     clearCart()

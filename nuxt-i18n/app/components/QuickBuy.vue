@@ -75,14 +75,14 @@
                 @click="selectProduct(product)"
               >
                 <img
-                  v-if="product.images?.length"
-                  :src="product.images[0]?.src"
-                  :alt="product.name"
+                  v-if="product.thumbnail"
+                  :src="product.thumbnail"
+                  :alt="product.title"
                   class="w-14 h-14 object-cover rounded-lg"
                 />
                 <div class="flex flex-col gap-1">
-                  <div class="text-sm text-white">{{ product.name }}</div>
-                  <div class="text-[#40ffaa]" v-html="product.price_html" />
+                  <div class="text-sm text-white">{{ product.title }}</div>
+                  <div class="text-[#40ffaa]">${{ (product.prices?.sale || product.prices?.regular || 0).toFixed(2) }}</div>
                 </div>
               </li>
             </ul>
@@ -139,6 +139,9 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { useAuth } from '~/composables/useAuth'
+import { useCart } from '~/composables/useCart'
+import type { CartItem } from '~/types/cart'
 
 type Maybe<T> = T | null | undefined
 
@@ -158,23 +161,20 @@ interface QuickBuyConfig {
   enabled?: boolean
 }
 
-interface WooImage {
-  src: string
-}
-
-interface WooProduct {
+interface GoProduct {
   id: number
-  name: string
-  price?: string | number
-  price_html?: string
-  images?: WooImage[]
-  dimensions?: { weight?: string | number }
-  weight?: string | number
-  prices?: { raw_price?: string | number; price?: string | number; regular_price?: string | number }
+  title: string
+  slug: string
+  thumbnail: string
+  prices: { regular: number; sale: number }
+  stock: { quantity: number }
 }
 
 interface Selection {
   id: number
+  title: string
+  slug: string
+  thumbnail: string
   qty: number
   weight_g: number
   price: number
@@ -185,10 +185,15 @@ const emit = defineEmits<{ close: [] }>()
 
 const step = ref(1)
 const query = ref('')
-const products = ref<WooProduct[]>([])
+const products = ref<GoProduct[]>([])
 const loading = ref(false)
 const error = ref('')
 const selections = ref<Selection[]>([])
+
+let searchTimer: Maybe<number> = null
+
+const auth = useAuth()
+const { addToCart } = useCart()
 
 let searchTimer: Maybe<number> = null
 
@@ -241,30 +246,18 @@ const formattedTotalPrice = computed(() => {
   }
 })
 
-const storeApiBase = computed(() => qbConfig.value.storeApiBase || '/wp-json/wc/store/v1')
-const cartUrl = computed(() => qbConfig.value.cartUrl || '/cart')
-const checkoutUrl = computed(() => qbConfig.value.checkoutUrl || '/checkout')
-
 const fetchProducts = async () => {
   loading.value = true
   error.value = ''
 
   try {
     const params = new URLSearchParams()
-    if (query.value) params.set('search', query.value)
-    if (currentCategorySlug.value) params.set('category', currentCategorySlug.value)
+    if (query.value) params.set('keyword', query.value)
     params.set('per_page', '12')
+    params.set('status', 'active')
 
-    const res = await fetch(`${storeApiBase.value}/products?${params.toString()}`, {
-      credentials: 'same-origin'
-    })
-
-    if (!res.ok) {
-      throw new Error(`Request failed ${res.status}`)
-    }
-
-    const data = (await res.json()) as Maybe<WooProduct[]>
-    products.value = Array.isArray(data) ? data : []
+    const res = await auth.request<any>(`/customer-service/products?${params.toString()}`)
+    products.value = res.items || []
   } catch (err) {
     error.value = (err as Error).message || String(err)
     products.value = []
@@ -307,68 +300,47 @@ const handleClose = () => {
   emit('close')
 }
 
+const addSelectionsToCart = () => {
+  for (const item of selections.value) {
+    addToCart({
+      id: item.id,
+      title: item.title,
+      slug: item.slug,
+      thumbnail: item.thumbnail,
+      price: item.price,
+      weight: item.weight_g
+    } as Omit<CartItem, 'quantity'>)
+  }
+}
+
 const goToCart = () => {
-  // 触发全局事件打开购物车弹窗
+  addSelectionsToCart()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('open-cart-drawer'))
   }
-  // 关闭 QuickBuy 弹窗
   emit('close')
 }
 
 const goToCheckout = () => {
-  // 触发全局事件打开结账弹窗
+  addSelectionsToCart()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('open-checkout-modal'))
   }
-  // 关闭 QuickBuy 弹窗
   emit('close')
 }
 
-const selectProduct = (product: WooProduct) => {
+const selectProduct = (product: GoProduct) => {
+  const price = product.prices?.sale || product.prices?.regular || 0
   selections.value.push({
     id: product.id,
+    title: product.title,
+    slug: product.slug,
+    thumbnail: product.thumbnail,
     qty: 1,
-    weight_g: extractWeightG(product),
-    price: extractPrice(product)
+    weight_g: 0,
+    price
   })
   next()
-}
-
-const extractWeightG = (product: WooProduct) => {
-  const raw = product.weight ?? product.dimensions?.weight ?? 0
-  if (raw == null || raw === '') return 0
-  const numeric = Number(raw)
-  if (!Number.isFinite(numeric)) return 0
-  if (numeric > 0 && numeric <= 5 && String(raw).includes('.')) {
-    return Math.round(numeric * 1000)
-  }
-  return Math.round(numeric)
-}
-
-const extractPrice = (product: WooProduct) => {
-  const prices = product.prices
-  let candidate = prices?.raw_price ?? prices?.price ?? prices?.regular_price
-  if (candidate != null) {
-    const numeric = Number(candidate)
-    if (Number.isFinite(numeric)) return numeric
-  }
-
-  if (product.price != null) {
-    const numeric = Number(product.price)
-    if (Number.isFinite(numeric)) return numeric
-  }
-
-  if (product.price_html) {
-    const text = String(product.price_html).replace(/<[^>]*>/g, '')
-    const match = text.match(/[0-9]+(?:\.[0-9]+)?/)
-    if (match) {
-      const numeric = Number(match[0])
-      if (Number.isFinite(numeric)) return numeric
-    }
-  }
-
-  return 0
 }
 
 onBeforeUnmount(() => {

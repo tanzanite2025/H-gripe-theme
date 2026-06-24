@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { isZipInRanges } from './useShippingValidation'
+import { useAuth } from '~/composables/useAuth'
 
 /**
  * 购物车计算系统 - 集成 Tanzanite Setting 配置
@@ -84,12 +85,6 @@ export interface Coupon {
 }
 
 export const useCartCalculation = () => {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => {
-    const base = (config.public as { wpApiBase?: string }).wpApiBase || '/wp-json'
-    return base.replace(/\/$/, '')
-  })
-
   // 状态
   const shippingTemplates = ref<CartShippingTemplate[]>([])
   const taxRates = ref<TaxRate[]>([])
@@ -101,16 +96,16 @@ export const useCartCalculation = () => {
   const selectedTaxRates = ref<number[]>([])
   const shippingAddress = ref<{ region?: string } | null>(null)
 
+  const { request } = useAuth()
+
   /**
    * 加载运费模板
    */
   const loadShippingTemplates = async () => {
     try {
-      const response = await $fetch<{ items: CartShippingTemplate[] }>(
-        `${apiBase.value}/tanzanite/v1/shipping-templates`,
-        {
-          headers: { accept: 'application/json' }
-        }
+      const response = await request<{ items: CartShippingTemplate[] }>(
+        '/shipping/templates',
+        { headers: { accept: 'application/json' } }
       )
       shippingTemplates.value = response.items || []
     } catch (error) {
@@ -123,13 +118,11 @@ export const useCartCalculation = () => {
    */
   const loadTaxRates = async () => {
     try {
-      const response = await $fetch<{ items: TaxRate[] }>(
-        `${apiBase.value}/tanzanite/v1/tax-rates`,
-        {
-          headers: { accept: 'application/json' }
-        }
+      const response = await request<{ items: TaxRate[] }>(
+        '/payment/tax-rates',
+        { headers: { accept: 'application/json' } }
       )
-      taxRates.value = (response.items || []).filter(t => t.is_active)
+      taxRates.value = (response.items || []).filter((t: TaxRate) => t.is_active)
     } catch (error) {
       console.error('Failed to load tax rates:', error)
     }
@@ -140,12 +133,9 @@ export const useCartCalculation = () => {
    */
   const loadUserPoints = async () => {
     try {
-      const response = await $fetch<UserPoints>(
-        `${apiBase.value}/tanzanite/v1/loyalty/points`,
-        {
-          headers: { accept: 'application/json' },
-          credentials: 'include'
-        }
+      const response = await request<UserPoints>(
+        '/marketing/loyalty/points',
+        { headers: { accept: 'application/json' } }
       )
       userPoints.value = response
     } catch (error) {
@@ -408,13 +398,12 @@ export const useCartCalculation = () => {
    */
   const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await $fetch<Coupon>(
-        `${apiBase.value}/tanzanite/v1/coupons/validate`,
+      const response = await request<Coupon>(
+        '/marketing/coupons/validate',
         {
           method: 'POST',
-          body: { code },
-          headers: { accept: 'application/json' },
-          credentials: 'include'
+          body: JSON.stringify({ code }),
+          headers: { 'Content-Type': 'application/json', accept: 'application/json' }
         }
       )
 

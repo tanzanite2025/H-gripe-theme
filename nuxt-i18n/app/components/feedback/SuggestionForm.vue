@@ -336,6 +336,12 @@ const handleSubmit = async () => {
   if (isSubmitting.value) return
   infoMessage.value = ''
 
+  if (eligibility.value && !eligibility.value.loggedIn) {
+    infoMessage.value = t('feedbackForm.messages.loginRequired')
+    openAuthModal('login')
+    return
+  }
+
   try {
     await submitSuggestion({
       fullName: form.fullName,
