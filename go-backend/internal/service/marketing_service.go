@@ -3,8 +3,11 @@ package service
 import (
 	"errors"
 	"fmt"
+	"math"
+	"math/rand"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
+	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/repository"
 	"time"
 
@@ -393,5 +396,161 @@ func (s *MarketingService) AdminAdjustPoints(userID uint, points int, reason str
 	}
 
 	return s.loyaltyRepo.UpdateUserPoints(userID, points)
+}
+
+// ==========================================
+// 积分兑换礼品卡核心业务方法
+// ==========================================
+
+// RedeemResult 兑换结果
+type RedeemResult struct {
+	GiftCardID      uint       `json:"giftcard_id"`
+	CardCode        string     `json:"card_code"`
+	Balance         float64    `json:"balance"`
+	PointsSpent     int        `json:"points_spent"`
+	PointsRemaining int        `json:"points_remaining"`
+	ExpiresAt       *time.Time `json:"expires_at"`
+}
+
+// RedeemPointsForGiftCard 积分兑换礼品卡（原子事务）
+// 将积分扣减、礼品卡生成、交易历史写入封装为统一的事务方法。
+// 所有校验失败均返回明确错误信息（Fail Loudly 原则）。
+func (s *MarketingService) RedeemPointsForGiftCard(
+	userID uint,
+	pointsToSpend int,
+	giftCardValue float64,
+	redeemCfg *setting.RedeemSettings,
+) (*RedeemResult, error) {
+	// 1. 校验配置是否开启
+	if !redeemCfg.Enabled {
+		return nil, errors.New("[CRITICAL] Point redemption is disabled")
+	}
+
+	// 2. 严格校验兑换率
+	expectedPoints := int(giftCardValue * float64(redeemCfg.ExchangeRate))
+	if expectedPoints != pointsToSpend {
+		return nil, fmt.Errorf("[CRITICAL] Points mismatch: value %.2f requires %d points, got %d", giftCardValue, expectedPoints, pointsToSpend)
+	}
+
+	// 3. 校验最小起兑点
+	if pointsToSpend < redeemCfg.MinPoints {
+		return nil, fmt.Errorf("[CRITICAL] Minimum points required to redeem is %d", redeemCfg.MinPoints)
+	}
+
+	// 开启数据库事务
+	tx := s.loyaltyRepo.GetDB().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 4. 校验用户可用积分余额
+	var userLoyalty loyalty.UserLoyalty
+	if err := tx.Where("user_id = ?", userID).First(&userLoyalty).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("[CRITICAL] Failed to retrieve user loyalty data: %v", err)
+	}
+
+	if userLoyalty.AvailablePoints < pointsToSpend {
+		tx.Rollback()
+		return nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, required %d", userLoyalty.AvailablePoints, pointsToSpend)
+	}
+
+	// 5. 校验今日兑换额度
+	var sumPoints int
+	todayStart := time.Now().Truncate(24 * time.Hour)
+	todayEnd := todayStart.Add(24 * time.Hour)
+
+	err := tx.Model(&loyalty.LoyaltyTransaction{}).
+		Where("user_id = ? AND type = ? AND source = ? AND created_at BETWEEN ? AND ?",
+			userID, "spend", "giftcard", todayStart, todayEnd).
+		Select("COALESCE(SUM(points), 0)").
+		Scan(&sumPoints).Error
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("[CRITICAL] Failed to verify daily limit: %v", err)
+	}
+
+	todayRedeemedValue := math.Abs(float64(sumPoints)) / float64(redeemCfg.ExchangeRate)
+	if redeemCfg.MaxValuePerDay > 0 && todayRedeemedValue+giftCardValue > redeemCfg.MaxValuePerDay {
+		tx.Rollback()
+		return nil, fmt.Errorf("[CRITICAL] Daily limit exceeded. Limit: %.2f, Redeemed: %.2f, Attempted: %.2f", redeemCfg.MaxValuePerDay, todayRedeemedValue, giftCardValue)
+	}
+
+	// 6. 扣减用户积分
+	userLoyalty.AvailablePoints -= pointsToSpend
+	userLoyalty.UsedPoints += pointsToSpend
+	userLoyalty.UpdatedAt = time.Now()
+	if err := tx.Save(&userLoyalty).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("[CRITICAL] Failed to deduct points: %v", err)
+	}
+
+	// 7. 生成礼品卡
+	cardCode := "REDEEM-" + generateRedeemCode(12)
+	var expiresAt *time.Time
+	if redeemCfg.CardExpiryDays > 0 {
+		t := time.Now().AddDate(0, 0, redeemCfg.CardExpiryDays)
+		expiresAt = &t
+	}
+
+	giftcard := coupon.GiftCard{
+		Code:         cardCode,
+		InitialValue: giftCardValue,
+		Balance:      giftCardValue,
+		Currency:     "USD",
+		Status:       "active",
+		ExpiresAt:    expiresAt,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	if err := tx.Create(&giftcard).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("[CRITICAL] Failed to create gift card: %v", err)
+	}
+
+	// 8. 写入积分交易历史
+	transaction := loyalty.LoyaltyTransaction{
+		UserID:      userID,
+		Type:        "spend",
+		Points:      -pointsToSpend,
+		Balance:     userLoyalty.AvailablePoints,
+		Source:      "giftcard",
+		SourceID:    giftcard.ID,
+		Description: fmt.Sprintf("Redeemed gift card %s with %d points", cardCode, pointsToSpend),
+		CreatedAt:   time.Now(),
+	}
+
+	if err := tx.Create(&transaction).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("[CRITICAL] Failed to create transaction log: %v", err)
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("[CRITICAL] Transaction commit failed: %v", err)
+	}
+
+	return &RedeemResult{
+		GiftCardID:      giftcard.ID,
+		CardCode:        giftcard.Code,
+		Balance:         giftcard.Balance,
+		PointsSpent:     pointsToSpend,
+		PointsRemaining: userLoyalty.AvailablePoints,
+		ExpiresAt:       giftcard.ExpiresAt,
+	}, nil
+}
+
+// generateRedeemCode 生成指定长度的随机大写字母+数字字符串
+func generateRedeemCode(n int) string {
+	const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := range b {
+		b[i] = letters[r.Intn(len(letters))]
+	}
+	return string(b)
 }
 

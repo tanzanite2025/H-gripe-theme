@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import http from '@/api/http'
 
 const coupons = ref([])
 const loading = ref(true)
@@ -21,19 +22,13 @@ const newCoupon = ref({
 // Load coupons from the backend
 const fetchCoupons = async () => {
   try {
-    const res = await fetch('http://localhost:8080/api/v1/admin/marketing/coupons/all', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
-    })
-    const json = await res.json()
-    if (res.ok) {
-      coupons.value = json.data || []
-    } else {
-      console.error("[CRITICAL] Failed to fetch coupons", json.error)
+    const json = await http('/marketing/coupons')
+    if (!json || !Array.isArray(json.coupons)) {
+      throw new Error("[CRITICAL] Invalid coupon data structure returned from server")
     }
+    coupons.value = json.coupons
   } catch (err) {
-    console.error("[CRITICAL] API Error", err)
+    alert("Failed to load coupons: " + err.message)
   } finally {
     loading.value = false
   }
@@ -59,24 +54,14 @@ const createCoupon = async () => {
     payload.max_discount = Number(payload.max_discount)
     payload.usage_limit = Number(payload.usage_limit)
 
-    const res = await fetch('http://localhost:8080/api/v1/admin/marketing/coupons', {
+    await http('/marketing/coupons', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
       body: JSON.stringify(payload)
     })
-    if (res.ok) {
-      showCreateModal.value = false
-      fetchCoupons()
-    } else {
-      const err = await res.json()
-      console.error("[CRITICAL] Failed to create coupon", err.error)
-      alert("Error: " + err.error)
-    }
+    showCreateModal.value = false
+    fetchCoupons()
   } catch (err) {
-    console.error("[CRITICAL] API Error", err)
+    alert("Error: " + err.message)
   }
 }
 
@@ -84,21 +69,13 @@ const createCoupon = async () => {
 const toggleCouponStatus = async (coupon) => {
   const updatedCoupon = { ...coupon, enabled: !coupon.enabled }
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/admin/marketing/coupons/${coupon.id}`, {
+    await http(`/marketing/coupons/${coupon.id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
       body: JSON.stringify(updatedCoupon)
     })
-    if (res.ok) {
-      coupon.enabled = updatedCoupon.enabled
-    } else {
-      console.error("[CRITICAL] Failed to update coupon status")
-    }
+    coupon.enabled = updatedCoupon.enabled
   } catch (err) {
-    console.error("[CRITICAL] API Error", err)
+    alert("Failed to update status: " + err.message)
   }
 }
 
@@ -106,19 +83,12 @@ const toggleCouponStatus = async (coupon) => {
 const deleteCoupon = async (id) => {
   if (!confirm("Are you sure you want to delete this coupon?")) return
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/admin/marketing/coupons/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+    await http(`/marketing/coupons/${id}`, {
+      method: 'DELETE'
     })
-    if (res.ok) {
-      coupons.value = coupons.value.filter(c => c.id !== id)
-    } else {
-      console.error("[CRITICAL] Failed to delete coupon")
-    }
+    coupons.value = coupons.value.filter(c => c.id !== id)
   } catch (err) {
-    console.error("[CRITICAL] API Error", err)
+    alert("Failed to delete coupon: " + err.message)
   }
 }
 

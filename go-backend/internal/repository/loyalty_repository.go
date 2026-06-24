@@ -15,6 +15,11 @@ func NewLoyaltyRepository(db *gorm.DB) *LoyaltyRepository {
 	return &LoyaltyRepository{db: db}
 }
 
+// GetDB 获取底层 GORM DB 实例
+func (r *LoyaltyRepository) GetDB() *gorm.DB {
+	return r.db
+}
+
 // LoyaltyTransaction 相关方法
 
 // CreateTransaction 创建积分交易

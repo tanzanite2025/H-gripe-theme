@@ -3,14 +3,17 @@ package service
 import (
 	"errors"
 	"fmt"
+	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/repository"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type OrderService struct {
+	db           *gorm.DB
 	orderRepo    *repository.OrderRepository
 	productRepo  *repository.ProductRepository
 	couponRepo   *repository.CouponRepository
@@ -20,6 +23,7 @@ type OrderService struct {
 }
 
 func NewOrderService(
+	db *gorm.DB,
 	orderRepo *repository.OrderRepository,
 	productRepo *repository.ProductRepository,
 	couponRepo *repository.CouponRepository,
@@ -28,6 +32,7 @@ func NewOrderService(
 	auditRepo *repository.AuditRepository,
 ) *OrderService {
 	return &OrderService{
+		db:           db,
 		orderRepo:    orderRepo,
 		productRepo:  productRepo,
 		couponRepo:   couponRepo,
@@ -47,7 +52,7 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 	for i := range items {
 		product, err := s.productRepo.FindByID(items[i].ProductID)
 		if err != nil {
-			return nil, fmt.Errorf("product not found: %w", err)
+			return nil, fmt.Errorf("[CRITICAL] Product ID %d not found in database: %w", items[i].ProductID, err)
 		}
 		
 		items[i].Price = product.Price
@@ -69,15 +74,25 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 	
 	// 应用优惠券
 	discountAmount := 0.0
+	var targetCoupon *coupon.Coupon
 	if couponCode != "" {
 		discount, err := s.applyCoupon(couponCode, userID, totalAmount)
-		if err == nil {
-			discountAmount = discount
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply coupon %s: %w", couponCode, err)
 		}
+		discountAmount = discount
+		cp, cpErr := s.couponRepo.FindCouponByCode(couponCode)
+		if cpErr != nil {
+			return nil, fmt.Errorf("referenced coupon code %s details not found: %w", couponCode, cpErr)
+		}
+		targetCoupon = cp
 	}
 	
 	// 计算最终金额
 	finalAmount := totalAmount + shippingFee + taxAmount - discountAmount
+	if finalAmount < 0 {
+		finalAmount = 0
+	}
 	
 	// 创建订单
 	o := &order.Order{
@@ -97,11 +112,46 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 		BillingAddress:  billingAddress,
 	}
 	
-	if err := s.orderRepo.Create(o); err != nil {
-		return nil, err
+	// 用事务原子化订单创建和优惠券扣减
+	var createdOrder *order.Order
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		txOrderRepo := s.orderRepo.WithTx(tx)
+		
+		// 1. 创建订单和明细记录
+		if err := txOrderRepo.Create(o); err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
+		}
+		createdOrder = o
+		
+		// 2. 优惠券扣减和记录
+		if targetCoupon != nil {
+			txCouponRepo := s.couponRepo.WithTx(tx)
+			
+			// 增加使用计数
+			if err := txCouponRepo.IncrementUsedCount(targetCoupon.ID); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to increment usage count for coupon ID %d: %w", targetCoupon.ID, err)
+			}
+			
+			// 创建使用凭证记录
+			usage := &coupon.CouponUsage{
+				CouponID:  targetCoupon.ID,
+				UserID:    userID,
+				OrderID:   o.ID,
+				Discount:  discountAmount,
+				CreatedAt: time.Now(),
+			}
+			if err := txCouponRepo.CreateCouponUsage(usage); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to record coupon usage for coupon ID %d: %w", targetCoupon.ID, err)
+			}
+		}
+		return nil
+	})
+	
+	if txErr != nil {
+		return nil, txErr
 	}
 	
-	return o, nil
+	return createdOrder, nil
 }
 
 // GetOrder 获取订单详情

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import http from '@/api/http'
 
 const items = ref(null) // Deliberately null to trigger fast-fail if not loaded
 const loading = ref(true)
@@ -9,18 +10,9 @@ const statusFilter = ref('pending')
 const fetchItems = async () => {
   loading.value = true
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/admin/showcase?status=${statusFilter.value}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      throw new Error(`[CRITICAL] Failed to fetch showcase items: ${json.error}`)
-    }
+    const json = await http(`/showcase?status=${statusFilter.value}`)
     items.value = json || []
   } catch (err) {
-    console.error(err)
     alert(err.message) // loud fail
   } finally {
     loading.value = false
@@ -37,17 +29,10 @@ const approveItem = async (id) => {
   items.value = items.value.filter(i => i.id !== id)
   
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/admin/showcase/${id}/approve`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
+    await http(`/showcase/${id}/approve`, {
+      method: 'PUT'
     })
-    if (!res.ok) {
-      throw new Error("[CRITICAL] Approval failed")
-    }
   } catch (err) {
-    console.error(err)
     alert(err.message)
     // Revert optimistic
     items.value.push(original)
@@ -66,19 +51,11 @@ const rejectItem = async (id) => {
   items.value = items.value.filter(i => i.id !== id)
 
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/admin/showcase/${id}/reject`, {
+    await http(`/showcase/${id}/reject`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
       body: JSON.stringify({ reason })
     })
-    if (!res.ok) {
-      throw new Error("[CRITICAL] Rejection failed")
-    }
   } catch (err) {
-    console.error(err)
     alert(err.message)
     // Revert optimistic
     items.value.push(original)

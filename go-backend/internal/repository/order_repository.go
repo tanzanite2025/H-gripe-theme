@@ -15,6 +15,11 @@ func NewOrderRepository(db *gorm.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
 
+// WithTx 复用事务 db 实例
+func (r *OrderRepository) WithTx(tx *gorm.DB) *OrderRepository {
+	return &OrderRepository{db: tx}
+}
+
 // Create 创建订单
 func (r *OrderRepository) Create(o *order.Order) error {
 	return r.db.Create(o).Error

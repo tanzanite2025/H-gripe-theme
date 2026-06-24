@@ -15,6 +15,11 @@ func NewCouponRepository(db *gorm.DB) *CouponRepository {
 	return &CouponRepository{db: db}
 }
 
+// WithTx 复用事务 db 实例
+func (r *CouponRepository) WithTx(tx *gorm.DB) *CouponRepository {
+	return &CouponRepository{db: tx}
+}
+
 // Coupon 相关方法
 
 // CreateCoupon 创建优惠券

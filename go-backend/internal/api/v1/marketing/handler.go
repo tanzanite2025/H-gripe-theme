@@ -1,6 +1,7 @@
 package marketing
 
 import (
+	"fmt"
 	"net/http"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
@@ -11,11 +12,13 @@ import (
 
 type Handler struct {
 	marketingService *service.MarketingService
+	settingService   *service.SettingService
 }
 
-func NewHandler(marketingService *service.MarketingService) *Handler {
+func NewHandler(marketingService *service.MarketingService, settingService *service.SettingService) *Handler {
 	return &Handler{
 		marketingService: marketingService,
+		settingService:   settingService,
 	}
 }
 
@@ -491,5 +494,70 @@ func (h *Handler) ListGiftCards(c *gin.Context) {
 	// TODO: Fetch from giftcard repo
 	c.JSON(http.StatusOK, gin.H{
 		"items": []interface{}{},
+	})
+}
+
+// RedeemPointsToGiftCard 积分兑换礼品卡（原生接口）
+// @Summary 积分兑换礼品卡
+// @Tags Marketing
+// @Accept json
+// @Produce json
+// @Param request body map[string]interface{} true "兑换请求 (points / points_to_spend, giftcard_value)"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/marketing/loyalty/redeem [post]
+func (h *Handler) RedeemPointsToGiftCard(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "[CRITICAL] Unauthorized access"})
+		return
+	}
+
+	// 双字段映射：同时接受 points 和 points_to_spend，解决前后端命名偏差
+	var req struct {
+		Points        int     `json:"points"`
+		PointsToSpend int     `json:"points_to_spend"`
+		GiftCardValue float64 `json:"giftcard_value" binding:"required,gt=0"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("[CRITICAL] Invalid request arguments: %v", err)})
+		return
+	}
+
+	// 容错：优先使用 points，如果为零则使用 points_to_spend
+	pointsToSpend := req.Points
+	if pointsToSpend <= 0 {
+		pointsToSpend = req.PointsToSpend
+	}
+	if pointsToSpend <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "[CRITICAL] 'points' or 'points_to_spend' must be > 0"})
+		return
+	}
+
+	// 获取兑换配置
+	locale := c.GetHeader("X-Locale")
+	if locale == "" {
+		locale = c.DefaultQuery("lang", "en")
+	}
+	config, err := h.settingService.GetRedeemSettings(locale)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Failed to load redeem settings: %v", err)})
+		return
+	}
+
+	// 调用核心 Service 方法
+	result, err := h.marketingService.RedeemPointsForGiftCard(userID.(uint), pointsToSpend, req.GiftCardValue, config)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"giftcard_id":      result.GiftCardID,
+		"card_code":        result.CardCode,
+		"balance":          result.Balance,
+		"points_spent":     result.PointsSpent,
+		"points_remaining": result.PointsRemaining,
+		"expires_at":       result.ExpiresAt,
+		"message":          "兑换成功",
 	})
 }

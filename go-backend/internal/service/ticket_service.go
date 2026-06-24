@@ -7,6 +7,7 @@ import (
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/repository"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -77,7 +78,7 @@ func (s *TicketService) HasPublicCustomerServiceConversation(conversationID stri
 	return true, t.AssignedTo, nil
 }
 
-func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message string, userID, agentID uint) (*ticket.Ticket, *ticket.TicketMessage, error) {
+func (s *TicketService) getOrCreateCustomerServiceConversation(conversationID string, userID, agentID uint) (*ticket.Ticket, error) {
 	persistedUserID := userID
 	if persistedUserID == 0 {
 		if agentID > 0 {
@@ -85,13 +86,13 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message 
 		} else {
 			agents, err := s.ListCustomerServiceAgentProfiles(1)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			if len(agents) == 0 {
-				return nil, nil, errors.New("no customer service agents configured")
+				return nil, errors.New("no customer service agents configured")
 			}
 			if agents[0].UserID == nil {
-				return nil, nil, errors.New("customer service agent is not linked to a Go user")
+				return nil, errors.New("customer service agent is not linked to a Go user")
 			}
 			persistedUserID = *agents[0].UserID
 		}
@@ -110,10 +111,10 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message 
 			Tags:       tag,
 		}
 		if err := s.CreateTicket(t); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	} else if err != nil {
-		return nil, nil, err
+		return nil, err
 	} else {
 		t.Status = "open"
 		if agentID > 0 {
@@ -123,7 +124,24 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message 
 			t.UserID = persistedUserID
 		}
 		if err := s.ticketRepo.UpdateTicket(t); err != nil {
-			return nil, nil, err
+			return nil, err
+		}
+	}
+	return t, nil
+}
+
+func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message string, userID, agentID uint) (*ticket.Ticket, *ticket.TicketMessage, error) {
+	t, err := s.getOrCreateCustomerServiceConversation(conversationID, userID, agentID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	persistedUserID := userID
+	if persistedUserID == 0 {
+		if agentID > 0 {
+			persistedUserID = agentID
+		} else {
+			persistedUserID = t.UserID
 		}
 	}
 
@@ -140,6 +158,98 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message 
 	}
 
 	return t, msg, nil
+}
+
+// GetWelcomeMessage 获取欢迎语。如果24小时内未发送过，则会自动创建一条客服自动回复消息。
+func (s *TicketService) GetWelcomeMessage(conversationID string) (string, bool, error) {
+	rules, err := s.ticketRepo.GetActiveAutoReplyRules("welcome")
+	if err != nil {
+		return "", false, err
+	}
+	if len(rules) == 0 {
+		return "", false, nil
+	}
+	welcomeRule := rules[0]
+
+	t, err := s.getOrCreateCustomerServiceConversation(conversationID, 0, 0)
+	if err != nil {
+		return "", false, err
+	}
+
+	lastSent, err := s.ticketRepo.GetLastWelcomeMessageTime(t.ID, welcomeRule.ReplyMessage)
+	if err == nil && !lastSent.IsZero() && time.Since(lastSent) < 24*time.Hour {
+		return welcomeRule.ReplyMessage, true, nil
+	}
+
+	// 24小时内未发送过，自动插入一条消息（UserID = 0 表示系统自动回复）
+	msg := &ticket.TicketMessage{
+		TicketID:   t.ID,
+		UserID:     0,
+		IsStaff:    true,
+		Content:    welcomeRule.ReplyMessage,
+		IsRead:     false,
+		IsInternal: false,
+	}
+	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
+		return "", false, err
+	}
+
+	return welcomeRule.ReplyMessage, false, nil
+}
+
+// MatchKeywordMessage 关键字匹配自动回复。如果匹配到，会自动插入一条客服自动回复消息。
+func (s *TicketService) MatchKeywordMessage(conversationID, message string) (string, uint, error) {
+	rules, err := s.ticketRepo.GetActiveAutoReplyRules("keyword")
+	if err != nil {
+		return "", 0, err
+	}
+	if len(rules) == 0 {
+		return "", 0, nil
+	}
+
+	var matchedRule *ticket.AutoReplyRule
+	for _, rule := range rules {
+		keyword := strings.TrimSpace(rule.TriggerKeyword)
+		if keyword == "" {
+			continue
+		}
+
+		isMatch := false
+		if rule.MatchType == "contains" {
+			isMatch = strings.Contains(strings.ToLower(message), strings.ToLower(keyword))
+		} else {
+			isMatch = strings.ToLower(strings.TrimSpace(message)) == strings.ToLower(keyword)
+		}
+
+		if isMatch {
+			matchedRule = &rule
+			break
+		}
+	}
+
+	if matchedRule == nil {
+		return "", 0, nil
+	}
+
+	t, err := s.getOrCreateCustomerServiceConversation(conversationID, 0, 0)
+	if err != nil {
+		return "", 0, err
+	}
+
+	// 自动回复一条消息（UserID = 0 表示系统自动回复）
+	msg := &ticket.TicketMessage{
+		TicketID:   t.ID,
+		UserID:     0,
+		IsStaff:    true,
+		Content:    matchedRule.ReplyMessage,
+		IsRead:     false,
+		IsInternal: false,
+	}
+	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
+		return "", 0, err
+	}
+
+	return matchedRule.ReplyMessage, matchedRule.ID, nil
 }
 
 func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, limit, offset int) ([]ticket.TicketMessage, error) {
