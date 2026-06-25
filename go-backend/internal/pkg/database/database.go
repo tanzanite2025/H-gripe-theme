@@ -11,6 +11,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/plugin/dbresolver"
 )
 
 // Init 初始化数据库连接
@@ -37,15 +38,24 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	// Configure read/write splitting using dbresolver
+	err = db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{dialector},
+		Replicas: []gorm.Dialector{dialector}, // Simulate replica using same DSN
+		Policy:   dbresolver.RandomPolicy{},
+	}).
+		SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second).
+		SetMaxIdleConns(cfg.MaxIdleConns).
+		SetMaxOpenConns(cfg.MaxOpenConns))
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure dbresolver: %w", err)
+	}
+
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database instance: %w", err)
 	}
-
-	// 设置连接池
-	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
-	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
-	sqlDB.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
 
 	// 测试连接
 	if err := sqlDB.Ping(); err != nil {
