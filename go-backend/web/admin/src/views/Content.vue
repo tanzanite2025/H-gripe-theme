@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="content-page">
     <div class="page-header">
       <h2>内容管理</h2>
@@ -596,7 +596,10 @@ const showTranslationsDialog = async (post) => {
   
   try {
     const response = await axios.get(`/api/admin/content/posts/${post.id}/translations`)
-    translations.value = response.data.translations || []
+    if (!response.data || !Array.isArray(response.data.translations)) {
+      throw new Error('[CRITICAL] Missing translations array in response')
+    }
+    translations.value = response.data.translations
     translationsDialogVisible.value = true
   } catch (error) {
     ElMessage.error('获取翻译版本失败')

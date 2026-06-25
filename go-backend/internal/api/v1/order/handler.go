@@ -12,11 +12,13 @@ import (
 
 type Handler struct {
 	orderService *service.OrderService
+	cartService  *service.CartService
 }
 
-func NewHandler(orderService *service.OrderService) *Handler {
+func NewHandler(orderService *service.OrderService, cartService *service.CartService) *Handler {
 	return &Handler{
 		orderService: orderService,
+		cartService:  cartService,
 	}
 }
 
@@ -74,9 +76,29 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// 转换订单项
-	items := make([]order.OrderItem, len(req.Items))
-	for i, item := range req.Items {
+	// 安全闭环：强制从后端 Cart 拉取，忽略前端的 req.Items
+	sessionID, _ := c.Cookie("session_id")
+	uid := userID.(uint)
+	
+	cart, err := h.cartService.GetOrCreateCart(&uid, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve cart session"})
+		return
+	}
+
+	summary, err := h.cartService.GetCartSummary(&uid, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve cart items"})
+		return
+	}
+
+	if len(summary.Items) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cart is empty"})
+		return
+	}
+
+	items := make([]order.OrderItem, len(summary.Items))
+	for i, item := range summary.Items {
 		items[i] = order.OrderItem{
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
@@ -131,6 +153,9 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 清空购物车
+	_ = h.cartService.ClearCart(cart.ID)
 
 	c.JSON(http.StatusCreated, o)
 }

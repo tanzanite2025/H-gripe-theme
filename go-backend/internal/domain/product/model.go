@@ -136,8 +136,9 @@ func (CartItem) TableName() string {
 
 // CartSummary 购物车摘要
 type CartSummary struct {
-	ItemCount int     `json:"item_count"`
-	Total     float64 `json:"total"`
+	ItemCount int        `json:"item_count"`
+	Total     float64    `json:"total"`
+	Items     []CartItem `json:"items"`
 }
 
 // ProductAttribute 商品属性

@@ -480,20 +480,41 @@ func (h *Handler) AdminAdjustPoints(c *gin.Context) {
 
 // GetUserAssets 获取用户资产数量
 func (h *Handler) GetUserAssets(c *gin.Context) {
-	// userID, exists := c.Get("user_id")
-	// TODO: Count actual user coupons and gift cards from DB
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "[CRITICAL] Unauthorized access"})
+		return
+	}
+
+	giftCards, err := h.marketingService.GetGiftCardsByUserID(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 礼品卡数量
 	c.JSON(http.StatusOK, gin.H{
-		"coupons":     0,
-		"point_cards": 0,
+		"coupons":     0, // 暂无绑定用户的独立优惠券概念
+		"point_cards": len(giftCards),
 	})
 }
 
 // ListGiftCards 获取当前用户的礼品卡
 func (h *Handler) ListGiftCards(c *gin.Context) {
-	// userID, exists := c.Get("user_id")
-	// TODO: Fetch from giftcard repo
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "[CRITICAL] Unauthorized access"})
+		return
+	}
+
+	giftCards, err := h.marketingService.GetGiftCardsByUserID(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"items": []interface{}{},
+		"items": giftCards,
 	})
 }
 

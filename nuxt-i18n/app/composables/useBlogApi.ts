@@ -150,12 +150,8 @@ export const useBlogApi = () => {
     const localTranslations = () => getBlogTranslationsByGroup(params.group)
     if (useLocalBlog.value) return localTranslations()
 
-    try {
-      // Group translations are not fully supported in Go API yet, returning fallback mock
-      return localTranslations()
-    } catch {
-      return localTranslations()
-    }
+    // Group translations are not fully supported in Go API yet, returning fallback mock
+    return localTranslations()
   }
 
   const getPostTranslations = async (postId: number): Promise<Record<string, any>> => {
@@ -164,10 +160,13 @@ export const useBlogApi = () => {
       const response = await $fetch<{ translations: Record<string, any> }>(
         `${trimTrailingSlash(apiBase)}/api/v1/i18n/translations/${postId}`
       )
-      return response.translations || {}
+      if (!response || !response.translations) {
+        throw new Error(`[CRITICAL] Post translations response invalid for postId ${postId}`)
+      }
+      return response.translations
     } catch (error) {
       console.error('Failed to fetch post translations from Go backend:', error)
-      return {}
+      throw error // FAIL LOUDLY: Never return {} on critical fetch error
     }
   }
 

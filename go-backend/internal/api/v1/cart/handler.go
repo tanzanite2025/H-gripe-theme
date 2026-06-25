@@ -95,12 +95,118 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 		return
 	}
 
-	// 实现更新逻辑
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
+	}
+
+	sessionID, _ := c.Cookie("session_id")
+	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	productID := c.Param("id")
+	var pID uint
+	fmt.Sscanf(productID, "%d", &pID)
+
+	if err := h.cartService.UpdateCartItem(cart.ID, pID, req.Quantity); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "cart item updated"})
 }
 
 // RemoveFromCart 从购物车移除商品
 func (h *Handler) RemoveFromCart(c *gin.Context) {
-	// 实现移除逻辑
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
+	}
+
+	sessionID, _ := c.Cookie("session_id")
+	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	productID := c.Param("id")
+	var pID uint
+	fmt.Sscanf(productID, "%d", &pID)
+
+	if err := h.cartService.RemoveFromCart(cart.ID, pID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "product removed from cart"})
+}
+
+// SyncCart 同步本地购物车到云端
+func (h *Handler) SyncCart(c *gin.Context) {
+	var items []service.SyncCartItemReq
+	if err := c.ShouldBindJSON(&items); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
+	}
+
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		sessionID = uuid.New().String()
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true)
+	}
+
+	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.cartService.SyncCart(cart.ID, items); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 重新获取同步后的摘要
+	summary, err := h.cartService.GetCartSummary(userID, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
+}
+
+// ClearCart 清空购物车
+func (h *Handler) ClearCart(c *gin.Context) {
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
+	}
+
+	sessionID, _ := c.Cookie("session_id")
+	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.cartService.ClearCart(cart.ID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "cart cleared"})
 }

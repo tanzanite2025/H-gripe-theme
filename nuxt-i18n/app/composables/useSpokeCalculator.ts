@@ -1,7 +1,12 @@
 import { ref } from 'vue'
 import type { SpokeCalcInput, SpokeCalcResult } from '~/types/spoke'
-import type { SpokeCalcApiResponse } from '~/server/api/spoke-calc.post'
 
+// Define the response shape from Go backend
+interface SpokeCalcApiResponse {
+  leftLengthMm: number
+  rightLengthMm: number
+  debug: any
+}
 export const useSpokeCalculator = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -12,22 +17,21 @@ export const useSpokeCalculator = () => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await useFetch<SpokeCalcApiResponse>('/api/spoke-calc', {
+      // Use the actual Go backend endpoint instead of Nuxt mock
+      const auth = useAuth()
+      const data = await auth.request<SpokeCalcApiResponse>('/spoke/calc', {
         method: 'POST',
-        body: input,
+        body: JSON.stringify(input)
       })
 
-      if (fetchError.value) {
-        throw fetchError.value
-      }
-
-      if (data.value) {
+      if (data && data.leftLengthMm && data.rightLengthMm) {
         result.value = {
-          leftLengthMm: data.value.leftLengthMm,
-          rightLengthMm: data.value.rightLengthMm,
+          leftLengthMm: data.leftLengthMm,
+          rightLengthMm: data.rightLengthMm,
         }
       } else {
         result.value = null
+        throw new Error('Invalid response format from server')
       }
     } catch (e: any) {
       // eslint-disable-next-line no-console

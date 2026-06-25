@@ -70,8 +70,12 @@ export const useSpokeHistory = () => {
         'Failed to load spoke length history',
       )
 
-      const nextItems = response?.items ?? []
-      const nextMeta = response?.meta ?? null
+      if (!response || !Array.isArray(response.items)) {
+        throw new Error('[CRITICAL] Spoke history API returned invalid data structure (missing items array)')
+      }
+
+      const nextItems = response.items
+      const nextMeta = response.meta || null
 
       if (append && page > 1) {
         const existing = items.value || []
