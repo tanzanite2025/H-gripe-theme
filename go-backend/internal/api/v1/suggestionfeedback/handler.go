@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	domainsuggestion "tanzanite/internal/domain/suggestionfeedback"
+	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 
 type Handler struct {
 	suggestionService *service.SuggestionFeedbackService
+	storageService    storage.StorageService
 }
 
 type createSuggestionRequest struct {
@@ -27,8 +29,11 @@ type createSuggestionRequest struct {
 	ThreadKey       string                        `json:"threadKey"`
 }
 
-func NewHandler(suggestionService *service.SuggestionFeedbackService) *Handler {
-	return &Handler{suggestionService: suggestionService}
+func NewHandler(suggestionService *service.SuggestionFeedbackService, storageService storage.StorageService) *Handler {
+	return &Handler{
+		suggestionService: suggestionService,
+		storageService:    storageService,
+	}
 }
 
 func (h *Handler) Eligibility(c *gin.Context) {
@@ -39,6 +44,32 @@ func (h *Handler) Eligibility(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, eligibility)
+}
+
+func (h *Handler) Upload(c *gin.Context) {
+	_, exists := currentUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Please sign in to upload files."})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_file", "message": "No file uploaded"})
+		return
+	}
+
+	url, err := h.storageService.Upload(c.Request.Context(), file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed", "message": "Failed to upload file"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"url":  url,
+		"name": file.Filename,
+		"size": file.Size,
+	})
 }
 
 func (h *Handler) Create(c *gin.Context) {

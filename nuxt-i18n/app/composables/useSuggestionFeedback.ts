@@ -104,12 +104,30 @@ export const useSuggestionFeedback = (threadKey: MaybeRef<string> = 'product_ser
     }
   }
 
+  const uploadAttachment = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await auth.request<{ url: string; name: string; size: number }>(
+      '/suggestion-feedback/upload',
+      {
+        method: 'POST',
+        body: formData,
+        // FormData should not have Content-Type manually set so the browser can add the boundary
+        headers: { accept: 'application/json' },
+      },
+      'Failed to upload attachment'
+    )
+    return response
+  }
+
   return {
     eligibility,
     isSubmitting,
     errorMessage,
     successMessage,
     loadEligibility,
+    uploadAttachment,
     submitSuggestion,
   }
 }

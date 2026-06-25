@@ -566,7 +566,8 @@ const handleSubmit = async () => {
       },
       payment_method: form.value.paymentMethod || 'credit_card',
       shipping_method: 'standard',
-      coupon_code: couponCode.value || ''
+      coupon_code: couponCode.value || '',
+      points_to_use: (calculation && calculation.usePointsDiscount.value) ? (calculation.pointsToUse.value || 0) : 0
     }
 
     const response = await auth.request('/orders', {

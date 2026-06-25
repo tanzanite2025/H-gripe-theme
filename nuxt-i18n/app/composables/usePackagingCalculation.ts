@@ -70,12 +70,13 @@ export function usePackagingCalculation() {
 
     try {
       const config = useRuntimeConfig()
-      const response = await $fetch<{ ok: boolean; data: { items: PackagingRule[] } }>(
-        `${config.public.apiBase}/wp-json/tanzanite/v1/packaging-rules`
+      const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+      const response = await $fetch<{ data: PackagingRule[] }>(
+        `${base}/shipping/packaging-rules`
       )
 
-      if (response.ok && response.data?.items) {
-        packagingRules.value = response.data.items.filter(r => r.is_active)
+      if (Array.isArray(response?.data)) {
+        packagingRules.value = response.data.filter(r => r.is_active)
       }
     } catch (e) {
       console.error('Failed to load packaging rules:', e)

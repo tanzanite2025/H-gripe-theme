@@ -217,6 +217,7 @@ const {
   errorMessage,
   successMessage,
   loadEligibility,
+  uploadAttachment,
   submitSuggestion,
 } = useSuggestionFeedback(threadKeyRef)
 
@@ -321,15 +322,27 @@ const handleAuthModalSuccess = async () => {
   await loadEligibility()
 }
 
-const mapAttachmentsForPayload = () => {
-  if (!allowAttachments.value) {
+const mapAttachmentsForPayload = async () => {
+  if (!allowAttachments.value || form.attachments.length === 0) {
     return []
   }
-  return form.attachments.map(file => ({
-    name: file.name,
-    url: '',
-    size: file.size,
-  }))
+  
+  const uploadedUrls = []
+  for (const file of form.attachments) {
+    try {
+      const res = await uploadAttachment(file)
+      uploadedUrls.push({
+        name: res.name || file.name,
+        url: res.url,
+        size: res.size || file.size,
+      })
+    } catch (error) {
+      console.error('Failed to upload file:', file.name, error)
+      throw new Error(t('feedbackForm.messages.submitError') + ': ' + file.name)
+    }
+  }
+  
+  return uploadedUrls
 }
 
 const handleSubmit = async () => {
@@ -342,7 +355,10 @@ const handleSubmit = async () => {
     return
   }
 
+  isSubmitting.value = true
   try {
+    const uploadedAttachments = await mapAttachmentsForPayload()
+
     await submitSuggestion({
       fullName: form.fullName,
       email: form.email,
@@ -351,7 +367,7 @@ const handleSubmit = async () => {
       productCategory: form.productCategory,
       requestType: form.requestType,
       message: form.message,
-      attachments: mapAttachmentsForPayload(),
+      attachments: uploadedAttachments,
       threadKey: threadKeyRef.value,
     })
 
@@ -360,6 +376,8 @@ const handleSubmit = async () => {
     loadEligibility()
   } catch (error: any) {
     infoMessage.value = error?.message || errorMessage.value || t('feedbackForm.messages.submitError')
+  } finally {
+    isSubmitting.value = false
   }
 }
 

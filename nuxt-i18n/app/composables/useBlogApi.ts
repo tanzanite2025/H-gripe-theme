@@ -33,9 +33,8 @@ const getGoOriginBase = (apiBase: string) => {
 export const useBlogApi = () => {
   const config = useRuntimeConfig()
 
-  const blogCompatBase = computed(() => {
-    const apiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-    return `${getGoOriginBase(apiBase)}/wp-json/tanzanite/v1`
+  const apiBase = computed(() => {
+    return (config.public as { apiBase?: string }).apiBase || '/api/v1'
   })
 
   const blogApiMode = computed(() => {
@@ -44,7 +43,7 @@ export const useBlogApi = () => {
 
   const useLocalBlog = computed(() => {
     if (['local', 'mock', 'disabled'].includes(blogApiMode.value)) return true
-    return import.meta.server && blogCompatBase.value.startsWith('/')
+    return import.meta.server && apiBase.value.startsWith('/')
   })
 
   const buildLocalPostsResponse = (params: {
@@ -74,15 +73,33 @@ export const useBlogApi = () => {
     if (useLocalBlog.value) return localResponse()
 
     try {
-      return await $fetch<BlogPostsResponse>(`${blogCompatBase.value}/posts`, {
+      const response = await $fetch<{ data: BlogPostSummary[], total: number }>(`${trimTrailingSlash(apiBase.value)}/content/posts`, {
         params: {
-          lang: params.lang,
+          locale: params.lang,
           category: params.category,
           page: params.page,
-          per_page: params.perPage,
-        },
-        credentials: 'include',
+          page_size: params.perPage,
+          status: 'published'
+        }
       })
+      
+      return {
+        page: params.page,
+        per_page: params.perPage,
+        total: response.total || 0,
+        items: (response.data || []).map((item: any) => ({
+          id: item.id,
+          lang: item.locale || params.lang,
+          group: item.translation_group_id ? `grp-${item.translation_group_id}` : '',
+          slug: item.slug,
+          title: item.title,
+          excerpt: item.excerpt,
+          date: item.published_at || item.created_at,
+          featuredImage: item.featured_image ? { url: item.featured_image } : null,
+          categories: item.tags ? item.tags.split(',') : [],
+          translations: {}
+        } as BlogPostSummary))
+      }
     } catch {
       return localResponse()
     }
@@ -97,13 +114,29 @@ export const useBlogApi = () => {
     }
 
     try {
-      return await $fetch<BlogPostDetail>(`${blogCompatBase.value}/post`, {
+      const response = await $fetch<{ data: BlogPostDetail } | BlogPostDetail>(`${trimTrailingSlash(apiBase.value)}/content/posts/${encodeURIComponent(params.slug)}`, {
         params: {
-          lang: params.lang,
-          slug: params.slug,
-        },
-        credentials: 'include',
+          locale: params.lang,
+        }
       })
+      // Backend might wrap in data or return directly
+      const post = (response as any).data || response
+      if (!post) throw new Error('Post not found in response')
+        
+      return {
+        id: post.id,
+        lang: post.locale || params.lang,
+        group: post.translation_group_id ? `grp-${post.translation_group_id}` : '',
+        slug: post.slug,
+        title: post.title,
+        excerpt: post.excerpt,
+        date: post.published_at || post.created_at,
+        featuredImage: post.featured_image ? { url: post.featured_image } : null,
+        categories: post.tags ? post.tags.split(',') : [],
+        translations: {},
+        contentHtml: post.content || '',
+        canonicalUrl: post.canonical_url || ''
+      } as BlogPostDetail
     } catch {
       const post = localPost()
       if (post) return post
@@ -118,15 +151,8 @@ export const useBlogApi = () => {
     if (useLocalBlog.value) return localTranslations()
 
     try {
-      return await $fetch<BlogTranslationsResponse>(
-        `${blogCompatBase.value}/translations`,
-        {
-          params: {
-            group: params.group,
-          },
-          credentials: 'include',
-        }
-      )
+      // Group translations are not fully supported in Go API yet, returning fallback mock
+      return localTranslations()
     } catch {
       return localTranslations()
     }
@@ -146,7 +172,7 @@ export const useBlogApi = () => {
   }
 
   return {
-    blogCompatBase,
+    apiBase,
     listPosts,
     getPost,
     getTranslations,
