@@ -285,6 +285,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			customerServiceGroup.GET("/messages/:conversation_id", ticketHandler.GetPublicCustomerServiceMessages)
 			customerServiceGroup.GET("/auto-reply/welcome", ticketHandler.GetWelcomeMessage)
 			customerServiceGroup.POST("/auto-reply/match", ticketHandler.MatchKeywordMessage)
+			customerServiceGroup.GET("/ws", ticketHandler.ServeWS)
 
 			agentGroup := customerServiceGroup.Group("/agent")
 			agentGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin", "manager", "support", "agent"))

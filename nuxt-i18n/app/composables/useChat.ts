@@ -1,5 +1,6 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { useWebSocket } from '@vueuse/core'
 
 export interface ChatMessage {
   id: number
@@ -191,19 +192,23 @@ export const useChat = () => {
   }
 
   /**
-   * 实时轮询新消息（可选）
+   * WebSocket连接
    */
-  const startPolling = (interval = 5000) => {
-    const pollInterval = setInterval(async () => {
-      if (isChatOpen.value && currentConversation.value) {
-        await loadMessages(currentConversation.value.id)
+  const connectWebSocket = () => {
+    const { status, data, send, open, close } = useWebSocket('ws://localhost:9000/api/v1/ws', {
+      autoReconnect: true,
+      onMessage: (ws, event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          if (msg && msg.id) {
+             messages.value.push(msg)
+          }
+        } catch (e) {
+          console.error('WebSocket parse error:', e)
+        }
       }
-      if (isCustomerListOpen.value || isChatOpen.value) {
-        await loadConversations()
-      }
-    }, interval)
-
-    return () => clearInterval(pollInterval)
+    })
+    return { status, close }
   }
 
   return {
@@ -225,6 +230,6 @@ export const useChat = () => {
     openChat,
     closeChat,
     backToCustomerList,
-    startPolling,
+    connectWebSocket,
   }
 }

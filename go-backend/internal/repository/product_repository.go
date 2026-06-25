@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"tanzanite/internal/domain/product"
@@ -392,4 +393,15 @@ func (r *ProductRepository) FindValuesByAttributeID(attrID uint) ([]product.Attr
 	var values []product.AttributeValue
 	err := r.db.Where("attribute_id = ?", attrID).Order("sort_order ASC").Find(&values).Error
 	return values, err
+}
+
+// SemanticSearchPublic performs a vector similarity search using pgvector (Stub)
+func (r *ProductRepository) SemanticSearchPublic(ctx context.Context, query string) ([]product.Product, error) {
+	// Stub: This is a placeholder for actual OpenAI embedding generation and pgvector search.
+	// 1. Generate embedding using openai.Client (e.g. client.CreateEmbeddings(ctx, req))
+	// 2. Search using GORM and pgvector's <=> operator:
+	// r.db.WithContext(ctx).Order("embedding <=> ?", embedding).Limit(10).Find(&products)
+	
+	var products []product.Product
+	return products, nil
 }

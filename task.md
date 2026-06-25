@@ -8,3 +8,11 @@
 - [x] 移除 `useAuth.ts` 中手动保存 JWT 到 cookie/localStorage 的逻辑，改为依赖后端设置的 `HttpOnly` cookie。
 - [x] 在 `AuthModal.vue` 中引入 `zod`，为邮箱和密码添加严格的客户端验证。
 - [x] 运行类型检查或构建，确保无编译错误。
+
+## Level 7 Backend Plan
+
+- [x] 在 `go-backend` 目录下，安装 `gorilla/websocket` 依赖。
+- [x] 创建 `internal/api/v1/ticket/hub.go` 或在现有 handler 中添加 WebSocket 的升级逻辑，配置一个并发安全的 Hub。
+- [x] 在 `go-backend` 目录下，安装 `github.com/sashabaranov/go-openai` 和 `github.com/pgvector/pgvector-go`。
+- [x] 在 `internal/repository/product_repository.go` 中，添加 `SemanticSearchPublic(ctx context.Context, query string) ([]domain.Product, error)` 占位方法。
+- [x] 在 `go-backend` 目录下运行 `go mod tidy` 和 `go build ./...` 验证编译。
