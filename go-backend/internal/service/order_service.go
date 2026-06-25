@@ -148,17 +148,28 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 		ShippingFee:     shippingFee,
 		TaxAmount:       taxAmount,
 		DiscountAmount:  discountAmount,
+		CouponCode:      couponCode,
+		PointsUsed:      pointsToUse,
+		PointsValue:     pointsDiscount,
 		Items:           items,
 		ShippingAddress: shippingAddress,
 		BillingAddress:  billingAddress,
 	}
 	
-	// 用事务原子化订单创建和优惠券扣减
+	// 用事务原子化订单创建、库存扣减和优惠券扣减
 	var createdOrder *order.Order
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
 		txOrderRepo := s.orderRepo.WithTx(tx)
+		txProductRepo := s.productRepo.WithTx(tx)
 		
-		// 1. 创建订单和明细记录
+		// 1. 扣减库存 (防超卖)
+		for _, item := range items {
+			if err := txProductRepo.DecrementStock(item.ProductID, item.Quantity); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to deduct stock for product %d: %w", item.ProductID, err)
+			}
+		}
+
+		// 2. 创建订单和明细记录
 		if err := txOrderRepo.Create(o); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
 		}
@@ -276,7 +287,61 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 		return errors.New("order cannot be cancelled")
 	}
 	
-	return s.orderRepo.UpdateStatus(id, "cancelled")
+	// 使用事务进行原子化回滚
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		txOrderRepo := s.orderRepo.WithTx(tx)
+		txProductRepo := s.productRepo.WithTx(tx)
+		
+		// 1. 更新订单状态为 cancelled
+		if err := txOrderRepo.UpdateStatus(id, "cancelled"); err != nil {
+			return err
+		}
+
+		// 2. 退还库存
+		for _, item := range o.Items {
+			if err := txProductRepo.IncrementStock(item.ProductID, item.Quantity); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to restore stock for product %d: %w", item.ProductID, err)
+			}
+		}
+
+		// 3. 退还积分
+		if o.PointsUsed > 0 {
+			txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
+			if err := tx.Exec("UPDATE user_loyalties SET available_points = available_points + ?, used_points = used_points - ? WHERE user_id = ?", o.PointsUsed, o.PointsUsed, userID).Error; err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
+			}
+			
+			// 记录退还积分流水
+			userLoyalty, _ := txLoyaltyRepo.FindUserLoyaltyByUserID(userID)
+			if userLoyalty != nil {
+				txTransaction := &loyalty.LoyaltyTransaction{
+					UserID:      userID,
+					Points:      o.PointsUsed,
+					Type:        "refund",
+					Description: fmt.Sprintf("Order #%s cancelled points refund", o.OrderNumber),
+					Balance:     userLoyalty.AvailablePoints,
+					CreatedAt:   time.Now(),
+				}
+				_ = txLoyaltyRepo.CreateTransaction(txTransaction)
+			}
+		}
+
+		// 4. 退还优惠券使用次数
+		if o.CouponCode != "" {
+			txCouponRepo := s.couponRepo.WithTx(tx)
+			cp, err := txCouponRepo.FindCouponByCode(o.CouponCode)
+			if err == nil && cp != nil {
+				// 减少使用次数
+				_ = tx.Model(&coupon.Coupon{}).Where("id = ? AND used_count > 0", cp.ID).
+					UpdateColumn("used_count", gorm.Expr("used_count - ?", 1)).Error
+				
+				// 删除使用记录
+				_ = tx.Where("order_id = ?", o.ID).Delete(&coupon.CouponUsage{})
+			}
+		}
+
+		return nil
+	})
 }
 
 // GetOrderStats 获取订单统计
