@@ -29,3 +29,17 @@
   - 拦截表单提交：在发送后端请求前，执行本地验证，如果验证失败，直接在 UI 显示报错（利用原有的 `error` 状态展示），防止触发不必要的 API 请求。
 - **最终验证**：
   - 进入 `nuxt-i18n` 目录运行 `npm run typecheck` 或 `npm run build`。
+
+## 5. Level 7 Backend Plan
+- **WebSocket 实时支持**:
+  - `cd go-backend`
+  - 运行 `go get github.com/gorilla/websocket`。
+  - 创建 `internal/api/v1/ticket/hub.go`，建立一个并发安全的 WebSockets Hub (`Hub` struct，包含客户端连接的 map、注册和注销通道、广播通道)。
+  - 提供 HTTP 到 WebSocket 的 Upgrade 端点（例如 `/api/v1/ws`）。
+- **AI 语义搜索存根**:
+  - 运行 `go get github.com/sashabaranov/go-openai github.com/pgvector/pgvector-go`。
+  - 修改 `internal/repository/product_repository.go`，增加 `SemanticSearchPublic(ctx context.Context, query string) ([]domain.Product, error)` 存根方法，模拟调用 OpenAI 生成嵌入，并使用类似 `ORDER BY embedding <=> ?` 的原生 SQL 语句进行 pgvector 搜索。
+- **验证编译**:
+  - `cd go-backend`
+  - 运行 `go mod tidy`
+  - 运行 `go build ./...`，确保项目编译无误。

@@ -3,6 +3,7 @@
     <Transition :name="props.embedded ? 'wa-drawer' : 'fade'">
       <div
         v-if="modelValue"
+        ref="modalRef"
         :class="props.embedded ? 'wa-drawer-mask' : 'fixed inset-0 z-[13000] flex items-center justify-center p-0 md:p-4'"
         aria-modal="true"
         role="dialog"
@@ -220,6 +221,7 @@ import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useGoogleAuth } from '~/composables/useGoogleAuth'
 import { z } from 'zod'
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
 const authSchema = z.object({
   email: z.string().email('无效的电子邮件格式'),
@@ -271,8 +273,15 @@ watch(() => props.defaultMode, (val) => {
   mode.value = val
 })
 
-watch(() => modelValue.value, (isOpen) => {
-  if (!isOpen) {
+const modalRef = ref<HTMLElement | null>(null)
+const { activate, deactivate } = useFocusTrap(modalRef)
+
+watch(() => modelValue.value, async (isOpen) => {
+  if (isOpen) {
+    // delay activation to wait for the DOM element to mount
+    setTimeout(() => activate(), 50)
+  } else {
+    deactivate()
     resetForms()
   }
 })
