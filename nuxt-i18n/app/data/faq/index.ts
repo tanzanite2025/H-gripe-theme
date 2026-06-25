@@ -69,7 +69,10 @@ export function getAllFaqData(): PageFaqData[] {
  */
 export async function fetchFaqData(pageId: string): Promise<PageFaqData | undefined> {
   try {
-    const res = await $fetch<{ data: any[] }>(`http://localhost:8080/api/v1/content/faqs`, {
+    const config = useRuntimeConfig()
+    const apiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
+    
+    const res = await $fetch<{ data: any[] }>(`${apiBase}/content/faqs`, {
       query: { page_id: pageId, page_size: 100 }
     })
     
@@ -110,7 +113,10 @@ export async function fetchFaqData(pageId: string): Promise<PageFaqData | undefi
  */
 export async function fetchAllFaqData(): Promise<PageFaqData[]> {
   try {
-    const res = await $fetch<{ data: any[] }>(`http://localhost:8080/api/v1/content/faqs`, {
+    const config = useRuntimeConfig()
+    const apiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
+    
+    const res = await $fetch<{ data: any[] }>(`${apiBase}/content/faqs`, {
       query: { page_size: 1000 }
     })
     

@@ -88,7 +88,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	productHandler := product.NewHandler(productService)
 	cartHandler := cart.NewHandler(cartService)
 	settingsHandler := settings.NewHandler(settingService)
-	orderHandler := order.NewHandler(orderService)
+	orderHandler := order.NewHandler(orderService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService)
@@ -149,6 +149,8 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			cartGroup.POST("/add", cartHandler.AddToCart)
 			cartGroup.PUT("/items/:id", cartHandler.UpdateCartItem)
 			cartGroup.DELETE("/items/:id", cartHandler.RemoveFromCart)
+			cartGroup.POST("/sync", cartHandler.SyncCart)
+			cartGroup.POST("/clear", cartHandler.ClearCart)
 		}
 
 		wishlistGroup := v1.Group("/wishlist")
@@ -175,6 +177,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 
 		spokeGroup := v1.Group("/spoke")
 		{
+			spokeGroup.POST("/calc", spokeHandler.Calculate)
 			spokeGroup.GET("/export", spokeHandler.GetExport)
 			spokeGroup.GET("/history", spokeHandler.ListHistory)
 		}

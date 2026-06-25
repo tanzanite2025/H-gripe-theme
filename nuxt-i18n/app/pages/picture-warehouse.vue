@@ -763,12 +763,7 @@ const fetchUserPhotos = async () => {
     userLoading.value = true
     userError.value = null
 
-    const response = await fetch('/api/v1/showcase/gallery?type=user&status=approved')
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const payload = await response.json()
+    const payload = await auth.request<any[]>('/showcase/gallery?type=user&status=approved')
     const mapped = Array.isArray(payload) ? mapPayloadToPhotos(payload, 'user') : []
 
     if (mapped.length) {
@@ -786,13 +781,7 @@ const fetchBrandPhotos = async () => {
     brandLoading.value = true
     brandError.value = null
 
-    const response = await fetch('/api/v1/showcase/gallery?type=brand&status=approved')
-
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const payload = await response.json()
+    const payload = await auth.request<any[]>('/showcase/gallery?type=brand&status=approved')
     const mapped = Array.isArray(payload) ? mapPayloadToPhotos(payload, 'brand') : []
 
     if (mapped.length) {
@@ -914,15 +903,9 @@ const fetchCommentsForPhoto = async (photoId: string) => {
     commentsLoading.value = true
     commentsError.value = null
 
-    const response = await fetch(
-      `/api/v1/showcase/comments?photo_id=${encodeURIComponent(photoId)}&per_page=20`
+    const payload = await auth.request<any[]>(
+      `/showcase/comments?photo_id=${encodeURIComponent(photoId)}&per_page=20`
     )
-
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const payload = await response.json()
     if (!Array.isArray(payload)) {
       comments.value = []
       return

@@ -318,6 +318,7 @@ const fetchStats = async () => {
     stats.value = response.data
   } catch (error) {
     console.error('Failed to fetch stats:', error)
+    ElMessage.error('获取统计数据失败')
   }
 }
 
@@ -381,6 +382,7 @@ const fetchSalesChart = async () => {
     }
   } catch (error) {
     console.error('Failed to fetch sales chart:', error)
+    ElMessage.error('获取销售图表失败')
   } finally {
     chartLoading.value = false
   }
@@ -389,27 +391,39 @@ const fetchSalesChart = async () => {
 const fetchRecentOrders = async () => {
   try {
     const response = await axios.get('/api/admin/dashboard/recent-orders')
-    recentOrders.value = response.data.orders || []
+    if (!response.data || !Array.isArray(response.data.orders)) {
+      throw new Error('[CRITICAL] Missing orders array in response')
+    }
+    recentOrders.value = response.data.orders
   } catch (error) {
     console.error('Failed to fetch recent orders:', error)
+    ElMessage.error('获取近期订单失败')
   }
 }
 
 const fetchRecentUsers = async () => {
   try {
     const response = await axios.get('/api/admin/dashboard/recent-users')
-    recentUsers.value = response.data.users || []
+    if (!response.data || !Array.isArray(response.data.users)) {
+      throw new Error('[CRITICAL] Missing users array in response')
+    }
+    recentUsers.value = response.data.users
   } catch (error) {
     console.error('Failed to fetch recent users:', error)
+    ElMessage.error('获取近期用户失败')
   }
 }
 
 const fetchRecentTickets = async () => {
   try {
     const response = await axios.get('/api/admin/dashboard/recent-tickets')
-    recentTickets.value = response.data.tickets || []
+    if (!response.data || !Array.isArray(response.data.tickets)) {
+      throw new Error('[CRITICAL] Missing tickets array in response')
+    }
+    recentTickets.value = response.data.tickets
   } catch (error) {
     console.error('Failed to fetch recent tickets:', error)
+    ElMessage.error('获取近期工单失败')
   }
 }
 

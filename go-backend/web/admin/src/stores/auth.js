@@ -27,13 +27,17 @@ export const useAuthStore = defineStore('auth', () => {
 
       const { token: newToken, user: newUser } = response.data
 
+      if (!newUser || !Array.isArray(newUser.permissions)) {
+        throw new Error('[CRITICAL] Missing permissions array in login response')
+      }
+
       token.value = newToken
       user.value = newUser
-      permissions.value = newUser.permissions || []
+      permissions.value = newUser.permissions
 
       localStorage.setItem('admin_token', newToken)
       localStorage.setItem('admin_user', JSON.stringify(newUser))
-      localStorage.setItem('admin_permissions', JSON.stringify(newUser.permissions || []))
+      localStorage.setItem('admin_permissions', JSON.stringify(newUser.permissions))
 
       // 设置 axios 默认 header
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`

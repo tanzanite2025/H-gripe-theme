@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="settings-page">
     <div class="page-header">
       <h2>系统设置</h2>
@@ -382,6 +382,7 @@ const fetchSettings = async (group) => {
     }
   } catch (error) {
     console.error(`获取${group}设置失败`, error)
+    ElMessage.error(`获取${group === 'site' ? '站点' : group}设置失败`)
   }
 }
 
@@ -400,6 +401,7 @@ const fetchPublicChatCompatibility = async () => {
     publicChatCompatibility.value = response.data
   } catch (error) {
     console.error('获取 Public Chat 客服兼容检查失败', error)
+    ElMessage.error('获取 Public Chat 客服兼容检查失败')
   } finally {
     loadingCompatibility.value = false
   }

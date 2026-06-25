@@ -109,8 +109,26 @@ func (s *CartService) UpdateCartItem(cartID, productID uint, quantity int) error
 }
 
 // RemoveFromCart 从购物车移除商品
-func (s *CartService) RemoveFromCart(itemID uint) error {
-	return s.cartRepo.RemoveItem(itemID)
+func (s *CartService) RemoveFromCart(cartID, productID uint) error {
+	item, err := s.cartRepo.FindItem(cartID, productID)
+	if err != nil {
+		return nil
+	}
+	return s.cartRepo.RemoveItem(item.ID)
+}
+
+type SyncCartItemReq struct {
+	ProductID uint `json:"product_id"`
+	Quantity  int  `json:"quantity"`
+}
+
+// SyncCart 合并本地购物车项目到云端
+func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
+	for _, item := range items {
+		// AddToCart 已经处理了存在则累加数量、不存在则插入的逻辑
+		_ = s.AddToCart(cartID, item.ProductID, item.Quantity)
+	}
+	return nil
 }
 
 // GetCartSummary 获取购物车摘要

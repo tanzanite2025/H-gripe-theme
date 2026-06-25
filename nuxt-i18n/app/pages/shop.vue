@@ -269,7 +269,7 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
       params.price_max = max
     }
 
-    const attrs = payload.filters?.attributes || {}
+    const attrs = payload.filters?.attributes
     if (attrs && typeof attrs === 'object') {
       params.attributes = attrs
     }
