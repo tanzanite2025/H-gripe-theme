@@ -101,6 +101,7 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORS(cfg.CORS))
+	router.Use(middleware.SecurityHeaders())
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

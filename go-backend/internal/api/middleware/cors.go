@@ -13,8 +13,13 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 		
 		// 检查是否在允许列表中
 		allowed := false
+		isWildcard := false
 		for _, allowedOrigin := range cfg.AllowedOrigins {
-			if allowedOrigin == "*" || allowedOrigin == origin {
+			if allowedOrigin == "*" {
+				isWildcard = true
+				break
+			}
+			if allowedOrigin == origin {
 				allowed = true
 				break
 			}
@@ -22,6 +27,8 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 
 		if allowed {
 			c.Header("Access-Control-Allow-Origin", origin)
+		} else if isWildcard && !cfg.AllowCredentials {
+			c.Header("Access-Control-Allow-Origin", "*")
 		}
 
 		c.Header("Access-Control-Allow-Methods", joinStrings(cfg.AllowedMethods, ", "))

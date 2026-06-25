@@ -1,95 +1,52 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
-	"sync"
 	"time"
 
+	"tanzanite/internal/pkg/cache"
+
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis_rate/v10"
 )
 
-// RateLimiter 简单的速率限制器
+// RateLimiter 速率限制器
 type RateLimiter struct {
-	visitors map[string]*Visitor
-	mu       sync.RWMutex
-	rate     int           // 每分钟请求数
-	window   time.Duration // 时间窗口
+	limiter *redis_rate.Limiter
 }
 
-type Visitor struct {
-	lastSeen time.Time
-	count    int
-}
-
-// NewRateLimiter 创建速率限制器
-func NewRateLimiter(requestsPerMinute int) *RateLimiter {
-	rl := &RateLimiter{
-		visitors: make(map[string]*Visitor),
-		rate:     requestsPerMinute,
-		window:   time.Minute,
+// NewRateLimiter 创建基于 Redis 的速率限制器
+func NewRateLimiter(redisCache *cache.RedisCache) *RateLimiter {
+	return &RateLimiter{
+		limiter: redis_rate.NewLimiter(redisCache.Client()),
 	}
-
-	// 定期清理过期访客
-	go rl.cleanupVisitors()
-
-	return rl
 }
 
 // RateLimit 速率限制中间件
-func (rl *RateLimiter) RateLimit() gin.HandlerFunc {
+func (rl *RateLimiter) RateLimit(requests int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
+		key := "rate_limit:" + ip
 
-		rl.mu.Lock()
-		visitor, exists := rl.visitors[ip]
+		res, err := rl.limiter.Allow(context.Background(), key, redis_rate.Limit{
+			Rate:   requests,
+			Burst:  requests,
+			Period: window,
+		})
 
-		if !exists {
-			rl.visitors[ip] = &Visitor{
-				lastSeen: time.Now(),
-				count:    1,
-			}
-			rl.mu.Unlock()
-			c.Next()
-			return
-		}
-
-		// 检查时间窗口
-		if time.Since(visitor.lastSeen) > rl.window {
-			visitor.count = 1
-			visitor.lastSeen = time.Now()
-			rl.mu.Unlock()
-			c.Next()
-			return
-		}
-
-		// 检查请求次数
-		if visitor.count >= rl.rate {
-			rl.mu.Unlock()
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "rate limit exceeded",
-			})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "rate limit error"})
 			c.Abort()
 			return
 		}
 
-		visitor.count++
-		rl.mu.Unlock()
-		c.Next()
-	}
-}
-
-// cleanupVisitors 清理过期访客
-func (rl *RateLimiter) cleanupVisitors() {
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		rl.mu.Lock()
-		for ip, visitor := range rl.visitors {
-			if time.Since(visitor.lastSeen) > rl.window*2 {
-				delete(rl.visitors, ip)
-			}
+		if res.Allowed == 0 {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+			c.Abort()
+			return
 		}
-		rl.mu.Unlock()
+
+		c.Next()
 	}
 }

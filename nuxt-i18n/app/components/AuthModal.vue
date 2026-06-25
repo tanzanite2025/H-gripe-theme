@@ -219,6 +219,12 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useGoogleAuth } from '~/composables/useGoogleAuth'
+import { z } from 'zod'
+
+const authSchema = z.object({
+  email: z.string().email('无效的电子邮件格式'),
+  password: z.string().min(8, '密码至少需要8个字符').regex(/[A-Z]/, '密码必须包含至少一个大写字母')
+})
 
 const props = defineProps({
   defaultMode: { type: String as () => 'login' | 'register', default: 'login' },
@@ -343,6 +349,17 @@ const handleGoogleLogin = async () => {
 
 const handleLogin = async () => {
   loginForm.value.error = ''
+  
+  const validation = authSchema.safeParse({
+    email: loginForm.value.username,
+    password: loginForm.value.password
+  })
+  
+  if (!validation.success) {
+    loginForm.value.error = validation.error.errors[0].message
+    return
+  }
+
   loginForm.value.loading = true
   try {
     await auth.login({
@@ -366,6 +383,17 @@ const handleLogin = async () => {
 
 const handleRegister = async () => {
   registerForm.value.error = ''
+  
+  const validation = authSchema.safeParse({
+    email: registerForm.value.email,
+    password: registerForm.value.password
+  })
+  
+  if (!validation.success) {
+    registerForm.value.error = validation.error.errors[0].message
+    return
+  }
+
   registerForm.value.loading = true
   try {
     await auth.register({

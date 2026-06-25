@@ -76,9 +76,6 @@ export function useAuth() {
   // 抛弃 wpApiBase，直连 Go 后端
   const baseURL = config.public?.apiBase || '/api/v1'
 
-  // 使用 cookie 持久化 JWT token
-  const token = useCookie('auth_token', { maxAge: 60 * 60 * 24 * 7 }) // 7天
-
   const user = useState<AuthUser | null>('auth-user', () => null)
   const loading = useState<boolean>('auth-loading', () => false)
   const error = useState<string | null>('auth-error', () => null)
@@ -90,9 +87,6 @@ export function useAuth() {
     }
 
     const headers = new Headers(init.headers || undefined)
-    if (token.value) {
-      headers.set('Authorization', `Bearer ${token.value}`)
-    }
 
     const finalInit: RequestInit = {
       credentials: defaultCredentials,
@@ -147,10 +141,6 @@ export function useAuth() {
         'Login failed'
       )
       
-      if (response && response.token) {
-        token.value = response.token
-      }
-      
       const data = response?.user || null
       user.value = data
       return data
@@ -201,7 +191,6 @@ export function useAuth() {
     } catch (err) {
       console.warn('Logout request failed:', err)
     } finally {
-      token.value = null
       user.value = null
     }
   }
@@ -224,9 +213,6 @@ export function useAuth() {
         },
         'Google login failed'
       )
-      if (response && response.token) {
-        token.value = response.token
-      }
       const data = response?.user || null
       user.value = data
       return data
