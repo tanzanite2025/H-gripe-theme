@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { defineNuxtConfig } from 'nuxt/config'
-import locales from './i18n/locales.manifest.js'
+import locales from './app/i18n/locales.manifest.js'
 
 const env = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) || {}
 const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
@@ -36,12 +36,13 @@ export default defineNuxtConfig({
     url: 'https://tanzanite.site',
   },
 
-  modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap'],
+  modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image'],
 
   i18n: {
+    restructureDir: 'app',
     locales,
     lazy: true,
-    langDir: '../i18n/locales',
+    langDir: 'i18n/locales',
     defaultLocale: 'en',
     fallbackLocale: 'en',
     strategy: 'prefix_except_default',

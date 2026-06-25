@@ -214,7 +214,7 @@
     />
 
     <!-- 聊天内登录弹窗（复用全局 AuthModal，嵌入模式） -->
-    <AuthModal
+    <LazyAuthModal
       v-model="showAuthModal"
       :default-mode="authMode"
       embedded
@@ -261,7 +261,6 @@
 import { useWhatsAppState } from '~/composables/chat/useWhatsAppState'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
-import AuthModal from '~/components/AuthModal.vue'
 import AgentChatPanel from '~/components/whatsapp/AgentChatPanel.vue'
 import ChatTransferModal from '~/components/whatsapp/ChatTransferModal.vue'
 import ChatWelcomePanel from '~/components/whatsapp/ChatWelcomePanel.vue'

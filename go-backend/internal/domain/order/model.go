@@ -13,9 +13,9 @@ type Order struct {
 	UserID          uint           `gorm:"index" json:"user_id"`
 	Status          string         `gorm:"index;default:'pending'" json:"status"` // pending, paid, processing, shipped, completed, cancelled, refunded
 	PaymentMethod   string         `json:"payment_method"`
-	PaymentStatus   string         `gorm:"default:'unpaid'" json:"payment_status"` // unpaid, paid, refunded
+	PaymentStatus   string         `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, refunded
 	ShippingMethod  string         `json:"shipping_method"`
-	ShippingStatus  string         `gorm:"default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
+	ShippingStatus  string         `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
 	TrackingNumber  string         `json:"tracking_number"`
 	CarrierCode     string         `json:"carrier_code"`
 	

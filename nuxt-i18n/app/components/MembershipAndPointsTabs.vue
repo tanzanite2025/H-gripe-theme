@@ -147,7 +147,7 @@
         </div>
       </section>
 
-      <AuthModal
+      <LazyAuthModal
         v-model="showAuthModal"
         :default-mode="authMode"
         embedded
@@ -265,7 +265,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useLocalePath } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
-import AuthModal from '~/components/AuthModal.vue'
 
 const props = defineProps<{ variant?: 'page' | 'modal' }>()
 

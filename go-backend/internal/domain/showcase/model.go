@@ -57,7 +57,7 @@ type Comment struct {
 	Content    string    `gorm:"type:text;not null" json:"content"`
 	Location   string    `gorm:"type:varchar(100)" json:"location"`
 	
-	Status     string    `gorm:"type:varchar(20);default:'pending'" json:"status"`
+	Status     string    `gorm:"index;type:varchar(20);default:'pending'" json:"status"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }

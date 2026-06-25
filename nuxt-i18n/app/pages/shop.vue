@@ -157,7 +157,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
+import { useRoute, useRuntimeConfig, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import CategorySidebar from '~/components/CategorySidebar.vue'
 import CategoryChips from '~/components/CategoryChips.vue'
@@ -180,9 +181,7 @@ interface ShopProduct {
   price?: string
 }
 
-const products = ref<ShopProduct[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
+const route = useRoute()
 
 const quickSelectedKeywords = ref<string[]>([])
 const quickFreeTextQuery = ref('')
@@ -283,42 +282,46 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
   return params
 }
 
-const loadProducts = async (payload?: ProductSearchPayload) => {
-  loading.value = true
-  error.value = null
-  try {
+const { data: asyncData, pending, error: asyncError, refresh } = await useAsyncData(
+  'shop-products',
+  () => {
     const config = useRuntimeConfig()
     const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+    const params = buildProductQueryParams(currentSearch.value || undefined)
+    Object.assign(params, route.query)
 
-    const params = buildProductQueryParams(payload || undefined)
-
-    const response = await $fetch<any>(`${base}/customer-service/products`, {
-      params,
-    })
-
-    if (response && Array.isArray(response.items)) {
-      products.value = response.items.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        url: `/shop/${item.slug || item.id}`,
-        thumbnail: item.thumbnail,
-        price:
-          item.prices?.sale > 0
-            ? `$${item.prices.sale}`
-            : item.prices?.regular > 0
-            ? `$${item.prices.regular}`
-            : '',
-      }))
-    } else {
-      products.value = []
-    }
-  } catch (e: any) {
-    console.error('Failed to load shop products:', e)
-    error.value = e?.data?.message || 'Failed to load products.'
-    products.value = []
-  } finally {
-    loading.value = false
+    return $fetch<any>(`${base}/customer-service/products`, { params })
   }
+)
+
+watch(() => route.query, () => {
+  refresh()
+}, { deep: true })
+
+const products = computed<ShopProduct[]>(() => {
+  const response = asyncData.value
+  if (response && Array.isArray(response.items)) {
+    return response.items.map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      url: `/shop/${item.slug || item.id}`,
+      thumbnail: item.thumbnail,
+      price:
+        item.prices?.sale > 0
+          ? `$${item.prices.sale}`
+          : item.prices?.regular > 0
+          ? `$${item.prices.regular}`
+          : '',
+    }))
+  }
+  return []
+})
+
+const loading = computed(() => pending.value)
+const error = computed(() => asyncError.value?.message || null)
+
+const loadProducts = async (payload?: ProductSearchPayload) => {
+  await refresh()
 }
 
 interface ProductSearchPayload {

@@ -13,9 +13,11 @@
     "i18n:fill-missing": "node scripts/i18n/fill-missing.mjs",
     "i18n:build": "node scripts/i18n/build-locales.mjs",
     "i18n:check": "node scripts/i18n/check-messages.mjs",
-    "check-locales": "node scripts/check-locales.mjs"
+    "check-locales": "node scripts/check-locales.mjs",
+    "clean": "node -e \"require('fs').rmSync('.nuxt', { recursive: true, force: true }); require('fs').rmSync('node_modules/.cache', { recursive: true, force: true });\""
   },
   "dependencies": {
+    "@nuxt/image": "^2.0.0",
     "@nuxtjs/i18n": "^9.1.0",
     "@nuxtjs/sitemap": "^7.5.0",
     "@vueuse/core": "^14.0.0",

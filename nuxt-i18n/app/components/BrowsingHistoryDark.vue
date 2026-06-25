@@ -159,6 +159,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useThrottleFn } from '@vueuse/core'
 import { useBrowsingHistory } from '~/composables/useBrowsingHistory'
 import { useWishlist } from '~/composables/useWishlist'
 
@@ -182,6 +183,8 @@ const checkScroll = () => {
   showLeftArrow.value = scrollLeft > 0
   showRightArrow.value = scrollLeft < scrollWidth - clientWidth - 10
 }
+
+const throttledCheckScroll = useThrottleFn(checkScroll, 150)
 
 // 向左滚动
 const scrollLeft = () => {
@@ -226,14 +229,14 @@ const handleShareToChat = (event: Event, item: any) => {
 // 监听滚动事件
 onMounted(() => {
   if (scrollContainer.value) {
-    scrollContainer.value.addEventListener('scroll', checkScroll)
+    scrollContainer.value.addEventListener('scroll', throttledCheckScroll)
     checkScroll()
   }
 })
 
 onUnmounted(() => {
   if (scrollContainer.value) {
-    scrollContainer.value.removeEventListener('scroll', checkScroll)
+    scrollContainer.value.removeEventListener('scroll', throttledCheckScroll)
   }
 })
 </script>

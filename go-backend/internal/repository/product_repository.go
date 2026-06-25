@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"strings"
 	"tanzanite/internal/domain/product"
 
@@ -57,6 +58,16 @@ func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 		return nil, err
 	}
 	return &p, nil
+}
+
+// FindProductsByIDs 根据IDs查找产品列表
+func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, error) {
+	var products []product.Product
+	if len(ids) == 0 {
+		return products, nil
+	}
+	err := r.db.Where("id IN ?", ids).Find(&products).Error
+	return products, err
 }
 
 // Update 更新产品
@@ -137,6 +148,44 @@ func (r *ProductRepository) DecrementStock(id uint, quantity int) error {
 	}
 	if res.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound // 库存不足或记录不存在
+	}
+	return nil
+}
+
+// DecrementStocks 批量原子扣减库存
+func (r *ProductRepository) DecrementStocks(items map[uint]int) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	var cases []string
+	var args []interface{}
+	var stockCases []string
+	var stockArgs []interface{}
+	var ids []uint
+
+	for id, quantity := range items {
+		ids = append(ids, id)
+		cases = append(cases, "WHEN ? THEN stock - ?")
+		args = append(args, id, quantity)
+
+		stockCases = append(stockCases, "WHEN ? THEN ?")
+		stockArgs = append(stockArgs, id, quantity)
+	}
+
+	query := fmt.Sprintf("UPDATE products SET stock = CASE id %s END WHERE id IN ? AND stock >= CASE id %s END",
+		strings.Join(cases, " "),
+		strings.Join(stockCases, " "))
+
+	finalArgs := append(args, ids)
+	finalArgs = append(finalArgs, stockArgs...)
+
+	res := r.db.Exec(query, finalArgs...)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected < int64(len(items)) {
+		return fmt.Errorf("insufficient stock for some items or items not found")
 	}
 	return nil
 }

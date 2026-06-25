@@ -124,11 +124,49 @@ type SyncCartItemReq struct {
 
 // SyncCart 合并本地购物车项目到云端
 func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
-	for _, item := range items {
-		// AddToCart 已经处理了存在则累加数量、不存在则插入的逻辑
-		_ = s.AddToCart(cartID, item.ProductID, item.Quantity)
+	if len(items) == 0 {
+		return nil
 	}
-	return nil
+
+	var productIDs []uint
+	for _, item := range items {
+		productIDs = append(productIDs, item.ProductID)
+	}
+
+	products, err := s.productRepo.FindProductsByIDs(productIDs)
+	if err != nil {
+		return err
+	}
+
+	productMap := make(map[uint]product.Product)
+	for _, p := range products {
+		productMap[p.ID] = p
+	}
+
+	var cartItems []product.CartItem
+	for _, req := range items {
+		p, exists := productMap[req.ProductID]
+		if !exists {
+			continue
+		}
+		if p.Stock < req.Quantity {
+			continue
+		}
+
+		price := p.Price
+		if p.SalePrice != nil {
+			price = *p.SalePrice
+		}
+
+		cartItems = append(cartItems, product.CartItem{
+			CartID:    cartID,
+			ProductID: req.ProductID,
+			Quantity:  req.Quantity,
+			Price:     price,
+		})
+	}
+
+	return s.cartRepo.BulkUpsertItems(cartItems)
 }
 
 // GetCartSummary 获取购物车摘要

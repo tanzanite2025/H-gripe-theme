@@ -166,10 +166,12 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 		txProductRepo := s.productRepo.WithTx(tx)
 		
 		// 1. 扣减库存 (防超卖)
+		itemsMap := make(map[uint]int)
 		for _, item := range items {
-			if err := txProductRepo.DecrementStock(item.ProductID, item.Quantity); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to deduct stock for product %d: %w", item.ProductID, err)
-			}
+			itemsMap[item.ProductID] += item.Quantity
+		}
+		if err := txProductRepo.DecrementStocks(itemsMap); err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to deduct stock in bulk: %w", err)
 		}
 
 		// 2. 创建订单和明细记录
@@ -315,7 +317,10 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 			}
 			
 			// 记录退还积分流水
-			userLoyalty, _ := txLoyaltyRepo.FindUserLoyaltyByUserID(userID)
+			userLoyalty, err := txLoyaltyRepo.FindUserLoyaltyByUserID(userID)
+			if err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to find user loyalty during refund: %w", err)
+			}
 			if userLoyalty != nil {
 				txTransaction := &loyalty.LoyaltyTransaction{
 					UserID:      userID,
@@ -325,7 +330,9 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 					Balance:     userLoyalty.AvailablePoints,
 					CreatedAt:   time.Now(),
 				}
-				_ = txLoyaltyRepo.CreateTransaction(txTransaction)
+				if err := txLoyaltyRepo.CreateTransaction(txTransaction); err != nil {
+					return fmt.Errorf("[CRITICAL] Failed to create refund transaction: %w", err)
+				}
 			}
 		}
 
@@ -333,13 +340,20 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 		if o.CouponCode != "" {
 			txCouponRepo := s.couponRepo.WithTx(tx)
 			cp, err := txCouponRepo.FindCouponByCode(o.CouponCode)
-			if err == nil && cp != nil {
+			if err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to find coupon during refund: %w", err)
+			}
+			if cp != nil {
 				// 减少使用次数
-				_ = tx.Model(&coupon.Coupon{}).Where("id = ? AND used_count > 0", cp.ID).
-					UpdateColumn("used_count", gorm.Expr("used_count - ?", 1)).Error
+				if err := tx.Model(&coupon.Coupon{}).Where("id = ? AND used_count > 0", cp.ID).
+					UpdateColumn("used_count", gorm.Expr("used_count - ?", 1)).Error; err != nil {
+					return fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
+				}
 				
 				// 删除使用记录
-				_ = tx.Where("order_id = ?", o.ID).Delete(&coupon.CouponUsage{})
+				if err := tx.Where("order_id = ?", o.ID).Delete(&coupon.CouponUsage{}).Error; err != nil {
+					return fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
+				}
 			}
 		}
 

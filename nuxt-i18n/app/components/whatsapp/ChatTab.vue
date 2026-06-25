@@ -143,6 +143,7 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useThrottleFn } from '@vueuse/core'
 
 const props = defineProps<{
   messages: any[]
@@ -168,14 +169,16 @@ const checkDesktop = () => {
   isDesktop.value = window.innerWidth >= 768
 }
 
+const throttledCheckDesktop = useThrottleFn(checkDesktop, 150)
+
 onMounted(() => {
   checkDesktop()
-  window.addEventListener('resize', checkDesktop)
+  window.addEventListener('resize', throttledCheckDesktop)
   scrollToBottom()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkDesktop)
+  window.removeEventListener('resize', throttledCheckDesktop)
 })
 
 const handleSendMessage = () => {

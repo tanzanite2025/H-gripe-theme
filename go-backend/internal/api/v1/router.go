@@ -190,8 +190,15 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			orderGroup.GET("", orderHandler.ListOrders)
 			orderGroup.GET("/stats", orderHandler.GetOrderStats)
 			orderGroup.GET("/:id", orderHandler.GetOrder)
-			orderGroup.PUT("/:id/status", orderHandler.UpdateOrderStatus)
 			orderGroup.POST("/:id/cancel", orderHandler.CancelOrder)
+		}
+
+		// 管理员订单路由
+		adminOrderGroup := v1.Group("/admin/orders")
+		adminOrderGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin"))
+		{
+			adminOrderGroup.GET("", orderHandler.ListAllOrders)
+			adminOrderGroup.PUT("/:id/status", orderHandler.UpdateOrderStatus)
 		}
 
 		// 营销路由
