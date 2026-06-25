@@ -36,7 +36,7 @@ export default defineNuxtConfig({
     url: 'https://tanzanite.site',
   },
 
-  modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image'],
+  modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon', '@nuxt/fonts'],
 
   i18n: {
     restructureDir: 'app',

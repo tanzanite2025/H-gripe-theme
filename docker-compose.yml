@@ -1,0 +1,32 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: tanzanite
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./go-backend
+    ports:
+      - "9000:9000"
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build:
+      context: ./nuxt-i18n
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

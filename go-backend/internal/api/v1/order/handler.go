@@ -140,6 +140,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 
 	// 创建订单
 	o, err := h.orderService.CreateOrder(
+		c.Request.Context(),
 		userID.(uint),
 		items,
 		shippingAddr,

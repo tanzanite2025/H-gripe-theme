@@ -221,14 +221,14 @@ import { useAuth } from '~/composables/useAuth'
 import { useGoogleAuth } from '~/composables/useGoogleAuth'
 
 const props = defineProps({
-  modelValue: { type: Boolean, default: false },
   defaultMode: { type: String as () => 'login' | 'register', default: 'login' },
   embedded: { type: Boolean, default: false },
   placement: { type: String as () => 'auto' | 'center' | 'bottom', default: 'auto' }
 })
 
+const modelValue = defineModel<boolean>({ default: false })
+
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: boolean): void
   (event: 'success', payload: { type: 'login' | 'register' }): void
   (event: 'mode-change', value: 'login' | 'register'): void
 }>()
@@ -265,7 +265,7 @@ watch(() => props.defaultMode, (val) => {
   mode.value = val
 })
 
-watch(() => props.modelValue, (isOpen) => {
+watch(() => modelValue.value, (isOpen) => {
   if (!isOpen) {
     resetForms()
   }
@@ -278,7 +278,7 @@ const resetForms = () => {
 }
 
 const close = () => {
-  emit('update:modelValue', false)
+  modelValue.value = false
 }
 
 const setMode = (next: 'login' | 'register') => {

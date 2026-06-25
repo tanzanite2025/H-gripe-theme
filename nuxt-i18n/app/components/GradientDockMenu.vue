@@ -9,7 +9,7 @@
         @click="openSidebarLeft"
         aria-label="Open sidebar"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 md:w-6 md:h-6 transition-all"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <Icon name="lucide:menu" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
         <span class="text-[9px] md:text-xs font-medium tracking-tight">Menu</span>
       </button>
 
@@ -22,7 +22,7 @@
         @click="toggleChatFromDock()" 
         aria-label="Chat"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 md:w-6 md:h-6 transition-all"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <Icon name="lucide:message-circle" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
         <span class="text-[9px] md:text-xs font-medium tracking-tight">Chat</span>
         <!-- Unread Badge -->
         <span
@@ -47,7 +47,7 @@
         :aria-expanded="quickOpen" 
         aria-label="Quick buy"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 md:w-6 md:h-6 transition-all"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <Icon name="lucide:zap" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
         <span class="text-[9px] md:text-xs font-medium tracking-tight">Quick</span>
       </button>
 
@@ -57,7 +57,7 @@
         @click="openCartDrawer" 
         aria-label="Open cart"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 md:w-6 md:h-6 transition-all"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <Icon name="lucide:shopping-cart" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
         <span class="text-[9px] md:text-xs font-medium tracking-tight">Cart</span>
       </button>
 
@@ -67,7 +67,7 @@
         @click="openWishlist" 
         aria-label="Open wishlist"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 md:w-6 md:h-6 transition-all"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <Icon name="lucide:heart" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
         <span class="text-[9px] md:text-xs font-medium tracking-tight">Saved</span>
         <span
           v-if="wishlistCount > 0"
