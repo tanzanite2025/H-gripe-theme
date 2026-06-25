@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type MarketingService struct {
@@ -166,21 +167,24 @@ func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint
 		return errors.New("gift card is expired")
 	}
 
-	// 扣除余额
-	if err := s.couponRepo.UpdateGiftCardBalance(card.ID, -amount); err != nil {
-		return err
-	}
+	return s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
+		txCouponRepo := s.couponRepo.WithTx(tx)
+		// 扣除余额
+		if err := txCouponRepo.UpdateGiftCardBalance(card.ID, -amount); err != nil {
+			return err
+		}
 
-	// 创建交易记录
-	transaction := &coupon.GiftCardTransaction{
-		GiftCardID: card.ID,
-		OrderID:    orderID,
-		Amount:     -amount,
-		Type:       "use",
-		Balance:    card.Balance - amount,
-	}
+		// 创建交易记录
+		transaction := &coupon.GiftCardTransaction{
+			GiftCardID: card.ID,
+			OrderID:    orderID,
+			Amount:     -amount,
+			Type:       "use",
+			Balance:    card.Balance - amount,
+		}
 
-	return s.couponRepo.CreateGiftCardTransaction(transaction)
+		return txCouponRepo.CreateGiftCardTransaction(transaction)
+	})
 }
 
 // Loyalty 相关方法
@@ -193,23 +197,26 @@ func (s *MarketingService) EarnPoints(userID uint, points int, source string, so
 		balance = 0
 	}
 
-	// 创建交易记录
-	transaction := &loyalty.LoyaltyTransaction{
-		UserID:      userID,
-		Type:        "earn",
-		Points:      points,
-		Balance:     balance + points,
-		Source:      source,
-		SourceID:    sourceID,
-		Description: description,
-	}
+	return s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
+		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
+		// 创建交易记录
+		transaction := &loyalty.LoyaltyTransaction{
+			UserID:      userID,
+			Type:        "earn",
+			Points:      points,
+			Balance:     balance + points,
+			Source:      source,
+			SourceID:    sourceID,
+			Description: description,
+		}
 
-	if err := s.loyaltyRepo.CreateTransaction(transaction); err != nil {
-		return err
-	}
+		if err := txLoyaltyRepo.CreateTransaction(transaction); err != nil {
+			return err
+		}
 
-	// 更新用户积分
-	return s.loyaltyRepo.UpdateUserPoints(userID, points)
+		// 更新用户积分
+		return txLoyaltyRepo.UpdateUserPoints(userID, points)
+	})
 }
 
 // SpendPoints 消费积分
@@ -224,23 +231,26 @@ func (s *MarketingService) SpendPoints(userID uint, points int, orderID uint) er
 		return errors.New("insufficient points")
 	}
 
-	// 创建交易记录
-	transaction := &loyalty.LoyaltyTransaction{
-		UserID:      userID,
-		Type:        "spend",
-		Points:      -points,
-		Balance:     balance - points,
-		Source:      "order",
-		SourceID:    orderID,
-		Description: fmt.Sprintf("Spent %d points on order", points),
-	}
+	return s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
+		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
+		// 创建交易记录
+		transaction := &loyalty.LoyaltyTransaction{
+			UserID:      userID,
+			Type:        "spend",
+			Points:      -points,
+			Balance:     balance - points,
+			Source:      "order",
+			SourceID:    orderID,
+			Description: fmt.Sprintf("Spent %d points on order", points),
+		}
 
-	if err := s.loyaltyRepo.CreateTransaction(transaction); err != nil {
-		return err
-	}
+		if err := txLoyaltyRepo.CreateTransaction(transaction); err != nil {
+			return err
+		}
 
-	// 更新用户积分
-	return s.loyaltyRepo.UpdateUserPoints(userID, -points)
+		// 更新用户积分
+		return txLoyaltyRepo.UpdateUserPoints(userID, -points)
+	})
 }
 
 // CheckIn 签到

@@ -198,11 +198,13 @@ const calculateUnreadCount = () => {
 }
 
 // 组件挂载时计算未读消息数
+let unreadInterval: ReturnType<typeof setInterval> | null = null
+
 onMounted(() => {
   calculateUnreadCount()
   
   // 每30秒更新一次未读消息数
-  setInterval(calculateUnreadCount, 30000)
+  unreadInterval = setInterval(calculateUnreadCount, 30000)
 })
 
 // cart summary data
@@ -305,6 +307,10 @@ onBeforeUnmount(() => {
   // remove global listener with stored reference
   const ref = (window as any)._dockOnGlobalPopup
   if (ref) window.removeEventListener('ui:popup-open', ref)
+
+  if (unreadInterval) {
+    clearInterval(unreadInterval)
+  }
 })
 
 // defensive: ensure mutual exclusivity if any state is toggled externally

@@ -4,6 +4,7 @@ import (
 	"tanzanite/internal/domain/product"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type CartRepository struct {
@@ -94,4 +95,17 @@ func (r *CartRepository) GetSummary(cartID uint) (*product.CartSummary, error) {
 	}
 
 	return summary, nil
+}
+
+// BulkUpsertItems 批量插入或更新购物车项目
+func (r *CartRepository) BulkUpsertItems(items []product.CartItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	return r.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "cart_id"}, {Name: "product_id"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"quantity": gorm.Expr("cart_items.quantity + EXCLUDED.quantity"),
+		}),
+	}).Create(&items).Error
 }

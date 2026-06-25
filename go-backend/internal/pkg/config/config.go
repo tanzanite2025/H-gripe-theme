@@ -112,6 +112,10 @@ func Load(configFiles ...string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	if cfg.JWT.Secret == "" {
+		panic("[CRITICAL] jwt.secret is missing in configuration!")
+	}
+
 	return &cfg, nil
 }
 
@@ -141,7 +145,6 @@ func setDefaults() {
 
 	viper.SetDefault("jwt.expire_hours", 24)
 	viper.SetDefault("jwt.refresh_expire_hours", 168)
-	viper.SetDefault("jwt.secret", "change-me-dev-only")
 
 	viper.SetDefault("i18n.default_locale", "en")
 	viper.SetDefault("i18n.supported_locales", []string{"en", "zh", "fr", "de", "es", "ja", "ko", "it", "pt", "ru", "ar", "fi", "da", "th"})

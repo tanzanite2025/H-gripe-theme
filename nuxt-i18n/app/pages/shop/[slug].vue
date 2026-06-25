@@ -2,7 +2,7 @@
   <main v-if="product" class="product-page" :aria-label="metaTitle">
     <div class="product-hero">
       <figure v-if="primaryImage" class="product-image">
-        <img :src="primaryImage" :alt="product.name || metaTitle" loading="eager" />
+        <NuxtImg :src="primaryImage" :alt="product.name || metaTitle" loading="lazy" format="webp" />
       </figure>
       <div class="product-summary">
         <h1 class="product-title">{{ product.name }}</h1>
@@ -19,7 +19,7 @@
       <h2>Gallery</h2>
       <ul class="gallery-list">
         <li v-for="image in product.images" :key="image.id || image.url" class="gallery-item">
-          <img :src="image.url" :alt="image.alt || product.name || 'Product image'" loading="lazy" />
+          <NuxtImg :src="image.url" :alt="image.alt || product.name || 'Product image'" loading="lazy" format="webp" />
         </li>
       </ul>
     </section>

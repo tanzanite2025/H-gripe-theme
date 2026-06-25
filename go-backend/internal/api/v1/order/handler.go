@@ -304,8 +304,13 @@ func (h *Handler) ListAllOrders(c *gin.Context) {
 // @Param id path int true "订单ID"
 // @Param status body map[string]string true "状态"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/orders/{id}/status [put]
+// @Router /api/v1/admin/orders/{id}/status [put]
 func (h *Handler) UpdateOrderStatus(c *gin.Context) {
+	if role, exists := c.Get("role"); !exists || role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})

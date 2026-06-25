@@ -18,9 +18,9 @@ type User struct {
 	Password  string         `gorm:"not null" json:"-"`
 	FirstName string         `json:"first_name"`
 	LastName  string         `json:"last_name"`
-	Role      string         `gorm:"default:'user'" json:"role"`
+	Role      string         `gorm:"index;default:'user'" json:"role"`
 	Locale    string         `gorm:"default:'en'" json:"locale"`
-	Status    string         `gorm:"default:'active'" json:"status"` // active, inactive, suspended
+	Status    string         `gorm:"index;default:'active'" json:"status"` // active, inactive, suspended
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`

@@ -182,7 +182,7 @@
       <p v-if="infoMessage" class="feedback-form__info">{{ infoMessage }}</p>
       <p v-else-if="errorMessage" class="feedback-form__info feedback-form__info--error">{{ errorMessage }}</p>
     </form>
-    <AuthModal
+    <LazyAuthModal
       v-model="showAuthModal"
       :default-mode="authMode"
       placement="center"
@@ -196,7 +196,6 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useSuggestionFeedback } from '~/composables/useSuggestionFeedback'
-import AuthModal from '~/components/AuthModal.vue'
 
 const props = withDefaults(
   defineProps<{

@@ -332,6 +332,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type ComponentPublicInstance } from 'vue'
+import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
@@ -361,6 +362,8 @@ const updateHeaderOffset = () => {
   const offset = Math.max(0, Math.ceil(rect.bottom))
   document.documentElement.style.setProperty('--site-header-offset', `${offset}px`)
 }
+
+const throttledUpdateHeaderOffset = useThrottleFn(updateHeaderOffset, 150)
 
 // Share button (Membership panel)
 const shareOpen = ref(false)
@@ -729,9 +732,9 @@ onMounted(() => {
 
   nextTick(() => {
     updateHeaderOffset()
-    window.addEventListener('resize', updateHeaderOffset)
+    window.addEventListener('resize', throttledUpdateHeaderOffset)
     if ('ResizeObserver' in window) {
-      headerResizeObserver = new ResizeObserver(() => updateHeaderOffset())
+      headerResizeObserver = new ResizeObserver(() => throttledUpdateHeaderOffset())
       if (headerRootRef.value) {
         headerResizeObserver.observe(headerRootRef.value)
       }
@@ -757,7 +760,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 
   if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', updateHeaderOffset)
+    window.removeEventListener('resize', throttledUpdateHeaderOffset)
   }
 
   if (headerResizeObserver) {

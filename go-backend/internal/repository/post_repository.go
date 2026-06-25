@@ -94,7 +94,7 @@ func (r *PostRepository) FindByTranslationGroup(groupID uint) ([]post.Post, erro
 // FindPublished 查找所有已发布的文章
 func (r *PostRepository) FindPublished() ([]post.Post, error) {
 	var posts []post.Post
-	err := r.db.Where("status = ?", "published").Order("published_at DESC").Find(&posts).Error
+	err := r.db.Where("status = ?", "published").Order("published_at DESC").Limit(1000).Find(&posts).Error
 	return posts, err
 }
 
@@ -103,6 +103,7 @@ func (r *PostRepository) FindPublishedByLocale(locale string) ([]post.Post, erro
 	var posts []post.Post
 	err := r.db.Where("status = ? AND locale = ?", "published", locale).
 		Order("published_at DESC").
+		Limit(1000).
 		Find(&posts).Error
 	return posts, err
 }

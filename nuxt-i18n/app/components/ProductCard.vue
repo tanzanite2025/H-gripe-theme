@@ -1,7 +1,7 @@
 <template>
   <div class="flex gap-2.5 p-2 border border-white/[0.18] rounded-[10px] bg-white/[0.06] hover:bg-white/[0.12] transition-colors">
     <a :href="item.url" target="_blank" rel="noopener" class="flex gap-2.5 flex-1 min-w-0">
-      <img v-if="item.thumbnail" :src="item.thumbnail" :alt="item.title || 'product'" class="w-14 h-14 object-cover rounded-lg flex-shrink-0" />
+      <NuxtImg v-if="item.thumbnail" :src="item.thumbnail" :alt="item.title || 'product'" class="w-14 h-14 object-cover rounded-lg flex-shrink-0" loading="lazy" format="webp" />
       <div class="text-sm text-white flex-1 min-w-0 truncate">{{ item.title }}</div>
     </a>
     <div class="flex items-center ml-auto flex-shrink-0">
