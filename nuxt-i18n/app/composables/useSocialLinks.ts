@@ -51,7 +51,8 @@ export function useSocialLinks() {
 
   const socialLinks = computed<SocialLinkViewModel[]>(() => {
     if (previewLinks.value && previewLinks.value.length) return previewLinks.value
-    return normalize(siteSettings.value.socialLinks || [])
+    if (!siteSettings.value.socialLinks) throw new Error("[CRITICAL] socialLinks missing");
+    return normalize(siteSettings.value.socialLinks)
   })
 
   return { socialLinks }

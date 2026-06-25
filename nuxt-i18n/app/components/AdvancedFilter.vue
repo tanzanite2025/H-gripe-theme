@@ -274,10 +274,10 @@ const localFilters = ref<FilterState>({
   preOrder: props.initialFilters?.preOrder ?? false,
   sortBy: props.initialFilters?.sortBy || 'newest',
   minRating: props.initialFilters?.minRating || 0,
-  attributes: props.initialFilters?.attributes || {},
+  attributes: (() => { if (!props.initialFilters?.attributes) throw new Error("[CRITICAL] attributes missing"); return props.initialFilters.attributes; })(),
 })
 
-const attributeFilters = computed(() => props.attributeFilters || [])
+const attributeFilters = computed(() => { if (!props.attributeFilters) throw new Error("[CRITICAL] attributeFilters missing"); return props.attributeFilters; })
 
 // 为属性下拉展开状态生成稳定的 key（即使后端 slug 为空也可用）
 const getAttributeKey = (attr: AttributeFilterConfig): string => {
@@ -333,8 +333,9 @@ const initializeAttributeSelections = (force = false): boolean => {
   const attrs = attributeFilters.value
   if (!attrs || !attrs.length) return false
 
+  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
   const currentAttributes: Record<string, string[]> = {
-    ...(localFilters.value.attributes || {}),
+    ...localFilters.value.attributes,
   }
 
   let changed = false
@@ -348,7 +349,8 @@ const initializeAttributeSelections = (force = false): boolean => {
       return
     }
 
-    const allValues = (attr.values || [])
+    if (!attr.values) throw new Error("[CRITICAL] attr.values missing")
+    const allValues = attr.values
       .filter((v) => v && typeof v.slug === 'string' && v.slug.length > 0)
       .map((v) => v.slug)
 
@@ -428,8 +430,10 @@ const handleFilterChange = () => {
 
 // 属性筛选：检查某个属性值是否已被选中
 const isAttributeSelected = (attrSlug: string, valueSlug: string): boolean => {
-  const attributes = localFilters.value.attributes || {}
-  const selected = attributes[attrSlug] || []
+  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
+  const attributes = localFilters.value.attributes
+  if (!attributes[attrSlug]) throw new Error(`[CRITICAL] attributes[${attrSlug}] missing`)
+  const selected = attributes[attrSlug]
   return selected.includes(valueSlug)
 }
 
@@ -438,11 +442,13 @@ const getAttributeSummary = (attr: AttributeFilterConfig): string => {
   const key = getAttributeKey(attr)
   if (!key) return 'All'
 
-  const values = (attr.values || []).filter((v) => v && v.is_enabled !== false)
+  if (!attr.values) throw new Error("[CRITICAL] attr.values missing")
+  const values = attr.values.filter((v) => v && v.is_enabled !== false)
   const total = values.length
   if (!total) return 'All'
 
-  const attributes = localFilters.value.attributes || {}
+  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
+  const attributes = localFilters.value.attributes
   const selected = Array.isArray(attributes[key]) ? attributes[key] : []
 
   const selectedCount = values.reduce((count, v) => {
@@ -479,7 +485,8 @@ const formatAttributeValueLabel = (attrSlug: string, valueName: string): string 
 
 // 属性筛选：切换选中状态
 const toggleAttributeSelection = (attrSlug: string, valueSlug: string, checked: boolean) => {
-  const currentAttributes = { ...(localFilters.value.attributes || {}) }
+  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
+  const currentAttributes = { ...localFilters.value.attributes }
   const currentValues = Array.isArray(currentAttributes[attrSlug])
     ? [...currentAttributes[attrSlug]]
     : []

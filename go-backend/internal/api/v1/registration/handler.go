@@ -301,9 +301,6 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 
 	// 清除可能导致隐私数据泄漏的用户信息
 	reg.User = nil
-	if reg.Product != nil {
-		reg.Product.User = nil
-	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"valid":            true,

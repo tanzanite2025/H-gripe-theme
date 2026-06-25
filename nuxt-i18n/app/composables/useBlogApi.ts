@@ -83,11 +83,12 @@ export const useBlogApi = () => {
         }
       })
       
+      if (!response.data) throw new Error("[CRITICAL] response.data missing");
       return {
         page: params.page,
         per_page: params.perPage,
         total: response.total || 0,
-        items: (response.data || []).map((item: any) => ({
+        items: response.data.map((item: any) => ({
           id: item.id,
           lang: item.locale || params.lang,
           group: item.translation_group_id ? `grp-${item.translation_group_id}` : '',

@@ -195,8 +195,8 @@ let searchTimer: Maybe<number> = null
 const auth = useAuth()
 const { addToCart } = useCart()
 
-const qbConfig = computed(() => props.config || {})
-const steps = computed(() => qbConfig.value.steps || [])
+const qbConfig = computed(() => { if (!props.config) throw new Error("[CRITICAL] config missing"); return props.config; })
+const steps = computed(() => { if (!qbConfig.value.steps) throw new Error("[CRITICAL] steps missing"); return qbConfig.value.steps; })
 const currentStepConf = computed(() => steps.value[step.value - 1] || { id: 0, slug: '', name: '' })
 const currentCategorySlug = computed(() => currentStepConf.value.slug || '')
 const currentCategoryName = computed(() => currentStepConf.value.name || '')
@@ -255,7 +255,8 @@ const fetchProducts = async () => {
     params.set('status', 'active')
 
     const res = await auth.request<any>(`/customer-service/products?${params.toString()}`)
-    products.value = res.items || []
+    if (!res.items) throw new Error("[CRITICAL] res.items missing")
+    products.value = res.items
   } catch (err) {
     error.value = (err as Error).message || String(err)
     products.value = []

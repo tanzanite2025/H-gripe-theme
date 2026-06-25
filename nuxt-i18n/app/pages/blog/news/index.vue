@@ -83,7 +83,8 @@ const { data: initialResponse } = await useAsyncData(
 )
 
 watchEffect(() => {
-  posts.value = (initialResponse.value?.items || []) as BlogPostSummary[]
+  if (!initialResponse.value?.items) throw new Error("[CRITICAL] items missing")
+  posts.value = initialResponse.value.items as BlogPostSummary[]
   page.value = initialResponse.value?.page || 1
   total.value = initialResponse.value?.total || 0
 })
@@ -101,7 +102,8 @@ const loadMore = async () => {
       page: page.value + 1,
       perPage: PER_PAGE,
     })
-    posts.value = [...posts.value, ...((next.items || []) as BlogPostSummary[])]
+    if (!next.items) throw new Error("[CRITICAL] next items missing")
+    posts.value = [...posts.value, ...(next.items as BlogPostSummary[])]
     page.value = next.page
     total.value = next.total
   } finally {

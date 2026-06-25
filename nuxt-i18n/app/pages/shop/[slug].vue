@@ -117,7 +117,10 @@ const metaDescription = computed(() => {
   return `${text.slice(0, 157)}...`
 })
 
-const productImages = computed(() => product.value?.images || [])
+const productImages = computed(() => {
+  if (!product.value?.images) throw new Error("[CRITICAL] product images missing")
+  return product.value.images
+})
 
 const primaryImage = computed(() => {
   if (product.value?.thumbnail) {

@@ -42,7 +42,7 @@ export const useCart = () => {
           sale_price: item.product?.sale_price,
           quantity: item.quantity,
           image: item.product?.images?.[0]?.url || '',
-          categories: item.product?.categories || [],
+          categories: (() => { if (!item.product?.categories) throw new Error("[CRITICAL] item.product.categories missing"); return item.product.categories; })(),
           stock: item.product?.stock || 0,
           maxStock: item.product?.stock || 0,
         }))

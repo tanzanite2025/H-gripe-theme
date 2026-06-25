@@ -204,8 +204,8 @@ const emit = defineEmits<{
 // 本地筛选状态
 const localFilters = ref({
   searchText: props.initialFilters?.searchText || '',
-  selectedCategories: props.initialFilters?.selectedCategories || [],
-  selectedTags: props.initialFilters?.selectedTags || [],
+  selectedCategories: (() => { if (!props.initialFilters?.selectedCategories) throw new Error("[CRITICAL] selectedCategories missing"); return props.initialFilters.selectedCategories; })(),
+  selectedTags: (() => { if (!props.initialFilters?.selectedTags) throw new Error("[CRITICAL] selectedTags missing"); return props.initialFilters.selectedTags; })(),
   sortBy: props.initialFilters?.sortBy || 'relevance',
   dateFrom: props.initialFilters?.dateFrom || '',
   dateTo: props.initialFilters?.dateTo || ''
@@ -290,8 +290,8 @@ watch(() => props.initialFilters, (newVal) => {
   if (newVal) {
     localFilters.value = {
       searchText: newVal.searchText || '',
-      selectedCategories: newVal.selectedCategories || [],
-      selectedTags: newVal.selectedTags || [],
+      selectedCategories: (() => { if (!newVal.selectedCategories) throw new Error("[CRITICAL] selectedCategories missing"); return newVal.selectedCategories; })(),
+      selectedTags: (() => { if (!newVal.selectedTags) throw new Error("[CRITICAL] selectedTags missing"); return newVal.selectedTags; })(),
       sortBy: newVal.sortBy || 'relevance',
       dateFrom: newVal.dateFrom || '',
       dateTo: newVal.dateTo || ''

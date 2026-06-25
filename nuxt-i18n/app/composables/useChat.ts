@@ -48,7 +48,9 @@ export const useChat = () => {
         { headers: { accept: 'application/json' } },
         'Failed to load conversations'
       )
-      conversations.value = response.data?.items || response.conversations || []
+      const items = response.data?.items || response.conversations;
+      if (!items) throw new Error("[CRITICAL] conversations missing");
+      conversations.value = items
     } catch (error) {
       console.error('Failed to load conversations:', error)
     }
@@ -64,7 +66,9 @@ export const useChat = () => {
         { headers: { accept: 'application/json' } },
         'Failed to load messages'
       )
-      messages.value = response.data?.items || response.messages || []
+      const items = response.data?.items || response.messages;
+      if (!items) throw new Error("[CRITICAL] messages missing");
+      messages.value = items
 
       // 标记为已读
       await markAsRead(conversationId)
