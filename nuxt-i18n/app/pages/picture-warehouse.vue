@@ -532,6 +532,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { definePageMeta, useHead, useRoute } from '#imports'
 
+import { useAuth } from '~/composables/useAuth'
+
 definePageMeta({
   layout: 'products',
 })
@@ -539,6 +541,8 @@ definePageMeta({
 useHead({
   title: 'Picture warehouse',
 })
+
+const auth = useAuth()
 
 type PhotoKind = 'user' | 'brand'
 
@@ -647,35 +651,28 @@ const submitUpload = async () => {
       formData.append('bike_model', uploadBikeModel.value.trim())
     if (uploadNotes.value.trim()) formData.append('notes', uploadNotes.value.trim())
 
-    const response = await fetch('/api/v1/showcase/upload', {
-      method: 'POST',
-      body: formData,
-    })
-
-    let payload: any = null
     try {
-      payload = await response.json()
-    } catch {
-      payload = null
-    }
-
-    if (!response.ok) {
-      const code = payload && (payload.code || payload?.data?.code)
-
-      if (response.status === 401 || response.status === 403) {
+      await auth.request('/showcase/upload', {
+        method: 'POST',
+        // FormData will automatically set boundary headers, so don't set Content-Type here
+        headers: { accept: 'application/json' },
+        body: formData,
+      }, 'Upload failed. Please try again later.')
+    } catch (err: any) {
+      const msg = err?.message || 'Upload failed. Please try again later.'
+      if (msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('login')) {
         uploadError.value = 'Please log in before uploading.'
-      } else if (response.status === 429) {
+      } else if (msg.includes('429')) {
         uploadError.value = 'Too many uploads. Please try again later.'
-      } else if (code === 'tpg_invalid_type') {
+      } else if (msg.includes('invalid_type') || msg.includes('Only WEBP')) {
         uploadError.value = 'Only WEBP images are allowed.'
-      } else if (code === 'tpg_file_too_large') {
+      } else if (msg.includes('file_too_large') || msg.includes('too large')) {
         uploadError.value = 'File is too large. Please keep it under 5MB.'
-      } else if (code === 'tpg_missing_region') {
+      } else if (msg.includes('missing_region')) {
         uploadError.value = 'Region is required.'
       } else {
-        uploadError.value = 'Upload failed. Please try again later.'
+        uploadError.value = msg
       }
-
       return
     }
 
@@ -999,32 +996,24 @@ const submitComment = async () => {
       body.location = commentLocation.value.trim()
     }
 
-    const response = await fetch('/api/v1/showcase/comments', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-
-    let payload: any = null
     try {
-      payload = await response.json()
-    } catch {
-      payload = null
-    }
-
-    if (!response.ok) {
-      const code = payload && (payload.code || payload?.data?.code)
-
-      if (response.status === 401 || response.status === 403) {
+      await auth.request('/showcase/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+        body: JSON.stringify(body),
+      }, 'Failed to submit comment. Please try again later.')
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to submit comment. Please try again later.'
+      if (msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('login')) {
         commentError.value = 'Please log in before commenting.'
-      } else if (code === 'tpg_empty_comment') {
+      } else if (msg.includes('empty_comment') || msg.includes('cannot be empty')) {
         commentError.value = 'Comment content cannot be empty.'
       } else {
-        commentError.value = 'Failed to submit comment. Please try again later.'
+        commentError.value = msg
       }
-
       return
     }
 
