@@ -28,6 +28,7 @@ type CreateOrderRequest struct {
 	PaymentMethod   string             `json:"payment_method" binding:"required"`
 	ShippingMethod  string             `json:"shipping_method" binding:"required"`
 	CouponCode      string             `json:"coupon_code"`
+	PointsToUse     int                `json:"points_to_use"`
 }
 
 type OrderItemRequest struct {
@@ -124,6 +125,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		req.PaymentMethod,
 		req.ShippingMethod,
 		req.CouponCode,
+		req.PointsToUse,
 	)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

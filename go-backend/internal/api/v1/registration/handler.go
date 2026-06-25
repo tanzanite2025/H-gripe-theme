@@ -299,6 +299,12 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 		return
 	}
 
+	// 清除可能导致隐私数据泄漏的用户信息
+	reg.User = nil
+	if reg.Product != nil {
+		reg.Product.User = nil
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"valid":            true,
 		"registration":     reg,
@@ -504,15 +510,21 @@ func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 	}
 
 	// 验证权限
-	reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "registration not found"})
-		return
-	}
-
-	if reg.UserID != userID.(uint) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-		return
+	if claim.RegistrationID != 0 {
+		reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "registration not found"})
+			return
+		}
+		if reg.UserID != userID.(uint) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
+	} else {
+		if claim.UserID != userID.(uint) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, claim)

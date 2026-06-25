@@ -67,7 +67,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	faqService := service.NewFAQService(faqRepo)
 	galleryService := service.NewGalleryService(galleryRepo)
 	// registrationService := service.NewRegistrationService(registrationRepo, productRepo)
-	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo)
+	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
 	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 	reviewService := service.NewReviewService(reviewRepo)
 	ticketService := service.NewTicketService(ticketRepo, userRepo)
@@ -101,7 +101,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	wishlistHandler := wishlist.NewHandler(wishlistService)
 	feedbackHandler := feedback.NewHandler(feedbackService)
-	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService)
+	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
 	spokeHandler := spoke.NewHandler(spokeRepo)
 	registerWordPressCompatRoutes(r, postService, settingService, loyaltyRepo, marketingService, authService)
 
@@ -169,6 +169,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		suggestionFeedbackGroup := v1.Group("/suggestion-feedback")
 		{
 			suggestionFeedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), suggestionFeedbackHandler.Eligibility)
+			suggestionFeedbackGroup.POST("/upload", middleware.AuthMiddleware(authService), suggestionFeedbackHandler.Upload)
 			suggestionFeedbackGroup.POST("", middleware.AuthMiddleware(authService), suggestionFeedbackHandler.Create)
 		}
 
@@ -359,6 +360,8 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			shippingGroup.GET("/zones/:id", shippingHandler.GetZone)
 			shippingGroup.GET("/track/:tracking_number", shippingHandler.TrackShipment)
 			shippingGroup.GET("/orders/:order_id/tracking", shippingHandler.GetOrderTracking)
+			shippingGroup.GET("/packaging-rules", shippingHandler.ListPackagingRules)
+			shippingGroup.GET("/packaging-rules/:id", shippingHandler.GetPackagingRule)
 			shippingGroup.GET("/products/:id/packaging-rules", shippingHandler.GetProductPackagingRules)
 		}
 

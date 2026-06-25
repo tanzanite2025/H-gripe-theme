@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/repository"
 	"time"
@@ -20,6 +21,7 @@ type OrderService struct {
 	paymentRepo  *repository.PaymentRepository
 	shippingRepo *repository.ShippingRepository
 	auditRepo    *repository.AuditRepository
+	loyaltyRepo  *repository.LoyaltyRepository
 }
 
 func NewOrderService(
@@ -30,6 +32,7 @@ func NewOrderService(
 	paymentRepo *repository.PaymentRepository,
 	shippingRepo *repository.ShippingRepository,
 	auditRepo *repository.AuditRepository,
+	loyaltyRepo *repository.LoyaltyRepository,
 ) *OrderService {
 	return &OrderService{
 		db:           db,
@@ -39,11 +42,12 @@ func NewOrderService(
 		paymentRepo:  paymentRepo,
 		shippingRepo: shippingRepo,
 		auditRepo:    auditRepo,
+		loyaltyRepo:  loyaltyRepo,
 	}
 }
 
 // CreateOrder 创建订单
-func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippingAddress, billingAddress order.Address, paymentMethod, shippingMethod string, couponCode string) (*order.Order, error) {
+func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippingAddress, billingAddress order.Address, paymentMethod, shippingMethod string, couponCode string, pointsToUse int) (*order.Order, error) {
 	// 生成订单号
 	orderNumber := s.generateOrderNumber()
 	
@@ -72,15 +76,52 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 		taxAmount = 0
 	}
 	
+	// 应用会员折扣 (Member Tier Discount)
+	memberDiscount := 0.0
+	userLoyalty, err := s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
+	if err == nil && userLoyalty != nil {
+		tierDiscount := 0.0
+		switch {
+		case userLoyalty.TotalPoints >= 10000:
+			tierDiscount = 0.20 // Platinum
+		case userLoyalty.TotalPoints >= 5000:
+			tierDiscount = 0.15 // Gold
+		case userLoyalty.TotalPoints >= 2000:
+			tierDiscount = 0.10 // Silver
+		case userLoyalty.TotalPoints >= 500:
+			tierDiscount = 0.05 // Bronze
+		}
+		if tierDiscount > 0 {
+			memberDiscount = totalAmount * tierDiscount
+		}
+	}
+
+	// 应用积分抵扣 (Points Discount)
+	pointsDiscount := 0.0
+	if pointsToUse > 0 {
+		if userLoyalty == nil || userLoyalty.AvailablePoints < pointsToUse {
+			return nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 
+				func() int { if userLoyalty != nil { return userLoyalty.AvailablePoints } return 0 }(), pointsToUse)
+		}
+		
+		// 1积分 = 0.01元
+		pointsDiscount = float64(pointsToUse) * 0.01
+		// 限制最多抵扣 50% 的订单金额
+		if maxPointsDiscount := totalAmount * 0.5; pointsDiscount > maxPointsDiscount {
+			pointsDiscount = maxPointsDiscount
+			pointsToUse = int(maxPointsDiscount * 100)
+		}
+	}
+
 	// 应用优惠券
-	discountAmount := 0.0
+	discountAmount := memberDiscount + pointsDiscount
 	var targetCoupon *coupon.Coupon
 	if couponCode != "" {
 		discount, err := s.applyCoupon(couponCode, userID, totalAmount)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply coupon %s: %w", couponCode, err)
 		}
-		discountAmount = discount
+		discountAmount += discount
 		cp, cpErr := s.couponRepo.FindCouponByCode(couponCode)
 		if cpErr != nil {
 			return nil, fmt.Errorf("referenced coupon code %s details not found: %w", couponCode, cpErr)
@@ -144,6 +185,30 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 				return fmt.Errorf("[CRITICAL] Failed to record coupon usage for coupon ID %d: %w", targetCoupon.ID, err)
 			}
 		}
+
+		// 3. 积分扣减和记录
+		if pointsToUse > 0 {
+			txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
+			
+			// 修改 UserLoyalty 表记录
+			if err := tx.Exec("UPDATE user_loyalties SET available_points = available_points - ?, used_points = used_points + ? WHERE user_id = ?", pointsToUse, pointsToUse, userID).Error; err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to deduct points: %w", err)
+			}
+			
+			// 记录积分流水
+			txTransaction := &loyalty.LoyaltyTransaction{
+				UserID:      userID,
+				Points:      -pointsToUse,
+				Type:        "redemption",
+				Description: fmt.Sprintf("Order #%s points redemption", orderNumber),
+				Balance:     userLoyalty.AvailablePoints - pointsToUse,
+				CreatedAt:   time.Now(),
+			}
+			if err := txLoyaltyRepo.CreateTransaction(txTransaction); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to record points transaction: %w", err)
+			}
+		}
+
 		return nil
 	})
 	

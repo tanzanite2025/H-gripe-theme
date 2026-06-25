@@ -165,12 +165,13 @@ export function useShippingValidation() {
 
     try {
       const config = useRuntimeConfig()
-      const response = await $fetch<{ ok: boolean; data: { items: ShippingTemplate[] } }>(
-        `${config.public.apiBase}/wp-json/tanzanite/v1/shipping-templates`
+      const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+      const response = await $fetch<{ data: ShippingTemplate[] }>(
+        `${base}/shipping/templates`
       )
 
-      if (response.ok && response.data?.items) {
-        shippingTemplates.value = response.data.items
+      if (Array.isArray(response?.data)) {
+        shippingTemplates.value = response.data
       }
     } catch (e) {
       console.error('Failed to load shipping templates:', e)
