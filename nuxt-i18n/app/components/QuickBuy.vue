@@ -195,8 +195,6 @@ let searchTimer: Maybe<number> = null
 const auth = useAuth()
 const { addToCart } = useCart()
 
-let searchTimer: Maybe<number> = null
-
 const qbConfig = computed(() => props.config || {})
 const steps = computed(() => qbConfig.value.steps || [])
 const currentStepConf = computed(() => steps.value[step.value - 1] || { id: 0, slug: '', name: '' })
