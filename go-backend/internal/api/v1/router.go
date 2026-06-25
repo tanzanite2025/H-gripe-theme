@@ -92,7 +92,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	marketingHandler := marketing.NewHandler(marketingService, settingService)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService)
-	paymentHandler := payment.NewHandler(paymentRepo)
+	paymentHandler := payment.NewHandler(paymentRepo, orderRepo)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationRepo, orderRepo, storageSvc)
@@ -330,6 +330,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		// 支付路由
 		paymentGroup := v1.Group("/payment")
 		{
+			// 公网暴露的 Webhook 回调路由（免鉴权，内部负责验签）
+			paymentGroup.POST("/webhook/:provider", paymentHandler.HandleWebhook)
+
 			// 公开端点
 			paymentGroup.GET("/methods", paymentHandler.ListPaymentMethods)
 			paymentGroup.GET("/methods/:id", paymentHandler.GetPaymentMethod)

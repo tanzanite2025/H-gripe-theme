@@ -2,9 +2,13 @@ package payment
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -159,9 +163,45 @@ func (g *stripeGateway) GetPayment(ctx context.Context, paymentID string) (*Paym
 	}, nil
 }
 
+// verifyHMACSHA256 验证 HMAC SHA256 签名
+func verifyHMACSHA256(payload []byte, signature, secret string) bool {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	expectedMAC := mac.Sum(nil)
+	expectedSignature := hex.EncodeToString(expectedMAC)
+	return hmac.Equal([]byte(signature), []byte(expectedSignature))
+}
+
 func (g *stripeGateway) VerifyWebhook(payload []byte, signature string) (bool, error) {
-	// TODO: 实现 Stripe Webhook 验证
-	// stripe.VerifyWebhookSignature(payload, signature, g.config.WebhookSecret)
+	// Stripe 真实验签（未来引入官方 stripe-go 后可以替换为 stripe.Webhook.ConstructEvent）
+	if g.config.WebhookSecret == "" {
+		return false, fmt.Errorf("webhook secret is not configured")
+	}
+
+	// Stripe signature 格式: t=1492774577,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+	// 这里提供基础的 v1 提取逻辑（简化版）
+	parts := strings.Split(signature, ",")
+	var t, v1 string
+	for _, part := range parts {
+		if strings.HasPrefix(part, "t=") {
+			t = strings.TrimPrefix(part, "t=")
+		} else if strings.HasPrefix(part, "v1=") {
+			v1 = strings.TrimPrefix(part, "v1=")
+		}
+	}
+
+	if t == "" || v1 == "" {
+		return false, fmt.Errorf("invalid stripe signature format")
+	}
+
+	// 拼接待签名的字符串: timestamp.payload
+	signedPayload := fmt.Sprintf("%s.%s", t, string(payload))
+	
+	isValid := verifyHMACSHA256([]byte(signedPayload), v1, g.config.WebhookSecret)
+	if !isValid {
+		return false, fmt.Errorf("signature verification failed")
+	}
+	
 	return true, nil
 }
 
