@@ -15,6 +15,11 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
+// WithTx 复用事务 db 实例
+func (r *ProductRepository) WithTx(tx *gorm.DB) *ProductRepository {
+	return &ProductRepository{db: tx}
+}
+
 // Create 创建产品
 func (r *ProductRepository) Create(p *product.Product) error {
 	return r.db.Create(p).Error
@@ -118,9 +123,28 @@ func (r *ProductRepository) SearchPublic(locale, status, keyword string, offset,
 	return products, total, err
 }
 
-// UpdateStock 更新库存
+// UpdateStock 更新库存 (绝对值，后台管理用)
 func (r *ProductRepository) UpdateStock(id uint, quantity int) error {
 	return r.db.Model(&product.Product{}).Where("id = ?", id).Update("stock", quantity).Error
+}
+
+// DecrementStock 原子扣减库存
+func (r *ProductRepository) DecrementStock(id uint, quantity int) error {
+	res := r.db.Model(&product.Product{}).Where("id = ? AND stock >= ?", id, quantity).
+		UpdateColumn("stock", gorm.Expr("stock - ?", quantity))
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound // 库存不足或记录不存在
+	}
+	return nil
+}
+
+// IncrementStock 原子增加库存
+func (r *ProductRepository) IncrementStock(id uint, quantity int) error {
+	return r.db.Model(&product.Product{}).Where("id = ?", id).
+		UpdateColumn("stock", gorm.Expr("stock + ?", quantity)).Error
 }
 
 // IncrementViewCount 增加浏览次数
