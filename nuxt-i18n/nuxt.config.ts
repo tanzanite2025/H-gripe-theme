@@ -76,6 +76,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/',
     buildAssetsDir: '_nuxt/',
+    cdnURL: process.env.CDN_URL || 'https://cdn.tanzanite.site/',
     head: {
       meta: [
         { charset: 'utf-8' },
@@ -88,7 +89,7 @@ export default defineNuxtConfig({
   ssr: true,
 
   nitro: {
-    preset: 'static'
+    preset: 'cloudflare-pages'
   },
 
   // 配置 WordPress API 端点
