@@ -17,6 +17,11 @@ type RedisCache struct {
 	ctx    context.Context
 }
 
+// Client returns the underlying redis client
+func (r *RedisCache) Client() *redis.Client {
+	return r.client
+}
+
 // Init 初始化Redis连接
 func Init(cfg config.RedisConfig) (*RedisCache, error) {
 	client := redis.NewClient(&redis.Options{

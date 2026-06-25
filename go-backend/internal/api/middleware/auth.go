@@ -12,23 +12,30 @@ import (
 // AuthMiddleware JWT认证中间件
 func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 从Header获取token
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
-			c.Abort()
-			return
-		}
+		var tokenString string
 
-		// 解析Bearer token
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-			c.Abort()
-			return
-		}
+		// 优先从 Cookie 中获取 token
+		if cookie, err := c.Cookie("auth_token"); err == nil && cookie != "" {
+			tokenString = cookie
+		} else {
+			// 从Header获取token
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
+				c.Abort()
+				return
+			}
 
-		tokenString := parts[1]
+			// 解析Bearer token
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
+				c.Abort()
+				return
+			}
+
+			tokenString = parts[1]
+		}
 
 		// 验证token
 		claims, err := authService.ValidateToken(tokenString)
@@ -52,19 +59,25 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 // OptionalAuthMiddleware 可选认证中间件（不强制要求登录）
 func OptionalAuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.Next()
-			return
-		}
+		var tokenString string
 
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.Next()
-			return
-		}
+		if cookie, err := c.Cookie("auth_token"); err == nil && cookie != "" {
+			tokenString = cookie
+		} else {
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" {
+				c.Next()
+				return
+			}
 
-		tokenString := parts[1]
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				c.Next()
+				return
+			}
+
+			tokenString = parts[1]
+		}
 		claims, err := authService.ValidateToken(tokenString)
 		if err == nil {
 			c.Set("user_id", claims.UserID)

@@ -48,9 +48,11 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 		return
 	}
 
+	// 设置 HttpOnly Cookie
+	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+
 	// 返回用户信息和权限
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
 		"user": gin.H{
 			"id":          user.ID,
 			"email":       user.Email,
@@ -118,8 +120,10 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
+	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"message": "Token refreshed successfully",
 	})
 }
 
@@ -127,6 +131,8 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // POST /api/admin/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	// 在实际应用中，可以在这里将令牌加入黑名单
+	c.SetCookie("auth_token", "", -1, "/", "", true, true)
+
 	// 目前只返回成功消息
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Logged out successfully",

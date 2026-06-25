@@ -12,6 +12,8 @@ import (
 	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
 
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -61,8 +63,11 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")
 	{
+		rateLimiter := middleware.NewRateLimiter(redisCache)
+
 		// 认证路由（公开）
 		authGroup := admin.Group("/auth")
+		authGroup.Use(rateLimiter.RateLimit(10, time.Minute))
 		{
 			authGroup.POST("/login", authHandler.AdminLogin)
 		}

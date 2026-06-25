@@ -64,8 +64,9 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
 		"user":  user.ToResponse(),
 	})
 }
@@ -90,5 +91,6 @@ func (h *Handler) GetProfile(c *gin.Context) {
 // Logout 用户登出
 func (h *Handler) Logout(c *gin.Context) {
 	// JWT是无状态的，客户端删除token即可
+	c.SetCookie("auth_token", "", -1, "/", "", true, true)
 	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }
