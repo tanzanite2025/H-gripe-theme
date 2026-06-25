@@ -73,7 +73,8 @@ export const useFeedback = (threadKey: string) => {
         'Failed to load feedback'
       )
 
-      items.value = response.data || []
+      if (!response.data) throw new Error("[CRITICAL] response.data missing");
+      items.value = response.data
       pagination.value = response.pagination
     } catch (err: unknown) {
       // eslint-disable-next-line no-console

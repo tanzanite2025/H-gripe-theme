@@ -15,6 +15,11 @@ func NewLoyaltyRepository(db *gorm.DB) *LoyaltyRepository {
 	return &LoyaltyRepository{db: db}
 }
 
+// WithTx 使用指定的事务创建新的 repository 实例
+func (r *LoyaltyRepository) WithTx(tx *gorm.DB) *LoyaltyRepository {
+	return &LoyaltyRepository{db: tx}
+}
+
 // GetDB 获取底层 GORM DB 实例
 func (r *LoyaltyRepository) GetDB() *gorm.DB {
 	return r.db

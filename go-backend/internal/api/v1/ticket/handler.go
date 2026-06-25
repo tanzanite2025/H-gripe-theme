@@ -1,4 +1,4 @@
-package ticket
+﻿package ticket
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ func NewHandler(ticketService *service.TicketService) *Handler {
 	}
 }
 
-// CreateTicketRequest 创建工单请求
+// CreateTicketRequest 鍒涘缓宸ュ崟璇锋眰
 type CreateTicketRequest struct {
 	Subject  string `json:"subject" binding:"required"`
 	Category string `json:"category" binding:"required"`
@@ -29,12 +29,12 @@ type CreateTicketRequest struct {
 	Content  string `json:"content" binding:"required"`
 }
 
-// CreateTicket 创建工单
-// @Summary 创建工单
+// CreateTicket 鍒涘缓宸ュ崟
+// @Summary 鍒涘缓宸ュ崟
 // @Tags Tickets
 // @Accept json
 // @Produce json
-// @Param ticket body CreateTicketRequest true "工单信息"
+// @Param ticket body CreateTicketRequest true "宸ュ崟淇℃伅"
 // @Success 201 {object} ticket.Ticket
 // @Router /api/v1/tickets [post]
 func (h *Handler) CreateTicket(c *gin.Context) {
@@ -62,7 +62,7 @@ func (h *Handler) CreateTicket(c *gin.Context) {
 		return
 	}
 
-	// 创建初始消息
+	// 鍒涘缓鍒濆娑堟伅
 	msg := &ticket.TicketMessage{
 		TicketID: t.ID,
 		UserID:   userID.(uint),
@@ -77,11 +77,11 @@ func (h *Handler) CreateTicket(c *gin.Context) {
 	c.JSON(http.StatusCreated, t)
 }
 
-// GetTicket 获取工单详情
-// @Summary 获取工单详情
+// GetTicket 鑾峰彇宸ュ崟璇︽儏
+// @Summary 鑾峰彇宸ュ崟璇︽儏
 // @Tags Tickets
 // @Produce json
-// @Param id path int true "工单ID"
+// @Param id path int true "宸ュ崟ID"
 // @Success 200 {object} ticket.Ticket
 // @Router /api/v1/tickets/{id} [get]
 func (h *Handler) GetTicket(c *gin.Context) {
@@ -91,7 +91,7 @@ func (h *Handler) GetTicket(c *gin.Context) {
 		return
 	}
 
-	// 检查是否是管理员
+	// 妫€鏌ユ槸鍚︽槸绠＄悊鍛?
 	isStaff := false
 	if role, exists := c.Get("role"); exists && role == "admin" {
 		isStaff = true
@@ -112,12 +112,12 @@ func (h *Handler) GetTicket(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// ListTickets 获取工单列表
-// @Summary 获取工单列表
+// ListTickets 鑾峰彇宸ュ崟鍒楄〃
+// @Summary 鑾峰彇宸ュ崟鍒楄〃
 // @Tags Tickets
 // @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
+// @Param page query int false "椤电爜" default(1)
+// @Param page_size query int false "姣忛〉鏁伴噺" default(20)
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/tickets [get]
 func (h *Handler) ListTickets(c *gin.Context) {
@@ -155,14 +155,14 @@ func (h *Handler) ListTickets(c *gin.Context) {
 	})
 }
 
-// ListAllTickets 获取所有工单（管理员）
-// @Summary 获取所有工单
+// ListAllTickets 鑾峰彇鎵€鏈夊伐鍗曪紙绠＄悊鍛橈級
+// @Summary 鑾峰彇鎵€鏈夊伐鍗?
 // @Tags Tickets
 // @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "状态"
-// @Param priority query string false "优先级"
+// @Param page query int false "椤电爜" default(1)
+// @Param page_size query int false "姣忛〉鏁伴噺" default(20)
+// @Param status query string false "鐘舵€?
+// @Param priority query string false "浼樺厛绾?
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/admin/tickets [get]
 func (h *Handler) ListAllTickets(c *gin.Context) {
@@ -196,13 +196,13 @@ func (h *Handler) ListAllTickets(c *gin.Context) {
 	})
 }
 
-// UpdateTicketStatus 更新工单状态
-// @Summary 更新工单状态
+// UpdateTicketStatus 鏇存柊宸ュ崟鐘舵€?
+// @Summary 鏇存柊宸ュ崟鐘舵€?
 // @Tags Tickets
 // @Accept json
 // @Produce json
-// @Param id path int true "工单ID"
-// @Param request body map[string]string true "状态"
+// @Param id path int true "宸ュ崟ID"
+// @Param request body map[string]string true "鐘舵€?
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/tickets/{id}/status [put]
 func (h *Handler) UpdateTicketStatus(c *gin.Context) {
@@ -228,13 +228,13 @@ func (h *Handler) UpdateTicketStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ticket status updated"})
 }
 
-// AssignTicket 分配工单（管理员）
-// @Summary 分配工单
+// AssignTicket 鍒嗛厤宸ュ崟锛堢鐞嗗憳锛?
+// @Summary 鍒嗛厤宸ュ崟
 // @Tags Tickets
 // @Accept json
 // @Produce json
-// @Param id path int true "工单ID"
-// @Param request body map[string]uint true "分配信息"
+// @Param id path int true "宸ュ崟ID"
+// @Param request body map[string]uint true "鍒嗛厤淇℃伅"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/admin/tickets/{id}/assign [post]
 func (h *Handler) AssignTicket(c *gin.Context) {
@@ -260,11 +260,11 @@ func (h *Handler) AssignTicket(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ticket assigned"})
 }
 
-// CloseTicket 关闭工单
-// @Summary 关闭工单
+// CloseTicket 鍏抽棴宸ュ崟
+// @Summary 鍏抽棴宸ュ崟
 // @Tags Tickets
 // @Produce json
-// @Param id path int true "工单ID"
+// @Param id path int true "宸ュ崟ID"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/tickets/{id}/close [post]
 func (h *Handler) CloseTicket(c *gin.Context) {
@@ -293,13 +293,13 @@ func (h *Handler) CloseTicket(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ticket closed"})
 }
 
-// AddMessage 添加消息
-// @Summary 添加消息
+// AddMessage 娣诲姞娑堟伅
+// @Summary 娣诲姞娑堟伅
 // @Tags Tickets
 // @Accept json
 // @Produce json
-// @Param id path int true "工单ID"
-// @Param message body map[string]interface{} true "消息内容"
+// @Param id path int true "宸ュ崟ID"
+// @Param message body map[string]interface{} true "娑堟伅鍐呭"
 // @Success 201 {object} ticket.TicketMessage
 // @Router /api/v1/tickets/{id}/messages [post]
 func (h *Handler) AddMessage(c *gin.Context) {
@@ -345,11 +345,11 @@ func (h *Handler) AddMessage(c *gin.Context) {
 	c.JSON(http.StatusCreated, msg)
 }
 
-// GetMessages 获取工单消息列表
-// @Summary 获取工单消息列表
+// GetMessages 鑾峰彇宸ュ崟娑堟伅鍒楄〃
+// @Summary 鑾峰彇宸ュ崟娑堟伅鍒楄〃
 // @Tags Tickets
 // @Produce json
-// @Param id path int true "工单ID"
+// @Param id path int true "宸ュ崟ID"
 // @Success 200 {array} ticket.TicketMessage
 // @Router /api/v1/tickets/{id}/messages [get]
 func (h *Handler) GetMessages(c *gin.Context) {
@@ -379,397 +379,8 @@ func (h *Handler) GetMessages(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": messages})
 }
 
-func (h *Handler) ListCustomerServiceConversations(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "50"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 50
-	}
-
-	tickets, total, err := h.ticketService.GetCustomerServiceConversations(page, pageSize)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "customer_service_error", "message": err.Error()})
-		return
-	}
-
-	items := make([]gin.H, 0, len(tickets))
-	for _, item := range tickets {
-		items = append(items, ticketConversationResponse(item))
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"data": gin.H{
-			"items": items,
-			"pagination": gin.H{
-				"page":       page,
-				"page_size":  pageSize,
-				"total":      total,
-				"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-			},
-		},
-		"conversations": items,
-	})
-}
-
-func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
-	agents, err := h.ticketService.ListCustomerServiceAgentProfiles(limit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	items := make([]gin.H, 0, len(agents))
-	for _, agent := range agents {
-		if agent.UserID == nil {
-			continue
-		}
-		items = append(items, gin.H{
-			"id":              *agent.UserID,
-			"agent_id":        agent.AgentID,
-			"legacy_agent_id": agent.AgentID,
-			"wp_user_id":      *agent.UserID,
-			"name":            agent.DisplayName(),
-			"email":           agent.PublicEmail(),
-			"avatar":          agent.Avatar,
-			"whatsapp":        agent.WhatsApp,
-			"status":          emptyToDefault(agent.OnlineStatus, "offline"),
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    items,
-		"emailSettings": gin.H{
-			"preSalesEmail":   "",
-			"afterSalesEmail": "",
-		},
-	})
-}
-
-func emptyToDefault(value, defaultValue string) string {
-	if strings.TrimSpace(value) == "" {
-		return defaultValue
-	}
-	return strings.TrimSpace(value)
-}
-
-func (h *Handler) HasPublicCustomerServiceConversation(c *gin.Context) {
-	conversationID := strings.TrimSpace(c.Query("visitor_id"))
-	if conversationID == "" {
-		c.JSON(http.StatusOK, gin.H{"hasConversation": false})
-		return
-	}
-
-	hasConversation, lastAgentID, err := h.ticketService.HasPublicCustomerServiceConversation(conversationID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"hasConversation": hasConversation,
-		"lastAgentId":     zeroToNil(lastAgentID),
-	})
-}
-
-func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
-	var req struct {
-		ConversationID string      `json:"conversation_id" binding:"required"`
-		Message        string      `json:"message" binding:"required"`
-		SenderType     string      `json:"sender_type"`
-		SenderName     string      `json:"sender_name" binding:"required"`
-		SenderEmail    string      `json:"sender_email"`
-		AgentID        string      `json:"agent_id"`
-		MessageType    string      `json:"message_type"`
-		Metadata       interface{} `json:"metadata"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	conversationID := strings.TrimSpace(req.ConversationID)
-	message := strings.TrimSpace(req.Message)
-	senderName := strings.TrimSpace(req.SenderName)
-	if conversationID == "" || message == "" || senderName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "missing required parameters"})
-		return
-	}
-
-	var userID uint
-	if value, exists := c.Get("user_id"); exists {
-		if parsed, ok := value.(uint); ok {
-			userID = parsed
-		}
-	}
-
-	var agentID uint
-	if strings.TrimSpace(req.AgentID) != "" {
-		if parsed, err := strconv.ParseUint(strings.TrimSpace(req.AgentID), 10, 32); err == nil {
-			agentID = uint(parsed)
-		}
-	}
-
-	_, msg, err := h.ticketService.AddPublicCustomerServiceMessage(conversationID, message, userID, agentID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, req.MessageType, req.Metadata)
-	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"message_id": msg.ID,
-		"data":       response,
-	})
-}
-
-func (h *Handler) GetWelcomeMessage(c *gin.Context) {
-	conversationID := strings.TrimSpace(c.Query("conversation_id"))
-	if conversationID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "conversation_id is required"})
-		return
-	}
-
-	reply, alreadySent, err := h.ticketService.GetWelcomeMessage(conversationID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data": gin.H{
-			"message":      reply,
-			"already_sent": alreadySent,
-		},
-	})
-}
-
-func (h *Handler) MatchKeywordMessage(c *gin.Context) {
-	var req struct {
-		Message        string `json:"message" binding:"required"`
-		ConversationID string `json:"conversation_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	reply, ruleID, err := h.ticketService.MatchKeywordMessage(req.ConversationID, req.Message)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	if reply == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data": gin.H{
-				"reply": "",
-			},
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data": gin.H{
-			"reply":   reply,
-			"rule_id": ruleID,
-		},
-	})
-}
-
-func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
-	conversationID := strings.TrimSpace(c.Param("conversation_id"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-	if conversationID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "missing conversation id"})
-		return
-	}
-
-	messages, err := h.ticketService.GetPublicCustomerServiceMessages(conversationID, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": []gin.H{}, "total": 0})
-		return
-	}
-
-	items := make([]gin.H, 0, len(messages))
-	for _, item := range messages {
-		items = append(items, publicCustomerServiceMessageResponse(item, conversationID, "", "", nil))
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    items,
-		"total":   len(items),
-	})
-}
-
-func (h *Handler) GetCustomerServiceMessages(c *gin.Context) {
-	ticketID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid conversation id"})
-		return
-	}
-
-	messages, err := h.ticketService.GetMessages(uint(ticketID), 0, true)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-
-	items := make([]gin.H, 0, len(messages))
-	for _, item := range messages {
-		items = append(items, ticketMessageResponse(item))
-	}
-
-	if err := h.ticketService.MarkMessagesAsRead(uint(ticketID), true); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"data":     gin.H{"items": items},
-		"messages": items,
-	})
-}
-
-func (h *Handler) SendCustomerServiceMessage(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
-	var req struct {
-		ConversationID uint   `json:"conversation_id" binding:"required"`
-		Message        string `json:"message" binding:"required"`
-		AttachmentURL  string `json:"attachment_url"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	attachments := []string{}
-	if strings.TrimSpace(req.AttachmentURL) != "" {
-		attachments = append(attachments, strings.TrimSpace(req.AttachmentURL))
-	}
-	attachmentsJSON, _ := json.Marshal(attachments)
-
-	msg := &ticket.TicketMessage{
-		TicketID:    req.ConversationID,
-		UserID:      userID.(uint),
-		IsStaff:     true,
-		Content:     strings.TrimSpace(req.Message),
-		Attachments: string(attachmentsJSON),
-		IsRead:      false,
-		IsInternal:  false,
-	}
-	if err := h.ticketService.AddMessage(msg, userID.(uint), true); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"ok": true, "message": ticketMessageResponse(*msg)})
-}
-
-func (h *Handler) MarkCustomerServiceMessagesRead(c *gin.Context) {
-	var req struct {
-		ConversationID uint `json:"conversation_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.ticketService.MarkMessagesAsRead(req.ConversationID, true); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"ok": true, "success": true})
-}
-
-func (h *Handler) TransferCustomerServiceConversation(c *gin.Context) {
-	ticketID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid conversation id"})
-		return
-	}
-
-	var req struct {
-		ToAgentID string `json:"to_agent_id" binding:"required"`
-		Note      string `json:"note"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	assignedTo, err := strconv.ParseUint(req.ToAgentID, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid agent id"})
-		return
-	}
-
-	if err := h.ticketService.AssignTicket(uint(ticketID), uint(assignedTo)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"ok":      true,
-		"success": true,
-		"data": gin.H{
-			"conversation_id": ticketID,
-			"to_agent_id":     assignedTo,
-			"to_agent":        req.ToAgentID,
-		},
-	})
-}
-
-func (h *Handler) GetCustomerServiceAgentStatus(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"ok": true,
-		"data": gin.H{
-			"status": "online",
-		},
-	})
-}
-
-func (h *Handler) UpdateCustomerServiceAgentStatus(c *gin.Context) {
-	var req struct {
-		Status string `json:"status" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "message": err.Error()})
-		return
-	}
-
-	allowed := map[string]bool{"online": true, "busy": true, "away": true, "offline": true}
-	if !allowed[req.Status] {
-		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "message": "invalid status"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"ok": true,
-		"data": gin.H{
-			"status": req.Status,
-		},
-	})
-}
-
-// GetTicketStats 获取工单统计
-// @Summary 获取工单统计
+// GetTicketStats 鑾峰彇宸ュ崟缁熻
+// @Summary 鑾峰彇宸ュ崟缁熻
 // @Tags Tickets
 // @Produce json
 // @Success 200 {object} map[string]int64
@@ -790,8 +401,8 @@ func (h *Handler) GetTicketStats(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
-// GetDashboard 获取客服仪表板（管理员）
-// @Summary 获取客服仪表板
+// GetDashboard 鑾峰彇瀹㈡湇浠〃鏉匡紙绠＄悊鍛橈級
+// @Summary 鑾峰彇瀹㈡湇浠〃鏉?
 // @Tags Tickets
 // @Produce json
 // @Success 200 {object} map[string]interface{}
@@ -806,11 +417,11 @@ func (h *Handler) GetDashboard(c *gin.Context) {
 	c.JSON(http.StatusOK, dashboard)
 }
 
-// GetRecentTickets 获取最近的工单（管理员）
-// @Summary 获取最近的工单
+// GetRecentTickets 鑾峰彇鏈€杩戠殑宸ュ崟锛堢鐞嗗憳锛?
+// @Summary 鑾峰彇鏈€杩戠殑宸ュ崟
 // @Tags Tickets
 // @Produce json
-// @Param limit query int false "数量限制" default(10)
+// @Param limit query int false "鏁伴噺闄愬埗" default(10)
 // @Success 200 {array} ticket.Ticket
 // @Router /api/v1/admin/tickets/recent [get]
 func (h *Handler) GetRecentTickets(c *gin.Context) {

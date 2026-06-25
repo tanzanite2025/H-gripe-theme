@@ -36,7 +36,10 @@ export function useMembership() {
   const topTierImage = computed(() => userData.value?.loyalty?.top_tier_image || '')
   const points = computed(() => userData.value?.loyalty?.points ?? 0)
   const profileInfo = computed(() => userData.value?.profile || null)
-  const tiers = computed(() => (userData.value?.loyalty?.tiers || []) as any[])
+  const tiers = computed(() => {
+    if (!userData.value?.loyalty?.tiers) throw new Error("[CRITICAL] tiers missing");
+    return userData.value.loyalty.tiers as any[];
+  })
 
   // ========== 等级进度 ==========
   const tierInfo = computed(() => {
@@ -168,7 +171,10 @@ export function useMembership() {
 
     try {
       const data = await auth.request<any>('/marketing/gift-cards')
-      const allCards = data.items || data || []
+      const allCards = data.items || data;
+      if (!allCards || (Array.isArray(allCards) && allCards.length === 0 && !data.items && !data)) {
+        throw new Error("[CRITICAL] gift cards missing");
+      }
       availableGiftcards.value = allCards.filter((card: any) => card.status === 'active')
     } catch (error) {
       console.error('Failed to fetch gift cards:', error)

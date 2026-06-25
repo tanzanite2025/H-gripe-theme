@@ -99,9 +99,12 @@ func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippin
 	// 应用积分抵扣 (Points Discount)
 	pointsDiscount := 0.0
 	if pointsToUse > 0 {
-		if userLoyalty == nil || userLoyalty.AvailablePoints < pointsToUse {
-			return nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 
-				func() int { if userLoyalty != nil { return userLoyalty.AvailablePoints } return 0 }(), pointsToUse)
+		available := 0
+		if userLoyalty != nil {
+			available = userLoyalty.AvailablePoints
+		}
+		if userLoyalty == nil || available < pointsToUse {
+			return nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", available, pointsToUse)
 		}
 		
 		// 1积分 = 0.01元

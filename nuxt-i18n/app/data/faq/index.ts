@@ -76,7 +76,8 @@ export async function fetchFaqData(pageId: string): Promise<PageFaqData | undefi
       query: { page_id: pageId, page_size: 100 }
     })
     
-    const items = res.data || []
+    if (!res.data) throw new Error("[CRITICAL] FAQ data missing")
+    const items = res.data
     if (items.length === 0) return getFaqData(pageId) // Fallback
 
     const categoriesMap = new Map<string, any>()
@@ -120,7 +121,8 @@ export async function fetchAllFaqData(): Promise<PageFaqData[]> {
       query: { page_size: 1000 }
     })
     
-    const items = res.data || []
+    if (!res.data) throw new Error("[CRITICAL] FAQ data missing")
+    const items = res.data
     if (items.length === 0) return getAllFaqData()
 
     const pagesMap = new Map<string, PageFaqData>()

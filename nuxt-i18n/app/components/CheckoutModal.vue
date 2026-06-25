@@ -158,7 +158,8 @@ const shippingState = computed<CartPriceBreakdown['shippingState']>(() => {
 })
 
 const stepperOrderSummary = computed(() => {
-  const items = (cartItems.value || []).map((item: any) => ({
+  if (!cartItems.value) throw new Error("[CRITICAL] cartItems missing")
+  const items = cartItems.value.map((item: any) => ({
     id: item.id ?? item.sku ?? item.title ?? '',
     title: item.title ?? 'Item',
     quantity: item.quantity ?? 1,

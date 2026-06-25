@@ -108,9 +108,11 @@ function findMatchingRule(
   for (const template of templates) {
     if (!template.is_active) continue
 
-    for (const rule of template.rules || []) {
+    if (!template.rules) throw new Error("[CRITICAL] template.rules missing");
+    for (const rule of template.rules) {
       // 检查国家匹配 — regions 为空或不包含用户国家则跳过
-      const regions = rule.regions || []
+      if (!rule.regions) throw new Error("[CRITICAL] rule.regions missing");
+      const regions = rule.regions
       if (regions.length === 0 || !regions.map(r => r.toUpperCase()).includes(normalizedCountry)) {
         continue
       }
@@ -192,8 +194,10 @@ export function useShippingValidation() {
     for (const template of shippingTemplates.value) {
       if (!template.is_active) continue
 
-      for (const rule of template.rules || []) {
-        const regions = rule.regions || []
+      if (!template.rules) throw new Error("[CRITICAL] template.rules missing");
+      for (const rule of template.rules) {
+        if (!rule.regions) throw new Error("[CRITICAL] rule.regions missing");
+        const regions = rule.regions
         // regions 为空表示不可配送
         if (regions.length > 0 && regions.map(r => r.toUpperCase()).includes(normalizedCountry)) {
           return true
@@ -213,8 +217,10 @@ export function useShippingValidation() {
     for (const template of shippingTemplates.value) {
       if (!template.is_active) continue
 
-      for (const rule of template.rules || []) {
-        const regions = rule.regions || []
+      if (!template.rules) throw new Error("[CRITICAL] template.rules missing");
+      for (const rule of template.rules) {
+        if (!rule.regions) throw new Error("[CRITICAL] rule.regions missing");
+        const regions = rule.regions
         for (const region of regions) {
           countries.add(region.toUpperCase())
         }

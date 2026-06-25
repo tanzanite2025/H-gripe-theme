@@ -107,7 +107,8 @@ export const useCartCalculation = () => {
         '/shipping/templates',
         { headers: { accept: 'application/json' } }
       )
-      shippingTemplates.value = response.items || []
+      if (!response.items) throw new Error("[CRITICAL] response.items missing");
+      shippingTemplates.value = response.items
     } catch (error) {
       console.error('Failed to load shipping templates:', error)
     }
@@ -122,7 +123,8 @@ export const useCartCalculation = () => {
         '/payment/tax-rates',
         { headers: { accept: 'application/json' } }
       )
-      taxRates.value = (response.items || []).filter((t: TaxRate) => t.is_active)
+      if (!response.items) throw new Error("[CRITICAL] response.items missing");
+      taxRates.value = response.items.filter((t: TaxRate) => t.is_active)
     } catch (error) {
       console.error('Failed to load tax rates:', error)
     }
@@ -309,15 +311,18 @@ export const useCartCalculation = () => {
     for (const template of shippingTemplates.value) {
       if (template.is_active === false) continue
 
-      for (const rule of template.rules || []) {
+      if (!template.rules) throw new Error("[CRITICAL] template.rules missing");
+      for (const rule of template.rules) {
         // 检查国家匹配
-        const regions = rule.regions || []
+        if (!rule.regions) throw new Error("[CRITICAL] rule.regions missing");
+        const regions = rule.regions
         if (regions.length === 0 || !regions.map(r => r.toUpperCase()).includes(normalizedCountry)) {
           continue
         }
 
         // 检查邮编匹配
-        const zipRanges = rule.zip_ranges || []
+        if (!rule.zip_ranges) throw new Error("[CRITICAL] rule.zip_ranges missing");
+        const zipRanges = rule.zip_ranges
         if (zipRanges.length > 0 && zip) {
           const zipMatched = isZipInRanges(zip, zipRanges)
           if (!zipMatched) continue

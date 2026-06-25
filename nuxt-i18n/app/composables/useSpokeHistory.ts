@@ -78,7 +78,8 @@ export const useSpokeHistory = () => {
       const nextMeta = response.meta || null
 
       if (append && page > 1) {
-        const existing = items.value || []
+        if (!items.value) throw new Error("[CRITICAL] items.value missing");
+        const existing = items.value
         const existingIds = new Set(existing.map((item) => item.id))
         const merged = [...existing, ...nextItems.filter((item) => !existingIds.has(item.id))]
         items.value = merged
