@@ -30,11 +30,14 @@ import (
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gorm.io/gorm"
 )
 
 // RegisterRoutes 注册所有v1路由
 func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) {
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	r.Use(middleware.TraceMiddleware())
 	// 初始化repositories
 	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)

@@ -1,15 +1,18 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
+	"tanzanite/internal/pkg/logger"
 	"tanzanite/internal/repository"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -47,7 +50,15 @@ func NewOrderService(
 }
 
 // CreateOrder 创建订单
-func (s *OrderService) CreateOrder(userID uint, items []order.OrderItem, shippingAddress, billingAddress order.Address, paymentMethod, shippingMethod string, couponCode string, pointsToUse int) (*order.Order, error) {
+func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []order.OrderItem, shippingAddress, billingAddress order.Address, paymentMethod, shippingMethod string, couponCode string, pointsToUse int) (*order.Order, error) {
+	traceID := ""
+	if ctx != nil {
+		if tid, ok := ctx.Value("X-Trace-ID").(string); ok {
+			traceID = tid
+		}
+	}
+	logger.Info("CreateOrder started", zap.String("trace_id", traceID), zap.Uint("user_id", userID))
+
 	// 生成订单号
 	orderNumber := s.generateOrderNumber()
 	

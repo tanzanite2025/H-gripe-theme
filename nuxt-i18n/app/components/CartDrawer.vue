@@ -60,9 +60,7 @@
                   class="w-full h-full object-cover"
                 />
                 <div v-else class="w-full h-full flex items-center justify-center text-white/50">
-                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                  <Icon name="lucide:image" class="w-8 h-8" />
                 </div>
               </div>
 
@@ -85,9 +83,7 @@
                     class="w-7 h-7 flex items-center justify-center rounded border border-white/[0.18] hover:bg-white/10 transition-colors text-white"
                     :disabled="item.quantity <= 1"
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                    </svg>
+                    <Icon name="lucide:minus" class="w-4 h-4" />
                   </button>
                   
                   <input
@@ -104,9 +100,7 @@
                     class="w-7 h-7 flex items-center justify-center rounded border border-white hover:bg-white/10 transition-colors text-white"
                     :disabled="item.maxStock ? item.quantity >= item.maxStock : false"
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
+                    <Icon name="lucide:plus" class="w-4 h-4" />
                   </button>
 
                   <button
@@ -114,9 +108,7 @@
                     class="w-7 h-7 flex items-center justify-center rounded border border-white/[0.18] hover:bg-white/10 transition-colors text-white"
                     title="Add to wishlist"
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
-                    </svg>
+                    <Icon name="lucide:heart" class="w-4 h-4" />
                   </button>
 
                   <button
@@ -139,9 +131,7 @@
         <!-- 空购物车 -->
         <div v-else class="wa-drawer-content relative z-10 flex flex-col">
           <div class="flex flex-col items-center justify-center py-12">
-            <svg class="w-24 h-24 text-white/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
+            <Icon name="lucide:shopping-bag" class="w-24 h-24 text-white/30 mb-4" />
             <p class="text-white/70 text-lg font-medium mb-2">Your cart is empty</p>
             <p class="text-white/50 text-sm mb-6">Add some products to get started!</p>
             <button
@@ -175,9 +165,7 @@
           </div>
           <div v-else-if="freeShippingThreshold > 0 && subtotal >= freeShippingThreshold" class="mb-4">
             <div class="flex items-center gap-2 text-green-400 text-sm">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
+              <Icon name="lucide:check" class="w-4 h-4" />
               <span>🎉 You've unlocked free shipping!</span>
             </div>
           </div>

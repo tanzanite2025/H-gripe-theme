@@ -135,12 +135,12 @@ import { watch } from 'vue'
 import { useWishlist } from '~/composables/useWishlist'
 
 const props = defineProps<{
-  modelValue: boolean
   variant?: 'default' | 'bottom'
 }>()
 
+const modelValue = defineModel<boolean>({ default: false })
+
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
   (e: 'close'): void
   (e: 'share-to-chat', product: any): void
 }>()
@@ -148,7 +148,7 @@ const emit = defineEmits<{
 const { items, loading, error, loadWishlist, removeFromWishlist } = useWishlist()
 
 watch(
-  () => props.modelValue,
+  () => modelValue.value,
   (val) => {
     if (val) {
       loadWishlist()
@@ -157,7 +157,7 @@ watch(
 )
 
 const handleClose = () => {
-  emit('update:modelValue', false)
+  modelValue.value = false
   emit('close')
 }
 

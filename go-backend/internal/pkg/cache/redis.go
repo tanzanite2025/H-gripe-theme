@@ -9,7 +9,7 @@ import (
 
 	"tanzanite/internal/pkg/config"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisCache struct {
@@ -93,4 +93,28 @@ func (r *RedisCache) Exists(key string) (bool, error) {
 // Close 关闭连接
 func (r *RedisCache) Close() error {
 	return r.client.Close()
+}
+
+// PublishEvent 发布事件到 Redis Stream
+func (r *RedisCache) PublishEvent(ctx context.Context, stream string, values map[string]interface{}) error {
+	return r.client.XAdd(ctx, &redis.XAddArgs{
+		Stream: stream,
+		Values: values,
+	}).Err()
+}
+
+// ConsumeEventGroup 从 Redis Stream 的消费者组读取事件
+func (r *RedisCache) ConsumeEventGroup(ctx context.Context, stream, group, consumer string) ([]redis.XMessage, error) {
+	streams, err := r.client.XReadGroup(ctx, &redis.XReadGroupArgs{
+		Group:    group,
+		Consumer: consumer,
+		Streams:  []string{stream, ">"},
+	}).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(streams) > 0 {
+		return streams[0].Messages, nil
+	}
+	return []redis.XMessage{}, nil
 }
