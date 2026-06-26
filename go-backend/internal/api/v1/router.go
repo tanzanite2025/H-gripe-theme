@@ -4,6 +4,7 @@ import (
 	"tanzanite/internal/api/middleware"
 	"tanzanite/internal/api/v1/auth"
 	"tanzanite/internal/api/v1/cart"
+	"tanzanite/internal/api/v1/chat"
 	"tanzanite/internal/api/v1/content"
 	"tanzanite/internal/api/v1/faq"
 	"tanzanite/internal/api/v1/feedback"
@@ -62,6 +63,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	feedbackRepo := repository.NewFeedbackRepository(db)
 	suggestionFeedbackRepo := repository.NewSuggestionFeedbackRepository(db)
 	spokeRepo := repository.NewSpokeRepository(db)
+	chatRepo := repository.NewChatRepository(db)
 
 	// 初始化services
 	authService := service.NewAuthService(userRepo, cfg.JWT)
@@ -298,6 +300,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 				agentGroup.GET("/status", ticketHandler.GetCustomerServiceAgentStatus)
 				agentGroup.POST("/status", ticketHandler.UpdateCustomerServiceAgentStatus)
 			}
+		}
+
+		// 聊天消息持久化路由（新增）
+		chatGroup := v1.Group("/chat")
+		chatGroup.Use(middleware.OptionalAuthMiddleware(authService))
+		{
+			chatGroup.POST("/messages", chat.NewChatHandler(chatRepo).SaveMessage)
+			chatGroup.GET("/messages", chat.NewChatHandler(chatRepo).GetMessages)
 		}
 
 		// Showcase (Picture Warehouse)
