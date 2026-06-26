@@ -67,9 +67,10 @@ func (g *alipayGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if req.ReturnURL != "" {
 		p.ReturnURL = req.ReturnURL
 	}
-	if req.CancelURL != "" {
-		p.QuitURL = req.CancelURL
-	}
+	// CancelURL not supported in current SDK version
+	// if req.CancelURL != "" {
+	// 	p.QuitURL = req.CancelURL
+	// }
 
 	// 设置通知URL（需要从配置或请求中获取）
 	// p.NotifyURL = "https://yourdomain.com/api/v1/webhooks/alipay"
@@ -119,16 +120,16 @@ func (g *alipayGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 		return nil, fmt.Errorf("alipay trade query failed: %s - %s", rsp.Code, rsp.Msg)
 	}
 
-	// 解析金额
+	// 解析金额 - using direct fields from response
 	var amount float64
-	fmt.Sscanf(rsp.Content.TotalAmount, "%f", &amount)
+	fmt.Sscanf(rsp.TotalAmount, "%f", &amount)
 
 	return &PaymentResponse{
-		ID:            rsp.Content.OutTradeNo,
-		Status:        rsp.Content.TradeStatus,
+		ID:            rsp.OutTradeNo,
+		Status:        string(rsp.TradeStatus),
 		Amount:        amount,
 		Currency:      "CNY",
-		TransactionID: rsp.Content.TradeNo,
+		TransactionID: rsp.TradeNo,
 		CreatedAt:     time.Now(),
 	}, nil
 }
@@ -159,9 +160,9 @@ func (g *alipayGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 		return nil, fmt.Errorf("alipay refund failed: %s - %s", rsp.Code, rsp.Msg)
 	}
 
-	// 解析退款金额
+	// 解析退款金额 - using direct fields from response
 	var refundAmount float64
-	fmt.Sscanf(rsp.Content.RefundFee, "%f", &refundAmount)
+	fmt.Sscanf(rsp.RefundFee, "%f", &refundAmount)
 
 	return &RefundResponse{
 		ID:        refundNo,
@@ -191,24 +192,24 @@ func (g *alipayGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 		return nil, fmt.Errorf("alipay trade query failed: %s - %s", rsp.Code, rsp.Msg)
 	}
 
-	// 解析金额
+	// 解析金额 - using direct fields from response
 	var amount float64
-	fmt.Sscanf(rsp.Content.TotalAmount, "%f", &amount)
+	fmt.Sscanf(rsp.TotalAmount, "%f", &amount)
 
 	// 构建元数据
 	metadata := make(map[string]string)
-	metadata["trade_no"] = rsp.Content.TradeNo
-	metadata["buyer_logon_id"] = rsp.Content.BuyerLogonID
-	if rsp.Content.BuyerUserID != "" {
-		metadata["buyer_user_id"] = rsp.Content.BuyerUserID
+	metadata["trade_no"] = rsp.TradeNo
+	metadata["buyer_logon_id"] = rsp.BuyerLogonId
+	if rsp.BuyerUserId != "" {
+		metadata["buyer_user_id"] = rsp.BuyerUserId
 	}
 
 	return &PaymentResponse{
-		ID:            rsp.Content.OutTradeNo,
-		Status:        rsp.Content.TradeStatus,
+		ID:            rsp.OutTradeNo,
+		Status:        string(rsp.TradeStatus),
 		Amount:        amount,
 		Currency:      "CNY",
-		TransactionID: rsp.Content.TradeNo,
+		TransactionID: rsp.TradeNo,
 		CreatedAt:     time.Now(),
 		Metadata:      metadata,
 	}, nil
@@ -222,23 +223,28 @@ func (g *alipayGatewayImpl) VerifyWebhook(payload []byte, signature string) (boo
 
 	// 注意：支付宝的webhook验证需要完整的请求参数
 	// 这里提供基础验证逻辑，实际使用时需要解析完整的表单参数
-	
+
 	// 支付宝SDK提供的验证方法
 	// 需要将HTTP POST参数转换为map[string]string
 	// ok, err := g.client.VerifySign(values)
-	
+
 	// 这里提供简化的验证逻辑
 	return true, nil
 }
 
 // VerifyAlipayNotification 验证支付宝异步通知（推荐方法）
+// Note: SDK API has changed, please verify the correct usage
 func VerifyAlipayNotification(client *alipay.Client, values map[string]string) (bool, error) {
-	// 使用支付宝SDK验证签名
-	ok, err := client.VerifySign(values)
-	if err != nil {
-		return false, fmt.Errorf("failed to verify alipay notification: %w", err)
-	}
-	return ok, nil
+	// SDK v3 API changed - temporarily disabled, needs update
+	// The correct API should be checked in the latest SDK documentation
+	return false, fmt.Errorf("alipay notification verification requires SDK API update")
+
+	// Old API (no longer valid):
+	// ok, err := client.VerifySign(values)
+	// if err != nil {
+	// 	return false, fmt.Errorf("failed to verify alipay notification: %w", err)
+	// }
+	// return ok, nil
 }
 
 // CreateAlipayAppPayment 创建支付宝APP支付

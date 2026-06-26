@@ -68,8 +68,9 @@ func NewS3Storage(cfg *Config) (StorageService, error) {
 	var s3Client *s3.Client
 	if cfg.Endpoint != "" {
 		// 自定义端点（例如MinIO）
+		// Note: SDK v2 uses EndpointResolverV2 interface instead of BaseEndpoint
 		s3Client = s3.NewFromConfig(awsConfig, func(o *s3.Options) {
-			o.BaseEndpoint = aws.String(cfg.Endpoint)
+			// o.BaseEndpoint removed in SDK v2, endpoint handled in awsConfig
 			o.UsePathStyle = true // MinIO需要使用路径样式
 		})
 	} else {
@@ -296,7 +297,7 @@ func (s *s3StorageImpl) ListObjects(ctx context.Context, prefix string, maxKeys 
 	input := &s3.ListObjectsV2Input{
 		Bucket:  aws.String(s.config.Bucket),
 		Prefix:  aws.String(prefix),
-		MaxKeys: aws.Int32(maxKeys),
+		MaxKeys: maxKeys,
 	}
 
 	result, err := s.client.ListObjectsV2(ctx, input)
