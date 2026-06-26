@@ -9,8 +9,19 @@ import (
 	"tanzanite/internal/repository"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+var (
+	ErrCustomerServiceConversationAccessDenied = errors.New("conversation access denied")
+	ErrCustomerServiceOwnerRequired            = errors.New("conversation owner is required")
+)
+
+type CustomerServiceOwner struct {
+	UserID             *uint
+	VisitorSessionHash string
+}
 
 type TicketService struct {
 	ticketRepo *repository.TicketRepository
@@ -67,82 +78,68 @@ func (s *TicketService) GetCustomerServiceConversations(page, pageSize int) ([]t
 	return s.ticketRepo.FindCustomerServiceConversations(page, pageSize)
 }
 
-func (s *TicketService) HasPublicCustomerServiceConversation(conversationID string) (bool, uint, error) {
-	t, err := s.ticketRepo.FindCustomerServiceConversationByTag(customerServiceConversationTag(conversationID))
+func (s *TicketService) HasPublicCustomerServiceConversation(owner CustomerServiceOwner) (bool, string, uint, error) {
+	t, err := s.findCustomerServiceConversationByOwner(owner)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, 0, nil
+		return false, "", 0, nil
 	}
 	if err != nil {
-		return false, 0, err
+		return false, "", 0, err
 	}
-	return true, t.AssignedTo, nil
+	return true, ticketConversationID(t), t.AssignedTo, nil
 }
 
-func (s *TicketService) getOrCreateCustomerServiceConversation(conversationID string, userID, agentID uint) (*ticket.Ticket, error) {
-	persistedUserID := userID
-	if persistedUserID == 0 {
-		if agentID > 0 {
-			persistedUserID = agentID
-		} else {
-			agents, err := s.ListCustomerServiceAgentProfiles(1)
-			if err != nil {
-				return nil, err
-			}
-			if len(agents) == 0 {
-				return nil, errors.New("no customer service agents configured")
-			}
-			if agents[0].UserID == nil {
-				return nil, errors.New("customer service agent is not linked to a Go user")
-			}
-			persistedUserID = *agents[0].UserID
-		}
+func (s *TicketService) GetOrCreatePublicCustomerServiceConversation(owner CustomerServiceOwner, agentID uint) (*ticket.Ticket, error) {
+	owner = normalizeCustomerServiceOwner(owner)
+	if !owner.Valid() {
+		return nil, ErrCustomerServiceOwnerRequired
 	}
 
-	tag := customerServiceConversationTag(conversationID)
-	t, err := s.ticketRepo.FindCustomerServiceConversationByTag(tag)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		t = &ticket.Ticket{
-			UserID:     persistedUserID,
-			Subject:    "Customer service chat",
-			Category:   "customer_service",
-			Priority:   "medium",
-			Status:     "open",
-			AssignedTo: agentID,
-			Tags:       tag,
-		}
-		if err := s.CreateTicket(t); err != nil {
+	t, err := s.findCustomerServiceConversationByOwner(owner)
+	if err == nil {
+		if err := s.updateCustomerServiceConversationOwner(t, owner, agentID); err != nil {
 			return nil, err
 		}
-	} else if err != nil {
-		return nil, err
-	} else {
-		t.Status = "open"
-		if agentID > 0 {
-			t.AssignedTo = agentID
-		}
-		if t.UserID == 0 {
-			t.UserID = persistedUserID
-		}
-		if err := s.ticketRepo.UpdateTicket(t); err != nil {
-			return nil, err
-		}
+		return t, nil
 	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	persistedUserID, err := s.customerServicePersistedUserID(owner.UserID, agentID)
+	if err != nil {
+		return nil, err
+	}
+
+	conversationID := uuid.NewString()
+	t = &ticket.Ticket{
+		UserID:             persistedUserID,
+		CustomerUserID:     owner.UserID,
+		ConversationID:     &conversationID,
+		VisitorSessionHash: owner.VisitorSessionHash,
+		Subject:            "Customer service chat",
+		Category:           "customer_service",
+		Priority:           "medium",
+		Status:             "open",
+		AssignedTo:         agentID,
+		Tags:               customerServiceConversationTag(conversationID),
+	}
+	if err := s.CreateTicket(t); err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
-func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message string, userID, agentID uint) (*ticket.Ticket, *ticket.TicketMessage, error) {
-	t, err := s.getOrCreateCustomerServiceConversation(conversationID, userID, agentID)
+func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, owner CustomerServiceOwner, message string, agentID uint) (*ticket.Ticket, *ticket.TicketMessage, error) {
+	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	persistedUserID := userID
-	if persistedUserID == 0 {
-		if agentID > 0 {
-			persistedUserID = agentID
-		} else {
-			persistedUserID = t.UserID
-		}
+	persistedUserID := t.UserID
+	if owner.UserID != nil && *owner.UserID > 0 {
+		persistedUserID = *owner.UserID
 	}
 
 	msg := &ticket.TicketMessage{
@@ -161,7 +158,7 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID, message 
 }
 
 // GetWelcomeMessage 获取欢迎语。如果24小时内未发送过，则会自动创建一条客服自动回复消息。
-func (s *TicketService) GetWelcomeMessage(conversationID string) (string, bool, error) {
+func (s *TicketService) GetWelcomeMessage(conversationID string, owner CustomerServiceOwner, agentID uint) (string, bool, error) {
 	rules, err := s.ticketRepo.GetActiveAutoReplyRules("welcome")
 	if err != nil {
 		return "", false, err
@@ -171,7 +168,7 @@ func (s *TicketService) GetWelcomeMessage(conversationID string) (string, bool, 
 	}
 	welcomeRule := rules[0]
 
-	t, err := s.getOrCreateCustomerServiceConversation(conversationID, 0, 0)
+	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
 		return "", false, err
 	}
@@ -198,7 +195,7 @@ func (s *TicketService) GetWelcomeMessage(conversationID string) (string, bool, 
 }
 
 // MatchKeywordMessage 关键字匹配自动回复。如果匹配到，会自动插入一条客服自动回复消息。
-func (s *TicketService) MatchKeywordMessage(conversationID, message string) (string, uint, error) {
+func (s *TicketService) MatchKeywordMessage(conversationID, message string, owner CustomerServiceOwner, agentID uint) (string, uint, error) {
 	rules, err := s.ticketRepo.GetActiveAutoReplyRules("keyword")
 	if err != nil {
 		return "", 0, err
@@ -231,7 +228,7 @@ func (s *TicketService) MatchKeywordMessage(conversationID, message string) (str
 		return "", 0, nil
 	}
 
-	t, err := s.getOrCreateCustomerServiceConversation(conversationID, 0, 0)
+	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
 		return "", 0, err
 	}
@@ -252,8 +249,8 @@ func (s *TicketService) MatchKeywordMessage(conversationID, message string) (str
 	return matchedRule.ReplyMessage, matchedRule.ID, nil
 }
 
-func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, limit, offset int) ([]ticket.TicketMessage, error) {
-	t, err := s.ticketRepo.FindCustomerServiceConversationByTag(customerServiceConversationTag(conversationID))
+func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, owner CustomerServiceOwner, limit, offset int) ([]ticket.TicketMessage, error) {
+	t, err := s.getAccessibleCustomerServiceConversation(conversationID, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -275,6 +272,161 @@ func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, 
 		end = len(messages)
 	}
 	return messages[offset:end], nil
+}
+
+func (s *TicketService) CanAccessCustomerServiceConversation(conversationID string, owner CustomerServiceOwner) (bool, error) {
+	_, err := s.getAccessibleCustomerServiceConversation(conversationID, owner)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, ErrCustomerServiceConversationAccessDenied) || errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	return false, err
+}
+
+func (s *TicketService) getOrCreateAccessibleCustomerServiceConversation(conversationID string, owner CustomerServiceOwner, agentID uint) (*ticket.Ticket, error) {
+	conversationID = strings.TrimSpace(conversationID)
+	if conversationID == "" {
+		return s.GetOrCreatePublicCustomerServiceConversation(owner, agentID)
+	}
+
+	t, err := s.getAccessibleCustomerServiceConversation(conversationID, owner)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.updateCustomerServiceConversationOwner(t, normalizeCustomerServiceOwner(owner), agentID); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (s *TicketService) getAccessibleCustomerServiceConversation(conversationID string, owner CustomerServiceOwner) (*ticket.Ticket, error) {
+	owner = normalizeCustomerServiceOwner(owner)
+	if strings.TrimSpace(conversationID) == "" || !owner.Valid() {
+		return nil, ErrCustomerServiceConversationAccessDenied
+	}
+
+	t, err := s.ticketRepo.FindCustomerServiceConversationByConversationID(strings.TrimSpace(conversationID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrCustomerServiceConversationAccessDenied
+		}
+		return nil, err
+	}
+
+	if customerServiceOwnerMatches(t, owner) {
+		return t, nil
+	}
+	return nil, ErrCustomerServiceConversationAccessDenied
+}
+
+func (s *TicketService) findCustomerServiceConversationByOwner(owner CustomerServiceOwner) (*ticket.Ticket, error) {
+	owner = normalizeCustomerServiceOwner(owner)
+	if !owner.Valid() {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	if owner.UserID != nil {
+		t, err := s.ticketRepo.FindCustomerServiceConversationByOwner(owner.UserID, "")
+		if err == nil {
+			return t, nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+	}
+
+	if owner.VisitorSessionHash != "" {
+		return s.ticketRepo.FindCustomerServiceConversationByOwner(nil, owner.VisitorSessionHash)
+	}
+
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (s *TicketService) updateCustomerServiceConversationOwner(t *ticket.Ticket, owner CustomerServiceOwner, agentID uint) error {
+	changed := false
+	if t.ConversationID == nil || strings.TrimSpace(*t.ConversationID) == "" {
+		conversationID := uuid.NewString()
+		t.ConversationID = &conversationID
+		t.Tags = customerServiceConversationTag(conversationID)
+		changed = true
+	}
+	if t.CustomerUserID == nil && owner.UserID != nil {
+		t.CustomerUserID = owner.UserID
+		changed = true
+	}
+	if t.VisitorSessionHash == "" && owner.VisitorSessionHash != "" {
+		t.VisitorSessionHash = owner.VisitorSessionHash
+		changed = true
+	}
+	if agentID > 0 && t.AssignedTo != agentID {
+		t.AssignedTo = agentID
+		changed = true
+	}
+	if t.Status == "" || t.Status == "closed" || t.Status == "resolved" {
+		t.Status = "open"
+		changed = true
+	}
+	if t.UserID == 0 {
+		persistedUserID, err := s.customerServicePersistedUserID(owner.UserID, agentID)
+		if err != nil {
+			return err
+		}
+		t.UserID = persistedUserID
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+	return s.ticketRepo.UpdateTicket(t)
+}
+
+func (s *TicketService) customerServicePersistedUserID(userID *uint, agentID uint) (uint, error) {
+	if userID != nil && *userID > 0 {
+		return *userID, nil
+	}
+	if agentID > 0 {
+		return agentID, nil
+	}
+
+	agents, err := s.ListCustomerServiceAgentProfiles(1)
+	if err != nil {
+		return 0, err
+	}
+	if len(agents) == 0 {
+		return 0, errors.New("no customer service agents configured")
+	}
+	if agents[0].UserID == nil {
+		return 0, errors.New("customer service agent is not linked to a Go user")
+	}
+	return *agents[0].UserID, nil
+}
+
+func normalizeCustomerServiceOwner(owner CustomerServiceOwner) CustomerServiceOwner {
+	owner.VisitorSessionHash = strings.TrimSpace(owner.VisitorSessionHash)
+	if owner.UserID != nil && *owner.UserID == 0 {
+		owner.UserID = nil
+	}
+	return owner
+}
+
+func (owner CustomerServiceOwner) Valid() bool {
+	return owner.UserID != nil || strings.TrimSpace(owner.VisitorSessionHash) != ""
+}
+
+func customerServiceOwnerMatches(t *ticket.Ticket, owner CustomerServiceOwner) bool {
+	if owner.UserID != nil && t.CustomerUserID != nil && *t.CustomerUserID == *owner.UserID {
+		return true
+	}
+	return owner.VisitorSessionHash != "" && t.VisitorSessionHash == owner.VisitorSessionHash
+}
+
+func ticketConversationID(t *ticket.Ticket) string {
+	if t == nil || t.ConversationID == nil {
+		return ""
+	}
+	return strings.TrimSpace(*t.ConversationID)
 }
 
 func (s *TicketService) ListCustomerServiceAgents(limit int) ([]user.User, error) {

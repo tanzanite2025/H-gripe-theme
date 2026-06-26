@@ -79,7 +79,7 @@ func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int) 
 	var tickets []ticket.Ticket
 	var total int64
 
-	query := r.db.Model(&ticket.Ticket{})
+	query := r.db.Model(&ticket.Ticket{}).Where("category = ?", "customer_service")
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -92,11 +92,30 @@ func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int) 
 	return tickets, total, err
 }
 
-func (r *TicketRepository) FindCustomerServiceConversationByTag(tag string) (*ticket.Ticket, error) {
+func (r *TicketRepository) FindCustomerServiceConversationByConversationID(conversationID string) (*ticket.Ticket, error) {
 	var t ticket.Ticket
 	err := r.db.Preload("User").Preload("Messages", func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at ASC")
-	}).Where("category = ? AND tags = ?", "customer_service", tag).First(&t).Error
+	}).Where("category = ? AND conversation_id = ?", "customer_service", conversationID).First(&t).Error
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (r *TicketRepository) FindCustomerServiceConversationByOwner(userID *uint, visitorSessionHash string) (*ticket.Ticket, error) {
+	var t ticket.Ticket
+	query := r.db.Preload("User").Preload("Messages", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at ASC")
+	}).Where("category = ?", "customer_service")
+
+	if userID != nil {
+		query = query.Where("customer_user_id = ?", *userID)
+	} else {
+		query = query.Where("visitor_session_hash = ?", visitorSessionHash)
+	}
+
+	err := query.Order("updated_at DESC").First(&t).Error
 	if err != nil {
 		return nil, err
 	}

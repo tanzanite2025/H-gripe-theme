@@ -1,13 +1,23 @@
 package ticket
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"tanzanite/internal/domain/ticket"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+)
+
+const (
+	customerServiceVisitorCookie = "tz_customer_service_visitor"
+	customerServiceVisitorMaxAge = 86400 * 365
 )
 
 func (h *Handler) ListCustomerServiceConversations(c *gin.Context) {
@@ -96,28 +106,126 @@ func emptyToDefault(value, defaultValue string) string {
 	return strings.TrimSpace(value)
 }
 
-func (h *Handler) HasPublicCustomerServiceConversation(c *gin.Context) {
-	conversationID := strings.TrimSpace(c.Query("visitor_id"))
-	if conversationID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] visitor_id is required"})
+func publicCustomerUserID(c *gin.Context) *uint {
+	value, exists := c.Get("user_id")
+	if !exists {
+		return nil
+	}
+	userID, ok := value.(uint)
+	if !ok {
+		return nil
+	}
+	return &userID
+}
+
+func (h *Handler) publicCustomerOwner(c *gin.Context) service.CustomerServiceOwner {
+	return service.CustomerServiceOwner{
+		UserID:             publicCustomerUserID(c),
+		VisitorSessionHash: h.ensureVisitorSessionHash(c),
+	}
+}
+
+func (h *Handler) ensureVisitorSessionHash(c *gin.Context) string {
+	sessionID, _ := c.Cookie(customerServiceVisitorCookie)
+	if _, err := uuid.Parse(strings.TrimSpace(sessionID)); err != nil {
+		sessionID = uuid.NewString()
+	}
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(customerServiceVisitorCookie, sessionID, customerServiceVisitorMaxAge, "/", "", visitorCookieSecure(c), true)
+	sum := sha256.Sum256([]byte(sessionID))
+	return hex.EncodeToString(sum[:])
+}
+
+func visitorCookieSecure(c *gin.Context) bool {
+	return c.Request != nil && (c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https"))
+}
+
+func parseCustomerServiceAgentID(value string) uint {
+	if strings.TrimSpace(value) == "" {
+		return 0
+	}
+	parsed, err := strconv.ParseUint(strings.TrimSpace(value), 10, 32)
+	if err != nil {
+		return 0
+	}
+	return uint(parsed)
+}
+
+func publicConversationID(item *ticket.Ticket) string {
+	if item == nil {
+		return ""
+	}
+	if item.ConversationID != nil && strings.TrimSpace(*item.ConversationID) != "" {
+		return strings.TrimSpace(*item.ConversationID)
+	}
+	if strings.HasPrefix(item.Tags, "conversation_id:") {
+		return strings.TrimPrefix(item.Tags, "conversation_id:")
+	}
+	return ""
+}
+
+func writePublicCustomerServiceError(c *gin.Context, err error) {
+	if errors.Is(err, service.ErrCustomerServiceConversationAccessDenied) {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "conversation access denied"})
+		return
+	}
+	if errors.Is(err, service.ErrCustomerServiceOwnerRequired) {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "conversation owner is required"})
+		return
+	}
+	c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+}
+
+func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
+	var req struct {
+		AgentID string `json:"agent_id"`
+	}
+	if c.Request != nil && c.Request.ContentLength != 0 {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+			return
+		}
+	}
+
+	t, err := h.ticketService.GetOrCreatePublicCustomerServiceConversation(
+		h.publicCustomerOwner(c),
+		parseCustomerServiceAgentID(req.AgentID),
+	)
+	if err != nil {
+		writePublicCustomerServiceError(c, err)
 		return
 	}
 
-	hasConversation, lastAgentID, err := h.ticketService.HasPublicCustomerServiceConversation(conversationID)
+	conversationID := publicConversationID(t)
+	c.JSON(http.StatusOK, gin.H{
+		"success":         true,
+		"hasConversation": true,
+		"conversation_id": conversationID,
+		"lastAgentId":     zeroToNil(t.AssignedTo),
+		"data": gin.H{
+			"conversation_id": conversationID,
+			"lastAgentId":     zeroToNil(t.AssignedTo),
+		},
+	})
+}
+
+func (h *Handler) HasPublicCustomerServiceConversation(c *gin.Context) {
+	hasConversation, conversationID, lastAgentID, err := h.ticketService.HasPublicCustomerServiceConversation(h.publicCustomerOwner(c))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "[CRITICAL] " + err.Error()})
+		writePublicCustomerServiceError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"hasConversation": hasConversation,
+		"conversation_id": conversationID,
 		"lastAgentId":     zeroToNil(lastAgentID),
 	})
 }
 
 func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	var req struct {
-		ConversationID string      `json:"conversation_id" binding:"required"`
+		ConversationID string      `json:"conversation_id"`
 		Message        string      `json:"message" binding:"required"`
 		SenderType     string      `json:"sender_type"`
 		SenderName     string      `json:"sender_name" binding:"required"`
@@ -134,28 +242,19 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	conversationID := strings.TrimSpace(req.ConversationID)
 	message := strings.TrimSpace(req.Message)
 	senderName := strings.TrimSpace(req.SenderName)
-	if conversationID == "" || message == "" || senderName == "" {
+	if message == "" || senderName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] missing required parameters"})
 		return
 	}
 
-	var userID uint
-	if value, exists := c.Get("user_id"); exists {
-		if parsed, ok := value.(uint); ok {
-			userID = parsed
-		}
-	}
-
-	var agentID uint
-	if strings.TrimSpace(req.AgentID) != "" {
-		if parsed, err := strconv.ParseUint(strings.TrimSpace(req.AgentID), 10, 32); err == nil {
-			agentID = uint(parsed)
-		}
-	}
-
-	_, msg, err := h.ticketService.AddPublicCustomerServiceMessage(conversationID, message, userID, agentID)
+	t, msg, err := h.ticketService.AddPublicCustomerServiceMessage(
+		conversationID,
+		h.publicCustomerOwner(c),
+		message,
+		parseCustomerServiceAgentID(req.AgentID),
+	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+		writePublicCustomerServiceError(c, err)
 		return
 	}
 	if msg == nil {
@@ -163,29 +262,39 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		return
 	}
 
+	conversationID = publicConversationID(t)
 	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, req.MessageType, req.Metadata)
 	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"message_id": msg.ID,
-		"data":       response,
+		"success":         true,
+		"message_id":      msg.ID,
+		"conversation_id": conversationID,
+		"data":            response,
 	})
 }
 
 func (h *Handler) GetWelcomeMessage(c *gin.Context) {
 	conversationID := strings.TrimSpace(c.Query("conversation_id"))
+	agentID := parseCustomerServiceAgentID(c.Query("agent_id"))
+	owner := h.publicCustomerOwner(c)
+
 	if conversationID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] conversation_id is required"})
-		return
+		t, err := h.ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agentID)
+		if err != nil {
+			writePublicCustomerServiceError(c, err)
+			return
+		}
+		conversationID = publicConversationID(t)
 	}
 
-	reply, alreadySent, err := h.ticketService.GetWelcomeMessage(conversationID)
+	reply, alreadySent, err := h.ticketService.GetWelcomeMessage(conversationID, owner, agentID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+		writePublicCustomerServiceError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
+		"success":         true,
+		"conversation_id": conversationID,
 		"data": gin.H{
 			"message":      reply,
 			"already_sent": alreadySent,
@@ -197,21 +306,33 @@ func (h *Handler) MatchKeywordMessage(c *gin.Context) {
 	var req struct {
 		Message        string `json:"message" binding:"required"`
 		ConversationID string `json:"conversation_id" binding:"required"`
+		AgentID        string `json:"agent_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
 		return
 	}
+	req.ConversationID = strings.TrimSpace(req.ConversationID)
+	if req.ConversationID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] conversation_id is required"})
+		return
+	}
 
-	reply, ruleID, err := h.ticketService.MatchKeywordMessage(req.ConversationID, req.Message)
+	reply, ruleID, err := h.ticketService.MatchKeywordMessage(
+		req.ConversationID,
+		req.Message,
+		h.publicCustomerOwner(c),
+		parseCustomerServiceAgentID(req.AgentID),
+	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+		writePublicCustomerServiceError(c, err)
 		return
 	}
 
 	if reply == "" {
 		c.JSON(http.StatusOK, gin.H{
-			"success": true,
+			"success":         true,
+			"conversation_id": req.ConversationID,
 			"data": gin.H{
 				"reply": "",
 			},
@@ -220,7 +341,8 @@ func (h *Handler) MatchKeywordMessage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
+		"success":         true,
+		"conversation_id": req.ConversationID,
 		"data": gin.H{
 			"reply":   reply,
 			"rule_id": ruleID,
@@ -237,9 +359,9 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 		return
 	}
 
-	messages, err := h.ticketService.GetPublicCustomerServiceMessages(conversationID, limit, offset)
+	messages, err := h.ticketService.GetPublicCustomerServiceMessages(conversationID, h.publicCustomerOwner(c), limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+		writePublicCustomerServiceError(c, err)
 		return
 	}
 	if messages == nil {

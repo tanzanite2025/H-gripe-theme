@@ -3,6 +3,7 @@ package chat
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"tanzanite/internal/domain/chat"
 	"tanzanite/internal/repository"
@@ -15,7 +16,43 @@ type ChatHandler struct {
 }
 
 func NewChatHandler(chatRepo *repository.ChatRepository) *ChatHandler {
-	return &ChatHandler{chatRepo: chatRepo}
+	return &ChatHandler{
+		chatRepo: chatRepo,
+	}
+}
+
+func (h *ChatHandler) hasSessionAccess(c *gin.Context, sessionID string) bool {
+	value, exists := c.Get("user_id")
+	if !exists {
+		return false
+	}
+	userID, ok := value.(uint)
+	if !ok {
+		return false
+	}
+	belongs, err := h.chatRepo.SessionBelongsToUser(sessionID, userID)
+	return err == nil && belongs
+}
+
+func (h *ChatHandler) ensureSessionWritable(c *gin.Context, sessionID string) bool {
+	exists, err := h.chatRepo.SessionExists(sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to inspect chat session"})
+		return false
+	}
+	if !exists {
+		if _, ok := c.Get("user_id"); ok {
+			return true
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		return false
+	}
+	if h.hasSessionAccess(c, sessionID) {
+		return true
+	}
+
+	c.JSON(http.StatusForbidden, gin.H{"error": "chat session access denied"})
+	return false
 }
 
 // SaveMessage 保存聊天消息
@@ -37,13 +74,24 @@ func (h *ChatHandler) SaveMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	req.SessionID = strings.TrimSpace(req.SessionID)
+	if req.SessionID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id is required"})
+		return
+	}
+	if !h.ensureSessionWritable(c, req.SessionID) {
+		return
+	}
 
 	// 获取用户ID（如果已登录）
 	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
+	uid, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		return
 	}
+	id := uid.(uint)
+	userID = &id
 
 	// 创建消息对象
 	message := &chat.ChatMessage{
@@ -84,6 +132,11 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 	sessionID := c.Query("session_id")
 	if sessionID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id is required"})
+		return
+	}
+	sessionID = strings.TrimSpace(sessionID)
+	if !h.hasSessionAccess(c, sessionID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "chat session access denied"})
 		return
 	}
 

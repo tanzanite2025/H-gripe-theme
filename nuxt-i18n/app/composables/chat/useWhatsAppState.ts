@@ -97,14 +97,12 @@ export const useWhatsAppState = (emit: any) => {
   const checkApiHistoryChat = async (): Promise<boolean> => {
     try {
       // 获取访客ID
-      let visitorId = localStorage.getItem('tz_visitor_id')
-      if (!visitorId && !user.value) return false
-      
-      const identifier = user.value ? `user_${user.value.id}` : visitorId
-      
-      const response = await $fetch<{ hasConversation: boolean }>(`${publicApiBase.value}/customer-service/has-conversation`, {
-        params: { visitor_id: identifier }
+      const response = await $fetch<{ hasConversation: boolean; conversation_id?: string }>(`${publicApiBase.value}/customer-service/has-conversation`, {
+        credentials: 'include'
       })
+      if (response?.conversation_id) {
+        conversationId.value = response.conversation_id
+      }
       
       return response?.hasConversation || false
     } catch (error) {
@@ -121,8 +119,8 @@ export const useWhatsAppState = (emit: any) => {
     
     // 2. 后台 API 校验（如果结果不同则更新）
     const apiResult = await checkApiHistoryChat()
-    if (apiResult !== hasHistoryChat.value) {
-      hasHistoryChat.value = apiResult
+    if (apiResult) {
+      hasHistoryChat.value = true
     }
   }
   
@@ -308,26 +306,36 @@ export const useWhatsAppState = (emit: any) => {
   const isUploadingImage = ref(false)
   
   // 生成会话ID（基于访客标识）
-  const conversationId = computed(() => {
-    if (user.value) {
-      return `user_${user.value.id}`
-    }
-    // 访客使用 localStorage 中的唯一ID
-    let visitorId = localStorage.getItem('tz_visitor_id')
-    if (!visitorId) {
-      visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      localStorage.setItem('tz_visitor_id', visitorId)
-    }
-    return visitorId
-  })
-  
-  // LocalStorage 键名（包含客服ID，确保每个客服的聊天记录独立）
+  const conversationId = ref('')
   const STORAGE_KEY = computed(() => {
     const agentId = selectedAgent.value?.id || 'default'
-    return `tz_chat_${conversationId.value}_agent_${agentId}`
+    return `tz_chat_${conversationId.value || 'pending'}_agent_${agentId}`
   })
   const STORAGE_EXPIRY_DAYS = 5
-  
+
+  const rememberConversationId = (payload: any) => {
+    const id = payload?.conversation_id || payload?.conversationId || payload?.data?.conversation_id || payload?.data?.conversationId
+    if (typeof id === 'string' && id.length > 0) {
+      conversationId.value = id
+    }
+    return conversationId.value
+  }
+
+  const ensureCustomerServiceConversation = async () => {
+    if (conversationId.value) return conversationId.value
+    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/conversations`, {
+      method: 'POST',
+      credentials: 'include',
+      body: {
+        agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
+      }
+    })
+    const id = rememberConversationId(response)
+    if (!id) {
+      throw new Error('[CRITICAL] conversation_id missing in customer-service conversation response')
+    }
+    return id
+  }
   // Toast 提示
   const showToast = ref(false)
   const toastMessage = ref('')
@@ -620,6 +628,7 @@ export const useWhatsAppState = (emit: any) => {
   // 发送消息到后端 API
   const sendMessageToAPI = async (messageData: any) => {
     try {
+      const currentConversationId = await ensureCustomerServiceConversation()
       const response = await authRequest<any>(
         '/customer-service/messages',
         {
@@ -629,7 +638,7 @@ export const useWhatsAppState = (emit: any) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            conversation_id: conversationId.value,
+            conversation_id: currentConversationId,
             message: messageData.message,
             sender_type: user.value ? 'user' : 'visitor',
             sender_name: user.value?.display_name || '访客',
@@ -641,6 +650,7 @@ export const useWhatsAppState = (emit: any) => {
         },
         'Failed to send customer-service message'
       )
+      rememberConversationId(response)
       return response
     } catch (error) {
       console.error('发送消息到API失败:', error)
@@ -695,20 +705,24 @@ export const useWhatsAppState = (emit: any) => {
   // 检查关键词自动回复
   const checkAutoReply = async (userMessage: string) => {
     try {
+      const currentConversationId = await ensureCustomerServiceConversation()
       const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/match`, {
         method: 'POST',
+        credentials: 'include',
         body: {
           message: userMessage,
-          conversation_id: conversationId.value
+          conversation_id: currentConversationId,
+          agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
         }
       })
+      rememberConversationId(response)
       
       if (response.success && response.data.reply) {
         // 延迟 500ms 模拟真实回复
         setTimeout(() => {
           messages.value.push({
             id: Date.now(),
-            conversation_id: conversationId.value,
+            conversation_id: currentConversationId,
             sender_id: 0,
             sender_name: 'Auto Reply',
             sender_email: '',
@@ -1068,17 +1082,21 @@ export const useWhatsAppState = (emit: any) => {
   // 发送欢迎语
   const sendWelcomeMessage = async () => {
     try {
+      const currentConversationId = await ensureCustomerServiceConversation()
       const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/welcome`, {
+        credentials: 'include',
         params: {
-          conversation_id: conversationId.value
+          conversation_id: currentConversationId,
+          agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
         }
       })
+      rememberConversationId(response)
       
       if (response.success && response.data.message && !response.data.already_sent) {
         // 添加欢迎消息到消息列表
         messages.value.push({
           id: Date.now(),
-          conversation_id: conversationId.value,
+          conversation_id: currentConversationId,
           sender_id: 0,
           sender_name: 'System',
           sender_email: '',
@@ -1471,11 +1489,7 @@ export const useWhatsAppState = (emit: any) => {
     data,
     parsed,
     checkApiHistoryChat,
-    visitorId,
-    identifier,
-    response,
     initHistoryChatCheck,
-    apiResult,
     agents,
     selectedAgent,
     isLoadingAgents,

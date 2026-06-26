@@ -109,6 +109,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
 	spokeHandler := spoke.NewHandler(spokeRepo)
+	chatHandler := chat.NewChatHandler(chatRepo)
 	registerWordPressCompatRoutes(r, postService, settingService, loyaltyRepo, marketingService, authService)
 
 	// API v1 路由组
@@ -277,11 +278,12 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			customerServiceGroup.GET("/agents", ticketHandler.ListPublicCustomerServiceAgents)
 			customerServiceGroup.GET("/products", productHandler.ListPublicChatProducts)
 			customerServiceGroup.GET("/orders", middleware.AuthMiddleware(authService), orderHandler.ListPublicChatOrders)
-			customerServiceGroup.GET("/has-conversation", ticketHandler.HasPublicCustomerServiceConversation)
+			customerServiceGroup.POST("/conversations", middleware.OptionalAuthMiddleware(authService), ticketHandler.EnsurePublicCustomerServiceConversation)
+			customerServiceGroup.GET("/has-conversation", middleware.OptionalAuthMiddleware(authService), ticketHandler.HasPublicCustomerServiceConversation)
 			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), ticketHandler.SendPublicCustomerServiceMessage)
-			customerServiceGroup.GET("/messages/:conversation_id", ticketHandler.GetPublicCustomerServiceMessages)
-			customerServiceGroup.GET("/auto-reply/welcome", ticketHandler.GetWelcomeMessage)
-			customerServiceGroup.POST("/auto-reply/match", ticketHandler.MatchKeywordMessage)
+			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
+			customerServiceGroup.GET("/auto-reply/welcome", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetWelcomeMessage)
+			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), ticketHandler.MatchKeywordMessage)
 			customerServiceGroup.GET("/ws", ticketHandler.ServeWS)
 
 			agentGroup := customerServiceGroup.Group("/agent")
@@ -299,10 +301,10 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 
 		// 聊天消息持久化路由（新增）
 		chatGroup := v1.Group("/chat")
-		chatGroup.Use(middleware.OptionalAuthMiddleware(authService))
+		chatGroup.Use(middleware.AuthMiddleware(authService))
 		{
-			chatGroup.POST("/messages", chat.NewChatHandler(chatRepo).SaveMessage)
-			chatGroup.GET("/messages", chat.NewChatHandler(chatRepo).GetMessages)
+			chatGroup.POST("/messages", chatHandler.SaveMessage)
+			chatGroup.GET("/messages", chatHandler.GetMessages)
 		}
 
 		// 用户浏览历史路由（需要认证）

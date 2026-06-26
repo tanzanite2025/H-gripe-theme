@@ -1,8 +1,6 @@
 package ticket
 
-import (
-	"tanzanite/internal/service"
-)
+import "tanzanite/internal/service"
 
 type Handler struct {
 	ticketService *service.TicketService

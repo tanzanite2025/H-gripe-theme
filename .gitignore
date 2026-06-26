@@ -24,6 +24,7 @@ Thumbs.db
 
 # Databases
 *.sql
+!go-backend/migrations/*.sql
 *.sqlite
 *.db
 

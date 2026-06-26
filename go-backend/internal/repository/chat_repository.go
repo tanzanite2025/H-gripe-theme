@@ -18,6 +18,20 @@ func (r *ChatRepository) SaveMessage(message *chat.ChatMessage) error {
 	return r.db.Create(message).Error
 }
 
+func (r *ChatRepository) SessionExists(sessionID string) (bool, error) {
+	var count int64
+	err := r.db.Model(&chat.ChatMessage{}).Where("session_id = ?", sessionID).Count(&count).Error
+	return count > 0, err
+}
+
+func (r *ChatRepository) SessionBelongsToUser(sessionID string, userID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&chat.ChatMessage{}).
+		Where("session_id = ? AND user_id = ?", sessionID, userID).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // GetMessages 获取会话的聊天历史
 func (r *ChatRepository) GetMessages(sessionID string, limit int) ([]chat.ChatMessage, error) {
 	var messages []chat.ChatMessage
