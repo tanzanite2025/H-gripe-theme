@@ -108,9 +108,8 @@ type stripeGateway struct {
 }
 
 func newStripeGateway(config *Config) (PaymentGateway, error) {
-	// TODO: 初始化 Stripe SDK
-	// 需要安装: github.com/stripe/stripe-go/v76
-	return &stripeGateway{config: config}, nil
+	// 使用真实的Stripe实现
+	return NewStripeGateway(config)
 }
 
 func (g *stripeGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
@@ -211,9 +210,8 @@ type paypalGateway struct {
 }
 
 func newPayPalGateway(config *Config) (PaymentGateway, error) {
-	// TODO: 初始化 PayPal SDK
-	// 需要安装: github.com/plutov/paypal/v4
-	return &paypalGateway{config: config}, nil
+	// 使用真实的PayPal实现
+	return NewPayPalGateway(config)
 }
 
 func (g *paypalGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
@@ -268,9 +266,8 @@ type alipayGateway struct {
 }
 
 func newAlipayGateway(config *Config) (PaymentGateway, error) {
-	// TODO: 初始化支付宝 SDK
-	// 需要安装: github.com/smartwalle/alipay/v3
-	return &alipayGateway{config: config}, nil
+	// 使用真实的支付宝实现
+	return NewAlipayGateway(config)
 }
 
 func (g *alipayGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
@@ -322,9 +319,8 @@ type wechatGateway struct {
 }
 
 func newWechatGateway(config *Config) (PaymentGateway, error) {
-	// TODO: 初始化微信支付 SDK
-	// 需要安装: github.com/wechatpay-apiv3/wechatpay-go
-	return &wechatGateway{config: config}, nil
+	// 使用真实的微信支付实现
+	return NewWechatGateway(config)
 }
 
 func (g *wechatGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
@@ -516,4 +512,14 @@ func ValidateRefundAmount(amount, originalAmount float64) error {
 	}
 
 	return nil
+}
+
+
+// verifyHMACSHA256 验证 HMAC SHA256 签名
+func verifyHMACSHA256(payload []byte, signature, secret string) bool {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	expectedMAC := mac.Sum(nil)
+	expectedSignature := hex.EncodeToString(expectedMAC)
+	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
