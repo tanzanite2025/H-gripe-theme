@@ -90,6 +90,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 
 	// 初始化handlers
 	authHandler := auth.NewHandler(authService)
+	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(userRepo)
 	contentHandler := content.NewHandler(postService, faqService)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
@@ -308,6 +309,16 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		{
 			chatGroup.POST("/messages", chat.NewChatHandler(chatRepo).SaveMessage)
 			chatGroup.GET("/messages", chat.NewChatHandler(chatRepo).GetMessages)
+		}
+
+		// 用户浏览历史路由（需要认证）
+		userGroup := v1.Group("/user")
+		userGroup.Use(middleware.AuthMiddleware(authService))
+		{
+			userGroup.POST("/browsing-history", browsingHistoryHandler.AddBrowsingHistory)
+			userGroup.GET("/browsing-history", browsingHistoryHandler.GetBrowsingHistory)
+			userGroup.DELETE("/browsing-history/:product_id", browsingHistoryHandler.DeleteBrowsingHistory)
+			userGroup.DELETE("/browsing-history", browsingHistoryHandler.ClearBrowsingHistory)
 		}
 
 		// Showcase (Picture Warehouse)
