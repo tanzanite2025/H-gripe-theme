@@ -211,9 +211,8 @@ type s3Storage struct {
 }
 
 func newS3Storage(config *Config) (StorageService, error) {
-	// TODO: 实现 S3 存储
-	// 需要安装: github.com/aws/aws-sdk-go-v2
-	return &s3Storage{config: config}, nil
+	// 使用真实的S3实现
+	return NewS3Storage(config)
 }
 
 func (s *s3Storage) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
@@ -238,9 +237,8 @@ type ossStorage struct {
 }
 
 func newOSSStorage(config *Config) (StorageService, error) {
-	// TODO: 实现 OSS 存储
-	// 需要安装: github.com/aliyun/aliyun-oss-go-sdk
-	return &ossStorage{config: config}, nil
+	// 使用真实的OSS实现
+	return NewOSSStorage(config)
 }
 
 func (s *ossStorage) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
