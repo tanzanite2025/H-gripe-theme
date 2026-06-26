@@ -16,3 +16,22 @@
 - [x] 在 `go-backend` 目录下，安装 `github.com/sashabaranov/go-openai` 和 `github.com/pgvector/pgvector-go`。
 - [x] 在 `internal/repository/product_repository.go` 中，添加 `SemanticSearchPublic(ctx context.Context, query string) ([]domain.Product, error)` 占位方法。
 - [x] 在 `go-backend` 目录下运行 `go mod tidy` 和 `go build ./...` 验证编译。
+
+## Level 9 Error & Health Plan
+
+- [x] 在 `go-backend` 中创建 `internal/api/v1/apierror/error.go`。
+- [x] 定义 `AppError` 结构体，包含 `Code`、`Message` 和 `StatusCode`。
+- [x] 编写 `Send(c *gin.Context, err error)` 辅助函数，处理 `AppError` 并隐藏非 `AppError` 的内部细节（默认返回 500）。
+- [x] 更新 `internal/api/v1/auth/handler.go`，使用新的 `apierror.Send` 替换原有的错误返回。
+- [x] 更新 `internal/api/v1/router.go`，修改 `/health` 接口，增加数据库（`db.DB().Ping()`）和 Redis（`redis.Client.Ping()`）连通性检查，任意失败返回 503。
+- [x] 在 `internal/api/v1/router.go` 中添加 `/ready` 接口，进行相同的连通性检查。
+- [x] 运行 `go mod tidy` 和 `go build ./...` 验证编译。
+## Level 9 Infrastructure Plan
+
+- [x] 在 `go-backend` 目录，安装 `github.com/golang-migrate/migrate/v4`。
+- [x] 更新 `internal/pkg/database/migrate.go`，禁用生产环境下的 GORM `AutoMigrate` 或提供警告，并配置使用 `migrate.New` 执行 `migrations/` 中的 SQL。
+- [x] 在 `go-backend` 目录，安装 `github.com/hibiken/asynq`。
+- [x] 创建 `internal/pkg/worker/worker.go`（Asynq Server）。
+- [x] 创建 `internal/pkg/worker/client.go`（Asynq Client）。
+- [x] 在 `cmd/server/main.go` 中集成 worker server 的启停逻辑，与 HTTP 服务一同实现优雅关闭。
+- [x] 运行 `go mod tidy` 和 `go build ./...` 验证编译通过。

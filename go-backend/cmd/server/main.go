@@ -16,6 +16,7 @@ import (
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/database"
 	"tanzanite/internal/pkg/logger"
+	"tanzanite/internal/pkg/worker"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -48,9 +49,18 @@ func main() {
 	}
 
 	if cfg.Database.AutoMigrate {
-		if err := database.AutoMigrate(db); err != nil {
-			logger.Fatal("database migration failed", zap.Error(err))
+		if err := database.AutoMigrate(db, cfg.Server.Mode); err != nil {
+			logger.Fatal("database auto-migration failed", zap.Error(err))
 		}
+	}
+
+	sqlDB, err := db.DB()
+	if err == nil {
+		if err := database.RunSQLMigrations(sqlDB, &cfg.Database); err != nil {
+			logger.Warn("SQL migrations failed or skipped", zap.Error(err))
+		}
+	} else {
+		logger.Warn("failed to get sql.DB for migrations", zap.Error(err))
 	}
 
 	redisCache, err := cache.Init(cfg.Redis)
@@ -68,6 +78,14 @@ func main() {
 		Handler:      router,
 		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
+	}
+
+	workerServer := worker.NewServer(&cfg.Redis)
+	workerClient := worker.NewClient(&cfg.Redis)
+	defer workerClient.Close()
+
+	if err := workerServer.Start(); err != nil {
+		logger.Fatal("worker server failed to start", zap.Error(err))
 	}
 
 	go func() {
@@ -92,6 +110,8 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Fatal("server shutdown failed", zap.Error(err))
 	}
+
+	workerServer.Stop()
 
 	logger.Info("server stopped")
 }

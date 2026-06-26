@@ -430,10 +430,21 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	r.GET("/sitemap-:locale.xml", i18nHandler.GetLocaleSitemap)
 
 	// 健康检查
-	r.GET("/health", func(c *gin.Context) {
+	healthCheck := func(c *gin.Context) {
+		sqlDB, err := db.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			c.JSON(503, gin.H{"status": "error", "message": "database unavailable"})
+			return
+		}
+		if err := redisCache.Client().Ping(c.Request.Context()).Err(); err != nil {
+			c.JSON(503, gin.H{"status": "error", "message": "redis unavailable"})
+			return
+		}
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"version": "1.4.0",
 		})
-	})
+	}
+	r.GET("/health", healthCheck)
+	r.GET("/ready", healthCheck)
 }

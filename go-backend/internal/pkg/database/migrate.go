@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+	"fmt"
 	"tanzanite/internal/domain/audit"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/faq"
@@ -23,11 +25,21 @@ import (
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/domain/wishlist"
+	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/logger"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
-func AutoMigrate(db *gorm.DB) error {
+func AutoMigrate(db *gorm.DB, serverMode string) error {
+	if serverMode == "release" {
+		logger.Warn("GORM AutoMigrate is running in release mode. It is recommended to use SQL migrations for production. Proceeding with caution.")
+	}
+
 	err := db.AutoMigrate(
 		&user.User{},
 		&user.AgentProfile{},
@@ -117,6 +129,33 @@ func SeedDefaultSettings(db *gorm.DB) error {
 			}
 		}
 	}
+	return nil
+}
+
+// RunSQLMigrations executes SQL migrations using golang-migrate
+func RunSQLMigrations(sqlDB *sql.DB, cfg *config.DatabaseConfig) error {
+	if cfg.Driver != "postgres" {
+		logger.Info("SQL Migrations only implemented for postgres currently, skipping", zap.String("driver", cfg.Driver))
+		return nil
+	}
+
+	driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("could not create postgres driver: %w", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres", driver)
+	if err != nil {
+		return fmt.Errorf("could not instantiate migrate: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run migrate up: %w", err)
+	}
+
+	logger.Info("SQL migrations completed successfully")
 	return nil
 }
 

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"tanzanite/internal/api/v1/apierror"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -34,13 +35,13 @@ type LoginRequest struct {
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.Send(c, apierror.New("BAD_REQUEST", "Invalid request payload", http.StatusBadRequest))
 		return
 	}
 
 	user, err := h.authService.Register(req.Email, req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.Send(c, apierror.New("BAD_REQUEST", err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -54,13 +55,13 @@ func (h *Handler) Register(c *gin.Context) {
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.Send(c, apierror.New("BAD_REQUEST", "Invalid request payload", http.StatusBadRequest))
 		return
 	}
 
 	token, user, err := h.authService.Login(req.EmailOrUsername, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		apierror.Send(c, apierror.New("UNAUTHORIZED", err.Error(), http.StatusUnauthorized))
 		return
 	}
 
@@ -75,13 +76,13 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.Send(c, apierror.New("UNAUTHORIZED", "unauthorized", http.StatusUnauthorized))
 		return
 	}
 
 	user, err := h.authService.GetUserByID(userID.(uint))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		apierror.Send(c, apierror.New("NOT_FOUND", "user not found", http.StatusNotFound))
 		return
 	}
 
