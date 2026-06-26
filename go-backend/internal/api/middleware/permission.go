@@ -149,6 +149,11 @@ func RequireRoleAuth(roles ...auth.Role) gin.HandlerFunc {
 	}
 }
 
+// RequireBackofficeAccess requires an active staff role for admin surfaces.
+func RequireBackofficeAccess() gin.HandlerFunc {
+	return RequireRoleAuth(auth.RoleAdmin, auth.RoleManager, auth.RoleEditor, auth.RoleSupport)
+}
+
 // AdminOnly 仅管理员中间件
 func AdminOnly() gin.HandlerFunc {
 	return RequireRoleAuth(auth.RoleAdmin)
