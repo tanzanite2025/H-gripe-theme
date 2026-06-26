@@ -1,9 +1,10 @@
 package payment
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/payment"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +22,7 @@ import (
 func (h *Handler) CreateRefund(c *gin.Context) {
 	var refund payment.Refund
 	if err := c.ShouldBindJSON(&refund); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
@@ -29,11 +30,11 @@ func (h *Handler) CreateRefund(c *gin.Context) {
 	refund.Status = "pending"
 
 	if err := h.paymentRepo.CreateRefund(&refund); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, refund)
+	response.Created(c, refund)
 }
 
 // GetRefund 获取退款详情
@@ -46,17 +47,17 @@ func (h *Handler) CreateRefund(c *gin.Context) {
 func (h *Handler) GetRefund(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refund id"})
+		apierror.RespondBadRequest(c, "invalid refund id")
 		return
 	}
 
 	refund, err := h.paymentRepo.FindRefundByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Refund")
 		return
 	}
 
-	c.JSON(http.StatusOK, refund)
+	response.Success(c, refund)
 }
 
 // GetOrderRefunds 获取订单的退款记录
@@ -69,17 +70,17 @@ func (h *Handler) GetRefund(c *gin.Context) {
 func (h *Handler) GetOrderRefunds(c *gin.Context) {
 	orderID, err := strconv.ParseUint(c.Param("order_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		apierror.RespondBadRequest(c, "invalid order id")
 		return
 	}
 
 	refunds, err := h.paymentRepo.FindRefundsByOrderID(uint(orderID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": refunds})
+	response.Success(c, gin.H{"data": refunds})
 }
 
 // UpdateRefundStatus 更新退款状态（管理员）
@@ -94,7 +95,7 @@ func (h *Handler) GetOrderRefunds(c *gin.Context) {
 func (h *Handler) UpdateRefundStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid refund id"})
+		apierror.RespondBadRequest(c, "invalid refund id")
 		return
 	}
 
@@ -102,21 +103,21 @@ func (h *Handler) UpdateRefundStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	refund, err := h.paymentRepo.FindRefundByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Refund")
 		return
 	}
 
 	refund.Status = req.Status
 	if err := h.paymentRepo.UpdateRefund(refund); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "refund status updated"})
+	response.SuccessWithMessage(c, "refund status updated", nil)
 }

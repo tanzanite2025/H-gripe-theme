@@ -1,9 +1,10 @@
 package payment
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/payment"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,11 +23,11 @@ func (h *Handler) ListPaymentMethods(c *gin.Context) {
 
 	methods, err := h.paymentRepo.FindAllPaymentMethods(enabledOnly)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": methods})
+	response.Success(c, gin.H{"data": methods})
 }
 
 // GetPaymentMethod 获取支付方式详情
@@ -39,17 +40,17 @@ func (h *Handler) ListPaymentMethods(c *gin.Context) {
 func (h *Handler) GetPaymentMethod(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment method id"})
+		apierror.RespondBadRequest(c, "invalid payment method id")
 		return
 	}
 
 	method, err := h.paymentRepo.FindPaymentMethodByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Payment method")
 		return
 	}
 
-	c.JSON(http.StatusOK, method)
+	response.Success(c, method)
 }
 
 // CreatePaymentMethod 创建支付方式（管理员）
@@ -63,16 +64,16 @@ func (h *Handler) GetPaymentMethod(c *gin.Context) {
 func (h *Handler) CreatePaymentMethod(c *gin.Context) {
 	var method payment.PaymentMethod
 	if err := c.ShouldBindJSON(&method); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.paymentRepo.CreatePaymentMethod(&method); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, method)
+	response.Created(c, method)
 }
 
 // UpdatePaymentMethod 更新支付方式（管理员）
@@ -87,23 +88,23 @@ func (h *Handler) CreatePaymentMethod(c *gin.Context) {
 func (h *Handler) UpdatePaymentMethod(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment method id"})
+		apierror.RespondBadRequest(c, "invalid payment method id")
 		return
 	}
 
 	var method payment.PaymentMethod
 	if err := c.ShouldBindJSON(&method); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	method.ID = uint(id)
 	if err := h.paymentRepo.UpdatePaymentMethod(&method); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, method)
+	response.Success(c, method)
 }
 
 // DeletePaymentMethod 删除支付方式（管理员）
@@ -116,14 +117,14 @@ func (h *Handler) UpdatePaymentMethod(c *gin.Context) {
 func (h *Handler) DeletePaymentMethod(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment method id"})
+		apierror.RespondBadRequest(c, "invalid payment method id")
 		return
 	}
 
 	if err := h.paymentRepo.DeletePaymentMethod(uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "payment method deleted"})
+	response.SuccessWithMessage(c, "payment method deleted", nil)
 }

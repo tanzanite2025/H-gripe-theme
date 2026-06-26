@@ -3,8 +3,9 @@ package payment
 import (
 	"encoding/json"
 	"io"
-	"net/http"
 	pgateway "tanzanite/internal/pkg/payment" // alias for gateway
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,7 +25,7 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 	// 1. 读取原始 Payload
 	payload, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
+		apierror.RespondBadRequest(c, "Failed to read request body")
 		return
 	}
 
@@ -38,12 +39,12 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 	case "alipay":
 		signature = c.GetHeader("Alipay-Signature")
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported payment provider"})
+		apierror.RespondBadRequest(c, "Unsupported payment provider")
 		return
 	}
 
 	if signature == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing signature"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
@@ -56,13 +57,13 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 
 	gateway, err := pgateway.NewPaymentGateway(config)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize payment gateway"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	isValid, err := gateway.VerifyWebhook(payload, signature)
 	if !isValid || err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid signature"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
@@ -72,33 +73,33 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 		Status      string `json:"status"` // paid, failed
 	}
 	if err := json.Unmarshal(payload, &event); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON payload"})
+		apierror.RespondBadRequest(c, "Invalid JSON payload")
 		return
 	}
 
 	if event.OrderNumber == "" || event.Status != "paid" {
-		c.JSON(http.StatusOK, gin.H{"message": "Ignored or non-paid event"})
+		response.SuccessWithMessage(c, "Ignored or non-paid event", nil)
 		return
 	}
 
 	// 5. 调用 OrderRepository 更新状态，实现核心状态扭转闭环
 	order, err := h.orderRepo.FindByOrderNumber(event.OrderNumber)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		apierror.RespondNotFound(c, "Order")
 		return
 	}
 
 	// 将订单支付状态设为 paid
 	if err := h.orderRepo.UpdatePaymentStatus(order.ID, "paid"); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update payment status"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	// 自动将物流状态流转为待发货 (processing)
 	if err := h.orderRepo.UpdateStatus(order.ID, "processing"); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update order status"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Webhook processed successfully"})
+	response.SuccessWithMessage(c, "Webhook processed successfully", nil)
 }
