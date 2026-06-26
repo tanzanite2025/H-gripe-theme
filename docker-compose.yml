@@ -1,32 +1,126 @@
 version: "3.8"
+
+networks:
+  tanzanite-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+
 services:
   postgres:
     image: postgres:15-alpine
+    container_name: tanzanite-postgres
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: tanzanite
+      POSTGRES_PASSWORD: tanzanite_password
       POSTGRES_DB: tanzanite
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - tanzanite-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tanzanite"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    container_name: tanzanite-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - tanzanite-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server --appendonly yes
 
   backend:
     build:
       context: ./go-backend
+      dockerfile: Dockerfile
+    container_name: tanzanite-api
     ports:
       - "9000:9000"
+    environment:
+      - SERVER_MODE=debug
+      - SERVER_PORT=:9000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=tanzanite
+      - DB_PASSWORD=tanzanite_password
+      - DB_NAME=tanzanite
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=dev-secret-key-change-in-production
+      - LOG_LEVEL=debug
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tanzanite-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./nuxt-i18n
+    container_name: tanzanite-frontend
     ports:
       - "3000:3000"
+    environment:
+      - API_BASE_URL=http://backend:9000
+      - NUXT_PUBLIC_API_BASE=http://localhost:9000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+
+  # 可选: Adminer (数据库管理工具)
+  adminer:
+    image: adminer:latest
+    container_name: tanzanite-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    profiles:
+      - tools
+
+  # 可选: Redis Commander (Redis管理工具)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: tanzanite-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    networks:
+      - tanzanite-network
+    restart: unless-stopped
+    profiles:
+      - tools

@@ -1,34 +1,59 @@
-# Build stage
-FROM golang:1.22-alpine AS builder
+# 多阶段构建 - 构建阶段
+FROM golang:1.21-alpine AS builder
 
+# 安装必要的工具
+RUN apk add --no-cache git ca-certificates tzdata
+
+# 设置工作目录
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache git
-
-# Copy go mod files
+# 复制go mod文件
 COPY go.mod go.sum ./
+
+# 下载依赖
 RUN go mod download
 
-# Copy source code
+# 复制源代码
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o tanzanite-api ./cmd/server
+# 构建应用
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s -X main.Version=${VERSION:-dev} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    -o /app/server \
+    ./cmd/server
 
-# Final stage
+# 运行阶段 - 最小镜像
 FROM alpine:latest
 
+# 安装ca证书和时区数据
 RUN apk --no-cache add ca-certificates tzdata
 
-WORKDIR /root/
+# 创建非root用户
+RUN addgroup -g 1000 app && \
+    adduser -D -u 1000 -G app app
 
-# Copy binary from builder
-COPY --from=builder /app/tanzanite-api .
-COPY --from=builder /app/config/config.example.yaml ./config/config.yaml
+# 设置工作目录
+WORKDIR /app
 
-# Expose port
+# 从构建阶段复制二进制文件
+COPY --from=builder /app/server /app/server
+
+# 复制配置文件（可选）
+COPY --from=builder /app/config /app/config
+
+# 创建必要的目录
+RUN mkdir -p /app/logs /app/uploads && \
+    chown -R app:app /app
+
+# 切换到非root用户
+USER app
+
+# 暴露端口
 EXPOSE 9000
 
-# Run the application
-CMD ["./tanzanite-api"]
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:9000/health || exit 1
+
+# 运行应用
+ENTRYPOINT ["/app/server"]

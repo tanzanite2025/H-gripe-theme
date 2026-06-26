@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+k8s/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+vendor/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (if in dev)
+uploads/
