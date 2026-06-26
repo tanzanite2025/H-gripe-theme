@@ -63,6 +63,7 @@ export const useChatSync = () => {
     try {
       const response = await $fetch(`${apiBase.value}/chat/messages`, {
         method: 'POST',
+        credentials: 'include',
         body: {
           session_id: sessionId,
           message: {
@@ -166,7 +167,10 @@ export const useChatSync = () => {
     try {
       // 优先从后端加载
       const response = await $fetch<{ messages: ChatMessage[]; count: number }>(
-        `${apiBase.value}/chat/messages?session_id=${sessionId}&limit=100`
+        `${apiBase.value}/chat/messages?session_id=${sessionId}&limit=100`,
+        {
+          credentials: 'include'
+        }
       )
 
       if (response.messages && response.messages.length > 0) {

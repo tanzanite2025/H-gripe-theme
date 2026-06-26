@@ -123,9 +123,17 @@ func ticketConversationResponse(item ticket.Ticket) gin.H {
 			}
 		}
 	}
+	conversationID := ""
+	if item.ConversationID != nil && strings.TrimSpace(*item.ConversationID) != "" {
+		conversationID = strings.TrimSpace(*item.ConversationID)
+	} else if strings.HasPrefix(item.Tags, "conversation_id:") {
+		conversationID = strings.TrimPrefix(item.Tags, "conversation_id:")
+	}
 
 	return gin.H{
 		"id":                item.ID,
+		"ticket_id":         item.ID,
+		"conversation_id":   conversationID,
 		"customer_id":       customerID,
 		"customer_name":     customerName,
 		"customer_avatar":   customerAvatar,
