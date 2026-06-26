@@ -28,15 +28,15 @@ type TrackingRequest struct {
 
 // TrackingInfo 物流追踪信息
 type TrackingInfo struct {
-	TrackingNumber string           `json:"tracking_number"`
-	Carrier        string           `json:"carrier"`
-	Status         string           `json:"status"`
-	StatusCode     int              `json:"status_code"`
-	Events         []TrackingEvent  `json:"events"`
-	Origin         *Location        `json:"origin,omitempty"`
-	Destination    *Location        `json:"destination,omitempty"`
-	EstimatedTime  *time.Time       `json:"estimated_time,omitempty"`
-	UpdatedAt      time.Time        `json:"updated_at"`
+	TrackingNumber string          `json:"tracking_number"`
+	Carrier        string          `json:"carrier"`
+	Status         string          `json:"status"`
+	StatusCode     int             `json:"status_code"`
+	Events         []TrackingEvent `json:"events"`
+	Origin         *Location       `json:"origin,omitempty"`
+	Destination    *Location       `json:"destination,omitempty"`
+	EstimatedTime  *time.Time      `json:"estimated_time,omitempty"`
+	UpdatedAt      time.Time       `json:"updated_at"`
 }
 
 // TrackingEvent 物流事件

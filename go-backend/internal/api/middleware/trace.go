@@ -11,11 +11,11 @@ func TraceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		traceID := uuid.New().String()
 		c.Set("X-Trace-ID", traceID)
-		
+
 		// Set in standard request context so services can extract it
 		ctx := context.WithValue(c.Request.Context(), "X-Trace-ID", traceID)
 		c.Request = c.Request.WithContext(ctx)
-		
+
 		c.Next()
 	}
 }

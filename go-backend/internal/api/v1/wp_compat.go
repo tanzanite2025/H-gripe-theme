@@ -344,12 +344,12 @@ func getCompatRedeemConfig(settingService *service.SettingService) gin.HandlerFu
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"enabled":            config.Enabled,
-			"exchange_rate":      config.ExchangeRate,
-			"min_points":         config.MinPoints,
-			"max_value_per_day":  config.MaxValuePerDay,
-			"card_expiry_days":   config.CardExpiryDays,
-			"preset_values":      config.PresetValues,
+			"enabled":           config.Enabled,
+			"exchange_rate":     config.ExchangeRate,
+			"min_points":        config.MinPoints,
+			"max_value_per_day": config.MaxValuePerDay,
+			"card_expiry_days":  config.CardExpiryDays,
+			"preset_values":     config.PresetValues,
 		})
 	}
 }
@@ -403,9 +403,9 @@ func getCompatUserPoints(loyaltyRepo *repository.LoyaltyRepository, settingServi
 		var sumPoints int
 		todayStart := time.Now().Truncate(24 * time.Hour)
 		todayEnd := todayStart.Add(24 * time.Hour)
-		
+
 		err = loyaltyRepo.GetDB().Model(&loyalty.LoyaltyTransaction{}).
-			Where("user_id = ? AND type = ? AND source = ? AND created_at BETWEEN ? AND ?", 
+			Where("user_id = ? AND type = ? AND source = ? AND created_at BETWEEN ? AND ?",
 				userID, "spend", "giftcard", todayStart, todayEnd).
 			Select("COALESCE(SUM(points), 0)").
 			Scan(&sumPoints).Error
@@ -532,4 +532,3 @@ func getCompatLanguages() gin.HandlerFunc {
 		})
 	}
 }
-

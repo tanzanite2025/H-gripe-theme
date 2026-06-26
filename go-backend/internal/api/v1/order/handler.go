@@ -81,7 +81,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	// 安全闭环：强制从后端 Cart 拉取，忽略前端的 req.Items
 	sessionID, _ := c.Cookie("session_id")
 	uid := userID.(uint)
-	
+
 	cart, err := h.cartService.GetOrCreateCart(&uid, sessionID)
 	if err != nil {
 		apierror.RespondInternalError(c, err)

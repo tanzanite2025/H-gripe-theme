@@ -46,7 +46,7 @@ func (r *SubscriptionRepository) FindAll(page, pageSize int, status string) ([]s
 	var total int64
 
 	query := r.db.Model(&subscription.Subscription{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -57,7 +57,7 @@ func (r *SubscriptionRepository) FindAll(page, pageSize int, status string) ([]s
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&subscriptions).Error
-	
+
 	return subscriptions, total, err
 }
 
@@ -67,7 +67,7 @@ func (r *SubscriptionRepository) FindByTags(tags []string, page, pageSize int) (
 	var total int64
 
 	query := r.db.Model(&subscription.Subscription{}).Where("status = ?", "active")
-	
+
 	// 查找包含任一标签的订阅
 	for i, tag := range tags {
 		if i == 0 {
@@ -83,7 +83,7 @@ func (r *SubscriptionRepository) FindByTags(tags []string, page, pageSize int) (
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&subscriptions).Error
-	
+
 	return subscriptions, total, err
 }
 
@@ -97,12 +97,12 @@ func (r *SubscriptionRepository) UpdateStatus(email, status string) error {
 	updates := map[string]interface{}{
 		"status": status,
 	}
-	
+
 	if status == "unsubscribed" {
 		now := time.Now()
 		updates["unsubscribed_at"] = &now
 	}
-	
+
 	return r.db.Model(&subscription.Subscription{}).Where("email = ?", email).Updates(updates).Error
 }
 
@@ -122,14 +122,14 @@ func (r *SubscriptionRepository) CheckEmailExists(email string) (bool, error) {
 // GetStats 获取订阅统计
 func (r *SubscriptionRepository) GetStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
-	
+
 	// 总订阅数
 	var totalCount int64
 	if err := r.db.Model(&subscription.Subscription{}).Count(&totalCount).Error; err != nil {
 		return nil, err
 	}
 	stats["total_count"] = totalCount
-	
+
 	// 活跃订阅数
 	var activeCount int64
 	if err := r.db.Model(&subscription.Subscription{}).
@@ -137,7 +137,7 @@ func (r *SubscriptionRepository) GetStats() (map[string]interface{}, error) {
 		return nil, err
 	}
 	stats["active_count"] = activeCount
-	
+
 	// 已退订数
 	var unsubscribedCount int64
 	if err := r.db.Model(&subscription.Subscription{}).
@@ -145,7 +145,7 @@ func (r *SubscriptionRepository) GetStats() (map[string]interface{}, error) {
 		return nil, err
 	}
 	stats["unsubscribed_count"] = unsubscribedCount
-	
+
 	// 本月新增
 	var monthlyCount int64
 	startOfMonth := time.Now().AddDate(0, 0, -time.Now().Day()+1)
@@ -154,7 +154,7 @@ func (r *SubscriptionRepository) GetStats() (map[string]interface{}, error) {
 		return nil, err
 	}
 	stats["monthly_count"] = monthlyCount
-	
+
 	return stats, nil
 }
 

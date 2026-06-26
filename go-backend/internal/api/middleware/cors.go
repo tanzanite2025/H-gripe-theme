@@ -10,7 +10,7 @@ import (
 func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		
+
 		// 检查是否在允许列表中
 		allowed := false
 		isWildcard := false
@@ -34,7 +34,7 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Methods", joinStrings(cfg.AllowedMethods, ", "))
 		c.Header("Access-Control-Allow-Headers", joinStrings(cfg.AllowedHeaders, ", "))
 		c.Header("Access-Control-Expose-Headers", joinStrings(cfg.ExposeHeaders, ", "))
-		
+
 		if cfg.AllowCredentials {
 			c.Header("Access-Control-Allow-Credentials", "true")
 		}

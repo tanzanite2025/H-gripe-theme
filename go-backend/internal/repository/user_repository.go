@@ -224,15 +224,14 @@ func (r *UserRepository) FindRecent(limit int) ([]user.User, error) {
 	return users, err
 }
 
-
 // AddBrowsingHistory 添加或更新浏览历史
 func (r *UserRepository) AddBrowsingHistory(userID uint, productID uint) error {
 	var history user.BrowsingHistory
-	
+
 	// 查找是否已存在
 	err := r.db.Where("user_id = ? AND product_id = ?", userID, productID).
 		First(&history).Error
-	
+
 	if err == gorm.ErrRecordNotFound {
 		// 不存在，创建新记录
 		history = user.BrowsingHistory{
@@ -245,7 +244,7 @@ func (r *UserRepository) AddBrowsingHistory(userID uint, productID uint) error {
 	} else if err != nil {
 		return err
 	}
-	
+
 	// 已存在，更新浏览次数和时间
 	history.ViewCount++
 	history.LastViewedAt = time.Now()
@@ -255,14 +254,14 @@ func (r *UserRepository) AddBrowsingHistory(userID uint, productID uint) error {
 // GetBrowsingHistory 获取用户浏览历史
 func (r *UserRepository) GetBrowsingHistory(userID uint, limit int) ([]user.BrowsingHistory, error) {
 	var history []user.BrowsingHistory
-	
+
 	query := r.db.Where("user_id = ?", userID).
 		Order("last_viewed_at DESC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	err := query.Find(&history).Error
 	return history, err
 }

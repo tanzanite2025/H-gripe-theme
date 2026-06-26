@@ -86,19 +86,19 @@ func (h *ContentHandler) GetPost(c *gin.Context) {
 // POST /api/admin/content/posts
 func (h *ContentHandler) CreatePost(c *gin.Context) {
 	var req struct {
-		Title              string  `json:"title" binding:"required"`
-		Slug               string  `json:"slug" binding:"required"`
-		Content            string  `json:"content"`
-		Excerpt            string  `json:"excerpt"`
-		Status             string  `json:"status" binding:"required,oneof=draft published archived"`
-		Locale             string  `json:"locale" binding:"required"`
-		FeaturedImg        string  `json:"featured_image"`
-		Tags               string  `json:"tags"`
-		MetaTitle          string  `json:"meta_title"`
-		MetaDesc           string  `json:"meta_description"`
-		MetaKeywords       string  `json:"meta_keywords"`
-		CanonicalURL       string  `json:"canonical_url"`
-		TranslationGroupID *uint   `json:"translation_group_id"`
+		Title              string `json:"title" binding:"required"`
+		Slug               string `json:"slug" binding:"required"`
+		Content            string `json:"content"`
+		Excerpt            string `json:"excerpt"`
+		Status             string `json:"status" binding:"required,oneof=draft published archived"`
+		Locale             string `json:"locale" binding:"required"`
+		FeaturedImg        string `json:"featured_image"`
+		Tags               string `json:"tags"`
+		MetaTitle          string `json:"meta_title"`
+		MetaDesc           string `json:"meta_description"`
+		MetaKeywords       string `json:"meta_keywords"`
+		CanonicalURL       string `json:"canonical_url"`
+		TranslationGroupID *uint  `json:"translation_group_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -165,19 +165,19 @@ func (h *ContentHandler) UpdatePost(c *gin.Context) {
 	}
 
 	var req struct {
-		Title              string  `json:"title"`
-		Slug               string  `json:"slug"`
-		Content            string  `json:"content"`
-		Excerpt            string  `json:"excerpt"`
-		Status             string  `json:"status" binding:"omitempty,oneof=draft published archived"`
-		Locale             string  `json:"locale"`
-		FeaturedImg        string  `json:"featured_image"`
-		Tags               string  `json:"tags"`
-		MetaTitle          string  `json:"meta_title"`
-		MetaDesc           string  `json:"meta_description"`
-		MetaKeywords       string  `json:"meta_keywords"`
-		CanonicalURL       string  `json:"canonical_url"`
-		TranslationGroupID *uint   `json:"translation_group_id"`
+		Title              string `json:"title"`
+		Slug               string `json:"slug"`
+		Content            string `json:"content"`
+		Excerpt            string `json:"excerpt"`
+		Status             string `json:"status" binding:"omitempty,oneof=draft published archived"`
+		Locale             string `json:"locale"`
+		FeaturedImg        string `json:"featured_image"`
+		Tags               string `json:"tags"`
+		MetaTitle          string `json:"meta_title"`
+		MetaDesc           string `json:"meta_description"`
+		MetaKeywords       string `json:"meta_keywords"`
+		CanonicalURL       string `json:"canonical_url"`
+		TranslationGroupID *uint  `json:"translation_group_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

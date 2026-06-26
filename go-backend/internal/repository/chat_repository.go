@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"tanzanite/internal/domain/chat"
 	"gorm.io/gorm"
+	"tanzanite/internal/domain/chat"
 )
 
 type ChatRepository struct {
@@ -21,14 +21,14 @@ func (r *ChatRepository) SaveMessage(message *chat.ChatMessage) error {
 // GetMessages 获取会话的聊天历史
 func (r *ChatRepository) GetMessages(sessionID string, limit int) ([]chat.ChatMessage, error) {
 	var messages []chat.ChatMessage
-	
+
 	query := r.db.Where("session_id = ?", sessionID).
 		Order("timestamp ASC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	err := query.Find(&messages).Error
 	return messages, err
 }
@@ -36,14 +36,14 @@ func (r *ChatRepository) GetMessages(sessionID string, limit int) ([]chat.ChatMe
 // GetMessagesByUser 获取用户的所有聊天记录
 func (r *ChatRepository) GetMessagesByUser(userID uint, limit int) ([]chat.ChatMessage, error) {
 	var messages []chat.ChatMessage
-	
+
 	query := r.db.Where("user_id = ?", userID).
 		Order("timestamp DESC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	err := query.Find(&messages).Error
 	return messages, err
 }

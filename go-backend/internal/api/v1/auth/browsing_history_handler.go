@@ -2,12 +2,12 @@ package auth
 
 import (
 	"strconv"
-	
+
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/repository"
-	
+
 	"github.com/gin-gonic/gin"
 )
 

@@ -158,4 +158,3 @@ func RunSQLMigrations(sqlDB *sql.DB, cfg *config.DatabaseConfig) error {
 	logger.Info("SQL migrations completed successfully")
 	return nil
 }
-

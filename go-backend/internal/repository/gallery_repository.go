@@ -46,7 +46,7 @@ func (r *GalleryRepository) FindAllGalleries(page, pageSize int) ([]gallery.Gall
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
 		return db.Order("`order` ASC").Limit(1) // 只加载封面图
 	}).Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&galleries).Error
-	
+
 	return galleries, total, err
 }
 
@@ -95,7 +95,7 @@ func (r *GalleryRepository) FindImagesByTags(tags []string, page, pageSize int) 
 	var total int64
 
 	query := r.db.Model(&gallery.GalleryImage{})
-	
+
 	// 使用PostgreSQL的数组操作符查找包含任一标签的图片
 	for i, tag := range tags {
 		if i == 0 {
@@ -111,7 +111,7 @@ func (r *GalleryRepository) FindImagesByTags(tags []string, page, pageSize int) 
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&images).Error
-	
+
 	return images, total, err
 }
 
@@ -162,6 +162,6 @@ func (r *GalleryRepository) SearchImages(keyword string, page, pageSize int) ([]
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&images).Error
-	
+
 	return images, total, err
 }

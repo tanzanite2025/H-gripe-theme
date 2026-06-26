@@ -23,7 +23,7 @@ func IsValidLocale(locale string) bool {
 // NormalizeLocale 规范化语言代码
 func NormalizeLocale(locale string) string {
 	locale = strings.ToLower(strings.TrimSpace(locale))
-	
+
 	// 移除非字母字符
 	var result strings.Builder
 	for _, r := range locale {
@@ -31,12 +31,12 @@ func NormalizeLocale(locale string) string {
 			result.WriteRune(r)
 		}
 	}
-	
+
 	normalized := result.String()
 	if normalized == "" {
 		return "en"
 	}
-	
+
 	return normalized
 }
 

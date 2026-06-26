@@ -212,7 +212,7 @@ func validateEmailAddresses(emails []string) error {
 	}
 
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-	
+
 	for _, email := range emails {
 		if !emailRegex.MatchString(email) {
 			return fmt.Errorf("invalid email address: %s", email)

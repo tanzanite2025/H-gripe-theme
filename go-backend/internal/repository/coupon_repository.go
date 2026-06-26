@@ -58,7 +58,7 @@ func (r *CouponRepository) FindAllCoupons(page, pageSize int) ([]coupon.Coupon, 
 
 	offset := (page - 1) * pageSize
 	err := r.db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&coupons).Error
-	
+
 	return coupons, total, err
 }
 
@@ -66,11 +66,11 @@ func (r *CouponRepository) FindAllCoupons(page, pageSize int) ([]coupon.Coupon, 
 func (r *CouponRepository) FindActiveCoupons() ([]coupon.Coupon, error) {
 	var coupons []coupon.Coupon
 	now := time.Now()
-	
+
 	err := r.db.Where("enabled = ? AND start_date <= ? AND end_date >= ?", true, now, now).
 		Where("used_count < usage_limit OR usage_limit = 0").
 		Find(&coupons).Error
-	
+
 	return coupons, err
 }
 

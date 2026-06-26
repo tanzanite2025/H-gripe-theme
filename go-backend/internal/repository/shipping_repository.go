@@ -107,11 +107,11 @@ func (r *ShippingRepository) FindCarrierByCode(code string) (*shipping.Carrier, 
 func (r *ShippingRepository) FindAllCarriers(enabledOnly bool) ([]shipping.Carrier, error) {
 	var carriers []shipping.Carrier
 	query := r.db.Order("name ASC")
-	
+
 	if enabledOnly {
 		query = query.Where("enabled = ?", true)
 	}
-	
+
 	err := query.Find(&carriers).Error
 	return carriers, err
 }

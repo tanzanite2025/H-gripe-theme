@@ -401,7 +401,7 @@ func (r *ProductRepository) SemanticSearchPublic(ctx context.Context, query stri
 	// 1. Generate embedding using openai.Client (e.g. client.CreateEmbeddings(ctx, req))
 	// 2. Search using GORM and pgvector's <=> operator:
 	// r.db.WithContext(ctx).Order("embedding <=> ?", embedding).Limit(10).Find(&products)
-	
+
 	var products []product.Product
 	return products, nil
 }

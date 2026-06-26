@@ -33,11 +33,11 @@ type URLSet struct {
 
 // URL Sitemap URL 元素
 type URL struct {
-	Loc        string      `xml:"loc"`
-	LastMod    string      `xml:"lastmod,omitempty"`
-	ChangeFreq string      `xml:"changefreq,omitempty"`
-	Priority   string      `xml:"priority,omitempty"`
-	Links      []Link      `xml:"xhtml:link"`
+	Loc        string `xml:"loc"`
+	LastMod    string `xml:"lastmod,omitempty"`
+	ChangeFreq string `xml:"changefreq,omitempty"`
+	Priority   string `xml:"priority,omitempty"`
+	Links      []Link `xml:"xhtml:link"`
 }
 
 // Link Hreflang 链接元素

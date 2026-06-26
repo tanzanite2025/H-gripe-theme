@@ -163,6 +163,7 @@ func (s *MarketingService) CreateGiftCard(userID uint, amount float64) (*coupon.
 func (s *MarketingService) GetGiftCardsByUserID(userID uint) ([]coupon.GiftCard, error) {
 	return s.couponRepo.FindGiftCardsByUserID(userID)
 }
+
 // UseGiftCard 使用礼品卡
 func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint) error {
 	card, err := s.couponRepo.FindGiftCardByCode(code)
@@ -583,4 +584,3 @@ func generateRedeemCode(n int) string {
 	}
 	return string(b)
 }
-

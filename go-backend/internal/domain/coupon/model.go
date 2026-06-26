@@ -8,25 +8,25 @@ import (
 
 // Coupon 优惠券
 type Coupon struct {
-	ID                uint           `gorm:"primarykey" json:"id"`
-	Code              string         `gorm:"uniqueIndex;not null" json:"code"`
-	Type              string         `gorm:"not null" json:"type"` // fixed, percentage
-	Value             float64        `gorm:"not null" json:"value"`
-	Description       string         `gorm:"type:text" json:"description"`
-	MinAmount         float64        `gorm:"default:0" json:"min_amount"`
-	MaxDiscount       float64        `gorm:"default:0" json:"max_discount"`
-	UsageLimit        int            `gorm:"default:0" json:"usage_limit"` // 0表示无限制
-	UsageLimitPerUser int            `gorm:"default:0" json:"usage_limit_per_user"`
-	UsedCount         int            `gorm:"default:0" json:"used_count"`
-	StartDate         time.Time      `json:"start_date"`
-	EndDate           time.Time      `json:"end_date"`
-	ApplicableProducts string        `gorm:"type:text" json:"applicable_products"` // JSON数组
-	ExcludedProducts   string        `gorm:"type:text" json:"excluded_products"`   // JSON数组
-	ApplicableCategories string      `gorm:"type:text" json:"applicable_categories"` // JSON数组
-	Enabled           bool           `gorm:"default:true" json:"enabled"`
-	CreatedAt         time.Time      `json:"created_at"`
-	UpdatedAt         time.Time      `json:"updated_at"`
-	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                   uint           `gorm:"primarykey" json:"id"`
+	Code                 string         `gorm:"uniqueIndex;not null" json:"code"`
+	Type                 string         `gorm:"not null" json:"type"` // fixed, percentage
+	Value                float64        `gorm:"not null" json:"value"`
+	Description          string         `gorm:"type:text" json:"description"`
+	MinAmount            float64        `gorm:"default:0" json:"min_amount"`
+	MaxDiscount          float64        `gorm:"default:0" json:"max_discount"`
+	UsageLimit           int            `gorm:"default:0" json:"usage_limit"` // 0表示无限制
+	UsageLimitPerUser    int            `gorm:"default:0" json:"usage_limit_per_user"`
+	UsedCount            int            `gorm:"default:0" json:"used_count"`
+	StartDate            time.Time      `json:"start_date"`
+	EndDate              time.Time      `json:"end_date"`
+	ApplicableProducts   string         `gorm:"type:text" json:"applicable_products"`   // JSON数组
+	ExcludedProducts     string         `gorm:"type:text" json:"excluded_products"`     // JSON数组
+	ApplicableCategories string         `gorm:"type:text" json:"applicable_categories"` // JSON数组
+	Enabled              bool           `gorm:"default:true" json:"enabled"`
+	CreatedAt            time.Time      `json:"created_at"`
+	UpdatedAt            time.Time      `json:"updated_at"`
+	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // TableName 指定表名
@@ -54,18 +54,18 @@ func (c *Coupon) CalculateDiscount(amount float64) float64 {
 	if amount < c.MinAmount {
 		return 0
 	}
-	
+
 	var discount float64
 	if c.Type == "percentage" {
 		discount = amount * c.Value / 100
 	} else {
 		discount = c.Value
 	}
-	
+
 	if c.MaxDiscount > 0 && discount > c.MaxDiscount {
 		discount = c.MaxDiscount
 	}
-	
+
 	return discount
 }
 
@@ -86,20 +86,20 @@ func (CouponUsage) TableName() string {
 
 // GiftCard 礼品卡
 type GiftCard struct {
-	ID            uint           `gorm:"primarykey" json:"id"`
-	Code          string         `gorm:"uniqueIndex;not null" json:"code"`
-	InitialValue  float64        `gorm:"not null" json:"initial_value"`
-	Balance       float64        `gorm:"not null" json:"balance"`
-	Currency      string         `gorm:"default:'USD'" json:"currency"`
-	Status        string         `gorm:"index" json:"status"` // active, used, expired, cancelled
-	RecipientEmail string        `json:"recipient_email"`
-	RecipientName  string        `json:"recipient_name"`
-	SenderName     string        `json:"sender_name"`
-	Message        string        `gorm:"type:text" json:"message"`
-	CoverImage     string        `json:"cover_image"`
-	ExpiresAt      *time.Time    `json:"expires_at"`
-	CreatedAt      time.Time     `json:"created_at"`
-	UpdatedAt      time.Time     `json:"updated_at"`
+	ID             uint           `gorm:"primarykey" json:"id"`
+	Code           string         `gorm:"uniqueIndex;not null" json:"code"`
+	InitialValue   float64        `gorm:"not null" json:"initial_value"`
+	Balance        float64        `gorm:"not null" json:"balance"`
+	Currency       string         `gorm:"default:'USD'" json:"currency"`
+	Status         string         `gorm:"index" json:"status"` // active, used, expired, cancelled
+	RecipientEmail string         `json:"recipient_email"`
+	RecipientName  string         `json:"recipient_name"`
+	SenderName     string         `json:"sender_name"`
+	Message        string         `gorm:"type:text" json:"message"`
+	CoverImage     string         `json:"cover_image"`
+	ExpiresAt      *time.Time     `json:"expires_at"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 

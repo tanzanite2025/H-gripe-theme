@@ -106,9 +106,9 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 	// 检查状态转换是否合法
 	if !existingOrder.CanTransitionTo(req.Status) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid status transition",
+			"error":          "Invalid status transition",
 			"current_status": existingOrder.Status,
-			"target_status": req.Status,
+			"target_status":  req.Status,
 		})
 		return
 	}
@@ -273,9 +273,9 @@ func (h *OrderHandler) GetSalesChart(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": data,
+		"data":       data,
 		"start_date": startDate.Format("2006-01-02"),
-		"end_date": endDate.Format("2006-01-02"),
+		"end_date":   endDate.Format("2006-01-02"),
 	})
 }
 

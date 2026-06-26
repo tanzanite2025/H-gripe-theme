@@ -35,14 +35,14 @@ func (r *ShowcaseRepository) List(kind string, status string, limit int, offset 
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
-	
+
 	err := query.Order("created_at desc").Limit(limit).Offset(offset).Find(&items).Error
 	return items, err
 }
 
 func (r *ShowcaseRepository) UpdateStatus(id uint, status string, reason string) error {
 	updates := map[string]interface{}{
-		"status": status,
+		"status":          status,
 		"rejected_reason": reason,
 	}
 	if status == showcase.StatusApproved {

@@ -122,7 +122,7 @@ func (g *stripeGateway) CreatePayment(ctx context.Context, req *PaymentRequest) 
 	//     Description: stripe.String(req.Description),
 	// }
 	// pi, err := paymentintent.New(params)
-	
+
 	return &PaymentResponse{
 		ID:         "pi_mock_" + req.OrderID,
 		Status:     "pending",
@@ -196,12 +196,12 @@ func (g *stripeGateway) VerifyWebhook(payload []byte, signature string) (bool, e
 
 	// 拼接待签名的字符串: timestamp.payload
 	signedPayload := fmt.Sprintf("%s.%s", t, string(payload))
-	
+
 	isValid := verifyHMACSHA256([]byte(signedPayload), v1, g.config.WebhookSecret)
 	if !isValid {
 		return false, fmt.Errorf("signature verification failed")
 	}
-	
+
 	return true, nil
 }
 
