@@ -56,26 +56,77 @@ export const useCart = () => {
     }
   }
 
-  // 2. 游客本地购物车合并到云端
-  const syncGuestCart = async () => {
-    if (import.meta.client) {
-      const saved = localStorage.getItem('tanzanite_cart')
-      if (saved) {
+  // 2. 游客本地购物车合并到云端（带重试和失败处理）
+  const syncGuestCart = async (): Promise<{
+    success: boolean
+    error?: string
+    itemsCount?: number
+  }> => {
+    if (!import.meta.client) {
+      return { success: false, error: 'Not in client' }
+    }
+
+    const saved = localStorage.getItem('tanzanite_cart')
+    if (!saved) {
+      return { success: true, itemsCount: 0 }
+    }
+
+    try {
+      const items = JSON.parse(saved)
+      if (!items || items.length === 0) {
+        localStorage.removeItem('tanzanite_cart')
+        return { success: true, itemsCount: 0 }
+      }
+
+      const payload = items.map((item: any) => ({
+        product_id: item.id,
+        quantity: item.quantity
+      }))
+
+      // 使用重试机制同步到后端（最多3次）
+      let lastError: any
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          const items = JSON.parse(saved)
-          if (items && items.length > 0) {
-            const payload = items.map((item: any) => ({ product_id: item.id, quantity: item.quantity }))
-            await auth.request('/cart/sync', {
-              method: 'POST',
-              body: JSON.stringify(payload)
-            })
-          }
+          await auth.request('/cart/sync', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          })
+
+          // ✅ 同步成功，删除本地数据
           localStorage.removeItem('tanzanite_cart')
+          await loadCartFromBackend()
+
+          console.log(`[Cart] Guest cart synced successfully (${items.length} items)`)
+          return {
+            success: true,
+            itemsCount: items.length
+          }
         } catch (e) {
-          console.error('Failed to sync guest cart', e)
+          lastError = e
+          console.warn(`[Cart] Sync attempt ${attempt}/3 failed:`, e)
+
+          if (attempt < 3) {
+            // 等待后重试（延迟递增：1s, 2s）
+            await new Promise(resolve => setTimeout(resolve, attempt * 1000))
+          }
         }
       }
-      await loadCartFromBackend()
+
+      // ❌ 3次重试后仍然失败，保留本地数据
+      console.error('[Cart] Failed to sync guest cart after 3 attempts:', lastError)
+
+      return {
+        success: false,
+        error: lastError instanceof Error ? lastError.message : 'Sync failed',
+        itemsCount: items.length
+      }
+    } catch (e) {
+      console.error('[Cart] Failed to parse guest cart', e)
+
+      return {
+        success: false,
+        error: 'Failed to parse cart data'
+      }
     }
   }
 
@@ -123,13 +174,32 @@ export const useCart = () => {
   }
 
   // 监听登录状态变化
-  watch(() => auth.isAuthenticated.value, (newVal) => {
-    if (newVal) {
-      // 用户登录后，将 session 的购物车与 user 的购物车合并
-      syncGuestCart()
-    } else {
-      // 登出后重新拉取游客空车
-      loadCartFromBackend()
+  watch(() => auth.isAuthenticated.value, async (newVal, oldVal) => {
+    if (newVal && !oldVal) {
+      // 用户刚登录，将本地购物车与云端合并
+      const result = await syncGuestCart()
+
+      if (!result.success && result.itemsCount && result.itemsCount > 0) {
+        // 同步失败，显示错误提示
+        console.error('[Cart] Failed to sync cart:', result.error)
+
+        // 使用浏览器原生提示（因为可能还没加载ElMessage）
+        if (typeof window !== 'undefined' && window.alert) {
+          const retry = window.confirm(
+            `购物车同步失败（${result.itemsCount}件商品），本地数据已保留。\n\n是否刷新页面重试？`
+          )
+
+          if (retry) {
+            window.location.reload()
+          }
+        }
+      } else if (result.success && result.itemsCount && result.itemsCount > 0) {
+        // 同步成功，显示成功提示
+        console.log(`[Cart] Successfully synced ${result.itemsCount} items`)
+      }
+    } else if (!newVal && oldVal) {
+      // 用户登出，重新拉取游客空车
+      await loadCartFromBackend()
     }
   })
 

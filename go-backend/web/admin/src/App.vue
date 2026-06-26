@@ -3,7 +3,26 @@
 </template>
 
 <script setup>
-// 主应用组件
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { ElMessage } from 'element-plus'
+
+const authStore = useAuthStore()
+
+onMounted(async () => {
+  // 页面加载时初始化认证状态并验证权限
+  const result = await authStore.initAuth()
+
+  if (result.authenticated) {
+    if (result.permissionsUpdated) {
+      ElMessage.info('权限已更新，请注意菜单变化')
+    }
+
+    if (result.warning) {
+      console.warn('[App] Auth warning:', result.warning)
+    }
+  }
+})
 </script>
 
 <style>
