@@ -47,7 +47,7 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	// 设置客户信息
 	if req.Customer != nil {
 		params.ReceiptEmail = stripe.String(req.Customer.Email)
-		
+
 		// 如果有客户ID，使用它
 		if req.Customer.ID != "" {
 			params.Customer = stripe.String(req.Customer.ID)

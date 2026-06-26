@@ -112,8 +112,9 @@ func Load(configFiles ...string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	if cfg.JWT.Secret == "" {
-		panic("[CRITICAL] jwt.secret is missing in configuration!")
+	// 验证关键配置
+	if err := validateConfig(&cfg); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil
@@ -224,4 +225,21 @@ func (c *JWTConfig) GetJWTExpireDuration() time.Duration {
 // GetRefreshExpireDuration 获取刷新令牌过期时间
 func (c *JWTConfig) GetRefreshExpireDuration() time.Duration {
 	return time.Duration(c.RefreshExpireHours) * time.Hour
+}
+
+// validateConfig 验证配置是否完整
+func validateConfig(cfg *Config) error {
+	if cfg.JWT.Secret == "" {
+		return fmt.Errorf("JWT secret is required. Please set JWT_SECRET environment variable or jwt.secret in config file")
+	}
+
+	if cfg.Database.Host == "" {
+		return fmt.Errorf("database host is required")
+	}
+
+	if cfg.Database.Database == "" {
+		return fmt.Errorf("database name is required")
+	}
+
+	return nil
 }

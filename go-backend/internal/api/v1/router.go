@@ -30,8 +30,6 @@ import (
 	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
 
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gorm.io/gorm"
@@ -116,11 +114,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
 	{
-		rateLimiter := middleware.NewRateLimiter(redisCache)
-
 		// 认证路由（公开）
 		authGroup := v1.Group("/auth")
-		authGroup.Use(rateLimiter.RateLimit(10, time.Minute))
+		authGroup.Use(middleware.RateLimit(10)) // 10 RPS for auth endpoints
 		{
 			authGroup.POST("/register", authHandler.Register)
 			authGroup.POST("/login", authHandler.Login)

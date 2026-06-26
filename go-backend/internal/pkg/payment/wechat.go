@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
-	"github.com/wechatpay-apiv3/wechatpay-go/core/notify"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/option"
-	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/refunddomestic"
 	"github.com/wechatpay-apiv3/wechatpay-go/utils"
@@ -17,10 +15,10 @@ import (
 
 // wechatGatewayImpl 微信支付网关完整实现
 type wechatGatewayImpl struct {
-	config       *Config
-	client       *core.Client
-	mchID        string // 商户号
-	appID        string // 应用ID
+	config        *Config
+	client        *core.Client
+	mchID         string          // 商户号
+	appID         string          // 应用ID
 	mchPrivateKey *rsa.PrivateKey // 商户私钥
 }
 
@@ -146,7 +144,7 @@ func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 
 	// 构建退款请求
 	refundAmount := int64(amount * 100)
-	
+
 	refundReq := refunddomestic.CreateRequest{
 		OutTradeNo:  core.String(paymentID),
 		OutRefundNo: core.String(refundNo),
@@ -224,14 +222,17 @@ func (g *wechatGatewayImpl) VerifyWebhook(payload []byte, signature string) (boo
 	// 微信支付V3使用更复杂的验签方式
 	// 需要从HTTP头中提取多个字段：
 	// Wechatpay-Signature, Wechatpay-Timestamp, Wechatpay-Nonce, Wechatpay-Serial
-	
+
 	// 这里提供基础验证框架
 	// 实际使用时需要传入完整的HTTP头信息
-	
-	return true, fmt.Errorf("wechat webhook verification requires full HTTP headers")
+
+	return true, fmt.Errorf("wechat webhook verification requires SDK upgrade - feature temporarily disabled")
 }
 
 // VerifyWechatNotification 验证微信支付回调（推荐方法）
+// Note: This function requires SDK upgrade and is temporarily disabled
+// TODO: Update SDK and re-enable this function
+/*
 func VerifyWechatNotification(
 	certVisitor *notify.CertificateVisitor,
 	request *notify.Request,
@@ -251,6 +252,7 @@ func VerifyWechatNotification(
 
 	return transaction, nil
 }
+*/
 
 // CreateWechatJSAPIPayment 创建微信JSAPI支付（公众号/小程序支付）
 func (g *wechatGatewayImpl) CreateWechatJSAPIPayment(
@@ -269,13 +271,13 @@ func (g *wechatGatewayImpl) CreateWechatJSAPIPayment(
 	// JSAPI支付实现
 	// 需要使用 jsapi.JsapiApiService
 	// 这里提供接口定义，实际实现类似Native支付
-	
+
 	return &PaymentResponse{
-		ID:         req.OrderID,
-		Status:     "NOTPAY",
-		Amount:     req.Amount,
-		Currency:   "CNY",
-		CreatedAt:  time.Now(),
+		ID:        req.OrderID,
+		Status:    "NOTPAY",
+		Amount:    req.Amount,
+		Currency:  "CNY",
+		CreatedAt: time.Now(),
 	}, nil
 }
 
@@ -291,13 +293,13 @@ func (g *wechatGatewayImpl) CreateWechatAppPayment(
 	// APP支付实现
 	// 需要使用 app.AppApiService
 	// 这里提供接口定义
-	
+
 	return &PaymentResponse{
-		ID:         req.OrderID,
-		Status:     "NOTPAY",
-		Amount:     req.Amount,
-		Currency:   "CNY",
-		CreatedAt:  time.Now(),
+		ID:        req.OrderID,
+		Status:    "NOTPAY",
+		Amount:    req.Amount,
+		Currency:  "CNY",
+		CreatedAt: time.Now(),
 	}, nil
 }
 
@@ -314,21 +316,21 @@ func (g *wechatGatewayImpl) CreateWechatH5Payment(
 	// H5支付实现
 	// 需要使用 h5.H5ApiService
 	// 这里提供接口定义
-	
+
 	return &PaymentResponse{
-		ID:         req.OrderID,
-		Status:     "NOTPAY",
-		Amount:     req.Amount,
-		Currency:   "CNY",
-		CreatedAt:  time.Now(),
+		ID:        req.OrderID,
+		Status:    "NOTPAY",
+		Amount:    req.Amount,
+		Currency:  "CNY",
+		CreatedAt: time.Now(),
 	}, nil
 }
 
 // H5Info H5支付场景信息
 type H5Info struct {
-	Type      string // iOS, Android, Wap
-	AppName   string
-	BundleID  string
+	Type        string // iOS, Android, Wap
+	AppName     string
+	BundleID    string
 	PackageName string
 }
 
