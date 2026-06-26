@@ -70,7 +70,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 
 		// 需要认证的路由
 		authenticated := admin.Group("")
-		authenticated.Use(middleware.AuthMiddleware(authService))
+		authenticated.Use(middleware.AuthMiddleware(authService), middleware.RequireBackofficeAccess())
 		{
 			// 认证相关
 			authGroup := authenticated.Group("/auth")
@@ -83,6 +83,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 
 			// 仪表板（所有管理员都可以访问）
 			dashboardGroup := authenticated.Group("/dashboard")
+			dashboardGroup.Use(middleware.RequireAnyPermission(auth.PermOrderView, auth.PermUserView, auth.PermTicketView, auth.PermSubscriptionView))
 			{
 				dashboardGroup.GET("/stats", dashboardHandler.GetStats)
 				dashboardGroup.GET("/recent-orders", dashboardHandler.GetRecentOrders)

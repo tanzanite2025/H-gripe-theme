@@ -138,3 +138,73 @@ func TestAuthService_ValidateToken(t *testing.T) {
 	assert.Equal(t, testUser.ID, claims.UserID)
 	assert.Equal(t, testUser.Email, claims.Email)
 }
+
+func TestAuthService_ValidateActiveTokenUsesCurrentUser(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	jwtCfg := config.JWTConfig{
+		Secret:             "test-secret",
+		ExpireHours:        24,
+		RefreshExpireHours: 168,
+	}
+	authService := NewAuthService(mockRepo, jwtCfg)
+
+	tokenUser := &user.User{
+		ID:       1,
+		Email:    "old@example.com",
+		Username: "olduser",
+		Role:     "admin",
+		Status:   "active",
+	}
+	currentUser := &user.User{
+		ID:       1,
+		Email:    "current@example.com",
+		Username: "currentuser",
+		Role:     "support",
+		Status:   "active",
+	}
+
+	token, err := authService.GenerateToken(tokenUser)
+	assert.NoError(t, err)
+	mockRepo.On("FindByID", uint(1)).Return(currentUser, nil)
+
+	claims, err := authService.ValidateActiveToken(token)
+	assert.NoError(t, err)
+	assert.Equal(t, currentUser.Email, claims.Email)
+	assert.Equal(t, currentUser.Username, claims.Username)
+	assert.Equal(t, "support", claims.Role)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuthService_ValidateActiveTokenRejectsInactiveUser(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	jwtCfg := config.JWTConfig{
+		Secret:             "test-secret",
+		ExpireHours:        24,
+		RefreshExpireHours: 168,
+	}
+	authService := NewAuthService(mockRepo, jwtCfg)
+
+	tokenUser := &user.User{
+		ID:       1,
+		Email:    "admin@example.com",
+		Username: "admin",
+		Role:     "admin",
+		Status:   "active",
+	}
+	currentUser := &user.User{
+		ID:       1,
+		Email:    "admin@example.com",
+		Username: "admin",
+		Role:     "admin",
+		Status:   "suspended",
+	}
+
+	token, err := authService.GenerateToken(tokenUser)
+	assert.NoError(t, err)
+	mockRepo.On("FindByID", uint(1)).Return(currentUser, nil)
+
+	claims, err := authService.ValidateActiveToken(token)
+	assert.Error(t, err)
+	assert.Nil(t, claims)
+	mockRepo.AssertExpectations(t)
+}

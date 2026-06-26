@@ -38,7 +38,7 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 		}
 
 		// 验证token
-		claims, err := authService.ValidateToken(tokenString)
+		claims, err := authService.ValidateActiveToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			c.Abort()
@@ -78,7 +78,7 @@ func OptionalAuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 
 			tokenString = parts[1]
 		}
-		claims, err := authService.ValidateToken(tokenString)
+		claims, err := authService.ValidateActiveToken(tokenString)
 		if err == nil {
 			c.Set("user_id", claims.UserID)
 			c.Set("email", claims.Email)

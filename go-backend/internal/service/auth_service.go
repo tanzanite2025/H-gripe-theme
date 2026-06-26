@@ -139,6 +139,28 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	return nil, errors.New("invalid token")
 }
 
+// ValidateActiveToken verifies the token and refreshes user state from storage.
+func (s *AuthService) ValidateActiveToken(tokenString string) (*Claims, error) {
+	claims, err := s.ValidateToken(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	currentUser, err := s.userRepo.FindByID(claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if currentUser.Status != "active" {
+		return nil, errors.New("user account is not active")
+	}
+
+	claims.Email = currentUser.Email
+	claims.Username = currentUser.Username
+	claims.Role = string(auth.NormalizeRole(currentUser.Role))
+
+	return claims, nil
+}
+
 // GetUserByID 根据ID获取用户
 func (s *AuthService) GetUserByID(id uint) (*user.User, error) {
 	return s.userRepo.FindByID(id)
