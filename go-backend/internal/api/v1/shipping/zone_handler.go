@@ -1,9 +1,10 @@
 package shipping
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/shipping"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,11 +20,11 @@ import (
 func (h *Handler) ListZones(c *gin.Context) {
 	zones, err := h.shippingRepo.FindAllZones()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": zones})
+	response.Success(c, gin.H{"data": zones})
 }
 
 // GetZone 获取配送区域详情
@@ -36,17 +37,17 @@ func (h *Handler) ListZones(c *gin.Context) {
 func (h *Handler) GetZone(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid zone id"})
+		apierror.RespondBadRequest(c, "invalid zone id")
 		return
 	}
 
 	zone, err := h.shippingRepo.FindZoneByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Zone")
 		return
 	}
 
-	c.JSON(http.StatusOK, zone)
+	response.Success(c, zone)
 }
 
 // CreateZone 创建配送区域（管理员）
@@ -60,16 +61,16 @@ func (h *Handler) GetZone(c *gin.Context) {
 func (h *Handler) CreateZone(c *gin.Context) {
 	var zone shipping.ShippingZone
 	if err := c.ShouldBindJSON(&zone); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.shippingRepo.CreateZone(&zone); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, zone)
+	response.Created(c, zone)
 }
 
 // UpdateZone 更新配送区域（管理员）
@@ -84,23 +85,23 @@ func (h *Handler) CreateZone(c *gin.Context) {
 func (h *Handler) UpdateZone(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid zone id"})
+		apierror.RespondBadRequest(c, "invalid zone id")
 		return
 	}
 
 	var zone shipping.ShippingZone
 	if err := c.ShouldBindJSON(&zone); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	zone.ID = uint(id)
 	if err := h.shippingRepo.UpdateZone(&zone); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, zone)
+	response.Success(c, zone)
 }
 
 // DeleteZone 删除配送区域（管理员）
@@ -113,14 +114,14 @@ func (h *Handler) UpdateZone(c *gin.Context) {
 func (h *Handler) DeleteZone(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid zone id"})
+		apierror.RespondBadRequest(c, "invalid zone id")
 		return
 	}
 
 	if err := h.shippingRepo.DeleteZone(uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "zone deleted"})
+	response.SuccessWithMessage(c, "zone deleted", nil)
 }

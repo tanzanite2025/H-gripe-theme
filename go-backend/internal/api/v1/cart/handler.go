@@ -2,7 +2,8 @@ package cart
 
 import (
 	"fmt"
-	"net/http"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,24 @@ func NewHandler(cartService *service.CartService) *Handler {
 	}
 }
 
+// getUserIDAndSession 从context获取用户ID和session ID
+// 统一的辅助方法，减少重复代码
+func getUserIDAndSession(c *gin.Context) (*uint, string) {
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
+	}
+
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		sessionID = uuid.New().String()
+		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true)
+	}
+
+	return userID, sessionID
+}
+
 // AddToCartRequest 添加到购物车请求
 type AddToCartRequest struct {
 	ProductID uint `json:"product_id" binding:"required"`
@@ -32,80 +51,54 @@ type UpdateCartItemRequest struct {
 
 // GetCartSummary 获取购物车摘要
 func (h *Handler) GetCartSummary(c *gin.Context) {
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
-
-	// 获取或创建会话ID
-	sessionID, err := c.Cookie("session_id")
-	if err != nil || sessionID == "" {
-		sessionID = uuid.New().String()
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true)
-	}
+	userID, sessionID := getUserIDAndSession(c)
 
 	summary, err := h.cartService.GetCartSummary(userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, summary)
+	response.Success(c, summary)
 }
 
 // AddToCart 添加商品到购物车
 func (h *Handler) AddToCart(c *gin.Context) {
 	var req AddToCartRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
-
-	sessionID, err := c.Cookie("session_id")
-	if err != nil || sessionID == "" {
-		sessionID = uuid.New().String()
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true)
-	}
+	userID, sessionID := getUserIDAndSession(c)
 
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	if err := h.cartService.AddToCart(cart.ID, req.ProductID, req.Quantity); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "product added to cart"})
+	response.SuccessWithMessage(c, "Product added to cart", nil)
 }
 
 // UpdateCartItem 更新购物车项目
 func (h *Handler) UpdateCartItem(c *gin.Context) {
 	var req UpdateCartItemRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
+	userID, sessionID := getUserIDAndSession(c)
 
-	sessionID, _ := c.Cookie("session_id")
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -114,25 +107,20 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 	fmt.Sscanf(productID, "%d", &pID)
 
 	if err := h.cartService.UpdateCartItem(cart.ID, pID, req.Quantity); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "cart item updated"})
+	response.SuccessWithMessage(c, "Cart item updated", nil)
 }
 
 // RemoveFromCart 从购物车移除商品
 func (h *Handler) RemoveFromCart(c *gin.Context) {
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
+	userID, sessionID := getUserIDAndSession(c)
 
-	sessionID, _ := c.Cookie("session_id")
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -141,73 +129,58 @@ func (h *Handler) RemoveFromCart(c *gin.Context) {
 	fmt.Sscanf(productID, "%d", &pID)
 
 	if err := h.cartService.RemoveFromCart(cart.ID, pID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "product removed from cart"})
+	response.SuccessWithMessage(c, "Product removed from cart", nil)
 }
 
 // SyncCart 同步本地购物车到云端
 func (h *Handler) SyncCart(c *gin.Context) {
 	var items []service.SyncCartItemReq
 	if err := c.ShouldBindJSON(&items); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
-
-	sessionID, err := c.Cookie("session_id")
-	if err != nil || sessionID == "" {
-		sessionID = uuid.New().String()
-		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true)
-	}
+	userID, sessionID := getUserIDAndSession(c)
 
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	if err := h.cartService.SyncCart(cart.ID, items); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	// 重新获取同步后的摘要
 	summary, err := h.cartService.GetCartSummary(userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, summary)
+	response.Success(c, summary)
 }
 
 // ClearCart 清空购物车
 func (h *Handler) ClearCart(c *gin.Context) {
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
+	userID, sessionID := getUserIDAndSession(c)
 
-	sessionID, _ := c.Cookie("session_id")
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	if err := h.cartService.ClearCart(cart.ID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "cart cleared"})
+	response.SuccessWithMessage(c, "Cart cleared", nil)
 }

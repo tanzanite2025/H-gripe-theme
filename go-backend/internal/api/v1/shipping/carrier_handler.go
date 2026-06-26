@@ -1,9 +1,10 @@
 package shipping
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/shipping"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,11 +23,11 @@ func (h *Handler) ListCarriers(c *gin.Context) {
 
 	carriers, err := h.shippingRepo.FindAllCarriers(enabledOnly)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": carriers})
+	response.Success(c, gin.H{"data": carriers})
 }
 
 // GetCarrier 获取物流公司详情
@@ -39,17 +40,17 @@ func (h *Handler) ListCarriers(c *gin.Context) {
 func (h *Handler) GetCarrier(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid carrier id"})
+		apierror.RespondBadRequest(c, "invalid carrier id")
 		return
 	}
 
 	carrier, err := h.shippingRepo.FindCarrierByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Carrier")
 		return
 	}
 
-	c.JSON(http.StatusOK, carrier)
+	response.Success(c, carrier)
 }
 
 // CreateCarrier 创建物流公司（管理员）
@@ -63,16 +64,16 @@ func (h *Handler) GetCarrier(c *gin.Context) {
 func (h *Handler) CreateCarrier(c *gin.Context) {
 	var carrier shipping.Carrier
 	if err := c.ShouldBindJSON(&carrier); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.shippingRepo.CreateCarrier(&carrier); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, carrier)
+	response.Created(c, carrier)
 }
 
 // UpdateCarrier 更新物流公司（管理员）
@@ -87,23 +88,23 @@ func (h *Handler) CreateCarrier(c *gin.Context) {
 func (h *Handler) UpdateCarrier(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid carrier id"})
+		apierror.RespondBadRequest(c, "invalid carrier id")
 		return
 	}
 
 	var carrier shipping.Carrier
 	if err := c.ShouldBindJSON(&carrier); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	carrier.ID = uint(id)
 	if err := h.shippingRepo.UpdateCarrier(&carrier); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, carrier)
+	response.Success(c, carrier)
 }
 
 // DeleteCarrier 删除物流公司（管理员）
@@ -116,14 +117,14 @@ func (h *Handler) UpdateCarrier(c *gin.Context) {
 func (h *Handler) DeleteCarrier(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid carrier id"})
+		apierror.RespondBadRequest(c, "invalid carrier id")
 		return
 	}
 
 	if err := h.shippingRepo.DeleteCarrier(uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "carrier deleted"})
+	response.SuccessWithMessage(c, "carrier deleted", nil)
 }

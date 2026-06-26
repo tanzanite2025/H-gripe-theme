@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"net/http"
+	"tanzanite/internal/pkg/response"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -35,5 +35,5 @@ func (h *MarketingHandler) GetMarketingStats(c *gin.Context) {
 	loyaltyStats, _ := h.loyaltyRepo.GetLoyaltyStats()
 	stats["loyalty"] = loyaltyStats
 
-	c.JSON(http.StatusOK, stats)
+	response.Success(c, stats)
 }

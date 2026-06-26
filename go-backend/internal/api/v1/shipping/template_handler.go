@@ -1,9 +1,10 @@
 package shipping
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/shipping"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,11 +20,11 @@ import (
 func (h *Handler) ListTemplates(c *gin.Context) {
 	templates, err := h.shippingRepo.FindAllTemplates()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": templates})
+	response.Success(c, gin.H{"data": templates})
 }
 
 // GetTemplate 获取运费模板详情
@@ -36,17 +37,17 @@ func (h *Handler) ListTemplates(c *gin.Context) {
 func (h *Handler) GetTemplate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid template id"})
+		apierror.RespondBadRequest(c, "invalid template id")
 		return
 	}
 
 	template, err := h.shippingRepo.FindTemplateByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Template")
 		return
 	}
 
-	c.JSON(http.StatusOK, template)
+	response.Success(c, template)
 }
 
 // CalculateShipping 计算运费
@@ -66,20 +67,20 @@ func (h *Handler) CalculateShipping(c *gin.Context) {
 		Country    string  `json:"country" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	// 获取模板
 	template, err := h.shippingRepo.FindTemplateByID(req.TemplateID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "template not found"})
+		apierror.RespondNotFound(c, "Template")
 		return
 	}
 
 	// 检查是否免运费
 	if template.FreeShipping && req.Amount >= template.FreeThreshold {
-		c.JSON(http.StatusOK, gin.H{
+		response.Success(c, gin.H{
 			"shipping_fee":  0.0,
 			"free_shipping": true,
 		})
@@ -108,7 +109,7 @@ func (h *Handler) CalculateShipping(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response.Success(c, gin.H{
 		"shipping_fee":  shippingFee,
 		"free_shipping": false,
 	})
@@ -125,16 +126,16 @@ func (h *Handler) CalculateShipping(c *gin.Context) {
 func (h *Handler) CreateTemplate(c *gin.Context) {
 	var template shipping.ShippingTemplate
 	if err := c.ShouldBindJSON(&template); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.shippingRepo.CreateTemplate(&template); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, template)
+	response.Created(c, template)
 }
 
 // UpdateTemplate 更新运费模板（管理员）
@@ -149,23 +150,23 @@ func (h *Handler) CreateTemplate(c *gin.Context) {
 func (h *Handler) UpdateTemplate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid template id"})
+		apierror.RespondBadRequest(c, "invalid template id")
 		return
 	}
 
 	var template shipping.ShippingTemplate
 	if err := c.ShouldBindJSON(&template); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	template.ID = uint(id)
 	if err := h.shippingRepo.UpdateTemplate(&template); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, template)
+	response.Success(c, template)
 }
 
 // DeleteTemplate 删除运费模板（管理员）
@@ -178,14 +179,14 @@ func (h *Handler) UpdateTemplate(c *gin.Context) {
 func (h *Handler) DeleteTemplate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid template id"})
+		apierror.RespondBadRequest(c, "invalid template id")
 		return
 	}
 
 	if err := h.shippingRepo.DeleteTemplate(uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "template deleted"})
+	response.SuccessWithMessage(c, "template deleted", nil)
 }

@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"net/http"
-	"tanzanite/internal/api/v1/apierror"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -35,18 +35,18 @@ type LoginRequest struct {
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.Send(c, apierror.New("BAD_REQUEST", "Invalid request payload", http.StatusBadRequest))
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	user, err := h.authService.Register(req.Email, req.Username, req.Password)
 	if err != nil {
-		apierror.Send(c, apierror.New("BAD_REQUEST", err.Error(), http.StatusBadRequest))
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "user registered successfully",
+	response.Created(c, gin.H{
+		"message": "User registered successfully",
 		"user":    user.ToResponse(),
 	})
 }
@@ -55,20 +55,20 @@ func (h *Handler) Register(c *gin.Context) {
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.Send(c, apierror.New("BAD_REQUEST", "Invalid request payload", http.StatusBadRequest))
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	token, user, err := h.authService.Login(req.EmailOrUsername, req.Password)
 	if err != nil {
-		apierror.Send(c, apierror.New("UNAUTHORIZED", err.Error(), http.StatusUnauthorized))
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
 
-	c.JSON(http.StatusOK, gin.H{
-		"user":  user.ToResponse(),
+	response.Success(c, gin.H{
+		"user": user.ToResponse(),
 	})
 }
 
@@ -76,22 +76,22 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		apierror.Send(c, apierror.New("UNAUTHORIZED", "unauthorized", http.StatusUnauthorized))
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	user, err := h.authService.GetUserByID(userID.(uint))
 	if err != nil {
-		apierror.Send(c, apierror.New("NOT_FOUND", "user not found", http.StatusNotFound))
+		apierror.RespondNotFound(c, "User")
 		return
 	}
 
-	c.JSON(http.StatusOK, user.ToResponse())
+	response.Success(c, user.ToResponse())
 }
 
 // Logout 用户登出
 func (h *Handler) Logout(c *gin.Context) {
 	// JWT是无状态的，客户端删除token即可
 	c.SetCookie("auth_token", "", -1, "/", "", true, true)
-	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
+	response.SuccessWithMessage(c, "Logged out successfully", nil)
 }

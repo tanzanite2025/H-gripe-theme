@@ -1,9 +1,11 @@
 package admin
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/loyalty"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/pagination"
+	"tanzanite/internal/pkg/response"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,31 +15,24 @@ import (
 
 // ListLoyaltyTransactions 获取积分交易列表
 func (h *MarketingHandler) ListLoyaltyTransactions(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 	userID, _ := strconv.ParseUint(c.Query("user_id"), 10, 32)
 
 	if userID > 0 {
-		transactions, total, err := h.loyaltyRepo.FindTransactionsByUserID(uint(userID), page, pageSize)
+		transactions, total, err := h.loyaltyRepo.FindTransactionsByUserID(uint(userID), params.Page, params.PageSize)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "获取交易记录失败"})
+			apierror.RespondInternalError(c, err)
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"transactions": transactions,
-			"total":        total,
-			"page":         page,
-			"page_size":    pageSize,
-		})
+		response.Paged(c, gin.H{"transactions": transactions}, params.Page, params.PageSize, total)
 	} else {
 		// 需要在 Repository 中添加 FindAllTransactions 方法
-		c.JSON(http.StatusOK, gin.H{
+		response.SuccessWithMessage(c, "请提供 user_id 参数", gin.H{
 			"transactions": []loyalty.LoyaltyTransaction{},
 			"total":        0,
-			"page":         page,
-			"page_size":    pageSize,
-			"message":      "请提供 user_id 参数",
+			"page":         params.Page,
+			"page_size":    params.PageSize,
 		})
 	}
 }
@@ -51,7 +46,7 @@ func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
@@ -72,7 +67,7 @@ func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {
 	}
 
 	if err := h.loyaltyRepo.CreateTransaction(transaction); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建交易记录失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -97,34 +92,28 @@ func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {
 		h.loyaltyRepo.UpdateUserLoyalty(userLoyalty)
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"transaction": transaction})
+	response.Created(c, gin.H{"transaction": transaction})
 }
 
 // ============ 签到管理 ============
 
 // ListCheckIns 获取签到记录列表
 func (h *MarketingHandler) ListCheckIns(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 	userID, _ := strconv.ParseUint(c.Query("user_id"), 10, 32)
 
 	if userID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供 user_id 参数"})
+		apierror.RespondBadRequest(c, "请提供 user_id 参数")
 		return
 	}
 
-	checkIns, total, err := h.loyaltyRepo.FindCheckInsByUserID(uint(userID), page, pageSize)
+	checkIns, total, err := h.loyaltyRepo.FindCheckInsByUserID(uint(userID), params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取签到记录失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"check_ins": checkIns,
-		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
-	})
+	response.Paged(c, gin.H{"check_ins": checkIns}, params.Page, params.PageSize, total)
 }
 
 // ============ 推荐管理 ============
@@ -134,24 +123,24 @@ func (h *MarketingHandler) ListReferrals(c *gin.Context) {
 	referrerID, _ := strconv.ParseUint(c.Query("referrer_id"), 10, 32)
 
 	if referrerID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供 referrer_id 参数"})
+		apierror.RespondBadRequest(c, "请提供 referrer_id 参数")
 		return
 	}
 
 	referrals, err := h.loyaltyRepo.FindReferralsByReferrerID(uint(referrerID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取推荐记录失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"referrals": referrals})
+	response.Success(c, gin.H{"referrals": referrals})
 }
 
 // UpdateReferralStatus 更新推荐状态
 func (h *MarketingHandler) UpdateReferralStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的推荐ID"})
+		apierror.RespondBadRequest(c, "无效的推荐ID")
 		return
 	}
 
@@ -160,13 +149,13 @@ func (h *MarketingHandler) UpdateReferralStatus(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	referral, err := h.loyaltyRepo.FindReferralByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "推荐记录不存在"})
+		apierror.RespondNotFound(c, "推荐记录")
 		return
 	}
 
@@ -177,9 +166,9 @@ func (h *MarketingHandler) UpdateReferralStatus(c *gin.Context) {
 	}
 
 	if err := h.loyaltyRepo.UpdateReferral(referral); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新推荐状态失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"referral": referral})
+	response.Success(c, gin.H{"referral": referral})
 }
