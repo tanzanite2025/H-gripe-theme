@@ -1,9 +1,10 @@
 package payment
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/payment"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,11 +20,11 @@ import (
 func (h *Handler) ListTaxRates(c *gin.Context) {
 	rates, err := h.paymentRepo.FindAllTaxRates()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": rates})
+	response.Success(c, gin.H{"data": rates})
 }
 
 // GetTaxRate 获取税率详情
@@ -36,17 +37,17 @@ func (h *Handler) ListTaxRates(c *gin.Context) {
 func (h *Handler) GetTaxRate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tax rate id"})
+		apierror.RespondBadRequest(c, "invalid tax rate id")
 		return
 	}
 
 	rate, err := h.paymentRepo.FindTaxRateByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Tax rate")
 		return
 	}
 
-	c.JSON(http.StatusOK, rate)
+	response.Success(c, rate)
 }
 
 // CalculateTax 计算税费
@@ -64,7 +65,7 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 		State   string  `json:"state"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
@@ -72,7 +73,7 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 	taxRate, err := h.paymentRepo.FindTaxRateByLocation(req.Country, req.State)
 	if err != nil {
 		// 没有找到税率，返回0
-		c.JSON(http.StatusOK, gin.H{
+		response.Success(c, gin.H{
 			"amount":   req.Amount,
 			"tax_rate": 0.0,
 			"tax":      0.0,
@@ -85,7 +86,7 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 	tax := req.Amount * taxRate.Rate / 100
 	total := req.Amount + tax
 
-	c.JSON(http.StatusOK, gin.H{
+	response.Success(c, gin.H{
 		"amount":   req.Amount,
 		"tax_rate": taxRate.Rate,
 		"tax":      tax,
@@ -104,16 +105,16 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 func (h *Handler) CreateTaxRate(c *gin.Context) {
 	var rate payment.TaxRate
 	if err := c.ShouldBindJSON(&rate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.paymentRepo.CreateTaxRate(&rate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, rate)
+	response.Created(c, rate)
 }
 
 // UpdateTaxRate 更新税率（管理员）
@@ -128,23 +129,23 @@ func (h *Handler) CreateTaxRate(c *gin.Context) {
 func (h *Handler) UpdateTaxRate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tax rate id"})
+		apierror.RespondBadRequest(c, "invalid tax rate id")
 		return
 	}
 
 	var rate payment.TaxRate
 	if err := c.ShouldBindJSON(&rate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	rate.ID = uint(id)
 	if err := h.paymentRepo.UpdateTaxRate(&rate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, rate)
+	response.Success(c, rate)
 }
 
 // DeleteTaxRate 删除税率（管理员）
@@ -157,14 +158,14 @@ func (h *Handler) UpdateTaxRate(c *gin.Context) {
 func (h *Handler) DeleteTaxRate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tax rate id"})
+		apierror.RespondBadRequest(c, "invalid tax rate id")
 		return
 	}
 
 	if err := h.paymentRepo.DeleteTaxRate(uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "tax rate deleted"})
+	response.SuccessWithMessage(c, "tax rate deleted", nil)
 }

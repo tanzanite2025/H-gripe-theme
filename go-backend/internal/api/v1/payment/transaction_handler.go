@@ -1,9 +1,10 @@
 package payment
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/payment"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,17 +21,17 @@ import (
 func (h *Handler) GetTransaction(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction id"})
+		apierror.RespondBadRequest(c, "invalid transaction id")
 		return
 	}
 
 	transaction, err := h.paymentRepo.FindTransactionByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Transaction")
 		return
 	}
 
-	c.JSON(http.StatusOK, transaction)
+	response.Success(c, transaction)
 }
 
 // GetOrderTransactions 获取订单的交易记录
@@ -43,17 +44,17 @@ func (h *Handler) GetTransaction(c *gin.Context) {
 func (h *Handler) GetOrderTransactions(c *gin.Context) {
 	orderID, err := strconv.ParseUint(c.Param("order_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		apierror.RespondBadRequest(c, "invalid order id")
 		return
 	}
 
 	transactions, err := h.paymentRepo.FindTransactionByOrderID(uint(orderID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": transactions})
+	response.Success(c, gin.H{"data": transactions})
 }
 
 // CreateTransaction 创建交易记录
@@ -67,14 +68,14 @@ func (h *Handler) GetOrderTransactions(c *gin.Context) {
 func (h *Handler) CreateTransaction(c *gin.Context) {
 	var transaction payment.Transaction
 	if err := c.ShouldBindJSON(&transaction); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.paymentRepo.CreateTransaction(&transaction); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, transaction)
+	response.Created(c, transaction)
 }
