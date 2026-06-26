@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/service"
+	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"

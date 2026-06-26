@@ -69,7 +69,7 @@ func (h *ShowcaseHandler) List(c *gin.Context) {
 		kind = "user"
 	}
 	status := c.Query("status")
-	
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
 
@@ -119,7 +119,7 @@ func (h *ShowcaseHandler) AddComment(c *gin.Context) {
 func (h *ShowcaseHandler) ListComments(c *gin.Context) {
 	photoIDStr := c.Query("photo_id")
 	photoID, _ := strconv.Atoi(photoIDStr)
-	
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
 

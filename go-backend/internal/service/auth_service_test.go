@@ -1,9 +1,9 @@
 package service
 
 import (
-	"testing"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/pkg/config"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

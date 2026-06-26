@@ -45,11 +45,11 @@ func (r *PaymentRepository) FindPaymentMethodByCode(code string) (*payment.Payme
 func (r *PaymentRepository) FindAllPaymentMethods(enabledOnly bool) ([]payment.PaymentMethod, error) {
 	var methods []payment.PaymentMethod
 	query := r.db.Order("sort_order ASC")
-	
+
 	if enabledOnly {
 		query = query.Where("enabled = ?", true)
 	}
-	
+
 	err := query.Find(&methods).Error
 	return methods, err
 }

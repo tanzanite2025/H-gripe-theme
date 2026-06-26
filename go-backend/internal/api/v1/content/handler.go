@@ -42,10 +42,10 @@ func (h *Handler) ListPosts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       posts,
-		"total":      total,
-		"page":       page,
-		"page_size":  pageSize,
+		"data":        posts,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
 		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
 	})
 }
@@ -99,10 +99,10 @@ func (h *Handler) ListFAQs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       faqs,
-		"total":      total,
-		"page":       page,
-		"page_size":  pageSize,
+		"data":        faqs,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
 		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
 	})
 }

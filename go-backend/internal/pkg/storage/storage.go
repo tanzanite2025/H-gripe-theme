@@ -142,7 +142,7 @@ func (s *localStorage) Delete(ctx context.Context, url string) error {
 	// 从 URL 提取文件路径
 	// 安全处理：确保文件在允许的目录内
 	urlPath := strings.TrimPrefix(url, s.config.BaseURL+"/uploads/")
-	
+
 	// 清理路径，防止路径遍历攻击
 	cleanPath := filepath.Clean(urlPath)
 	if strings.Contains(cleanPath, "..") {
@@ -151,18 +151,18 @@ func (s *localStorage) Delete(ctx context.Context, url string) error {
 
 	// 构建完整文件路径
 	filePath := filepath.Join(s.config.LocalPath, cleanPath)
-	
+
 	// 确保文件在允许的目录内
 	absLocalPath, err := filepath.Abs(s.config.LocalPath)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
-	
+
 	absFilePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute file path: %w", err)
 	}
-	
+
 	if !strings.HasPrefix(absFilePath, absLocalPath) {
 		return fmt.Errorf("invalid file path: outside allowed directory")
 	}
@@ -190,7 +190,7 @@ func (s *localStorage) generateFilename(originalFilename string) string {
 	cleanName = strings.ReplaceAll(cleanName, "..", "")
 	cleanName = strings.ReplaceAll(cleanName, "/", "")
 	cleanName = strings.ReplaceAll(cleanName, "\\", "")
-	
+
 	// 获取文件扩展名
 	ext := strings.ToLower(filepath.Ext(cleanName))
 

@@ -3,8 +3,8 @@ package payment
 import (
 	"encoding/json"
 	"io"
-	pgateway "tanzanite/internal/pkg/payment" // alias for gateway
 	"tanzanite/internal/pkg/apierror"
+	pgateway "tanzanite/internal/pkg/payment" // alias for gateway
 	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"

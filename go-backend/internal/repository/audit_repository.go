@@ -36,14 +36,14 @@ func (r *AuditRepository) FindAuditLogsByUserID(userID uint, page, pageSize int)
 	var total int64
 
 	query := r.db.Model(&audit.AuditLog{}).Where("user_id = ?", userID)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&logs).Error
-	
+
 	return logs, total, err
 }
 
@@ -54,14 +54,14 @@ func (r *AuditRepository) FindAuditLogsByEntity(entityType string, entityID uint
 
 	query := r.db.Model(&audit.AuditLog{}).
 		Where("entity_type = ? AND entity_id = ?", entityType, entityID)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&logs).Error
-	
+
 	return logs, total, err
 }
 
@@ -71,11 +71,11 @@ func (r *AuditRepository) FindAllAuditLogs(page, pageSize int, action, entityTyp
 	var total int64
 
 	query := r.db.Model(&audit.AuditLog{})
-	
+
 	if action != "" {
 		query = query.Where("action = ?", action)
 	}
-	
+
 	if entityType != "" {
 		query = query.Where("entity_type = ?", entityType)
 	}
@@ -86,7 +86,7 @@ func (r *AuditRepository) FindAllAuditLogs(page, pageSize int, action, entityTyp
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&logs).Error
-	
+
 	return logs, total, err
 }
 
@@ -97,14 +97,14 @@ func (r *AuditRepository) FindAuditLogsByDateRange(startDate, endDate time.Time,
 
 	query := r.db.Model(&audit.AuditLog{}).
 		Where("created_at >= ? AND created_at <= ?", startDate, endDate)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&logs).Error
-	
+
 	return logs, total, err
 }
 
@@ -114,14 +114,14 @@ func (r *AuditRepository) FindAuditLogsByIP(ipAddress string, page, pageSize int
 	var total int64
 
 	query := r.db.Model(&audit.AuditLog{}).Where("ip_address = ?", ipAddress)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&logs).Error
-	
+
 	return logs, total, err
 }
 
@@ -139,7 +139,7 @@ func (r *AuditRepository) SearchAuditLogs(keyword string, page, pageSize int) ([
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&logs).Error
-	
+
 	return logs, total, err
 }
 
@@ -151,19 +151,19 @@ func (r *AuditRepository) DeleteOldAuditLogs(beforeDate time.Time) error {
 // GetAuditStats 获取审计统计
 func (r *AuditRepository) GetAuditStats(startDate, endDate time.Time) (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
-	
+
 	query := r.db.Model(&audit.AuditLog{})
 	if !startDate.IsZero() && !endDate.IsZero() {
 		query = query.Where("created_at >= ? AND created_at <= ?", startDate, endDate)
 	}
-	
+
 	// 总日志数
 	var totalCount int64
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, err
 	}
 	stats["total_count"] = totalCount
-	
+
 	// 按操作类型统计
 	var actionStats []struct {
 		Action string
@@ -174,7 +174,7 @@ func (r *AuditRepository) GetAuditStats(startDate, endDate time.Time) (map[strin
 		return nil, err
 	}
 	stats["action_stats"] = actionStats
-	
+
 	// 按实体类型统计
 	var entityStats []struct {
 		EntityType string
@@ -185,7 +185,7 @@ func (r *AuditRepository) GetAuditStats(startDate, endDate time.Time) (map[strin
 		return nil, err
 	}
 	stats["entity_stats"] = entityStats
-	
+
 	// 按用户统计（Top 10）
 	var userStats []struct {
 		UserID uint
@@ -197,7 +197,7 @@ func (r *AuditRepository) GetAuditStats(startDate, endDate time.Time) (map[strin
 		return nil, err
 	}
 	stats["top_users"] = userStats
-	
+
 	return stats, nil
 }
 

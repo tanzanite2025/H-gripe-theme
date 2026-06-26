@@ -134,8 +134,8 @@ func (h *Handler) Calculate(c *gin.Context) {
 		"leftLengthMm":  leftRounded,
 		"rightLengthMm": rightRounded,
 		"debug": gin.H{
-			"rim": rim,
-			"hub": hubGeo,
+			"rim":            rim,
+			"hub":            hubGeo,
 			"formulaVersion": "v1.0-go-backend",
 		},
 	})

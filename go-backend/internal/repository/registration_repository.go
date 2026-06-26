@@ -49,7 +49,7 @@ func (r *RegistrationRepository) FindRegistrationsByUserID(userID uint, page, pa
 	var total int64
 
 	query := r.db.Model(&registration.ProductRegistration{}).Where("user_id = ?", userID)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -57,7 +57,7 @@ func (r *RegistrationRepository) FindRegistrationsByUserID(userID uint, page, pa
 	offset := (page - 1) * pageSize
 	err := query.Preload("Product").Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&registrations).Error
-	
+
 	return registrations, total, err
 }
 
@@ -67,7 +67,7 @@ func (r *RegistrationRepository) FindRegistrationsByProductID(productID uint, pa
 	var total int64
 
 	query := r.db.Model(&registration.ProductRegistration{}).Where("product_id = ?", productID)
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -75,7 +75,7 @@ func (r *RegistrationRepository) FindRegistrationsByProductID(productID uint, pa
 	offset := (page - 1) * pageSize
 	err := query.Preload("User").Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&registrations).Error
-	
+
 	return registrations, total, err
 }
 
@@ -85,7 +85,7 @@ func (r *RegistrationRepository) FindAllRegistrations(page, pageSize int, status
 	var total int64
 
 	query := r.db.Model(&registration.ProductRegistration{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -97,7 +97,7 @@ func (r *RegistrationRepository) FindAllRegistrations(page, pageSize int, status
 	offset := (page - 1) * pageSize
 	err := query.Preload("User").Preload("Product").Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&registrations).Error
-	
+
 	return registrations, total, err
 }
 
@@ -129,25 +129,25 @@ func (r *RegistrationRepository) CheckSerialNumberExists(serialNumber string) (b
 func (r *RegistrationRepository) FindExpiringWarranties(days int) ([]registration.ProductRegistration, error) {
 	var registrations []registration.ProductRegistration
 	expiryDate := time.Now().AddDate(0, 0, days)
-	
-	err := r.db.Where("warranty_expires <= ? AND warranty_expires >= ? AND status = ?", 
+
+	err := r.db.Where("warranty_expires <= ? AND warranty_expires >= ? AND status = ?",
 		expiryDate, time.Now(), "active").
 		Preload("User").Preload("Product").Find(&registrations).Error
-	
+
 	return registrations, err
 }
 
 // GetRegistrationStats 获取注册统计
 func (r *RegistrationRepository) GetRegistrationStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
-	
+
 	// 总注册数
 	var totalCount int64
 	if err := r.db.Model(&registration.ProductRegistration{}).Count(&totalCount).Error; err != nil {
 		return nil, err
 	}
 	stats["total_count"] = totalCount
-	
+
 	// 各状态统计
 	statuses := []string{"active", "expired", "cancelled"}
 	for _, status := range statuses {
@@ -158,7 +158,7 @@ func (r *RegistrationRepository) GetRegistrationStats() (map[string]interface{},
 		}
 		stats[status+"_count"] = count
 	}
-	
+
 	// 本月新增
 	var monthlyCount int64
 	startOfMonth := time.Now().AddDate(0, 0, -time.Now().Day()+1)
@@ -167,7 +167,7 @@ func (r *RegistrationRepository) GetRegistrationStats() (map[string]interface{},
 		return nil, err
 	}
 	stats["monthly_count"] = monthlyCount
-	
+
 	return stats, nil
 }
 
@@ -203,7 +203,7 @@ func (r *RegistrationRepository) FindAllWarrantyClaims(page, pageSize int, statu
 	var total int64
 
 	query := r.db.Model(&registration.WarrantyClaim{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -216,7 +216,7 @@ func (r *RegistrationRepository) FindAllWarrantyClaims(page, pageSize int, statu
 	err := query.Preload("Registration").Preload("Registration.User").
 		Preload("Registration.Product").Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&claims).Error
-	
+
 	return claims, total, err
 }
 
@@ -230,13 +230,13 @@ func (r *RegistrationRepository) UpdateWarrantyClaimStatus(id uint, status strin
 	updates := map[string]interface{}{
 		"status": status,
 	}
-	
+
 	if status == "approved" {
 		updates["approved_at"] = time.Now()
 	} else if status == "completed" {
 		updates["completed_at"] = time.Now()
 	}
-	
+
 	return r.db.Model(&registration.WarrantyClaim{}).Where("id = ?", id).Updates(updates).Error
 }
 

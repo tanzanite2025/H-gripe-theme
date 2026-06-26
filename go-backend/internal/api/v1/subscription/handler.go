@@ -242,7 +242,7 @@ func (h *Handler) DeleteSubscription(c *gin.Context) {
 // GET /api/v1/admin/subscriptions/export
 func (h *Handler) ExportEmails(c *gin.Context) {
 	tagsStr := c.Query("tags")
-	
+
 	var emails []string
 	var err error
 

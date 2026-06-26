@@ -505,4 +505,3 @@ func (s *SettingService) GetRedeemSettings(locale string) (*setting.RedeemSettin
 
 	return &redeemSettings, nil
 }
-

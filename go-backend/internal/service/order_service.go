@@ -62,7 +62,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 
 	// 生成订单号
 	orderNumber := s.generateOrderNumber()
-	
+
 	// 计算订单金额
 	var totalAmount float64
 	for i := range items {
@@ -70,24 +70,24 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 		if err != nil {
 			return nil, fmt.Errorf("[CRITICAL] Product ID %d not found in database: %w", items[i].ProductID, err)
 		}
-		
+
 		items[i].Price = product.Price
 		items[i].Subtotal = product.Price * float64(items[i].Quantity)
 		totalAmount += items[i].Subtotal
 	}
-	
+
 	// 计算运费
 	shippingFee, err := s.calculateShippingFee(shippingMethod, totalAmount, shippingAddress.Country)
 	if err != nil {
 		shippingFee = 0 // 默认免运费
 	}
-	
+
 	// 计算税费
 	taxAmount, err := s.calculateTax(totalAmount, shippingAddress.Country, shippingAddress.State)
 	if err != nil {
 		taxAmount = 0
 	}
-	
+
 	// 应用会员折扣 (Member Tier Discount)
 	memberDiscount := 0.0
 	userLoyalty, err := s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
@@ -118,7 +118,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 		if userLoyalty == nil || available < pointsToUse {
 			return nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", available, pointsToUse)
 		}
-		
+
 		// 1积分 = 0.01元
 		pointsDiscount = float64(pointsToUse) * 0.01
 		// 限制最多抵扣 50% 的订单金额
@@ -143,13 +143,13 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 		}
 		targetCoupon = cp
 	}
-	
+
 	// 计算最终金额
 	finalAmount := totalAmount + shippingFee + taxAmount - discountAmount
 	if finalAmount < 0 {
 		finalAmount = 0
 	}
-	
+
 	// 创建订单
 	o := &order.Order{
 		OrderNumber:     orderNumber,
@@ -170,13 +170,13 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 		ShippingAddress: shippingAddress,
 		BillingAddress:  billingAddress,
 	}
-	
+
 	// 用事务原子化订单创建、库存扣减和优惠券扣减
 	var createdOrder *order.Order
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
 		txOrderRepo := s.orderRepo.WithTx(tx)
 		txProductRepo := s.productRepo.WithTx(tx)
-		
+
 		// 1. 扣减库存 (防超卖)
 		itemsMap := make(map[uint]int)
 		for _, item := range items {
@@ -191,16 +191,16 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
 		}
 		createdOrder = o
-		
+
 		// 2. 优惠券扣减和记录
 		if targetCoupon != nil {
 			txCouponRepo := s.couponRepo.WithTx(tx)
-			
+
 			// 增加使用计数
 			if err := txCouponRepo.IncrementUsedCount(targetCoupon.ID); err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to increment usage count for coupon ID %d: %w", targetCoupon.ID, err)
 			}
-			
+
 			// 创建使用凭证记录
 			usage := &coupon.CouponUsage{
 				CouponID:  targetCoupon.ID,
@@ -216,13 +216,13 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 
 		return nil
 	})
-	
+
 	if txErr != nil {
 		return nil, txErr
 	}
-	
+
 	eventbus.Publish("OrderPlacedEvent", createdOrder)
-	
+
 	return createdOrder, nil
 }
 
@@ -232,12 +232,12 @@ func (s *OrderService) GetOrder(id uint, userID uint) (*order.Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 验证权限
 	if o.UserID != userID {
 		return nil, errors.New("unauthorized")
 	}
-	
+
 	return o, nil
 }
 
@@ -258,11 +258,11 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if !s.isValidStatusTransition(o.Status, status) {
 		return fmt.Errorf("invalid status transition from %s to %s", o.Status, status)
 	}
-	
+
 	return s.orderRepo.UpdateStatus(id, status)
 }
 
@@ -272,22 +272,22 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// 验证权限
 	if o.UserID != userID {
 		return errors.New("unauthorized")
 	}
-	
+
 	// 只有pending和paid状态可以取消
 	if o.Status != "pending" && o.Status != "paid" {
 		return errors.New("order cannot be cancelled")
 	}
-	
+
 	// 使用事务进行原子化回滚
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		txOrderRepo := s.orderRepo.WithTx(tx)
 		txProductRepo := s.productRepo.WithTx(tx)
-		
+
 		// 1. 更新订单状态为 cancelled
 		if err := txOrderRepo.UpdateStatus(id, "cancelled"); err != nil {
 			return err
@@ -306,7 +306,7 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 			if err := tx.Exec("UPDATE user_loyalties SET available_points = available_points + ?, used_points = used_points - ? WHERE user_id = ?", o.PointsUsed, o.PointsUsed, userID).Error; err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
 			}
-			
+
 			// 记录退还积分流水
 			userLoyalty, err := txLoyaltyRepo.FindUserLoyaltyByUserID(userID)
 			if err != nil {
@@ -340,7 +340,7 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 					UpdateColumn("used_count", gorm.Expr("used_count - ?", 1)).Error; err != nil {
 					return fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
 				}
-				
+
 				// 删除使用记录
 				if err := tx.Where("order_id = ?", o.ID).Delete(&coupon.CouponUsage{}).Error; err != nil {
 					return fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
@@ -380,7 +380,7 @@ func (s *OrderService) calculateTax(amount float64, country, state string) (floa
 	if err != nil {
 		return 0, nil // 没有税率配置则不收税
 	}
-	
+
 	return amount * taxRate.Rate / 100, nil
 }
 
@@ -390,25 +390,25 @@ func (s *OrderService) applyCoupon(code string, userID uint, amount float64) (fl
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// 验证优惠券
 	if !coupon.Enabled {
 		return 0, errors.New("coupon is disabled")
 	}
-	
+
 	now := time.Now()
 	if now.Before(coupon.StartDate) || now.After(coupon.EndDate) {
 		return 0, errors.New("coupon is expired")
 	}
-	
+
 	if coupon.UsageLimit > 0 && coupon.UsedCount >= coupon.UsageLimit {
 		return 0, errors.New("coupon usage limit reached")
 	}
-	
+
 	if amount < coupon.MinAmount {
 		return 0, fmt.Errorf("minimum amount %.2f required", coupon.MinAmount)
 	}
-	
+
 	// 计算折扣
 	var discount float64
 	if coupon.Type == "fixed" {
@@ -419,7 +419,7 @@ func (s *OrderService) applyCoupon(code string, userID uint, amount float64) (fl
 			discount = coupon.MaxDiscount
 		}
 	}
-	
+
 	return discount, nil
 }
 
@@ -432,17 +432,17 @@ func (s *OrderService) isValidStatusTransition(from, to string) bool {
 		"completed": {},
 		"cancelled": {},
 	}
-	
+
 	allowedStatuses, ok := validTransitions[from]
 	if !ok {
 		return false
 	}
-	
+
 	for _, status := range allowedStatuses {
 		if status == to {
 			return true
 		}
 	}
-	
+
 	return false
 }

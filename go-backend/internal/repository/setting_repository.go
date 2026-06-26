@@ -35,11 +35,11 @@ func (r *SettingRepository) GetByGroup(group, locale string) ([]setting.Setting,
 func (r *SettingRepository) Set(s *setting.Setting) error {
 	var existing setting.Setting
 	err := r.db.Where("key = ? AND locale = ?", s.Key, s.Locale).First(&existing).Error
-	
+
 	if err == gorm.ErrRecordNotFound {
 		return r.db.Create(s).Error
 	}
-	
+
 	existing.Value = s.Value
 	existing.Type = s.Type
 	existing.Group = s.Group

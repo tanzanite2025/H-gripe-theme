@@ -142,8 +142,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			contentGroup.POST("/faqs/:id/view", faqHandler.IncrementFAQView)
 		}
 
-
-
 		// 产品路由（公开）
 		productGroup := v1.Group("/products")
 		{
@@ -441,7 +439,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 				authRegistration.GET("/:registration_id/warranty-claims", registrationHandler.ListRegistrationClaims)
 			}
 		}
-
 
 	}
 

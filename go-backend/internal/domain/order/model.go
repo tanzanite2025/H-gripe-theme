@@ -8,63 +8,63 @@ import (
 
 // Order 订单模型
 type Order struct {
-	ID              uint           `gorm:"primarykey" json:"id"`
-	OrderNumber     string         `gorm:"uniqueIndex;not null" json:"order_number"`
-	UserID          uint           `gorm:"index" json:"user_id"`
-	Status          string         `gorm:"index;default:'pending'" json:"status"` // pending, paid, processing, shipped, completed, cancelled, refunded
-	PaymentMethod   string         `json:"payment_method"`
-	PaymentStatus   string         `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, refunded
-	ShippingMethod  string         `json:"shipping_method"`
-	ShippingStatus  string         `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
-	TrackingNumber  string         `json:"tracking_number"`
-	CarrierCode     string         `json:"carrier_code"`
-	
+	ID             uint   `gorm:"primarykey" json:"id"`
+	OrderNumber    string `gorm:"uniqueIndex;not null" json:"order_number"`
+	UserID         uint   `gorm:"index" json:"user_id"`
+	Status         string `gorm:"index;default:'pending'" json:"status"` // pending, paid, processing, shipped, completed, cancelled, refunded
+	PaymentMethod  string `json:"payment_method"`
+	PaymentStatus  string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, refunded
+	ShippingMethod string `json:"shipping_method"`
+	ShippingStatus string `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
+	TrackingNumber string `json:"tracking_number"`
+	CarrierCode    string `json:"carrier_code"`
+
 	// 金额相关
-	SubtotalAmount  float64        `gorm:"not null" json:"subtotal_amount"`
-	ShippingFee     float64        `gorm:"default:0" json:"shipping_fee"`
-	TaxAmount       float64        `gorm:"default:0" json:"tax_amount"`
-	DiscountAmount  float64        `gorm:"default:0" json:"discount_amount"`
-	TotalAmount     float64        `gorm:"not null" json:"total_amount"`
-	
+	SubtotalAmount float64 `gorm:"not null" json:"subtotal_amount"`
+	ShippingFee    float64 `gorm:"default:0" json:"shipping_fee"`
+	TaxAmount      float64 `gorm:"default:0" json:"tax_amount"`
+	DiscountAmount float64 `gorm:"default:0" json:"discount_amount"`
+	TotalAmount    float64 `gorm:"not null" json:"total_amount"`
+
 	// 优惠信息
-	CouponCode      string         `json:"coupon_code"`
-	PointsUsed      int            `gorm:"default:0" json:"points_used"`
-	PointsValue     float64        `gorm:"default:0" json:"points_value"`
-	
+	CouponCode  string  `json:"coupon_code"`
+	PointsUsed  int     `gorm:"default:0" json:"points_used"`
+	PointsValue float64 `gorm:"default:0" json:"points_value"`
+
 	// 地址信息
-	ShippingAddress Address        `gorm:"embedded;embeddedPrefix:shipping_" json:"shipping_address"`
-	BillingAddress  Address        `gorm:"embedded;embeddedPrefix:billing_" json:"billing_address"`
-	
+	ShippingAddress Address `gorm:"embedded;embeddedPrefix:shipping_" json:"shipping_address"`
+	BillingAddress  Address `gorm:"embedded;embeddedPrefix:billing_" json:"billing_address"`
+
 	// 备注
-	CustomerNote    string         `gorm:"type:text" json:"customer_note"`
-	AdminNote       string         `gorm:"type:text" json:"admin_note"`
-	
+	CustomerNote string `gorm:"type:text" json:"customer_note"`
+	AdminNote    string `gorm:"type:text" json:"admin_note"`
+
 	// 关联
-	Items           []OrderItem    `gorm:"foreignKey:OrderID" json:"items"`
-	
+	Items []OrderItem `gorm:"foreignKey:OrderID" json:"items"`
+
 	// 时间戳
-	CreatedAt       time.Time      `json:"created_at"`
-	UpdatedAt       time.Time      `json:"updated_at"`
-	PaidAt          *time.Time     `json:"paid_at"`
-	ShippedAt       *time.Time     `json:"shipped_at"`
-	CompletedAt     *time.Time     `json:"completed_at"`
-	CancelledAt     *time.Time     `json:"cancelled_at"`
-	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	PaidAt      *time.Time     `json:"paid_at"`
+	ShippedAt   *time.Time     `json:"shipped_at"`
+	CompletedAt *time.Time     `json:"completed_at"`
+	CancelledAt *time.Time     `json:"cancelled_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // Address 地址结构
 type Address struct {
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Company     string `json:"company"`
-	Address1    string `json:"address_1"`
-	Address2    string `json:"address_2"`
-	City        string `json:"city"`
-	State       string `json:"state"`
-	PostalCode  string `json:"postal_code"`
-	Country     string `json:"country"`
-	Phone       string `json:"phone"`
-	Email       string `json:"email"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	Company    string `json:"company"`
+	Address1   string `json:"address_1"`
+	Address2   string `json:"address_2"`
+	City       string `json:"city"`
+	State      string `json:"state"`
+	PostalCode string `json:"postal_code"`
+	Country    string `json:"country"`
+	Phone      string `json:"phone"`
+	Email      string `json:"email"`
 }
 
 // OrderItem 订单商品项
@@ -154,17 +154,17 @@ func (o *Order) CanTransitionTo(targetStatus string) bool {
 
 // OrderSummary 订单摘要（用于列表）
 type OrderSummary struct {
-	ID              uint       `json:"id"`
-	OrderNumber     string     `json:"order_number"`
-	UserID          uint       `json:"user_id"`
-	Status          string     `json:"status"`
-	PaymentStatus   string     `json:"payment_status"`
-	ShippingStatus  string     `json:"shipping_status"`
-	TotalAmount     float64    `json:"total_amount"`
-	ItemCount       int        `json:"item_count"`
-	CustomerName    string     `json:"customer_name"`
-	CreatedAt       time.Time  `json:"created_at"`
-	PaidAt          *time.Time `json:"paid_at"`
+	ID             uint       `json:"id"`
+	OrderNumber    string     `json:"order_number"`
+	UserID         uint       `json:"user_id"`
+	Status         string     `json:"status"`
+	PaymentStatus  string     `json:"payment_status"`
+	ShippingStatus string     `json:"shipping_status"`
+	TotalAmount    float64    `json:"total_amount"`
+	ItemCount      int        `json:"item_count"`
+	CustomerName   string     `json:"customer_name"`
+	CreatedAt      time.Time  `json:"created_at"`
+	PaidAt         *time.Time `json:"paid_at"`
 }
 
 // ToSummary 转换为摘要

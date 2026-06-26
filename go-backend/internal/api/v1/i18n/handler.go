@@ -114,12 +114,12 @@ func (h *Handler) GetPostTranslations(c *gin.Context) {
 	translationMap := make(map[string]interface{})
 	for _, t := range translations {
 		translationMap[t.Locale] = gin.H{
-			"id":            t.ID,
-			"title":         t.Title,
-			"slug":          t.Slug,
-			"locale":        t.Locale,
-			"published_at":  t.PublishedAt,
-			"url":           buildPostURL(t.Locale, t.Slug),
+			"id":           t.ID,
+			"title":        t.Title,
+			"slug":         t.Slug,
+			"locale":       t.Locale,
+			"published_at": t.PublishedAt,
+			"url":          buildPostURL(t.Locale, t.Slug),
 		}
 	}
 

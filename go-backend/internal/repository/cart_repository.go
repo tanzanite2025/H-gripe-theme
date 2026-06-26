@@ -103,7 +103,7 @@ func (r *CartRepository) BulkUpsertItems(items []product.CartItem) error {
 		return nil
 	}
 	return r.db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "cart_id"}, {Name: "product_id"}},
+		Columns: []clause.Column{{Name: "cart_id"}, {Name: "product_id"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{
 			"quantity": gorm.Expr("cart_items.quantity + EXCLUDED.quantity"),
 		}),

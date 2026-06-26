@@ -16,7 +16,7 @@ type Product struct {
 	Price       float64        `gorm:"not null" json:"price"`
 	SalePrice   *float64       `json:"sale_price"`
 	Stock       int            `gorm:"default:0" json:"stock"`
-	Weight      int            `json:"weight_grams"` // 克
+	Weight      int            `json:"weight_grams"`                         // 克
 	Status      string         `gorm:"default:'active';index" json:"status"` // active, inactive, out_of_stock
 	Locale      string         `gorm:"uniqueIndex:idx_product_slug_locale;default:'en';index" json:"locale"`
 	ParentID    *uint          `gorm:"index" json:"parent_id"` // 翻译关联
@@ -92,19 +92,19 @@ func (p *Product) ToListResponse() *ProductListResponse {
 		Locale:    p.Locale,
 		Featured:  p.Featured,
 	}
-	
+
 	// 获取第一张图片作为特色图片
 	if len(p.Images) > 0 {
 		resp.FeaturedImg = p.Images[0].URL
 	}
-	
+
 	return resp
 }
 
 // Cart 购物车
 type Cart struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
-	UserID    *uint          `gorm:"index" json:"user_id"` // 可为空（游客购物车）
+	UserID    *uint          `gorm:"index" json:"user_id"`    // 可为空（游客购物车）
 	SessionID string         `gorm:"index" json:"session_id"` // 游客会话ID
 	Items     []CartItem     `gorm:"foreignKey:CartID" json:"items"`
 	CreatedAt time.Time      `json:"created_at"`

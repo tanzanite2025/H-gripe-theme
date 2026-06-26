@@ -3,10 +3,10 @@ package chat
 import (
 	"net/http"
 	"strconv"
-	
+
 	"tanzanite/internal/domain/chat"
 	"tanzanite/internal/repository"
-	
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -63,7 +63,7 @@ func (h *ChatHandler) SaveMessage(c *gin.Context) {
 			err.Error() == "duplicate key value violates unique constraint" {
 			c.JSON(http.StatusOK, gin.H{
 				"success": true,
-				"message": "Message already exists (idempotent)"
+				"message": "Message already exists (idempotent)",
 			})
 			return
 		}
@@ -73,8 +73,8 @@ func (h *ChatHandler) SaveMessage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message_id": message.MessageID
+		"success":    true,
+		"message_id": message.MessageID,
 	})
 }
 
@@ -102,7 +102,7 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"messages": messages,
-		"count":    len(messages)
+		"count":    len(messages),
 	})
 }
 
@@ -130,7 +130,7 @@ func (h *ChatHandler) GetUserMessages(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"messages": messages,
-		"count":    len(messages)
+		"count":    len(messages),
 	})
 }
 

@@ -137,11 +137,11 @@ func (r *FAQRepository) GetByCategory(category, locale string) ([]faq.FAQ, error
 func (r *FAQRepository) GetPopular(locale string, limit int) ([]faq.FAQ, error) {
 	var faqs []faq.FAQ
 	query := r.db.Where("status = ?", "published")
-	
+
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
 	}
-	
+
 	err := query.Order("view_count DESC, created_at DESC").
 		Limit(limit).
 		Find(&faqs).Error
