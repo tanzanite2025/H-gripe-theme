@@ -223,3 +223,65 @@ func (r *UserRepository) FindRecent(limit int) ([]user.User, error) {
 	err := r.db.Order("created_at DESC").Limit(limit).Find(&users).Error
 	return users, err
 }
+
+
+// AddBrowsingHistory 添加或更新浏览历史
+func (r *UserRepository) AddBrowsingHistory(userID uint, productID uint) error {
+	var history user.BrowsingHistory
+	
+	// 查找是否已存在
+	err := r.db.Where("user_id = ? AND product_id = ?", userID, productID).
+		First(&history).Error
+	
+	if err == gorm.ErrRecordNotFound {
+		// 不存在，创建新记录
+		history = user.BrowsingHistory{
+			UserID:       userID,
+			ProductID:    productID,
+			ViewCount:    1,
+			LastViewedAt: time.Now(),
+		}
+		return r.db.Create(&history).Error
+	} else if err != nil {
+		return err
+	}
+	
+	// 已存在，更新浏览次数和时间
+	history.ViewCount++
+	history.LastViewedAt = time.Now()
+	return r.db.Save(&history).Error
+}
+
+// GetBrowsingHistory 获取用户浏览历史
+func (r *UserRepository) GetBrowsingHistory(userID uint, limit int) ([]user.BrowsingHistory, error) {
+	var history []user.BrowsingHistory
+	
+	query := r.db.Where("user_id = ?", userID).
+		Order("last_viewed_at DESC")
+	
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	
+	err := query.Find(&history).Error
+	return history, err
+}
+
+// DeleteBrowsingHistory 删除特定浏览记录
+func (r *UserRepository) DeleteBrowsingHistory(userID uint, productID uint) error {
+	return r.db.Where("user_id = ? AND product_id = ?", userID, productID).
+		Delete(&user.BrowsingHistory{}).Error
+}
+
+// ClearBrowsingHistory 清空用户浏览历史
+func (r *UserRepository) ClearBrowsingHistory(userID uint) error {
+	return r.db.Where("user_id = ?", userID).
+		Delete(&user.BrowsingHistory{}).Error
+}
+
+// DeleteOldBrowsingHistory 删除超过指定天数的浏览历史
+func (r *UserRepository) DeleteOldBrowsingHistory(days int) error {
+	cutoffDate := time.Now().AddDate(0, 0, -days)
+	return r.db.Where("last_viewed_at < ?", cutoffDate).
+		Delete(&user.BrowsingHistory{}).Error
+}
