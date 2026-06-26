@@ -1,9 +1,11 @@
 package registration
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/registration"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/pagination"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,13 +21,13 @@ import (
 func (h *Handler) CreateRegistration(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	var reg registration.ProductRegistration
 	if err := c.ShouldBindJSON(&reg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
@@ -36,20 +38,20 @@ func (h *Handler) CreateRegistration(c *gin.Context) {
 	// 检查序列号是否已存在
 	exists, err := h.registrationRepo.CheckSerialNumberExists(reg.SerialNumber)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 	if exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "serial number already registered"})
+		apierror.RespondConflict(c, "Serial number already registered")
 		return
 	}
 
 	if err := h.registrationRepo.CreateRegistration(&reg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, reg)
+	response.Created(c, reg)
 }
 
 // GetRegistration 获取注册详情
@@ -62,29 +64,29 @@ func (h *Handler) CreateRegistration(c *gin.Context) {
 func (h *Handler) GetRegistration(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid registration id"})
+		apierror.RespondBadRequest(c, "Invalid registration ID")
 		return
 	}
 
 	reg, err := h.registrationRepo.FindRegistrationByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Registration")
 		return
 	}
 
 	// 验证权限
 	if reg.UserID != userID.(uint) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		apierror.RespondForbidden(c)
 		return
 	}
 
-	c.JSON(http.StatusOK, reg)
+	response.Success(c, reg)
 }
 
 // ListUserRegistrations 获取用户的注册列表
@@ -98,35 +100,19 @@ func (h *Handler) GetRegistration(c *gin.Context) {
 func (h *Handler) ListUserRegistrations(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	registrations, total, err := h.registrationRepo.FindRegistrationsByUserID(userID.(uint), page, pageSize)
+	registrations, total, err := h.registrationRepo.FindRegistrationsByUserID(userID.(uint), params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": registrations,
-		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
-			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-		},
-	})
+	response.Paged(c, registrations, params.Page, params.PageSize, total)
 }
 
 // ListAllRegistrations 获取所有注册（管理员）
@@ -139,32 +125,16 @@ func (h *Handler) ListUserRegistrations(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/admin/registrations [get]
 func (h *Handler) ListAllRegistrations(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 	status := c.Query("status")
 
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	registrations, total, err := h.registrationRepo.FindAllRegistrations(page, pageSize, status)
+	registrations, total, err := h.registrationRepo.FindAllRegistrations(params.Page, params.PageSize, status)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": registrations,
-		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
-			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-		},
-	})
+	response.Paged(c, registrations, params.Page, params.PageSize, total)
 }
 
 // UpdateRegistration 更新注册信息
@@ -179,31 +149,31 @@ func (h *Handler) ListAllRegistrations(c *gin.Context) {
 func (h *Handler) UpdateRegistration(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid registration id"})
+		apierror.RespondBadRequest(c, "Invalid registration ID")
 		return
 	}
 
 	// 检查权限
 	existing, err := h.registrationRepo.FindRegistrationByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Registration")
 		return
 	}
 
 	if existing.UserID != userID.(uint) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		apierror.RespondForbidden(c)
 		return
 	}
 
 	var reg registration.ProductRegistration
 	if err := c.ShouldBindJSON(&reg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
@@ -211,11 +181,11 @@ func (h *Handler) UpdateRegistration(c *gin.Context) {
 	reg.UserID = userID.(uint)
 
 	if err := h.registrationRepo.UpdateRegistration(&reg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, reg)
+	response.Success(c, reg)
 }
 
 // UpdateRegistrationStatus 更新注册状态（管理员）
@@ -230,7 +200,7 @@ func (h *Handler) UpdateRegistration(c *gin.Context) {
 func (h *Handler) UpdateRegistrationStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid registration id"})
+		apierror.RespondBadRequest(c, "Invalid registration ID")
 		return
 	}
 
@@ -238,16 +208,16 @@ func (h *Handler) UpdateRegistrationStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	if err := h.registrationRepo.UpdateRegistrationStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "registration status updated"})
+	response.SuccessWithMessage(c, "Registration status updated", nil)
 }
 
 // GetRegistrationStats 获取注册统计（管理员）
@@ -259,9 +229,9 @@ func (h *Handler) UpdateRegistrationStatus(c *gin.Context) {
 func (h *Handler) GetRegistrationStats(c *gin.Context) {
 	stats, err := h.registrationRepo.GetRegistrationStats()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, stats)
+	response.Success(c, stats)
 }

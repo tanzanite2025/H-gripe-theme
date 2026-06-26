@@ -1,9 +1,10 @@
 package registration
 
 import (
-	"net/http"
 	"strings"
 	"tanzanite/internal/domain/registration"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,23 +23,20 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 		SerialNumber string `json:"serial_number" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	reg, err := h.registrationRepo.FindRegistrationBySerialNumber(req.SerialNumber)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"valid":   false,
-			"message": "serial number not found",
-		})
+		apierror.RespondNotFound(c, "Serial number")
 		return
 	}
 
 	// 清除可能导致隐私数据泄漏的用户信息
 	reg.User = nil
 
-	c.JSON(http.StatusOK, gin.H{
+	response.Success(c, gin.H{
 		"valid":            true,
 		"registration":     reg,
 		"warranty_expires": reg.WarrantyExpires,
@@ -55,17 +53,17 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 func (h *Handler) GetWarrantyStatus(c *gin.Context) {
 	code := strings.TrimSpace(c.Param("code"))
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_code", "message": "Product code is required."})
+		apierror.RespondBadRequest(c, "Product code is required")
 		return
 	}
 
 	reg, err := h.registrationRepo.FindRegistrationBySerialNumber(code)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Product not found."})
+		apierror.RespondNotFound(c, "Product")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response.Success(c, gin.H{
 		"success": true,
 		"data":    warrantyStatusResponse(reg),
 	})

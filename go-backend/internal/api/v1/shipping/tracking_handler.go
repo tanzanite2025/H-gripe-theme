@@ -1,9 +1,10 @@
 package shipping
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/shipping"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,17 +21,17 @@ import (
 func (h *Handler) TrackShipment(c *gin.Context) {
 	trackingNumber := c.Param("tracking_number")
 	if trackingNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "tracking number is required"})
+		apierror.RespondBadRequest(c, "tracking number is required")
 		return
 	}
 
 	events, err := h.shippingRepo.FindTrackingEventsByTrackingNumber(trackingNumber)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": events})
+	response.Success(c, gin.H{"data": events})
 }
 
 // GetOrderTracking 获取订单物流追踪
@@ -43,17 +44,17 @@ func (h *Handler) TrackShipment(c *gin.Context) {
 func (h *Handler) GetOrderTracking(c *gin.Context) {
 	orderID, err := strconv.ParseUint(c.Param("order_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		apierror.RespondBadRequest(c, "invalid order id")
 		return
 	}
 
 	events, err := h.shippingRepo.FindTrackingEventsByOrderID(uint(orderID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": events})
+	response.Success(c, gin.H{"data": events})
 }
 
 // CreateTrackingEvent 创建物流追踪事件（管理员）
@@ -67,14 +68,14 @@ func (h *Handler) GetOrderTracking(c *gin.Context) {
 func (h *Handler) CreateTrackingEvent(c *gin.Context) {
 	var event shipping.TrackingEvent
 	if err := c.ShouldBindJSON(&event); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.shippingRepo.CreateTrackingEvent(&event); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, event)
+	response.Created(c, event)
 }

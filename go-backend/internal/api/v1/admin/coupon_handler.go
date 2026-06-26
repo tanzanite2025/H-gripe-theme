@@ -1,9 +1,11 @@
 package admin
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/pagination"
+	"tanzanite/internal/pkg/response"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,13 +21,12 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Router /api/admin/marketing/coupons [get]
 func (h *MarketingHandler) ListCoupons(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 	status := c.Query("status") // all, active, expired, disabled
 
-	coupons, total, err := h.couponRepo.FindAllCoupons(page, pageSize)
+	coupons, total, err := h.couponRepo.FindAllCoupons(params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取优惠券列表失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -53,12 +54,7 @@ func (h *MarketingHandler) ListCoupons(c *gin.Context) {
 		total = int64(len(filtered))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"coupons":   coupons,
-		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
-	})
+	response.Paged(c, coupons, params.Page, params.PageSize, total)
 }
 
 // GetCoupon 获取优惠券详情
@@ -71,17 +67,17 @@ func (h *MarketingHandler) ListCoupons(c *gin.Context) {
 func (h *MarketingHandler) GetCoupon(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的优惠券ID"})
+		apierror.RespondBadRequest(c, "无效的优惠券ID")
 		return
 	}
 
 	cp, err := h.couponRepo.FindCouponByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "优惠券不存在"})
+		apierror.RespondNotFound(c, "优惠券")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"coupon": cp})
+	response.Success(c, gin.H{"coupon": cp})
 }
 
 // CreateCoupon 创建优惠券
@@ -111,7 +107,7 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
@@ -133,11 +129,11 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 	}
 
 	if err := h.couponRepo.CreateCoupon(cp); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建优惠券失败"})
+		apierror.RespondBadRequest(c, "创建优惠券失败")
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"coupon": cp})
+	response.Created(c, gin.H{"coupon": cp})
 }
 
 // UpdateCoupon 更新优惠券
@@ -152,13 +148,13 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的优惠券ID"})
+		apierror.RespondBadRequest(c, "无效的优惠券ID")
 		return
 	}
 
 	cp, err := h.couponRepo.FindCouponByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "优惠券不存在"})
+		apierror.RespondNotFound(c, "优惠券")
 		return
 	}
 
@@ -180,7 +176,7 @@ func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
@@ -211,11 +207,11 @@ func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 	cp.Enabled = req.Enabled
 
 	if err := h.couponRepo.UpdateCoupon(cp); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新优惠券失败"})
+		apierror.RespondBadRequest(c, "更新优惠券失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"coupon": cp})
+	response.Success(c, gin.H{"coupon": cp})
 }
 
 // DeleteCoupon 删除优惠券
@@ -228,16 +224,16 @@ func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 func (h *MarketingHandler) DeleteCoupon(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的优惠券ID"})
+		apierror.RespondBadRequest(c, "无效的优惠券ID")
 		return
 	}
 
 	if err := h.couponRepo.DeleteCoupon(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除优惠券失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
+	response.SuccessWithMessage(c, "删除成功", nil)
 }
 
 // GetCouponStats 获取优惠券统计
@@ -249,7 +245,7 @@ func (h *MarketingHandler) DeleteCoupon(c *gin.Context) {
 func (h *MarketingHandler) GetCouponStats(c *gin.Context) {
 	coupons, _, err := h.couponRepo.FindAllCoupons(1, 1000)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取统计失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -275,5 +271,5 @@ func (h *MarketingHandler) GetCouponStats(c *gin.Context) {
 	}
 	stats["used"] = totalUsed
 
-	c.JSON(http.StatusOK, stats)
+	response.Success(c, stats)
 }

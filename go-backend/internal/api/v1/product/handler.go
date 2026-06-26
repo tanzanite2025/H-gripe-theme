@@ -1,11 +1,13 @@
 package product
 
 import (
-	"net/http"
 	"strconv"
 	"strings"
 	"tanzanite/internal/api/middleware"
 	productdomain "tanzanite/internal/domain/product"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/pagination"
+	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -26,29 +28,20 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 	status := c.DefaultQuery("status", "active")
 	featured := c.Query("featured") == "true"
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "12"))
+	params := pagination.ParsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 12
+	// 覆盖默认pageSize为12（产品展示常用）
+	if c.Query("page_size") == "" {
+		params.PageSize = 12
 	}
 
-	products, total, err := h.productService.List(locale, status, featured, page, pageSize)
+	products, total, err := h.productService.List(locale, status, featured, params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data":        products,
-		"total":       total,
-		"page":        page,
-		"page_size":   pageSize,
-		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
-	})
+	response.Paged(c, products, params.Page, params.PageSize, total)
 }
 
 func (h *Handler) ListPublicChatProducts(c *gin.Context) {
@@ -67,7 +60,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 
 	products, total, err := h.productService.SearchPublic(locale, status, keyword, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -76,7 +69,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		items = append(items, makePublicChatProduct(item))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(200, gin.H{
 		"success": true,
 		"items":   items,
 		"meta": gin.H{
@@ -99,21 +92,21 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	if id, err := strconv.ParseUint(idOrSlug, 10, 32); err == nil {
 		product, err := h.productService.GetByID(uint(id))
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
+			apierror.RespondNotFound(c, "Product")
 			return
 		}
-		c.JSON(http.StatusOK, product)
+		response.Success(c, product)
 		return
 	}
 
 	// 作为slug查询
 	product, err := h.productService.GetBySlug(idOrSlug, locale)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
+		apierror.RespondNotFound(c, "Product")
 		return
 	}
 
-	c.JSON(http.StatusOK, product)
+	response.Success(c, product)
 }
 
 func normalizePublicChatProductStatus(status string) string {
@@ -165,10 +158,10 @@ func makePublicChatProduct(item productdomain.Product) gin.H {
 func (h *Handler) GetFilterableAttributes(c *gin.Context) {
 	attrs, err := h.productService.GetFilterableAttributes()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(200, gin.H{
 		"success": true,
 		"data":    attrs,
 	})
@@ -176,187 +169,174 @@ func (h *Handler) GetFilterableAttributes(c *gin.Context) {
 
 // ListAttributes 获取属性列表
 func (h *Handler) ListAttributes(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	params := pagination.ParsePagination(c)
 
-	attrs, total, err := h.productService.ListAttributes(page, pageSize)
+	attrs, total, err := h.productService.ListAttributes(params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data":        attrs,
-		"total":       total,
-		"page":        page,
-		"page_size":   pageSize,
-		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
-	})
+	response.Paged(c, attrs, params.Page, params.PageSize, total)
 }
 
 // GetAttribute 获取属性详情
 func (h *Handler) GetAttribute(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		apierror.RespondBadRequest(c, "Invalid attribute ID")
 		return
 	}
 
 	attr, err := h.productService.GetAttributeByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "attribute not found"})
+		apierror.RespondNotFound(c, "Attribute")
 		return
 	}
 
-	c.JSON(http.StatusOK, attr)
+	response.Success(c, attr)
 }
 
 // CreateAttribute 创建属性
 func (h *Handler) CreateAttribute(c *gin.Context) {
 	var attr productdomain.ProductAttribute
 	if err := c.ShouldBindJSON(&attr); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	if err := h.productService.CreateAttribute(&attr); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, attr)
+	response.Created(c, attr)
 }
 
 // UpdateAttribute 更新属性
 func (h *Handler) UpdateAttribute(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		apierror.RespondBadRequest(c, "Invalid attribute ID")
 		return
 	}
 
 	var attr productdomain.ProductAttribute
 	if err := c.ShouldBindJSON(&attr); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 	attr.ID = uint(id)
 
 	if err := h.productService.UpdateAttribute(&attr); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, attr)
+	response.Success(c, attr)
 }
 
 // DeleteAttribute 删除属性
 func (h *Handler) DeleteAttribute(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		apierror.RespondBadRequest(c, "Invalid attribute ID")
 		return
 	}
 
 	if err := h.productService.DeleteAttribute(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "attribute deleted successfully"})
+	response.SuccessWithMessage(c, "Attribute deleted successfully", nil)
 }
 
 // GetAttributeValues 获取属性值列表
 func (h *Handler) GetAttributeValues(c *gin.Context) {
 	attrID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		apierror.RespondBadRequest(c, "Invalid attribute ID")
 		return
 	}
 
 	values, err := h.productService.GetValuesByAttributeID(uint(attrID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, values)
+	response.Success(c, values)
 }
 
 // CreateAttributeValue 创建属性值
 func (h *Handler) CreateAttributeValue(c *gin.Context) {
 	attrID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		apierror.RespondBadRequest(c, "Invalid attribute ID")
 		return
 	}
 
 	var val productdomain.AttributeValue
 	if err := c.ShouldBindJSON(&val); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 	val.AttributeID = uint(attrID)
 
 	if err := h.productService.CreateAttributeValue(&val); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, val)
+	response.Created(c, val)
 }
 
 // UpdateAttributeValue 更新属性值
 func (h *Handler) UpdateAttributeValue(c *gin.Context) {
 	_, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		apierror.RespondBadRequest(c, "Invalid attribute ID")
 		return
 	}
 	valID, err := strconv.ParseUint(c.Param("valueId"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid value id"})
+		apierror.RespondBadRequest(c, "Invalid value ID")
 		return
 	}
 
 	var val productdomain.AttributeValue
 	if err := c.ShouldBindJSON(&val); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 	val.ID = uint(valID)
 
 	if err := h.productService.UpdateAttributeValue(&val); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, val)
+	response.Success(c, val)
 }
 
 // DeleteAttributeValue 删除属性值
 func (h *Handler) DeleteAttributeValue(c *gin.Context) {
 	_, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attribute id"})
+		apierror.RespondBadRequest(c, "Invalid attribute ID")
 		return
 	}
 	valID, err := strconv.ParseUint(c.Param("valueId"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid value id"})
+		apierror.RespondBadRequest(c, "Invalid value ID")
 		return
 	}
 
 	if err := h.productService.DeleteAttributeValue(uint(valID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "attribute value deleted successfully"})
+	response.SuccessWithMessage(c, "Attribute value deleted successfully", nil)
 }

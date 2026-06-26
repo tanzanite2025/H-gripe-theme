@@ -3,11 +3,13 @@ package registration
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
 	"strconv"
 	"strings"
 	orderdomain "tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/registration"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/pagination"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,16 +33,16 @@ func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 		Email       string `json:"email" binding:"required,email"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_params", "message": "Order Number and Email are required."})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	if _, err := h.findVerifiedWarrantyOrder(req.OrderNumber, req.Email); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "invalid_order", "message": err.Error()})
+		apierror.RespondNotFound(c, "Order")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Order verified successfully."})
+	response.SuccessWithMessage(c, "Order verified successfully", nil)
 }
 
 // SubmitWarrantyClaim 提交保修申请
@@ -61,24 +63,24 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 	orderNumber := strings.TrimSpace(c.PostForm("order_number"))
 	email := strings.TrimSpace(c.PostForm("email"))
 	if orderNumber == "" || email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_params", "message": "Order Number and Email are required."})
+		apierror.RespondBadRequest(c, "Order Number and Email are required")
 		return
 	}
 
 	order, err := h.findVerifiedWarrantyOrder(orderNumber, email)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "invalid_order", "message": err.Error()})
+		apierror.RespondNotFound(c, "Order")
 		return
 	}
 
 	imageURLs, videoURL, err := h.uploadWarrantyClaimFiles(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "upload_failed", "message": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 	imagesJSON, err := json.Marshal(imageURLs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "encode_failed", "message": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -96,13 +98,13 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 	}
 
 	if err := h.registrationRepo.CreateWarrantyClaim(&claim); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "db_error", "message": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	response.Created(c, gin.H{
 		"success": true,
-		"message": "Claim submitted successfully.",
+		"message": "Claim submitted successfully",
 		"id":      claim.ID,
 	})
 }
@@ -115,18 +117,18 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 // @Success 200 {array} registration.ProductRegistration
 // @Router /api/v1/admin/registrations/expiring [get]
 func (h *Handler) GetExpiringWarranties(c *gin.Context) {
-	days, _ := strconv.Atoi(c.DefaultQuery("days", "30"))
-	if days < 1 || days > 365 {
+	days := pagination.ParseLimit(c)
+	if days > 365 {
 		days = 30
 	}
 
 	registrations, err := h.registrationRepo.FindExpiringWarranties(days)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": registrations})
+	response.Success(c, gin.H{"data": registrations})
 }
 
 // CreateWarrantyClaim 创建保修申请
@@ -140,25 +142,25 @@ func (h *Handler) GetExpiringWarranties(c *gin.Context) {
 func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	var claim registration.WarrantyClaim
 	if err := c.ShouldBindJSON(&claim); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	// 验证注册记录是否属于当前用户
 	reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "registration not found"})
+		apierror.RespondNotFound(c, "Registration")
 		return
 	}
 
 	if reg.UserID != userID.(uint) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		apierror.RespondForbidden(c)
 		return
 	}
 
@@ -166,11 +168,11 @@ func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 	claim.Status = "pending"
 
 	if err := h.registrationRepo.CreateWarrantyClaim(&claim); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, claim)
+	response.Created(c, claim)
 }
 
 // GetWarrantyClaim 获取保修申请详情
@@ -183,19 +185,19 @@ func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid claim id"})
+		apierror.RespondBadRequest(c, "Invalid claim ID")
 		return
 	}
 
 	claim, err := h.registrationRepo.FindWarrantyClaimByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Warranty claim")
 		return
 	}
 
@@ -203,21 +205,21 @@ func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 	if claim.RegistrationID != 0 {
 		reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "registration not found"})
+			apierror.RespondNotFound(c, "Registration")
 			return
 		}
 		if reg.UserID != userID.(uint) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			apierror.RespondForbidden(c)
 			return
 		}
 	} else {
 		if claim.UserID != userID.(uint) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			apierror.RespondForbidden(c)
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, claim)
+	response.Success(c, claim)
 }
 
 // ListRegistrationClaims 获取注册的保修申请列表
@@ -230,35 +232,35 @@ func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	registrationID, err := strconv.ParseUint(c.Param("registration_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid registration id"})
+		apierror.RespondBadRequest(c, "Invalid registration ID")
 		return
 	}
 
 	// 验证权限
 	reg, err := h.registrationRepo.FindRegistrationByID(uint(registrationID))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "registration not found"})
+		apierror.RespondNotFound(c, "Registration")
 		return
 	}
 
 	if reg.UserID != userID.(uint) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		apierror.RespondForbidden(c)
 		return
 	}
 
 	claims, err := h.registrationRepo.FindWarrantyClaimsByRegistrationID(uint(registrationID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": claims})
+	response.Success(c, gin.H{"data": claims})
 }
 
 // ListAllWarrantyClaims 获取所有保修申请（管理员）
@@ -271,32 +273,16 @@ func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/admin/registrations/warranty-claims [get]
 func (h *Handler) ListAllWarrantyClaims(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 	status := c.Query("status")
 
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	claims, total, err := h.registrationRepo.FindAllWarrantyClaims(page, pageSize, status)
+	claims, total, err := h.registrationRepo.FindAllWarrantyClaims(params.Page, params.PageSize, status)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": claims,
-		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
-			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-		},
-	})
+	response.Paged(c, claims, params.Page, params.PageSize, total)
 }
 
 // UpdateWarrantyClaimStatus 更新保修申请状态（管理员）
@@ -311,7 +297,7 @@ func (h *Handler) ListAllWarrantyClaims(c *gin.Context) {
 func (h *Handler) UpdateWarrantyClaimStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid claim id"})
+		apierror.RespondBadRequest(c, "Invalid claim ID")
 		return
 	}
 
@@ -319,16 +305,16 @@ func (h *Handler) UpdateWarrantyClaimStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	if err := h.registrationRepo.UpdateWarrantyClaimStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "warranty claim status updated"})
+	response.SuccessWithMessage(c, "Warranty claim status updated", nil)
 }
 
 // 私有辅助方法

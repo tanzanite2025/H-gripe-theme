@@ -1,9 +1,10 @@
 package admin
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/loyalty"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,28 +15,28 @@ import (
 func (h *MarketingHandler) ListMemberLevels(c *gin.Context) {
 	levels, err := h.loyaltyRepo.FindAllMemberLevels()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取会员等级失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"levels": levels})
+	response.Success(c, gin.H{"levels": levels})
 }
 
 // GetMemberLevel 获取会员等级详情
 func (h *MarketingHandler) GetMemberLevel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的等级ID"})
+		apierror.RespondBadRequest(c, "无效的等级ID")
 		return
 	}
 
 	level, err := h.loyaltyRepo.FindMemberLevelByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "会员等级不存在"})
+		apierror.RespondNotFound(c, "会员等级")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"level": level})
+	response.Success(c, gin.H{"level": level})
 }
 
 // CreateMemberLevel 创建会员等级
@@ -53,7 +54,7 @@ func (h *MarketingHandler) CreateMemberLevel(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
@@ -70,24 +71,24 @@ func (h *MarketingHandler) CreateMemberLevel(c *gin.Context) {
 	}
 
 	if err := h.loyaltyRepo.CreateMemberLevel(level); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建会员等级失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"level": level})
+	response.Created(c, gin.H{"level": level})
 }
 
 // UpdateMemberLevel 更新会员等级
 func (h *MarketingHandler) UpdateMemberLevel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的等级ID"})
+		apierror.RespondBadRequest(c, "无效的等级ID")
 		return
 	}
 
 	level, err := h.loyaltyRepo.FindMemberLevelByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "会员等级不存在"})
+		apierror.RespondNotFound(c, "会员等级")
 		return
 	}
 
@@ -104,7 +105,7 @@ func (h *MarketingHandler) UpdateMemberLevel(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
@@ -126,25 +127,25 @@ func (h *MarketingHandler) UpdateMemberLevel(c *gin.Context) {
 	level.SortOrder = req.SortOrder
 
 	if err := h.loyaltyRepo.UpdateMemberLevel(level); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新会员等级失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"level": level})
+	response.Success(c, gin.H{"level": level})
 }
 
 // DeleteMemberLevel 删除会员等级
 func (h *MarketingHandler) DeleteMemberLevel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的等级ID"})
+		apierror.RespondBadRequest(c, "无效的等级ID")
 		return
 	}
 
 	if err := h.loyaltyRepo.DeleteMemberLevel(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除会员等级失败"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
+	response.SuccessWithMessage(c, "删除成功", nil)
 }

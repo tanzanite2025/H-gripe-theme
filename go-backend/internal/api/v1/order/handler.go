@@ -1,9 +1,11 @@
 package order
 
 import (
-	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/order"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/pagination"
+	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
 	"time"
 
@@ -66,13 +68,13 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	// 获取用户ID
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	var req CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
@@ -82,18 +84,18 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	
 	cart, err := h.cartService.GetOrCreateCart(&uid, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve cart session"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	summary, err := h.cartService.GetCartSummary(&uid, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve cart items"})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	if len(summary.Items) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cart is empty"})
+		apierror.RespondBadRequest(c, "Cart is empty")
 		return
 	}
 
@@ -151,14 +153,14 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		req.PointsToUse,
 	)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
 	// 清空购物车
 	_ = h.cartService.ClearCart(cart.ID)
 
-	c.JSON(http.StatusCreated, o)
+	response.Created(c, o)
 }
 
 // GetOrder 获取订单详情
@@ -172,23 +174,23 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 func (h *Handler) GetOrder(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		apierror.RespondBadRequest(c, "Invalid order ID")
 		return
 	}
 
 	o, err := h.orderService.GetOrder(uint(id), userID.(uint))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		apierror.RespondNotFound(c, "Order")
 		return
 	}
 
-	c.JSON(http.StatusOK, o)
+	response.Success(c, o)
 }
 
 // ListOrders 获取订单列表
@@ -202,52 +204,33 @@ func (h *Handler) GetOrder(c *gin.Context) {
 func (h *Handler) ListOrders(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	orders, total, err := h.orderService.GetUserOrders(userID.(uint), page, pageSize)
+	orders, total, err := h.orderService.GetUserOrders(userID.(uint), params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": orders,
-		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
-			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-		},
-	})
+	response.Paged(c, orders, params.Page, params.PageSize, total)
 }
 
 func (h *Handler) ListPublicChatOrders(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", c.DefaultQuery("page_size", "10")))
-	if limit < 1 || limit > 50 {
-		limit = 10
-	}
+	limit := pagination.ParseLimit(c)
 
 	orders, _, err := h.orderService.GetUserOrders(userID.(uint), 1, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -256,7 +239,7 @@ func (h *Handler) ListPublicChatOrders(c *gin.Context) {
 		items = append(items, makePublicChatOrder(item))
 	}
 
-	c.JSON(http.StatusOK, items)
+	c.JSON(200, items)
 }
 
 // ListAllOrders 获取所有订单（管理员）
@@ -269,32 +252,16 @@ func (h *Handler) ListPublicChatOrders(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/admin/orders [get]
 func (h *Handler) ListAllOrders(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	params := pagination.ParsePagination(c)
 	status := c.Query("status")
 
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	orders, total, err := h.orderService.GetAllOrders(page, pageSize, status)
+	orders, total, err := h.orderService.GetAllOrders(params.Page, params.PageSize, status)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": orders,
-		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
-			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-		},
-	})
+	response.Paged(c, orders, params.Page, params.PageSize, total)
 }
 
 // UpdateOrderStatus 更新订单状态
@@ -308,13 +275,13 @@ func (h *Handler) ListAllOrders(c *gin.Context) {
 // @Router /api/v1/admin/orders/{id}/status [put]
 func (h *Handler) UpdateOrderStatus(c *gin.Context) {
 	if role, exists := c.Get("role"); !exists || role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		apierror.RespondForbidden(c)
 		return
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		apierror.RespondBadRequest(c, "Invalid order ID")
 		return
 	}
 
@@ -322,16 +289,16 @@ func (h *Handler) UpdateOrderStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
 	if err := h.orderService.UpdateOrderStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "order status updated"})
+	response.SuccessWithMessage(c, "Order status updated", nil)
 }
 
 // CancelOrder 取消订单
@@ -344,22 +311,22 @@ func (h *Handler) UpdateOrderStatus(c *gin.Context) {
 func (h *Handler) CancelOrder(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		apierror.RespondBadRequest(c, "Invalid order ID")
 		return
 	}
 
 	if err := h.orderService.CancelOrder(uint(id), userID.(uint)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "order cancelled"})
+	response.SuccessWithMessage(c, "Order cancelled", nil)
 }
 
 // GetOrderStats 获取订单统计
@@ -371,17 +338,17 @@ func (h *Handler) CancelOrder(c *gin.Context) {
 func (h *Handler) GetOrderStats(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		apierror.RespondUnauthorized(c)
 		return
 	}
 
 	stats, err := h.orderService.GetOrderStats(userID.(uint))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, stats)
+	response.Success(c, stats)
 }
 
 func makePublicChatOrder(item order.Order) gin.H {
