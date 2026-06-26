@@ -1,0 +1,266 @@
+# golangci-lint配置文件
+# 用于代码质量检查和静态分析
+
+run:
+  # 超时时间
+  timeout: 5m
+  
+  # 并发运行的linter数量
+  concurrency: 4
+  
+  # 要检查的目录
+  tests: true
+  
+  # 跳过的目录
+  skip-dirs:
+    - vendor
+    - bin
+    - tmp
+    - .git
+  
+  # 跳过的文件
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*_test\\.go$"  # 可选：跳过测试文件
+  
+  # Go版本
+  go: '1.21'
+
+# 输出配置
+output:
+  # 输出格式：colored-line-number, line-number, json, tab, checkstyle, code-climate
+  format: colored-line-number
+  
+  # 打印检查的文件数
+  print-issued-lines: true
+  
+  # 打印linter名称
+  print-linter-name: true
+
+# Linters配置
+linters:
+  # 启用的linters
+  enable:
+    # 默认linters
+    - errcheck      # 检查未处理的错误
+    - gosimple      # 简化代码
+    - govet         # 检查可疑的构造
+    - ineffassign   # 检测无效的赋值
+    - staticcheck   # 静态分析
+    - unused        # 检测未使用的常量、变量、函数等
+    
+    # 额外的linters
+    - gofmt         # 检查代码格式
+    - goimports     # 检查import排序
+    - misspell      # 检查拼写错误
+    - revive        # 快速、可配置的Go linter
+    - gosec         # 安全检查
+    - gocritic      # 代码审查工具
+    - gocyclo       # 计算循环复杂度
+    - dupl          # 检测重复代码
+    - unparam       # 检测未使用的函数参数
+    - nakedret      # 检测裸返回
+    - prealloc      # 检测可以预分配的切片
+    - exportloopref # 检测循环变量的引用问题
+    - whitespace    # 检测不必要的空白
+    - unconvert     # 检测不必要的类型转换
+    - goconst       # 检测可以定义为常量的重复字符串
+    - bodyclose     # 检测HTTP响应body是否关闭
+    - noctx         # 检测发送HTTP请求时没有传递context
+    
+  # 禁用的linters
+  disable:
+    - typecheck     # 类型检查（由编译器处理）
+    - exhaustive    # 检查switch语句的完整性（太严格）
+    - exhaustruct   # 检查结构体字面量的完整性（太严格）
+    - gochecknoglobals  # 禁止全局变量（太严格）
+    - gochecknoinits    # 禁止init函数（太严格）
+    - lll           # 行长度限制（由gofmt处理）
+    - funlen        # 函数长度限制（太严格）
+    - godox         # 检测TODO/FIXME注释（开发中允许）
+
+# Linters设置
+linters-settings:
+  # errcheck配置
+  errcheck:
+    # 检查类型断言
+    check-type-assertions: true
+    # 检查空白标识符
+    check-blank: true
+    # 忽略的函数调用
+    exclude-functions:
+      - fmt.Print
+      - fmt.Println
+      - fmt.Printf
+  
+  # govet配置
+  govet:
+    # 检查shadow变量
+    check-shadowing: true
+    # 启用所有检查
+    enable-all: true
+  
+  # gofmt配置
+  gofmt:
+    # 简化代码
+    simplify: true
+  
+  # goimports配置
+  goimports:
+    # 本地包前缀
+    local-prefixes: github.com/tanzanite
+  
+  # revive配置
+  revive:
+    # 规则配置
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+  
+  # gosec配置
+  gosec:
+    # 严重级别
+    severity: medium
+    # 置信度
+    confidence: medium
+    # 排除的规则
+    excludes:
+      - G104  # 未检查的错误（由errcheck处理）
+  
+  # gocyclo配置
+  gocyclo:
+    # 循环复杂度阈值
+    min-complexity: 15
+  
+  # dupl配置
+  dupl:
+    # 重复代码的阈值（行数）
+    threshold: 100
+  
+  # goconst配置
+  goconst:
+    # 最小字符串长度
+    min-len: 3
+    # 最小出现次数
+    min-occurrences: 3
+  
+  # misspell配置
+  misspell:
+    # 语言
+    locale: US
+    # 忽略的单词
+    ignore-words:
+      - tanzanite
+  
+  # unparam配置
+  unparam:
+    # 检查导出的函数
+    check-exported: false
+  
+  # nakedret配置
+  nakedret:
+    # 最大函数行数
+    max-func-lines: 30
+  
+  # prealloc配置
+  prealloc:
+    # 简单循环
+    simple: true
+    # 范围循环
+    range-loops: true
+    # for循环
+    for-loops: false
+  
+  # whitespace配置
+  whitespace:
+    # 多行if
+    multi-if: true
+    # 多行函数
+    multi-func: true
+
+# Issues配置
+issues:
+  # 排除的规则
+  exclude-rules:
+    # 排除测试文件的某些检查
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+    
+    # 排除生成的文件
+    - path: \.pb\.go$
+      linters:
+        - all
+    
+    # 排除main.go的某些检查
+    - path: cmd/server/main\.go
+      linters:
+        - gochecknoglobals
+    
+    # 排除特定错误消息
+    - text: "weak cryptographic primitive"
+      linters:
+        - gosec
+    
+    - text: "Use of weak random number generator"
+      linters:
+        - gosec
+  
+  # 显示所有问题
+  exclude-use-default: false
+  
+  # 最大问题数（0表示无限制）
+  max-issues-per-linter: 0
+  
+  # 最大同类问题数（0表示无限制）
+  max-same-issues: 0
+  
+  # 显示全部问题
+  new: false
+
+# 严重性配置
+severity:
+  # 默认严重级别
+  default-severity: warning
+  
+  # 规则严重级别
+  rules:
+    - linters:
+        - errcheck
+        - gosec
+      severity: error
+    
+    - linters:
+        - revive
+        - gocritic
+      severity: warning
+    
+    - linters:
+        - misspell
+        - whitespace
+      severity: info

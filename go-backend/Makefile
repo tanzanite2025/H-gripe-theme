@@ -252,6 +252,82 @@ profile-mem: ## 内存性能分析
 	$(GO) test -memprofile=mem.prof -bench=. ./...
 	$(GO) tool pprof -http=:8080 mem.prof
 
+perf-test: ## 运行性能测试
+	@echo "Running performance tests..."
+	@chmod +x scripts/performance-test.sh
+	./scripts/performance-test.sh
+
+##@ 安全和审计
+
+security-scan: ## 运行安全扫描
+	@echo "Running security scan..."
+	@chmod +x scripts/security-scan.sh
+	./scripts/security-scan.sh
+
+audit: ## 运行依赖审计
+	@echo "Running dependency audit..."
+	$(GO) list -json -m all | go run github.com/sonatype-nexus-community/nancy@latest sleuth
+
+##@ 数据库管理
+
+db-backup: ## 备份数据库
+	@echo "Backing up database..."
+	@chmod +x scripts/backup-database.sh
+	./scripts/backup-database.sh
+
+db-restore: ## 恢复数据库
+	@echo "Restoring database..."
+	@chmod +x scripts/restore-database.sh
+	./scripts/restore-database.sh
+
+db-migrate-create: ## 创建新的迁移文件
+	@echo "Creating new migration..."
+	@chmod +x scripts/db-migrate.sh
+	./scripts/db-migrate.sh create $(NAME)
+
+##@ 日志和监控
+
+logs: ## 查看应用日志
+	@echo "Viewing application logs..."
+	tail -f logs/app.log
+
+log-analysis: ## 分析日志
+	@echo "Analyzing logs..."
+	@chmod +x scripts/log-analysis.sh
+	./scripts/log-analysis.sh -s
+
+monitoring-deploy: ## 部署监控系统
+	@echo "Deploying monitoring stack..."
+	kubectl create namespace monitoring || true
+	kubectl apply -f k8s/monitoring/prometheus-config.yaml
+	kubectl apply -f k8s/monitoring/alertmanager-config.yaml
+	kubectl apply -f k8s/monitoring/grafana-config.yaml
+	kubectl apply -f k8s/monitoring/exporters/
+
+monitoring-status: ## 查看监控系统状态
+	@echo "Monitoring stack status..."
+	kubectl get pods -n monitoring
+	kubectl get svc -n monitoring
+
+##@ 开发环境管理
+
+dev-setup: ## 快速设置开发环境
+	@echo "Setting up development environment..."
+	@chmod +x scripts/dev-setup.sh
+	./scripts/dev-setup.sh
+
+dev-reset: ## 重置开发环境
+	@echo "Resetting development environment..."
+	docker-compose down -v
+	rm -f .env
+	$(MAKE) dev-setup
+
+dev-db-reset: ## 重置开发数据库
+	@echo "Resetting development database..."
+	docker-compose restart postgres
+	sleep 5
+	$(MAKE) migrate-up
+
 ##@ CI/CD
 
 ci: lint test build ## 运行CI流程
@@ -259,5 +335,19 @@ ci: lint test build ## 运行CI流程
 
 cd: docker-build docker-push k8s-deploy ## 运行CD流程
 	@echo "CD pipeline completed successfully!"
+
+ci-full: security-scan lint test build docker-build ## 完整CI流程（包含安全扫描）
+	@echo "Full CI pipeline completed successfully!"
+
+##@ 全面检查
+
+check-all: lint vet test security-scan ## 运行所有检查
+	@echo "All checks passed!"
+
+pre-commit: fmt lint test ## 提交前检查
+	@echo "Pre-commit checks passed!"
+
+pre-deploy: check-all build docker-build ## 部署前检查
+	@echo "Pre-deploy checks passed!"
 
 .DEFAULT_GOAL := help
