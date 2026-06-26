@@ -7,6 +7,7 @@ import (
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
+	"tanzanite/internal/pkg/eventbus"
 	"tanzanite/internal/pkg/logger"
 	"tanzanite/internal/repository"
 	"time"
@@ -213,35 +214,14 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 			}
 		}
 
-		// 3. 积分扣减和记录
-		if pointsToUse > 0 {
-			txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
-			
-			// 修改 UserLoyalty 表记录
-			if err := tx.Exec("UPDATE user_loyalties SET available_points = available_points - ?, used_points = used_points + ? WHERE user_id = ?", pointsToUse, pointsToUse, userID).Error; err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to deduct points: %w", err)
-			}
-			
-			// 记录积分流水
-			txTransaction := &loyalty.LoyaltyTransaction{
-				UserID:      userID,
-				Points:      -pointsToUse,
-				Type:        "redemption",
-				Description: fmt.Sprintf("Order #%s points redemption", orderNumber),
-				Balance:     userLoyalty.AvailablePoints - pointsToUse,
-				CreatedAt:   time.Now(),
-			}
-			if err := txLoyaltyRepo.CreateTransaction(txTransaction); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to record points transaction: %w", err)
-			}
-		}
-
 		return nil
 	})
 	
 	if txErr != nil {
 		return nil, txErr
 	}
+	
+	eventbus.Publish("OrderPlacedEvent", createdOrder)
 	
 	return createdOrder, nil
 }

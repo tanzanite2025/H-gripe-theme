@@ -43,3 +43,31 @@
   - `cd go-backend`
   - 运行 `go mod tidy`
   - 运行 `go build ./...`，确保项目编译无误。
+
+## 5.5 Level 9 Error & Health Plan
+- **统一错误响应**:
+  - `cd go-backend`
+  - 创建 `internal/api/v1/apierror/error.go`。
+  - 定义 `AppError` 结构体，包含 `Code`、`Message` 和 `StatusCode` 字段。
+  - 编写 `Send(c *gin.Context, err error)` 辅助函数：判断错误是否为 `*AppError`，是则返回相应的状态码和 JSON 响应；否则返回 500 并屏蔽内部细节。
+  - 修改 `internal/api/v1/auth/handler.go`（或类似核心 handler），将其使用 `c.JSON(400, gin.H{"error": err.Error()})` 的地方替换为 `apierror.Send`。
+- **深度健康检查**:
+  - 更新 `internal/api/v1/router.go`（或定义了 `/health` 接口的地方）。
+  - 在 `/health` 接口中添加对数据库（`db.DB().Ping()`）和 Redis（`redis.Client.Ping()`）的检查。如果任何一个失败，则返回 HTTP 503 Service Unavailable。
+  - 新增 `/ready` 接口，执行相同的健康和连通性检查。
+- **验证编译**:
+  - `cd go-backend`
+  - 运行 `go mod tidy` 和 `go build ./...` 确保编译通过。
+
+## 6. Level 9 Infrastructure Plan
+- **Database Migrations**:
+  - `cd go-backend` 并运行 `go get github.com/golang-migrate/migrate/v4`
+  - 修改 `internal/pkg/database/migrate.go`：如果环境是 production，则默认禁用 GORM `AutoMigrate`（或仅做 warning 打印）；增加逻辑通过 `migrate.New` 等方式读取 `migrations/` 目录执行 SQL 迁移。
+- **Async Job Queue**:
+  - `cd go-backend` 并运行 `go get github.com/hibiken/asynq`
+  - 创建 `internal/pkg/worker/worker.go`：封装 Asynq Server 的启动和任务处理逻辑。
+  - 创建 `internal/pkg/worker/client.go`：封装 Asynq Client，用于生产者投递任务。
+  - 修改 `cmd/server/main.go`：初始化 Redis 连接给 Asynq Server，将 worker server 与原有的 HTTP Server 并排启动，监听退出信号时一并优雅关闭 (`server.Shutdown()`)。
+- **验证编译**:
+  - `cd go-backend`
+  - 运行 `go mod tidy` 和 `go build ./...`。

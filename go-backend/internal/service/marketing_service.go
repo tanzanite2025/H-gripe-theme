@@ -7,7 +7,9 @@ import (
 	"math/rand"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
+	"tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/setting"
+	"tanzanite/internal/pkg/eventbus"
 	"tanzanite/internal/repository"
 	"time"
 
@@ -24,10 +26,24 @@ func NewMarketingService(
 	couponRepo *repository.CouponRepository,
 	loyaltyRepo *repository.LoyaltyRepository,
 ) *MarketingService {
-	return &MarketingService{
+	s := &MarketingService{
 		couponRepo:  couponRepo,
 		loyaltyRepo: loyaltyRepo,
 	}
+	s.initEventListeners()
+	return s
+}
+
+func (s *MarketingService) initEventListeners() {
+	eventbus.Subscribe("OrderPlacedEvent", func(event interface{}) {
+		o, ok := event.(*order.Order)
+		if !ok {
+			return
+		}
+		if o.PointsUsed > 0 {
+			_ = s.SpendPoints(o.UserID, o.PointsUsed, o.ID)
+		}
+	})
 }
 
 // Coupon 相关方法
