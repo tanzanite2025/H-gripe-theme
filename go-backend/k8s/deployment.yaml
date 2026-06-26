@@ -1,0 +1,196 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tanzanite-api
+  namespace: default
+  labels:
+    app: tanzanite-api
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tanzanite-api
+  template:
+    metadata:
+      labels:
+        app: tanzanite-api
+        version: v1
+    spec:
+      containers:
+      - name: api
+        image: tanzanite-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 9000
+          protocol: TCP
+        
+        # 环境变量配置
+        env:
+        - name: SERVER_MODE
+          value: "release"
+        - name: SERVER_PORT
+          value: ":9000"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: tanzanite-secrets
+              key: jwt-secret
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: tanzanite-config
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: tanzanite-config
+              key: db-port
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: tanzanite-config
+              key: db-name
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: tanzanite-secrets
+              key: db-username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: tanzanite-secrets
+              key: db-password
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: tanzanite-config
+              key: redis-host
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: tanzanite-config
+              key: redis-port
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: tanzanite-secrets
+              key: redis-password
+        
+        # 资源限制
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # 存活探针 - 检测容器是否需要重启
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # 就绪探针 - 检测容器是否准备好接收流量
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # 启动探针 - 给应用更多时间启动
+        startupProbe:
+          httpGet:
+            path: /liveness
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 30
+        
+        # 优雅终止
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+      
+      # 终止优雅期
+      terminationGracePeriodSeconds: 30
+      
+      # Pod反亲和性 - 确保Pod分散在不同节点
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - tanzanite-api
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tanzanite-api
+  namespace: default
+  labels:
+    app: tanzanite-api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 9000
+    protocol: TCP
+    name: http
+  selector:
+    app: tanzanite-api
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tanzanite-config
+  namespace: default
+data:
+  db-host: "postgres-service"
+  db-port: "5432"
+  db-name: "tanzanite"
+  redis-host: "redis-service"
+  redis-port: "6379"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tanzanite-secrets
+  namespace: default
+type: Opaque
+stringData:
+  jwt-secret: "your-jwt-secret-here-change-in-production"
+  db-username: "tanzanite"
+  db-password: "your-db-password-here"
+  redis-password: ""

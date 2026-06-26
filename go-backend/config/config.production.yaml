@@ -1,0 +1,203 @@
+server:
+  port: ":9000"
+  mode: release
+  base_url: "https://api.tanzanite.example.com"
+  read_timeout: 30
+  write_timeout: 30
+
+database:
+  driver: postgres
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  username: ${DB_USERNAME}
+  password: ${DB_PASSWORD}
+  database: ${DB_NAME}
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600
+  auto_migrate: false
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+  password: ${REDIS_PASSWORD}
+  db: 0
+  pool_size: 20
+
+jwt:
+  secret: ${JWT_SECRET}
+  expire_hours: 24
+  refresh_expire_hours: 168
+
+i18n:
+  default_locale: en
+  supported_locales:
+    - en
+    - zh
+    - fr
+    - de
+    - es
+    - ja
+    - ko
+    - it
+    - pt
+    - ru
+    - ar
+    - fi
+    - da
+    - th
+
+cors:
+  allowed_origins:
+    - "https://tanzanite.example.com"
+    - "https://www.tanzanite.example.com"
+  allowed_methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+  allowed_headers:
+    - Origin
+    - Content-Type
+    - Authorization
+    - Accept-Language
+    - X-Request-ID
+  expose_headers:
+    - Content-Length
+    - X-Request-ID
+  allow_credentials: true
+  max_age: 43200
+
+cache:
+  default_ttl: 3600
+  post_ttl: 3600
+  product_ttl: 1800
+  settings_ttl: 7200
+
+log:
+  level: info
+  format: json
+  output: stdout
+
+# 限流配置（生产环境）
+rate_limit:
+  # 全局限流
+  global_rps: 1000
+  
+  # IP限流
+  ip_rps: 100
+  ip_burst: 200
+  
+  # 用户限流
+  user_rps: 50
+  user_burst: 100
+  
+  # 认证端点限流
+  auth_rps: 5
+  auth_burst: 10
+  
+  # 支付端点限流
+  payment_rps: 10
+  payment_burst: 20
+  
+  # 管理员端点限流
+  admin_rps: 20
+  admin_burst: 40
+
+# 文件上传配置
+upload:
+  max_size: 10485760  # 10MB
+  max_image_size: 5242880  # 5MB
+  max_video_size: 104857600  # 100MB
+  allowed_types:
+    - image/jpeg
+    - image/png
+    - image/gif
+    - image/webp
+    - application/pdf
+
+# 安全配置
+security:
+  # 密码策略
+  min_password_length: 8
+  require_uppercase: true
+  require_lowercase: true
+  require_number: true
+  require_special: false
+  
+  # 会话配置
+  max_sessions_per_user: 5
+  session_timeout: 3600
+  
+  # IP白名单（管理员）
+  admin_ip_whitelist: []
+  
+  # 启用安全头
+  enable_hsts: true
+  enable_csp: true
+  enable_xss_protection: true
+  enable_frame_guard: true
+
+# 监控配置
+monitoring:
+  enable_metrics: true
+  enable_tracing: false
+  metrics_path: /metrics
+  health_check_path: /health
+
+# 支付网关配置
+payment:
+  stripe:
+    api_key: ${STRIPE_API_KEY}
+    webhook_secret: ${STRIPE_WEBHOOK_SECRET}
+  paypal:
+    client_id: ${PAYPAL_CLIENT_ID}
+    secret: ${PAYPAL_SECRET}
+    mode: live
+  alipay:
+    app_id: ${ALIPAY_APP_ID}
+    private_key: ${ALIPAY_PRIVATE_KEY}
+    alipay_public_key: ${ALIPAY_PUBLIC_KEY}
+  wechat:
+    app_id: ${WECHAT_APP_ID}
+    mch_id: ${WECHAT_MCH_ID}
+    api_key: ${WECHAT_API_KEY}
+    cert_path: ${WECHAT_CERT_PATH}
+    key_path: ${WECHAT_KEY_PATH}
+
+# 云存储配置
+storage:
+  provider: s3  # s3, oss, local
+  s3:
+    region: ${AWS_REGION}
+    bucket: ${AWS_S3_BUCKET}
+    access_key: ${AWS_ACCESS_KEY_ID}
+    secret_key: ${AWS_SECRET_ACCESS_KEY}
+    base_url: ${AWS_S3_BASE_URL}
+  oss:
+    endpoint: ${ALIYUN_OSS_ENDPOINT}
+    bucket: ${ALIYUN_OSS_BUCKET}
+    access_key: ${ALIYUN_ACCESS_KEY_ID}
+    secret_key: ${ALIYUN_ACCESS_KEY_SECRET}
+    base_url: ${ALIYUN_OSS_BASE_URL}
+
+# 邮件配置
+email:
+  smtp_host: ${SMTP_HOST}
+  smtp_port: ${SMTP_PORT}
+  smtp_username: ${SMTP_USERNAME}
+  smtp_password: ${SMTP_PASSWORD}
+  from_address: ${EMAIL_FROM_ADDRESS}
+  from_name: "Tanzanite Components"
+
+# 第三方服务
+third_party:
+  # Google reCAPTCHA
+  recaptcha_secret: ${RECAPTCHA_SECRET}
+  
+  # Sentry错误追踪
+  sentry_dsn: ${SENTRY_DSN}
+  
+  # Analytics
+  google_analytics_id: ${GA_ID}
