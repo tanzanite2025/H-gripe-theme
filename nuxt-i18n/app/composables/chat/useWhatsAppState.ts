@@ -2,6 +2,7 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
+import { loadChatAgentDirectory } from '~/composables/chat/useChatAgentDirectory'
 import {
   CHAT_STORAGE_EXPIRY_DAYS,
   createEmptyChatRoom,
@@ -126,8 +127,6 @@ export const useWhatsAppState = (emit: any) => {
   // 在线客服数量
   const onlineAgentsCount = computed(() => agents.value.length)
   
-  const isDesktopSearchFocused = ref(false)
-  
   watch([showWelcomeScreen, welcomeAgents], () => {
     if (!showWelcomeScreen.value) return
     if (!welcomeAgents.value.length) return
@@ -138,28 +137,6 @@ export const useWhatsAppState = (emit: any) => {
       selectedAgent.value = welcomeAgents.value[1] || welcomeAgents.value[0]
     }
   }, { immediate: true })
-  // Desktop-only搜索占位
-  const desktopSearchQuery = ref('')
-  
-  const matchingAgents = computed<any[]>(() => {
-    const query = desktopSearchQuery.value.trim().toLowerCase()
-    if (!query) return []
-  
-    return agents.value.filter((agent) => {
-      const name = (agent?.name || '').toLowerCase()
-      const email = (agent?.email || '').toLowerCase()
-      const rawTags = Array.isArray((agent as any).tags)
-        ? (agent as any).tags.join(' ')
-        : (agent as any).tags || ''
-      const tags = String(rawTags).toLowerCase()
-  
-      return name.includes(query) || email.includes(query) || tags.includes(query)
-    })
-  })
-  
-  const shouldShowDesktopSearchResults = computed(() => {
-    return isDesktopSearchFocused.value && !!desktopSearchQuery.value.trim()
-  })
   
   // 全局邮箱设置
   const emailSettings = ref({
@@ -169,7 +146,6 @@ export const useWhatsAppState = (emit: any) => {
   
   const chatRooms = ref<Record<number, ChatRoomState>>({})
   
-  const messagesContainerMobile = ref<HTMLElement | null>(null)
   const isSending = ref(false)
   
   const ensureChatRoom = (agentId: number): ChatRoomState => {
@@ -272,7 +248,6 @@ export const useWhatsAppState = (emit: any) => {
   const isTransferring = ref(false)
   
   // 图片上传
-  const imageInput = ref<HTMLInputElement | null>(null)
   const isUploadingImage = ref(false)
   
   // 生成会话ID（基于访客标识）
@@ -312,14 +287,6 @@ export const useWhatsAppState = (emit: any) => {
   
   const messagePressTimer = ref<number | null>(null)
   const pressedMessage = ref<any | null>(null)
-  
-  // WhatsApp 长按相关
-  let longPressTimer: number | null = null
-  const longPressDuration = 500 // 长按时长（毫秒）
-  let isLongPress = ref(false)
-  
-  // 是否显示"我的订单"标签
-  const shouldShowOrders = computed(() => !!user.value)
   
   // 保修查询登录状态
   const isLoggedInForWarranty = computed(() => !!user.value)
@@ -363,13 +330,6 @@ export const useWhatsAppState = (emit: any) => {
     loadMessagesFromStorage()
   }
   
-  // FAQ 数据
-  const faqItems = [
-    { id: 'wheelset', text: 'How to choose the right wheelset?', url: '/guides/wheelset-buyers' },
-    { id: 'warranty', text: "What's the warranty policy?", url: '/support/warranty-check' },
-    { id: 'shipping', text: 'Shipping & delivery times', url: '/support/shipping' },
-  ]
-  
   // 显示 Toast 提示
   const displayToast = (message: string, duration = 2000) => {
     toastMessage.value = message
@@ -380,49 +340,6 @@ export const useWhatsAppState = (emit: any) => {
       showToast.value = false
     }, duration)
   }
-  
-  // WhatsApp 触摸开始（长按检测）
-  const handleWhatsAppTouchStart = (agent: any) => {
-    if (!agent.whatsapp) return
-    
-    isLongPress.value = false
-    longPressTimer = setTimeout(() => {
-      isLongPress.value = true
-      // 长按触发，打开 WhatsApp
-      if (confirm(`Open WhatsApp to contact ${agent.name}?`)) {
-        window.open(`https://wa.me/${agent.whatsapp.replace('+', '')}`, '_blank')
-      }
-    }, longPressDuration)
-  }
-  
-  // WhatsApp 触摸结束
-  const handleWhatsAppTouchEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      longPressTimer = null
-    }
-  }
-  
-  // WhatsApp 点击（桌面端或短按）
-  const handleWhatsAppClick = (agent: any) => {
-    if (!agent.whatsapp) return
-    
-    // 如果是长按触发的，不执行点击逻辑
-    if (isLongPress.value) {
-      isLongPress.value = false
-      return
-    }
-    
-    // 短按显示提示
-    displayToast('Long press to open WhatsApp', 2000)
-  }
-  
-  // WhatsApp 链接
-  
-  const whatsappLink = computed(() => {
-    if (!selectedAgent.value?.whatsapp) return ''
-    return `https://wa.me/${selectedAgent.value.whatsapp.replace('+', '')}`
-  })
   
   const canDeleteMessage = (message: any) => !message.is_agent
   
@@ -484,32 +401,9 @@ export const useWhatsAppState = (emit: any) => {
     confirmDeleteMessage(message)
   }
   
-  // 获取状态文本
-  const getStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      active: '在线',
-      closed: '已关闭',
-      pending: '待处理'
-    }
-    return statusMap[status] || status
-  }
-  
-  // 格式化消息时间
-  const formatMessageTime = (time: string) => {
-    const date = new Date(time)
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  }
-  
   // 滚动到底部
   const scrollToBottom = () => {
-    nextTick(() => {
-      const containers = [messagesContainerMobile.value]
-      containers.forEach((container) => {
-        if (container) {
-          container.scrollTop = container.scrollHeight
-        }
-      })
-    })
+    nextTick()
   }
   
   // 监听消息变化，自动滚动到底部
@@ -873,84 +767,18 @@ export const useWhatsAppState = (emit: any) => {
   const fetchAgents = async () => {
     isLoadingAgents.value = true
     try {
-      // 1. 先尝试从 localStorage 读取缓存
-      if (typeof window !== 'undefined') {
-        const cached = localStorage.getItem('whatsapp_agents_cache')
-        if (cached) {
-          try {
-            const { data, timestamp } = JSON.parse(cached)
-            // 缓存有效期：30分钟
-            if (Date.now() - timestamp < 30 * 60 * 1000) {
-              // 过滤掉当前登录用户关联的客服
-              const currentUserId = user.value?.id
-              const filteredAgents = data.agents.filter((agent: any) => {
-                return !agent.wp_user_id || agent.wp_user_id !== currentUserId
-              })
-              
-              agents.value = filteredAgents
-              if (data.emailSettings) {
-                emailSettings.value = data.emailSettings
-              }
-  
-              await initializeSelectedAgent()
-              isLoadingAgents.value = false
-              return
-            }
-          } catch (e) {
-            // 缓存解析失败，继续请求
-          }
-        }
+      const directory = await loadChatAgentDirectory({
+        apiBase: publicApiBase.value,
+        currentUserId: user.value?.id,
+        allowDevFallback: import.meta.dev
+      })
+
+      if (directory.emailSettings) {
+        emailSettings.value = directory.emailSettings
       }
-      
-      // 2. 缓存不存在或过期，从 API 获取
-      let agentsData: any[] = []
-      
-      try {
-        const response = await $fetch<any>(`${publicApiBase.value}/customer-service/agents`)
-        if (response.success && response.data) {
-          agentsData = response.data
-        }
-      } catch (error) {
-        console.warn('Failed to fetch agents from API, using mock data for dev')
-      }
-      
-      // 用于缓存的原始数据
-      let cacheData = { agents: agentsData, emailSettings: null as any }
-      
-      // 开发环境：如果 API 没有返回数据，使用模拟数据
-      if (agentsData.length === 0 && import.meta.dev) {
-        agentsData = [
-          { id: 'CS001', name: 'Sales', email: 'sales@tanzanite.site', avatar: '', whatsapp: '+8613800138001', wp_user_id: null },
-          { id: 'CS002', name: 'Tech Support', email: 'tech@tanzanite.site', avatar: '', whatsapp: '+8613800138002', wp_user_id: null },
-          { id: 'CS003', name: 'After Sales', email: 'support@tanzanite.site', avatar: '', whatsapp: '+8613800138003', wp_user_id: null },
-        ]
-        cacheData.agents = agentsData
-        // 开发环境设置默认邮箱
-        emailSettings.value = {
-          preSalesEmail: 'sales@tanzanite.site',
-          afterSalesEmail: 'support@tanzanite.site'
-        }
-        cacheData.emailSettings = emailSettings.value
-      }
-      
-      if (agentsData.length > 0) {
-        // 过滤掉当前登录用户关联的客服
-        const currentUserId = user.value?.id
-        const filteredAgents = agentsData.filter((agent: any) => {
-          // 如果客服没有关联 wp_user_id，或者不是当前用户，则显示
-          return !agent.wp_user_id || agent.wp_user_id !== currentUserId
-        })
-        
-        agents.value = filteredAgents
-        
-        // 3. 保存到 localStorage（保存原始数据，过滤在读取时进行）
-        if (typeof window !== 'undefined' && cacheData.agents.length > 0) {
-          localStorage.setItem('whatsapp_agents_cache', JSON.stringify({
-            data: cacheData,
-            timestamp: Date.now()
-          }))
-        }
-        
+
+      if (directory.agents.length > 0) {
+        agents.value = directory.agents
         await initializeSelectedAgent()
       }
     } catch (error) {
@@ -1026,43 +854,6 @@ export const useWhatsAppState = (emit: any) => {
     loadMessagesFromStorage()
   }
   
-  const selectAgentFromSearch = (agent: any) => {
-    selectAgent(agent)
-    isDesktopSearchFocused.value = false
-  }
-  
-  const handleDesktopSearchBlur = () => {
-    setTimeout(() => {
-      isDesktopSearchFocused.value = false
-    }, 100)
-  }
-  
-  // 根据客服ID获取背景颜色值（深色系）
-  const getAgentBgColorValue = (agentId: number) => {
-    const colors = [
-      '#0a0a0a',      // 深黑（默认）
-      '#0d1117',      // 深蓝黑
-      '#0f0a14',      // 深紫黑
-      '#0a1410',      // 深绿黑
-      '#14100a',      // 深橙黑
-      '#100a14',      // 深紫红黑
-    ]
-    return colors[agentId % colors.length] || colors[0]
-  }
-  
-  // 根据客服ID获取背景颜色类名（深色系）- 保留用于其他地方
-  const getAgentBgColor = (agentId: number) => {
-    const colors = [
-      'bg-[#0a0a0a]',      // 深黑（默认）
-      'bg-[#0d1117]',      // 深蓝黑
-      'bg-[#0f0a14]',      // 深紫黑
-      'bg-[#0a1410]',      // 深绿黑
-      'bg-[#14100a]',      // 深橙黑
-      'bg-[#100a14]',      // 深紫红黑
-    ]
-    return colors[agentId % colors.length] || colors[0]
-  }
-  
   const agentThemePalette = ['#6b73ff', '#40ffaa', '#C77DFF']
   const getAgentThemeColor = (agentId: number) => {
     return agentThemePalette[(agentId - 1) % agentThemePalette.length] || agentThemePalette[0]
@@ -1071,15 +862,6 @@ export const useWhatsAppState = (emit: any) => {
   const currentThemeColor = computed(() => {
     if (!selectedAgent.value?.id) return agentThemePalette[0]
     return getAgentThemeColor(selectedAgent.value.id)
-  })
-  
-  const mobilePanelStyle = computed(() => {
-    const color = currentThemeColor.value
-    return {
-      borderColor: color,
-      background: `linear-gradient(180deg, ${color}33 0%, rgba(0,0,0,0.85) 100%)`,
-      boxShadow: `0 15px 40px ${color}40`
-    }
   })
   
   // 获取首字母
