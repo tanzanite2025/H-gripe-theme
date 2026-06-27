@@ -7,8 +7,10 @@ import (
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func (h *Handler) CreateRegistration(c *gin.Context) {
@@ -152,8 +154,10 @@ func (h *Handler) GetRegistrationStats(c *gin.Context) {
 
 func respondRegistrationServiceError(c *gin.Context, err error) {
 	switch {
-	case errors.Is(err, errWarrantyEmailMismatch):
+	case errors.Is(err, service.ErrWarrantyEmailMismatch):
 		apierror.RespondForbidden(c)
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		apierror.RespondNotFound(c, "Resource")
 	case err.Error() == "unauthorized":
 		apierror.RespondForbidden(c)
 	case err.Error() == "serial number already registered":

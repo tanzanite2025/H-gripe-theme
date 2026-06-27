@@ -40,11 +40,12 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	authService := service.NewAuthService(userRepo, cfg.JWT, cfg.OAuth)
 	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
 	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
-	registrationService := service.NewRegistrationService(registrationRepo, productRepo)
+	registrationService := service.NewRegistrationService(registrationRepo, productRepo, orderRepo)
 	userService := service.NewUserService(userRepo)
 	postService := service.NewPostService(postRepo, redisCache, cfg.Cache.PostTTL)
 	productService := service.NewProductService(productRepo, redisCache, cfg.Cache.ProductTTL)
 	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
+	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 
 	// 初始化 handlers
 	authHandler := NewAuthHandler(authService)
@@ -57,11 +58,11 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	galleryHandler := NewGalleryHandler(galleryRepo)
 	subscriptionHandler := NewSubscriptionHandler(subscriptionRepo)
 	ticketHandler := NewTicketHandler(ticketRepo)
-	marketingHandler := NewMarketingHandler(couponRepo, loyaltyRepo)
+	marketingHandler := NewMarketingHandler(marketingService)
 	settingsHandler := NewSettingsHandler(settingRepo, userRepo)
 	auditHandler := NewAuditHandler(auditRepo)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
-	registrationHandler := registration.NewHandler(registrationRepo, registrationService, orderRepo, storageSvc)
+	registrationHandler := registration.NewHandler(registrationService, storageSvc)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 
 	// 管理后台 API 路由组

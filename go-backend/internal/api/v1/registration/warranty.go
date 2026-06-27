@@ -1,24 +1,23 @@
 package registration
 
 import (
-	"encoding/json"
 	"errors"
 	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
-	orderdomain "tanzanite/internal/domain/order"
 	domainregistration "tanzanite/internal/domain/registration"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/pkg/upload"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 var (
-	errWarrantyEmailMismatch      = errors.New("email does not match order record")
 	errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
 
 	warrantyClaimMaxRequestBytes int64 = 135 << 20
@@ -34,7 +33,7 @@ func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.findVerifiedWarrantyOrder(req.OrderNumber, req.Email); err != nil {
+	if _, err := h.registrationSvc.VerifyWarrantyOrder(req.OrderNumber, req.Email); err != nil {
 		apierror.RespondNotFound(c, "Order")
 		return
 	}
@@ -62,12 +61,6 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	order, err := h.findVerifiedWarrantyOrder(orderNumber, email)
-	if err != nil {
-		apierror.RespondNotFound(c, "Order")
-		return
-	}
-
 	imageURLs, videoURL, err := h.uploadWarrantyClaimFiles(c)
 	if err != nil {
 		status := http.StatusBadRequest
@@ -80,26 +73,20 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	imagesJSON, err := json.Marshal(imageURLs)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
-	claim := domainregistration.WarrantyClaim{
-		UserID:       order.UserID,
-		IssueType:    "warranty",
-		Description:  strings.TrimSpace(c.PostForm("issue_description")),
-		Images:       string(imagesJSON),
+	claim, err := h.registrationSvc.CreateWarrantyClaimForOrder(service.WarrantyClaimByOrderInput{
 		OrderNumber:  orderNumber,
 		Email:        email,
-		TirePressure: strings.TrimSpace(c.PostForm("tire_pressure")),
+		Description:  c.PostForm("issue_description"),
+		TirePressure: c.PostForm("tire_pressure"),
 		IsTubeless:   c.PostForm("is_tubeless") == "yes",
+		ImageURLs:    imageURLs,
 		VideoURL:     videoURL,
-		Status:       "pending",
-	}
-
-	if err := h.registrationRepo.CreateWarrantyClaim(&claim); err != nil {
+	})
+	if err != nil {
+		if errors.Is(err, service.ErrWarrantyEmailMismatch) || errors.Is(err, gorm.ErrRecordNotFound) {
+			apierror.RespondNotFound(c, "Order")
+			return
+		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -139,19 +126,8 @@ func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
-	if err != nil {
-		apierror.RespondNotFound(c, "Registration")
-		return
-	}
-	if reg.UserID != userID.(uint) {
-		apierror.RespondForbidden(c)
-		return
-	}
-
-	claim.Status = "pending"
-	if err := h.registrationRepo.CreateWarrantyClaim(&claim); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+	if err := h.registrationSvc.CreateWarrantyClaim(&claim, userID.(uint)); err != nil {
+		respondRegistrationServiceError(c, err)
 		return
 	}
 
@@ -171,24 +147,9 @@ func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	claim, err := h.registrationRepo.FindWarrantyClaimByID(uint(id))
+	claim, err := h.registrationSvc.GetWarrantyClaim(uint(id), userID.(uint), false)
 	if err != nil {
-		apierror.RespondNotFound(c, "Warranty claim")
-		return
-	}
-
-	if claim.RegistrationID != 0 {
-		reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
-		if err != nil {
-			apierror.RespondNotFound(c, "Registration")
-			return
-		}
-		if reg.UserID != userID.(uint) {
-			apierror.RespondForbidden(c)
-			return
-		}
-	} else if claim.UserID != userID.(uint) {
-		apierror.RespondForbidden(c)
+		respondRegistrationServiceError(c, err)
 		return
 	}
 
@@ -208,19 +169,9 @@ func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 		return
 	}
 
-	reg, err := h.registrationRepo.FindRegistrationByID(uint(registrationID))
+	claims, err := h.registrationSvc.GetRegistrationClaims(uint(registrationID), userID.(uint), false)
 	if err != nil {
-		apierror.RespondNotFound(c, "Registration")
-		return
-	}
-	if reg.UserID != userID.(uint) {
-		apierror.RespondForbidden(c)
-		return
-	}
-
-	claims, err := h.registrationRepo.FindWarrantyClaimsByRegistrationID(uint(registrationID))
-	if err != nil {
-		apierror.RespondInternalError(c, err)
+		respondRegistrationServiceError(c, err)
 		return
 	}
 
@@ -231,7 +182,7 @@ func (h *Handler) ListAllWarrantyClaims(c *gin.Context) {
 	params := pagination.ParsePagination(c)
 	status := c.Query("status")
 
-	claims, total, err := h.registrationRepo.FindAllWarrantyClaims(params.Page, params.PageSize, status)
+	claims, total, err := h.registrationSvc.GetAllWarrantyClaims(params.Page, params.PageSize, status)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -255,28 +206,17 @@ func (h *Handler) UpdateWarrantyClaimStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.registrationRepo.UpdateWarrantyClaimStatus(uint(id), req.Status); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+	processedBy := uint(0)
+	if userID, exists := c.Get("user_id"); exists {
+		processedBy = userID.(uint)
+	}
+
+	if err := h.registrationSvc.UpdateWarrantyClaimStatus(uint(id), req.Status, processedBy); err != nil {
+		respondRegistrationServiceError(c, err)
 		return
 	}
 
 	response.SuccessWithMessage(c, "Warranty claim status updated", nil)
-}
-
-func (h *Handler) findVerifiedWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
-	orderNumber = strings.TrimSpace(orderNumber)
-	email = strings.ToLower(strings.TrimSpace(email))
-	order, err := h.orderRepo.FindByOrderNumberForVerification(orderNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	shippingEmail := strings.ToLower(strings.TrimSpace(order.ShippingAddress.Email))
-	billingEmail := strings.ToLower(strings.TrimSpace(order.BillingAddress.Email))
-	if email == "" || (email != shippingEmail && email != billingEmail) {
-		return nil, errWarrantyEmailMismatch
-	}
-	return order, nil
 }
 
 func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, error) {

@@ -1,7 +1,10 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
+	"strings"
+	orderdomain "tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/registration"
 	"tanzanite/internal/repository"
 	"time"
@@ -10,12 +13,30 @@ import (
 type RegistrationService struct {
 	registrationRepo *repository.RegistrationRepository
 	productRepo      *repository.ProductRepository
+	orderRepo        *repository.OrderRepository
 }
 
-func NewRegistrationService(registrationRepo *repository.RegistrationRepository, productRepo *repository.ProductRepository) *RegistrationService {
+var ErrWarrantyEmailMismatch = errors.New("email does not match order record")
+
+type WarrantyClaimByOrderInput struct {
+	OrderNumber  string
+	Email        string
+	Description  string
+	TirePressure string
+	IsTubeless   bool
+	ImageURLs    []string
+	VideoURL     string
+}
+
+func NewRegistrationService(
+	registrationRepo *repository.RegistrationRepository,
+	productRepo *repository.ProductRepository,
+	orderRepo *repository.OrderRepository,
+) *RegistrationService {
 	return &RegistrationService{
 		registrationRepo: registrationRepo,
 		productRepo:      productRepo,
+		orderRepo:        orderRepo,
 	}
 }
 
@@ -168,6 +189,58 @@ func (s *RegistrationService) CheckExpiredWarranties() error {
 
 // WarrantyClaim 相关方法
 
+func (s *RegistrationService) VerifyWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
+	if s.orderRepo == nil {
+		return nil, errors.New("order verification is unavailable")
+	}
+
+	orderNumber = strings.TrimSpace(orderNumber)
+	email = strings.ToLower(strings.TrimSpace(email))
+	order, err := s.orderRepo.FindByOrderNumberForVerification(orderNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	shippingEmail := strings.ToLower(strings.TrimSpace(order.ShippingAddress.Email))
+	billingEmail := strings.ToLower(strings.TrimSpace(order.BillingAddress.Email))
+	if email == "" || (email != shippingEmail && email != billingEmail) {
+		return nil, ErrWarrantyEmailMismatch
+	}
+
+	return order, nil
+}
+
+func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrderInput) (*registration.WarrantyClaim, error) {
+	order, err := s.VerifyWarrantyOrder(input.OrderNumber, input.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	imagesJSON, err := json.Marshal(input.ImageURLs)
+	if err != nil {
+		return nil, err
+	}
+
+	claim := &registration.WarrantyClaim{
+		UserID:       order.UserID,
+		IssueType:    "warranty",
+		Description:  strings.TrimSpace(input.Description),
+		Images:       string(imagesJSON),
+		OrderNumber:  strings.TrimSpace(input.OrderNumber),
+		Email:        strings.TrimSpace(input.Email),
+		TirePressure: strings.TrimSpace(input.TirePressure),
+		IsTubeless:   input.IsTubeless,
+		VideoURL:     input.VideoURL,
+		Status:       "submitted",
+	}
+
+	if err := s.registrationRepo.CreateWarrantyClaim(claim); err != nil {
+		return nil, err
+	}
+
+	return claim, nil
+}
+
 // CreateWarrantyClaim 创建保修申请
 func (s *RegistrationService) CreateWarrantyClaim(claim *registration.WarrantyClaim, userID uint) error {
 	// 验证注册记录
@@ -192,9 +265,9 @@ func (s *RegistrationService) CreateWarrantyClaim(claim *registration.WarrantyCl
 
 	// 设置默认值
 	claim.UserID = userID
-	if claim.Status == "" {
-		claim.Status = "submitted"
-	}
+	claim.Status = "submitted"
+	claim.ProcessedBy = 0
+	claim.ProcessedAt = nil
 
 	return s.registrationRepo.CreateWarrantyClaim(claim)
 }
