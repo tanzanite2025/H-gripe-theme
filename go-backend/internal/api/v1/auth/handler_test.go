@@ -105,7 +105,8 @@ func TestRegisterHandler(t *testing.T) {
 
 	var response map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &response)
-	assert.Equal(t, "user registered successfully", response["message"])
+	assert.Equal(t, "Created successfully", response["message"])
+	assert.NotNil(t, response["data"])
 	mockRepo.AssertExpectations(t)
 }
 
@@ -152,6 +153,7 @@ func TestLoginHandler(t *testing.T) {
 
 	var response map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NotEmpty(t, response["token"])
+	assert.NotNil(t, response["data"])
+	assert.NotEmpty(t, w.Result().Cookies())
 	mockRepo.AssertExpectations(t)
 }
