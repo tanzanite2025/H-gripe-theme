@@ -1,4 +1,4 @@
-# Tanzanite 💎 - Next-Gen E-Commerce & ERP System
+# H-gripe-theme 💎 - Next-Gen E-Commerce & ERP System
 
 ![Version](https://img.shields.io/badge/Version-v10.0.0--CQRS-blue)
 ![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go)
@@ -6,7 +6,7 @@
 ![Vue](https://img.shields.io/badge/Vue-3.4-4FC08D?logo=vue.js)
 ![Architecture](https://img.shields.io/badge/Architecture-CQRS%20%7C%20Micro--Frontend-FF6A00)
 
-Tanzanite 是一套跨越了传统单体极限的 **企业级微服务商业架构**。采用现代化的**前后端完全分离、三端独立部署**架构，经过 11 轮（L0 - L10）的深度演进，本系统已在并发吞吐量、全球边缘分发、智能化交互与金融级安全维度达到了顶尖大厂水准。
+H-gripe-theme 是一套跨越了传统单体极限的 **企业级微服务商业架构**。采用现代化的**前后端完全分离、三端独立部署**架构，经过 11 轮（L0 - L10）的深度演进，本系统已在并发吞吐量、全球边缘分发、智能化交互与金融级安全维度达到了顶尖大厂水准。
 
 ## 📐 三端架构总览
 
@@ -474,7 +474,7 @@ cd go-backend
 - 📧 **Email**: support@tanzanite.site
 - 📖 **后端文档**: [go-backend/README.md](./go-backend/README.md)
 - 📖 **API 文档**: [go-backend/API.md](./go-backend/API.md)
-- 🐛 **问题反馈**: [GitHub Issues](https://github.com/tanzanite/tanzanite-theme/issues)
+- 🐛 **问题反馈**: [GitHub Issues](https://github.com/tanzanite2025/H-gripe-theme/issues)
 
 ## 📄 许可证
 

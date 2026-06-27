@@ -29,6 +29,9 @@ jwt:
   expire_hours: 24
   refresh_expire_hours: 168
 
+oauth:
+  google_client_id: ${GOOGLE_CLIENT_ID}
+
 i18n:
   default_locale: en
   supported_locales:
@@ -74,6 +77,9 @@ cache:
   post_ttl: 3600
   product_ttl: 1800
   settings_ttl: 7200
+
+worker:
+  enabled: ${WORKER_ENABLED}
 
 log:
   level: info

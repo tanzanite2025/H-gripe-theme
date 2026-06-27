@@ -31,6 +31,10 @@ type LoginRequest struct {
 	Password        string `json:"password" binding:"required"`
 }
 
+type GoogleLoginRequest struct {
+	IDToken string `json:"id_token" binding:"required"`
+}
+
 // Register 用户注册
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
@@ -73,6 +77,26 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 // GetProfile 获取当前用户信息
+func (h *Handler) GoogleLogin(c *gin.Context) {
+	var req GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+
+	token, user, err := h.authService.LoginWithGoogle(c.Request.Context(), req.IDToken)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+
+	response.Success(c, gin.H{
+		"user": user.ToResponse(),
+	})
+}
+
 func (h *Handler) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {

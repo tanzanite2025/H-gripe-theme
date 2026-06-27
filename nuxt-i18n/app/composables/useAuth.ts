@@ -71,6 +71,16 @@ const extractMessage = (payload: MaybeJson, fallback: string) => {
   return typeof message === 'string' && message.trim().length > 0 ? message : fallback
 }
 
+const unwrapData = <T>(payload: T | { data?: T } | null | undefined): T | null => {
+  if (!payload || typeof payload !== 'object') {
+    return (payload as T) || null
+  }
+  if ('data' in payload && payload.data !== undefined) {
+    return payload.data as T
+  }
+  return payload as T
+}
+
 export function useAuth() {
   const config = useRuntimeConfig()
   // 抛弃 wpApiBase，直连 Go 后端
@@ -115,8 +125,8 @@ export function useAuth() {
 
     initialized.value = true
     try {
-      const response = await request<AuthUser>('/auth/profile', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
-      const data = response || null
+      const response = await request<AuthUser | { data?: AuthUser }>('/auth/profile', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
+      const data = unwrapData<AuthUser>(response)
       user.value = data
       error.value = null
       return data
@@ -131,7 +141,7 @@ export function useAuth() {
     error.value = null
 
     try {
-      const response = await request<{ token: string, user: AuthUser }>(
+      const response = await request<{ token?: string, user?: AuthUser } | { data?: { token?: string, user?: AuthUser } }>(
         '/auth/login',
         {
           method: 'POST',
@@ -141,7 +151,8 @@ export function useAuth() {
         'Login failed'
       )
       
-      const data = response?.user || null
+      const payload = unwrapData<{ token?: string, user?: AuthUser }>(response)
+      const data = payload?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -158,7 +169,7 @@ export function useAuth() {
     error.value = null
 
     try {
-      const response = await request<{ message: string, user: AuthUser }>(
+      const response = await request<{ message?: string, user?: AuthUser } | { data?: { message?: string, user?: AuthUser } }>(
         '/auth/register',
         {
           method: 'POST',
@@ -168,7 +179,8 @@ export function useAuth() {
         'Registration failed'
       )
       // 注册接口目前未返回token，需要在注册后让用户去登录，或后端改进返回token
-      const data = response?.user || null
+      const payload = unwrapData<{ message?: string, user?: AuthUser }>(response)
+      const data = payload?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -204,7 +216,7 @@ export function useAuth() {
     error.value = null
 
     try {
-      const response = await request<{ token: string, user: AuthUser }>(
+      const response = await request<{ token?: string, user?: AuthUser } | { data?: { token?: string, user?: AuthUser } }>(
         '/auth/google-login',
         {
           method: 'POST',
@@ -213,7 +225,8 @@ export function useAuth() {
         },
         'Google login failed'
       )
-      const data = response?.user || null
+      const payload = unwrapData<{ token?: string, user?: AuthUser }>(response)
+      const data = payload?.user || null
       user.value = data
       return data
     } catch (err) {

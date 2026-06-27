@@ -3,6 +3,7 @@ package admin
 import (
 	"net/http"
 	"strconv"
+	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/repository"
 
@@ -89,7 +90,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		Password  string `json:"password" binding:"required,min=6"`
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
-		Role      string `json:"role" binding:"required,oneof=admin manager editor support viewer"`
+		Role      string `json:"role" binding:"required,oneof=user admin manager editor support agent viewer"`
 		Locale    string `json:"locale"`
 		Status    string `json:"status" binding:"required,oneof=active inactive suspended"`
 	}
@@ -119,7 +120,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		Username:  req.Username,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
-		Role:      req.Role,
+		Role:      string(auth.NormalizeRole(req.Role)),
 		Locale:    req.Locale,
 		Status:    req.Status,
 	}
@@ -156,7 +157,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		Password  string `json:"password" binding:"omitempty,min=6"`
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
-		Role      string `json:"role" binding:"omitempty,oneof=admin manager editor support viewer"`
+		Role      string `json:"role" binding:"omitempty,oneof=user admin manager editor support agent viewer"`
 		Locale    string `json:"locale"`
 		Status    string `json:"status" binding:"omitempty,oneof=active inactive suspended"`
 	}
@@ -208,7 +209,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		existingUser.LastName = req.LastName
 	}
 	if req.Role != "" {
-		existingUser.Role = req.Role
+		existingUser.Role = string(auth.NormalizeRole(req.Role))
 	}
 	if req.Locale != "" {
 		existingUser.Locale = req.Locale

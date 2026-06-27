@@ -203,7 +203,7 @@ func (r Role) GetPermissions() []Permission {
 // IsValid 检查角色是否有效
 func (r Role) IsValid() bool {
 	switch r {
-	case RoleAdmin, RoleManager, RoleEditor, RoleSupport, RoleViewer:
+	case RoleAdmin, RoleManager, RoleEditor, RoleSupport, RoleViewer, RoleUser:
 		return true
 	default:
 		return false

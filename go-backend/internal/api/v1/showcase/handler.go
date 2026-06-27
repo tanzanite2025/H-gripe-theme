@@ -3,10 +3,13 @@ package showcase
 import (
 	"net/http"
 	"strconv"
+	"tanzanite/internal/pkg/upload"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
+
+const showcaseMaxRequestBytes = 55 << 20
 
 type ShowcaseHandler struct {
 	service *service.ShowcaseService
@@ -17,22 +20,28 @@ func NewShowcaseHandler(s *service.ShowcaseService) *ShowcaseHandler {
 }
 
 func (h *ShowcaseHandler) Upload(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, showcaseMaxRequestBytes)
+
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil { // 10 MB max memory
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form", "code": "tpg_invalid_form"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form", "message": err.Error(), "code": "tpg_invalid_form"})
 		return
 	}
 
 	form := c.Request.MultipartForm
 	files := form.File["file[]"]
 	if len(files) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No files provided", "code": "tpg_missing_files"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No files provided", "message": "No files provided", "code": "tpg_missing_files"})
+		return
+	}
+	if err := upload.ValidateFiles(files, upload.ShowcaseImageRule); err != nil {
+		c.JSON(upload.HTTPStatus(err), gin.H{"error": err.Error(), "message": err.Error(), "code": upload.ErrorCode(err)})
 		return
 	}
 
 	region := c.PostForm("region")
 	if region == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Region is required", "code": "tpg_missing_region"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Region is required", "message": "missing_region: Region is required", "code": "tpg_missing_region"})
 		return
 	}
 

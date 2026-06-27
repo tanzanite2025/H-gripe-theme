@@ -6,6 +6,7 @@ func TestNormalizeRole(t *testing.T) {
 	tests := map[string]Role{
 		"administrator":              RoleAdmin,
 		"shop_manager":               RoleManager,
+		"agent":                      RoleSupport,
 		"customer_service":           RoleSupport,
 		"administrator,shop_manager": RoleAdmin,
 		"subscriber":                 RoleUser,
@@ -30,5 +31,11 @@ func TestIsCustomerServiceAgentRole(t *testing.T) {
 		if IsCustomerServiceAgentRole(raw) {
 			t.Fatalf("expected %q to not be a customer service agent role", raw)
 		}
+	}
+}
+
+func TestRoleUserIsValid(t *testing.T) {
+	if !RoleUser.IsValid() {
+		t.Fatal("expected user role to be valid")
 	}
 }

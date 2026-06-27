@@ -80,14 +80,14 @@ func main() {
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	}
 
-	workerServer := worker.NewServer(&cfg.Redis)
-	workerClient := worker.NewClient(&cfg.Redis)
-	defer func() {
-		_ = workerClient.Close()
-	}()
-
-	if err := workerServer.Start(); err != nil {
-		logger.Fatal("worker server failed to start", zap.Error(err))
+	var workerServer *worker.Server
+	if cfg.Worker.Enabled {
+		workerServer = worker.NewServer(&cfg.Redis)
+		if err := workerServer.Start(); err != nil {
+			logger.Fatal("worker server failed to start", zap.Error(err))
+		}
+	} else {
+		logger.Info("Asynq worker disabled")
 	}
 
 	go func() {
@@ -113,7 +113,9 @@ func main() {
 		logger.Fatal("server shutdown failed", zap.Error(err))
 	}
 
-	workerServer.Stop()
+	if workerServer != nil {
+		workerServer.Stop()
+	}
 
 	logger.Info("server stopped")
 }

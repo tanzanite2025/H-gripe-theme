@@ -1,7 +1,10 @@
 package ticket
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -126,14 +129,70 @@ func (h *Handler) publicCustomerOwner(c *gin.Context) service.CustomerServiceOwn
 }
 
 func (h *Handler) ensureVisitorSessionHash(c *gin.Context) string {
-	sessionID, _ := c.Cookie(customerServiceVisitorCookie)
-	if _, err := uuid.Parse(strings.TrimSpace(sessionID)); err != nil {
+	hash, _ := h.visitorSessionHash(c, true)
+	return hash
+}
+
+func (h *Handler) existingVisitorSessionHash(c *gin.Context) (string, bool) {
+	return h.visitorSessionHash(c, false)
+}
+
+func (h *Handler) visitorSessionHash(c *gin.Context, create bool) (string, bool) {
+	sessionID, ok := h.readVisitorSessionID(c)
+	if !ok {
+		if !create {
+			return "", false
+		}
 		sessionID = uuid.NewString()
 	}
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(customerServiceVisitorCookie, sessionID, customerServiceVisitorMaxAge, "/", "", visitorCookieSecure(c), true)
+	h.setVisitorSessionCookie(c, sessionID)
 	sum := sha256.Sum256([]byte(sessionID))
-	return hex.EncodeToString(sum[:])
+	return hex.EncodeToString(sum[:]), true
+}
+
+func (h *Handler) readVisitorSessionID(c *gin.Context) (string, bool) {
+	rawCookie, err := c.Cookie(customerServiceVisitorCookie)
+	if err != nil {
+		return "", false
+	}
+	rawCookie = strings.TrimSpace(rawCookie)
+	if rawCookie == "" {
+		return "", false
+	}
+
+	sessionID, signature, signed := strings.Cut(rawCookie, ".")
+	sessionID = strings.TrimSpace(sessionID)
+	if _, err := uuid.Parse(sessionID); err != nil {
+		return "", false
+	}
+	if !signed || strings.TrimSpace(signature) == "" {
+		return "", false
+	}
+	if h.validVisitorSignature(sessionID, signature) {
+		return sessionID, true
+	}
+	return "", false
+}
+
+func (h *Handler) setVisitorSessionCookie(c *gin.Context, sessionID string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(customerServiceVisitorCookie, h.signVisitorSessionID(sessionID), customerServiceVisitorMaxAge, "/", "", visitorCookieSecure(c), true)
+}
+
+func (h *Handler) signVisitorSessionID(sessionID string) string {
+	mac := hmac.New(sha256.New, h.visitorSecret)
+	_, _ = mac.Write([]byte(sessionID))
+	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	return sessionID + "." + signature
+}
+
+func (h *Handler) validVisitorSignature(sessionID string, signature string) bool {
+	expected := h.signVisitorSessionID(sessionID)
+	_, expectedSignature, _ := strings.Cut(expected, ".")
+	if len(signature) != len(expectedSignature) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(signature), []byte(expectedSignature)) == 1
 }
 
 func visitorCookieSecure(c *gin.Context) bool {

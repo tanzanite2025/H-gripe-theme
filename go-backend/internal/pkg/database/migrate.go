@@ -120,7 +120,7 @@ func SeedDefaultSettings(db *gorm.DB) error {
 
 	for _, s := range defaultSettings {
 		var count int64
-		if err := db.Model(&setting.Setting{}).Where("`key` = ? AND locale = ?", s.Key, s.Locale).Count(&count).Error; err != nil {
+		if err := db.Model(&setting.Setting{}).Where("key = ? AND locale = ?", s.Key, s.Locale).Count(&count).Error; err != nil {
 			return err
 		}
 		if count == 0 {

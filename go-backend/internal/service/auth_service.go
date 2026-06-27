@@ -1,7 +1,16 @@
 package service
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
 	"tanzanite/internal/domain/auth"
@@ -24,12 +33,18 @@ type UserRepository interface {
 type AuthService struct {
 	userRepo UserRepository
 	jwtCfg   config.JWTConfig
+	oauthCfg config.OAuthConfig
 }
 
-func NewAuthService(userRepo UserRepository, jwtCfg config.JWTConfig) *AuthService {
+func NewAuthService(userRepo UserRepository, jwtCfg config.JWTConfig, oauthCfg ...config.OAuthConfig) *AuthService {
+	oauthConfig := config.OAuthConfig{}
+	if len(oauthCfg) > 0 {
+		oauthConfig = oauthCfg[0]
+	}
 	return &AuthService{
 		userRepo: userRepo,
 		jwtCfg:   jwtCfg,
+		oauthCfg: oauthConfig,
 	}
 }
 
@@ -105,6 +120,174 @@ func (s *AuthService) Login(emailOrUsername, password string) (string, *user.Use
 }
 
 // GenerateToken 生成JWT令牌
+type googleTokenInfo struct {
+	Issuer        string `json:"iss"`
+	Subject       string `json:"sub"`
+	Audience      string `json:"aud"`
+	Email         string `json:"email"`
+	EmailVerified string `json:"email_verified"`
+	Name          string `json:"name"`
+	GivenName     string `json:"given_name"`
+	FamilyName    string `json:"family_name"`
+}
+
+func (s *AuthService) LoginWithGoogle(ctx context.Context, idToken string) (string, *user.User, error) {
+	idToken = strings.TrimSpace(idToken)
+	if idToken == "" {
+		return "", nil, errors.New("google id token is required")
+	}
+	if strings.TrimSpace(s.oauthCfg.GoogleClientID) == "" {
+		return "", nil, errors.New("google login is not configured")
+	}
+
+	tokenInfo, err := s.verifyGoogleIDToken(ctx, idToken)
+	if err != nil {
+		return "", nil, err
+	}
+
+	existingUser, err := s.userRepo.FindByEmail(tokenInfo.Email)
+	if err == nil {
+		if existingUser.Status != "active" {
+			return "", nil, errors.New("user account is not active")
+		}
+		token, err := s.GenerateToken(existingUser)
+		if err != nil {
+			return "", nil, err
+		}
+		return token, existingUser, nil
+	}
+
+	createdUser, err := s.createGoogleUser(tokenInfo)
+	if err != nil {
+		return "", nil, err
+	}
+	token, err := s.GenerateToken(createdUser)
+	if err != nil {
+		return "", nil, err
+	}
+	return token, createdUser, nil
+}
+
+func (s *AuthService) verifyGoogleIDToken(ctx context.Context, idToken string) (*googleTokenInfo, error) {
+	endpoint := "https://oauth2.googleapis.com/tokeninfo?id_token=" + url.QueryEscape(idToken)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify google id token: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("invalid google id token")
+	}
+
+	var tokenInfo googleTokenInfo
+	if err := json.NewDecoder(resp.Body).Decode(&tokenInfo); err != nil {
+		return nil, fmt.Errorf("failed to parse google token response: %w", err)
+	}
+
+	tokenInfo.Email = strings.ToLower(strings.TrimSpace(tokenInfo.Email))
+	tokenInfo.Subject = strings.TrimSpace(tokenInfo.Subject)
+	if tokenInfo.Audience != strings.TrimSpace(s.oauthCfg.GoogleClientID) {
+		return nil, errors.New("google token audience mismatch")
+	}
+	if tokenInfo.Issuer != "accounts.google.com" && tokenInfo.Issuer != "https://accounts.google.com" {
+		return nil, errors.New("google token issuer mismatch")
+	}
+	if tokenInfo.Email == "" || !strings.EqualFold(tokenInfo.EmailVerified, "true") {
+		return nil, errors.New("google email is not verified")
+	}
+	if tokenInfo.Subject == "" {
+		return nil, errors.New("google subject is missing")
+	}
+	return &tokenInfo, nil
+}
+
+func (s *AuthService) createGoogleUser(tokenInfo *googleTokenInfo) (*user.User, error) {
+	password, err := randomPassword()
+	if err != nil {
+		return nil, err
+	}
+
+	createdUser := &user.User{
+		Email:     tokenInfo.Email,
+		Username:  s.googleUsername(tokenInfo.Email, tokenInfo.Subject),
+		FirstName: strings.TrimSpace(tokenInfo.GivenName),
+		LastName:  strings.TrimSpace(tokenInfo.FamilyName),
+		Role:      string(auth.RoleUser),
+		Status:    "active",
+	}
+	if createdUser.FirstName == "" && createdUser.LastName == "" {
+		createdUser.FirstName, createdUser.LastName = splitGoogleName(tokenInfo.Name)
+	}
+
+	if err := createdUser.HashPassword(password); err != nil {
+		return nil, err
+	}
+	if err := s.userRepo.Create(createdUser); err != nil {
+		return nil, err
+	}
+	return createdUser, nil
+}
+
+func (s *AuthService) googleUsername(email string, subject string) string {
+	emailPrefix := strings.Split(strings.ToLower(strings.TrimSpace(email)), "@")[0]
+	base := sanitizeUsername(emailPrefix)
+	if len(base) < 3 {
+		base = "google_user"
+	}
+
+	shortSubject := subject
+	if len(shortSubject) > 12 {
+		shortSubject = shortSubject[:12]
+	}
+	candidates := []string{
+		base,
+		base + "_" + shortSubject,
+		"google_" + shortSubject,
+	}
+	for _, candidate := range candidates {
+		if _, err := s.userRepo.FindByUsername(candidate); err != nil {
+			return candidate
+		}
+	}
+	return fmt.Sprintf("google_%s_%d", shortSubject, time.Now().Unix())
+}
+
+func sanitizeUsername(value string) string {
+	re := regexp.MustCompile(`[^a-z0-9_]+`)
+	value = re.ReplaceAllString(strings.ToLower(strings.TrimSpace(value)), "_")
+	value = strings.Trim(value, "_")
+	if len(value) > 50 {
+		value = value[:50]
+	}
+	return value
+}
+
+func splitGoogleName(name string) (string, string) {
+	parts := strings.Fields(strings.TrimSpace(name))
+	if len(parts) == 0 {
+		return "", ""
+	}
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], strings.Join(parts[1:], " ")
+}
+
+func randomPassword() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf), nil
+}
+
 func (s *AuthService) GenerateToken(u *user.User) (string, error) {
 	claims := Claims{
 		UserID:   u.ID,

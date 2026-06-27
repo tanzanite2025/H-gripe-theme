@@ -31,6 +31,9 @@ jwt:
   expire_hours: 24
   refresh_expire_hours: 168  # 7 days
 
+oauth:
+  google_client_id: ""  # Set via GOOGLE_CLIENT_ID or NUXT_PUBLIC_GOOGLE_CLIENT_ID
+
 i18n:
   default_locale: "en"
   supported_locales:
@@ -94,6 +97,9 @@ cache:
   post_ttl: 3600
   product_ttl: 1800
   settings_ttl: 7200
+
+worker:
+  enabled: false  # Enable only after registering Asynq task handlers
 
 log:
   level: "info"  # debug, info, warn, error
