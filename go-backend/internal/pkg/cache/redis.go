@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"tanzanite/internal/pkg/config"
+	appLogger "tanzanite/internal/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -38,7 +38,7 @@ func Init(cfg config.RedisConfig) (*RedisCache, error) {
 		return nil, fmt.Errorf("failed to connect to redis: %w", err)
 	}
 
-	log.Println("Redis connected successfully")
+	appLogger.Info("redis connected successfully")
 
 	return &RedisCache{
 		client: client,

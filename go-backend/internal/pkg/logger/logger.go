@@ -8,6 +8,7 @@ import (
 )
 
 var Log *zap.Logger
+var noopLog = zap.NewNop()
 
 // Init 初始化日志
 func Init(cfg config.LogConfig) error {
@@ -41,25 +42,35 @@ func Init(cfg config.LogConfig) error {
 
 // Info 记录信息日志
 func Info(msg string, fields ...zap.Field) {
-	Log.Info(msg, fields...)
+	activeLogger().Info(msg, fields...)
 }
 
 // Error 记录错误日志
 func Error(msg string, fields ...zap.Field) {
-	Log.Error(msg, fields...)
+	activeLogger().Error(msg, fields...)
 }
 
 // Debug 记录调试日志
 func Debug(msg string, fields ...zap.Field) {
-	Log.Debug(msg, fields...)
+	activeLogger().Debug(msg, fields...)
 }
 
 // Warn 记录警告日志
 func Warn(msg string, fields ...zap.Field) {
-	Log.Warn(msg, fields...)
+	activeLogger().Warn(msg, fields...)
 }
 
 // Fatal 记录致命错误并退出
 func Fatal(msg string, fields ...zap.Field) {
+	if Log == nil {
+		panic(msg)
+	}
 	Log.Fatal(msg, fields...)
+}
+
+func activeLogger() *zap.Logger {
+	if Log == nil {
+		return noopLog
+	}
+	return Log
 }

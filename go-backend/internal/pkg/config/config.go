@@ -40,6 +40,7 @@ type DatabaseConfig struct {
 	MaxOpenConns    int    `mapstructure:"max_open_conns"`
 	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"`
 	AutoMigrate     bool   `mapstructure:"auto_migrate"`
+	LogLevel        string `mapstructure:"log_level"`
 }
 
 type RedisConfig struct {
@@ -147,6 +148,7 @@ func setDefaults() {
 	viper.SetDefault("database.max_open_conns", 100)
 	viper.SetDefault("database.conn_max_lifetime", 3600)
 	viper.SetDefault("database.auto_migrate", true)
+	viper.SetDefault("database.log_level", "silent")
 
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", 6379)
@@ -193,6 +195,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("database.password", "DB_PASSWORD", "DATABASE_PASSWORD")
 	_ = viper.BindEnv("database.database", "DB_NAME", "DATABASE_NAME")
 	_ = viper.BindEnv("database.auto_migrate", "DB_AUTO_MIGRATE", "DATABASE_AUTO_MIGRATE")
+	_ = viper.BindEnv("database.log_level", "DB_LOG_LEVEL", "DATABASE_LOG_LEVEL")
 
 	_ = viper.BindEnv("redis.host", "REDIS_HOST")
 	_ = viper.BindEnv("redis.port", "REDIS_PORT")

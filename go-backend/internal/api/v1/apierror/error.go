@@ -2,10 +2,13 @@ package apierror
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
+	appLogger "tanzanite/internal/pkg/logger"
+	"tanzanite/internal/pkg/requestctx"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // AppError represents a unified application error
@@ -51,9 +54,38 @@ func Send(c *gin.Context, err error) {
 	}
 
 	// For non-AppErrors, log it and return a generic 500 to hide internal details.
-	log.Printf("[CRITICAL] Unhandled error: %v", err)
+	logUnhandledError(c, err)
 	c.JSON(http.StatusInternalServerError, gin.H{
 		"error": ErrInternal.Message,
 		"code":  ErrInternal.Code,
 	})
+}
+
+func logUnhandledError(c *gin.Context, err error) {
+	fields := []zap.Field{
+		zap.String("error_type", fmt.Sprintf("%T", err)),
+		zap.Int("status", http.StatusInternalServerError),
+	}
+
+	if c != nil && c.Request != nil {
+		fields = append(fields,
+			zap.String("method", c.Request.Method),
+			zap.String("path", safeRoutePath(c)),
+		)
+		if traceID, ok := requestctx.TraceID(c.Request.Context()); ok {
+			fields = append(fields, zap.String("trace_id", traceID))
+		}
+	}
+
+	appLogger.Error("unhandled API error", fields...)
+}
+
+func safeRoutePath(c *gin.Context) string {
+	if route := c.FullPath(); route != "" {
+		return route
+	}
+	if c.Request != nil && c.Request.URL != nil {
+		return c.Request.URL.Path
+	}
+	return ""
 }

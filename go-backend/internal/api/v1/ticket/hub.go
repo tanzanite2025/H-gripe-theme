@@ -1,15 +1,18 @@
 package ticket
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
+	appLogger "tanzanite/internal/pkg/logger"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 const (
@@ -53,7 +56,11 @@ func (h *Handler) ServeWS(c *gin.Context) {
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("[CRITICAL] WebSocket upgrade failed:", err)
+		appLogger.Warn("websocket upgrade failed",
+			zap.String("error_type", fmt.Sprintf("%T", err)),
+			zap.String("method", c.Request.Method),
+			zap.String("path", c.FullPath()),
+		)
 		return
 	}
 
@@ -81,7 +88,7 @@ func (h *Handler) ServeWS(c *gin.Context) {
 			_, _, err := conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.Printf("[CRITICAL] WebSocket error: %v", err)
+					appLogger.Warn("websocket unexpected close", zap.String("error_type", fmt.Sprintf("%T", err)))
 				}
 				return
 			}

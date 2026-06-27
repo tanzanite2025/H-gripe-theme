@@ -18,6 +18,7 @@ database:
   max_open_conns: 100
   conn_max_lifetime: 3600  # seconds
   auto_migrate: true
+  log_level: "silent"  # silent, error, warn, info
 
 redis:
   host: "localhost"
