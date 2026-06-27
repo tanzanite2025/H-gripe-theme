@@ -5,18 +5,21 @@ import (
 	"net/http"
 	"strconv"
 	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type OrderHandler struct {
-	orderRepo *repository.OrderRepository
+	orderRepo    *repository.OrderRepository
+	orderService *service.OrderService
 }
 
-func NewOrderHandler(orderRepo *repository.OrderRepository) *OrderHandler {
+func NewOrderHandler(orderRepo *repository.OrderRepository, orderService *service.OrderService) *OrderHandler {
 	return &OrderHandler{
-		orderRepo: orderRepo,
+		orderRepo:    orderRepo,
+		orderService: orderService,
 	}
 }
 
@@ -96,25 +99,8 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	// 获取当前订单
-	existingOrder, err := h.orderRepo.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
-		return
-	}
-
-	// 检查状态转换是否合法
-	if !existingOrder.CanTransitionTo(req.Status) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":          "Invalid status transition",
-			"current_status": existingOrder.Status,
-			"target_status":  req.Status,
-		})
-		return
-	}
-
-	if err := h.orderRepo.UpdateStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update order status"})
+	if err := h.orderService.UpdateOrderStatus(uint(id), req.Status); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -375,19 +361,7 @@ func (h *OrderHandler) BatchUpdateStatus(c *gin.Context) {
 	failed := 0
 
 	for _, id := range req.OrderIDs {
-		// 检查状态转换是否合法
-		existingOrder, err := h.orderRepo.FindByID(id)
-		if err != nil {
-			failed++
-			continue
-		}
-
-		if !existingOrder.CanTransitionTo(req.Status) {
-			failed++
-			continue
-		}
-
-		if err := h.orderRepo.UpdateStatus(id, req.Status); err == nil {
+		if err := h.orderService.UpdateOrderStatus(id, req.Status); err == nil {
 			updated++
 		} else {
 			failed++

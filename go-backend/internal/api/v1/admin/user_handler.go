@@ -1,22 +1,21 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
-	userRepo *repository.UserRepository
+	userService *service.UserService
 }
 
-func NewUserHandler(userRepo *repository.UserRepository) *UserHandler {
+func NewUserHandler(userService *service.UserService) *UserHandler {
 	return &UserHandler{
-		userRepo: userRepo,
+		userService: userService,
 	}
 }
 
@@ -36,7 +35,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		pageSize = 20
 	}
 
-	users, total, err := h.userRepo.FindAllWithFilters(page, pageSize, role, status, search)
+	users, total, err := h.userService.ListUsers(page, pageSize, role, status, search)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
@@ -70,7 +69,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userRepo.FindByID(uint(id))
+	user, err := h.userService.GetUser(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
@@ -100,39 +99,24 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// 检查邮箱是否已存在
-	existingUser, _ := h.userRepo.FindByEmail(req.Email)
-	if existingUser != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+	_, actorRole, ok := currentAdminActor(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin session"})
 		return
 	}
 
-	// 检查用户名是否已存在
-	existingUser, _ = h.userRepo.FindByUsername(req.Username)
-	if existingUser != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
-		return
-	}
-
-	// 创建用户
-	newUser := &user.User{
+	newUser, err := h.userService.CreateUser(service.UserCreateInput{
 		Email:     req.Email,
 		Username:  req.Username,
+		Password:  req.Password,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
-		Role:      string(auth.NormalizeRole(req.Role)),
+		Role:      req.Role,
 		Locale:    req.Locale,
 		Status:    req.Status,
-	}
-
-	// 加密密码
-	if err := newUser.HashPassword(req.Password); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-		return
-	}
-
-	if err := h.userRepo.Create(newUser); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+	}, actorRole)
+	if err != nil {
+		respondUserServiceError(c, err, "Failed to create user")
 		return
 	}
 
@@ -167,65 +151,30 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// 获取现有用户
-	existingUser, err := h.userRepo.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+	actorID, actorRole, ok := currentAdminActor(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin session"})
 		return
 	}
 
-	// 更新字段
-	if req.Email != "" && req.Email != existingUser.Email {
-		// 检查新邮箱是否已被使用
-		emailUser, _ := h.userRepo.FindByEmail(req.Email)
-		if emailUser != nil && emailUser.ID != existingUser.ID {
-			c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
-			return
-		}
-		existingUser.Email = req.Email
-	}
-
-	if req.Username != "" && req.Username != existingUser.Username {
-		// 检查新用户名是否已被使用
-		usernameUser, _ := h.userRepo.FindByUsername(req.Username)
-		if usernameUser != nil && usernameUser.ID != existingUser.ID {
-			c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
-			return
-		}
-		existingUser.Username = req.Username
-	}
-
-	if req.Password != "" {
-		if err := existingUser.HashPassword(req.Password); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-			return
-		}
-	}
-
-	if req.FirstName != "" {
-		existingUser.FirstName = req.FirstName
-	}
-	if req.LastName != "" {
-		existingUser.LastName = req.LastName
-	}
-	if req.Role != "" {
-		existingUser.Role = string(auth.NormalizeRole(req.Role))
-	}
-	if req.Locale != "" {
-		existingUser.Locale = req.Locale
-	}
-	if req.Status != "" {
-		existingUser.Status = req.Status
-	}
-
-	if err := h.userRepo.Update(existingUser); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+	updatedUser, err := h.userService.UpdateUser(uint(id), actorID, actorRole, service.UserUpdateInput{
+		Email:     req.Email,
+		Username:  req.Username,
+		Password:  req.Password,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Role:      req.Role,
+		Locale:    req.Locale,
+		Status:    req.Status,
+	})
+	if err != nil {
+		respondUserServiceError(c, err, "Failed to update user")
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "User updated successfully",
-		"user":    existingUser.ToResponse(),
+		"user":    updatedUser.ToResponse(),
 	})
 }
 
@@ -238,15 +187,14 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	// 不允许删除自己
-	currentUserID, _ := c.Get("user_id")
-	if currentUserID.(uint) == uint(id) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete yourself"})
+	actorID, _, ok := currentAdminActor(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin session"})
 		return
 	}
 
-	if err := h.userRepo.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+	if err := h.userService.DeleteUser(uint(id), actorID); err != nil {
+		respondUserServiceError(c, err, "Failed to delete user")
 		return
 	}
 
@@ -273,15 +221,14 @@ func (h *UserHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
-	// 不允许修改自己的状态
-	currentUserID, _ := c.Get("user_id")
-	if currentUserID.(uint) == uint(id) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot modify your own status"})
+	actorID, actorRole, ok := currentAdminActor(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin session"})
 		return
 	}
 
-	if err := h.userRepo.UpdateStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user status"})
+	if err := h.userService.UpdateUserStatus(uint(id), actorID, actorRole, req.Status); err != nil {
+		respondUserServiceError(c, err, "Failed to update user status")
 		return
 	}
 
@@ -293,7 +240,7 @@ func (h *UserHandler) UpdateUserStatus(c *gin.Context) {
 // GetUserStats 获取用户统计
 // GET /api/admin/users/stats
 func (h *UserHandler) GetUserStats(c *gin.Context) {
-	stats, err := h.userRepo.GetStats()
+	stats, err := h.userService.GetUserStats()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user stats"})
 		return
@@ -314,20 +261,16 @@ func (h *UserHandler) BatchDeleteUsers(c *gin.Context) {
 		return
 	}
 
-	// 不允许删除自己
-	currentUserID, _ := c.Get("user_id")
-	for _, id := range req.UserIDs {
-		if id == currentUserID.(uint) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete yourself"})
-			return
-		}
+	actorID, _, ok := currentAdminActor(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin session"})
+		return
 	}
 
-	deleted := 0
-	for _, id := range req.UserIDs {
-		if err := h.userRepo.Delete(id); err == nil {
-			deleted++
-		}
+	deleted, err := h.userService.BatchDeleteUsers(req.UserIDs, actorID)
+	if err != nil {
+		respondUserServiceError(c, err, "Batch delete failed")
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -335,4 +278,48 @@ func (h *UserHandler) BatchDeleteUsers(c *gin.Context) {
 		"deleted": deleted,
 		"total":   len(req.UserIDs),
 	})
+}
+
+func currentAdminActor(c *gin.Context) (uint, string, bool) {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		return 0, "", false
+	}
+
+	userID, ok := userIDValue.(uint)
+	if !ok || userID == 0 {
+		return 0, "", false
+	}
+
+	roleValue, exists := c.Get("user_role")
+	if !exists {
+		roleValue, exists = c.Get("role")
+	}
+	if !exists {
+		return 0, "", false
+	}
+
+	role, ok := roleValue.(string)
+	return userID, role, ok && role != ""
+}
+
+func respondUserServiceError(c *gin.Context, err error, fallback string) {
+	switch {
+	case errors.Is(err, service.ErrUserNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+	case errors.Is(err, service.ErrEmailExists):
+		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+	case errors.Is(err, service.ErrUsernameExists):
+		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+	case errors.Is(err, service.ErrSelfDelete):
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete yourself"})
+	case errors.Is(err, service.ErrSelfStatusChange):
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot modify your own status"})
+	case errors.Is(err, service.ErrSelfRoleChange):
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot modify your own role"})
+	case errors.Is(err, service.ErrRoleForbidden):
+		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient privileges for requested role change"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fallback})
+	}
 }
