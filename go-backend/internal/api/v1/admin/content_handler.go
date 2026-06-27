@@ -1,23 +1,77 @@
 package admin
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
-	"tanzanite/internal/domain/post"
-	"tanzanite/internal/repository"
-	"time"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 type ContentHandler struct {
-	postRepo *repository.PostRepository
+	postService *service.PostService
 }
 
-func NewContentHandler(postRepo *repository.PostRepository) *ContentHandler {
+func NewContentHandler(postService *service.PostService) *ContentHandler {
 	return &ContentHandler{
-		postRepo: postRepo,
+		postService: postService,
 	}
+}
+
+type postCreateRequest struct {
+	Title              string `json:"title" binding:"required"`
+	Slug               string `json:"slug" binding:"required"`
+	Content            string `json:"content"`
+	Excerpt            string `json:"excerpt"`
+	Status             string `json:"status" binding:"required,oneof=draft published archived"`
+	Locale             string `json:"locale" binding:"required"`
+	FeaturedImg        string `json:"featured_image"`
+	Tags               string `json:"tags"`
+	MetaTitle          string `json:"meta_title"`
+	MetaDesc           string `json:"meta_description"`
+	MetaKeywords       string `json:"meta_keywords"`
+	CanonicalURL       string `json:"canonical_url"`
+	TranslationGroupID *uint  `json:"translation_group_id"`
+}
+
+type postUpdateRequest struct {
+	Title              *string `json:"title" binding:"omitempty,min=1"`
+	Slug               *string `json:"slug" binding:"omitempty,min=1"`
+	Content            *string `json:"content"`
+	Excerpt            *string `json:"excerpt"`
+	Status             *string `json:"status" binding:"omitempty,oneof=draft published archived"`
+	Locale             *string `json:"locale" binding:"omitempty,min=1"`
+	FeaturedImg        *string `json:"featured_image"`
+	Tags               *string `json:"tags"`
+	MetaTitle          *string `json:"meta_title"`
+	MetaDesc           *string `json:"meta_description"`
+	MetaKeywords       *string `json:"meta_keywords"`
+	CanonicalURL       *string `json:"canonical_url"`
+	TranslationGroupID *uint   `json:"translation_group_id"`
+}
+
+func respondPostServiceError(c *gin.Context, err error, fallbackMessage string) {
+	switch {
+	case errors.Is(err, service.ErrPostNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+	case errors.Is(err, service.ErrPostSlugExists):
+		c.JSON(http.StatusConflict, gin.H{"error": "Slug already exists for this locale"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fallbackMessage})
+	}
+}
+
+func currentAdminUserID(c *gin.Context) (uint, bool) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		return 0, false
+	}
+
+	typedUserID, ok := userID.(uint)
+	return typedUserID, ok
 }
 
 // ListPosts 获取文章列表
@@ -37,7 +91,7 @@ func (h *ContentHandler) ListPosts(c *gin.Context) {
 		pageSize = 20
 	}
 
-	posts, total, err := h.postRepo.FindAllWithFilters(page, pageSize, status, locale, search, authorID)
+	posts, total, err := h.postService.ListAdmin(page, pageSize, status, locale, search, authorID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch posts"})
 		return
@@ -65,16 +119,10 @@ func (h *ContentHandler) GetPost(c *gin.Context) {
 		return
 	}
 
-	foundPost, err := h.postRepo.FindByID(uint(id))
+	foundPost, err := h.postService.GetAdminPost(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		respondPostServiceError(c, err, "Failed to fetch post")
 		return
-	}
-
-	// 获取翻译版本
-	if foundPost.TranslationGroupID != nil {
-		translations, _ := h.postRepo.FindByTranslationGroup(*foundPost.TranslationGroupID)
-		foundPost.Translations = translations
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -85,49 +133,25 @@ func (h *ContentHandler) GetPost(c *gin.Context) {
 // CreatePost 创建文章
 // POST /api/admin/content/posts
 func (h *ContentHandler) CreatePost(c *gin.Context) {
-	var req struct {
-		Title              string `json:"title" binding:"required"`
-		Slug               string `json:"slug" binding:"required"`
-		Content            string `json:"content"`
-		Excerpt            string `json:"excerpt"`
-		Status             string `json:"status" binding:"required,oneof=draft published archived"`
-		Locale             string `json:"locale" binding:"required"`
-		FeaturedImg        string `json:"featured_image"`
-		Tags               string `json:"tags"`
-		MetaTitle          string `json:"meta_title"`
-		MetaDesc           string `json:"meta_description"`
-		MetaKeywords       string `json:"meta_keywords"`
-		CanonicalURL       string `json:"canonical_url"`
-		TranslationGroupID *uint  `json:"translation_group_id"`
-	}
-
+	var req postCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 获取当前用户ID作为作者
-	userID, exists := c.Get("user_id")
-	if !exists {
+	userID, ok := currentAdminUserID(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	// 检查 slug 是否已存在
-	existingPost, _ := h.postRepo.FindBySlug(req.Slug, req.Locale)
-	if existingPost != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Slug already exists for this locale"})
-		return
-	}
-
-	// 创建文章
-	newPost := &post.Post{
+	newPost, err := h.postService.CreateAdminPost(service.PostCreateInput{
 		Title:              req.Title,
 		Slug:               req.Slug,
 		Content:            req.Content,
 		Excerpt:            req.Excerpt,
 		Status:             req.Status,
-		AuthorID:           userID.(uint),
+		AuthorID:           userID,
 		Locale:             req.Locale,
 		FeaturedImg:        req.FeaturedImg,
 		Tags:               req.Tags,
@@ -136,16 +160,9 @@ func (h *ContentHandler) CreatePost(c *gin.Context) {
 		MetaKeywords:       req.MetaKeywords,
 		CanonicalURL:       req.CanonicalURL,
 		TranslationGroupID: req.TranslationGroupID,
-	}
-
-	// 如果状态是已发布，设置发布时间
-	if req.Status == "published" {
-		now := time.Now()
-		newPost.PublishedAt = &now
-	}
-
-	if err := h.postRepo.Create(newPost); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
+	})
+	if err != nil {
+		respondPostServiceError(c, err, "Failed to create post")
 		return
 	}
 
@@ -164,80 +181,44 @@ func (h *ContentHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Title              string `json:"title"`
-		Slug               string `json:"slug"`
-		Content            string `json:"content"`
-		Excerpt            string `json:"excerpt"`
-		Status             string `json:"status" binding:"omitempty,oneof=draft published archived"`
-		Locale             string `json:"locale"`
-		FeaturedImg        string `json:"featured_image"`
-		Tags               string `json:"tags"`
-		MetaTitle          string `json:"meta_title"`
-		MetaDesc           string `json:"meta_description"`
-		MetaKeywords       string `json:"meta_keywords"`
-		CanonicalURL       string `json:"canonical_url"`
-		TranslationGroupID *uint  `json:"translation_group_id"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var req postUpdateRequest
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 获取现有文章
-	existingPost, err := h.postRepo.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+	var raw map[string]json.RawMessage
+	if err := c.ShouldBindBodyWith(&raw, binding.JSON); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 更新字段
-	if req.Title != "" {
-		existingPost.Title = req.Title
-	}
-	if req.Slug != "" && req.Slug != existingPost.Slug {
-		// 检查新 slug 是否已被使用
-		slugPost, _ := h.postRepo.FindBySlug(req.Slug, existingPost.Locale)
-		if slugPost != nil && slugPost.ID != existingPost.ID {
-			c.JSON(http.StatusConflict, gin.H{"error": "Slug already exists"})
-			return
-		}
-		existingPost.Slug = req.Slug
-	}
-	if req.Content != "" {
-		existingPost.Content = req.Content
-	}
-	if req.Excerpt != "" {
-		existingPost.Excerpt = req.Excerpt
-	}
-	if req.Status != "" {
-		// 如果从非发布状态改为发布状态，设置发布时间
-		if req.Status == "published" && existingPost.Status != "published" {
-			now := time.Now()
-			existingPost.PublishedAt = &now
-		}
-		existingPost.Status = req.Status
-	}
-	if req.Locale != "" {
-		existingPost.Locale = req.Locale
-	}
-	existingPost.FeaturedImg = req.FeaturedImg
-	existingPost.Tags = req.Tags
-	existingPost.MetaTitle = req.MetaTitle
-	existingPost.MetaDesc = req.MetaDesc
-	existingPost.MetaKeywords = req.MetaKeywords
-	existingPost.CanonicalURL = req.CanonicalURL
-	existingPost.TranslationGroupID = req.TranslationGroupID
+	_, updateTranslationGroupID := raw["translation_group_id"]
 
-	if err := h.postRepo.Update(existingPost); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
+	updatedPost, err := h.postService.UpdateAdminPost(uint(id), service.PostUpdateInput{
+		Title:                    req.Title,
+		Slug:                     req.Slug,
+		Content:                  req.Content,
+		Excerpt:                  req.Excerpt,
+		Status:                   req.Status,
+		Locale:                   req.Locale,
+		FeaturedImg:              req.FeaturedImg,
+		Tags:                     req.Tags,
+		MetaTitle:                req.MetaTitle,
+		MetaDesc:                 req.MetaDesc,
+		MetaKeywords:             req.MetaKeywords,
+		CanonicalURL:             req.CanonicalURL,
+		TranslationGroupID:       req.TranslationGroupID,
+		UpdateTranslationGroupID: updateTranslationGroupID,
+	})
+	if err != nil {
+		respondPostServiceError(c, err, "Failed to update post")
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Post updated successfully",
-		"post":    existingPost,
+		"post":    updatedPost,
 	})
 }
 
@@ -250,8 +231,8 @@ func (h *ContentHandler) DeletePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.postRepo.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post"})
+	if err := h.postService.Delete(uint(id)); err != nil {
+		respondPostServiceError(c, err, "Failed to delete post")
 		return
 	}
 
@@ -278,8 +259,8 @@ func (h *ContentHandler) UpdatePostStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.postRepo.UpdateStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post status"})
+	if err := h.postService.UpdateStatus(uint(id), req.Status); err != nil {
+		respondPostServiceError(c, err, "Failed to update post status")
 		return
 	}
 
@@ -291,7 +272,7 @@ func (h *ContentHandler) UpdatePostStatus(c *gin.Context) {
 // GetPostStats 获取文章统计
 // GET /api/admin/content/posts/stats
 func (h *ContentHandler) GetPostStats(c *gin.Context) {
-	stats, err := h.postRepo.GetStats()
+	stats, err := h.postService.GetStats()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get post stats"})
 		return
@@ -309,19 +290,10 @@ func (h *ContentHandler) GetTranslations(c *gin.Context) {
 		return
 	}
 
-	foundPost, err := h.postRepo.FindByID(uint(id))
+	translations, err := h.postService.GetTranslations(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		respondPostServiceError(c, err, "Failed to get translations")
 		return
-	}
-
-	var translations []post.Post
-	if foundPost.TranslationGroupID != nil {
-		translations, err = h.postRepo.FindByTranslationGroup(*foundPost.TranslationGroupID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get translations"})
-			return
-		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -342,11 +314,10 @@ func (h *ContentHandler) BatchUpdateStatus(c *gin.Context) {
 		return
 	}
 
-	updated := 0
-	for _, id := range req.PostIDs {
-		if err := h.postRepo.UpdateStatus(id, req.Status); err == nil {
-			updated++
-		}
+	updated, err := h.postService.BatchUpdateStatus(req.PostIDs, req.Status)
+	if err != nil {
+		respondPostServiceError(c, err, "Failed to batch update post status")
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -368,11 +339,10 @@ func (h *ContentHandler) BatchDelete(c *gin.Context) {
 		return
 	}
 
-	deleted := 0
-	for _, id := range req.PostIDs {
-		if err := h.postRepo.Delete(id); err == nil {
-			deleted++
-		}
+	deleted, err := h.postService.BatchDelete(req.PostIDs)
+	if err != nil {
+		respondPostServiceError(c, err, "Failed to batch delete posts")
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

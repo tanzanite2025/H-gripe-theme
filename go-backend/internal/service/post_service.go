@@ -1,11 +1,14 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"tanzanite/internal/domain/post"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/repository"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type PostService struct {
@@ -22,86 +25,250 @@ func NewPostService(postRepo *repository.PostRepository, cache *cache.RedisCache
 	}
 }
 
-// GetByID 根据ID获取文章
+var (
+	ErrPostNotFound   = errors.New("post not found")
+	ErrPostSlugExists = errors.New("post slug already exists")
+)
+
+type PostCreateInput struct {
+	Title              string
+	Slug               string
+	Content            string
+	Excerpt            string
+	Status             string
+	AuthorID           uint
+	Locale             string
+	FeaturedImg        string
+	Tags               string
+	MetaTitle          string
+	MetaDesc           string
+	MetaKeywords       string
+	CanonicalURL       string
+	TranslationGroupID *uint
+}
+
+type PostUpdateInput struct {
+	Title                    *string
+	Slug                     *string
+	Content                  *string
+	Excerpt                  *string
+	Status                   *string
+	Locale                   *string
+	FeaturedImg              *string
+	Tags                     *string
+	MetaTitle                *string
+	MetaDesc                 *string
+	MetaKeywords             *string
+	CanonicalURL             *string
+	TranslationGroupID       *uint
+	UpdateTranslationGroupID bool
+}
+
 func (s *PostService) GetByID(id uint) (*post.Post, error) {
 	cacheKey := fmt.Sprintf("post:%d", id)
 
-	// 尝试从缓存获取
-	var p post.Post
-	if err := s.cache.Get(cacheKey, &p); err == nil {
-		return &p, nil
+	var cachedPost post.Post
+	if s.cache != nil && s.cache.Get(cacheKey, &cachedPost) == nil {
+		return &cachedPost, nil
 	}
 
-	// 从数据库获取
 	result, err := s.postRepo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// 增加浏览次数
 	_ = s.postRepo.IncrementViewCount(id)
 
-	// 写入缓存
-	_ = s.cache.Set(cacheKey, result, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, result, s.cacheTTL)
+	}
 
 	return result, nil
 }
 
-// GetBySlug 根据slug获取文章
 func (s *PostService) GetBySlug(slug, locale string) (*post.Post, error) {
 	cacheKey := fmt.Sprintf("post:slug:%s:%s", slug, locale)
 
-	// 尝试从缓存获取
-	var p post.Post
-	if err := s.cache.Get(cacheKey, &p); err == nil {
-		return &p, nil
+	var cachedPost post.Post
+	if s.cache != nil && s.cache.Get(cacheKey, &cachedPost) == nil {
+		return &cachedPost, nil
 	}
 
-	// 从数据库获取
 	result, err := s.postRepo.FindBySlug(slug, locale)
 	if err != nil {
 		return nil, err
 	}
 
-	// 增加浏览次数
 	_ = s.postRepo.IncrementViewCount(result.ID)
 
-	// 写入缓存
-	_ = s.cache.Set(cacheKey, result, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, result, s.cacheTTL)
+	}
 
 	return result, nil
 }
 
-// List 获取文章列表
 func (s *PostService) List(locale, status string, page, pageSize int) ([]post.Post, int64, error) {
 	offset := (page - 1) * pageSize
 	return s.postRepo.List(locale, status, offset, pageSize)
 }
 
-// Create 创建文章
+func (s *PostService) ListAdmin(page, pageSize int, status, locale, search, authorID string) ([]post.Post, int64, error) {
+	return s.postRepo.FindAllWithFilters(page, pageSize, status, locale, search, authorID)
+}
+
+func (s *PostService) GetAdminPost(id uint) (*post.Post, error) {
+	foundPost, err := s.findPost(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if foundPost.TranslationGroupID != nil {
+		translations, err := s.postRepo.FindByTranslationGroup(*foundPost.TranslationGroupID)
+		if err != nil {
+			return nil, err
+		}
+		foundPost.Translations = translations
+	}
+
+	return foundPost, nil
+}
+
+func (s *PostService) GetStats() (map[string]interface{}, error) {
+	return s.postRepo.GetStats()
+}
+
 func (s *PostService) Create(p *post.Post) error {
 	return s.postRepo.Create(p)
 }
 
-// Update 更新文章
+func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error) {
+	if err := s.ensureSlugAvailable(input.Slug, input.Locale, 0); err != nil {
+		return nil, err
+	}
+
+	newPost := &post.Post{
+		Title:              input.Title,
+		Slug:               input.Slug,
+		Content:            input.Content,
+		Excerpt:            input.Excerpt,
+		Status:             input.Status,
+		AuthorID:           input.AuthorID,
+		Locale:             input.Locale,
+		FeaturedImg:        input.FeaturedImg,
+		Tags:               input.Tags,
+		MetaTitle:          input.MetaTitle,
+		MetaDesc:           input.MetaDesc,
+		MetaKeywords:       input.MetaKeywords,
+		CanonicalURL:       input.CanonicalURL,
+		TranslationGroupID: input.TranslationGroupID,
+	}
+
+	if input.Status == "published" {
+		now := time.Now()
+		newPost.PublishedAt = &now
+	}
+
+	if err := s.postRepo.Create(newPost); err != nil {
+		return nil, err
+	}
+
+	return newPost, nil
+}
+
 func (s *PostService) Update(p *post.Post) error {
+	previousPost, err := s.findPost(p.ID)
+	if err != nil {
+		return err
+	}
+
 	if err := s.postRepo.Update(p); err != nil {
 		return err
 	}
 
-	// 清除缓存
-	cacheKey := fmt.Sprintf("post:%d", p.ID)
-	_ = s.cache.Delete(cacheKey)
-
-	slugCacheKey := fmt.Sprintf("post:slug:%s:%s", p.Slug, p.Locale)
-	_ = s.cache.Delete(slugCacheKey)
+	s.clearPostCache(previousPost)
+	s.clearPostCache(p)
 
 	return nil
 }
 
-// Delete 删除文章
+func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Post, error) {
+	existingPost, err := s.findPost(id)
+	if err != nil {
+		return nil, err
+	}
+
+	previousPost := *existingPost
+	nextSlug := existingPost.Slug
+	nextLocale := existingPost.Locale
+	if input.Slug != nil {
+		nextSlug = *input.Slug
+	}
+	if input.Locale != nil {
+		nextLocale = *input.Locale
+	}
+	if nextSlug != existingPost.Slug || nextLocale != existingPost.Locale {
+		if err := s.ensureSlugAvailable(nextSlug, nextLocale, existingPost.ID); err != nil {
+			return nil, err
+		}
+	}
+
+	if input.Title != nil {
+		existingPost.Title = *input.Title
+	}
+	if input.Slug != nil {
+		existingPost.Slug = *input.Slug
+	}
+	if input.Content != nil {
+		existingPost.Content = *input.Content
+	}
+	if input.Excerpt != nil {
+		existingPost.Excerpt = *input.Excerpt
+	}
+	if input.Status != nil {
+		if *input.Status == "published" && existingPost.Status != "published" && existingPost.PublishedAt == nil {
+			now := time.Now()
+			existingPost.PublishedAt = &now
+		}
+		existingPost.Status = *input.Status
+	}
+	if input.Locale != nil {
+		existingPost.Locale = *input.Locale
+	}
+	if input.FeaturedImg != nil {
+		existingPost.FeaturedImg = *input.FeaturedImg
+	}
+	if input.Tags != nil {
+		existingPost.Tags = *input.Tags
+	}
+	if input.MetaTitle != nil {
+		existingPost.MetaTitle = *input.MetaTitle
+	}
+	if input.MetaDesc != nil {
+		existingPost.MetaDesc = *input.MetaDesc
+	}
+	if input.MetaKeywords != nil {
+		existingPost.MetaKeywords = *input.MetaKeywords
+	}
+	if input.CanonicalURL != nil {
+		existingPost.CanonicalURL = *input.CanonicalURL
+	}
+	if input.UpdateTranslationGroupID {
+		existingPost.TranslationGroupID = input.TranslationGroupID
+	}
+
+	if err := s.postRepo.Update(existingPost); err != nil {
+		return nil, err
+	}
+
+	s.clearPostCache(&previousPost)
+	s.clearPostCache(existingPost)
+
+	return existingPost, nil
+}
+
 func (s *PostService) Delete(id uint) error {
-	p, err := s.postRepo.FindByID(id)
+	existingPost, err := s.findPost(id)
 	if err != nil {
 		return err
 	}
@@ -110,49 +277,119 @@ func (s *PostService) Delete(id uint) error {
 		return err
 	}
 
-	// 清除缓存
-	cacheKey := fmt.Sprintf("post:%d", id)
-	_ = s.cache.Delete(cacheKey)
-
-	slugCacheKey := fmt.Sprintf("post:slug:%s:%s", p.Slug, p.Locale)
-	_ = s.cache.Delete(slugCacheKey)
+	s.clearPostCache(existingPost)
 
 	return nil
 }
 
-// GetTranslations 获取文章的所有翻译版本
+func (s *PostService) UpdateStatus(id uint, status string) error {
+	existingPost, err := s.findPost(id)
+	if err != nil {
+		return err
+	}
+
+	if err := s.postRepo.UpdateStatus(id, status); err != nil {
+		return err
+	}
+
+	s.clearPostCache(existingPost)
+
+	return nil
+}
+
+func (s *PostService) BatchUpdateStatus(ids []uint, status string) (int, error) {
+	updated := 0
+	for _, id := range ids {
+		if err := s.UpdateStatus(id, status); err != nil {
+			if errors.Is(err, ErrPostNotFound) {
+				continue
+			}
+			return updated, err
+		}
+		updated++
+	}
+
+	return updated, nil
+}
+
+func (s *PostService) BatchDelete(ids []uint) (int, error) {
+	deleted := 0
+	for _, id := range ids {
+		if err := s.Delete(id); err != nil {
+			if errors.Is(err, ErrPostNotFound) {
+				continue
+			}
+			return deleted, err
+		}
+		deleted++
+	}
+
+	return deleted, nil
+}
+
 func (s *PostService) GetTranslations(postID uint) ([]post.Post, error) {
-	// 先获取文章的翻译组ID
 	groupID, err := s.postRepo.GetTranslationGroupID(postID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound
+		}
 		return nil, err
 	}
 
-	// 如果没有翻译组ID，返回空列表
 	if groupID == nil {
 		return []post.Post{}, nil
 	}
 
-	// 获取翻译组中的所有文章
-	translations, err := s.postRepo.FindByTranslationGroup(*groupID)
-	if err != nil {
-		return nil, err
-	}
-
-	return translations, nil
+	return s.postRepo.FindByTranslationGroup(*groupID)
 }
 
-// GetTranslationsByGroup 根据翻译组ID获取所有翻译版本
 func (s *PostService) GetTranslationsByGroup(groupID uint) ([]post.Post, error) {
 	return s.postRepo.FindByTranslationGroup(groupID)
 }
 
-// GetPublishedPosts 获取所有已发布的文章
 func (s *PostService) GetPublishedPosts() ([]post.Post, error) {
 	return s.postRepo.FindPublished()
 }
 
-// GetPublishedPostsByLocale 获取指定语言的已发布文章
 func (s *PostService) GetPublishedPostsByLocale(locale string) ([]post.Post, error) {
 	return s.postRepo.FindPublishedByLocale(locale)
+}
+
+func (s *PostService) findPost(id uint) (*post.Post, error) {
+	foundPost, err := s.postRepo.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound
+		}
+		return nil, err
+	}
+
+	return foundPost, nil
+}
+
+func (s *PostService) ensureSlugAvailable(slug, locale string, currentPostID uint) error {
+	existingPost, err := s.postRepo.FindBySlug(slug, locale)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	if existingPost != nil && existingPost.ID != currentPostID {
+		return ErrPostSlugExists
+	}
+
+	return nil
+}
+
+func (s *PostService) clearPostCache(p *post.Post) {
+	if s.cache == nil || p == nil {
+		return
+	}
+
+	_ = s.cache.Delete(fmt.Sprintf("post:%d", p.ID))
+	if p.Slug != "" {
+		_ = s.cache.Delete(fmt.Sprintf("post:slug:%s:%s", p.Slug, p.Locale))
+	}
 }
