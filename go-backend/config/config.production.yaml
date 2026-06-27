@@ -16,6 +16,7 @@ database:
   max_open_conns: 100
   conn_max_lifetime: 3600
   auto_migrate: false
+  log_level: silent
 
 redis:
   host: ${REDIS_HOST}

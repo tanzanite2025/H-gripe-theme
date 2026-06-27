@@ -3,15 +3,14 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"tanzanite/internal/pkg/config"
+	appLogger "tanzanite/internal/pkg/logger"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"gorm.io/plugin/dbresolver"
 )
 
@@ -29,7 +28,7 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	db, err := gorm.Open(dialector, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: newGormLogger(cfg.LogLevel),
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},
@@ -63,7 +62,7 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Database connected successfully")
+	appLogger.Info("database connected successfully")
 	return db, nil
 }
 
