@@ -2,14 +2,17 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
-import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
-import WishlistDrawer from '~/components/WishlistDrawer.vue'
-import AuthModal from '~/components/AuthModal.vue'
-import AgentChatPanel from '~/components/whatsapp/AgentChatPanel.vue'
-import ChatTransferModal from '~/components/whatsapp/ChatTransferModal.vue'
-import ChatWelcomePanel from '~/components/whatsapp/ChatWelcomePanel.vue'
-import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
-import TestReportDrawer from '~/components/whatsapp/TestReportDrawer.vue'
+import {
+  CHAT_STORAGE_EXPIRY_DAYS,
+  createEmptyChatRoom,
+  getChatStorageKey,
+  getLastSelectedAgentId,
+  hasLocalChatHistory,
+  loadChatRoomFromStorage,
+  saveChatRoomToStorage,
+  saveLastSelectedAgentId
+} from '~/composables/chat/useChatStorage'
+import type { ChatRoomState, ChatTab } from '~/composables/chat/useChatStorage'
 
 export const useWhatsAppState = (emit: any) => {
   const { user, isAgent, agentId, request: authRequest } = useAuth()
@@ -75,18 +78,7 @@ export const useWhatsAppState = (emit: any) => {
   const checkLocalHistoryChat = (): boolean => {
     if (typeof window === 'undefined') return false
     try {
-      const keys = Object.keys(localStorage)
-      const chatKeys = keys.filter(key => key.startsWith('tz_chat_'))
-      
-      for (const key of chatKeys) {
-        const data = localStorage.getItem(key)
-        if (data) {
-          const parsed = JSON.parse(data)
-          if (parsed.messages && parsed.messages.length > 0) {
-            return true
-          }
-        }
-      }
+      return hasLocalChatHistory()
     } catch (error) {
       console.error('检查本地历史对话失败:', error)
     }
@@ -175,36 +167,14 @@ export const useWhatsAppState = (emit: any) => {
     afterSalesEmail: ''
   })
   
-  type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member' | 'test' | 'tire'
-  interface ChatRoomState {
-    messages: any[]
-    activeTab: ChatTab
-    newMessage: string
-    searchQuery: string
-    searchResults: any[]
-    ordersList: any[]
-    isLoadingOrders: boolean
-    isSearching: boolean
-  }
-  
   const chatRooms = ref<Record<number, ChatRoomState>>({})
-  const LAST_AGENT_STORAGE_KEY = 'tz_last_selected_agent'
   
   const messagesContainerMobile = ref<HTMLElement | null>(null)
   const isSending = ref(false)
   
   const ensureChatRoom = (agentId: number): ChatRoomState => {
     if (!chatRooms.value[agentId]) {
-      chatRooms.value[agentId] = {
-        messages: [],
-        activeTab: 'chat',
-        newMessage: '',
-        searchQuery: '',
-        searchResults: [],
-        ordersList: [],
-        isLoadingOrders: false,
-        isSearching: false
-      }
+      chatRooms.value[agentId] = createEmptyChatRoom()
     }
     return chatRooms.value[agentId]
   }
@@ -308,10 +278,9 @@ export const useWhatsAppState = (emit: any) => {
   // 生成会话ID（基于访客标识）
   const conversationId = ref('')
   const STORAGE_KEY = computed(() => {
-    const agentId = selectedAgent.value?.id || 'default'
-    return `tz_chat_${conversationId.value || 'pending'}_agent_${agentId}`
+    return getChatStorageKey(conversationId.value, selectedAgent.value?.id)
   })
-  const STORAGE_EXPIRY_DAYS = 5
+  const STORAGE_EXPIRY_DAYS = CHAT_STORAGE_EXPIRY_DAYS
 
   const rememberConversationId = (payload: any) => {
     const id = payload?.conversation_id || payload?.conversationId || payload?.data?.conversation_id || payload?.data?.conversationId
@@ -551,7 +520,7 @@ export const useWhatsAppState = (emit: any) => {
   // 监听客服切换，加载对应的聊天记录
   watch(() => selectedAgent.value?.id, (newId, oldId) => {
     if (newId && newId !== oldId) {
-      localStorage.setItem(LAST_AGENT_STORAGE_KEY, String(newId))
+      saveLastSelectedAgentId(newId)
       loadMessagesFromStorage()
       scrollToBottom()
     }
@@ -570,30 +539,11 @@ export const useWhatsAppState = (emit: any) => {
     const currentRoom = ensureChatRoom(selectedAgent.value.id)
   
     try {
-      const stored = localStorage.getItem(STORAGE_KEY.value)
-      if (stored) {
-        const data = JSON.parse(stored)
-        const now = Date.now()
-        const expiryTime = STORAGE_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-        
-        if (!data.messages) throw new Error('[CRITICAL] Messages array missing from local storage data');
-        const validMessages = data.messages.filter((msg: any) => {
-          const msgTime = new Date(msg.created_at).getTime()
-          return (now - msgTime) < expiryTime
-        })
-  
-        currentRoom.messages = validMessages
-        currentRoom.activeTab = (data.activeTab as ChatTab) || 'chat'
-        currentRoom.newMessage = data.newMessage || ''
-        currentRoom.searchQuery = data.searchQuery || ''
-        if (!data.searchResults) throw new Error('[CRITICAL] searchResults missing in storage data');
-        currentRoom.searchResults = Array.isArray(data.searchResults) ? data.searchResults : []
-        if (!data.ordersList) throw new Error('[CRITICAL] ordersList missing in storage data');
-        currentRoom.ordersList = Array.isArray(data.ordersList) ? data.ordersList : []
-        currentRoom.isSearching = !!data.isSearching
-        currentRoom.isLoadingOrders = !!data.isLoadingOrders
-  
-        if (validMessages.length !== data.messages.length) {
+      const storedRoom = loadChatRoomFromStorage(STORAGE_KEY.value, STORAGE_EXPIRY_DAYS)
+      if (storedRoom) {
+        Object.assign(currentRoom, storedRoom.room)
+
+        if (storedRoom.hasExpiredMessages) {
           saveMessagesToStorage()
         }
       } else {
@@ -609,17 +559,7 @@ export const useWhatsAppState = (emit: any) => {
     if (!selectedAgent.value) return
     const currentRoom = ensureChatRoom(selectedAgent.value.id)
     try {
-      localStorage.setItem(STORAGE_KEY.value, JSON.stringify({
-        messages: currentRoom.messages,
-        activeTab: currentRoom.activeTab,
-        newMessage: currentRoom.newMessage,
-        searchQuery: currentRoom.searchQuery,
-        searchResults: currentRoom.searchResults,
-        ordersList: currentRoom.ordersList,
-        isSearching: currentRoom.isSearching,
-        isLoadingOrders: currentRoom.isLoadingOrders,
-        lastUpdated: new Date().toISOString()
-      }))
+      saveChatRoomToStorage(STORAGE_KEY.value, currentRoom)
     } catch (error) {
       console.error('保存消息失败:', error)
     }
@@ -743,13 +683,10 @@ export const useWhatsAppState = (emit: any) => {
   
   // 搜索商品
   const searchProducts = async () => {
-    console.log('[WhatsAppChatModal] searchProducts clicked, query =', searchQuery.value)
-  
     const trimmedQuery = searchQuery.value.trim()
   
     // 如果关键字为空：仍然打开抽屉，只显示空状态，方便确认组件是否挂载
     if (!trimmedQuery) {
-      console.log('[WhatsAppChatModal] empty search query, open drawer with empty state')
       productDrawerQuery.value = ''
       productDrawerError.value = null
       productDrawerVisible.value = true
@@ -764,7 +701,6 @@ export const useWhatsAppState = (emit: any) => {
   
     isSearching.value = true
     try {
-      console.log('[WhatsAppChatModal] fetching products...')
       const response = await $fetch<any>(`${publicApiBase.value}/customer-service/products`, {
         params: {
           keyword: trimmedQuery,
@@ -789,7 +725,6 @@ export const useWhatsAppState = (emit: any) => {
             : (item.prices?.regular > 0 ? `$${item.prices.regular}` : ''),
           maxStock: item.stock?.quantity || 0
         }))
-        console.log('[WhatsAppChatModal] products loaded:', searchResults.value.length)
       
     } catch (error) {
       console.error('搜索失败:', error)
@@ -797,7 +732,6 @@ export const useWhatsAppState = (emit: any) => {
       searchResults.value = []
     } finally {
       isSearching.value = false
-      console.log('[WhatsAppChatModal] search finished')
     }
   }
   
@@ -833,8 +767,7 @@ export const useWhatsAppState = (emit: any) => {
     historyDrawerVisible.value = false
   }
   
-  // 分享商品到聊天
-  const shareProductToChat = async (product: any) => {
+  const shareProductMessageToChat = async (product: any, errorLabel: string) => {
     if (!selectedAgent.value || isSending.value) return
     
     isSending.value = true
@@ -864,47 +797,20 @@ export const useWhatsAppState = (emit: any) => {
       activeTab.value = 'chat'
       scrollToBottom()
     } catch (error) {
-      console.error('分享商品失败:', error)
+      console.error(errorLabel, error)
     } finally {
       isSending.value = false
     }
   }
+
+  // 分享商品到聊天
+  const shareProductToChat = (product: any) => {
+    return shareProductMessageToChat(product, '分享商品失败:')
+  }
   
   // 从浏览历史分享商品到聊天
-  const handleShareProductFromHistory = async (product: any) => {
-    if (!selectedAgent.value || isSending.value) return
-    
-    isSending.value = true
-    
-    const messageData = {
-      id: Date.now(),
-      conversation_id: conversationId.value,
-      sender_id: user.value?.id || 0,
-      sender_name: user.value?.display_name || '访客',
-      sender_email: user.value?.email || '',
-      message: product.title || '商品',
-      message_type: 'product',
-      metadata: {
-        title: product.title,
-        url: product.url,
-        thumbnail: product.thumbnail,
-        price: product.price
-      },
-      created_at: new Date().toISOString(),
-      is_agent: false
-    }
-    
-    try {
-      messages.value.push(messageData)
-      saveMessagesToStorage()
-      await sendMessageToAPI(messageData)
-      activeTab.value = 'chat'
-      scrollToBottom()
-    } catch (error) {
-      console.error('从浏览历史分享商品失败:', error)
-    } finally {
-      isSending.value = false
-    }
+  const handleShareProductFromHistory = (product: any) => {
+    return shareProductMessageToChat(product, '从浏览历史分享商品失败:')
   }
   
   // 加载订单列表
@@ -1061,13 +967,11 @@ export const useWhatsAppState = (emit: any) => {
     }
   
     let defaultAgent = agents.value[0]
-    if (typeof window !== 'undefined') {
-      const storedId = localStorage.getItem(LAST_AGENT_STORAGE_KEY)
-      if (storedId) {
-        const matched = agents.value.find(agent => String(agent.id) === storedId)
-        if (matched) {
-          defaultAgent = matched
-        }
+    const storedId = getLastSelectedAgentId()
+    if (storedId) {
+      const matched = agents.value.find(agent => String(agent.id) === storedId)
+      if (matched) {
+        defaultAgent = matched
       }
     }
   
@@ -1470,50 +1374,23 @@ export const useWhatsAppState = (emit: any) => {
   })
   
   return {
-    config,
-    publicApiBase,
-    base,
-    testReportDrawerVisible,
-    handleOpenTestReport,
+    user,
     agentMode,
     agentConversations,
     isLoadingConversations,
     selectedConversation,
     currentAgentStatus,
     showStatusDropdown,
+    agentStatusColors,
+    agentStatusLabels,
     showWelcomeScreen,
     hasHistoryChat,
-    checkLocalHistoryChat,
-    keys,
-    chatKeys,
-    data,
-    parsed,
-    checkApiHistoryChat,
-    initHistoryChatCheck,
     agents,
     selectedAgent,
-    isLoadingAgents,
     welcomeAgents,
     onlineAgentsCount,
-    isDesktopSearchFocused,
-    ids,
-    currentId,
-    desktopSearchQuery,
-    matchingAgents,
-    query,
-    name,
-    email,
-    rawTags,
-    tags,
-    shouldShowDesktopSearchResults,
     emailSettings,
-    chatRooms,
-    LAST_AGENT_STORAGE_KEY,
-    messagesContainerMobile,
     isSending,
-    ensureChatRoom,
-    currentChatRoom,
-    agentId,
     messages,
     activeTab,
     newMessage,
@@ -1531,107 +1408,45 @@ export const useWhatsAppState = (emit: any) => {
     transferToAgent,
     transferNote,
     isTransferring,
-    imageInput,
     isUploadingImage,
-    conversationId,
-    STORAGE_KEY,
-    STORAGE_EXPIRY_DAYS,
+    testReportDrawerVisible,
     showToast,
     toastMessage,
-    messagePressTimer,
-    pressedMessage,
-    longPressDuration,
-    isLongPress,
-    shouldShowOrders,
+    isMemberLogged,
+    levelName,
+    points,
+    tierInfo,
+    levelDiscounts,
+    userCoupons,
+    userPointCards,
     isLoggedInForWarranty,
     showAuthModal,
     authMode,
+    currentThemeColor,
     openMemberAuth,
     handleWarrantyLoginRequest,
     handleChatAuthSuccess,
+    handleOpenTestReport,
     handleClose,
     enterChat,
     selectAgentFromWelcome,
-    faqItems,
-    displayToast,
-    handleWhatsAppTouchStart,
-    handleWhatsAppTouchEnd,
-    handleWhatsAppClick,
-    whatsappLink,
-    canDeleteMessage,
-    confirmDeleteMessage,
-    ok,
-    deleteMessage,
-    clearMessagePressTimer,
-    startMessagePress,
-    handleMessageTouchStart,
-    handleMessageTouchEnd,
-    handleMessageMouseDown,
-    handleMessageMouseUp,
     handleMessageContextMenu,
-    getStatusText,
-    formatMessageTime,
-    date,
-    scrollToBottom,
-    containers,
-    loadMessagesFromStorage,
-    currentRoom,
-    stored,
-    now,
-    expiryTime,
-    validMessages,
-    msgTime,
-    saveMessagesToStorage,
-    sendMessageToAPI,
     handleSendMessage,
-    messageText,
-    messageData,
-    checkAutoReply,
     searchProducts,
-    trimmedQuery,
     handleAddProductToCart,
-    result,
     handleProductDrawerClose,
     handleHistoryDrawerClose,
     shareProductToChat,
     handleShareProductFromHistory,
-    loadOrders,
     shareOrderToChat,
-    fetchAgents,
-    cached,
-    currentUserId,
-    filteredAgents,
-    cacheData,
-    initializeSelectedAgent,
-    defaultAgent,
-    storedId,
-    matched,
-    sendWelcomeMessage,
-    selectAgent,
-    selectAgentFromSearch,
-    handleDesktopSearchBlur,
-    getAgentBgColorValue,
-    colors,
-    getAgentBgColor,
-    agentThemePalette,
-    getAgentThemeColor,
-    currentThemeColor,
-    mobilePanelStyle,
-    color,
+    openCartFromChat,
     getInitials,
-    parts,
     handleImageUpload,
-    target,
-    file,
-    reader,
-    imageUrl,
+    handleTransfer,
     fetchAgentConversations,
     selectConversation,
-    loadConversationMessages,
     backToConversationList,
     sendMessage,
-    fetchAgentStatus,
-    changeAgentStatus,
-    previousStatus
+    changeAgentStatus
   }
 }

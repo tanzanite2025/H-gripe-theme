@@ -96,7 +96,6 @@ export const useCart = () => {
           localStorage.removeItem('tanzanite_cart')
           await loadCartFromBackend()
 
-          console.log(`[Cart] Guest cart synced successfully (${items.length} items)`)
           return {
             success: true,
             itemsCount: items.length
@@ -195,7 +194,6 @@ export const useCart = () => {
         }
       } else if (result.success && result.itemsCount && result.itemsCount > 0) {
         // 同步成功，显示成功提示
-        console.log(`[Cart] Successfully synced ${result.itemsCount} items`)
       }
     } else if (!newVal && oldVal) {
       // 用户登出，重新拉取游客空车

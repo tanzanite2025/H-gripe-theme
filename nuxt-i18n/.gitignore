@@ -12,6 +12,12 @@ node_modules
 # Logs
 logs
 *.log
+*build-log*.txt
+
+# Root-level generated prototypes
+/*-demo.html
+/*-showcase.html
+/*-deploy.tar.gz
 
 # Misc
 .DS_Store

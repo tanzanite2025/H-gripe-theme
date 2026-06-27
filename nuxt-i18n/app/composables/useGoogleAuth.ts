@@ -158,10 +158,6 @@ export function useGoogleAuth() {
                 console.warn('[useGoogleAuth] Prompt not displayed:', notification.getNotDisplayedReason())
                 // 可能是浏览器阻止了弹窗，提示用户手动点击
                 error.value = 'Google 登录弹窗被阻止，请检查浏览器设置或稍后重试'
-            } else if (notification.isSkippedMoment()) {
-                console.log('[useGoogleAuth] Prompt skipped:', notification.getSkippedReason())
-            } else if (notification.isDismissedMoment()) {
-                console.log('[useGoogleAuth] Prompt dismissed:', notification.getDismissedReason())
             }
         })
     }

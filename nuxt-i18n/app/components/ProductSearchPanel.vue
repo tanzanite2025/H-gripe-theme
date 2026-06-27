@@ -143,7 +143,6 @@ const toggleKeyword = (keyword: string) => {
 
 const handleFilterChange = (newFilters: ProductSearchFilters) => {
   filters.value = newFilters
-  console.log('Product search filters changed:', newFilters)
 }
 
 const handleReset = () => {
@@ -159,7 +158,6 @@ const handleReset = () => {
     attributes: {},
   }
   filterResetKey.value += 1
-  console.log('Product search filters reset')
 
   // 重置后立即触发一次搜索，让父级重新请求商品列表
   emit('search', {
@@ -173,8 +171,6 @@ const searchProducts = async () => {
   searchingProducts.value = true
   syncProductSearchQuery()
   const query = productSearchQuery.value.trim()
-  console.log('Product search query:', query || '(empty)')
-  console.log('Product search filters:', filters.value)
 
   const chipCategorySlug = buildChipCategorySlug()
 

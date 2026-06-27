@@ -81,7 +81,6 @@ export const useBrowsingHistory = () => {
         // 合并后端数据到本地
         // 注意：这里需要产品详情，暂时保持本地优先
         // 实际使用时应该让后端返回产品详情或前端批量查询
-        console.log('已从后端加载浏览历史:', backendHistory.length, '条')
       }
     } catch (error) {
       console.error('从后端加载浏览历史失败:', error)
