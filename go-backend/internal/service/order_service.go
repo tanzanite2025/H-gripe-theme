@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/eventbus"
 	"tanzanite/internal/pkg/logger"
 	"tanzanite/internal/pkg/requestctx"
 	"tanzanite/internal/repository"
@@ -129,12 +128,14 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 
 	// 应用优惠券
 	discountAmount := memberDiscount + pointsDiscount
+	couponDiscount := 0.0
 	var targetCoupon *coupon.Coupon
 	if couponCode != "" {
 		discount, err := s.applyCoupon(couponCode, totalAmount)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply coupon %s: %w", couponCode, err)
 		}
+		couponDiscount = discount
 		discountAmount += discount
 		cp, cpErr := s.couponRepo.FindCouponByCode(couponCode)
 		if cpErr != nil {
@@ -175,6 +176,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
 		txOrderRepo := s.orderRepo.WithTx(tx)
 		txProductRepo := s.productRepo.WithTx(tx)
+		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
 
 		// 1. 扣减库存 (防超卖)
 		itemsMap := make(map[uint]int)
@@ -191,7 +193,21 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 		}
 		createdOrder = o
 
-		// 2. 优惠券扣减和记录
+		// 3. 扣减积分并写入流水
+		if pointsToUse > 0 {
+			if _, err := txLoyaltyRepo.AdjustUserPoints(
+				userID,
+				-pointsToUse,
+				"spend",
+				"order",
+				o.ID,
+				fmt.Sprintf("Spent %d points on order #%s", pointsToUse, o.OrderNumber),
+			); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to deduct points for order ID %d: %w", o.ID, err)
+			}
+		}
+
+		// 4. 优惠券扣减和记录
 		if targetCoupon != nil {
 			txCouponRepo := s.couponRepo.WithTx(tx)
 
@@ -205,7 +221,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 				CouponID:  targetCoupon.ID,
 				UserID:    userID,
 				OrderID:   o.ID,
-				Discount:  discountAmount,
+				Discount:  couponDiscount,
 				CreatedAt: time.Now(),
 			}
 			if err := txCouponRepo.CreateCouponUsage(usage); err != nil {
@@ -219,8 +235,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 	if txErr != nil {
 		return nil, txErr
 	}
-
-	eventbus.Publish("OrderPlacedEvent", createdOrder)
 
 	return createdOrder, nil
 }

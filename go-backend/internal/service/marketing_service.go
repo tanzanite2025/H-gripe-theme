@@ -7,9 +7,7 @@ import (
 	"math/rand"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/eventbus"
 	"tanzanite/internal/repository"
 	"time"
 
@@ -111,20 +109,7 @@ func NewMarketingService(
 		couponRepo:  couponRepo,
 		loyaltyRepo: loyaltyRepo,
 	}
-	s.initEventListeners()
 	return s
-}
-
-func (s *MarketingService) initEventListeners() {
-	eventbus.Subscribe("OrderPlacedEvent", func(event interface{}) {
-		o, ok := event.(*order.Order)
-		if !ok {
-			return
-		}
-		if o.PointsUsed > 0 {
-			_ = s.SpendPoints(o.UserID, o.PointsUsed, o.ID)
-		}
-	})
 }
 
 // Coupon 相关方法
@@ -185,20 +170,24 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 
 // UseCoupon 使用优惠券
 func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmount float64) error {
-	// 增加使用次数
-	if err := s.couponRepo.IncrementUsedCount(couponID); err != nil {
-		return err
-	}
+	return s.couponRepo.GetDB().Transaction(func(tx *gorm.DB) error {
+		txCouponRepo := s.couponRepo.WithTx(tx)
 
-	// 创建使用记录
-	usage := &coupon.CouponUsage{
-		CouponID: couponID,
-		UserID:   userID,
-		OrderID:  orderID,
-		Discount: discountAmount,
-	}
+		// 增加使用次数
+		if err := txCouponRepo.IncrementUsedCount(couponID); err != nil {
+			return err
+		}
 
-	return s.couponRepo.CreateCouponUsage(usage)
+		// 创建使用记录
+		usage := &coupon.CouponUsage{
+			CouponID: couponID,
+			UserID:   userID,
+			OrderID:  orderID,
+			Discount: discountAmount,
+		}
+
+		return txCouponRepo.CreateCouponUsage(usage)
+	})
 }
 
 // GetActiveCoupons 获取有效优惠券
@@ -621,26 +610,33 @@ func (s *MarketingService) GetGiftCardsByUserID(userID uint) ([]coupon.GiftCard,
 
 // UseGiftCard 使用礼品卡
 func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint) error {
-	card, err := s.couponRepo.FindGiftCardByCode(code)
-	if err != nil {
-		return errors.New("gift card not found")
+	if amount <= 0 {
+		return errors.New("amount must be positive")
 	}
 
-	if card.Status != "active" {
-		return errors.New("gift card is not active")
-	}
-
-	if card.Balance < amount {
-		return errors.New("insufficient balance")
-	}
-
-	// 检查过期时间
-	if card.ExpiresAt != nil && time.Now().After(*card.ExpiresAt) {
-		return errors.New("gift card is expired")
-	}
-
-	return s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
+	return s.couponRepo.GetDB().Transaction(func(tx *gorm.DB) error {
 		txCouponRepo := s.couponRepo.WithTx(tx)
+
+		card, err := txCouponRepo.FindGiftCardByCodeForUpdate(code)
+		if err != nil {
+			return errors.New("gift card not found")
+		}
+
+		if card.Status != "active" {
+			return errors.New("gift card is not active")
+		}
+
+		if card.Balance < amount {
+			return errors.New("insufficient balance")
+		}
+
+		// 检查过期时间
+		if card.ExpiresAt != nil && time.Now().After(*card.ExpiresAt) {
+			return errors.New("gift card is expired")
+		}
+
+		remainingBalance := card.Balance - amount
+
 		// 扣除余额
 		if err := txCouponRepo.UpdateGiftCardBalance(card.ID, -amount); err != nil {
 			return err
@@ -652,7 +648,7 @@ func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint
 			OrderID:    orderID,
 			Amount:     -amount,
 			Type:       "use",
-			Balance:    card.Balance - amount,
+			Balance:    remainingBalance,
 		}
 
 		return txCouponRepo.CreateGiftCardTransaction(transaction)

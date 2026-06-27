@@ -1,18 +1,29 @@
 package repository
 
 import (
+	"errors"
 	"tanzanite/internal/domain/coupon"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type CouponRepository struct {
 	db *gorm.DB
 }
 
+var (
+	ErrCouponUsageLimitReached     = errors.New("coupon usage limit reached")
+	ErrGiftCardInsufficientBalance = errors.New("insufficient gift card balance")
+)
+
 func NewCouponRepository(db *gorm.DB) *CouponRepository {
 	return &CouponRepository{db: db}
+}
+
+func (r *CouponRepository) GetDB() *gorm.DB {
+	return r.db
 }
 
 // WithTx 复用事务 db 实例
@@ -81,8 +92,16 @@ func (r *CouponRepository) UpdateCoupon(c *coupon.Coupon) error {
 
 // IncrementUsedCount 增加使用次数
 func (r *CouponRepository) IncrementUsedCount(id uint) error {
-	return r.db.Model(&coupon.Coupon{}).Where("id = ?", id).
-		UpdateColumn("used_count", gorm.Expr("used_count + ?", 1)).Error
+	tx := r.db.Model(&coupon.Coupon{}).
+		Where("id = ? AND (usage_limit = 0 OR used_count < usage_limit)", id).
+		UpdateColumn("used_count", gorm.Expr("used_count + ?", 1))
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return ErrCouponUsageLimitReached
+	}
+	return nil
 }
 
 func (r *CouponRepository) DecrementUsedCount(id uint) error {
@@ -159,6 +178,15 @@ func (r *CouponRepository) FindGiftCardByCode(code string) (*coupon.GiftCard, er
 	return &g, nil
 }
 
+func (r *CouponRepository) FindGiftCardByCodeForUpdate(code string) (*coupon.GiftCard, error) {
+	var g coupon.GiftCard
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("code = ?", code).First(&g).Error
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
 // FindGiftCardsByUserID 查找用户的礼品卡
 func (r *CouponRepository) FindGiftCardsByUserID(userID uint) ([]coupon.GiftCard, error) {
 	var cards []coupon.GiftCard
@@ -192,8 +220,19 @@ func (r *CouponRepository) UpdateGiftCard(g *coupon.GiftCard) error {
 
 // UpdateGiftCardBalance 更新礼品卡余额
 func (r *CouponRepository) UpdateGiftCardBalance(id uint, amount float64) error {
-	return r.db.Model(&coupon.GiftCard{}).Where("id = ?", id).
-		UpdateColumn("balance", gorm.Expr("balance + ?", amount)).Error
+	query := r.db.Model(&coupon.GiftCard{}).Where("id = ?", id)
+	if amount < 0 {
+		query = query.Where("balance >= ?", -amount)
+	}
+
+	tx := query.UpdateColumn("balance", gorm.Expr("balance + ?", amount))
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if amount < 0 && tx.RowsAffected == 0 {
+		return ErrGiftCardInsufficientBalance
+	}
+	return nil
 }
 
 // GiftCardTransaction 相关方法
