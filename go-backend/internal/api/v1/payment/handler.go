@@ -2,16 +2,17 @@ package payment
 
 import (
 	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 )
 
 type Handler struct {
-	paymentRepo *repository.PaymentRepository
-	orderRepo   *repository.OrderRepository
+	paymentRepo  *repository.PaymentRepository
+	orderService *service.OrderService
 }
 
-func NewHandler(paymentRepo *repository.PaymentRepository, orderRepo *repository.OrderRepository) *Handler {
+func NewHandler(paymentRepo *repository.PaymentRepository, orderService *service.OrderService) *Handler {
 	return &Handler{
-		paymentRepo: paymentRepo,
-		orderRepo:   orderRepo,
+		paymentRepo:  paymentRepo,
+		orderService: orderService,
 	}
 }
