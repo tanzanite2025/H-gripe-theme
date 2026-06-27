@@ -71,7 +71,7 @@ func (s *ossStorageImpl) Upload(ctx context.Context, file *multipart.FileHeader)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	// 生成唯一文件名
 	filename := s.generateFilename(file.Filename)

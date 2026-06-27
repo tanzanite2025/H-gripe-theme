@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -96,7 +97,7 @@ func TestRegisterHandler(t *testing.T) {
 
 	// 发送请求
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequestWithContext(context.Background(), "POST", "/register", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 
@@ -144,7 +145,7 @@ func TestLoginHandler(t *testing.T) {
 
 	// 发送请求
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequestWithContext(context.Background(), "POST", "/login", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 

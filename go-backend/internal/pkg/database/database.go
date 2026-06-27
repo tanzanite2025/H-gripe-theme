@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -58,7 +59,7 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	// 测试连接
-	if err := sqlDB.Ping(); err != nil {
+	if err := sqlDB.PingContext(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 

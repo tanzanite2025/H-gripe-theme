@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/database"
@@ -53,7 +53,7 @@ func main() {
 
 	// 读取 JSON 文件
 	fmt.Printf("📖 读取文件: %s\n", *inputFile)
-	data, err := ioutil.ReadFile(*inputFile)
+	data, err := os.ReadFile(*inputFile)
 	if err != nil {
 		log.Fatalf("❌ 读取文件失败: %v", err)
 	}

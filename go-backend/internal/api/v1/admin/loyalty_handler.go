@@ -80,7 +80,10 @@ func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {
 			TotalPoints:     req.Points,
 			AvailablePoints: req.Points,
 		}
-		h.loyaltyRepo.CreateUserLoyalty(userLoyalty)
+		if err := h.loyaltyRepo.CreateUserLoyalty(userLoyalty); err != nil {
+			apierror.RespondInternalError(c, err)
+			return
+		}
 	} else {
 		if req.Points > 0 {
 			userLoyalty.TotalPoints += req.Points
@@ -89,7 +92,10 @@ func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {
 			userLoyalty.UsedPoints += -req.Points
 			userLoyalty.AvailablePoints += req.Points
 		}
-		h.loyaltyRepo.UpdateUserLoyalty(userLoyalty)
+		if err := h.loyaltyRepo.UpdateUserLoyalty(userLoyalty); err != nil {
+			apierror.RespondInternalError(c, err)
+			return
+		}
 	}
 
 	response.Created(c, gin.H{"transaction": transaction})

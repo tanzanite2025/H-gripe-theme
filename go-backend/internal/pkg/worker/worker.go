@@ -4,9 +4,10 @@ import (
 	"context"
 	"tanzanite/internal/pkg/config"
 
+	"tanzanite/internal/pkg/logger"
+
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
-	"tanzanite/internal/pkg/logger"
 )
 
 // Server encapsulates the asynq worker server

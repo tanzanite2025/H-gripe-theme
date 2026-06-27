@@ -168,6 +168,10 @@ func (s *track17Service) Track(ctx context.Context, trackingNumber, carrier stri
 
 // BatchTrack 批量追踪
 func (s *track17Service) BatchTrack(ctx context.Context, trackings []TrackingRequest) ([]*TrackingInfo, error) {
+	if err := validateBatchTrackingRequest(trackings); err != nil {
+		return nil, err
+	}
+
 	// 构建请求
 	numbers := make([]map[string]string, len(trackings))
 	for i, t := range trackings {
@@ -272,7 +276,7 @@ func (s *track17Service) sendRequest(ctx context.Context, endpoint string, body 
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// 读取响应
 	respBody, err := io.ReadAll(resp.Body)
@@ -349,6 +353,10 @@ func (s *MockTrackingService) Track(ctx context.Context, trackingNumber, carrier
 }
 
 func (s *MockTrackingService) BatchTrack(ctx context.Context, trackings []TrackingRequest) ([]*TrackingInfo, error) {
+	if err := validateBatchTrackingRequest(trackings); err != nil {
+		return nil, err
+	}
+
 	results := make([]*TrackingInfo, len(trackings))
 	for i, t := range trackings {
 		info, _ := s.Track(ctx, t.TrackingNumber, t.Carrier)

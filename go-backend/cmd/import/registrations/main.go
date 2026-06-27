@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -113,9 +113,9 @@ func readExportFile(filename string) (*RegistrationExportData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("打开文件失败: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
-	content, err := ioutil.ReadAll(file)
+	content, err := io.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("读取文件失败: %w", err)
 	}

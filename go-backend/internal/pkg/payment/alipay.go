@@ -121,8 +121,10 @@ func (g *alipayGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 	}
 
 	// 解析金额 - using direct fields from response
-	var amount float64
-	fmt.Sscanf(rsp.TotalAmount, "%f", &amount)
+	amount, err := parsePaymentAmount("alipay total amount", rsp.TotalAmount)
+	if err != nil {
+		return nil, err
+	}
 
 	return &PaymentResponse{
 		ID:            rsp.OutTradeNo,
@@ -161,8 +163,10 @@ func (g *alipayGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 	}
 
 	// 解析退款金额 - using direct fields from response
-	var refundAmount float64
-	fmt.Sscanf(rsp.RefundFee, "%f", &refundAmount)
+	refundAmount, err := parsePaymentAmount("alipay refund amount", rsp.RefundFee)
+	if err != nil {
+		return nil, err
+	}
 
 	return &RefundResponse{
 		ID:        refundNo,
@@ -193,8 +197,10 @@ func (g *alipayGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	}
 
 	// 解析金额 - using direct fields from response
-	var amount float64
-	fmt.Sscanf(rsp.TotalAmount, "%f", &amount)
+	amount, err := parsePaymentAmount("alipay total amount", rsp.TotalAmount)
+	if err != nil {
+		return nil, err
+	}
 
 	// 构建元数据
 	metadata := make(map[string]string)

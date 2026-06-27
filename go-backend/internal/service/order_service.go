@@ -9,6 +9,7 @@ import (
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/pkg/eventbus"
 	"tanzanite/internal/pkg/logger"
+	"tanzanite/internal/pkg/requestctx"
 	"tanzanite/internal/repository"
 	"time"
 
@@ -54,7 +55,7 @@ func NewOrderService(
 func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []order.OrderItem, shippingAddress, billingAddress order.Address, paymentMethod, shippingMethod string, couponCode string, pointsToUse int) (*order.Order, error) {
 	traceID := ""
 	if ctx != nil {
-		if tid, ok := ctx.Value("X-Trace-ID").(string); ok {
+		if tid, ok := requestctx.TraceID(ctx); ok {
 			traceID = tid
 		}
 	}
@@ -77,16 +78,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 	}
 
 	// 计算运费
-	shippingFee, err := s.calculateShippingFee(shippingMethod, totalAmount, shippingAddress.Country)
-	if err != nil {
-		shippingFee = 0 // 默认免运费
-	}
+	shippingFee := s.calculateShippingFee(totalAmount)
 
 	// 计算税费
-	taxAmount, err := s.calculateTax(totalAmount, shippingAddress.Country, shippingAddress.State)
-	if err != nil {
-		taxAmount = 0
-	}
+	taxAmount := s.calculateTax(totalAmount, shippingAddress.Country, shippingAddress.State)
 
 	// 应用会员折扣 (Member Tier Discount)
 	memberDiscount := 0.0
@@ -132,7 +127,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 	discountAmount := memberDiscount + pointsDiscount
 	var targetCoupon *coupon.Coupon
 	if couponCode != "" {
-		discount, err := s.applyCoupon(couponCode, userID, totalAmount)
+		discount, err := s.applyCoupon(couponCode, totalAmount)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply coupon %s: %w", couponCode, err)
 		}
@@ -365,27 +360,27 @@ func (s *OrderService) generateOrderNumber() string {
 }
 
 // calculateShippingFee 计算运费
-func (s *OrderService) calculateShippingFee(method string, amount float64, country string) (float64, error) {
+func (s *OrderService) calculateShippingFee(amount float64) float64 {
 	// 这里应该根据运费模板计算
 	// 简化实现：固定运费
 	if amount >= 100 {
-		return 0, nil // 满100免运费
+		return 0 // 满100免运费
 	}
-	return 10.0, nil
+	return 10.0
 }
 
 // calculateTax 计算税费
-func (s *OrderService) calculateTax(amount float64, country, state string) (float64, error) {
+func (s *OrderService) calculateTax(amount float64, country, state string) float64 {
 	taxRate, err := s.paymentRepo.FindTaxRateByLocation(country, state)
 	if err != nil {
-		return 0, nil // 没有税率配置则不收税
+		return 0 // 没有税率配置则不收税
 	}
 
-	return amount * taxRate.Rate / 100, nil
+	return amount * taxRate.Rate / 100
 }
 
 // applyCoupon 应用优惠券
-func (s *OrderService) applyCoupon(code string, userID uint, amount float64) (float64, error) {
+func (s *OrderService) applyCoupon(code string, amount float64) (float64, error) {
 	coupon, err := s.couponRepo.FindCouponByCode(code)
 	if err != nil {
 		return 0, err
@@ -411,9 +406,10 @@ func (s *OrderService) applyCoupon(code string, userID uint, amount float64) (fl
 
 	// 计算折扣
 	var discount float64
-	if coupon.Type == "fixed" {
+	switch coupon.Type {
+	case "fixed":
 		discount = coupon.Value
-	} else if coupon.Type == "percentage" {
+	case "percentage":
 		discount = amount * coupon.Value / 100
 		if coupon.MaxDiscount > 0 && discount > coupon.MaxDiscount {
 			discount = coupon.MaxDiscount

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -130,7 +131,7 @@ func TestBackofficeDashboardGateUsesCurrentUserRole(t *testing.T) {
 				},
 			)
 
-			req := httptest.NewRequest(http.MethodGet, "/api/admin/dashboard/stats", nil)
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/dashboard/stats", nil)
 			req.Header.Set("Authorization", "Bearer "+token)
 			rec := httptest.NewRecorder()
 

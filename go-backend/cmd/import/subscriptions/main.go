@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -48,7 +47,7 @@ func main() {
 
 	fmt.Printf("正在从 %s 导入订阅数据...\n", dataFile)
 
-	data, err := ioutil.ReadFile(dataFile)
+	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}

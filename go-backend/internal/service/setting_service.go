@@ -317,8 +317,10 @@ func (s *SettingService) GetEmailSettings(locale string) (*setting.EmailSettings
 		case "smtp_host":
 			emailSettings.SMTPHost = st.Value
 		case "smtp_port":
-			var port int
-			fmt.Sscanf(st.Value, "%d", &port)
+			port, err := strconv.Atoi(st.Value)
+			if err != nil {
+				return nil, fmt.Errorf("invalid smtp_port %q: %w", st.Value, err)
+			}
 			emailSettings.SMTPPort = port
 		case "smtp_username":
 			emailSettings.SMTPUsername = st.Value

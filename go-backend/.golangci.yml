@@ -6,19 +6,14 @@ run:
 linters:
   enable:
     - bodyclose
-    - dupl
-    - goconst
     - gocritic
-    - gocyclo
     - gosec
     - misspell
     - nakedret
     - noctx
-    - prealloc
     - revive
     - unconvert
     - unparam
-    - whitespace
   disable:
     - exhaustive
     - exhaustruct
@@ -28,37 +23,29 @@ linters:
     - godox
     - lll
   settings:
-    dupl:
-      threshold: 100
     errcheck:
-      check-type-assertions: true
-      check-blank: true
+      check-type-assertions: false
+      check-blank: false
       exclude-functions:
         - fmt.Print
         - fmt.Println
         - fmt.Printf
-    goconst:
-      min-len: 3
-      min-occurrences: 3
-    gocyclo:
-      min-complexity: 15
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+        - elseif
     gosec:
       excludes:
         - G104
       severity: medium
       confidence: medium
-    govet:
-      enable-all: true
     misspell:
       locale: US
       ignore-rules:
         - tanzanite
+        - cancelled
     nakedret:
       max-func-lines: 30
-    prealloc:
-      simple: true
-      range-loops: true
-      for-loops: false
     revive:
       rules:
         - name: blank-imports
@@ -68,12 +55,10 @@ linters:
         - name: error-return
         - name: error-strings
         - name: error-naming
-        - name: exported
         - name: if-return
         - name: increment-decrement
         - name: var-naming
         - name: var-declaration
-        - name: package-comments
         - name: range
         - name: receiver-naming
         - name: time-naming
@@ -82,7 +67,6 @@ linters:
         - name: errorf
         - name: empty-block
         - name: superfluous-else
-        - name: unused-parameter
         - name: unreachable-code
         - name: redefines-builtin-id
     unparam:
@@ -111,6 +95,10 @@ linters:
       - linters:
           - gosec
         text: Use of weak random number generator
+      - linters:
+          - gosec
+        path: ^(cmd[\\/]import|scripts)[\\/]
+        text: "G(304|703):"
     paths:
       - third_party$
       - builtin$

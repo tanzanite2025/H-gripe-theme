@@ -208,7 +208,7 @@ func (g *wechatGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 
 	return &PaymentResponse{
 		ID:            *resp.OutTradeNo,
-		Status:        string(*resp.TradeState),
+		Status:        *resp.TradeState,
 		Amount:        amount,
 		Currency:      "CNY",
 		TransactionID: getStringValue(resp.TransactionId),

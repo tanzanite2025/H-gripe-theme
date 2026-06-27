@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"gorm.io/gorm"
 	"tanzanite/internal/domain/chat"
+
+	"gorm.io/gorm"
 )
 
 type ChatRepository struct {

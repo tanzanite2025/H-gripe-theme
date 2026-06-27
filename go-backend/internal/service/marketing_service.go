@@ -89,9 +89,10 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 
 	// 计算折扣
 	var discount float64
-	if c.Type == "fixed" {
+	switch c.Type {
+	case "fixed":
 		discount = c.Value
-	} else if c.Type == "percentage" {
+	case "percentage":
 		discount = amount * c.Value / 100
 		if c.MaxDiscount > 0 && discount > c.MaxDiscount {
 			discount = c.MaxDiscount

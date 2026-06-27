@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -69,7 +69,7 @@ func main() {
 
 	// 读取 JSON 文件
 	log.Printf("正在读取文件: %s\n", *jsonFile)
-	data, err := ioutil.ReadFile(*jsonFile)
+	data, err := os.ReadFile(*jsonFile)
 	if err != nil {
 		log.Fatalf("读取文件失败: %v", err)
 	}
