@@ -2,9 +2,9 @@ package admin
 
 import (
 	"encoding/csv"
+	"errors"
 	"net/http"
 	"strconv"
-	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
 	"time"
 
@@ -12,14 +12,23 @@ import (
 )
 
 type OrderHandler struct {
-	orderRepo    *repository.OrderRepository
 	orderService *service.OrderService
 }
 
-func NewOrderHandler(orderRepo *repository.OrderRepository, orderService *service.OrderService) *OrderHandler {
+func NewOrderHandler(orderService *service.OrderService) *OrderHandler {
 	return &OrderHandler{
-		orderRepo:    orderRepo,
 		orderService: orderService,
+	}
+}
+
+func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string, defaultStatus int) {
+	switch {
+	case errors.Is(err, service.ErrOrderNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+	case errors.Is(err, service.ErrOrderDeleteNotAllowed):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	default:
+		c.JSON(defaultStatus, gin.H{"error": fallbackMessage})
 	}
 }
 
@@ -42,7 +51,7 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 		pageSize = 20
 	}
 
-	orders, total, err := h.orderRepo.FindAllWithFilters(page, pageSize, status, paymentStatus, shippingStatus, search, startDate, endDate)
+	orders, total, err := h.orderService.ListAdminOrders(page, pageSize, status, paymentStatus, shippingStatus, search, startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch orders"})
 		return
@@ -70,9 +79,9 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 		return
 	}
 
-	order, err := h.orderRepo.FindByID(uint(id))
+	order, err := h.orderService.GetAdminOrder(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		respondOrderServiceError(c, err, "Failed to fetch order", http.StatusInternalServerError)
 		return
 	}
 
@@ -100,7 +109,7 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 	}
 
 	if err := h.orderService.UpdateOrderStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondOrderServiceError(c, err, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -127,8 +136,8 @@ func (h *OrderHandler) UpdatePaymentStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.orderRepo.UpdatePaymentStatus(uint(id), req.PaymentStatus); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update payment status"})
+	if err := h.orderService.UpdatePaymentStatus(uint(id), req.PaymentStatus); err != nil {
+		respondOrderServiceError(c, err, "Failed to update payment status", http.StatusInternalServerError)
 		return
 	}
 
@@ -155,8 +164,8 @@ func (h *OrderHandler) UpdateShippingStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.orderRepo.UpdateShippingStatus(uint(id), req.ShippingStatus); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update shipping status"})
+	if err := h.orderService.UpdateShippingStatus(uint(id), req.ShippingStatus); err != nil {
+		respondOrderServiceError(c, err, "Failed to update shipping status", http.StatusInternalServerError)
 		return
 	}
 
@@ -184,8 +193,8 @@ func (h *OrderHandler) UpdateTrackingInfo(c *gin.Context) {
 		return
 	}
 
-	if err := h.orderRepo.UpdateTrackingInfo(uint(id), req.TrackingNumber, req.CarrierCode); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update tracking info"})
+	if err := h.orderService.UpdateTrackingInfo(uint(id), req.TrackingNumber, req.CarrierCode); err != nil {
+		respondOrderServiceError(c, err, "Failed to update tracking info", http.StatusInternalServerError)
 		return
 	}
 
@@ -212,15 +221,8 @@ func (h *OrderHandler) UpdateAdminNote(c *gin.Context) {
 		return
 	}
 
-	existingOrder, err := h.orderRepo.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
-		return
-	}
-
-	existingOrder.AdminNote = req.AdminNote
-	if err := h.orderRepo.Update(existingOrder); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update admin note"})
+	if err := h.orderService.UpdateAdminNote(uint(id), req.AdminNote); err != nil {
+		respondOrderServiceError(c, err, "Failed to update admin note", http.StatusInternalServerError)
 		return
 	}
 
@@ -232,7 +234,7 @@ func (h *OrderHandler) UpdateAdminNote(c *gin.Context) {
 // GetOrderStats 获取订单统计
 // GET /api/admin/orders/stats
 func (h *OrderHandler) GetOrderStats(c *gin.Context) {
-	stats, err := h.orderRepo.GetStats()
+	stats, err := h.orderService.GetAdminStats()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get order stats"})
 		return
@@ -252,7 +254,7 @@ func (h *OrderHandler) GetSalesChart(c *gin.Context) {
 	endDate := time.Now()
 	startDate := endDate.AddDate(0, 0, -days)
 
-	data, err := h.orderRepo.GetSalesByDateRange(startDate, endDate)
+	data, err := h.orderService.GetSalesByDateRange(startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get sales chart data"})
 		return
@@ -296,7 +298,7 @@ func (h *OrderHandler) ExportOrders(c *gin.Context) {
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
 
-	orders, _, err := h.orderRepo.FindAllWithFilters(1, 10000, status, "", "", "", startDate, endDate)
+	orders, _, err := h.orderService.ListAdminOrders(1, 10000, status, "", "", "", startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch orders"})
 		return
@@ -385,8 +387,8 @@ func (h *OrderHandler) DeleteOrder(c *gin.Context) {
 		return
 	}
 
-	if err := h.orderRepo.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete order"})
+	if err := h.orderService.DeleteAdminOrder(uint(id)); err != nil {
+		respondOrderServiceError(c, err, "Failed to delete order", http.StatusInternalServerError)
 		return
 	}
 
