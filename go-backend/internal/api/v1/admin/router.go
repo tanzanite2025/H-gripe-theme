@@ -36,9 +36,10 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	shippingRepo := repository.NewShippingRepository(db)
 
 	// 初始化 services
-	authService := service.NewAuthService(userRepo, cfg.JWT)
+	authService := service.NewAuthService(userRepo, cfg.JWT, cfg.OAuth)
 	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
 	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
+	registrationService := service.NewRegistrationService(registrationRepo, productRepo)
 
 	// 初始化 handlers
 	authHandler := NewAuthHandler(authService)
@@ -55,7 +56,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	settingsHandler := NewSettingsHandler(settingRepo, userRepo)
 	auditHandler := NewAuditHandler(auditRepo)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
-	registrationHandler := registration.NewHandler(registrationRepo, orderRepo, storageSvc)
+	registrationHandler := registration.NewHandler(registrationRepo, registrationService, orderRepo, storageSvc)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 
 	// 管理后台 API 路由组

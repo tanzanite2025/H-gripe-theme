@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"mime/multipart"
+	"net/http"
 	"strconv"
 	"strings"
 	orderdomain "tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/registration"
+	domainregistration "tanzanite/internal/domain/registration"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
+	"tanzanite/internal/pkg/upload"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,16 +20,10 @@ import (
 var (
 	errWarrantyEmailMismatch      = errors.New("email does not match order record")
 	errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
+
+	warrantyClaimMaxRequestBytes int64 = 135 << 20
 )
 
-// VerifyWarrantyOrder 验证保修订单
-// @Summary 验证保修订单
-// @Tags Registration
-// @Accept json
-// @Produce json
-// @Param request body map[string]string true "订单号和邮箱"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/registrations/warranty/verify-order [post]
 func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 	var req struct {
 		OrderNumber string `json:"order_number" binding:"required"`
@@ -46,21 +42,19 @@ func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 	response.SuccessWithMessage(c, "Order verified successfully", nil)
 }
 
-// SubmitWarrantyClaim 提交保修申请
-// @Summary 提交保修申请
-// @Tags Registration
-// @Accept multipart/form-data
-// @Produce json
-// @Param order_number formData string true "订单号"
-// @Param email formData string true "邮箱"
-// @Param issue_description formData string true "问题描述"
-// @Param tire_pressure formData string false "胎压"
-// @Param is_tubeless formData string false "是否无内胎"
-// @Param images formData file false "图片"
-// @Param video formData file false "视频"
-// @Success 201 {object} map[string]interface{}
-// @Router /api/v1/registrations/warranty/claim [post]
 func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, warrantyClaimMaxRequestBytes)
+	if err := c.Request.ParseMultipartForm(16 << 20); err != nil {
+		status := http.StatusBadRequest
+		code := apierror.ErrCodeBadRequest
+		if strings.Contains(strings.ToLower(err.Error()), "too large") {
+			status = http.StatusRequestEntityTooLarge
+			code = upload.CodeFileTooLarge
+		}
+		apierror.RespondError(c, status, code, err.Error())
+		return
+	}
+
 	orderNumber := strings.TrimSpace(c.PostForm("order_number"))
 	email := strings.TrimSpace(c.PostForm("email"))
 	if orderNumber == "" || email == "" {
@@ -76,16 +70,23 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 
 	imageURLs, videoURL, err := h.uploadWarrantyClaimFiles(c)
 	if err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+		status := http.StatusBadRequest
+		code := apierror.ErrCodeBadRequest
+		if upload.ErrorCode(err) != "invalid_upload" {
+			status = upload.HTTPStatus(err)
+			code = upload.ErrorCode(err)
+		}
+		apierror.RespondError(c, status, code, err.Error())
 		return
 	}
+
 	imagesJSON, err := json.Marshal(imageURLs)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	claim := registration.WarrantyClaim{
+	claim := domainregistration.WarrantyClaim{
 		UserID:       order.UserID,
 		IssueType:    "warranty",
 		Description:  strings.TrimSpace(c.PostForm("issue_description")),
@@ -110,20 +111,13 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 	})
 }
 
-// GetExpiringWarranties 获取即将过期的保修（管理员）
-// @Summary 获取即将过期的保修
-// @Tags Registration
-// @Produce json
-// @Param days query int false "天数" default(30)
-// @Success 200 {array} registration.ProductRegistration
-// @Router /api/v1/admin/registrations/expiring [get]
 func (h *Handler) GetExpiringWarranties(c *gin.Context) {
 	days := pagination.ParseLimit(c)
 	if days > 365 {
 		days = 30
 	}
 
-	registrations, err := h.registrationRepo.FindExpiringWarranties(days)
+	registrations, err := h.registrationSvc.GetExpiringWarranties(days)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -132,14 +126,6 @@ func (h *Handler) GetExpiringWarranties(c *gin.Context) {
 	response.Success(c, gin.H{"data": registrations})
 }
 
-// CreateWarrantyClaim 创建保修申请
-// @Summary 创建保修申请
-// @Tags Registration
-// @Accept json
-// @Produce json
-// @Param claim body registration.WarrantyClaim true "保修申请信息"
-// @Success 201 {object} registration.WarrantyClaim
-// @Router /api/v1/registrations/warranty-claims [post]
 func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -147,27 +133,23 @@ func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	var claim registration.WarrantyClaim
+	var claim domainregistration.WarrantyClaim
 	if err := c.ShouldBindJSON(&claim); err != nil {
 		apierror.RespondValidationError(c, err.Error())
 		return
 	}
 
-	// 验证注册记录是否属于当前用户
 	reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
 	if err != nil {
 		apierror.RespondNotFound(c, "Registration")
 		return
 	}
-
 	if reg.UserID != userID.(uint) {
 		apierror.RespondForbidden(c)
 		return
 	}
 
-	// 设置默认状态
 	claim.Status = "pending"
-
 	if err := h.registrationRepo.CreateWarrantyClaim(&claim); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
@@ -176,13 +158,6 @@ func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 	response.Created(c, claim)
 }
 
-// GetWarrantyClaim 获取保修申请详情
-// @Summary 获取保修申请详情
-// @Tags Registration
-// @Produce json
-// @Param id path int true "保修申请ID"
-// @Success 200 {object} registration.WarrantyClaim
-// @Router /api/v1/registrations/warranty-claims/{id} [get]
 func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -202,7 +177,6 @@ func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	// 验证权限
 	if claim.RegistrationID != 0 {
 		reg, err := h.registrationRepo.FindRegistrationByID(claim.RegistrationID)
 		if err != nil {
@@ -213,23 +187,14 @@ func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 			apierror.RespondForbidden(c)
 			return
 		}
-	} else {
-		if claim.UserID != userID.(uint) {
-			apierror.RespondForbidden(c)
-			return
-		}
+	} else if claim.UserID != userID.(uint) {
+		apierror.RespondForbidden(c)
+		return
 	}
 
 	response.Success(c, claim)
 }
 
-// ListRegistrationClaims 获取注册的保修申请列表
-// @Summary 获取注册的保修申请列表
-// @Tags Registration
-// @Produce json
-// @Param registration_id path int true "注册ID"
-// @Success 200 {array} registration.WarrantyClaim
-// @Router /api/v1/registrations/{registration_id}/warranty-claims [get]
 func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -243,13 +208,11 @@ func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 		return
 	}
 
-	// 验证权限
 	reg, err := h.registrationRepo.FindRegistrationByID(uint(registrationID))
 	if err != nil {
 		apierror.RespondNotFound(c, "Registration")
 		return
 	}
-
 	if reg.UserID != userID.(uint) {
 		apierror.RespondForbidden(c)
 		return
@@ -264,15 +227,6 @@ func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 	response.Success(c, gin.H{"data": claims})
 }
 
-// ListAllWarrantyClaims 获取所有保修申请（管理员）
-// @Summary 获取所有保修申请
-// @Tags Registration
-// @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "状态"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/registrations/warranty-claims [get]
 func (h *Handler) ListAllWarrantyClaims(c *gin.Context) {
 	params := pagination.ParsePagination(c)
 	status := c.Query("status")
@@ -286,15 +240,6 @@ func (h *Handler) ListAllWarrantyClaims(c *gin.Context) {
 	response.Paged(c, claims, params.Page, params.PageSize, total)
 }
 
-// UpdateWarrantyClaimStatus 更新保修申请状态（管理员）
-// @Summary 更新保修申请状态
-// @Tags Registration
-// @Accept json
-// @Produce json
-// @Param id path int true "保修申请ID"
-// @Param request body map[string]string true "状态"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/registrations/warranty-claims/{id}/status [put]
 func (h *Handler) UpdateWarrantyClaimStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -318,26 +263,22 @@ func (h *Handler) UpdateWarrantyClaimStatus(c *gin.Context) {
 	response.SuccessWithMessage(c, "Warranty claim status updated", nil)
 }
 
-// 私有辅助方法
-
-// findVerifiedWarrantyOrder 查找并验证保修订单
 func (h *Handler) findVerifiedWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
 	orderNumber = strings.TrimSpace(orderNumber)
 	email = strings.ToLower(strings.TrimSpace(email))
-	o, err := h.orderRepo.FindByOrderNumberForVerification(orderNumber)
+	order, err := h.orderRepo.FindByOrderNumberForVerification(orderNumber)
 	if err != nil {
 		return nil, err
 	}
 
-	shippingEmail := strings.ToLower(strings.TrimSpace(o.ShippingAddress.Email))
-	billingEmail := strings.ToLower(strings.TrimSpace(o.BillingAddress.Email))
+	shippingEmail := strings.ToLower(strings.TrimSpace(order.ShippingAddress.Email))
+	billingEmail := strings.ToLower(strings.TrimSpace(order.BillingAddress.Email))
 	if email == "" || (email != shippingEmail && email != billingEmail) {
 		return nil, errWarrantyEmailMismatch
 	}
-	return o, nil
+	return order, nil
 }
 
-// uploadWarrantyClaimFiles 上传保修申请文件
 func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, error) {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -348,9 +289,20 @@ func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, er
 	imageFiles = append(imageFiles, form.File["images[]"]...)
 	imageFiles = append(imageFiles, form.File["images"]...)
 	videoFiles := form.File["video"]
-	hasFiles := len(imageFiles) > 0 || len(videoFiles) > 0
-	if hasFiles && h.storageService == nil {
+
+	if (len(imageFiles) > 0 || len(videoFiles) > 0) && h.storageService == nil {
 		return nil, "", errWarrantyStorageUnavailable
+	}
+	if err := upload.ValidateFiles(imageFiles, upload.WarrantyImageRule); err != nil {
+		return nil, "", err
+	}
+	if len(videoFiles) > 1 {
+		return nil, "", errors.New("too_many_files: maximum 1 video allowed")
+	}
+	if len(videoFiles) == 1 {
+		if err := upload.ValidateFile(videoFiles[0], upload.WarrantyVideoRule); err != nil {
+			return nil, "", err
+		}
 	}
 
 	imageURLs := make([]string, 0, len(imageFiles))
@@ -363,7 +315,7 @@ func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, er
 	}
 
 	videoURL := ""
-	if len(videoFiles) > 0 {
+	if len(videoFiles) == 1 {
 		url, err := h.storageService.Upload(c.Request.Context(), videoFiles[0])
 		if err != nil {
 			return nil, "", err

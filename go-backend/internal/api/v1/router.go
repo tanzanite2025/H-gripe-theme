@@ -64,14 +64,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	chatRepo := repository.NewChatRepository(db)
 
 	// 初始化services
-	authService := service.NewAuthService(userRepo, cfg.JWT)
+	authService := service.NewAuthService(userRepo, cfg.JWT, cfg.OAuth)
 	postService := service.NewPostService(postRepo, redisCache, cfg.Cache.PostTTL)
 	productService := service.NewProductService(productRepo, redisCache, cfg.Cache.ProductTTL)
 	cartService := service.NewCartService(cartRepo, productRepo)
 	settingService := service.NewSettingService(settingRepo, redisCache, cfg.Cache.SettingsTTL)
 	faqService := service.NewFAQService(faqRepo)
 	galleryService := service.NewGalleryService(galleryRepo)
-	// registrationService := service.NewRegistrationService(registrationRepo, productRepo)
+	registrationService := service.NewRegistrationService(registrationRepo, productRepo)
 	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
 	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 	reviewService := service.NewReviewService(reviewRepo)
@@ -97,11 +97,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	orderHandler := order.NewHandler(orderService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService)
 	reviewHandler := review.NewHandler(reviewService)
-	ticketHandler := ticket.NewHandler(ticketService)
+	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
+		AllowedOrigins: cfg.CORS.AllowedOrigins,
+		VisitorSecret:  cfg.JWT.Secret,
+	})
 	paymentHandler := payment.NewHandler(paymentRepo, orderRepo)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
-	registrationHandler := registration.NewHandler(registrationRepo, orderRepo, storageSvc)
+	registrationHandler := registration.NewHandler(registrationRepo, registrationService, orderRepo, storageSvc)
 	subscriptionHandler := subscription.NewHandler(subscriptionService)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
@@ -121,6 +124,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		{
 			authGroup.POST("/register", authHandler.Register)
 			authGroup.POST("/login", authHandler.Login)
+			authGroup.POST("/google-login", authHandler.GoogleLogin)
 			authGroup.POST("/logout", authHandler.Logout)
 			authGroup.GET("/profile", middleware.AuthMiddleware(authService), authHandler.GetProfile)
 		}
@@ -284,7 +288,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
 			customerServiceGroup.GET("/auto-reply/welcome", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetWelcomeMessage)
 			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), ticketHandler.MatchKeywordMessage)
-			customerServiceGroup.GET("/ws", ticketHandler.ServeWS)
+			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), ticketHandler.ServeWS)
 
 			agentGroup := customerServiceGroup.Group("/agent")
 			agentGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin", "manager", "support", "agent"))

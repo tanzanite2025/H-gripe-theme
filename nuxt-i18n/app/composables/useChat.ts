@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useWebSocket } from '@vueuse/core'
+import { useRuntimeConfig } from '#imports'
 
 export interface ChatMessage {
   id: number
@@ -38,6 +39,7 @@ const isChatOpen = ref(false)
 
 export const useChat = () => {
   const auth = useAuth()
+  const config = useRuntimeConfig()
 
   /**
    * 加载客户列表（会话列表）
@@ -195,7 +197,11 @@ export const useChat = () => {
    * WebSocket连接
    */
   const connectWebSocket = () => {
-    const { status, data, send, open, close } = useWebSocket('ws://localhost:9000/api/v1/ws', {
+    const apiBase = String(config.public?.apiBase || '/api/v1')
+    const wsBase = apiBase.startsWith('http')
+      ? apiBase.replace(/^http/, 'ws')
+      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${apiBase}`
+    const { status, data, send, open, close } = useWebSocket(`${wsBase}/customer-service/ws`, {
       autoReconnect: true,
       onMessage: (ws, event) => {
         try {

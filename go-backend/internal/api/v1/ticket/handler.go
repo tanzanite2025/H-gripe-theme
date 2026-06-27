@@ -3,11 +3,24 @@ package ticket
 import "tanzanite/internal/service"
 
 type Handler struct {
-	ticketService *service.TicketService
+	ticketService  *service.TicketService
+	allowedOrigins []string
+	visitorSecret  []byte
 }
 
-func NewHandler(ticketService *service.TicketService) *Handler {
+type Options struct {
+	AllowedOrigins []string
+	VisitorSecret  string
+}
+
+func NewHandler(ticketService *service.TicketService, opts ...Options) *Handler {
+	options := Options{}
+	if len(opts) > 0 {
+		options = opts[0]
+	}
 	return &Handler{
-		ticketService: ticketService,
+		ticketService:  ticketService,
+		allowedOrigins: append([]string(nil), options.AllowedOrigins...),
+		visitorSecret:  []byte(options.VisitorSecret),
 	}
 }

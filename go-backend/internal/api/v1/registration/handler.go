@@ -3,19 +3,20 @@ package registration
 import (
 	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 )
 
-// Handler 产品注册处理器
 type Handler struct {
 	registrationRepo *repository.RegistrationRepository
+	registrationSvc  *service.RegistrationService
 	orderRepo        *repository.OrderRepository
 	storageService   storage.StorageService
 }
 
-// NewHandler 创建产品注册处理器
-func NewHandler(registrationRepo *repository.RegistrationRepository, orderRepo *repository.OrderRepository, storageService storage.StorageService) *Handler {
+func NewHandler(registrationRepo *repository.RegistrationRepository, registrationSvc *service.RegistrationService, orderRepo *repository.OrderRepository, storageService storage.StorageService) *Handler {
 	return &Handler{
 		registrationRepo: registrationRepo,
+		registrationSvc:  registrationSvc,
 		orderRepo:        orderRepo,
 		storageService:   storageService,
 	}

@@ -13,10 +13,12 @@ type Config struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	Redis    RedisConfig    `mapstructure:"redis"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	OAuth    OAuthConfig    `mapstructure:"oauth"`
 	I18n     I18nConfig     `mapstructure:"i18n"`
 	CORS     CORSConfig     `mapstructure:"cors"`
 	Cache    CacheConfig    `mapstructure:"cache"`
 	Log      LogConfig      `mapstructure:"log"`
+	Worker   WorkerConfig   `mapstructure:"worker"`
 }
 
 type ServerConfig struct {
@@ -54,6 +56,10 @@ type JWTConfig struct {
 	RefreshExpireHours int    `mapstructure:"refresh_expire_hours"`
 }
 
+type OAuthConfig struct {
+	GoogleClientID string `mapstructure:"google_client_id"`
+}
+
 type I18nConfig struct {
 	DefaultLocale    string   `mapstructure:"default_locale"`
 	SupportedLocales []string `mapstructure:"supported_locales"`
@@ -79,6 +85,10 @@ type LogConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
 	Output string `mapstructure:"output"`
+}
+
+type WorkerConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // Load 加载配置文件
@@ -147,6 +157,8 @@ func setDefaults() {
 	viper.SetDefault("jwt.expire_hours", 24)
 	viper.SetDefault("jwt.refresh_expire_hours", 168)
 
+	viper.SetDefault("oauth.google_client_id", "")
+
 	viper.SetDefault("i18n.default_locale", "en")
 	viper.SetDefault("i18n.supported_locales", []string{"en", "zh", "fr", "de", "es", "ja", "ko", "it", "pt", "ru", "ar", "fi", "da", "th"})
 
@@ -165,6 +177,8 @@ func setDefaults() {
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "json")
 	viper.SetDefault("log.output", "stdout")
+
+	viper.SetDefault("worker.enabled", false)
 }
 
 func bindEnvironment() {
@@ -189,9 +203,13 @@ func bindEnvironment() {
 	_ = viper.BindEnv("jwt.expire_hours", "JWT_EXPIRE_HOURS")
 	_ = viper.BindEnv("jwt.refresh_expire_hours", "JWT_REFRESH_EXPIRE_HOURS")
 
+	_ = viper.BindEnv("oauth.google_client_id", "GOOGLE_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_ID", "NUXT_PUBLIC_GOOGLE_CLIENT_ID")
+
 	_ = viper.BindEnv("log.level", "LOG_LEVEL")
 	_ = viper.BindEnv("log.format", "LOG_FORMAT")
 	_ = viper.BindEnv("log.output", "LOG_OUTPUT")
+
+	_ = viper.BindEnv("worker.enabled", "WORKER_ENABLED", "ASYNQ_WORKER_ENABLED")
 }
 
 // GetDSN 获取数据库连接字符串

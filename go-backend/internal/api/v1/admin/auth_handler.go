@@ -40,7 +40,7 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 
 	// 检查用户角色（只允许管理员角色登录）
 	role := auth.NormalizeRole(user.Role)
-	if !role.IsValid() || role == auth.RoleViewer {
+	if role != auth.RoleAdmin && role != auth.RoleManager && role != auth.RoleEditor && role != auth.RoleSupport {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error":   "Access denied",
 			"message": "You don't have permission to access the admin panel",

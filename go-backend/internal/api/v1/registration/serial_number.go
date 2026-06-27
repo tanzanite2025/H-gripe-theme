@@ -2,7 +2,7 @@ package registration
 
 import (
 	"strings"
-	"tanzanite/internal/domain/registration"
+	domainregistration "tanzanite/internal/domain/registration"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
 	"time"
@@ -10,14 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// VerifySerialNumber 验证序列号
-// @Summary 验证序列号
-// @Tags Registration
-// @Accept json
-// @Produce json
-// @Param request body map[string]string true "序列号"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/registrations/verify [post]
 func (h *Handler) VerifySerialNumber(c *gin.Context) {
 	var req struct {
 		SerialNumber string `json:"serial_number" binding:"required"`
@@ -27,15 +19,13 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 		return
 	}
 
-	reg, err := h.registrationRepo.FindRegistrationBySerialNumber(req.SerialNumber)
+	reg, err := h.registrationSvc.VerifySerialNumber(req.SerialNumber)
 	if err != nil {
 		apierror.RespondNotFound(c, "Serial number")
 		return
 	}
 
-	// 清除可能导致隐私数据泄漏的用户信息
 	reg.User = nil
-
 	response.Success(c, gin.H{
 		"valid":            true,
 		"registration":     reg,
@@ -43,13 +33,6 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 	})
 }
 
-// GetWarrantyStatus 获取保修状态
-// @Summary 获取保修状态
-// @Tags Registration
-// @Produce json
-// @Param code path string true "产品代码"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/registrations/warranty/{code} [get]
 func (h *Handler) GetWarrantyStatus(c *gin.Context) {
 	code := strings.TrimSpace(c.Param("code"))
 	if code == "" {
@@ -57,7 +40,7 @@ func (h *Handler) GetWarrantyStatus(c *gin.Context) {
 		return
 	}
 
-	reg, err := h.registrationRepo.FindRegistrationBySerialNumber(code)
+	reg, err := h.registrationSvc.VerifySerialNumber(code)
 	if err != nil {
 		apierror.RespondNotFound(c, "Product")
 		return
@@ -69,8 +52,7 @@ func (h *Handler) GetWarrantyStatus(c *gin.Context) {
 	})
 }
 
-// warrantyStatusResponse 格式化保修状态响应
-func warrantyStatusResponse(reg *registration.ProductRegistration) gin.H {
+func warrantyStatusResponse(reg *domainregistration.ProductRegistration) gin.H {
 	now := time.Now()
 	status := "expired"
 	if reg.WarrantyExpires.After(now) && reg.Status != "expired" {

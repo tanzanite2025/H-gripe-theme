@@ -7,10 +7,13 @@ import (
 	"net/http"
 	domainsuggestion "tanzanite/internal/domain/suggestionfeedback"
 	"tanzanite/internal/pkg/storage"
+	"tanzanite/internal/pkg/upload"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
+
+const suggestionFeedbackMaxRequestBytes = 6 << 20
 
 type Handler struct {
 	suggestionService *service.SuggestionFeedbackService
@@ -47,6 +50,8 @@ func (h *Handler) Eligibility(c *gin.Context) {
 }
 
 func (h *Handler) Upload(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, suggestionFeedbackMaxRequestBytes)
+
 	_, exists := currentUserID(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Please sign in to upload files."})
@@ -56,6 +61,10 @@ func (h *Handler) Upload(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_file", "message": "No file uploaded"})
+		return
+	}
+	if err := upload.ValidateFile(file, upload.SuggestionImageRule); err != nil {
+		c.JSON(upload.HTTPStatus(err), gin.H{"error": upload.ErrorCode(err), "message": err.Error()})
 		return
 	}
 
