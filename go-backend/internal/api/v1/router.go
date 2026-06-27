@@ -101,7 +101,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		AllowedOrigins: cfg.CORS.AllowedOrigins,
 		VisitorSecret:  cfg.JWT.Secret,
 	})
-	paymentHandler := payment.NewHandler(paymentRepo, orderRepo)
+	paymentHandler := payment.NewHandler(paymentRepo, orderService)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationRepo, registrationService, orderRepo, storageSvc)
