@@ -134,9 +134,9 @@ func (s *emailService) buildMessage(to []string, subject, body string, isHTML bo
 	var buf bytes.Buffer
 
 	// 邮件头
-	buf.WriteString(fmt.Sprintf("From: %s <%s>\r\n", s.config.FromName, s.config.From))
-	buf.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(to, ", ")))
-	buf.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	fmt.Fprintf(&buf, "From: %s <%s>\r\n", s.config.FromName, s.config.From)
+	fmt.Fprintf(&buf, "To: %s\r\n", strings.Join(to, ", "))
+	fmt.Fprintf(&buf, "Subject: %s\r\n", subject)
 	buf.WriteString("MIME-Version: 1.0\r\n")
 
 	if isHTML {

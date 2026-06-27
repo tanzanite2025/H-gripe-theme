@@ -231,9 +231,10 @@ func (r *RegistrationRepository) UpdateWarrantyClaimStatus(id uint, status strin
 		"status": status,
 	}
 
-	if status == "approved" {
+	switch status {
+	case "approved":
 		updates["approved_at"] = time.Now()
-	} else if status == "completed" {
+	case "completed":
 		updates["completed_at"] = time.Now()
 	}
 

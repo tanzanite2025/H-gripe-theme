@@ -42,7 +42,7 @@ func (h *Handler) ServeWS(c *gin.Context) {
 		globalHub.Lock()
 		delete(globalHub.clients, conn)
 		globalHub.Unlock()
-		conn.Close()
+		_ = conn.Close()
 	}()
 
 	for {

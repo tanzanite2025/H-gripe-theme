@@ -1,7 +1,8 @@
 package middleware
 
 import (
-	"context"
+	"tanzanite/internal/pkg/requestctx"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -13,7 +14,7 @@ func TraceMiddleware() gin.HandlerFunc {
 		c.Set("X-Trace-ID", traceID)
 
 		// Set in standard request context so services can extract it
-		ctx := context.WithValue(c.Request.Context(), "X-Trace-ID", traceID)
+		ctx := requestctx.WithTraceID(c.Request.Context(), traceID)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()

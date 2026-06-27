@@ -2,7 +2,6 @@ package admin
 
 import (
 	"net/http"
-	"strings"
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/domain/user"
@@ -310,15 +309,4 @@ func (h *SettingsHandler) GetPaymentSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"settings": settings})
-}
-
-func displayName(firstName, lastName, username, email string) string {
-	fullName := strings.TrimSpace(strings.TrimSpace(firstName) + " " + strings.TrimSpace(lastName))
-	if fullName != "" {
-		return fullName
-	}
-	if strings.TrimSpace(username) != "" {
-		return strings.TrimSpace(username)
-	}
-	return strings.TrimSpace(email)
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -168,7 +167,7 @@ func main() {
 func importUsers(db *gorm.DB, exportDir string) error {
 	fmt.Println("📥 Importing users...")
 
-	data, err := ioutil.ReadFile(exportDir + "/users.json")
+	data, err := os.ReadFile(exportDir + "/users.json")
 	if err != nil {
 		return err
 	}
@@ -207,7 +206,7 @@ func importAgentProfiles(db *gorm.DB, exportDir string) error {
 		return err
 	}
 
-	data, err := ioutil.ReadFile(exportDir + "/customer-service-agents.json")
+	data, err := os.ReadFile(exportDir + "/customer-service-agents.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("⚠️  customer-service-agents.json not found, skipping")
@@ -415,7 +414,7 @@ func defaultString(value, fallback string) string {
 func importPosts(db *gorm.DB, exportDir string) error {
 	fmt.Println("📥 Importing posts...")
 
-	data, err := ioutil.ReadFile(exportDir + "/posts.json")
+	data, err := os.ReadFile(exportDir + "/posts.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("⏭️  No posts file found, skipping...")
@@ -476,7 +475,7 @@ func importPosts(db *gorm.DB, exportDir string) error {
 func importProducts(db *gorm.DB, exportDir string) error {
 	fmt.Println("📥 Importing products...")
 
-	data, err := ioutil.ReadFile(exportDir + "/products.json")
+	data, err := os.ReadFile(exportDir + "/products.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("⏭️  No products file found, skipping...")
@@ -540,7 +539,7 @@ func importProducts(db *gorm.DB, exportDir string) error {
 func importSettings(db *gorm.DB, exportDir string) error {
 	fmt.Println("📥 Importing settings...")
 
-	data, err := ioutil.ReadFile(exportDir + "/settings.json")
+	data, err := os.ReadFile(exportDir + "/settings.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("⏭️  No settings file found, skipping...")
@@ -575,7 +574,7 @@ func importSettings(db *gorm.DB, exportDir string) error {
 func importFAQs(db *gorm.DB, exportDir string) error {
 	fmt.Println("📥 Importing FAQs...")
 
-	data, err := ioutil.ReadFile(exportDir + "/faqs.json")
+	data, err := os.ReadFile(exportDir + "/faqs.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("⏭️  No FAQs file found, skipping...")

@@ -28,6 +28,8 @@ const (
 	StorageTypeLocal StorageType = "local"
 	StorageTypeS3    StorageType = "s3"
 	StorageTypeOSS   StorageType = "oss"
+
+	localDirPerm os.FileMode = 0o750
 )
 
 // Config 存储配置
@@ -65,7 +67,7 @@ func NewStorageService(config *Config) (StorageService, error) {
 // newLocalStorage 创建本地存储
 func newLocalStorage(config *Config) (StorageService, error) {
 	// 确保上传目录存在
-	if err := os.MkdirAll(config.LocalPath, 0755); err != nil {
+	if err := os.MkdirAll(config.LocalPath, localDirPerm); err != nil {
 		return nil, fmt.Errorf("failed to create upload directory: %w", err)
 	}
 
@@ -81,24 +83,28 @@ func (s *localStorage) Upload(ctx context.Context, file *multipart.FileHeader) (
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	// 生成唯一文件名
 	filename := s.generateFilename(file.Filename)
 
 	// 确保目标目录存在
-	destPath := filepath.Join(s.config.LocalPath, filename)
+	destPath, err := s.localPath(filename)
+	if err != nil {
+		return "", err
+	}
 	destDir := filepath.Dir(destPath)
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, localDirPerm); err != nil {
 		return "", fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
 	// 创建目标文件
+	// #nosec G304 -- destPath is constrained to the configured upload root by localPath.
 	dest, err := os.Create(destPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer dest.Close()
+	defer func() { _ = dest.Close() }()
 
 	// 复制文件内容
 	if _, err := io.Copy(dest, src); err != nil {
@@ -115,18 +121,22 @@ func (s *localStorage) UploadFromReader(ctx context.Context, reader io.Reader, f
 	newFilename := s.generateFilename(filename)
 
 	// 确保目标目录存在
-	destPath := filepath.Join(s.config.LocalPath, newFilename)
+	destPath, err := s.localPath(newFilename)
+	if err != nil {
+		return "", err
+	}
 	destDir := filepath.Dir(destPath)
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, localDirPerm); err != nil {
 		return "", fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
 	// 创建目标文件
+	// #nosec G304 -- destPath is constrained to the configured upload root by localPath.
 	dest, err := os.Create(destPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer dest.Close()
+	defer func() { _ = dest.Close() }()
 
 	// 复制文件内容
 	if _, err := io.Copy(dest, reader); err != nil {
@@ -142,32 +152,15 @@ func (s *localStorage) Delete(ctx context.Context, url string) error {
 	// 从 URL 提取文件路径
 	// 安全处理：确保文件在允许的目录内
 	urlPath := strings.TrimPrefix(url, s.config.BaseURL+"/uploads/")
+	urlPath = strings.TrimPrefix(urlPath, "/uploads/")
 
-	// 清理路径，防止路径遍历攻击
-	cleanPath := filepath.Clean(urlPath)
-	if strings.Contains(cleanPath, "..") {
-		return fmt.Errorf("invalid file path: path traversal detected")
-	}
-
-	// 构建完整文件路径
-	filePath := filepath.Join(s.config.LocalPath, cleanPath)
-
-	// 确保文件在允许的目录内
-	absLocalPath, err := filepath.Abs(s.config.LocalPath)
+	absFilePath, err := s.localPath(urlPath)
 	if err != nil {
-		return fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	absFilePath, err := filepath.Abs(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to get absolute file path: %w", err)
-	}
-
-	if !strings.HasPrefix(absFilePath, absLocalPath) {
-		return fmt.Errorf("invalid file path: outside allowed directory")
+		return err
 	}
 
 	// 删除文件
+	// #nosec G304 -- absFilePath is constrained to the configured upload root by localPath.
 	if err := os.Remove(absFilePath); err != nil {
 		if os.IsNotExist(err) {
 			return nil // 文件不存在，视为成功
@@ -181,6 +174,39 @@ func (s *localStorage) Delete(ctx context.Context, url string) error {
 // GetURL 获取文件 URL
 func (s *localStorage) GetURL(filename string) string {
 	return fmt.Sprintf("%s/uploads/%s", s.config.BaseURL, filename)
+}
+
+func (s *localStorage) localPath(name string) (string, error) {
+	cleanName := filepath.Clean(name)
+	if cleanName == "." || cleanName == ".." || filepath.IsAbs(cleanName) {
+		return "", fmt.Errorf("invalid file path")
+	}
+
+	parentPrefix := ".." + string(os.PathSeparator)
+	if strings.HasPrefix(cleanName, parentPrefix) {
+		return "", fmt.Errorf("invalid file path: path traversal detected")
+	}
+
+	root, err := filepath.Abs(s.config.LocalPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute upload path: %w", err)
+	}
+
+	target, err := filepath.Abs(filepath.Join(root, cleanName))
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute file path: %w", err)
+	}
+
+	rel, err := filepath.Rel(root, target)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate file path: %w", err)
+	}
+
+	if rel == ".." || strings.HasPrefix(rel, parentPrefix) || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("invalid file path: outside upload directory")
+	}
+
+	return target, nil
 }
 
 // generateFilename 生成唯一文件名
@@ -205,56 +231,12 @@ func (s *localStorage) generateFilename(originalFilename string) string {
 	return filepath.Join(datePath, fmt.Sprintf("%s%s", id, ext))
 }
 
-// s3Storage S3 存储实现 (占位符)
-type s3Storage struct {
-	config *Config
-}
-
 func newS3Storage(config *Config) (StorageService, error) {
-	// 使用真实的S3实现
 	return NewS3Storage(config)
 }
 
-func (s *s3Storage) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
-	return "", fmt.Errorf("S3 storage not implemented yet")
-}
-
-func (s *s3Storage) UploadFromReader(ctx context.Context, reader io.Reader, filename string) (string, error) {
-	return "", fmt.Errorf("S3 storage not implemented yet")
-}
-
-func (s *s3Storage) Delete(ctx context.Context, url string) error {
-	return fmt.Errorf("S3 storage not implemented yet")
-}
-
-func (s *s3Storage) GetURL(filename string) string {
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.config.Bucket, s.config.Region, filename)
-}
-
-// ossStorage 阿里云 OSS 存储实现 (占位符)
-type ossStorage struct {
-	config *Config
-}
-
 func newOSSStorage(config *Config) (StorageService, error) {
-	// 使用真实的OSS实现
 	return NewOSSStorage(config)
-}
-
-func (s *ossStorage) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
-	return "", fmt.Errorf("OSS storage not implemented yet")
-}
-
-func (s *ossStorage) UploadFromReader(ctx context.Context, reader io.Reader, filename string) (string, error) {
-	return "", fmt.Errorf("OSS storage not implemented yet")
-}
-
-func (s *ossStorage) Delete(ctx context.Context, url string) error {
-	return fmt.Errorf("OSS storage not implemented yet")
-}
-
-func (s *ossStorage) GetURL(filename string) string {
-	return fmt.Sprintf("https://%s.%s.aliyuncs.com/%s", s.config.Bucket, s.config.Region, filename)
 }
 
 // LoadConfigFromEnv 从环境变量加载配置

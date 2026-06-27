@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strings"
+	"strconv"
 	"time"
 )
 
@@ -102,64 +102,8 @@ func NewPaymentGateway(config *Config) (PaymentGateway, error) {
 	}
 }
 
-// stripeGateway Stripe 支付网关实现
-type stripeGateway struct {
-	config *Config
-}
-
 func newStripeGateway(config *Config) (PaymentGateway, error) {
-	// 使用真实的Stripe实现
 	return NewStripeGateway(config)
-}
-
-func (g *stripeGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
-	// TODO: 实现 Stripe 支付创建
-	// 示例代码:
-	// params := &stripe.PaymentIntentParams{
-	//     Amount:   stripe.Int64(int64(req.Amount * 100)),
-	//     Currency: stripe.String(req.Currency),
-	//     Description: stripe.String(req.Description),
-	// }
-	// pi, err := paymentintent.New(params)
-
-	return &PaymentResponse{
-		ID:         "pi_mock_" + req.OrderID,
-		Status:     "pending",
-		Amount:     req.Amount,
-		Currency:   req.Currency,
-		PaymentURL: "https://checkout.stripe.com/pay/mock",
-		CreatedAt:  time.Now(),
-		Metadata:   req.Metadata,
-	}, nil
-}
-
-func (g *stripeGateway) CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	// TODO: 实现 Stripe 支付捕获
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "succeeded",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *stripeGateway) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
-	// TODO: 实现 Stripe 退款
-	return &RefundResponse{
-		ID:        "re_mock_" + paymentID,
-		PaymentID: paymentID,
-		Amount:    amount,
-		Status:    "succeeded",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *stripeGateway) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	// TODO: 实现 Stripe 支付查询
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "succeeded",
-		CreatedAt: time.Now(),
-	}, nil
 }
 
 // verifyHMACSHA256 验证 HMAC SHA256 签名
@@ -171,199 +115,24 @@ func verifyHMACSHA256(payload []byte, signature, secret string) bool {
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
 
-func (g *stripeGateway) VerifyWebhook(payload []byte, signature string) (bool, error) {
-	// Stripe 真实验签（未来引入官方 stripe-go 后可以替换为 stripe.Webhook.ConstructEvent）
-	if g.config.WebhookSecret == "" {
-		return false, fmt.Errorf("webhook secret is not configured")
+func parsePaymentAmount(label, value string) (float64, error) {
+	amount, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s %q: %w", label, value, err)
 	}
-
-	// Stripe signature 格式: t=1492774577,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
-	// 这里提供基础的 v1 提取逻辑（简化版）
-	parts := strings.Split(signature, ",")
-	var t, v1 string
-	for _, part := range parts {
-		if strings.HasPrefix(part, "t=") {
-			t = strings.TrimPrefix(part, "t=")
-		} else if strings.HasPrefix(part, "v1=") {
-			v1 = strings.TrimPrefix(part, "v1=")
-		}
-	}
-
-	if t == "" || v1 == "" {
-		return false, fmt.Errorf("invalid stripe signature format")
-	}
-
-	// 拼接待签名的字符串: timestamp.payload
-	signedPayload := fmt.Sprintf("%s.%s", t, string(payload))
-
-	isValid := verifyHMACSHA256([]byte(signedPayload), v1, g.config.WebhookSecret)
-	if !isValid {
-		return false, fmt.Errorf("signature verification failed")
-	}
-
-	return true, nil
-}
-
-// paypalGateway PayPal 支付网关实现
-type paypalGateway struct {
-	config *Config
+	return amount, nil
 }
 
 func newPayPalGateway(config *Config) (PaymentGateway, error) {
-	// 使用真实的PayPal实现
 	return NewPayPalGateway(config)
 }
 
-func (g *paypalGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
-	// TODO: 实现 PayPal 支付创建
-	return &PaymentResponse{
-		ID:         "PAYID-" + req.OrderID,
-		Status:     "created",
-		Amount:     req.Amount,
-		Currency:   req.Currency,
-		PaymentURL: "https://www.paypal.com/checkoutnow?token=mock",
-		CreatedAt:  time.Now(),
-	}, nil
-}
-
-func (g *paypalGateway) CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	// TODO: 实现 PayPal 支付捕获
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "completed",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *paypalGateway) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
-	// TODO: 实现 PayPal 退款
-	return &RefundResponse{
-		ID:        "refund_" + paymentID,
-		PaymentID: paymentID,
-		Amount:    amount,
-		Status:    "completed",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *paypalGateway) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	// TODO: 实现 PayPal 支付查询
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "completed",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *paypalGateway) VerifyWebhook(payload []byte, signature string) (bool, error) {
-	// TODO: 实现 PayPal Webhook 验证
-	return true, nil
-}
-
-// alipayGateway 支付宝支付网关实现
-type alipayGateway struct {
-	config *Config
-}
-
 func newAlipayGateway(config *Config) (PaymentGateway, error) {
-	// 使用真实的支付宝实现
 	return NewAlipayGateway(config)
 }
 
-func (g *alipayGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
-	// TODO: 实现支付宝支付创建
-	return &PaymentResponse{
-		ID:         "alipay_" + req.OrderID,
-		Status:     "WAIT_BUYER_PAY",
-		Amount:     req.Amount,
-		Currency:   req.Currency,
-		PaymentURL: "https://openapi.alipay.com/gateway.do?mock",
-		CreatedAt:  time.Now(),
-	}, nil
-}
-
-func (g *alipayGateway) CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "TRADE_SUCCESS",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *alipayGateway) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
-	return &RefundResponse{
-		ID:        "refund_" + paymentID,
-		PaymentID: paymentID,
-		Amount:    amount,
-		Status:    "REFUND_SUCCESS",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *alipayGateway) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "TRADE_SUCCESS",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *alipayGateway) VerifyWebhook(payload []byte, signature string) (bool, error) {
-	// TODO: 实现支付宝异步通知验证
-	return true, nil
-}
-
-// wechatGateway 微信支付网关实现
-type wechatGateway struct {
-	config *Config
-}
-
 func newWechatGateway(config *Config) (PaymentGateway, error) {
-	// 使用真实的微信支付实现
 	return NewWechatGateway(config)
-}
-
-func (g *wechatGateway) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
-	// TODO: 实现微信支付创建
-	return &PaymentResponse{
-		ID:         "wx_" + req.OrderID,
-		Status:     "NOTPAY",
-		Amount:     req.Amount,
-		Currency:   req.Currency,
-		PaymentURL: "weixin://wxpay/bizpayurl?mock",
-		CreatedAt:  time.Now(),
-	}, nil
-}
-
-func (g *wechatGateway) CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "SUCCESS",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *wechatGateway) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
-	return &RefundResponse{
-		ID:        "refund_" + paymentID,
-		PaymentID: paymentID,
-		Amount:    amount,
-		Status:    "SUCCESS",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *wechatGateway) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
-	return &PaymentResponse{
-		ID:        paymentID,
-		Status:    "SUCCESS",
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func (g *wechatGateway) VerifyWebhook(payload []byte, signature string) (bool, error) {
-	// TODO: 实现微信支付回调验证
-	return true, nil
 }
 
 // LoadConfigFromEnv 从环境变量加载配置

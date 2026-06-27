@@ -82,7 +82,9 @@ func main() {
 
 	workerServer := worker.NewServer(&cfg.Redis)
 	workerClient := worker.NewClient(&cfg.Redis)
-	defer workerClient.Close()
+	defer func() {
+		_ = workerClient.Close()
+	}()
 
 	if err := workerServer.Start(); err != nil {
 		logger.Fatal("worker server failed to start", zap.Error(err))
@@ -122,9 +124,13 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORS(cfg.CORS))
 	router.Use(middleware.SecurityHeaders())
-	
+
 	// 全局限流 - 保护整个服务
 	router.Use(middleware.GlobalRateLimit(1000)) // 1000 RPS globally
+
+	if cfg.Server.Mode != gin.ReleaseMode {
+		setupSwagger(router)
+	}
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -139,7 +145,7 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 	{
 		// 导入health handler
 		// health.RegisterRoutes(healthGroup, db, redisCache.Client)
-		
+
 		// 临时保留简单的健康检查（直到集成health handler）
 		healthGroup.GET("/health", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
@@ -149,13 +155,13 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 				"buildTime": BuildTime,
 			})
 		})
-		
+
 		healthGroup.GET("/readiness", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "ready",
 			})
 		})
-		
+
 		healthGroup.GET("/liveness", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "alive",

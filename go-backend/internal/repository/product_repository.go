@@ -178,7 +178,9 @@ func (r *ProductRepository) DecrementStocks(items map[uint]int) error {
 		strings.Join(cases, " "),
 		strings.Join(stockCases, " "))
 
-	finalArgs := append(args, ids)
+	finalArgs := make([]interface{}, 0, len(args)+1+len(stockArgs))
+	finalArgs = append(finalArgs, args...)
+	finalArgs = append(finalArgs, ids)
 	finalArgs = append(finalArgs, stockArgs...)
 
 	res := r.db.Exec(query, finalArgs...)
@@ -222,9 +224,10 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 		query = query.Where("name LIKE ? OR sku LIKE ? OR description LIKE ?",
 			"%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
-	if featured == "true" {
+	switch featured {
+	case "true":
 		query = query.Where("featured = ?", true)
-	} else if featured == "false" {
+	case "false":
 		query = query.Where("featured = ?", false)
 	}
 

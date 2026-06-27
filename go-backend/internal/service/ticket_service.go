@@ -215,7 +215,7 @@ func (s *TicketService) MatchKeywordMessage(conversationID, message string, owne
 		if rule.MatchType == "contains" {
 			isMatch = strings.Contains(strings.ToLower(message), strings.ToLower(keyword))
 		} else {
-			isMatch = strings.ToLower(strings.TrimSpace(message)) == strings.ToLower(keyword)
+			isMatch = strings.EqualFold(strings.TrimSpace(message), keyword)
 		}
 
 		if isMatch {

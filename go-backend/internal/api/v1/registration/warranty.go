@@ -3,6 +3,7 @@ package registration
 import (
 	"encoding/json"
 	"errors"
+	"mime/multipart"
 	"strconv"
 	"strings"
 	orderdomain "tanzanite/internal/domain/order"
@@ -15,7 +16,7 @@ import (
 )
 
 var (
-	errWarrantyEmailMismatch      = errors.New("Email does not match order record.")
+	errWarrantyEmailMismatch      = errors.New("email does not match order record")
 	errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
 )
 
@@ -343,7 +344,9 @@ func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, er
 		return []string{}, "", nil
 	}
 
-	imageFiles := append(form.File["images[]"], form.File["images"]...)
+	imageFiles := make([]*multipart.FileHeader, 0, len(form.File["images[]"])+len(form.File["images"]))
+	imageFiles = append(imageFiles, form.File["images[]"]...)
+	imageFiles = append(imageFiles, form.File["images"]...)
 	videoFiles := form.File["video"]
 	hasFiles := len(imageFiles) > 0 || len(videoFiles) > 0
 	if hasFiles && h.storageService == nil {

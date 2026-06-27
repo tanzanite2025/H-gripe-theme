@@ -1,7 +1,7 @@
 package cart
 
 import (
-	"fmt"
+	"strconv"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
@@ -103,8 +103,12 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 	}
 
 	productID := c.Param("id")
-	var pID uint
-	fmt.Sscanf(productID, "%d", &pID)
+	parsedProductID, err := strconv.ParseUint(productID, 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "invalid product id")
+		return
+	}
+	pID := uint(parsedProductID)
 
 	if err := h.cartService.UpdateCartItem(cart.ID, pID, req.Quantity); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
@@ -125,8 +129,12 @@ func (h *Handler) RemoveFromCart(c *gin.Context) {
 	}
 
 	productID := c.Param("id")
-	var pID uint
-	fmt.Sscanf(productID, "%d", &pID)
+	parsedProductID, err := strconv.ParseUint(productID, 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "invalid product id")
+		return
+	}
+	pID := uint(parsedProductID)
 
 	if err := h.cartService.RemoveFromCart(cart.ID, pID); err != nil {
 		apierror.RespondBadRequest(c, err.Error())

@@ -361,13 +361,6 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				logsGroup.GET("/user/:user_id", auditHandler.GetUserAuditLogs)
 				logsGroup.POST("/cleanup", middleware.AdminOnly(), auditHandler.DeleteOldLogs)
 			}
-
-			// 系统管理（仅管理员）
-			systemGroup := authenticated.Group("/system")
-			systemGroup.Use(middleware.AdminOnly())
-			{
-				// TODO: 实现系统管理端点
-			}
 		}
 	}
 }

@@ -62,7 +62,7 @@ import (
 func setupSwagger(r *gin.Engine) {
 	// Swagger文档路由
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	
+
 	// 重定向根路径到Swagger UI
 	r.GET("/docs", func(c *gin.Context) {
 		c.Redirect(302, "/swagger/index.html")

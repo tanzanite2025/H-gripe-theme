@@ -66,9 +66,9 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 
 	// 构建应用上下文
 	appCtx := &paypal.ApplicationContext{
-		BrandName:       "Tanzanite Components",
-		Locale:          "en-US",
-		UserAction:      "PAY_NOW",
+		BrandName:          "Tanzanite Components",
+		Locale:             "en-US",
+		UserAction:         "PAY_NOW",
 		ShippingPreference: "NO_SHIPPING",
 	}
 
@@ -144,7 +144,10 @@ func (g *paypalGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 		if pu.Payments != nil && len(pu.Payments.Captures) > 0 {
 			capture := pu.Payments.Captures[0]
 			if capture.Amount != nil {
-				fmt.Sscanf(capture.Amount.Value, "%f", &amount)
+				amount, err = parsePaymentAmount("paypal capture amount", capture.Amount.Value)
+				if err != nil {
+					return nil, err
+				}
 				currency = capture.Amount.Currency
 			}
 		}
@@ -203,7 +206,10 @@ func (g *paypalGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 	// 解析退款金额
 	var refundAmount float64
 	if refundResp.Amount != nil {
-		fmt.Sscanf(refundResp.Amount.Value, "%f", &refundAmount)
+		refundAmount, err = parsePaymentAmount("paypal refund amount", refundResp.Amount.Value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &RefundResponse{
@@ -232,7 +238,10 @@ func (g *paypalGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	var currency string
 	if len(order.PurchaseUnits) > 0 {
 		if order.PurchaseUnits[0].Amount != nil {
-			fmt.Sscanf(order.PurchaseUnits[0].Amount.Value, "%f", &amount)
+			amount, err = parsePaymentAmount("paypal order amount", order.PurchaseUnits[0].Amount.Value)
+			if err != nil {
+				return nil, err
+			}
 			currency = order.PurchaseUnits[0].Amount.Currency
 		}
 	}
@@ -256,7 +265,7 @@ func (g *paypalGatewayImpl) VerifyWebhook(payload []byte, signature string) (boo
 	// PayPal webhook验证使用HMAC SHA256
 	// 注意：在生产环境中，建议使用PayPal的官方验证API
 	// POST /v1/notifications/verify-webhook-signature
-	
+
 	// 基本的HMAC验证
 	isValid := verifyHMACSHA256(payload, signature, g.config.WebhookSecret)
 	if !isValid {
