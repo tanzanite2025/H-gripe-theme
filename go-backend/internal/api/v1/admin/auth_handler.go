@@ -3,6 +3,7 @@ package admin
 import (
 	"net/http"
 	"tanzanite/internal/domain/auth"
+	"tanzanite/internal/pkg/securecookie"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -22,9 +23,11 @@ func isBackofficeRole(role auth.Role) bool {
 	return role == auth.RoleAdmin || role == auth.RoleManager || role == auth.RoleEditor || role == auth.RoleSupport
 }
 
-func (h *AuthHandler) setAdminAuthCookies(c *gin.Context, token string, refreshToken string) {
-	c.SetCookie("auth_token", token, h.authService.AccessTokenMaxAgeSeconds(), "/", "", true, true)
-	c.SetCookie("refresh_token", refreshToken, h.authService.RefreshTokenMaxAgeSeconds(), "/", "", true, true)
+func (h *AuthHandler) setAdminAuthCookies(c *gin.Context, token string, refreshToken string) error {
+	securecookie.SetAuthToken(c, token, h.authService.AccessTokenMaxAgeSeconds())
+	securecookie.SetRefreshToken(c, refreshToken, h.authService.RefreshTokenMaxAgeSeconds())
+	_, err := securecookie.SetCSRFToken(c, h.authService.RefreshTokenMaxAgeSeconds())
+	return err
 }
 
 // AdminLogin 管理员登录
@@ -63,7 +66,10 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 		return
 	}
 
-	h.setAdminAuthCookies(c, token, refreshToken)
+	if err := h.setAdminAuthCookies(c, token, refreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate CSRF token"})
+		return
+	}
 
 	// 返回用户信息和权限
 	c.JSON(http.StatusOK, gin.H{
@@ -152,7 +158,10 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	h.setAdminAuthCookies(c, token, newRefreshToken)
+	if err := h.setAdminAuthCookies(c, token, newRefreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate CSRF token"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Token refreshed successfully",
@@ -164,8 +173,9 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // POST /api/admin/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	// 在实际应用中，可以在这里将令牌加入黑名单
-	c.SetCookie("auth_token", "", -1, "/", "", true, true)
-	c.SetCookie("refresh_token", "", -1, "/", "", true, true)
+	securecookie.ClearAuthToken(c)
+	securecookie.ClearRefreshToken(c)
+	securecookie.ClearCSRFToken(c)
 
 	// 目前只返回成功消息
 	c.JSON(http.StatusOK, gin.H{

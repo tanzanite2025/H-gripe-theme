@@ -47,6 +47,22 @@ interface ApiResponse<T> {
 type MaybeJson = Record<string, unknown> | string | null
 
 const defaultCredentials: RequestCredentials = 'include'
+const csrfCookieName = 'csrf_token'
+const csrfHeaderName = 'X-CSRF-Token'
+
+const isUnsafeMethod = (method?: string) => !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes((method || 'GET').toUpperCase())
+
+const readCookie = (name: string) => {
+  if (typeof document === 'undefined') {
+    return ''
+  }
+  const prefix = `${encodeURIComponent(name)}=`
+  const cookie = document.cookie
+    .split(';')
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix))
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : ''
+}
 
 const readResponse = async (response: Response): Promise<MaybeJson> => {
   const text = await response.text()
@@ -96,6 +112,12 @@ export function useAuth() {
     }
 
     const headers = new Headers(init.headers || undefined)
+    if (isUnsafeMethod(init.method)) {
+      const csrfToken = readCookie(csrfCookieName)
+      if (csrfToken) {
+        headers.set(csrfHeaderName, csrfToken)
+      }
+    }
 
     const finalInit: RequestInit = {
       credentials: defaultCredentials,

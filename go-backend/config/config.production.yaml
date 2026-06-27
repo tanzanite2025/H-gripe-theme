@@ -66,6 +66,7 @@ cors:
     - Content-Type
     - Authorization
     - Accept-Language
+    - X-CSRF-Token
     - X-Request-ID
   expose_headers:
     - Content-Length

@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"errors"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
+	"tanzanite/internal/pkg/securecookie"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -69,7 +71,11 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+	securecookie.SetAuthToken(c, token, 3600*24*7)
+	if _, err := securecookie.SetCSRFToken(c, 3600*24*7); err != nil {
+		apierror.RespondInternalError(c, errors.New("failed to generate CSRF token"))
+		return
+	}
 
 	response.Success(c, gin.H{
 		"user": user.ToResponse(),
@@ -90,7 +96,11 @@ func (h *Handler) GoogleLogin(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+	securecookie.SetAuthToken(c, token, 3600*24*7)
+	if _, err := securecookie.SetCSRFToken(c, 3600*24*7); err != nil {
+		apierror.RespondInternalError(c, errors.New("failed to generate CSRF token"))
+		return
+	}
 
 	response.Success(c, gin.H{
 		"user": user.ToResponse(),
@@ -116,6 +126,7 @@ func (h *Handler) GetProfile(c *gin.Context) {
 // Logout 用户登出
 func (h *Handler) Logout(c *gin.Context) {
 	// JWT是无状态的，客户端删除token即可
-	c.SetCookie("auth_token", "", -1, "/", "", true, true)
+	securecookie.ClearAuthToken(c)
+	securecookie.ClearCSRFToken(c)
 	response.SuccessWithMessage(c, "Logged out successfully", nil)
 }

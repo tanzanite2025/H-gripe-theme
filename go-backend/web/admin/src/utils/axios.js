@@ -9,12 +9,33 @@ const instance = axios.create({
 
 const LOGIN_PATH = '/login'
 const AUTH_STORAGE_KEYS = ['admin_token', 'admin_user', 'admin_permissions']
+const CSRF_COOKIE_NAME = 'csrf_token'
+const CSRF_HEADER_NAME = 'X-CSRF-Token'
 
 let refreshPromise = null
 let sessionExpiredHandled = false
 
 const isLoginEndpoint = (url = '') => url.includes('/api/admin/auth/login')
 const isRefreshEndpoint = (url = '') => url.includes('/api/admin/auth/refresh')
+const isUnsafeMethod = (method = 'get') => !['get', 'head', 'options', 'trace'].includes(method.toLowerCase())
+
+const readCookie = (name) => {
+  if (typeof document === 'undefined') return ''
+  const prefix = `${encodeURIComponent(name)}=`
+  const cookie = document.cookie
+    .split(';')
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix))
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : ''
+}
+
+const attachCsrfHeader = (headers = {}) => {
+  const token = readCookie(CSRF_COOKIE_NAME)
+  if (token) {
+    headers[CSRF_HEADER_NAME] = token
+  }
+  return headers
+}
 
 const clearAdminAuth = () => {
   AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key))
@@ -48,11 +69,11 @@ const refreshAdminToken = async () => {
       baseURL: instance.defaults.baseURL,
       timeout: instance.defaults.timeout,
       withCredentials: true,
-      headers: {
+      headers: attachCsrfHeader({
         Authorization: localStorage.getItem('admin_token')
           ? `Bearer ${localStorage.getItem('admin_token')}`
           : undefined
-      }
+      })
     }).then((response) => {
       const newToken = response.data?.token
       if (newToken) {
@@ -75,6 +96,9 @@ instance.interceptors.request.use(
     const token = localStorage.getItem('admin_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    if (isUnsafeMethod(config.method)) {
+      attachCsrfHeader(config.headers)
     }
     return config
   },

@@ -166,7 +166,7 @@ func setDefaults() {
 
 	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:3000", "http://localhost:5173"})
 	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
-	viper.SetDefault("cors.allowed_headers", []string{"Origin", "Content-Type", "Authorization", "Accept-Language"})
+	viper.SetDefault("cors.allowed_headers", []string{"Origin", "Content-Type", "Authorization", "Accept-Language", "X-CSRF-Token"})
 	viper.SetDefault("cors.expose_headers", []string{"Content-Length"})
 	viper.SetDefault("cors.allow_credentials", true)
 	viper.SetDefault("cors.max_age", 43200)

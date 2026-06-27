@@ -115,6 +115,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	chatHandler := chat.NewChatHandler(chatRepo)
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
+	v1.Use(middleware.CSRFProtection(cfg.CORS.AllowedOrigins))
 	{
 		// 认证路由（公开）
 		authGroup := v1.Group("/auth")
