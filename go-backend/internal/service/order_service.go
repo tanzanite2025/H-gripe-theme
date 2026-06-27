@@ -28,6 +28,11 @@ type OrderService struct {
 	loyaltyRepo  *repository.LoyaltyRepository
 }
 
+var (
+	ErrOrderNotFound         = errors.New("order not found")
+	ErrOrderDeleteNotAllowed = errors.New("only cancelled or refunded orders can be deleted")
+)
+
 func NewOrderService(
 	db *gorm.DB,
 	orderRepo *repository.OrderRepository,
@@ -224,7 +229,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 func (s *OrderService) GetOrder(id uint, userID uint) (*order.Order, error) {
 	o, err := s.orderRepo.FindByID(id)
 	if err != nil {
-		return nil, err
+		return nil, normalizeOrderError(err)
 	}
 
 	// 验证权限
@@ -233,6 +238,10 @@ func (s *OrderService) GetOrder(id uint, userID uint) (*order.Order, error) {
 	}
 
 	return o, nil
+}
+
+func (s *OrderService) GetAdminOrder(id uint) (*order.Order, error) {
+	return s.findOrder(id)
 }
 
 // GetUserOrders 获取用户订单列表
@@ -245,12 +254,16 @@ func (s *OrderService) GetAllOrders(page, pageSize int, status string) ([]order.
 	return s.orderRepo.FindAll(page, pageSize, status)
 }
 
+func (s *OrderService) ListAdminOrders(page, pageSize int, status, paymentStatus, shippingStatus, search, startDate, endDate string) ([]order.Order, int64, error) {
+	return s.orderRepo.FindAllWithFilters(page, pageSize, status, paymentStatus, shippingStatus, search, startDate, endDate)
+}
+
 // UpdateOrderStatus 更新订单状态
 func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 	// 验证状态转换
 	o, err := s.orderRepo.FindByID(id)
 	if err != nil {
-		return err
+		return normalizeOrderError(err)
 	}
 
 	if !o.CanTransitionTo(status) {
@@ -262,6 +275,61 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 	}
 
 	return s.orderRepo.UpdateStatus(id, status)
+}
+
+func (s *OrderService) UpdatePaymentStatus(id uint, paymentStatus string) error {
+	if _, err := s.findOrder(id); err != nil {
+		return err
+	}
+
+	return s.orderRepo.UpdatePaymentStatus(id, paymentStatus)
+}
+
+func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
+	if _, err := s.findOrder(id); err != nil {
+		return err
+	}
+
+	return s.orderRepo.UpdateShippingStatus(id, shippingStatus)
+}
+
+func (s *OrderService) UpdateTrackingInfo(id uint, trackingNumber, carrierCode string) error {
+	if _, err := s.findOrder(id); err != nil {
+		return err
+	}
+
+	return s.orderRepo.UpdateTrackingInfo(id, trackingNumber, carrierCode)
+}
+
+func (s *OrderService) UpdateAdminNote(id uint, adminNote string) error {
+	o, err := s.findOrder(id)
+	if err != nil {
+		return err
+	}
+
+	o.AdminNote = adminNote
+	return s.orderRepo.Update(o)
+}
+
+func (s *OrderService) DeleteAdminOrder(id uint) error {
+	o, err := s.findOrder(id)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != "cancelled" && o.Status != "refunded" {
+		return ErrOrderDeleteNotAllowed
+	}
+
+	return s.orderRepo.Delete(id)
+}
+
+func (s *OrderService) GetAdminStats() (map[string]interface{}, error) {
+	return s.orderRepo.GetStats()
+}
+
+func (s *OrderService) GetSalesByDateRange(startDate, endDate time.Time) ([]map[string]interface{}, error) {
+	return s.orderRepo.GetSalesByDateRange(startDate, endDate)
 }
 
 // CancelOrder 取消订单
@@ -340,6 +408,22 @@ func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
 
 		return nil
 	})
+}
+
+func (s *OrderService) findOrder(id uint) (*order.Order, error) {
+	o, err := s.orderRepo.FindByID(id)
+	if err != nil {
+		return nil, normalizeOrderError(err)
+	}
+
+	return o, nil
+}
+
+func normalizeOrderError(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrOrderNotFound
+	}
+	return err
 }
 
 // GetOrderStats 获取订单统计
