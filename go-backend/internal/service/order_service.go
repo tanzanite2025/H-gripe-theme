@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"tanzanite/internal/domain/coupon"
-	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/pkg/eventbus"
 	"tanzanite/internal/pkg/logger"
@@ -298,27 +297,16 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 		// 3. 退还积分
 		if o.PointsUsed > 0 {
 			txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
-			if err := tx.Exec("UPDATE user_loyalties SET available_points = available_points + ?, used_points = used_points - ? WHERE user_id = ?", o.PointsUsed, o.PointsUsed, userID).Error; err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
-			}
-
-			// 记录退还积分流水
-			userLoyalty, err := txLoyaltyRepo.FindUserLoyaltyByUserID(userID)
+			_, err := txLoyaltyRepo.AdjustUserPoints(
+				userID,
+				o.PointsUsed,
+				"refund",
+				"order",
+				o.ID,
+				fmt.Sprintf("Order #%s cancelled points refund", o.OrderNumber),
+			)
 			if err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to find user loyalty during refund: %w", err)
-			}
-			if userLoyalty != nil {
-				txTransaction := &loyalty.LoyaltyTransaction{
-					UserID:      userID,
-					Points:      o.PointsUsed,
-					Type:        "refund",
-					Description: fmt.Sprintf("Order #%s cancelled points refund", o.OrderNumber),
-					Balance:     userLoyalty.AvailablePoints,
-					CreatedAt:   time.Now(),
-				}
-				if err := txLoyaltyRepo.CreateTransaction(txTransaction); err != nil {
-					return fmt.Errorf("[CRITICAL] Failed to create refund transaction: %w", err)
-				}
+				return fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
 			}
 		}
 
