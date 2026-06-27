@@ -253,8 +253,12 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 		return err
 	}
 
-	if !s.isValidStatusTransition(o.Status, status) {
+	if !o.CanTransitionTo(status) {
 		return fmt.Errorf("invalid status transition from %s to %s", o.Status, status)
+	}
+
+	if status == "cancelled" {
+		return s.cancelOrderWithRollback(o)
 	}
 
 	return s.orderRepo.UpdateStatus(id, status)
@@ -277,13 +281,17 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 		return errors.New("order cannot be cancelled")
 	}
 
+	return s.cancelOrderWithRollback(o)
+}
+
+func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
 	// 使用事务进行原子化回滚
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		txOrderRepo := s.orderRepo.WithTx(tx)
 		txProductRepo := s.productRepo.WithTx(tx)
 
 		// 1. 更新订单状态为 cancelled
-		if err := txOrderRepo.UpdateStatus(id, "cancelled"); err != nil {
+		if err := txOrderRepo.UpdateStatus(o.ID, "cancelled"); err != nil {
 			return err
 		}
 
@@ -298,7 +306,7 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 		if o.PointsUsed > 0 {
 			txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
 			_, err := txLoyaltyRepo.AdjustUserPoints(
-				userID,
+				o.UserID,
 				o.PointsUsed,
 				"refund",
 				"order",

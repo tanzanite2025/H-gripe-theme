@@ -21,6 +21,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	// 初始化 repositories
 	userRepo := repository.NewUserRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
+	paymentRepo := repository.NewPaymentRepository(db)
 	ticketRepo := repository.NewTicketRepository(db)
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
 	productRepo := repository.NewProductRepository(db)
@@ -40,13 +41,15 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
 	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
 	registrationService := service.NewRegistrationService(registrationRepo, productRepo)
+	userService := service.NewUserService(userRepo)
+	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
 
 	// 初始化 handlers
 	authHandler := NewAuthHandler(authService)
 	dashboardHandler := NewDashboardHandler(orderRepo, userRepo, ticketRepo, subscriptionRepo)
-	userHandler := NewUserHandler(userRepo)
+	userHandler := NewUserHandler(userService)
 	productHandler := NewProductHandler(productRepo)
-	orderHandler := NewOrderHandler(orderRepo)
+	orderHandler := NewOrderHandler(orderRepo, orderService)
 	contentHandler := NewContentHandler(postRepo)
 	faqHandler := NewFAQHandler(faqRepo)
 	galleryHandler := NewGalleryHandler(galleryRepo)
