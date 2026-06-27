@@ -15,9 +15,9 @@ type Coupon struct {
 	Description          string         `gorm:"type:text" json:"description"`
 	MinAmount            float64        `gorm:"default:0" json:"min_amount"`
 	MaxDiscount          float64        `gorm:"default:0" json:"max_discount"`
-	UsageLimit           int            `gorm:"default:0" json:"usage_limit"` // 0表示无限制
+	UsageLimit           int            `gorm:"default:0;check:coupon_usage_limit_non_negative,usage_limit >= 0" json:"usage_limit"` // 0表示无限制
 	UsageLimitPerUser    int            `gorm:"default:0" json:"usage_limit_per_user"`
-	UsedCount            int            `gorm:"default:0" json:"used_count"`
+	UsedCount            int            `gorm:"default:0;check:coupon_used_count_valid,used_count >= 0 AND (usage_limit = 0 OR used_count <= usage_limit)" json:"used_count"`
 	StartDate            time.Time      `json:"start_date"`
 	EndDate              time.Time      `json:"end_date"`
 	ApplicableProducts   string         `gorm:"type:text" json:"applicable_products"`   // JSON数组
@@ -89,7 +89,7 @@ type GiftCard struct {
 	ID             uint           `gorm:"primarykey" json:"id"`
 	Code           string         `gorm:"uniqueIndex;not null" json:"code"`
 	InitialValue   float64        `gorm:"not null" json:"initial_value"`
-	Balance        float64        `gorm:"not null" json:"balance"`
+	Balance        float64        `gorm:"not null;check:balance_non_negative,balance >= 0" json:"balance"`
 	Currency       string         `gorm:"default:'USD'" json:"currency"`
 	Status         string         `gorm:"index" json:"status"` // active, used, expired, cancelled
 	RecipientEmail string         `json:"recipient_email"`
