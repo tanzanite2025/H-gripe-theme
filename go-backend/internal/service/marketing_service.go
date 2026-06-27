@@ -15,7 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type MarketingService struct {
@@ -394,88 +393,76 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 	}
 
 	// 开启数据库事务
-	tx := s.loyaltyRepo.GetDB().Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+	var giftcard coupon.GiftCard
+	var transaction *loyalty.LoyaltyTransaction
+
+	err := s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
+		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
+		txCouponRepo := s.couponRepo.WithTx(tx)
+		// 4. 校验用户可用积分余额
+		userLoyalty, err := txLoyaltyRepo.FindOrCreateUserLoyaltyForUpdate(userID)
+		if err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to retrieve user loyalty data: %v", err)
 		}
-	}()
 
-	// 4. 校验用户可用积分余额
-	var userLoyalty loyalty.UserLoyalty
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&userLoyalty).Error; err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Failed to retrieve user loyalty data: %v", err)
-	}
+		if userLoyalty.AvailablePoints < pointsToSpend {
+			return fmt.Errorf("[CRITICAL] Insufficient points: available %d, required %d", userLoyalty.AvailablePoints, pointsToSpend)
+		}
 
-	if userLoyalty.AvailablePoints < pointsToSpend {
-		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, required %d", userLoyalty.AvailablePoints, pointsToSpend)
-	}
+		// 5. 校验今日兑换额度
+		todayStart := time.Now().Truncate(24 * time.Hour)
+		todayEnd := todayStart.Add(24 * time.Hour)
 
-	// 5. 校验今日兑换额度
-	var sumPoints int
-	todayStart := time.Now().Truncate(24 * time.Hour)
-	todayEnd := todayStart.Add(24 * time.Hour)
+		sumPoints, err := txLoyaltyRepo.SumTransactionPointsByUser(userID, "spend", "giftcard", todayStart, todayEnd)
+		if err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to verify daily limit: %v", err)
+		}
 
-	err := tx.Model(&loyalty.LoyaltyTransaction{}).
-		Where("user_id = ? AND type = ? AND source = ? AND created_at BETWEEN ? AND ?",
-			userID, "spend", "giftcard", todayStart, todayEnd).
-		Select("COALESCE(SUM(points), 0)").
-		Scan(&sumPoints).Error
+		todayRedeemedValue := math.Abs(float64(sumPoints)) / float64(redeemCfg.ExchangeRate)
+		if redeemCfg.MaxValuePerDay > 0 && todayRedeemedValue+giftCardValue > redeemCfg.MaxValuePerDay {
+			return fmt.Errorf("[CRITICAL] Daily limit exceeded. Limit: %.2f, Redeemed: %.2f, Attempted: %.2f", redeemCfg.MaxValuePerDay, todayRedeemedValue, giftCardValue)
+		}
+
+		// 6. 生成礼品卡
+		cardCode := "REDEEM-" + generateRedeemCode(12)
+		var expiresAt *time.Time
+		if redeemCfg.CardExpiryDays > 0 {
+			t := time.Now().AddDate(0, 0, redeemCfg.CardExpiryDays)
+			expiresAt = &t
+		}
+
+		giftcard = coupon.GiftCard{
+			Code:         cardCode,
+			InitialValue: giftCardValue,
+			Balance:      giftCardValue,
+			Currency:     "USD",
+			Status:       "active",
+			ExpiresAt:    expiresAt,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+
+		if err := txCouponRepo.CreateGiftCard(&giftcard); err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to create gift card: %v", err)
+		}
+
+		// 7. 原子扣减积分并写入交易历史
+		transaction, err = txLoyaltyRepo.AdjustUserPoints(
+			userID,
+			-pointsToSpend,
+			"spend",
+			"giftcard",
+			giftcard.ID,
+			fmt.Sprintf("Redeemed gift card %s with %d points", cardCode, pointsToSpend),
+		)
+		if err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to deduct points: %v", err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Failed to verify daily limit: %v", err)
-	}
-
-	todayRedeemedValue := math.Abs(float64(sumPoints)) / float64(redeemCfg.ExchangeRate)
-	if redeemCfg.MaxValuePerDay > 0 && todayRedeemedValue+giftCardValue > redeemCfg.MaxValuePerDay {
-		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Daily limit exceeded. Limit: %.2f, Redeemed: %.2f, Attempted: %.2f", redeemCfg.MaxValuePerDay, todayRedeemedValue, giftCardValue)
-	}
-
-	// 6. 生成礼品卡
-	cardCode := "REDEEM-" + generateRedeemCode(12)
-	var expiresAt *time.Time
-	if redeemCfg.CardExpiryDays > 0 {
-		t := time.Now().AddDate(0, 0, redeemCfg.CardExpiryDays)
-		expiresAt = &t
-	}
-
-	giftcard := coupon.GiftCard{
-		Code:         cardCode,
-		InitialValue: giftCardValue,
-		Balance:      giftCardValue,
-		Currency:     "USD",
-		Status:       "active",
-		ExpiresAt:    expiresAt,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-	}
-
-	if err := tx.Create(&giftcard).Error; err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Failed to create gift card: %v", err)
-	}
-
-	// 7. 原子扣减积分并写入交易历史
-	txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
-	transaction, err := txLoyaltyRepo.AdjustUserPoints(
-		userID,
-		-pointsToSpend,
-		"spend",
-		"giftcard",
-		giftcard.ID,
-		fmt.Sprintf("Redeemed gift card %s with %d points", cardCode, pointsToSpend),
-	)
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Failed to deduct points: %v", err)
-	}
-
-	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		return nil, fmt.Errorf("[CRITICAL] Transaction commit failed: %v", err)
+		return nil, err
 	}
 
 	return &RedeemResult{

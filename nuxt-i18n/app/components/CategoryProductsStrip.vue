@@ -114,8 +114,10 @@ const resolvedEmptyMessage = computed(
   () => props.emptyMessage || 'No products are listed yet. Coming soon.'
 )
 
+const categoryKeyword = computed(() => props.categorySlug.replace(/[-_]+/g, ' ').trim())
+
 const loadProducts = async () => {
-  if (!props.categorySlug) {
+  if (!categoryKeyword.value) {
     products.value = []
     return
   }
@@ -128,6 +130,7 @@ const loadProducts = async () => {
     const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
 
     const productParams: Record<string, any> = {
+      keyword: categoryKeyword.value,
       per_page: perPage.value,
       status: 'active',
     }
@@ -161,7 +164,7 @@ const loadProducts = async () => {
       products.value = []
     }
   } catch (e: any) {
-    console.error('Failed to load category products:', e)
+    console.error('Failed to load products:', e)
     error.value = e?.data?.message || 'Failed to load products.'
     products.value = []
   } finally {

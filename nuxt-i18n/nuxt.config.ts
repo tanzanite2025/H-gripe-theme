@@ -7,9 +7,6 @@ const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
 const publicApiBase = trimTrailingSlash(
   env.NUXT_PUBLIC_API_BASE || env.GO_API_BASE || env.API_BASE || ''
 )
-const wpApiBase = trimTrailingSlash(
-  env.NUXT_PUBLIC_WP_API_BASE || env.WP_API_BASE || (publicApiBase ? `${publicApiBase}/wp-json` : '/wp-json')
-)
 
 export default defineNuxtConfig({
   extends: ['./layers/admin', './layers/shop'],
@@ -93,11 +90,9 @@ export default defineNuxtConfig({
     preset: 'cloudflare-pages'
   },
 
-  // 配置 WordPress API 端点
   runtimeConfig: {
     public: {
       apiBase: publicApiBase,
-      wpApiBase,
       blogApiMode: env.NUXT_PUBLIC_BLOG_API_MODE || env.BLOG_API_MODE || 'auto',
       siteTitle: env.NUXT_SITE_TITLE || 'Tanzanite',
       siteUrl: env.NUXT_SITE_URL || 'https://tanzanite.site',

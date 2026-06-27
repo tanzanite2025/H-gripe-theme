@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 export interface ShopCategory {
   id: number
@@ -8,12 +8,6 @@ export interface ShopCategory {
 }
 
 export const useShopCategories = () => {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => {
-    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-    return base.replace(/\/$/, '')
-  })
-
   const categories = ref<ShopCategory[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)

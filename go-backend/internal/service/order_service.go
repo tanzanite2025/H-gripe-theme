@@ -319,13 +319,12 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 			}
 			if cp != nil {
 				// 减少使用次数
-				if err := tx.Model(&coupon.Coupon{}).Where("id = ? AND used_count > 0", cp.ID).
-					UpdateColumn("used_count", gorm.Expr("used_count - ?", 1)).Error; err != nil {
+				if err := txCouponRepo.DecrementUsedCount(cp.ID); err != nil {
 					return fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
 				}
 
 				// 删除使用记录
-				if err := tx.Where("order_id = ?", o.ID).Delete(&coupon.CouponUsage{}).Error; err != nil {
+				if err := txCouponRepo.DeleteCouponUsageByOrderID(o.ID); err != nil {
 					return fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
 				}
 			}

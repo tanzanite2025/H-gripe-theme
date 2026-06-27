@@ -85,6 +85,11 @@ func (r *CouponRepository) IncrementUsedCount(id uint) error {
 		UpdateColumn("used_count", gorm.Expr("used_count + ?", 1)).Error
 }
 
+func (r *CouponRepository) DecrementUsedCount(id uint) error {
+	return r.db.Model(&coupon.Coupon{}).Where("id = ? AND used_count > 0", id).
+		UpdateColumn("used_count", gorm.Expr("used_count - ?", 1)).Error
+}
+
 // DeleteCoupon 删除优惠券
 func (r *CouponRepository) DeleteCoupon(id uint) error {
 	return r.db.Delete(&coupon.Coupon{}, id).Error
@@ -112,6 +117,10 @@ func (r *CouponRepository) FindCouponUsageByOrderID(orderID uint) (*coupon.Coupo
 		return nil, err
 	}
 	return &usage, nil
+}
+
+func (r *CouponRepository) DeleteCouponUsageByOrderID(orderID uint) error {
+	return r.db.Where("order_id = ?", orderID).Delete(&coupon.CouponUsage{}).Error
 }
 
 // CountUserCouponUsage 统计用户使用某优惠券的次数

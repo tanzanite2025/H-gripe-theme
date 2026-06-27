@@ -81,6 +81,23 @@ func (r *LoyaltyRepository) GetUserPointsBalance(userID uint) (int, error) {
 	return userLoyalty.AvailablePoints, nil
 }
 
+func (r *LoyaltyRepository) FindOrCreateUserLoyaltyForUpdate(userID uint) (*loyalty.UserLoyalty, error) {
+	if userID == 0 {
+		return nil, ErrInvalidUserID
+	}
+	return findOrCreateUserLoyaltyForUpdate(r.db, userID)
+}
+
+func (r *LoyaltyRepository) SumTransactionPointsByUser(userID uint, transactionType, source string, start, end time.Time) (int, error) {
+	var sumPoints int
+	err := r.db.Model(&loyalty.LoyaltyTransaction{}).
+		Where("user_id = ? AND type = ? AND source = ? AND created_at BETWEEN ? AND ?",
+			userID, transactionType, source, start, end).
+		Select("COALESCE(SUM(points), 0)").
+		Scan(&sumPoints).Error
+	return sumPoints, err
+}
+
 // AdjustUserPoints atomically updates a user's points summary and creates the matching ledger entry.
 func (r *LoyaltyRepository) AdjustUserPoints(userID uint, points int, transactionType, source string, sourceID uint, description string) (*loyalty.LoyaltyTransaction, error) {
 	if userID == 0 {

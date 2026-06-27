@@ -111,7 +111,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRoute } from '#imports'
+import { useRoute, useRuntimeConfig } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import TireSizeSection from '~/components/TireSizeSection.vue'
@@ -148,6 +148,7 @@ const tabs: { id: SizeChartsTabId; label: string }[] = [
 const activeTab = ref<SizeChartsTabId>('tubeless')
 
 const route = useRoute()
+const config = useRuntimeConfig()
 
 const getTabFromHash = (hash: string): SizeChartsTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')
@@ -155,7 +156,7 @@ const getTabFromHash = (hash: string): SizeChartsTabId | null => {
   return (allowed as string[]).includes(raw) ? (raw as SizeChartsTabId) : null
 }
 
-// Tire products drawer (filtered by tire category)
+// Tire products drawer
 const tireProductsDrawerVisible = ref(false)
 const tireProductsLoading = ref(false)
 const tireProductsResults = ref<any[]>([])
@@ -163,33 +164,35 @@ const tireProductsError = ref<string | null>(null)
 const tireProductsQuery = ref('')
 
 const openTireProductsDrawer = async () => {
-  const categorySlug = 'tire'
+  const keyword = 'tire'
 
-  tireProductsQuery.value = 'Tire category'
+  tireProductsQuery.value = 'Tire products'
   tireProductsError.value = null
   tireProductsDrawerVisible.value = true
   tireProductsLoading.value = true
 
   try {
-    const response = await $fetch<any>('/wp-json/tanzanite/v1/products', {
+    const apiBase = String((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+    const response = await $fetch<any>(`${apiBase}/customer-service/products`, {
       params: {
-        category: categorySlug,
+        keyword,
         per_page: 20,
-        status: 'publish',
+        status: 'active',
       },
       credentials: 'include',
     })
 
-    if (response && Array.isArray(response.items)) {
-      tireProductsResults.value = response.items.map((item: any) => ({
+    const products = Array.isArray(response?.items) ? response.items : []
+    if (products.length > 0) {
+      tireProductsResults.value = products.map((item: any) => ({
         id: item.id,
         title: item.title,
         url: item.preview_url || `/shop/${item.slug || item.id}`,
         thumbnail: item.thumbnail,
         price:
-          item.prices?.sale > 0
+          Number(item.prices?.sale) > 0
             ? `$${item.prices.sale}`
-            : item.prices?.regular > 0
+            : Number(item.prices?.regular) > 0
               ? `$${item.prices.regular}`
               : '',
       }))

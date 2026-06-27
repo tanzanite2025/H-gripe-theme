@@ -113,8 +113,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
 	spokeHandler := spoke.NewHandler(spokeRepo)
 	chatHandler := chat.NewChatHandler(chatRepo)
-	registerWordPressCompatRoutes(r, postService, settingService, loyaltyRepo, marketingService, authService)
-
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
 	{
