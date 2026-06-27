@@ -114,8 +114,6 @@ export const useProductAttributes = () => {
       )
 
       const items = Array.isArray(response?.data) ? response.data : []
-      // eslint-disable-next-line no-console
-      console.log('Loaded filterable attributes for AdvancedFilter:', items)
       colorAttributes.value = items
     } catch (e: any) {
       // eslint-disable-next-line no-console

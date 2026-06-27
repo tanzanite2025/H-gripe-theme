@@ -455,16 +455,6 @@ const getAttributeSummary = (attr: AttributeFilterConfig): string => {
     return count + (selected.includes(v.slug) ? 1 : 0)
   }, 0)
 
-  // 调试信息：在本地环境观察实际选中数量与总数（仅在浏览器端打印）
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line no-console
-    console.log('[AdvancedFilter:getAttributeSummary]', key, {
-      total,
-      selectedCount,
-      selectedSlugs: selected,
-    })
-  }
-
   // 全选：显示 All
   if (selectedCount >= total && total > 0) return 'All'
 
