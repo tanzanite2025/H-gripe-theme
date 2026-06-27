@@ -2,92 +2,44 @@ package admin
 
 import (
 	"strconv"
-	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
+	"tanzanite/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ListCoupons 获取优惠券列表
-// @Summary 获取优惠券列表
-// @Tags Admin-Marketing
-// @Produce json
-// @Param page query int false "页码"
-// @Param page_size query int false "每页数量"
-// @Param status query string false "状态"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/admin/marketing/coupons [get]
 func (h *MarketingHandler) ListCoupons(c *gin.Context) {
 	params := pagination.ParsePagination(c)
-	status := c.Query("status") // all, active, expired, disabled
+	status := c.Query("status")
 
-	coupons, total, err := h.couponRepo.FindAllCoupons(params.Page, params.PageSize)
+	coupons, total, err := h.marketingService.ListCouponsAdmin(params.Page, params.PageSize, status)
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		apierror.RespondBadRequest(c, err.Error())
 		return
-	}
-
-	// 根据状态筛选
-	if status != "" && status != "all" {
-		filtered := make([]coupon.Coupon, 0)
-		now := time.Now()
-		for _, cp := range coupons {
-			switch status {
-			case "active":
-				if cp.Enabled && now.After(cp.StartDate) && now.Before(cp.EndDate) {
-					filtered = append(filtered, cp)
-				}
-			case "expired":
-				if now.After(cp.EndDate) {
-					filtered = append(filtered, cp)
-				}
-			case "disabled":
-				if !cp.Enabled {
-					filtered = append(filtered, cp)
-				}
-			}
-		}
-		coupons = filtered
-		total = int64(len(filtered))
 	}
 
 	response.Paged(c, coupons, params.Page, params.PageSize, total)
 }
 
-// GetCoupon 获取优惠券详情
-// @Summary 获取优惠券详情
-// @Tags Admin-Marketing
-// @Produce json
-// @Param id path int true "优惠券ID"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/admin/marketing/coupons/{id} [get]
 func (h *MarketingHandler) GetCoupon(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		apierror.RespondBadRequest(c, "无效的优惠券ID")
+		apierror.RespondBadRequest(c, "invalid coupon ID")
 		return
 	}
 
-	cp, err := h.couponRepo.FindCouponByID(uint(id))
+	cp, err := h.marketingService.GetCoupon(uint(id))
 	if err != nil {
-		apierror.RespondNotFound(c, "优惠券")
+		respondMarketingError(c, err, "coupon")
 		return
 	}
 
 	response.Success(c, gin.H{"coupon": cp})
 }
 
-// CreateCoupon 创建优惠券
-// @Summary 创建优惠券
-// @Tags Admin-Marketing
-// @Accept json
-// @Produce json
-// @Param coupon body coupon.Coupon true "优惠券信息"
-// @Success 201 {object} map[string]interface{}
-// @Router /api/admin/marketing/coupons [post]
 func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 	var req struct {
 		Code                 string    `json:"code" binding:"required"`
@@ -103,7 +55,7 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 		ApplicableProducts   string    `json:"applicable_products"`
 		ExcludedProducts     string    `json:"excluded_products"`
 		ApplicableCategories string    `json:"applicable_categories"`
-		Enabled              bool      `json:"enabled"`
+		Enabled              *bool     `json:"enabled"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -111,7 +63,65 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 		return
 	}
 
-	cp := &coupon.Coupon{
+	enabled := true
+	if req.Enabled != nil {
+		enabled = *req.Enabled
+	}
+
+	cp, err := h.marketingService.CreateCouponAdmin(service.CouponCreateInput{
+		Code:                 req.Code,
+		Type:                 req.Type,
+		Value:                req.Value,
+		Description:          req.Description,
+		MinAmount:            req.MinAmount,
+		MaxDiscount:          req.MaxDiscount,
+		UsageLimit:           req.UsageLimit,
+		UsageLimitPerUser:    req.UsageLimitPerUser,
+		StartDate:            req.StartDate,
+		EndDate:              req.EndDate,
+		ApplicableProducts:   req.ApplicableProducts,
+		ExcludedProducts:     req.ExcludedProducts,
+		ApplicableCategories: req.ApplicableCategories,
+		Enabled:              enabled,
+	})
+	if err != nil {
+		respondMarketingError(c, err, "coupon")
+		return
+	}
+
+	response.Created(c, gin.H{"coupon": cp})
+}
+
+func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "invalid coupon ID")
+		return
+	}
+
+	var req struct {
+		Code                 *string    `json:"code"`
+		Type                 *string    `json:"type" binding:"omitempty,oneof=fixed percentage"`
+		Value                *float64   `json:"value" binding:"omitempty,gt=0"`
+		Description          *string    `json:"description"`
+		MinAmount            *float64   `json:"min_amount"`
+		MaxDiscount          *float64   `json:"max_discount"`
+		UsageLimit           *int       `json:"usage_limit"`
+		UsageLimitPerUser    *int       `json:"usage_limit_per_user"`
+		StartDate            *time.Time `json:"start_date"`
+		EndDate              *time.Time `json:"end_date"`
+		ApplicableProducts   *string    `json:"applicable_products"`
+		ExcludedProducts     *string    `json:"excluded_products"`
+		ApplicableCategories *string    `json:"applicable_categories"`
+		Enabled              *bool      `json:"enabled"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+
+	cp, err := h.marketingService.UpdateCouponAdmin(uint(id), service.CouponUpdateInput{
 		Code:                 req.Code,
 		Type:                 req.Type,
 		Value:                req.Value,
@@ -126,150 +136,36 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 		ExcludedProducts:     req.ExcludedProducts,
 		ApplicableCategories: req.ApplicableCategories,
 		Enabled:              req.Enabled,
-	}
-
-	if err := h.couponRepo.CreateCoupon(cp); err != nil {
-		apierror.RespondBadRequest(c, "创建优惠券失败")
-		return
-	}
-
-	response.Created(c, gin.H{"coupon": cp})
-}
-
-// UpdateCoupon 更新优惠券
-// @Summary 更新优惠券
-// @Tags Admin-Marketing
-// @Accept json
-// @Produce json
-// @Param id path int true "优惠券ID"
-// @Param coupon body coupon.Coupon true "优惠券信息"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/admin/marketing/coupons/{id} [put]
-func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	})
 	if err != nil {
-		apierror.RespondBadRequest(c, "无效的优惠券ID")
-		return
-	}
-
-	cp, err := h.couponRepo.FindCouponByID(uint(id))
-	if err != nil {
-		apierror.RespondNotFound(c, "优惠券")
-		return
-	}
-
-	var req struct {
-		Code                 string    `json:"code"`
-		Type                 string    `json:"type" binding:"omitempty,oneof=fixed percentage"`
-		Value                float64   `json:"value"`
-		Description          string    `json:"description"`
-		MinAmount            float64   `json:"min_amount"`
-		MaxDiscount          float64   `json:"max_discount"`
-		UsageLimit           int       `json:"usage_limit"`
-		UsageLimitPerUser    int       `json:"usage_limit_per_user"`
-		StartDate            time.Time `json:"start_date"`
-		EndDate              time.Time `json:"end_date"`
-		ApplicableProducts   string    `json:"applicable_products"`
-		ExcludedProducts     string    `json:"excluded_products"`
-		ApplicableCategories string    `json:"applicable_categories"`
-		Enabled              bool      `json:"enabled"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondValidationError(c, err.Error())
-		return
-	}
-
-	// 更新字段
-	if req.Code != "" {
-		cp.Code = req.Code
-	}
-	if req.Type != "" {
-		cp.Type = req.Type
-	}
-	if req.Value > 0 {
-		cp.Value = req.Value
-	}
-	cp.Description = req.Description
-	cp.MinAmount = req.MinAmount
-	cp.MaxDiscount = req.MaxDiscount
-	cp.UsageLimit = req.UsageLimit
-	cp.UsageLimitPerUser = req.UsageLimitPerUser
-	if !req.StartDate.IsZero() {
-		cp.StartDate = req.StartDate
-	}
-	if !req.EndDate.IsZero() {
-		cp.EndDate = req.EndDate
-	}
-	cp.ApplicableProducts = req.ApplicableProducts
-	cp.ExcludedProducts = req.ExcludedProducts
-	cp.ApplicableCategories = req.ApplicableCategories
-	cp.Enabled = req.Enabled
-
-	if err := h.couponRepo.UpdateCoupon(cp); err != nil {
-		apierror.RespondBadRequest(c, "更新优惠券失败")
+		respondMarketingError(c, err, "coupon")
 		return
 	}
 
 	response.Success(c, gin.H{"coupon": cp})
 }
 
-// DeleteCoupon 删除优惠券
-// @Summary 删除优惠券
-// @Tags Admin-Marketing
-// @Produce json
-// @Param id path int true "优惠券ID"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/admin/marketing/coupons/{id} [delete]
 func (h *MarketingHandler) DeleteCoupon(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		apierror.RespondBadRequest(c, "无效的优惠券ID")
+		apierror.RespondBadRequest(c, "invalid coupon ID")
 		return
 	}
 
-	if err := h.couponRepo.DeleteCoupon(uint(id)); err != nil {
-		apierror.RespondInternalError(c, err)
+	if err := h.marketingService.DeleteCouponAdmin(uint(id)); err != nil {
+		respondMarketingError(c, err, "coupon")
 		return
 	}
 
-	response.SuccessWithMessage(c, "删除成功", nil)
+	response.SuccessWithMessage(c, "deleted successfully", nil)
 }
 
-// GetCouponStats 获取优惠券统计
-// @Summary 获取优惠券统计
-// @Tags Admin-Marketing
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /api/admin/marketing/coupons/stats [get]
 func (h *MarketingHandler) GetCouponStats(c *gin.Context) {
-	coupons, _, err := h.couponRepo.FindAllCoupons(1, 1000)
+	stats, err := h.marketingService.GetCouponStats()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-
-	now := time.Now()
-	stats := gin.H{
-		"total":    len(coupons),
-		"active":   0,
-		"expired":  0,
-		"disabled": 0,
-		"used":     0,
-	}
-
-	totalUsed := 0
-	for _, cp := range coupons {
-		if cp.Enabled && now.After(cp.StartDate) && now.Before(cp.EndDate) {
-			stats["active"] = stats["active"].(int) + 1
-		} else if now.After(cp.EndDate) {
-			stats["expired"] = stats["expired"].(int) + 1
-		} else if !cp.Enabled {
-			stats["disabled"] = stats["disabled"].(int) + 1
-		}
-		totalUsed += cp.UsedCount
-	}
-	stats["used"] = totalUsed
 
 	response.Success(c, stats)
 }

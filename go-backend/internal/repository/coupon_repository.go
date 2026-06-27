@@ -166,6 +166,25 @@ func (r *CouponRepository) FindGiftCardsByUserID(userID uint) ([]coupon.GiftCard
 	return cards, err
 }
 
+func (r *CouponRepository) FindAllGiftCards(page, pageSize int, status string) ([]coupon.GiftCard, int64, error) {
+	var cards []coupon.GiftCard
+	var total int64
+
+	query := r.db.Model(&coupon.GiftCard{})
+	if status != "" && status != "all" {
+		query = query.Where("status = ?", status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&cards).Error
+
+	return cards, total, err
+}
+
 // UpdateGiftCard 更新礼品卡
 func (r *CouponRepository) UpdateGiftCard(g *coupon.GiftCard) error {
 	return r.db.Save(g).Error

@@ -22,6 +22,87 @@ type MarketingService struct {
 	loyaltyRepo *repository.LoyaltyRepository
 }
 
+var (
+	ErrMarketingNotFound  = errors.New("marketing resource not found")
+	ErrCouponCodeExists   = errors.New("coupon code already exists")
+	ErrGiftCardCodeExists = errors.New("gift card code already exists")
+)
+
+type CouponCreateInput struct {
+	Code                 string
+	Type                 string
+	Value                float64
+	Description          string
+	MinAmount            float64
+	MaxDiscount          float64
+	UsageLimit           int
+	UsageLimitPerUser    int
+	StartDate            time.Time
+	EndDate              time.Time
+	ApplicableProducts   string
+	ExcludedProducts     string
+	ApplicableCategories string
+	Enabled              bool
+}
+
+type CouponUpdateInput struct {
+	Code                 *string
+	Type                 *string
+	Value                *float64
+	Description          *string
+	MinAmount            *float64
+	MaxDiscount          *float64
+	UsageLimit           *int
+	UsageLimitPerUser    *int
+	StartDate            *time.Time
+	EndDate              *time.Time
+	ApplicableProducts   *string
+	ExcludedProducts     *string
+	ApplicableCategories *string
+	Enabled              *bool
+}
+
+type GiftCardCreateInput struct {
+	Code           string
+	InitialValue   float64
+	Currency       string
+	RecipientEmail string
+	RecipientName  string
+	SenderName     string
+	Message        string
+	CoverImage     string
+	ExpiresAt      *time.Time
+}
+
+type GiftCardDetail struct {
+	GiftCard     *coupon.GiftCard
+	Transactions []coupon.GiftCardTransaction
+}
+
+type MemberLevelCreateInput struct {
+	Name             string
+	MinPoints        int
+	MaxPoints        int
+	DiscountRate     float64
+	PointsMultiplier float64
+	Benefits         string
+	Icon             string
+	Color            string
+	SortOrder        int
+}
+
+type MemberLevelUpdateInput struct {
+	Name             *string
+	MinPoints        *int
+	MaxPoints        *int
+	DiscountRate     *float64
+	PointsMultiplier *float64
+	Benefits         *string
+	Icon             *string
+	Color            *string
+	SortOrder        *int
+}
+
 func NewMarketingService(
 	couponRepo *repository.CouponRepository,
 	loyaltyRepo *repository.LoyaltyRepository,
@@ -128,6 +209,379 @@ func (s *MarketingService) GetActiveCoupons() ([]coupon.Coupon, error) {
 // GetAllCoupons 获取全部优惠券 (供管理端使用)
 func (s *MarketingService) GetAllCoupons(page, pageSize int) ([]coupon.Coupon, int64, error) {
 	return s.couponRepo.FindAllCoupons(page, pageSize)
+}
+
+func (s *MarketingService) ListCouponsAdmin(page, pageSize int, status string) ([]coupon.Coupon, int64, error) {
+	coupons, total, err := s.couponRepo.FindAllCoupons(page, pageSize)
+	if err != nil || status == "" || status == "all" {
+		return coupons, total, err
+	}
+
+	filtered := make([]coupon.Coupon, 0, len(coupons))
+	now := time.Now()
+	for _, cp := range coupons {
+		switch status {
+		case "active":
+			if cp.Enabled && now.After(cp.StartDate) && now.Before(cp.EndDate) {
+				filtered = append(filtered, cp)
+			}
+		case "expired":
+			if now.After(cp.EndDate) {
+				filtered = append(filtered, cp)
+			}
+		case "disabled":
+			if !cp.Enabled {
+				filtered = append(filtered, cp)
+			}
+		default:
+			return nil, 0, fmt.Errorf("unsupported coupon status filter %s", status)
+		}
+	}
+
+	return filtered, int64(len(filtered)), nil
+}
+
+func (s *MarketingService) GetCoupon(id uint) (*coupon.Coupon, error) {
+	cp, err := s.couponRepo.FindCouponByID(id)
+	if err != nil {
+		return nil, normalizeMarketingError(err)
+	}
+	return cp, nil
+}
+
+func (s *MarketingService) CreateCouponAdmin(input CouponCreateInput) (*coupon.Coupon, error) {
+	if err := s.ensureCouponCodeAvailable(input.Code, 0); err != nil {
+		return nil, err
+	}
+
+	cp := &coupon.Coupon{
+		Code:                 input.Code,
+		Type:                 input.Type,
+		Value:                input.Value,
+		Description:          input.Description,
+		MinAmount:            input.MinAmount,
+		MaxDiscount:          input.MaxDiscount,
+		UsageLimit:           input.UsageLimit,
+		UsageLimitPerUser:    input.UsageLimitPerUser,
+		StartDate:            input.StartDate,
+		EndDate:              input.EndDate,
+		ApplicableProducts:   input.ApplicableProducts,
+		ExcludedProducts:     input.ExcludedProducts,
+		ApplicableCategories: input.ApplicableCategories,
+		Enabled:              input.Enabled,
+	}
+
+	if err := s.couponRepo.CreateCoupon(cp); err != nil {
+		return nil, err
+	}
+
+	return cp, nil
+}
+
+func (s *MarketingService) UpdateCouponAdmin(id uint, input CouponUpdateInput) (*coupon.Coupon, error) {
+	cp, err := s.GetCoupon(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Code != nil && *input.Code != cp.Code {
+		if err := s.ensureCouponCodeAvailable(*input.Code, cp.ID); err != nil {
+			return nil, err
+		}
+		cp.Code = *input.Code
+	}
+	if input.Type != nil {
+		cp.Type = *input.Type
+	}
+	if input.Value != nil {
+		cp.Value = *input.Value
+	}
+	if input.Description != nil {
+		cp.Description = *input.Description
+	}
+	if input.MinAmount != nil {
+		cp.MinAmount = *input.MinAmount
+	}
+	if input.MaxDiscount != nil {
+		cp.MaxDiscount = *input.MaxDiscount
+	}
+	if input.UsageLimit != nil {
+		cp.UsageLimit = *input.UsageLimit
+	}
+	if input.UsageLimitPerUser != nil {
+		cp.UsageLimitPerUser = *input.UsageLimitPerUser
+	}
+	if input.StartDate != nil {
+		cp.StartDate = *input.StartDate
+	}
+	if input.EndDate != nil {
+		cp.EndDate = *input.EndDate
+	}
+	if input.ApplicableProducts != nil {
+		cp.ApplicableProducts = *input.ApplicableProducts
+	}
+	if input.ExcludedProducts != nil {
+		cp.ExcludedProducts = *input.ExcludedProducts
+	}
+	if input.ApplicableCategories != nil {
+		cp.ApplicableCategories = *input.ApplicableCategories
+	}
+	if input.Enabled != nil {
+		cp.Enabled = *input.Enabled
+	}
+
+	if err := s.couponRepo.UpdateCoupon(cp); err != nil {
+		return nil, err
+	}
+
+	return cp, nil
+}
+
+func (s *MarketingService) DeleteCouponAdmin(id uint) error {
+	if _, err := s.GetCoupon(id); err != nil {
+		return err
+	}
+	return s.couponRepo.DeleteCoupon(id)
+}
+
+func (s *MarketingService) GetCouponStats() (map[string]interface{}, error) {
+	coupons, _, err := s.couponRepo.FindAllCoupons(1, 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	stats := map[string]interface{}{
+		"total":    len(coupons),
+		"active":   0,
+		"expired":  0,
+		"disabled": 0,
+		"used":     0,
+	}
+
+	totalUsed := 0
+	for _, cp := range coupons {
+		if cp.Enabled && now.After(cp.StartDate) && now.Before(cp.EndDate) {
+			stats["active"] = stats["active"].(int) + 1
+		} else if now.After(cp.EndDate) {
+			stats["expired"] = stats["expired"].(int) + 1
+		} else if !cp.Enabled {
+			stats["disabled"] = stats["disabled"].(int) + 1
+		}
+		totalUsed += cp.UsedCount
+	}
+	stats["used"] = totalUsed
+
+	return stats, nil
+}
+
+func (s *MarketingService) ListGiftCardsAdmin(page, pageSize int, status string) ([]coupon.GiftCard, int64, error) {
+	return s.couponRepo.FindAllGiftCards(page, pageSize, status)
+}
+
+func (s *MarketingService) GetGiftCard(id uint) (*GiftCardDetail, error) {
+	card, err := s.couponRepo.FindGiftCardByID(id)
+	if err != nil {
+		return nil, normalizeMarketingError(err)
+	}
+
+	transactions, err := s.couponRepo.FindGiftCardTransactionsByCardID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GiftCardDetail{
+		GiftCard:     card,
+		Transactions: transactions,
+	}, nil
+}
+
+func (s *MarketingService) CreateGiftCardAdmin(input GiftCardCreateInput) (*coupon.GiftCard, error) {
+	if input.Currency == "" {
+		input.Currency = "USD"
+	}
+
+	var card coupon.GiftCard
+	err := s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
+		txCouponRepo := s.couponRepo.WithTx(tx)
+		if err := ensureGiftCardCodeAvailable(txCouponRepo, input.Code, 0); err != nil {
+			return err
+		}
+
+		card = coupon.GiftCard{
+			Code:           input.Code,
+			InitialValue:   input.InitialValue,
+			Balance:        input.InitialValue,
+			Currency:       input.Currency,
+			Status:         "active",
+			RecipientEmail: input.RecipientEmail,
+			RecipientName:  input.RecipientName,
+			SenderName:     input.SenderName,
+			Message:        input.Message,
+			CoverImage:     input.CoverImage,
+			ExpiresAt:      input.ExpiresAt,
+		}
+		if err := txCouponRepo.CreateGiftCard(&card); err != nil {
+			return err
+		}
+
+		transaction := &coupon.GiftCardTransaction{
+			GiftCardID: card.ID,
+			Type:       "issue",
+			Amount:     input.InitialValue,
+			Balance:    input.InitialValue,
+			Note:       "Admin issued gift card",
+		}
+		return txCouponRepo.CreateGiftCardTransaction(transaction)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &card, nil
+}
+
+func (s *MarketingService) UpdateGiftCardStatus(id uint, status string) (*coupon.GiftCard, error) {
+	card, err := s.couponRepo.FindGiftCardByID(id)
+	if err != nil {
+		return nil, normalizeMarketingError(err)
+	}
+
+	card.Status = status
+	if err := s.couponRepo.UpdateGiftCard(card); err != nil {
+		return nil, err
+	}
+
+	return card, nil
+}
+
+func (s *MarketingService) ListLoyaltyTransactions(userID uint, page, pageSize int) ([]loyalty.LoyaltyTransaction, int64, error) {
+	return s.loyaltyRepo.FindTransactionsByUserID(userID, page, pageSize)
+}
+
+func (s *MarketingService) AdminAdjustPointsWithTransaction(userID uint, points int, description string) (*loyalty.LoyaltyTransaction, error) {
+	if description == "" {
+		description = "Admin adjustment"
+	}
+	return s.loyaltyRepo.AdjustUserPoints(userID, points, "adjust", "admin", 0, description)
+}
+
+func (s *MarketingService) ListCheckIns(userID uint, page, pageSize int) ([]loyalty.CheckIn, int64, error) {
+	return s.loyaltyRepo.FindCheckInsByUserID(userID, page, pageSize)
+}
+
+func (s *MarketingService) ListReferrals(referrerID uint) ([]loyalty.Referral, error) {
+	return s.loyaltyRepo.FindReferralsByReferrerID(referrerID)
+}
+
+func (s *MarketingService) UpdateReferralStatus(id uint, status string) (*loyalty.Referral, error) {
+	referral, err := s.loyaltyRepo.FindReferralByID(id)
+	if err != nil {
+		return nil, normalizeMarketingError(err)
+	}
+
+	referral.Status = status
+	if status == "completed" && referral.CompletedAt == nil {
+		now := time.Now()
+		referral.CompletedAt = &now
+	}
+
+	if err := s.loyaltyRepo.UpdateReferral(referral); err != nil {
+		return nil, err
+	}
+
+	return referral, nil
+}
+
+func (s *MarketingService) GetMemberLevel(id uint) (*loyalty.MemberLevel, error) {
+	level, err := s.loyaltyRepo.FindMemberLevelByID(id)
+	if err != nil {
+		return nil, normalizeMarketingError(err)
+	}
+	return level, nil
+}
+
+func (s *MarketingService) CreateMemberLevelAdmin(input MemberLevelCreateInput) (*loyalty.MemberLevel, error) {
+	level := &loyalty.MemberLevel{
+		Name:             input.Name,
+		MinPoints:        input.MinPoints,
+		MaxPoints:        input.MaxPoints,
+		DiscountRate:     input.DiscountRate,
+		PointsMultiplier: input.PointsMultiplier,
+		Benefits:         input.Benefits,
+		Icon:             input.Icon,
+		Color:            input.Color,
+		SortOrder:        input.SortOrder,
+	}
+	if err := s.loyaltyRepo.CreateMemberLevel(level); err != nil {
+		return nil, err
+	}
+	return level, nil
+}
+
+func (s *MarketingService) UpdateMemberLevelAdmin(id uint, input MemberLevelUpdateInput) (*loyalty.MemberLevel, error) {
+	level, err := s.GetMemberLevel(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Name != nil {
+		level.Name = *input.Name
+	}
+	if input.MinPoints != nil {
+		level.MinPoints = *input.MinPoints
+	}
+	if input.MaxPoints != nil {
+		level.MaxPoints = *input.MaxPoints
+	}
+	if input.DiscountRate != nil {
+		level.DiscountRate = *input.DiscountRate
+	}
+	if input.PointsMultiplier != nil {
+		level.PointsMultiplier = *input.PointsMultiplier
+	}
+	if input.Benefits != nil {
+		level.Benefits = *input.Benefits
+	}
+	if input.Icon != nil {
+		level.Icon = *input.Icon
+	}
+	if input.Color != nil {
+		level.Color = *input.Color
+	}
+	if input.SortOrder != nil {
+		level.SortOrder = *input.SortOrder
+	}
+
+	if err := s.loyaltyRepo.UpdateMemberLevel(level); err != nil {
+		return nil, err
+	}
+
+	return level, nil
+}
+
+func (s *MarketingService) DeleteMemberLevelAdmin(id uint) error {
+	if _, err := s.GetMemberLevel(id); err != nil {
+		return err
+	}
+	return s.loyaltyRepo.DeleteMemberLevel(id)
+}
+
+func (s *MarketingService) GetMarketingStats() (map[string]interface{}, error) {
+	couponStats, err := s.GetCouponStats()
+	if err != nil {
+		return nil, err
+	}
+
+	loyaltyStats, err := s.loyaltyRepo.GetLoyaltyStats()
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"coupons": couponStats,
+		"loyalty": loyaltyStats,
+	}, nil
 }
 
 // UpdateCoupon 更新优惠券
@@ -321,6 +775,41 @@ func (s *MarketingService) GetUserLoyalty(userID uint) (*loyalty.UserLoyalty, er
 // generateGiftCardCode 生成礼品卡代码
 func (s *MarketingService) generateGiftCardCode() string {
 	return fmt.Sprintf("GC%s", uuid.New().String()[:12])
+}
+
+func (s *MarketingService) ensureCouponCodeAvailable(code string, excludeID uint) error {
+	existing, err := s.couponRepo.FindCouponByCode(code)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+	if existing != nil && existing.ID != excludeID {
+		return ErrCouponCodeExists
+	}
+	return nil
+}
+
+func ensureGiftCardCodeAvailable(repo *repository.CouponRepository, code string, excludeID uint) error {
+	existing, err := repo.FindGiftCardByCode(code)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+	if existing != nil && existing.ID != excludeID {
+		return ErrGiftCardCodeExists
+	}
+	return nil
+}
+
+func normalizeMarketingError(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrMarketingNotFound
+	}
+	return err
 }
 
 // ==========================================

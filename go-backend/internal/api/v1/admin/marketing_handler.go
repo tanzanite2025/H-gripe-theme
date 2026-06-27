@@ -1,19 +1,28 @@
 package admin
 
 import (
-	"tanzanite/internal/repository"
+	"errors"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/service"
+
+	"github.com/gin-gonic/gin"
 )
 
-// MarketingHandler 营销管理处理器
 type MarketingHandler struct {
-	couponRepo  *repository.CouponRepository
-	loyaltyRepo *repository.LoyaltyRepository
+	marketingService *service.MarketingService
 }
 
-// NewMarketingHandler 创建营销管理处理器
-func NewMarketingHandler(couponRepo *repository.CouponRepository, loyaltyRepo *repository.LoyaltyRepository) *MarketingHandler {
-	return &MarketingHandler{
-		couponRepo:  couponRepo,
-		loyaltyRepo: loyaltyRepo,
+func NewMarketingHandler(marketingService *service.MarketingService) *MarketingHandler {
+	return &MarketingHandler{marketingService: marketingService}
+}
+
+func respondMarketingError(c *gin.Context, err error, notFoundResource string) {
+	switch {
+	case errors.Is(err, service.ErrMarketingNotFound):
+		apierror.RespondNotFound(c, notFoundResource)
+	case errors.Is(err, service.ErrCouponCodeExists), errors.Is(err, service.ErrGiftCardCodeExists):
+		apierror.RespondConflict(c, err.Error())
+	default:
+		apierror.RespondInternalError(c, err)
 	}
 }
