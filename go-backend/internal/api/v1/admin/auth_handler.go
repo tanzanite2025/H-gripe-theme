@@ -18,6 +18,15 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	}
 }
 
+func isBackofficeRole(role auth.Role) bool {
+	return role == auth.RoleAdmin || role == auth.RoleManager || role == auth.RoleEditor || role == auth.RoleSupport
+}
+
+func (h *AuthHandler) setAdminAuthCookies(c *gin.Context, token string, refreshToken string) {
+	c.SetCookie("auth_token", token, h.authService.AccessTokenMaxAgeSeconds(), "/", "", true, true)
+	c.SetCookie("refresh_token", refreshToken, h.authService.RefreshTokenMaxAgeSeconds(), "/", "", true, true)
+}
+
 // AdminLogin 管理员登录
 // POST /api/admin/auth/login
 func (h *AuthHandler) AdminLogin(c *gin.Context) {
@@ -40,7 +49,7 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 
 	// 检查用户角色（只允许管理员角色登录）
 	role := auth.NormalizeRole(user.Role)
-	if role != auth.RoleAdmin && role != auth.RoleManager && role != auth.RoleEditor && role != auth.RoleSupport {
+	if !isBackofficeRole(role) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error":   "Access denied",
 			"message": "You don't have permission to access the admin panel",
@@ -48,11 +57,17 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 		return
 	}
 
-	// 设置 HttpOnly Cookie
-	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+	refreshToken, err := h.authService.GenerateRefreshToken(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
+		return
+	}
+
+	h.setAdminAuthCookies(c, token, refreshToken)
 
 	// 返回用户信息和权限
 	c.JSON(http.StatusOK, gin.H{
+		"token": token,
 		"user": gin.H{
 			"id":          user.ID,
 			"email":       user.Email,
@@ -101,29 +116,47 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 // RefreshToken 刷新令牌
 // POST /api/admin/auth/refresh
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil || refreshToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	user, err := h.authService.GetUserByID(userID.(uint))
+	claims, err := h.authService.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
+		return
+	}
+
+	user, err := h.authService.GetUserByID(claims.UserID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
-	// 生成新令牌
+	role := auth.NormalizeRole(user.Role)
+	if !isBackofficeRole(role) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
 	token, err := h.authService.GenerateToken(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
-	c.SetCookie("auth_token", token, 3600*24*7, "/", "", true, true)
+	newRefreshToken, err := h.authService.GenerateRefreshToken(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
+		return
+	}
+
+	h.setAdminAuthCookies(c, token, newRefreshToken)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Token refreshed successfully",
+		"token":   token,
 	})
 }
 
@@ -132,6 +165,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 func (h *AuthHandler) Logout(c *gin.Context) {
 	// 在实际应用中，可以在这里将令牌加入黑名单
 	c.SetCookie("auth_token", "", -1, "/", "", true, true)
+	c.SetCookie("refresh_token", "", -1, "/", "", true, true)
 
 	// 目前只返回成功消息
 	c.JSON(http.StatusOK, gin.H{

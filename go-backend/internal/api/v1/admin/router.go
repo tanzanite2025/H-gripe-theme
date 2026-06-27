@@ -73,6 +73,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 		authGroup.Use(middleware.RateLimit(10)) // 10 RPS for auth endpoints
 		{
 			authGroup.POST("/login", authHandler.AdminLogin)
+			authGroup.POST("/refresh", authHandler.RefreshToken)
 		}
 
 		// 需要认证的路由
@@ -83,7 +84,6 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 			authGroup := authenticated.Group("/auth")
 			{
 				authGroup.GET("/profile", authHandler.GetProfile)
-				authGroup.POST("/refresh", authHandler.RefreshToken)
 				authGroup.POST("/logout", authHandler.Logout)
 				authGroup.GET("/permissions", authHandler.GetPermissions)
 			}
