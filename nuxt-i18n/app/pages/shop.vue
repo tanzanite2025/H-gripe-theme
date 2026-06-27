@@ -197,12 +197,12 @@ const selectedCategory = ref<ShopCategory | null>(null)
 interface ProductSearchFiltersPayload {
   priceRange: [number, number]
   attributes?: Record<string, string[]>
-  categoryId?: number | null
 }
 
 interface ProductSearchPayload {
   query: string
   filters: ProductSearchFiltersPayload
+  chipCategorySlug?: string
 }
 
 const currentSearch = ref<ProductSearchPayload | null>(null)
@@ -242,6 +242,32 @@ const toggleQuickKeyword = (keyword: string) => {
   syncQuickSearchQuery()
 }
 
+const categorySlugToKeyword = (slug: string) => slug.replace(/[-_]+/g, ' ').trim()
+
+const joinUniqueSearchParts = (parts: Array<string | null | undefined>) => {
+  const seen = new Set<string>()
+  const normalized: string[] = []
+
+  for (const part of parts) {
+    const value = String(part || '').trim()
+    if (!value) continue
+
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    normalized.push(value)
+  }
+
+  return normalized.join(' ')
+}
+
+const buildProductKeyword = (payload?: ProductSearchPayload) => joinUniqueSearchParts([
+  payload?.query,
+  selectedCategory.value?.name || selectedCategory.value?.slug,
+  payload?.chipCategorySlug ? categorySlugToKeyword(payload.chipCategorySlug) : null,
+])
+
 const runQuickSearch = () => {
   handleSearch({
     query: quickSearchQuery.value,
@@ -252,11 +278,11 @@ const runQuickSearch = () => {
 const buildProductQueryParams = (payload?: ProductSearchPayload) => {
   const params: Record<string, any> = {
     per_page: 24,
-    status: 'publish',
+    status: 'active',
   }
 
   if (payload) {
-    const keyword = payload.query?.trim()
+    const keyword = buildProductKeyword(payload)
     if (keyword) {
       params.keyword = keyword
     }
@@ -271,11 +297,6 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
     const attrs = payload.filters?.attributes
     if (attrs && typeof attrs === 'object') {
       params.attributes = attrs
-    }
-
-    const categoryId = payload.filters?.categoryId
-    if (typeof categoryId === 'number' && categoryId > 0) {
-      params.category = categoryId
     }
   }
 
@@ -324,29 +345,16 @@ const loadProducts = async (payload?: ProductSearchPayload) => {
   await refresh()
 }
 
-interface ProductSearchPayload {
-  query: string
-  filters: ProductSearchFiltersPayload
-  chipCategorySlug?: string
-}
-
 const handleSearch = (payload: ProductSearchPayload) => {
-  let categoryId: number | null = selectedCategory.value?.id ?? null
-
   if (payload.chipCategorySlug && Array.isArray(categories.value) && categories.value.length) {
     const match = categories.value.find(cat => cat.slug === payload.chipCategorySlug)
     if (match) {
       selectedCategory.value = match
-      categoryId = match.id
     }
   }
 
   const next: ProductSearchPayload = {
     ...payload,
-    filters: {
-      ...payload.filters,
-      categoryId,
-    },
   }
 
   currentSearch.value = next
@@ -367,10 +375,6 @@ const onCategorySelect = (category: ShopCategory | null) => {
 
   const next: ProductSearchPayload = {
     ...base,
-    filters: {
-      ...base.filters,
-      categoryId: category?.id ?? null,
-    },
   }
 
   currentSearch.value = next

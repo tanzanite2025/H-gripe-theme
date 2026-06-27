@@ -78,7 +78,7 @@ func (r *CartRepository) ClearCart(cartID uint) error {
 // GetSummary 获取购物车摘要
 func (r *CartRepository) GetSummary(cartID uint) (*product.CartSummary, error) {
 	var items []product.CartItem
-	err := r.db.Preload("Product").Preload("Product.Categories").Preload("Product.Images").Where("cart_id = ?", cartID).Find(&items).Error
+	err := r.db.Preload("Product.Images").Where("cart_id = ?", cartID).Find(&items).Error
 	if err != nil {
 		return nil, err
 	}

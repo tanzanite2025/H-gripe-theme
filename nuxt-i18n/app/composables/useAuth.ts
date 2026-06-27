@@ -83,7 +83,6 @@ const unwrapData = <T>(payload: T | { data?: T } | null | undefined): T | null =
 
 export function useAuth() {
   const config = useRuntimeConfig()
-  // 抛弃 wpApiBase，直连 Go 后端
   const baseURL = config.public?.apiBase || '/api/v1'
 
   const user = useState<AuthUser | null>('auth-user', () => null)
@@ -93,7 +92,7 @@ export function useAuth() {
 
   const request = async <T = MaybeJson>(path: string, init: RequestInit = {}, fallbackMessage = 'Request failed'): Promise<T> => {
     if (!baseURL) {
-      throw new Error('Missing runtimeConfig.public.wpApiBase for authentication requests')
+      throw new Error('Missing runtimeConfig.public.apiBase for authentication requests')
     }
 
     const headers = new Headers(init.headers || undefined)

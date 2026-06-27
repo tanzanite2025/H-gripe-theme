@@ -3,7 +3,6 @@ import { useLocalePath, useRoute, useRouter, useState } from '#imports'
 export type ShopSearchFiltersPayload = Record<string, any> & {
   priceRange?: [number, number]
   attributes?: Record<string, string[]>
-  categoryId?: number | null
 }
 
 export interface ShopSearchPayload {

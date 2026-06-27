@@ -2,8 +2,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-const wpApiBase = process.env.WP_API_BASE || 'https://tanzanite.site/wp-json'
-const wpLocalesUrl = process.env.WP_LOCALES_URL
+const apiBase =
+  process.env.NUXT_PUBLIC_API_BASE ||
+  process.env.GO_API_BASE ||
+  process.env.API_BASE ||
+  'https://tanzanite.site/api/v1'
+const localesUrl = process.env.GO_LOCALES_URL || process.env.LOCALES_URL
 const manifestPath = path.resolve('i18n/locales.manifest.js')
 
 function loadManifestLocales() {
@@ -16,26 +20,26 @@ function loadManifestLocales() {
 }
 
 function resolveEndpoint() {
-  if (wpLocalesUrl) return wpLocalesUrl
-  const base = wpApiBase.replace(/\/$/, '')
-  if (base.endsWith('/wp-json')) return `${base}/tanzanite/v1/languages`
-  return `${base}/wp-json/tanzanite/v1/languages`
+  if (localesUrl) return localesUrl
+  const base = apiBase.replace(/\/$/, '')
+  if (base.endsWith('/api/v1')) return `${base}/i18n/languages`
+  return `${base}/api/v1/i18n/languages`
 }
 
-async function fetchWpLocales() {
+async function fetchBackendLocales() {
   const url = resolveEndpoint()
   const res = await fetch(url)
   if (!res.ok) {
     if (res.status === 404) {
-      throw new Error(`Fetch WP locales failed: 404 Not Found. Check that tanzanite-blog-i18n plugin is active and endpoint exists at ${url}. Override with WP_API_BASE or WP_LOCALES_URL if needed.`)
+      throw new Error(`Fetch backend locales failed: 404 Not Found. Check that the Go backend exposes ${url}. Override with GO_LOCALES_URL or LOCALES_URL if needed.`)
     }
-    throw new Error(`Fetch WP locales failed: ${res.status} ${res.statusText} (url: ${url})`)
+    throw new Error(`Fetch backend locales failed: ${res.status} ${res.statusText} (url: ${url})`)
   }
   const data = await res.json()
-  if (!data || !Array.isArray(data.locales)) {
-    throw new Error('Unexpected WP locales response shape')
+  if (!data || !Array.isArray(data.languages)) {
+    throw new Error('Unexpected backend locales response shape')
   }
-  return data.locales
+  return data.languages
 }
 
 function toMap(list) {
@@ -47,28 +51,28 @@ function toMap(list) {
   return map
 }
 
-function diffLocales(manifestList, wpList) {
+function diffLocales(manifestList, backendList) {
   const manifestMap = toMap(manifestList)
-  const wpMap = toMap(wpList)
+  const backendMap = toMap(backendList)
 
   const missingInManifest = []
   const extraInManifest = []
   const nameMismatch = []
 
-  for (const code of wpMap.keys()) {
+  for (const code of backendMap.keys()) {
     if (!manifestMap.has(code)) {
       missingInManifest.push(code)
     } else {
       const m = manifestMap.get(code)
-      const w = wpMap.get(code)
-      if (m?.name && w?.name && m.name !== w.name) {
-        nameMismatch.push({ code, manifest: m.name, wp: w.name })
+      const b = backendMap.get(code)
+      if (m?.name && b?.name && m.name !== b.name) {
+        nameMismatch.push({ code, manifest: m.name, backend: b.name })
       }
     }
   }
 
   for (const code of manifestMap.keys()) {
-    if (!wpMap.has(code)) {
+    if (!backendMap.has(code)) {
       extraInManifest.push(code)
     }
   }
@@ -78,34 +82,34 @@ function diffLocales(manifestList, wpList) {
 
 async function main() {
   try {
-    const [manifestLocales, wpLocales] = await Promise.all([
+    const [manifestLocales, backendLocales] = await Promise.all([
       loadManifestLocales(),
-      fetchWpLocales(),
+      fetchBackendLocales(),
     ])
 
-    const { missingInManifest, extraInManifest, nameMismatch } = diffLocales(manifestLocales, wpLocales)
+    const { missingInManifest, extraInManifest, nameMismatch } = diffLocales(manifestLocales, backendLocales)
 
     if (
       missingInManifest.length === 0 &&
       extraInManifest.length === 0 &&
       nameMismatch.length === 0
     ) {
-      console.log('Locales are aligned with WordPress source.')
+      console.log('Locales are aligned with Go backend source.')
       process.exit(0)
     }
 
     if (missingInManifest.length) {
-      console.error('Missing in manifest (present in WP):', missingInManifest.join(', '))
+      console.error('Missing in manifest (present in backend):', missingInManifest.join(', '))
     }
 
     if (extraInManifest.length) {
-      console.error('Extra in manifest (absent in WP):', extraInManifest.join(', '))
+      console.error('Extra in manifest (absent in backend):', extraInManifest.join(', '))
     }
 
     if (nameMismatch.length) {
       console.error('Name mismatch:')
       for (const item of nameMismatch) {
-        console.error(`  ${item.code}: manifest="${item.manifest}" wp="${item.wp}"`)
+        console.error(`  ${item.code}: manifest="${item.manifest}" backend="${item.backend}"`)
       }
     }
 
