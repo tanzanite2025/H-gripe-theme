@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type MarketingService struct {
@@ -209,66 +210,20 @@ func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint
 
 // EarnPoints 赚取积分
 func (s *MarketingService) EarnPoints(userID uint, points int, source string, sourceID uint, description string) error {
-	// 获取当前余额
-	balance, err := s.loyaltyRepo.GetUserPointsBalance(userID)
-	if err != nil {
-		balance = 0
+	if points <= 0 {
+		return errors.New("points must be positive")
 	}
-
-	return s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
-		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
-		// 创建交易记录
-		transaction := &loyalty.LoyaltyTransaction{
-			UserID:      userID,
-			Type:        "earn",
-			Points:      points,
-			Balance:     balance + points,
-			Source:      source,
-			SourceID:    sourceID,
-			Description: description,
-		}
-
-		if err := txLoyaltyRepo.CreateTransaction(transaction); err != nil {
-			return err
-		}
-
-		// 更新用户积分
-		return txLoyaltyRepo.UpdateUserPoints(userID, points)
-	})
+	_, err := s.loyaltyRepo.AdjustUserPoints(userID, points, "earn", source, sourceID, description)
+	return err
 }
 
 // SpendPoints 消费积分
 func (s *MarketingService) SpendPoints(userID uint, points int, orderID uint) error {
-	// 检查余额
-	balance, err := s.loyaltyRepo.GetUserPointsBalance(userID)
-	if err != nil {
-		return err
+	if points <= 0 {
+		return errors.New("points must be positive")
 	}
-
-	if balance < points {
-		return errors.New("insufficient points")
-	}
-
-	return s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
-		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
-		// 创建交易记录
-		transaction := &loyalty.LoyaltyTransaction{
-			UserID:      userID,
-			Type:        "spend",
-			Points:      -points,
-			Balance:     balance - points,
-			Source:      "order",
-			SourceID:    orderID,
-			Description: fmt.Sprintf("Spent %d points on order", points),
-		}
-
-		if err := txLoyaltyRepo.CreateTransaction(transaction); err != nil {
-			return err
-		}
-
-		// 更新用户积分
-		return txLoyaltyRepo.UpdateUserPoints(userID, -points)
-	})
+	_, err := s.loyaltyRepo.AdjustUserPoints(userID, -points, "spend", "order", orderID, fmt.Sprintf("Spent %d points on order", points))
+	return err
 }
 
 // CheckIn 签到
@@ -395,39 +350,8 @@ func (s *MarketingService) ListMemberLevels() ([]loyalty.MemberLevel, error) {
 
 // AdminAdjustPoints 管理员手动调整用户积分
 func (s *MarketingService) AdminAdjustPoints(userID uint, points int, reason string) error {
-	// 获取当前余额
-	balance, err := s.loyaltyRepo.GetUserPointsBalance(userID)
-	if err != nil && err.Error() != "record not found" {
-		balance = 0
-	}
-
-	// 计算新余额
-	newBalance := balance + points
-	if newBalance < 0 {
-		return errors.New("insufficient points to deduct")
-	}
-
-	// 交易类型
-	txType := "earn"
-	if points < 0 {
-		txType = "spend"
-	}
-
-	transaction := &loyalty.LoyaltyTransaction{
-		UserID:      userID,
-		Type:        txType,
-		Points:      points,
-		Balance:     newBalance,
-		Source:      "admin",
-		SourceID:    0,
-		Description: fmt.Sprintf("Admin Adjustment: %s", reason),
-	}
-
-	if err := s.loyaltyRepo.CreateTransaction(transaction); err != nil {
-		return err
-	}
-
-	return s.loyaltyRepo.UpdateUserPoints(userID, points)
+	_, err := s.loyaltyRepo.AdjustUserPoints(userID, points, "adjust", "admin", 0, fmt.Sprintf("Admin Adjustment: %s", reason))
+	return err
 }
 
 // ==========================================
@@ -479,7 +403,7 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 
 	// 4. 校验用户可用积分余额
 	var userLoyalty loyalty.UserLoyalty
-	if err := tx.Where("user_id = ?", userID).First(&userLoyalty).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&userLoyalty).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("[CRITICAL] Failed to retrieve user loyalty data: %v", err)
 	}
@@ -510,16 +434,7 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		return nil, fmt.Errorf("[CRITICAL] Daily limit exceeded. Limit: %.2f, Redeemed: %.2f, Attempted: %.2f", redeemCfg.MaxValuePerDay, todayRedeemedValue, giftCardValue)
 	}
 
-	// 6. 扣减用户积分
-	userLoyalty.AvailablePoints -= pointsToSpend
-	userLoyalty.UsedPoints += pointsToSpend
-	userLoyalty.UpdatedAt = time.Now()
-	if err := tx.Save(&userLoyalty).Error; err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Failed to deduct points: %v", err)
-	}
-
-	// 7. 生成礼品卡
+	// 6. 生成礼品卡
 	cardCode := "REDEEM-" + generateRedeemCode(12)
 	var expiresAt *time.Time
 	if redeemCfg.CardExpiryDays > 0 {
@@ -543,21 +458,19 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		return nil, fmt.Errorf("[CRITICAL] Failed to create gift card: %v", err)
 	}
 
-	// 8. 写入积分交易历史
-	transaction := loyalty.LoyaltyTransaction{
-		UserID:      userID,
-		Type:        "spend",
-		Points:      -pointsToSpend,
-		Balance:     userLoyalty.AvailablePoints,
-		Source:      "giftcard",
-		SourceID:    giftcard.ID,
-		Description: fmt.Sprintf("Redeemed gift card %s with %d points", cardCode, pointsToSpend),
-		CreatedAt:   time.Now(),
-	}
-
-	if err := tx.Create(&transaction).Error; err != nil {
+	// 7. 原子扣减积分并写入交易历史
+	txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
+	transaction, err := txLoyaltyRepo.AdjustUserPoints(
+		userID,
+		-pointsToSpend,
+		"spend",
+		"giftcard",
+		giftcard.ID,
+		fmt.Sprintf("Redeemed gift card %s with %d points", cardCode, pointsToSpend),
+	)
+	if err != nil {
 		tx.Rollback()
-		return nil, fmt.Errorf("[CRITICAL] Failed to create transaction log: %v", err)
+		return nil, fmt.Errorf("[CRITICAL] Failed to deduct points: %v", err)
 	}
 
 	// 提交事务
@@ -570,7 +483,7 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		CardCode:        giftcard.Code,
 		Balance:         giftcard.Balance,
 		PointsSpent:     pointsToSpend,
-		PointsRemaining: userLoyalty.AvailablePoints,
+		PointsRemaining: transaction.Balance,
 		ExpiresAt:       giftcard.ExpiresAt,
 	}, nil
 }

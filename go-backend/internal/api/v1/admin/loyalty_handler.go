@@ -50,52 +50,10 @@ func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {
 		return
 	}
 
-	// 获取当前余额
-	balance, err := h.loyaltyRepo.GetUserPointsBalance(req.UserID)
+	transaction, err := h.loyaltyRepo.AdjustUserPoints(req.UserID, req.Points, "adjust", "admin", 0, req.Description)
 	if err != nil {
-		balance = 0
-	}
-
-	// 创建交易记录
-	transaction := &loyalty.LoyaltyTransaction{
-		UserID:      req.UserID,
-		Type:        "adjust",
-		Points:      req.Points,
-		Balance:     balance + req.Points,
-		Source:      "admin",
-		Description: req.Description,
-	}
-
-	if err := h.loyaltyRepo.CreateTransaction(transaction); err != nil {
-		apierror.RespondInternalError(c, err)
+		apierror.RespondBadRequest(c, err.Error())
 		return
-	}
-
-	// 更新用户积分
-	userLoyalty, err := h.loyaltyRepo.FindUserLoyaltyByUserID(req.UserID)
-	if err != nil {
-		// 如果用户没有积分记录，创建一个
-		userLoyalty = &loyalty.UserLoyalty{
-			UserID:          req.UserID,
-			TotalPoints:     req.Points,
-			AvailablePoints: req.Points,
-		}
-		if err := h.loyaltyRepo.CreateUserLoyalty(userLoyalty); err != nil {
-			apierror.RespondInternalError(c, err)
-			return
-		}
-	} else {
-		if req.Points > 0 {
-			userLoyalty.TotalPoints += req.Points
-			userLoyalty.AvailablePoints += req.Points
-		} else {
-			userLoyalty.UsedPoints += -req.Points
-			userLoyalty.AvailablePoints += req.Points
-		}
-		if err := h.loyaltyRepo.UpdateUserLoyalty(userLoyalty); err != nil {
-			apierror.RespondInternalError(c, err)
-			return
-		}
 	}
 
 	response.Created(c, gin.H{"transaction": transaction})

@@ -1,15 +1,24 @@
 package repository
 
 import (
+	"errors"
+	"fmt"
 	"tanzanite/internal/domain/loyalty"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type LoyaltyRepository struct {
 	db *gorm.DB
 }
+
+var (
+	ErrInvalidUserID      = errors.New("user ID is required")
+	ErrInvalidPoints      = errors.New("points must not be zero")
+	ErrInsufficientPoints = errors.New("insufficient points")
+)
 
 func NewLoyaltyRepository(db *gorm.DB) *LoyaltyRepository {
 	return &LoyaltyRepository{db: db}
@@ -61,15 +70,118 @@ func (r *LoyaltyRepository) FindTransactionsByUserID(userID uint, page, pageSize
 
 // GetUserPointsBalance 获取用户积分余额
 func (r *LoyaltyRepository) GetUserPointsBalance(userID uint) (int, error) {
-	var transaction loyalty.LoyaltyTransaction
-	err := r.db.Where("user_id = ?", userID).Order("created_at DESC").First(&transaction).Error
+	var userLoyalty loyalty.UserLoyalty
+	err := r.db.Where("user_id = ?", userID).First(&userLoyalty).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return 0, nil
 		}
 		return 0, err
 	}
-	return transaction.Balance, nil
+	return userLoyalty.AvailablePoints, nil
+}
+
+// AdjustUserPoints atomically updates a user's points summary and creates the matching ledger entry.
+func (r *LoyaltyRepository) AdjustUserPoints(userID uint, points int, transactionType, source string, sourceID uint, description string) (*loyalty.LoyaltyTransaction, error) {
+	if userID == 0 {
+		return nil, ErrInvalidUserID
+	}
+	if points == 0 {
+		return nil, ErrInvalidPoints
+	}
+
+	if transactionType == "" {
+		transactionType = "adjust"
+	}
+
+	if source == "" {
+		source = transactionType
+	}
+
+	var transaction *loyalty.LoyaltyTransaction
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		userLoyalty, err := findOrCreateUserLoyaltyForUpdate(tx, userID)
+		if err != nil {
+			return err
+		}
+
+		if points < 0 && userLoyalty.AvailablePoints+points < 0 {
+			return ErrInsufficientPoints
+		}
+
+		applyPointsDelta(userLoyalty, points, transactionType)
+
+		if err := tx.Save(userLoyalty).Error; err != nil {
+			return fmt.Errorf("failed to update user loyalty: %w", err)
+		}
+
+		transaction = &loyalty.LoyaltyTransaction{
+			UserID:      userID,
+			Type:        transactionType,
+			Points:      points,
+			Balance:     userLoyalty.AvailablePoints,
+			Source:      source,
+			SourceID:    sourceID,
+			Description: description,
+		}
+
+		if err := tx.Create(transaction).Error; err != nil {
+			return fmt.Errorf("failed to create loyalty transaction: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return transaction, nil
+}
+
+func findOrCreateUserLoyaltyForUpdate(tx *gorm.DB, userID uint) (*loyalty.UserLoyalty, error) {
+	var userLoyalty loyalty.UserLoyalty
+	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("user_id = ?", userID).
+		First(&userLoyalty).Error
+	if err == nil {
+		return &userLoyalty, nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	if err := tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}},
+		DoNothing: true,
+	}).Create(&loyalty.UserLoyalty{UserID: userID}).Error; err != nil {
+		return nil, fmt.Errorf("failed to initialize user loyalty: %w", err)
+	}
+
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("user_id = ?", userID).
+		First(&userLoyalty).Error; err != nil {
+		return nil, err
+	}
+
+	return &userLoyalty, nil
+}
+
+func applyPointsDelta(userLoyalty *loyalty.UserLoyalty, points int, transactionType string) {
+	if points > 0 {
+		userLoyalty.AvailablePoints += points
+		if transactionType == "refund" {
+			userLoyalty.UsedPoints -= points
+			if userLoyalty.UsedPoints < 0 {
+				userLoyalty.UsedPoints = 0
+			}
+			return
+		}
+		userLoyalty.TotalPoints += points
+		return
+	}
+
+	userLoyalty.AvailablePoints += points
+	userLoyalty.UsedPoints += -points
 }
 
 // CheckIn 相关方法
@@ -240,11 +352,8 @@ func (r *LoyaltyRepository) UpdateUserLoyalty(u *loyalty.UserLoyalty) error {
 
 // UpdateUserPoints 更新用户积分
 func (r *LoyaltyRepository) UpdateUserPoints(userID uint, points int) error {
-	return r.db.Model(&loyalty.UserLoyalty{}).Where("user_id = ?", userID).
-		Updates(map[string]interface{}{
-			"total_points":   gorm.Expr("total_points + ?", points),
-			"current_points": gorm.Expr("current_points + ?", points),
-		}).Error
+	_, err := r.AdjustUserPoints(userID, points, "adjust", "system", 0, "System points update")
+	return err
 }
 
 // GetLoyaltyStats 获取会员统计信息
