@@ -1,21 +1,74 @@
 package admin
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 type ProductHandler struct {
-	productRepo *repository.ProductRepository
+	productRepo    *repository.ProductRepository
+	productService *service.ProductService
 }
 
-func NewProductHandler(productRepo *repository.ProductRepository) *ProductHandler {
+func NewProductHandler(productRepo *repository.ProductRepository, productService *service.ProductService) *ProductHandler {
 	return &ProductHandler{
-		productRepo: productRepo,
+		productRepo:    productRepo,
+		productService: productService,
+	}
+}
+
+type productCreateRequest struct {
+	SKU         string   `json:"sku" binding:"required"`
+	Name        string   `json:"name" binding:"required"`
+	Slug        string   `json:"slug" binding:"required"`
+	Description string   `json:"description"`
+	ShortDesc   string   `json:"short_description"`
+	Price       float64  `json:"price" binding:"required,gt=0"`
+	SalePrice   *float64 `json:"sale_price"`
+	Stock       int      `json:"stock" binding:"gte=0"`
+	Weight      int      `json:"weight_grams" binding:"gte=0"`
+	Status      string   `json:"status" binding:"required,oneof=active inactive out_of_stock"`
+	Locale      string   `json:"locale"`
+	ParentID    *uint    `json:"parent_id"`
+	Featured    bool     `json:"featured"`
+	MetaTitle   string   `json:"meta_title"`
+	MetaDesc    string   `json:"meta_description"`
+}
+
+type productUpdateRequest struct {
+	SKU         *string  `json:"sku" binding:"omitempty,min=1"`
+	Name        *string  `json:"name" binding:"omitempty,min=1"`
+	Slug        *string  `json:"slug" binding:"omitempty,min=1"`
+	Description *string  `json:"description"`
+	ShortDesc   *string  `json:"short_description"`
+	Price       *float64 `json:"price" binding:"omitempty,gt=0"`
+	SalePrice   *float64 `json:"sale_price" binding:"omitempty,gte=0"`
+	Stock       *int     `json:"stock" binding:"omitempty,gte=0"`
+	Weight      *int     `json:"weight_grams" binding:"omitempty,gte=0"`
+	Status      *string  `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
+	Locale      *string  `json:"locale"`
+	ParentID    *uint    `json:"parent_id"`
+	Featured    *bool    `json:"featured"`
+	MetaTitle   *string  `json:"meta_title"`
+	MetaDesc    *string  `json:"meta_description"`
+}
+
+func respondProductServiceError(c *gin.Context, err error, fallbackMessage string) {
+	switch {
+	case errors.Is(err, service.ErrProductNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+	case errors.Is(err, service.ErrProductSKUExists):
+		c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fallbackMessage})
 	}
 }
 
@@ -36,7 +89,7 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		pageSize = 20
 	}
 
-	products, total, err := h.productRepo.FindAllWithFilters(page, pageSize, status, locale, search, featured)
+	products, total, err := h.productService.ListAdmin(page, pageSize, status, locale, search, featured)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
 		return
@@ -64,9 +117,9 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 		return
 	}
 
-	product, err := h.productRepo.FindByID(uint(id))
+	product, err := h.productService.GetAdminProduct(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		respondProductServiceError(c, err, "Failed to fetch product")
 		return
 	}
 
@@ -78,38 +131,14 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 // CreateProduct 创建商品
 // POST /api/admin/products
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
-	var req struct {
-		SKU         string   `json:"sku" binding:"required"`
-		Name        string   `json:"name" binding:"required"`
-		Slug        string   `json:"slug" binding:"required"`
-		Description string   `json:"description"`
-		ShortDesc   string   `json:"short_description"`
-		Price       float64  `json:"price" binding:"required,gt=0"`
-		SalePrice   *float64 `json:"sale_price"`
-		Stock       int      `json:"stock" binding:"gte=0"`
-		Weight      int      `json:"weight_grams"`
-		Status      string   `json:"status" binding:"required,oneof=active inactive out_of_stock"`
-		Locale      string   `json:"locale"`
-		ParentID    *uint    `json:"parent_id"`
-		Featured    bool     `json:"featured"`
-		MetaTitle   string   `json:"meta_title"`
-		MetaDesc    string   `json:"meta_description"`
-	}
+	var req productCreateRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 检查 SKU 是否已存在
-	existingProduct, _ := h.productRepo.FindBySKU(req.SKU)
-	if existingProduct != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
-		return
-	}
-
-	// 创建商品
-	newProduct := &product.Product{
+	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
 		SKU:         req.SKU,
 		Name:        req.Name,
 		Slug:        req.Slug,
@@ -125,10 +154,9 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Featured:    req.Featured,
 		MetaTitle:   req.MetaTitle,
 		MetaDesc:    req.MetaDesc,
-	}
-
-	if err := h.productRepo.Create(newProduct); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
+	})
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to create product")
 		return
 	}
 
@@ -147,92 +175,48 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		SKU         string   `json:"sku"`
-		Name        string   `json:"name"`
-		Slug        string   `json:"slug"`
-		Description string   `json:"description"`
-		ShortDesc   string   `json:"short_description"`
-		Price       float64  `json:"price" binding:"omitempty,gt=0"`
-		SalePrice   *float64 `json:"sale_price"`
-		Stock       int      `json:"stock" binding:"omitempty,gte=0"`
-		Weight      int      `json:"weight_grams"`
-		Status      string   `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
-		Locale      string   `json:"locale"`
-		ParentID    *uint    `json:"parent_id"`
-		Featured    bool     `json:"featured"`
-		MetaTitle   string   `json:"meta_title"`
-		MetaDesc    string   `json:"meta_description"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var req productUpdateRequest
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 获取现有商品
-	existingProduct, err := h.productRepo.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+	var raw map[string]json.RawMessage
+	if err := c.ShouldBindBodyWith(&raw, binding.JSON); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 更新字段
-	if req.SKU != "" && req.SKU != existingProduct.SKU {
-		// 检查新 SKU 是否已被使用
-		skuProduct, _ := h.productRepo.FindBySKU(req.SKU)
-		if skuProduct != nil && skuProduct.ID != existingProduct.ID {
-			c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
-			return
-		}
-		existingProduct.SKU = req.SKU
-	}
+	_, updateSalePrice := raw["sale_price"]
+	_, updateParentID := raw["parent_id"]
 
-	if req.Name != "" {
-		existingProduct.Name = req.Name
-	}
-	if req.Slug != "" {
-		existingProduct.Slug = req.Slug
-	}
-	if req.Description != "" {
-		existingProduct.Description = req.Description
-	}
-	if req.ShortDesc != "" {
-		existingProduct.ShortDesc = req.ShortDesc
-	}
-	if req.Price > 0 {
-		existingProduct.Price = req.Price
-	}
-	existingProduct.SalePrice = req.SalePrice
-	if req.Stock >= 0 {
-		existingProduct.Stock = req.Stock
-	}
-	if req.Weight > 0 {
-		existingProduct.Weight = req.Weight
-	}
-	if req.Status != "" {
-		existingProduct.Status = req.Status
-	}
-	if req.Locale != "" {
-		existingProduct.Locale = req.Locale
-	}
-	existingProduct.ParentID = req.ParentID
-	existingProduct.Featured = req.Featured
-	if req.MetaTitle != "" {
-		existingProduct.MetaTitle = req.MetaTitle
-	}
-	if req.MetaDesc != "" {
-		existingProduct.MetaDesc = req.MetaDesc
-	}
-
-	if err := h.productRepo.Update(existingProduct); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product"})
+	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
+		SKU:             req.SKU,
+		Name:            req.Name,
+		Slug:            req.Slug,
+		Description:     req.Description,
+		ShortDesc:       req.ShortDesc,
+		Price:           req.Price,
+		SalePrice:       req.SalePrice,
+		UpdateSalePrice: updateSalePrice,
+		Stock:           req.Stock,
+		Weight:          req.Weight,
+		Status:          req.Status,
+		Locale:          req.Locale,
+		ParentID:        req.ParentID,
+		UpdateParentID:  updateParentID,
+		Featured:        req.Featured,
+		MetaTitle:       req.MetaTitle,
+		MetaDesc:        req.MetaDesc,
+	})
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to update product")
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Product updated successfully",
-		"product": existingProduct,
+		"product": updatedProduct,
 	})
 }
 
@@ -245,8 +229,8 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	if err := h.productRepo.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
+	if err := h.productService.Delete(uint(id)); err != nil {
+		respondProductServiceError(c, err, "Failed to delete product")
 		return
 	}
 
@@ -273,8 +257,8 @@ func (h *ProductHandler) UpdateProductStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.productRepo.UpdateStatus(uint(id), req.Status); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product status"})
+	if err := h.productService.UpdateStatus(uint(id), req.Status); err != nil {
+		respondProductServiceError(c, err, "Failed to update product status")
 		return
 	}
 
@@ -301,8 +285,8 @@ func (h *ProductHandler) UpdateProductStock(c *gin.Context) {
 		return
 	}
 
-	if err := h.productRepo.UpdateStock(uint(id), req.Stock); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product stock"})
+	if err := h.productService.UpdateStock(uint(id), req.Stock); err != nil {
+		respondProductServiceError(c, err, "Failed to update product stock")
 		return
 	}
 
@@ -314,7 +298,7 @@ func (h *ProductHandler) UpdateProductStock(c *gin.Context) {
 // GetProductStats 获取商品统计
 // GET /api/admin/products/stats
 func (h *ProductHandler) GetProductStats(c *gin.Context) {
-	stats, err := h.productRepo.GetStats()
+	stats, err := h.productService.GetStats()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get product stats"})
 		return
@@ -336,11 +320,10 @@ func (h *ProductHandler) BatchUpdateStatus(c *gin.Context) {
 		return
 	}
 
-	updated := 0
-	for _, id := range req.ProductIDs {
-		if err := h.productRepo.UpdateStatus(id, req.Status); err == nil {
-			updated++
-		}
+	updated, err := h.productService.BatchUpdateStatus(req.ProductIDs, req.Status)
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to batch update product status")
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -362,11 +345,10 @@ func (h *ProductHandler) BatchDelete(c *gin.Context) {
 		return
 	}
 
-	deleted := 0
-	for _, id := range req.ProductIDs {
-		if err := h.productRepo.Delete(id); err == nil {
-			deleted++
-		}
+	deleted, err := h.productService.BatchDelete(req.ProductIDs)
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to batch delete products")
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
