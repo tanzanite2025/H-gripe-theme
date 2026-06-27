@@ -67,6 +67,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")
+	admin.Use(middleware.CSRFProtection(cfg.CORS.AllowedOrigins))
 	{
 		// 认证路由（公开）
 		authGroup := admin.Group("/auth")
