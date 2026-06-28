@@ -74,6 +74,11 @@ cors:
   allow_credentials: true
   max_age: 43200
 
+cookie:
+  secure: always
+  same_site: lax
+  domain: ""
+
 cache:
   default_ttl: 3600
   post_ttl: 3600

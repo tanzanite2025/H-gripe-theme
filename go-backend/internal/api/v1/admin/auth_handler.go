@@ -10,13 +10,22 @@ import (
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
+	authService   *service.AuthService
+	cookieOptions securecookie.Options
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+func NewAuthHandler(authService *service.AuthService, cookieOptions ...securecookie.Options) *AuthHandler {
 	return &AuthHandler{
-		authService: authService,
+		authService:   authService,
+		cookieOptions: resolveCookieOptions(cookieOptions),
 	}
+}
+
+func resolveCookieOptions(cookieOptions []securecookie.Options) securecookie.Options {
+	if len(cookieOptions) == 0 {
+		return securecookie.DefaultOptions()
+	}
+	return cookieOptions[0]
 }
 
 func isBackofficeRole(role auth.Role) bool {
@@ -24,9 +33,9 @@ func isBackofficeRole(role auth.Role) bool {
 }
 
 func (h *AuthHandler) setAdminAuthCookies(c *gin.Context, token string, refreshToken string) error {
-	securecookie.SetAuthToken(c, token, h.authService.AccessTokenMaxAgeSeconds())
-	securecookie.SetRefreshToken(c, refreshToken, h.authService.RefreshTokenMaxAgeSeconds())
-	_, err := securecookie.SetCSRFToken(c, h.authService.RefreshTokenMaxAgeSeconds())
+	securecookie.SetAuthToken(c, token, h.authService.AccessTokenMaxAgeSeconds(), h.cookieOptions)
+	securecookie.SetRefreshToken(c, refreshToken, h.authService.RefreshTokenMaxAgeSeconds(), h.cookieOptions)
+	_, err := securecookie.SetCSRFToken(c, h.authService.RefreshTokenMaxAgeSeconds(), h.cookieOptions)
 	return err
 }
 
@@ -122,7 +131,7 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 // RefreshToken 刷新令牌
 // POST /api/admin/auth/refresh
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	refreshToken, err := c.Cookie("refresh_token")
+	refreshToken, err := c.Cookie(securecookie.RefreshTokenCookie)
 	if err != nil || refreshToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -173,9 +182,9 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // POST /api/admin/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	// 在实际应用中，可以在这里将令牌加入黑名单
-	securecookie.ClearAuthToken(c)
-	securecookie.ClearRefreshToken(c)
-	securecookie.ClearCSRFToken(c)
+	securecookie.ClearAuthToken(c, h.cookieOptions)
+	securecookie.ClearRefreshToken(c, h.cookieOptions)
+	securecookie.ClearCSRFToken(c, h.cookieOptions)
 
 	// 目前只返回成功消息
 	c.JSON(http.StatusOK, gin.H{

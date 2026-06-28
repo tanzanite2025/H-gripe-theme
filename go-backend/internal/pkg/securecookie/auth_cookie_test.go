@@ -67,3 +67,31 @@ func TestSetCSRFTokenUsesReadableSameSiteLaxCookie(t *testing.T) {
 		t.Fatalf("SameSite = %v, want %v", cookie.SameSite, http.SameSiteLaxMode)
 	}
 }
+
+func TestSetAuthTokenAcceptsConfiguredCookieOptions(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+
+	SetAuthToken(context, "token", 3600, Options{
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
+		Domain:   "example.com",
+	})
+
+	cookies := recorder.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("cookies = %d, want 1", len(cookies))
+	}
+	cookie := cookies[0]
+	if cookie.Secure {
+		t.Fatal("auth cookie should honor configured Secure=false")
+	}
+	if cookie.SameSite != http.SameSiteStrictMode {
+		t.Fatalf("SameSite = %v, want %v", cookie.SameSite, http.SameSiteStrictMode)
+	}
+	if cookie.Domain != "example.com" {
+		t.Fatalf("Domain = %q, want %q", cookie.Domain, "example.com")
+	}
+}

@@ -26,6 +26,7 @@ import (
 	"tanzanite/internal/api/v1/wishlist"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/securecookie"
 	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
@@ -87,7 +88,12 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	suggestionFeedbackService := service.NewSuggestionFeedbackService(suggestionFeedbackRepo)
 
 	// 初始化handlers
-	authHandler := auth.NewHandler(authService)
+	cookieOptions := securecookie.Options{
+		Secure:   cfg.Cookie.SecureEnabled(cfg.Server),
+		SameSite: cfg.Cookie.SameSiteMode(),
+		Domain:   cfg.Cookie.Domain,
+	}
+	authHandler := auth.NewHandler(authService, cookieOptions)
 	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(userRepo)
 	contentHandler := content.NewHandler(postService, faqService)
 	faqHandler := faq.NewHandler(faqService)

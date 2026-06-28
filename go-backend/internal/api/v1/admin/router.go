@@ -8,6 +8,7 @@ import (
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/securecookie"
 	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
@@ -48,7 +49,12 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 
 	// 初始化 handlers
-	authHandler := NewAuthHandler(authService)
+	cookieOptions := securecookie.Options{
+		Secure:   cfg.Cookie.SecureEnabled(cfg.Server),
+		SameSite: cfg.Cookie.SameSiteMode(),
+		Domain:   cfg.Cookie.Domain,
+	}
+	authHandler := NewAuthHandler(authService, cookieOptions)
 	dashboardHandler := NewDashboardHandler(orderRepo, userRepo, ticketRepo, subscriptionRepo)
 	userHandler := NewUserHandler(userService)
 	productHandler := NewProductHandler(productRepo, productService)
