@@ -11,13 +11,22 @@ import (
 )
 
 type Handler struct {
-	authService *service.AuthService
+	authService   *service.AuthService
+	cookieOptions securecookie.Options
 }
 
-func NewHandler(authService *service.AuthService) *Handler {
+func NewHandler(authService *service.AuthService, cookieOptions ...securecookie.Options) *Handler {
 	return &Handler{
-		authService: authService,
+		authService:   authService,
+		cookieOptions: resolveCookieOptions(cookieOptions),
 	}
+}
+
+func resolveCookieOptions(cookieOptions []securecookie.Options) securecookie.Options {
+	if len(cookieOptions) == 0 {
+		return securecookie.DefaultOptions()
+	}
+	return cookieOptions[0]
 }
 
 // RegisterRequest 注册请求
@@ -71,8 +80,8 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	securecookie.SetAuthToken(c, token, 3600*24*7)
-	if _, err := securecookie.SetCSRFToken(c, 3600*24*7); err != nil {
+	securecookie.SetAuthToken(c, token, 3600*24*7, h.cookieOptions)
+	if _, err := securecookie.SetCSRFToken(c, 3600*24*7, h.cookieOptions); err != nil {
 		apierror.RespondInternalError(c, errors.New("failed to generate CSRF token"))
 		return
 	}
@@ -96,8 +105,8 @@ func (h *Handler) GoogleLogin(c *gin.Context) {
 		return
 	}
 
-	securecookie.SetAuthToken(c, token, 3600*24*7)
-	if _, err := securecookie.SetCSRFToken(c, 3600*24*7); err != nil {
+	securecookie.SetAuthToken(c, token, 3600*24*7, h.cookieOptions)
+	if _, err := securecookie.SetCSRFToken(c, 3600*24*7, h.cookieOptions); err != nil {
 		apierror.RespondInternalError(c, errors.New("failed to generate CSRF token"))
 		return
 	}
@@ -126,7 +135,7 @@ func (h *Handler) GetProfile(c *gin.Context) {
 // Logout 用户登出
 func (h *Handler) Logout(c *gin.Context) {
 	// JWT是无状态的，客户端删除token即可
-	securecookie.ClearAuthToken(c)
-	securecookie.ClearCSRFToken(c)
+	securecookie.ClearAuthToken(c, h.cookieOptions)
+	securecookie.ClearCSRFToken(c, h.cookieOptions)
 	response.SuccessWithMessage(c, "Logged out successfully", nil)
 }

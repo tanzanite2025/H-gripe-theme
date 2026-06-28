@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ type Config struct {
 	OAuth    OAuthConfig    `mapstructure:"oauth"`
 	I18n     I18nConfig     `mapstructure:"i18n"`
 	CORS     CORSConfig     `mapstructure:"cors"`
+	Cookie   CookieConfig   `mapstructure:"cookie"`
 	Cache    CacheConfig    `mapstructure:"cache"`
 	Log      LogConfig      `mapstructure:"log"`
 	Worker   WorkerConfig   `mapstructure:"worker"`
@@ -73,6 +75,12 @@ type CORSConfig struct {
 	ExposeHeaders    []string `mapstructure:"expose_headers"`
 	AllowCredentials bool     `mapstructure:"allow_credentials"`
 	MaxAge           int      `mapstructure:"max_age"`
+}
+
+type CookieConfig struct {
+	Secure   string `mapstructure:"secure"`
+	SameSite string `mapstructure:"same_site"`
+	Domain   string `mapstructure:"domain"`
 }
 
 type CacheConfig struct {
@@ -171,6 +179,10 @@ func setDefaults() {
 	viper.SetDefault("cors.allow_credentials", true)
 	viper.SetDefault("cors.max_age", 43200)
 
+	viper.SetDefault("cookie.secure", "auto")
+	viper.SetDefault("cookie.same_site", "lax")
+	viper.SetDefault("cookie.domain", "")
+
 	viper.SetDefault("cache.default_ttl", 3600)
 	viper.SetDefault("cache.post_ttl", 3600)
 	viper.SetDefault("cache.product_ttl", 1800)
@@ -208,6 +220,10 @@ func bindEnvironment() {
 
 	_ = viper.BindEnv("oauth.google_client_id", "GOOGLE_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_ID", "NUXT_PUBLIC_GOOGLE_CLIENT_ID")
 
+	_ = viper.BindEnv("cookie.secure", "COOKIE_SECURE")
+	_ = viper.BindEnv("cookie.same_site", "COOKIE_SAME_SITE")
+	_ = viper.BindEnv("cookie.domain", "COOKIE_DOMAIN")
+
 	_ = viper.BindEnv("log.level", "LOG_LEVEL")
 	_ = viper.BindEnv("log.format", "LOG_FORMAT")
 	_ = viper.BindEnv("log.output", "LOG_OUTPUT")
@@ -238,6 +254,29 @@ func (c *RedisConfig) GetRedisAddr() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
+func (c *CookieConfig) SecureEnabled(server ServerConfig) bool {
+	switch strings.ToLower(strings.TrimSpace(c.Secure)) {
+	case "false", "no", "never", "off", "0":
+		return false
+	case "true", "yes", "always", "on", "1":
+		return true
+	default:
+		baseURL := strings.ToLower(strings.TrimSpace(server.BaseURL))
+		return strings.EqualFold(server.Mode, "release") || strings.HasPrefix(baseURL, "https://")
+	}
+}
+
+func (c *CookieConfig) SameSiteMode() http.SameSite {
+	switch strings.ToLower(strings.TrimSpace(c.SameSite)) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
+	}
+}
+
 // GetJWTExpireDuration 获取JWT过期时间
 func (c *JWTConfig) GetJWTExpireDuration() time.Duration {
 	return time.Duration(c.ExpireHours) * time.Hour
@@ -262,5 +301,35 @@ func validateConfig(cfg *Config) error {
 		return fmt.Errorf("database name is required")
 	}
 
+	if !isValidCookieSecureMode(cfg.Cookie.Secure) {
+		return fmt.Errorf("cookie.secure must be auto, always/true, or never/false")
+	}
+
+	if !isValidCookieSameSite(cfg.Cookie.SameSite) {
+		return fmt.Errorf("cookie.same_site must be one of lax, strict, or none")
+	}
+
+	if cfg.Cookie.SameSiteMode() == http.SameSiteNoneMode && !cfg.Cookie.SecureEnabled(cfg.Server) {
+		return fmt.Errorf("cookie.same_site=none requires secure cookies")
+	}
+
 	return nil
+}
+
+func isValidCookieSecureMode(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "auto", "false", "no", "never", "off", "0", "true", "yes", "always", "on", "1":
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidCookieSameSite(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "lax", "strict", "none":
+		return true
+	default:
+		return false
+	}
 }
