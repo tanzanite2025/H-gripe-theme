@@ -80,6 +80,27 @@ func (s *AuditService) GetUserAuditLogs(userID uint, page, pageSize int) ([]audi
 	return s.auditRepo.FindAuditLogsByUserID(userID, page, pageSize)
 }
 
+func (s *AuditService) GetEntityAuditLogs(resource string, resourceID uint, page, pageSize int) ([]audit.AuditLog, int64, error) {
+	return s.auditRepo.FindAuditLogsByEntity(resource, resourceID, page, pageSize)
+}
+
+func (s *AuditService) GetAllAuditLogs(page, pageSize int, action, resource string) ([]audit.AuditLog, int64, error) {
+	return s.auditRepo.FindAllAuditLogs(page, pageSize, action, resource)
+}
+
+func (s *AuditService) GetAuditLogsByDateRange(startDate, endDate string, page, pageSize int) ([]audit.AuditLog, int64, error) {
+	start, end, err := parseAuditDateRange(startDate, endDate)
+	if err != nil {
+		return nil, 0, err
+	}
+	end = end.Add(24*time.Hour - time.Second)
+	return s.auditRepo.FindAuditLogsByDateRange(start, end, page, pageSize)
+}
+
+func (s *AuditService) GetAuditLogsByIP(ipAddress string, page, pageSize int) ([]audit.AuditLog, int64, error) {
+	return s.auditRepo.FindAuditLogsByIP(ipAddress, page, pageSize)
+}
+
 func (s *AuditService) DeleteOldLogs(beforeDate string) error {
 	parsedDate, err := parseAuditDate(beforeDate)
 	if err != nil {
