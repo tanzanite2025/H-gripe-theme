@@ -60,7 +60,7 @@ func (h *Handler) GetCarrier(c *gin.Context) {
 // @Produce json
 // @Param carrier body shipping.Carrier true "物流公司信息"
 // @Success 201 {object} shipping.Carrier
-// @Router /api/v1/admin/shipping/carriers [post]
+// @Router /api/admin/shipping/carriers [post]
 func (h *Handler) CreateCarrier(c *gin.Context) {
 	var carrier shipping.Carrier
 	if err := c.ShouldBindJSON(&carrier); err != nil {
@@ -84,7 +84,7 @@ func (h *Handler) CreateCarrier(c *gin.Context) {
 // @Param id path int true "物流公司ID"
 // @Param carrier body shipping.Carrier true "物流公司信息"
 // @Success 200 {object} shipping.Carrier
-// @Router /api/v1/admin/shipping/carriers/{id} [put]
+// @Router /api/admin/shipping/carriers/{id} [put]
 func (h *Handler) UpdateCarrier(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -113,7 +113,7 @@ func (h *Handler) UpdateCarrier(c *gin.Context) {
 // @Produce json
 // @Param id path int true "物流公司ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/shipping/carriers/{id} [delete]
+// @Router /api/admin/shipping/carriers/{id} [delete]
 func (h *Handler) DeleteCarrier(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

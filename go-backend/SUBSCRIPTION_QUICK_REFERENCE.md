@@ -75,38 +75,44 @@ GET /api/v1/subscriptions/status/:email
 
 #### 获取所有订阅
 ```bash
-GET /api/v1/admin/subscriptions?page=1&page_size=20&status=active
+GET /api/admin/subscriptions?page=1&page_size=20&status=active
 Cookie: auth_token=<http_only_cookie>
 ```
 
-#### 根据标签获取订阅
+#### 获取订阅详情
 ```bash
-GET /api/v1/admin/subscriptions/tags?tags=newsletter,promotions&page=1&page_size=20
+GET /api/admin/subscriptions/:email
 Cookie: auth_token=<http_only_cookie>
 ```
 
 #### 获取统计信息
 ```bash
-GET /api/v1/admin/subscriptions/stats
+GET /api/admin/subscriptions/stats
 Cookie: auth_token=<http_only_cookie>
+```
+
+#### 获取活跃邮箱列表
+```bash
+GET /api/admin/subscriptions/active-emails
+Cookie: auth_token=<http_only_cookie>
+```
+
+#### 更新订阅状态
+```bash
+PATCH /api/admin/subscriptions/:email/status
+Cookie: auth_token=<http_only_cookie>
+X-CSRF-Token: <csrf_token_cookie_value>
+
+{
+  "status": "active"
+}
 ```
 
 #### 删除订阅
 ```bash
-DELETE /api/v1/admin/subscriptions/:email
+DELETE /api/admin/subscriptions/:email
 Cookie: auth_token=<http_only_cookie>
 X-CSRF-Token: <csrf_token_cookie_value>
-```
-
-#### 导出邮箱列表
-```bash
-# 导出所有活跃邮箱
-GET /api/v1/admin/subscriptions/export
-Cookie: auth_token=<http_only_cookie>
-
-# 按标签导出
-GET /api/v1/admin/subscriptions/export?tags=newsletter
-Cookie: auth_token=<http_only_cookie>
 ```
 
 ---
@@ -143,17 +149,17 @@ curl -X POST http://localhost:8080/api/v1/subscriptions \
 curl http://localhost:8080/api/v1/subscriptions/unsubscribe/abc123def456...
 ```
 
-### 场景 3: 管理员导出营销邮箱列表
+### 场景 3: 管理员获取活跃营销邮箱列表
 
 ```bash
-curl http://localhost:8080/api/v1/admin/subscriptions/export?tags=promotions \
+curl http://localhost:8080/api/admin/subscriptions/active-emails \
   -b cookies.txt
 ```
 
 ### 场景 4: 查看订阅统计
 
 ```bash
-curl http://localhost:8080/api/v1/admin/subscriptions/stats \
+curl http://localhost:8080/api/admin/subscriptions/stats \
   -b cookies.txt
 ```
 

@@ -64,7 +64,6 @@ func (h *Handler) GetOrderTracking(c *gin.Context) {
 // @Produce json
 // @Param event body shipping.TrackingEvent true "追踪事件"
 // @Success 201 {object} shipping.TrackingEvent
-// @Router /api/v1/admin/shipping/tracking [post]
 func (h *Handler) CreateTrackingEvent(c *gin.Context) {
 	var event shipping.TrackingEvent
 	if err := c.ShouldBindJSON(&event); err != nil {

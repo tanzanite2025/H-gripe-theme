@@ -202,7 +202,7 @@ GET    /admin/warranty-claims         - 获取所有保修申请 [管理员]
 PUT    /admin/warranty-claims/:id/status - 更新保修申请状态 [管理员]
 ```
 
-### 审计日志 API (`/api/v1/admin/audit`) ⭐ 新增
+### 审计日志 API (`/api/admin/logs`) ⭐ 新增
 ```
 # 管理员端点（全部需要管理员权限）
 GET    /logs                          - 获取所有审计日志

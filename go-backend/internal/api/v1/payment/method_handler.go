@@ -60,7 +60,6 @@ func (h *Handler) GetPaymentMethod(c *gin.Context) {
 // @Produce json
 // @Param method body payment.PaymentMethod true "支付方式信息"
 // @Success 201 {object} payment.PaymentMethod
-// @Router /api/v1/admin/payment/methods [post]
 func (h *Handler) CreatePaymentMethod(c *gin.Context) {
 	var method payment.PaymentMethod
 	if err := c.ShouldBindJSON(&method); err != nil {
@@ -84,7 +83,6 @@ func (h *Handler) CreatePaymentMethod(c *gin.Context) {
 // @Param id path int true "支付方式ID"
 // @Param method body payment.PaymentMethod true "支付方式信息"
 // @Success 200 {object} payment.PaymentMethod
-// @Router /api/v1/admin/payment/methods/{id} [put]
 func (h *Handler) UpdatePaymentMethod(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -113,7 +111,6 @@ func (h *Handler) UpdatePaymentMethod(c *gin.Context) {
 // @Produce json
 // @Param id path int true "支付方式ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/payment/methods/{id} [delete]
 func (h *Handler) DeletePaymentMethod(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

@@ -137,7 +137,7 @@ func (h *Handler) GetSubscription(c *gin.Context) {
 // ========== 管理员 API ==========
 
 // GetAllSubscriptions 获取所有订阅（管理员）
-// GET /api/v1/admin/subscriptions
+// Legacy admin handler; not registered by current router.
 func (h *Handler) GetAllSubscriptions(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -170,7 +170,7 @@ func (h *Handler) GetAllSubscriptions(c *gin.Context) {
 }
 
 // GetSubscriptionsByTags 根据标签获取订阅（管理员）
-// GET /api/v1/admin/subscriptions/tags?tags=tag1,tag2
+// Legacy admin handler; not registered by current router.
 func (h *Handler) GetSubscriptionsByTags(c *gin.Context) {
 	tagsStr := c.Query("tags")
 	if tagsStr == "" {
@@ -210,7 +210,7 @@ func (h *Handler) GetSubscriptionsByTags(c *gin.Context) {
 }
 
 // GetStats 获取订阅统计（管理员）
-// GET /api/v1/admin/subscriptions/stats
+// Legacy admin handler; not registered by current router.
 func (h *Handler) GetStats(c *gin.Context) {
 	stats, err := h.subscriptionService.GetStats()
 	if err != nil {
@@ -222,7 +222,7 @@ func (h *Handler) GetStats(c *gin.Context) {
 }
 
 // DeleteSubscription 删除订阅（管理员）
-// DELETE /api/v1/admin/subscriptions/:email
+// Legacy admin handler; not registered by current router.
 func (h *Handler) DeleteSubscription(c *gin.Context) {
 	email := c.Param("email")
 	if email == "" {
@@ -239,7 +239,7 @@ func (h *Handler) DeleteSubscription(c *gin.Context) {
 }
 
 // ExportEmails 导出邮箱列表（管理员）
-// GET /api/v1/admin/subscriptions/export
+// Legacy admin handler; not registered by current router.
 func (h *Handler) ExportEmails(c *gin.Context) {
 	tagsStr := c.Query("tags")
 

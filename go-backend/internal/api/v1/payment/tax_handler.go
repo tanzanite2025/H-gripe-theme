@@ -100,7 +100,6 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 // @Produce json
 // @Param rate body payment.TaxRate true "税率信息"
 // @Success 201 {object} payment.TaxRate
-// @Router /api/v1/admin/payment/tax-rates [post]
 func (h *Handler) CreateTaxRate(c *gin.Context) {
 	var rate payment.TaxRate
 	if err := c.ShouldBindJSON(&rate); err != nil {
@@ -124,7 +123,6 @@ func (h *Handler) CreateTaxRate(c *gin.Context) {
 // @Param id path int true "税率ID"
 // @Param rate body payment.TaxRate true "税率信息"
 // @Success 200 {object} payment.TaxRate
-// @Router /api/v1/admin/payment/tax-rates/{id} [put]
 func (h *Handler) UpdateTaxRate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -153,7 +151,6 @@ func (h *Handler) UpdateTaxRate(c *gin.Context) {
 // @Produce json
 // @Param id path int true "税率ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/payment/tax-rates/{id} [delete]
 func (h *Handler) DeleteTaxRate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

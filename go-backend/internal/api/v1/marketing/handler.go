@@ -84,7 +84,6 @@ func (h *Handler) ValidateCoupon(c *gin.Context) {
 // @Produce json
 // @Param coupon body coupon.Coupon true "优惠券信息"
 // @Success 201 {object} coupon.Coupon
-// @Router /api/v1/admin/marketing/coupons [post]
 func (h *Handler) CreateCoupon(c *gin.Context) {
 	var coupon coupon.Coupon
 	if err := c.ShouldBindJSON(&coupon); err != nil {
@@ -107,7 +106,6 @@ func (h *Handler) CreateCoupon(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(20)
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/marketing/coupons/all [get]
 func (h *Handler) GetAllCoupons(c *gin.Context) {
 	page := 1
 	pageSize := 20
@@ -134,7 +132,6 @@ func (h *Handler) GetAllCoupons(c *gin.Context) {
 // @Param id path int true "优惠券ID"
 // @Param coupon body coupon.Coupon true "优惠券信息"
 // @Success 200 {object} coupon.Coupon
-// @Router /api/v1/admin/marketing/coupons/{id} [put]
 func (h *Handler) UpdateCoupon(c *gin.Context) {
 	var coupon coupon.Coupon
 	if err := c.ShouldBindJSON(&coupon); err != nil {
@@ -156,7 +153,6 @@ func (h *Handler) UpdateCoupon(c *gin.Context) {
 // @Produce json
 // @Param id path int true "优惠券ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/marketing/coupons/{id} [delete]
 func (h *Handler) DeleteCoupon(c *gin.Context) {
 	var uriParams struct {
 		ID uint `uri:"id" binding:"required"`
@@ -289,7 +285,6 @@ func (h *Handler) GetLoyaltyInfo(c *gin.Context) {
 // @Tags Admin/Loyalty
 // @Produce json
 // @Success 200 {array} loyalty.MemberLevel
-// @Router /api/v1/admin/loyalty/levels [get]
 func (h *Handler) ListMemberLevels(c *gin.Context) {
 	levels, err := h.marketingService.ListMemberLevels()
 	if err != nil {
@@ -306,7 +301,6 @@ func (h *Handler) ListMemberLevels(c *gin.Context) {
 // @Produce json
 // @Param level body loyalty.MemberLevel true "会员等级"
 // @Success 201 {object} loyalty.MemberLevel
-// @Router /api/v1/admin/loyalty/levels [post]
 func (h *Handler) CreateMemberLevel(c *gin.Context) {
 	var level loyalty.MemberLevel
 	if err := c.ShouldBindJSON(&level); err != nil {
@@ -330,7 +324,6 @@ func (h *Handler) CreateMemberLevel(c *gin.Context) {
 // @Param id path int true "等级ID"
 // @Param level body loyalty.MemberLevel true "会员等级"
 // @Success 200 {object} loyalty.MemberLevel
-// @Router /api/v1/admin/loyalty/levels/{id} [put]
 func (h *Handler) UpdateMemberLevel(c *gin.Context) {
 	// 简单解析ID并绑定
 	var level loyalty.MemberLevel
@@ -356,7 +349,6 @@ func (h *Handler) UpdateMemberLevel(c *gin.Context) {
 // @Param id path int true "用户ID"
 // @Param request body map[string]interface{} true "调整请求 (points: int, reason: string)"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/loyalty/users/{id}/adjust [post]
 func (h *Handler) AdminAdjustPoints(c *gin.Context) {
 	var req struct {
 		Points int    `json:"points" binding:"required"`
