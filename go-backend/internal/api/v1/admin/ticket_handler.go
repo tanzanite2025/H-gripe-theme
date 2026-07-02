@@ -1,23 +1,25 @@
 package admin
 
 import (
+	"errors"
 	"strconv"
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type TicketHandler struct {
-	ticketRepo *repository.TicketRepository
+	ticketService *service.TicketService
 }
 
-func NewTicketHandler(ticketRepo *repository.TicketRepository) *TicketHandler {
+func NewTicketHandler(ticketService *service.TicketService) *TicketHandler {
 	return &TicketHandler{
-		ticketRepo: ticketRepo,
+		ticketService: ticketService,
 	}
 }
 
@@ -28,7 +30,7 @@ func (h *TicketHandler) ListTickets(c *gin.Context) {
 	status := c.Query("status")
 	priority := c.Query("priority")
 
-	tickets, total, err := h.ticketRepo.FindAllTickets(params.Page, params.PageSize, status, priority)
+	tickets, total, err := h.ticketService.GetAllTickets(params.Page, params.PageSize, status, priority)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -56,7 +58,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 		return
 	}
 
-	ticketItem, err := h.ticketRepo.FindTicketByID(uint(id))
+	ticketItem, err := h.ticketService.GetTicket(uint(id), 0, true)
 	if err != nil {
 		apierror.RespondNotFound(c, "Ticket")
 		return
@@ -85,7 +87,11 @@ func (h *TicketHandler) UpdateTicketStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.ticketRepo.UpdateTicketStatus(uint(id), req.Status); err != nil {
+	if err := h.ticketService.UpdateTicketStatus(uint(id), req.Status); err != nil {
+		if errors.Is(err, service.ErrInvalidTicketStatus) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -111,7 +117,7 @@ func (h *TicketHandler) AssignTicket(c *gin.Context) {
 		return
 	}
 
-	if err := h.ticketRepo.AssignTicket(uint(id), req.AssignedTo); err != nil {
+	if err := h.ticketService.AssignTicket(uint(id), req.AssignedTo); err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -140,32 +146,27 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 		return
 	}
 
-	existingTicket, err := h.ticketRepo.FindTicketByID(uint(id))
+	updatedTicket, err := h.ticketService.UpdateAdminTicket(uint(id), service.TicketAdminUpdateInput{
+		Subject:    req.Subject,
+		Priority:   req.Priority,
+		Status:     req.Status,
+		AssignedTo: req.AssignedTo,
+	})
 	if err != nil {
-		apierror.RespondNotFound(c, "Ticket")
-		return
-	}
-
-	if req.Subject != "" {
-		existingTicket.Subject = req.Subject
-	}
-	if req.Priority != "" {
-		existingTicket.Priority = req.Priority
-	}
-	if req.Status != "" {
-		existingTicket.Status = req.Status
-	}
-	if req.AssignedTo != nil {
-		existingTicket.AssignedTo = *req.AssignedTo
-	}
-
-	if err := h.ticketRepo.UpdateTicket(existingTicket); err != nil {
+		if errors.Is(err, service.ErrInvalidTicketPriority) || errors.Is(err, service.ErrInvalidTicketStatus) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			apierror.RespondNotFound(c, "Ticket")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
 	response.SuccessWithMessage(c, "Ticket updated successfully", gin.H{
-		"ticket": existingTicket,
+		"ticket": updatedTicket,
 	})
 }
 
@@ -178,7 +179,11 @@ func (h *TicketHandler) DeleteTicket(c *gin.Context) {
 		return
 	}
 
-	if err := h.ticketRepo.DeleteTicket(uint(id)); err != nil {
+	if err := h.ticketService.DeleteTicket(uint(id), 0, true); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			apierror.RespondNotFound(c, "Ticket")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -189,7 +194,7 @@ func (h *TicketHandler) DeleteTicket(c *gin.Context) {
 // GetTicketStats 获取工单统计
 // GET /api/admin/tickets/stats
 func (h *TicketHandler) GetTicketStats(c *gin.Context) {
-	stats, err := h.ticketRepo.GetStats()
+	stats, err := h.ticketService.GetAdminTicketStats()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -230,7 +235,7 @@ func (h *TicketHandler) CreateMessage(c *gin.Context) {
 		IsStaff:  true, // 管理员发送的消息
 	}
 
-	if err := h.ticketRepo.CreateTicketMessage(newMessage); err != nil {
+	if err := h.ticketService.AddMessage(newMessage, userID.(uint), true); err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -250,7 +255,7 @@ func (h *TicketHandler) GetMessages(c *gin.Context) {
 		return
 	}
 
-	messages, err := h.ticketRepo.FindMessagesByTicketID(uint(ticketID))
+	messages, err := h.ticketService.GetMessages(uint(ticketID), 0, true)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -270,7 +275,7 @@ func (h *TicketHandler) MarkMessagesAsRead(c *gin.Context) {
 		return
 	}
 
-	if err := h.ticketRepo.MarkMessagesAsRead(uint(ticketID), true); err != nil {
+	if err := h.ticketService.MarkMessagesAsRead(uint(ticketID), true); err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}

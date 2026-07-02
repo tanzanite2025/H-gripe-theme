@@ -67,17 +67,8 @@ func (s *TicketService) UpdateTicket(t *ticket.Ticket, userID uint, isStaff bool
 }
 
 func (s *TicketService) UpdateTicketStatus(id uint, status string) error {
-	validStatuses := []string{"open", "in_progress", "resolved", "closed"}
-	isValid := false
-	for _, candidate := range validStatuses {
-		if candidate == status {
-			isValid = true
-			break
-		}
-	}
-
-	if !isValid {
-		return errors.New("invalid status")
+	if !validTicketStatus(status) {
+		return ErrInvalidTicketStatus
 	}
 
 	return s.ticketRepo.UpdateTicketStatus(id, status)
