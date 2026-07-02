@@ -16,6 +16,7 @@ import (
 )
 
 type MarketingService struct {
+	txManager   *repository.TxManager
 	couponRepo  *repository.CouponRepository
 	loyaltyRepo *repository.LoyaltyRepository
 }
@@ -102,10 +103,12 @@ type MemberLevelUpdateInput struct {
 }
 
 func NewMarketingService(
+	txManager *repository.TxManager,
 	couponRepo *repository.CouponRepository,
 	loyaltyRepo *repository.LoyaltyRepository,
 ) *MarketingService {
 	s := &MarketingService{
+		txManager:   txManager,
 		couponRepo:  couponRepo,
 		loyaltyRepo: loyaltyRepo,
 	}
@@ -170,11 +173,10 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 
 // UseCoupon 使用优惠券
 func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmount float64) error {
-	return s.couponRepo.GetDB().Transaction(func(tx *gorm.DB) error {
-		txCouponRepo := s.couponRepo.WithTx(tx)
+	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 
 		// 增加使用次数
-		if err := txCouponRepo.IncrementUsedCount(couponID); err != nil {
+		if err := repos.Coupon.IncrementUsedCount(couponID); err != nil {
 			return err
 		}
 
@@ -186,7 +188,7 @@ func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmo
 			Discount: discountAmount,
 		}
 
-		return txCouponRepo.CreateCouponUsage(usage)
+		return repos.Coupon.CreateCouponUsage(usage)
 	})
 }
 
@@ -391,9 +393,8 @@ func (s *MarketingService) CreateGiftCardAdmin(input GiftCardCreateInput) (*coup
 	}
 
 	var card coupon.GiftCard
-	err := s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
-		txCouponRepo := s.couponRepo.WithTx(tx)
-		if err := ensureGiftCardCodeAvailable(txCouponRepo, input.Code, 0); err != nil {
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		if err := ensureGiftCardCodeAvailable(repos.Coupon, input.Code, 0); err != nil {
 			return err
 		}
 
@@ -410,7 +411,7 @@ func (s *MarketingService) CreateGiftCardAdmin(input GiftCardCreateInput) (*coup
 			CoverImage:     input.CoverImage,
 			ExpiresAt:      input.ExpiresAt,
 		}
-		if err := txCouponRepo.CreateGiftCard(&card); err != nil {
+		if err := repos.Coupon.CreateGiftCard(&card); err != nil {
 			return err
 		}
 
@@ -421,7 +422,7 @@ func (s *MarketingService) CreateGiftCardAdmin(input GiftCardCreateInput) (*coup
 			Balance:    input.InitialValue,
 			Note:       "Admin issued gift card",
 		}
-		return txCouponRepo.CreateGiftCardTransaction(transaction)
+		return repos.Coupon.CreateGiftCardTransaction(transaction)
 	})
 	if err != nil {
 		return nil, err
@@ -614,10 +615,9 @@ func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint
 		return errors.New("amount must be positive")
 	}
 
-	return s.couponRepo.GetDB().Transaction(func(tx *gorm.DB) error {
-		txCouponRepo := s.couponRepo.WithTx(tx)
+	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 
-		card, err := txCouponRepo.FindGiftCardByCodeForUpdate(code)
+		card, err := repos.Coupon.FindGiftCardByCodeForUpdate(code)
 		if err != nil {
 			return errors.New("gift card not found")
 		}
@@ -638,7 +638,7 @@ func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint
 		remainingBalance := card.Balance - amount
 
 		// 扣除余额
-		if err := txCouponRepo.UpdateGiftCardBalance(card.ID, -amount); err != nil {
+		if err := repos.Coupon.UpdateGiftCardBalance(card.ID, -amount); err != nil {
 			return err
 		}
 
@@ -651,7 +651,7 @@ func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint
 			Balance:    remainingBalance,
 		}
 
-		return txCouponRepo.CreateGiftCardTransaction(transaction)
+		return repos.Coupon.CreateGiftCardTransaction(transaction)
 	})
 }
 
@@ -881,11 +881,9 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 	var giftcard coupon.GiftCard
 	var transaction *loyalty.LoyaltyTransaction
 
-	err := s.loyaltyRepo.GetDB().Transaction(func(tx *gorm.DB) error {
-		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
-		txCouponRepo := s.couponRepo.WithTx(tx)
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		// 4. 校验用户可用积分余额
-		userLoyalty, err := txLoyaltyRepo.FindOrCreateUserLoyaltyForUpdate(userID)
+		userLoyalty, err := repos.Loyalty.FindOrCreateUserLoyaltyForUpdate(userID)
 		if err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to retrieve user loyalty data: %v", err)
 		}
@@ -898,7 +896,7 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		todayStart := time.Now().Truncate(24 * time.Hour)
 		todayEnd := todayStart.Add(24 * time.Hour)
 
-		sumPoints, err := txLoyaltyRepo.SumTransactionPointsByUser(userID, "spend", "giftcard", todayStart, todayEnd)
+		sumPoints, err := repos.Loyalty.SumTransactionPointsByUser(userID, "spend", "giftcard", todayStart, todayEnd)
 		if err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to verify daily limit: %v", err)
 		}
@@ -927,12 +925,12 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 			UpdatedAt:    time.Now(),
 		}
 
-		if err := txCouponRepo.CreateGiftCard(&giftcard); err != nil {
+		if err := repos.Coupon.CreateGiftCard(&giftcard); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to create gift card: %v", err)
 		}
 
 		// 7. 原子扣减积分并写入交易历史
-		transaction, err = txLoyaltyRepo.AdjustUserPoints(
+		transaction, err = repos.Loyalty.AdjustUserPointsInCurrentTx(
 			userID,
 			-pointsToSpend,
 			"spend",

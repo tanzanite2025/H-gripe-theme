@@ -17,14 +17,9 @@ import (
 )
 
 type OrderService struct {
-	db           *gorm.DB
-	orderRepo    *repository.OrderRepository
-	productRepo  *repository.ProductRepository
-	couponRepo   *repository.CouponRepository
-	shippingRepo *repository.ShippingRepository
-	auditRepo    *repository.AuditRepository
-	loyaltyRepo  *repository.LoyaltyRepository
-	checkout     *CheckoutService
+	txManager *repository.TxManager
+	orderRepo *repository.OrderRepository
+	checkout  *CheckoutService
 }
 
 var (
@@ -33,24 +28,14 @@ var (
 )
 
 func NewOrderService(
-	db *gorm.DB,
+	txManager *repository.TxManager,
 	orderRepo *repository.OrderRepository,
-	productRepo *repository.ProductRepository,
-	couponRepo *repository.CouponRepository,
 	checkout *CheckoutService,
-	shippingRepo *repository.ShippingRepository,
-	auditRepo *repository.AuditRepository,
-	loyaltyRepo *repository.LoyaltyRepository,
 ) *OrderService {
 	return &OrderService{
-		db:           db,
-		orderRepo:    orderRepo,
-		productRepo:  productRepo,
-		couponRepo:   couponRepo,
-		shippingRepo: shippingRepo,
-		auditRepo:    auditRepo,
-		loyaltyRepo:  loyaltyRepo,
-		checkout:     checkout,
+		txManager: txManager,
+		orderRepo: orderRepo,
+		checkout:  checkout,
 	}
 }
 
@@ -73,59 +58,57 @@ func (s *OrderService) CreateOrder(
 	}
 	logger.Info("CreateOrder started", zap.String("trace_id", traceID), zap.Uint("user_id", userID))
 
-	quote, err := s.checkout.Quote(CheckoutQuoteInput{
+	quoteInput := CheckoutQuoteInput{
 		UserID:          userID,
 		Items:           items,
 		ShippingAddress: shippingAddress,
 		CouponCode:      couponCode,
 		PointsToUse:     pointsToUse,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	o := &order.Order{
-		OrderNumber:     s.generateOrderNumber(),
-		UserID:          userID,
-		Status:          "pending",
-		PaymentMethod:   paymentMethod,
-		PaymentStatus:   "unpaid",
-		ShippingMethod:  shippingMethod,
-		ShippingStatus:  "pending",
-		SubtotalAmount:  quote.SubtotalAmount,
-		TotalAmount:     quote.TotalAmount,
-		ShippingFee:     quote.ShippingFee,
-		TaxAmount:       quote.TaxAmount,
-		DiscountAmount:  quote.DiscountAmount,
-		CouponCode:      quote.CouponCode,
-		PointsUsed:      quote.PointsToUse,
-		PointsValue:     quote.PointsDiscount,
-		Items:           quote.Items,
-		ShippingAddress: shippingAddress,
-		BillingAddress:  billingAddress,
 	}
 
 	var createdOrder *order.Order
-	txErr := s.db.Transaction(func(tx *gorm.DB) error {
-		txOrderRepo := s.orderRepo.WithTx(tx)
-		txProductRepo := s.productRepo.WithTx(tx)
-		txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
+	txErr := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		quote, err := s.checkout.QuoteWithRepositories(quoteInput, repos)
+		if err != nil {
+			return err
+		}
+
+		o := &order.Order{
+			OrderNumber:     s.generateOrderNumber(),
+			UserID:          userID,
+			Status:          "pending",
+			PaymentMethod:   paymentMethod,
+			PaymentStatus:   "unpaid",
+			ShippingMethod:  shippingMethod,
+			ShippingStatus:  "pending",
+			SubtotalAmount:  quote.SubtotalAmount,
+			TotalAmount:     quote.TotalAmount,
+			ShippingFee:     quote.ShippingFee,
+			TaxAmount:       quote.TaxAmount,
+			DiscountAmount:  quote.DiscountAmount,
+			CouponCode:      quote.CouponCode,
+			PointsUsed:      quote.PointsToUse,
+			PointsValue:     quote.PointsDiscount,
+			Items:           quote.Items,
+			ShippingAddress: shippingAddress,
+			BillingAddress:  billingAddress,
+		}
 
 		itemsMap := make(map[uint]int)
 		for _, item := range quote.Items {
 			itemsMap[item.ProductID] += item.Quantity
 		}
-		if err := txProductRepo.DecrementStocks(itemsMap); err != nil {
+		if err := repos.Product.DecrementStocks(itemsMap); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to deduct stock in bulk: %w", err)
 		}
 
-		if err := txOrderRepo.Create(o); err != nil {
+		if err := repos.Order.Create(o); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
 		}
 		createdOrder = o
 
 		if quote.PointsToUse > 0 {
-			if _, err := txLoyaltyRepo.AdjustUserPoints(
+			if _, err := repos.Loyalty.AdjustUserPointsInCurrentTx(
 				userID,
 				-quote.PointsToUse,
 				"spend",
@@ -138,8 +121,7 @@ func (s *OrderService) CreateOrder(
 		}
 
 		if quote.Coupon != nil {
-			txCouponRepo := s.couponRepo.WithTx(tx)
-			if err := txCouponRepo.IncrementUsedCount(quote.Coupon.ID); err != nil {
+			if err := repos.Coupon.IncrementUsedCount(quote.Coupon.ID); err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to increment usage count for coupon ID %d: %w", quote.Coupon.ID, err)
 			}
 
@@ -150,7 +132,7 @@ func (s *OrderService) CreateOrder(
 				Discount:  quote.CouponDiscount,
 				CreatedAt: time.Now(),
 			}
-			if err := txCouponRepo.CreateCouponUsage(usage); err != nil {
+			if err := repos.Coupon.CreateCouponUsage(usage); err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to record coupon usage for coupon ID %d: %w", quote.Coupon.ID, err)
 			}
 		}
@@ -237,18 +219,16 @@ func (s *OrderService) MarkOrderPaidByNumber(orderNumber string) error {
 		}
 		return s.orderRepo.UpdatePaymentStatus(o.ID, "paid")
 	case "pending", "paid":
-		return s.db.Transaction(func(tx *gorm.DB) error {
-			txOrderRepo := s.orderRepo.WithTx(tx)
-
-			if err := txOrderRepo.UpdatePaymentStatus(o.ID, "paid"); err != nil {
+		return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+			if err := repos.Order.UpdatePaymentStatus(o.ID, "paid"); err != nil {
 				return err
 			}
 			if o.Status == "pending" {
-				if err := txOrderRepo.UpdateStatus(o.ID, "paid"); err != nil {
+				if err := repos.Order.UpdateStatus(o.ID, "paid"); err != nil {
 					return err
 				}
 			}
-			return txOrderRepo.UpdateStatus(o.ID, "processing")
+			return repos.Order.UpdateStatus(o.ID, "processing")
 		})
 	default:
 		return fmt.Errorf("unsupported order status %s for paid webhook", o.Status)
@@ -320,23 +300,19 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 }
 
 func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
-		txOrderRepo := s.orderRepo.WithTx(tx)
-		txProductRepo := s.productRepo.WithTx(tx)
-
-		if err := txOrderRepo.UpdateStatus(o.ID, "cancelled"); err != nil {
+	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		if err := repos.Order.UpdateStatus(o.ID, "cancelled"); err != nil {
 			return err
 		}
 
 		for _, item := range o.Items {
-			if err := txProductRepo.IncrementStock(item.ProductID, item.Quantity); err != nil {
+			if err := repos.Product.IncrementStock(item.ProductID, item.Quantity); err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to restore stock for product %d: %w", item.ProductID, err)
 			}
 		}
 
 		if o.PointsUsed > 0 {
-			txLoyaltyRepo := s.loyaltyRepo.WithTx(tx)
-			_, err := txLoyaltyRepo.AdjustUserPoints(
+			_, err := repos.Loyalty.AdjustUserPointsInCurrentTx(
 				o.UserID,
 				o.PointsUsed,
 				"refund",
@@ -350,17 +326,16 @@ func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
 		}
 
 		if o.CouponCode != "" {
-			txCouponRepo := s.couponRepo.WithTx(tx)
-			cp, err := txCouponRepo.FindCouponByCode(o.CouponCode)
+			cp, err := repos.Coupon.FindCouponByCode(o.CouponCode)
 			if err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to find coupon during refund: %w", err)
 			}
 			if cp != nil {
-				if err := txCouponRepo.DecrementUsedCount(cp.ID); err != nil {
+				if err := repos.Coupon.DecrementUsedCount(cp.ID); err != nil {
 					return fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
 				}
 
-				if err := txCouponRepo.DeleteCouponUsageByOrderID(o.ID); err != nil {
+				if err := repos.Coupon.DeleteCouponUsageByOrderID(o.ID); err != nil {
 					return fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
 				}
 			}

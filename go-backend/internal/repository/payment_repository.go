@@ -14,6 +14,10 @@ func NewPaymentRepository(db *gorm.DB) *PaymentRepository {
 	return &PaymentRepository{db: db}
 }
 
+func (r *PaymentRepository) WithTx(tx *gorm.DB) *PaymentRepository {
+	return &PaymentRepository{db: tx}
+}
+
 // PaymentMethod 相关方法
 
 // CreatePaymentMethod 创建支付方式
