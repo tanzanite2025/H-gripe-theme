@@ -38,7 +38,7 @@ func (r *OrderRepository) Create(o *order.Order) error {
 // FindByID 根据ID查找订单
 func (r *OrderRepository) FindByID(id uint) (*order.Order, error) {
 	var o order.Order
-	err := r.db.Preload("Items").Preload("ShippingAddress").Preload("BillingAddress").First(&o, id).Error
+	err := r.db.Preload("Items").First(&o, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (r *OrderRepository) FindByIDForUpdate(id uint) (*order.Order, error) {
 // FindByOrderNumber 根据订单号查找订单
 func (r *OrderRepository) FindByOrderNumber(orderNumber string) (*order.Order, error) {
 	var o order.Order
-	err := r.db.Preload("Items").Preload("ShippingAddress").Preload("BillingAddress").
+	err := r.db.Preload("Items").
 		Where("order_number = ?", orderNumber).First(&o).Error
 	if err != nil {
 		return nil, err

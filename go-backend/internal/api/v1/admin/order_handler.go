@@ -100,7 +100,7 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status string `json:"status" binding:"required,oneof=pending paid processing shipped completed cancelled refunded"`
+		Status string `json:"status" binding:"required,oneof=pending processing shipped completed cancelled"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -323,7 +323,7 @@ func (h *OrderHandler) ExportOrders(c *gin.Context) {
 func (h *OrderHandler) BatchUpdateStatus(c *gin.Context) {
 	var req struct {
 		OrderIDs []uint `json:"order_ids" binding:"required,min=1"`
-		Status   string `json:"status" binding:"required,oneof=pending paid processing shipped completed cancelled refunded"`
+		Status   string `json:"status" binding:"required,oneof=pending processing shipped completed cancelled"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -337,12 +337,10 @@
         <el-form-item label="订单状态">
           <el-select v-model="statusForm.status" style="width: 100%">
             <el-option label="待支付" value="pending" />
-            <el-option label="已支付" value="paid" />
             <el-option label="处理中" value="processing" />
             <el-option label="已发货" value="shipped" />
             <el-option label="已完成" value="completed" />
             <el-option label="已取消" value="cancelled" />
-            <el-option label="已退款" value="refunded" />
           </el-select>
         </el-form-item>
         <el-form-item label="物流状态">

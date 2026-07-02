@@ -129,8 +129,8 @@ func randomString(n int) string {
 
 // OrderStatusTransition 订单状态流转规则
 var OrderStatusTransition = map[string][]string{
-	"pending":    {"paid", "cancelled"},
-	"paid":       {"processing", "cancelled", "refunded"},
+	"pending":    {"cancelled"},
+	"paid":       {"processing", "cancelled"},
 	"processing": {"shipped", "cancelled"},
 	"shipped":    {"completed", "cancelled"},
 	"completed":  {},

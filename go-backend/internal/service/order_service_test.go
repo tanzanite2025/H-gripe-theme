@@ -111,10 +111,31 @@ func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
 }
 
 func TestOrderStatusTransitionUsesDomainRules(t *testing.T) {
-	assert.True(t, (&order.Order{Status: "pending"}).CanTransitionTo("paid"))
+	assert.False(t, (&order.Order{Status: "pending"}).CanTransitionTo("paid"))
 	assert.True(t, (&order.Order{Status: "shipped"}).CanTransitionTo("completed"))
 	assert.False(t, (&order.Order{Status: "shipped"}).CanTransitionTo("delivered"))
+	assert.False(t, (&order.Order{Status: "paid"}).CanTransitionTo("refunded"))
 	assert.False(t, (&order.Order{Status: "cancelled"}).CanTransitionTo("paid"))
+}
+
+func TestOrderServiceRejectsPaymentManagedStatusUpdates(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	orderRecord := order.Order{
+		OrderNumber:   "ORD-SYSTEM-STATUS",
+		UserID:        42,
+		Status:        "pending",
+		PaymentStatus: "unpaid",
+		TotalAmount:   100,
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	require.ErrorIs(t, orderService.UpdateOrderStatus(orderRecord.ID, "paid"), ErrSystemManagedOrderStatus)
+	require.ErrorIs(t, orderService.UpdateOrderStatus(orderRecord.ID, "refunded"), ErrSystemManagedOrderStatus)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "pending", savedOrder.Status)
+	assert.Equal(t, "unpaid", savedOrder.PaymentStatus)
 }
 
 func TestOrderServiceGenerateOrderNumberFormat(t *testing.T) {
