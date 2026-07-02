@@ -1,14 +1,12 @@
 package admin
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/gallery"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type GalleryHandler struct {
@@ -130,7 +128,7 @@ func (h *GalleryHandler) UpdateGallery(c *gin.Context) {
 		Slug:        req.Slug,
 	})
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if service.IsRecordNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
 			return
 		}
@@ -259,7 +257,7 @@ func (h *GalleryHandler) UpdateImage(c *gin.Context) {
 		Order:       req.Order,
 	})
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if service.IsRecordNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Image not found"})
 			return
 		}

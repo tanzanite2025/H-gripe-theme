@@ -1,14 +1,12 @@
 package admin
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/faq"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type FAQHandler struct {
@@ -151,7 +149,7 @@ func (h *FAQHandler) UpdateFAQ(c *gin.Context) {
 		Order:    req.Order,
 	})
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if service.IsRecordNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "FAQ not found"})
 			return
 		}

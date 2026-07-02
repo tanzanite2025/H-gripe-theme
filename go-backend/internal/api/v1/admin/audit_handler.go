@@ -7,7 +7,6 @@ import (
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type AuditHandler struct {
@@ -57,7 +56,7 @@ func (h *AuditHandler) GetAuditLog(c *gin.Context) {
 
 	log, err := h.auditService.GetAuditLog(uint(id))
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if service.IsRecordNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "audit log not found"})
 			return
 		}
