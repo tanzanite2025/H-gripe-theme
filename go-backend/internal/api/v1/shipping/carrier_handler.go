@@ -21,7 +21,7 @@ import (
 func (h *Handler) ListCarriers(c *gin.Context) {
 	enabledOnly := c.Query("enabled") == "true"
 
-	carriers, err := h.shippingRepo.FindAllCarriers(enabledOnly)
+	carriers, err := h.shippingService.ListCarriers(enabledOnly)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -44,7 +44,7 @@ func (h *Handler) GetCarrier(c *gin.Context) {
 		return
 	}
 
-	carrier, err := h.shippingRepo.FindCarrierByID(uint(id))
+	carrier, err := h.shippingService.GetCarrier(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Carrier")
 		return
@@ -68,7 +68,7 @@ func (h *Handler) CreateCarrier(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.CreateCarrier(&carrier); err != nil {
+	if err := h.shippingService.CreateCarrier(&carrier); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -99,7 +99,7 @@ func (h *Handler) UpdateCarrier(c *gin.Context) {
 	}
 
 	carrier.ID = uint(id)
-	if err := h.shippingRepo.UpdateCarrier(&carrier); err != nil {
+	if err := h.shippingService.UpdateCarrier(&carrier); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -121,7 +121,7 @@ func (h *Handler) DeleteCarrier(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.DeleteCarrier(uint(id)); err != nil {
+	if err := h.shippingService.DeleteCarrier(uint(id)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

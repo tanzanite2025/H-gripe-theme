@@ -25,7 +25,7 @@ func (h *Handler) TrackShipment(c *gin.Context) {
 		return
 	}
 
-	events, err := h.shippingRepo.FindTrackingEventsByTrackingNumber(trackingNumber)
+	events, err := h.shippingService.GetTrackingEventsByTrackingNumber(trackingNumber)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -48,7 +48,7 @@ func (h *Handler) GetOrderTracking(c *gin.Context) {
 		return
 	}
 
-	events, err := h.shippingRepo.FindTrackingEventsByOrderID(uint(orderID))
+	events, err := h.shippingService.GetTrackingEventsByOrderID(uint(orderID))
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -72,7 +72,7 @@ func (h *Handler) CreateTrackingEvent(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.CreateTrackingEvent(&event); err != nil {
+	if err := h.shippingService.CreateTrackingEvent(&event); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

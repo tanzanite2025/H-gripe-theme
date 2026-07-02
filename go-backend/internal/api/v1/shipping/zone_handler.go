@@ -18,7 +18,7 @@ import (
 // @Success 200 {array} shipping.ShippingZone
 // @Router /api/v1/shipping/zones [get]
 func (h *Handler) ListZones(c *gin.Context) {
-	zones, err := h.shippingRepo.FindAllZones()
+	zones, err := h.shippingService.ListZones()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -41,7 +41,7 @@ func (h *Handler) GetZone(c *gin.Context) {
 		return
 	}
 
-	zone, err := h.shippingRepo.FindZoneByID(uint(id))
+	zone, err := h.shippingService.GetZone(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Zone")
 		return
@@ -65,7 +65,7 @@ func (h *Handler) CreateZone(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.CreateZone(&zone); err != nil {
+	if err := h.shippingService.CreateZone(&zone); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -96,7 +96,7 @@ func (h *Handler) UpdateZone(c *gin.Context) {
 	}
 
 	zone.ID = uint(id)
-	if err := h.shippingRepo.UpdateZone(&zone); err != nil {
+	if err := h.shippingService.UpdateZone(&zone); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -118,7 +118,7 @@ func (h *Handler) DeleteZone(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.DeleteZone(uint(id)); err != nil {
+	if err := h.shippingService.DeleteZone(uint(id)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

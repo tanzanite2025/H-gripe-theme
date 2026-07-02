@@ -1,15 +1,15 @@
 package shipping
 
 import (
-	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 )
 
 type Handler struct {
-	shippingRepo *repository.ShippingRepository
+	shippingService *service.ShippingService
 }
 
-func NewHandler(shippingRepo *repository.ShippingRepository) *Handler {
+func NewHandler(shippingService *service.ShippingService) *Handler {
 	return &Handler{
-		shippingRepo: shippingRepo,
+		shippingService: shippingService,
 	}
 }
