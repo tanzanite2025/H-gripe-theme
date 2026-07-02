@@ -4,8 +4,6 @@ import (
 	"errors"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/repository"
-
-	"gorm.io/gorm"
 )
 
 type CartService struct {
@@ -31,7 +29,7 @@ func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.
 		cart, err = s.cartRepo.FindBySessionID(sessionID)
 	}
 
-	if err == gorm.ErrRecordNotFound {
+	if repository.IsRecordNotFound(err) {
 		// 创建新购物车
 		cart = &product.Cart{
 			UserID:    userID,

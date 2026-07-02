@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type OrderService struct {
@@ -355,7 +354,7 @@ func (s *OrderService) findOrder(id uint) (*order.Order, error) {
 }
 
 func normalizeOrderError(err error) error {
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if repository.IsRecordNotFound(err) {
 		return ErrOrderNotFound
 	}
 	return err

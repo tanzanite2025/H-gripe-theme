@@ -7,8 +7,6 @@ import (
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/repository"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type PostService struct {
@@ -330,7 +328,7 @@ func (s *PostService) BatchDelete(ids []uint) (int, error) {
 func (s *PostService) GetTranslations(postID uint) ([]post.Post, error) {
 	groupID, err := s.postRepo.GetTranslationGroupID(postID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil, ErrPostNotFound
 		}
 		return nil, err
@@ -358,7 +356,7 @@ func (s *PostService) GetPublishedPostsByLocale(locale string) ([]post.Post, err
 func (s *PostService) findPost(id uint) (*post.Post, error) {
 	foundPost, err := s.postRepo.FindByID(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil, ErrPostNotFound
 		}
 		return nil, err
@@ -370,7 +368,7 @@ func (s *PostService) findPost(id uint) (*post.Post, error) {
 func (s *PostService) ensureSlugAvailable(slug, locale string, currentPostID uint) error {
 	existingPost, err := s.postRepo.FindBySlug(slug, locale)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil
 		}
 		return err

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type MarketingService struct {
@@ -776,7 +775,7 @@ func (s *MarketingService) generateGiftCardCode() string {
 func (s *MarketingService) ensureCouponCodeAvailable(code string, excludeID uint) error {
 	existing, err := s.couponRepo.FindCouponByCode(code)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil
 		}
 		return err
@@ -790,7 +789,7 @@ func (s *MarketingService) ensureCouponCodeAvailable(code string, excludeID uint
 func ensureGiftCardCodeAvailable(repo *repository.CouponRepository, code string, excludeID uint) error {
 	existing, err := repo.FindGiftCardByCode(code)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil
 		}
 		return err
@@ -802,7 +801,7 @@ func ensureGiftCardCodeAvailable(repo *repository.CouponRepository, code string,
 }
 
 func normalizeMarketingError(err error) error {
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if repository.IsRecordNotFound(err) {
 		return ErrMarketingNotFound
 	}
 	return err
