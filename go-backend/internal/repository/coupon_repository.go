@@ -22,10 +22,6 @@ func NewCouponRepository(db *gorm.DB) *CouponRepository {
 	return &CouponRepository{db: db}
 }
 
-func (r *CouponRepository) GetDB() *gorm.DB {
-	return r.db
-}
-
 // WithTx 复用事务 db 实例
 func (r *CouponRepository) WithTx(tx *gorm.DB) *CouponRepository {
 	return &CouponRepository{db: tx}

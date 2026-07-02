@@ -30,10 +30,6 @@ func (r *LoyaltyRepository) WithTx(tx *gorm.DB) *LoyaltyRepository {
 }
 
 // GetDB 获取底层 GORM DB 实例
-func (r *LoyaltyRepository) GetDB() *gorm.DB {
-	return r.db
-}
-
 // LoyaltyTransaction 相关方法
 
 // CreateTransaction 创建积分交易
@@ -100,6 +96,19 @@ func (r *LoyaltyRepository) SumTransactionPointsByUser(userID uint, transactionT
 
 // AdjustUserPoints atomically updates a user's points summary and creates the matching ledger entry.
 func (r *LoyaltyRepository) AdjustUserPoints(userID uint, points int, transactionType, source string, sourceID uint, description string) (*loyalty.LoyaltyTransaction, error) {
+	var transaction *loyalty.LoyaltyTransaction
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		transaction, err = r.WithTx(tx).AdjustUserPointsInCurrentTx(userID, points, transactionType, source, sourceID, description)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return transaction, nil
+}
+
+func (r *LoyaltyRepository) AdjustUserPointsInCurrentTx(userID uint, points int, transactionType, source string, sourceID uint, description string) (*loyalty.LoyaltyTransaction, error) {
 	if userID == 0 {
 		return nil, ErrInvalidUserID
 	}
@@ -115,41 +124,33 @@ func (r *LoyaltyRepository) AdjustUserPoints(userID uint, points int, transactio
 		source = transactionType
 	}
 
-	var transaction *loyalty.LoyaltyTransaction
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		userLoyalty, err := findOrCreateUserLoyaltyForUpdate(tx, userID)
-		if err != nil {
-			return err
-		}
-
-		if points < 0 && userLoyalty.AvailablePoints+points < 0 {
-			return ErrInsufficientPoints
-		}
-
-		applyPointsDelta(userLoyalty, points, transactionType)
-
-		if err := tx.Save(userLoyalty).Error; err != nil {
-			return fmt.Errorf("failed to update user loyalty: %w", err)
-		}
-
-		transaction = &loyalty.LoyaltyTransaction{
-			UserID:      userID,
-			Type:        transactionType,
-			Points:      points,
-			Balance:     userLoyalty.AvailablePoints,
-			Source:      source,
-			SourceID:    sourceID,
-			Description: description,
-		}
-
-		if err := tx.Create(transaction).Error; err != nil {
-			return fmt.Errorf("failed to create loyalty transaction: %w", err)
-		}
-
-		return nil
-	})
+	userLoyalty, err := findOrCreateUserLoyaltyForUpdate(r.db, userID)
 	if err != nil {
 		return nil, err
+	}
+
+	if points < 0 && userLoyalty.AvailablePoints+points < 0 {
+		return nil, ErrInsufficientPoints
+	}
+
+	applyPointsDelta(userLoyalty, points, transactionType)
+
+	if err := r.db.Save(userLoyalty).Error; err != nil {
+		return nil, fmt.Errorf("failed to update user loyalty: %w", err)
+	}
+
+	transaction := &loyalty.LoyaltyTransaction{
+		UserID:      userID,
+		Type:        transactionType,
+		Points:      points,
+		Balance:     userLoyalty.AvailablePoints,
+		Source:      source,
+		SourceID:    sourceID,
+		Description: description,
+	}
+
+	if err := r.db.Create(transaction).Error; err != nil {
+		return nil, fmt.Errorf("failed to create loyalty transaction: %w", err)
 	}
 
 	return transaction, nil

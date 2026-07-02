@@ -100,6 +100,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	}
 
 	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
+	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment)
 
 	services := Services{
 		Auth:         service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
@@ -111,7 +112,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Gallery:      service.NewGalleryService(repos.Gallery),
 		Registration: service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
 		Checkout:     service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty),
-		Marketing:    service.NewMarketingService(repos.Coupon, repos.Loyalty),
+		Marketing:    service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty),
 		Review:       service.NewReviewService(repos.Review),
 		Ticket:       service.NewTicketService(repos.Ticket, repos.User),
 		Subscription: service.NewSubscriptionService(repos.Subscription),
@@ -130,7 +131,11 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Chat:      service.NewChatService(repos.Chat),
 	}
 	services.AdminSettings = service.NewAdminSettingsService(services.Setting, repos.User)
-	services.Order = service.NewOrderService(db, repos.Order, repos.Product, repos.Coupon, services.Checkout, repos.Shipping, repos.Audit, repos.Loyalty)
+	services.Order = service.NewOrderService(
+		txManager,
+		repos.Order,
+		services.Checkout,
+	)
 	services.Payment = service.NewPaymentService(repos.Payment, services.Order)
 
 	return &Dependencies{

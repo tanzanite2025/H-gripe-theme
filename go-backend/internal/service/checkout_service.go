@@ -39,6 +39,13 @@ type CheckoutQuote struct {
 	Coupon         *coupon.Coupon    `json:"coupon,omitempty"`
 }
 
+type checkoutRepositories struct {
+	productRepo *repository.ProductRepository
+	couponRepo  *repository.CouponRepository
+	paymentRepo *repository.PaymentRepository
+	loyaltyRepo *repository.LoyaltyRepository
+}
+
 func NewCheckoutService(
 	productRepo *repository.ProductRepository,
 	couponRepo *repository.CouponRepository,
@@ -54,6 +61,24 @@ func NewCheckoutService(
 }
 
 func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error) {
+	return s.quote(input, checkoutRepositories{
+		productRepo: s.productRepo,
+		couponRepo:  s.couponRepo,
+		paymentRepo: s.paymentRepo,
+		loyaltyRepo: s.loyaltyRepo,
+	})
+}
+
+func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos repository.TxRepositories) (*CheckoutQuote, error) {
+	return s.quote(input, checkoutRepositories{
+		productRepo: repos.Product,
+		couponRepo:  repos.Coupon,
+		paymentRepo: repos.Payment,
+		loyaltyRepo: repos.Loyalty,
+	})
+}
+
+func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutRepositories) (*CheckoutQuote, error) {
 	if len(input.Items) == 0 {
 		return nil, errors.New("cart is empty")
 	}
@@ -65,7 +90,7 @@ func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error
 			return nil, fmt.Errorf("invalid quantity for product ID %d", item.ProductID)
 		}
 
-		product, err := s.productRepo.FindByID(item.ProductID)
+		product, err := repos.productRepo.FindByID(item.ProductID)
 		if err != nil {
 			return nil, fmt.Errorf("[CRITICAL] Product ID %d not found in database: %w", item.ProductID, err)
 		}
@@ -80,9 +105,9 @@ func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error
 	}
 
 	shippingFee := s.calculateShippingFee(subtotal)
-	taxAmount := s.calculateTax(subtotal, input.ShippingAddress.Country, input.ShippingAddress.State)
-	memberDiscount := s.calculateMemberDiscount(input.UserID, subtotal)
-	pointsToUse, pointsDiscount, err := s.calculatePointsDiscount(input.UserID, input.PointsToUse, subtotal)
+	taxAmount := s.calculateTax(repos.paymentRepo, subtotal, input.ShippingAddress.Country, input.ShippingAddress.State)
+	memberDiscount := s.calculateMemberDiscount(repos.loyaltyRepo, input.UserID, subtotal)
+	pointsToUse, pointsDiscount, err := s.calculatePointsDiscount(repos.loyaltyRepo, input.UserID, input.PointsToUse, subtotal)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +115,7 @@ func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error
 	var targetCoupon *coupon.Coupon
 	couponDiscount := 0.0
 	if input.CouponCode != "" {
-		targetCoupon, couponDiscount, err = s.validateCoupon(input.CouponCode, subtotal)
+		targetCoupon, couponDiscount, err = s.validateCoupon(repos.couponRepo, input.CouponCode, subtotal)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply coupon %s: %w", input.CouponCode, err)
 		}
@@ -118,8 +143,8 @@ func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error
 	}, nil
 }
 
-func (s *CheckoutService) calculateMemberDiscount(userID uint, subtotal float64) float64 {
-	userLoyalty, err := s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
+func (s *CheckoutService) calculateMemberDiscount(loyaltyRepo *repository.LoyaltyRepository, userID uint, subtotal float64) float64 {
+	userLoyalty, err := loyaltyRepo.FindUserLoyaltyByUserID(userID)
 	if err != nil || userLoyalty == nil {
 		return 0
 	}
@@ -139,12 +164,12 @@ func (s *CheckoutService) calculateMemberDiscount(userID uint, subtotal float64)
 	return subtotal * tierDiscount
 }
 
-func (s *CheckoutService) calculatePointsDiscount(userID uint, requestedPoints int, subtotal float64) (int, float64, error) {
+func (s *CheckoutService) calculatePointsDiscount(loyaltyRepo *repository.LoyaltyRepository, userID uint, requestedPoints int, subtotal float64) (int, float64, error) {
 	if requestedPoints <= 0 {
 		return 0, 0, nil
 	}
 
-	userLoyalty, err := s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
+	userLoyalty, err := loyaltyRepo.FindUserLoyaltyByUserID(userID)
 	if err != nil || userLoyalty == nil {
 		return 0, 0, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 0, requestedPoints)
 	}
@@ -162,8 +187,8 @@ func (s *CheckoutService) calculatePointsDiscount(userID uint, requestedPoints i
 	return pointsToUse, pointsDiscount, nil
 }
 
-func (s *CheckoutService) validateCoupon(code string, amount float64) (*coupon.Coupon, float64, error) {
-	c, err := s.couponRepo.FindCouponByCode(code)
+func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository, code string, amount float64) (*coupon.Coupon, float64, error) {
+	c, err := couponRepo.FindCouponByCode(code)
 	if err != nil {
 		return nil, 0, errors.New("coupon not found")
 	}
@@ -192,8 +217,8 @@ func (s *CheckoutService) calculateShippingFee(amount float64) float64 {
 	return 10.0
 }
 
-func (s *CheckoutService) calculateTax(amount float64, country, state string) float64 {
-	taxRate, err := s.paymentRepo.FindTaxRateByLocation(country, state)
+func (s *CheckoutService) calculateTax(paymentRepo *repository.PaymentRepository, amount float64, country, state string) float64 {
+	taxRate, err := paymentRepo.FindTaxRateByLocation(country, state)
 	if err != nil {
 		return 0
 	}
