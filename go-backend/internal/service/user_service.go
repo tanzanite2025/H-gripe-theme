@@ -205,6 +205,22 @@ func (s *UserService) BatchDeleteUsers(ids []uint, actorID uint) (int, error) {
 	return deleted, nil
 }
 
+func (s *UserService) AddBrowsingHistory(userID, productID uint) error {
+	return s.userRepo.AddBrowsingHistory(userID, productID)
+}
+
+func (s *UserService) GetBrowsingHistory(userID uint, limit int) ([]user.BrowsingHistory, error) {
+	return s.userRepo.GetBrowsingHistory(userID, limit)
+}
+
+func (s *UserService) DeleteBrowsingHistory(userID, productID uint) error {
+	return s.userRepo.DeleteBrowsingHistory(userID, productID)
+}
+
+func (s *UserService) ClearBrowsingHistory(userID uint) error {
+	return s.userRepo.ClearBrowsingHistory(userID)
+}
+
 func (s *UserService) ensureEmailAvailable(email string, currentUserID uint) error {
 	existingUser, err := s.userRepo.FindByEmail(email)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
