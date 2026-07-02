@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OrderRepository struct {
@@ -20,6 +21,15 @@ func (r *OrderRepository) WithTx(tx *gorm.DB) *OrderRepository {
 	return &OrderRepository{db: tx}
 }
 
+func (r *OrderRepository) lockForUpdate(query *gorm.DB) *gorm.DB {
+	switch r.db.Dialector.Name() {
+	case "postgres", "mysql", "sqlserver":
+		return query.Clauses(clause.Locking{Strength: "UPDATE"})
+	default:
+		return query
+	}
+}
+
 // Create 创建订单
 func (r *OrderRepository) Create(o *order.Order) error {
 	return r.db.Create(o).Error
@@ -29,6 +39,15 @@ func (r *OrderRepository) Create(o *order.Order) error {
 func (r *OrderRepository) FindByID(id uint) (*order.Order, error) {
 	var o order.Order
 	err := r.db.Preload("Items").Preload("ShippingAddress").Preload("BillingAddress").First(&o, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+func (r *OrderRepository) FindByIDForUpdate(id uint) (*order.Order, error) {
+	var o order.Order
+	err := r.lockForUpdate(r.db).First(&o, id).Error
 	if err != nil {
 		return nil, err
 	}

@@ -79,6 +79,7 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 		OrderNumber   string  `json:"order_number"`
 		Status        string  `json:"status"` // paid, completed, succeeded, failed
 		TransactionID string  `json:"transaction_id"`
+		RefundID      string  `json:"refund_id"`
 		Amount        float64 `json:"amount"`
 		Currency      string  `json:"currency"`
 		PaymentMethod string  `json:"payment_method"`
@@ -88,25 +89,47 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
-	if event.OrderNumber == "" || !isPaidWebhookStatus(event.Status) {
-		response.SuccessWithMessage(c, "Ignored or non-paid event", nil)
-		return
-	}
-
-	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
-		Provider:        string(gatewayType),
-		OrderNumber:     event.OrderNumber,
-		TransactionID:   event.TransactionID,
-		PaymentMethod:   event.PaymentMethod,
-		Amount:          event.Amount,
-		Currency:        event.Currency,
-		GatewayResponse: string(payload),
-	}); err != nil {
-		if errors.Is(err, service.ErrOrderNotFound) {
-			apierror.RespondNotFound(c, "Order")
+	switch {
+	case isPaidWebhookStatus(event.Status):
+		if event.OrderNumber == "" {
+			response.SuccessWithMessage(c, "Ignored paid event without order_number", nil)
 			return
 		}
-		apierror.RespondBadRequest(c, err.Error())
+		if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
+			Provider:        string(gatewayType),
+			OrderNumber:     event.OrderNumber,
+			TransactionID:   event.TransactionID,
+			PaymentMethod:   event.PaymentMethod,
+			Amount:          event.Amount,
+			Currency:        event.Currency,
+			GatewayResponse: string(payload),
+		}); err != nil {
+			if errors.Is(err, service.ErrOrderNotFound) {
+				apierror.RespondNotFound(c, "Order")
+				return
+			}
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+	case isRefundWebhookStatus(event.Status):
+		if err := h.paymentService.RecordVerifiedGatewayRefund(service.VerifiedGatewayRefundInput{
+			Provider:        string(gatewayType),
+			OrderNumber:     event.OrderNumber,
+			TransactionID:   event.TransactionID,
+			RefundID:        event.RefundID,
+			Amount:          event.Amount,
+			Currency:        event.Currency,
+			GatewayResponse: string(payload),
+		}); err != nil {
+			if errors.Is(err, service.ErrOrderNotFound) {
+				apierror.RespondNotFound(c, "Order")
+				return
+			}
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+	default:
+		response.SuccessWithMessage(c, "Ignored unsupported payment event", nil)
 		return
 	}
 
@@ -116,6 +139,15 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 func isPaidWebhookStatus(status string) bool {
 	switch strings.ToLower(status) {
 	case "paid", "completed", "succeeded":
+		return true
+	default:
+		return false
+	}
+}
+
+func isRefundWebhookStatus(status string) bool {
+	switch strings.ToLower(status) {
+	case "refunded", "refund_completed", "refund_succeeded", "refund.succeeded":
 		return true
 	default:
 		return false
