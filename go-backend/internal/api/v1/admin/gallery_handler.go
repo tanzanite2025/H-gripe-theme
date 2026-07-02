@@ -1,21 +1,23 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/gallery"
-	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type GalleryHandler struct {
-	galleryRepo *repository.GalleryRepository
+	galleryService *service.GalleryService
 }
 
-func NewGalleryHandler(galleryRepo *repository.GalleryRepository) *GalleryHandler {
+func NewGalleryHandler(galleryService *service.GalleryService) *GalleryHandler {
 	return &GalleryHandler{
-		galleryRepo: galleryRepo,
+		galleryService: galleryService,
 	}
 }
 
@@ -32,7 +34,7 @@ func (h *GalleryHandler) ListGalleries(c *gin.Context) {
 		pageSize = 20
 	}
 
-	galleries, total, err := h.galleryRepo.FindAllGalleries(page, pageSize)
+	galleries, total, err := h.galleryService.GetAllGalleries(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch galleries"})
 		return
@@ -60,7 +62,7 @@ func (h *GalleryHandler) GetGallery(c *gin.Context) {
 		return
 	}
 
-	galleryItem, err := h.galleryRepo.FindGalleryByID(uint(id))
+	galleryItem, err := h.galleryService.GetGalleryByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
 		return
@@ -91,7 +93,7 @@ func (h *GalleryHandler) CreateGallery(c *gin.Context) {
 		Slug:        req.Slug,
 	}
 
-	if err := h.galleryRepo.CreateGallery(newGallery); err != nil {
+	if err := h.galleryService.CreateGallery(newGallery); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create gallery"})
 		return
 	}
@@ -122,30 +124,23 @@ func (h *GalleryHandler) UpdateGallery(c *gin.Context) {
 		return
 	}
 
-	existingGallery, err := h.galleryRepo.FindGalleryByID(uint(id))
+	updatedGallery, err := h.galleryService.UpdateAdminGallery(uint(id), service.GalleryAdminUpdateInput{
+		Title:       req.Title,
+		Description: req.Description,
+		Slug:        req.Slug,
+	})
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
-		return
-	}
-
-	if req.Title != "" {
-		existingGallery.Name = req.Title
-	}
-	if req.Description != "" {
-		existingGallery.Description = req.Description
-	}
-	if req.Slug != "" {
-		existingGallery.Slug = req.Slug
-	}
-
-	if err := h.galleryRepo.UpdateGallery(existingGallery); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update gallery"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Gallery updated successfully",
-		"gallery": existingGallery,
+		"gallery": updatedGallery,
 	})
 }
 
@@ -158,7 +153,7 @@ func (h *GalleryHandler) DeleteGallery(c *gin.Context) {
 		return
 	}
 
-	if err := h.galleryRepo.DeleteGallery(uint(id)); err != nil {
+	if err := h.galleryService.DeleteGallery(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete gallery"})
 		return
 	}
@@ -177,7 +172,7 @@ func (h *GalleryHandler) ListImages(c *gin.Context) {
 		return
 	}
 
-	images, err := h.galleryRepo.FindImagesByGalleryID(uint(id))
+	images, err := h.galleryService.GetImagesByGalleryID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch images"})
 		return
@@ -221,7 +216,7 @@ func (h *GalleryHandler) CreateImage(c *gin.Context) {
 		Order:       req.Order,
 	}
 
-	if err := h.galleryRepo.CreateGalleryImage(newImage); err != nil {
+	if err := h.galleryService.CreateGalleryImage(newImage); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create image"})
 		return
 	}
@@ -255,37 +250,26 @@ func (h *GalleryHandler) UpdateImage(c *gin.Context) {
 		return
 	}
 
-	existingImage, err := h.galleryRepo.FindGalleryImageByID(uint(imageID))
+	updatedImage, err := h.galleryService.UpdateAdminGalleryImage(uint(imageID), service.GalleryImageAdminUpdateInput{
+		Title:       req.Title,
+		Description: req.Description,
+		URL:         req.URL,
+		Thumbnail:   req.Thumbnail,
+		Tags:        req.Tags,
+		Order:       req.Order,
+	})
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Image not found"})
-		return
-	}
-
-	if req.Title != "" {
-		existingImage.Title = req.Title
-	}
-	if req.Description != "" {
-		existingImage.Description = req.Description
-	}
-	if req.URL != "" {
-		existingImage.URL = req.URL
-	}
-	if req.Thumbnail != "" {
-		existingImage.Thumbnail = req.Thumbnail
-	}
-	if req.Tags != "" {
-		existingImage.Tags = req.Tags
-	}
-	existingImage.Order = req.Order
-
-	if err := h.galleryRepo.UpdateGalleryImage(existingImage); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Image not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update image"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Image updated successfully",
-		"image":   existingImage,
+		"image":   updatedImage,
 	})
 }
 
@@ -298,7 +282,7 @@ func (h *GalleryHandler) DeleteImage(c *gin.Context) {
 		return
 	}
 
-	if err := h.galleryRepo.DeleteGalleryImage(uint(imageID)); err != nil {
+	if err := h.galleryService.DeleteGalleryImage(uint(imageID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image"})
 		return
 	}
@@ -320,7 +304,7 @@ func (h *GalleryHandler) BatchDeleteImages(c *gin.Context) {
 		return
 	}
 
-	if err := h.galleryRepo.BatchDeleteImages(req.ImageIDs); err != nil {
+	if err := h.galleryService.BatchDeleteImages(req.ImageIDs); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to batch delete images"})
 		return
 	}
