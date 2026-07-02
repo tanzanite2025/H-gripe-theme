@@ -183,13 +183,6 @@ func (r *CouponRepository) FindGiftCardByCodeForUpdate(code string) (*coupon.Gif
 	return &g, nil
 }
 
-// FindGiftCardsByUserID 查找用户的礼品卡
-func (r *CouponRepository) FindGiftCardsByUserID(userID uint) ([]coupon.GiftCard, error) {
-	var cards []coupon.GiftCard
-	err := r.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&cards).Error
-	return cards, err
-}
-
 func (r *CouponRepository) FindAllGiftCards(page, pageSize int, status string) ([]coupon.GiftCard, int64, error) {
 	var cards []coupon.GiftCard
 	var total int64

@@ -226,19 +226,19 @@
               <div class="giftcard-header">
                 <span class="giftcard-icon">💳</span>
                 <div class="giftcard-info">
-                  <div class="giftcard-code">{{ card.card_code }}</div>
+                  <div class="giftcard-code">{{ card.label }}</div>
                   <div class="giftcard-label">{{ $t('giftcards.balance', 'Balance') }}</div>
                 </div>
-                <div class="giftcard-value">${{ card.balance }}</div>
+                <div class="giftcard-value">${{ card.giftcard_value }}</div>
               </div>
               <div class="giftcard-footer">
                 <span class="giftcard-points">
-                  {{ $t('giftcards.pointsRequired', 'Points required') }}: {{ card.points_spent || 0 }}
+                  {{ $t('giftcards.pointsRequired', 'Points required') }}: {{ card.points_required || 0 }}
                 </span>
                 <button
                   class="btn-redeem"
                   @click="handleRedeemGiftcard(card)"
-                  :disabled="(isLogged && pointsNumber < (card.points_spent || 0)) || redeemingCardId === card.id"
+                  :disabled="(isLogged && pointsNumber < (card.points_required || 0)) || redeemingCardId === card.id"
                 >
                   {{ redeemingCardId === card.id ? $t('giftcards.redeeming', 'Redeeming...') : $t('giftcards.redeem', 'Redeem') }}
                 </button>
