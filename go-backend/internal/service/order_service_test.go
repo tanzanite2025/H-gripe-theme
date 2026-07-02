@@ -2,276 +2,215 @@ package service
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
+	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/domain/loyalty"
+	"tanzanite/internal/domain/order"
+	paymentdomain "tanzanite/internal/domain/payment"
+	"tanzanite/internal/domain/product"
+	"tanzanite/internal/repository"
+
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-// MockOrderRepository 模拟订单仓储
-type MockOrderRepository struct {
-	mock.Mock
+func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 50, 5)
+	seedUserLoyalty(t, db, userID, 1000)
+	seedCoupon(t, db, "SAVE10", "fixed", 10, 1)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 2}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"SAVE10",
+		100,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	require.NotZero(t, createdOrder.ID)
+	assert.InDelta(t, 100, createdOrder.SubtotalAmount, 0.001)
+	assert.InDelta(t, 16, createdOrder.DiscountAmount, 0.001)
+	assert.InDelta(t, 84, createdOrder.TotalAmount, 0.001)
+	assert.Equal(t, 100, createdOrder.PointsUsed)
+	assert.InDelta(t, 1, createdOrder.PointsValue, 0.001)
+	assert.Equal(t, "SAVE10", createdOrder.CouponCode)
+
+	var savedOrder order.Order
+	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+	require.Len(t, savedOrder.Items, 1)
+	assert.Equal(t, productRecord.Name, savedOrder.Items[0].ProductName)
+	assert.Equal(t, productRecord.SKU, savedOrder.Items[0].SKU)
+	assert.InDelta(t, 100, savedOrder.Items[0].Subtotal, 0.001)
+	assert.InDelta(t, 100, savedOrder.Items[0].Total, 0.001)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 3, savedProduct.Stock)
+
+	var savedLoyalty loyalty.UserLoyalty
+	require.NoError(t, db.Where("user_id = ?", userID).First(&savedLoyalty).Error)
+	assert.Equal(t, 900, savedLoyalty.AvailablePoints)
+	assert.Equal(t, 100, savedLoyalty.UsedPoints)
+
+	var pointTransaction loyalty.LoyaltyTransaction
+	require.NoError(t, db.Where("user_id = ? AND source = ? AND source_id = ?", userID, "order", createdOrder.ID).First(&pointTransaction).Error)
+	assert.Equal(t, -100, pointTransaction.Points)
+	assert.Equal(t, 900, pointTransaction.Balance)
+
+	var savedCoupon coupon.Coupon
+	require.NoError(t, db.Where("code = ?", "SAVE10").First(&savedCoupon).Error)
+	assert.Equal(t, 1, savedCoupon.UsedCount)
+
+	var usage coupon.CouponUsage
+	require.NoError(t, db.Where("coupon_id = ? AND order_id = ?", savedCoupon.ID, createdOrder.ID).First(&usage).Error)
+	assert.InDelta(t, 10, usage.Discount, 0.001)
 }
 
-func (m *MockOrderRepository) Create(ctx context.Context, order interface{}) error {
-	args := m.Called(ctx, order)
-	return args.Error(0)
+func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 50, 1)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 2}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+
+	require.Error(t, err)
+	assert.Nil(t, createdOrder)
+	assert.True(t, strings.Contains(strings.ToLower(err.Error()), "stock"))
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Equal(t, int64(0), orderCount)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 1, savedProduct.Stock)
 }
 
-func (m *MockOrderRepository) FindByID(ctx context.Context, id uint) (interface{}, error) {
-	args := m.Called(ctx, id)
-	return args.Get(0), args.Error(1)
+func TestOrderStatusTransitionUsesDomainRules(t *testing.T) {
+	assert.True(t, (&order.Order{Status: "pending"}).CanTransitionTo("paid"))
+	assert.True(t, (&order.Order{Status: "shipped"}).CanTransitionTo("completed"))
+	assert.False(t, (&order.Order{Status: "shipped"}).CanTransitionTo("delivered"))
+	assert.False(t, (&order.Order{Status: "cancelled"}).CanTransitionTo("paid"))
 }
 
-func (m *MockOrderRepository) FindByUserID(ctx context.Context, userID uint, page, pageSize int) ([]interface{}, int64, error) {
-	args := m.Called(ctx, userID, page, pageSize)
-	return args.Get(0).([]interface{}), args.Get(1).(int64), args.Error(2)
+func TestOrderServiceGenerateOrderNumberFormat(t *testing.T) {
+	orderNumber := (&OrderService{}).generateOrderNumber()
+
+	assert.True(t, strings.HasPrefix(orderNumber, "ORD"+time.Now().Format("20060102")))
+	assert.Len(t, orderNumber, 19)
 }
 
-func (m *MockOrderRepository) Update(ctx context.Context, order interface{}) error {
-	args := m.Called(ctx, order)
-	return args.Error(0)
+func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
+	t.Helper()
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+
+	require.NoError(t, db.AutoMigrate(
+		&product.Product{},
+		&product.ProductImage{},
+		&order.Order{},
+		&order.OrderItem{},
+		&coupon.Coupon{},
+		&coupon.CouponUsage{},
+		&loyalty.UserLoyalty{},
+		&loyalty.LoyaltyTransaction{},
+		&paymentdomain.TaxRate{},
+	))
+
+	orderRepo := repository.NewOrderRepository(db)
+	productRepo := repository.NewProductRepository(db)
+	couponRepo := repository.NewCouponRepository(db)
+	paymentRepo := repository.NewPaymentRepository(db)
+	shippingRepo := repository.NewShippingRepository(db)
+	auditRepo := repository.NewAuditRepository(db)
+	loyaltyRepo := repository.NewLoyaltyRepository(db)
+
+	return db, NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
 }
 
-func (m *MockOrderRepository) UpdateStatus(ctx context.Context, id uint, status string) error {
-	args := m.Called(ctx, id, status)
-	return args.Error(0)
-}
+func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {
+	t.Helper()
 
-// TestCreateOrder 测试创建订单
-func TestCreateOrder(t *testing.T) {
-	// 准备测试数据
-	ctx := context.Background()
-	mockRepo := new(MockOrderRepository)
-
-	// 模拟订单数据
-	orderData := map[string]interface{}{
-		"user_id":      uint(1),
-		"order_number": "ORD-20260525-001",
-		"status":       "pending",
-		"subtotal":     100.00,
-		"total":        110.00,
+	record := product.Product{
+		SKU:   "SKU-TEST",
+		Name:  "Test Product",
+		Slug:  "test-product",
+		Price: price,
+		Stock: stock,
 	}
-
-	// 设置期望
-	mockRepo.On("Create", ctx, mock.Anything).Return(nil)
-
-	// 执行测试
-	err := mockRepo.Create(ctx, orderData)
-
-	// 断言
-	assert.NoError(t, err)
-	mockRepo.AssertExpectations(t)
+	require.NoError(t, db.Create(&record).Error)
+	return record
 }
 
-// TestCalculateOrderTotal 测试订单金额计算
-func TestCalculateOrderTotal(t *testing.T) {
-	tests := []struct {
-		name          string
-		subtotal      float64
-		shippingFee   float64
-		tax           float64
-		discount      float64
-		expectedTotal float64
-	}{
-		{
-			name:          "基本计算",
-			subtotal:      100.00,
-			shippingFee:   10.00,
-			tax:           5.00,
-			discount:      0.00,
-			expectedTotal: 115.00,
-		},
-		{
-			name:          "有折扣",
-			subtotal:      100.00,
-			shippingFee:   10.00,
-			tax:           5.00,
-			discount:      15.00,
-			expectedTotal: 100.00,
-		},
-		{
-			name:          "免运费",
-			subtotal:      200.00,
-			shippingFee:   0.00,
-			tax:           10.00,
-			discount:      0.00,
-			expectedTotal: 210.00,
-		},
-	}
+func seedUserLoyalty(t *testing.T, db *gorm.DB, userID uint, points int) {
+	t.Helper()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			total := tt.subtotal + tt.shippingFee + tt.tax - tt.discount
-			assert.Equal(t, tt.expectedTotal, total)
-		})
-	}
+	require.NoError(t, db.Create(&loyalty.UserLoyalty{
+		UserID:          userID,
+		TotalPoints:     points,
+		AvailablePoints: points,
+	}).Error)
 }
 
-// TestOrderStatusTransition 测试订单状态流转
-func TestOrderStatusTransition(t *testing.T) {
-	validTransitions := map[string][]string{
-		"pending":    {"paid", "cancelled"},
-		"paid":       {"processing", "cancelled"},
-		"processing": {"shipped", "cancelled"},
-		"shipped":    {"delivered"},
-		"delivered":  {"refunded"},
-		"cancelled":  {},
-		"refunded":   {},
-	}
+func seedCoupon(t *testing.T, db *gorm.DB, code, couponType string, value float64, usageLimit int) {
+	t.Helper()
 
-	tests := []struct {
-		name        string
-		fromStatus  string
-		toStatus    string
-		shouldAllow bool
-	}{
-		{"pending to paid", "pending", "paid", true},
-		{"pending to shipped", "pending", "shipped", false},
-		{"paid to processing", "paid", "processing", true},
-		{"shipped to delivered", "shipped", "delivered", true},
-		{"delivered to pending", "delivered", "pending", false},
-		{"cancelled to paid", "cancelled", "paid", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			allowed := false
-			if validStatuses, ok := validTransitions[tt.fromStatus]; ok {
-				for _, status := range validStatuses {
-					if status == tt.toStatus {
-						allowed = true
-						break
-					}
-				}
-			}
-			assert.Equal(t, tt.shouldAllow, allowed)
-		})
-	}
-}
-
-// TestGenerateOrderNumber 测试订单号生成
-func TestGenerateOrderNumber(t *testing.T) {
-	// 生成订单号
 	now := time.Now()
-	orderNumber := generateOrderNumber(now)
-
-	// 验证格式: ORD-YYYYMMDD-XXXXXX
-	assert.Contains(t, orderNumber, "ORD-")
-	assert.Contains(t, orderNumber, now.Format("20060102"))
-	assert.Len(t, orderNumber, 19) // ORD-20260525-123456
+	require.NoError(t, db.Create(&coupon.Coupon{
+		Code:       code,
+		Type:       couponType,
+		Value:      value,
+		UsageLimit: usageLimit,
+		StartDate:  now.Add(-time.Hour),
+		EndDate:    now.Add(time.Hour),
+		Enabled:    true,
+	}).Error)
 }
 
-// generateOrderNumber 生成订单号 (辅助函数)
-func generateOrderNumber(t time.Time) string {
-	return "ORD-" + t.Format("20060102") + "-123456"
-}
-
-// TestValidateOrderItems 测试订单项验证
-func TestValidateOrderItems(t *testing.T) {
-	tests := []struct {
-		name    string
-		items   []map[string]interface{}
-		wantErr bool
-	}{
-		{
-			name: "有效订单项",
-			items: []map[string]interface{}{
-				{"product_id": 1, "quantity": 2, "price": 50.00},
-				{"product_id": 2, "quantity": 1, "price": 30.00},
-			},
-			wantErr: false,
-		},
-		{
-			name:    "空订单项",
-			items:   []map[string]interface{}{},
-			wantErr: true,
-		},
-		{
-			name: "数量为0",
-			items: []map[string]interface{}{
-				{"product_id": 1, "quantity": 0, "price": 50.00},
-			},
-			wantErr: true,
-		},
-		{
-			name: "价格为负",
-			items: []map[string]interface{}{
-				{"product_id": 1, "quantity": 1, "price": -10.00},
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateOrderItems(tt.items)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-// validateOrderItems 验证订单项 (辅助函数)
-func validateOrderItems(items []map[string]interface{}) error {
-	if len(items) == 0 {
-		return assert.AnError
-	}
-	for _, item := range items {
-		if qty, ok := item["quantity"].(int); ok && qty <= 0 {
-			return assert.AnError
-		}
-		if price, ok := item["price"].(float64); ok && price < 0 {
-			return assert.AnError
-		}
-	}
-	return nil
-}
-
-// BenchmarkCalculateOrderTotal 性能测试
-func BenchmarkCalculateOrderTotal(b *testing.B) {
-	subtotal := 100.00
-	shippingFee := 10.00
-	tax := 5.00
-	discount := 15.00
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = subtotal + shippingFee + tax - discount
-	}
-}
-
-// TestConcurrentOrderCreation 并发测试
-func TestConcurrentOrderCreation(t *testing.T) {
-	ctx := context.Background()
-	mockRepo := new(MockOrderRepository)
-
-	// 设置期望 - 允许多次调用
-	mockRepo.On("Create", ctx, mock.Anything).Return(nil)
-
-	// 并发创建订单
-	concurrency := 10
-	done := make(chan bool, concurrency)
-
-	for i := 0; i < concurrency; i++ {
-		go func(id int) {
-			orderData := map[string]interface{}{
-				"user_id":      uint(id),
-				"order_number": generateOrderNumber(time.Now()),
-				"status":       "pending",
-			}
-			err := mockRepo.Create(ctx, orderData)
-			assert.NoError(t, err)
-			done <- true
-		}(i)
-	}
-
-	// 等待所有 goroutine 完成
-	for i := 0; i < concurrency; i++ {
-		<-done
+func testAddress() order.Address {
+	return order.Address{
+		FirstName:  "Test",
+		LastName:   "Buyer",
+		Address1:   "123 Test Street",
+		City:       "Test City",
+		State:      "CA",
+		PostalCode: "90001",
+		Country:    "US",
+		Phone:      "1234567890",
+		Email:      "buyer@example.com",
 	}
 }

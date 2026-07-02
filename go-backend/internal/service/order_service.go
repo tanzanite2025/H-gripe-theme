@@ -77,6 +77,9 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 
 		items[i].Price = product.Price
 		items[i].Subtotal = product.Price * float64(items[i].Quantity)
+		items[i].ProductName = product.Name
+		items[i].SKU = product.SKU
+		items[i].Total = items[i].Subtotal
 		totalAmount += items[i].Subtotal
 	}
 
@@ -159,6 +162,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uint, items []ord
 		PaymentStatus:   "unpaid",
 		ShippingMethod:  shippingMethod,
 		ShippingStatus:  "pending",
+		SubtotalAmount:  totalAmount,
 		TotalAmount:     finalAmount,
 		ShippingFee:     shippingFee,
 		TaxAmount:       taxAmount,
