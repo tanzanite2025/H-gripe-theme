@@ -9,6 +9,16 @@ type FAQService struct {
 	faqRepo *repository.FAQRepository
 }
 
+type FAQAdminUpdateInput struct {
+	Question string
+	Answer   string
+	PageID   string
+	Category string
+	Locale   string
+	Status   string
+	Order    int
+}
+
 func NewFAQService(faqRepo *repository.FAQRepository) *FAQService {
 	return &FAQService{
 		faqRepo: faqRepo,
@@ -26,6 +36,13 @@ func (s *FAQService) List(locale, pageID, category, status string, page, pageSiz
 	return s.faqRepo.List(locale, pageID, category, status, offset, pageSize)
 }
 
+func (s *FAQService) ListAdmin(locale, pageID, category, status, search string, page, pageSize int) ([]faq.FAQ, int64, error) {
+	if search != "" {
+		return s.Search(search, locale, page, pageSize)
+	}
+	return s.List(locale, pageID, category, status, page, pageSize)
+}
+
 // GetCategories 获取所有分类
 func (s *FAQService) GetCategories(locale string) ([]string, error) {
 	return s.faqRepo.GetCategories(locale)
@@ -41,9 +58,52 @@ func (s *FAQService) Update(f *faq.FAQ) error {
 	return s.faqRepo.Update(f)
 }
 
+func (s *FAQService) UpdateAdminFAQ(id uint, input FAQAdminUpdateInput) (*faq.FAQ, error) {
+	existingFAQ, err := s.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Question != "" {
+		existingFAQ.Question = input.Question
+	}
+	if input.Answer != "" {
+		existingFAQ.Answer = input.Answer
+	}
+	if input.PageID != "" {
+		existingFAQ.PageID = input.PageID
+	}
+	if input.Category != "" {
+		existingFAQ.Category = input.Category
+	}
+	if input.Locale != "" {
+		existingFAQ.Locale = input.Locale
+	}
+	if input.Status != "" {
+		existingFAQ.Status = input.Status
+	}
+	existingFAQ.Order = input.Order
+
+	if err := s.Update(existingFAQ); err != nil {
+		return nil, err
+	}
+
+	return existingFAQ, nil
+}
+
 // Delete 删除FAQ
 func (s *FAQService) Delete(id uint) error {
 	return s.faqRepo.Delete(id)
+}
+
+func (s *FAQService) BatchDelete(ids []uint) (int, error) {
+	deleted := 0
+	for _, id := range ids {
+		if err := s.Delete(id); err == nil {
+			deleted++
+		}
+	}
+	return deleted, nil
 }
 
 // Search 搜索FAQ
