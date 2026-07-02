@@ -44,7 +44,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	repos := deps.Repositories
 	services := deps.Services
 	authService := services.Auth
-	userRepo := repos.User
 	postService := services.Post
 	productService := services.Product
 	cartService := services.Cart
@@ -76,7 +75,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		Domain:   cfg.Cookie.Domain,
 	}
 	authHandler := auth.NewHandler(authService, cookieOptions)
-	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(userRepo)
+	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(services.User)
 	contentHandler := content.NewHandler(postService, faqService)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
