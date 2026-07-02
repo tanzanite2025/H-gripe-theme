@@ -66,6 +66,7 @@ type Services struct {
 	SuggestionFeedback *service.SuggestionFeedbackService
 	User               *service.UserService
 	Dashboard          *service.DashboardService
+	Audit              *service.AuditService
 }
 
 func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) *Dependencies {
@@ -120,6 +121,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		),
 		User:      service.NewUserService(repos.User),
 		Dashboard: service.NewDashboardService(repos.Order, repos.User, repos.Ticket, repos.Subscription),
+		Audit:     service.NewAuditService(repos.Audit),
 	}
 	services.AdminSettings = service.NewAdminSettingsService(services.Setting, repos.User)
 	services.Order = service.NewOrderService(db, repos.Order, repos.Product, repos.Coupon, services.Checkout, repos.Shipping, repos.Audit, repos.Loyalty)
