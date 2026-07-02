@@ -4,8 +4,6 @@ import (
 	"errors"
 	"tanzanite/internal/domain/wishlist"
 	"tanzanite/internal/repository"
-
-	"gorm.io/gorm"
 )
 
 var (
@@ -32,7 +30,7 @@ func (s *WishlistService) List(userID uint) ([]wishlist.Item, error) {
 
 func (s *WishlistService) Add(userID, productID uint) (*wishlist.Item, error) {
 	if _, err := s.productRepo.FindByID(productID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil, ErrWishlistProductNotFound
 		}
 		return nil, err
@@ -42,7 +40,7 @@ func (s *WishlistService) Add(userID, productID uint) (*wishlist.Item, error) {
 	if err == nil {
 		return existing, nil
 	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !repository.IsRecordNotFound(err) {
 		return nil, err
 	}
 
@@ -60,7 +58,7 @@ func (s *WishlistService) Add(userID, productID uint) (*wishlist.Item, error) {
 func (s *WishlistService) Remove(userID, itemID uint) error {
 	item, err := s.wishlistRepo.FindByID(itemID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return ErrWishlistItemNotFound
 		}
 		return err

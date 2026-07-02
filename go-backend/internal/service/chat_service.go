@@ -7,8 +7,6 @@ import (
 
 	domainchat "tanzanite/internal/domain/chat"
 	"tanzanite/internal/repository"
-
-	"gorm.io/gorm"
 )
 
 var (
@@ -159,7 +157,7 @@ func isValidChatRole(role string) bool {
 }
 
 func isDuplicateChatMessageError(err error) bool {
-	if errors.Is(err, gorm.ErrDuplicatedKey) {
+	if repository.IsDuplicatedKey(err) {
 		return true
 	}
 

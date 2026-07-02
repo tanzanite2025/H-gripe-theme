@@ -6,8 +6,6 @@ import (
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/repository"
-
-	"gorm.io/gorm"
 )
 
 var (
@@ -56,7 +54,7 @@ func (s *UserService) ListUsers(page, pageSize int, role, status, search string)
 
 func (s *UserService) GetUser(id uint) (*user.User, error) {
 	u, err := s.userRepo.FindByID(id)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if repository.IsRecordNotFound(err) {
 		return nil, ErrUserNotFound
 	}
 	return u, err
@@ -223,7 +221,7 @@ func (s *UserService) ClearBrowsingHistory(userID uint) error {
 
 func (s *UserService) ensureEmailAvailable(email string, currentUserID uint) error {
 	existingUser, err := s.userRepo.FindByEmail(email)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if repository.IsRecordNotFound(err) {
 		return nil
 	}
 	if err != nil {
@@ -237,7 +235,7 @@ func (s *UserService) ensureEmailAvailable(email string, currentUserID uint) err
 
 func (s *UserService) ensureUsernameAvailable(username string, currentUserID uint) error {
 	existingUser, err := s.userRepo.FindByUsername(username)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if repository.IsRecordNotFound(err) {
 		return nil
 	}
 	if err != nil {

@@ -7,8 +7,6 @@ import (
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/repository"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type ProductService struct {
@@ -329,7 +327,7 @@ func (s *ProductService) BatchDelete(ids []uint) (int, error) {
 func (s *ProductService) findProduct(id uint) (*product.Product, error) {
 	result, err := s.productRepo.FindByID(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil, ErrProductNotFound
 		}
 		return nil, err
@@ -341,7 +339,7 @@ func (s *ProductService) findProduct(id uint) (*product.Product, error) {
 func (s *ProductService) ensureSKUAvailable(sku string, currentProductID uint) error {
 	existingProduct, err := s.productRepo.FindBySKU(sku)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil
 		}
 		return err

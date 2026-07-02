@@ -5,9 +5,9 @@ import (
 	"strings"
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
+	"tanzanite/internal/repository"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 var (
@@ -26,7 +26,7 @@ func (s *TicketService) GetCustomerServiceConversations(page, pageSize int) ([]t
 
 func (s *TicketService) HasPublicCustomerServiceConversation(owner CustomerServiceOwner) (bool, string, uint, error) {
 	t, err := s.findCustomerServiceConversationByOwner(owner)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if repository.IsRecordNotFound(err) {
 		return false, "", 0, nil
 	}
 	if err != nil {
@@ -48,7 +48,7 @@ func (s *TicketService) GetOrCreatePublicCustomerServiceConversation(owner Custo
 		}
 		return t, nil
 	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !repository.IsRecordNotFound(err) {
 		return nil, err
 	}
 
@@ -133,7 +133,7 @@ func (s *TicketService) CanAccessCustomerServiceConversation(conversationID stri
 	if err == nil {
 		return true, nil
 	}
-	if errors.Is(err, ErrCustomerServiceConversationAccessDenied) || errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, ErrCustomerServiceConversationAccessDenied) || repository.IsRecordNotFound(err) {
 		return false, nil
 	}
 	return false, err
@@ -163,7 +163,7 @@ func (s *TicketService) getAccessibleCustomerServiceConversation(conversationID 
 
 	t, err := s.ticketRepo.FindCustomerServiceConversationByConversationID(strings.TrimSpace(conversationID))
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil, ErrCustomerServiceConversationAccessDenied
 		}
 		return nil, err
@@ -178,7 +178,7 @@ func (s *TicketService) getAccessibleCustomerServiceConversation(conversationID 
 func (s *TicketService) findCustomerServiceConversationByOwner(owner CustomerServiceOwner) (*ticket.Ticket, error) {
 	owner = normalizeCustomerServiceOwner(owner)
 	if !owner.Valid() {
-		return nil, gorm.ErrRecordNotFound
+		return nil, repository.ErrRecordNotFound
 	}
 
 	if owner.UserID != nil {
@@ -186,7 +186,7 @@ func (s *TicketService) findCustomerServiceConversationByOwner(owner CustomerSer
 		if err == nil {
 			return t, nil
 		}
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
+		if !repository.IsRecordNotFound(err) {
 			return nil, err
 		}
 	}
@@ -195,7 +195,7 @@ func (s *TicketService) findCustomerServiceConversationByOwner(owner CustomerSer
 		return s.ticketRepo.FindCustomerServiceConversationByOwner(nil, owner.VisitorSessionHash)
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, repository.ErrRecordNotFound
 }
 
 func (s *TicketService) updateCustomerServiceConversationOwner(t *ticket.Ticket, owner CustomerServiceOwner, agentID uint) error {
