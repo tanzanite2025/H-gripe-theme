@@ -22,8 +22,9 @@ type OrderService struct {
 }
 
 var (
-	ErrOrderNotFound         = errors.New("order not found")
-	ErrOrderDeleteNotAllowed = errors.New("only cancelled or refunded orders can be deleted")
+	ErrOrderNotFound            = errors.New("order not found")
+	ErrOrderDeleteNotAllowed    = errors.New("only cancelled or refunded orders can be deleted")
+	ErrSystemManagedOrderStatus = errors.New("order status is managed by payment workflow")
 )
 
 func NewOrderService(
@@ -180,6 +181,10 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 		return normalizeOrderError(err)
 	}
 
+	if isSystemManagedOrderStatus(status) {
+		return fmt.Errorf("%w: %s", ErrSystemManagedOrderStatus, status)
+	}
+
 	if !o.CanTransitionTo(status) {
 		return fmt.Errorf("invalid status transition from %s to %s", o.Status, status)
 	}
@@ -189,6 +194,10 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 	}
 
 	return s.orderRepo.UpdateStatus(id, status)
+}
+
+func isSystemManagedOrderStatus(status string) bool {
+	return status == "paid" || status == "refunded"
 }
 
 func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
