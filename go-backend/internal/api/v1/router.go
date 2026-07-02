@@ -206,6 +206,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 
 			// 等级配置（公开）
 			marketingGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
+			marketingGroup.GET("/loyalty/redeem-options", marketingHandler.ListRedeemGiftCardOptions)
 
 			// 需要认证的营销功能
 			authMarketing := marketingGroup.Group("")
@@ -214,18 +215,12 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				// 优惠券
 				authMarketing.POST("/coupons/validate", marketingHandler.ValidateCoupon)
 
-				// 礼品卡
-				authMarketing.GET("/gift-cards", marketingHandler.ListGiftCards)
-				authMarketing.POST("/gift-cards", marketingHandler.CreateGiftCard)
-				authMarketing.POST("/gift-cards/use", marketingHandler.UseGiftCard)
-
 				// 积分和会员
 				authMarketing.GET("/loyalty/assets", marketingHandler.GetUserAssets)
 				authMarketing.GET("/loyalty/points", marketingHandler.GetPoints)
 				authMarketing.GET("/loyalty/info", marketingHandler.GetLoyaltyInfo)
 				authMarketing.POST("/loyalty/checkin", marketingHandler.CheckIn)
 				authMarketing.POST("/loyalty/referral", marketingHandler.CreateReferral)
-				authMarketing.POST("/loyalty/spend", marketingHandler.SpendPoints)
 				authMarketing.POST("/loyalty/redeem", marketingHandler.RedeemPointsToGiftCard)
 			}
 		}

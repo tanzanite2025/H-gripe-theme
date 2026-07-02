@@ -10,8 +10,6 @@ import (
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/repository"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type MarketingService struct {
@@ -583,77 +581,6 @@ func (s *MarketingService) DeleteCoupon(id uint) error {
 	return s.couponRepo.DeleteCoupon(id)
 }
 
-// GiftCard 相关方法
-
-// CreateGiftCard 创建礼品卡
-func (s *MarketingService) CreateGiftCard(userID uint, amount float64) (*coupon.GiftCard, error) {
-	code := s.generateGiftCardCode()
-
-	card := &coupon.GiftCard{
-		Code:         code,
-		Balance:      amount,
-		InitialValue: amount,
-		Status:       "active",
-	}
-
-	if err := s.couponRepo.CreateGiftCard(card); err != nil {
-		return nil, err
-	}
-
-	return card, nil
-}
-
-// GetGiftCardsByUserID 获取用户的礼品卡
-func (s *MarketingService) GetGiftCardsByUserID(userID uint) ([]coupon.GiftCard, error) {
-	return s.couponRepo.FindGiftCardsByUserID(userID)
-}
-
-// UseGiftCard 使用礼品卡
-func (s *MarketingService) UseGiftCard(code string, amount float64, orderID uint) error {
-	if amount <= 0 {
-		return errors.New("amount must be positive")
-	}
-
-	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-
-		card, err := repos.Coupon.FindGiftCardByCodeForUpdate(code)
-		if err != nil {
-			return errors.New("gift card not found")
-		}
-
-		if card.Status != "active" {
-			return errors.New("gift card is not active")
-		}
-
-		if card.Balance < amount {
-			return errors.New("insufficient balance")
-		}
-
-		// 检查过期时间
-		if card.ExpiresAt != nil && time.Now().After(*card.ExpiresAt) {
-			return errors.New("gift card is expired")
-		}
-
-		remainingBalance := card.Balance - amount
-
-		// 扣除余额
-		if err := repos.Coupon.UpdateGiftCardBalance(card.ID, -amount); err != nil {
-			return err
-		}
-
-		// 创建交易记录
-		transaction := &coupon.GiftCardTransaction{
-			GiftCardID: card.ID,
-			OrderID:    orderID,
-			Amount:     -amount,
-			Type:       "use",
-			Balance:    remainingBalance,
-		}
-
-		return repos.Coupon.CreateGiftCardTransaction(transaction)
-	})
-}
-
 // Loyalty 相关方法
 
 // EarnPoints 赚取积分
@@ -662,15 +589,6 @@ func (s *MarketingService) EarnPoints(userID uint, points int, source string, so
 		return errors.New("points must be positive")
 	}
 	_, err := s.loyaltyRepo.AdjustUserPoints(userID, points, "earn", source, sourceID, description)
-	return err
-}
-
-// SpendPoints 消费积分
-func (s *MarketingService) SpendPoints(userID uint, points int, orderID uint) error {
-	if points <= 0 {
-		return errors.New("points must be positive")
-	}
-	_, err := s.loyaltyRepo.AdjustUserPoints(userID, -points, "spend", "order", orderID, fmt.Sprintf("Spent %d points on order", points))
 	return err
 }
 
@@ -765,12 +683,11 @@ func (s *MarketingService) GetUserLoyalty(userID uint) (*loyalty.UserLoyalty, er
 	return s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
 }
 
-// 辅助方法
-
-// generateGiftCardCode 生成礼品卡代码
-func (s *MarketingService) generateGiftCardCode() string {
-	return fmt.Sprintf("GC%s", uuid.New().String()[:12])
+func (s *MarketingService) CountRedeemedGiftCards(userID uint) (int64, error) {
+	return s.loyaltyRepo.CountTransactionsByUserAndSource(userID, "spend", "giftcard")
 }
+
+// 辅助方法
 
 func (s *MarketingService) ensureCouponCodeAvailable(code string, excludeID uint) error {
 	existing, err := s.couponRepo.FindCouponByCode(code)
@@ -851,25 +768,67 @@ type RedeemResult struct {
 	ExpiresAt       *time.Time `json:"expires_at"`
 }
 
+type RedeemGiftCardOption struct {
+	ID             int     `json:"id"`
+	Label          string  `json:"label"`
+	GiftCardValue  float64 `json:"giftcard_value"`
+	PointsRequired int     `json:"points_required"`
+	Status         string  `json:"status"`
+}
+
+func (s *MarketingService) ListRedeemGiftCardOptions(redeemCfg *setting.RedeemSettings) []RedeemGiftCardOption {
+	if redeemCfg == nil || !redeemCfg.Enabled || redeemCfg.ExchangeRate <= 0 {
+		return []RedeemGiftCardOption{}
+	}
+
+	options := make([]RedeemGiftCardOption, 0, len(redeemCfg.PresetValues))
+	for idx, value := range redeemCfg.PresetValues {
+		if value <= 0 {
+			continue
+		}
+		pointsRequired := int(math.Round(value * float64(redeemCfg.ExchangeRate)))
+		if pointsRequired < redeemCfg.MinPoints {
+			continue
+		}
+		options = append(options, RedeemGiftCardOption{
+			ID:             idx + 1,
+			Label:          fmt.Sprintf("$%.2f Gift Card", value),
+			GiftCardValue:  value,
+			PointsRequired: pointsRequired,
+			Status:         "active",
+		})
+	}
+
+	return options
+}
+
 // RedeemPointsForGiftCard 积分兑换礼品卡（原子事务）
 // 将积分扣减、礼品卡生成、交易历史写入封装为统一的事务方法。
 // 所有校验失败均返回明确错误信息（Fail Loudly 原则）。
 func (s *MarketingService) RedeemPointsForGiftCard(
 	userID uint,
-	pointsToSpend int,
 	giftCardValue float64,
 	redeemCfg *setting.RedeemSettings,
 ) (*RedeemResult, error) {
 	// 1. 校验配置是否开启
+	if redeemCfg == nil {
+		return nil, errors.New("[CRITICAL] Redeem settings are required")
+	}
 	if !redeemCfg.Enabled {
 		return nil, errors.New("[CRITICAL] Point redemption is disabled")
 	}
-
-	// 2. 严格校验兑换率
-	expectedPoints := int(giftCardValue * float64(redeemCfg.ExchangeRate))
-	if expectedPoints != pointsToSpend {
-		return nil, fmt.Errorf("[CRITICAL] Points mismatch: value %.2f requires %d points, got %d", giftCardValue, expectedPoints, pointsToSpend)
+	if redeemCfg.ExchangeRate <= 0 {
+		return nil, errors.New("[CRITICAL] Redeem exchange rate must be greater than zero")
 	}
+	if giftCardValue <= 0 {
+		return nil, errors.New("[CRITICAL] Gift card value must be greater than zero")
+	}
+	if !isAllowedRedeemValue(giftCardValue, redeemCfg.PresetValues) {
+		return nil, fmt.Errorf("[CRITICAL] Gift card value %.2f is not an allowed redeem preset", giftCardValue)
+	}
+
+	// 2. 服务端按配置计算积分，前端不再传入有价资产扣减数
+	pointsToSpend := int(math.Round(giftCardValue * float64(redeemCfg.ExchangeRate)))
 
 	// 3. 校验最小起兑点
 	if pointsToSpend < redeemCfg.MinPoints {
@@ -955,6 +914,15 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		PointsRemaining: transaction.Balance,
 		ExpiresAt:       giftcard.ExpiresAt,
 	}, nil
+}
+
+func isAllowedRedeemValue(value float64, presets []float64) bool {
+	for _, preset := range presets {
+		if math.Abs(value-preset) < 0.000001 {
+			return true
+		}
+	}
+	return false
 }
 
 // generateRedeemCode 生成指定长度的随机大写字母+数字字符串

@@ -174,67 +174,6 @@ func (h *Handler) DeleteCoupon(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "coupon deleted successfully"})
 }
 
-// Gift Card 相关接口
-
-// CreateGiftCard 创建礼品卡
-// @Summary 创建礼品卡
-// @Tags Marketing
-// @Accept json
-// @Produce json
-// @Param request body map[string]interface{} true "礼品卡信息"
-// @Success 201 {object} coupon.GiftCard
-// @Router /api/v1/marketing/gift-cards [post]
-func (h *Handler) CreateGiftCard(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
-	var req struct {
-		Amount float64 `json:"amount" binding:"required,gt=0"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	card, err := h.marketingService.CreateGiftCard(userID.(uint), req.Amount)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, card)
-}
-
-// UseGiftCard 使用礼品卡
-// @Summary 使用礼品卡
-// @Tags Marketing
-// @Accept json
-// @Produce json
-// @Param request body map[string]interface{} true "使用请求"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/marketing/gift-cards/use [post]
-func (h *Handler) UseGiftCard(c *gin.Context) {
-	var req struct {
-		Code    string  `json:"code" binding:"required"`
-		Amount  float64 `json:"amount" binding:"required,gt=0"`
-		OrderID uint    `json:"order_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.marketingService.UseGiftCard(req.Code, req.Amount, req.OrderID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "gift card used successfully"})
-}
-
 // Loyalty 相关接口
 
 // GetPoints 获取积分余额
@@ -317,38 +256,6 @@ func (h *Handler) CreateReferral(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "referral created"})
-}
-
-// SpendPoints 消费积分
-// @Summary 消费积分
-// @Tags Marketing
-// @Accept json
-// @Produce json
-// @Param request body map[string]interface{} true "消费请求"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/marketing/loyalty/spend [post]
-func (h *Handler) SpendPoints(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
-	var req struct {
-		Points  int  `json:"points" binding:"required,gt=0"`
-		OrderID uint `json:"order_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.marketingService.SpendPoints(userID.(uint), req.Points, req.OrderID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "points spent successfully"})
 }
 
 // GetLoyaltyInfo 获取会员信息
@@ -486,35 +393,37 @@ func (h *Handler) GetUserAssets(c *gin.Context) {
 		return
 	}
 
-	giftCards, err := h.marketingService.GetGiftCardsByUserID(userID.(uint))
+	redeemedGiftCards, err := h.marketingService.CountRedeemedGiftCards(userID.(uint))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 礼品卡数量
 	c.JSON(http.StatusOK, gin.H{
 		"coupons":     0, // 暂无绑定用户的独立优惠券概念
-		"point_cards": len(giftCards),
+		"point_cards": redeemedGiftCards,
 	})
 }
 
-// ListGiftCards 获取当前用户的礼品卡
-func (h *Handler) ListGiftCards(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "[CRITICAL] Unauthorized access"})
-		return
+func (h *Handler) ListRedeemGiftCardOptions(c *gin.Context) {
+	locale := c.GetHeader("X-Locale")
+	if locale == "" {
+		locale = c.DefaultQuery("lang", "en")
 	}
 
-	giftCards, err := h.marketingService.GetGiftCardsByUserID(userID.(uint))
+	config, err := h.settingService.GetRedeemSettings(locale)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Failed to load redeem settings: %v", err)})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"items": giftCards,
+		"enabled":           config.Enabled,
+		"exchange_rate":     config.ExchangeRate,
+		"min_points":        config.MinPoints,
+		"max_value_per_day": config.MaxValuePerDay,
+		"card_expiry_days":  config.CardExpiryDays,
+		"items":             h.marketingService.ListRedeemGiftCardOptions(config),
 	})
 }
 
@@ -523,7 +432,7 @@ func (h *Handler) ListGiftCards(c *gin.Context) {
 // @Tags Marketing
 // @Accept json
 // @Produce json
-// @Param request body map[string]interface{} true "兑换请求 (points / points_to_spend, giftcard_value)"
+// @Param request body map[string]interface{} true "兑换请求 (giftcard_value)"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/marketing/loyalty/redeem [post]
 func (h *Handler) RedeemPointsToGiftCard(c *gin.Context) {
@@ -533,24 +442,11 @@ func (h *Handler) RedeemPointsToGiftCard(c *gin.Context) {
 		return
 	}
 
-	// 双字段映射：同时接受 points 和 points_to_spend，解决前后端命名偏差
 	var req struct {
-		Points        int     `json:"points"`
-		PointsToSpend int     `json:"points_to_spend"`
 		GiftCardValue float64 `json:"giftcard_value" binding:"required,gt=0"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("[CRITICAL] Invalid request arguments: %v", err)})
-		return
-	}
-
-	// 容错：优先使用 points，如果为零则使用 points_to_spend
-	pointsToSpend := req.Points
-	if pointsToSpend <= 0 {
-		pointsToSpend = req.PointsToSpend
-	}
-	if pointsToSpend <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "[CRITICAL] 'points' or 'points_to_spend' must be > 0"})
 		return
 	}
 
@@ -566,7 +462,7 @@ func (h *Handler) RedeemPointsToGiftCard(c *gin.Context) {
 	}
 
 	// 调用核心 Service 方法
-	result, err := h.marketingService.RedeemPointsForGiftCard(userID.(uint), pointsToSpend, req.GiftCardValue, config)
+	result, err := h.marketingService.RedeemPointsForGiftCard(userID.(uint), req.GiftCardValue, config)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

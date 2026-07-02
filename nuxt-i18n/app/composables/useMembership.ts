@@ -17,11 +17,11 @@ interface TierConfig {
 }
 
 // 礼品卡类型
-interface GiftCard {
+interface RedeemGiftCardOption {
   id: number
-  card_code: string
-  balance: string
-  points_spent: number
+  label: string
+  giftcard_value: number
+  points_required: number
   status: string
   cover_image?: string
 }
@@ -158,7 +158,7 @@ export function useMembership() {
   }
 
   // ========== 礼品卡 ==========
-  const availableGiftcards = ref<GiftCard[]>([])
+  const availableGiftcards = ref<RedeemGiftCardOption[]>([])
   const giftcardsLoading = ref(false)
   const giftcardsError = ref('')
   const redeemingCardId = ref<number | null>(null)
@@ -170,7 +170,7 @@ export function useMembership() {
     giftcardsError.value = ''
 
     try {
-      const data = await auth.request<any>('/marketing/gift-cards')
+      const data = await auth.request<any>('/marketing/loyalty/redeem-options')
       const allCards = data.items || data;
       if (!allCards || (Array.isArray(allCards) && allCards.length === 0 && !data.items && !data)) {
         throw new Error("[CRITICAL] gift cards missing");
@@ -184,7 +184,7 @@ export function useMembership() {
     }
   }
 
-  const handleRedeemGiftcard = async (card: GiftCard) => {
+  const handleRedeemGiftcard = async (card: RedeemGiftCardOption) => {
     if (redeemingCardId.value) return
 
     if (!isLogged.value) {
@@ -203,9 +203,7 @@ export function useMembership() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          points: card.points_spent,
-          points_to_spend: card.points_spent,
-          giftcard_value: parseFloat(card.balance)
+          giftcard_value: Number(card.giftcard_value)
         })
       })
 
