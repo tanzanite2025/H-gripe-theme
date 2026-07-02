@@ -25,11 +25,7 @@ const pendingSyncQueue = ref<Array<{ sessionId: string; message: ChatMessage }>>
 const isSyncing = ref(false)
 
 export const useChatSync = () => {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => {
-    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-    return base.replace(/\/$/, '')
-  })
+  const { request } = useApiRequest()
 
   /**
    * 保存消息到本地存储（快速响应）
@@ -61,10 +57,13 @@ export const useChatSync = () => {
     message: ChatMessage
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await $fetch(`${apiBase.value}/chat/messages`, {
+      await request('/chat/messages', {
         method: 'POST',
-        credentials: 'include',
-        body: {
+        headers: {
+          'Content-Type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
           session_id: sessionId,
           message: {
             id: message.id,
@@ -73,9 +72,9 @@ export const useChatSync = () => {
             timestamp: message.timestamp,
             agent_id: message.agentId,
             metadata: message.metadata
-          }
-        }
-      })
+          },
+        }),
+      }, 'Failed to sync chat message')
 
       return { success: true }
     } catch (e: any) {
@@ -166,11 +165,12 @@ export const useChatSync = () => {
   ): Promise<{ messages: ChatMessage[]; fromCache: boolean }> => {
     try {
       // 优先从后端加载
-      const response = await $fetch<{ messages: ChatMessage[]; count: number }>(
-        `${apiBase.value}/chat/messages?session_id=${sessionId}&limit=100`,
+      const response = await request<{ messages: ChatMessage[]; count: number }>(
+        `/chat/messages?session_id=${encodeURIComponent(sessionId)}&limit=100`,
         {
-          credentials: 'include'
-        }
+          headers: { accept: 'application/json' },
+        },
+        'Failed to load chat history'
       )
 
       if (response.messages && response.messages.length > 0) {

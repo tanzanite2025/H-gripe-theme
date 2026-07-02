@@ -15,9 +15,9 @@ info:
     - 审计日志
     
     ## 认证
-    大部分 API 需要 JWT Token 认证。在请求头中添加：
+    大部分 API 使用 HttpOnly Cookie 认证。浏览器客户端需要携带凭据：
     ```
-    Authorization: Bearer <your_jwt_token>
+    credentials: include
     ```
     
     ## 速率限制
@@ -72,11 +72,11 @@ tags:
 
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT Token 认证
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: auth_token
+      description: HttpOnly Cookie authentication
   
   schemas:
     Error:
@@ -417,7 +417,7 @@ paths:
       summary: 创建订单
       description: 从购物车创建新订单
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -493,7 +493,7 @@ paths:
       summary: 获取订单列表
       description: 获取当前用户的订单列表
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: page
           in: query
@@ -538,7 +538,7 @@ paths:
       summary: 验证优惠券
       description: 验证优惠券是否可用
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -585,7 +585,7 @@ paths:
       summary: 创建评价
       description: 为产品创建评价
       security:
-        - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -639,4 +639,4 @@ paths:
                 $ref: '#/components/schemas/Error'
 
 security:
-  - BearerAuth: []
+        - CookieAuth: []

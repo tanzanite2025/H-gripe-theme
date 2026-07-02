@@ -116,7 +116,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Subscription（订阅）
 
 #### 工具和脚本
-- ✅ WordPress 数据导出脚本（PHP）
 - ✅ Go 数据导入工具
 - ✅ 开发环境设置脚本
 - ✅ 启动脚本（Windows/Linux）
@@ -155,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 安全特性
 - bcrypt 密码加密
-- JWT Token 认证
+- HttpOnly Cookie + CSRF 认证
 - CORS 配置
 - SQL 注入防护
 - XSS 防护头
@@ -166,20 +165,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 单元测试覆盖
 - 代码注释完整
 - 错误处理规范
-
-### Migration from WordPress
-
-#### 支持的数据迁移
-- ✅ 用户数据
-- ✅ 文章数据
-- ✅ 产品数据（WooCommerce）
-- ✅ 设置数据
-- ✅ FAQ 数据
-
-#### API 兼容性
-- 保持与 WordPress REST API 相似的响应格式
-- 支持相同的查询参数
-- 兼容前端 Nuxt 应用
 
 ### Known Issues
 

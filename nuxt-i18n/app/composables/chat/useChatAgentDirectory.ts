@@ -19,12 +19,12 @@ interface StoredChatAgentCache {
   timestamp?: number
 }
 
-const AGENTS_CACHE_KEY = 'whatsapp_agents_cache'
+const AGENTS_CACHE_KEY = 'public_chat_agents_cache'
 const AGENTS_CACHE_TTL_MS = 30 * 60 * 1000
 
 export const filterAgentsForUser = (agents: any[], currentUserId?: number | string | null) => {
   return agents.filter((agent: any) => {
-    return !agent.wp_user_id || agent.wp_user_id !== currentUserId
+    return !agent.user_id || String(agent.user_id) !== String(currentUserId)
   })
 }
 
@@ -55,9 +55,9 @@ export const saveChatAgentsCache = (data: ChatAgentCacheData) => {
 
 export const getDevFallbackAgentDirectory = (): ChatAgentCacheData => ({
   agents: [
-    { id: 'CS001', name: 'Sales', email: 'sales@tanzanite.site', avatar: '', whatsapp: '+8613800138001', wp_user_id: null },
-    { id: 'CS002', name: 'Tech Support', email: 'tech@tanzanite.site', avatar: '', whatsapp: '+8613800138002', wp_user_id: null },
-    { id: 'CS003', name: 'After Sales', email: 'support@tanzanite.site', avatar: '', whatsapp: '+8613800138003', wp_user_id: null },
+    { id: 'CS001', name: 'Sales', email: 'sales@tanzanite.site', avatar: '', whatsapp: '+8613800138001', user_id: null },
+    { id: 'CS002', name: 'Tech Support', email: 'tech@tanzanite.site', avatar: '', whatsapp: '+8613800138002', user_id: null },
+    { id: 'CS003', name: 'After Sales', email: 'support@tanzanite.site', avatar: '', whatsapp: '+8613800138003', user_id: null },
   ],
   emailSettings: {
     preSalesEmail: 'sales@tanzanite.site',

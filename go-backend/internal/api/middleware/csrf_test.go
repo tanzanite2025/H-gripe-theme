@@ -98,7 +98,7 @@ func TestCSRFProtectionAllowsDoubleSubmitToken(t *testing.T) {
 	}
 }
 
-func TestCSRFProtectionAllowsBearerClientsWithoutCookie(t *testing.T) {
+func TestCSRFProtectionAllowsUnsafeRequestWithoutAuthCookie(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
@@ -108,7 +108,6 @@ func TestCSRFProtectionAllowsBearerClientsWithoutCookie(t *testing.T) {
 	})
 
 	request := httptest.NewRequest(http.MethodPost, "/orders", nil)
-	request.Header.Set("Authorization", "Bearer token")
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
@@ -118,7 +117,7 @@ func TestCSRFProtectionAllowsBearerClientsWithoutCookie(t *testing.T) {
 	}
 }
 
-func TestCSRFProtectionBlocksCookieRequestEvenWithBearerWithoutToken(t *testing.T) {
+func TestCSRFProtectionBlocksCookieRequestWithoutToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
@@ -129,7 +128,6 @@ func TestCSRFProtectionBlocksCookieRequestEvenWithBearerWithoutToken(t *testing.
 
 	request := httptest.NewRequest(http.MethodPost, "/orders", nil)
 	request.Header.Set("Origin", "https://app.example.com")
-	request.Header.Set("Authorization", "Bearer token")
 	request.AddCookie(&http.Cookie{Name: securecookie.AuthTokenCookie, Value: "jwt"})
 	recorder := httptest.NewRecorder()
 

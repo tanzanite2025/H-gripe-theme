@@ -51,7 +51,7 @@ type TicketExportData struct {
 
 var (
 	dryRun     = flag.Bool("dry-run", false, "试运行模式，不实际写入数据库")
-	inputFile  = flag.String("input", "scripts/wordpress-export/export/tickets.json", "输入文件路径")
+	inputFile  = flag.String("input", "data/import/tickets.json", "输入文件路径")
 	configFile = flag.String("config", "config/config.yaml", "配置文件路径")
 )
 

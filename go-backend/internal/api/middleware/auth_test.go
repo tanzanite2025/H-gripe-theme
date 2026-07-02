@@ -10,6 +10,7 @@ import (
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/securecookie"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -132,7 +133,7 @@ func TestBackofficeDashboardGateUsesCurrentUserRole(t *testing.T) {
 			)
 
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/dashboard/stats", nil)
-			req.Header.Set("Authorization", "Bearer "+token)
+			req.AddCookie(&http.Cookie{Name: securecookie.AuthTokenCookie, Value: token})
 			rec := httptest.NewRecorder()
 
 			router.ServeHTTP(rec, req)
@@ -140,4 +141,48 @@ func TestBackofficeDashboardGateUsesCurrentUserRole(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 		})
 	}
+}
+
+func TestAuthMiddlewareRejectsBearerWithoutCookie(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	authService := service.NewAuthService(
+		&testUserRepository{
+			users: map[uint]*user.User{
+				1: {
+					ID:       1,
+					Email:    "person@example.com",
+					Username: "person",
+					Role:     "admin",
+					Status:   "active",
+				},
+			},
+		},
+		config.JWTConfig{
+			Secret:             "test-secret",
+			ExpireHours:        24,
+			RefreshExpireHours: 168,
+		},
+	)
+	token, err := authService.GenerateToken(&user.User{
+		ID:       1,
+		Email:    "person@example.com",
+		Username: "person",
+		Role:     "admin",
+		Status:   "active",
+	})
+	assert.NoError(t, err)
+
+	router := gin.New()
+	router.GET("/private", AuthMiddleware(authService), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/private", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }

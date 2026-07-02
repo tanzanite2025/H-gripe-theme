@@ -89,7 +89,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		Password  string `json:"password" binding:"required,min=6"`
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
-		Role      string `json:"role" binding:"required,oneof=user admin manager editor support agent viewer"`
+		Role      string `json:"role" binding:"required,oneof=user admin manager editor support viewer"`
 		Locale    string `json:"locale"`
 		Status    string `json:"status" binding:"required,oneof=active inactive suspended"`
 	}
@@ -141,7 +141,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		Password  string `json:"password" binding:"omitempty,min=6"`
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
-		Role      string `json:"role" binding:"omitempty,oneof=user admin manager editor support agent viewer"`
+		Role      string `json:"role" binding:"omitempty,oneof=user admin manager editor support viewer"`
 		Locale    string `json:"locale"`
 		Status    string `json:"status" binding:"omitempty,oneof=active inactive suspended"`
 	}

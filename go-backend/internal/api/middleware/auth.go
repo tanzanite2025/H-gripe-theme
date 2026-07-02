@@ -2,42 +2,23 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
+
 	"tanzanite/internal/domain/auth"
+	"tanzanite/internal/pkg/securecookie"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware JWT认证中间件
 func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var tokenString string
-
-		// 优先从 Cookie 中获取 token
-		if cookie, err := c.Cookie("auth_token"); err == nil && cookie != "" {
-			tokenString = cookie
-		} else {
-			// 从Header获取token
-			authHeader := c.GetHeader("Authorization")
-			if authHeader == "" {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
-				c.Abort()
-				return
-			}
-
-			// 解析Bearer token
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-				c.Abort()
-				return
-			}
-
-			tokenString = parts[1]
+		tokenString, err := c.Cookie(securecookie.AuthTokenCookie)
+		if err != nil || tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication cookie required"})
+			c.Abort()
+			return
 		}
 
-		// 验证token
 		claims, err := authService.ValidateActiveToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
@@ -45,53 +26,36 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		// 将用户信息存储到上下文
-		c.Set("user_id", claims.UserID)
-		c.Set("email", claims.Email)
-		c.Set("username", claims.Username)
-		c.Set("role", claims.Role)
-		c.Set("user_role", claims.Role) // 为权限中间件添加
-
+		setAuthClaims(c, claims)
 		c.Next()
 	}
 }
 
-// OptionalAuthMiddleware 可选认证中间件（不强制要求登录）
 func OptionalAuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var tokenString string
-
-		if cookie, err := c.Cookie("auth_token"); err == nil && cookie != "" {
-			tokenString = cookie
-		} else {
-			authHeader := c.GetHeader("Authorization")
-			if authHeader == "" {
-				c.Next()
-				return
-			}
-
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				c.Next()
-				return
-			}
-
-			tokenString = parts[1]
+		tokenString, err := c.Cookie(securecookie.AuthTokenCookie)
+		if err != nil || tokenString == "" {
+			c.Next()
+			return
 		}
+
 		claims, err := authService.ValidateActiveToken(tokenString)
 		if err == nil {
-			c.Set("user_id", claims.UserID)
-			c.Set("email", claims.Email)
-			c.Set("username", claims.Username)
-			c.Set("role", claims.Role)
-			c.Set("user_role", claims.Role) // 为权限中间件添加
+			setAuthClaims(c, claims)
 		}
 
 		c.Next()
 	}
 }
 
-// RequireRole 角色验证中间件
+func setAuthClaims(c *gin.Context, claims *service.Claims) {
+	c.Set("user_id", claims.UserID)
+	c.Set("email", claims.Email)
+	c.Set("username", claims.Username)
+	c.Set("role", claims.Role)
+	c.Set("user_role", claims.Role)
+}
+
 func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("role")

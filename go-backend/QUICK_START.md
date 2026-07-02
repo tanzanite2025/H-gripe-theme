@@ -71,6 +71,7 @@ curl -X POST http://localhost:9000/api/v1/auth/register \
 
 ```bash
 curl -X POST http://localhost:9000/api/v1/auth/login \
+  -c cookies.txt \
   -H "Content-Type: application/json" \
   -d '{
     "email_or_username": "test@example.com",
@@ -78,13 +79,13 @@ curl -X POST http://localhost:9000/api/v1/auth/login \
   }'
 ```
 
-保存返回的 `token`！
+登录成功后会写入 `auth_token`、`refresh_token`、`csrf_token` Cookie。
 
 ### 3. 获取用户信息
 
 ```bash
 curl http://localhost:9000/api/v1/auth/profile \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+  -b cookies.txt
 ```
 
 ### 4. 获取产品列表
@@ -133,28 +134,13 @@ make dev
 
 ---
 
-## 📊 从 WordPress 迁移数据
+## 📊 离线导入数据
 
-### 1. 导出 WordPress 数据
-
-在 WordPress 根目录运行：
+将需要导入的 JSON 文件放到 `data/import/`，然后按模块运行 Go 导入命令：
 
 ```bash
-php wp-content/themes/tanzanite-theme/go-backend/scripts/wp-data-export.php
-```
-
-### 2. 复制导出文件
-
-```bash
-# 将导出的文件复制到 Go 项目
-cp -r export/ go-backend/scripts/export/
-```
-
-### 3. 导入到 Go 后端
-
-```bash
-cd go-backend
-go run scripts/import-data.go
+go run ./cmd/import/settings -input data/import/settings.json
+go run ./cmd/import/faqs -input data/import/faqs.json
 ```
 
 ---

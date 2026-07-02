@@ -89,10 +89,15 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+  const requiresAuth = to.meta.requiresAuth !== false
+
+  if (requiresAuth && !authStore.initialized) {
+    await authStore.initAuth()
+  }
   
-  if (to.meta.requiresAuth !== false && !authStore.isAuthenticated) {
+  if (requiresAuth && !authStore.isAuthenticated) {
     // 需要认证但未登录，跳转到登录页
     next({ name: 'Login', query: { redirect: to.fullPath } })
   } else if (to.name === 'Login' && authStore.isAuthenticated) {

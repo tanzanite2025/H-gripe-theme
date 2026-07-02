@@ -173,11 +173,11 @@
           </el-form>
         </el-tab-pane>
 
-        <!-- Public Chat 客服兼容检查 -->
+        <!-- Public Chat 客服 -->
         <el-tab-pane label="Public Chat 客服" name="public_chat">
-          <div class="compatibility-panel">
+          <div class="agent-panel">
             <el-alert
-              title="用于 M2.9/M3 前确认 Go agent profile、用户状态与 users.role 映射是否兼容。"
+              title="Public Chat 只读取 Go customer_service_agent_profiles；公开展示需绑定 active 用户且角色为 admin、manager 或 support。"
               type="info"
               show-icon
               :closable="false"
@@ -186,66 +186,48 @@
             <div class="panel-actions">
               <el-button
                 type="primary"
-                :loading="loadingCompatibility"
-                @click="fetchPublicChatCompatibility"
+                :loading="loadingPublicChatAgents"
+                @click="fetchPublicChatAgents"
               >
-                刷新兼容检查
+                刷新客服概览
               </el-button>
             </div>
 
             <el-row :gutter="16" class="summary-row">
               <el-col :xs="24" :sm="8">
                 <el-card shadow="never">
-                  <div class="summary-label">Go 可公开客服数</div>
-                  <div class="summary-value">{{ compatSummary.compatible_agents || 0 }}</div>
+                  <div class="summary-label">Profile 总数</div>
+                  <div class="summary-value">{{ publicChatAgentsSummary.profile_count || 0 }}</div>
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="8">
                 <el-card shadow="never">
-                  <div class="summary-label">是否仍依赖 PHP 对账</div>
-                  <div class="summary-value">
-                    <el-tag :type="compatSummary.php_preflight_required ? 'warning' : 'success'">
-                      {{ compatSummary.php_preflight_required ? '需要' : '不需要' }}
-                    </el-tag>
-                  </div>
-                </el-card>
-              </el-col>
-              <el-col :xs="24" :sm="8">
-                <el-card shadow="never">
-                  <div class="summary-label">Go 缺失 profile 字段</div>
-                  <div class="tag-list">
-                    <el-tag
-                      v-for="field in compatSummary.missing_profile_columns || []"
-                      :key="field"
-                      type="danger"
-                      effect="plain"
-                    >
-                      {{ field }}
-                    </el-tag>
-                  </div>
+                  <div class="summary-label">公开客服数</div>
+                  <div class="summary-value">{{ publicChatAgentsSummary.exposed_agents || 0 }}</div>
                 </el-card>
               </el-col>
             </el-row>
 
             <el-alert
-              v-for="warning in compatWarnings"
+              v-for="warning in publicChatAgentWarnings"
               :key="warning"
-              class="compat-warning"
+              class="agent-warning"
               :title="warning"
               type="warning"
               show-icon
               :closable="false"
             />
 
-            <h3>Go users → public chat agents</h3>
+            <h3>Public chat agents</h3>
             <el-table
-              v-loading="loadingCompatibility"
-              :data="compatAgents"
+              v-loading="loadingPublicChatAgents"
+              :data="publicChatAgents"
               border
-              empty-text="暂无 Go active customer-service agent 候选"
+              empty-text="暂无 public chat 客服 profile"
             >
-              <el-table-column prop="id" label="User ID" width="90" />
+              <el-table-column prop="id" label="Profile ID" width="100" />
               <el-table-column prop="agent_id" label="Agent ID" width="120" />
+              <el-table-column prop="user_id" label="User ID" width="90" />
               <el-table-column prop="display_name" label="Name" min-width="140" />
               <el-table-column prop="email" label="Email" min-width="180" />
               <el-table-column prop="whatsapp" label="WhatsApp" width="140" />
@@ -261,33 +243,7 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="wp_user_id" label="wp_user_id" width="120" />
             </el-table>
-
-            <h3>Role 映射规则</h3>
-            <el-table :data="compatRoleMappings" border>
-              <el-table-column prop="source" label="Source role" min-width="180" />
-              <el-table-column prop="normalized" label="Normalized Go role" min-width="180" />
-              <el-table-column label="Public visible" width="140">
-                <template #default="{ row }">
-                  <el-tag :type="row.agent_visible ? 'success' : 'info'">
-                    {{ row.agent_visible ? 'Yes' : 'No' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-            </el-table>
-
-            <h3>Go DB verification SQL</h3>
-            <el-collapse>
-              <el-collapse-item
-                v-for="item in compatPreflightSql"
-                :key="item.title"
-                :title="item.title"
-                :name="item.title"
-              >
-                <pre class="sql-block">{{ item.sql }}</pre>
-              </el-collapse-item>
-            </el-collapse>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -347,13 +303,11 @@ const paymentSettings = reactive({
   test_mode: true
 })
 
-const loadingCompatibility = ref(false)
-const publicChatCompatibility = ref(null)
-const compatSummary = computed(() => publicChatCompatibility.value?.summary || {})
-const compatAgents = computed(() => publicChatCompatibility.value?.agents || [])
-const compatWarnings = computed(() => publicChatCompatibility.value?.warnings || [])
-const compatRoleMappings = computed(() => publicChatCompatibility.value?.role_mappings || [])
-const compatPreflightSql = computed(() => publicChatCompatibility.value?.preflight_sql || [])
+const loadingPublicChatAgents = ref(false)
+const publicChatAgentsOverview = ref(null)
+const publicChatAgentsSummary = computed(() => publicChatAgentsOverview.value?.summary || {})
+const publicChatAgents = computed(() => publicChatAgentsOverview.value?.agents || [])
+const publicChatAgentWarnings = computed(() => publicChatAgentsOverview.value?.warnings || [])
 
 const hasPermission = (permission) => {
   return authStore.hasPermission(permission)
@@ -388,22 +342,22 @@ const fetchSettings = async (group) => {
 
 const handleTabChange = (tabName) => {
   if (tabName === 'public_chat') {
-    fetchPublicChatCompatibility()
+    fetchPublicChatAgents()
     return
   }
   fetchSettings(tabName)
 }
 
-const fetchPublicChatCompatibility = async () => {
-  loadingCompatibility.value = true
+const fetchPublicChatAgents = async () => {
+  loadingPublicChatAgents.value = true
   try {
-    const response = await axios.get('/api/admin/settings/public-chat-agent-compatibility')
-    publicChatCompatibility.value = response.data
+    const response = await axios.get('/api/admin/settings/public-chat-agents')
+    publicChatAgentsOverview.value = response.data
   } catch (error) {
-    console.error('获取 Public Chat 客服兼容检查失败', error)
-    ElMessage.error('获取 Public Chat 客服兼容检查失败')
+    console.error('获取 Public Chat 客服失败', error)
+    ElMessage.error('获取 Public Chat 客服失败')
   } finally {
-    loadingCompatibility.value = false
+    loadingPublicChatAgents.value = false
   }
 }
 
@@ -461,7 +415,7 @@ onMounted(() => {
   color: #303133;
 }
 
-.compatibility-panel {
+.agent-panel {
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -494,7 +448,7 @@ onMounted(() => {
   gap: 8px;
 }
 
-.compat-warning {
+.agent-warning {
   margin-top: -6px;
 }
 

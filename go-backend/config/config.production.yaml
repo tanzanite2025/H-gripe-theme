@@ -64,7 +64,6 @@ cors:
   allowed_headers:
     - Origin
     - Content-Type
-    - Authorization
     - Accept-Language
     - X-CSRF-Token
     - X-Request-ID

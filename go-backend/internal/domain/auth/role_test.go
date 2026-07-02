@@ -4,11 +4,17 @@ import "testing"
 
 func TestNormalizeRole(t *testing.T) {
 	tests := map[string]Role{
-		"administrator":              RoleAdmin,
-		"shop_manager":               RoleManager,
-		"agent":                      RoleSupport,
-		"customer_service":           RoleSupport,
-		"administrator,shop_manager": RoleAdmin,
+		"admin":                      RoleAdmin,
+		"ADMIN":                      RoleAdmin,
+		"manager":                    RoleManager,
+		"support":                    RoleSupport,
+		"editor":                     RoleEditor,
+		"viewer":                     RoleViewer,
+		"administrator":              RoleUser,
+		"shop_manager":               RoleUser,
+		"agent":                      RoleUser,
+		"customer_service":           RoleUser,
+		"administrator,shop_manager": RoleUser,
 		"subscriber":                 RoleUser,
 		"":                           RoleUser,
 	}
@@ -21,13 +27,13 @@ func TestNormalizeRole(t *testing.T) {
 }
 
 func TestIsCustomerServiceAgentRole(t *testing.T) {
-	for _, raw := range []string{"admin", "manager", "support", "administrator", "shop_manager", "customer_service"} {
+	for _, raw := range []string{"admin", "manager", "support"} {
 		if !IsCustomerServiceAgentRole(raw) {
 			t.Fatalf("expected %q to be a customer service agent role", raw)
 		}
 	}
 
-	for _, raw := range []string{"editor", "viewer", "subscriber", "customer"} {
+	for _, raw := range []string{"agent", "administrator", "shop_manager", "customer_service", "editor", "viewer", "subscriber", "customer"} {
 		if IsCustomerServiceAgentRole(raw) {
 			t.Fatalf("expected %q to not be a customer service agent role", raw)
 		}

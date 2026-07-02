@@ -80,15 +80,14 @@ func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 			continue
 		}
 		items = append(items, gin.H{
-			"id":              *agent.UserID,
-			"agent_id":        agent.AgentID,
-			"legacy_agent_id": agent.AgentID,
-			"wp_user_id":      *agent.UserID,
-			"name":            agent.DisplayName(),
-			"email":           agent.PublicEmail(),
-			"avatar":          agent.Avatar,
-			"whatsapp":        agent.WhatsApp,
-			"status":          emptyToDefault(agent.OnlineStatus, "offline"),
+			"id":       *agent.UserID,
+			"user_id":  *agent.UserID,
+			"agent_id": agent.AgentID,
+			"name":     agent.DisplayName(),
+			"email":    agent.PublicEmail(),
+			"avatar":   agent.Avatar,
+			"whatsapp": agent.WhatsApp,
+			"status":   emptyToDefault(agent.OnlineStatus, "offline"),
 		})
 	}
 
