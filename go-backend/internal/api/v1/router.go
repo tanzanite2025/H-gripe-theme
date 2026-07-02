@@ -190,14 +190,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			orderGroup.POST("/:id/cancel", orderHandler.CancelOrder)
 		}
 
-		// 管理员订单路由
-		adminOrderGroup := v1.Group("/admin/orders")
-		adminOrderGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin"))
-		{
-			adminOrderGroup.GET("", orderHandler.ListAllOrders)
-			adminOrderGroup.PUT("/:id/status", orderHandler.UpdateOrderStatus)
-		}
-
 		// 营销路由
 		marketingGroup := v1.Group("/marketing")
 		{

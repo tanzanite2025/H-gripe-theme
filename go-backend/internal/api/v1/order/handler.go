@@ -242,65 +242,6 @@ func (h *Handler) ListPublicChatOrders(c *gin.Context) {
 	c.JSON(200, items)
 }
 
-// ListAllOrders 获取所有订单（管理员）
-// @Summary 获取所有订单
-// @Tags Orders
-// @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "订单状态"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/orders [get]
-func (h *Handler) ListAllOrders(c *gin.Context) {
-	params := pagination.ParsePagination(c)
-	status := c.Query("status")
-
-	orders, total, err := h.orderService.GetAllOrders(params.Page, params.PageSize, status)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
-	response.Paged(c, orders, params.Page, params.PageSize, total)
-}
-
-// UpdateOrderStatus 更新订单状态
-// @Summary 更新订单状态
-// @Tags Orders
-// @Accept json
-// @Produce json
-// @Param id path int true "订单ID"
-// @Param status body map[string]string true "状态"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/orders/{id}/status [put]
-func (h *Handler) UpdateOrderStatus(c *gin.Context) {
-	if role, exists := c.Get("role"); !exists || role != "admin" {
-		apierror.RespondForbidden(c)
-		return
-	}
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		apierror.RespondBadRequest(c, "Invalid order ID")
-		return
-	}
-
-	var req struct {
-		Status string `json:"status" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondValidationError(c, err.Error())
-		return
-	}
-
-	if err := h.orderService.UpdateOrderStatus(uint(id), req.Status); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	response.SuccessWithMessage(c, "Order status updated", nil)
-}
-
 // CancelOrder 取消订单
 // @Summary 取消订单
 // @Tags Orders
