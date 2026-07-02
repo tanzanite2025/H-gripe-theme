@@ -1,0 +1,201 @@
+package service
+
+import (
+	"errors"
+	"fmt"
+	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/domain/order"
+	"tanzanite/internal/repository"
+	"time"
+)
+
+type CheckoutService struct {
+	productRepo *repository.ProductRepository
+	couponRepo  *repository.CouponRepository
+	paymentRepo *repository.PaymentRepository
+	loyaltyRepo *repository.LoyaltyRepository
+}
+
+type CheckoutQuoteInput struct {
+	UserID          uint
+	Items           []order.OrderItem
+	ShippingAddress order.Address
+	CouponCode      string
+	PointsToUse     int
+}
+
+type CheckoutQuote struct {
+	Items          []order.OrderItem `json:"items"`
+	SubtotalAmount float64           `json:"subtotal_amount"`
+	ShippingFee    float64           `json:"shipping_fee"`
+	TaxAmount      float64           `json:"tax_amount"`
+	MemberDiscount float64           `json:"member_discount"`
+	PointsDiscount float64           `json:"points_discount"`
+	CouponDiscount float64           `json:"coupon_discount"`
+	DiscountAmount float64           `json:"discount_amount"`
+	TotalAmount    float64           `json:"total_amount"`
+	CouponCode     string            `json:"coupon_code"`
+	PointsToUse    int               `json:"points_to_use"`
+	Coupon         *coupon.Coupon    `json:"coupon,omitempty"`
+}
+
+func NewCheckoutService(
+	productRepo *repository.ProductRepository,
+	couponRepo *repository.CouponRepository,
+	paymentRepo *repository.PaymentRepository,
+	loyaltyRepo *repository.LoyaltyRepository,
+) *CheckoutService {
+	return &CheckoutService{
+		productRepo: productRepo,
+		couponRepo:  couponRepo,
+		paymentRepo: paymentRepo,
+		loyaltyRepo: loyaltyRepo,
+	}
+}
+
+func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error) {
+	if len(input.Items) == 0 {
+		return nil, errors.New("cart is empty")
+	}
+
+	items := make([]order.OrderItem, len(input.Items))
+	var subtotal float64
+	for i, item := range input.Items {
+		if item.Quantity <= 0 {
+			return nil, fmt.Errorf("invalid quantity for product ID %d", item.ProductID)
+		}
+
+		product, err := s.productRepo.FindByID(item.ProductID)
+		if err != nil {
+			return nil, fmt.Errorf("[CRITICAL] Product ID %d not found in database: %w", item.ProductID, err)
+		}
+
+		items[i] = item
+		items[i].Price = product.Price
+		items[i].Subtotal = product.Price * float64(item.Quantity)
+		items[i].ProductName = product.Name
+		items[i].SKU = product.SKU
+		items[i].Total = items[i].Subtotal
+		subtotal += items[i].Subtotal
+	}
+
+	shippingFee := s.calculateShippingFee(subtotal)
+	taxAmount := s.calculateTax(subtotal, input.ShippingAddress.Country, input.ShippingAddress.State)
+	memberDiscount := s.calculateMemberDiscount(input.UserID, subtotal)
+	pointsToUse, pointsDiscount, err := s.calculatePointsDiscount(input.UserID, input.PointsToUse, subtotal)
+	if err != nil {
+		return nil, err
+	}
+
+	var targetCoupon *coupon.Coupon
+	couponDiscount := 0.0
+	if input.CouponCode != "" {
+		targetCoupon, couponDiscount, err = s.validateCoupon(input.CouponCode, subtotal)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply coupon %s: %w", input.CouponCode, err)
+		}
+	}
+
+	discountAmount := memberDiscount + pointsDiscount + couponDiscount
+	totalAmount := subtotal + shippingFee + taxAmount - discountAmount
+	if totalAmount < 0 {
+		totalAmount = 0
+	}
+
+	return &CheckoutQuote{
+		Items:          items,
+		SubtotalAmount: subtotal,
+		ShippingFee:    shippingFee,
+		TaxAmount:      taxAmount,
+		MemberDiscount: memberDiscount,
+		PointsDiscount: pointsDiscount,
+		CouponDiscount: couponDiscount,
+		DiscountAmount: discountAmount,
+		TotalAmount:    totalAmount,
+		CouponCode:     input.CouponCode,
+		PointsToUse:    pointsToUse,
+		Coupon:         targetCoupon,
+	}, nil
+}
+
+func (s *CheckoutService) calculateMemberDiscount(userID uint, subtotal float64) float64 {
+	userLoyalty, err := s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
+	if err != nil || userLoyalty == nil {
+		return 0
+	}
+
+	tierDiscount := 0.0
+	switch {
+	case userLoyalty.TotalPoints >= 10000:
+		tierDiscount = 0.20
+	case userLoyalty.TotalPoints >= 5000:
+		tierDiscount = 0.15
+	case userLoyalty.TotalPoints >= 2000:
+		tierDiscount = 0.10
+	case userLoyalty.TotalPoints >= 500:
+		tierDiscount = 0.05
+	}
+
+	return subtotal * tierDiscount
+}
+
+func (s *CheckoutService) calculatePointsDiscount(userID uint, requestedPoints int, subtotal float64) (int, float64, error) {
+	if requestedPoints <= 0 {
+		return 0, 0, nil
+	}
+
+	userLoyalty, err := s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
+	if err != nil || userLoyalty == nil {
+		return 0, 0, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 0, requestedPoints)
+	}
+	if userLoyalty.AvailablePoints < requestedPoints {
+		return 0, 0, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", userLoyalty.AvailablePoints, requestedPoints)
+	}
+
+	pointsDiscount := float64(requestedPoints) * 0.01
+	pointsToUse := requestedPoints
+	if maxPointsDiscount := subtotal * 0.5; pointsDiscount > maxPointsDiscount {
+		pointsDiscount = maxPointsDiscount
+		pointsToUse = int(maxPointsDiscount * 100)
+	}
+
+	return pointsToUse, pointsDiscount, nil
+}
+
+func (s *CheckoutService) validateCoupon(code string, amount float64) (*coupon.Coupon, float64, error) {
+	c, err := s.couponRepo.FindCouponByCode(code)
+	if err != nil {
+		return nil, 0, errors.New("coupon not found")
+	}
+	if !c.Enabled {
+		return nil, 0, errors.New("coupon is disabled")
+	}
+
+	now := time.Now()
+	if now.Before(c.StartDate) || now.After(c.EndDate) {
+		return nil, 0, errors.New("coupon is expired")
+	}
+	if c.UsageLimit > 0 && c.UsedCount >= c.UsageLimit {
+		return nil, 0, errors.New("coupon usage limit reached")
+	}
+	if amount < c.MinAmount {
+		return nil, 0, fmt.Errorf("minimum amount %.2f required", c.MinAmount)
+	}
+
+	return c, c.CalculateDiscount(amount), nil
+}
+
+func (s *CheckoutService) calculateShippingFee(amount float64) float64 {
+	if amount >= 100 {
+		return 0
+	}
+	return 10.0
+}
+
+func (s *CheckoutService) calculateTax(amount float64, country, state string) float64 {
+	taxRate, err := s.paymentRepo.FindTaxRateByLocation(country, state)
+	if err != nil {
+		return 0
+	}
+	return amount * taxRate.Rate / 100
+}

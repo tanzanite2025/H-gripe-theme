@@ -1,6 +1,6 @@
 <template>
   <teleport to="body">
-    <!-- 遮罩层 -->
+    <!-- 遮罩�?-->
     <transition name="fade">
       <div
         v-if="isCheckoutOpen"
@@ -16,7 +16,7 @@
             v-if="isCheckoutOpen"
             class="relative flex flex-col w-full max-w-[1400px] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] checkout-modal-shell h-[95vh] md:h-[780px] max-h-[95vh]"
           >
-            <!-- 头部：再次压缩高度，为下方内容留出更多空间 -->
+            <!-- 头部：再次压缩高度，为下方内容留出更多空�?-->
             <div class="relative flex items-center justify-center px-2 md:px-6 py-3.5 border-b border-transparent bg-[rgba(4,7,20,0.92)] backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:border-transparent md:bg-transparent md:backdrop-blur-0 md:shadow-none">
               <div class="flex items-center gap-2 md:gap-3">
                 <h2 class="sr-only">Checkout</h2>
@@ -76,7 +76,7 @@
                 :initial-method="activePaymentTab"
                 :coupon-input="couponCode"
                 :is-applying-coupon="isApplyingCoupon"
-                :applied-coupon="calculation.appliedCoupon.value"
+                :applied-coupon="appliedCouponDisplayPayload"
                 :points-available="calculation.userPoints.value?.available || 0"
                 :is-using-points="calculation.usePointsDiscount.value"
                 :points-to-use="calculation.pointsToUse.value"
@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, type ComputedRef } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, type ComputedRef } from 'vue'
 import { useCart } from '#imports'
 import type { useCartCalculation } from '~/composables/useCartCalculation'
 import ChatStartButton from '~/components/ChatStartButton.vue'
@@ -137,6 +137,31 @@ type CartPriceBreakdown = CartPriceBreakdownBase & {
   giftCardDiscount?: number
 }
 
+type ApiResponse<T> = T | { data?: T }
+
+type CheckoutQuote = {
+  subtotal_amount: number
+  shipping_fee: number
+  tax_amount: number
+  member_discount: number
+  points_discount: number
+  coupon_discount: number
+  discount_amount: number
+  total_amount: number
+  coupon_code?: string
+  points_to_use: number
+}
+
+const unwrapApiData = <T,>(payload: ApiResponse<T> | null | undefined): T | null => {
+  if (!payload || typeof payload !== 'object') {
+    return (payload as T) || null
+  }
+  if ('data' in payload && payload.data !== undefined) {
+    return payload.data as T
+  }
+  return payload as T
+}
+
 const {
   cartItems,
   isCheckoutOpen,
@@ -149,7 +174,10 @@ const {
   openCartFromCheckout,
 } = useCart()
 
+const auth = useAuth()
 const typedPriceBreakdown = priceBreakdown as ComputedRef<CartPriceBreakdown>
+const checkoutQuote = ref<CheckoutQuote | null>(null)
+const isFetchingCheckoutQuote = ref(false)
 
 const shippingState = computed<CartPriceBreakdown['shippingState']>(() => {
   if (!form.value.country) return 'select'
@@ -167,26 +195,27 @@ const stepperOrderSummary = computed(() => {
     thumbnail: item.thumbnail ?? null,
   }))
 
-  const totals = typedPriceBreakdown.value || ({} as CartPriceBreakdown)
+  const localTotals = typedPriceBreakdown.value || ({} as CartPriceBreakdown)
+  const quote = checkoutQuote.value
   const matchedRule = shippingValidation.value?.matchedRule as { service_label?: string } | undefined
 
   return {
     items,
     totals: {
-      subtotal: totals.subtotal ?? 0,
-      shipping: totals.shipping ?? null,
+      subtotal: quote?.subtotal_amount ?? localTotals.subtotal ?? 0,
+      shipping: quote ? quote.shipping_fee : localTotals.shipping ?? null,
       shippingLabel: matchedRule?.service_label,
-      shippingState: shippingState.value,
-      tax: totals.tax ?? 0,
-      pointsDiscount: totals.pointsDiscount ?? 0,
-      couponDiscount: totals.couponDiscount ?? 0,
+      shippingState: isFetchingCheckoutQuote.value ? 'checking' : shippingState.value,
+      tax: quote?.tax_amount ?? localTotals.tax ?? 0,
+      pointsDiscount: quote?.points_discount ?? localTotals.pointsDiscount ?? 0,
+      couponDiscount: quote?.coupon_discount ?? localTotals.couponDiscount ?? 0,
       giftCardDiscount: 0,
-      total: totals.total ?? 0,
+      total: quote?.total_amount ?? localTotals.total ?? 0,
     },
   }
 })
 
-// 配送验证
+// 配送验�?
 const {
   loadShippingTemplates,
   validateShipping,
@@ -195,13 +224,13 @@ const {
   getZipFormatHint,
 } = useShippingValidation()
 
-// 初始化计算系统和配送模板
+// 初始化计算系统和配送模�?
 onMounted(async () => {
   calculation.initialize()
   await loadShippingTemplates()
 })
 
-// 聊天窗口（WhatsAppChatModal）
+// 聊天窗口（WhatsAppChatModal�?
 const { openChat } = useChatWidget()
 
 const handleOpenShippingChat = () => {
@@ -211,10 +240,10 @@ const handleOpenShippingChat = () => {
   }
 }
 
-// 支付方式列表（暂未直接用于 Tabs，但保留给后续逻辑使用）
+// 支付方式列表（暂未直接用�?Tabs，但保留给后续逻辑使用�?
 const paymentMethods = [
   { id: 'credit_card', name: 'Credit Card', icon: '💳' },
-  { id: 'paypal', name: 'PayPal', icon: '🅿️' },
+  { id: 'paypal', name: 'PayPal', icon: 'P' },
   { id: 'alipay', name: 'Alipay', icon: '💙' },
   { id: 'wechat', name: 'WeChat Pay', icon: '💚' },
 ]
@@ -268,7 +297,7 @@ type StepperOption = {
 type ShippingField = 'country' | 'name' | 'phone' | 'address' | 'city' | 'zip' | 'paymentMethod' | 'notes'
 
 const stepperOptions = computed<StepperOption[]>(() => {
-  const priceText = `≈ ${formatPrice(priceBreakdown.value.total)}`
+  const priceText = formatPrice(checkoutQuote.value?.total_amount ?? priceBreakdown.value.total)
   return [
     {
       id: 'card',
@@ -372,8 +401,77 @@ const form = ref({
 const isSubmitting = ref(false)
 const couponCode = ref('')
 const isApplyingCoupon = ref(false)
+const appliedCouponDisplayPayload = computed(() => checkoutQuote.value?.coupon_code || calculation.appliedCoupon.value)
+let checkoutQuoteTimer: ReturnType<typeof setTimeout> | null = null
 
-// 配送验证结果
+const selectedPointsToUse = computed(() => {
+  return calculation?.usePointsDiscount?.value ? (calculation.pointsToUse.value || 0) : 0
+})
+
+const buildShippingAddressPayload = () => {
+  const nameParts = form.value.name.trim().split(' ').filter(Boolean)
+  const firstName = nameParts[0] || 'Guest'
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User'
+
+  return {
+    first_name: firstName,
+    last_name: lastName,
+    address1: form.value.address || '',
+    city: form.value.city || '',
+    postal_code: form.value.zip || '',
+    country: form.value.country || '',
+    phone: form.value.phone || '',
+    email: auth.user.value?.email || 'guest@example.com'
+  }
+}
+
+const fetchCheckoutQuote = async (showError = false) => {
+  if (!isCheckoutOpen.value || !cartItems.value?.length) {
+    checkoutQuote.value = null
+    return false
+  }
+
+  isFetchingCheckoutQuote.value = true
+  try {
+    const response = await auth.request<ApiResponse<CheckoutQuote>>('/checkout/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        shipping_address: buildShippingAddressPayload(),
+        coupon_code: couponCode.value.trim(),
+        points_to_use: selectedPointsToUse.value,
+      })
+    })
+    const quote = unwrapApiData<CheckoutQuote>(response)
+    if (!quote) {
+      throw new Error('Invalid checkout quote response')
+    }
+    checkoutQuote.value = quote
+    return true
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to refresh checkout quote'
+    checkoutQuote.value = null
+    if (showError) {
+      alert(message)
+    } else {
+      console.warn('Checkout quote refresh failed:', message)
+    }
+    return false
+  } finally {
+    isFetchingCheckoutQuote.value = false
+  }
+}
+
+const scheduleCheckoutQuoteRefresh = () => {
+  if (checkoutQuoteTimer) {
+    clearTimeout(checkoutQuoteTimer)
+  }
+  checkoutQuoteTimer = setTimeout(() => {
+    void fetchCheckoutQuote(false)
+  }, 300)
+}
+
+// 配送验证结�?
 const shippingValidation = computed(() => {
   return validateShipping(form.value.country, form.value.zip)
 })
@@ -396,7 +494,7 @@ const normalizedShippingValidation = computed(() => {
   }
 })
 
-// 可配送国家列表
+// 可配送国家列�?
 const shippableCountryCodes = computed(() => getShippableCountries())
 
 const shippableCountries = computed(() => {
@@ -459,19 +557,43 @@ const openFreightForwarder = () => {
   window.open('/help/freight-forwarder', '_blank')
 }
 
-// 保存购物车稍后再买
+// 保存购物车稍后再�?
 const saveCartForLater = () => {
-  // 可以保存到 localStorage 或用户账户
+  // 可以保存�?localStorage 或用户账�?
   alert('Your cart has been saved. We\'ll notify you when shipping becomes available to your region.')
 }
 
 watch(isCheckoutOpen, value => {
   if (!value) {
     currentStepperStep.value = 1
+    checkoutQuote.value = null
+  } else {
+    scheduleCheckoutQuoteRefresh()
   }
 })
 
-// 基于地区的运费计算
+watch(
+  () => [
+    isCheckoutOpen.value,
+    cartItems.value?.map((item: any) => `${item.id}:${item.quantity}`).join('|') || '',
+    form.value.country,
+    form.value.city,
+    form.value.zip,
+    couponCode.value.trim(),
+    selectedPointsToUse.value,
+  ],
+  () => {
+    scheduleCheckoutQuoteRefresh()
+  }
+)
+
+onUnmounted(() => {
+  if (checkoutQuoteTimer) {
+    clearTimeout(checkoutQuoteTimer)
+  }
+})
+
+// 基于地区的运费计�?
 const regionShippingFee = computed(() => {
   if (!form.value.country || !shippingValidation.value.isShippable) {
     return 0
@@ -488,19 +610,16 @@ const regionShippingFee = computed(() => {
   return rule.fee || 0
 })
 
-// 应用优惠券
+// 应用优惠�?
 const handleApplyCoupon = async () => {
   if (!couponCode.value) return
   
   isApplyingCoupon.value = true
-  const couponAmount = typedPriceBreakdown.value?.subtotal ?? 0
-  const result = await calculation.applyCoupon(couponCode.value, couponAmount)
+  const success = await fetchCheckoutQuote(true)
   isApplyingCoupon.value = false
   
-  if (result.success) {
+  if (success) {
     alert('Coupon applied successfully!')
-  } else {
-    alert(result.message)
   }
 }
 
@@ -525,7 +644,7 @@ const handleSubmit = async () => {
 
   // 根据支付方式分别校验
   if (tab === 'card' || tab === 'alipay' || tab === 'stripe') {
-    // 在线卡支付 / 本地钱包：需要完整可配送地址 + 联系方式
+    // 在线卡支�?/ 本地钱包：需要完整可配送地址 + 联系方式
     if (!isFormValid.value) {
       alert('Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.')
       return
@@ -538,41 +657,32 @@ const handleSubmit = async () => {
     }
   }
 
-  // Bank transfer / WorldFirst：不强制前置地址校验，由后续人工沟通确认
+  // Bank transfer / WorldFirst：不强制前置地址校验，由后续人工沟通确�?
 
   isSubmitting.value = true
 
   try {
+    const quoteReady = await fetchCheckoutQuote(true)
+    if (!quoteReady) {
+      return
+    }
+
     // 调用 Go 后端订单 API
-    const auth = useAuth()
     
     // 适配后端 CreateOrderRequest 数据结构
-    const nameParts = form.value.name.trim().split(' ')
-    const firstName = nameParts[0] || 'Guest'
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User'
-
     const orderPayload = {
       items: cartItems.value.map((item: any) => ({
         product_id: item.id || 0,
         quantity: item.quantity || 1
       })),
-      shipping_address: {
-        first_name: firstName,
-        last_name: lastName,
-        address1: form.value.address || 'N/A',
-        city: form.value.city || 'N/A',
-        postal_code: form.value.zip || '000000',
-        country: form.value.country || 'US',
-        phone: form.value.phone || '00000000',
-        email: auth.user.value?.email || 'guest@example.com'
-      },
+      shipping_address: buildShippingAddressPayload(),
       payment_method: form.value.paymentMethod || 'credit_card',
       shipping_method: 'standard',
       coupon_code: couponCode.value || '',
-      points_to_use: (calculation && calculation.usePointsDiscount.value) ? (calculation.pointsToUse.value || 0) : 0
+      points_to_use: selectedPointsToUse.value
     }
 
-    const response = await auth.request('/orders', {
+    await auth.request('/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderPayload)

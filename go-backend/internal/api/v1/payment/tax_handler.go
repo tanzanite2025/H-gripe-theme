@@ -18,7 +18,7 @@ import (
 // @Success 200 {array} payment.TaxRate
 // @Router /api/v1/payment/tax-rates [get]
 func (h *Handler) ListTaxRates(c *gin.Context) {
-	rates, err := h.paymentRepo.FindAllTaxRates()
+	rates, err := h.paymentService.ListTaxRates()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -41,7 +41,7 @@ func (h *Handler) GetTaxRate(c *gin.Context) {
 		return
 	}
 
-	rate, err := h.paymentRepo.FindTaxRateByID(uint(id))
+	rate, err := h.paymentService.GetTaxRate(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Tax rate")
 		return
@@ -70,7 +70,7 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 	}
 
 	// 查找税率
-	taxRate, err := h.paymentRepo.FindTaxRateByLocation(req.Country, req.State)
+	taxRate, tax, err := h.paymentService.CalculateTax(req.Amount, req.Country, req.State)
 	if err != nil {
 		// 没有找到税率，返回0
 		response.Success(c, gin.H{
@@ -83,12 +83,11 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 	}
 
 	// 计算税费
-	tax := req.Amount * taxRate.Rate / 100
 	total := req.Amount + tax
 
 	response.Success(c, gin.H{
 		"amount":   req.Amount,
-		"tax_rate": taxRate.Rate,
+		"tax_rate": taxRate,
 		"tax":      tax,
 		"total":    total,
 	})
@@ -109,7 +108,7 @@ func (h *Handler) CreateTaxRate(c *gin.Context) {
 		return
 	}
 
-	if err := h.paymentRepo.CreateTaxRate(&rate); err != nil {
+	if err := h.paymentService.CreateTaxRate(&rate); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -140,7 +139,7 @@ func (h *Handler) UpdateTaxRate(c *gin.Context) {
 	}
 
 	rate.ID = uint(id)
-	if err := h.paymentRepo.UpdateTaxRate(&rate); err != nil {
+	if err := h.paymentService.UpdateTaxRate(&rate); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -162,7 +161,7 @@ func (h *Handler) DeleteTaxRate(c *gin.Context) {
 		return
 	}
 
-	if err := h.paymentRepo.DeleteTaxRate(uint(id)); err != nil {
+	if err := h.paymentService.DeleteTaxRate(uint(id)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

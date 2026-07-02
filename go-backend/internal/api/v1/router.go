@@ -5,6 +5,7 @@ import (
 	"tanzanite/internal/api/v1/auth"
 	"tanzanite/internal/api/v1/cart"
 	"tanzanite/internal/api/v1/chat"
+	"tanzanite/internal/api/v1/checkout"
 	"tanzanite/internal/api/v1/content"
 	"tanzanite/internal/api/v1/faq"
 	"tanzanite/internal/api/v1/feedback"
@@ -73,7 +74,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	faqService := service.NewFAQService(faqRepo)
 	galleryService := service.NewGalleryService(galleryRepo)
 	registrationService := service.NewRegistrationService(registrationRepo, productRepo, orderRepo)
-	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
+	checkoutService := service.NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo)
+	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, checkoutService, shippingRepo, auditRepo, loyaltyRepo)
+	paymentService := service.NewPaymentService(paymentRepo, orderService)
 	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 	reviewService := service.NewReviewService(reviewRepo)
 	ticketService := service.NewTicketService(ticketRepo, userRepo)
@@ -101,13 +104,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	cartHandler := cart.NewHandler(cartService)
 	settingsHandler := settings.NewHandler(settingService)
 	orderHandler := order.NewHandler(orderService, cartService)
+	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
 		AllowedOrigins: cfg.CORS.AllowedOrigins,
 		VisitorSecret:  cfg.JWT.Secret,
 	})
-	paymentHandler := payment.NewHandler(paymentRepo, orderService)
+	paymentHandler := payment.NewHandler(paymentService, orderService)
 	shippingHandler := shipping.NewHandler(shippingRepo)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc)
@@ -195,6 +199,12 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			spokeGroup.POST("/calc", spokeHandler.Calculate)
 			spokeGroup.GET("/export", spokeHandler.GetExport)
 			spokeGroup.GET("/history", spokeHandler.ListHistory)
+		}
+
+		checkoutGroup := v1.Group("/checkout")
+		checkoutGroup.Use(middleware.AuthMiddleware(authService))
+		{
+			checkoutGroup.POST("/quote", checkoutHandler.Quote)
 		}
 
 		// 订单路由（需要认证）
@@ -386,10 +396,8 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			authPayment := paymentGroup.Group("")
 			authPayment.Use(middleware.AuthMiddleware(authService))
 			{
-				authPayment.POST("/transactions", paymentHandler.CreateTransaction)
 				authPayment.GET("/transactions/:id", paymentHandler.GetTransaction)
 				authPayment.GET("/orders/:order_id/transactions", paymentHandler.GetOrderTransactions)
-				authPayment.POST("/refunds", paymentHandler.CreateRefund)
 				authPayment.GET("/refunds/:id", paymentHandler.GetRefund)
 				authPayment.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
 			}
