@@ -41,7 +41,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	r.Use(middleware.TraceMiddleware())
 	// 初始化repositories
 	deps := app.NewDependencies(db, redisCache, cfg)
-	repos := deps.Repositories
 	services := deps.Services
 	authService := services.Auth
 	postService := services.Post
@@ -64,8 +63,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	wishlistService := services.Wishlist
 	feedbackService := services.Feedback
 	suggestionFeedbackService := services.SuggestionFeedback
-	spokeRepo := repos.Spoke
-	chatRepo := repos.Chat
+	chatService := services.Chat
 
 	// 初始化handlers
 	cookieOptions := securecookie.Options{
@@ -98,8 +96,8 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	wishlistHandler := wishlist.NewHandler(wishlistService)
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
-	spokeHandler := spoke.NewHandler(spokeRepo)
-	chatHandler := chat.NewChatHandler(chatRepo)
+	spokeHandler := spoke.NewHandler(services.Spoke)
+	chatHandler := chat.NewChatHandler(chatService)
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
 	v1.Use(middleware.CSRFProtection(cfg.CORS.AllowedOrigins))
