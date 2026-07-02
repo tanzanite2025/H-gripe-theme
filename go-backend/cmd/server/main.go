@@ -12,6 +12,7 @@ import (
 	"tanzanite/internal/api/middleware"
 	v1 "tanzanite/internal/api/v1"
 	"tanzanite/internal/api/v1/admin"
+	"tanzanite/internal/api/v1/health"
 	"tanzanite/internal/app"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
@@ -127,9 +128,7 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORS(cfg.CORS))
 	router.Use(middleware.SecurityHeaders())
-
-	// 全局限流 - 保护整个服务
-	router.Use(middleware.GlobalRateLimit(1000)) // 1000 RPS globally
+	router.Use(middleware.GlobalRateLimit(1000))
 
 	if cfg.Server.Mode != gin.ReleaseMode {
 		setupSwagger(router)
@@ -142,35 +141,7 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 		})
 	})
 
-	// 使用专用的健康检查处理器（支持Kubernetes探针）
-	// 注意: 这些端点使用新的health handler，提供更详细的健康状态
-	healthGroup := router.Group("")
-	{
-		// 导入health handler
-		// health.RegisterRoutes(healthGroup, db, redisCache.Client)
-
-		// 临时保留简单的健康检查（直到集成health handler）
-		healthGroup.GET("/health", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"status":    "ok",
-				"service":   "tanzanite-api",
-				"version":   Version,
-				"buildTime": BuildTime,
-			})
-		})
-
-		healthGroup.GET("/readiness", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"status": "ready",
-			})
-		})
-
-		healthGroup.GET("/liveness", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"status": "alive",
-			})
-		})
-	}
+	health.RegisterRoutes(router.Group(""), db, redisCache.Client(), Version, BuildTime)
 
 	deps := app.NewDependencies(db, redisCache, cfg)
 	v1.RegisterRoutes(router, deps, cfg)
