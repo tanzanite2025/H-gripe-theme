@@ -25,9 +25,12 @@ func (h *Handler) GetTransaction(c *gin.Context) {
 		return
 	}
 
-	transaction, err := h.paymentRepo.FindTransactionByID(uint(id))
+	transaction, err := h.paymentService.GetTransaction(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Transaction")
+		return
+	}
+	if !h.authorizeOrderPaymentRead(c, transaction.OrderID) {
 		return
 	}
 
@@ -47,8 +50,11 @@ func (h *Handler) GetOrderTransactions(c *gin.Context) {
 		apierror.RespondBadRequest(c, "invalid order id")
 		return
 	}
+	if !h.authorizeOrderPaymentRead(c, uint(orderID)) {
+		return
+	}
 
-	transactions, err := h.paymentRepo.FindTransactionByOrderID(uint(orderID))
+	transactions, err := h.paymentService.GetOrderTransactions(uint(orderID))
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -72,7 +78,7 @@ func (h *Handler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	if err := h.paymentRepo.CreateTransaction(&transaction); err != nil {
+	if err := h.paymentService.CreateGatewayTransaction(&transaction); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

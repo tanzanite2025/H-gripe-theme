@@ -20,6 +20,12 @@ import (
 // @Success 201 {object} payment.Refund
 // @Router /api/v1/payment/refunds [post]
 func (h *Handler) CreateRefund(c *gin.Context) {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		apierror.RespondUnauthorized(c)
+		return
+	}
+
 	var refund payment.Refund
 	if err := c.ShouldBindJSON(&refund); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
@@ -29,7 +35,7 @@ func (h *Handler) CreateRefund(c *gin.Context) {
 	// 设置默认状态
 	refund.Status = "pending"
 
-	if err := h.paymentRepo.CreateRefund(&refund); err != nil {
+	if err := h.paymentService.CreateAdminRefund(&refund, userIDValue.(uint)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -51,9 +57,12 @@ func (h *Handler) GetRefund(c *gin.Context) {
 		return
 	}
 
-	refund, err := h.paymentRepo.FindRefundByID(uint(id))
+	refund, err := h.paymentService.GetRefund(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Refund")
+		return
+	}
+	if !h.authorizeOrderPaymentRead(c, refund.OrderID) {
 		return
 	}
 
@@ -73,8 +82,11 @@ func (h *Handler) GetOrderRefunds(c *gin.Context) {
 		apierror.RespondBadRequest(c, "invalid order id")
 		return
 	}
+	if !h.authorizeOrderPaymentRead(c, uint(orderID)) {
+		return
+	}
 
-	refunds, err := h.paymentRepo.FindRefundsByOrderID(uint(orderID))
+	refunds, err := h.paymentService.GetOrderRefunds(uint(orderID))
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -107,14 +119,7 @@ func (h *Handler) UpdateRefundStatus(c *gin.Context) {
 		return
 	}
 
-	refund, err := h.paymentRepo.FindRefundByID(uint(id))
-	if err != nil {
-		apierror.RespondNotFound(c, "Refund")
-		return
-	}
-
-	refund.Status = req.Status
-	if err := h.paymentRepo.UpdateRefund(refund); err != nil {
+	if err := h.paymentService.UpdateRefundStatus(uint(id), req.Status); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

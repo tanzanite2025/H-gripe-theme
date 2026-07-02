@@ -158,8 +158,9 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	shippingRepo := repository.NewShippingRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
 	loyaltyRepo := repository.NewLoyaltyRepository(db)
+	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo)
 
-	return db, NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
+	return db, NewOrderService(db, orderRepo, productRepo, couponRepo, checkoutService, shippingRepo, auditRepo, loyaltyRepo)
 }
 
 func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"tanzanite/internal/api/middleware"
+	"tanzanite/internal/api/v1/payment"
 	"tanzanite/internal/api/v1/registration"
 	"tanzanite/internal/api/v1/shipping"
 	"tanzanite/internal/api/v1/showcase"
@@ -45,7 +46,9 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	userService := service.NewUserService(userRepo)
 	postService := service.NewPostService(postRepo, redisCache, cfg.Cache.PostTTL)
 	productService := service.NewProductService(productRepo, redisCache, cfg.Cache.ProductTTL)
-	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, paymentRepo, shippingRepo, auditRepo, loyaltyRepo)
+	checkoutService := service.NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo)
+	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, checkoutService, shippingRepo, auditRepo, loyaltyRepo)
+	paymentService := service.NewPaymentService(paymentRepo, orderService)
 	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
 
 	// 初始化 handlers
@@ -59,6 +62,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	userHandler := NewUserHandler(userService)
 	productHandler := NewProductHandler(productRepo, productService)
 	orderHandler := NewOrderHandler(orderService)
+	paymentHandler := payment.NewHandler(paymentService, orderService)
 	contentHandler := NewContentHandler(postService)
 	faqHandler := NewFAQHandler(faqRepo)
 	galleryHandler := NewGalleryHandler(galleryRepo)
@@ -169,6 +173,18 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 				ordersGroup.PATCH("/:id/admin-note", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateAdminNote)
 				ordersGroup.POST("/batch-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.BatchUpdateStatus)
 				ordersGroup.DELETE("/:id", middleware.RequirePermission(auth.PermOrderDelete), orderHandler.DeleteOrder)
+			}
+
+			paymentGroup := authenticated.Group("/payment")
+			paymentGroup.Use(middleware.RequirePermission(auth.PermOrderView))
+			{
+				paymentGroup.GET("/transactions/:id", paymentHandler.GetTransaction)
+				paymentGroup.GET("/orders/:order_id/transactions", paymentHandler.GetOrderTransactions)
+				paymentGroup.POST("/transactions", middleware.RequirePermission(auth.PermOrderEdit), paymentHandler.CreateTransaction)
+				paymentGroup.GET("/refunds/:id", paymentHandler.GetRefund)
+				paymentGroup.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
+				paymentGroup.POST("/refunds", middleware.RequirePermission(auth.PermOrderRefund), paymentHandler.CreateRefund)
+				paymentGroup.PUT("/refunds/:id/status", middleware.RequirePermission(auth.PermOrderRefund), paymentHandler.UpdateRefundStatus)
 			}
 
 			// 内容管理（需要内容管理权限）

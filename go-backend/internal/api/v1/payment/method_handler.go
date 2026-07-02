@@ -21,7 +21,7 @@ import (
 func (h *Handler) ListPaymentMethods(c *gin.Context) {
 	enabledOnly := c.Query("enabled") == "true"
 
-	methods, err := h.paymentRepo.FindAllPaymentMethods(enabledOnly)
+	methods, err := h.paymentService.ListPaymentMethods(enabledOnly)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -44,7 +44,7 @@ func (h *Handler) GetPaymentMethod(c *gin.Context) {
 		return
 	}
 
-	method, err := h.paymentRepo.FindPaymentMethodByID(uint(id))
+	method, err := h.paymentService.GetPaymentMethod(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Payment method")
 		return
@@ -68,7 +68,7 @@ func (h *Handler) CreatePaymentMethod(c *gin.Context) {
 		return
 	}
 
-	if err := h.paymentRepo.CreatePaymentMethod(&method); err != nil {
+	if err := h.paymentService.CreatePaymentMethod(&method); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -99,7 +99,7 @@ func (h *Handler) UpdatePaymentMethod(c *gin.Context) {
 	}
 
 	method.ID = uint(id)
-	if err := h.paymentRepo.UpdatePaymentMethod(&method); err != nil {
+	if err := h.paymentService.UpdatePaymentMethod(&method); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -121,7 +121,7 @@ func (h *Handler) DeletePaymentMethod(c *gin.Context) {
 		return
 	}
 
-	if err := h.paymentRepo.DeletePaymentMethod(uint(id)); err != nil {
+	if err := h.paymentService.DeletePaymentMethod(uint(id)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
