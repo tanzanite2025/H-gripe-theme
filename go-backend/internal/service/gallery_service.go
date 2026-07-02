@@ -9,6 +9,21 @@ type GalleryService struct {
 	repo *repository.GalleryRepository
 }
 
+type GalleryAdminUpdateInput struct {
+	Title       string
+	Description string
+	Slug        string
+}
+
+type GalleryImageAdminUpdateInput struct {
+	Title       string
+	Description string
+	URL         string
+	Thumbnail   string
+	Tags        string
+	Order       int
+}
+
 func NewGalleryService(repo *repository.GalleryRepository) *GalleryService {
 	return &GalleryService{repo: repo}
 }
@@ -33,6 +48,29 @@ func (s *GalleryService) GetAllGalleries(page, pageSize int) ([]gallery.Gallery,
 // UpdateGallery 更新图片库
 func (s *GalleryService) UpdateGallery(g *gallery.Gallery) error {
 	return s.repo.UpdateGallery(g)
+}
+
+func (s *GalleryService) UpdateAdminGallery(id uint, input GalleryAdminUpdateInput) (*gallery.Gallery, error) {
+	existingGallery, err := s.GetGalleryByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Title != "" {
+		existingGallery.Name = input.Title
+	}
+	if input.Description != "" {
+		existingGallery.Description = input.Description
+	}
+	if input.Slug != "" {
+		existingGallery.Slug = input.Slug
+	}
+
+	if err := s.UpdateGallery(existingGallery); err != nil {
+		return nil, err
+	}
+
+	return existingGallery, nil
 }
 
 // DeleteGallery 删除图片库
@@ -65,6 +103,36 @@ func (s *GalleryService) GetImagesByTags(tags []string, page, pageSize int) ([]g
 // UpdateGalleryImage 更新图片
 func (s *GalleryService) UpdateGalleryImage(img *gallery.GalleryImage) error {
 	return s.repo.UpdateGalleryImage(img)
+}
+
+func (s *GalleryService) UpdateAdminGalleryImage(id uint, input GalleryImageAdminUpdateInput) (*gallery.GalleryImage, error) {
+	existingImage, err := s.GetGalleryImageByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Title != "" {
+		existingImage.Title = input.Title
+	}
+	if input.Description != "" {
+		existingImage.Description = input.Description
+	}
+	if input.URL != "" {
+		existingImage.URL = input.URL
+	}
+	if input.Thumbnail != "" {
+		existingImage.Thumbnail = input.Thumbnail
+	}
+	if input.Tags != "" {
+		existingImage.Tags = input.Tags
+	}
+	existingImage.Order = input.Order
+
+	if err := s.UpdateGalleryImage(existingImage); err != nil {
+		return nil, err
+	}
+
+	return existingImage, nil
 }
 
 // UpdateImageOrder 更新图片排序
