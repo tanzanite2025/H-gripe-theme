@@ -151,7 +151,6 @@ func (h *Handler) ListTickets(c *gin.Context) {
 // @Param status query string false "状态"
 // @Param priority query string false "优先级"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/tickets [get]
 func (h *Handler) ListAllTickets(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -223,7 +222,6 @@ func (h *Handler) UpdateTicketStatus(c *gin.Context) {
 // @Param id path int true "工单ID"
 // @Param request body map[string]uint true "分配信息"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/tickets/{id}/assign [post]
 func (h *Handler) AssignTicket(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -307,7 +305,6 @@ func (h *Handler) GetTicketStats(c *gin.Context) {
 // @Tags Tickets
 // @Produce json
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/tickets/dashboard [get]
 func (h *Handler) GetDashboard(c *gin.Context) {
 	dashboard, err := h.ticketService.GetDashboard()
 	if err != nil {
@@ -324,7 +321,6 @@ func (h *Handler) GetDashboard(c *gin.Context) {
 // @Produce json
 // @Param limit query int false "数量限制" default(10)
 // @Success 200 {array} ticket.Ticket
-// @Router /api/v1/admin/tickets/recent [get]
 func (h *Handler) GetRecentTickets(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	if limit < 1 || limit > 100 {

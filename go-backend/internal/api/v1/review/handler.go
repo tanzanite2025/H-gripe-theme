@@ -208,7 +208,6 @@ func (h *Handler) GetFeaturedReviews(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(20)
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/reviews/pending [get]
 func (h *Handler) GetPendingReviews(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -243,7 +242,6 @@ func (h *Handler) GetPendingReviews(c *gin.Context) {
 // @Produce json
 // @Param id path int true "评价ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/reviews/{id}/approve [post]
 func (h *Handler) ApproveReview(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -265,7 +263,6 @@ func (h *Handler) ApproveReview(c *gin.Context) {
 // @Produce json
 // @Param id path int true "评价ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/reviews/{id}/reject [post]
 func (h *Handler) RejectReview(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -289,7 +286,6 @@ func (h *Handler) RejectReview(c *gin.Context) {
 // @Param id path int true "评价ID"
 // @Param request body map[string]bool true "精选状态"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/reviews/{id}/featured [put]
 func (h *Handler) SetFeatured(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

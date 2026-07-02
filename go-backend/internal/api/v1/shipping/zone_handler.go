@@ -57,7 +57,6 @@ func (h *Handler) GetZone(c *gin.Context) {
 // @Produce json
 // @Param zone body shipping.ShippingZone true "区域信息"
 // @Success 201 {object} shipping.ShippingZone
-// @Router /api/v1/admin/shipping/zones [post]
 func (h *Handler) CreateZone(c *gin.Context) {
 	var zone shipping.ShippingZone
 	if err := c.ShouldBindJSON(&zone); err != nil {
@@ -81,7 +80,6 @@ func (h *Handler) CreateZone(c *gin.Context) {
 // @Param id path int true "区域ID"
 // @Param zone body shipping.ShippingZone true "区域信息"
 // @Success 200 {object} shipping.ShippingZone
-// @Router /api/v1/admin/shipping/zones/{id} [put]
 func (h *Handler) UpdateZone(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -110,7 +108,6 @@ func (h *Handler) UpdateZone(c *gin.Context) {
 // @Produce json
 // @Param id path int true "区域ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/shipping/zones/{id} [delete]
 func (h *Handler) DeleteZone(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
