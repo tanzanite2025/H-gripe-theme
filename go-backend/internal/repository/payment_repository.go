@@ -4,6 +4,7 @@ import (
 	"tanzanite/internal/domain/payment"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type PaymentRepository struct {
@@ -16,6 +17,15 @@ func NewPaymentRepository(db *gorm.DB) *PaymentRepository {
 
 func (r *PaymentRepository) WithTx(tx *gorm.DB) *PaymentRepository {
 	return &PaymentRepository{db: tx}
+}
+
+func (r *PaymentRepository) lockForUpdate(query *gorm.DB) *gorm.DB {
+	switch r.db.Dialector.Name() {
+	case "postgres", "mysql", "sqlserver":
+		return query.Clauses(clause.Locking{Strength: "UPDATE"})
+	default:
+		return query
+	}
 }
 
 // PaymentMethod 相关方法
@@ -130,6 +140,15 @@ func (r *PaymentRepository) FindTransactionByID(id uint) (*payment.Transaction, 
 	return &t, nil
 }
 
+func (r *PaymentRepository) FindTransactionByIDForUpdate(id uint) (*payment.Transaction, error) {
+	var t payment.Transaction
+	err := r.lockForUpdate(r.db).First(&t, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
 // FindTransactionByOrderID 根据订单ID查找交易
 func (r *PaymentRepository) FindTransactionByOrderID(orderID uint) ([]payment.Transaction, error) {
 	var transactions []payment.Transaction
@@ -141,6 +160,15 @@ func (r *PaymentRepository) FindTransactionByOrderID(orderID uint) ([]payment.Tr
 func (r *PaymentRepository) FindTransactionByTransactionID(transactionID string) (*payment.Transaction, error) {
 	var t payment.Transaction
 	err := r.db.Where("transaction_id = ?", transactionID).First(&t).Error
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (r *PaymentRepository) FindTransactionByTransactionIDForUpdate(transactionID string) (*payment.Transaction, error) {
+	var t payment.Transaction
+	err := r.lockForUpdate(r.db).Where("transaction_id = ?", transactionID).First(&t).Error
 	if err != nil {
 		return nil, err
 	}
@@ -169,11 +197,52 @@ func (r *PaymentRepository) FindRefundByID(id uint) (*payment.Refund, error) {
 	return &rf, nil
 }
 
+func (r *PaymentRepository) FindRefundByRefundID(refundID string) (*payment.Refund, error) {
+	var rf payment.Refund
+	err := r.db.Where("refund_id = ?", refundID).First(&rf).Error
+	if err != nil {
+		return nil, err
+	}
+	return &rf, nil
+}
+
 // FindRefundsByOrderID 根据订单ID查找退款
 func (r *PaymentRepository) FindRefundsByOrderID(orderID uint) ([]payment.Refund, error) {
 	var refunds []payment.Refund
 	err := r.db.Where("order_id = ?", orderID).Order("created_at DESC").Find(&refunds).Error
 	return refunds, err
+}
+
+func (r *PaymentRepository) FindPendingRefundByTransactionAndAmount(transactionID uint, amount float64) (*payment.Refund, error) {
+	var rf payment.Refund
+	err := r.lockForUpdate(r.db).
+		Where("transaction_id = ? AND status = ? AND amount BETWEEN ? AND ?", transactionID, "pending", amount-0.01, amount+0.01).
+		Order("created_at ASC").
+		First(&rf).Error
+	if err != nil {
+		return nil, err
+	}
+	return &rf, nil
+}
+
+func (r *PaymentRepository) SumRefundAmountByTransactionID(transactionID uint, statuses ...string) (float64, error) {
+	var total float64
+	query := r.db.Model(&payment.Refund{}).Where("transaction_id = ?", transactionID)
+	if len(statuses) > 0 {
+		query = query.Where("status IN ?", statuses)
+	}
+	err := query.Select("COALESCE(SUM(amount), 0)").Scan(&total).Error
+	return total, err
+}
+
+func (r *PaymentRepository) SumRefundAmountByOrderID(orderID uint, statuses ...string) (float64, error) {
+	var total float64
+	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
+	if len(statuses) > 0 {
+		query = query.Where("status IN ?", statuses)
+	}
+	err := query.Select("COALESCE(SUM(amount), 0)").Scan(&total).Error
+	return total, err
 }
 
 // UpdateRefund 更新退款

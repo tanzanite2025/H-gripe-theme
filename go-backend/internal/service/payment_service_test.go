@@ -2,6 +2,7 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"tanzanite/internal/domain/order"
 	paymentdomain "tanzanite/internal/domain/payment"
@@ -78,6 +79,107 @@ func TestRecordVerifiedGatewayPaymentRejectsAmountMismatch(t *testing.T) {
 	assert.Equal(t, "pending", savedOrder.Status)
 }
 
+func TestCreateAdminRefundReservesPendingAmount(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-REF-1", 100, "processing", "paid")
+	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_1", 100, "USD")
+
+	refund := paymentdomain.Refund{
+		OrderID:       orderRecord.ID,
+		TransactionID: transaction.ID,
+		Amount:        60,
+		Reason:        "customer request",
+	}
+	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
+
+	assert.Equal(t, "pending", refund.Status)
+	assert.Equal(t, uint(7), refund.RefundedBy)
+	assert.Nil(t, refund.RefundID)
+
+	excessRefund := paymentdomain.Refund{
+		OrderID:       orderRecord.ID,
+		TransactionID: transaction.ID,
+		Amount:        50,
+	}
+	require.Error(t, paymentService.CreateAdminRefund(&excessRefund, 7))
+
+	var refundCount int64
+	require.NoError(t, db.Model(&paymentdomain.Refund{}).Where("transaction_id = ?", transaction.ID).Count(&refundCount).Error)
+	assert.Equal(t, int64(1), refundCount)
+}
+
+func TestRecordVerifiedGatewayRefundCompletesPendingRefund(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-REF-2", 84, "processing", "paid")
+	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_2", 84, "USD")
+	refund := paymentdomain.Refund{
+		OrderID:       orderRecord.ID,
+		TransactionID: transaction.ID,
+		Amount:        84,
+	}
+	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
+
+	err := paymentService.RecordVerifiedGatewayRefund(VerifiedGatewayRefundInput{
+		Provider:      "stripe",
+		OrderNumber:   orderRecord.OrderNumber,
+		TransactionID: transaction.TransactionID,
+		RefundID:      "rf_123",
+		Amount:        84,
+		Currency:      "USD",
+	})
+	require.NoError(t, err)
+
+	var savedRefund paymentdomain.Refund
+	require.NoError(t, db.First(&savedRefund, refund.ID).Error)
+	assert.Equal(t, "completed", savedRefund.Status)
+	require.NotNil(t, savedRefund.RefundID)
+	assert.Equal(t, "rf_123", *savedRefund.RefundID)
+	assert.NotNil(t, savedRefund.CompletedAt)
+
+	var savedTransaction paymentdomain.Transaction
+	require.NoError(t, db.First(&savedTransaction, transaction.ID).Error)
+	assert.Equal(t, "refunded", savedTransaction.Status)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "refunded", savedOrder.PaymentStatus)
+	assert.Equal(t, "refunded", savedOrder.Status)
+
+	require.NoError(t, paymentService.RecordVerifiedGatewayRefund(VerifiedGatewayRefundInput{
+		Provider:      "stripe",
+		OrderNumber:   orderRecord.OrderNumber,
+		TransactionID: transaction.TransactionID,
+		RefundID:      "rf_123",
+		Amount:        84,
+		Currency:      "USD",
+	}))
+
+	var refundCount int64
+	require.NoError(t, db.Model(&paymentdomain.Refund{}).Where("refund_id = ?", "rf_123").Count(&refundCount).Error)
+	assert.Equal(t, int64(1), refundCount)
+}
+
+func TestRecordVerifiedGatewayRefundRejectsOverRefund(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-REF-3", 100, "processing", "paid")
+	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_3", 100, "USD")
+
+	err := paymentService.RecordVerifiedGatewayRefund(VerifiedGatewayRefundInput{
+		Provider:      "stripe",
+		OrderNumber:   orderRecord.OrderNumber,
+		TransactionID: transaction.TransactionID,
+		RefundID:      "rf_too_much",
+		Amount:        101,
+		Currency:      "USD",
+	})
+
+	require.Error(t, err)
+
+	var refundCount int64
+	require.NoError(t, db.Model(&paymentdomain.Refund{}).Where("refund_id = ?", "rf_too_much").Count(&refundCount).Error)
+	assert.Equal(t, int64(0), refundCount)
+}
+
 func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 	t.Helper()
 
@@ -96,6 +198,7 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 	require.NoError(t, db.AutoMigrate(
 		&order.Order{},
 		&paymentdomain.Transaction{},
+		&paymentdomain.Refund{},
 	))
 
 	orderRepo := repository.NewOrderRepository(db)
@@ -117,6 +220,23 @@ func seedPaymentOrder(t *testing.T, db *gorm.DB, orderNumber string, total float
 		Status:        status,
 		PaymentStatus: paymentStatus,
 		TotalAmount:   total,
+	}
+	require.NoError(t, db.Create(&record).Error)
+	return record
+}
+
+func seedCompletedTransaction(t *testing.T, db *gorm.DB, orderID uint, transactionID string, amount float64, currency string) paymentdomain.Transaction {
+	t.Helper()
+
+	completedAt := time.Now()
+	record := paymentdomain.Transaction{
+		OrderID:       orderID,
+		TransactionID: transactionID,
+		PaymentMethod: "stripe",
+		Amount:        amount,
+		Currency:      currency,
+		Status:        "completed",
+		CompletedAt:   &completedAt,
 	}
 	require.NoError(t, db.Create(&record).Error)
 	return record

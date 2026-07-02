@@ -161,7 +161,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				paymentGroup.GET("/refunds/:id", paymentHandler.GetRefund)
 				paymentGroup.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
 				paymentGroup.POST("/refunds", middleware.RequirePermission(auth.PermOrderRefund), paymentHandler.CreateRefund)
-				paymentGroup.PUT("/refunds/:id/status", middleware.RequirePermission(auth.PermOrderRefund), paymentHandler.UpdateRefundStatus)
 			}
 
 			// 内容管理（需要内容管理权限）

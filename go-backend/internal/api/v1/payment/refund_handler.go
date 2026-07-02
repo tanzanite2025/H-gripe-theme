@@ -26,14 +26,23 @@ func (h *Handler) CreateRefund(c *gin.Context) {
 		return
 	}
 
-	var refund payment.Refund
-	if err := c.ShouldBindJSON(&refund); err != nil {
+	var req struct {
+		OrderID       uint    `json:"order_id" binding:"required"`
+		TransactionID uint    `json:"transaction_id" binding:"required"`
+		Amount        float64 `json:"amount" binding:"required,gt=0"`
+		Reason        string  `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	// 设置默认状态
-	refund.Status = "pending"
+	refund := payment.Refund{
+		OrderID:       req.OrderID,
+		TransactionID: req.TransactionID,
+		Amount:        req.Amount,
+		Reason:        req.Reason,
+	}
 
 	if err := h.paymentService.CreateAdminRefund(&refund, userIDValue.(uint)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
@@ -93,36 +102,4 @@ func (h *Handler) GetOrderRefunds(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"data": refunds})
-}
-
-// UpdateRefundStatus 更新退款状态（管理员）
-// @Summary 更新退款状态
-// @Tags Payment
-// @Accept json
-// @Produce json
-// @Param id path int true "退款ID"
-// @Param request body map[string]string true "状态"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/admin/payment/refunds/{id}/status [put]
-func (h *Handler) UpdateRefundStatus(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		apierror.RespondBadRequest(c, "invalid refund id")
-		return
-	}
-
-	var req struct {
-		Status string `json:"status" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	if err := h.paymentService.UpdateRefundStatus(uint(id), req.Status); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	response.SuccessWithMessage(c, "refund status updated", nil)
 }
