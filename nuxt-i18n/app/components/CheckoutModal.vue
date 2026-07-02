@@ -493,7 +493,8 @@ const handleApplyCoupon = async () => {
   if (!couponCode.value) return
   
   isApplyingCoupon.value = true
-  const result = await calculation.applyCoupon(couponCode.value)
+  const couponAmount = typedPriceBreakdown.value?.subtotal ?? 0
+  const result = await calculation.applyCoupon(couponCode.value, couponAmount)
   isApplyingCoupon.value = false
   
   if (result.success) {

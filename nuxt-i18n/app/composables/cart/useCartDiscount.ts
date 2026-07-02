@@ -5,7 +5,7 @@
 import { ref, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { getTierByPoints } from './config/member-tiers'
-import type { UserPoints, Coupon, MemberTier } from './types/cart-calculation-types'
+import type { UserPoints, Coupon, CouponValidationResponse, MemberTier } from './types/cart-calculation-types'
 
 export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | null>>) => {
   const { request } = useAuth()
@@ -83,18 +83,26 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
   /**
    * 应用优惠券
    */
-  const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
+  const applyCoupon = async (code: string, amount: number): Promise<{ success: boolean; message: string }> => {
+    const normalizedCode = code.trim()
+    if (!normalizedCode) {
+      return { success: false, message: 'Coupon code is required' }
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { success: false, message: 'Cart subtotal must be greater than zero' }
+    }
+
     try {
-      const response = await request<Coupon>(
+      const response = await request<CouponValidationResponse>(
         '/marketing/coupons/validate',
         {
           method: 'POST',
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code: normalizedCode, amount }),
           headers: { 'Content-Type': 'application/json', accept: 'application/json' }
         }
       )
 
-      appliedCoupon.value = response
+      appliedCoupon.value = response.coupon
       return { success: true, message: 'Coupon applied successfully' }
     } catch (error) {
       console.error('Failed to apply coupon:', error)

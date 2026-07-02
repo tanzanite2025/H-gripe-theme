@@ -59,10 +59,18 @@ export interface UserPoints {
 
 // 优惠券/礼品卡
 export interface Coupon {
+  id?: number
   code: string
   type: 'percentage' | 'fixed' | 'points'
   value: number
   min_amount?: number
+  max_discount?: number
+}
+
+export interface CouponValidationResponse {
+  valid: boolean
+  coupon: Coupon
+  discount: number
 }
 
 // 购物车商品

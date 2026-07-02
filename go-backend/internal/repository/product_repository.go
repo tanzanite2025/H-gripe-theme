@@ -7,6 +7,7 @@ import (
 	"tanzanite/internal/domain/product"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ProductRepository struct {
@@ -22,6 +23,12 @@ func (r *ProductRepository) WithTx(tx *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: tx}
 }
 
+func orderProductImages(db *gorm.DB) *gorm.DB {
+	return db.Order(clause.OrderByColumn{
+		Column: clause.Column{Table: "product_images", Name: "order"},
+	})
+}
+
 // Create 创建产品
 func (r *ProductRepository) Create(p *product.Product) error {
 	return r.db.Create(p).Error
@@ -31,7 +38,7 @@ func (r *ProductRepository) Create(p *product.Product) error {
 func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 	var p product.Product
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return db.Order("product_images.order ASC")
+		return orderProductImages(db)
 	}).First(&p, id).Error
 	if err != nil {
 		return nil, err
@@ -43,7 +50,7 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, error) {
 	var p product.Product
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return db.Order("product_images.order ASC")
+		return orderProductImages(db)
 	}).Where("slug = ? AND locale = ?", slug, locale).First(&p).Error
 	if err != nil {
 		return nil, err
@@ -87,7 +94,7 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	var total int64
 
 	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return db.Order("product_images.order ASC")
+		return orderProductImages(db)
 	})
 
 	if locale != "" {
@@ -113,7 +120,7 @@ func (r *ProductRepository) SearchPublic(locale, status, keyword string, offset,
 	var total int64
 
 	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return db.Order("product_images.order ASC")
+		return orderProductImages(db)
 	})
 
 	if locale != "" {
@@ -210,7 +217,7 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	var total int64
 
 	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return db.Order("product_images.order ASC")
+		return orderProductImages(db)
 	})
 
 	// 应用筛选条件
