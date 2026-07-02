@@ -155,13 +155,15 @@ If a frontend build fails immediately after checkout, run `npm install` in that 
 
 ## Documentation Map
 
+- Project docs index: `docs/README.md`
 - Backend guide: `go-backend/README.md`
 - Backend API notes: `go-backend/API.md`
-- Backend maintainability notes: `go-backend/MAINTAINABILITY_GUIDE.md`
+- Backend maintainability notes: `go-backend/docs/MAINTAINABILITY_GUIDE.md`
 - Admin app guide: `go-backend/web/admin/README.md`
 - Kubernetes manifests and notes: `go-backend/k8s/`
+- Historical reports: `docs/archive/`
 
-Some older documentation files still contain historical or aspirational wording. Prefer the current code and this README when there is a conflict.
+Historical reports have been moved under `docs/archive/`. Prefer the current code, this README, and area-specific README files when documents conflict.
 
 ## Project Status
 
