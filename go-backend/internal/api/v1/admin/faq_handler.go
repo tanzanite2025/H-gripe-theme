@@ -1,21 +1,23 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type FAQHandler struct {
-	faqRepo *repository.FAQRepository
+	faqService *service.FAQService
 }
 
-func NewFAQHandler(faqRepo *repository.FAQRepository) *FAQHandler {
+func NewFAQHandler(faqService *service.FAQService) *FAQHandler {
 	return &FAQHandler{
-		faqRepo: faqRepo,
+		faqService: faqService,
 	}
 }
 
@@ -37,18 +39,7 @@ func (h *FAQHandler) ListFAQs(c *gin.Context) {
 		pageSize = 20
 	}
 
-	var faqs []faq.FAQ
-	var total int64
-	var err error
-
-	if search != "" {
-		offset := (page - 1) * pageSize
-		faqs, total, err = h.faqRepo.Search(search, locale, offset, pageSize)
-	} else {
-		offset := (page - 1) * pageSize
-		faqs, total, err = h.faqRepo.List(locale, pageID, category, status, offset, pageSize)
-	}
-
+	faqs, total, err := h.faqService.ListAdmin(locale, pageID, category, status, search, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch FAQs"})
 		return
@@ -76,7 +67,7 @@ func (h *FAQHandler) GetFAQ(c *gin.Context) {
 		return
 	}
 
-	faqItem, err := h.faqRepo.FindByID(uint(id))
+	faqItem, err := h.faqService.GetByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "FAQ not found"})
 		return
@@ -115,7 +106,7 @@ func (h *FAQHandler) CreateFAQ(c *gin.Context) {
 		Order:    req.Order,
 	}
 
-	if err := h.faqRepo.Create(newFAQ); err != nil {
+	if err := h.faqService.Create(newFAQ); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create FAQ"})
 		return
 	}
@@ -150,40 +141,27 @@ func (h *FAQHandler) UpdateFAQ(c *gin.Context) {
 		return
 	}
 
-	existingFAQ, err := h.faqRepo.FindByID(uint(id))
+	updatedFAQ, err := h.faqService.UpdateAdminFAQ(uint(id), service.FAQAdminUpdateInput{
+		Question: req.Question,
+		Answer:   req.Answer,
+		PageID:   req.PageID,
+		Category: req.Category,
+		Locale:   req.Locale,
+		Status:   req.Status,
+		Order:    req.Order,
+	})
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "FAQ not found"})
-		return
-	}
-
-	if req.Question != "" {
-		existingFAQ.Question = req.Question
-	}
-	if req.Answer != "" {
-		existingFAQ.Answer = req.Answer
-	}
-	if req.PageID != "" {
-		existingFAQ.PageID = req.PageID
-	}
-	if req.Category != "" {
-		existingFAQ.Category = req.Category
-	}
-	if req.Locale != "" {
-		existingFAQ.Locale = req.Locale
-	}
-	if req.Status != "" {
-		existingFAQ.Status = req.Status
-	}
-	existingFAQ.Order = req.Order
-
-	if err := h.faqRepo.Update(existingFAQ); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "FAQ not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update FAQ"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "FAQ updated successfully",
-		"faq":     existingFAQ,
+		"faq":     updatedFAQ,
 	})
 }
 
@@ -196,7 +174,7 @@ func (h *FAQHandler) DeleteFAQ(c *gin.Context) {
 		return
 	}
 
-	if err := h.faqRepo.Delete(uint(id)); err != nil {
+	if err := h.faqService.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete FAQ"})
 		return
 	}
@@ -211,7 +189,7 @@ func (h *FAQHandler) DeleteFAQ(c *gin.Context) {
 func (h *FAQHandler) GetCategories(c *gin.Context) {
 	locale := c.DefaultQuery("locale", "en")
 
-	categories, err := h.faqRepo.GetCategories(locale)
+	categories, err := h.faqService.GetCategories(locale)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get categories"})
 		return
@@ -240,7 +218,7 @@ func (h *FAQHandler) UpdateOrder(c *gin.Context) {
 		return
 	}
 
-	if err := h.faqRepo.UpdateOrder(uint(id), req.Order); err != nil {
+	if err := h.faqService.UpdateOrder(uint(id), req.Order); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update order"})
 		return
 	}
@@ -262,11 +240,10 @@ func (h *FAQHandler) BatchDelete(c *gin.Context) {
 		return
 	}
 
-	deleted := 0
-	for _, id := range req.FAQIDs {
-		if err := h.faqRepo.Delete(id); err == nil {
-			deleted++
-		}
+	deleted, err := h.faqService.BatchDelete(req.FAQIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to batch delete FAQs"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
