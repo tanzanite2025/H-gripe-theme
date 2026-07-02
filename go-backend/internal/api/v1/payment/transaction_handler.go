@@ -2,7 +2,6 @@ package payment
 
 import (
 	"strconv"
-	"tanzanite/internal/domain/payment"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
 
@@ -61,27 +60,4 @@ func (h *Handler) GetOrderTransactions(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"data": transactions})
-}
-
-// CreateTransaction 创建交易记录
-// @Summary 创建交易记录
-// @Tags Payment
-// @Accept json
-// @Produce json
-// @Param transaction body payment.Transaction true "交易信息"
-// @Success 201 {object} payment.Transaction
-// @Router /api/v1/payment/transactions [post]
-func (h *Handler) CreateTransaction(c *gin.Context) {
-	var transaction payment.Transaction
-	if err := c.ShouldBindJSON(&transaction); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	if err := h.paymentService.CreateGatewayTransaction(&transaction); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	response.Created(c, transaction)
 }

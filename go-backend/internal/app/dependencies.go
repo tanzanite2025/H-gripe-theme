@@ -136,7 +136,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.Order,
 		services.Checkout,
 	)
-	services.Payment = service.NewPaymentService(repos.Payment, services.Order)
+	services.Payment = service.NewPaymentService(txManager, repos.Payment)
 
 	return &Dependencies{
 		Repositories: repos,

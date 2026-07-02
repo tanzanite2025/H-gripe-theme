@@ -118,34 +118,6 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 	})
 }
 
-// UpdatePaymentStatus 更新支付状态
-// PATCH /api/admin/orders/:id/payment-status
-func (h *OrderHandler) UpdatePaymentStatus(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
-		return
-	}
-
-	var req struct {
-		PaymentStatus string `json:"payment_status" binding:"required,oneof=unpaid paid refunded"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.orderService.UpdatePaymentStatus(uint(id), req.PaymentStatus); err != nil {
-		respondOrderServiceError(c, err, "Failed to update payment status", http.StatusInternalServerError)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Payment status updated successfully",
-	})
-}
-
 // UpdateShippingStatus 更新物流状态
 // PATCH /api/admin/orders/:id/shipping-status
 func (h *OrderHandler) UpdateShippingStatus(c *gin.Context) {

@@ -146,7 +146,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				ordersGroup.GET("/export", orderHandler.ExportOrders)
 				ordersGroup.GET("/:id", orderHandler.GetOrder)
 				ordersGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateOrderStatus)
-				ordersGroup.PATCH("/:id/payment-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdatePaymentStatus)
 				ordersGroup.PATCH("/:id/shipping-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateShippingStatus)
 				ordersGroup.PATCH("/:id/tracking", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateTrackingInfo)
 				ordersGroup.PATCH("/:id/admin-note", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateAdminNote)
@@ -159,7 +158,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			{
 				paymentGroup.GET("/transactions/:id", paymentHandler.GetTransaction)
 				paymentGroup.GET("/orders/:order_id/transactions", paymentHandler.GetOrderTransactions)
-				paymentGroup.POST("/transactions", middleware.RequirePermission(auth.PermOrderEdit), paymentHandler.CreateTransaction)
 				paymentGroup.GET("/refunds/:id", paymentHandler.GetRefund)
 				paymentGroup.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
 				paymentGroup.POST("/refunds", middleware.RequirePermission(auth.PermOrderRefund), paymentHandler.CreateRefund)
