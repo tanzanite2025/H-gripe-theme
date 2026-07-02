@@ -12,6 +12,7 @@ import (
 	"tanzanite/internal/api/middleware"
 	v1 "tanzanite/internal/api/v1"
 	"tanzanite/internal/api/v1/admin"
+	"tanzanite/internal/app"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/database"
@@ -171,8 +172,9 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 		})
 	}
 
-	v1.RegisterRoutes(router, db, redisCache, cfg)
-	admin.RegisterAdminRoutes(router, db, redisCache, cfg)
+	deps := app.NewDependencies(db, redisCache, cfg)
+	v1.RegisterRoutes(router, deps, cfg)
+	admin.RegisterAdminRoutes(router, deps, cfg)
 
 	return router
 }
