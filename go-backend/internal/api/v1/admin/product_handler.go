@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -14,13 +13,11 @@ import (
 )
 
 type ProductHandler struct {
-	productRepo    *repository.ProductRepository
 	productService *service.ProductService
 }
 
-func NewProductHandler(productRepo *repository.ProductRepository, productService *service.ProductService) *ProductHandler {
+func NewProductHandler(productService *service.ProductService) *ProductHandler {
 	return &ProductHandler{
-		productRepo:    productRepo,
 		productService: productService,
 	}
 }
@@ -360,7 +357,7 @@ func (h *ProductHandler) BatchDelete(c *gin.Context) {
 
 // GetFilterableAttributes 获取可过滤属性列表 (公开端点可借用)
 func (h *ProductHandler) GetFilterableAttributes(c *gin.Context) {
-	attrs, err := h.productRepo.FindFilterableAttributes()
+	attrs, err := h.productService.GetFilterableAttributes()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -382,7 +379,7 @@ func (h *ProductHandler) ListAttributes(c *gin.Context) {
 		pageSize = 20
 	}
 
-	attrs, total, err := h.productRepo.FindAllAttributes(page, pageSize)
+	attrs, total, err := h.productService.ListAttributes(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -405,7 +402,7 @@ func (h *ProductHandler) GetAttribute(c *gin.Context) {
 		return
 	}
 
-	attr, err := h.productRepo.FindAttributeByID(uint(id))
+	attr, err := h.productService.GetAttributeByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "attribute not found"})
 		return
@@ -422,7 +419,7 @@ func (h *ProductHandler) CreateAttribute(c *gin.Context) {
 		return
 	}
 
-	if err := h.productRepo.CreateAttribute(&attr); err != nil {
+	if err := h.productService.CreateAttribute(&attr); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -445,7 +442,7 @@ func (h *ProductHandler) UpdateAttribute(c *gin.Context) {
 	}
 	attr.ID = uint(id)
 
-	if err := h.productRepo.UpdateAttribute(&attr); err != nil {
+	if err := h.productService.UpdateAttribute(&attr); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -461,7 +458,7 @@ func (h *ProductHandler) DeleteAttribute(c *gin.Context) {
 		return
 	}
 
-	if err := h.productRepo.DeleteAttribute(uint(id)); err != nil {
+	if err := h.productService.DeleteAttribute(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -477,7 +474,7 @@ func (h *ProductHandler) GetAttributeValues(c *gin.Context) {
 		return
 	}
 
-	values, err := h.productRepo.FindValuesByAttributeID(uint(attrID))
+	values, err := h.productService.GetValuesByAttributeID(uint(attrID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -501,7 +498,7 @@ func (h *ProductHandler) CreateAttributeValue(c *gin.Context) {
 	}
 	val.AttributeID = uint(attrID)
 
-	if err := h.productRepo.CreateAttributeValue(&val); err != nil {
+	if err := h.productService.CreateAttributeValue(&val); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -529,7 +526,7 @@ func (h *ProductHandler) UpdateAttributeValue(c *gin.Context) {
 	}
 	val.ID = uint(valID)
 
-	if err := h.productRepo.UpdateAttributeValue(&val); err != nil {
+	if err := h.productService.UpdateAttributeValue(&val); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -550,7 +547,7 @@ func (h *ProductHandler) DeleteAttributeValue(c *gin.Context) {
 		return
 	}
 
-	if err := h.productRepo.DeleteAttributeValue(uint(valID)); err != nil {
+	if err := h.productService.DeleteAttributeValue(uint(valID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
