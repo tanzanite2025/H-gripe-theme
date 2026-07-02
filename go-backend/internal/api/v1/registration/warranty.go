@@ -14,7 +14,6 @@ import (
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 var (
@@ -83,7 +82,7 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		VideoURL:     videoURL,
 	})
 	if err != nil {
-		if errors.Is(err, service.ErrWarrantyEmailMismatch) || errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, service.ErrWarrantyEmailMismatch) || service.IsRecordNotFound(err) {
 			apierror.RespondNotFound(c, "Order")
 			return
 		}

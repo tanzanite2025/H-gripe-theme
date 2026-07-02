@@ -10,7 +10,6 @@ import (
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type TicketHandler struct {
@@ -157,7 +156,7 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 			apierror.RespondBadRequest(c, err.Error())
 			return
 		}
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if service.IsRecordNotFound(err) {
 			apierror.RespondNotFound(c, "Ticket")
 			return
 		}
@@ -180,7 +179,7 @@ func (h *TicketHandler) DeleteTicket(c *gin.Context) {
 	}
 
 	if err := h.ticketService.DeleteTicket(uint(id), 0, true); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if service.IsRecordNotFound(err) {
 			apierror.RespondNotFound(c, "Ticket")
 			return
 		}
