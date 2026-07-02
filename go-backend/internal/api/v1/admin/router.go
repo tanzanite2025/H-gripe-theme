@@ -8,18 +8,15 @@ import (
 	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/app"
 	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/securecookie"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // RegisterAdminRoutes 注册管理后台路由
-func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) {
+func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	// 初始化 repositories
-	deps := app.NewDependencies(db, redisCache, cfg)
 	services := deps.Services
 	authService := services.Auth
 	storageSvc := deps.Storage

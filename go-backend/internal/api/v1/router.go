@@ -26,21 +26,18 @@ import (
 	"tanzanite/internal/api/v1/ticket"
 	"tanzanite/internal/api/v1/wishlist"
 	"tanzanite/internal/app"
-	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/securecookie"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gorm.io/gorm"
 )
 
 // RegisterRoutes 注册所有v1路由
-func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) {
+func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	r.Use(middleware.TraceMiddleware())
 	// 初始化repositories
-	deps := app.NewDependencies(db, redisCache, cfg)
 	services := deps.Services
 	authService := services.Auth
 	postService := services.Post
@@ -438,21 +435,4 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	r.GET("/sitemap-:locale.xml", i18nHandler.GetLocaleSitemap)
 
 	// 健康检查
-	healthCheck := func(c *gin.Context) {
-		sqlDB, err := db.DB()
-		if err != nil || sqlDB.Ping() != nil {
-			c.JSON(503, gin.H{"status": "error", "message": "database unavailable"})
-			return
-		}
-		if err := redisCache.Client().Ping(c.Request.Context()).Err(); err != nil {
-			c.JSON(503, gin.H{"status": "error", "message": "redis unavailable"})
-			return
-		}
-		c.JSON(200, gin.H{
-			"status":  "ok",
-			"version": "1.4.0",
-		})
-	}
-	r.GET("/health", healthCheck)
-	r.GET("/ready", healthCheck)
 }
