@@ -53,7 +53,7 @@ func (r *AuditRepository) FindAuditLogsByEntity(entityType string, entityID uint
 	var total int64
 
 	query := r.db.Model(&audit.AuditLog{}).
-		Where("entity_type = ? AND entity_id = ?", entityType, entityID)
+		Where("resource = ? AND resource_id = ?", entityType, entityID)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -66,7 +66,7 @@ func (r *AuditRepository) FindAuditLogsByEntity(entityType string, entityID uint
 }
 
 // FindAllAuditLogs 查找所有审计日志（管理员）
-func (r *AuditRepository) FindAllAuditLogs(page, pageSize int, action, entityType string) ([]audit.AuditLog, int64, error) {
+func (r *AuditRepository) FindAllAuditLogs(page, pageSize int, action, resource string) ([]audit.AuditLog, int64, error) {
 	var logs []audit.AuditLog
 	var total int64
 
@@ -76,8 +76,8 @@ func (r *AuditRepository) FindAllAuditLogs(page, pageSize int, action, entityTyp
 		query = query.Where("action = ?", action)
 	}
 
-	if entityType != "" {
-		query = query.Where("entity_type = ?", entityType)
+	if resource != "" {
+		query = query.Where("resource = ?", resource)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
@@ -180,8 +180,8 @@ func (r *AuditRepository) GetAuditStats(startDate, endDate time.Time) (map[strin
 		EntityType string
 		Count      int64
 	}
-	if err := query.Select("entity_type, count(*) as count").
-		Group("entity_type").Scan(&entityStats).Error; err != nil {
+	if err := query.Select("resource as entity_type, count(*) as count").
+		Group("resource").Scan(&entityStats).Error; err != nil {
 		return nil, err
 	}
 	stats["entity_stats"] = entityStats
