@@ -191,49 +191,6 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 	return s.orderRepo.UpdateStatus(id, status)
 }
 
-func (s *OrderService) UpdatePaymentStatus(id uint, paymentStatus string) error {
-	if _, err := s.findOrder(id); err != nil {
-		return err
-	}
-
-	return s.orderRepo.UpdatePaymentStatus(id, paymentStatus)
-}
-
-func (s *OrderService) MarkOrderPaidByNumber(orderNumber string) error {
-	if orderNumber == "" {
-		return errors.New("order number is required")
-	}
-
-	o, err := s.orderRepo.FindByOrderNumber(orderNumber)
-	if err != nil {
-		return normalizeOrderError(err)
-	}
-
-	switch o.Status {
-	case "cancelled", "refunded":
-		return fmt.Errorf("cannot mark %s order as paid", o.Status)
-	case "processing", "shipped", "completed":
-		if o.PaymentStatus == "paid" {
-			return nil
-		}
-		return s.orderRepo.UpdatePaymentStatus(o.ID, "paid")
-	case "pending", "paid":
-		return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-			if err := repos.Order.UpdatePaymentStatus(o.ID, "paid"); err != nil {
-				return err
-			}
-			if o.Status == "pending" {
-				if err := repos.Order.UpdateStatus(o.ID, "paid"); err != nil {
-					return err
-				}
-			}
-			return repos.Order.UpdateStatus(o.ID, "processing")
-		})
-	default:
-		return fmt.Errorf("unsupported order status %s for paid webhook", o.Status)
-	}
-}
-
 func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
 	if _, err := s.findOrder(id); err != nil {
 		return err

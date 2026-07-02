@@ -345,13 +345,6 @@
             <el-option label="已退款" value="refunded" />
           </el-select>
         </el-form-item>
-        <el-form-item label="支付状态">
-          <el-select v-model="statusForm.payment_status" style="width: 100%">
-            <el-option label="未支付" value="unpaid" />
-            <el-option label="已支付" value="paid" />
-            <el-option label="已退款" value="refunded" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="物流状态">
           <el-select v-model="statusForm.shipping_status" style="width: 100%">
             <el-option label="待处理" value="pending" />
@@ -417,7 +410,6 @@ const statusForm = reactive({
   id: null,
   order_number: '',
   status: '',
-  payment_status: '',
   shipping_status: '',
   tracking_number: '',
   carrier_code: ''
@@ -570,7 +562,6 @@ const showStatusDialog = (order) => {
     id: order.id,
     order_number: order.order_number,
     status: order.status,
-    payment_status: order.payment_status,
     shipping_status: order.shipping_status,
     tracking_number: order.tracking_number || '',
     carrier_code: order.carrier_code || ''
@@ -585,11 +576,6 @@ const submitStatus = async () => {
     // 更新订单状态
     await axios.patch(`/api/admin/orders/${statusForm.id}/status`, {
       status: statusForm.status
-    })
-
-    // 更新支付状态
-    await axios.patch(`/api/admin/orders/${statusForm.id}/payment-status`, {
-      payment_status: statusForm.payment_status
     })
 
     // 更新物流状态

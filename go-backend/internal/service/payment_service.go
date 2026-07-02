@@ -2,20 +2,33 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"tanzanite/internal/domain/payment"
 	"tanzanite/internal/repository"
+	"time"
 )
 
 type PaymentService struct {
-	paymentRepo  *repository.PaymentRepository
-	orderService *OrderService
+	txManager   *repository.TxManager
+	paymentRepo *repository.PaymentRepository
 }
 
-func NewPaymentService(paymentRepo *repository.PaymentRepository, orderService *OrderService) *PaymentService {
+func NewPaymentService(txManager *repository.TxManager, paymentRepo *repository.PaymentRepository) *PaymentService {
 	return &PaymentService{
-		paymentRepo:  paymentRepo,
-		orderService: orderService,
+		txManager:   txManager,
+		paymentRepo: paymentRepo,
 	}
+}
+
+type VerifiedGatewayPaymentInput struct {
+	Provider        string
+	OrderNumber     string
+	TransactionID   string
+	PaymentMethod   string
+	Amount          float64
+	Currency        string
+	GatewayResponse string
 }
 
 func (s *PaymentService) ListPaymentMethods(enabledOnly bool) ([]payment.PaymentMethod, error) {
@@ -52,24 +65,69 @@ func (s *PaymentService) GetOrderTransactions(orderID uint) ([]payment.Transacti
 	return s.paymentRepo.FindTransactionByOrderID(orderID)
 }
 
-func (s *PaymentService) CreateGatewayTransaction(transaction *payment.Transaction) error {
-	if transaction == nil {
-		return errors.New("transaction is required")
+func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPaymentInput) error {
+	if input.Provider == "" {
+		return errors.New("provider is required")
 	}
-	if transaction.OrderID == 0 {
-		return errors.New("order_id is required")
+	if input.OrderNumber == "" {
+		return errors.New("order_number is required")
 	}
-	if transaction.Amount <= 0 {
+	if input.TransactionID == "" {
+		return errors.New("transaction_id is required")
+	}
+	if input.Amount <= 0 {
 		return errors.New("amount must be greater than zero")
 	}
-	if transaction.PaymentMethod == "" {
-		return errors.New("payment_method is required")
+	if input.PaymentMethod == "" {
+		input.PaymentMethod = input.Provider
 	}
-	if transaction.Status == "" {
-		transaction.Status = "pending"
+	if input.Currency == "" {
+		input.Currency = "USD"
 	}
 
-	return s.paymentRepo.CreateTransaction(transaction)
+	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		if _, err := repos.Payment.FindTransactionByTransactionID(input.TransactionID); err == nil {
+			return nil
+		} else if !repository.IsRecordNotFound(err) {
+			return err
+		}
+
+		o, err := repos.Order.FindByOrderNumberForVerification(input.OrderNumber)
+		if err != nil {
+			return normalizeOrderError(err)
+		}
+		if o.PaymentStatus == "paid" {
+			return errors.New("order is already paid")
+		}
+		if o.Status == "cancelled" || o.Status == "refunded" {
+			return fmt.Errorf("cannot mark %s order as paid", o.Status)
+		}
+		if math.Abs(o.TotalAmount-input.Amount) > 0.01 {
+			return fmt.Errorf("payment amount %.2f does not match order total %.2f", input.Amount, o.TotalAmount)
+		}
+
+		completedAt := time.Now()
+		transaction := &payment.Transaction{
+			OrderID:         o.ID,
+			TransactionID:   input.TransactionID,
+			PaymentMethod:   input.PaymentMethod,
+			Amount:          input.Amount,
+			Currency:        input.Currency,
+			Status:          "completed",
+			GatewayResponse: input.GatewayResponse,
+			CompletedAt:     &completedAt,
+		}
+		if err := repos.Payment.CreateTransaction(transaction); err != nil {
+			return err
+		}
+		if err := repos.Order.UpdatePaymentStatus(o.ID, "paid"); err != nil {
+			return err
+		}
+		if o.Status == "pending" || o.Status == "paid" {
+			return repos.Order.UpdateStatus(o.ID, "processing")
+		}
+		return nil
+	})
 }
 
 func (s *PaymentService) GetRefund(id uint) (*payment.Refund, error) {
