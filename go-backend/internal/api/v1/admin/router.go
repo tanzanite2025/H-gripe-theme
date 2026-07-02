@@ -6,13 +6,11 @@ import (
 	"tanzanite/internal/api/v1/registration"
 	"tanzanite/internal/api/v1/shipping"
 	"tanzanite/internal/api/v1/showcase"
+	"tanzanite/internal/app"
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -21,35 +19,26 @@ import (
 // RegisterAdminRoutes 注册管理后台路由
 func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) {
 	// 初始化 repositories
-	userRepo := repository.NewUserRepository(db)
-	orderRepo := repository.NewOrderRepository(db)
-	paymentRepo := repository.NewPaymentRepository(db)
-	ticketRepo := repository.NewTicketRepository(db)
-	subscriptionRepo := repository.NewSubscriptionRepository(db)
-	productRepo := repository.NewProductRepository(db)
-	postRepo := repository.NewPostRepository(db)
-	faqRepo := repository.NewFAQRepository(db)
-	galleryRepo := repository.NewGalleryRepository(db)
-	couponRepo := repository.NewCouponRepository(db)
-	loyaltyRepo := repository.NewLoyaltyRepository(db)
-	settingRepo := repository.NewSettingRepository(db)
-	auditRepo := repository.NewAuditRepository(db)
-	showcaseRepo := repository.NewShowcaseRepository(db)
-	registrationRepo := repository.NewRegistrationRepository(db)
-	shippingRepo := repository.NewShippingRepository(db)
-
-	// 初始化 services
-	authService := service.NewAuthService(userRepo, cfg.JWT, cfg.OAuth)
-	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
-	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
-	registrationService := service.NewRegistrationService(registrationRepo, productRepo, orderRepo)
-	userService := service.NewUserService(userRepo)
-	postService := service.NewPostService(postRepo, redisCache, cfg.Cache.PostTTL)
-	productService := service.NewProductService(productRepo, redisCache, cfg.Cache.ProductTTL)
-	checkoutService := service.NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo)
-	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, checkoutService, shippingRepo, auditRepo, loyaltyRepo)
-	paymentService := service.NewPaymentService(paymentRepo, orderService)
-	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
+	deps := app.NewDependencies(db, redisCache, cfg)
+	repos := deps.Repositories
+	services := deps.Services
+	authService := services.Auth
+	storageSvc := deps.Storage
+	showcaseService := services.Showcase
+	registrationService := services.Registration
+	userService := services.User
+	postService := services.Post
+	productService := services.Product
+	orderService := services.Order
+	paymentService := services.Payment
+	marketingService := services.Marketing
+	dashboardService := services.Dashboard
+	ticketRepo := repos.Ticket
+	subscriptionRepo := repos.Subscription
+	faqRepo := repos.FAQ
+	galleryRepo := repos.Gallery
+	auditRepo := repos.Audit
+	shippingRepo := repos.Shipping
 
 	// 初始化 handlers
 	cookieOptions := securecookie.Options{
@@ -58,9 +47,9 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 		Domain:   cfg.Cookie.Domain,
 	}
 	authHandler := NewAuthHandler(authService, cookieOptions)
-	dashboardHandler := NewDashboardHandler(orderRepo, userRepo, ticketRepo, subscriptionRepo)
+	dashboardHandler := NewDashboardHandler(dashboardService)
 	userHandler := NewUserHandler(userService)
-	productHandler := NewProductHandler(productRepo, productService)
+	productHandler := NewProductHandler(productService)
 	orderHandler := NewOrderHandler(orderService)
 	paymentHandler := payment.NewHandler(paymentService, orderService)
 	contentHandler := NewContentHandler(postService)
@@ -69,7 +58,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	subscriptionHandler := NewSubscriptionHandler(subscriptionRepo)
 	ticketHandler := NewTicketHandler(ticketRepo)
 	marketingHandler := NewMarketingHandler(marketingService)
-	settingsHandler := NewSettingsHandler(settingRepo, userRepo)
+	settingsHandler := NewSettingsHandler(services.AdminSettings)
 	auditHandler := NewAuditHandler(auditRepo)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc)

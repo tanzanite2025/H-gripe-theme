@@ -25,12 +25,10 @@ import (
 	"tanzanite/internal/api/v1/suggestionfeedback"
 	"tanzanite/internal/api/v1/ticket"
 	"tanzanite/internal/api/v1/wishlist"
+	"tanzanite/internal/app"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -42,53 +40,34 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	r.Use(middleware.TraceMiddleware())
 	// 初始化repositories
-	userRepo := repository.NewUserRepository(db)
-	postRepo := repository.NewPostRepository(db)
-	productRepo := repository.NewProductRepository(db)
-	cartRepo := repository.NewCartRepository(db)
-	settingRepo := repository.NewSettingRepository(db)
-	faqRepo := repository.NewFAQRepository(db)
-	orderRepo := repository.NewOrderRepository(db)
-	paymentRepo := repository.NewPaymentRepository(db)
-	shippingRepo := repository.NewShippingRepository(db)
-	couponRepo := repository.NewCouponRepository(db)
-	loyaltyRepo := repository.NewLoyaltyRepository(db)
-	reviewRepo := repository.NewReviewRepository(db)
-	ticketRepo := repository.NewTicketRepository(db)
-	galleryRepo := repository.NewGalleryRepository(db)
-	registrationRepo := repository.NewRegistrationRepository(db)
-	auditRepo := repository.NewAuditRepository(db)
-	showcaseRepo := repository.NewShowcaseRepository(db)
-	wishlistRepo := repository.NewWishlistRepository(db)
-	feedbackRepo := repository.NewFeedbackRepository(db)
-	suggestionFeedbackRepo := repository.NewSuggestionFeedbackRepository(db)
-	spokeRepo := repository.NewSpokeRepository(db)
-	chatRepo := repository.NewChatRepository(db)
-
-	// 初始化services
-	authService := service.NewAuthService(userRepo, cfg.JWT, cfg.OAuth)
-	postService := service.NewPostService(postRepo, redisCache, cfg.Cache.PostTTL)
-	productService := service.NewProductService(productRepo, redisCache, cfg.Cache.ProductTTL)
-	cartService := service.NewCartService(cartRepo, productRepo)
-	settingService := service.NewSettingService(settingRepo, redisCache, cfg.Cache.SettingsTTL)
-	faqService := service.NewFAQService(faqRepo)
-	galleryService := service.NewGalleryService(galleryRepo)
-	registrationService := service.NewRegistrationService(registrationRepo, productRepo, orderRepo)
-	checkoutService := service.NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo)
-	orderService := service.NewOrderService(db, orderRepo, productRepo, couponRepo, checkoutService, shippingRepo, auditRepo, loyaltyRepo)
-	paymentService := service.NewPaymentService(paymentRepo, orderService)
-	marketingService := service.NewMarketingService(couponRepo, loyaltyRepo)
-	reviewService := service.NewReviewService(reviewRepo)
-	ticketService := service.NewTicketService(ticketRepo, userRepo)
-	subscriptionRepo := repository.NewSubscriptionRepository(db)
-	subscriptionService := service.NewSubscriptionService(subscriptionRepo)
-	sitemapService := service.NewSitemapService(postRepo, cfg.Server.BaseURL)
-
-	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
-	showcaseService := service.NewShowcaseService(showcaseRepo, storageSvc)
-	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
-	feedbackService := service.NewFeedbackService(feedbackRepo)
-	suggestionFeedbackService := service.NewSuggestionFeedbackService(suggestionFeedbackRepo)
+	deps := app.NewDependencies(db, redisCache, cfg)
+	repos := deps.Repositories
+	services := deps.Services
+	authService := services.Auth
+	userRepo := repos.User
+	postService := services.Post
+	productService := services.Product
+	cartService := services.Cart
+	settingService := services.Setting
+	faqService := services.FAQ
+	galleryService := services.Gallery
+	registrationService := services.Registration
+	checkoutService := services.Checkout
+	orderService := services.Order
+	paymentService := services.Payment
+	marketingService := services.Marketing
+	reviewService := services.Review
+	ticketService := services.Ticket
+	subscriptionService := services.Subscription
+	sitemapService := services.Sitemap
+	storageSvc := deps.Storage
+	showcaseService := services.Showcase
+	wishlistService := services.Wishlist
+	feedbackService := services.Feedback
+	suggestionFeedbackService := services.SuggestionFeedback
+	shippingRepo := repos.Shipping
+	spokeRepo := repos.Spoke
+	chatRepo := repos.Chat
 
 	// 初始化handlers
 	cookieOptions := securecookie.Options{
