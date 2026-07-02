@@ -1,20 +1,21 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
-	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type SubscriptionHandler struct {
-	subscriptionRepo *repository.SubscriptionRepository
+	subscriptionService *service.SubscriptionService
 }
 
-func NewSubscriptionHandler(subscriptionRepo *repository.SubscriptionRepository) *SubscriptionHandler {
+func NewSubscriptionHandler(subscriptionService *service.SubscriptionService) *SubscriptionHandler {
 	return &SubscriptionHandler{
-		subscriptionRepo: subscriptionRepo,
+		subscriptionService: subscriptionService,
 	}
 }
 
@@ -32,7 +33,7 @@ func (h *SubscriptionHandler) ListSubscriptions(c *gin.Context) {
 		pageSize = 20
 	}
 
-	subscriptions, total, err := h.subscriptionRepo.FindAll(page, pageSize, status)
+	subscriptions, total, err := h.subscriptionService.GetAllSubscriptions(page, pageSize, status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscriptions"})
 		return
@@ -56,7 +57,7 @@ func (h *SubscriptionHandler) ListSubscriptions(c *gin.Context) {
 func (h *SubscriptionHandler) GetSubscription(c *gin.Context) {
 	email := c.Param("email")
 
-	subscription, err := h.subscriptionRepo.FindByEmail(email)
+	subscription, err := h.subscriptionService.GetSubscription(email)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
 		return
@@ -81,7 +82,11 @@ func (h *SubscriptionHandler) UpdateSubscriptionStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.subscriptionRepo.UpdateStatus(email, req.Status); err != nil {
+	if err := h.subscriptionService.UpdateStatus(email, req.Status); err != nil {
+		if errors.Is(err, service.ErrInvalidSubscriptionStatus) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update subscription status"})
 		return
 	}
@@ -96,7 +101,7 @@ func (h *SubscriptionHandler) UpdateSubscriptionStatus(c *gin.Context) {
 func (h *SubscriptionHandler) DeleteSubscription(c *gin.Context) {
 	email := c.Param("email")
 
-	if err := h.subscriptionRepo.Delete(email); err != nil {
+	if err := h.subscriptionService.DeleteSubscription(email); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete subscription"})
 		return
 	}
@@ -109,7 +114,7 @@ func (h *SubscriptionHandler) DeleteSubscription(c *gin.Context) {
 // GetSubscriptionStats 获取订阅统计
 // GET /api/admin/subscriptions/stats
 func (h *SubscriptionHandler) GetSubscriptionStats(c *gin.Context) {
-	stats, err := h.subscriptionRepo.GetStats()
+	stats, err := h.subscriptionService.GetStats()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get subscription stats"})
 		return
@@ -121,7 +126,7 @@ func (h *SubscriptionHandler) GetSubscriptionStats(c *gin.Context) {
 // GetActiveEmails 获取所有活跃订阅邮箱
 // GET /api/admin/subscriptions/active-emails
 func (h *SubscriptionHandler) GetActiveEmails(c *gin.Context) {
-	emails, err := h.subscriptionRepo.GetActiveEmails()
+	emails, err := h.subscriptionService.GetActiveEmails()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get active emails"})
 		return
@@ -145,11 +150,10 @@ func (h *SubscriptionHandler) BatchDelete(c *gin.Context) {
 		return
 	}
 
-	deleted := 0
-	for _, email := range req.Emails {
-		if err := h.subscriptionRepo.Delete(email); err == nil {
-			deleted++
-		}
+	deleted, err := h.subscriptionService.BatchDelete(req.Emails)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to batch delete subscriptions"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

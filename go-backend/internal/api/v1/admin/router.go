@@ -33,7 +33,6 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	paymentService := services.Payment
 	marketingService := services.Marketing
 	dashboardService := services.Dashboard
-	subscriptionRepo := repos.Subscription
 	auditRepo := repos.Audit
 	shippingRepo := repos.Shipping
 
@@ -52,7 +51,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	contentHandler := NewContentHandler(postService)
 	faqHandler := NewFAQHandler(services.FAQ)
 	galleryHandler := NewGalleryHandler(services.Gallery)
-	subscriptionHandler := NewSubscriptionHandler(subscriptionRepo)
+	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
 	ticketHandler := NewTicketHandler(services.Ticket)
 	marketingHandler := NewMarketingHandler(marketingService)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
