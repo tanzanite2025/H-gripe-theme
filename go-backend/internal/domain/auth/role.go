@@ -15,33 +15,20 @@ const (
 )
 
 func NormalizeRole(raw string) Role {
-	roles := strings.FieldsFunc(strings.ToLower(strings.TrimSpace(raw)), func(r rune) bool {
-		return r == ',' || r == ' ' || r == ';'
-	})
-	if len(roles) == 0 {
+	switch Role(strings.ToLower(strings.TrimSpace(raw))) {
+	case RoleAdmin:
+		return RoleAdmin
+	case RoleManager:
+		return RoleManager
+	case RoleSupport:
+		return RoleSupport
+	case RoleEditor:
+		return RoleEditor
+	case RoleViewer:
+		return RoleViewer
+	default:
 		return RoleUser
 	}
-
-	priority := []struct {
-		role    Role
-		aliases map[string]bool
-	}{
-		{RoleAdmin, map[string]bool{"admin": true, "administrator": true}},
-		{RoleManager, map[string]bool{"manager": true, "shop_manager": true}},
-		{RoleSupport, map[string]bool{"support": true, "agent": true, "customer_service": true, "customer_support": true}},
-		{RoleEditor, map[string]bool{"editor": true}},
-		{RoleViewer, map[string]bool{"viewer": true}},
-	}
-
-	for _, item := range priority {
-		for _, role := range roles {
-			if item.aliases[role] {
-				return item.role
-			}
-		}
-	}
-
-	return RoleUser
 }
 
 func IsCustomerServiceAgentRole(raw string) bool {

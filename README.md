@@ -55,7 +55,7 @@ H-gripe-theme 是一套跨越了传统单体极限的 **企业级微服务商业
 - **全双工光速互联**：基于 `@vueuse/core` 与 Go 后端 `gorilla/websocket` 并发集线器打通了无延迟推流通道。
 
 ### 3. 🛡️ 工业级护城河 (DevSecOps & Hardening)
-- **严苛的安全矩阵**：全站剥离 LocalStorage，采用防篡改 `HttpOnly / Secure` Cookie 管理 JWT。API 路由层覆有基于 Redis 的高频令牌桶限流防火墙。
+- **严苛的安全矩阵**：全站剥离 LocalStorage，采用 `HttpOnly / Secure` Cookie + CSRF 管理登录会话。API 路由层覆有基于 Redis 的高频令牌桶限流防火墙。
 - **安全表结构跃迁**：弃用危险的 GORM 自动同步，全面切入 `golang-migrate` 纯 SQL 版本化迁移引擎，确保线上 Schema 的万无一失与瞬间回滚。
 - **深度探针与零泄露**：统一拦截所有系统级 `AppError` 拒绝内部堆栈外泄。配备能直探底层心跳的 K8s `/health` & `/ready` 深度探针。
 
@@ -84,7 +84,7 @@ H-gripe-theme 是一套跨越了传统单体极限的 **企业级微服务商业
 | **数据库** | PostgreSQL (w/ pgvector), golang-migrate |
 | **缓存/队列** | Redis v9 (Cache + Pub/Sub + RateLimit) |
 | **异步任务** | hibiken/asynq |
-| **认证** | JWT (HttpOnly Secure Cookie) |
+| **认证** | HttpOnly Secure Cookie + CSRF |
 | **AI能力** | go-openai + pgvector 向量搜索 |
 | **实时推送** | gorilla/websocket |
 
@@ -234,7 +234,7 @@ npm run dev
 - ✅ 事件驱动异步处理（EventBus）
 - ✅ 读写分离（主从数据库集群）
 - ✅ 分布式任务队列（asynq + Redis）
-- ✅ JWT 认证（前台 + 后台双角色）
+- ✅ Cookie + CSRF 认证（前台 + 后台双角色）
 - ✅ API 限流防护（4种策略：IP/用户/端点/全局）
 - ✅ Redis 多层缓存
 - ✅ 向量语义搜索（pgvector + OpenAI）
@@ -263,9 +263,8 @@ npm run dev           # 自动热重载
 
 # Step 3: 测试 API
 cd go-backend
-# 使用提供的测试脚本
-./test-product-api.ps1
-./test-order-api.ps1
+# 运行后端测试
+go test ./...
 ```
 
 ### 2️⃣ 数据库迁移
@@ -369,14 +368,14 @@ make k8s-logs         # 查看日志
 
 ## 🛡️ 安全特性
 
-- ✅ **JWT 认证** - HttpOnly Secure Cookie，防止 XSS
+- ✅ **Cookie + CSRF 认证** - HttpOnly Secure Cookie 防 XSS，CSRF Header 防跨站请求伪造
 - ✅ **密码加密** - bcrypt 强加密
 - ✅ **CORS 配置** - 跨域请求保护
 - ✅ **API 限流** - 基于 Redis 的令牌桶算法（100 req/min）
 - ✅ **SQL 注入防护** - GORM 参数化查询
 - ✅ **XSS 防护** - 输入验证 + 输出转义
 - ✅ **HTTPS 强制** - 生产环境强制 HTTPS
-- ✅ **敏感数据脱敏** - 日志中自动过滤密码/Token
+- ✅ **敏感数据脱敏** - 日志中自动过滤密码与会话敏感信息
 - ✅ **版本化迁移** - 拒绝危险的自动同步，使用 SQL 迁移文件
 
 ## 📊 性能优化与监控
@@ -421,7 +420,7 @@ cd go-backend
 ### ✅ 已完成 (v10.0.0-CQRS)
 - [x] 基础三端架构搭建
 - [x] CQRS + Event Sourcing 重构
-- [x] 用户认证系统（JWT）
+- [x] 用户认证系统（HttpOnly Cookie + CSRF）
 - [x] 产品管理 API（130+ 端点）
 - [x] 购物车功能
 - [x] 34种语言国际化

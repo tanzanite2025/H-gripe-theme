@@ -203,7 +203,7 @@ const handleCommand = async (command) => {
         type: 'warning'
       })
 
-      authStore.logout()
+      await authStore.logout()
       router.push('/login')
     } catch {
       // 用户取消

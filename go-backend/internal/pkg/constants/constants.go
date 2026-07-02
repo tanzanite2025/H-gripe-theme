@@ -69,7 +69,6 @@ const (
 	RoleAdmin   = "admin"
 	RoleManager = "manager"
 	RoleSupport = "support"
-	RoleAgent   = "agent"
 )
 
 // Ticket status
@@ -105,7 +104,6 @@ const (
 
 // Header keys
 const (
-	HeaderAuthorization  = "Authorization"
 	HeaderAcceptLanguage = "Accept-Language"
 	HeaderContentType    = "Content-Type"
 	HeaderUserAgent      = "User-Agent"

@@ -296,7 +296,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), ticketHandler.ServeWS)
 
 			agentGroup := customerServiceGroup.Group("/agent")
-			agentGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin", "manager", "support", "agent"))
+			agentGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin", "manager", "support"))
 			{
 				agentGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
 				agentGroup.GET("/conversations/:id/messages", ticketHandler.GetCustomerServiceMessages)

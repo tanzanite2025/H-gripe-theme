@@ -58,8 +58,7 @@ curl -X POST ${API_BASE_URL}/api/v1/auth/register \
       "id": 1,
       "username": "testuser",
       "email": "test@example.com"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
   }
 }
 ```
@@ -68,6 +67,7 @@ curl -X POST ${API_BASE_URL}/api/v1/auth/register \
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/auth/login \
+  -c cookies.txt \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -75,9 +75,9 @@ curl -X POST ${API_BASE_URL}/api/v1/auth/login \
   }'
 ```
 
-保存返回的token：
+保存 Cookie 会话并导出 CSRF token：
 ```bash
-export TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+export CSRF_TOKEN="$(grep csrf_token cookies.txt | awk '{print $7}')"
 ```
 
 ## 健康检查
@@ -110,14 +110,15 @@ curl ${API_BASE_URL}/health/readiness
 
 ```bash
 curl ${API_BASE_URL}/api/v1/users/me \
-  -H "Authorization: Bearer ${TOKEN}"
+  -b cookies.txt
 ```
 
 ### 更新用户资料
 
 ```bash
 curl -X PUT ${API_BASE_URL}/api/v1/users/me \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "first_name": "Updated",
@@ -130,7 +131,8 @@ curl -X PUT ${API_BASE_URL}/api/v1/users/me \
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/users/me/password \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "old_password": "SecurePassword123!",
@@ -166,7 +168,8 @@ curl "${API_BASE_URL}/api/v1/products/search?q=laptop&min_price=500&max_price=20
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/products \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test Product",
@@ -184,7 +187,8 @@ curl -X POST ${API_BASE_URL}/api/v1/products \
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/orders \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "items": [
@@ -212,21 +216,21 @@ curl -X POST ${API_BASE_URL}/api/v1/orders \
 
 ```bash
 curl ${API_BASE_URL}/api/v1/orders \
-  -H "Authorization: Bearer ${TOKEN}"
+  -b cookies.txt
 ```
 
 ### 获取订单详情
 
 ```bash
 curl ${API_BASE_URL}/api/v1/orders/123 \
-  -H "Authorization: Bearer ${TOKEN}"
+  -b cookies.txt
 ```
 
 ### 取消订单
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/orders/123/cancel \
-  -H "Authorization: Bearer ${TOKEN}"
+  -b cookies.txt
 ```
 
 ## 支付测试
@@ -236,7 +240,8 @@ curl -X POST ${API_BASE_URL}/api/v1/orders/123/cancel \
 ```bash
 # 创建支付意图
 curl -X POST ${API_BASE_URL}/api/v1/payment/stripe/create \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "amount": 9999,
@@ -255,7 +260,8 @@ curl -X POST ${API_BASE_URL}/api/v1/payment/stripe/create \
 ```bash
 # 创建PayPal订单
 curl -X POST ${API_BASE_URL}/api/v1/payment/paypal/create \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "amount": "99.99",
@@ -272,7 +278,8 @@ curl -X POST ${API_BASE_URL}/api/v1/payment/paypal/create \
 ```bash
 # 创建支付宝支付
 curl -X POST ${API_BASE_URL}/api/v1/payment/alipay/create \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "amount": "99.99",
@@ -287,7 +294,8 @@ curl -X POST ${API_BASE_URL}/api/v1/payment/alipay/create \
 ```bash
 # 创建微信扫码支付
 curl -X POST ${API_BASE_URL}/api/v1/payment/wechat/native \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "amount": 9999,
@@ -302,7 +310,8 @@ curl -X POST ${API_BASE_URL}/api/v1/payment/wechat/native \
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/cart/items \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "product_id": 1,
@@ -314,14 +323,15 @@ curl -X POST ${API_BASE_URL}/api/v1/cart/items \
 
 ```bash
 curl ${API_BASE_URL}/api/v1/cart \
-  -H "Authorization: Bearer ${TOKEN}"
+  -b cookies.txt
 ```
 
 ### 更新购物车商品数量
 
 ```bash
 curl -X PUT ${API_BASE_URL}/api/v1/cart/items/1 \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "quantity": 5
@@ -332,7 +342,7 @@ curl -X PUT ${API_BASE_URL}/api/v1/cart/items/1 \
 
 ```bash
 curl -X DELETE ${API_BASE_URL}/api/v1/cart/items/1 \
-  -H "Authorization: Bearer ${TOKEN}"
+  -b cookies.txt
 ```
 
 ## 评论和评分
@@ -341,7 +351,8 @@ curl -X DELETE ${API_BASE_URL}/api/v1/cart/items/1 \
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/products/1/reviews \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "rating": 5,
@@ -361,7 +372,8 @@ curl "${API_BASE_URL}/api/v1/products/1/reviews?page=1&limit=10"
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/upload/product \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -F "file=@/path/to/image.jpg"
 ```
 
@@ -369,7 +381,8 @@ curl -X POST ${API_BASE_URL}/api/v1/upload/product \
 
 ```bash
 curl -X POST ${API_BASE_URL}/api/v1/upload/avatar \
-  -H "Authorization: Bearer ${TOKEN}" \
+  -b cookies.txt \
+  -H "X-CSRF-Token: ${CSRF_TOKEN}" \
   -F "file=@/path/to/avatar.jpg"
 ```
 
@@ -379,7 +392,7 @@ curl -X POST ${API_BASE_URL}/api/v1/upload/avatar \
 
 ```javascript
 // JavaScript示例
-const ws = new WebSocket(`ws://localhost:8080/api/v1/chat/ws?token=${TOKEN}`);
+const ws = new WebSocket('ws://localhost:8080/api/v1/customer-service/ws');
 
 ws.onopen = () => {
   console.log('Connected to chat');
@@ -405,9 +418,9 @@ ws.onmessage = (event) => {
 **问题**：收到401未授权错误
 
 **解决方案**：
-- 确保在请求头中包含了有效的JWT token
-- 检查token是否已过期
-- 验证token格式：`Authorization: Bearer <token>`
+- 确保请求携带有效的 Cookie 会话
+- 检查会话是否已过期
+- 对 POST/PUT/PATCH/DELETE 请求确认 `X-CSRF-Token` 与 `csrf_token` Cookie 一致
 
 ### 2. 403 Forbidden错误
 

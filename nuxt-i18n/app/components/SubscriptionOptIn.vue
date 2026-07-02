@@ -74,8 +74,8 @@ const emit = defineEmits<{
   (e: 'subscribed', payload: SubscriptionSubmitResponse): void
 }>()
 
-const config = useRuntimeConfig()
 const { locale } = useI18n()
+const { request } = useApiRequest()
 
 const email = ref('')
 const loading = ref(false)
@@ -97,25 +97,20 @@ async function handleSubmit() {
   loading.value = true
 
   try {
-    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-    const apiBase = base.replace(/\/$/, '')
-    const endpoint = `${apiBase}${props.endpointPath}`
-
-    const response = await fetch(endpoint, {
+    const data = await request<SubscriptionSubmitResponse>(props.endpointPath, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        accept: 'application/json',
       },
       body: JSON.stringify({
         email: value,
         source: 'website',
         locale: locale.value,
       }),
-    })
+    }, 'Subscription failed, please try again later')
 
-    const data = await response.json().catch(() => ({})) as SubscriptionSubmitResponse
-
-    if (!response.ok || (data && data.success === false)) {
+    if (data && data.success === false) {
       throw new Error(data?.message || data?.error || '订阅失败，请稍后重试')
     }
 

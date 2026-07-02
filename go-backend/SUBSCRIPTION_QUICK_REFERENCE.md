@@ -17,7 +17,7 @@ go run cmd/server/main.go
 ### 3. 测试 API
 
 ```powershell
-.\test-subscription-api.ps1
+go test ./internal/api/v1/subscription ./internal/service
 ```
 
 ---
@@ -76,57 +76,47 @@ GET /api/v1/subscriptions/status/:email
 #### 获取所有订阅
 ```bash
 GET /api/v1/admin/subscriptions?page=1&page_size=20&status=active
-Authorization: Bearer <token>
+Cookie: auth_token=<http_only_cookie>
 ```
 
 #### 根据标签获取订阅
 ```bash
 GET /api/v1/admin/subscriptions/tags?tags=newsletter,promotions&page=1&page_size=20
-Authorization: Bearer <token>
+Cookie: auth_token=<http_only_cookie>
 ```
 
 #### 获取统计信息
 ```bash
 GET /api/v1/admin/subscriptions/stats
-Authorization: Bearer <token>
+Cookie: auth_token=<http_only_cookie>
 ```
 
 #### 删除订阅
 ```bash
 DELETE /api/v1/admin/subscriptions/:email
-Authorization: Bearer <token>
+Cookie: auth_token=<http_only_cookie>
+X-CSRF-Token: <csrf_token_cookie_value>
 ```
 
 #### 导出邮箱列表
 ```bash
 # 导出所有活跃邮箱
 GET /api/v1/admin/subscriptions/export
-Authorization: Bearer <token>
+Cookie: auth_token=<http_only_cookie>
 
 # 按标签导出
 GET /api/v1/admin/subscriptions/export?tags=newsletter
-Authorization: Bearer <token>
+Cookie: auth_token=<http_only_cookie>
 ```
 
 ---
 
 ## 数据迁移
 
-### 从 WordPress 导出
-
-1. 编辑 `scripts/wordpress-export/export-subscriptions.php`，配置数据库连接
-2. 运行导出脚本：
-
-```bash
-php scripts/wordpress-export/export-subscriptions.php
-```
-
-3. 数据将导出到 `data/subscriptions.json`
-
 ### 导入到 Go 后端
 
 ```bash
-go run ./cmd/import/subscriptions data/subscriptions.json
+go run ./cmd/import/subscriptions data/import/subscriptions.json
 ```
 
 ---
@@ -157,14 +147,14 @@ curl http://localhost:8080/api/v1/subscriptions/unsubscribe/abc123def456...
 
 ```bash
 curl http://localhost:8080/api/v1/admin/subscriptions/export?tags=promotions \
-  -H "Authorization: Bearer <admin_token>"
+  -b cookies.txt
 ```
 
 ### 场景 4: 查看订阅统计
 
 ```bash
 curl http://localhost:8080/api/v1/admin/subscriptions/stats \
-  -H "Authorization: Bearer <admin_token>"
+  -b cookies.txt
 ```
 
 ---
@@ -331,7 +321,7 @@ import (
 **解决方案**:
 1. 确保服务器正在运行
 2. 检查端口是否正确（默认 8080）
-3. 对于管理员测试，需要先设置 `$adminToken` 变量
+3. 对于管理员测试，需要先登录并复用 Cookie 会话
 
 ---
 
@@ -348,7 +338,7 @@ import (
 
 如有问题，请查看：
 1. 完整文档: `SUBSCRIPTION_SYSTEM_COMPLETE.md`
-2. 测试脚本: `test-subscription-api.ps1`
+2. 测试命令: `go test ./internal/api/v1/subscription ./internal/service`
 3. 代码示例: `internal/api/v1/subscription/handler.go`
 
 ---

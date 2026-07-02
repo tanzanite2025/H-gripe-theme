@@ -329,7 +329,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 			{
 				settingsGroup.GET("", settingsHandler.GetAllSettings)
 				settingsGroup.GET("/groups", settingsHandler.GetGroups)
-				settingsGroup.GET("/public-chat-agent-compatibility", settingsHandler.GetPublicChatAgentCompatibility)
+				settingsGroup.GET("/public-chat-agents", settingsHandler.ListPublicChatAgents)
 				settingsGroup.PUT("", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.UpdateSetting)
 				settingsGroup.POST("/batch", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.BatchUpdateSettings)
 				settingsGroup.DELETE("/:key", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.DeleteSetting)

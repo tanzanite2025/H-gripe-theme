@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"strconv"
 	"strings"
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
@@ -434,45 +433,7 @@ func (s *TicketService) ListCustomerServiceAgents(limit int) ([]user.User, error
 }
 
 func (s *TicketService) ListCustomerServiceAgentProfiles(limit int) ([]user.AgentProfile, error) {
-	profiles, err := s.userRepo.FindCustomerServiceAgentProfiles(limit)
-	if err != nil {
-		return nil, err
-	}
-	if len(profiles) > 0 {
-		return profiles, nil
-	}
-
-	agents, err := s.userRepo.FindCustomerServiceAgents(limit)
-	if err != nil {
-		return nil, err
-	}
-	fallback := make([]user.AgentProfile, 0, len(agents))
-	for _, agent := range agents {
-		agentID := agent.ID
-		fallback = append(fallback, user.AgentProfile{
-			AgentID:      strconv.FormatUint(uint64(agent.ID), 10),
-			UserID:       &agentID,
-			User:         &agent,
-			Name:         displayName(agent.FirstName, agent.LastName, agent.Username, agent.Email),
-			Email:        agent.Email,
-			Status:       agent.Status,
-			OnlineStatus: "online",
-			CreatedAt:    agent.CreatedAt,
-			UpdatedAt:    agent.UpdatedAt,
-		})
-	}
-	return fallback, nil
-}
-
-func displayName(firstName, lastName, username, email string) string {
-	fullName := strings.TrimSpace(strings.TrimSpace(firstName) + " " + strings.TrimSpace(lastName))
-	if fullName != "" {
-		return fullName
-	}
-	if strings.TrimSpace(username) != "" {
-		return strings.TrimSpace(username)
-	}
-	return strings.TrimSpace(email)
+	return s.userRepo.FindCustomerServiceAgentProfiles(limit)
 }
 
 // GetAssignedTickets 获取分配给客服的工单

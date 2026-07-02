@@ -31,7 +31,7 @@ type FAQImport struct {
 func main() {
 	// 命令行参数
 	dryRun := flag.Bool("dry-run", false, "试运行模式，不实际写入数据库")
-	inputFile := flag.String("input", "scripts/wordpress-export/export/faqs.json", "输入 JSON 文件路径")
+	inputFile := flag.String("input", "data/import/faqs.json", "输入 JSON 文件路径")
 	flag.Parse()
 
 	fmt.Println("========================================")

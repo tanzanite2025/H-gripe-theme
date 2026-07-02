@@ -111,16 +111,7 @@ func (r *UserRepository) FindCustomerServiceAgents(limit int) ([]user.User, erro
 	}
 
 	err := r.db.Where("status = ?", "active").
-		Where(
-			"role IN ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ? OR LOWER(role) LIKE ?",
-			[]string{"admin", "manager", "support", "agent", "administrator", "shop_manager", "customer_service", "customer_support"},
-			"%administrator%",
-			"%shop_manager%",
-			"%customer_service%",
-			"%customer_support%",
-			"%support%",
-			"%agent%",
-		).
+		Where("role IN ?", []string{"admin", "manager", "support"}).
 		Order("role ASC, created_at ASC").
 		Limit(limit).
 		Find(&users).Error
@@ -137,6 +128,7 @@ func (r *UserRepository) FindCustomerServiceAgentProfiles(limit int) ([]user.Age
 		Joins("JOIN users ON users.id = customer_service_agent_profiles.user_id").
 		Where("customer_service_agent_profiles.status = ?", "active").
 		Where("users.status = ?", "active").
+		Where("users.role IN ?", []string{"admin", "manager", "support"}).
 		Order("customer_service_agent_profiles.created_at ASC, customer_service_agent_profiles.id ASC").
 		Limit(limit).
 		Find(&profiles).Error

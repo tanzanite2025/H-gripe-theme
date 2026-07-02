@@ -10,9 +10,10 @@ Current API Version: **1.4.0**
 
 ## Authentication
 
-Most endpoints require JWT authentication. Include the token in the Authorization header:
+Most endpoints use HttpOnly Cookie authentication. Browser clients must send credentials, and unsafe methods must include the CSRF header:
 ```
-Authorization: Bearer <your_jwt_token>
+credentials: include
+X-CSRF-Token: <csrf_token_cookie_value>
 ```
 
 ---
@@ -59,7 +60,6 @@ Content-Type: application/json
 **Response:**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": 1,
     "email": "user@example.com",
@@ -72,7 +72,7 @@ Content-Type: application/json
 ### Get Profile
 ```http
 GET /api/v1/auth/profile
-Authorization: Bearer <token>
+Cookie: auth_token=<http_only_cookie>
 ```
 
 ---
@@ -187,7 +187,7 @@ Can use either ID or slug.
 ### Get Cart Summary
 ```http
 GET /api/v1/cart/summary
-Authorization: Bearer <token> (optional)
+Cookie: auth_token=<http_only_cookie> (optional)
 Cookie: session_id=<session_id>
 ```
 
@@ -202,7 +202,8 @@ Cookie: session_id=<session_id>
 ### Add to Cart
 ```http
 POST /api/v1/cart/add
-Authorization: Bearer <token> (optional)
+Cookie: auth_token=<http_only_cookie> (optional)
+X-CSRF-Token: <csrf_token_cookie_value>
 Content-Type: application/json
 
 {

@@ -81,7 +81,7 @@ Documentation:        10 个文件
 
 ### 1. ✅ 用户认证系统 (100%)
 - 用户注册和登录
-- JWT Token 认证
+- HttpOnly Cookie + CSRF 认证
 - 密码加密（bcrypt）
 - 用户信息管理
 
@@ -392,10 +392,11 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 # 获取产品列表
 curl http://localhost:8080/api/v1/products
 
-# 创建订单 (需要 JWT Token)
+# 创建订单 (需要 Cookie 会话和 CSRF)
 curl -X POST http://localhost:8080/api/v1/orders \
+  -b cookies.txt \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
   -d '{
     "items": [{"product_id": 1, "quantity": 2}],
     "shipping_address": {...},
@@ -450,7 +451,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 ## 🔒 安全特性
 
-- ✅ JWT Token 认证
+- ✅ HttpOnly Cookie + CSRF 认证
 - ✅ bcrypt 密码加密
 - ✅ SQL 注入防护（GORM）
 - ✅ XSS 防护

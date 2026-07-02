@@ -21,10 +21,10 @@ import (
 // @host api.tanzanite.com
 // @BasePath /api/v1
 
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description JWT认证。格式：Bearer {token}
+// @securityDefinitions.apikey CookieAuth
+// @in cookie
+// @name auth_token
+// @description HttpOnly Cookie authentication. Browser clients must send credentials.
 
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header

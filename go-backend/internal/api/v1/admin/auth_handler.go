@@ -82,7 +82,6 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 
 	// 返回用户信息和权限
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
 		"user": gin.H{
 			"id":          user.ID,
 			"email":       user.Email,
@@ -174,7 +173,6 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Token refreshed successfully",
-		"token":   token,
 	})
 }
 

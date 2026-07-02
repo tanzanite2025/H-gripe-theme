@@ -8,7 +8,7 @@ const instance = axios.create({
 })
 
 const LOGIN_PATH = '/login'
-const AUTH_STORAGE_KEYS = ['admin_token', 'admin_user', 'admin_permissions']
+const AUTH_STORAGE_KEYS = ['admin_user', 'admin_permissions']
 const CSRF_COOKIE_NAME = 'csrf_token'
 const CSRF_HEADER_NAME = 'X-CSRF-Token'
 
@@ -39,16 +39,6 @@ const attachCsrfHeader = (headers = {}) => {
 
 const clearAdminAuth = () => {
   AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key))
-  delete instance.defaults.headers.common.Authorization
-  delete axios.defaults.headers.common.Authorization
-}
-
-const storeToken = (token) => {
-  if (!token) return
-  sessionExpiredHandled = false
-  localStorage.setItem('admin_token', token)
-  instance.defaults.headers.common.Authorization = `Bearer ${token}`
-  axios.defaults.headers.common.Authorization = `Bearer ${token}`
 }
 
 const redirectToLoginOnce = () => {
@@ -69,17 +59,10 @@ const refreshAdminToken = async () => {
       baseURL: instance.defaults.baseURL,
       timeout: instance.defaults.timeout,
       withCredentials: true,
-      headers: attachCsrfHeader({
-        Authorization: localStorage.getItem('admin_token')
-          ? `Bearer ${localStorage.getItem('admin_token')}`
-          : undefined
-      })
-    }).then((response) => {
-      const newToken = response.data?.token
-      if (newToken) {
-        storeToken(newToken)
-      }
-      return newToken || localStorage.getItem('admin_token')
+      headers: attachCsrfHeader({})
+    }).then(() => {
+      sessionExpiredHandled = false
+      return true
     }).finally(() => {
       refreshPromise = null
     })
@@ -93,10 +76,6 @@ const silenceAuthFailure = () => new Promise(() => {})
 // 请求拦截器
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('admin_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
     if (isUnsafeMethod(config.method)) {
       attachCsrfHeader(config.headers)
     }
@@ -127,14 +106,11 @@ instance.interceptors.response.use(
 
           if (!isRefreshEndpoint(error.config?.url) && !error.config?._retry) {
             try {
-              const token = await refreshAdminToken()
+              await refreshAdminToken()
               const retryConfig = {
                 ...error.config,
                 _retry: true,
-                headers: {
-                  ...error.config.headers,
-                  Authorization: token ? `Bearer ${token}` : error.config.headers?.Authorization
-                }
+                headers: { ...error.config.headers }
               }
               return instance(retryConfig)
             } catch (refreshError) {
