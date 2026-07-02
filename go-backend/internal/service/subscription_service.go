@@ -13,6 +13,8 @@ type SubscriptionService struct {
 	subscriptionRepo *repository.SubscriptionRepository
 }
 
+var ErrInvalidSubscriptionStatus = errors.New("invalid subscription status")
+
 func NewSubscriptionService(subscriptionRepo *repository.SubscriptionRepository) *SubscriptionService {
 	return &SubscriptionService{
 		subscriptionRepo: subscriptionRepo,
@@ -71,6 +73,17 @@ func (s *SubscriptionService) UnsubscribeByEmail(email string) error {
 	return s.subscriptionRepo.UpdateStatus(email, "unsubscribed")
 }
 
+func (s *SubscriptionService) UpdateStatus(email, status string) error {
+	switch status {
+	case "active":
+		return s.Resubscribe(email)
+	case "unsubscribed":
+		return s.UnsubscribeByEmail(email)
+	default:
+		return ErrInvalidSubscriptionStatus
+	}
+}
+
 // Resubscribe 重新订阅
 func (s *SubscriptionService) Resubscribe(email string) error {
 	// 查找订阅
@@ -111,6 +124,16 @@ func (s *SubscriptionService) UpdateSubscription(sub *subscription.Subscription)
 // DeleteSubscription 删除订阅
 func (s *SubscriptionService) DeleteSubscription(email string) error {
 	return s.subscriptionRepo.Delete(email)
+}
+
+func (s *SubscriptionService) BatchDelete(emails []string) (int, error) {
+	deleted := 0
+	for _, email := range emails {
+		if err := s.DeleteSubscription(email); err == nil {
+			deleted++
+		}
+	}
+	return deleted, nil
 }
 
 // GetStats 获取订阅统计
