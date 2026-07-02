@@ -1,384 +1,97 @@
 # Tanzanite Go Backend
 
-WordPress 到 Go 后端迁移项目 - 高性能、可扩展的 RESTful API 服务
+This is the Go API service for the Tanzanite e-commerce project. It serves both the Nuxt storefront and the Vue admin console.
 
-## 📋 项目概述与新架构说明
+The project is still under active development and has not launched in production. Treat this file as a practical backend entry point, not a production-readiness claim.
 
-本项目是 Tanzanite 电商系统的全新后端架构。以往采用 WordPress (PHP) 作为核心，通过插件提供 REST API 供 Nuxt 前端调用，同时依赖 WP 自带的后台面板（受限于当时的虚拟机方案）。
-现在，项目正在按模块剥离 WordPress，目标是升级为“Go 后端 + 独立管理后台”的现代化前后端分离架构：
+## Runtime Shape
 
-- **🖥️ 前端 (C端)**: Nuxt 3 (SSR 渲染，位于项目根目录等前端目录，负责前台展示与多语言 SEO)
-- **⚙️ 后端 (API服务)**: Go 1.21 + Gin + GORM (当前目录，负责提供给 C端 和 B端 的所有数据接口)
-- **🎛️ 管理后台 (B端)**: Vue 3 + Vite + Element Plus 单页应用，当前主线位于 `web/admin/`。`admin-panel/` 是早期 demo，不再作为迁移目标。
+- Public/customer API: `/api/v1`
+- Admin API: `/api/admin`
+- Health checks: `/health`, `/ready`, `/liveness`
+- Metrics: `/metrics`
 
-提供以下核心能力：
-- 🚀 高性能 RESTful API (130+ 个独立端点)
-- 🌍 34种语言国际化支持
-- 🔐 JWT 认证系统 (安全区分前台用户与后台管理员角色)
-- 📦 Redis 缓存 & PostgreSQL/MySQL 数据库支持
-- 🐳 Docker 容器化一键部署
+## Tech Stack
 
-## 🏗️ 项目结构
+- Go `1.25.1`
+- Gin HTTP router
+- GORM persistence layer
+- PostgreSQL primary database
+- Redis for cache/session/worker-related infrastructure
+- Docker Compose for local infrastructure
 
-```
-tanzanite-go-backend/
-├── cmd/
-│   └── server/              # 应用入口 (main.go)
-├── internal/
-│   ├── api/
-│   │   ├── middleware/      # 中间件 (认证、CORS、日志等)
-│   │   └── v1/              # API v1 路由和处理器
-│   │       ├── auth/        # 认证相关
-│   │       ├── cart/        # 购物车
-│   │       ├── content/     # 内容管理 (文章、FAQ)
-│   │       ├── product/     # 产品管理
-│   │       └── settings/    # 设置管理
-│   ├── domain/              # 领域模型
-│   │   ├── user/            # 用户模型
-│   │   ├── post/            # 文章模型
-│   │   ├── product/         # 产品模型
-│   │   ├── faq/             # FAQ模型
-│   │   └── ...
-│   ├── repository/          # 数据访问层
-│   ├── service/             # 业务逻辑层
-│   └── pkg/                 # 内部工具包
-│       ├── cache/           # Redis缓存
-│       ├── config/          # 配置管理
-│       ├── database/        # 数据库连接
-│       ├── i18n/            # 国际化
-│       └── logger/          # 日志系统
-├── migrations/              # 数据库迁移文件
-├── config/                  # 配置文件
-├── scripts/                 # 工具脚本
-│   ├── wp-data-export.php   # WordPress数据导出
-│   ├── import-data.go       # 数据导入工具
-│   ├── setup-dev.sh         # 开发环境设置
-│   └── start.sh/bat         # 启动脚本
-├── docker-compose.yml       # Docker编排
-├── Dockerfile               # Docker镜像
-├── Makefile                 # 构建脚本
-└── API.md                   # API文档
+## Directory Map
+
+```text
+go-backend/
+|-- cmd/server/          # API entrypoint
+|-- config/              # configuration examples
+|-- docs/                # backend module and testing notes
+|-- internal/
+|   |-- api/             # routes, middleware, HTTP handlers
+|   |-- domain/          # domain models
+|   |-- repository/      # persistence access
+|   |-- service/         # business logic
+|   `-- pkg/             # internal shared packages
+|-- migrations/          # database migrations
+|-- scripts/             # backend utility scripts
+|-- web/admin/           # Vue admin console
+|-- API.md               # API notes
+|-- DEPLOYMENT.md        # deployment notes
+`-- QUICK_START.md       # quick start notes
 ```
 
-## 🚀 快速开始
+## Local Development
 
-### 前置要求
+From the repository root, start PostgreSQL and Redis:
 
-- **Go 1.21+** - [安装指南](https://go.dev/doc/install)
-- **PostgreSQL 15+** 或 **MySQL 8+**
-- **Redis 7+**
-- **Docker** (可选，推荐)
+```powershell
+docker compose up -d postgres redis
+```
 
-### 方式一：使用 Docker (推荐)
+Then run the backend:
 
-```bash
-# 1. 克隆项目
+```powershell
 cd go-backend
-
-# 2. 创建配置文件
-cp .env.example .env
-cp config/config.example.yaml config/config.yaml
-
-# 3. 启动所有后端服务 (API, Postgres, Redis)
-docker-compose up -d
-
-# 4. 启动管理后台 (Vue 3 Admin Panel)
-# 另开一个终端窗口执行：
-cd web/admin
-npm install
-npm run dev
-# 管理后台将启动于 http://localhost:3000
-
-# 5. 访问后端 API 健康检查
-curl http://localhost:8080/health
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
+Copy-Item config/config.example.yaml config/config.yaml -ErrorAction SilentlyContinue
+go run ./cmd/server
 ```
 
-### 方式二：本地开发
+Default local address:
 
-#### Windows
+- `http://localhost:9000`
+- health check: `http://localhost:9000/health`
 
-```cmd
-# 1. 安装依赖
-go mod download
+## Testing
 
-# 2. 创建配置
-copy config\config.example.yaml config\config.yaml
-copy .env.example .env
-
-# 3. 启动 PostgreSQL 和 Redis (使用 Docker)
-docker-compose up -d postgres redis
-
-# 4. 运行应用
-scripts\start.bat
-```
-
-#### Linux/Mac
-
-```bash
-# 1. 运行设置脚本
-chmod +x scripts/setup-dev.sh
-./scripts/setup-dev.sh
-
-# 2. 启动服务
-make run
-
-# 或使用热重载开发模式
-make dev
-```
-
-## 📝 配置说明
-
-### config/config.yaml
-
-主要配置项：
-
-```yaml
-server:
-  port: ":9000"  # 本地默认端口；docker-compose 通过 SERVER_PORT=:8080 覆盖
-  mode: "debug"  # debug, release, test
-
-database:
-  driver: "postgres"  # postgres 或 mysql
-  host: "localhost"
-  port: 5432
-  username: "tanzanite"
-  password: "your_password"
-  database: "tanzanite"
-
-redis:
-  host: "localhost"
-  port: 6379
-
-jwt:
-  secret: "your-secret-key"
-  expire_hours: 24
-
-i18n:
-  default_locale: "en"
-  supported_locales: [en, zh, fr, de, es, ...]
-```
-
-### .env
-
-环境变量（敏感信息）：
-
-```env
-DB_PASSWORD=your_secure_password
-JWT_SECRET=your_jwt_secret_key
-```
-
-## 🔧 开发命令
-
-```bash
-# 构建应用
-make build
-
-# 运行应用
-make run
-
-# 热重载开发模式 (需要安装 air)
-make dev
-
-# 运行测试
-make test
-
-# 测试覆盖率
-make test-coverage
-
-# 代码格式化
-make fmt
-
-# 代码检查
-make lint
-
-# Docker 构建
-make docker-build
-
-# Docker 启动
-make docker-up
-
-# Docker 停止
-make docker-down
-
-# 查看所有命令
-make help
-```
-
-## 📊 数据迁移
-
-### 从 WordPress 导出数据
-
-```bash
-# 在 WordPress 根目录运行
-php go-backend/scripts/wp-data-export.php
-```
-
-这将在 `scripts/export/` 目录生成以下文件：
-- `users.json` - 用户数据
-- `posts.json` - 文章数据
-- `products.json` - 产品数据
-- `settings.json` - 设置数据
-- `faqs.json` - FAQ数据
-
-### 导入到 Go 后端
-
-```bash
-# 确保导出的文件在 scripts/export/ 目录
-go run scripts/import-data.go
-```
-
-## 🌐 API 文档
-
-详细的 API 文档请查看 [API.md](./API.md)
-
-### 主要端点
-
-```
-# 认证
-POST   /api/v1/auth/register      # 用户注册
-POST   /api/v1/auth/login         # 用户登录
-GET    /api/v1/auth/profile       # 获取用户信息
-
-# 内容
-GET    /api/v1/content/posts      # 文章列表
-GET    /api/v1/content/posts/:id  # 文章详情
-GET    /api/v1/content/faqs       # FAQ列表
-
-# 产品
-GET    /api/v1/products           # 产品列表
-GET    /api/v1/products/:id       # 产品详情
-
-# 购物车
-GET    /api/v1/cart/summary       # 购物车摘要
-POST   /api/v1/cart/add           # 添加到购物车
-
-# 设置
-GET    /api/v1/settings/site      # 站点设置
-GET    /api/v1/settings/quick-buy # 快速购买设置
-
-# 健康检查
-GET    /health                    # 服务健康状态
-```
-
-### 国际化支持
-
-所有端点支持多语言，通过以下方式指定：
-
-```bash
-# 1. URL 路径
-GET /fr/api/v1/products
-
-# 2. Header
-GET /api/v1/products
-Accept-Language: fr
-
-# 3. Cookie
-Cookie: locale=fr
-```
-
-## 🧪 测试
-
-```bash
-# 运行所有测试
+```powershell
+cd go-backend
 go test ./...
-
-# 运行特定包的测试
-go test ./internal/service/...
-
-# 带覆盖率
-go test -cover ./...
-
-# 生成覆盖率报告
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
 ```
 
-## 🐳 Docker 部署
+## Backend Boundaries
 
-### 开发环境
+- Handlers should parse requests, call services, and return responses.
+- Business rules belong in `internal/service`.
+- Persistence details belong in `internal/repository`.
+- Database transactions should be owned by a clear service-level use case or a dedicated transaction helper.
+- Payment and refund state should only change through verified provider callbacks or controlled admin/service flows.
+- New code should not add WordPress compatibility paths unless they are explicit migration tools.
 
-```bash
-docker-compose up -d
-```
+## Related Docs
 
-### 生产环境
+- API notes: `API.md`
+- Quick start: `QUICK_START.md`
+- Deployment notes: `DEPLOYMENT.md`
+- API testing guide: `docs/API_TESTING_GUIDE.md`
+- Blog i18n maintainability notes: `docs/MAINTAINABILITY_GUIDE.md`
+- Blog i18n quick reference: `docs/I18N_QUICK_REFERENCE.md`
+- Subscription quick reference: `docs/SUBSCRIPTION_QUICK_REFERENCE.md`
+- Admin console: `web/admin/README.md`
 
-```bash
-# 构建镜像
-docker build -t tanzanite-api:latest .
+## Historical Reports
 
-# 运行容器
-docker run -d \
-  -p 9000:9000 \
-  -e DATABASE_HOST=your-db-host \
-  -e REDIS_HOST=your-redis-host \
-  --name tanzanite-api \
-  tanzanite-api:latest
-```
+Old completion, security, quality, and refactoring reports live under `../docs/archive/`. They are useful context, but they are not the current source of truth.
 
-## 📈 性能优化
-
-- ✅ Redis 多层缓存
-- ✅ 数据库连接池
-- ✅ GORM 预加载优化
-- ✅ 速率限制 (100 req/min)
-- ✅ 并发处理
-- ✅ 静态资源缓存
-
-## 🔒 安全特性
-
-- ✅ JWT 认证
-- ✅ 密码 bcrypt 加密
-- ✅ CORS 配置
-- ✅ 速率限制
-- ✅ SQL 注入防护 (GORM)
-- ✅ XSS 防护
-
-## 📚 技术栈
-
-- **Web框架**: Gin
-- **ORM**: GORM
-- **数据库**: PostgreSQL / MySQL
-- **缓存**: Redis
-- **认证**: JWT
-- **日志**: Zap
-- **配置**: Viper
-- **容器**: Docker
-
-## 🤝 贡献指南
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-## 📄 许可证
-
-本项目采用 MIT 许可证
-
-## 📞 支持
-
-- 📧 Email: support@tanzanite.site
-- 📖 文档: [API.md](./API.md)
-- 🐛 问题: [GitHub Issues](https://github.com/tanzanite/go-backend/issues)
-
-## 🗺️ 路线图
-
-- [x] 基础架构搭建
-- [x] 认证系统
-- [x] 内容管理 API
-- [x] 产品管理 API
-- [x] 购物车功能
-- [x] 多语言支持
-- [ ] 订单系统
-- [ ] 支付集成
-- [ ] 邮件通知
-- [ ] 管理后台 API
-- [ ] GraphQL 支持
-- [ ] WebSocket 实时通信
-
----
-
-**版本**: v1.0.0  
-**最后更新**: 2026-05-25
+Last updated: 2026-07-02.
