@@ -13,7 +13,7 @@ import (
 
 // ListPackagingRules 获取所有包装规则
 func (h *Handler) ListPackagingRules(c *gin.Context) {
-	rules, err := h.shippingRepo.FindAllPackagingRules()
+	rules, err := h.shippingService.ListPackagingRules()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -29,7 +29,7 @@ func (h *Handler) GetPackagingRule(c *gin.Context) {
 		return
 	}
 
-	rule, err := h.shippingRepo.FindPackagingRuleByID(uint(id))
+	rule, err := h.shippingService.GetPackagingRule(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Packaging rule")
 		return
@@ -46,7 +46,7 @@ func (h *Handler) CreatePackagingRule(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.CreatePackagingRule(&rule); err != nil {
+	if err := h.shippingService.CreatePackagingRule(&rule); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -69,7 +69,7 @@ func (h *Handler) UpdatePackagingRule(c *gin.Context) {
 	}
 
 	rule.ID = uint(id)
-	if err := h.shippingRepo.UpdatePackagingRule(&rule); err != nil {
+	if err := h.shippingService.UpdatePackagingRule(&rule); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -85,7 +85,7 @@ func (h *Handler) DeletePackagingRule(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.DeletePackagingRule(uint(id)); err != nil {
+	if err := h.shippingService.DeletePackagingRule(uint(id)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -101,7 +101,7 @@ func (h *Handler) CreatePackagingRuleApply(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.CreatePackagingRuleApply(&apply); err != nil {
+	if err := h.shippingService.CreatePackagingRuleApply(&apply); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -117,7 +117,7 @@ func (h *Handler) DeletePackagingRuleApply(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingRepo.DeletePackagingRuleApply(uint(applyID)); err != nil {
+	if err := h.shippingService.DeletePackagingRuleApply(uint(applyID)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -133,7 +133,7 @@ func (h *Handler) GetProductPackagingRules(c *gin.Context) {
 		return
 	}
 
-	rules, err := h.shippingRepo.FindPackagingRulesByProductID(uint(productID))
+	rules, err := h.shippingService.GetProductPackagingRules(uint(productID))
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return

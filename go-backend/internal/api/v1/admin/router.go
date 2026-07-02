@@ -20,7 +20,6 @@ import (
 func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) {
 	// 初始化 repositories
 	deps := app.NewDependencies(db, redisCache, cfg)
-	repos := deps.Repositories
 	services := deps.Services
 	authService := services.Auth
 	storageSvc := deps.Storage
@@ -33,7 +32,6 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	paymentService := services.Payment
 	marketingService := services.Marketing
 	dashboardService := services.Dashboard
-	shippingRepo := repos.Shipping
 
 	// 初始化 handlers
 	cookieOptions := securecookie.Options{
@@ -57,7 +55,7 @@ func RegisterAdminRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCach
 	auditHandler := NewAuditHandler(services.Audit)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc)
-	shippingHandler := shipping.NewHandler(shippingRepo)
+	shippingHandler := shipping.NewHandler(services.Shipping)
 
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")

@@ -64,7 +64,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 	wishlistService := services.Wishlist
 	feedbackService := services.Feedback
 	suggestionFeedbackService := services.SuggestionFeedback
-	shippingRepo := repos.Shipping
 	spokeRepo := repos.Spoke
 	chatRepo := repos.Chat
 
@@ -90,7 +89,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, redisCache *cache.RedisCache, cf
 		VisitorSecret:  cfg.JWT.Secret,
 	})
 	paymentHandler := payment.NewHandler(paymentService, orderService)
-	shippingHandler := shipping.NewHandler(shippingRepo)
+	shippingHandler := shipping.NewHandler(services.Shipping)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc)
 	subscriptionHandler := subscription.NewHandler(subscriptionService)
