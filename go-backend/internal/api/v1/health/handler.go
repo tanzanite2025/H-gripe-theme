@@ -10,139 +10,94 @@ import (
 	"gorm.io/gorm"
 )
 
-// Handler 健康检查处理器
 type Handler struct {
-	db    *gorm.DB
-	redis *redis.Client
+	db        *gorm.DB
+	redis     *redis.Client
+	version   string
+	buildTime string
 }
 
-// NewHandler 创建处理器
-func NewHandler(db *gorm.DB, redis *redis.Client) *Handler {
-	return &Handler{
-		db:    db,
-		redis: redis,
-	}
-}
-
-// HealthResponse 健康检查响应
 type HealthResponse struct {
-	Status   string            `json:"status"`
-	Version  string            `json:"version"`
-	Time     string            `json:"time"`
-	Services map[string]string `json:"services"`
+	Status    string            `json:"status"`
+	Version   string            `json:"version"`
+	BuildTime string            `json:"buildTime,omitempty"`
+	Time      string            `json:"time"`
+	Services  map[string]string `json:"services"`
 }
 
-// Health 健康检查端点
+func NewHandler(db *gorm.DB, redis *redis.Client, version, buildTime string) *Handler {
+	return &Handler{
+		db:        db,
+		redis:     redis,
+		version:   version,
+		buildTime: buildTime,
+	}
+}
+
+func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB, redis *redis.Client, version, buildTime string) {
+	handler := NewHandler(db, redis, version, buildTime)
+
+	r.GET("/health", handler.Health)
+	r.GET("/readiness", handler.Readiness)
+	r.GET("/ready", handler.Readiness)
+	r.GET("/liveness", handler.Liveness)
+}
+
 func (h *Handler) Health(c *gin.Context) {
-	ctx := context.Background()
-	services := make(map[string]string)
-
-	// 检查数据库
-	dbStatus := "healthy"
-	if h.db != nil {
-		sqlDB, err := h.db.DB()
-		if err != nil {
-			dbStatus = "error: " + err.Error()
-		} else {
-			if err := sqlDB.Ping(); err != nil {
-				dbStatus = "unhealthy: " + err.Error()
-			}
-		}
-	} else {
-		dbStatus = "not configured"
-	}
-	services["database"] = dbStatus
-
-	// 检查Redis
-	redisStatus := "healthy"
-	if h.redis != nil {
-		if err := h.redis.Ping(ctx).Err(); err != nil {
-			redisStatus = "unhealthy: " + err.Error()
-		}
-	} else {
-		redisStatus = "not configured"
-	}
-	services["redis"] = redisStatus
-
-	// 确定总体状态
-	overallStatus := "healthy"
-	if dbStatus != "healthy" || redisStatus != "healthy" {
-		overallStatus = "degraded"
-	}
-	if dbStatus != "healthy" && redisStatus != "healthy" {
-		overallStatus = "unhealthy"
+	services := map[string]string{
+		"database": h.databaseStatus(),
+		"redis":    h.redisStatus(c.Request.Context()),
 	}
 
+	status := overallStatus(services)
 	statusCode := http.StatusOK
-	switch overallStatus {
-	case "unhealthy":
+	if status == "unhealthy" {
 		statusCode = http.StatusServiceUnavailable
-	case "degraded":
-		statusCode = http.StatusOK // 降级但仍可服务
 	}
 
-	response := HealthResponse{
-		Status:   overallStatus,
-		Version:  "1.0.0",
-		Time:     time.Now().Format(time.RFC3339),
-		Services: services,
-	}
-
-	c.JSON(statusCode, response)
-}
-
-// Readiness 就绪检查端点（Kubernetes探针）
-func (h *Handler) Readiness(c *gin.Context) {
-	ctx := context.Background()
-
-	// 检查数据库连接
-	if h.db != nil {
-		sqlDB, err := h.db.DB()
-		if err != nil || sqlDB.Ping() != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status": "not ready",
-				"reason": "database not available",
-			})
-			return
-		}
-	}
-
-	// 检查Redis连接
-	if h.redis != nil {
-		if err := h.redis.Ping(ctx).Err(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status": "not ready",
-				"reason": "redis not available",
-			})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status": "ready",
+	c.JSON(statusCode, HealthResponse{
+		Status:    status,
+		Version:   h.version,
+		BuildTime: h.buildTime,
+		Time:      time.Now().Format(time.RFC3339),
+		Services:  services,
 	})
 }
 
-// Liveness 存活检查端点（Kubernetes探针）
+func (h *Handler) Readiness(c *gin.Context) {
+	if h.databaseStatus() != "healthy" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status": "not ready",
+			"reason": "database not available",
+		})
+		return
+	}
+
+	if h.redisStatus(c.Request.Context()) != "healthy" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status": "not ready",
+			"reason": "redis not available",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ready"})
+}
+
 func (h *Handler) Liveness(c *gin.Context) {
-	// 简单的存活检查，只要服务在运行就返回200
 	c.JSON(http.StatusOK, gin.H{
 		"status": "alive",
 		"time":   time.Now().Format(time.RFC3339),
 	})
 }
 
-// DetailedHealth 详细健康检查（仅供管理员）
 func (h *Handler) DetailedHealth(c *gin.Context) {
-	ctx := context.Background()
 	details := make(map[string]interface{})
 
-	// 数据库详情
 	if h.db != nil {
-		sqlDB, err := h.db.DB()
-		if err == nil {
+		if sqlDB, err := h.db.DB(); err == nil {
 			stats := sqlDB.Stats()
-			details["database"] = map[string]interface{}{
+			details["database"] = gin.H{
 				"status":           "healthy",
 				"max_open_conns":   stats.MaxOpenConnections,
 				"open_conns":       stats.OpenConnections,
@@ -152,51 +107,75 @@ func (h *Handler) DetailedHealth(c *gin.Context) {
 				"wait_duration_ms": stats.WaitDuration.Milliseconds(),
 			}
 		} else {
-			details["database"] = map[string]interface{}{
-				"status": "error",
-				"error":  err.Error(),
-			}
+			details["database"] = gin.H{"status": "error", "error": err.Error()}
 		}
 	}
 
-	// Redis详情
 	if h.redis != nil {
-		if err := h.redis.Ping(ctx).Err(); err == nil {
-			poolStats := h.redis.PoolStats()
-			details["redis"] = map[string]interface{}{
+		if err := h.redis.Ping(c.Request.Context()).Err(); err == nil {
+			stats := h.redis.PoolStats()
+			details["redis"] = gin.H{
 				"status":      "healthy",
-				"hits":        poolStats.Hits,
-				"misses":      poolStats.Misses,
-				"timeouts":    poolStats.Timeouts,
-				"total_conns": poolStats.TotalConns,
-				"idle_conns":  poolStats.IdleConns,
-				"stale_conns": poolStats.StaleConns,
+				"hits":        stats.Hits,
+				"misses":      stats.Misses,
+				"timeouts":    stats.Timeouts,
+				"total_conns": stats.TotalConns,
+				"idle_conns":  stats.IdleConns,
+				"stale_conns": stats.StaleConns,
 			}
 		} else {
-			details["redis"] = map[string]interface{}{
-				"status": "error",
-				"error":  err.Error(),
-			}
+			details["redis"] = gin.H{"status": "error", "error": err.Error()}
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "ok",
-		"time":    time.Now().Format(time.RFC3339),
-		"version": "1.0.0",
-		"details": details,
+		"status":    "ok",
+		"time":      time.Now().Format(time.RFC3339),
+		"version":   h.version,
+		"buildTime": h.buildTime,
+		"details":   details,
 	})
 }
 
-// RegisterRoutes 注册健康检查路由
-func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB, redis *redis.Client) {
-	handler := NewHandler(db, redis)
+func (h *Handler) databaseStatus() string {
+	if h.db == nil {
+		return "not configured"
+	}
 
-	// 公开健康检查端点
-	r.GET("/health", handler.Health)
-	r.GET("/readiness", handler.Readiness)
-	r.GET("/liveness", handler.Liveness)
+	sqlDB, err := h.db.DB()
+	if err != nil {
+		return "error: " + err.Error()
+	}
+	if err := sqlDB.Ping(); err != nil {
+		return "unhealthy: " + err.Error()
+	}
+	return "healthy"
+}
 
-	// 详细健康检查（需要认证）
-	// r.GET("/health/detailed", middleware.Auth(), handler.DetailedHealth)
+func (h *Handler) redisStatus(ctx context.Context) string {
+	if h.redis == nil {
+		return "not configured"
+	}
+	if err := h.redis.Ping(ctx).Err(); err != nil {
+		return "unhealthy: " + err.Error()
+	}
+	return "healthy"
+}
+
+func overallStatus(services map[string]string) string {
+	unhealthyCount := 0
+	for _, status := range services {
+		if status != "healthy" {
+			unhealthyCount++
+		}
+	}
+
+	switch unhealthyCount {
+	case 0:
+		return "healthy"
+	case len(services):
+		return "unhealthy"
+	default:
+		return "degraded"
+	}
 }
