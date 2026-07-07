@@ -4,7 +4,6 @@ import (
 	"tanzanite/internal/domain/product"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type CartRepository struct {
@@ -18,7 +17,7 @@ func NewCartRepository(db *gorm.DB) *CartRepository {
 // FindByUserID 根据用户ID查找购物车
 func (r *CartRepository) FindByUserID(userID uint) (*product.Cart, error) {
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Images").Where("user_id = ?", userID).First(&cart).Error
+	err := r.db.Preload("Items.Product.Images").Preload("Items.Variant").Where("user_id = ?", userID).First(&cart).Error
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +27,7 @@ func (r *CartRepository) FindByUserID(userID uint) (*product.Cart, error) {
 // FindBySessionID 根据会话ID查找购物车
 func (r *CartRepository) FindBySessionID(sessionID string) (*product.Cart, error) {
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Images").Where("session_id = ?", sessionID).First(&cart).Error
+	err := r.db.Preload("Items.Product.Images").Preload("Items.Variant").Where("session_id = ?", sessionID).First(&cart).Error
 	if err != nil {
 		return nil, err
 	}
@@ -61,9 +60,15 @@ func (r *CartRepository) RemoveItem(itemID uint) error {
 }
 
 // FindItem 查找购物车项目
-func (r *CartRepository) FindItem(cartID, productID uint) (*product.CartItem, error) {
+func (r *CartRepository) FindItem(cartID, productID uint, variantID *uint) (*product.CartItem, error) {
 	var item product.CartItem
-	err := r.db.Where("cart_id = ? AND product_id = ?", cartID, productID).First(&item).Error
+	query := r.db.Where("cart_id = ? AND product_id = ?", cartID, productID)
+	if variantID != nil {
+		query = query.Where("variant_id = ?", *variantID)
+	} else {
+		query = query.Where("variant_id IS NULL")
+	}
+	err := query.First(&item).Error
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +83,7 @@ func (r *CartRepository) ClearCart(cartID uint) error {
 // GetSummary 获取购物车摘要
 func (r *CartRepository) GetSummary(cartID uint) (*product.CartSummary, error) {
 	var items []product.CartItem
-	err := r.db.Preload("Product.Images").Where("cart_id = ?", cartID).Find(&items).Error
+	err := r.db.Preload("Product.Images").Preload("Variant").Where("cart_id = ?", cartID).Find(&items).Error
 	if err != nil {
 		return nil, err
 	}
@@ -102,10 +107,25 @@ func (r *CartRepository) BulkUpsertItems(items []product.CartItem) error {
 	if len(items) == 0 {
 		return nil
 	}
-	return r.db.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "cart_id"}, {Name: "product_id"}},
-		DoUpdates: clause.Assignments(map[string]interface{}{
-			"quantity": gorm.Expr("cart_items.quantity + EXCLUDED.quantity"),
-		}),
-	}).Create(&items).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for _, item := range items {
+			repo := &CartRepository{db: tx}
+			existing, err := repo.FindItem(item.CartID, item.ProductID, item.VariantID)
+			if err == nil {
+				existing.Quantity += item.Quantity
+				existing.Price = item.Price
+				if err := tx.Save(existing).Error; err != nil {
+					return err
+				}
+				continue
+			}
+			if !IsRecordNotFound(err) {
+				return err
+			}
+			if err := tx.Create(&item).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

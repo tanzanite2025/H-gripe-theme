@@ -23,43 +23,51 @@ func NewProductHandler(productService *service.ProductService) *ProductHandler {
 }
 
 type productCreateRequest struct {
-	ProductTypeID *uint                  `json:"product_type_id"`
-	SKU           string                 `json:"sku" binding:"required"`
-	Name          string                 `json:"name" binding:"required"`
-	Slug          string                 `json:"slug" binding:"required"`
-	Description   string                 `json:"description"`
-	ShortDesc     string                 `json:"short_description"`
-	Price         float64                `json:"price" binding:"required,gt=0"`
-	SalePrice     *float64               `json:"sale_price"`
-	Stock         int                    `json:"stock" binding:"gte=0"`
-	Weight        int                    `json:"weight_grams" binding:"gte=0"`
-	Status        string                 `json:"status" binding:"required,oneof=active inactive out_of_stock"`
-	Locale        string                 `json:"locale"`
-	ParentID      *uint                  `json:"parent_id"`
-	Featured      bool                   `json:"featured"`
-	MetaTitle     string                 `json:"meta_title"`
-	MetaDesc      string                 `json:"meta_description"`
-	Specs         map[string]interface{} `json:"specs"`
+	ProductTypeID *uint                   `json:"product_type_id"`
+	Name          string                  `json:"name" binding:"required"`
+	Slug          string                  `json:"slug" binding:"required"`
+	Description   string                  `json:"description"`
+	ShortDesc     string                  `json:"short_description"`
+	Weight        int                     `json:"weight_grams" binding:"gte=0"`
+	Status        string                  `json:"status" binding:"required,oneof=active inactive out_of_stock"`
+	Locale        string                  `json:"locale"`
+	ParentID      *uint                   `json:"parent_id"`
+	Featured      bool                    `json:"featured"`
+	MetaTitle     string                  `json:"meta_title"`
+	MetaDesc      string                  `json:"meta_description"`
+	Specs         map[string]interface{}  `json:"specs"`
+	Variants      []productVariantRequest `json:"variants"`
 }
 
 type productUpdateRequest struct {
-	ProductTypeID *uint                  `json:"product_type_id"`
-	SKU           *string                `json:"sku" binding:"omitempty,min=1"`
-	Name          *string                `json:"name" binding:"omitempty,min=1"`
-	Slug          *string                `json:"slug" binding:"omitempty,min=1"`
-	Description   *string                `json:"description"`
-	ShortDesc     *string                `json:"short_description"`
-	Price         *float64               `json:"price" binding:"omitempty,gt=0"`
-	SalePrice     *float64               `json:"sale_price" binding:"omitempty,gte=0"`
-	Stock         *int                   `json:"stock" binding:"omitempty,gte=0"`
-	Weight        *int                   `json:"weight_grams" binding:"omitempty,gte=0"`
-	Status        *string                `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
-	Locale        *string                `json:"locale"`
-	ParentID      *uint                  `json:"parent_id"`
-	Featured      *bool                  `json:"featured"`
-	MetaTitle     *string                `json:"meta_title"`
-	MetaDesc      *string                `json:"meta_description"`
-	Specs         map[string]interface{} `json:"specs"`
+	ProductTypeID *uint                   `json:"product_type_id"`
+	Name          *string                 `json:"name" binding:"omitempty,min=1"`
+	Slug          *string                 `json:"slug" binding:"omitempty,min=1"`
+	Description   *string                 `json:"description"`
+	ShortDesc     *string                 `json:"short_description"`
+	Weight        *int                    `json:"weight_grams" binding:"omitempty,gte=0"`
+	Status        *string                 `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
+	Locale        *string                 `json:"locale"`
+	ParentID      *uint                   `json:"parent_id"`
+	Featured      *bool                   `json:"featured"`
+	MetaTitle     *string                 `json:"meta_title"`
+	MetaDesc      *string                 `json:"meta_description"`
+	Specs         map[string]interface{}  `json:"specs"`
+	Variants      []productVariantRequest `json:"variants"`
+}
+
+type productVariantRequest struct {
+	ID           *uint                  `json:"id"`
+	SKU          string                 `json:"sku"`
+	Title        string                 `json:"title"`
+	OptionValues map[string]interface{} `json:"option_values"`
+	Price        float64                `json:"price"`
+	SalePrice    *float64               `json:"sale_price"`
+	Stock        int                    `json:"stock"`
+	Weight       int                    `json:"weight_grams"`
+	IsDefault    bool                   `json:"is_default"`
+	IsActive     *bool                  `json:"is_active"`
+	SortOrder    int                    `json:"sort_order"`
 }
 
 func respondProductServiceError(c *gin.Context, err error, fallbackMessage string) {
@@ -71,6 +79,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 	case errors.Is(err, service.ErrProductTypeNotFound):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Product type not found"})
 	case errors.Is(err, service.ErrProductSpecInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductVariantInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fallbackMessage})
@@ -104,6 +114,30 @@ func normalizeRequestSpecs(raw map[string]interface{}) map[string]string {
 		}
 	}
 	return specs
+}
+
+func normalizeVariantRequests(raw []productVariantRequest) []service.ProductVariantInput {
+	if len(raw) == 0 {
+		return nil
+	}
+
+	variants := make([]service.ProductVariantInput, 0, len(raw))
+	for _, item := range raw {
+		variants = append(variants, service.ProductVariantInput{
+			ID:           item.ID,
+			SKU:          item.SKU,
+			Title:        item.Title,
+			OptionValues: normalizeRequestSpecs(item.OptionValues),
+			Price:        item.Price,
+			SalePrice:    item.SalePrice,
+			Stock:        item.Stock,
+			Weight:       item.Weight,
+			IsDefault:    item.IsDefault,
+			IsActive:     item.IsActive,
+			SortOrder:    item.SortOrder,
+		})
+	}
+	return variants
 }
 
 // ListProducts 获取商品列表
@@ -174,14 +208,10 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 
 	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
 		ProductTypeID: req.ProductTypeID,
-		SKU:           req.SKU,
 		Name:          req.Name,
 		Slug:          req.Slug,
 		Description:   req.Description,
 		ShortDesc:     req.ShortDesc,
-		Price:         req.Price,
-		SalePrice:     req.SalePrice,
-		Stock:         req.Stock,
 		Weight:        req.Weight,
 		Status:        req.Status,
 		Locale:        req.Locale,
@@ -190,6 +220,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		MetaTitle:     req.MetaTitle,
 		MetaDesc:      req.MetaDesc,
 		SpecValues:    normalizeRequestSpecs(req.Specs),
+		Variants:      normalizeVariantRequests(req.Variants),
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to create product")
@@ -223,26 +254,24 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	_, updateSalePrice := raw["sale_price"]
 	_, updateParentID := raw["parent_id"]
 	_, updateProductTypeID := raw["product_type_id"]
 	_, updateSpecs := raw["specs"]
+	_, updateVariants := raw["variants"]
 	if updateProductTypeID && !updateSpecs {
 		updateSpecs = true
+	}
+	if updateProductTypeID && !updateVariants {
+		updateVariants = true
 	}
 
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
 		ProductTypeID:       req.ProductTypeID,
 		UpdateProductTypeID: updateProductTypeID,
-		SKU:                 req.SKU,
 		Name:                req.Name,
 		Slug:                req.Slug,
 		Description:         req.Description,
 		ShortDesc:           req.ShortDesc,
-		Price:               req.Price,
-		SalePrice:           req.SalePrice,
-		UpdateSalePrice:     updateSalePrice,
-		Stock:               req.Stock,
 		Weight:              req.Weight,
 		Status:              req.Status,
 		Locale:              req.Locale,
@@ -253,6 +282,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		MetaDesc:            req.MetaDesc,
 		SpecValues:          normalizeRequestSpecs(req.Specs),
 		UpdateSpecValues:    updateSpecs,
+		Variants:            normalizeVariantRequests(req.Variants),
+		UpdateVariants:      updateVariants,
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to update product")
@@ -309,34 +340,6 @@ func (h *ProductHandler) UpdateProductStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Product status updated successfully",
-	})
-}
-
-// UpdateProductStock 更新商品库存
-// PATCH /api/admin/products/:id/stock
-func (h *ProductHandler) UpdateProductStock(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
-		return
-	}
-
-	var req struct {
-		Stock int `json:"stock" binding:"required,gte=0"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.productService.UpdateStock(uint(id), req.Stock); err != nil {
-		respondProductServiceError(c, err, "Failed to update product stock")
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Product stock updated successfully",
 	})
 }
 

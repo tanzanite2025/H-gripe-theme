@@ -52,6 +52,7 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	var savedOrder order.Order
 	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
 	require.Len(t, savedOrder.Items, 1)
+	require.NotNil(t, savedOrder.Items[0].VariantID)
 	assert.Equal(t, productRecord.Name, savedOrder.Items[0].ProductName)
 	assert.Equal(t, productRecord.SKU, savedOrder.Items[0].SKU)
 	assert.InDelta(t, 100, savedOrder.Items[0].Subtotal, 0.001)
@@ -78,6 +79,60 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	var usage coupon.CouponUsage
 	require.NoError(t, db.Where("coupon_id = ? AND order_id = ?", savedCoupon.ID, createdOrder.ID).First(&usage).Error)
 	assert.InDelta(t, 10, usage.Discount, 0.001)
+}
+
+func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProductShell(t, db, 999, 99)
+	salePrice := 80.0
+	variant := product.ProductVariant{
+		ProductID:    productRecord.ID,
+		SKU:          "SKU-TEST-BLK-24H",
+		Title:        "Black / 24H",
+		OptionValues: `{"color":"black","spoke_holes":"24"}`,
+		Price:        90,
+		SalePrice:    &salePrice,
+		Stock:        3,
+		IsDefault:    true,
+		IsActive:     true,
+	}
+	require.NoError(t, db.Create(&variant).Error)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, VariantID: &variant.ID, Quantity: 2}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.InDelta(t, 160, createdOrder.SubtotalAmount, 0.001)
+	assert.InDelta(t, 160, createdOrder.TotalAmount, 0.001)
+
+	var savedOrder order.Order
+	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+	require.Len(t, savedOrder.Items, 1)
+	require.NotNil(t, savedOrder.Items[0].VariantID)
+	assert.Equal(t, variant.ID, *savedOrder.Items[0].VariantID)
+	assert.Equal(t, variant.SKU, savedOrder.Items[0].SKU)
+	assert.Equal(t, variant.OptionValues, savedOrder.Items[0].Attributes)
+	assert.InDelta(t, 80, savedOrder.Items[0].Price, 0.001)
+	assert.InDelta(t, 160, savedOrder.Items[0].Subtotal, 0.001)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
+	assert.Equal(t, 1, savedVariant.Stock)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 1, savedProduct.Stock)
 }
 
 func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
@@ -108,6 +163,32 @@ func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
 	assert.Equal(t, 1, savedProduct.Stock)
+}
+
+func TestOrderServiceCreateOrderRejectsProductWithoutVariant(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProductShell(t, db, 50, 1)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+
+	require.Error(t, err)
+	assert.Nil(t, createdOrder)
+	assert.True(t, strings.Contains(strings.ToLower(err.Error()), "not found"))
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Equal(t, int64(0), orderCount)
 }
 
 func TestOrderStatusTransitionUsesDomainRules(t *testing.T) {
@@ -166,6 +247,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&product.Product{},
 		&product.ProductImage{},
 		&product.ProductSpecValue{},
+		&product.ProductVariant{},
 		&order.Order{},
 		&order.OrderItem{},
 		&coupon.Coupon{},
@@ -187,6 +269,23 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 }
 
 func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {
+	t.Helper()
+
+	record := seedProductShell(t, db, price, stock)
+	require.NoError(t, db.Create(&product.ProductVariant{
+		ProductID:    record.ID,
+		SKU:          record.SKU,
+		Title:        "Default",
+		OptionValues: "{}",
+		Price:        price,
+		Stock:        stock,
+		IsDefault:    true,
+		IsActive:     true,
+	}).Error)
+	return record
+}
+
+func seedProductShell(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {
 	t.Helper()
 
 	record := product.Product{

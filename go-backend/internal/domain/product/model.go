@@ -28,6 +28,7 @@ type Product struct {
 	Images        []ProductImage     `gorm:"foreignKey:ProductID" json:"images"`
 	ProductType   *ProductType       `gorm:"foreignKey:ProductTypeID" json:"product_type,omitempty"`
 	SpecValues    []ProductSpecValue `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`
+	Variants      []ProductVariant   `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt     `gorm:"index" json:"-"`
@@ -66,34 +67,37 @@ func (ProductImage) TableName() string {
 
 // ProductListResponse 产品列表响应
 type ProductListResponse struct {
-	ID          uint     `json:"id"`
-	SKU         string   `json:"sku"`
-	Name        string   `json:"name"`
-	Slug        string   `json:"slug"`
-	ShortDesc   string   `json:"short_description"`
-	Price       float64  `json:"price"`
-	SalePrice   *float64 `json:"sale_price"`
-	Stock       int      `json:"stock"`
-	Status      string   `json:"status"`
-	Locale      string   `json:"locale"`
-	Featured    bool     `json:"featured"`
-	FeaturedImg string   `json:"featured_image"`
+	ID           uint     `json:"id"`
+	SKU          string   `json:"sku"`
+	Name         string   `json:"name"`
+	Slug         string   `json:"slug"`
+	ShortDesc    string   `json:"short_description"`
+	Price        float64  `json:"price"`
+	SalePrice    *float64 `json:"sale_price"`
+	Stock        int      `json:"stock"`
+	Status       string   `json:"status"`
+	Locale       string   `json:"locale"`
+	Featured     bool     `json:"featured"`
+	FeaturedImg  string   `json:"featured_image"`
+	VariantCount int      `json:"variant_count"`
 }
 
 // ToListResponse 转换为列表响应
 func (p *Product) ToListResponse() *ProductListResponse {
+	price, salePrice := p.DisplayPrices()
 	resp := &ProductListResponse{
-		ID:        p.ID,
-		SKU:       p.SKU,
-		Name:      p.Name,
-		Slug:      p.Slug,
-		ShortDesc: p.ShortDesc,
-		Price:     p.Price,
-		SalePrice: p.SalePrice,
-		Stock:     p.Stock,
-		Status:    p.Status,
-		Locale:    p.Locale,
-		Featured:  p.Featured,
+		ID:           p.ID,
+		SKU:          p.DisplaySKU(),
+		Name:         p.Name,
+		Slug:         p.Slug,
+		ShortDesc:    p.ShortDesc,
+		Price:        price,
+		SalePrice:    salePrice,
+		Stock:        p.TotalVariantStock(),
+		Status:       p.Status,
+		Locale:       p.Locale,
+		Featured:     p.Featured,
+		VariantCount: len(p.Variants),
 	}
 
 	// 获取第一张图片作为特色图片
@@ -102,6 +106,56 @@ func (p *Product) ToListResponse() *ProductListResponse {
 	}
 
 	return resp
+}
+
+func (p *Product) ActiveVariants() []ProductVariant {
+	var variants []ProductVariant
+	for _, variant := range p.Variants {
+		if variant.IsActive {
+			variants = append(variants, variant)
+		}
+	}
+	return variants
+}
+
+func (p *Product) DefaultVariant() *ProductVariant {
+	activeVariants := p.ActiveVariants()
+	if len(activeVariants) == 0 {
+		return nil
+	}
+	for i := range activeVariants {
+		if activeVariants[i].IsDefault {
+			return &activeVariants[i]
+		}
+	}
+	return &activeVariants[0]
+}
+
+func (p *Product) DisplaySKU() string {
+	if variant := p.DefaultVariant(); variant != nil {
+		return variant.SKU
+	}
+	return p.SKU
+}
+
+func (p *Product) DisplayPrices() (float64, *float64) {
+	if variant := p.DefaultVariant(); variant != nil {
+		return variant.Price, variant.SalePrice
+	}
+	return p.Price, p.SalePrice
+}
+
+func (p *Product) TotalVariantStock() int {
+	activeVariants := p.ActiveVariants()
+	if len(activeVariants) == 0 {
+		return p.Stock
+	}
+
+	total := 0
+	for _, variant := range activeVariants {
+		total += variant.Stock
+	}
+	return total
 }
 
 // Cart 购物车
@@ -122,14 +176,16 @@ func (Cart) TableName() string {
 
 // CartItem 购物车项目
 type CartItem struct {
-	ID        uint      `gorm:"primarykey" json:"id"`
-	CartID    uint      `gorm:"not null;index" json:"cart_id"`
-	ProductID uint      `gorm:"not null;index" json:"product_id"`
-	Quantity  int       `gorm:"not null" json:"quantity"`
-	Price     float64   `gorm:"not null" json:"price"` // 快照价格
-	Product   *Product  `gorm:"foreignKey:ProductID" json:"product,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        uint            `gorm:"primarykey" json:"id"`
+	CartID    uint            `gorm:"not null;index;uniqueIndex:idx_cart_product_variant" json:"cart_id"`
+	ProductID uint            `gorm:"not null;index;uniqueIndex:idx_cart_product_variant" json:"product_id"`
+	VariantID *uint           `gorm:"not null;index;uniqueIndex:idx_cart_product_variant" json:"variant_id"`
+	Quantity  int             `gorm:"not null" json:"quantity"`
+	Price     float64         `gorm:"not null" json:"price"` // 快照价格
+	Product   *Product        `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+	Variant   *ProductVariant `gorm:"foreignKey:VariantID" json:"variant,omitempty"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
 }
 
 // TableName 指定表名
@@ -202,21 +258,22 @@ func (ProductType) TableName() string {
 }
 
 type SpecDefinition struct {
-	ID            uint      `gorm:"primarykey" json:"id"`
-	ProductTypeID uint      `gorm:"not null;index;uniqueIndex:idx_product_type_spec_slug" json:"product_type_id"`
-	Group         string    `gorm:"type:varchar(80);default:'specs';not null" json:"group"`
-	Name          string    `gorm:"type:varchar(120);not null" json:"name"`
-	Slug          string    `gorm:"type:varchar(120);not null;uniqueIndex:idx_product_type_spec_slug" json:"slug"`
-	FieldType     string    `gorm:"type:varchar(32);default:'text';not null" json:"field_type"`
-	Unit          string    `gorm:"type:varchar(32)" json:"unit"`
-	IsRequired    bool      `gorm:"default:false;not null" json:"is_required"`
-	IsFilterable  bool      `gorm:"default:false;not null" json:"is_filterable"`
-	IsVisible     bool      `gorm:"default:true;not null" json:"is_visible"`
-	SortOrder     int       `gorm:"default:0;not null" json:"sort_order"`
-	Options       string    `gorm:"type:text" json:"options"`
-	Validation    string    `gorm:"type:text" json:"validation"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID              uint      `gorm:"primarykey" json:"id"`
+	ProductTypeID   uint      `gorm:"not null;index;uniqueIndex:idx_product_type_spec_slug" json:"product_type_id"`
+	Group           string    `gorm:"type:varchar(80);default:'specs';not null" json:"group"`
+	Name            string    `gorm:"type:varchar(120);not null" json:"name"`
+	Slug            string    `gorm:"type:varchar(120);not null;uniqueIndex:idx_product_type_spec_slug" json:"slug"`
+	FieldType       string    `gorm:"type:varchar(32);default:'text';not null" json:"field_type"`
+	Unit            string    `gorm:"type:varchar(32)" json:"unit"`
+	IsRequired      bool      `gorm:"default:false;not null" json:"is_required"`
+	IsFilterable    bool      `gorm:"default:false;not null" json:"is_filterable"`
+	IsVisible       bool      `gorm:"default:true;not null" json:"is_visible"`
+	IsVariantOption bool      `gorm:"default:false;not null" json:"is_variant_option"`
+	SortOrder       int       `gorm:"default:0;not null" json:"sort_order"`
+	Options         string    `gorm:"type:text" json:"options"`
+	Validation      string    `gorm:"type:text" json:"validation"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 func (SpecDefinition) TableName() string {
@@ -235,4 +292,40 @@ type ProductSpecValue struct {
 
 func (ProductSpecValue) TableName() string {
 	return "product_spec_values"
+}
+
+type ProductVariant struct {
+	ID           uint           `gorm:"primarykey" json:"id"`
+	ProductID    uint           `gorm:"not null;index;uniqueIndex:idx_product_variant_options" json:"product_id"`
+	SKU          string         `gorm:"type:varchar(120);uniqueIndex;not null" json:"sku"`
+	Title        string         `gorm:"type:varchar(160)" json:"title"`
+	OptionValues string         `gorm:"type:text;not null;uniqueIndex:idx_product_variant_options" json:"option_values"`
+	Price        float64        `gorm:"not null" json:"price"`
+	SalePrice    *float64       `json:"sale_price"`
+	Stock        int            `gorm:"default:0;not null" json:"stock"`
+	Weight       int            `json:"weight_grams"`
+	IsDefault    bool           `gorm:"default:false;not null" json:"is_default"`
+	IsActive     bool           `gorm:"default:true;not null" json:"is_active"`
+	SortOrder    int            `gorm:"default:0;not null" json:"sort_order"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (ProductVariant) TableName() string {
+	return "product_variants"
+}
+
+func (v *ProductVariant) EffectivePrice() float64 {
+	if v.SalePrice != nil {
+		return *v.SalePrice
+	}
+	return v.Price
+}
+
+func (v *ProductVariant) BeforeCreate(tx *gorm.DB) error {
+	if v.OptionValues == "" {
+		v.OptionValues = "{}"
+	}
+	return nil
 }

@@ -142,31 +142,60 @@ func makePublicChatProduct(item productdomain.Product) gin.H {
 	}
 
 	salePrice := 0.0
-	if item.SalePrice != nil {
-		salePrice = *item.SalePrice
+	price, sale := item.DisplayPrices()
+	if sale != nil {
+		salePrice = *sale
+	}
+	defaultVariantID := uint(0)
+	if defaultVariant := item.DefaultVariant(); defaultVariant != nil {
+		defaultVariantID = defaultVariant.ID
 	}
 
 	return gin.H{
-		"id":        item.ID,
-		"title":     item.Name,
-		"status":    item.Status,
-		"excerpt":   item.ShortDesc,
-		"slug":      item.Slug,
-		"sku":       item.SKU,
-		"thumbnail": thumbnail,
+		"id":                 item.ID,
+		"title":              item.Name,
+		"status":             item.Status,
+		"excerpt":            item.ShortDesc,
+		"slug":               item.Slug,
+		"sku":                item.DisplaySKU(),
+		"thumbnail":          thumbnail,
+		"default_variant_id": defaultVariantID,
+		"variant_count":      len(item.ActiveVariants()),
+		"variants":           makePublicVariants(item.ActiveVariants()),
 		"prices": gin.H{
-			"regular": item.Price,
+			"regular": price,
 			"sale":    salePrice,
 			"member":  0,
 		},
 		"stock": gin.H{
-			"quantity": item.Stock,
+			"quantity": item.TotalVariantStock(),
 			"alert":    0,
 		},
 		"preview_url": "/shop/" + item.Slug,
 		"updated_at":  item.UpdatedAt,
 		"created_at":  item.CreatedAt,
 	}
+}
+
+func makePublicVariants(variants []productdomain.ProductVariant) []gin.H {
+	items := make([]gin.H, 0, len(variants))
+	for _, variant := range variants {
+		salePrice := 0.0
+		if variant.SalePrice != nil {
+			salePrice = *variant.SalePrice
+		}
+		items = append(items, gin.H{
+			"id":            variant.ID,
+			"sku":           variant.SKU,
+			"title":         variant.Title,
+			"option_values": variant.OptionValues,
+			"price":         variant.Price,
+			"sale_price":    salePrice,
+			"stock":         variant.Stock,
+			"is_default":    variant.IsDefault,
+		})
+	}
+	return items
 }
 
 // GetFilterableAttributes 获取可过滤属性列表 (公开端点)

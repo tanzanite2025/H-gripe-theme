@@ -82,6 +82,7 @@ import { useCart } from '~/composables/useCart'
 
 interface StripProduct {
   id: number
+  defaultVariantId?: number | null
   title: string
   slug: string
   url: string
@@ -152,6 +153,7 @@ const loadProducts = async () => {
 
         return {
           id: item.id,
+          defaultVariantId: item.default_variant_id || null,
           title: item.title,
           slug: item.slug || String(item.id),
           url: `/shop/${item.slug || item.id}`,
@@ -179,6 +181,8 @@ const handleAddToCart = (product: StripProduct) => {
 
   const result = addToCart({
     id: product.id,
+    product_id: product.id,
+    variant_id: product.defaultVariantId || null,
     title: product.title,
     slug: product.slug,
     price,

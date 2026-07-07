@@ -18,7 +18,6 @@ func NewCartService(cartRepo *repository.CartRepository, productRepo *repository
 	}
 }
 
-// GetOrCreateCart 获取或创建购物车
 func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.Cart, error) {
 	var cart *product.Cart
 	var err error
@@ -30,7 +29,6 @@ func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.
 	}
 
 	if repository.IsRecordNotFound(err) {
-		// 创建新购物车
 		cart = &product.Cart{
 			UserID:    userID,
 			SessionID: sessionID,
@@ -45,70 +43,70 @@ func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.
 	return cart, nil
 }
 
-// AddToCart 添加商品到购物车
-func (s *CartService) AddToCart(cartID, productID uint, quantity int) error {
-	// 检查产品是否存在
-	prod, err := s.productRepo.FindByID(productID)
-	if err != nil {
-		return errors.New("product not found")
-	}
-
-	// 检查库存
-	if prod.Stock < quantity {
-		return errors.New("insufficient stock")
-	}
-
-	// 检查是否已存在该商品
-	existingItem, err := s.cartRepo.FindItem(cartID, productID)
-	if err == nil {
-		// 更新数量
-		existingItem.Quantity += quantity
-		return s.cartRepo.UpdateItem(existingItem)
-	}
-
-	// 添加新商品
-	item := &product.CartItem{
-		CartID:    cartID,
-		ProductID: productID,
-		Quantity:  quantity,
-		Price:     prod.Price,
-	}
-
-	if prod.SalePrice != nil {
-		item.Price = *prod.SalePrice
-	}
-
-	return s.cartRepo.AddItem(item)
-}
-
-// UpdateCartItem 更新购物车项目数量
-func (s *CartService) UpdateCartItem(cartID, productID uint, quantity int) error {
+func (s *CartService) AddToCart(cartID, productID uint, variantID *uint, quantity int) error {
 	if quantity <= 0 {
 		return errors.New("quantity must be greater than 0")
 	}
 
-	item, err := s.cartRepo.FindItem(cartID, productID)
+	_, variant, err := s.productRepo.FindPurchasableVariant(productID, variantID)
+	if err != nil || variant == nil {
+		return errors.New("product not found")
+	}
+
+	price, availableStock, resolvedVariantID := purchasablePriceStock(variant)
+	if availableStock < quantity {
+		return errors.New("insufficient stock")
+	}
+
+	existingItem, err := s.cartRepo.FindItem(cartID, productID, resolvedVariantID)
+	if err == nil {
+		if existingItem.Quantity+quantity > availableStock {
+			return errors.New("insufficient stock")
+		}
+		existingItem.Quantity += quantity
+		existingItem.Price = price
+		return s.cartRepo.UpdateItem(existingItem)
+	}
+	if !repository.IsRecordNotFound(err) {
+		return err
+	}
+
+	return s.cartRepo.AddItem(&product.CartItem{
+		CartID:    cartID,
+		ProductID: productID,
+		VariantID: resolvedVariantID,
+		Quantity:  quantity,
+		Price:     price,
+	})
+}
+
+func (s *CartService) UpdateCartItem(cartID, productID uint, variantID *uint, quantity int) error {
+	if quantity <= 0 {
+		return errors.New("quantity must be greater than 0")
+	}
+
+	item, err := s.cartRepo.FindItem(cartID, productID, variantID)
 	if err != nil {
 		return errors.New("item not found in cart")
 	}
 
-	// 检查库存
-	prod, err := s.productRepo.FindByID(productID)
-	if err != nil {
-		return err
+	_, variant, err := s.productRepo.FindPurchasableVariant(productID, item.VariantID)
+	if err != nil || variant == nil {
+		return errors.New("product not found")
 	}
 
-	if prod.Stock < quantity {
+	price, availableStock, _ := purchasablePriceStock(variant)
+	if availableStock < quantity {
 		return errors.New("insufficient stock")
 	}
 
 	item.Quantity = quantity
+	item.Price = price
 	return s.cartRepo.UpdateItem(item)
 }
 
-// RemoveFromCart 从购物车移除商品
-func (s *CartService) RemoveFromCart(cartID, productID uint) error {
-	item, err := s.cartRepo.FindItem(cartID, productID)
+func (s *CartService) RemoveFromCart(cartID, productID uint, variantID *uint) error {
+	item, err := s.cartRepo.FindItem(cartID, productID, variantID)
 	if err != nil {
 		return nil
 	}
@@ -116,49 +114,36 @@ func (s *CartService) RemoveFromCart(cartID, productID uint) error {
 }
 
 type SyncCartItemReq struct {
-	ProductID uint `json:"product_id"`
-	Quantity  int  `json:"quantity"`
+	ProductID uint  `json:"product_id"`
+	VariantID *uint `json:"variant_id"`
+	Quantity  int   `json:"quantity"`
 }
 
-// SyncCart 合并本地购物车项目到云端
 func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 	if len(items) == 0 {
 		return nil
 	}
 
-	var productIDs []uint
-	for _, item := range items {
-		productIDs = append(productIDs, item.ProductID)
-	}
-
-	products, err := s.productRepo.FindProductsByIDs(productIDs)
-	if err != nil {
-		return err
-	}
-
-	productMap := make(map[uint]product.Product)
-	for _, p := range products {
-		productMap[p.ID] = p
-	}
-
 	var cartItems []product.CartItem
 	for _, req := range items {
-		p, exists := productMap[req.ProductID]
-		if !exists {
-			continue
-		}
-		if p.Stock < req.Quantity {
+		if req.Quantity <= 0 {
 			continue
 		}
 
-		price := p.Price
-		if p.SalePrice != nil {
-			price = *p.SalePrice
+		_, variant, err := s.productRepo.FindPurchasableVariant(req.ProductID, req.VariantID)
+		if err != nil || variant == nil {
+			continue
+		}
+
+		price, availableStock, resolvedVariantID := purchasablePriceStock(variant)
+		if availableStock < req.Quantity {
+			continue
 		}
 
 		cartItems = append(cartItems, product.CartItem{
 			CartID:    cartID,
 			ProductID: req.ProductID,
+			VariantID: resolvedVariantID,
 			Quantity:  req.Quantity,
 			Price:     price,
 		})
@@ -167,7 +152,6 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 	return s.cartRepo.BulkUpsertItems(cartItems)
 }
 
-// GetCartSummary 获取购物车摘要
 func (s *CartService) GetCartSummary(userID *uint, sessionID string) (*product.CartSummary, error) {
 	cart, err := s.GetOrCreateCart(userID, sessionID)
 	if err != nil {
@@ -177,7 +161,11 @@ func (s *CartService) GetCartSummary(userID *uint, sessionID string) (*product.C
 	return s.cartRepo.GetSummary(cart.ID)
 }
 
-// ClearCart 清空购物车
 func (s *CartService) ClearCart(cartID uint) error {
 	return s.cartRepo.ClearCart(cartID)
+}
+
+func purchasablePriceStock(variant *product.ProductVariant) (float64, int, *uint) {
+	variantID := variant.ID
+	return variant.EffectivePrice(), variant.Stock, &variantID
 }

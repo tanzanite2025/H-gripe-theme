@@ -161,15 +161,6 @@
             </el-button>
             <el-button
               v-if="hasPermission('product:edit')"
-              type="info"
-              size="small"
-              link
-              @click="showStockDialog(row)"
-            >
-              库存
-            </el-button>
-            <el-button
-              v-if="hasPermission('product:edit')"
               type="warning"
               size="small"
               link
@@ -247,23 +238,18 @@
       >
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="SKU" prop="sku">
-              <el-input v-model="productForm.sku" placeholder="请输入 SKU" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="商品名称" prop="name">
               <el-input v-model="productForm.name" placeholder="请输入商品名称" />
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Slug" prop="slug">
               <el-input v-model="productForm.slug" placeholder="请输入 URL slug" />
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="语言" prop="locale">
               <el-select v-model="productForm.locale" placeholder="请选择语言" style="width: 100%">
@@ -272,9 +258,6 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="产品类型">
               <el-select
@@ -356,39 +339,98 @@
           />
         </el-form-item>
 
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item label="价格" prop="price">
+        <el-divider content-position="left">SKU 变体矩阵</el-divider>
+        <el-alert
+          title="价格、促销价、库存只维护在变体行；商品列表会自动汇总默认变体价格与总库存。"
+          type="info"
+          show-icon
+          :closable="false"
+          class="variant-alert"
+        />
+        <el-table :data="productForm.variants" border size="small" class="variant-table">
+          <el-table-column label="默认" width="70" align="center">
+            <template #default="{ $index }">
+              <el-radio
+                :model-value="defaultVariantIndex"
+                :label="$index"
+                @change="setDefaultVariant($index)"
+              >
+                &nbsp;
+              </el-radio>
+            </template>
+          </el-table-column>
+          <el-table-column label="SKU" min-width="160">
+            <template #default="{ row }">
+              <el-input v-model="row.sku" placeholder="变体 SKU" />
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-for="spec in variantSpecDefinitions"
+            :key="spec.id"
+            :label="getSpecLabel(spec)"
+            min-width="150"
+          >
+            <template #default="{ row }">
               <el-input-number
-                v-model="productForm.price"
+                v-if="spec.field_type === 'number'"
+                v-model="row.option_values[spec.slug]"
                 :min="0"
-                :precision="2"
-                :step="0.01"
                 style="width: 100%"
               />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="促销价">
-              <el-input-number
-                v-model="productForm.sale_price"
-                :min="0"
-                :precision="2"
-                :step="0.01"
+              <el-select
+                v-else-if="spec.field_type === 'select'"
+                v-model="row.option_values[spec.slug]"
+                clearable
+                filterable
                 style="width: 100%"
+              >
+                <el-option
+                  v-for="option in parseSpecOptions(spec)"
+                  :key="option"
+                  :label="formatSpecOption(option)"
+                  :value="option"
+                />
+              </el-select>
+              <el-switch
+                v-else-if="spec.field_type === 'boolean'"
+                v-model="row.option_values[spec.slug]"
               />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库存" prop="stock">
-              <el-input-number
-                v-model="productForm.stock"
-                :min="0"
-                style="width: 100%"
+              <el-input
+                v-else
+                v-model="row.option_values[spec.slug]"
+                :placeholder="spec.name"
               />
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </template>
+          </el-table-column>
+          <el-table-column label="价格" width="130">
+            <template #default="{ row }">
+              <el-input-number v-model="row.price" :min="0" :precision="2" :step="0.01" style="width: 100%" />
+            </template>
+          </el-table-column>
+          <el-table-column label="促销价" width="130">
+            <template #default="{ row }">
+              <el-input-number v-model="row.sale_price" :min="0" :precision="2" :step="0.01" style="width: 100%" />
+            </template>
+          </el-table-column>
+          <el-table-column label="库存" width="120">
+            <template #default="{ row }">
+              <el-input-number v-model="row.stock" :min="0" style="width: 100%" />
+            </template>
+          </el-table-column>
+          <el-table-column label="启用" width="80" align="center">
+            <template #default="{ row }">
+              <el-switch v-model="row.is_active" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80" align="center">
+            <template #default="{ $index }">
+              <el-button type="danger" link @click="removeVariant($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-button class="add-variant-button" type="primary" plain @click="addVariant">
+          添加变体
+        </el-button>
 
         <el-row :gutter="20">
           <el-col :span="12">
@@ -437,35 +479,6 @@
       </template>
     </el-dialog>
 
-    <!-- 库存管理对话框 -->
-    <el-dialog
-      v-model="stockDialogVisible"
-      title="库存管理"
-      width="400px"
-    >
-      <el-form :model="stockForm" label-width="100px">
-        <el-form-item label="商品名称">
-          <span>{{ stockForm.name }}</span>
-        </el-form-item>
-        <el-form-item label="当前库存">
-          <span>{{ stockForm.currentStock }}</span>
-        </el-form-item>
-        <el-form-item label="新库存" required>
-          <el-input-number
-            v-model="stockForm.stock"
-            :min="0"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <el-button @click="stockDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitStock">
-          确定
-        </el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -483,7 +496,6 @@ const products = ref([])
 const selectedProducts = ref([])
 const productTypes = ref([])
 const dialogVisible = ref(false)
-const stockDialogVisible = ref(false)
 const dialogMode = ref('create')
 const submitting = ref(false)
 const productFormRef = ref(null)
@@ -504,46 +516,28 @@ const pagination = reactive({
 })
 
 const productForm = reactive({
+  id: null,
   product_type_id: null,
-  sku: '',
   name: '',
   slug: '',
   description: '',
   short_description: '',
-  price: 0,
-  sale_price: null,
-  stock: 0,
   weight_grams: 0,
   status: 'active',
   locale: 'zh',
   featured: false,
   meta_title: '',
   meta_description: '',
-  specs: {}
-})
-
-const stockForm = reactive({
-  id: null,
-  name: '',
-  currentStock: 0,
-  stock: 0
+  specs: {},
+  variants: []
 })
 
 const productFormRules = {
-  sku: [
-    { required: true, message: '请输入 SKU', trigger: 'blur' }
-  ],
   name: [
     { required: true, message: '请输入商品名称', trigger: 'blur' }
   ],
   slug: [
     { required: true, message: '请输入 URL slug', trigger: 'blur' }
-  ],
-  price: [
-    { required: true, message: '请输入价格', trigger: 'blur' }
-  ],
-  stock: [
-    { required: true, message: '请输入库存', trigger: 'blur' }
   ],
   status: [
     { required: true, message: '请选择状态', trigger: 'change' }
@@ -581,7 +575,18 @@ const selectedProductType = computed(() => {
 })
 
 const selectedSpecDefinitions = computed(() => {
-  return selectedProductType.value?.spec_definitions || []
+  return (selectedProductType.value?.spec_definitions || [])
+    .filter(spec => !spec.is_variant_option)
+})
+
+const variantSpecDefinitions = computed(() => {
+  return (selectedProductType.value?.spec_definitions || [])
+    .filter(spec => spec.is_variant_option)
+})
+
+const defaultVariantIndex = computed(() => {
+  const index = productForm.variants.findIndex(variant => variant.is_default)
+  return index >= 0 ? index : 0
 })
 
 const fetchProductTypes = async () => {
@@ -633,6 +638,180 @@ const buildSpecFormValues = (product) => {
   return values
 }
 
+const parseVariantOptions = (variant) => {
+  if (!variant?.option_values) return {}
+  if (typeof variant.option_values === 'object') return { ...variant.option_values }
+  try {
+    const parsed = JSON.parse(variant.option_values)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch (error) {
+    return {}
+  }
+}
+
+const createEmptyVariant = (overrides = {}) => ({
+  id: null,
+  sku: '',
+  title: '',
+  option_values: {},
+  price: 0,
+  sale_price: null,
+  stock: 0,
+  weight_grams: 0,
+  is_default: false,
+  is_active: true,
+  sort_order: productForm.variants.length * 10,
+  ...overrides
+})
+
+const buildVariantFormValues = (product) => {
+  const variants = (product.variants || []).map((variant, index) => createEmptyVariant({
+    id: variant.id || null,
+    sku: variant.sku || '',
+    title: variant.title || '',
+    option_values: parseVariantOptions(variant),
+    price: Number(variant.price || 0),
+    sale_price: variant.sale_price ?? null,
+    stock: Number(variant.stock || 0),
+    weight_grams: variant.weight_grams ?? variant.weight ?? 0,
+    is_default: Boolean(variant.is_default),
+    is_active: variant.is_active !== false,
+    sort_order: variant.sort_order ?? index * 10
+  }))
+
+  if (variants.length === 0) {
+    variants.push(createEmptyVariant({
+      weight_grams: product.weight_grams ?? product.weight ?? 0,
+      is_default: true
+    }))
+  }
+
+  if (!variants.some(variant => variant.is_default)) {
+    variants[0].is_default = true
+  }
+  return variants
+}
+
+const addVariant = () => {
+  productForm.variants.push(createEmptyVariant({
+    is_default: productForm.variants.length === 0
+  }))
+}
+
+const removeVariant = (index) => {
+  if (productForm.variants.length <= 1) {
+    ElMessage.warning('至少保留一个变体')
+    return
+  }
+  const wasDefault = productForm.variants[index]?.is_default
+  productForm.variants.splice(index, 1)
+  if (wasDefault && productForm.variants.length > 0) {
+    setDefaultVariant(0)
+  }
+}
+
+const setDefaultVariant = (index) => {
+  productForm.variants.forEach((variant, currentIndex) => {
+    variant.is_default = currentIndex === index
+  })
+}
+
+const normalizeFormVariants = () => {
+  const variants = productForm.variants
+  if (!variants.length) {
+    return []
+  }
+
+  if (!variants.some(variant => variant.is_default)) {
+    variants[0].is_default = true
+  }
+
+  return variants.map((variant, index) => {
+    const optionValues = {}
+    variantSpecDefinitions.value.forEach((spec) => {
+      const value = variant.option_values?.[spec.slug]
+      if (value !== undefined && value !== null && value !== '') {
+        optionValues[spec.slug] = value
+      }
+    })
+
+    return {
+      id: variant.id || undefined,
+      sku: String(variant.sku || '').trim(),
+      title: String(variant.title || '').trim(),
+      option_values: optionValues,
+      price: Number(variant.price || 0),
+      sale_price: variant.sale_price === '' ? null : variant.sale_price,
+      stock: Number(variant.stock || 0),
+      weight_grams: Number(variant.weight_grams || productForm.weight_grams || 0),
+      is_default: Boolean(variant.is_default),
+      is_active: variant.is_active !== false,
+      sort_order: Number(variant.sort_order ?? index * 10)
+    }
+  })
+}
+
+const buildProductPayload = () => {
+  const variants = normalizeFormVariants()
+  const {
+    id,
+    product_type_id,
+    name,
+    slug,
+    description,
+    short_description,
+    weight_grams,
+    status,
+    locale,
+    parent_id,
+    featured,
+    meta_title,
+    meta_description,
+    specs
+  } = productForm
+
+  return {
+    id,
+    product_type_id,
+    name,
+    slug,
+    description,
+    short_description,
+    weight_grams,
+    status,
+    locale,
+    parent_id,
+    featured,
+    meta_title,
+    meta_description,
+    specs,
+    variants
+  }
+}
+
+const validateVariants = (variants) => {
+  if (!variants.length) {
+    ElMessage.error('请至少添加一个 SKU 变体')
+    return false
+  }
+  const invalidSKU = variants.find(variant => !variant.sku)
+  if (invalidSKU) {
+    ElMessage.error('每个变体都必须填写 SKU')
+    return false
+  }
+  const invalidPrice = variants.find(variant => Number(variant.price || 0) <= 0)
+  if (invalidPrice) {
+    ElMessage.error('每个变体价格必须大于 0')
+    return false
+  }
+  const invalidStock = variants.find(variant => Number(variant.stock || 0) < 0)
+  if (invalidStock) {
+    ElMessage.error('变体库存不能为负数')
+    return false
+  }
+  return true
+}
+
 const handleProductTypeChange = () => {
   const nextSpecs = {}
   selectedSpecDefinitions.value.forEach((spec) => {
@@ -641,6 +820,9 @@ const handleProductTypeChange = () => {
     }
   })
   productForm.specs = nextSpecs
+  productForm.variants.forEach((variant) => {
+    variant.option_values = {}
+  })
 }
 
 const fetchStats = async () => {
@@ -702,53 +884,38 @@ const showEditDialog = async (product) => {
   Object.assign(productForm, {
     id: detail.id,
     product_type_id: detail.product_type_id || detail.product_type?.id || null,
-    sku: detail.sku,
     name: detail.name,
     slug: detail.slug,
     description: detail.description || '',
     short_description: detail.short_description || detail.short_desc || '',
-    price: detail.price,
-    sale_price: detail.sale_price,
-    stock: detail.stock,
     weight_grams: detail.weight_grams ?? detail.weight ?? 0,
     status: detail.status,
     locale: detail.locale || 'zh',
     featured: detail.featured || false,
     meta_title: detail.meta_title || '',
     meta_description: detail.meta_description || detail.meta_desc || '',
-    specs: buildSpecFormValues(detail)
+    specs: buildSpecFormValues(detail),
+    variants: buildVariantFormValues(detail)
   })
   dialogVisible.value = true
 }
 
-const showStockDialog = (product) => {
-  Object.assign(stockForm, {
-    id: product.id,
-    name: product.name,
-    currentStock: product.stock,
-    stock: product.stock
-  })
-  stockDialogVisible.value = true
-}
-
 const resetForm = () => {
   Object.assign(productForm, {
+    id: null,
     product_type_id: null,
-    sku: '',
     name: '',
     slug: '',
     description: '',
     short_description: '',
-    price: 0,
-    sale_price: null,
-    stock: 0,
     weight_grams: 0,
     status: 'active',
     locale: 'zh',
     featured: false,
     meta_title: '',
     meta_description: '',
-    specs: {}
+    specs: {},
+    variants: [createEmptyVariant({ is_default: true })]
   })
   if (productFormRef.value) {
     productFormRef.value.clearValidate()
@@ -764,11 +931,15 @@ const submitForm = async () => {
     submitting.value = true
 
     try {
+      const payload = buildProductPayload()
+      if (!validateVariants(payload.variants)) {
+        return
+      }
       if (dialogMode.value === 'create') {
-        await axios.post('/api/admin/products', productForm)
+        await axios.post('/api/admin/products', payload)
         ElMessage.success('商品创建成功')
       } else {
-        const { id, ...data } = productForm
+        const { id, ...data } = payload
         await axios.put(`/api/admin/products/${id}`, data)
         ElMessage.success('商品更新成功')
       }
@@ -782,24 +953,6 @@ const submitForm = async () => {
       submitting.value = false
     }
   })
-}
-
-const submitStock = async () => {
-  submitting.value = true
-
-  try {
-    await axios.patch(`/api/admin/products/${stockForm.id}/stock`, {
-      stock: stockForm.stock
-    })
-    ElMessage.success('库存更新成功')
-    stockDialogVisible.value = false
-    fetchProducts()
-    fetchStats()
-  } catch (error) {
-    ElMessage.error(error.response?.data?.error || '更新失败')
-  } finally {
-    submitting.value = false
-  }
 }
 
 const toggleStatus = async (product) => {
@@ -967,6 +1120,18 @@ onMounted(() => {
   text-decoration: line-through;
   color: #909399;
   font-size: 12px;
+}
+
+.variant-alert {
+  margin-bottom: 12px;
+}
+
+.variant-table {
+  margin-bottom: 12px;
+}
+
+.add-variant-button {
+  margin-bottom: 20px;
 }
 
 .batch-actions {

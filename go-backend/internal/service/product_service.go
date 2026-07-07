@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"tanzanite/internal/domain/product"
@@ -27,22 +28,33 @@ func NewProductService(productRepo *repository.ProductRepository, cache *cache.R
 }
 
 var (
-	ErrProductNotFound     = errors.New("product not found")
-	ErrProductSKUExists    = errors.New("product sku already exists")
-	ErrProductTypeNotFound = errors.New("product type not found")
-	ErrProductSpecInvalid  = errors.New("product spec invalid")
+	ErrProductNotFound       = errors.New("product not found")
+	ErrProductSKUExists      = errors.New("product sku already exists")
+	ErrProductTypeNotFound   = errors.New("product type not found")
+	ErrProductSpecInvalid    = errors.New("product spec invalid")
+	ErrProductVariantInvalid = errors.New("product variant invalid")
 )
+
+type ProductVariantInput struct {
+	ID           *uint
+	SKU          string
+	Title        string
+	OptionValues map[string]string
+	Price        float64
+	SalePrice    *float64
+	Stock        int
+	Weight       int
+	IsDefault    bool
+	IsActive     *bool
+	SortOrder    int
+}
 
 type ProductCreateInput struct {
 	ProductTypeID *uint
-	SKU           string
 	Name          string
 	Slug          string
 	Description   string
 	ShortDesc     string
-	Price         float64
-	SalePrice     *float64
-	Stock         int
 	Weight        int
 	Status        string
 	Locale        string
@@ -51,20 +63,16 @@ type ProductCreateInput struct {
 	MetaTitle     string
 	MetaDesc      string
 	SpecValues    map[string]string
+	Variants      []ProductVariantInput
 }
 
 type ProductUpdateInput struct {
 	ProductTypeID       *uint
 	UpdateProductTypeID bool
-	SKU                 *string
 	Name                *string
 	Slug                *string
 	Description         *string
 	ShortDesc           *string
-	Price               *float64
-	SalePrice           *float64
-	UpdateSalePrice     bool
-	Stock               *int
 	Weight              *int
 	Status              *string
 	Locale              *string
@@ -75,6 +83,8 @@ type ProductUpdateInput struct {
 	MetaDesc            *string
 	SpecValues          map[string]string
 	UpdateSpecValues    bool
+	Variants            []ProductVariantInput
+	UpdateVariants      bool
 }
 
 type ProductSearchInput struct {
@@ -178,25 +188,26 @@ func (s *ProductService) Create(p *product.Product) error {
 }
 
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
-	if err := s.ensureSKUAvailable(input.SKU, 0); err != nil {
-		return nil, err
-	}
-
 	specValues, err := s.buildSpecValues(input.ProductTypeID, input.SpecValues)
 	if err != nil {
 		return nil, err
 	}
 
+	variants, err := s.buildVariants(input.ProductTypeID, input.Variants)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureVariantSKUsAvailable(variants, 0); err != nil {
+		return nil, err
+	}
+
 	newProduct := &product.Product{
 		ProductTypeID: input.ProductTypeID,
-		SKU:           input.SKU,
+		SKU:           defaultVariantSKU(variants),
 		Name:          input.Name,
 		Slug:          input.Slug,
 		Description:   input.Description,
 		ShortDesc:     input.ShortDesc,
-		Price:         input.Price,
-		SalePrice:     input.SalePrice,
-		Stock:         input.Stock,
 		Weight:        input.Weight,
 		Status:        input.Status,
 		Locale:        input.Locale,
@@ -206,7 +217,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		MetaDesc:      input.MetaDesc,
 	}
 
-	if err := s.productRepo.CreateWithSpecValues(newProduct, specValues); err != nil {
+	if err := s.productRepo.CreateWithSpecValuesAndVariants(newProduct, specValues, variants); err != nil {
 		return nil, err
 	}
 
@@ -240,12 +251,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if input.UpdateProductTypeID {
 		existingProduct.ProductTypeID = input.ProductTypeID
 	}
-	if input.SKU != nil && *input.SKU != existingProduct.SKU {
-		if err := s.ensureSKUAvailable(*input.SKU, existingProduct.ID); err != nil {
-			return nil, err
-		}
-		existingProduct.SKU = *input.SKU
-	}
 	if input.Name != nil {
 		existingProduct.Name = *input.Name
 	}
@@ -257,15 +262,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	}
 	if input.ShortDesc != nil {
 		existingProduct.ShortDesc = *input.ShortDesc
-	}
-	if input.Price != nil {
-		existingProduct.Price = *input.Price
-	}
-	if input.UpdateSalePrice {
-		existingProduct.SalePrice = input.SalePrice
-	}
-	if input.Stock != nil {
-		existingProduct.Stock = *input.Stock
 	}
 	if input.Weight != nil {
 		existingProduct.Weight = *input.Weight
@@ -297,7 +293,18 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		}
 	}
 
-	if err := s.productRepo.UpdateWithSpecValues(existingProduct, specValues, input.UpdateSpecValues); err != nil {
+	var variants []product.ProductVariant
+	if input.UpdateVariants {
+		variants, err = s.buildVariants(existingProduct.ProductTypeID, input.Variants)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.ensureVariantSKUsAvailable(variants, existingProduct.ID); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := s.productRepo.UpdateWithSpecValuesAndVariants(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants); err != nil {
 		return nil, err
 	}
 
@@ -314,21 +321,6 @@ func (s *ProductService) Delete(id uint) error {
 	}
 
 	if err := s.productRepo.Delete(id); err != nil {
-		return err
-	}
-
-	s.clearProductCache(existingProduct)
-
-	return nil
-}
-
-func (s *ProductService) UpdateStock(id uint, quantity int) error {
-	existingProduct, err := s.findProduct(id)
-	if err != nil {
-		return err
-	}
-
-	if err := s.productRepo.UpdateStock(id, quantity); err != nil {
 		return err
 	}
 
@@ -392,22 +384,6 @@ func (s *ProductService) findProduct(id uint) (*product.Product, error) {
 	}
 
 	return result, nil
-}
-
-func (s *ProductService) ensureSKUAvailable(sku string, currentProductID uint) error {
-	existingProduct, err := s.productRepo.FindBySKU(sku)
-	if err != nil {
-		if repository.IsRecordNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	if existingProduct != nil && existingProduct.ID != currentProductID {
-		return ErrProductSKUExists
-	}
-
-	return nil
 }
 
 func (s *ProductService) clearProductCache(p *product.Product) {
@@ -500,6 +476,9 @@ func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]
 		if !ok {
 			return nil, fmt.Errorf("%w: unknown spec %s", ErrProductSpecInvalid, slug)
 		}
+		if definition.IsVariantOption {
+			return nil, fmt.Errorf("%w: spec %s belongs to product variants", ErrProductSpecInvalid, slug)
+		}
 
 		normalized, err := normalizeSpecValue(definition, raw)
 		if err != nil {
@@ -512,6 +491,9 @@ func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]
 
 	specValues := make([]product.ProductSpecValue, 0, len(normalizedValues))
 	for _, definition := range productType.SpecDefinitions {
+		if definition.IsVariantOption {
+			continue
+		}
 		value := strings.TrimSpace(normalizedValues[definition.Slug])
 		if value == "" {
 			if definition.IsRequired {
@@ -527,6 +509,212 @@ func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]
 	}
 
 	return specValues, nil
+}
+
+func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVariantInput) ([]product.ProductVariant, error) {
+	if len(inputs) == 0 {
+		return nil, fmt.Errorf("%w: at least one variant is required", ErrProductVariantInvalid)
+	}
+
+	variantDefinitions, err := s.loadVariantDefinitions(productTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	variants := make([]product.ProductVariant, 0, len(inputs))
+	defaultIndex := -1
+	seenSKU := make(map[string]struct{}, len(inputs))
+	seenOptions := make(map[string]struct{}, len(inputs))
+
+	for i, input := range inputs {
+		input.SKU = strings.TrimSpace(input.SKU)
+		if input.SKU == "" {
+			return nil, fmt.Errorf("%w: sku is required", ErrProductVariantInvalid)
+		}
+		if input.Price <= 0 {
+			return nil, fmt.Errorf("%w: price must be greater than zero for %s", ErrProductVariantInvalid, input.SKU)
+		}
+		if input.Stock < 0 {
+			return nil, fmt.Errorf("%w: stock cannot be negative for %s", ErrProductVariantInvalid, input.SKU)
+		}
+		if input.SalePrice != nil && *input.SalePrice < 0 {
+			return nil, fmt.Errorf("%w: sale_price cannot be negative for %s", ErrProductVariantInvalid, input.SKU)
+		}
+
+		skuKey := strings.ToLower(input.SKU)
+		if _, exists := seenSKU[skuKey]; exists {
+			return nil, fmt.Errorf("%w: duplicate sku %s", ErrProductVariantInvalid, input.SKU)
+		}
+		seenSKU[skuKey] = struct{}{}
+
+		optionValues, optionJSON, err := s.normalizeVariantOptions(variantDefinitions, input.OptionValues)
+		if err != nil {
+			return nil, err
+		}
+		if _, exists := seenOptions[optionJSON]; exists {
+			return nil, fmt.Errorf("%w: duplicate option combination %s", ErrProductVariantInvalid, optionJSON)
+		}
+		seenOptions[optionJSON] = struct{}{}
+
+		isActive := true
+		if input.IsActive != nil {
+			isActive = *input.IsActive
+		}
+		if input.IsDefault {
+			defaultIndex = i
+		}
+
+		variant := product.ProductVariant{
+			SKU:          input.SKU,
+			Title:        strings.TrimSpace(input.Title),
+			OptionValues: optionJSON,
+			Price:        input.Price,
+			SalePrice:    input.SalePrice,
+			Stock:        input.Stock,
+			Weight:       input.Weight,
+			IsDefault:    input.IsDefault,
+			IsActive:     isActive,
+			SortOrder:    input.SortOrder,
+		}
+		if input.ID != nil {
+			variant.ID = *input.ID
+		}
+		if variant.Title == "" {
+			variant.Title = variantTitle(optionValues)
+		}
+		variants = append(variants, variant)
+	}
+
+	if defaultIndex == -1 {
+		defaultIndex = 0
+	}
+	for i := range variants {
+		variants[i].IsDefault = i == defaultIndex
+	}
+
+	return variants, nil
+}
+
+func (s *ProductService) ensureVariantSKUsAvailable(variants []product.ProductVariant, currentProductID uint) error {
+	for _, variant := range variants {
+		existingProduct, err := s.productRepo.FindBySKU(variant.SKU)
+		if err != nil && !repository.IsRecordNotFound(err) {
+			return err
+		}
+		if err == nil && existingProduct.ID != currentProductID {
+			return ErrProductSKUExists
+		}
+
+		existingVariant, err := s.productRepo.FindVariantBySKU(variant.SKU)
+		if err != nil {
+			if repository.IsRecordNotFound(err) {
+				continue
+			}
+			return err
+		}
+		if currentProductID == 0 || existingVariant.ProductID != currentProductID {
+			return ErrProductSKUExists
+		}
+		if variant.ID != 0 && existingVariant.ID != variant.ID {
+			return ErrProductSKUExists
+		}
+	}
+
+	return nil
+}
+
+func defaultVariantSKU(variants []product.ProductVariant) string {
+	if len(variants) == 0 {
+		return ""
+	}
+	for _, variant := range variants {
+		if variant.IsDefault {
+			return variant.SKU
+		}
+	}
+	return variants[0].SKU
+}
+
+func (s *ProductService) loadVariantDefinitions(productTypeID *uint) (map[string]product.SpecDefinition, error) {
+	if productTypeID == nil {
+		return nil, nil
+	}
+
+	productType, err := s.productRepo.FindProductTypeByID(*productTypeID)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, ErrProductTypeNotFound
+		}
+		return nil, err
+	}
+
+	definitions := make(map[string]product.SpecDefinition)
+	for _, definition := range productType.SpecDefinitions {
+		if definition.IsVariantOption {
+			definitions[definition.Slug] = definition
+		}
+	}
+	return definitions, nil
+}
+
+func (s *ProductService) normalizeVariantOptions(definitions map[string]product.SpecDefinition, rawValues map[string]string) (map[string]string, string, error) {
+	if len(rawValues) > 0 && len(definitions) == 0 {
+		return nil, "", fmt.Errorf("%w: product_type_id is required when variant options are provided", ErrProductVariantInvalid)
+	}
+
+	normalizedValues := make(map[string]string, len(rawValues))
+	for slug, raw := range rawValues {
+		definition, ok := definitions[slug]
+		if !ok {
+			return nil, "", fmt.Errorf("%w: unknown variant option %s", ErrProductVariantInvalid, slug)
+		}
+		normalized, err := normalizeSpecValue(definition, raw)
+		if err != nil {
+			return nil, "", err
+		}
+		if normalized != "" {
+			normalizedValues[slug] = normalized
+		}
+	}
+
+	for _, definition := range definitions {
+		value := strings.TrimSpace(normalizedValues[definition.Slug])
+		if value == "" && definition.IsRequired {
+			return nil, "", fmt.Errorf("%w: required variant option %s is missing", ErrProductVariantInvalid, definition.Slug)
+		}
+	}
+
+	if len(normalizedValues) == 0 {
+		return normalizedValues, "{}", nil
+	}
+
+	encoded, err := json.Marshal(normalizedValues)
+	if err != nil {
+		return nil, "", err
+	}
+	return normalizedValues, string(encoded), nil
+}
+
+func variantTitle(values map[string]string) string {
+	if len(values) == 0 {
+		return "Default"
+	}
+
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, values[key])
+	}
+	return strings.Join(parts, " / ")
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }
 
 func normalizeSpecValue(definition product.SpecDefinition, raw string) (string, error) {
