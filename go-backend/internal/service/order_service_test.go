@@ -161,8 +161,11 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
+		&product.ProductType{},
+		&product.SpecDefinition{},
 		&product.Product{},
 		&product.ProductImage{},
+		&product.ProductSpecValue{},
 		&order.Order{},
 		&order.OrderItem{},
 		&coupon.Coupon{},

@@ -274,6 +274,70 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="产品类型">
+              <el-select
+                v-model="productForm.product_type_id"
+                placeholder="请选择产品类型"
+                clearable
+                style="width: 100%"
+                @change="handleProductTypeChange"
+              >
+                <el-option
+                  v-for="type in productTypes"
+                  :key="type.id"
+                  :label="type.name"
+                  :value="type.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <template v-if="selectedSpecDefinitions.length">
+          <el-divider content-position="left">规格模板</el-divider>
+          <el-row :gutter="20">
+            <el-col
+              v-for="spec in selectedSpecDefinitions"
+              :key="spec.id"
+              :span="12"
+            >
+              <el-form-item :label="getSpecLabel(spec)" :required="spec.is_required">
+                <el-input-number
+                  v-if="spec.field_type === 'number'"
+                  v-model="productForm.specs[spec.slug]"
+                  :min="0"
+                  style="width: 100%"
+                />
+                <el-select
+                  v-else-if="spec.field_type === 'select'"
+                  v-model="productForm.specs[spec.slug]"
+                  clearable
+                  filterable
+                  style="width: 100%"
+                >
+                  <el-option
+                    v-for="option in parseSpecOptions(spec)"
+                    :key="option"
+                    :label="formatSpecOption(option)"
+                    :value="option"
+                  />
+                </el-select>
+                <el-switch
+                  v-else-if="spec.field_type === 'boolean'"
+                  v-model="productForm.specs[spec.slug]"
+                />
+                <el-input
+                  v-else
+                  v-model="productForm.specs[spec.slug]"
+                  :placeholder="`请输入${spec.name}`"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </template>
+
         <el-form-item label="简短描述">
           <el-input
             v-model="productForm.short_description"
@@ -406,7 +470,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Refresh, Star } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -417,6 +481,7 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const products = ref([])
 const selectedProducts = ref([])
+const productTypes = ref([])
 const dialogVisible = ref(false)
 const stockDialogVisible = ref(false)
 const dialogMode = ref('create')
@@ -439,6 +504,7 @@ const pagination = reactive({
 })
 
 const productForm = reactive({
+  product_type_id: null,
   sku: '',
   name: '',
   slug: '',
@@ -452,7 +518,8 @@ const productForm = reactive({
   locale: 'zh',
   featured: false,
   meta_title: '',
-  meta_description: ''
+  meta_description: '',
+  specs: {}
 })
 
 const stockForm = reactive({
@@ -509,6 +576,73 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
+const selectedProductType = computed(() => {
+  return productTypes.value.find(type => type.id === productForm.product_type_id) || null
+})
+
+const selectedSpecDefinitions = computed(() => {
+  return selectedProductType.value?.spec_definitions || []
+})
+
+const fetchProductTypes = async () => {
+  try {
+    const response = await axios.get('/api/admin/product-types')
+    productTypes.value = response.data?.data || []
+  } catch (error) {
+    console.error('获取产品类型失败', error)
+  }
+}
+
+const parseSpecOptions = (spec) => {
+  if (!spec?.options) return []
+  try {
+    const parsed = JSON.parse(spec.options)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return []
+  }
+}
+
+const formatSpecOption = (option) => {
+  return String(option).replace(/_/g, ' ')
+}
+
+const getSpecLabel = (spec) => {
+  return spec.unit ? `${spec.name} (${spec.unit})` : spec.name
+}
+
+const coerceSpecValueForForm = (definition, value) => {
+  if (!definition) return value
+  if (definition.field_type === 'number') {
+    const numberValue = Number(value)
+    return Number.isFinite(numberValue) ? numberValue : undefined
+  }
+  if (definition.field_type === 'boolean') {
+    return value === true || value === 'true' || value === '1'
+  }
+  return value
+}
+
+const buildSpecFormValues = (product) => {
+  const values = {}
+  ;(product.spec_values || []).forEach((item) => {
+    const definition = item.definition
+    if (!definition?.slug) return
+    values[definition.slug] = coerceSpecValueForForm(definition, item.value)
+  })
+  return values
+}
+
+const handleProductTypeChange = () => {
+  const nextSpecs = {}
+  selectedSpecDefinitions.value.forEach((spec) => {
+    if (spec.field_type === 'boolean') {
+      nextSpecs[spec.slug] = false
+    }
+  })
+  productForm.specs = nextSpecs
+}
+
 const fetchStats = async () => {
   try {
     const response = await axios.get('/api/admin/products/stats')
@@ -552,24 +686,37 @@ const showCreateDialog = () => {
   dialogVisible.value = true
 }
 
-const showEditDialog = (product) => {
+const showEditDialog = async (product) => {
   dialogMode.value = 'edit'
+  let detail = product
+  try {
+    if (productTypes.value.length === 0) {
+      await fetchProductTypes()
+    }
+    const response = await axios.get(`/api/admin/products/${product.id}`)
+    detail = response.data?.product || product
+  } catch (error) {
+    ElMessage.warning('获取商品详情失败，使用列表数据编辑')
+  }
+
   Object.assign(productForm, {
-    id: product.id,
-    sku: product.sku,
-    name: product.name,
-    slug: product.slug,
-    description: product.description || '',
-    short_description: product.short_desc || '',
-    price: product.price,
-    sale_price: product.sale_price,
-    stock: product.stock,
-    weight_grams: product.weight || 0,
-    status: product.status,
-    locale: product.locale || 'zh',
-    featured: product.featured || false,
-    meta_title: product.meta_title || '',
-    meta_description: product.meta_desc || ''
+    id: detail.id,
+    product_type_id: detail.product_type_id || detail.product_type?.id || null,
+    sku: detail.sku,
+    name: detail.name,
+    slug: detail.slug,
+    description: detail.description || '',
+    short_description: detail.short_description || detail.short_desc || '',
+    price: detail.price,
+    sale_price: detail.sale_price,
+    stock: detail.stock,
+    weight_grams: detail.weight_grams ?? detail.weight ?? 0,
+    status: detail.status,
+    locale: detail.locale || 'zh',
+    featured: detail.featured || false,
+    meta_title: detail.meta_title || '',
+    meta_description: detail.meta_description || detail.meta_desc || '',
+    specs: buildSpecFormValues(detail)
   })
   dialogVisible.value = true
 }
@@ -586,6 +733,7 @@ const showStockDialog = (product) => {
 
 const resetForm = () => {
   Object.assign(productForm, {
+    product_type_id: null,
     sku: '',
     name: '',
     slug: '',
@@ -599,7 +747,8 @@ const resetForm = () => {
     locale: 'zh',
     featured: false,
     meta_title: '',
-    meta_description: ''
+    meta_description: '',
+    specs: {}
   })
   if (productFormRef.value) {
     productFormRef.value.clearValidate()
@@ -744,6 +893,7 @@ const batchDelete = async () => {
 }
 
 onMounted(() => {
+  fetchProductTypes()
   fetchStats()
   fetchProducts()
 })

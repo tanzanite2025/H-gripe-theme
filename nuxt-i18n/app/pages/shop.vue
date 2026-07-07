@@ -296,7 +296,7 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
 
     const attrs = payload.filters?.attributes
     if (attrs && typeof attrs === 'object') {
-      params.attributes = attrs
+      params.attributes = JSON.stringify(attrs)
     }
   }
 
