@@ -14,6 +14,18 @@ type ProductRepository struct {
 	db *gorm.DB
 }
 
+type ProductSearchQuery struct {
+	Locale      string
+	Status      string
+	Keyword     string
+	TypeSlug    string
+	PriceMin    *float64
+	PriceMax    *float64
+	SpecFilters map[string][]string
+	Offset      int
+	Limit       int
+}
+
 func NewProductRepository(db *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
@@ -29,9 +41,31 @@ func orderProductImages(db *gorm.DB) *gorm.DB {
 	})
 }
 
+func orderSpecDefinitions(db *gorm.DB) *gorm.DB {
+	return db.Order("product_spec_definitions.sort_order ASC, product_spec_definitions.id ASC")
+}
+
 // Create 创建产品
 func (r *ProductRepository) Create(p *product.Product) error {
 	return r.db.Create(p).Error
+}
+
+func (r *ProductRepository) CreateWithSpecValues(p *product.Product, specValues []product.ProductSpecValue) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(p).Error; err != nil {
+			return err
+		}
+
+		if len(specValues) == 0 {
+			return nil
+		}
+
+		for i := range specValues {
+			specValues[i].ProductID = p.ID
+		}
+
+		return tx.Create(&specValues).Error
+	})
 }
 
 // FindByID 根据ID查找产品
@@ -39,6 +73,10 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 	var p product.Product
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
 		return orderProductImages(db)
+	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
+	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
 	}).First(&p, id).Error
 	if err != nil {
 		return nil, err
@@ -51,6 +89,10 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 	var p product.Product
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
 		return orderProductImages(db)
+	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
+	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
 	}).Where("slug = ? AND locale = ?", slug, locale).First(&p).Error
 	if err != nil {
 		return nil, err
@@ -81,6 +123,32 @@ func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, er
 // Update 更新产品
 func (r *ProductRepository) Update(p *product.Product) error {
 	return r.db.Save(p).Error
+}
+
+func (r *ProductRepository) UpdateWithSpecValues(p *product.Product, specValues []product.ProductSpecValue, replaceSpecs bool) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(p).Error; err != nil {
+			return err
+		}
+
+		if !replaceSpecs {
+			return nil
+		}
+
+		if err := tx.Where("product_id = ?", p.ID).Delete(&product.ProductSpecValue{}).Error; err != nil {
+			return err
+		}
+
+		if len(specValues) == 0 {
+			return nil
+		}
+
+		for i := range specValues {
+			specValues[i].ProductID = p.ID
+		}
+
+		return tx.Create(&specValues).Error
+	})
 }
 
 // Delete 删除产品（软删除）
@@ -115,7 +183,7 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	return products, total, err
 }
 
-func (r *ProductRepository) SearchPublic(locale, status, keyword string, offset, limit int) ([]product.Product, int64, error) {
+func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Product, int64, error) {
 	var products []product.Product
 	var total int64
 
@@ -123,22 +191,46 @@ func (r *ProductRepository) SearchPublic(locale, status, keyword string, offset,
 		return orderProductImages(db)
 	})
 
-	if locale != "" {
-		query = query.Where("locale = ?", locale)
+	if input.Locale != "" {
+		query = query.Where("products.locale = ?", input.Locale)
 	}
-	if status != "" {
-		query = query.Where("status = ?", status)
+	if input.Status != "" {
+		query = query.Where("products.status = ?", input.Status)
 	}
-	if keyword != "" {
-		pattern := "%" + strings.ToLower(keyword) + "%"
-		query = query.Where("LOWER(name) LIKE ? OR LOWER(sku) LIKE ? OR LOWER(short_desc) LIKE ? OR LOWER(description) LIKE ?", pattern, pattern, pattern, pattern)
+	if input.TypeSlug != "" {
+		query = query.Joins("JOIN product_types ON product_types.id = products.product_type_id AND product_types.slug = ?", input.TypeSlug)
+	}
+	if input.PriceMin != nil {
+		query = query.Where("COALESCE(products.sale_price, products.price) >= ?", *input.PriceMin)
+	}
+	if input.PriceMax != nil {
+		query = query.Where("COALESCE(products.sale_price, products.price) <= ?", *input.PriceMax)
+	}
+	if input.Keyword != "" {
+		pattern := "%" + strings.ToLower(input.Keyword) + "%"
+		query = query.Where("LOWER(products.name) LIKE ? OR LOWER(products.sku) LIKE ? OR LOWER(products.short_desc) LIKE ? OR LOWER(products.description) LIKE ?", pattern, pattern, pattern, pattern)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	filterIndex := 0
+	for slug, values := range input.SpecFilters {
+		if slug == "" || len(values) == 0 {
+			continue
+		}
+
+		valueAlias := fmt.Sprintf("psv_%d", filterIndex)
+		defAlias := fmt.Sprintf("psd_%d", filterIndex)
+		query = query.
+			Joins(fmt.Sprintf("JOIN product_spec_values %s ON %s.product_id = products.id", valueAlias, valueAlias)).
+			Joins(fmt.Sprintf("JOIN product_spec_definitions %s ON %s.id = %s.spec_definition_id AND %s.slug = ?", defAlias, defAlias, valueAlias, defAlias), slug).
+			Where(fmt.Sprintf("%s.value IN ?", valueAlias), values)
+		filterIndex++
+	}
+
+	if err := query.Distinct("products.id").Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	err := query.Order("updated_at DESC").Offset(offset).Limit(limit).Find(&products).Error
+	err := query.Distinct("products.*").Order("products.updated_at DESC").Offset(input.Offset).Limit(input.Limit).Find(&products).Error
 	return products, total, err
 }
 
@@ -403,6 +495,41 @@ func (r *ProductRepository) FindValuesByAttributeID(attrID uint) ([]product.Attr
 	var values []product.AttributeValue
 	err := r.db.Where("attribute_id = ?", attrID).Order("sort_order ASC").Find(&values).Error
 	return values, err
+}
+
+func (r *ProductRepository) FindAllProductTypes(includeDisabled bool) ([]product.ProductType, error) {
+	var productTypes []product.ProductType
+	query := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
+	})
+	if !includeDisabled {
+		query = query.Where("is_enabled = ?", true)
+	}
+
+	err := query.Order("sort_order ASC, id ASC").Find(&productTypes).Error
+	return productTypes, err
+}
+
+func (r *ProductRepository) FindProductTypeByID(id uint) (*product.ProductType, error) {
+	var productType product.ProductType
+	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
+	}).First(&productType, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &productType, nil
+}
+
+func (r *ProductRepository) FindProductTypeBySlug(slug string) (*product.ProductType, error) {
+	var productType product.ProductType
+	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
+	}).Where("slug = ?", slug).First(&productType).Error
+	if err != nil {
+		return nil, err
+	}
+	return &productType, nil
 }
 
 // SemanticSearchPublic performs a vector similarity search using pgvector (Stub)

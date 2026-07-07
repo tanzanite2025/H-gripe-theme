@@ -104,6 +104,12 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			}
 
 			// 商品管理（需要商品管理权限）
+			productTypesGroup := authenticated.Group("/product-types")
+			productTypesGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				productTypesGroup.GET("", productHandler.ListProductTypes)
+			}
+
 			productsGroup := authenticated.Group("/products")
 			productsGroup.Use(middleware.RequirePermission(auth.PermProductView))
 			{

@@ -11,6 +11,7 @@
         <div class="product-meta">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
           <span v-if="product.sku" class="product-sku">SKU: {{ product.sku }}</span>
+          <span v-if="product.product_type?.name" class="product-sku">{{ product.product_type.name }}</span>
         </div>
       </div>
     </div>
@@ -28,8 +29,21 @@
       <h2>Details</h2>
       <article v-html="product.description" />
     </section>
+
+    <section v-if="specGroups.length" class="product-specs" aria-label="Product specifications">
+      <h2>Specifications</h2>
+      <div v-for="group in specGroups" :key="group.name" class="spec-group">
+        <h3>{{ group.name }}</h3>
+        <dl>
+          <template v-for="item in group.items" :key="item.slug">
+            <dt>{{ item.name }}</dt>
+            <dd>{{ item.displayValue }}</dd>
+          </template>
+        </dl>
+      </div>
+    </section>
   </main>
-  <section v-else-if="pending" class="product-page product-page--pending">Loading…</section>
+  <section v-else-if="pending" class="product-page product-page--pending">Loading...</section>
   <section v-else class="product-page product-page--error" role="alert">Product not found.</section>
 </template>
 
@@ -43,8 +57,32 @@ interface ProductImage {
   alt?: string
 }
 
+interface ProductType {
+  id: number
+  name: string
+  slug: string
+}
+
+interface SpecDefinition {
+  id: number
+  name: string
+  slug: string
+  group?: string
+  field_type: string
+  unit?: string
+  is_visible?: boolean
+}
+
+interface ProductSpecValue {
+  id: number
+  value: string
+  definition?: SpecDefinition
+}
+
 interface GoProduct {
   id: number
+  product_type_id?: number
+  product_type?: ProductType
   name: string
   slug: string
   short_description?: string
@@ -56,6 +94,7 @@ interface GoProduct {
   thumbnail?: string
   meta_title?: string
   meta_description?: string
+  spec_values?: ProductSpecValue[]
 }
 
 const route = useRoute()
@@ -80,11 +119,11 @@ const { data: product, pending, error } = await useAsyncData<GoProduct | null>(
 
     try {
       const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
-      const response = await $fetch<GoProduct>(
+      const response = await $fetch<any>(
         `${base}/products/${encodeURIComponent(slug.value)}`,
         { headers: { accept: 'application/json' } }
       )
-      return response || null
+      return response?.data || response || null
     } catch (err) {
       console.warn('Failed to load product', err)
       return null
@@ -118,8 +157,7 @@ const metaDescription = computed(() => {
 })
 
 const productImages = computed(() => {
-  if (!product.value?.images) throw new Error("[CRITICAL] product images missing")
-  return product.value.images
+  return product.value?.images || []
 })
 
 const primaryImage = computed(() => {
@@ -147,6 +185,43 @@ const formattedPrice = computed(() => {
   } catch (err) {
     return `$${numeric.toFixed(2)}`
   }
+})
+
+const formatSpecValue = (item: ProductSpecValue) => {
+  const definition = item.definition
+  const value = String(item.value || '').trim()
+  if (!definition) return value
+
+  if (definition.field_type === 'boolean') {
+    return value === 'true' ? 'Yes' : 'No'
+  }
+  if (definition.unit && value) {
+    return `${value} ${definition.unit}`
+  }
+  return value
+}
+
+const specGroups = computed(() => {
+  const groups = new Map<string, Array<{ slug: string; name: string; displayValue: string }>>()
+
+  ;(product.value?.spec_values || []).forEach((item) => {
+    const definition = item.definition
+    if (!definition || definition.is_visible === false) return
+
+    const displayValue = formatSpecValue(item)
+    if (!displayValue) return
+
+    const groupName = definition.group || 'Specifications'
+    const current = groups.get(groupName) || []
+    current.push({
+      slug: definition.slug,
+      name: definition.name,
+      displayValue,
+    })
+    groups.set(groupName, current)
+  })
+
+  return [...groups.entries()].map(([name, items]) => ({ name, items }))
 })
 
 const productSchema = computed(() => {
@@ -299,7 +374,8 @@ useHead(() => {
 }
 
 .product-gallery h2,
-.product-content h2 {
+.product-content h2,
+.product-specs h2 {
   margin-bottom: 0.75rem;
   font-size: 1.5rem;
 }
@@ -328,5 +404,41 @@ useHead(() => {
 .product-content article :deep(p) {
   margin-bottom: 1rem;
   line-height: 1.6;
+}
+
+.product-specs {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.25rem;
+}
+
+.spec-group + .spec-group {
+  margin-top: 1.25rem;
+}
+
+.spec-group h3 {
+  margin-bottom: 0.75rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.spec-group dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.65rem 1rem;
+}
+
+.spec-group dt {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.spec-group dd {
+  color: #fff;
+  font-weight: 600;
+  text-align: right;
 }
 </style>

@@ -128,6 +128,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		productGroup := v1.Group("/products")
 		{
 			productGroup.GET("", productHandler.ListProducts)
+			productGroup.GET("/types", productHandler.ListProductTypes)
 			productGroup.GET("/attributes/filterable", productHandler.GetFilterableAttributes)
 			productGroup.GET("/:id", productHandler.GetProduct)
 		}

@@ -7,27 +7,30 @@ import (
 )
 
 type Product struct {
-	ID          uint           `gorm:"primarykey" json:"id"`
-	SKU         string         `gorm:"uniqueIndex;not null" json:"sku"`
-	Name        string         `gorm:"not null;index" json:"name"`
-	Slug        string         `gorm:"uniqueIndex:idx_product_slug_locale;not null" json:"slug"`
-	Description string         `gorm:"type:text" json:"description"`
-	ShortDesc   string         `gorm:"type:text" json:"short_description"`
-	Price       float64        `gorm:"not null" json:"price"`
-	SalePrice   *float64       `json:"sale_price"`
-	Stock       int            `gorm:"default:0" json:"stock"`
-	Weight      int            `json:"weight_grams"`                         // 克
-	Status      string         `gorm:"default:'active';index" json:"status"` // active, inactive, out_of_stock
-	Locale      string         `gorm:"uniqueIndex:idx_product_slug_locale;default:'en';index" json:"locale"`
-	ParentID    *uint          `gorm:"index" json:"parent_id"` // 翻译关联
-	Featured    bool           `gorm:"default:false" json:"featured"`
-	ViewCount   int            `gorm:"default:0" json:"view_count"`
-	MetaTitle   string         `json:"meta_title"`
-	MetaDesc    string         `gorm:"type:text" json:"meta_description"`
-	Images      []ProductImage `gorm:"foreignKey:ProductID" json:"images"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	ID            uint               `gorm:"primarykey" json:"id"`
+	ProductTypeID *uint              `gorm:"index" json:"product_type_id"`
+	SKU           string             `gorm:"uniqueIndex;not null" json:"sku"`
+	Name          string             `gorm:"not null;index" json:"name"`
+	Slug          string             `gorm:"uniqueIndex:idx_product_slug_locale;not null" json:"slug"`
+	Description   string             `gorm:"type:text" json:"description"`
+	ShortDesc     string             `gorm:"type:text" json:"short_description"`
+	Price         float64            `gorm:"not null" json:"price"`
+	SalePrice     *float64           `json:"sale_price"`
+	Stock         int                `gorm:"default:0" json:"stock"`
+	Weight        int                `json:"weight_grams"`                         // 克
+	Status        string             `gorm:"default:'active';index" json:"status"` // active, inactive, out_of_stock
+	Locale        string             `gorm:"uniqueIndex:idx_product_slug_locale;default:'en';index" json:"locale"`
+	ParentID      *uint              `gorm:"index" json:"parent_id"` // 翻译关联
+	Featured      bool               `gorm:"default:false" json:"featured"`
+	ViewCount     int                `gorm:"default:0" json:"view_count"`
+	MetaTitle     string             `json:"meta_title"`
+	MetaDesc      string             `gorm:"type:text" json:"meta_description"`
+	Images        []ProductImage     `gorm:"foreignKey:ProductID" json:"images"`
+	ProductType   *ProductType       `gorm:"foreignKey:ProductTypeID" json:"product_type,omitempty"`
+	SpecValues    []ProductSpecValue `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt     `gorm:"index" json:"-"`
 }
 
 // TableName 指定表名
@@ -180,4 +183,56 @@ type AttributeValue struct {
 // TableName 指定表名
 func (AttributeValue) TableName() string {
 	return "product_attribute_values"
+}
+
+type ProductType struct {
+	ID              uint             `gorm:"primarykey" json:"id"`
+	Name            string           `gorm:"type:varchar(120);not null" json:"name"`
+	Slug            string           `gorm:"type:varchar(120);uniqueIndex;not null" json:"slug"`
+	Description     string           `gorm:"type:text" json:"description"`
+	SortOrder       int              `gorm:"default:0;not null" json:"sort_order"`
+	IsEnabled       bool             `gorm:"default:true;not null" json:"is_enabled"`
+	SpecDefinitions []SpecDefinition `gorm:"foreignKey:ProductTypeID" json:"spec_definitions,omitempty"`
+	CreatedAt       time.Time        `json:"created_at"`
+	UpdatedAt       time.Time        `json:"updated_at"`
+}
+
+func (ProductType) TableName() string {
+	return "product_types"
+}
+
+type SpecDefinition struct {
+	ID            uint      `gorm:"primarykey" json:"id"`
+	ProductTypeID uint      `gorm:"not null;index;uniqueIndex:idx_product_type_spec_slug" json:"product_type_id"`
+	Group         string    `gorm:"type:varchar(80);default:'specs';not null" json:"group"`
+	Name          string    `gorm:"type:varchar(120);not null" json:"name"`
+	Slug          string    `gorm:"type:varchar(120);not null;uniqueIndex:idx_product_type_spec_slug" json:"slug"`
+	FieldType     string    `gorm:"type:varchar(32);default:'text';not null" json:"field_type"`
+	Unit          string    `gorm:"type:varchar(32)" json:"unit"`
+	IsRequired    bool      `gorm:"default:false;not null" json:"is_required"`
+	IsFilterable  bool      `gorm:"default:false;not null" json:"is_filterable"`
+	IsVisible     bool      `gorm:"default:true;not null" json:"is_visible"`
+	SortOrder     int       `gorm:"default:0;not null" json:"sort_order"`
+	Options       string    `gorm:"type:text" json:"options"`
+	Validation    string    `gorm:"type:text" json:"validation"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+func (SpecDefinition) TableName() string {
+	return "product_spec_definitions"
+}
+
+type ProductSpecValue struct {
+	ID               uint            `gorm:"primarykey" json:"id"`
+	ProductID        uint            `gorm:"not null;index;uniqueIndex:idx_product_spec_value" json:"product_id"`
+	SpecDefinitionID uint            `gorm:"not null;index;uniqueIndex:idx_product_spec_value" json:"spec_definition_id"`
+	Value            string          `gorm:"type:text;not null" json:"value"`
+	SpecDefinition   *SpecDefinition `gorm:"foreignKey:SpecDefinitionID" json:"definition,omitempty"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
+}
+
+func (ProductSpecValue) TableName() string {
+	return "product_spec_values"
 }

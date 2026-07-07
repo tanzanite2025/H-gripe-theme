@@ -1,6 +1,7 @@
 package product
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"tanzanite/internal/api/middleware"
@@ -48,6 +49,10 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 	status := normalizePublicChatProductStatus(c.DefaultQuery("status", "active"))
 	keyword := strings.TrimSpace(c.Query("keyword"))
+	typeSlug := strings.TrimSpace(c.Query("product_type"))
+	priceMin := parseOptionalFloatQuery(c, "price_min")
+	priceMax := parseOptionalFloatQuery(c, "price_max")
+	specFilters := parseSpecFilterQuery(c)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", c.DefaultQuery("page_size", "20")))
 
@@ -58,7 +63,17 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		pageSize = 20
 	}
 
-	products, total, err := h.productService.SearchPublic(locale, status, keyword, page, pageSize)
+	products, total, err := h.productService.SearchPublic(service.ProductSearchInput{
+		Locale:      locale,
+		Status:      status,
+		Keyword:     keyword,
+		TypeSlug:    typeSlug,
+		PriceMin:    priceMin,
+		PriceMax:    priceMax,
+		SpecFilters: specFilters,
+		Page:        page,
+		PageSize:    pageSize,
+	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -77,7 +92,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 			"per_page":    pageSize,
 			"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
 			"total":       total,
-			"filters":     []string{"keyword", "status"},
+			"filters":     []string{"keyword", "status", "product_type", "price_min", "price_max", "attributes"},
 			"sorting":     []string{"updated_at"},
 		},
 	})
@@ -165,6 +180,16 @@ func (h *Handler) GetFilterableAttributes(c *gin.Context) {
 		"success": true,
 		"data":    attrs,
 	})
+}
+
+func (h *Handler) ListProductTypes(c *gin.Context) {
+	productTypes, err := h.productService.ListProductTypes(false)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+
+	response.Success(c, productTypes)
 }
 
 // ListAttributes 获取属性列表
@@ -339,4 +364,85 @@ func (h *Handler) DeleteAttributeValue(c *gin.Context) {
 	}
 
 	response.SuccessWithMessage(c, "Attribute value deleted successfully", nil)
+}
+
+func parseOptionalFloatQuery(c *gin.Context, key string) *float64 {
+	raw := strings.TrimSpace(c.Query(key))
+	if raw == "" {
+		return nil
+	}
+
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return nil
+	}
+	return &value
+}
+
+func parseSpecFilterQuery(c *gin.Context) map[string][]string {
+	filters := make(map[string][]string)
+	query := c.Request.URL.Query()
+
+	for key, values := range query {
+		switch {
+		case key == "attributes":
+			for _, raw := range values {
+				mergeAttributeJSON(filters, raw)
+			}
+		case strings.HasPrefix(key, "attributes["):
+			slug := strings.TrimPrefix(key, "attributes[")
+			switch {
+			case strings.HasSuffix(slug, "][]"):
+				slug = strings.TrimSuffix(slug, "][]")
+			case strings.HasSuffix(slug, "]"):
+				slug = strings.TrimSuffix(slug, "]")
+			}
+			appendSpecFilterValues(filters, slug, values)
+		case strings.HasPrefix(key, "attributes."):
+			slug := strings.TrimPrefix(key, "attributes.")
+			slug = strings.TrimSuffix(slug, "[]")
+			appendSpecFilterValues(filters, slug, values)
+		}
+	}
+
+	return filters
+}
+
+func mergeAttributeJSON(filters map[string][]string, raw string) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return
+	}
+
+	var listValues map[string][]string
+	if err := json.Unmarshal([]byte(raw), &listValues); err == nil {
+		for slug, values := range listValues {
+			appendSpecFilterValues(filters, slug, values)
+		}
+		return
+	}
+
+	var singleValues map[string]string
+	if err := json.Unmarshal([]byte(raw), &singleValues); err == nil {
+		for slug, value := range singleValues {
+			appendSpecFilterValues(filters, slug, []string{value})
+		}
+	}
+}
+
+func appendSpecFilterValues(filters map[string][]string, slug string, values []string) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return
+	}
+
+	for _, raw := range values {
+		for _, part := range strings.Split(raw, ",") {
+			value := strings.TrimSpace(part)
+			if value == "" {
+				continue
+			}
+			filters[slug] = append(filters[slug], value)
+		}
+	}
 }
