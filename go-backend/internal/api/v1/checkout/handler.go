@@ -70,6 +70,7 @@ func (h *Handler) Quote(c *gin.Context) {
 	for i, item := range summary.Items {
 		items[i] = order.OrderItem{
 			ProductID: item.ProductID,
+			VariantID: item.VariantID,
 			Quantity:  item.Quantity,
 		}
 	}

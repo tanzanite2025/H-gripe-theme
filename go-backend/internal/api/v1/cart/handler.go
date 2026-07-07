@@ -39,14 +39,29 @@ func getUserIDAndSession(c *gin.Context) (*uint, string) {
 }
 
 // AddToCartRequest 添加到购物车请求
+func parseOptionalUintQuery(c *gin.Context, key string) *uint {
+	raw := c.Query(key)
+	if raw == "" {
+		return nil
+	}
+	parsed, err := strconv.ParseUint(raw, 10, 32)
+	if err != nil {
+		return nil
+	}
+	value := uint(parsed)
+	return &value
+}
+
 type AddToCartRequest struct {
-	ProductID uint `json:"product_id" binding:"required"`
-	Quantity  int  `json:"quantity" binding:"required,min=1"`
+	ProductID uint  `json:"product_id" binding:"required"`
+	VariantID *uint `json:"variant_id"`
+	Quantity  int   `json:"quantity" binding:"required,min=1"`
 }
 
 // UpdateCartItemRequest 更新购物车项目请求
 type UpdateCartItemRequest struct {
-	Quantity int `json:"quantity" binding:"required,min=1"`
+	VariantID *uint `json:"variant_id"`
+	Quantity  int   `json:"quantity" binding:"required,min=1"`
 }
 
 // GetCartSummary 获取购物车摘要
@@ -78,7 +93,7 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	if err := h.cartService.AddToCart(cart.ID, req.ProductID, req.Quantity); err != nil {
+	if err := h.cartService.AddToCart(cart.ID, req.ProductID, req.VariantID, req.Quantity); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -110,7 +125,7 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 	}
 	pID := uint(parsedProductID)
 
-	if err := h.cartService.UpdateCartItem(cart.ID, pID, req.Quantity); err != nil {
+	if err := h.cartService.UpdateCartItem(cart.ID, pID, req.VariantID, req.Quantity); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -136,7 +151,8 @@ func (h *Handler) RemoveFromCart(c *gin.Context) {
 	}
 	pID := uint(parsedProductID)
 
-	if err := h.cartService.RemoveFromCart(cart.ID, pID); err != nil {
+	variantID := parseOptionalUintQuery(c, "variant_id")
+	if err := h.cartService.RemoveFromCart(cart.ID, pID, variantID); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

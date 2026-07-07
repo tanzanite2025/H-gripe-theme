@@ -90,16 +90,31 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			return nil, fmt.Errorf("invalid quantity for product ID %d", item.ProductID)
 		}
 
-		product, err := repos.productRepo.FindByID(item.ProductID)
+		product, variant, err := repos.productRepo.FindPurchasableVariant(item.ProductID, item.VariantID)
 		if err != nil {
 			return nil, fmt.Errorf("[CRITICAL] Product ID %d not found in database: %w", item.ProductID, err)
 		}
+		if variant == nil {
+			return nil, fmt.Errorf("[CRITICAL] Product ID %d has no purchasable variant", item.ProductID)
+		}
+
+		resolvedVariantID := variant.ID
+		variantID := &resolvedVariantID
+		price := variant.EffectivePrice()
+		sku := variant.SKU
+		attributes := variant.OptionValues
+		availableStock := variant.Stock
+		if availableStock < item.Quantity {
+			return nil, fmt.Errorf("insufficient stock for product ID %d", item.ProductID)
+		}
 
 		items[i] = item
-		items[i].Price = product.Price
-		items[i].Subtotal = product.Price * float64(item.Quantity)
+		items[i].VariantID = variantID
+		items[i].Price = price
+		items[i].Subtotal = price * float64(item.Quantity)
 		items[i].ProductName = product.Name
-		items[i].SKU = product.SKU
+		items[i].SKU = sku
+		items[i].Attributes = attributes
 		items[i].Total = items[i].Subtotal
 		subtotal += items[i].Subtotal
 	}

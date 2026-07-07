@@ -53,6 +53,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.ProductType{},
 		&product.SpecDefinition{},
 		&product.ProductSpecValue{},
+		&product.ProductVariant{},
 		&product.Cart{},
 		&product.CartItem{},
 		&orderdomain.Order{},

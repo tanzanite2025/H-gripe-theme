@@ -94,12 +94,15 @@ func (s *OrderService) CreateOrder(
 			BillingAddress:  billingAddress,
 		}
 
-		itemsMap := make(map[uint]int)
+		variantItemsMap := make(map[uint]int)
 		for _, item := range quote.Items {
-			itemsMap[item.ProductID] += item.Quantity
+			if item.VariantID == nil {
+				return fmt.Errorf("[CRITICAL] Missing variant for product ID %d", item.ProductID)
+			}
+			variantItemsMap[*item.VariantID] += item.Quantity
 		}
-		if err := repos.Product.DecrementStocks(itemsMap); err != nil {
-			return fmt.Errorf("[CRITICAL] Failed to deduct stock in bulk: %w", err)
+		if err := repos.Product.DecrementVariantStocks(variantItemsMap); err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to deduct variant stock in bulk: %w", err)
 		}
 
 		if err := repos.Order.Create(o); err != nil {
@@ -271,8 +274,11 @@ func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
 		}
 
 		for _, item := range o.Items {
-			if err := repos.Product.IncrementStock(item.ProductID, item.Quantity); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to restore stock for product %d: %w", item.ProductID, err)
+			if item.VariantID == nil {
+				return fmt.Errorf("[CRITICAL] Missing variant for order item %d", item.ID)
+			}
+			if err := repos.Product.IncrementVariantStock(*item.VariantID, item.Quantity); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to restore stock for variant %d: %w", *item.VariantID, err)
 			}
 		}
 

@@ -163,6 +163,7 @@ interface QuickBuyConfig {
 
 interface GoProduct {
   id: number
+  default_variant_id?: number | null
   title: string
   slug: string
   thumbnail: string
@@ -172,6 +173,7 @@ interface GoProduct {
 
 interface Selection {
   id: number
+  variant_id?: number | null
   title: string
   slug: string
   thumbnail: string
@@ -303,6 +305,8 @@ const addSelectionsToCart = () => {
   for (const item of selections.value) {
     addToCart({
       id: item.id,
+      product_id: item.id,
+      variant_id: item.variant_id || null,
       title: item.title,
       slug: item.slug,
       thumbnail: item.thumbnail,
@@ -332,6 +336,7 @@ const selectProduct = (product: GoProduct) => {
   const price = product.prices?.sale || product.prices?.regular || 0
   selections.value.push({
     id: product.id,
+    variant_id: product.default_variant_id || null,
     title: product.title,
     slug: product.slug,
     thumbnail: product.thumbnail,

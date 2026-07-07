@@ -30,7 +30,7 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-// WithTx 复用事务 db 实例
+// WithTx 澶嶇敤浜嬪姟 db 瀹炰緥
 func (r *ProductRepository) WithTx(tx *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: tx}
 }
@@ -45,30 +45,49 @@ func orderSpecDefinitions(db *gorm.DB) *gorm.DB {
 	return db.Order("product_spec_definitions.sort_order ASC, product_spec_definitions.id ASC")
 }
 
-// Create 创建产品
+func orderProductVariants(db *gorm.DB) *gorm.DB {
+	return db.Order("product_variants.sort_order ASC, product_variants.id ASC")
+}
+
+// Create 鍒涘缓浜у搧
 func (r *ProductRepository) Create(p *product.Product) error {
 	return r.db.Create(p).Error
 }
 
 func (r *ProductRepository) CreateWithSpecValues(p *product.Product, specValues []product.ProductSpecValue) error {
+	return r.CreateWithSpecValuesAndVariants(p, specValues, nil)
+}
+
+func (r *ProductRepository) CreateWithSpecValuesAndVariants(p *product.Product, specValues []product.ProductSpecValue, variants []product.ProductVariant) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		syncProductSummaryFromVariants(p, variants)
 		if err := tx.Create(p).Error; err != nil {
 			return err
 		}
 
-		if len(specValues) == 0 {
-			return nil
+		if len(specValues) > 0 {
+			for i := range specValues {
+				specValues[i].ProductID = p.ID
+			}
+			if err := tx.Create(&specValues).Error; err != nil {
+				return err
+			}
 		}
 
-		for i := range specValues {
-			specValues[i].ProductID = p.ID
+		if len(variants) > 0 {
+			for i := range variants {
+				variants[i].ProductID = p.ID
+			}
+			if err := tx.Create(&variants).Error; err != nil {
+				return err
+			}
 		}
 
-		return tx.Create(&specValues).Error
+		return nil
 	})
 }
 
-// FindByID 根据ID查找产品
+// FindByID 鏍规嵁ID鏌ユ壘浜у搧
 func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 	var p product.Product
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
@@ -77,6 +96,8 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 		return orderSpecDefinitions(db)
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
+	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return orderProductVariants(db)
 	}).First(&p, id).Error
 	if err != nil {
 		return nil, err
@@ -84,7 +105,7 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 	return &p, nil
 }
 
-// FindBySlug 根据slug和语言查找产品
+// FindBySlug 鏍规嵁slug鍜岃瑷€鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, error) {
 	var p product.Product
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
@@ -93,6 +114,8 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 		return orderSpecDefinitions(db)
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
+	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return orderProductVariants(db)
 	}).Where("slug = ? AND locale = ?", slug, locale).First(&p).Error
 	if err != nil {
 		return nil, err
@@ -100,70 +123,188 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 	return &p, nil
 }
 
-// FindBySKU 根据SKU查找产品
+// FindBySKU 鏍规嵁SKU鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	var p product.Product
-	err := r.db.Preload("Images").Where("sku = ?", sku).First(&p).Error
+	err := r.db.Preload("Images").
+		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) }).
+		Where("sku = ?", sku).First(&p).Error
 	if err != nil {
 		return nil, err
 	}
 	return &p, nil
 }
 
-// FindProductsByIDs 根据IDs查找产品列表
+// FindProductsByIDs 鏍规嵁IDs鏌ユ壘浜у搧鍒楄〃
+func (r *ProductRepository) FindVariantBySKU(sku string) (*product.ProductVariant, error) {
+	var variant product.ProductVariant
+	if err := r.db.Where("sku = ?", sku).First(&variant).Error; err != nil {
+		return nil, err
+	}
+	return &variant, nil
+}
+
 func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, error) {
 	var products []product.Product
 	if len(ids) == 0 {
 		return products, nil
 	}
-	err := r.db.Where("id IN ?", ids).Find(&products).Error
+	err := r.db.Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return orderProductVariants(db)
+	}).Where("id IN ?", ids).Find(&products).Error
 	return products, err
 }
 
-// Update 更新产品
+// Update 鏇存柊浜у搧
 func (r *ProductRepository) Update(p *product.Product) error {
 	return r.db.Save(p).Error
 }
 
 func (r *ProductRepository) UpdateWithSpecValues(p *product.Product, specValues []product.ProductSpecValue, replaceSpecs bool) error {
+	return r.UpdateWithSpecValuesAndVariants(p, specValues, replaceSpecs, nil, false)
+}
+
+func (r *ProductRepository) UpdateWithSpecValuesAndVariants(p *product.Product, specValues []product.ProductSpecValue, replaceSpecs bool, variants []product.ProductVariant, replaceVariants bool) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if replaceVariants {
+			syncProductSummaryFromVariants(p, variants)
+		}
 		if err := tx.Save(p).Error; err != nil {
 			return err
 		}
 
-		if !replaceSpecs {
-			return nil
+		if replaceSpecs {
+			if err := tx.Where("product_id = ?", p.ID).Delete(&product.ProductSpecValue{}).Error; err != nil {
+				return err
+			}
+
+			if len(specValues) > 0 {
+				for i := range specValues {
+					specValues[i].ProductID = p.ID
+				}
+				if err := tx.Create(&specValues).Error; err != nil {
+					return err
+				}
+			}
 		}
 
-		if err := tx.Where("product_id = ?", p.ID).Delete(&product.ProductSpecValue{}).Error; err != nil {
-			return err
+		if replaceVariants {
+			if err := replaceProductVariants(tx, p.ID, variants); err != nil {
+				return err
+			}
 		}
 
-		if len(specValues) == 0 {
-			return nil
-		}
-
-		for i := range specValues {
-			specValues[i].ProductID = p.ID
-		}
-
-		return tx.Create(&specValues).Error
+		return nil
 	})
 }
 
-// Delete 删除产品（软删除）
+// Delete 鍒犻櫎浜у搧锛堣蒋鍒犻櫎锛?
+func syncProductSummaryFromVariants(p *product.Product, variants []product.ProductVariant) {
+	if len(variants) == 0 {
+		return
+	}
+
+	defaultIndex := -1
+	totalStock := 0
+	for i, variant := range variants {
+		if variant.IsActive {
+			totalStock += variant.Stock
+		}
+		if variant.IsActive && variant.IsDefault {
+			defaultIndex = i
+		}
+	}
+	if defaultIndex == -1 {
+		for i, variant := range variants {
+			if variant.IsActive {
+				defaultIndex = i
+				break
+			}
+		}
+	}
+	if defaultIndex == -1 {
+		defaultIndex = 0
+	}
+
+	defaultVariant := variants[defaultIndex]
+	p.SKU = defaultVariant.SKU
+	p.Price = defaultVariant.Price
+	p.SalePrice = defaultVariant.SalePrice
+	p.Stock = totalStock
+	if defaultVariant.Weight > 0 {
+		p.Weight = defaultVariant.Weight
+	}
+}
+
+func replaceProductVariants(tx *gorm.DB, productID uint, variants []product.ProductVariant) error {
+	var existingVariants []product.ProductVariant
+	if err := tx.Where("product_id = ?", productID).Find(&existingVariants).Error; err != nil {
+		return err
+	}
+
+	existingByID := make(map[uint]product.ProductVariant, len(existingVariants))
+	existingBySKU := make(map[string]product.ProductVariant, len(existingVariants))
+	for _, variant := range existingVariants {
+		existingByID[variant.ID] = variant
+		existingBySKU[variant.SKU] = variant
+	}
+
+	keepIDs := make([]uint, 0, len(variants))
+	for i := range variants {
+		variants[i].ProductID = productID
+		if variants[i].ID == 0 {
+			if existing, ok := existingBySKU[variants[i].SKU]; ok {
+				variants[i].ID = existing.ID
+			}
+		}
+
+		if variants[i].ID != 0 {
+			if _, ok := existingByID[variants[i].ID]; !ok {
+				return fmt.Errorf("variant %d does not belong to product %d", variants[i].ID, productID)
+			}
+			if err := tx.Save(&variants[i]).Error; err != nil {
+				return err
+			}
+			keepIDs = append(keepIDs, variants[i].ID)
+			continue
+		}
+
+		if err := tx.Create(&variants[i]).Error; err != nil {
+			return err
+		}
+		keepIDs = append(keepIDs, variants[i].ID)
+	}
+
+	deleteQuery := tx.Where("product_id = ?", productID)
+	if len(keepIDs) > 0 {
+		deleteQuery = deleteQuery.Where("id NOT IN ?", keepIDs)
+	}
+	return deleteQuery.Delete(&product.ProductVariant{}).Error
+}
+
 func (r *ProductRepository) Delete(id uint) error {
 	return r.db.Delete(&product.Product{}, id).Error
 }
 
-// List 获取产品列表
+// List 鑾峰彇浜у搧鍒楄〃
+func activeVariantExistsSQL(alias string) string {
+	return fmt.Sprintf(`EXISTS (
+		SELECT 1 FROM product_variants %s
+		WHERE %s.product_id = products.id
+		  AND %s.deleted_at IS NULL
+		  AND %s.is_active = TRUE
+	)`, alias, alias, alias, alias)
+}
+
 func (r *ProductRepository) List(locale, status string, featured bool, offset, limit int) ([]product.Product, int64, error) {
 	var products []product.Product
 	var total int64
 
 	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
 		return orderProductImages(db)
-	})
+	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return orderProductVariants(db)
+	}).Where(activeVariantExistsSQL("pv_list"))
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
@@ -189,7 +330,9 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 
 	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
 		return orderProductImages(db)
-	})
+	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return orderProductVariants(db)
+	}).Where(activeVariantExistsSQL("pv_public"))
 
 	if input.Locale != "" {
 		query = query.Where("products.locale = ?", input.Locale)
@@ -201,10 +344,22 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 		query = query.Joins("JOIN product_types ON product_types.id = products.product_type_id AND product_types.slug = ?", input.TypeSlug)
 	}
 	if input.PriceMin != nil {
-		query = query.Where("COALESCE(products.sale_price, products.price) >= ?", *input.PriceMin)
+		query = query.Where(`EXISTS (
+			SELECT 1 FROM product_variants pv_price_min
+			WHERE pv_price_min.product_id = products.id
+			  AND pv_price_min.deleted_at IS NULL
+			  AND pv_price_min.is_active = TRUE
+			  AND COALESCE(pv_price_min.sale_price, pv_price_min.price) >= ?
+		)`, *input.PriceMin)
 	}
 	if input.PriceMax != nil {
-		query = query.Where("COALESCE(products.sale_price, products.price) <= ?", *input.PriceMax)
+		query = query.Where(`EXISTS (
+			SELECT 1 FROM product_variants pv_price_max
+			WHERE pv_price_max.product_id = products.id
+			  AND pv_price_max.deleted_at IS NULL
+			  AND pv_price_max.is_active = TRUE
+			  AND COALESCE(pv_price_max.sale_price, pv_price_max.price) <= ?
+		)`, *input.PriceMax)
 	}
 	if input.Keyword != "" {
 		pattern := "%" + strings.ToLower(input.Keyword) + "%"
@@ -219,10 +374,33 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 
 		valueAlias := fmt.Sprintf("psv_%d", filterIndex)
 		defAlias := fmt.Sprintf("psd_%d", filterIndex)
-		query = query.
-			Joins(fmt.Sprintf("JOIN product_spec_values %s ON %s.product_id = products.id", valueAlias, valueAlias)).
-			Joins(fmt.Sprintf("JOIN product_spec_definitions %s ON %s.id = %s.spec_definition_id AND %s.slug = ?", defAlias, defAlias, valueAlias, defAlias), slug).
-			Where(fmt.Sprintf("%s.value IN ?", valueAlias), values)
+		variantAlias := fmt.Sprintf("pvv_%d", filterIndex)
+		var variantConditions []string
+		var args []interface{}
+		args = append(args, slug, values)
+		for _, value := range values {
+			variantConditions = append(variantConditions, fmt.Sprintf("%s.option_values LIKE ?", variantAlias))
+			args = append(args, fmt.Sprintf("%%\"%s\":\"%s\"%%", slug, value))
+		}
+
+		query = query.Where(fmt.Sprintf(`(
+			EXISTS (
+				SELECT 1
+				FROM product_spec_values %s
+				JOIN product_spec_definitions %s ON %s.id = %s.spec_definition_id
+				WHERE %s.product_id = products.id
+				  AND %s.slug = ?
+				  AND %s.value IN ?
+			)
+			OR EXISTS (
+				SELECT 1
+				FROM product_variants %s
+				WHERE %s.product_id = products.id
+				  AND %s.deleted_at IS NULL
+				  AND %s.is_active = TRUE
+				  AND (%s)
+			)
+		)`, valueAlias, defAlias, defAlias, valueAlias, valueAlias, defAlias, valueAlias, variantAlias, variantAlias, variantAlias, variantAlias, strings.Join(variantConditions, " OR ")), args...)
 		filterIndex++
 	}
 
@@ -234,85 +412,121 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	return products, total, err
 }
 
-// UpdateStock 更新库存 (绝对值，后台管理用)
-func (r *ProductRepository) UpdateStock(id uint, quantity int) error {
-	return r.db.Model(&product.Product{}).Where("id = ?", id).Update("stock", quantity).Error
+// IncrementViewCount 澧炲姞娴忚娆℃暟
+func (r *ProductRepository) FindPurchasableVariant(productID uint, variantID *uint) (*product.Product, *product.ProductVariant, error) {
+	p, err := r.FindByID(productID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	activeVariants := p.ActiveVariants()
+	if len(activeVariants) == 0 {
+		return nil, nil, gorm.ErrRecordNotFound
+	}
+
+	if variantID != nil {
+		for i := range activeVariants {
+			if activeVariants[i].ID == *variantID {
+				return p, &activeVariants[i], nil
+			}
+		}
+		return nil, nil, gorm.ErrRecordNotFound
+	}
+
+	if variant := p.DefaultVariant(); variant != nil {
+		return p, variant, nil
+	}
+
+	return nil, nil, gorm.ErrRecordNotFound
 }
 
-// DecrementStock 原子扣减库存
-func (r *ProductRepository) DecrementStock(id uint, quantity int) error {
-	res := r.db.Model(&product.Product{}).Where("id = ? AND stock >= ?", id, quantity).
-		UpdateColumn("stock", gorm.Expr("stock - ?", quantity))
-	if res.Error != nil {
-		return res.Error
-	}
-	if res.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound // 库存不足或记录不存在
-	}
-	return nil
-}
-
-// DecrementStocks 批量原子扣减库存
-func (r *ProductRepository) DecrementStocks(items map[uint]int) error {
+func (r *ProductRepository) DecrementVariantStocks(items map[uint]int) error {
 	if len(items) == 0 {
 		return nil
 	}
 
-	var cases []string
-	var args []interface{}
-	var stockCases []string
-	var stockArgs []interface{}
-	var ids []uint
-
-	for id, quantity := range items {
-		ids = append(ids, id)
-		cases = append(cases, "WHEN ? THEN stock - ?")
-		args = append(args, id, quantity)
-
-		stockCases = append(stockCases, "WHEN ? THEN ?")
-		stockArgs = append(stockArgs, id, quantity)
+	for variantID, quantity := range items {
+		res := r.db.Model(&product.ProductVariant{}).
+			Where("id = ? AND is_active = ? AND stock >= ?", variantID, true, quantity).
+			UpdateColumn("stock", gorm.Expr("stock - ?", quantity))
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return fmt.Errorf("insufficient stock for variant %d or variant not found", variantID)
+		}
 	}
 
-	query := fmt.Sprintf("UPDATE products SET stock = CASE id %s END WHERE id IN ? AND stock >= CASE id %s END",
-		strings.Join(cases, " "),
-		strings.Join(stockCases, " "))
+	return r.refreshProductStockForVariants(items)
+}
 
-	finalArgs := make([]interface{}, 0, len(args)+1+len(stockArgs))
-	finalArgs = append(finalArgs, args...)
-	finalArgs = append(finalArgs, ids)
-	finalArgs = append(finalArgs, stockArgs...)
-
-	res := r.db.Exec(query, finalArgs...)
+func (r *ProductRepository) IncrementVariantStock(variantID uint, quantity int) error {
+	res := r.db.Model(&product.ProductVariant{}).Where("id = ?", variantID).
+		UpdateColumn("stock", gorm.Expr("stock + ?", quantity))
 	if res.Error != nil {
 		return res.Error
 	}
-	if res.RowsAffected < int64(len(items)) {
-		return fmt.Errorf("insufficient stock for some items or items not found")
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
 	}
+	return r.refreshProductStockForVariants(map[uint]int{variantID: quantity})
+}
+
+func (r *ProductRepository) refreshProductStockForVariants(items map[uint]int) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	var productIDs []uint
+	if err := r.db.Model(&product.ProductVariant{}).
+		Where("id IN ?", uintMapKeys(items)).
+		Distinct().
+		Pluck("product_id", &productIDs).Error; err != nil {
+		return err
+	}
+
+	for _, productID := range productIDs {
+		var totalStock int64
+		if err := r.db.Model(&product.ProductVariant{}).
+			Where("product_id = ? AND is_active = ? AND deleted_at IS NULL", productID, true).
+			Select("COALESCE(SUM(stock), 0)").
+			Scan(&totalStock).Error; err != nil {
+			return err
+		}
+		if err := r.db.Model(&product.Product{}).
+			Where("id = ?", productID).
+			Update("stock", totalStock).Error; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-// IncrementStock 原子增加库存
-func (r *ProductRepository) IncrementStock(id uint, quantity int) error {
-	return r.db.Model(&product.Product{}).Where("id = ?", id).
-		UpdateColumn("stock", gorm.Expr("stock + ?", quantity)).Error
+func uintMapKeys(items map[uint]int) []uint {
+	keys := make([]uint, 0, len(items))
+	for key := range items {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
-// IncrementViewCount 增加浏览次数
 func (r *ProductRepository) IncrementViewCount(id uint) error {
 	return r.db.Model(&product.Product{}).Where("id = ?", id).UpdateColumn("view_count", gorm.Expr("view_count + ?", 1)).Error
 }
 
-// FindAllWithFilters 根据筛选条件获取商品列表
+// FindAllWithFilters 鏍规嵁绛涢€夋潯浠惰幏鍙栧晢鍝佸垪琛?
 func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, locale, search, featured string) ([]product.Product, int64, error) {
 	var products []product.Product
 	var total int64
 
 	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
 		return orderProductImages(db)
+	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return orderProductVariants(db)
 	})
 
-	// 应用筛选条件
+	// 搴旂敤绛涢€夋潯浠?
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -330,35 +544,35 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 		query = query.Where("featured = ?", false)
 	}
 
-	// 获取总数
+	// 鑾峰彇鎬绘暟
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 分页查询
+	// 鍒嗛〉鏌ヨ
 	offset := (page - 1) * pageSize
 	err := query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&products).Error
 
 	return products, total, err
 }
 
-// UpdateStatus 更新商品状态
+// UpdateStatus 鏇存柊鍟嗗搧鐘舵€?
 func (r *ProductRepository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&product.Product{}).Where("id = ?", id).Update("status", status).Error
 }
 
-// GetStats 获取商品统计
+// GetStats 鑾峰彇鍟嗗搧缁熻
 func (r *ProductRepository) GetStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 
-	// 总商品数
+	// 鎬诲晢鍝佹暟
 	var total int64
 	if err := r.db.Model(&product.Product{}).Count(&total).Error; err != nil {
 		return nil, err
 	}
 	stats["total"] = total
 
-	// 按状态统计
+	// 鎸夌姸鎬佺粺璁?
 	var statusStats []struct {
 		Status string
 		Count  int64
@@ -371,21 +585,21 @@ func (r *ProductRepository) GetStats() (map[string]interface{}, error) {
 		stats[stat.Status] = stat.Count
 	}
 
-	// 精选商品数
+	// 绮鹃€夊晢鍝佹暟
 	var featuredCount int64
 	if err := r.db.Model(&product.Product{}).Where("featured = ?", true).Count(&featuredCount).Error; err != nil {
 		return nil, err
 	}
 	stats["featured"] = featuredCount
 
-	// 低库存商品数（库存 < 10）
+	// 浣庡簱瀛樺晢鍝佹暟锛堝簱瀛?< 10锛?
 	var lowStockCount int64
 	if err := r.db.Model(&product.Product{}).Where("stock < ? AND stock > 0", 10).Count(&lowStockCount).Error; err != nil {
 		return nil, err
 	}
 	stats["low_stock"] = lowStockCount
 
-	// 缺货商品数
+	// 缂鸿揣鍟嗗搧鏁?
 	var outOfStockCount int64
 	if err := r.db.Model(&product.Product{}).Where("stock = 0").Count(&outOfStockCount).Error; err != nil {
 		return nil, err
@@ -395,7 +609,7 @@ func (r *ProductRepository) GetStats() (map[string]interface{}, error) {
 	return stats, nil
 }
 
-// FindAttributeByID 根据ID查找属性
+// FindAttributeByID 鏍规嵁ID鏌ユ壘灞炴€?
 func (r *ProductRepository) FindAttributeByID(id uint) (*product.ProductAttribute, error) {
 	var attr product.ProductAttribute
 	err := r.db.Preload("Values", func(db *gorm.DB) *gorm.DB {
@@ -407,7 +621,7 @@ func (r *ProductRepository) FindAttributeByID(id uint) (*product.ProductAttribut
 	return &attr, nil
 }
 
-// FindAttributeBySlug 根据Slug查找属性
+// FindAttributeBySlug 鏍规嵁Slug鏌ユ壘灞炴€?
 func (r *ProductRepository) FindAttributeBySlug(slug string) (*product.ProductAttribute, error) {
 	var attr product.ProductAttribute
 	err := r.db.Preload("Values", func(db *gorm.DB) *gorm.DB {
@@ -419,7 +633,7 @@ func (r *ProductRepository) FindAttributeBySlug(slug string) (*product.ProductAt
 	return &attr, nil
 }
 
-// FindAllAttributes 获取所有属性列表
+// FindAllAttributes 鑾峰彇鎵€鏈夊睘鎬у垪琛?
 func (r *ProductRepository) FindAllAttributes(page, pageSize int) ([]product.ProductAttribute, int64, error) {
 	var attrs []product.ProductAttribute
 	var total int64
@@ -437,26 +651,26 @@ func (r *ProductRepository) FindAllAttributes(page, pageSize int) ([]product.Pro
 	return attrs, total, err
 }
 
-// CreateAttribute 创建属性
+// CreateAttribute 鍒涘缓灞炴€?
 func (r *ProductRepository) CreateAttribute(attr *product.ProductAttribute) error {
 	return r.db.Create(attr).Error
 }
 
-// UpdateAttribute 更新属性
+// UpdateAttribute 鏇存柊灞炴€?
 func (r *ProductRepository) UpdateAttribute(attr *product.ProductAttribute) error {
 	return r.db.Save(attr).Error
 }
 
-// DeleteAttribute 删除属性
+// DeleteAttribute 鍒犻櫎灞炴€?
 func (r *ProductRepository) DeleteAttribute(id uint) error {
-	// 先删除属性关联的属性值
+	// 鍏堝垹闄ゅ睘鎬у叧鑱旂殑灞炴€у€?
 	if err := r.db.Where("attribute_id = ?", id).Delete(&product.AttributeValue{}).Error; err != nil {
 		return err
 	}
 	return r.db.Delete(&product.ProductAttribute{}, id).Error
 }
 
-// FindFilterableAttributes 获取前台可过滤的属性
+// FindFilterableAttributes 鑾峰彇鍓嶅彴鍙繃婊ょ殑灞炴€?
 func (r *ProductRepository) FindFilterableAttributes() ([]product.ProductAttribute, error) {
 	var attrs []product.ProductAttribute
 	err := r.db.Preload("Values", func(db *gorm.DB) *gorm.DB {
@@ -465,7 +679,7 @@ func (r *ProductRepository) FindFilterableAttributes() ([]product.ProductAttribu
 	return attrs, err
 }
 
-// FindAttributeValueByID 根据ID获取属性值
+// FindAttributeValueByID 鏍规嵁ID鑾峰彇灞炴€у€?
 func (r *ProductRepository) FindAttributeValueByID(id uint) (*product.AttributeValue, error) {
 	var val product.AttributeValue
 	err := r.db.First(&val, id).Error
@@ -475,22 +689,22 @@ func (r *ProductRepository) FindAttributeValueByID(id uint) (*product.AttributeV
 	return &val, nil
 }
 
-// CreateAttributeValue 创建属性值
+// CreateAttributeValue 鍒涘缓灞炴€у€?
 func (r *ProductRepository) CreateAttributeValue(val *product.AttributeValue) error {
 	return r.db.Create(val).Error
 }
 
-// UpdateAttributeValue 更新属性值
+// UpdateAttributeValue 鏇存柊灞炴€у€?
 func (r *ProductRepository) UpdateAttributeValue(val *product.AttributeValue) error {
 	return r.db.Save(val).Error
 }
 
-// DeleteAttributeValue 删除属性值
+// DeleteAttributeValue 鍒犻櫎灞炴€у€?
 func (r *ProductRepository) DeleteAttributeValue(id uint) error {
 	return r.db.Delete(&product.AttributeValue{}, id).Error
 }
 
-// FindValuesByAttributeID 根据属性ID查找属性值
+// FindValuesByAttributeID 鏍规嵁灞炴€D鏌ユ壘灞炴€у€?
 func (r *ProductRepository) FindValuesByAttributeID(attrID uint) ([]product.AttributeValue, error) {
 	var values []product.AttributeValue
 	err := r.db.Where("attribute_id = ?", attrID).Order("sort_order ASC").Find(&values).Error

@@ -10,9 +10,30 @@
         <p v-else-if="product.description" class="product-description" v-html="product.description" />
         <div class="product-meta">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
-          <span v-if="product.sku" class="product-sku">SKU: {{ product.sku }}</span>
+          <span v-if="displaySKU" class="product-sku">SKU: {{ displaySKU }}</span>
           <span v-if="product.product_type?.name" class="product-sku">{{ product.product_type.name }}</span>
         </div>
+        <div v-if="activeVariants.length" class="product-variants">
+          <label for="variant-select">Choose SKU</label>
+          <select id="variant-select" v-model.number="selectedVariantId">
+            <option
+              v-for="variant in activeVariants"
+              :key="variant.id"
+              :value="variant.id"
+            >
+              {{ variantLabel(variant) }}
+            </option>
+          </select>
+          <p class="variant-stock">Stock: {{ selectedVariant?.stock ?? 0 }}</p>
+        </div>
+        <button
+          type="button"
+          class="product-add-button"
+          :disabled="!canAddToCart"
+          @click="addSelectedToCart"
+        >
+          {{ canAddToCart ? 'Add to cart' : 'Out of stock' }}
+        </button>
       </div>
     </div>
 
@@ -48,8 +69,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRuntimeConfig, useAsyncData, useHead } from '#imports'
+import { useCart } from '~/composables/useCart'
 
 interface ProductImage {
   id?: number | string
@@ -79,6 +101,18 @@ interface ProductSpecValue {
   definition?: SpecDefinition
 }
 
+interface ProductVariant {
+  id: number
+  sku: string
+  title?: string
+  option_values?: string | Record<string, string>
+  price: number
+  sale_price?: number | null
+  stock: number
+  is_default?: boolean
+  is_active?: boolean
+}
+
 interface GoProduct {
   id: number
   product_type_id?: number
@@ -90,15 +124,19 @@ interface GoProduct {
   sku?: string
   price: number
   sale_price?: number
+  stock?: number
   images?: ProductImage[]
   thumbnail?: string
   meta_title?: string
   meta_description?: string
   spec_values?: ProductSpecValue[]
+  variants?: ProductVariant[]
 }
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const selectedVariantId = ref<number | null>(null)
+const { addToCart, openCart } = useCart()
 
 const slug = computed(() => String(route.params.slug || ''))
 
@@ -170,8 +208,63 @@ const primaryImage = computed(() => {
 
 const canonicalUrl = computed(() => `${siteOrigin.value}/shop/${product.value?.slug || slug.value}`)
 
+const activeVariants = computed(() => {
+  return (product.value?.variants || []).filter((variant) => variant.is_active !== false)
+})
+
+watch(product, (currentProduct) => {
+  const variants = (currentProduct?.variants || []).filter((variant) => variant.is_active !== false)
+  if (variants.length === 0) {
+    selectedVariantId.value = null
+    return
+  }
+  const defaultVariant = variants.find((variant) => variant.is_default) || variants[0]
+  selectedVariantId.value = defaultVariant.id
+}, { immediate: true })
+
+const selectedVariant = computed(() => {
+  if (!selectedVariantId.value) return null
+  return activeVariants.value.find((variant) => variant.id === selectedVariantId.value) || null
+})
+
+const parseVariantOptions = (variant: ProductVariant) => {
+  if (!variant.option_values) return {}
+  if (typeof variant.option_values === 'object') return variant.option_values
+  try {
+    const parsed = JSON.parse(variant.option_values)
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, string> : {}
+  } catch {
+    return {}
+  }
+}
+
+const variantLabel = (variant: ProductVariant) => {
+  const options = Object.values(parseVariantOptions(variant)).filter(Boolean)
+  const optionLabel = options.length ? ` · ${options.join(' / ')}` : ''
+  return `${variant.title || variant.sku}${optionLabel}`
+}
+
+const displaySKU = computed(() => selectedVariant.value?.sku || product.value?.sku || '')
+
+const effectivePrice = computed(() => {
+  return selectedVariant.value?.sale_price
+    ?? selectedVariant.value?.price
+    ?? product.value?.sale_price
+    ?? product.value?.price
+    ?? 0
+})
+
+const selectedStock = computed(() => {
+  if (selectedVariant.value) return selectedVariant.value.stock
+  return product.value && activeVariants.value.length === 0 ? product.value.stock ?? 0 : 0
+})
+
+const canAddToCart = computed(() => {
+  return Boolean(product.value && Number(effectivePrice.value) > 0 && selectedStock.value > 0)
+})
+
 const formattedPrice = computed(() => {
-  const raw = product.value?.sale_price || product.value?.price
+  const raw = effectivePrice.value
   if (raw == null) return ''
   const numeric = Number(raw)
   if (!Number.isFinite(numeric)) return ''
@@ -186,6 +279,30 @@ const formattedPrice = computed(() => {
     return `$${numeric.toFixed(2)}`
   }
 })
+
+const addSelectedToCart = () => {
+  if (!product.value || !canAddToCart.value) return
+
+  const variant = selectedVariant.value
+  const result = addToCart({
+    id: variant?.id || product.value.id,
+    product_id: product.value.id,
+    variant_id: variant?.id || null,
+    title: product.value.name,
+    name: product.value.name,
+    slug: product.value.slug,
+    sku: variant?.sku || product.value.sku || '',
+    price: Number(effectivePrice.value),
+    image: primaryImage.value || undefined,
+    thumbnail: primaryImage.value || undefined,
+    stock: selectedStock.value,
+    maxStock: selectedStock.value
+  })
+
+  if (result?.success) {
+    openCart()
+  }
+}
 
 const formatSpecValue = (item: ProductSpecValue) => {
   const definition = item.definition
@@ -236,7 +353,7 @@ const productSchema = computed(() => {
   })
 
   const offers = (() => {
-    const raw = product.value?.sale_price || product.value?.price
+    const raw = effectivePrice.value
     if (raw == null) return null
     const numeric = Number(raw)
     if (!Number.isFinite(numeric)) return null
@@ -254,7 +371,7 @@ const productSchema = computed(() => {
     '@type': 'Product',
     name: metaTitle.value,
     description: metaDescription.value,
-    sku: product.value?.sku,
+    sku: displaySKU.value,
     image: images,
     offers: offers || undefined
   }
@@ -371,6 +488,55 @@ useHead(() => {
 .product-price {
   font-weight: 600;
   font-size: 1.15rem;
+}
+
+.product-variants {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  max-width: 24rem;
+}
+
+.product-variants label {
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.product-variants select {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 0.7rem 0.9rem;
+}
+
+.variant-stock {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.9rem;
+}
+
+.product-add-button {
+  width: fit-content;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6b73ff, #40ffaa);
+  color: #06111f;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.85rem 1.35rem;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.product-add-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.product-add-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .product-gallery h2,

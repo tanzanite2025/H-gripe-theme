@@ -36,8 +36,9 @@ type CreateOrderRequest struct {
 }
 
 type OrderItemRequest struct {
-	ProductID uint `json:"product_id" binding:"required"`
-	Quantity  int  `json:"quantity" binding:"required,min=1"`
+	ProductID uint  `json:"product_id" binding:"required"`
+	VariantID *uint `json:"variant_id"`
+	Quantity  int   `json:"quantity" binding:"required,min=1"`
 }
 
 type AddressRequest struct {
@@ -103,6 +104,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	for i, item := range summary.Items {
 		items[i] = order.OrderItem{
 			ProductID: item.ProductID,
+			VariantID: item.VariantID,
 			Quantity:  item.Quantity,
 		}
 	}

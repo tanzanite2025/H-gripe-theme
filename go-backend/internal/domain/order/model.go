@@ -72,6 +72,7 @@ type OrderItem struct {
 	ID          uint      `gorm:"primarykey" json:"id"`
 	OrderID     uint      `gorm:"not null;index" json:"order_id"`
 	ProductID   uint      `gorm:"not null;index" json:"product_id"`
+	VariantID   *uint     `gorm:"not null;index" json:"variant_id"`
 	ProductName string    `gorm:"not null" json:"product_name"`
 	SKU         string    `json:"sku"`
 	Quantity    int       `gorm:"not null" json:"quantity"`

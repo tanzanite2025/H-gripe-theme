@@ -607,6 +607,7 @@ export const useWhatsAppState = (emit: any) => {
       
         searchResults.value = response.items.map((item: any) => ({
           id: item.id,
+          defaultVariantId: item.default_variant_id || null,
           title: item.title,
           name: item.title,
           slug: item.slug,
@@ -632,6 +633,8 @@ export const useWhatsAppState = (emit: any) => {
   const handleAddProductToCart = (product: any) => {
     const result = addToCart({
       id: product.id,
+      product_id: product.id,
+      variant_id: product.defaultVariantId || null,
       title: product.title || product.name || 'Product',
       name: product.name || product.title || 'Product',
       slug: product.slug,
