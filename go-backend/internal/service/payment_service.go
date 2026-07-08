@@ -320,27 +320,3 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		return nil
 	})
 }
-
-func (s *PaymentService) CreatePaymentMethod(method *payment.PaymentMethod) error {
-	return s.paymentRepo.CreatePaymentMethod(method)
-}
-
-func (s *PaymentService) UpdatePaymentMethod(method *payment.PaymentMethod) error {
-	return s.paymentRepo.UpdatePaymentMethod(method)
-}
-
-func (s *PaymentService) DeletePaymentMethod(id uint) error {
-	return s.paymentRepo.DeletePaymentMethod(id)
-}
-
-func (s *PaymentService) CreateTaxRate(rate *payment.TaxRate) error {
-	return s.paymentRepo.CreateTaxRate(rate)
-}
-
-func (s *PaymentService) UpdateTaxRate(rate *payment.TaxRate) error {
-	return s.paymentRepo.UpdateTaxRate(rate)
-}
-
-func (s *PaymentService) DeleteTaxRate(id uint) error {
-	return s.paymentRepo.DeleteTaxRate(id)
-}

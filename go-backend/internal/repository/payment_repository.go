@@ -30,11 +30,6 @@ func (r *PaymentRepository) lockForUpdate(query *gorm.DB) *gorm.DB {
 
 // PaymentMethod 相关方法
 
-// CreatePaymentMethod 创建支付方式
-func (r *PaymentRepository) CreatePaymentMethod(pm *payment.PaymentMethod) error {
-	return r.db.Create(pm).Error
-}
-
 // FindPaymentMethodByID 根据ID查找支付方式
 func (r *PaymentRepository) FindPaymentMethodByID(id uint) (*payment.PaymentMethod, error) {
 	var pm payment.PaymentMethod
@@ -68,22 +63,7 @@ func (r *PaymentRepository) FindAllPaymentMethods(enabledOnly bool) ([]payment.P
 	return methods, err
 }
 
-// UpdatePaymentMethod 更新支付方式
-func (r *PaymentRepository) UpdatePaymentMethod(pm *payment.PaymentMethod) error {
-	return r.db.Save(pm).Error
-}
-
-// DeletePaymentMethod 删除支付方式
-func (r *PaymentRepository) DeletePaymentMethod(id uint) error {
-	return r.db.Delete(&payment.PaymentMethod{}, id).Error
-}
-
 // TaxRate 相关方法
-
-// CreateTaxRate 创建税率
-func (r *PaymentRepository) CreateTaxRate(tr *payment.TaxRate) error {
-	return r.db.Create(tr).Error
-}
 
 // FindTaxRateByID 根据ID查找税率
 func (r *PaymentRepository) FindTaxRateByID(id uint) (*payment.TaxRate, error) {
@@ -111,16 +91,6 @@ func (r *PaymentRepository) FindAllTaxRates() ([]payment.TaxRate, error) {
 	var rates []payment.TaxRate
 	err := r.db.Order("country ASC, state ASC").Find(&rates).Error
 	return rates, err
-}
-
-// UpdateTaxRate 更新税率
-func (r *PaymentRepository) UpdateTaxRate(tr *payment.TaxRate) error {
-	return r.db.Save(tr).Error
-}
-
-// DeleteTaxRate 删除税率
-func (r *PaymentRepository) DeleteTaxRate(id uint) error {
-	return r.db.Delete(&payment.TaxRate{}, id).Error
 }
 
 // Transaction 相关方法

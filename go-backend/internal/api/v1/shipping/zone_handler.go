@@ -2,18 +2,15 @@ package shipping
 
 import (
 	"strconv"
-	"tanzanite/internal/domain/shipping"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ============ Shipping Zone 相关接口 ============
+// ============ Shipping Zone 閻╃鍙ч幒銉ュ經 ============
 
-// ListZones 获取配送区域列表
-// @Summary 获取配送区域列表
-// @Tags Shipping
+// ListZones 閼惧嘲褰囬柊宥夆偓浣稿隘閸╃喎鍨悰?// @Summary 閼惧嘲褰囬柊宥夆偓浣稿隘閸╃喎鍨悰?// @Tags Shipping
 // @Produce json
 // @Success 200 {array} shipping.ShippingZone
 // @Router /api/v1/shipping/zones [get]
@@ -27,11 +24,9 @@ func (h *Handler) ListZones(c *gin.Context) {
 	response.Success(c, gin.H{"data": zones})
 }
 
-// GetZone 获取配送区域详情
-// @Summary 获取配送区域详情
-// @Tags Shipping
+// GetZone 閼惧嘲褰囬柊宥夆偓浣稿隘閸╃喕顕涢幆?// @Summary 閼惧嘲褰囬柊宥夆偓浣稿隘閸╃喕顕涢幆?// @Tags Shipping
 // @Produce json
-// @Param id path int true "区域ID"
+// @Param id path int true "閸栧搫鐓橧D"
 // @Success 200 {object} shipping.ShippingZone
 // @Router /api/v1/shipping/zones/{id} [get]
 func (h *Handler) GetZone(c *gin.Context) {
@@ -48,77 +43,4 @@ func (h *Handler) GetZone(c *gin.Context) {
 	}
 
 	response.Success(c, zone)
-}
-
-// CreateZone 创建配送区域（管理员）
-// @Summary 创建配送区域
-// @Tags Shipping
-// @Accept json
-// @Produce json
-// @Param zone body shipping.ShippingZone true "区域信息"
-// @Success 201 {object} shipping.ShippingZone
-func (h *Handler) CreateZone(c *gin.Context) {
-	var zone shipping.ShippingZone
-	if err := c.ShouldBindJSON(&zone); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	if err := h.shippingService.CreateZone(&zone); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	response.Created(c, zone)
-}
-
-// UpdateZone 更新配送区域（管理员）
-// @Summary 更新配送区域
-// @Tags Shipping
-// @Accept json
-// @Produce json
-// @Param id path int true "区域ID"
-// @Param zone body shipping.ShippingZone true "区域信息"
-// @Success 200 {object} shipping.ShippingZone
-func (h *Handler) UpdateZone(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		apierror.RespondBadRequest(c, "invalid zone id")
-		return
-	}
-
-	var zone shipping.ShippingZone
-	if err := c.ShouldBindJSON(&zone); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	zone.ID = uint(id)
-	if err := h.shippingService.UpdateZone(&zone); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	response.Success(c, zone)
-}
-
-// DeleteZone 删除配送区域（管理员）
-// @Summary 删除配送区域
-// @Tags Shipping
-// @Produce json
-// @Param id path int true "区域ID"
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) DeleteZone(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		apierror.RespondBadRequest(c, "invalid zone id")
-		return
-	}
-
-	if err := h.shippingService.DeleteZone(uint(id)); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	response.SuccessWithMessage(c, "zone deleted", nil)
 }

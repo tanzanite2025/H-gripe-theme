@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateTicketRequest 创建工单请求
 type CreateTicketRequest struct {
 	Subject  string `json:"subject" binding:"required"`
 	Category string `json:"category" binding:"required"`
@@ -16,14 +15,6 @@ type CreateTicketRequest struct {
 	Content  string `json:"content" binding:"required"`
 }
 
-// CreateTicket 创建工单
-// @Summary 创建工单
-// @Tags Tickets
-// @Accept json
-// @Produce json
-// @Param ticket body CreateTicketRequest true "工单信息"
-// @Success 201 {object} ticket.Ticket
-// @Router /api/v1/tickets [post]
 func (h *Handler) CreateTicket(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -49,7 +40,6 @@ func (h *Handler) CreateTicket(c *gin.Context) {
 		return
 	}
 
-	// 创建初始消息
 	msg := &ticket.TicketMessage{
 		TicketID: t.ID,
 		UserID:   userID.(uint),
@@ -64,13 +54,6 @@ func (h *Handler) CreateTicket(c *gin.Context) {
 	c.JSON(http.StatusCreated, t)
 }
 
-// GetTicket 获取工单详情
-// @Summary 获取工单详情
-// @Tags Tickets
-// @Produce json
-// @Param id path int true "工单ID"
-// @Success 200 {object} ticket.Ticket
-// @Router /api/v1/tickets/{id} [get]
 func (h *Handler) GetTicket(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -78,7 +61,6 @@ func (h *Handler) GetTicket(c *gin.Context) {
 		return
 	}
 
-	// 检查是否是管理员
 	isStaff := false
 	if role, exists := c.Get("role"); exists && role == "admin" {
 		isStaff = true
@@ -99,14 +81,6 @@ func (h *Handler) GetTicket(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// ListTickets 获取工单列表
-// @Summary 获取工单列表
-// @Tags Tickets
-// @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/tickets [get]
 func (h *Handler) ListTickets(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -142,55 +116,6 @@ func (h *Handler) ListTickets(c *gin.Context) {
 	})
 }
 
-// ListAllTickets 获取所有工单（管理员）
-// @Summary 获取所有工单
-// @Tags Tickets
-// @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "状态"
-// @Param priority query string false "优先级"
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) ListAllTickets(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-	status := c.Query("status")
-	priority := c.Query("priority")
-
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	tickets, total, err := h.ticketService.GetAllTickets(page, pageSize, status, priority)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"ok":   true,
-		"data": tickets,
-		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
-			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-		},
-	})
-}
-
-// UpdateTicketStatus 更新工单状态
-// @Summary 更新工单状态
-// @Tags Tickets
-// @Accept json
-// @Produce json
-// @Param id path int true "工单ID"
-// @Param request body map[string]string true "状态"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/tickets/{id}/status [put]
 func (h *Handler) UpdateTicketStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -214,44 +139,6 @@ func (h *Handler) UpdateTicketStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ticket status updated"})
 }
 
-// AssignTicket 分配工单（管理员）
-// @Summary 分配工单
-// @Tags Tickets
-// @Accept json
-// @Produce json
-// @Param id path int true "工单ID"
-// @Param request body map[string]uint true "分配信息"
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) AssignTicket(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ticket id"})
-		return
-	}
-
-	var req struct {
-		AssignedTo uint `json:"assigned_to" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.ticketService.AssignTicket(uint(id), req.AssignedTo); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "ticket assigned"})
-}
-
-// CloseTicket 关闭工单
-// @Summary 关闭工单
-// @Tags Tickets
-// @Produce json
-// @Param id path int true "工单ID"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/tickets/{id}/close [post]
 func (h *Handler) CloseTicket(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -278,12 +165,6 @@ func (h *Handler) CloseTicket(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ticket closed"})
 }
 
-// GetTicketStats 获取工单统计
-// @Summary 获取工单统计
-// @Tags Tickets
-// @Produce json
-// @Success 200 {object} map[string]int64
-// @Router /api/v1/tickets/stats [get]
 func (h *Handler) GetTicketStats(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -298,40 +179,4 @@ func (h *Handler) GetTicketStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
-}
-
-// GetDashboard 获取客服仪表板（管理员）
-// @Summary 获取客服仪表板
-// @Tags Tickets
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) GetDashboard(c *gin.Context) {
-	dashboard, err := h.ticketService.GetDashboard()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, dashboard)
-}
-
-// GetRecentTickets 获取最近的工单（管理员）
-// @Summary 获取最近的工单
-// @Tags Tickets
-// @Produce json
-// @Param limit query int false "数量限制" default(10)
-// @Success 200 {array} ticket.Ticket
-func (h *Handler) GetRecentTickets(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	if limit < 1 || limit > 100 {
-		limit = 10
-	}
-
-	tickets, err := h.ticketService.GetRecentTickets(limit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": tickets})
 }

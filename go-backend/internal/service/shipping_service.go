@@ -34,18 +34,6 @@ func (s *ShippingService) GetTemplate(id uint) (*shipping.ShippingTemplate, erro
 	return s.shippingRepo.FindTemplateByID(id)
 }
 
-func (s *ShippingService) CreateTemplate(template *shipping.ShippingTemplate) error {
-	return s.shippingRepo.CreateTemplate(template)
-}
-
-func (s *ShippingService) UpdateTemplate(template *shipping.ShippingTemplate) error {
-	return s.shippingRepo.UpdateTemplate(template)
-}
-
-func (s *ShippingService) DeleteTemplate(id uint) error {
-	return s.shippingRepo.DeleteTemplate(id)
-}
-
 func (s *ShippingService) CalculateShipping(input ShippingCalculationInput) (*ShippingQuote, error) {
 	template, err := s.GetTemplate(input.TemplateID)
 	if err != nil {
@@ -103,28 +91,12 @@ func (s *ShippingService) GetZone(id uint) (*shipping.ShippingZone, error) {
 	return s.shippingRepo.FindZoneByID(id)
 }
 
-func (s *ShippingService) CreateZone(zone *shipping.ShippingZone) error {
-	return s.shippingRepo.CreateZone(zone)
-}
-
-func (s *ShippingService) UpdateZone(zone *shipping.ShippingZone) error {
-	return s.shippingRepo.UpdateZone(zone)
-}
-
-func (s *ShippingService) DeleteZone(id uint) error {
-	return s.shippingRepo.DeleteZone(id)
-}
-
 func (s *ShippingService) GetTrackingEventsByTrackingNumber(trackingNumber string) ([]shipping.TrackingEvent, error) {
 	return s.shippingRepo.FindTrackingEventsByTrackingNumber(trackingNumber)
 }
 
 func (s *ShippingService) GetTrackingEventsByOrderID(orderID uint) ([]shipping.TrackingEvent, error) {
 	return s.shippingRepo.FindTrackingEventsByOrderID(orderID)
-}
-
-func (s *ShippingService) CreateTrackingEvent(event *shipping.TrackingEvent) error {
-	return s.shippingRepo.CreateTrackingEvent(event)
 }
 
 func (s *ShippingService) ListPackagingRules() ([]shipping.PackagingRule, error) {

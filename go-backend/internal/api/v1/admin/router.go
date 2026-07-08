@@ -2,9 +2,6 @@ package admin
 
 import (
 	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/api/v1/payment"
-	"tanzanite/internal/api/v1/registration"
-	"tanzanite/internal/api/v1/shipping"
 	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/app"
 	"tanzanite/internal/domain/auth"
@@ -19,7 +16,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	// 初始化 repositories
 	services := deps.Services
 	authService := services.Auth
-	storageSvc := deps.Storage
 	showcaseService := services.Showcase
 	registrationService := services.Registration
 	userService := services.User
@@ -41,7 +37,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	userHandler := NewUserHandler(userService)
 	productHandler := NewProductHandler(productService)
 	orderHandler := NewOrderHandler(orderService)
-	paymentHandler := payment.NewHandler(paymentService, orderService)
+	paymentHandler := NewPaymentHandler(paymentService)
 	contentHandler := NewContentHandler(postService)
 	faqHandler := NewFAQHandler(services.FAQ)
 	galleryHandler := NewGalleryHandler(services.Gallery)
@@ -51,8 +47,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
 	auditHandler := NewAuditHandler(services.Audit)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
-	registrationHandler := registration.NewHandler(registrationService, storageSvc)
-	shippingHandler := shipping.NewHandler(services.Shipping)
+	registrationHandler := NewRegistrationHandler(registrationService)
+	shippingHandler := NewShippingHandler(services.Shipping)
 
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")

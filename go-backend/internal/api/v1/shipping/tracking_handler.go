@@ -2,20 +2,17 @@ package shipping
 
 import (
 	"strconv"
-	"tanzanite/internal/domain/shipping"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ============ Tracking 相关接口 ============
+// ============ Tracking 閻╃鍙ч幒銉ュ經 ============
 
-// TrackShipment 追踪物流
-// @Summary 追踪物流
-// @Tags Shipping
+// TrackShipment 鏉╁€熼嚋閻椻晜绁?// @Summary 鏉╁€熼嚋閻椻晜绁?// @Tags Shipping
 // @Produce json
-// @Param tracking_number path string true "追踪号"
+// @Param tracking_number path string true "鏉╁€熼嚋閸?
 // @Success 200 {array} shipping.TrackingEvent
 // @Router /api/v1/shipping/track/{tracking_number} [get]
 func (h *Handler) TrackShipment(c *gin.Context) {
@@ -34,11 +31,11 @@ func (h *Handler) TrackShipment(c *gin.Context) {
 	response.Success(c, gin.H{"data": events})
 }
 
-// GetOrderTracking 获取订单物流追踪
-// @Summary 获取订单物流追踪
+// GetOrderTracking 閼惧嘲褰囩拋銏犲礋閻椻晜绁︽潻鍊熼嚋
+// @Summary 閼惧嘲褰囩拋銏犲礋閻椻晜绁︽潻鍊熼嚋
 // @Tags Shipping
 // @Produce json
-// @Param order_id path int true "订单ID"
+// @Param order_id path int true "鐠併垹宕烮D"
 // @Success 200 {array} shipping.TrackingEvent
 // @Router /api/v1/shipping/orders/{order_id}/tracking [get]
 func (h *Handler) GetOrderTracking(c *gin.Context) {
@@ -55,26 +52,4 @@ func (h *Handler) GetOrderTracking(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"data": events})
-}
-
-// CreateTrackingEvent 创建物流追踪事件（管理员）
-// @Summary 创建物流追踪事件
-// @Tags Shipping
-// @Accept json
-// @Produce json
-// @Param event body shipping.TrackingEvent true "追踪事件"
-// @Success 201 {object} shipping.TrackingEvent
-func (h *Handler) CreateTrackingEvent(c *gin.Context) {
-	var event shipping.TrackingEvent
-	if err := c.ShouldBindJSON(&event); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	if err := h.shippingService.CreateTrackingEvent(&event); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	response.Created(c, event)
 }

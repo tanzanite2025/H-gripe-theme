@@ -114,17 +114,6 @@ func NewMarketingService(
 
 // Coupon 相关方法
 
-// CreateCoupon 创建优惠券
-func (s *MarketingService) CreateCoupon(c *coupon.Coupon) error {
-	// 验证优惠券代码唯一性
-	existing, _ := s.couponRepo.FindCouponByCode(c.Code)
-	if existing != nil {
-		return errors.New("coupon code already exists")
-	}
-
-	return s.couponRepo.CreateCoupon(c)
-}
-
 // ValidateCoupon 验证优惠券
 func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float64) (*coupon.Coupon, float64, error) {
 	c, err := s.couponRepo.FindCouponByCode(code)
@@ -192,11 +181,6 @@ func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmo
 // GetActiveCoupons 获取有效优惠券
 func (s *MarketingService) GetActiveCoupons() ([]coupon.Coupon, error) {
 	return s.couponRepo.FindActiveCoupons()
-}
-
-// GetAllCoupons 获取全部优惠券 (供管理端使用)
-func (s *MarketingService) GetAllCoupons(page, pageSize int) ([]coupon.Coupon, int64, error) {
-	return s.couponRepo.FindAllCoupons(page, pageSize)
 }
 
 func (s *MarketingService) ListCouponsAdmin(page, pageSize int, status string) ([]coupon.Coupon, int64, error) {
@@ -571,16 +555,6 @@ func (s *MarketingService) GetMarketingStats() (map[string]interface{}, error) {
 	}, nil
 }
 
-// UpdateCoupon 更新优惠券
-func (s *MarketingService) UpdateCoupon(c *coupon.Coupon) error {
-	return s.couponRepo.UpdateCoupon(c)
-}
-
-// DeleteCoupon 删除优惠券
-func (s *MarketingService) DeleteCoupon(id uint) error {
-	return s.couponRepo.DeleteCoupon(id)
-}
-
 // Loyalty 相关方法
 
 // EarnPoints 赚取积分
@@ -728,30 +702,9 @@ func normalizeMarketingError(err error) error {
 // B端 (Admin) 会员与积分管理方法
 // ==========================================
 
-// CreateMemberLevel 创建会员等级
-func (s *MarketingService) CreateMemberLevel(level *loyalty.MemberLevel) error {
-	return s.loyaltyRepo.CreateMemberLevel(level)
-}
-
-// UpdateMemberLevel 更新会员等级
-func (s *MarketingService) UpdateMemberLevel(level *loyalty.MemberLevel) error {
-	return s.loyaltyRepo.UpdateMemberLevel(level)
-}
-
-// DeleteMemberLevel 删除会员等级
-func (s *MarketingService) DeleteMemberLevel(id uint) error {
-	return s.loyaltyRepo.DeleteMemberLevel(id)
-}
-
 // ListMemberLevels 获取所有会员等级
 func (s *MarketingService) ListMemberLevels() ([]loyalty.MemberLevel, error) {
 	return s.loyaltyRepo.FindAllMemberLevels()
-}
-
-// AdminAdjustPoints 管理员手动调整用户积分
-func (s *MarketingService) AdminAdjustPoints(userID uint, points int, reason string) error {
-	_, err := s.loyaltyRepo.AdjustUserPoints(userID, points, "adjust", "admin", 0, fmt.Sprintf("Admin Adjustment: %s", reason))
-	return err
 }
 
 // ==========================================
