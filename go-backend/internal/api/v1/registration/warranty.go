@@ -8,7 +8,6 @@ import (
 	"strings"
 	domainregistration "tanzanite/internal/domain/registration"
 	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/pkg/upload"
 	"tanzanite/internal/service"
@@ -97,21 +96,6 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 	})
 }
 
-func (h *Handler) GetExpiringWarranties(c *gin.Context) {
-	days := pagination.ParseLimit(c)
-	if days > 365 {
-		days = 30
-	}
-
-	registrations, err := h.registrationSvc.GetExpiringWarranties(days)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
-	response.Success(c, gin.H{"data": registrations})
-}
-
 func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -175,47 +159,6 @@ func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"data": claims})
-}
-
-func (h *Handler) ListAllWarrantyClaims(c *gin.Context) {
-	params := pagination.ParsePagination(c)
-	status := c.Query("status")
-
-	claims, total, err := h.registrationSvc.GetAllWarrantyClaims(params.Page, params.PageSize, status)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
-	response.Paged(c, claims, params.Page, params.PageSize, total)
-}
-
-func (h *Handler) UpdateWarrantyClaimStatus(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		apierror.RespondBadRequest(c, "Invalid claim ID")
-		return
-	}
-
-	var req struct {
-		Status string `json:"status" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondValidationError(c, err.Error())
-		return
-	}
-
-	processedBy := uint(0)
-	if userID, exists := c.Get("user_id"); exists {
-		processedBy = userID.(uint)
-	}
-
-	if err := h.registrationSvc.UpdateWarrantyClaimStatus(uint(id), req.Status, processedBy); err != nil {
-		respondRegistrationServiceError(c, err)
-		return
-	}
-
-	response.SuccessWithMessage(c, "Warranty claim status updated", nil)
 }
 
 func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, error) {

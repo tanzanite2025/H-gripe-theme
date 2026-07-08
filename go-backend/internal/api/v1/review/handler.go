@@ -20,7 +20,7 @@ func NewHandler(reviewService *service.ReviewService) *Handler {
 	}
 }
 
-// CreateReviewRequest 创建评价请求
+// CreateReviewRequest 閸掓稑缂撶拠鍕幆鐠囬攱鐪?
 type CreateReviewRequest struct {
 	ProductID uint     `json:"product_id" binding:"required"`
 	Rating    int      `json:"rating" binding:"required,min=1,max=5"`
@@ -29,12 +29,12 @@ type CreateReviewRequest struct {
 	Images    []string `json:"images"`
 }
 
-// CreateReview 创建评价
-// @Summary 创建评价
+// CreateReview 閸掓稑缂撶拠鍕幆
+// @Summary 閸掓稑缂撶拠鍕幆
 // @Tags Reviews
 // @Accept json
 // @Produce json
-// @Param review body CreateReviewRequest true "评价信息"
+// @Param review body CreateReviewRequest true "鐠囧嫪鐜穱鈩冧紖"
 // @Success 201 {object} review.Review
 // @Router /api/v1/reviews [post]
 func (h *Handler) CreateReview(c *gin.Context) {
@@ -69,11 +69,9 @@ func (h *Handler) CreateReview(c *gin.Context) {
 	c.JSON(http.StatusCreated, r)
 }
 
-// GetReview 获取评价详情
-// @Summary 获取评价详情
-// @Tags Reviews
+// GetReview 閼惧嘲褰囩拠鍕幆鐠囷附鍎?// @Summary 閼惧嘲褰囩拠鍕幆鐠囷附鍎?// @Tags Reviews
 // @Produce json
-// @Param id path int true "评价ID"
+// @Param id path int true "鐠囧嫪鐜疘D"
 // @Success 200 {object} review.Review
 // @Router /api/v1/reviews/{id} [get]
 func (h *Handler) GetReview(c *gin.Context) {
@@ -92,14 +90,12 @@ func (h *Handler) GetReview(c *gin.Context) {
 	c.JSON(http.StatusOK, r)
 }
 
-// ListProductReviews 获取产品评价列表
-// @Summary 获取产品评价列表
-// @Tags Reviews
+// ListProductReviews 閼惧嘲褰囨禍褍鎼х拠鍕幆閸掓銆?// @Summary 閼惧嘲褰囨禍褍鎼х拠鍕幆閸掓銆?// @Tags Reviews
 // @Produce json
-// @Param product_id query int true "产品ID"
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "状态"
+// @Param product_id query int true "娴溠冩惂ID"
+// @Param page query int false "妞ょ數鐖? default(1)
+// @Param page_size query int false "濮ｅ繘銆夐弫浼村櫤" default(20)
+// @Param status query string false "閻樿埖鈧?
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/reviews [get]
 func (h *Handler) ListProductReviews(c *gin.Context) {
@@ -137,12 +133,10 @@ func (h *Handler) ListProductReviews(c *gin.Context) {
 	})
 }
 
-// ListUserReviews 获取用户评价列表
-// @Summary 获取用户评价列表
-// @Tags Reviews
+// ListUserReviews 閼惧嘲褰囬悽銊﹀煕鐠囧嫪鐜崚妤勩€?// @Summary 閼惧嘲褰囬悽銊﹀煕鐠囧嫪鐜崚妤勩€?// @Tags Reviews
 // @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
+// @Param page query int false "妞ょ數鐖? default(1)
+// @Param page_size query int false "濮ｅ繘銆夐弫浼村櫤" default(20)
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/reviews/my [get]
 func (h *Handler) ListUserReviews(c *gin.Context) {
@@ -179,11 +173,9 @@ func (h *Handler) ListUserReviews(c *gin.Context) {
 	})
 }
 
-// GetFeaturedReviews 获取精选评价
-// @Summary 获取精选评价
-// @Tags Reviews
+// GetFeaturedReviews 閼惧嘲褰囩划楣冣偓澶庣槑娴?// @Summary 閼惧嘲褰囩划楣冣偓澶庣槑娴?// @Tags Reviews
 // @Produce json
-// @Param limit query int false "数量限制" default(10)
+// @Param limit query int false "閺佷即鍣洪梽鎰煑" default(10)
 // @Success 200 {array} review.Review
 // @Router /api/v1/reviews/featured [get]
 func (h *Handler) GetFeaturedReviews(c *gin.Context) {
@@ -201,119 +193,11 @@ func (h *Handler) GetFeaturedReviews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": reviews})
 }
 
-// GetPendingReviews 获取待审核评价（管理员）
-// @Summary 获取待审核评价
+// DeleteReview 閸掔娀娅庣拠鍕幆
+// @Summary 閸掔娀娅庣拠鍕幆
 // @Tags Reviews
 // @Produce json
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) GetPendingReviews(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	reviews, total, err := h.reviewService.GetPendingReviews(page, pageSize)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"data": reviews,
-		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
-			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
-		},
-	})
-}
-
-// ApproveReview 审核通过评价（管理员）
-// @Summary 审核通过评价
-// @Tags Reviews
-// @Produce json
-// @Param id path int true "评价ID"
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) ApproveReview(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
-		return
-	}
-
-	if err := h.reviewService.ApproveReview(uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "review approved"})
-}
-
-// RejectReview 拒绝评价（管理员）
-// @Summary 拒绝评价
-// @Tags Reviews
-// @Produce json
-// @Param id path int true "评价ID"
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) RejectReview(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
-		return
-	}
-
-	if err := h.reviewService.RejectReview(uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "review rejected"})
-}
-
-// SetFeatured 设置精选评价（管理员）
-// @Summary 设置精选评价
-// @Tags Reviews
-// @Accept json
-// @Produce json
-// @Param id path int true "评价ID"
-// @Param request body map[string]bool true "精选状态"
-// @Success 200 {object} map[string]interface{}
-func (h *Handler) SetFeatured(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
-		return
-	}
-
-	var req struct {
-		Featured bool `json:"featured"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.reviewService.SetFeatured(uint(id), req.Featured); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "featured status updated"})
-}
-
-// DeleteReview 删除评价
-// @Summary 删除评价
-// @Tags Reviews
-// @Produce json
-// @Param id path int true "评价ID"
+// @Param id path int true "鐠囧嫪鐜疘D"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/reviews/{id} [delete]
 func (h *Handler) DeleteReview(c *gin.Context) {
@@ -337,13 +221,11 @@ func (h *Handler) DeleteReview(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "review deleted"})
 }
 
-// MarkHelpful 标记评价有用
-// @Summary 标记评价有用
-// @Tags Reviews
+// MarkHelpful 閺嶅洩顔囩拠鍕幆閺堝鏁?// @Summary 閺嶅洩顔囩拠鍕幆閺堝鏁?// @Tags Reviews
 // @Accept json
 // @Produce json
-// @Param id path int true "评价ID"
-// @Param request body map[string]bool true "是否有用"
+// @Param id path int true "鐠囧嫪鐜疘D"
+// @Param request body map[string]bool true "閺勵垰鎯侀張澶屾暏"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/reviews/{id}/helpful [post]
 func (h *Handler) MarkHelpful(c *gin.Context) {
@@ -375,11 +257,9 @@ func (h *Handler) MarkHelpful(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "marked successfully"})
 }
 
-// GetReviewSummary 获取产品评价摘要
-// @Summary 获取产品评价摘要
-// @Tags Reviews
+// GetReviewSummary 閼惧嘲褰囨禍褍鎼х拠鍕幆閹芥顩?// @Summary 閼惧嘲褰囨禍褍鎼х拠鍕幆閹芥顩?// @Tags Reviews
 // @Produce json
-// @Param product_id path int true "产品ID"
+// @Param product_id path int true "娴溠冩惂ID"
 // @Success 200 {object} review.ReviewSummary
 // @Router /api/v1/reviews/summary/{product_id} [get]
 func (h *Handler) GetReviewSummary(c *gin.Context) {

@@ -91,52 +91,6 @@ func (h *Handler) Liveness(c *gin.Context) {
 	})
 }
 
-func (h *Handler) DetailedHealth(c *gin.Context) {
-	details := make(map[string]interface{})
-
-	if h.db != nil {
-		if sqlDB, err := h.db.DB(); err == nil {
-			stats := sqlDB.Stats()
-			details["database"] = gin.H{
-				"status":           "healthy",
-				"max_open_conns":   stats.MaxOpenConnections,
-				"open_conns":       stats.OpenConnections,
-				"in_use":           stats.InUse,
-				"idle":             stats.Idle,
-				"wait_count":       stats.WaitCount,
-				"wait_duration_ms": stats.WaitDuration.Milliseconds(),
-			}
-		} else {
-			details["database"] = gin.H{"status": "error", "error": err.Error()}
-		}
-	}
-
-	if h.redis != nil {
-		if err := h.redis.Ping(c.Request.Context()).Err(); err == nil {
-			stats := h.redis.PoolStats()
-			details["redis"] = gin.H{
-				"status":      "healthy",
-				"hits":        stats.Hits,
-				"misses":      stats.Misses,
-				"timeouts":    stats.Timeouts,
-				"total_conns": stats.TotalConns,
-				"idle_conns":  stats.IdleConns,
-				"stale_conns": stats.StaleConns,
-			}
-		} else {
-			details["redis"] = gin.H{"status": "error", "error": err.Error()}
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":    "ok",
-		"time":      time.Now().Format(time.RFC3339),
-		"version":   h.version,
-		"buildTime": h.buildTime,
-		"details":   details,
-	})
-}
-
 func (h *Handler) databaseStatus() string {
 	if h.db == nil {
 		return "not configured"
