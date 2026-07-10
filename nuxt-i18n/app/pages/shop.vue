@@ -113,8 +113,8 @@
                 <h3 class="text-xs font-semibold text-white line-clamp-2 mb-1">
                   {{ product.title }}
                 </h3>
-                <p v-if="product.price" class="text-xs text-[#40ffaa] mb-2">
-                  {{ product.price }}
+                <p v-if="product.priceLabel" class="text-xs text-[#40ffaa] mb-2">
+                  {{ product.priceLabel }}
                 </p>
                 <div class="mt-auto flex gap-1.5 items-center">
                   <button
@@ -158,7 +158,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRoute, useRuntimeConfig, useAsyncData } from '#imports'
+import { useRoute, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import CategorySidebar from '~/components/CategorySidebar.vue'
 import CategoryChips from '~/components/CategoryChips.vue'
@@ -167,21 +167,16 @@ import { useWishlist } from '~/composables/useWishlist'
 import { useShopCategories } from '~/composables/useShopCategories'
 import type { ShopCategory } from '~/composables/useShopCategories'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import { useShopProducts } from '~/composables/useShopProducts'
+import type { ShopProduct } from '~/composables/useShopProducts'
 import { popularSearchKeywords } from '~/utils/popularSearchKeywords'
 
 definePageMeta({
   layout: 'products',
 })
 
-interface ShopProduct {
-  id: number
-  title: string
-  url: string
-  thumbnail?: string
-  price?: string
-}
-
 const route = useRoute()
+const { fetchShopProducts } = useShopProducts()
 
 const quickSelectedKeywords = ref<string[]>([])
 const quickFreeTextQuery = ref('')
@@ -306,12 +301,10 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
 const { data: asyncData, pending, error: asyncError, refresh } = await useAsyncData(
   'shop-products',
   () => {
-    const config = useRuntimeConfig()
-    const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
     const params = buildProductQueryParams(currentSearch.value || undefined)
     Object.assign(params, route.query)
 
-    return $fetch<any>(`${base}/customer-service/products`, { params })
+    return fetchShopProducts(params)
   }
 )
 
@@ -322,18 +315,7 @@ watch(() => route.query, () => {
 const products = computed<ShopProduct[]>(() => {
   const response = asyncData.value
   if (response && Array.isArray(response.items)) {
-    return response.items.map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      url: `/shop/${item.slug || item.id}`,
-      thumbnail: item.thumbnail,
-      price:
-        item.prices?.sale > 0
-          ? `$${item.prices.sale}`
-          : item.prices?.regular > 0
-          ? `$${item.prices.regular}`
-          : '',
-    }))
+    return response.items
   }
   return []
 })
