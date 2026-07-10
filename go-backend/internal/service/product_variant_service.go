@@ -10,6 +10,20 @@ import (
 	"tanzanite/internal/repository"
 )
 
+type ProductVariantInput struct {
+	ID           *uint
+	SKU          string
+	Title        string
+	OptionValues map[string]string
+	Price        float64
+	SalePrice    *float64
+	Stock        int
+	Weight       int
+	IsDefault    bool
+	IsActive     *bool
+	SortOrder    int
+}
+
 func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]string) ([]product.ProductSpecValue, error) {
 	if productTypeID == nil {
 		if len(values) > 0 {

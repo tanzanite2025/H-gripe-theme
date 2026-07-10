@@ -7,7 +7,6 @@ import (
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,37 +21,6 @@ func NewHandler(orderService *service.OrderService, cartService *service.CartSer
 		orderService: orderService,
 		cartService:  cartService,
 	}
-}
-
-// CreateOrderRequest 创建订单请求
-type CreateOrderRequest struct {
-	Items           []OrderItemRequest `json:"items" binding:"required,min=1"`
-	ShippingAddress AddressRequest     `json:"shipping_address" binding:"required"`
-	BillingAddress  AddressRequest     `json:"billing_address"`
-	PaymentMethod   string             `json:"payment_method" binding:"required"`
-	ShippingMethod  string             `json:"shipping_method" binding:"required"`
-	CouponCode      string             `json:"coupon_code"`
-	PointsToUse     int                `json:"points_to_use"`
-}
-
-type OrderItemRequest struct {
-	ProductID uint  `json:"product_id" binding:"required"`
-	VariantID *uint `json:"variant_id"`
-	Quantity  int   `json:"quantity" binding:"required,min=1"`
-}
-
-type AddressRequest struct {
-	FirstName  string `json:"first_name" binding:"required"`
-	LastName   string `json:"last_name" binding:"required"`
-	Company    string `json:"company"`
-	Address1   string `json:"address1" binding:"required"`
-	Address2   string `json:"address2"`
-	City       string `json:"city" binding:"required"`
-	State      string `json:"state"`
-	PostalCode string `json:"postal_code" binding:"required"`
-	Country    string `json:"country" binding:"required"`
-	Phone      string `json:"phone" binding:"required"`
-	Email      string `json:"email" binding:"required,email"`
 }
 
 // CreateOrder 创建订单
@@ -109,38 +77,8 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		}
 	}
 
-	// 转换地址
-	shippingAddr := order.Address{
-		FirstName:  req.ShippingAddress.FirstName,
-		LastName:   req.ShippingAddress.LastName,
-		Company:    req.ShippingAddress.Company,
-		Address1:   req.ShippingAddress.Address1,
-		Address2:   req.ShippingAddress.Address2,
-		City:       req.ShippingAddress.City,
-		State:      req.ShippingAddress.State,
-		PostalCode: req.ShippingAddress.PostalCode,
-		Country:    req.ShippingAddress.Country,
-		Phone:      req.ShippingAddress.Phone,
-		Email:      req.ShippingAddress.Email,
-	}
-
-	// 如果没有提供账单地址，使用配送地址
-	billingAddr := shippingAddr
-	if req.BillingAddress.FirstName != "" {
-		billingAddr = order.Address{
-			FirstName:  req.BillingAddress.FirstName,
-			LastName:   req.BillingAddress.LastName,
-			Company:    req.BillingAddress.Company,
-			Address1:   req.BillingAddress.Address1,
-			Address2:   req.BillingAddress.Address2,
-			City:       req.BillingAddress.City,
-			State:      req.BillingAddress.State,
-			PostalCode: req.BillingAddress.PostalCode,
-			Country:    req.BillingAddress.Country,
-			Phone:      req.BillingAddress.Phone,
-			Email:      req.BillingAddress.Email,
-		}
-	}
+	shippingAddr := addressFromRequest(req.ShippingAddress)
+	billingAddr := billingAddressFromRequest(shippingAddr, req.BillingAddress)
 
 	// 创建订单
 	o, err := h.orderService.CreateOrder(
@@ -221,29 +159,6 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	response.Paged(c, orders, params.Page, params.PageSize, total)
 }
 
-func (h *Handler) ListPublicChatOrders(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		apierror.RespondUnauthorized(c)
-		return
-	}
-
-	limit := pagination.ParseLimit(c)
-
-	orders, _, err := h.orderService.GetUserOrders(userID.(uint), 1, limit)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
-	items := make([]gin.H, 0, len(orders))
-	for _, item := range orders {
-		items = append(items, makePublicChatOrder(item))
-	}
-
-	c.JSON(200, items)
-}
-
 // CancelOrder 取消订单
 // @Summary 取消订单
 // @Tags Orders
@@ -292,24 +207,4 @@ func (h *Handler) GetOrderStats(c *gin.Context) {
 	}
 
 	response.Success(c, stats)
-}
-
-func makePublicChatOrder(item order.Order) gin.H {
-	title := "Order #" + item.OrderNumber
-	if item.OrderNumber == "" {
-		title = "Order #" + strconv.FormatUint(uint64(item.ID), 10)
-	}
-
-	return gin.H{
-		"id":           item.ID,
-		"order_number": item.OrderNumber,
-		"title":        title,
-		"status":       item.Status,
-		"total":        item.TotalAmount,
-		"currency":     "USD",
-		"date":         item.CreatedAt.Format("2006-01-02"),
-		"created_at":   item.CreatedAt.Format(time.RFC3339),
-		"url":          "/orders/" + strconv.FormatUint(uint64(item.ID), 10),
-		"thumbnail":    "",
-	}
 }
