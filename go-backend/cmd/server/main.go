@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"tanzanite/internal/api/admin"
 	"tanzanite/internal/api/middleware"
 	v1 "tanzanite/internal/api/v1"
-	"tanzanite/internal/api/v1/admin"
 	"tanzanite/internal/api/v1/health"
 	"tanzanite/internal/app"
 	"tanzanite/internal/pkg/cache"

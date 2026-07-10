@@ -1,18 +1,9 @@
 package service
 
 import (
-	"context"
 	"errors"
-	"fmt"
-	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/logger"
-	"tanzanite/internal/pkg/requestctx"
 	"tanzanite/internal/repository"
-	"time"
-
-	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 type OrderService struct {
@@ -39,116 +30,6 @@ func NewOrderService(
 	}
 }
 
-func (s *OrderService) CreateOrder(
-	ctx context.Context,
-	userID uint,
-	items []order.OrderItem,
-	shippingAddress order.Address,
-	billingAddress order.Address,
-	paymentMethod string,
-	shippingMethod string,
-	couponCode string,
-	pointsToUse int,
-) (*order.Order, error) {
-	traceID := ""
-	if ctx != nil {
-		if tid, ok := requestctx.TraceID(ctx); ok {
-			traceID = tid
-		}
-	}
-	logger.Info("CreateOrder started", zap.String("trace_id", traceID), zap.Uint("user_id", userID))
-
-	quoteInput := CheckoutQuoteInput{
-		UserID:          userID,
-		Items:           items,
-		ShippingAddress: shippingAddress,
-		CouponCode:      couponCode,
-		PointsToUse:     pointsToUse,
-	}
-
-	var createdOrder *order.Order
-	txErr := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-		quote, err := s.checkout.QuoteWithRepositories(quoteInput, repos)
-		if err != nil {
-			return err
-		}
-
-		o := &order.Order{
-			OrderNumber:     s.generateOrderNumber(),
-			UserID:          userID,
-			Status:          "pending",
-			PaymentMethod:   paymentMethod,
-			PaymentStatus:   "unpaid",
-			ShippingMethod:  shippingMethod,
-			ShippingStatus:  "pending",
-			SubtotalAmount:  quote.SubtotalAmount,
-			TotalAmount:     quote.TotalAmount,
-			ShippingFee:     quote.ShippingFee,
-			TaxAmount:       quote.TaxAmount,
-			DiscountAmount:  quote.DiscountAmount,
-			CouponCode:      quote.CouponCode,
-			PointsUsed:      quote.PointsToUse,
-			PointsValue:     quote.PointsDiscount,
-			Items:           quote.Items,
-			ShippingAddress: shippingAddress,
-			BillingAddress:  billingAddress,
-		}
-
-		variantItemsMap := make(map[uint]int)
-		for _, item := range quote.Items {
-			if item.VariantID == nil {
-				return fmt.Errorf("[CRITICAL] Missing variant for product ID %d", item.ProductID)
-			}
-			variantItemsMap[*item.VariantID] += item.Quantity
-		}
-		if err := repos.Product.DecrementVariantStocks(variantItemsMap); err != nil {
-			return fmt.Errorf("[CRITICAL] Failed to deduct variant stock in bulk: %w", err)
-		}
-
-		if err := repos.Order.Create(o); err != nil {
-			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
-		}
-		createdOrder = o
-
-		if quote.PointsToUse > 0 {
-			if _, err := repos.Loyalty.AdjustUserPointsInCurrentTx(
-				userID,
-				-quote.PointsToUse,
-				"spend",
-				"order",
-				o.ID,
-				fmt.Sprintf("Spent %d points on order #%s", quote.PointsToUse, o.OrderNumber),
-			); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to deduct points for order ID %d: %w", o.ID, err)
-			}
-		}
-
-		if quote.Coupon != nil {
-			if err := repos.Coupon.IncrementUsedCount(quote.Coupon.ID); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to increment usage count for coupon ID %d: %w", quote.Coupon.ID, err)
-			}
-
-			usage := &coupon.CouponUsage{
-				CouponID:  quote.Coupon.ID,
-				UserID:    userID,
-				OrderID:   o.ID,
-				Discount:  quote.CouponDiscount,
-				CreatedAt: time.Now(),
-			}
-			if err := repos.Coupon.CreateCouponUsage(usage); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to record coupon usage for coupon ID %d: %w", quote.Coupon.ID, err)
-			}
-		}
-
-		return nil
-	})
-	if txErr != nil {
-		return nil, txErr
-	}
-
-	return createdOrder, nil
-}
-
 func (s *OrderService) GetOrder(id uint, userID uint) (*order.Order, error) {
 	o, err := s.orderRepo.FindByID(id)
 	if err != nil {
@@ -162,158 +43,8 @@ func (s *OrderService) GetOrder(id uint, userID uint) (*order.Order, error) {
 	return o, nil
 }
 
-func (s *OrderService) GetAdminOrder(id uint) (*order.Order, error) {
-	return s.findOrder(id)
-}
-
 func (s *OrderService) GetUserOrders(userID uint, page, pageSize int) ([]order.Order, int64, error) {
 	return s.orderRepo.FindByUserID(userID, page, pageSize)
-}
-
-func (s *OrderService) GetAllOrders(page, pageSize int, status string) ([]order.Order, int64, error) {
-	return s.orderRepo.FindAll(page, pageSize, status)
-}
-
-func (s *OrderService) ListAdminOrders(page, pageSize int, status, paymentStatus, shippingStatus, search, startDate, endDate string) ([]order.Order, int64, error) {
-	return s.orderRepo.FindAllWithFilters(page, pageSize, status, paymentStatus, shippingStatus, search, startDate, endDate)
-}
-
-func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
-	o, err := s.orderRepo.FindByID(id)
-	if err != nil {
-		return normalizeOrderError(err)
-	}
-
-	if isSystemManagedOrderStatus(status) {
-		return fmt.Errorf("%w: %s", ErrSystemManagedOrderStatus, status)
-	}
-
-	if !o.CanTransitionTo(status) {
-		return fmt.Errorf("invalid status transition from %s to %s", o.Status, status)
-	}
-
-	if status == "cancelled" {
-		return s.cancelOrderWithRollback(o)
-	}
-
-	return s.orderRepo.UpdateStatus(id, status)
-}
-
-func isSystemManagedOrderStatus(status string) bool {
-	return status == "paid" || status == "refunded"
-}
-
-func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
-	if _, err := s.findOrder(id); err != nil {
-		return err
-	}
-
-	return s.orderRepo.UpdateShippingStatus(id, shippingStatus)
-}
-
-func (s *OrderService) UpdateTrackingInfo(id uint, trackingNumber, carrierCode string) error {
-	if _, err := s.findOrder(id); err != nil {
-		return err
-	}
-
-	return s.orderRepo.UpdateTrackingInfo(id, trackingNumber, carrierCode)
-}
-
-func (s *OrderService) UpdateAdminNote(id uint, adminNote string) error {
-	o, err := s.findOrder(id)
-	if err != nil {
-		return err
-	}
-
-	o.AdminNote = adminNote
-	return s.orderRepo.Update(o)
-}
-
-func (s *OrderService) DeleteAdminOrder(id uint) error {
-	o, err := s.findOrder(id)
-	if err != nil {
-		return err
-	}
-
-	if o.Status != "cancelled" && o.Status != "refunded" {
-		return ErrOrderDeleteNotAllowed
-	}
-
-	return s.orderRepo.Delete(id)
-}
-
-func (s *OrderService) GetAdminStats() (map[string]interface{}, error) {
-	return s.orderRepo.GetStats()
-}
-
-func (s *OrderService) GetSalesByDateRange(startDate, endDate time.Time) ([]map[string]interface{}, error) {
-	return s.orderRepo.GetSalesByDateRange(startDate, endDate)
-}
-
-func (s *OrderService) CancelOrder(id uint, userID uint) error {
-	o, err := s.orderRepo.FindByID(id)
-	if err != nil {
-		return normalizeOrderError(err)
-	}
-
-	if o.UserID != userID {
-		return errors.New("unauthorized")
-	}
-
-	if o.Status != "pending" && o.Status != "paid" {
-		return errors.New("order cannot be cancelled")
-	}
-
-	return s.cancelOrderWithRollback(o)
-}
-
-func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
-	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-		if err := repos.Order.UpdateStatus(o.ID, "cancelled"); err != nil {
-			return err
-		}
-
-		for _, item := range o.Items {
-			if item.VariantID == nil {
-				return fmt.Errorf("[CRITICAL] Missing variant for order item %d", item.ID)
-			}
-			if err := repos.Product.IncrementVariantStock(*item.VariantID, item.Quantity); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to restore stock for variant %d: %w", *item.VariantID, err)
-			}
-		}
-
-		if o.PointsUsed > 0 {
-			_, err := repos.Loyalty.AdjustUserPointsInCurrentTx(
-				o.UserID,
-				o.PointsUsed,
-				"refund",
-				"order",
-				o.ID,
-				fmt.Sprintf("Order #%s cancelled points refund", o.OrderNumber),
-			)
-			if err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
-			}
-		}
-
-		if o.CouponCode != "" {
-			cp, err := repos.Coupon.FindCouponByCode(o.CouponCode)
-			if err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to find coupon during refund: %w", err)
-			}
-			if cp != nil {
-				if err := repos.Coupon.DecrementUsedCount(cp.ID); err != nil {
-					return fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
-				}
-
-				if err := repos.Coupon.DeleteCouponUsageByOrderID(o.ID); err != nil {
-					return fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
-				}
-			}
-		}
-
-		return nil
-	})
 }
 
 func (s *OrderService) findOrder(id uint) (*order.Order, error) {
@@ -334,8 +65,4 @@ func normalizeOrderError(err error) error {
 
 func (s *OrderService) GetOrderStats(userID uint) (map[string]int64, error) {
 	return s.orderRepo.GetOrderStats(userID)
-}
-
-func (s *OrderService) generateOrderNumber() string {
-	return fmt.Sprintf("ORD%s%s", time.Now().Format("20060102"), uuid.New().String()[:8])
 }
