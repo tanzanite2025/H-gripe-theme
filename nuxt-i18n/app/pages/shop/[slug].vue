@@ -72,6 +72,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRuntimeConfig, useAsyncData, useHead } from '#imports'
 import { useCart } from '~/composables/useCart'
+import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
 
 interface ProductImage {
   id?: number | string
@@ -137,6 +138,7 @@ const route = useRoute()
 const config = useRuntimeConfig()
 const selectedVariantId = ref<number | null>(null)
 const { addToCart, openCart } = useCart()
+const { toCartItem } = useShopProducts()
 
 const slug = computed(() => String(route.params.slug || ''))
 
@@ -207,6 +209,10 @@ const primaryImage = computed(() => {
 })
 
 const canonicalUrl = computed(() => `${siteOrigin.value}/shop/${product.value?.slug || slug.value}`)
+
+const shopProduct = computed(() => {
+  return product.value ? normalizeShopProduct(product.value) : null
+})
 
 const activeVariants = computed(() => {
   return (product.value?.variants || []).filter((variant) => variant.is_active !== false)
@@ -281,23 +287,17 @@ const formattedPrice = computed(() => {
 })
 
 const addSelectedToCart = () => {
-  if (!product.value || !canAddToCart.value) return
+  if (!product.value || !shopProduct.value || !canAddToCart.value) return
 
   const variant = selectedVariant.value
-  const result = addToCart({
-    id: variant?.id || product.value.id,
-    product_id: product.value.id,
-    variant_id: variant?.id || null,
-    title: product.value.name,
-    name: product.value.name,
-    slug: product.value.slug,
-    sku: variant?.sku || product.value.sku || '',
+  const result = addToCart(toCartItem(shopProduct.value, {
+    variantId: variant?.id || null,
     price: Number(effectivePrice.value),
-    image: primaryImage.value || undefined,
+    salePrice: variant?.sale_price ?? product.value.sale_price ?? null,
+    sku: variant?.sku || product.value.sku || '',
     thumbnail: primaryImage.value || undefined,
-    stock: selectedStock.value,
-    maxStock: selectedStock.value
-  })
+    stockQuantity: selectedStock.value,
+  }))
 
   if (result?.success) {
     openCart()

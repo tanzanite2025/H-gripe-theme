@@ -82,7 +82,7 @@
                 />
                 <div class="flex flex-col gap-1">
                   <div class="text-sm text-white">{{ product.title }}</div>
-                  <div class="text-[#40ffaa]">${{ (product.prices?.sale || product.prices?.regular || 0).toFixed(2) }}</div>
+                  <div class="text-[#40ffaa]">{{ product.priceLabel || '$0' }}</div>
                 </div>
               </li>
             </ul>
@@ -139,8 +139,9 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
+import { useShopProducts } from '~/composables/useShopProducts'
+import type { ShopProduct } from '~/composables/useShopProducts'
 import type { CartItem } from '~/types/cart'
 
 type Maybe<T> = T | null | undefined
@@ -161,16 +162,6 @@ interface QuickBuyConfig {
   enabled?: boolean
 }
 
-interface GoProduct {
-  id: number
-  default_variant_id?: number | null
-  title: string
-  slug: string
-  thumbnail: string
-  prices: { regular: number; sale: number }
-  stock: { quantity: number }
-}
-
 interface Selection {
   id: number
   variant_id?: number | null
@@ -187,15 +178,15 @@ const emit = defineEmits<{ close: [] }>()
 
 const step = ref(1)
 const query = ref('')
-const products = ref<GoProduct[]>([])
+const products = ref<ShopProduct[]>([])
 const loading = ref(false)
 const error = ref('')
 const selections = ref<Selection[]>([])
 
 let searchTimer: Maybe<number> = null
 
-const auth = useAuth()
 const { addToCart } = useCart()
+const { fetchShopProducts } = useShopProducts()
 
 const qbConfig = computed(() => { if (!props.config) throw new Error("[CRITICAL] config missing"); return props.config; })
 const steps = computed(() => { if (!qbConfig.value.steps) throw new Error("[CRITICAL] steps missing"); return qbConfig.value.steps; })
@@ -251,13 +242,15 @@ const fetchProducts = async () => {
   error.value = ''
 
   try {
-    const params = new URLSearchParams()
-    if (query.value) params.set('keyword', query.value)
-    params.set('per_page', '12')
-    params.set('status', 'active')
+    const params: Record<string, string | number> = {
+      per_page: 12,
+      status: 'active',
+    }
+    if (query.value) {
+      params.keyword = query.value
+    }
 
-    const res = await auth.request<any>(`/customer-service/products?${params.toString()}`)
-    if (!res.items) throw new Error("[CRITICAL] res.items missing")
+    const res = await fetchShopProducts(params)
     products.value = res.items
   } catch (err) {
     error.value = (err as Error).message || String(err)
@@ -332,17 +325,16 @@ const goToCheckout = () => {
   emit('close')
 }
 
-const selectProduct = (product: GoProduct) => {
-  const price = product.prices?.sale || product.prices?.regular || 0
+const selectProduct = (product: ShopProduct) => {
   selections.value.push({
     id: product.id,
-    variant_id: product.default_variant_id || null,
+    variant_id: product.defaultVariantId || null,
     title: product.title,
     slug: product.slug,
-    thumbnail: product.thumbnail,
+    thumbnail: product.thumbnail || '',
     qty: 1,
     weight_g: 0,
-    price
+    price: product.priceNumber
   })
   next()
 }

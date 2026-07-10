@@ -32,23 +32,36 @@
         <div class="lg:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
            <NuxtLink 
               v-for="card in cards" 
-              :key="card.titleKey" 
-              to="/shop" 
+              :key="card.key" 
+              :to="card.url" 
               class="group block overflow-hidden rounded-2xl premium-card relative hover:shadow-2xl hover:shadow-blue-900/20 transition-all duration-500"
            >
               <!-- Image Aspect -->
               <div class="relative aspect-[4/3] bg-slate-800 overflow-hidden">
+                 <img
+                   v-if="card.thumbnail"
+                   :src="card.thumbnail"
+                   :alt="card.title"
+                   class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                   loading="lazy"
+                 />
                  <!-- Placeholder Gradient / Image Slot -->
-                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_60%)] group-hover:scale-110 transition-transform duration-700 ease-out"></div>
+                 <div
+                   v-else
+                   class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_60%)] group-hover:scale-110 transition-transform duration-700 ease-out"
+                 ></div>
                  
                  <!-- Gradient Overlay -->
                  <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                  
                  <div class="absolute bottom-0 inset-x-0 p-5">
-                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">{{ t(card.titleKey) }}</h3>
-                    <p class="text-white/70 text-sm line-clamp-2 mb-3">{{ t(card.descriptionKey) }}</p>
-                    <div class="inline-block px-3 py-1 rounded-lg bg-white/10 backdrop-blur text-xs font-medium text-white/90 border border-white/10 group-hover:bg-blue-500/20 group-hover:border-blue-500/30 transition-colors">
-                       {{ t(card.priceKey) }}
+                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">{{ card.title }}</h3>
+                    <p class="text-white/70 text-sm line-clamp-2 mb-3">{{ card.description }}</p>
+                    <div
+                      v-if="card.price"
+                      class="inline-block px-3 py-1 rounded-lg bg-white/10 backdrop-blur text-xs font-medium text-white/90 border border-white/10 group-hover:bg-blue-500/20 group-hover:border-blue-500/30 transition-colors"
+                    >
+                       {{ card.price }}
                     </div>
                  </div>
               </div>
@@ -62,32 +75,63 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from '#imports'
+import { useAsyncData, useI18n } from '#imports'
+import { useShopProducts } from '~/composables/useShopProducts'
+import type { ShopProduct } from '~/composables/useShopProducts'
 
 const { t } = useI18n()
+const { fetchFeaturedShopProducts } = useShopProducts()
+
+interface FeaturedProductCard {
+  key: string
+  title: string
+  description: string
+  price: string
+  url: string
+  thumbnail?: string
+}
+
+const { data: featuredProductsData } = await useAsyncData(
+  'home-featured-products',
+  () => fetchFeaturedShopProducts({
+    page_size: 4,
+    status: 'active',
+  }),
+  {
+    default: () => ({
+      items: [],
+      raw: null,
+    }),
+  }
+)
+
+const featuredProducts = computed<ShopProduct[]>(() => {
+  const items = featuredProductsData.value?.items
+  return Array.isArray(items) ? items : []
+})
+
+const dynamicCards = computed<FeaturedProductCard[]>(() =>
+  featuredProducts.value.slice(0, 4).map((product) => ({
+    key: `product-${product.id}`,
+    title: product.title,
+    description: product.description || t('home.featuredProducts.subtitle'),
+    price: product.priceLabel,
+    url: product.url,
+    thumbnail: product.thumbnail,
+  }))
+)
+
+const fallbackCards = computed<FeaturedProductCard[]>(() => {
+  return [0, 1, 2, 3].map((index) => ({
+    key: `fallback-${index}`,
+    title: t(`home.featuredProducts.items.${index}.title`),
+    description: t(`home.featuredProducts.items.${index}.description`),
+    price: t(`home.featuredProducts.items.${index}.price`),
+    url: '/shop',
+  }))
+})
 
 const cards = computed(() => {
-  return [
-    {
-      titleKey: 'home.featuredProducts.items.0.title',
-      descriptionKey: 'home.featuredProducts.items.0.description',
-      priceKey: 'home.featuredProducts.items.0.price',
-    },
-    {
-      titleKey: 'home.featuredProducts.items.1.title',
-      descriptionKey: 'home.featuredProducts.items.1.description',
-      priceKey: 'home.featuredProducts.items.1.price',
-    },
-    {
-      titleKey: 'home.featuredProducts.items.2.title',
-      descriptionKey: 'home.featuredProducts.items.2.description',
-      priceKey: 'home.featuredProducts.items.2.price',
-    },
-    {
-      titleKey: 'home.featuredProducts.items.3.title',
-      descriptionKey: 'home.featuredProducts.items.3.description',
-      priceKey: 'home.featuredProducts.items.3.price',
-    },
-  ]
+  return dynamicCards.value.length > 0 ? dynamicCards.value : fallbackCards.value
 })
 </script>

@@ -77,19 +77,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRuntimeConfig } from '#imports'
 import { useCart } from '~/composables/useCart'
-
-interface StripProduct {
-  id: number
-  defaultVariantId?: number | null
-  title: string
-  slug: string
-  url: string
-  thumbnail?: string
-  priceNumber: number
-  priceLabel: string
-}
+import { useShopProducts } from '~/composables/useShopProducts'
+import type { ShopProduct } from '~/composables/useShopProducts'
 
 const props = defineProps<{
   categorySlug: string
@@ -99,13 +89,14 @@ const props = defineProps<{
   showAddToCart?: boolean
 }>()
 
-const products = ref<StripProduct[]>([])
+const products = ref<ShopProduct[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
 const { addToCart, openCart } = useCart()
+const { fetchShopProducts, toCartItem } = useShopProducts()
 
 const perPage = computed(() => props.perPage ?? 12)
 const showAddToCart = computed(() => props.showAddToCart ?? true)
@@ -127,44 +118,14 @@ const loadProducts = async () => {
   error.value = null
 
   try {
-    const config = useRuntimeConfig()
-    const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
-
     const productParams: Record<string, any> = {
       keyword: categoryKeyword.value,
       per_page: perPage.value,
       status: 'active',
     }
 
-    const response = await $fetch<any>(`${base}/customer-service/products`, {
-      params: productParams,
-    })
-
-    if (response && Array.isArray(response.items)) {
-      products.value = response.items.map((item: any) => {
-        const sale = Number(item?.prices?.sale || 0)
-        const regular = Number(item?.prices?.regular || 0)
-        const priceNumber = sale > 0 ? sale : regular > 0 ? regular : 0
-
-        let priceLabel = ''
-        if (priceNumber > 0) {
-          priceLabel = `$${priceNumber}`
-        }
-
-        return {
-          id: item.id,
-          defaultVariantId: item.default_variant_id || null,
-          title: item.title,
-          slug: item.slug || String(item.id),
-          url: `/shop/${item.slug || item.id}`,
-          thumbnail: item.thumbnail,
-          priceNumber,
-          priceLabel,
-        } as StripProduct
-      })
-    } else {
-      products.value = []
-    }
+    const response = await fetchShopProducts(productParams)
+    products.value = response.items
   } catch (e: any) {
     console.error('Failed to load products:', e)
     error.value = e?.data?.message || 'Failed to load products.'
@@ -174,20 +135,10 @@ const loadProducts = async () => {
   }
 }
 
-const handleAddToCart = (product: StripProduct) => {
+const handleAddToCart = (product: ShopProduct) => {
   if (!product || !product.id) return
 
-  const price = Number(product.priceNumber || 0)
-
-  const result = addToCart({
-    id: product.id,
-    product_id: product.id,
-    variant_id: product.defaultVariantId || null,
-    title: product.title,
-    slug: product.slug,
-    price,
-    thumbnail: product.thumbnail,
-  })
+  const result = addToCart(toCartItem(product))
 
   if (result?.success) {
     openCart()
