@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"tanzanite/internal/service"
@@ -83,17 +82,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // CreateUser 创建用户
 // POST /api/admin/users
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	var req struct {
-		Email     string `json:"email" binding:"required,email"`
-		Username  string `json:"username" binding:"required,min=3,max=50"`
-		Password  string `json:"password" binding:"required,min=6"`
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Role      string `json:"role" binding:"required,oneof=user admin manager editor support viewer"`
-		Locale    string `json:"locale"`
-		Status    string `json:"status" binding:"required,oneof=active inactive suspended"`
-	}
-
+	var req userCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -135,17 +124,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Email     string `json:"email" binding:"omitempty,email"`
-		Username  string `json:"username" binding:"omitempty,min=3,max=50"`
-		Password  string `json:"password" binding:"omitempty,min=6"`
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Role      string `json:"role" binding:"omitempty,oneof=user admin manager editor support viewer"`
-		Locale    string `json:"locale"`
-		Status    string `json:"status" binding:"omitempty,oneof=active inactive suspended"`
-	}
-
+	var req userUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -212,10 +191,7 @@ func (h *UserHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Status string `json:"status" binding:"required,oneof=active inactive suspended"`
-	}
-
+	var req userStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -252,10 +228,7 @@ func (h *UserHandler) GetUserStats(c *gin.Context) {
 // BatchDeleteUsers 批量删除用户
 // POST /api/admin/users/batch-delete
 func (h *UserHandler) BatchDeleteUsers(c *gin.Context) {
-	var req struct {
-		UserIDs []uint `json:"user_ids" binding:"required,min=1"`
-	}
-
+	var req userBatchDeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -278,48 +251,4 @@ func (h *UserHandler) BatchDeleteUsers(c *gin.Context) {
 		"deleted": deleted,
 		"total":   len(req.UserIDs),
 	})
-}
-
-func currentAdminActor(c *gin.Context) (uint, string, bool) {
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		return 0, "", false
-	}
-
-	userID, ok := userIDValue.(uint)
-	if !ok || userID == 0 {
-		return 0, "", false
-	}
-
-	roleValue, exists := c.Get("user_role")
-	if !exists {
-		roleValue, exists = c.Get("role")
-	}
-	if !exists {
-		return 0, "", false
-	}
-
-	role, ok := roleValue.(string)
-	return userID, role, ok && role != ""
-}
-
-func respondUserServiceError(c *gin.Context, err error, fallback string) {
-	switch {
-	case errors.Is(err, service.ErrUserNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-	case errors.Is(err, service.ErrEmailExists):
-		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
-	case errors.Is(err, service.ErrUsernameExists):
-		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
-	case errors.Is(err, service.ErrSelfDelete):
-		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete yourself"})
-	case errors.Is(err, service.ErrSelfStatusChange):
-		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot modify your own status"})
-	case errors.Is(err, service.ErrSelfRoleChange):
-		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot modify your own role"})
-	case errors.Is(err, service.ErrRoleForbidden):
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient privileges for requested role change"})
-	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fallback})
-	}
 }
