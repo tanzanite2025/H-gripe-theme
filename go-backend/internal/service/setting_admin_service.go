@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"tanzanite/internal/domain/setting"
 )
 
@@ -19,12 +18,7 @@ func (s *SettingService) Set(key, value, settingType, group, locale string) erro
 		return err
 	}
 
-	cacheKey := fmt.Sprintf("setting:%s:%s", key, locale)
-	_ = s.cache.Delete(cacheKey)
-
-	groupCacheKey := fmt.Sprintf("settings:%s:%s", group, locale)
-	_ = s.cache.Delete(groupCacheKey)
-
+	s.invalidateSettingCaches(key, group, locale)
 	return nil
 }
 
@@ -38,7 +32,7 @@ func (s *SettingService) SetJSON(key string, value interface{}, group, locale st
 }
 
 func (s *SettingService) GetAll(locale string) ([]setting.Setting, error) {
-	cacheKey := fmt.Sprintf("settings:all:%s", locale)
+	cacheKey := settingsAllCacheKey(locale)
 
 	var settings []setting.Setting
 	if err := s.cache.Get(cacheKey, &settings); err == nil {
@@ -56,7 +50,7 @@ func (s *SettingService) GetAll(locale string) ([]setting.Setting, error) {
 }
 
 func (s *SettingService) GetAllPublic(locale string) ([]setting.Setting, error) {
-	cacheKey := fmt.Sprintf("settings:public:%s", locale)
+	cacheKey := settingsPublicCacheKey(locale)
 
 	var settings []setting.Setting
 	if err := s.cache.Get(cacheKey, &settings); err == nil {
@@ -74,7 +68,7 @@ func (s *SettingService) GetAllPublic(locale string) ([]setting.Setting, error) 
 }
 
 func (s *SettingService) GetByGroup(group, locale string) ([]setting.Setting, error) {
-	cacheKey := fmt.Sprintf("settings:group:%s:%s", group, locale)
+	cacheKey := settingsGroupCacheKey(group, locale)
 
 	var settings []setting.Setting
 	if err := s.cache.Get(cacheKey, &settings); err == nil {
@@ -97,38 +91,30 @@ func (s *SettingService) BatchSet(settings []setting.Setting) error {
 	}
 
 	for _, st := range settings {
-		cacheKey := fmt.Sprintf("setting:%s:%s", st.Key, st.Locale)
-		_ = s.cache.Delete(cacheKey)
-
-		groupCacheKey := fmt.Sprintf("settings:group:%s:%s", st.Group, st.Locale)
-		_ = s.cache.Delete(groupCacheKey)
-
-		allCacheKey := fmt.Sprintf("settings:all:%s", st.Locale)
-		_ = s.cache.Delete(allCacheKey)
-
-		publicCacheKey := fmt.Sprintf("settings:public:%s", st.Locale)
-		_ = s.cache.Delete(publicCacheKey)
+		s.invalidateSettingCaches(st.Key, st.Group, st.Locale)
 	}
 
 	return nil
 }
 
 func (s *SettingService) Delete(key, locale string) error {
+	st, _ := s.settingRepo.Get(key, locale)
+
 	if err := s.settingRepo.Delete(key, locale); err != nil {
 		return err
 	}
 
-	cacheKey := fmt.Sprintf("setting:%s:%s", key, locale)
-	_ = s.cache.Delete(cacheKey)
+	group := ""
+	if st != nil {
+		group = st.Group
+	}
 
-	allCacheKey := fmt.Sprintf("settings:all:%s", locale)
-	_ = s.cache.Delete(allCacheKey)
-
+	s.invalidateSettingCaches(key, group, locale)
 	return nil
 }
 
 func (s *SettingService) GetGroups() ([]string, error) {
-	cacheKey := "settings:groups"
+	cacheKey := settingsGroupsCacheKey()
 
 	var groups []string
 	if err := s.cache.Get(cacheKey, &groups); err == nil {

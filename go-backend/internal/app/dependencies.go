@@ -49,6 +49,7 @@ type Services struct {
 	Cart               *service.CartService
 	Setting            *service.SettingService
 	AdminSettings      *service.AdminSettingsService
+	AdminPublicChat    *service.AdminPublicChatAgentService
 	FAQ                *service.FAQService
 	Gallery            *service.GalleryService
 	Registration       *service.RegistrationService
@@ -130,7 +131,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Spoke:     service.NewSpokeService(repos.Spoke),
 		Chat:      service.NewChatService(repos.Chat),
 	}
-	services.AdminSettings = service.NewAdminSettingsService(services.Setting, repos.User)
+	services.AdminSettings = service.NewAdminSettingsService(services.Setting)
+	services.AdminPublicChat = service.NewAdminPublicChatAgentService(repos.User)
 	services.Order = service.NewOrderService(
 		txManager,
 		repos.Order,

@@ -16,16 +16,6 @@ func NewSettingsHandler(settingsService *service.AdminSettingsService) *Settings
 	return &SettingsHandler{settingsService: settingsService}
 }
 
-func (h *SettingsHandler) ListPublicChatAgents(c *gin.Context) {
-	overview, err := h.settingsService.ListPublicChatAgents(100)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch public chat agents"})
-		return
-	}
-
-	c.JSON(http.StatusOK, overview)
-}
-
 func (h *SettingsHandler) GetAllSettings(c *gin.Context) {
 	locale := c.DefaultQuery("locale", "en")
 	group := c.Query("group")

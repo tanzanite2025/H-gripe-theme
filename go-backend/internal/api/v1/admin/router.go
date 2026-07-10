@@ -45,6 +45,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	ticketHandler := NewTicketHandler(services.Ticket)
 	marketingHandler := NewMarketingHandler(marketingService)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
+	publicChatAgentHandler := NewPublicChatAgentHandler(services.AdminPublicChat)
 	auditHandler := NewAuditHandler(services.Audit)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	registrationHandler := NewRegistrationHandler(registrationService)
@@ -322,7 +323,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			{
 				settingsGroup.GET("", settingsHandler.GetAllSettings)
 				settingsGroup.GET("/groups", settingsHandler.GetGroups)
-				settingsGroup.GET("/public-chat-agents", settingsHandler.ListPublicChatAgents)
+				settingsGroup.GET("/public-chat-agents", publicChatAgentHandler.ListPublicChatAgents)
 				settingsGroup.PUT("", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.UpdateSetting)
 				settingsGroup.POST("/batch", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.BatchUpdateSettings)
 				settingsGroup.DELETE("/:key", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.DeleteSetting)
