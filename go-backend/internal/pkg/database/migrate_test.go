@@ -19,6 +19,9 @@ import (
 )
 
 var upMigrationNamePattern = regexp.MustCompile(`^\d+_[a-z0-9_]+\.up\.sql$`)
+var unsupportedMigrationSyntaxPattern = regexp.MustCompile(
+	`(?i)\bAUTO_INCREMENT\b|\bUNSIGNED\b|\bUNIX_TIMESTAMP\b|\bUNIQUE\s+KEY\b|\bENGINE=|\+goose`,
+)
 
 func TestSQLMigrationFilesFollowGolangMigrateConvention(t *testing.T) {
 	migrationDir := filepath.Join("..", "..", "..", "migrations")
@@ -35,6 +38,14 @@ func TestSQLMigrationFilesFollowGolangMigrateConvention(t *testing.T) {
 		if !upMigrationNamePattern.MatchString(entry.Name()) {
 			t.Errorf("migration %q does not follow <version>_<name>.up.sql", entry.Name())
 			continue
+		}
+		contents, err := os.ReadFile(filepath.Join(migrationDir, entry.Name()))
+		if err != nil {
+			t.Errorf("read migration %q: %v", entry.Name(), err)
+			continue
+		}
+		if unsupportedMigrationSyntaxPattern.Match(contents) {
+			t.Errorf("migration %q contains unsupported MySQL or Goose syntax", entry.Name())
 		}
 
 		versionText, _, _ := strings.Cut(entry.Name(), "_")
@@ -161,6 +172,7 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 		"warranty_claims",
 		"tickets",
 		"ticket_messages",
+		"browsing_history",
 	}
 	for _, table := range emptyBusinessTables {
 		var count int

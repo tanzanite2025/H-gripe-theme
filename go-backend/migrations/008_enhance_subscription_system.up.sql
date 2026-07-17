@@ -11,7 +11,8 @@ ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMP NULL;
 
 -- 为现有记录生成退订令牌
 UPDATE subscriptions 
-SET unsub_token = MD5(CONCAT(email, UNIX_TIMESTAMP(), RAND()))
+SET unsub_token = MD5(email || id::text || clock_timestamp()::text || random()::text)
+    || MD5(random()::text || clock_timestamp()::text || id::text)
 WHERE unsub_token IS NULL OR unsub_token = '';
 
 -- 为现有记录设置订阅时间
