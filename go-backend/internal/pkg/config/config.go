@@ -215,7 +215,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("database.driver", "DB_DRIVER", "DATABASE_DRIVER")
 	_ = viper.BindEnv("database.host", "DB_HOST", "DATABASE_HOST")
 	_ = viper.BindEnv("database.port", "DB_PORT", "DATABASE_PORT")
-	_ = viper.BindEnv("database.username", "DB_USER", "DB_USERNAME", "DATABASE_USERNAME")
+	_ = viper.BindEnv("database.username", "DB_USERNAME", "DATABASE_USERNAME")
 	_ = viper.BindEnv("database.password", "DB_PASSWORD", "DATABASE_PASSWORD")
 	_ = viper.BindEnv("database.database", "DB_NAME", "DATABASE_NAME")
 	_ = viper.BindEnv("database.auto_migrate", "DB_AUTO_MIGRATE", "DATABASE_AUTO_MIGRATE")

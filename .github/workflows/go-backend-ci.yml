@@ -81,7 +81,7 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USER: tanzanite
+          DB_USERNAME: tanzanite
           DB_PASSWORD: tanzanite_test
           DB_NAME: tanzanite_test
           REDIS_HOST: localhost
