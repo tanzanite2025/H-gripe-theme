@@ -40,6 +40,10 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon', '@nuxt/fonts'],
 
+  icon: {
+    localApiEndpoint: '/_nuxt_icon',
+  },
+
   i18n: {
     restructureDir: 'app',
     locales,
