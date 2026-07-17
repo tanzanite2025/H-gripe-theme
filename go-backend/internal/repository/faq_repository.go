@@ -4,6 +4,7 @@ import (
 	"tanzanite/internal/domain/faq"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type FAQRepository struct {
@@ -63,7 +64,12 @@ func (r *FAQRepository) List(locale, pageID, category, status string, offset, li
 		return nil, 0, err
 	}
 
-	err := query.Order("`order` ASC, created_at DESC").Offset(offset).Limit(limit).Find(&faqs).Error
+	err := query.
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&faqs).Error
 	return faqs, total, err
 }
 
@@ -94,7 +100,9 @@ func (r *FAQRepository) Search(keyword, locale string, offset, limit int) ([]faq
 		return nil, 0, err
 	}
 
-	err := query.Order("`order` ASC, view_count DESC, created_at DESC").
+	err := query.
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).
+		Order("view_count DESC, created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&faqs).Error
@@ -128,7 +136,8 @@ func (r *FAQRepository) IncrementViewCount(id uint) error {
 func (r *FAQRepository) GetByCategory(category, locale string) ([]faq.FAQ, error) {
 	var faqs []faq.FAQ
 	err := r.db.Where("category = ? AND locale = ? AND status = ?", category, locale, "published").
-		Order("`order` ASC, created_at DESC").
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).
+		Order("created_at DESC").
 		Find(&faqs).Error
 	return faqs, err
 }
