@@ -411,7 +411,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				authRegistration.PUT("/:id", registrationHandler.UpdateRegistration)
 				authRegistration.POST("/warranty-claims", registrationHandler.CreateWarrantyClaim)
 				authRegistration.GET("/warranty-claims/:id", registrationHandler.GetWarrantyClaim)
-				authRegistration.GET("/:registration_id/warranty-claims", registrationHandler.ListRegistrationClaims)
+				authRegistration.GET("/:id/warranty-claims", registrationHandler.ListRegistrationClaims)
 			}
 		}
 

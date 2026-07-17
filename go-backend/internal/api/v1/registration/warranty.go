@@ -146,7 +146,7 @@ func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 		return
 	}
 
-	registrationID, err := strconv.ParseUint(c.Param("registration_id"), 10, 32)
+	registrationID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		apierror.RespondBadRequest(c, "Invalid registration ID")
 		return
