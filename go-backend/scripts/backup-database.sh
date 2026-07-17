@@ -17,7 +17,7 @@ BACKUP_FILE="tanzanite_backup_${TIMESTAMP}.sql.gz"
 DB_HOST="${DB_HOST:-postgres.production}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tanzanite}"
-DB_USER="${DB_USER:-tanzanite}"
+DB_USERNAME="${DB_USERNAME:-tanzanite}"
 DB_PASSWORD="${DB_PASSWORD}"
 
 # 日志函数
@@ -42,7 +42,7 @@ export PGPASSWORD="${DB_PASSWORD}"
 if pg_dump \
     -h "${DB_HOST}" \
     -p "${DB_PORT}" \
-    -U "${DB_USER}" \
+    -U "${DB_USERNAME}" \
     -d "${DB_NAME}" \
     --format=plain \
     --no-owner \

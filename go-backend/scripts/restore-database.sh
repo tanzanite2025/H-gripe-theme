@@ -14,7 +14,7 @@ BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
 DB_HOST="${DB_HOST:-postgres.production}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tanzanite}"
-DB_USER="${DB_USER:-tanzanite}"
+DB_USERNAME="${DB_USERNAME:-tanzanite}"
 DB_PASSWORD="${DB_PASSWORD}"
 
 # 日志函数
@@ -83,7 +83,7 @@ export PGPASSWORD="${DB_PASSWORD}"
 
 # 检查数据库连接
 log "Testing database connection..."
-if ! psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d postgres -c "SELECT 1" &>/dev/null; then
+if ! psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d postgres -c "SELECT 1" &>/dev/null; then
     error "Cannot connect to database server"
     exit 1
 fi
@@ -91,7 +91,7 @@ log "Database connection: OK"
 
 # 终止活动连接
 log "Terminating active connections..."
-psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d postgres <<EOF
+psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d postgres <<EOF
 SELECT pg_terminate_backend(pid)
 FROM pg_stat_activity
 WHERE datname = '${DB_NAME}'
@@ -100,16 +100,16 @@ EOF
 
 # 删除并重建数据库
 log "Dropping database..."
-psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d postgres -c "DROP DATABASE IF EXISTS ${DB_NAME};"
+psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d postgres -c "DROP DATABASE IF EXISTS ${DB_NAME};"
 
 log "Creating database..."
-psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d postgres -c "CREATE DATABASE ${DB_NAME};"
+psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d postgres -c "CREATE DATABASE ${DB_NAME};"
 
 # 恢复数据
 log "Restoring data..."
 if [[ "${BACKUP_FILE}" == *.gz ]]; then
     # 压缩文件
-    if gunzip -c "${BACKUP_FILE}" | psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}" 2>&1; then
+    if gunzip -c "${BACKUP_FILE}" | psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" 2>&1; then
         log "Restore completed successfully"
     else
         error "Restore failed!"
@@ -117,7 +117,7 @@ if [[ "${BACKUP_FILE}" == *.gz ]]; then
     fi
 else
     # 未压缩文件
-    if psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}" < "${BACKUP_FILE}" 2>&1; then
+    if psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" < "${BACKUP_FILE}" 2>&1; then
         log "Restore completed successfully"
     else
         error "Restore failed!"
@@ -127,12 +127,12 @@ fi
 
 # 验证恢复
 log "Verifying restore..."
-TABLE_COUNT=$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';")
+TABLE_COUNT=$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';")
 log "Tables restored: ${TABLE_COUNT}"
 
 # 运行ANALYZE以更新统计信息
 log "Analyzing database..."
-psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}" -c "ANALYZE;"
+psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -c "ANALYZE;"
 
 log "Database restore completed successfully"
 

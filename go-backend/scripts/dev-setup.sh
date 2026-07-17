@@ -121,7 +121,7 @@ APP_DEBUG=true
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=tanzanite_dev
-DB_USER=tanzanite
+DB_USERNAME=tanzanite
 DB_PASSWORD=tanzanite_dev_password
 DB_SSLMODE=disable
 
