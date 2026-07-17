@@ -27,7 +27,10 @@ func (r *SettingRepository) Get(key, locale string) (*setting.Setting, error) {
 // GetByGroup 获取分组设置
 func (r *SettingRepository) GetByGroup(group, locale string) ([]setting.Setting, error) {
 	var settings []setting.Setting
-	err := r.db.Where("group = ? AND locale = ?", group, locale).Find(&settings).Error
+	err := r.db.Where(map[string]interface{}{
+		"group":  group,
+		"locale": locale,
+	}).Find(&settings).Error
 	return settings, err
 }
 
@@ -101,6 +104,6 @@ func (r *SettingRepository) BatchSet(settings []setting.Setting) error {
 // GetGroups 获取所有分组
 func (r *SettingRepository) GetGroups() ([]string, error) {
 	var groups []string
-	err := r.db.Model(&setting.Setting{}).Distinct("group").Pluck("group", &groups).Error
+	err := r.db.Model(&setting.Setting{}).Distinct().Pluck("group", &groups).Error
 	return groups, err
 }

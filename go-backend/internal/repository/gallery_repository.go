@@ -4,6 +4,7 @@ import (
 	"tanzanite/internal/domain/gallery"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type GalleryRepository struct {
@@ -25,7 +26,7 @@ func (r *GalleryRepository) CreateGallery(g *gallery.Gallery) error {
 func (r *GalleryRepository) FindGalleryByID(id uint) (*gallery.Gallery, error) {
 	var g gallery.Gallery
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return db.Order("`order` ASC")
+		return db.Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}})
 	}).First(&g, id).Error
 	if err != nil {
 		return nil, err
@@ -44,7 +45,7 @@ func (r *GalleryRepository) FindAllGalleries(page, pageSize int) ([]gallery.Gall
 
 	offset := (page - 1) * pageSize
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return db.Order("`order` ASC").Limit(1) // 只加载封面图
+		return db.Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).Limit(1) // 只加载封面图
 	}).Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&galleries).Error
 
 	return galleries, total, err
@@ -85,7 +86,9 @@ func (r *GalleryRepository) FindGalleryImageByID(id uint) (*gallery.GalleryImage
 func (r *GalleryRepository) FindImagesByGalleryID(galleryID uint) ([]gallery.GalleryImage, error) {
 	var images []gallery.GalleryImage
 	err := r.db.Where("gallery_id = ?", galleryID).
-		Order("`order` ASC, created_at ASC").Find(&images).Error
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).
+		Order("created_at ASC").
+		Find(&images).Error
 	return images, err
 }
 
@@ -123,7 +126,7 @@ func (r *GalleryRepository) UpdateGalleryImage(img *gallery.GalleryImage) error 
 // UpdateImageOrder 更新图片排序
 func (r *GalleryRepository) UpdateImageOrder(id uint, order int) error {
 	return r.db.Model(&gallery.GalleryImage{}).Where("id = ?", id).
-		Update("`order`", order).Error
+		Update("order", order).Error
 }
 
 // DeleteGalleryImage 删除图片
