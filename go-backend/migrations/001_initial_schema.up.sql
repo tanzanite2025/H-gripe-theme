@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at TIMESTAMP
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_users_deleted_at ON users(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at);
 
 -- Posts Table
 CREATE TABLE IF NOT EXISTS posts (
@@ -45,11 +45,11 @@ CREATE TABLE IF NOT EXISTS posts (
     FOREIGN KEY (parent_id) REFERENCES posts(id)
 );
 
-CREATE UNIQUE INDEX idx_posts_slug_locale ON posts(slug, locale);
-CREATE INDEX idx_posts_status ON posts(status);
-CREATE INDEX idx_posts_locale ON posts(locale);
-CREATE INDEX idx_posts_author_id ON posts(author_id);
-CREATE INDEX idx_posts_deleted_at ON posts(deleted_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_posts_slug_locale ON posts(slug, locale);
+CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status);
+CREATE INDEX IF NOT EXISTS idx_posts_locale ON posts(locale);
+CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_posts_deleted_at ON posts(deleted_at);
 
 -- Categories Table
 CREATE TABLE IF NOT EXISTS categories (
@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS categories (
     FOREIGN KEY (parent_id) REFERENCES categories(id)
 );
 
-CREATE UNIQUE INDEX idx_category_slug_locale ON categories(slug, locale);
-CREATE INDEX idx_categories_deleted_at ON categories(deleted_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_category_slug_locale ON categories(slug, locale);
+CREATE INDEX IF NOT EXISTS idx_categories_deleted_at ON categories(deleted_at);
 
 -- Post Categories (Many-to-Many)
 CREATE TABLE IF NOT EXISTS post_categories (
@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS post_categories (
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_post_categories_post_id ON post_categories(post_id);
-CREATE INDEX idx_post_categories_category_id ON post_categories(category_id);
+CREATE INDEX IF NOT EXISTS idx_post_categories_post_id ON post_categories(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_categories_category_id ON post_categories(category_id);
 
 -- Products Table
 CREATE TABLE IF NOT EXISTS products (
@@ -106,11 +106,11 @@ CREATE TABLE IF NOT EXISTS products (
     FOREIGN KEY (parent_id) REFERENCES products(id)
 );
 
-CREATE UNIQUE INDEX idx_product_slug_locale ON products(slug, locale);
-CREATE INDEX idx_products_sku ON products(sku);
-CREATE INDEX idx_products_status ON products(status);
-CREATE INDEX idx_products_locale ON products(locale);
-CREATE INDEX idx_products_deleted_at ON products(deleted_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_slug_locale ON products(slug, locale);
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+CREATE INDEX IF NOT EXISTS idx_products_locale ON products(locale);
+CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON products(deleted_at);
 
 -- Product Images Table
 CREATE TABLE IF NOT EXISTS product_images (
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS product_images (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_product_images_product_id ON product_images(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id);
 
 -- Carts Table
 CREATE TABLE IF NOT EXISTS carts (
@@ -136,9 +136,9 @@ CREATE TABLE IF NOT EXISTS carts (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE INDEX idx_carts_user_id ON carts(user_id);
-CREATE INDEX idx_carts_session_id ON carts(session_id);
-CREATE INDEX idx_carts_deleted_at ON carts(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_carts_user_id ON carts(user_id);
+CREATE INDEX IF NOT EXISTS idx_carts_session_id ON carts(session_id);
+CREATE INDEX IF NOT EXISTS idx_carts_deleted_at ON carts(deleted_at);
 
 -- Cart Items Table
 CREATE TABLE IF NOT EXISTS cart_items (
@@ -153,8 +153,8 @@ CREATE TABLE IF NOT EXISTS cart_items (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
-CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
-CREATE INDEX idx_cart_items_product_id ON cart_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON cart_items(cart_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON cart_items(product_id);
 
 -- Settings Table
 CREATE TABLE IF NOT EXISTS settings (
@@ -169,9 +169,9 @@ CREATE TABLE IF NOT EXISTS settings (
     deleted_at TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_setting_key_locale ON settings(key, locale);
-CREATE INDEX idx_settings_group ON settings("group");
-CREATE INDEX idx_settings_deleted_at ON settings(deleted_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_setting_key_locale ON settings(key, locale);
+CREATE INDEX IF NOT EXISTS idx_settings_group ON settings("group");
+CREATE INDEX IF NOT EXISTS idx_settings_deleted_at ON settings(deleted_at);
 
 -- Media Table
 CREATE TABLE IF NOT EXISTS media (
@@ -191,8 +191,8 @@ CREATE TABLE IF NOT EXISTS media (
     FOREIGN KEY (uploader_id) REFERENCES users(id)
 );
 
-CREATE INDEX idx_media_uploader_id ON media(uploader_id);
-CREATE INDEX idx_media_deleted_at ON media(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_media_uploader_id ON media(uploader_id);
+CREATE INDEX IF NOT EXISTS idx_media_deleted_at ON media(deleted_at);
 
 -- FAQs Table
 CREATE TABLE IF NOT EXISTS faqs (
@@ -211,10 +211,10 @@ CREATE TABLE IF NOT EXISTS faqs (
     FOREIGN KEY (parent_id) REFERENCES faqs(id)
 );
 
-CREATE INDEX idx_faqs_category ON faqs(category);
-CREATE INDEX idx_faqs_locale ON faqs(locale);
-CREATE INDEX idx_faqs_status ON faqs(status);
-CREATE INDEX idx_faqs_deleted_at ON faqs(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category);
+CREATE INDEX IF NOT EXISTS idx_faqs_locale ON faqs(locale);
+CREATE INDEX IF NOT EXISTS idx_faqs_status ON faqs(status);
+CREATE INDEX IF NOT EXISTS idx_faqs_deleted_at ON faqs(deleted_at);
 
 -- Subscriptions Table
 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -228,6 +228,6 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     deleted_at TIMESTAMP
 );
 
-CREATE INDEX idx_subscriptions_email ON subscriptions(email);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX idx_subscriptions_deleted_at ON subscriptions(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_email ON subscriptions(email);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_deleted_at ON subscriptions(deleted_at);

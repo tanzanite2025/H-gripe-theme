@@ -43,6 +43,14 @@ func main() {
 		_ = logger.Log.Sync()
 	}()
 
+	command := "serve"
+	if len(os.Args) > 1 {
+		if len(os.Args) != 2 || os.Args[1] != "migrate" {
+			logger.Fatal("unsupported command", zap.Strings("arguments", os.Args[1:]))
+		}
+		command = os.Args[1]
+	}
+
 	gin.SetMode(cfg.Server.Mode)
 
 	db, err := database.Init(cfg.Database)
@@ -50,22 +58,39 @@ func main() {
 		logger.Fatal("database init failed", zap.Error(err))
 	}
 
-	if cfg.Database.AutoMigrate {
-		if err := database.AutoMigrate(db, cfg.Server.Mode); err != nil {
-			logger.Fatal("database auto-migration failed", zap.Error(err))
+	sqlDB, err := db.DB()
+	if err != nil {
+		logger.Fatal("get database connection failed", zap.Error(err))
+	}
+	defer func() {
+		_ = sqlDB.Close()
+	}()
+
+	if command == "migrate" {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		migrationErr := database.PrepareSchema(ctx, db, &cfg.Database, cfg.Server.Mode)
+		cancel()
+		if migrationErr != nil {
+			logger.Fatal("database migration failed", zap.Error(migrationErr))
 		}
+		logger.Info("database migration completed")
+		return
 	}
 
-	sqlDB, err := db.DB()
-	if err == nil {
-		if err := database.RunSQLMigrations(sqlDB, &cfg.Database); err != nil {
-			if cfg.Server.Mode == gin.ReleaseMode {
-				logger.Fatal("SQL migrations failed", zap.Error(err))
-			}
-			logger.Warn("SQL migrations failed or skipped", zap.Error(err))
+	if cfg.Database.AutoMigrate {
+		if cfg.Server.Mode == gin.ReleaseMode {
+			logger.Fatal("DB_AUTO_MIGRATE must be false in release mode; run the migrate command before starting the API")
 		}
-	} else {
-		logger.Warn("failed to get sql.DB for migrations", zap.Error(err))
+		if cfg.Database.Driver == "postgres" {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+			migrationErr := database.PrepareSchema(ctx, db, &cfg.Database, cfg.Server.Mode)
+			cancel()
+			if migrationErr != nil {
+				logger.Fatal("database migration failed", zap.Error(migrationErr))
+			}
+		} else if err := database.AutoMigrate(db, cfg.Server.Mode); err != nil {
+			logger.Fatal("database auto-migration failed", zap.Error(err))
+		}
 	}
 
 	redisCache, err := cache.Init(cfg.Redis)

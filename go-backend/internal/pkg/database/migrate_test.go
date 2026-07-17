@@ -16,6 +16,9 @@ import (
 	"tanzanite/internal/pkg/config"
 
 	"github.com/lib/pq"
+	postgresdriver "gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 var upMigrationNamePattern = regexp.MustCompile(`^\d+_[a-z0-9_]+\.up\.sql$`)
@@ -70,7 +73,7 @@ func TestSQLMigrationFilesFollowGolangMigrateConvention(t *testing.T) {
 	}
 }
 
-func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
+func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	host := os.Getenv("DB_HOST")
 	username := os.Getenv("DB_USERNAME")
 	password := os.Getenv("DB_PASSWORD")
@@ -115,10 +118,17 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 		password,
 		databaseName,
 	)
-	testDB, err := sql.Open("postgres", testDSN)
+	gormDB, err := gorm.Open(postgresdriver.Open(testDSN), &gorm.Config{
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+	})
 	if err != nil {
 		_ = adminDB.Close()
-		t.Fatalf("open migration test database: %v", err)
+		t.Fatalf("open GORM migration test database: %v", err)
+	}
+	testDB, err := gormDB.DB()
+	if err != nil {
+		_ = adminDB.Close()
+		t.Fatalf("get migration test database: %v", err)
 	}
 	t.Cleanup(func() {
 		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -149,8 +159,11 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 	})
 
 	cfg := config.DatabaseConfig{Driver: "postgres"}
-	if err := RunSQLMigrations(testDB, &cfg); err != nil {
-		t.Fatalf("run SQL migrations: %v", err)
+	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
+		t.Fatalf("prepare fresh PostgreSQL schema: %v", err)
+	}
+	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
+		t.Fatalf("prepare existing PostgreSQL schema: %v", err)
 	}
 
 	var version int
@@ -160,6 +173,30 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 	}
 	if version != 13 || dirty {
 		t.Fatalf("unexpected migration state: version=%d dirty=%t", version, dirty)
+	}
+
+	requiredTables := []string{
+		"orders",
+		"order_items",
+		"transactions",
+		"product_attributes",
+		"product_variants",
+		"chat_messages",
+	}
+	for _, table := range requiredTables {
+		var exists bool
+		if err := testDB.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.tables
+				WHERE table_schema = 'public' AND table_name = $1
+			)
+		`, table).Scan(&exists); err != nil {
+			t.Fatalf("check table %s: %v", table, err)
+		}
+		if !exists {
+			t.Fatalf("required table %s does not exist", table)
+		}
 	}
 
 	emptyBusinessTables := []string{
