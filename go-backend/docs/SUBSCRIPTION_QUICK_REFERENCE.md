@@ -6,7 +6,7 @@ This guide covers the newsletter/subscription API surface.
 
 Run backend migrations through the normal backend startup/migration flow. The subscription schema is defined in:
 
-- `migrations/008_enhance_subscription_system.sql`
+- `migrations/008_enhance_subscription_system.up.sql`
 
 For local development:
 
