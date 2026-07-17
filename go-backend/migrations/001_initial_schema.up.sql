@@ -1,5 +1,5 @@
 -- Initial Database Schema for Tanzanite Go Backend
--- This is a reference SQL file. The actual migration is handled by GORM AutoMigrate in main.go
+-- Applied by golang-migrate during server startup.
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
