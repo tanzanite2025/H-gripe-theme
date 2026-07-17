@@ -56,14 +56,14 @@ The production project must keep these boundaries:
 
 ## Publish Images
 
-Push to `master` after CI passes. GitHub Actions publishes:
+Every commit pushed to `master` produces one complete deployable release. GitHub Actions validates the backend and both frontends, then publishes:
 
 - `ghcr.io/tanzanite2025/tanzanite-theme-api`
 - `ghcr.io/tanzanite2025/tanzanite-theme-storefront`
 - `ghcr.io/tanzanite2025/tanzanite-theme-admin`
 - `ghcr.io/tanzanite2025/tanzanite-theme-web`
 
-Production uses the immutable full tag `sha-<40-character-commit>` generated from the tested commit. The GHCR packages must be public or the VPS must have read-only registry credentials.
+Production uses the immutable full tag `sha-<40-character-commit>` generated from the tested commit. Publishing on every `master` commit is intentional: `deploy.sh` always resolves `origin/master`, so the branch head must always have a matching four-image release. The GHCR packages must be public or the VPS must have read-only registry credentials.
 
 `.github/workflows/go-backend-ci.yml` and `.github/workflows/ci.yml` are validation only. They must not publish production images or deploy Kubernetes. `.github/workflows/publish-images.yml` is the only production image publisher.
 
