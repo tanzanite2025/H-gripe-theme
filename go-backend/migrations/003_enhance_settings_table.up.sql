@@ -24,7 +24,7 @@ BEGIN
 END $$;
 
 -- 创建索引（如果不存在）
-CREATE INDEX IF NOT EXISTS idx_settings_group ON settings(group);
+CREATE INDEX IF NOT EXISTS idx_settings_group ON settings("group");
 CREATE INDEX IF NOT EXISTS idx_settings_is_public ON settings(is_public);
 
 -- 插入默认设置（如果不存在）
