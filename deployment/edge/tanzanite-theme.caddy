@@ -1,0 +1,9 @@
+tanzanite.site, www.tanzanite.site {
+    encode zstd gzip
+    reverse_proxy theme-web:8080
+}
+
+admin.tanzanite.site {
+    encode zstd gzip
+    reverse_proxy theme-web:8080
+}

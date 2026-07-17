@@ -1,5 +1,8 @@
-# 多阶段构建 - 构建阶段
-FROM golang:1.21-alpine AS builder
+# Multi-stage production build.
+FROM golang:1.25.1-alpine AS builder
+
+ARG VERSION=dev
+ARG BUILD_TIME=unknown
 
 # 安装必要的工具
 RUN apk add --no-cache git ca-certificates tzdata
@@ -18,12 +21,12 @@ COPY . .
 
 # 构建应用
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-w -s -X main.Version=${VERSION:-dev} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    -ldflags="-w -s -X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" \
     -o /app/server \
     ./cmd/server
 
-# 运行阶段 - 最小镜像
-FROM alpine:latest
+# Runtime image is pinned to avoid an unreviewed latest tag.
+FROM alpine:3.22
 
 # 安装ca证书和时区数据
 RUN apk --no-cache add ca-certificates tzdata
@@ -38,8 +41,9 @@ WORKDIR /app
 # 从构建阶段复制二进制文件
 COPY --from=builder /app/server /app/server
 
-# 复制配置文件（可选）
+# Production configuration and SQL migrations are runtime inputs.
 COPY --from=builder /app/config /app/config
+COPY --from=builder /app/migrations /app/migrations
 
 # 创建必要的目录
 RUN mkdir -p /app/logs /app/uploads && \
@@ -55,5 +59,4 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:9000/health || exit 1
 
-# 运行应用
 ENTRYPOINT ["/app/server"]

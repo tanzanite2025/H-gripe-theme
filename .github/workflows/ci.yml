@@ -1,42 +1,46 @@
-name: CI/CD Pipeline
+name: Frontend CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [master, main]
+    paths:
+      - "nuxt-i18n/**"
+      - "go-backend/web/admin/**"
+      - ".github/workflows/ci.yml"
   pull_request:
-    branches:
-      - main
+    branches: [master, main]
+    paths:
+      - "nuxt-i18n/**"
+      - "go-backend/web/admin/**"
+      - ".github/workflows/ci.yml"
 
 jobs:
-  backend:
+  build:
+    name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: go-backend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: storefront
+            path: nuxt-i18n
+          - name: admin
+            path: go-backend/web/admin
     steps:
-      - uses: actions/checkout@v7
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go-backend/go.mod
-      - name: Install dependencies
-        run: go mod tidy
-      - name: Run tests
-        run: go test ./...
+      - name: Checkout code
+        uses: actions/checkout@v7
 
-  frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: nuxt-i18n
-    steps:
-      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+
       - name: Install dependencies
+        working-directory: ${{ matrix.path }}
         run: npm ci
+
       - name: Build
+        working-directory: ${{ matrix.path }}
         run: npm run build

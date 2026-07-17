@@ -1,6 +1,9 @@
 package app
 
 import (
+	"fmt"
+	"os"
+
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/storage"
@@ -73,7 +76,7 @@ type Services struct {
 	Chat               *service.ChatService
 }
 
-func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) *Dependencies {
+func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) (*Dependencies, error) {
 	repos := Repositories{
 		User:               repository.NewUserRepository(db),
 		Post:               repository.NewPostRepository(db),
@@ -100,7 +103,14 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Subscription:       repository.NewSubscriptionRepository(db),
 	}
 
-	storageSvc, _ := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: "./uploads", BaseURL: cfg.Server.BaseURL})
+	storageConfig := storage.LoadConfigFromEnv()
+	if _, configured := os.LookupEnv("STORAGE_BASE_URL"); !configured {
+		storageConfig.BaseURL = cfg.Server.BaseURL
+	}
+	storageSvc, err := storage.NewStorageService(storageConfig)
+	if err != nil {
+		return nil, fmt.Errorf("initialize storage: %w", err)
+	}
 	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment)
 
 	services := Services{
@@ -144,5 +154,5 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Repositories: repos,
 		Services:     services,
 		Storage:      storageSvc,
-	}
+	}, nil
 }

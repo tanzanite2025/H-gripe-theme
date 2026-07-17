@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -24,11 +25,12 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port         string `mapstructure:"port"`
-	Mode         string `mapstructure:"mode"`
-	BaseURL      string `mapstructure:"base_url"`
-	ReadTimeout  int    `mapstructure:"read_timeout"`
-	WriteTimeout int    `mapstructure:"write_timeout"`
+	Port           string   `mapstructure:"port"`
+	Mode           string   `mapstructure:"mode"`
+	BaseURL        string   `mapstructure:"base_url"`
+	ReadTimeout    int      `mapstructure:"read_timeout"`
+	WriteTimeout   int      `mapstructure:"write_timeout"`
+	TrustedProxies []string `mapstructure:"trusted_proxies"`
 }
 
 type DatabaseConfig struct {
@@ -126,6 +128,13 @@ func Load(configFiles ...string) (*Config, error) {
 		}
 	}
 
+	if origins := strings.TrimSpace(os.Getenv("CORS_ORIGINS")); origins != "" {
+		viper.Set("cors.allowed_origins", splitEnvList(origins))
+	}
+	if proxies, configured := os.LookupEnv("TRUSTED_PROXIES"); configured {
+		viper.Set("server.trusted_proxies", splitEnvList(proxies))
+	}
+
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
@@ -145,6 +154,7 @@ func setDefaults() {
 	viper.SetDefault("server.base_url", "http://localhost:9000")
 	viper.SetDefault("server.read_timeout", 60)
 	viper.SetDefault("server.write_timeout", 60)
+	viper.SetDefault("server.trusted_proxies", []string{})
 
 	viper.SetDefault("database.driver", "postgres")
 	viper.SetDefault("database.host", "localhost")
@@ -199,6 +209,8 @@ func bindEnvironment() {
 	_ = viper.BindEnv("server.port", "SERVER_PORT")
 	_ = viper.BindEnv("server.mode", "SERVER_MODE")
 	_ = viper.BindEnv("server.base_url", "SERVER_BASE_URL")
+	_ = viper.BindEnv("server.read_timeout", "SERVER_READ_TIMEOUT")
+	_ = viper.BindEnv("server.write_timeout", "SERVER_WRITE_TIMEOUT")
 
 	_ = viper.BindEnv("database.driver", "DB_DRIVER", "DATABASE_DRIVER")
 	_ = viper.BindEnv("database.host", "DB_HOST", "DATABASE_HOST")
@@ -229,6 +241,17 @@ func bindEnvironment() {
 	_ = viper.BindEnv("log.output", "LOG_OUTPUT")
 
 	_ = viper.BindEnv("worker.enabled", "WORKER_ENABLED", "ASYNQ_WORKER_ENABLED")
+}
+
+func splitEnvList(value string) []string {
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 // GetDSN 获取数据库连接字符串

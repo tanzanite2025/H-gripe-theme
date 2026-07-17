@@ -1,5 +1,3 @@
-version: "3.8"
-
 networks:
   tanzanite-network:
     driver: bridge
@@ -84,6 +82,8 @@ services:
   frontend:
     build:
       context: ./nuxt-i18n
+      args:
+        API_INTERNAL_ORIGIN: http://backend:9000
     container_name: tanzanite-frontend
     ports:
       - "3000:3000"

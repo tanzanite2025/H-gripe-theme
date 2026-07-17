@@ -7,6 +7,7 @@ const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
 const publicApiBase = trimTrailingSlash(
   env.NUXT_PUBLIC_API_BASE || env.GO_API_BASE || env.API_BASE || ''
 )
+const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9000')
 
 export default defineNuxtConfig({
   extends: ['./layers/admin', './layers/shop'],
@@ -16,6 +17,9 @@ export default defineNuxtConfig({
 
   // Long cache for local Twemoji flags
   routeRules: {
+    '/api/**': {
+      proxy: `${internalApiOrigin}/api/**`
+    },
     '/twemoji/svg/**': {
       headers: {
         'cache-control': 'public, max-age=31536000, immutable'
@@ -74,7 +78,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/',
     buildAssetsDir: '_nuxt/',
-    cdnURL: process.env.CDN_URL || 'https://cdn.tanzanite.site/',
+    cdnURL: process.env.CDN_URL || undefined,
     head: {
       meta: [
         { charset: 'utf-8' },
@@ -87,7 +91,7 @@ export default defineNuxtConfig({
   ssr: true,
 
   nitro: {
-    preset: 'cloudflare-pages'
+    preset: env.NITRO_PRESET || 'node-server'
   },
 
   runtimeConfig: {
