@@ -31,7 +31,7 @@ var (
 )
 
 func main() {
-	cfg, err := config.Load()
+	cfg, err := config.Load(os.Getenv("CONFIG_FILE"))
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
@@ -59,6 +59,9 @@ func main() {
 	sqlDB, err := db.DB()
 	if err == nil {
 		if err := database.RunSQLMigrations(sqlDB, &cfg.Database); err != nil {
+			if cfg.Server.Mode == gin.ReleaseMode {
+				logger.Fatal("SQL migrations failed", zap.Error(err))
+			}
 			logger.Warn("SQL migrations failed or skipped", zap.Error(err))
 		}
 	} else {
@@ -124,6 +127,9 @@ func main() {
 
 func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) *gin.Engine {
 	router := gin.New()
+	if err := router.SetTrustedProxies(cfg.Server.TrustedProxies); err != nil {
+		logger.Fatal("trusted proxy configuration failed", zap.Error(err))
+	}
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORS(cfg.CORS))
@@ -143,7 +149,10 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 
 	health.RegisterRoutes(router.Group(""), db, redisCache.Client(), Version, BuildTime)
 
-	deps := app.NewDependencies(db, redisCache, cfg)
+	deps, err := app.NewDependencies(db, redisCache, cfg)
+	if err != nil {
+		logger.Fatal("dependency initialization failed", zap.Error(err))
+	}
 	v1.RegisterRoutes(router, deps, cfg)
 	admin.RegisterAdminRoutes(router, deps, cfg)
 

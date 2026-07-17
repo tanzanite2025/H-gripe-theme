@@ -120,6 +120,23 @@ Notes:
 docker compose --profile tools up -d adminer redis-commander
 ```
 
+The root Compose file is for local development only. It must not be deployed to Hostinger.
+
+## Production Deployment
+
+Hostinger production uses an isolated `tanzanite-theme` Compose project that joins the existing shared `tanzanite-edge` network. Only the shared Caddy gateway publishes ports `80/443`; Tanzanite PostgreSQL, Redis, API, storefront, and admin remain internal Docker services.
+
+Production entry points:
+
+- Compose: `compose.prod.yml`
+- Environment template: `deployment/production.env.example`
+- GHCR workflow: `.github/workflows/publish-images.yml`
+- Operations runbook: `docs/ops/hostinger-vps-docker-runbook.md`
+
+The ERP application is a separate project. Do not reuse its images, volumes, environment variables, database, or project name.
+
+The production template intentionally leaves payment gateways and outbound SMTP disabled. Their current packages are not yet wired and verified as provider-specific end-to-end production flows; see the runbook before enabling either integration.
+
 ## Testing
 
 Backend:
@@ -183,4 +200,4 @@ What should not be assumed without verification:
 - Full Kubernetes deployment readiness.
 - Any "microservice", "CQRS", "edge", or "AI search" claim unless proven in the current code path.
 
-Last updated: 2026-07-02.
+Last updated: 2026-07-17.
