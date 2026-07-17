@@ -45,22 +45,6 @@ CREATE INDEX IF NOT EXISTS idx_faqs_status ON faqs(status);
 CREATE INDEX IF NOT EXISTS idx_faqs_order ON faqs("order");
 CREATE INDEX IF NOT EXISTS idx_faqs_view_count ON faqs(view_count);
 
--- 插入示例 FAQ 数据（如果表为空）
-INSERT INTO faqs (question, answer, category, locale, "order", status, created_at, updated_at)
-SELECT * FROM (VALUES
-    ('What is your return policy?', 'We offer a 30-day return policy for all unused items in original packaging.', 'General', 'en', 1, 'published', NOW(), NOW()),
-    ('How long does shipping take?', 'Standard shipping takes 5-7 business days. Express shipping is available for 2-3 business days.', 'Shipping', 'en', 2, 'published', NOW(), NOW()),
-    ('Do you ship internationally?', 'Yes, we ship to most countries worldwide. Shipping costs and times vary by location.', 'Shipping', 'en', 3, 'published', NOW(), NOW()),
-    ('How can I track my order?', 'Once your order ships, you will receive a tracking number via email.', 'Orders', 'en', 4, 'published', NOW(), NOW()),
-    ('What payment methods do you accept?', 'We accept credit cards (Visa, MasterCard, Amex), PayPal, and bank transfers.', 'Payment', 'en', 5, 'published', NOW(), NOW()),
-    ('Can I cancel my order?', 'Orders can be cancelled within 24 hours of placement. After that, please contact customer service.', 'Orders', 'en', 6, 'published', NOW(), NOW()),
-    ('Do you offer warranty?', 'Yes, all products come with a 1-year manufacturer warranty.', 'Products', 'en', 7, 'published', NOW(), NOW()),
-    ('How do I contact customer support?', 'You can reach us via email at support@tanzanite.site or through our contact form.', 'Support', 'en', 8, 'published', NOW(), NOW()),
-    ('Are your products authentic?', 'Yes, we only sell 100% authentic products directly from manufacturers.', 'Products', 'en', 9, 'published', NOW(), NOW()),
-    ('Can I change my shipping address?', 'Yes, if your order has not shipped yet. Please contact us immediately.', 'Shipping', 'en', 10, 'published', NOW(), NOW())
-) AS v(question, answer, category, locale, "order", status, created_at, updated_at)
-WHERE NOT EXISTS (SELECT 1 FROM faqs LIMIT 1);
-
 -- 验证查询
 SELECT 
     'FAQ table enhanced successfully' as message,
