@@ -44,29 +44,6 @@ CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id ON ticket_messages(tick
 CREATE INDEX IF NOT EXISTS idx_ticket_messages_user_id ON ticket_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_messages_is_staff ON ticket_messages(is_staff);
 
--- 插入示例工单数据
-INSERT INTO tickets (ticket_number, user_id, subject, category, priority, status, tags) VALUES
-('TK20240515001', 1, 'Order not received', 'order', 'high', 'open', 'shipping,urgent'),
-('TK20240515002', 1, 'Product quality issue', 'product', 'medium', 'in_progress', 'quality'),
-('TK20240515003', 1, 'Refund request', 'order', 'high', 'resolved', 'refund'),
-('TK20240515004', 1, 'Account login problem', 'other', 'low', 'closed', 'account'),
-('TK20240515005', 1, 'Shipping delay inquiry', 'shipping', 'medium', 'open', 'shipping')
-ON CONFLICT (ticket_number) DO NOTHING;
-
--- 插入示例工单消息
-INSERT INTO ticket_messages (ticket_id, user_id, is_staff, content) VALUES
-(1, 1, FALSE, 'I placed an order 2 weeks ago but have not received it yet. Order number: #12345'),
-(1, 2, TRUE, 'Thank you for contacting us. Let me check the shipping status for you.'),
-(2, 1, FALSE, 'The product I received has a defect. Can I get a replacement?'),
-(2, 2, TRUE, 'We apologize for the inconvenience. Please send us photos of the defect.'),
-(3, 1, FALSE, 'I would like to request a refund for my recent purchase.'),
-(3, 2, TRUE, 'Your refund request has been approved. It will be processed within 3-5 business days.'),
-(4, 1, FALSE, 'I cannot log into my account. It says my password is incorrect.'),
-(4, 2, TRUE, 'I have reset your password. Please check your email for the reset link.'),
-(5, 1, FALSE, 'My order is showing as shipped but the tracking has not updated in 3 days.'),
-(5, 2, TRUE, 'Let me contact the shipping carrier to get an update on your package.')
-ON CONFLICT DO NOTHING;
-
 -- 输出统计信息
 DO $$
 DECLARE

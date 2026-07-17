@@ -49,25 +49,6 @@ CREATE INDEX IF NOT EXISTS idx_warranty_claims_user_id ON warranty_claims(user_i
 CREATE INDEX IF NOT EXISTS idx_warranty_claims_status ON warranty_claims(status);
 CREATE INDEX IF NOT EXISTS idx_warranty_claims_deleted_at ON warranty_claims(deleted_at);
 
--- 插入示例产品注册数据（假设已有产品和用户）
--- 注意：这里使用的 user_id 和 product_id 需要根据实际数据调整
-INSERT INTO product_registrations (user_id, product_id, serial_number, purchase_date, retailer, warranty_period, warranty_expires, status, notes) VALUES
-(1, 1, 'SN2024001001', '2024-01-15 10:00:00', 'Official Store', 24, '2026-01-15 10:00:00', 'active', 'Purchased during new year sale'),
-(1, 2, 'SN2024001002', '2024-02-20 14:30:00', 'Amazon', 12, '2025-02-20 14:30:00', 'active', 'Gift from friend'),
-(1, 3, 'SN2024001003', '2023-06-10 09:15:00', 'Best Buy', 12, '2024-06-10 09:15:00', 'expired', 'Warranty expired'),
-(1, 1, 'SN2024001004', '2024-03-05 16:45:00', 'Official Store', 24, '2026-03-05 16:45:00', 'active', 'Extended warranty purchased'),
-(1, 2, 'SN2024001005', '2024-04-12 11:20:00', 'Walmart', 12, '2025-04-12 11:20:00', 'active', 'Regular purchase')
-ON CONFLICT (serial_number) DO NOTHING;
-
--- 插入示例保修申请数据
-INSERT INTO warranty_claims (registration_id, user_id, issue_type, description, status) VALUES
-(1, 1, 'defect', 'Product has a manufacturing defect in the display', 'submitted'),
-(2, 1, 'malfunction', 'Device not turning on after 3 months of use', 'reviewing'),
-(3, 1, 'damage', 'Screen cracked during normal use', 'rejected'),
-(4, 1, 'defect', 'Battery draining too fast', 'approved'),
-(5, 1, 'malfunction', 'Buttons not responding properly', 'completed')
-ON CONFLICT DO NOTHING;
-
 -- 输出统计信息
 DO $$
 DECLARE

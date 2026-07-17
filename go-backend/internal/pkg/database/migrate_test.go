@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -65,6 +66,8 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 	if host == "" || username == "" || password == "" {
 		t.Skip("PostgreSQL integration environment is not configured")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 
 	port := 5432
 	if portText := os.Getenv("DB_PORT"); portText != "" {
@@ -88,7 +91,7 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 	}
 
 	databaseName := fmt.Sprintf("tanzanite_migration_test_%d", time.Now().UnixNano())
-	if _, err := adminDB.Exec("CREATE DATABASE " + pq.QuoteIdentifier(databaseName)); err != nil {
+	if _, err := adminDB.ExecContext(ctx, "CREATE DATABASE "+pq.QuoteIdentifier(databaseName)); err != nil {
 		_ = adminDB.Close()
 		t.Fatalf("create migration test database: %v", err)
 	}
@@ -107,12 +110,18 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 		t.Fatalf("open migration test database: %v", err)
 	}
 	t.Cleanup(func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cleanupCancel()
 		_ = testDB.Close()
-		_, _ = adminDB.Exec(
+		_, _ = adminDB.ExecContext(
+			cleanupCtx,
 			"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1",
 			databaseName,
 		)
-		_, _ = adminDB.Exec("DROP DATABASE IF EXISTS " + pq.QuoteIdentifier(databaseName))
+		_, _ = adminDB.ExecContext(
+			cleanupCtx,
+			"DROP DATABASE IF EXISTS "+pq.QuoteIdentifier(databaseName),
+		)
 		_ = adminDB.Close()
 	})
 
@@ -135,10 +144,32 @@ func TestRunSQLMigrationsAgainstFreshPostgres(t *testing.T) {
 
 	var version int
 	var dirty bool
-	if err := testDB.QueryRow("SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty); err != nil {
+	if err := testDB.QueryRowContext(ctx, "SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty); err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
 	if version != 13 || dirty {
 		t.Fatalf("unexpected migration state: version=%d dirty=%t", version, dirty)
+	}
+
+	emptyBusinessTables := []string{
+		"users",
+		"products",
+		"faqs",
+		"galleries",
+		"gallery_images",
+		"product_registrations",
+		"warranty_claims",
+		"tickets",
+		"ticket_messages",
+	}
+	for _, table := range emptyBusinessTables {
+		var count int
+		query := "SELECT COUNT(*) FROM " + pq.QuoteIdentifier(table)
+		if err := testDB.QueryRowContext(ctx, query).Scan(&count); err != nil {
+			t.Fatalf("count rows in %s: %v", table, err)
+		}
+		if count != 0 {
+			t.Fatalf("business table %s contains %d seeded rows", table, count)
+		}
 	}
 }
