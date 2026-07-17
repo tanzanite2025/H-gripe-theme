@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - "go-backend/**"
-      - "nuxt-i18n/**"
-      - "deployment/**"
-      - "compose.prod.yml"
-      - ".github/workflows/publish-images.yml"
   workflow_dispatch:
 
 permissions:
