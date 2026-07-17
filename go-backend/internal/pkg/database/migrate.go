@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"tanzanite/internal/domain/audit"
@@ -132,6 +133,52 @@ func SeedDefaultSettings(db *gorm.DB) error {
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig, serverMode string) error {
+	if db == nil {
+		return fmt.Errorf("database is nil")
+	}
+	if cfg == nil {
+		return fmt.Errorf("database config is nil")
+	}
+	if cfg.Driver != "postgres" {
+		return fmt.Errorf("schema preparation requires postgres, got %q", cfg.Driver)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("get sql database: %w", err)
+	}
+
+	var applicationTableCount int
+	if err := sqlDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM information_schema.tables
+		WHERE table_schema = 'public'
+		  AND table_type = 'BASE TABLE'
+		  AND table_name <> 'schema_migrations'
+	`).Scan(&applicationTableCount); err != nil {
+		return fmt.Errorf("inspect public schema: %w", err)
+	}
+
+	if applicationTableCount == 0 {
+		logger.Info("empty database detected; creating current schema baseline")
+		if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return AutoMigrate(tx, serverMode)
+		}); err != nil {
+			return fmt.Errorf("create schema baseline: %w", err)
+		}
+	} else {
+		logger.Info("existing database detected; skipping GORM schema baseline",
+			zap.Int("application_table_count", applicationTableCount),
+		)
+	}
+
+	if err := RunSQLMigrations(sqlDB, cfg); err != nil {
+		return fmt.Errorf("run SQL migrations: %w", err)
 	}
 	return nil
 }

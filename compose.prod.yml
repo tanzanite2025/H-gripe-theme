@@ -6,6 +6,35 @@ x-logging: &default-logging
     max-size: 10m
     max-file: "3"
 
+x-api-environment: &api-environment
+  CONFIG_FILE: /app/config/config.production.yaml
+  SERVER_MODE: release
+  SERVER_PORT: :9000
+  SERVER_BASE_URL: ${SERVER_BASE_URL:?SERVER_BASE_URL is required}
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_USERNAME: ${DB_USERNAME:?DB_USERNAME is required}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+  DB_NAME: ${DB_NAME:?DB_NAME is required}
+  DB_AUTO_MIGRATE: "false"
+  DB_LOG_LEVEL: silent
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+  TRUSTED_PROXIES: ${TRUSTED_PROXIES:?TRUSTED_PROXIES is required}
+  COOKIE_SECURE: always
+  COOKIE_SAME_SITE: lax
+  COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+  WORKER_ENABLED: "false"
+  LOG_LEVEL: info
+  LOG_FORMAT: json
+  STORAGE_TYPE: local
+  STORAGE_LOCAL_PATH: /app/uploads
+  STORAGE_BASE_URL: ${SERVER_BASE_URL:?SERVER_BASE_URL is required}
+
 services:
   db:
     image: postgres:15-alpine
@@ -54,43 +83,39 @@ services:
     cpus: 0.50
     logging: *default-logging
 
+  migrate:
+    image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    pull_policy: always
+    restart: "no"
+    command: ["migrate"]
+    environment: *api-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 0.75
+    logging: *default-logging
+
   api:
     image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:?IMAGE_TAG is required}
     pull_policy: always
     restart: unless-stopped
     expose:
       - "9000"
-    environment:
-      CONFIG_FILE: /app/config/config.production.yaml
-      SERVER_MODE: release
-      SERVER_PORT: :9000
-      SERVER_BASE_URL: ${SERVER_BASE_URL:?SERVER_BASE_URL is required}
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME is required}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      DB_NAME: ${DB_NAME:?DB_NAME is required}
-      DB_AUTO_MIGRATE: "false"
-      DB_LOG_LEVEL: silent
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
-      TRUSTED_PROXIES: ${TRUSTED_PROXIES:?TRUSTED_PROXIES is required}
-      COOKIE_SECURE: always
-      COOKIE_SAME_SITE: lax
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
-      WORKER_ENABLED: "false"
-      LOG_LEVEL: info
-      LOG_FORMAT: json
-      STORAGE_TYPE: local
-      STORAGE_LOCAL_PATH: /app/uploads
-      STORAGE_BASE_URL: ${SERVER_BASE_URL:?SERVER_BASE_URL is required}
+    environment: *api-environment
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     volumes:
