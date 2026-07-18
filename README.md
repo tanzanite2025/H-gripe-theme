@@ -36,7 +36,7 @@ The backend exposes:
 | --- | --- |
 | Backend | Go `1.25.1`, Gin, GORM, PostgreSQL, Redis |
 | Storefront | Nuxt 4, Vue 3, Pinia, Tailwind CSS |
-| Admin | Vue 3, Vite, Pinia, Element Plus, Axios |
+| Admin | Vue 3, Vite, Pinia, Tailwind CSS, shadcn-vue, Reka UI, Axios |
 | Infra | Docker Compose for local services; Kubernetes manifests exist under `go-backend/k8s/` |
 
 ## Local Development

@@ -1,307 +1,327 @@
 <template>
-  <div class="settings-page">
-    <div class="page-header">
-      <h2>系统设置</h2>
-      <el-button
-        v-if="hasPermission('settings:edit') && activeTab !== 'public_chat'"
-        type="primary"
-        :loading="saving"
-        @click="saveSettings"
-      >
-        保存设置
-      </el-button>
-    </div>
+  <div class="space-y-4">
+    <AdminPageHeader title="系统设置" description="管理站点、邮件、搜索、社交与支付配置">
+      <template #actions>
+        <Button
+          v-if="hasPermission('settings:edit') && activeTab !== 'public_chat'"
+          :disabled="saving || loadingSettings"
+          @click="saveSettings"
+        >
+          <LoaderCircle v-if="saving" class="size-4 animate-spin" />
+          <Save v-else class="size-4" />
+          {{ saving ? '保存中' : '保存设置' }}
+        </Button>
+      </template>
+    </AdminPageHeader>
 
-    <el-card>
-      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-        <!-- 站点设置 -->
-        <el-tab-pane label="站点设置" name="site">
-          <el-form
-            ref="siteFormRef"
-            :model="siteSettings"
-            label-width="150px"
-            style="max-width: 800px"
-          >
-            <el-form-item label="站点名称">
-              <el-input v-model="siteSettings.site_name" />
-            </el-form-item>
+    <div class="relative min-h-96">
+      <div v-if="loadingSettings" class="absolute inset-0 z-10 flex items-center justify-center bg-background/75">
+        <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载设置" />
+      </div>
 
-            <el-form-item label="站点描述">
-              <el-input v-model="siteSettings.site_description" type="textarea" :rows="3" />
-            </el-form-item>
+      <Tabs v-model="activeTab" class="gap-5">
+        <TabsList variant="line" class="h-10 w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
+          <TabsTrigger value="site" class="h-9 flex-none px-3"><Globe2 class="size-4" />站点</TabsTrigger>
+          <TabsTrigger value="email" class="h-9 flex-none px-3"><Mail class="size-4" />邮件</TabsTrigger>
+          <TabsTrigger value="seo" class="h-9 flex-none px-3"><SearchCheck class="size-4" />SEO</TabsTrigger>
+          <TabsTrigger value="social" class="h-9 flex-none px-3"><Share2 class="size-4" />社交媒体</TabsTrigger>
+          <TabsTrigger value="payment" class="h-9 flex-none px-3"><CreditCard class="size-4" />支付</TabsTrigger>
+          <TabsTrigger value="public_chat" class="h-9 flex-none px-3"><Headset class="size-4" />Public Chat</TabsTrigger>
+        </TabsList>
 
-            <el-form-item label="站点 Logo">
-              <el-input v-model="siteSettings.site_logo" placeholder="Logo URL" />
-            </el-form-item>
-
-            <el-form-item label="联系邮箱">
-              <el-input v-model="siteSettings.contact_email" />
-            </el-form-item>
-
-            <el-form-item label="联系电话">
-              <el-input v-model="siteSettings.contact_phone" />
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-
-        <!-- 邮件设置 -->
-        <el-tab-pane label="邮件设置" name="email">
-          <el-form
-            ref="emailFormRef"
-            :model="emailSettings"
-            label-width="150px"
-            style="max-width: 800px"
-          >
-            <el-form-item label="SMTP 主机">
-              <el-input v-model="emailSettings.smtp_host" />
-            </el-form-item>
-
-            <el-form-item label="SMTP 端口">
-              <el-input-number v-model="emailSettings.smtp_port" :min="1" :max="65535" />
-            </el-form-item>
-
-            <el-form-item label="SMTP 用户名">
-              <el-input v-model="emailSettings.smtp_username" />
-            </el-form-item>
-
-            <el-form-item label="SMTP 密码">
-              <el-input v-model="emailSettings.smtp_password" type="password" show-password />
-            </el-form-item>
-
-            <el-form-item label="发件人邮箱">
-              <el-input v-model="emailSettings.from_email" />
-            </el-form-item>
-
-            <el-form-item label="发件人名称">
-              <el-input v-model="emailSettings.from_name" />
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-
-        <!-- SEO 设置 -->
-        <el-tab-pane label="SEO 设置" name="seo">
-          <el-form
-            ref="seoFormRef"
-            :model="seoSettings"
-            label-width="150px"
-            style="max-width: 800px"
-          >
-            <el-form-item label="Meta 标题">
-              <el-input v-model="seoSettings.meta_title" />
-            </el-form-item>
-
-            <el-form-item label="Meta 描述">
-              <el-input v-model="seoSettings.meta_description" type="textarea" :rows="3" />
-            </el-form-item>
-
-            <el-form-item label="Meta 关键词">
-              <el-input v-model="seoSettings.meta_keywords" placeholder="用逗号分隔" />
-            </el-form-item>
-
-            <el-form-item label="Google Analytics">
-              <el-input v-model="seoSettings.google_analytics" placeholder="GA 跟踪 ID" />
-            </el-form-item>
-
-            <el-form-item label="Google Tag Manager">
-              <el-input v-model="seoSettings.google_tag_manager" placeholder="GTM ID" />
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-
-        <!-- 社交媒体设置 -->
-        <el-tab-pane label="社交媒体" name="social">
-          <el-form
-            ref="socialFormRef"
-            :model="socialSettings"
-            label-width="150px"
-            style="max-width: 800px"
-          >
-            <el-form-item label="Facebook">
-              <el-input v-model="socialSettings.facebook" placeholder="Facebook 页面 URL" />
-            </el-form-item>
-
-            <el-form-item label="Twitter">
-              <el-input v-model="socialSettings.twitter" placeholder="Twitter 账号 URL" />
-            </el-form-item>
-
-            <el-form-item label="Instagram">
-              <el-input v-model="socialSettings.instagram" placeholder="Instagram 账号 URL" />
-            </el-form-item>
-
-            <el-form-item label="LinkedIn">
-              <el-input v-model="socialSettings.linkedin" placeholder="LinkedIn 页面 URL" />
-            </el-form-item>
-
-            <el-form-item label="YouTube">
-              <el-input v-model="socialSettings.youtube" placeholder="YouTube 频道 URL" />
-            </el-form-item>
-
-            <el-form-item label="微信">
-              <el-input v-model="socialSettings.wechat" placeholder="微信二维码 URL" />
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-
-        <!-- 支付设置 -->
-        <el-tab-pane label="支付设置" name="payment">
-          <el-form
-            ref="paymentFormRef"
-            :model="paymentSettings"
-            label-width="150px"
-            style="max-width: 800px"
-          >
-            <el-form-item label="支付网关">
-              <el-select v-model="paymentSettings.gateway" placeholder="请选择支付网关">
-                <el-option label="Stripe" value="stripe" />
-                <el-option label="PayPal" value="paypal" />
-                <el-option label="支付宝" value="alipay" />
-                <el-option label="微信支付" value="wechat" />
-              </el-select>
-            </el-form-item>
-
-            <el-form-item label="API Key">
-              <el-input v-model="paymentSettings.api_key" type="password" show-password />
-            </el-form-item>
-
-            <el-form-item label="API Secret">
-              <el-input v-model="paymentSettings.api_secret" type="password" show-password />
-            </el-form-item>
-
-            <el-form-item label="测试模式">
-              <el-switch v-model="paymentSettings.test_mode" />
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-
-        <!-- Public Chat 客服 -->
-        <el-tab-pane label="Public Chat 客服" name="public_chat">
-          <div class="agent-panel">
-            <el-alert
-              title="Public Chat 只读取 Go customer_service_agent_profiles；公开展示需绑定 active 用户且角色为 admin、manager 或 support。"
-              type="info"
-              show-icon
-              :closable="false"
-            />
-
-            <div class="panel-actions">
-              <el-button
-                type="primary"
-                :loading="loadingPublicChatAgents"
-                @click="fetchPublicChatAgents"
-              >
-                刷新客服概览
-              </el-button>
+        <TabsContent value="site">
+          <SettingsSection title="站点资料" description="前台使用的品牌和联系信息。">
+            <div class="grid gap-4 md:grid-cols-2">
+              <AdminFormField label="站点名称">
+                <Input v-model="siteSettings.site_name" />
+              </AdminFormField>
+              <AdminFormField label="联系邮箱">
+                <Input v-model="siteSettings.contact_email" type="email" />
+              </AdminFormField>
+              <AdminFormField label="联系电话">
+                <Input v-model="siteSettings.contact_phone" type="tel" />
+              </AdminFormField>
+              <AdminFormField label="站点 Logo">
+                <Input v-model="siteSettings.site_logo" placeholder="Logo URL" />
+              </AdminFormField>
+              <AdminFormField label="站点描述" class="md:col-span-2">
+                <Textarea v-model="siteSettings.site_description" class="min-h-24" />
+              </AdminFormField>
+              <div v-if="siteSettings.site_logo" class="flex h-28 items-center justify-center overflow-hidden rounded-lg border bg-muted md:col-span-2">
+                <img :src="siteSettings.site_logo" alt="站点 Logo 预览" class="max-h-20 max-w-[80%] object-contain" />
+              </div>
             </div>
+          </SettingsSection>
+        </TabsContent>
 
-            <el-row :gutter="16" class="summary-row">
-              <el-col :xs="24" :sm="8">
-                <el-card shadow="never">
-                  <div class="summary-label">Profile 总数</div>
-                  <div class="summary-value">{{ publicChatAgentsSummary.profile_count || 0 }}</div>
-                </el-card>
-              </el-col>
-              <el-col :xs="24" :sm="8">
-                <el-card shadow="never">
-                  <div class="summary-label">公开客服数</div>
-                  <div class="summary-value">{{ publicChatAgentsSummary.exposed_agents || 0 }}</div>
-                </el-card>
-              </el-col>
-            </el-row>
+        <TabsContent value="email">
+          <SettingsSection title="SMTP 配置" description="用于系统通知与业务邮件发送。">
+            <div class="grid gap-4 md:grid-cols-2">
+              <AdminFormField label="SMTP 主机">
+                <Input v-model="emailSettings.smtp_host" placeholder="smtp.example.com" />
+              </AdminFormField>
+              <AdminFormField label="SMTP 端口">
+                <Input v-model.number="emailSettings.smtp_port" type="number" min="1" max="65535" />
+              </AdminFormField>
+              <AdminFormField label="SMTP 用户名">
+                <Input v-model="emailSettings.smtp_username" autocomplete="off" />
+              </AdminFormField>
+              <AdminFormField label="SMTP 密码">
+                <div class="relative">
+                  <Input
+                    v-model="emailSettings.smtp_password"
+                    :type="showSmtpPassword ? 'text' : 'password'"
+                    class="pr-10"
+                    autocomplete="new-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="absolute right-0 top-0"
+                    :aria-label="showSmtpPassword ? '隐藏 SMTP 密码' : '显示 SMTP 密码'"
+                    @click="showSmtpPassword = !showSmtpPassword"
+                  >
+                    <EyeOff v-if="showSmtpPassword" class="size-4" />
+                    <Eye v-else class="size-4" />
+                  </Button>
+                </div>
+              </AdminFormField>
+              <AdminFormField label="发件人邮箱">
+                <Input v-model="emailSettings.from_email" type="email" />
+              </AdminFormField>
+              <AdminFormField label="发件人名称">
+                <Input v-model="emailSettings.from_name" />
+              </AdminFormField>
+            </div>
+          </SettingsSection>
+        </TabsContent>
 
-            <el-alert
-              v-for="warning in publicChatAgentWarnings"
-              :key="warning"
-              class="agent-warning"
-              :title="warning"
-              type="warning"
-              show-icon
-              :closable="false"
-            />
+        <TabsContent value="seo">
+          <SettingsSection title="默认搜索信息" description="未单独配置页面 SEO 时使用的默认值。">
+            <div class="grid gap-4 md:grid-cols-2">
+              <AdminFormField label="Meta 标题" class="md:col-span-2">
+                <Input v-model="seoSettings.meta_title" />
+              </AdminFormField>
+              <AdminFormField label="Meta 描述" class="md:col-span-2">
+                <Textarea v-model="seoSettings.meta_description" class="min-h-24" />
+              </AdminFormField>
+              <AdminFormField label="Meta 关键词" class="md:col-span-2">
+                <Input v-model="seoSettings.meta_keywords" placeholder="用逗号分隔" />
+              </AdminFormField>
+              <AdminFormField label="Google Analytics">
+                <Input v-model="seoSettings.google_analytics" placeholder="GA 跟踪 ID" />
+              </AdminFormField>
+              <AdminFormField label="Google Tag Manager">
+                <Input v-model="seoSettings.google_tag_manager" placeholder="GTM ID" />
+              </AdminFormField>
+            </div>
+          </SettingsSection>
+        </TabsContent>
 
-            <h3>Public chat agents</h3>
-            <el-table
-              v-loading="loadingPublicChatAgents"
-              :data="publicChatAgents"
-              border
-              empty-text="暂无 public chat 客服 profile"
-            >
-              <el-table-column prop="id" label="Profile ID" width="100" />
-              <el-table-column prop="agent_id" label="Agent ID" width="120" />
-              <el-table-column prop="user_id" label="User ID" width="90" />
-              <el-table-column prop="display_name" label="Name" min-width="140" />
-              <el-table-column prop="email" label="Email" min-width="180" />
-              <el-table-column prop="whatsapp" label="WhatsApp" width="140" />
-              <el-table-column prop="raw_role" label="Raw role" width="150" />
-              <el-table-column prop="normalized_role" label="Go role" width="120" />
-              <el-table-column prop="user_status" label="User status" width="120" />
-              <el-table-column prop="profile_status" label="Profile status" width="130" />
-              <el-table-column prop="online_status" label="Online" width="100" />
-              <el-table-column label="Public exposed" width="130">
-                <template #default="{ row }">
-                  <el-tag :type="row.exposed ? 'success' : 'danger'">
-                    {{ row.exposed ? 'Yes' : 'No' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-            </el-table>
+        <TabsContent value="social">
+          <SettingsSection title="社交媒体" description="前台展示的官方账号与页面链接。">
+            <div class="grid gap-4 md:grid-cols-2">
+              <AdminFormField v-for="field in socialFields" :key="field.key" :label="field.label">
+                <Input v-model="socialSettings[field.key]" type="url" :placeholder="field.placeholder" />
+              </AdminFormField>
+            </div>
+          </SettingsSection>
+        </TabsContent>
+
+        <TabsContent value="payment">
+          <SettingsSection title="支付网关" description="支付凭据仅供后端使用，不公开到前台。">
+            <div class="grid gap-4 md:grid-cols-2">
+              <AdminFormField label="支付网关">
+                <Select v-model="paymentSettings.gateway">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="请选择支付网关" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stripe">Stripe</SelectItem>
+                    <SelectItem value="paypal">PayPal</SelectItem>
+                    <SelectItem value="alipay">支付宝</SelectItem>
+                    <SelectItem value="wechat">微信支付</SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
+                <div>
+                  <span class="text-xs font-medium">测试模式</span>
+                  <p class="mt-0.5 text-xs text-muted-foreground">启用后使用网关测试环境。</p>
+                </div>
+                <Switch v-model="paymentSettings.test_mode" aria-label="支付测试模式" />
+              </div>
+              <AdminFormField label="API Key" class="md:col-span-2">
+                <div class="relative">
+                  <Input v-model="paymentSettings.api_key" :type="showPaymentSecrets ? 'text' : 'password'" class="pr-10 font-mono" autocomplete="off" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="absolute right-0 top-0"
+                    :aria-label="showPaymentSecrets ? '隐藏支付凭据' : '显示支付凭据'"
+                    @click="showPaymentSecrets = !showPaymentSecrets"
+                  >
+                    <EyeOff v-if="showPaymentSecrets" class="size-4" />
+                    <Eye v-else class="size-4" />
+                  </Button>
+                </div>
+              </AdminFormField>
+              <AdminFormField label="API Secret" class="md:col-span-2">
+                <Input v-model="paymentSettings.api_secret" :type="showPaymentSecrets ? 'text' : 'password'" class="font-mono" autocomplete="off" />
+              </AdminFormField>
+            </div>
+          </SettingsSection>
+        </TabsContent>
+
+        <TabsContent value="public_chat" class="space-y-4">
+          <Alert>
+            <Info class="size-4" />
+            <AlertTitle>公开客服状态</AlertTitle>
+            <AlertDescription>公开客服需绑定活跃用户，且角色为 admin、manager 或 support。</AlertDescription>
+          </Alert>
+
+          <div class="flex justify-end">
+            <Button variant="outline" size="sm" :disabled="loadingPublicChatAgents" @click="fetchPublicChatAgents">
+              <RefreshCw :class="['size-3.5', { 'animate-spin': loadingPublicChatAgents }]" />
+              刷新概览
+            </Button>
           </div>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+
+          <section class="grid gap-3 sm:grid-cols-2" aria-label="Public Chat 客服统计">
+            <div class="rounded-lg border bg-card p-4 shadow-xs">
+              <span class="text-xs font-medium text-muted-foreground">Profile 总数</span>
+              <strong class="mt-2 block text-2xl font-semibold tabular-nums">{{ publicChatAgentsSummary.profile_count || 0 }}</strong>
+            </div>
+            <div class="rounded-lg border bg-card p-4 shadow-xs">
+              <span class="text-xs font-medium text-muted-foreground">公开客服数</span>
+              <strong class="mt-2 block text-2xl font-semibold tabular-nums">{{ publicChatAgentsSummary.exposed_agents || 0 }}</strong>
+            </div>
+          </section>
+
+          <Alert v-for="warning in publicChatAgentWarnings" :key="warning" class="border-amber-200 bg-amber-50 text-amber-900">
+            <TriangleAlert class="size-4" />
+            <AlertTitle>配置提醒</AlertTitle>
+            <AlertDescription>{{ warning }}</AlertDescription>
+          </Alert>
+
+          <AdminTablePanel :loading="loadingPublicChatAgents">
+            <Table class="min-w-[1280px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead class="w-16">ID</TableHead>
+                  <TableHead>客服</TableHead>
+                  <TableHead class="w-32">Agent ID</TableHead>
+                  <TableHead class="w-20">User ID</TableHead>
+                  <TableHead class="w-36">原始角色</TableHead>
+                  <TableHead class="w-28">Go 角色</TableHead>
+                  <TableHead class="w-28">用户状态</TableHead>
+                  <TableHead class="w-28">Profile</TableHead>
+                  <TableHead class="w-24">在线状态</TableHead>
+                  <TableHead class="w-24">公开</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableEmpty v-if="publicChatAgents.length === 0" :colspan="10">
+                  <div class="flex flex-col items-center text-muted-foreground">
+                    <Headset class="mb-2 size-7 opacity-55" />
+                    <span class="text-xs">暂无 Public Chat 客服 Profile</span>
+                  </div>
+                </TableEmpty>
+                <TableRow v-for="agent in publicChatAgents" :key="agent.id">
+                  <TableCell class="font-mono text-xs text-muted-foreground">{{ agent.id }}</TableCell>
+                  <TableCell>
+                    <div class="flex items-center gap-2.5">
+                      <Avatar class="size-8">
+                        <AvatarImage v-if="agent.avatar" :src="agent.avatar" :alt="agent.display_name" />
+                        <AvatarFallback>{{ agentInitials(agent) }}</AvatarFallback>
+                      </Avatar>
+                      <div class="min-w-0">
+                        <span class="block truncate font-medium">{{ agent.display_name || agent.username || '-' }}</span>
+                        <span class="block truncate text-xs text-muted-foreground">{{ agent.email || agent.whatsapp || '-' }}</span>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell class="font-mono text-xs">{{ agent.agent_id || '-' }}</TableCell>
+                  <TableCell class="font-mono text-xs">{{ agent.user_id || '-' }}</TableCell>
+                  <TableCell>{{ agent.raw_role || '-' }}</TableCell>
+                  <TableCell>{{ agent.normalized_role || '-' }}</TableCell>
+                  <TableCell><AdminStatusBadge :tone="agent.user_status === 'active' ? 'green' : 'gray'">{{ agent.user_status || '-' }}</AdminStatusBadge></TableCell>
+                  <TableCell><AdminStatusBadge :tone="agent.profile_status === 'active' ? 'green' : 'gray'">{{ agent.profile_status || '-' }}</AdminStatusBadge></TableCell>
+                  <TableCell><AdminStatusBadge :tone="agent.online_status === 'online' ? 'green' : 'gray'">{{ agent.online_status || '-' }}</AdminStatusBadge></TableCell>
+                  <TableCell><AdminStatusBadge :tone="agent.exposed ? 'green' : 'coral'">{{ agent.exposed ? '是' : '否' }}</AdminStatusBadge></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </AdminTablePanel>
+        </TabsContent>
+      </Tabs>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import {
+  CreditCard,
+  Eye,
+  EyeOff,
+  Globe2,
+  Headset,
+  Info,
+  LoaderCircle,
+  Mail,
+  RefreshCw,
+  Save,
+  SearchCheck,
+  Share2,
+  TriangleAlert
+} from '@lucide/vue'
+import AdminFormField from '@/components/admin/AdminFormField.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
-const authStore = useAuthStore()
+const SettingsSection = defineComponent({
+  props: {
+    title: { type: String, required: true },
+    description: { type: String, default: '' }
+  },
+  setup(props, { slots }) {
+    return () => h('section', { class: 'grid max-w-5xl gap-5 lg:grid-cols-[190px_minmax(0,1fr)]' }, [
+      h('div', {}, [
+        h('h2', { class: 'text-sm font-semibold' }, props.title),
+        props.description ? h('p', { class: 'mt-1 text-xs leading-5 text-muted-foreground' }, props.description) : null
+      ]),
+      h('div', { class: 'min-w-0' }, slots.default?.())
+    ])
+  }
+})
 
+const authStore = useAuthStore()
 const activeTab = ref('site')
 const saving = ref(false)
+const loadingSettings = ref(false)
+const showSmtpPassword = ref(false)
+const showPaymentSecrets = ref(false)
+const loadedGroups = new Set()
 
-const siteSettings = reactive({
-  site_name: '',
-  site_description: '',
-  site_logo: '',
-  contact_email: '',
-  contact_phone: ''
-})
-
-const emailSettings = reactive({
-  smtp_host: '',
-  smtp_port: 587,
-  smtp_username: '',
-  smtp_password: '',
-  from_email: '',
-  from_name: ''
-})
-
-const seoSettings = reactive({
-  meta_title: '',
-  meta_description: '',
-  meta_keywords: '',
-  google_analytics: '',
-  google_tag_manager: ''
-})
-
-const socialSettings = reactive({
-  facebook: '',
-  twitter: '',
-  instagram: '',
-  linkedin: '',
-  youtube: '',
-  wechat: ''
-})
-
-const paymentSettings = reactive({
-  gateway: '',
-  api_key: '',
-  api_secret: '',
-  test_mode: true
-})
+const siteSettings = reactive({ site_name: '', site_description: '', site_logo: '', contact_email: '', contact_phone: '' })
+const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
+const seoSettings = reactive({ meta_title: '', meta_description: '', meta_keywords: '', google_analytics: '', google_tag_manager: '' })
+const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
+const paymentSettings = reactive({ gateway: '', api_key: '', api_secret: '', test_mode: true })
 
 const loadingPublicChatAgents = ref(false)
 const publicChatAgentsOverview = ref(null)
@@ -309,156 +329,143 @@ const publicChatAgentsSummary = computed(() => publicChatAgentsOverview.value?.s
 const publicChatAgents = computed(() => publicChatAgentsOverview.value?.agents || [])
 const publicChatAgentWarnings = computed(() => publicChatAgentsOverview.value?.warnings || [])
 
-const hasPermission = (permission) => {
-  return authStore.hasPermission(permission)
-}
+const socialFields = [
+  { key: 'facebook', label: 'Facebook', placeholder: 'Facebook 页面 URL' },
+  { key: 'twitter', label: 'Twitter / X', placeholder: '账号 URL' },
+  { key: 'instagram', label: 'Instagram', placeholder: '账号 URL' },
+  { key: 'linkedin', label: 'LinkedIn', placeholder: '页面 URL' },
+  { key: 'youtube', label: 'YouTube', placeholder: '频道 URL' },
+  { key: 'wechat', label: '微信', placeholder: '二维码 URL' }
+]
 
-const fetchSettings = async (group) => {
-  try {
-    const response = await axios.get(`/api/admin/settings/${group}`)
-    const settings = response.data.settings
-
-    const targetSettings = {
-      site: siteSettings,
-      email: emailSettings,
-      seo: seoSettings,
-      social: socialSettings,
-      payment: paymentSettings
-    }[group]
-
-    if (targetSettings && settings) {
-      settings.forEach(setting => {
-        const key = setting.key.replace(`${group}_`, '')
-        if (key in targetSettings) {
-          targetSettings[key] = setting.value
-        }
-      })
+const groupDefinitions = {
+  site: {
+    target: siteSettings,
+    fields: {
+      site_name: { type: 'string', public: true, description: 'Site name' },
+      site_description: { type: 'string', public: true, description: 'Site description' },
+      site_logo: { type: 'string', public: true, description: 'Site logo URL' },
+      contact_email: { type: 'string', public: true, description: 'Contact email' },
+      contact_phone: { type: 'string', public: true, description: 'Contact phone' }
     }
-  } catch (error) {
-    console.error(`获取${group}设置失败`, error)
-    ElMessage.error(`获取${group === 'site' ? '站点' : group}设置失败`)
+  },
+  email: {
+    target: emailSettings,
+    fields: {
+      smtp_host: { type: 'string', public: false, description: 'SMTP server host' },
+      smtp_port: { type: 'number', public: false, description: 'SMTP server port' },
+      smtp_username: { type: 'string', public: false, description: 'SMTP username' },
+      smtp_password: { type: 'string', public: false, description: 'SMTP password' },
+      from_email: { type: 'string', public: false, description: 'Sender email' },
+      from_name: { type: 'string', public: false, description: 'Sender name' }
+    }
+  },
+  seo: {
+    target: seoSettings,
+    fields: {
+      meta_title: { type: 'string', public: true, description: 'Default meta title' },
+      meta_description: { type: 'string', public: true, description: 'Default meta description' },
+      meta_keywords: { type: 'string', public: true, description: 'Default meta keywords' },
+      google_analytics: { type: 'string', public: true, description: 'Google Analytics ID' },
+      google_tag_manager: { type: 'string', public: true, description: 'Google Tag Manager ID' }
+    }
+  },
+  social: {
+    target: socialSettings,
+    fields: Object.fromEntries(socialFields.map((field) => [field.key, { type: 'string', public: true, description: field.label }]))
+  },
+  payment: {
+    target: paymentSettings,
+    fields: {
+      gateway: { type: 'string', public: false, description: 'Payment gateway' },
+      api_key: { type: 'string', public: false, description: 'Payment API key' },
+      api_secret: { type: 'string', public: false, description: 'Payment API secret' },
+      test_mode: { type: 'boolean', public: false, description: 'Payment test mode' }
+    }
   }
 }
 
-const handleTabChange = (tabName) => {
-  if (tabName === 'public_chat') {
-    fetchPublicChatAgents()
-    return
+const hasPermission = (permission) => authStore.hasPermission(permission)
+const coerceSettingValue = (value, type) => {
+  if (type === 'number') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
   }
-  fetchSettings(tabName)
+  if (type === 'boolean') return value === true || value === 'true' || value === '1'
+  return value ?? ''
+}
+const settingKey = (setting, group) => setting.key.startsWith(`${group}_`) ? setting.key.slice(group.length + 1) : setting.key
+
+const fetchSettings = async (group, force = false) => {
+  const definition = groupDefinitions[group]
+  if (!definition || (!force && loadedGroups.has(group))) return
+  loadingSettings.value = true
+  try {
+    const response = await axios.get(`/api/admin/settings/${group}`, { params: { locale: 'en' } })
+    const settings = Array.isArray(response.data.settings) ? response.data.settings : []
+    const prefixed = settings.filter((setting) => setting.key.startsWith(`${group}_`))
+    const canonical = settings.filter((setting) => !setting.key.startsWith(`${group}_`))
+    ;[...prefixed, ...canonical].forEach((setting) => {
+      const key = settingKey(setting, group)
+      if (key in definition.target) {
+        definition.target[key] = coerceSettingValue(setting.value, definition.fields[key]?.type || setting.type)
+      }
+    })
+    loadedGroups.add(group)
+  } catch (error) {
+    console.error(`Failed to fetch ${group} settings:`, error)
+  } finally {
+    loadingSettings.value = false
+  }
 }
 
 const fetchPublicChatAgents = async () => {
   loadingPublicChatAgents.value = true
   try {
     const response = await axios.get('/api/admin/settings/public-chat-agents')
-    publicChatAgentsOverview.value = response.data
+    publicChatAgentsOverview.value = response.data || null
   } catch (error) {
-    console.error('获取 Public Chat 客服失败', error)
-    ElMessage.error('获取 Public Chat 客服失败')
+    console.error('Failed to fetch Public Chat agents:', error)
   } finally {
     loadingPublicChatAgents.value = false
   }
 }
 
 const saveSettings = async () => {
-  const currentSettings = {
-    site: siteSettings,
-    email: emailSettings,
-    seo: seoSettings,
-    social: socialSettings,
-    payment: paymentSettings
-  }[activeTab.value]
-  if (!currentSettings) return
-
-  const settingsArray = Object.entries(currentSettings).map(([key, value]) => ({
-    key: `${activeTab.value}_${key}`,
-    value: String(value),
-    group: activeTab.value,
+  const group = activeTab.value
+  const definition = groupDefinitions[group]
+  if (!definition) return
+  const settings = Object.entries(definition.fields).map(([key, metadata]) => ({
+    key,
+    value: String(definition.target[key] ?? ''),
+    type: metadata.type,
+    group,
     locale: 'en',
-    is_public: activeTab.value !== 'email' && activeTab.value !== 'payment'
+    is_public: metadata.public,
+    description: metadata.description
   }))
-
   saving.value = true
   try {
-    await axios.post('/api/admin/settings/batch', {
-      settings: settingsArray
-    })
-    ElMessage.success('设置保存成功')
+    const response = await axios.post('/api/admin/settings/batch', { settings })
+    toast.success(`已保存 ${response.data.count ?? settings.length} 项设置`)
+    loadedGroups.delete(group)
+    await fetchSettings(group, true)
   } catch (error) {
-    ElMessage.error('设置保存失败')
+    console.error('Failed to save settings:', error)
   } finally {
     saving.value = false
   }
 }
 
-onMounted(() => {
-  fetchSettings('site')
+const agentInitials = (agent) => {
+  const name = agent.display_name || agent.username || agent.email || '?'
+  return name.slice(0, 2).toUpperCase()
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'public_chat') fetchPublicChatAgents()
+  else fetchSettings(tab)
 })
+
+onMounted(() => fetchSettings('site'))
 </script>
-
-<style scoped>
-.settings-page {
-  padding: 0;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 24px;
-  color: #303133;
-}
-
-.agent-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.panel-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.summary-row {
-  width: 100%;
-}
-
-.summary-label {
-  color: #606266;
-  font-size: 13px;
-  margin-bottom: 10px;
-}
-
-.summary-value {
-  font-size: 28px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.agent-warning {
-  margin-top: -6px;
-}
-
-.sql-block {
-  margin: 0;
-  padding: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  background: #f5f7fa;
-  border-radius: 6px;
-  color: #303133;
-}
-</style>

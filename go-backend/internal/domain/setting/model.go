@@ -85,7 +85,7 @@ type SocialSettings struct {
 // UpdateSettingRequest 更新设置请求
 type UpdateSettingRequest struct {
 	Key         string `json:"key" binding:"required"`
-	Value       string `json:"value" binding:"required"`
+	Value       string `json:"value"`
 	Type        string `json:"type"`
 	Group       string `json:"group"`
 	Locale      string `json:"locale"`

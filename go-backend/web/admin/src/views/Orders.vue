@@ -1,383 +1,450 @@
-﻿<template>
-  <div class="orders-page">
-    <div class="page-header">
-      <h2>订单管理</h2>
-      <el-button type="success" :icon="Download" @click="exportOrders">
-        导出订单
-      </el-button>
-    </div>
+<template>
+  <div class="space-y-4">
+    <AdminPageHeader title="订单管理" description="查看订单履约、支付和物流状态">
+      <template #actions>
+        <Button variant="outline" @click="exportOrders">
+          <Download class="size-4" />
+          导出订单
+        </Button>
+      </template>
+    </AdminPageHeader>
 
-    <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="stat-item">
-            <div class="stat-label">总订单数</div>
-            <div class="stat-value">{{ stats.total || 0 }}</div>
+    <AdminStatsGrid :items="statItems" />
+
+    <AdminFilterPanel>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" @submit.prevent="applyFilters">
+        <label class="space-y-1.5 xl:col-span-2">
+          <span class="text-xs font-medium text-muted-foreground">搜索</span>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input v-model="filters.search" class="h-9 pl-9" placeholder="订单号、客户姓名或邮箱" />
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="stat-item">
-            <div class="stat-label">今日订单</div>
-            <div class="stat-value text-primary">{{ stats.today || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="stat-item">
-            <div class="stat-label">总销售额</div>
-            <div class="stat-value text-success">¥{{ formatMoney(stats.total_revenue || 0) }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover">
-          <div class="stat-item">
-            <div class="stat-label">今日销售额</div>
-            <div class="stat-value text-warning">¥{{ formatMoney(stats.today_revenue || 0) }}</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </label>
 
-    <!-- 筛选栏 -->
-    <el-card class="filter-card">
-      <el-form :inline="true" :model="filters">
-        <el-form-item label="搜索">
-          <el-input
-            v-model="filters.search"
-            placeholder="订单号/客户姓名/邮箱"
-            clearable
-            @clear="fetchOrders"
-            @keyup.enter="fetchOrders"
-          />
-        </el-form-item>
+        <FilterSelect v-model="filters.status" label="订单状态" :options="orderStatusOptions" />
+        <FilterSelect v-model="filters.payment_status" label="支付状态" :options="paymentStatusOptions" />
+        <FilterSelect v-model="filters.shipping_status" label="物流状态" :options="shippingStatusOptions" />
 
-        <el-form-item label="订单状态">
-          <el-select v-model="filters.status" placeholder="全部" clearable @change="fetchOrders">
-            <el-option label="待支付" value="pending" />
-            <el-option label="已支付" value="paid" />
-            <el-option label="处理中" value="processing" />
-            <el-option label="已发货" value="shipped" />
-            <el-option label="已完成" value="completed" />
-            <el-option label="已取消" value="cancelled" />
-            <el-option label="已退款" value="refunded" />
-          </el-select>
-        </el-form-item>
+        <label class="space-y-1.5">
+          <span class="text-xs font-medium text-muted-foreground">开始日期</span>
+          <Input v-model="filters.start_date" type="date" class="h-9" />
+        </label>
 
-        <el-form-item label="支付状态">
-          <el-select v-model="filters.payment_status" placeholder="全部" clearable @change="fetchOrders">
-            <el-option label="未支付" value="unpaid" />
-            <el-option label="已支付" value="paid" />
-            <el-option label="已退款" value="refunded" />
-          </el-select>
-        </el-form-item>
+        <label class="space-y-1.5">
+          <span class="text-xs font-medium text-muted-foreground">结束日期</span>
+          <Input v-model="filters.end_date" type="date" class="h-9" />
+        </label>
 
-        <el-form-item label="物流状态">
-          <el-select v-model="filters.shipping_status" placeholder="全部" clearable @change="fetchOrders">
-            <el-option label="待处理" value="pending" />
-            <el-option label="处理中" value="processing" />
-            <el-option label="已发货" value="shipped" />
-            <el-option label="已送达" value="delivered" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="日期范围">
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            @change="handleDateChange"
-          />
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="fetchOrders">搜索</el-button>
-          <el-button :icon="Refresh" @click="resetFilters">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <!-- 订单列表 -->
-    <el-card class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="orders"
-        stripe
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column type="selection" width="55" />
-        
-        <el-table-column prop="id" label="ID" width="80" />
-        
-        <el-table-column prop="order_number" label="订单号" width="180" />
-        
-        <el-table-column label="客户" min-width="150">
-          <template #default="{ row }">
-            {{ row.shipping_address.first_name }} {{ row.shipping_address.last_name }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="订单状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getOrderStatusType(row.status)">
-              {{ getOrderStatusName(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="支付状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getPaymentStatusType(row.payment_status)">
-              {{ getPaymentStatusName(row.payment_status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="物流状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getShippingStatusType(row.shipping_status)">
-              {{ getShippingStatusName(row.shipping_status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="total_amount" label="总金额" width="120">
-          <template #default="{ row }">
-            ¥{{ formatMoney(row.total_amount) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="created_at" label="创建时间" width="180">
-          <template #default="{ row }">
-            {{ formatDate(row.created_at) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              link
-              @click="showOrderDetail(row)"
-            >
-              详情
-            </el-button>
-            <el-button
-              v-if="hasPermission('order:edit')"
-              type="warning"
-              size="small"
-              link
-              @click="showStatusDialog(row)"
-            >
-              状态
-            </el-button>
-            <el-button
-              v-if="hasPermission('order:delete')"
-              type="danger"
-              size="small"
-              link
-              @click="deleteOrder(row)"
-            >
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 批量操作 -->
-      <div v-if="selectedOrders.length > 0" class="batch-actions">
-        <span>已选择 {{ selectedOrders.length }} 项</span>
-        <div>
-          <el-button
-            v-if="hasPermission('order:edit')"
-            type="success"
-            size="small"
-            @click="batchUpdateStatus('completed')"
-          >
-            批量完成
-          </el-button>
-          <el-button
-            v-if="hasPermission('order:edit')"
-            type="warning"
-            size="small"
-            @click="batchUpdateStatus('cancelled')"
-          >
-            批量取消
-          </el-button>
+        <div class="flex items-end gap-2">
+          <Button type="submit" class="h-9">
+            <Search class="size-4" />
+            搜索
+          </Button>
+          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
+            <RotateCcw class="size-4" />
+            重置
+          </Button>
         </div>
-      </div>
+      </form>
+    </AdminFilterPanel>
 
-      <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="fetchOrders"
-        @current-change="fetchOrders"
-      />
-    </el-card>
-
-    <!-- 订单详情对话框 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="订单详情"
-      width="900px"
-    >
-      <div v-if="currentOrder" class="order-detail">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="订单号">{{ currentOrder.order_number }}</el-descriptions-item>
-          <el-descriptions-item label="订单状态">
-            <el-tag :type="getOrderStatusType(currentOrder.status)">
-              {{ getOrderStatusName(currentOrder.status) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="支付状态">
-            <el-tag :type="getPaymentStatusType(currentOrder.payment_status)">
-              {{ getPaymentStatusName(currentOrder.payment_status) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="物流状态">
-            <el-tag :type="getShippingStatusType(currentOrder.shipping_status)">
-              {{ getShippingStatusName(currentOrder.shipping_status) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="支付方式">{{ currentOrder.payment_method || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="物流方式">{{ currentOrder.shipping_method || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="物流单号">{{ currentOrder.tracking_number || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="物流公司">{{ currentOrder.carrier_code || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatDate(currentOrder.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="支付时间">{{ currentOrder.paid_at ? formatDate(currentOrder.paid_at) : '-' }}</el-descriptions-item>
-        </el-descriptions>
-
-        <el-divider content-position="left">收货地址</el-divider>
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="姓名">
-            {{ currentOrder.shipping_address.first_name }} {{ currentOrder.shipping_address.last_name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="电话">{{ currentOrder.shipping_address.phone }}</el-descriptions-item>
-          <el-descriptions-item label="邮箱" :span="2">{{ currentOrder.shipping_address.email }}</el-descriptions-item>
-          <el-descriptions-item label="地址" :span="2">
-            {{ currentOrder.shipping_address.address_1 }}
-            {{ currentOrder.shipping_address.address_2 }}
-          </el-descriptions-item>
-          <el-descriptions-item label="城市">{{ currentOrder.shipping_address.city }}</el-descriptions-item>
-          <el-descriptions-item label="省/州">{{ currentOrder.shipping_address.state }}</el-descriptions-item>
-          <el-descriptions-item label="邮编">{{ currentOrder.shipping_address.postal_code }}</el-descriptions-item>
-          <el-descriptions-item label="国家">{{ currentOrder.shipping_address.country }}</el-descriptions-item>
-        </el-descriptions>
-
-        <el-divider content-position="left">订单商品</el-divider>
-        <el-table :data="currentOrder.items" border>
-          <el-table-column prop="product_name" label="商品名称" />
-          <el-table-column prop="sku" label="SKU" width="120" />
-          <el-table-column prop="price" label="单价" width="100">
-            <template #default="{ row }">¥{{ formatMoney(row.price) }}</template>
-          </el-table-column>
-          <el-table-column prop="quantity" label="数量" width="80" />
-          <el-table-column prop="total" label="小计" width="120">
-            <template #default="{ row }">¥{{ formatMoney(row.total) }}</template>
-          </el-table-column>
-        </el-table>
-
-        <el-divider content-position="left">金额明细</el-divider>
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="商品小计">¥{{ formatMoney(currentOrder.subtotal_amount) }}</el-descriptions-item>
-          <el-descriptions-item label="运费">¥{{ formatMoney(currentOrder.shipping_fee) }}</el-descriptions-item>
-          <el-descriptions-item label="税费">¥{{ formatMoney(currentOrder.tax_amount) }}</el-descriptions-item>
-          <el-descriptions-item label="优惠">-¥{{ formatMoney(currentOrder.discount_amount) }}</el-descriptions-item>
-          <el-descriptions-item label="订单总额">
-            <span class="total-amount">¥{{ formatMoney(currentOrder.total_amount) }}</span>
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <el-divider content-position="left">备注</el-divider>
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="客户备注">{{ currentOrder.customer_note || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="管理员备注">
-            <el-input
-              v-model="adminNoteForm.admin_note"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入管理员备注"
-            />
-            <el-button
+    <AdminTablePanel :loading="loading" :batch-visible="selectedOrders.length > 0">
+      <template #batch>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-medium">已选择 {{ selectedOrders.length }} 个订单</span>
+          <div class="flex flex-wrap gap-2">
+            <Button
               v-if="hasPermission('order:edit')"
-              type="primary"
-              size="small"
-              style="margin-top: 10px"
-              @click="updateAdminNote"
+              size="sm"
+              @click="requestBatchStatus('completed')"
             >
-              保存备注
-            </el-button>
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-    </el-dialog>
+              <CircleCheck class="size-3.5" />
+              批量完成
+            </Button>
+            <Button
+              v-if="hasPermission('order:edit')"
+              variant="outline"
+              size="sm"
+              @click="requestBatchStatus('cancelled')"
+            >
+              <CircleX class="size-3.5" />
+              批量取消
+            </Button>
+          </div>
+        </div>
+      </template>
 
-    <!-- 状态管理对话框 -->
-    <el-dialog
-      v-model="statusDialogVisible"
-      title="状态管理"
-      width="500px"
-    >
-      <el-form :model="statusForm" label-width="100px">
-        <el-form-item label="订单号">
-          <span>{{ statusForm.order_number }}</span>
-        </el-form-item>
-        <el-form-item label="订单状态">
-          <el-select v-model="statusForm.status" style="width: 100%">
-            <el-option label="待支付" value="pending" />
-            <el-option label="处理中" value="processing" />
-            <el-option label="已发货" value="shipped" />
-            <el-option label="已完成" value="completed" />
-            <el-option label="已取消" value="cancelled" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="物流状态">
-          <el-select v-model="statusForm.shipping_status" style="width: 100%">
-            <el-option label="待处理" value="pending" />
-            <el-option label="处理中" value="processing" />
-            <el-option label="已发货" value="shipped" />
-            <el-option label="已送达" value="delivered" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="物流单号">
-          <el-input v-model="statusForm.tracking_number" placeholder="请输入物流单号" />
-        </el-form-item>
-        <el-form-item label="物流公司">
-          <el-input v-model="statusForm.carrier_code" placeholder="请输入物流公司代码" />
-        </el-form-item>
-      </el-form>
+      <Table class="min-w-[1180px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead class="w-11">
+              <Checkbox
+                :model-value="selectionState"
+                aria-label="选择当前页订单"
+                @update:model-value="toggleAllOrders"
+              />
+            </TableHead>
+            <TableHead class="w-16">ID</TableHead>
+            <TableHead class="w-44">订单号</TableHead>
+            <TableHead>客户</TableHead>
+            <TableHead class="w-24">订单状态</TableHead>
+            <TableHead class="w-24">支付状态</TableHead>
+            <TableHead class="w-24">物流状态</TableHead>
+            <TableHead class="w-28 text-right">总金额</TableHead>
+            <TableHead class="w-44">创建时间</TableHead>
+            <TableHead class="w-16 text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableEmpty v-if="orders.length === 0" :colspan="10">
+            <div class="flex flex-col items-center text-muted-foreground">
+              <ShoppingBag class="mb-2 size-7 opacity-55" />
+              <span class="text-xs">暂无订单</span>
+            </div>
+          </TableEmpty>
+
+          <TableRow v-for="order in orders" :key="order.id">
+            <TableCell>
+              <Checkbox
+                :model-value="isSelected(order.id)"
+                :aria-label="`选择订单 ${order.order_number}`"
+                @update:model-value="toggleOrder(order, $event)"
+              />
+            </TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ order.id }}</TableCell>
+            <TableCell class="font-mono text-xs font-medium">{{ order.order_number }}</TableCell>
+            <TableCell>{{ shippingName(order.shipping_address) }}</TableCell>
+            <TableCell>
+              <AdminStatusBadge :tone="orderStatusTone(order.status)">{{ getOrderStatusName(order.status) }}</AdminStatusBadge>
+            </TableCell>
+            <TableCell>
+              <AdminStatusBadge :tone="paymentStatusTone(order.payment_status)">{{ getPaymentStatusName(order.payment_status) }}</AdminStatusBadge>
+            </TableCell>
+            <TableCell>
+              <AdminStatusBadge :tone="shippingStatusTone(order.shipping_status)">{{ getShippingStatusName(order.shipping_status) }}</AdminStatusBadge>
+            </TableCell>
+            <TableCell class="text-right font-medium tabular-nums">¥{{ formatMoney(order.total_amount) }}</TableCell>
+            <TableCell class="text-xs text-muted-foreground">{{ formatDate(order.created_at) }}</TableCell>
+            <TableCell class="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button variant="ghost" size="icon" :aria-label="`管理订单 ${order.order_number}`">
+                    <MoreHorizontal class="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-40">
+                  <DropdownMenuItem @select="showOrderDetail(order)">
+                    <Eye class="size-4" />
+                    查看详情
+                  </DropdownMenuItem>
+                  <DropdownMenuItem v-if="hasPermission('order:edit')" @select="showStatusDialog(order)">
+                    <RefreshCw class="size-4" />
+                    状态管理
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator v-if="hasPermission('order:delete')" />
+                  <DropdownMenuItem
+                    v-if="hasPermission('order:delete')"
+                    class="text-destructive focus:text-destructive"
+                    @select="requestDelete(order)"
+                  >
+                    <Trash2 class="size-4" />
+                    删除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <template #footer>
-        <el-button @click="statusDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitStatus">
-          确定
-        </el-button>
+        <AdminPagination
+          :page="pagination.page"
+          :page-size="pagination.pageSize"
+          :total="pagination.total"
+          @update:page="updatePage"
+          @update:page-size="updatePageSize"
+        />
       </template>
-    </el-dialog>
+    </AdminTablePanel>
+
+    <Dialog v-model:open="detailDialogVisible">
+      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
+        <DialogHeader>
+          <DialogTitle>订单详情</DialogTitle>
+          <DialogDescription>{{ currentOrder?.order_number || '订单信息' }}</DialogDescription>
+        </DialogHeader>
+
+        <div v-if="currentOrder" class="space-y-6">
+          <OrderDetailSection title="订单信息">
+            <dl class="grid overflow-hidden rounded-lg border sm:grid-cols-2">
+              <DetailItem label="订单号">{{ currentOrder.order_number }}</DetailItem>
+              <DetailItem label="订单状态"><AdminStatusBadge :tone="orderStatusTone(currentOrder.status)">{{ getOrderStatusName(currentOrder.status) }}</AdminStatusBadge></DetailItem>
+              <DetailItem label="支付状态"><AdminStatusBadge :tone="paymentStatusTone(currentOrder.payment_status)">{{ getPaymentStatusName(currentOrder.payment_status) }}</AdminStatusBadge></DetailItem>
+              <DetailItem label="物流状态"><AdminStatusBadge :tone="shippingStatusTone(currentOrder.shipping_status)">{{ getShippingStatusName(currentOrder.shipping_status) }}</AdminStatusBadge></DetailItem>
+              <DetailItem label="支付方式">{{ currentOrder.payment_method || '-' }}</DetailItem>
+              <DetailItem label="物流方式">{{ currentOrder.shipping_method || '-' }}</DetailItem>
+              <DetailItem label="物流单号">{{ currentOrder.tracking_number || '-' }}</DetailItem>
+              <DetailItem label="物流公司">{{ currentOrder.carrier_code || '-' }}</DetailItem>
+              <DetailItem label="创建时间">{{ formatDate(currentOrder.created_at) }}</DetailItem>
+              <DetailItem label="支付时间">{{ currentOrder.paid_at ? formatDate(currentOrder.paid_at) : '-' }}</DetailItem>
+            </dl>
+          </OrderDetailSection>
+
+          <OrderDetailSection title="收货地址">
+            <dl class="grid overflow-hidden rounded-lg border sm:grid-cols-2">
+              <DetailItem label="姓名">{{ shippingName(currentOrder.shipping_address) }}</DetailItem>
+              <DetailItem label="电话">{{ currentOrder.shipping_address?.phone || '-' }}</DetailItem>
+              <DetailItem label="邮箱" class="sm:col-span-2">{{ currentOrder.shipping_address?.email || '-' }}</DetailItem>
+              <DetailItem label="地址" class="sm:col-span-2">{{ shippingAddressLine(currentOrder.shipping_address) }}</DetailItem>
+              <DetailItem label="城市">{{ currentOrder.shipping_address?.city || '-' }}</DetailItem>
+              <DetailItem label="省/州">{{ currentOrder.shipping_address?.state || '-' }}</DetailItem>
+              <DetailItem label="邮编">{{ currentOrder.shipping_address?.postal_code || '-' }}</DetailItem>
+              <DetailItem label="国家">{{ currentOrder.shipping_address?.country || '-' }}</DetailItem>
+            </dl>
+          </OrderDetailSection>
+
+          <OrderDetailSection title="订单商品">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>商品名称</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead class="text-right">单价</TableHead>
+                  <TableHead class="text-right">数量</TableHead>
+                  <TableHead class="text-right">小计</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableEmpty v-if="!currentOrder.items?.length" :colspan="5">暂无商品明细</TableEmpty>
+                <TableRow v-for="item in currentOrder.items || []" :key="item.id || item.sku">
+                  <TableCell class="font-medium">{{ item.product_name }}</TableCell>
+                  <TableCell class="font-mono text-xs">{{ item.sku }}</TableCell>
+                  <TableCell class="text-right tabular-nums">¥{{ formatMoney(item.price) }}</TableCell>
+                  <TableCell class="text-right tabular-nums">{{ item.quantity }}</TableCell>
+                  <TableCell class="text-right font-medium tabular-nums">¥{{ formatMoney(item.total) }}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </OrderDetailSection>
+
+          <OrderDetailSection title="金额明细">
+            <dl class="ml-auto max-w-md space-y-2 text-sm">
+              <AmountRow label="商品小计" :value="currentOrder.subtotal_amount" />
+              <AmountRow label="运费" :value="currentOrder.shipping_fee" />
+              <AmountRow label="税费" :value="currentOrder.tax_amount" />
+              <AmountRow label="优惠" :value="-Number(currentOrder.discount_amount || 0)" />
+              <div class="flex items-center justify-between border-t pt-3 text-base font-semibold">
+                <dt>订单总额</dt>
+                <dd class="tabular-nums text-primary">¥{{ formatMoney(currentOrder.total_amount) }}</dd>
+              </div>
+            </dl>
+          </OrderDetailSection>
+
+          <OrderDetailSection title="备注">
+            <div class="space-y-4">
+              <div>
+                <span class="text-xs font-medium text-muted-foreground">客户备注</span>
+                <p class="mt-1 text-sm">{{ currentOrder.customer_note || '-' }}</p>
+              </div>
+              <div>
+                <Label for="admin-note">管理员备注</Label>
+                <Textarea id="admin-note" v-model="adminNoteForm.admin_note" class="mt-2 min-h-24" placeholder="请输入管理员备注" />
+                <Button
+                  v-if="hasPermission('order:edit')"
+                  size="sm"
+                  class="mt-2"
+                  @click="updateAdminNote"
+                >
+                  保存备注
+                </Button>
+              </div>
+            </div>
+          </OrderDetailSection>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="statusDialogVisible">
+      <DialogContent class="sm:max-w-lg">
+        <form @submit.prevent="submitStatus">
+          <DialogHeader>
+            <DialogTitle>状态管理</DialogTitle>
+            <DialogDescription>更新订单 {{ statusForm.order_number }} 的履约状态。</DialogDescription>
+          </DialogHeader>
+
+          <div class="space-y-4 py-5">
+            <label class="block space-y-1.5">
+              <span class="text-xs font-medium text-muted-foreground">订单状态</span>
+              <Select v-model="statusForm.status">
+                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in editableOrderStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label class="block space-y-1.5">
+              <span class="text-xs font-medium text-muted-foreground">物流状态</span>
+              <Select v-model="statusForm.shipping_status">
+                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in editableShippingStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label class="block space-y-1.5">
+              <span class="text-xs font-medium text-muted-foreground">物流单号</span>
+              <Input v-model="statusForm.tracking_number" />
+            </label>
+
+            <label class="block space-y-1.5">
+              <span class="text-xs font-medium text-muted-foreground">物流公司代码</span>
+              <Input v-model="statusForm.carrier_code" />
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="statusDialogVisible = false">取消</Button>
+            <Button type="submit" :disabled="submitting">
+              <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
+              {{ submitting ? '正在保存' : '保存' }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <AdminConfirmDialog
+      v-model:open="confirmation.open"
+      :title="confirmation.title"
+      :description="confirmation.description"
+      :confirm-label="confirmation.confirmLabel"
+      :destructive="confirmation.destructive"
+      @confirm="executeConfirmedAction"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Download } from '@element-plus/icons-vue'
+import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import {
+  Banknote,
+  CalendarCheck2,
+  CircleCheck,
+  CircleX,
+  Download,
+  Eye,
+  LoaderCircle,
+  MoreHorizontal,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  ShoppingBag,
+  Trash2,
+  TrendingUp
+} from '@lucide/vue'
+import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
+import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminPagination from '@/components/admin/AdminPagination.vue'
+import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
-const authStore = useAuthStore()
+const FilterSelect = defineComponent({
+  props: {
+    modelValue: { type: String, required: true },
+    label: { type: String, required: true },
+    options: { type: Array, required: true }
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () => h('label', { class: 'space-y-1.5' }, [
+      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+      h(Select, {
+        modelValue: props.modelValue,
+        'onUpdate:modelValue': (value) => emit('update:modelValue', value)
+      }, {
+        default: () => [
+          h(SelectTrigger, { class: 'h-9 w-full' }, { default: () => h(SelectValue) }),
+          h(SelectContent, {}, {
+            default: () => props.options.map((option) => h(SelectItem, { value: option.value }, { default: () => option.label }))
+          })
+        ]
+      })
+    ])
+  }
+})
 
+const OrderDetailSection = defineComponent({
+  props: { title: { type: String, required: true } },
+  setup(props, { slots }) {
+    return () => h('section', { class: 'space-y-3 border-t pt-5 first:border-t-0 first:pt-0' }, [
+      h('h3', { class: 'text-sm font-semibold' }, props.title),
+      slots.default?.()
+    ])
+  }
+})
+
+const DetailItem = defineComponent({
+  props: { label: { type: String, required: true } },
+  setup(props, { slots, attrs }) {
+    return () => h('div', { ...attrs, class: ['border-b p-3 last:border-b-0 sm:border-r sm:last:border-r-0', attrs.class] }, [
+      h('dt', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+      h('dd', { class: 'mt-1 text-sm' }, slots.default?.())
+    ])
+  }
+})
+
+const AmountRow = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    value: { type: [String, Number], default: 0 }
+  },
+  setup(props) {
+    return () => h('div', { class: 'flex items-center justify-between' }, [
+      h('dt', { class: 'text-muted-foreground' }, props.label),
+      h('dd', { class: 'tabular-nums' }, `¥${Number(props.value || 0).toFixed(2)}`)
+    ])
+  }
+})
+
+const authStore = useAuthStore()
 const loading = ref(false)
 const orders = ref([])
 const selectedOrders = ref([])
@@ -385,164 +452,134 @@ const detailDialogVisible = ref(false)
 const statusDialogVisible = ref(false)
 const submitting = ref(false)
 const currentOrder = ref(null)
-const dateRange = ref([])
-
 const stats = ref({})
 
 const filters = reactive({
   search: '',
-  status: '',
-  payment_status: '',
-  shipping_status: '',
+  status: 'all',
+  payment_status: 'all',
+  shipping_status: 'all',
   start_date: '',
   end_date: ''
 })
 
-const pagination = reactive({
-  page: 1,
-  pageSize: 20,
-  total: 0
-})
-
+const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const statusForm = reactive({
   id: null,
   order_number: '',
-  status: '',
-  shipping_status: '',
+  status: 'pending',
+  shipping_status: 'pending',
   tracking_number: '',
   carrier_code: ''
 })
-
-const adminNoteForm = reactive({
-  admin_note: ''
+const adminNoteForm = reactive({ admin_note: '' })
+const confirmation = reactive({
+  open: false,
+  type: '',
+  target: null,
+  status: '',
+  title: '',
+  description: '',
+  confirmLabel: '确定',
+  destructive: false
 })
 
-const hasPermission = (permission) => {
-  return authStore.hasPermission(permission)
-}
+const orderStatusOptions = [
+  { label: '全部状态', value: 'all' },
+  { label: '待支付', value: 'pending' },
+  { label: '已支付', value: 'paid' },
+  { label: '处理中', value: 'processing' },
+  { label: '已发货', value: 'shipped' },
+  { label: '已完成', value: 'completed' },
+  { label: '已取消', value: 'cancelled' },
+  { label: '已退款', value: 'refunded' }
+]
+const paymentStatusOptions = [
+  { label: '全部状态', value: 'all' },
+  { label: '未支付', value: 'unpaid' },
+  { label: '已支付', value: 'paid' },
+  { label: '已退款', value: 'refunded' }
+]
+const shippingStatusOptions = [
+  { label: '全部状态', value: 'all' },
+  { label: '待处理', value: 'pending' },
+  { label: '处理中', value: 'processing' },
+  { label: '已发货', value: 'shipped' },
+  { label: '已送达', value: 'delivered' }
+]
+const editableOrderStatusOptions = orderStatusOptions.filter((option) => !['all', 'paid', 'refunded'].includes(option.value))
+const editableShippingStatusOptions = shippingStatusOptions.filter((option) => option.value !== 'all')
 
-const getOrderStatusName = (status) => {
-  const statusMap = {
-    pending: '待支付',
-    paid: '已支付',
-    processing: '处理中',
-    shipped: '已发货',
-    completed: '已完成',
-    cancelled: '已取消',
-    refunded: '已退款'
-  }
-  return statusMap[status] || status
-}
+const statItems = computed(() => [
+  { key: 'total', label: '总订单数', value: stats.value.total || 0, icon: ShoppingBag, tone: 'gray' },
+  { key: 'today', label: '今日订单', value: stats.value.today || 0, icon: CalendarCheck2, tone: 'blue' },
+  { key: 'revenue', label: '总销售额', value: `¥${formatMoney(stats.value.total_revenue)}`, icon: Banknote, tone: 'green' },
+  { key: 'today-revenue', label: '今日销售额', value: `¥${formatMoney(stats.value.today_revenue)}`, icon: TrendingUp, tone: 'amber' }
+])
+const selectionState = computed(() => {
+  if (orders.value.length === 0 || selectedOrders.value.length === 0) return false
+  return selectedOrders.value.length === orders.value.length ? true : 'indeterminate'
+})
 
-const getOrderStatusType = (status) => {
-  const typeMap = {
-    pending: 'info',
-    paid: 'success',
-    processing: 'warning',
-    shipped: 'primary',
-    completed: 'success',
-    cancelled: 'danger',
-    refunded: 'warning'
-  }
-  return typeMap[status] || ''
-}
+const hasPermission = (permission) => authStore.hasPermission(permission)
 
-const getPaymentStatusName = (status) => {
-  const statusMap = {
-    unpaid: '未支付',
-    paid: '已支付',
-    refunded: '已退款'
-  }
-  return statusMap[status] || status
-}
+const getOrderStatusName = (status) => orderStatusOptions.find((option) => option.value === status)?.label || status
+const orderStatusTone = (status) => ({
+  pending: 'gray', paid: 'green', processing: 'amber', shipped: 'blue', completed: 'green', cancelled: 'coral', refunded: 'amber'
+})[status] || 'gray'
+const getPaymentStatusName = (status) => paymentStatusOptions.find((option) => option.value === status)?.label || status
+const paymentStatusTone = (status) => ({ unpaid: 'gray', paid: 'green', refunded: 'amber' })[status] || 'gray'
+const getShippingStatusName = (status) => shippingStatusOptions.find((option) => option.value === status)?.label || status
+const shippingStatusTone = (status) => ({ pending: 'gray', processing: 'amber', shipped: 'blue', delivered: 'green' })[status] || 'gray'
 
-const getPaymentStatusType = (status) => {
-  const typeMap = {
-    unpaid: 'info',
-    paid: 'success',
-    refunded: 'warning'
-  }
-  return typeMap[status] || ''
-}
+const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+const formatMoney = (amount) => Number(amount || 0).toFixed(2)
+const shippingName = (address) => [address?.first_name, address?.last_name].filter(Boolean).join(' ') || '-'
+const shippingAddressLine = (address) => [address?.address_1, address?.address_2].filter(Boolean).join(' ') || '-'
 
-const getShippingStatusName = (status) => {
-  const statusMap = {
-    pending: '待处理',
-    processing: '处理中',
-    shipped: '已发货',
-    delivered: '已送达'
-  }
-  return statusMap[status] || status
-}
-
-const getShippingStatusType = (status) => {
-  const typeMap = {
-    pending: 'info',
-    processing: 'warning',
-    shipped: 'primary',
-    delivered: 'success'
-  }
-  return typeMap[status] || ''
-}
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString('zh-CN')
-}
-
-const formatMoney = (amount) => {
-  return Number(amount).toFixed(2)
-}
-
-const handleDateChange = (dates) => {
-  if (dates && dates.length === 2) {
-    filters.start_date = dates[0].toISOString().split('T')[0]
-    filters.end_date = dates[1].toISOString().split('T')[0]
-  } else {
-    filters.start_date = ''
-    filters.end_date = ''
-  }
-  fetchOrders()
-}
+const buildFilterParams = () => ({
+  ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
+  ...(filters.status !== 'all' ? { status: filters.status } : {}),
+  ...(filters.payment_status !== 'all' ? { payment_status: filters.payment_status } : {}),
+  ...(filters.shipping_status !== 'all' ? { shipping_status: filters.shipping_status } : {}),
+  ...(filters.start_date ? { start_date: filters.start_date } : {}),
+  ...(filters.end_date ? { end_date: filters.end_date } : {})
+})
 
 const fetchStats = async () => {
   try {
     const response = await axios.get('/api/admin/orders/stats')
-    stats.value = response.data
+    stats.value = response.data || {}
   } catch (error) {
-    console.error('获取统计数据失败', error)
+    console.error('Failed to fetch order stats:', error)
   }
 }
 
 const fetchOrders = async () => {
   loading.value = true
   try {
-    const params = {
-      page: pagination.page,
-      page_size: pagination.pageSize,
-      ...filters
-    }
-
-    const response = await axios.get('/api/admin/orders', { params })
-    orders.value = response.data.orders
-    pagination.total = response.data.pagination.total
+    const response = await axios.get('/api/admin/orders', {
+      params: { page: pagination.page, page_size: pagination.pageSize, ...buildFilterParams() }
+    })
+    orders.value = response.data.orders || []
+    pagination.total = response.data.pagination?.total || 0
+    selectedOrders.value = []
   } catch (error) {
-    ElMessage.error('获取订单列表失败')
+    console.error('Failed to fetch orders:', error)
   } finally {
     loading.value = false
   }
 }
 
+const refreshOrders = () => Promise.all([fetchOrders(), fetchStats()])
+const applyFilters = () => { pagination.page = 1; fetchOrders() }
 const resetFilters = () => {
-  filters.search = ''
-  filters.status = ''
-  filters.payment_status = ''
-  filters.shipping_status = ''
-  filters.start_date = ''
-  filters.end_date = ''
-  dateRange.value = []
+  Object.assign(filters, { search: '', status: 'all', payment_status: 'all', shipping_status: 'all', start_date: '', end_date: '' })
   pagination.page = 1
   fetchOrders()
 }
+const updatePage = (page) => { pagination.page = page; fetchOrders() }
+const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchOrders() }
 
 const showOrderDetail = async (order) => {
   try {
@@ -551,7 +588,7 @@ const showOrderDetail = async (order) => {
     adminNoteForm.admin_note = currentOrder.value.admin_note || ''
     detailDialogVisible.value = true
   } catch (error) {
-    ElMessage.error('获取订单详情失败')
+    console.error('Failed to fetch order detail:', error)
   }
 }
 
@@ -569,32 +606,20 @@ const showStatusDialog = (order) => {
 
 const submitStatus = async () => {
   submitting.value = true
-
   try {
-    // 更新订单状态
-    await axios.patch(`/api/admin/orders/${statusForm.id}/status`, {
-      status: statusForm.status
-    })
-
-    // 更新物流状态
-    await axios.patch(`/api/admin/orders/${statusForm.id}/shipping-status`, {
-      shipping_status: statusForm.shipping_status
-    })
-
-    // 更新物流信息
+    await axios.patch(`/api/admin/orders/${statusForm.id}/status`, { status: statusForm.status })
+    await axios.patch(`/api/admin/orders/${statusForm.id}/shipping-status`, { shipping_status: statusForm.shipping_status })
     if (statusForm.tracking_number) {
       await axios.patch(`/api/admin/orders/${statusForm.id}/tracking`, {
         tracking_number: statusForm.tracking_number,
         carrier_code: statusForm.carrier_code
       })
     }
-
-    ElMessage.success('状态更新成功')
+    toast.success('订单状态已更新')
     statusDialogVisible.value = false
-    fetchOrders()
-    fetchStats()
+    await refreshOrders()
   } catch (error) {
-    ElMessage.error(error.response?.data?.error || '更新失败')
+    console.error('Failed to update order status:', error)
   } finally {
     submitting.value = false
   }
@@ -602,176 +627,73 @@ const submitStatus = async () => {
 
 const updateAdminNote = async () => {
   try {
-    await axios.patch(`/api/admin/orders/${currentOrder.value.id}/admin-note`, {
-      admin_note: adminNoteForm.admin_note
-    })
-    ElMessage.success('备注保存成功')
+    await axios.patch(`/api/admin/orders/${currentOrder.value.id}/admin-note`, { admin_note: adminNoteForm.admin_note })
     currentOrder.value.admin_note = adminNoteForm.admin_note
+    toast.success('管理员备注已保存')
   } catch (error) {
-    ElMessage.error('保存备注失败')
+    console.error('Failed to update admin note:', error)
   }
 }
 
-const deleteOrder = async (order) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除订单 ${order.order_number} 吗？此操作不可恢复！`, '警告', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'error'
-    })
-
-    await axios.delete(`/api/admin/orders/${order.id}`)
-    ElMessage.success('删除成功')
-    fetchOrders()
-    fetchStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
+const isSelected = (orderId) => selectedOrders.value.some((order) => order.id === orderId)
+const toggleAllOrders = (checked) => { selectedOrders.value = checked === true ? [...orders.value] : [] }
+const toggleOrder = (order, checked) => {
+  if (checked === true && !isSelected(order.id)) selectedOrders.value = [...selectedOrders.value, order]
+  else if (checked !== true) selectedOrders.value = selectedOrders.value.filter((selected) => selected.id !== order.id)
 }
 
-const handleSelectionChange = (selection) => {
-  selectedOrders.value = selection
+const setConfirmation = (values) => Object.assign(confirmation, { open: true, destructive: false, confirmLabel: '确定', ...values })
+const requestDelete = (order) => setConfirmation({
+  type: 'delete', target: order, title: '删除订单？', description: `订单 ${order.order_number} 将被永久删除，此操作不可恢复。`, confirmLabel: '删除', destructive: true
+})
+const requestBatchStatus = (status) => {
+  const completing = status === 'completed'
+  setConfirmation({
+    type: 'batch-status',
+    target: [...selectedOrders.value],
+    status,
+    title: completing ? '批量完成订单？' : '批量取消订单？',
+    description: `将 ${selectedOrders.value.length} 个订单标记为${completing ? '已完成' : '已取消'}。`,
+    confirmLabel: completing ? '批量完成' : '批量取消',
+    destructive: !completing
+  })
 }
 
-const batchUpdateStatus = async (status) => {
-  const action = status === 'completed' ? '完成' : '取消'
-  
+const executeConfirmedAction = async () => {
+  const { type, target, status } = confirmation
+  confirmation.open = false
   try {
-    await ElMessageBox.confirm(`确定要${action}选中的 ${selectedOrders.value.length} 个订单吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-
-    const orderIds = selectedOrders.value.map(o => o.id)
-    const response = await axios.post('/api/admin/orders/batch-status', {
-      order_ids: orderIds,
-      status: status
-    })
-
-    ElMessage.success(`批量${action}成功：${response.data.updated}/${response.data.total}`)
-    fetchOrders()
-    fetchStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(`批量${action}失败`)
+    if (type === 'delete') {
+      await axios.delete(`/api/admin/orders/${target.id}`)
+      toast.success('订单已删除')
+    } else if (type === 'batch-status') {
+      const response = await axios.post('/api/admin/orders/batch-status', {
+        order_ids: target.map((order) => order.id),
+        status
+      })
+      toast.success(`批量更新成功：${response.data.updated}/${response.data.total}`)
     }
+    await refreshOrders()
+  } catch (error) {
+    console.error('Failed to update orders:', error)
   }
 }
 
 const exportOrders = async () => {
   try {
-    const params = new URLSearchParams(filters).toString()
-    const url = `/api/admin/orders/export?${params}`
-    
-    const response = await axios.get(url, {
-      responseType: 'blob'
-    })
-    
-    const blob = new Blob([response.data], { type: 'text/csv' })
+    const query = new URLSearchParams(buildFilterParams()).toString()
+    const response = await axios.get(`/api/admin/orders/export${query ? `?${query}` : ''}`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
     const link = document.createElement('a')
-    link.href = window.URL.createObjectURL(blob)
-    link.download = `orders_${new Date().getTime()}.csv`
+    link.href = url
+    link.download = `orders_${Date.now()}.csv`
     link.click()
-    
-    ElMessage.success('导出成功')
+    window.URL.revokeObjectURL(url)
+    toast.success('订单已导出')
   } catch (error) {
-    ElMessage.error('导出失败')
+    console.error('Failed to export orders:', error)
   }
 }
 
-onMounted(() => {
-  fetchStats()
-  fetchOrders()
-})
+onMounted(refreshOrders)
 </script>
-
-<style scoped>
-.orders-page {
-  padding: 0;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 24px;
-  color: #303133;
-}
-
-.stats-row {
-  margin-bottom: 20px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.text-primary {
-  color: #409eff;
-}
-
-.text-success {
-  color: #67c23a;
-}
-
-.text-warning {
-  color: #e6a23c;
-}
-
-.filter-card {
-  margin-bottom: 20px;
-}
-
-.table-card {
-  margin-bottom: 20px;
-}
-
-.batch-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-top: 1px solid #ebeef5;
-  margin-top: 12px;
-}
-
-.el-pagination {
-  margin-top: 20px;
-  justify-content: flex-end;
-}
-
-.order-detail {
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.total-amount {
-  font-size: 18px;
-  font-weight: bold;
-  color: #f56c6c;
-}
-
-.el-divider {
-  margin: 20px 0;
-}
-</style>

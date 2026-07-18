@@ -1,179 +1,170 @@
 <template>
-  <el-container class="layout-container">
-    <!-- 侧边栏 -->
-    <el-aside :width="isCollapse ? '64px' : '200px'" class="sidebar">
-      <div class="logo">
-        <h3 v-if="!isCollapse">Tanzanite</h3>
-        <span v-else>T</span>
-      </div>
-
-      <el-menu
-        :default-active="activeMenu"
-        :collapse="isCollapse"
-        :router="true"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409eff"
+  <TooltipProvider>
+    <div class="flex h-screen h-dvh overflow-hidden bg-background">
+      <aside
+        class="hidden shrink-0 border-r border-sidebar-border bg-sidebar transition-[width] duration-200 lg:flex"
+        :class="isCollapse ? 'w-[72px]' : 'w-[232px]'"
       >
-        <el-menu-item index="/" :route="{ name: 'Dashboard' }">
-          <el-icon><DataAnalysis /></el-icon>
-          <template #title>仪表板</template>
-        </el-menu-item>
+        <AdminSidebar
+          :items="visibleNavigationItems"
+          :active-path="route.path"
+          :collapsed="isCollapse"
+        />
+      </aside>
 
-        <el-menu-item
-          v-if="hasPermission('product:view')"
-          index="/products"
-          :route="{ name: 'Products' }"
+      <Sheet v-model:open="mobileSidebarOpen">
+        <SheetContent
+          side="left"
+          class="w-64 gap-0 p-0 sm:max-w-64"
         >
-          <el-icon><Goods /></el-icon>
-          <template #title>商品管理</template>
-        </el-menu-item>
+          <SheetTitle class="sr-only">后台导航</SheetTitle>
+          <SheetDescription class="sr-only">选择要进入的后台管理模块</SheetDescription>
+          <AdminSidebar
+            :items="visibleNavigationItems"
+            :active-path="route.path"
+            @navigate="mobileSidebarOpen = false"
+          />
+        </SheetContent>
+      </Sheet>
 
-        <el-menu-item
-          v-if="hasPermission('order:view')"
-          index="/orders"
-          :route="{ name: 'Orders' }"
-        >
-          <el-icon><ShoppingCart /></el-icon>
-          <template #title>订单管理</template>
-        </el-menu-item>
+      <section class="flex min-w-0 flex-1 flex-col">
+        <header class="flex h-14 shrink-0 items-center justify-between border-b bg-card px-3 sm:px-4">
+          <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="lg:hidden"
+              aria-label="打开导航"
+              @click="mobileSidebarOpen = true"
+            >
+              <Menu class="size-4" />
+            </Button>
 
-        <el-menu-item
-          v-if="hasPermission('user:view')"
-          index="/users"
-          :route="{ name: 'Users' }"
-        >
-          <el-icon><User /></el-icon>
-          <template #title>用户管理</template>
-        </el-menu-item>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="hidden lg:inline-flex"
+                  :aria-label="isCollapse ? '展开导航' : '收起导航'"
+                  @click="isCollapse = !isCollapse"
+                >
+                  <PanelLeftOpen v-if="isCollapse" class="size-4" />
+                  <PanelLeftClose v-else class="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {{ isCollapse ? '展开导航' : '收起导航' }}
+              </TooltipContent>
+            </Tooltip>
 
-        <el-menu-item
-          v-if="hasPermission('content:view')"
-          index="/content"
-          :route="{ name: 'Content' }"
-        >
-          <el-icon><Document /></el-icon>
-          <template #title>内容管理</template>
-        </el-menu-item>
+            <div class="min-w-0">
+              <span class="hidden text-[10px] font-medium text-muted-foreground sm:block">运营后台</span>
+              <strong class="block truncate text-sm font-semibold">{{ routeTitle }}</strong>
+            </div>
+          </div>
 
-        <el-menu-item
-          v-if="hasPermission('faq:view')"
-          index="/faqs"
-          :route="{ name: 'FAQs' }"
-        >
-          <el-icon><QuestionFilled /></el-icon>
-          <template #title>FAQ管理</template>
-        </el-menu-item>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" class="h-auto gap-2 px-1.5 py-1 sm:px-2">
+                <Avatar class="size-8 rounded-lg">
+                  <AvatarFallback class="rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                    {{ userInitials }}
+                  </AvatarFallback>
+                </Avatar>
+                <span class="hidden max-w-36 flex-col items-start leading-tight sm:flex">
+                  <strong class="w-full truncate text-xs font-medium">{{ user?.username || '管理员' }}</strong>
+                  <small class="mt-0.5 text-[10px] text-muted-foreground">{{ roleLabel }}</small>
+                </span>
+                <ChevronDown class="size-3.5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="w-60">
+              <DropdownMenuLabel class="font-normal">
+                <span class="block text-xs font-medium">{{ user?.username || '管理员' }}</span>
+                <span class="mt-1 block truncate text-xs text-muted-foreground">{{ user?.email }}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem class="text-destructive focus:text-destructive" @select="logoutDialogOpen = true">
+                <LogOut class="size-4" />
+                退出登录
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
 
-        <el-menu-item
-          v-if="hasPermission('gallery:view')"
-          index="/galleries"
-          :route="{ name: 'Galleries' }"
-        >
-          <el-icon><Picture /></el-icon>
-          <template #title>图库管理</template>
-        </el-menu-item>
+        <main class="min-h-0 flex-1 overflow-auto bg-muted/35 p-3 sm:p-4 lg:p-6">
+          <div class="mx-auto w-full max-w-[1600px]">
+            <router-view />
+          </div>
+        </main>
+      </section>
+    </div>
+  </TooltipProvider>
 
-        <el-menu-item
-          v-if="hasPermission('subscription:view')"
-          index="/subscriptions"
-          :route="{ name: 'Subscriptions' }"
-        >
-          <el-icon><Message /></el-icon>
-          <template #title>订阅管理</template>
-        </el-menu-item>
-
-        <el-menu-item
-          v-if="hasPermission('ticket:view')"
-          index="/tickets"
-          :route="{ name: 'Tickets' }"
-        >
-          <el-icon><ChatDotRound /></el-icon>
-          <template #title>工单管理</template>
-        </el-menu-item>
-
-        <el-menu-item
-          v-if="hasPermission('marketing:view')"
-          index="/marketing"
-          :route="{ name: 'Marketing' }"
-        >
-          <el-icon><Promotion /></el-icon>
-          <template #title>营销管理</template>
-        </el-menu-item>
-
-        <el-menu-item
-          v-if="hasPermission('settings:view')"
-          index="/settings"
-          :route="{ name: 'Settings' }"
-        >
-          <el-icon><Setting /></el-icon>
-          <template #title>系统设置</template>
-        </el-menu-item>
-      </el-menu>
-    </el-aside>
-
-    <!-- 主内容区 -->
-    <el-container>
-      <!-- 顶部导航栏 -->
-      <el-header class="header">
-        <div class="header-left">
-          <el-icon class="collapse-icon" @click="toggleCollapse">
-            <Fold v-if="!isCollapse" />
-            <Expand v-else />
-          </el-icon>
-        </div>
-
-        <div class="header-right">
-          <el-dropdown @command="handleCommand">
-            <span class="user-dropdown">
-              <el-avatar :size="32" :src="userAvatar" />
-              <span class="username">{{ user?.username || '管理员' }}</span>
-              <el-icon><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item disabled>
-                  {{ user?.email }}
-                </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
-                  <el-icon><SwitchButton /></el-icon>
-                  退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-
-      <!-- 内容区域 -->
-      <el-main class="main-content">
-        <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+  <AlertDialog v-model:open="logoutDialogOpen">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>退出登录？</AlertDialogTitle>
+        <AlertDialogDescription>
+          当前管理会话将结束，需要重新登录后才能继续操作。
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>取消</AlertDialogCancel>
+        <AlertDialogAction :disabled="logoutLoading" @click="confirmLogout">
+          {{ logoutLoading ? '正在退出' : '退出' }}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
-  DataAnalysis,
-  Goods,
+  ChevronDown,
+  CircleHelp,
+  FileText,
+  Images,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  Megaphone,
+  Menu,
+  MessagesSquare,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ScrollText,
+  Settings,
   ShoppingCart,
-  User,
-  Document,
-  QuestionFilled,
-  Picture,
-  Message,
-  ChatDotRound,
-  Promotion,
-  Setting,
-  Fold,
-  Expand,
-  ArrowDown,
-  SwitchButton
-} from '@element-plus/icons-vue'
+  Users
+} from '@lucide/vue'
+import AdminSidebar from '@/components/admin/AdminSidebar.vue'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -181,113 +172,64 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const isCollapse = ref(false)
+const mobileSidebarOpen = ref(false)
+const logoutDialogOpen = ref(false)
+const logoutLoading = ref(false)
 const user = computed(() => authStore.user)
-const userAvatar = computed(() => `https://ui-avatars.com/api/?name=${user.value?.username || 'Admin'}&background=409eff&color=fff`)
 
-const activeMenu = computed(() => route.path)
+const navigationItems = [
+  { path: '/', routeName: 'Dashboard', label: '仪表板', icon: LayoutDashboard },
+  { path: '/products', routeName: 'Products', label: '商品管理', icon: Package, permission: 'product:view' },
+  { path: '/orders', routeName: 'Orders', label: '订单管理', icon: ShoppingCart, permission: 'order:view' },
+  { path: '/users', routeName: 'Users', label: '用户管理', icon: Users, permission: 'user:view' },
+  { path: '/content', routeName: 'Content', label: '内容管理', icon: FileText, permission: 'content:view' },
+  { path: '/faqs', routeName: 'FAQs', label: 'FAQ 管理', icon: CircleHelp, permission: 'faq:view' },
+  { path: '/galleries', routeName: 'Galleries', label: '图库管理', icon: Images, permission: 'gallery:view' },
+  { path: '/subscriptions', routeName: 'Subscriptions', label: '订阅管理', icon: Mail, permission: 'subscription:view' },
+  { path: '/tickets', routeName: 'Tickets', label: '工单管理', icon: MessagesSquare, permission: 'ticket:view' },
+  { path: '/marketing', routeName: 'Marketing', label: '营销管理', icon: Megaphone, permission: 'marketing:view' },
+  { path: '/settings', routeName: 'Settings', label: '系统设置', icon: Settings, permission: 'settings:view' },
+  { path: '/audit-logs', routeName: 'AuditLogs', label: '审计日志', icon: ScrollText, permission: 'logs:view' }
+]
 
-const hasPermission = (permission) => {
-  return authStore.hasPermission(permission)
-}
+const visibleNavigationItems = computed(() =>
+  navigationItems.filter((item) => !item.permission || authStore.hasPermission(item.permission))
+)
+const routeTitle = computed(() => route.meta.title || '仪表板')
+const userInitials = computed(() => {
+  const identity = user.value?.username || user.value?.email || 'Admin'
+  const parts = identity.split(/[\s_-]+/).filter(Boolean)
+  const initials = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0].slice(0, 2)
+  return initials.toUpperCase()
+})
+const roleLabel = computed(() => {
+  const labels = {
+    admin: '管理员',
+    manager: '经理',
+    editor: '编辑',
+    support: '客服',
+    viewer: '查看者'
+  }
+  return labels[user.value?.role] || '后台用户'
+})
 
-const toggleCollapse = () => {
-  isCollapse.value = !isCollapse.value
-}
+const confirmLogout = async () => {
+  if (logoutLoading.value) return
 
-const handleCommand = async (command) => {
-  if (command === 'logout') {
-    try {
-      await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      })
-
-      await authStore.logout()
-      router.push('/login')
-    } catch {
-      // 用户取消
-    }
+  logoutLoading.value = true
+  try {
+    await authStore.logout()
+    await router.push('/login')
+  } finally {
+    logoutLoading.value = false
+    logoutDialogOpen.value = false
   }
 }
+
+watch(
+  () => route.fullPath,
+  () => {
+    mobileSidebarOpen.value = false
+  }
+)
 </script>
-
-<style scoped>
-.layout-container {
-  height: 100vh;
-}
-
-.sidebar {
-  background-color: #304156;
-  transition: width 0.3s;
-  overflow-x: hidden;
-}
-
-.logo {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-  border-bottom: 1px solid #1f2d3d;
-}
-
-.logo h3 {
-  margin: 0;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #fff;
-  border-bottom: 1px solid #e4e7ed;
-  padding: 0 20px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-.collapse-icon {
-  font-size: 20px;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.collapse-icon:hover {
-  color: #409eff;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.user-dropdown {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.user-dropdown:hover {
-  background-color: #f5f7fa;
-}
-
-.username {
-  font-size: 14px;
-  color: #303133;
-}
-
-.main-content {
-  background-color: #f0f2f5;
-  padding: 20px;
-}
-</style>
