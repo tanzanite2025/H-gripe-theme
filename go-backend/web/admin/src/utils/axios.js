@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { toast } from 'vue-sonner'
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
@@ -45,7 +45,7 @@ const redirectToLoginOnce = () => {
   if (sessionExpiredHandled) return
   sessionExpiredHandled = true
 
-  ElMessage.error('登录已过期，请重新登录')
+  toast.error('登录已过期，请重新登录', { id: 'admin-session-expired' })
   clearAdminAuth()
 
   if (window.location.pathname !== LOGIN_PATH) {
@@ -122,21 +122,21 @@ instance.interceptors.response.use(
           redirectToLoginOnce()
           return silenceAuthFailure()
         case 403:
-          ElMessage.error(data.message || '没有权限访问')
+          toast.error(data.message || '没有权限访问', { id: 'api-forbidden' })
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          toast.error('请求的资源不存在', { id: 'api-not-found' })
           break
         case 500:
-          ElMessage.error('服务器错误')
+          toast.error('服务器错误', { id: 'api-server-error' })
           break
         default:
-          ElMessage.error(data.error || data.message || '请求失败')
+          toast.error(data.error || data.message || '请求失败', { id: 'api-request-error' })
       }
     } else if (error.request) {
-      ElMessage.error('网络错误，请检查网络连接')
+      toast.error('网络错误，请检查网络连接', { id: 'api-network-error' })
     } else {
-      ElMessage.error('请求配置错误')
+      toast.error('请求配置错误', { id: 'api-config-error' })
     }
 
     return Promise.reject(error)

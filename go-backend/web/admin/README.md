@@ -8,7 +8,10 @@ Vue 3 + Vite admin console for the Go backend.
 - Vite
 - Pinia
 - Vue Router
-- Element Plus
+- Tailwind CSS 4
+- shadcn-vue (Nova style)
+- Reka UI
+- Lucide icons
 - Axios
 
 ## Local Development
@@ -38,9 +41,12 @@ web/admin/
 |-- src/
 |   |-- api/          # API clients
 |   |-- assets/       # static assets
-|   |-- components/   # shared components
+|   |-- components/
+|   |   |-- admin/    # admin-specific composed components
+|   |   `-- ui/       # shadcn-vue registry components
 |   |-- router/       # route definitions and guards
 |   |-- stores/       # Pinia stores
+|   |-- styles/       # Tailwind theme and design tokens
 |   |-- utils/        # HTTP/client helpers
 |   `-- views/        # page-level views
 |-- public/
@@ -56,8 +62,14 @@ web/admin/
 - Cookie-authenticated unsafe requests must include CSRF headers where required by the backend.
 - Do not duplicate backend pricing, payment, or permission business rules in the frontend.
 
+## UI Architecture
+
+- Generated primitives stay in `src/components/ui`.
+- Product-specific composition belongs in `src/components/admin`.
+- Shared design tokens live in `src/styles/admin.css`.
+- Page views use the shared admin table, form, dialog, status, statistics, and pagination patterns.
+
 ## Related Docs
 
 - Backend guide: `../../README.md`
 - Root project guide: `../../../README.md`
-- Dark theme guide: `DARK_THEME_GUIDE.md`

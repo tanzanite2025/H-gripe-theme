@@ -1,395 +1,378 @@
-﻿<template>
-  <div class="subscriptions-page">
-    <div class="page-header">
-      <h2>订阅管理</h2>
-      <el-button
-        v-if="hasPermission('subscription:export')"
-        type="success"
-        :icon="Download"
-        @click="exportEmails"
-      >
-        导出邮箱
-      </el-button>
-    </div>
+<template>
+  <div class="space-y-4">
+    <AdminPageHeader title="订阅管理" description="查看邮件订阅来源、状态和退订记录">
+      <template #actions>
+        <Button v-if="hasPermission('subscription:export')" variant="outline" @click="exportEmails">
+          <Download class="size-4" />
+          导出活跃邮箱
+        </Button>
+      </template>
+    </AdminPageHeader>
 
-    <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">总订阅数</div>
-            <div class="stat-value">{{ stats.total || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">活跃订阅</div>
-            <div class="stat-value" style="color: #67c23a">{{ stats.active || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">已取消</div>
-            <div class="stat-value" style="color: #f56c6c">{{ stats.cancelled || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">今日新增</div>
-            <div class="stat-value" style="color: #409eff">{{ stats.today || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <AdminStatsGrid :items="statItems" />
 
-    <!-- 筛选栏 -->
-    <el-card class="filter-card">
-      <el-form :inline="true" :model="filters">
-        <el-form-item label="搜索">
-          <el-input
-            v-model="filters.search"
-            placeholder="邮箱"
-            clearable
-            @clear="fetchSubscriptions"
-            @keyup.enter="fetchSubscriptions"
-          />
-        </el-form-item>
-
-        <el-form-item label="状态">
-          <el-select v-model="filters.status" placeholder="全部" clearable @change="fetchSubscriptions">
-            <el-option label="活跃" value="active" />
-            <el-option label="已取消" value="cancelled" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="fetchSubscriptions">搜索</el-button>
-          <el-button :icon="Refresh" @click="resetFilters">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <!-- 订阅列表 -->
-    <el-card class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="subscriptions"
-        stripe
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column type="selection" width="55" />
-        
-        <el-table-column prop="email" label="邮箱" min-width="200" />
-        
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'">
-              {{ row.status === 'active' ? '活跃' : '已取消' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="source" label="来源" width="120">
-          <template #default="{ row }">
-            {{ getSourceName(row.source) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="subscribed_at" label="订阅时间" width="180">
-          <template #default="{ row }">
-            {{ formatDate(row.subscribed_at) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="unsubscribed_at" label="取消时间" width="180">
-          <template #default="{ row }">
-            {{ row.unsubscribed_at ? formatDate(row.unsubscribed_at) : '-' }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              v-if="hasPermission('subscription:edit')"
-              :type="row.status === 'active' ? 'warning' : 'success'"
-              size="small"
-              link
-              @click="toggleStatus(row)"
-            >
-              {{ row.status === 'active' ? '取消订阅' : '恢复订阅' }}
-            </el-button>
-            <el-button
-              v-if="hasPermission('subscription:delete')"
-              type="danger"
-              size="small"
-              link
-              @click="deleteSubscription(row)"
-            >
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 批量操作 -->
-      <div v-if="selectedSubscriptions.length > 0" class="batch-actions">
-        <span>已选择 {{ selectedSubscriptions.length }} 项</span>
-        <el-button
-          v-if="hasPermission('subscription:delete')"
-          type="danger"
-          size="small"
-          @click="batchDelete"
-        >
-          批量删除
-        </el-button>
+    <AdminFilterPanel>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <label class="w-full space-y-1.5 sm:w-52">
+          <span class="text-xs font-medium text-muted-foreground">状态</span>
+          <Select v-model="filters.status" @update:model-value="applyFilters">
+            <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部状态</SelectItem>
+              <SelectItem value="active">活跃</SelectItem>
+              <SelectItem value="unsubscribed">已退订</SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+        <Button type="button" variant="outline" class="h-9" @click="resetFilters">
+          <RotateCcw class="size-4" />
+          重置
+        </Button>
+        <Button type="button" variant="ghost" class="h-9" @click="refreshSubscriptions">
+          <RefreshCw class="size-4" />
+          刷新
+        </Button>
       </div>
+    </AdminFilterPanel>
 
-      <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="fetchSubscriptions"
-        @current-change="fetchSubscriptions"
-      />
-    </el-card>
+    <AdminTablePanel :loading="loading" :batch-visible="selectedSubscriptions.length > 0">
+      <template #batch>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-medium">已选择 {{ selectedSubscriptions.length }} 个订阅</span>
+          <Button
+            v-if="hasPermission('subscription:delete')"
+            variant="destructive"
+            size="sm"
+            @click="requestBatchDelete"
+          >
+            <Trash2 class="size-3.5" />
+            批量删除
+          </Button>
+        </div>
+      </template>
+
+      <Table class="min-w-[1120px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead class="w-11">
+              <Checkbox
+                :model-value="selectionState"
+                aria-label="选择当前页订阅"
+                @update:model-value="toggleAllSubscriptions"
+              />
+            </TableHead>
+            <TableHead class="w-16">ID</TableHead>
+            <TableHead>邮箱</TableHead>
+            <TableHead class="w-24">状态</TableHead>
+            <TableHead class="w-24">语言</TableHead>
+            <TableHead class="w-28">来源</TableHead>
+            <TableHead class="w-44">标签</TableHead>
+            <TableHead class="w-44">订阅时间</TableHead>
+            <TableHead class="w-44">退订时间</TableHead>
+            <TableHead class="w-16 text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableEmpty v-if="subscriptions.length === 0" :colspan="10">
+            <div class="flex flex-col items-center text-muted-foreground">
+              <MailOpen class="mb-2 size-7 opacity-55" />
+              <span class="text-xs">暂无订阅</span>
+            </div>
+          </TableEmpty>
+
+          <TableRow v-for="subscription in subscriptions" :key="subscription.id || subscription.email">
+            <TableCell>
+              <Checkbox
+                :model-value="isSelected(subscription.email)"
+                :aria-label="`选择订阅 ${subscription.email}`"
+                @update:model-value="toggleSubscription(subscription, $event)"
+              />
+            </TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ subscription.id || '-' }}</TableCell>
+            <TableCell>
+              <a :href="`mailto:${subscription.email}`" class="font-medium hover:text-primary hover:underline">
+                {{ subscription.email }}
+              </a>
+            </TableCell>
+            <TableCell>
+              <AdminStatusBadge :tone="statusTone(subscription.status)">{{ statusName(subscription.status) }}</AdminStatusBadge>
+            </TableCell>
+            <TableCell>{{ localeName(subscription.locale) }}</TableCell>
+            <TableCell>{{ sourceName(subscription.source) }}</TableCell>
+            <TableCell class="max-w-44 truncate text-xs text-muted-foreground">{{ subscription.tags || '-' }}</TableCell>
+            <TableCell class="text-xs text-muted-foreground">{{ formatDate(subscription.subscribed_at) }}</TableCell>
+            <TableCell class="text-xs text-muted-foreground">{{ formatDate(subscription.unsubscribed_at) }}</TableCell>
+            <TableCell class="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button variant="ghost" size="icon" :aria-label="`管理订阅 ${subscription.email}`">
+                    <MoreHorizontal class="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-40">
+                  <DropdownMenuItem
+                    v-if="hasPermission('subscription:edit')"
+                    @select="requestToggleStatus(subscription)"
+                  >
+                    <MailCheck v-if="subscription.status !== 'active'" class="size-4" />
+                    <MailX v-else class="size-4" />
+                    {{ subscription.status === 'active' ? '标记为退订' : '恢复订阅' }}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator v-if="hasPermission('subscription:delete')" />
+                  <DropdownMenuItem
+                    v-if="hasPermission('subscription:delete')"
+                    class="text-destructive focus:text-destructive"
+                    @select="requestDelete(subscription)"
+                  >
+                    <Trash2 class="size-4" />
+                    删除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+
+      <template #footer>
+        <AdminPagination
+          :page="pagination.page"
+          :page-size="pagination.pageSize"
+          :total="pagination.total"
+          @update:page="updatePage"
+          @update:page-size="updatePageSize"
+        />
+      </template>
+    </AdminTablePanel>
+
+    <AdminConfirmDialog
+      v-model:open="confirmation.open"
+      :title="confirmation.title"
+      :description="confirmation.description"
+      :confirm-label="confirmation.confirmLabel"
+      :destructive="confirmation.destructive"
+      @confirm="executeConfirmedAction"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Download, Search, Refresh } from '@element-plus/icons-vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import {
+  CalendarPlus,
+  Download,
+  Mail,
+  MailCheck,
+  MailOpen,
+  MailX,
+  MoreHorizontal,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+  UserMinus
+} from '@lucide/vue'
+import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
+import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminPagination from '@/components/admin/AdminPagination.vue'
+import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
-
 const loading = ref(false)
 const subscriptions = ref([])
 const selectedSubscriptions = ref([])
 const stats = ref({})
-
-const filters = reactive({
-  search: '',
-  status: ''
+const filters = reactive({ status: 'all' })
+const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const confirmation = reactive({
+  open: false,
+  type: '',
+  target: null,
+  status: '',
+  title: '',
+  description: '',
+  confirmLabel: '确定',
+  destructive: false
 })
 
-const pagination = reactive({
-  page: 1,
-  pageSize: 20,
-  total: 0
-})
-
-const hasPermission = (permission) => {
-  return authStore.hasPermission(permission)
-}
-
-const getSourceName = (source) => {
-  const sourceMap = {
-    website: '网站',
-    popup: '弹窗',
-    footer: '页脚',
-    checkout: '结账页'
+const statItems = computed(() => [
+  {
+    key: 'total',
+    label: '总订阅数',
+    value: stats.value.total_count ?? stats.value.total ?? 0,
+    icon: Mail,
+    tone: 'gray'
+  },
+  {
+    key: 'active',
+    label: '活跃订阅',
+    value: stats.value.active_count ?? stats.value.active ?? 0,
+    icon: MailCheck,
+    tone: 'green'
+  },
+  {
+    key: 'unsubscribed',
+    label: '已退订',
+    value: stats.value.unsubscribed_count ?? stats.value.cancelled ?? 0,
+    icon: UserMinus,
+    tone: 'coral'
+  },
+  {
+    key: 'monthly',
+    label: '本月新增',
+    value: stats.value.monthly_count ?? stats.value.today ?? 0,
+    icon: CalendarPlus,
+    tone: 'blue'
   }
-  return sourceMap[source] || source
-}
+])
+const selectionState = computed(() => {
+  if (subscriptions.value.length === 0 || selectedSubscriptions.value.length === 0) return false
+  return selectedSubscriptions.value.length === subscriptions.value.length ? true : 'indeterminate'
+})
 
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString('zh-CN')
-}
+const hasPermission = (permission) => authStore.hasPermission(permission)
+const statusName = (status) => ({ active: '活跃', unsubscribed: '已退订', cancelled: '已退订' })[status] || status || '-'
+const statusTone = (status) => status === 'active' ? 'green' : 'gray'
+const localeName = (locale) => ({ zh: '中文', en: 'English' })[locale] || locale || '-'
+const sourceName = (source) => ({ website: '网站', popup: '弹窗', footer: '页脚', checkout: '结账页' })[source] || source || '-'
+const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 
 const fetchSubscriptions = async () => {
   loading.value = true
   try {
-    const params = {
-      page: pagination.page,
-      page_size: pagination.pageSize,
-      ...filters
-    }
-
-    const response = await axios.get('/api/admin/subscriptions', { params })
-    subscriptions.value = response.data.subscriptions
-    pagination.total = response.data.total
+    const response = await axios.get('/api/admin/subscriptions', {
+      params: {
+        page: pagination.page,
+        page_size: pagination.pageSize,
+        ...(filters.status !== 'all' ? { status: filters.status } : {})
+      }
+    })
+    subscriptions.value = response.data.subscriptions || []
+    pagination.total = response.data.pagination?.total ?? response.data.total ?? 0
+    selectedSubscriptions.value = []
   } catch (error) {
-    ElMessage.error('获取订阅列表失败')
+    console.error('Failed to fetch subscriptions:', error)
   } finally {
     loading.value = false
   }
 }
-
 const fetchStats = async () => {
   try {
     const response = await axios.get('/api/admin/subscriptions/stats')
-    stats.value = response.data
+    stats.value = response.data || {}
   } catch (error) {
-    console.error('获取统计失败', error)
+    console.error('Failed to fetch subscription stats:', error)
+  }
+}
+const refreshSubscriptions = () => Promise.all([fetchSubscriptions(), fetchStats()])
+const applyFilters = () => { pagination.page = 1; fetchSubscriptions() }
+const resetFilters = () => { filters.status = 'all'; pagination.page = 1; fetchSubscriptions() }
+const updatePage = (page) => { pagination.page = page; fetchSubscriptions() }
+const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchSubscriptions() }
+
+const isSelected = (email) => selectedSubscriptions.value.some((subscription) => subscription.email === email)
+const toggleAllSubscriptions = (checked) => {
+  selectedSubscriptions.value = checked === true ? [...subscriptions.value] : []
+}
+const toggleSubscription = (subscription, checked) => {
+  if (checked === true && !isSelected(subscription.email)) {
+    selectedSubscriptions.value = [...selectedSubscriptions.value, subscription]
+  } else if (checked !== true) {
+    selectedSubscriptions.value = selectedSubscriptions.value.filter((selected) => selected.email !== subscription.email)
   }
 }
 
-const resetFilters = () => {
-  filters.search = ''
-  filters.status = ''
-  pagination.page = 1
-  fetchSubscriptions()
+const setConfirmation = (values) => Object.assign(confirmation, {
+  open: true,
+  type: '',
+  target: null,
+  status: '',
+  confirmLabel: '确定',
+  destructive: false,
+  ...values
+})
+const requestToggleStatus = (subscription) => {
+  const status = subscription.status === 'active' ? 'unsubscribed' : 'active'
+  const restoring = status === 'active'
+  setConfirmation({
+    type: 'status',
+    target: subscription,
+    status,
+    title: restoring ? '恢复订阅？' : '标记为退订？',
+    description: `${subscription.email} 将被${restoring ? '恢复为活跃订阅' : '标记为已退订'}。`,
+    confirmLabel: restoring ? '恢复订阅' : '确认退订'
+  })
 }
-
-const toggleStatus = async (subscription) => {
-  const newStatus = subscription.status === 'active' ? 'cancelled' : 'active'
-  const action = newStatus === 'active' ? '恢复' : '取消'
-
+const requestDelete = (subscription) => setConfirmation({
+  type: 'delete',
+  target: subscription,
+  title: '删除订阅？',
+  description: `${subscription.email} 的订阅记录将被永久删除，此操作不可恢复。`,
+  confirmLabel: '删除',
+  destructive: true
+})
+const requestBatchDelete = () => setConfirmation({
+  type: 'batch-delete',
+  target: [...selectedSubscriptions.value],
+  title: '批量删除订阅？',
+  description: `${selectedSubscriptions.value.length} 条订阅记录将被永久删除，此操作不可恢复。`,
+  confirmLabel: '批量删除',
+  destructive: true
+})
+const executeConfirmedAction = async () => {
+  const { type, target, status } = confirmation
+  confirmation.open = false
   try {
-    await ElMessageBox.confirm(`确定要${action}订阅 ${subscription.email} 吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-
-    await axios.patch(`/api/admin/subscriptions/${subscription.email}/status`, { status: newStatus })
-    ElMessage.success(`${action}成功`)
-    fetchSubscriptions()
-    fetchStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(`${action}失败`)
+    if (type === 'status') {
+      await axios.patch(`/api/admin/subscriptions/${encodeURIComponent(target.email)}/status`, { status })
+      toast.success(status === 'active' ? '订阅已恢复' : '订阅已标记为退订')
+    } else if (type === 'delete') {
+      await axios.delete(`/api/admin/subscriptions/${encodeURIComponent(target.email)}`)
+      toast.success('订阅已删除')
+    } else if (type === 'batch-delete') {
+      const response = await axios.post('/api/admin/subscriptions/batch-delete', {
+        emails: target.map((subscription) => subscription.email)
+      })
+      toast.success(`已删除 ${response.data.deleted ?? target.length} 条订阅`)
     }
-  }
-}
-
-const deleteSubscription = async (subscription) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除订阅 ${subscription.email} 吗？此操作不可恢复！`, '警告', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'error'
-    })
-
-    await axios.delete(`/api/admin/subscriptions/${subscription.email}`)
-    ElMessage.success('删除成功')
-    fetchSubscriptions()
-    fetchStats()
+    await refreshSubscriptions()
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
-}
-
-const handleSelectionChange = (selection) => {
-  selectedSubscriptions.value = selection
-}
-
-const batchDelete = async () => {
-  try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${selectedSubscriptions.value.length} 个订阅吗？此操作不可恢复！`, '警告', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'error'
-    })
-
-    const emails = selectedSubscriptions.value.map(s => s.email)
-    await axios.post('/api/admin/subscriptions/batch-delete', { emails })
-    ElMessage.success('批量删除成功')
-    fetchSubscriptions()
-    fetchStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('批量删除失败')
-    }
+    console.error('Failed to update subscriptions:', error)
   }
 }
 
 const exportEmails = async () => {
   try {
     const response = await axios.get('/api/admin/subscriptions/active-emails')
-    const emails = response.data.emails.join('\n')
-    
-    const blob = new Blob([emails], { type: 'text/plain' })
+    const emails = Array.isArray(response.data.emails) ? response.data.emails : []
+    const blob = new Blob([emails.join('\n')], { type: 'text/plain;charset=utf-8' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `subscriptions_${new Date().toISOString().split('T')[0]}.txt`
+    link.download = `subscriptions_${new Date().toISOString().slice(0, 10)}.txt`
     link.click()
     window.URL.revokeObjectURL(url)
-    
-    ElMessage.success('导出成功')
+    toast.success(`已导出 ${emails.length} 个活跃邮箱`)
   } catch (error) {
-    ElMessage.error('导出失败')
+    console.error('Failed to export subscription emails:', error)
   }
 }
 
-onMounted(() => {
-  fetchSubscriptions()
-  fetchStats()
-})
+onMounted(refreshSubscriptions)
 </script>
-
-<style scoped>
-.subscriptions-page {
-  padding: 0;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 24px;
-  color: #303133;
-}
-
-.stats-row {
-  margin-bottom: 20px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.filter-card {
-  margin-bottom: 20px;
-}
-
-.table-card {
-  margin-bottom: 20px;
-}
-
-.batch-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-top: 1px solid #ebeef5;
-  margin-top: 12px;
-}
-
-.el-pagination {
-  margin-top: 20px;
-  justify-content: flex-end;
-}
-</style>

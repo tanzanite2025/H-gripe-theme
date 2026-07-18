@@ -1,442 +1,502 @@
-﻿<template>
-  <div class="tickets-page">
-    <div class="page-header">
-      <h2>工单管理</h2>
-    </div>
+<template>
+  <div class="space-y-4">
+    <AdminPageHeader title="工单管理" description="处理客户请求、分配负责人并跟进消息记录" />
 
-    <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">总工单数</div>
-            <div class="stat-value">{{ stats.total || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">待处理</div>
-            <div class="stat-value" style="color: #e6a23c">{{ stats.open || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">处理中</div>
-            <div class="stat-value" style="color: #409eff">{{ stats.in_progress || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">已关闭</div>
-            <div class="stat-value" style="color: #67c23a">{{ stats.closed || 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <AdminStatsGrid :items="statItems" />
 
-    <!-- 筛选栏 -->
-    <el-card class="filter-card">
-      <el-form :inline="true" :model="filters">
-        <el-form-item label="搜索">
-          <el-input
-            v-model="filters.search"
-            placeholder="标题/工单号"
-            clearable
-            @clear="fetchTickets"
-            @keyup.enter="fetchTickets"
-          />
-        </el-form-item>
-
-        <el-form-item label="状态">
-          <el-select v-model="filters.status" placeholder="全部" clearable @change="fetchTickets">
-            <el-option label="待处理" value="open" />
-            <el-option label="处理中" value="in_progress" />
-            <el-option label="已解决" value="resolved" />
-            <el-option label="已关闭" value="closed" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="优先级">
-          <el-select v-model="filters.priority" placeholder="全部" clearable @change="fetchTickets">
-            <el-option label="低" value="low" />
-            <el-option label="中" value="medium" />
-            <el-option label="高" value="high" />
-            <el-option label="紧急" value="urgent" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="fetchTickets">搜索</el-button>
-          <el-button :icon="Refresh" @click="resetFilters">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <!-- 工单列表 -->
-    <el-card class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="tickets"
-        stripe
-        style="width: 100%"
-      >
-        <el-table-column prop="ticket_number" label="工单号" width="150" />
-        
-        <el-table-column prop="subject" label="标题" min-width="200" show-overflow-tooltip />
-        
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ getStatusName(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="优先级" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getPriorityType(row.priority)">
-              {{ getPriorityName(row.priority) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="user_name" label="用户" width="120" />
-        
-        <el-table-column prop="assigned_to_name" label="负责人" width="120">
-          <template #default="{ row }">
-            {{ row.assigned_to_name || '未分配' }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="created_at" label="创建时间" width="180">
-          <template #default="{ row }">
-            {{ formatDate(row.created_at) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="操作" width="250" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              link
-              @click="viewTicket(row)"
-            >
-              查看
-            </el-button>
-            <el-button
-              v-if="hasPermission('ticket:edit')"
-              type="warning"
-              size="small"
-              link
-              @click="showAssignDialog(row)"
-            >
-              分配
-            </el-button>
-            <el-button
-              v-if="hasPermission('ticket:delete')"
-              type="danger"
-              size="small"
-              link
-              @click="deleteTicket(row)"
-            >
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="fetchTickets"
-        @current-change="fetchTickets"
-      />
-    </el-card>
-
-    <!-- 工单详情对话框 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      :title="`工单详情 - ${currentTicket?.ticket_number}`"
-      width="900px"
-      top="5vh"
-    >
-      <div v-if="currentTicket" class="ticket-detail">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="工单号">{{ currentTicket.ticket_number }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="getStatusType(currentTicket.status)">
-              {{ getStatusName(currentTicket.status) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="优先级">
-            <el-tag :type="getPriorityType(currentTicket.priority)">
-              {{ getPriorityName(currentTicket.priority) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="用户">{{ currentTicket.user_name }}</el-descriptions-item>
-          <el-descriptions-item label="负责人">{{ currentTicket.assigned_to_name || '未分配' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatDate(currentTicket.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="标题" :span="2">{{ currentTicket.subject }}</el-descriptions-item>
-          <el-descriptions-item label="描述" :span="2">
-            <div style="white-space: pre-wrap;">{{ currentTicket.description }}</div>
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <!-- 状态更新 -->
-        <div v-if="hasPermission('ticket:edit')" class="status-update">
-          <el-select v-model="statusUpdate" placeholder="更新状态" style="width: 200px; margin-right: 10px;">
-            <el-option label="待处理" value="open" />
-            <el-option label="处理中" value="in_progress" />
-            <el-option label="已解决" value="resolved" />
-            <el-option label="已关闭" value="closed" />
-          </el-select>
-          <el-button type="primary" @click="updateStatus">更新状态</el-button>
-        </div>
-
-        <!-- 消息列表 -->
-        <div class="messages-section">
-          <h3>消息记录</h3>
-          <div v-loading="messagesLoading" class="messages-list">
-            <div v-for="msg in messages" :key="msg.id" class="message-item">
-              <div class="message-header">
-                <span class="message-sender">{{ msg.sender_name }}</span>
-                <span class="message-time">{{ formatDate(msg.created_at) }}</span>
-              </div>
-              <div class="message-content">{{ msg.message }}</div>
-            </div>
-          </div>
-
-          <!-- 回复表单 -->
-          <div v-if="hasPermission('ticket:edit')" class="reply-form">
-            <el-input
-              v-model="replyMessage"
-              type="textarea"
-              :rows="3"
-              placeholder="输入回复内容..."
-            />
-            <el-button
-              type="primary"
-              :loading="replying"
-              style="margin-top: 10px;"
-              @click="sendReply"
-            >
-              发送回复
-            </el-button>
-          </div>
-        </div>
+    <AdminFilterPanel>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <FilterSelect v-model="filters.status" label="状态" :options="statusFilterOptions" />
+        <FilterSelect v-model="filters.priority" label="优先级" :options="priorityFilterOptions" />
+        <Button type="button" variant="outline" class="h-9" @click="resetFilters">
+          <RotateCcw class="size-4" />
+          重置
+        </Button>
+        <Button type="button" variant="ghost" class="h-9" @click="refreshTickets">
+          <RefreshCw class="size-4" />
+          刷新
+        </Button>
       </div>
-    </el-dialog>
+    </AdminFilterPanel>
 
-    <!-- 分配工单对话框 -->
-    <el-dialog
-      v-model="assignDialogVisible"
-      title="分配工单"
-      width="400px"
-    >
-      <el-form label-width="80px">
-        <el-form-item label="负责人">
-          <el-select v-model="assignTo" placeholder="请选择负责人" style="width: 100%">
-            <el-option
-              v-for="user in supportUsers"
-              :key="user.id"
-              :label="user.username"
-              :value="user.id"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
+    <AdminTablePanel :loading="loading">
+      <Table class="min-w-[1080px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead class="w-44">工单号</TableHead>
+            <TableHead>标题</TableHead>
+            <TableHead class="w-28">分类</TableHead>
+            <TableHead class="w-24">状态</TableHead>
+            <TableHead class="w-24">优先级</TableHead>
+            <TableHead class="w-40">用户</TableHead>
+            <TableHead class="w-32">负责人</TableHead>
+            <TableHead class="w-44">创建时间</TableHead>
+            <TableHead class="w-16 text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableEmpty v-if="tickets.length === 0" :colspan="9">
+            <div class="flex flex-col items-center text-muted-foreground">
+              <MessagesSquare class="mb-2 size-7 opacity-55" />
+              <span class="text-xs">暂无工单</span>
+            </div>
+          </TableEmpty>
+
+          <TableRow v-for="ticket in tickets" :key="ticket.id">
+            <TableCell class="font-mono text-xs font-medium">{{ ticket.ticket_number }}</TableCell>
+            <TableCell class="max-w-80 truncate font-medium">{{ ticket.subject }}</TableCell>
+            <TableCell>{{ categoryName(ticket.category) }}</TableCell>
+            <TableCell>
+              <AdminStatusBadge :tone="statusTone(ticket.status)">{{ statusName(ticket.status) }}</AdminStatusBadge>
+            </TableCell>
+            <TableCell>
+              <AdminStatusBadge :tone="priorityTone(ticket.priority)">{{ priorityName(ticket.priority) }}</AdminStatusBadge>
+            </TableCell>
+            <TableCell class="max-w-40 truncate">{{ customerName(ticket) }}</TableCell>
+            <TableCell>{{ assigneeName(ticket.assigned_to) }}</TableCell>
+            <TableCell class="text-xs text-muted-foreground">{{ formatDate(ticket.created_at) }}</TableCell>
+            <TableCell class="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button variant="ghost" size="icon" :aria-label="`管理工单 ${ticket.ticket_number}`">
+                    <MoreHorizontal class="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-40">
+                  <DropdownMenuItem @select="viewTicket(ticket)">
+                    <Eye class="size-4" />
+                    查看详情
+                  </DropdownMenuItem>
+                  <DropdownMenuItem v-if="hasPermission('ticket:edit')" @select="showAssignDialog(ticket)">
+                    <UserRoundCog class="size-4" />
+                    分配工单
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator v-if="hasPermission('ticket:delete')" />
+                  <DropdownMenuItem
+                    v-if="hasPermission('ticket:delete')"
+                    class="text-destructive focus:text-destructive"
+                    @select="requestDelete(ticket)"
+                  >
+                    <Trash2 class="size-4" />
+                    删除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <template #footer>
-        <el-button @click="assignDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="assigning" @click="assignTicket">
-          确定
-        </el-button>
+        <AdminPagination
+          :page="pagination.page"
+          :page-size="pagination.pageSize"
+          :total="pagination.total"
+          @update:page="updatePage"
+          @update:page-size="updatePageSize"
+        />
       </template>
-    </el-dialog>
+    </AdminTablePanel>
+
+    <Dialog v-model:open="detailDialogVisible">
+      <DialogContent class="max-h-[92vh] overflow-y-auto p-0 sm:max-w-6xl" @open-auto-focus.prevent>
+        <DialogHeader class="border-b px-5 py-4 pr-12">
+          <DialogTitle>{{ currentTicket?.ticket_number || '工单详情' }}</DialogTitle>
+          <DialogDescription>{{ currentTicket?.subject || '查看工单信息和消息记录' }}</DialogDescription>
+        </DialogHeader>
+
+        <div class="relative min-h-80">
+          <div v-if="detailLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
+            <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载工单详情" />
+          </div>
+
+          <div v-if="currentTicket" class="grid lg:grid-cols-[320px_minmax(0,1fr)]">
+            <aside class="space-y-6 border-b p-5 lg:border-b-0 lg:border-r">
+              <section class="space-y-3">
+                <h3 class="text-sm font-semibold">工单信息</h3>
+                <dl class="divide-y rounded-lg border">
+                  <DetailItem label="状态">
+                    <AdminStatusBadge :tone="statusTone(currentTicket.status)">{{ statusName(currentTicket.status) }}</AdminStatusBadge>
+                  </DetailItem>
+                  <DetailItem label="优先级">
+                    <AdminStatusBadge :tone="priorityTone(currentTicket.priority)">{{ priorityName(currentTicket.priority) }}</AdminStatusBadge>
+                  </DetailItem>
+                  <DetailItem label="分类">{{ categoryName(currentTicket.category) }}</DetailItem>
+                  <DetailItem label="客户">{{ customerName(currentTicket) }}</DetailItem>
+                  <DetailItem label="负责人">{{ assigneeName(currentTicket.assigned_to) }}</DetailItem>
+                  <DetailItem label="创建时间">{{ formatDate(currentTicket.created_at) }}</DetailItem>
+                  <DetailItem label="更新时间">{{ formatDate(currentTicket.updated_at) }}</DetailItem>
+                  <DetailItem v-if="currentTicket.tags" label="标签">{{ currentTicket.tags }}</DetailItem>
+                </dl>
+              </section>
+
+              <section v-if="hasPermission('ticket:edit')" class="space-y-3 border-t pt-5">
+                <h3 class="text-sm font-semibold">处理操作</h3>
+                <label class="block space-y-1.5">
+                  <span class="text-xs font-medium text-muted-foreground">状态</span>
+                  <Select v-model="statusUpdate">
+                    <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in editableStatusOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </label>
+                <Button class="w-full" :disabled="statusUpdating || statusUpdate === currentTicket.status" @click="updateStatus">
+                  <LoaderCircle v-if="statusUpdating" class="size-4 animate-spin" />
+                  更新状态
+                </Button>
+                <Button variant="outline" class="w-full" @click="showAssignDialog(currentTicket)">
+                  <UserRoundCog class="size-4" />
+                  {{ currentTicket.assigned_to ? '更换负责人' : '分配负责人' }}
+                </Button>
+              </section>
+            </aside>
+
+            <section class="flex min-h-[620px] min-w-0 flex-col">
+              <div class="flex items-center justify-between border-b px-5 py-3">
+                <h3 class="text-sm font-semibold">消息记录</h3>
+                <span class="text-xs text-muted-foreground">{{ messages.length }} 条</span>
+              </div>
+
+              <div class="relative min-h-64 flex-1 overflow-y-auto px-5 py-4">
+                <div v-if="messagesLoading" class="absolute inset-0 flex items-center justify-center bg-background/75">
+                  <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载消息" />
+                </div>
+                <div v-else-if="messages.length === 0" class="flex h-52 flex-col items-center justify-center text-muted-foreground">
+                  <MessageCircleOff class="mb-2 size-7 opacity-55" />
+                  <span class="text-xs">暂无消息记录</span>
+                </div>
+                <div v-else class="space-y-3">
+                  <article
+                    v-for="message in messages"
+                    :key="message.id"
+                    class="max-w-[88%] rounded-lg border px-3.5 py-3"
+                    :class="message.is_staff ? 'ml-auto border-blue-200 bg-blue-50/70' : 'mr-auto bg-muted/40'"
+                  >
+                    <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold">{{ messageSender(message) }}</span>
+                        <AdminStatusBadge :tone="message.is_staff ? 'blue' : 'gray'">
+                          {{ message.is_staff ? '客服' : '客户' }}
+                        </AdminStatusBadge>
+                      </div>
+                      <time class="text-[11px] text-muted-foreground">{{ formatDate(message.created_at) }}</time>
+                    </header>
+                    <p class="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{{ message.content || message.message }}</p>
+                  </article>
+                </div>
+              </div>
+
+              <form v-if="hasPermission('ticket:edit')" class="border-t p-4" @submit.prevent="sendReply">
+                <Textarea v-model="replyMessage" class="min-h-24 resize-y" placeholder="输入回复内容" />
+                <div class="mt-3 flex justify-end">
+                  <Button type="submit" :disabled="replying || !replyMessage.trim()">
+                    <LoaderCircle v-if="replying" class="size-4 animate-spin" />
+                    <Send v-else class="size-4" />
+                    发送回复
+                  </Button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="assignDialogVisible">
+      <DialogContent class="sm:max-w-md" @open-auto-focus.prevent>
+        <form class="space-y-5" @submit.prevent="assignTicket">
+          <DialogHeader>
+            <DialogTitle>分配工单</DialogTitle>
+            <DialogDescription>{{ currentTicket?.ticket_number }} · {{ currentTicket?.subject }}</DialogDescription>
+          </DialogHeader>
+          <label class="block space-y-1.5">
+            <span class="text-xs font-medium">负责人</span>
+            <Select v-model="assignTo">
+              <SelectTrigger class="w-full"><SelectValue placeholder="请选择负责人" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="user in supportUsers" :key="user.id" :value="String(user.id)">
+                  {{ supportUserName(user) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="assignDialogVisible = false">取消</Button>
+            <Button type="submit" :disabled="assigning || !assignTo">
+              <LoaderCircle v-if="assigning" class="size-4 animate-spin" />
+              确认分配
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <AdminConfirmDialog
+      v-model:open="confirmation.open"
+      :title="confirmation.title"
+      :description="confirmation.description"
+      confirm-label="删除"
+      destructive
+      @confirm="executeDelete"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import {
+  CircleCheck,
+  CircleDot,
+  CirclePause,
+  CircleX,
+  Eye,
+  LoaderCircle,
+  MessageCircleOff,
+  MessagesSquare,
+  MoreHorizontal,
+  RefreshCw,
+  RotateCcw,
+  Send,
+  Trash2,
+  UserRoundCog
+} from '@lucide/vue'
+import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
+import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminPagination from '@/components/admin/AdminPagination.vue'
+import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
-const authStore = useAuthStore()
+const FilterSelect = defineComponent({
+  props: {
+    modelValue: { type: String, required: true },
+    label: { type: String, required: true },
+    options: { type: Array, required: true }
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () => h('label', { class: 'w-full space-y-1.5 sm:w-52' }, [
+      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+      h(Select, {
+        modelValue: props.modelValue,
+        'onUpdate:modelValue': (value) => {
+          emit('update:modelValue', value)
+          applyFilters()
+        }
+      }, {
+        default: () => [
+          h(SelectTrigger, { class: 'h-9 w-full' }, { default: () => h(SelectValue) }),
+          h(SelectContent, {}, {
+            default: () => props.options.map((option) => h(SelectItem, { value: option.value }, { default: () => option.label }))
+          })
+        ]
+      })
+    ])
+  }
+})
 
+const DetailItem = defineComponent({
+  props: { label: { type: String, required: true } },
+  setup(props, { slots }) {
+    return () => h('div', { class: 'grid grid-cols-[86px_minmax(0,1fr)] gap-3 px-3 py-2.5' }, [
+      h('dt', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+      h('dd', { class: 'min-w-0 break-words text-xs' }, slots.default?.())
+    ])
+  }
+})
+
+const authStore = useAuthStore()
 const loading = ref(false)
 const tickets = ref([])
 const stats = ref({})
 const detailDialogVisible = ref(false)
+const detailLoading = ref(false)
 const currentTicket = ref(null)
 const messages = ref([])
 const messagesLoading = ref(false)
 const replyMessage = ref('')
 const replying = ref(false)
-const statusUpdate = ref('')
+const statusUpdate = ref('open')
+const statusUpdating = ref(false)
 
 const assignDialogVisible = ref(false)
-const assignTo = ref(null)
+const assignTo = ref('')
 const assigning = ref(false)
 const supportUsers = ref([])
 
-const filters = reactive({
-  search: '',
-  status: '',
-  priority: ''
-})
+const filters = reactive({ status: 'all', priority: 'all' })
+const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const confirmation = reactive({ open: false, target: null, title: '', description: '' })
 
-const pagination = reactive({
-  page: 1,
-  pageSize: 20,
-  total: 0
-})
+const editableStatusOptions = [
+  { label: '待处理', value: 'open' },
+  { label: '处理中', value: 'in_progress' },
+  { label: '已解决', value: 'resolved' },
+  { label: '已关闭', value: 'closed' }
+]
+const statusFilterOptions = [{ label: '全部状态', value: 'all' }, ...editableStatusOptions]
+const priorityFilterOptions = [
+  { label: '全部优先级', value: 'all' },
+  { label: '低', value: 'low' },
+  { label: '中', value: 'medium' },
+  { label: '高', value: 'high' },
+  { label: '紧急', value: 'urgent' }
+]
 
-const hasPermission = (permission) => {
-  return authStore.hasPermission(permission)
+const statItems = computed(() => [
+  { key: 'total', label: '总工单数', value: stats.value.total || 0, icon: MessagesSquare, tone: 'gray' },
+  { key: 'open', label: '待处理', value: stats.value.open || 0, icon: CircleDot, tone: 'amber' },
+  { key: 'progress', label: '处理中', value: stats.value.in_progress || 0, icon: CirclePause, tone: 'blue' },
+  { key: 'closed', label: '已解决/关闭', value: Number(stats.value.resolved || 0) + Number(stats.value.closed || 0), icon: CircleCheck, tone: 'green' }
+])
+
+const apiData = (response) => response.data?.data ?? response.data ?? {}
+const hasPermission = (permission) => authStore.hasPermission(permission)
+const statusName = (status) => ({ open: '待处理', in_progress: '处理中', resolved: '已解决', closed: '已关闭' })[status] || status || '-'
+const statusTone = (status) => ({ open: 'amber', in_progress: 'blue', resolved: 'green', closed: 'gray' })[status] || 'gray'
+const priorityName = (priority) => ({ low: '低', medium: '中', high: '高', urgent: '紧急' })[priority] || priority || '-'
+const priorityTone = (priority) => ({ low: 'gray', medium: 'blue', high: 'amber', urgent: 'coral' })[priority] || 'gray'
+const categoryName = (category) => ({ order: '订单', product: '商品', shipping: '物流', customer_service: '在线客服', other: '其他' })[category] || category || '-'
+const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+const supportUserName = (user) => user.username || user.email || `用户 ${user.id}`
+const customerName = (ticket) => ticket.user_name || ticket.user?.username || ticket.user?.email || `用户 ${ticket.user_id}`
+const assigneeName = (assignedTo) => {
+  if (!assignedTo) return '未分配'
+  const user = supportUsers.value.find((item) => Number(item.id) === Number(assignedTo))
+  return user ? supportUserName(user) : `用户 ${assignedTo}`
 }
-
-const getStatusName = (status) => {
-  const map = {
-    open: '待处理',
-    in_progress: '处理中',
-    resolved: '已解决',
-    closed: '已关闭'
-  }
-  return map[status] || status
-}
-
-const getStatusType = (status) => {
-  const map = {
-    open: 'warning',
-    in_progress: 'primary',
-    resolved: 'success',
-    closed: 'info'
-  }
-  return map[status] || ''
-}
-
-const getPriorityName = (priority) => {
-  const map = {
-    low: '低',
-    medium: '中',
-    high: '高',
-    urgent: '紧急'
-  }
-  return map[priority] || priority
-}
-
-const getPriorityType = (priority) => {
-  const map = {
-    low: 'info',
-    medium: '',
-    high: 'warning',
-    urgent: 'danger'
-  }
-  return map[priority] || ''
-}
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString('zh-CN')
-}
+const messageSender = (message) => message.sender_name || message.user?.username || message.user?.email || (message.is_staff ? '客服' : '客户')
 
 const fetchTickets = async () => {
   loading.value = true
   try {
-    const params = {
-      page: pagination.page,
-      page_size: pagination.pageSize,
-      ...filters
-    }
-
-    const response = await axios.get('/api/admin/tickets', { params })
-    tickets.value = response.data.tickets
-    pagination.total = response.data.total
+    const response = await axios.get('/api/admin/tickets', {
+      params: {
+        page: pagination.page,
+        page_size: pagination.pageSize,
+        ...(filters.status !== 'all' ? { status: filters.status } : {}),
+        ...(filters.priority !== 'all' ? { priority: filters.priority } : {})
+      }
+    })
+    const data = apiData(response)
+    tickets.value = data.tickets || []
+    pagination.total = data.pagination?.total ?? 0
   } catch (error) {
-    ElMessage.error('获取工单列表失败')
+    console.error('Failed to fetch tickets:', error)
   } finally {
     loading.value = false
   }
 }
-
 const fetchStats = async () => {
   try {
     const response = await axios.get('/api/admin/tickets/stats')
-    stats.value = response.data
+    stats.value = apiData(response) || {}
   } catch (error) {
-    console.error('获取统计失败', error)
+    console.error('Failed to fetch ticket stats:', error)
   }
 }
-
-const resetFilters = () => {
-  filters.search = ''
-  filters.status = ''
-  filters.priority = ''
-  pagination.page = 1
-  fetchTickets()
+const fetchSupportUsers = async () => {
+  try {
+    const response = await axios.get('/api/admin/users', { params: { role: 'support', page_size: 100 } })
+    supportUsers.value = response.data.users || []
+  } catch (error) {
+    console.error('Failed to fetch support users:', error)
+  }
 }
+const refreshTickets = () => Promise.all([fetchTickets(), fetchStats()])
+const applyFilters = () => { pagination.page = 1; fetchTickets() }
+const resetFilters = () => { Object.assign(filters, { status: 'all', priority: 'all' }); pagination.page = 1; fetchTickets() }
+const updatePage = (page) => { pagination.page = page; fetchTickets() }
+const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchTickets() }
 
 const viewTicket = async (ticket) => {
   currentTicket.value = ticket
+  messages.value = []
+  replyMessage.value = ''
   statusUpdate.value = ticket.status
   detailDialogVisible.value = true
-  await fetchMessages(ticket.id)
+  detailLoading.value = true
+  messagesLoading.value = true
+  try {
+    const [detailResponse, messagesResponse] = await Promise.all([
+      axios.get(`/api/admin/tickets/${ticket.id}`),
+      axios.get(`/api/admin/tickets/${ticket.id}/messages`)
+    ])
+    const detailData = apiData(detailResponse)
+    const messageData = apiData(messagesResponse)
+    currentTicket.value = detailData.ticket || ticket
+    statusUpdate.value = currentTicket.value.status
+    messages.value = messageData.messages || currentTicket.value.messages || []
+    await axios.post(`/api/admin/tickets/${ticket.id}/messages/mark-read`)
+  } catch (error) {
+    console.error('Failed to fetch ticket detail:', error)
+  } finally {
+    detailLoading.value = false
+    messagesLoading.value = false
+  }
 }
-
 const fetchMessages = async (ticketId) => {
   messagesLoading.value = true
   try {
     const response = await axios.get(`/api/admin/tickets/${ticketId}/messages`)
-    messages.value = response.data.messages
+    messages.value = apiData(response).messages || []
+    await axios.post(`/api/admin/tickets/${ticketId}/messages/mark-read`)
   } catch (error) {
-    ElMessage.error('获取消息失败')
+    console.error('Failed to fetch ticket messages:', error)
   } finally {
     messagesLoading.value = false
   }
 }
-
 const updateStatus = async () => {
+  statusUpdating.value = true
   try {
-    await axios.patch(`/api/admin/tickets/${currentTicket.value.id}/status`, {
-      status: statusUpdate.value
-    })
-    ElMessage.success('状态更新成功')
+    await axios.patch(`/api/admin/tickets/${currentTicket.value.id}/status`, { status: statusUpdate.value })
     currentTicket.value.status = statusUpdate.value
-    fetchTickets()
-    fetchStats()
+    toast.success('工单状态已更新')
+    await refreshTickets()
   } catch (error) {
-    ElMessage.error('状态更新失败')
+    console.error('Failed to update ticket status:', error)
+  } finally {
+    statusUpdating.value = false
   }
 }
-
 const sendReply = async () => {
-  if (!replyMessage.value.trim()) {
-    ElMessage.warning('请输入回复内容')
-    return
-  }
-
+  const message = replyMessage.value.trim()
+  if (!message) return
   replying.value = true
   try {
-    await axios.post(`/api/admin/tickets/${currentTicket.value.id}/messages`, {
-      message: replyMessage.value
-    })
-    ElMessage.success('回复成功')
+    await axios.post(`/api/admin/tickets/${currentTicket.value.id}/messages`, { message })
     replyMessage.value = ''
-    fetchMessages(currentTicket.value.id)
+    toast.success('回复已发送')
+    await Promise.all([fetchMessages(currentTicket.value.id), fetchTickets()])
   } catch (error) {
-    ElMessage.error('回复失败')
+    console.error('Failed to send ticket reply:', error)
   } finally {
     replying.value = false
   }
@@ -444,177 +504,45 @@ const sendReply = async () => {
 
 const showAssignDialog = (ticket) => {
   currentTicket.value = ticket
-  assignTo.value = ticket.assigned_to
+  assignTo.value = ticket.assigned_to ? String(ticket.assigned_to) : ''
   assignDialogVisible.value = true
 }
-
 const assignTicket = async () => {
-  if (!assignTo.value) {
-    ElMessage.warning('请选择负责人')
-    return
-  }
-
+  if (!assignTo.value) return
   assigning.value = true
   try {
-    await axios.patch(`/api/admin/tickets/${currentTicket.value.id}/assign`, {
-      assigned_to: assignTo.value
-    })
-    ElMessage.success('分配成功')
+    await axios.patch(`/api/admin/tickets/${currentTicket.value.id}/assign`, { assigned_to: Number(assignTo.value) })
+    currentTicket.value.assigned_to = Number(assignTo.value)
+    currentTicket.value.status = 'in_progress'
+    statusUpdate.value = 'in_progress'
     assignDialogVisible.value = false
-    fetchTickets()
+    toast.success('工单已分配')
+    await refreshTickets()
   } catch (error) {
-    ElMessage.error('分配失败')
+    console.error('Failed to assign ticket:', error)
   } finally {
     assigning.value = false
   }
 }
 
-const deleteTicket = async (ticket) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除工单 ${ticket.ticket_number} 吗？此操作不可恢复！`, '警告', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'error'
-    })
-
-    await axios.delete(`/api/admin/tickets/${ticket.id}`)
-    ElMessage.success('删除成功')
-    fetchTickets()
-    fetchStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
-}
-
-const fetchSupportUsers = async () => {
-  try {
-    const response = await axios.get('/api/admin/users', {
-      params: { role: 'support', page_size: 100 }
-    })
-    supportUsers.value = response.data.users
-  } catch (error) {
-    console.error('获取客服列表失败', error)
-  }
-}
-
-onMounted(() => {
-  fetchTickets()
-  fetchStats()
-  fetchSupportUsers()
+const requestDelete = (ticket) => Object.assign(confirmation, {
+  open: true,
+  target: ticket,
+  title: '删除工单？',
+  description: `工单 ${ticket.ticket_number} 及全部消息将被永久删除，此操作不可恢复。`
 })
+const executeDelete = async () => {
+  const ticket = confirmation.target
+  confirmation.open = false
+  try {
+    await axios.delete(`/api/admin/tickets/${ticket.id}`)
+    if (currentTicket.value?.id === ticket.id) detailDialogVisible.value = false
+    toast.success('工单已删除')
+    await refreshTickets()
+  } catch (error) {
+    console.error('Failed to delete ticket:', error)
+  }
+}
+
+onMounted(() => Promise.all([fetchTickets(), fetchStats(), fetchSupportUsers()]))
 </script>
-
-<style scoped>
-.tickets-page {
-  padding: 0;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 24px;
-  color: #303133;
-}
-
-.stats-row {
-  margin-bottom: 20px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.filter-card {
-  margin-bottom: 20px;
-}
-
-.table-card {
-  margin-bottom: 20px;
-}
-
-.el-pagination {
-  margin-top: 20px;
-  justify-content: flex-end;
-}
-
-.ticket-detail {
-  padding: 10px 0;
-}
-
-.status-update {
-  margin: 20px 0;
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.messages-section {
-  margin-top: 20px;
-}
-
-.messages-section h3 {
-  margin-bottom: 15px;
-  font-size: 16px;
-  color: #303133;
-}
-
-.messages-list {
-  max-height: 400px;
-  overflow-y: auto;
-  margin-bottom: 15px;
-}
-
-.message-item {
-  padding: 12px;
-  margin-bottom: 10px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.message-sender {
-  font-weight: bold;
-  color: #303133;
-}
-
-.message-time {
-  font-size: 12px;
-  color: #909399;
-}
-
-.message-content {
-  color: #606266;
-  white-space: pre-wrap;
-}
-
-.reply-form {
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-</style>

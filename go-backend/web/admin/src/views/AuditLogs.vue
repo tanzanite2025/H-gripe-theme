@@ -1,464 +1,313 @@
 <template>
-  <div class="audit-logs-page">
-    <div class="page-header">
-      <h2>审计日志</h2>
-    </div>
+  <div class="space-y-4">
+    <AdminPageHeader title="审计日志" description="追踪后台操作、资源变更和请求结果">
+      <template #actions>
+        <Button variant="outline" @click="refreshLogs">
+          <RefreshCw class="size-4" />
+          刷新
+        </Button>
+      </template>
+    </AdminPageHeader>
 
-    <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">总日志数</div>
-            <div class="stat-value">{{ stats.total_count || 0 }}</div>
+    <AdminStatsGrid :items="statItems" />
+
+    <AdminFilterPanel>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" @submit.prevent="applyFilters">
+        <label class="space-y-1.5 xl:col-span-2">
+          <span class="text-xs font-medium text-muted-foreground">关键词</span>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input v-model="filters.keyword" class="h-9 pl-9" placeholder="用户、操作、资源、路径或错误信息" />
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">今日操作</div>
-            <div class="stat-value" style="color: #409eff">{{ todayCount }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">成功操作</div>
-            <div class="stat-value" style="color: #67c23a">{{ successCount }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <div class="stat-item">
-            <div class="stat-label">失败操作</div>
-            <div class="stat-value" style="color: #f56c6c">{{ failedCount }}</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 筛选栏 -->
-    <el-card class="filter-card">
-      <el-form :inline="true" :model="filters">
-        <el-form-item label="搜索">
-          <el-input
-            v-model="filters.keyword"
-            placeholder="关键词"
-            clearable
-            @clear="fetchLogs"
-            @keyup.enter="fetchLogs"
-          />
-        </el-form-item>
-
-        <el-form-item label="操作">
-          <el-select v-model="filters.action" placeholder="全部" clearable @change="fetchLogs">
-            <el-option label="创建" value="create" />
-            <el-option label="更新" value="update" />
-            <el-option label="删除" value="delete" />
-            <el-option label="查看" value="view" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="资源">
-          <el-select v-model="filters.resource" placeholder="全部" clearable @change="fetchLogs">
-            <el-option label="用户" value="user" />
-            <el-option label="商品" value="product" />
-            <el-option label="订单" value="order" />
-            <el-option label="文章" value="post" />
-            <el-option label="工单" value="ticket" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="日期范围">
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            @change="fetchLogs"
-          />
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="fetchLogs">搜索</el-button>
-          <el-button :icon="Refresh" @click="resetFilters">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <!-- 日志列表 -->
-    <el-card class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="logs"
-        stripe
-        style="width: 100%"
-      >
-        <el-table-column prop="id" label="ID" width="80" />
-        
-        <el-table-column prop="username" label="用户" width="120" />
-        
-        <el-table-column label="操作" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getActionType(row.action)">
-              {{ getActionName(row.action) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="resource" label="资源" width="100">
-          <template #default="{ row }">
-            {{ getResourceName(row.resource) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="resource_id" label="资源ID" width="100" />
-        
-        <el-table-column prop="method" label="方法" width="80">
-          <template #default="{ row }">
-            <el-tag size="small" :type="getMethodType(row.method)">
-              {{ row.method }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="path" label="路径" min-width="200" show-overflow-tooltip />
-        
-        <el-table-column prop="ip_address" label="IP 地址" width="140" />
-        
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'success' ? 'success' : 'danger'">
-              {{ row.status === 'success' ? '成功' : '失败' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="duration" label="耗时(ms)" width="100" />
-        
-        <el-table-column prop="created_at" label="时间" width="180">
-          <template #default="{ row }">
-            {{ formatDate(row.created_at) }}
-          </template>
-        </el-table-column>
-        
-        <el-table-column label="操作" width="100" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              link
-              @click="viewDetail(row)"
-            >
-              详情
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="fetchLogs"
-        @current-change="fetchLogs"
-      />
-    </el-card>
-
-    <!-- 详情对话框 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="日志详情"
-      width="800px"
-    >
-      <div v-if="currentLog" class="log-detail">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="ID">{{ currentLog.id }}</el-descriptions-item>
-          <el-descriptions-item label="用户">{{ currentLog.username }}</el-descriptions-item>
-          <el-descriptions-item label="操作">
-            <el-tag :type="getActionType(currentLog.action)">
-              {{ getActionName(currentLog.action) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="资源">{{ getResourceName(currentLog.resource) }}</el-descriptions-item>
-          <el-descriptions-item label="资源ID">{{ currentLog.resource_id }}</el-descriptions-item>
-          <el-descriptions-item label="方法">
-            <el-tag size="small" :type="getMethodType(currentLog.method)">
-              {{ currentLog.method }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="路径" :span="2">{{ currentLog.path }}</el-descriptions-item>
-          <el-descriptions-item label="IP 地址">{{ currentLog.ip_address }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="currentLog.status === 'success' ? 'success' : 'danger'">
-              {{ currentLog.status === 'success' ? '成功' : '失败' }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="耗时">{{ currentLog.duration }} ms</el-descriptions-item>
-          <el-descriptions-item label="时间">{{ formatDate(currentLog.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="User Agent" :span="2">
-            <div style="word-break: break-all;">{{ currentLog.user_agent }}</div>
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <div v-if="currentLog.changes" class="changes-section">
-          <h4>变更内容</h4>
-          <pre>{{ formatJSON(currentLog.changes) }}</pre>
+        </label>
+        <FilterSelect v-model="filters.action" label="操作" :options="actionFilterOptions" />
+        <FilterSelect v-model="filters.resource" label="资源" :options="resourceFilterOptions" />
+        <label class="space-y-1.5">
+          <span class="text-xs font-medium text-muted-foreground">用户 ID</span>
+          <Input v-model="filters.user_id" type="number" min="1" class="h-9" placeholder="全部用户" />
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-medium text-muted-foreground">IP 地址</span>
+          <Input v-model="filters.ip_address" class="h-9 font-mono" placeholder="全部地址" />
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-medium text-muted-foreground">开始日期</span>
+          <Input v-model="filters.start_date" type="date" class="h-9" />
+        </label>
+        <label class="space-y-1.5">
+          <span class="text-xs font-medium text-muted-foreground">结束日期</span>
+          <Input v-model="filters.end_date" type="date" class="h-9" />
+        </label>
+        <div class="flex items-end gap-2 xl:col-span-4">
+          <Button type="submit" class="h-9">
+            <Search class="size-4" />
+            查询
+          </Button>
+          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
+            <RotateCcw class="size-4" />
+            重置
+          </Button>
         </div>
+      </form>
+    </AdminFilterPanel>
 
-        <div v-if="currentLog.error_message" class="error-section">
-          <h4>错误信息</h4>
-          <el-alert type="error" :closable="false">
-            {{ currentLog.error_message }}
-          </el-alert>
+    <AdminTablePanel :loading="loading">
+      <Table class="min-w-[1440px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead class="w-16">ID</TableHead>
+            <TableHead class="w-36">用户</TableHead>
+            <TableHead class="w-24">操作</TableHead>
+            <TableHead class="w-28">资源</TableHead>
+            <TableHead class="w-24">资源 ID</TableHead>
+            <TableHead class="w-20">方法</TableHead>
+            <TableHead>路径</TableHead>
+            <TableHead class="w-36">IP 地址</TableHead>
+            <TableHead class="w-24">状态</TableHead>
+            <TableHead class="w-24 text-right">耗时</TableHead>
+            <TableHead class="w-44">时间</TableHead>
+            <TableHead class="w-16 text-right">详情</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableEmpty v-if="logs.length === 0" :colspan="12">
+            <div class="flex flex-col items-center text-muted-foreground">
+              <ScrollText class="mb-2 size-7 opacity-55" />
+              <span class="text-xs">暂无审计日志</span>
+            </div>
+          </TableEmpty>
+          <TableRow v-for="log in logs" :key="log.id">
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ log.id }}</TableCell>
+            <TableCell>
+              <span class="block truncate font-medium">{{ log.username || '-' }}</span>
+              <span class="block font-mono text-[11px] text-muted-foreground">ID {{ log.user_id || '-' }}</span>
+            </TableCell>
+            <TableCell><AdminStatusBadge :tone="actionTone(log.action)">{{ actionName(log.action) }}</AdminStatusBadge></TableCell>
+            <TableCell>{{ resourceName(log.resource) }}</TableCell>
+            <TableCell class="font-mono text-xs">{{ log.resource_id || '-' }}</TableCell>
+            <TableCell><AdminStatusBadge :tone="methodTone(log.method)">{{ log.method || '-' }}</AdminStatusBadge></TableCell>
+            <TableCell class="max-w-96 truncate font-mono text-xs text-muted-foreground">{{ log.path || '-' }}</TableCell>
+            <TableCell class="font-mono text-xs">{{ log.ip_address || '-' }}</TableCell>
+            <TableCell><AdminStatusBadge :tone="log.status === 'success' ? 'green' : 'coral'">{{ log.status === 'success' ? '成功' : '失败' }}</AdminStatusBadge></TableCell>
+            <TableCell class="text-right tabular-nums" :class="durationClass(log.duration)">{{ log.duration || 0 }} ms</TableCell>
+            <TableCell class="text-xs text-muted-foreground">{{ formatDate(log.created_at) }}</TableCell>
+            <TableCell class="text-right">
+              <Button variant="ghost" size="icon" :aria-label="`查看日志 ${log.id}`" @click="viewDetail(log)">
+                <Eye class="size-4" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <template #footer>
+        <AdminPagination
+          :page="pagination.page"
+          :page-size="pagination.pageSize"
+          :total="pagination.total"
+          @update:page="updatePage"
+          @update:page-size="updatePageSize"
+        />
+      </template>
+    </AdminTablePanel>
+
+    <Dialog v-model:open="detailDialogVisible">
+      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-4xl" @open-auto-focus.prevent>
+        <DialogHeader>
+          <DialogTitle>日志详情</DialogTitle>
+          <DialogDescription v-if="currentLog">审计日志 #{{ currentLog.id }}</DialogDescription>
+        </DialogHeader>
+
+        <div v-if="detailLoading" class="flex h-52 items-center justify-center">
+          <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载日志详情" />
         </div>
-      </div>
-    </el-dialog>
+        <div v-else-if="currentLog" class="space-y-6">
+          <dl class="grid overflow-hidden rounded-lg border sm:grid-cols-2">
+            <DetailItem label="用户">{{ currentLog.username || '-' }}（ID {{ currentLog.user_id || '-' }}）</DetailItem>
+            <DetailItem label="状态"><AdminStatusBadge :tone="currentLog.status === 'success' ? 'green' : 'coral'">{{ currentLog.status === 'success' ? '成功' : '失败' }}</AdminStatusBadge></DetailItem>
+            <DetailItem label="操作"><AdminStatusBadge :tone="actionTone(currentLog.action)">{{ actionName(currentLog.action) }}</AdminStatusBadge></DetailItem>
+            <DetailItem label="资源">{{ resourceName(currentLog.resource) }} / {{ currentLog.resource_id || '-' }}</DetailItem>
+            <DetailItem label="请求方法"><AdminStatusBadge :tone="methodTone(currentLog.method)">{{ currentLog.method || '-' }}</AdminStatusBadge></DetailItem>
+            <DetailItem label="耗时">{{ currentLog.duration || 0 }} ms</DetailItem>
+            <DetailItem label="IP 地址"><span class="font-mono text-xs">{{ currentLog.ip_address || '-' }}</span></DetailItem>
+            <DetailItem label="时间">{{ formatDate(currentLog.created_at) }}</DetailItem>
+            <DetailItem label="请求路径" class="sm:col-span-2"><span class="break-all font-mono text-xs">{{ currentLog.path || '-' }}</span></DetailItem>
+            <DetailItem label="User Agent" class="sm:col-span-2"><span class="break-all text-xs">{{ currentLog.user_agent || '-' }}</span></DetailItem>
+          </dl>
+
+          <Alert v-if="currentLog.error_message" variant="destructive">
+            <CircleAlert class="size-4" />
+            <AlertTitle>错误信息</AlertTitle>
+            <AlertDescription class="whitespace-pre-wrap break-words">{{ currentLog.error_message }}</AlertDescription>
+          </Alert>
+
+          <JsonSection v-if="currentLog.changes" title="变更内容" :value="currentLog.changes" />
+          <div v-if="currentLog.old_value || currentLog.new_value" class="grid gap-4 md:grid-cols-2">
+            <JsonSection v-if="currentLog.old_value" title="变更前" :value="currentLog.old_value" />
+            <JsonSection v-if="currentLog.new_value" title="变更后" :value="currentLog.new_value" />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Search, Refresh } from '@element-plus/icons-vue'
-import { useAuthStore } from '@/stores/auth'
+import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
+import { CircleAlert, Eye, LoaderCircle, RefreshCw, RotateCcw, ScrollText, Search, ShieldCheck, ShieldX } from '@lucide/vue'
+import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminPagination from '@/components/admin/AdminPagination.vue'
+import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import axios from '@/utils/axios'
 
-const authStore = useAuthStore()
+const FilterSelect = defineComponent({
+  props: {
+    modelValue: { type: String, required: true },
+    label: { type: String, required: true },
+    options: { type: Array, required: true }
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () => h('label', { class: 'space-y-1.5' }, [
+      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+      h(Select, { modelValue: props.modelValue, 'onUpdate:modelValue': (value) => emit('update:modelValue', value) }, {
+        default: () => [
+          h(SelectTrigger, { class: 'h-9 w-full' }, { default: () => h(SelectValue) }),
+          h(SelectContent, {}, { default: () => props.options.map((option) => h(SelectItem, { value: option.value }, { default: () => option.label })) })
+        ]
+      })
+    ])
+  }
+})
+
+const DetailItem = defineComponent({
+  props: { label: { type: String, required: true } },
+  setup(props, { slots, attrs }) {
+    return () => h('div', { ...attrs, class: ['border-b p-3 sm:border-r', attrs.class] }, [
+      h('dt', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+      h('dd', { class: 'mt-1 min-w-0 text-sm' }, slots.default?.())
+    ])
+  }
+})
+
+const JsonSection = defineComponent({
+  props: { title: { type: String, required: true }, value: { type: String, required: true } },
+  setup(props) {
+    return () => h('section', { class: 'min-w-0 space-y-2' }, [
+      h('h3', { class: 'text-sm font-semibold' }, props.title),
+      h('pre', { class: 'max-h-80 overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-5 whitespace-pre-wrap break-words' }, formatJSON(props.value))
+    ])
+  }
+})
 
 const loading = ref(false)
 const logs = ref([])
 const stats = ref({})
-const dateRange = ref([])
 const detailDialogVisible = ref(false)
+const detailLoading = ref(false)
 const currentLog = ref(null)
+const filters = reactive({ keyword: '', action: 'all', resource: 'all', user_id: '', ip_address: '', start_date: '', end_date: '' })
+const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
 
-const filters = reactive({
-  keyword: '',
-  action: '',
-  resource: '',
-  user_id: '',
-  ip_address: ''
+const actionFilterOptions = [
+  { label: '全部操作', value: 'all' }, { label: '创建', value: 'create' }, { label: '更新', value: 'update' },
+  { label: '删除', value: 'delete' }, { label: '查看', value: 'view' }
+]
+const resourceFilterOptions = [
+  { label: '全部资源', value: 'all' }, { label: '用户', value: 'user' }, { label: '商品', value: 'product' },
+  { label: '订单', value: 'order' }, { label: '文章', value: 'post' }, { label: '工单', value: 'ticket' },
+  { label: 'FAQ', value: 'faq' }, { label: '图库', value: 'gallery' }, { label: '订阅', value: 'subscription' },
+  { label: '营销', value: 'marketing' }, { label: '设置', value: 'setting' }
+]
+
+const statItems = computed(() => [
+  { key: 'total', label: '总日志数', value: stats.value.total_count || 0, icon: ScrollText, tone: 'gray' },
+  { key: 'today', label: '今日操作', value: stats.value.today_count || 0, icon: RefreshCw, tone: 'blue' },
+  { key: 'success', label: '成功操作', value: stats.value.success_count || 0, icon: ShieldCheck, tone: 'green' },
+  { key: 'failed', label: '失败操作', value: stats.value.failed_count || 0, icon: ShieldX, tone: 'coral' }
+])
+
+const actionName = (action) => ({ create: '创建', update: '更新', delete: '删除', view: '查看' })[action] || action || '-'
+const actionTone = (action) => ({ create: 'green', update: 'amber', delete: 'coral', view: 'gray' })[action] || 'gray'
+const resourceName = (resource) => ({
+  user: '用户', product: '商品', order: '订单', post: '文章', ticket: '工单', faq: 'FAQ', gallery: '图库',
+  subscription: '订阅', marketing: '营销', setting: '设置'
+})[resource] || resource || '-'
+const methodTone = (method) => ({ GET: 'gray', POST: 'green', PUT: 'amber', PATCH: 'blue', DELETE: 'coral' })[method] || 'gray'
+const durationClass = (duration) => Number(duration || 0) >= 1000 ? 'font-medium text-destructive' : Number(duration || 0) >= 300 ? 'text-amber-700' : ''
+const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+const formatJSON = (value) => {
+  if (typeof value !== 'string') return JSON.stringify(value, null, 2)
+  try { return JSON.stringify(JSON.parse(value), null, 2) } catch { return value }
+}
+const dateParams = () => ({
+  ...(filters.start_date ? { start_date: filters.start_date } : {}),
+  ...(filters.end_date ? { end_date: filters.end_date } : {})
 })
-
-const pagination = reactive({
-  page: 1,
-  pageSize: 20,
-  total: 0
-})
-
-const todayCount = computed(() => {
-  // 简化计算，实际应该从后端获取
-  return 0
-})
-
-const successCount = computed(() => {
-  // 简化计算，实际应该从后端获取
-  return 0
-})
-
-const failedCount = computed(() => {
-  // 简化计算，实际应该从后端获取
-  return 0
-})
-
-const getActionName = (action) => {
-  const map = {
-    create: '创建',
-    update: '更新',
-    delete: '删除',
-    view: '查看'
-  }
-  return map[action] || action
-}
-
-const getActionType = (action) => {
-  const map = {
-    create: 'success',
-    update: 'warning',
-    delete: 'danger',
-    view: 'info'
-  }
-  return map[action] || ''
-}
-
-const getResourceName = (resource) => {
-  const map = {
-    user: '用户',
-    product: '商品',
-    order: '订单',
-    post: '文章',
-    ticket: '工单',
-    faq: 'FAQ',
-    gallery: '图库',
-    subscription: '订阅'
-  }
-  return map[resource] || resource
-}
-
-const getMethodType = (method) => {
-  const map = {
-    GET: 'info',
-    POST: 'success',
-    PUT: 'warning',
-    PATCH: 'warning',
-    DELETE: 'danger'
-  }
-  return map[method] || ''
-}
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString('zh-CN')
-}
-
-const formatJSON = (jsonString) => {
-  try {
-    return JSON.stringify(JSON.parse(jsonString), null, 2)
-  } catch {
-    return jsonString
-  }
-}
 
 const fetchLogs = async () => {
   loading.value = true
   try {
-    const params = {
-      page: pagination.page,
-      page_size: pagination.pageSize,
-      ...filters
-    }
-
-    if (dateRange.value && dateRange.value.length === 2) {
-      params.start_date = dateRange.value[0].toISOString().split('T')[0]
-      params.end_date = dateRange.value[1].toISOString().split('T')[0]
-    }
-
-    const response = await axios.get('/api/admin/logs', { params })
-    logs.value = response.data.logs
-    pagination.total = response.data.total
+    const keyword = filters.keyword.trim()
+    const endpoint = keyword ? '/api/admin/logs/search' : '/api/admin/logs'
+    const params = keyword
+      ? { keyword, page: pagination.page, page_size: pagination.pageSize }
+      : {
+          page: pagination.page,
+          page_size: pagination.pageSize,
+          ...(filters.action !== 'all' ? { action: filters.action } : {}),
+          ...(filters.resource !== 'all' ? { resource: filters.resource } : {}),
+          ...(filters.user_id ? { user_id: filters.user_id } : {}),
+          ...(filters.ip_address.trim() ? { ip_address: filters.ip_address.trim() } : {}),
+          ...dateParams()
+        }
+    const response = await axios.get(endpoint, { params })
+    logs.value = response.data.logs || []
+    pagination.total = response.data.total || 0
   } catch (error) {
-    ElMessage.error('获取审计日志失败')
+    console.error('Failed to fetch audit logs:', error)
   } finally {
     loading.value = false
   }
 }
-
 const fetchStats = async () => {
   try {
-    const response = await axios.get('/api/admin/logs/stats')
-    stats.value = response.data
+    const response = await axios.get('/api/admin/logs/stats', { params: dateParams() })
+    stats.value = response.data || {}
   } catch (error) {
-    console.error('获取统计失败', error)
+    console.error('Failed to fetch audit stats:', error)
   }
 }
-
+const refreshLogs = () => Promise.all([fetchLogs(), fetchStats()])
+const applyFilters = () => { pagination.page = 1; refreshLogs() }
 const resetFilters = () => {
-  filters.keyword = ''
-  filters.action = ''
-  filters.resource = ''
-  filters.user_id = ''
-  filters.ip_address = ''
-  dateRange.value = []
+  Object.assign(filters, { keyword: '', action: 'all', resource: 'all', user_id: '', ip_address: '', start_date: '', end_date: '' })
   pagination.page = 1
-  fetchLogs()
+  refreshLogs()
 }
-
+const updatePage = (page) => { pagination.page = page; fetchLogs() }
+const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchLogs() }
 const viewDetail = async (log) => {
+  currentLog.value = log
+  detailDialogVisible.value = true
+  detailLoading.value = true
   try {
     const response = await axios.get(`/api/admin/logs/${log.id}`)
-    currentLog.value = response.data.log
-    detailDialogVisible.value = true
+    currentLog.value = response.data.log || log
   } catch (error) {
-    ElMessage.error('获取日志详情失败')
+    console.error('Failed to fetch audit log detail:', error)
+  } finally {
+    detailLoading.value = false
   }
 }
 
-onMounted(() => {
-  fetchLogs()
-  fetchStats()
-})
+onMounted(refreshLogs)
 </script>
-
-<style scoped>
-.audit-logs-page {
-  padding: 0;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 24px;
-  color: #303133;
-}
-
-.stats-row {
-  margin-bottom: 20px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.filter-card {
-  margin-bottom: 20px;
-}
-
-.table-card {
-  margin-bottom: 20px;
-}
-
-.el-pagination {
-  margin-top: 20px;
-  justify-content: flex-end;
-}
-
-.log-detail {
-  padding: 10px 0;
-}
-
-.changes-section,
-.error-section {
-  margin-top: 20px;
-}
-
-.changes-section h4,
-.error-section h4 {
-  margin-bottom: 10px;
-  font-size: 14px;
-  color: #303133;
-}
-
-.changes-section pre {
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  overflow-x: auto;
-  font-size: 12px;
-  line-height: 1.5;
-}
-</style>

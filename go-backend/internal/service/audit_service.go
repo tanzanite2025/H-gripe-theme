@@ -93,7 +93,6 @@ func (s *AuditService) GetAuditLogsByDateRange(startDate, endDate string, page, 
 	if err != nil {
 		return nil, 0, err
 	}
-	end = end.Add(24*time.Hour - time.Second)
 	return s.auditRepo.FindAuditLogsByDateRange(start, end, page, pageSize)
 }
 
@@ -118,7 +117,7 @@ func parseAuditDateRange(startDate, endDate string) (time.Time, time.Time, error
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
-	return start, end, nil
+	return start, end.Add(24*time.Hour - time.Nanosecond), nil
 }
 
 func parseOptionalAuditDate(value string) (time.Time, error) {

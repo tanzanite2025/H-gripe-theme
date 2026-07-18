@@ -1,237 +1,235 @@
 <template>
-  <div class="dashboard">
-    <h2 class="page-title">仪表板</h2>
+  <div class="space-y-4">
+    <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-normal">仪表板</h1>
+        <p class="mt-1 text-sm text-muted-foreground">今日经营与服务概览</p>
+      </div>
+      <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <CalendarDays class="size-3.5" />
+        <span>{{ currentDate }}</span>
+      </div>
+    </header>
 
-    <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card" @click="$router.push('/orders')">
-          <div class="stat-content">
-            <div class="stat-icon orders">
-              <el-icon><ShoppingCart /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.orders?.total || 0 }}</div>
-              <div class="stat-label">总订单数</div>
-              <div class="stat-sub">今日: {{ stats.orders?.today || 0 }}</div>
-            </div>
+    <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="关键指标">
+      <button
+        v-for="metric in metricCards"
+        :key="metric.key"
+        type="button"
+        class="group flex min-h-31 flex-col justify-between rounded-lg border bg-card p-4 text-left text-card-foreground shadow-xs transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-foreground/15 hover:shadow-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+        @click="navigateTo(metric.path)"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <span class="block text-xs font-medium text-muted-foreground">{{ metric.label }}</span>
+            <strong class="mt-1.5 block truncate text-2xl font-semibold tabular-nums">{{ metric.value }}</strong>
           </div>
-        </el-card>
-      </el-col>
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-lg" :class="metricToneClass(metric.tone)">
+            <component :is="metric.icon" class="size-4" />
+          </span>
+        </div>
+        <div class="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>{{ metric.detailLabel }}</span>
+          <strong class="font-medium tabular-nums text-foreground/75">{{ metric.detailValue }}</strong>
+        </div>
+      </button>
+    </section>
 
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card" @click="$router.push('/users')">
-          <div class="stat-content">
-            <div class="stat-icon users">
-              <el-icon><User /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.users?.total || 0 }}</div>
-              <div class="stat-label">总用户数</div>
-              <div class="stat-sub">今日: {{ stats.users?.today || 0 }}</div>
-            </div>
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,0.8fr)]">
+      <Card class="min-w-0 gap-0 py-0 shadow-none">
+        <CardHeader class="flex flex-row items-center justify-between border-b py-4">
+          <div>
+            <CardTitle class="text-sm font-semibold">销售趋势</CardTitle>
+            <CardDescription class="mt-1 text-xs">最近 30 天</CardDescription>
           </div>
-        </el-card>
-      </el-col>
-
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card">
-          <div class="stat-content">
-            <div class="stat-icon revenue">
-              <el-icon><Money /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">¥{{ formatNumber(stats.orders?.revenue || 0) }}</div>
-              <div class="stat-label">总销售额</div>
-              <div class="stat-sub">今日: ¥{{ formatNumber(stats.orders?.today_revenue || 0) }}</div>
-            </div>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="刷新销售趋势"
+                :disabled="chartLoading"
+                @click="fetchSalesChart"
+              >
+                <RefreshCw class="size-3.5" :class="chartLoading ? 'animate-spin' : ''" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>刷新销售趋势</TooltipContent>
+          </Tooltip>
+        </CardHeader>
+        <CardContent class="flex h-80 items-center justify-center p-4">
+          <div v-if="chartLoading" class="w-full space-y-4">
+            <Skeleton class="h-4 w-36" />
+            <Skeleton class="h-56 w-full" />
           </div>
-        </el-card>
-      </el-col>
-
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="stat-card" @click="$router.push('/tickets')">
-          <div class="stat-content">
-            <div class="stat-icon tickets">
-              <el-icon><ChatDotRound /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.tickets?.open || 0 }}</div>
-              <div class="stat-label">待处理工单</div>
-              <div class="stat-sub">总计: {{ stats.tickets?.total || 0 }}</div>
-            </div>
+          <v-chart v-else-if="chartOption" class="h-full w-full" :option="chartOption" autoresize />
+          <div v-else class="flex flex-col items-center text-center text-muted-foreground">
+            <ChartNoAxesCombined class="mb-3 size-8 opacity-55" />
+            <p class="text-sm font-medium text-foreground/75">暂无销售数据</p>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </CardContent>
+      </Card>
 
-    <!-- 销售图表和快速操作 -->
-    <el-row :gutter="20" style="margin-top: 20px">
-      <el-col :xs="24" :lg="16">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>销售趋势（最近30天）</span>
-              <el-button size="small" :icon="Refresh" @click="fetchSalesChart">刷新</el-button>
-            </div>
-          </template>
-          <div v-loading="chartLoading" style="height: 350px">
-            <v-chart v-if="chartOption" :option="chartOption" autoresize />
+      <Card class="min-w-0 gap-0 py-0 shadow-none">
+        <CardHeader class="border-b py-4">
+          <CardTitle class="text-sm font-semibold">快速操作</CardTitle>
+          <CardDescription class="text-xs">常用管理入口</CardDescription>
+        </CardHeader>
+        <CardContent class="grid grid-cols-1 gap-1 p-2 sm:grid-cols-2 xl:grid-cols-1">
+          <Button
+            v-for="action in visibleQuickActions"
+            :key="action.path"
+            variant="ghost"
+            class="h-10 w-full justify-start gap-2.5 px-2.5"
+            @click="navigateTo(action.path)"
+          >
+            <span class="flex size-7 shrink-0 items-center justify-center rounded-md" :class="metricToneClass(action.tone)">
+              <component :is="action.icon" class="size-3.5" />
+            </span>
+            <span class="truncate">{{ action.label }}</span>
+            <ArrowRight class="ml-auto size-3.5 text-muted-foreground" />
+          </Button>
+        </CardContent>
+      </Card>
+    </section>
+
+    <Card class="gap-0 py-0 shadow-none">
+      <Tabs v-model="activeActivity">
+        <CardHeader class="flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle class="text-sm font-semibold">最近活动</CardTitle>
+            <CardDescription class="mt-1 text-xs">最新业务记录</CardDescription>
           </div>
-        </el-card>
-      </el-col>
+          <TabsList variant="line">
+            <TabsTrigger value="orders">订单</TabsTrigger>
+            <TabsTrigger value="users">用户</TabsTrigger>
+            <TabsTrigger value="tickets">工单</TabsTrigger>
+          </TabsList>
+        </CardHeader>
 
-      <el-col :xs="24" :lg="8">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>快速操作</span>
+        <CardContent class="pb-4 pt-2">
+          <TabsContent value="orders" class="mt-0">
+            <div class="flex min-h-9 items-center justify-between">
+              <strong class="text-xs font-medium text-foreground/75">最近订单</strong>
+              <Button variant="link" size="sm" class="px-0" @click="navigateTo('/orders')">
+                查看全部
+                <ArrowRight class="size-3.5" />
+              </Button>
             </div>
-          </template>
-          <div class="quick-actions-grid">
-            <div
-              v-if="hasPermission('product:create')"
-              class="quick-action-item"
-              @click="$router.push('/products')"
-            >
-              <el-icon class="action-icon" color="#409eff"><Goods /></el-icon>
-              <span>添加商品</span>
-            </div>
-            <div
-              v-if="hasPermission('order:view')"
-              class="quick-action-item"
-              @click="$router.push('/orders')"
-            >
-              <el-icon class="action-icon" color="#67c23a"><ShoppingCart /></el-icon>
-              <span>查看订单</span>
-            </div>
-            <div
-              v-if="hasPermission('user:view')"
-              class="quick-action-item"
-              @click="$router.push('/users')"
-            >
-              <el-icon class="action-icon" color="#e6a23c"><User /></el-icon>
-              <span>用户管理</span>
-            </div>
-            <div
-              v-if="hasPermission('ticket:view')"
-              class="quick-action-item"
-              @click="$router.push('/tickets')"
-            >
-              <el-icon class="action-icon" color="#f56c6c"><ChatDotRound /></el-icon>
-              <span>工单管理</span>
-            </div>
-            <div
-              v-if="hasPermission('content:view')"
-              class="quick-action-item"
-              @click="$router.push('/content')"
-            >
-              <el-icon class="action-icon" color="#909399"><Document /></el-icon>
-              <span>内容管理</span>
-            </div>
-            <div
-              v-if="hasPermission('settings:view')"
-              class="quick-action-item"
-              @click="$router.push('/settings')"
-            >
-              <el-icon class="action-icon" color="#606266"><Setting /></el-icon>
-              <span>系统设置</span>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 最近活动 -->
-    <el-row :gutter="20" style="margin-top: 20px">
-      <el-col :xs="24" :lg="8">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>最近订单</span>
-              <el-button size="small" link @click="$router.push('/orders')">查看全部</el-button>
-            </div>
-          </template>
-          <el-empty v-if="recentOrders.length === 0" description="暂无订单" :image-size="80" />
-          <div v-else class="recent-list">
-            <div v-for="order in recentOrders" :key="order.id" class="recent-item">
-              <div class="recent-item-content">
-                <div class="recent-item-title">#{{ order.order_number }}</div>
-                <div class="recent-item-desc">¥{{ order.total_amount }}</div>
+            <EmptyActivity v-if="recentOrders.length === 0" label="暂无订单" />
+            <div v-else class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
+              <div v-for="order in recentOrders" :key="order.id" class="flex min-w-0 items-center justify-between gap-4 border-b py-3">
+                <div class="min-w-0">
+                  <strong class="block truncate text-xs font-medium">#{{ order.order_number }}</strong>
+                  <span class="mt-1 block truncate text-xs text-muted-foreground">¥{{ formatNumber(order.total_amount) }}</span>
+                </div>
+                <Badge variant="outline" :class="orderStatusClass(order.status)">
+                  {{ getOrderStatusName(order.status) }}
+                </Badge>
               </div>
-              <el-tag :type="getOrderStatusType(order.status)" size="small">
-                {{ getOrderStatusName(order.status) }}
-              </el-tag>
             </div>
-          </div>
-        </el-card>
-      </el-col>
+          </TabsContent>
 
-      <el-col :xs="24" :lg="8">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>最近用户</span>
-              <el-button size="small" link @click="$router.push('/users')">查看全部</el-button>
+          <TabsContent value="users" class="mt-0">
+            <div class="flex min-h-9 items-center justify-between">
+              <strong class="text-xs font-medium text-foreground/75">最近用户</strong>
+              <Button variant="link" size="sm" class="px-0" @click="navigateTo('/users')">
+                查看全部
+                <ArrowRight class="size-3.5" />
+              </Button>
             </div>
-          </template>
-          <el-empty v-if="recentUsers.length === 0" description="暂无用户" :image-size="80" />
-          <div v-else class="recent-list">
-            <div v-for="user in recentUsers" :key="user.id" class="recent-item">
-              <div class="recent-item-content">
-                <div class="recent-item-title">{{ user.username }}</div>
-                <div class="recent-item-desc">{{ user.email }}</div>
+            <EmptyActivity v-if="recentUsers.length === 0" label="暂无用户" />
+            <div v-else class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
+              <div v-for="recentUser in recentUsers" :key="recentUser.id" class="flex min-w-0 items-center justify-between gap-4 border-b py-3">
+                <div class="min-w-0">
+                  <strong class="block truncate text-xs font-medium">{{ recentUser.username }}</strong>
+                  <span class="mt-1 block truncate text-xs text-muted-foreground">{{ recentUser.email }}</span>
+                </div>
+                <Badge variant="outline" :class="roleStatusClass(recentUser.role)">
+                  {{ getRoleName(recentUser.role) }}
+                </Badge>
               </div>
-              <el-tag :type="getRoleType(user.role)" size="small">
-                {{ getRoleName(user.role) }}
-              </el-tag>
             </div>
-          </div>
-        </el-card>
-      </el-col>
+          </TabsContent>
 
-      <el-col :xs="24" :lg="8">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>最近工单</span>
-              <el-button size="small" link @click="$router.push('/tickets')">查看全部</el-button>
+          <TabsContent value="tickets" class="mt-0">
+            <div class="flex min-h-9 items-center justify-between">
+              <strong class="text-xs font-medium text-foreground/75">最近工单</strong>
+              <Button variant="link" size="sm" class="px-0" @click="navigateTo('/tickets')">
+                查看全部
+                <ArrowRight class="size-3.5" />
+              </Button>
             </div>
-          </template>
-          <el-empty v-if="recentTickets.length === 0" description="暂无工单" :image-size="80" />
-          <div v-else class="recent-list">
-            <div v-for="ticket in recentTickets" :key="ticket.id" class="recent-item">
-              <div class="recent-item-content">
-                <div class="recent-item-title">{{ ticket.subject }}</div>
-                <div class="recent-item-desc">{{ ticket.category }}</div>
+            <EmptyActivity v-if="recentTickets.length === 0" label="暂无工单" />
+            <div v-else class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
+              <div v-for="ticket in recentTickets" :key="ticket.id" class="flex min-w-0 items-center justify-between gap-4 border-b py-3">
+                <div class="min-w-0">
+                  <strong class="block truncate text-xs font-medium">{{ ticket.subject }}</strong>
+                  <span class="mt-1 block truncate text-xs text-muted-foreground">{{ ticket.category }}</span>
+                </div>
+                <Badge variant="outline" :class="ticketStatusClass(ticket.status)">
+                  {{ getTicketStatusName(ticket.status) }}
+                </Badge>
               </div>
-              <el-tag :type="getTicketStatusType(ticket.status)" size="small">
-                {{ getTicketStatusName(ticket.status) }}
-              </el-tag>
             </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+          </TabsContent>
+        </CardContent>
+      </Tabs>
+    </Card>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { ShoppingCart, User, Money, ChatDotRound, Goods, Document, Setting, Refresh } from '@element-plus/icons-vue'
+import { computed, defineComponent, h, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
+import {
+  ArrowRight,
+  CalendarDays,
+  ChartNoAxesCombined,
+  FileText,
+  Inbox,
+  MessagesSquare,
+  PackagePlus,
+  RefreshCw,
+  Settings,
+  ShoppingCart,
+  Users,
+  WalletCards
+} from '@lucide/vue'
 import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import VChart from 'vue-echarts'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
-// 注册 ECharts 组件
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 
+const EmptyActivity = defineComponent({
+  props: {
+    label: {
+      type: String,
+      required: true
+    }
+  },
+  setup(props) {
+    return () => h('div', { class: 'flex min-h-36 flex-col items-center justify-center text-muted-foreground' }, [
+      h(Inbox, { class: 'mb-2 size-6 opacity-55' }),
+      h('span', { class: 'text-xs' }, props.label)
+    ])
+  }
+})
+
+const router = useRouter()
 const authStore = useAuthStore()
-const user = computed(() => authStore.user)
 
 const stats = ref({})
 const chartLoading = ref(false)
@@ -239,14 +237,90 @@ const chartOption = ref(null)
 const recentOrders = ref([])
 const recentUsers = ref([])
 const recentTickets = ref([])
+const activeActivity = ref('orders')
 
-const hasPermission = (permission) => {
-  return authStore.hasPermission(permission)
+const currentDate = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long'
+}).format(new Date())
+
+const metricCards = computed(() => [
+  {
+    key: 'orders',
+    label: '总订单数',
+    value: stats.value.orders?.total || 0,
+    detailLabel: '今日新增',
+    detailValue: stats.value.orders?.today || 0,
+    icon: ShoppingCart,
+    tone: 'blue',
+    path: '/orders'
+  },
+  {
+    key: 'users',
+    label: '总用户数',
+    value: stats.value.users?.total || 0,
+    detailLabel: '今日新增',
+    detailValue: stats.value.users?.today || 0,
+    icon: Users,
+    tone: 'green',
+    path: '/users'
+  },
+  {
+    key: 'revenue',
+    label: '总销售额',
+    value: '¥' + formatNumber(stats.value.orders?.revenue || 0),
+    detailLabel: '今日销售',
+    detailValue: '¥' + formatNumber(stats.value.orders?.today_revenue || 0),
+    icon: WalletCards,
+    tone: 'amber',
+    path: '/orders'
+  },
+  {
+    key: 'tickets',
+    label: '待处理工单',
+    value: stats.value.tickets?.open || 0,
+    detailLabel: '工单总数',
+    detailValue: stats.value.tickets?.total || 0,
+    icon: MessagesSquare,
+    tone: 'coral',
+    path: '/tickets'
+  }
+])
+
+const quickActions = [
+  { label: '添加商品', path: '/products', permission: 'product:create', icon: PackagePlus, tone: 'blue' },
+  { label: '查看订单', path: '/orders', permission: 'order:view', icon: ShoppingCart, tone: 'green' },
+  { label: '用户管理', path: '/users', permission: 'user:view', icon: Users, tone: 'amber' },
+  { label: '工单管理', path: '/tickets', permission: 'ticket:view', icon: MessagesSquare, tone: 'coral' },
+  { label: '内容管理', path: '/content', permission: 'content:view', icon: FileText, tone: 'gray' },
+  { label: '系统设置', path: '/settings', permission: 'settings:view', icon: Settings, tone: 'gray' }
+]
+
+const visibleQuickActions = computed(() =>
+  quickActions.filter((action) => authStore.hasPermission(action.permission))
+)
+
+const metricToneClass = (tone) => {
+  const classes = {
+    blue: 'bg-blue-50 text-blue-700',
+    green: 'bg-emerald-50 text-emerald-700',
+    amber: 'bg-amber-50 text-amber-700',
+    coral: 'bg-rose-50 text-rose-700',
+    gray: 'bg-muted text-muted-foreground'
+  }
+  return classes[tone] || classes.gray
 }
 
-const formatNumber = (num) => {
-  return Number(num).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function formatNumber(value) {
+  return Number(value).toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
+
+const navigateTo = (path) => router.push(path)
 
 const getRoleName = (role) => {
   const roleMap = {
@@ -259,15 +333,15 @@ const getRoleName = (role) => {
   return roleMap[role] || role
 }
 
-const getRoleType = (role) => {
-  const typeMap = {
-    admin: 'danger',
-    manager: 'warning',
-    editor: 'success',
-    support: 'info',
-    viewer: ''
+const roleStatusClass = (role) => {
+  const classes = {
+    admin: 'border-rose-200 bg-rose-50 text-rose-700',
+    manager: 'border-amber-200 bg-amber-50 text-amber-700',
+    editor: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    support: 'border-blue-200 bg-blue-50 text-blue-700',
+    viewer: 'border-border bg-muted text-muted-foreground'
   }
-  return typeMap[role] || ''
+  return classes[role] || classes.viewer
 }
 
 const getOrderStatusName = (status) => {
@@ -281,15 +355,15 @@ const getOrderStatusName = (status) => {
   return statusMap[status] || status
 }
 
-const getOrderStatusType = (status) => {
-  const typeMap = {
-    pending: 'warning',
-    paid: 'success',
-    shipped: 'primary',
-    completed: 'info',
-    cancelled: 'danger'
+const orderStatusClass = (status) => {
+  const classes = {
+    pending: 'border-amber-200 bg-amber-50 text-amber-700',
+    paid: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    shipped: 'border-blue-200 bg-blue-50 text-blue-700',
+    completed: 'border-border bg-muted text-muted-foreground',
+    cancelled: 'border-rose-200 bg-rose-50 text-rose-700'
   }
-  return typeMap[status] || ''
+  return classes[status] || classes.completed
 }
 
 const getTicketStatusName = (status) => {
@@ -302,14 +376,18 @@ const getTicketStatusName = (status) => {
   return statusMap[status] || status
 }
 
-const getTicketStatusType = (status) => {
-  const typeMap = {
-    open: 'danger',
-    pending: 'warning',
-    resolved: 'success',
-    closed: 'info'
+const ticketStatusClass = (status) => {
+  const classes = {
+    open: 'border-rose-200 bg-rose-50 text-rose-700',
+    pending: 'border-amber-200 bg-amber-50 text-amber-700',
+    resolved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    closed: 'border-border bg-muted text-muted-foreground'
   }
-  return typeMap[status] || ''
+  return classes[status] || classes.closed
+}
+
+const notifyLoadFailure = () => {
+  toast.error('部分仪表盘数据加载失败', { id: 'dashboard-load-error' })
 }
 
 const fetchStats = async () => {
@@ -318,7 +396,7 @@ const fetchStats = async () => {
     stats.value = response.data
   } catch (error) {
     console.error('Failed to fetch stats:', error)
-    ElMessage.error('获取统计数据失败')
+    notifyLoadFailure()
   }
 }
 
@@ -328,61 +406,81 @@ const fetchSalesChart = async () => {
     const response = await axios.get('/api/admin/dashboard/sales-chart')
     const data = response.data.data || []
 
-    const dates = data.map(item => item.date)
-    const counts = data.map(item => item.count)
-    const amounts = data.map(item => item.amount)
+    if (data.length === 0) {
+      chartOption.value = null
+      return
+    }
 
     chartOption.value = {
+      color: ['#2563eb', '#16803c'],
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis',
+        backgroundColor: '#182230',
+        borderWidth: 0,
+        textStyle: { color: '#ffffff' }
       },
       legend: {
+        top: 0,
+        right: 0,
+        itemWidth: 10,
+        itemHeight: 10,
+        textStyle: { color: '#667085' },
         data: ['订单数', '销售额']
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
+        top: 44,
+        right: 24,
+        bottom: 16,
+        left: 12,
         containLabel: true
       },
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: dates
+        data: data.map((item) => item.date),
+        axisLine: { lineStyle: { color: '#e4e7ec' } },
+        axisTick: { show: false },
+        axisLabel: { color: '#667085' }
       },
       yAxis: [
         {
           type: 'value',
           name: '订单数',
-          position: 'left'
+          nameTextStyle: { color: '#667085' },
+          splitLine: { lineStyle: { color: '#eaecf0' } },
+          axisLabel: { color: '#667085' }
         },
         {
           type: 'value',
           name: '销售额',
-          position: 'right'
+          nameTextStyle: { color: '#667085' },
+          splitLine: { show: false },
+          axisLabel: { color: '#667085' }
         }
       ],
       series: [
         {
           name: '订单数',
           type: 'line',
-          data: counts,
+          data: data.map((item) => item.count),
           smooth: true,
-          itemStyle: { color: '#409eff' }
+          symbolSize: 7,
+          lineStyle: { width: 3 }
         },
         {
           name: '销售额',
           type: 'line',
           yAxisIndex: 1,
-          data: amounts,
+          data: data.map((item) => item.amount),
           smooth: true,
-          itemStyle: { color: '#67c23a' }
+          symbolSize: 7,
+          lineStyle: { width: 3 }
         }
       ]
     }
   } catch (error) {
     console.error('Failed to fetch sales chart:', error)
-    ElMessage.error('获取销售图表失败')
+    notifyLoadFailure()
   } finally {
     chartLoading.value = false
   }
@@ -397,7 +495,7 @@ const fetchRecentOrders = async () => {
     recentOrders.value = response.data.orders
   } catch (error) {
     console.error('Failed to fetch recent orders:', error)
-    ElMessage.error('获取近期订单失败')
+    notifyLoadFailure()
   }
 }
 
@@ -410,7 +508,7 @@ const fetchRecentUsers = async () => {
     recentUsers.value = response.data.users
   } catch (error) {
     console.error('Failed to fetch recent users:', error)
-    ElMessage.error('获取近期用户失败')
+    notifyLoadFailure()
   }
 }
 
@@ -423,7 +521,7 @@ const fetchRecentTickets = async () => {
     recentTickets.value = response.data.tickets
   } catch (error) {
     console.error('Failed to fetch recent tickets:', error)
-    ElMessage.error('获取近期工单失败')
+    notifyLoadFailure()
   }
 }
 
@@ -435,166 +533,3 @@ onMounted(() => {
   fetchRecentTickets()
 })
 </script>
-
-<style scoped>
-.dashboard {
-  padding: 0;
-}
-
-.page-title {
-  margin: 0 0 20px 0;
-  font-size: 24px;
-  color: #303133;
-}
-
-.stats-row {
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.stat-content {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: #fff;
-}
-
-.stat-icon.orders {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.stat-icon.users {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.stat-icon.revenue {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.stat-icon.tickets {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-}
-
-.stat-info {
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #303133;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 4px;
-}
-
-.stat-sub {
-  font-size: 12px;
-  color: #c0c4cc;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.quick-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.quick-action-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.quick-action-item:hover {
-  border-color: #409eff;
-  background-color: #f5f7fa;
-  transform: translateY(-2px);
-}
-
-.action-icon {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-
-.quick-action-item span {
-  font-size: 14px;
-  color: #606266;
-}
-
-.recent-list {
-  max-height: 350px;
-  overflow-y: auto;
-}
-
-.recent-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.recent-item:last-child {
-  border-bottom: none;
-}
-
-.recent-item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.recent-item-title {
-  font-size: 14px;
-  color: #303133;
-  font-weight: 500;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recent-item-desc {
-  font-size: 12px;
-  color: #909399;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-</style>

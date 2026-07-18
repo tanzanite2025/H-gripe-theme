@@ -131,7 +131,10 @@ func (r *AuditRepository) SearchAuditLogs(keyword string, page, pageSize int) ([
 	var total int64
 
 	query := r.db.Model(&audit.AuditLog{}).
-		Where("description ILIKE ? OR user_agent ILIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+		Where(
+			"username ILIKE ? OR action ILIKE ? OR resource ILIKE ? OR path ILIKE ? OR user_agent ILIKE ? OR error_message ILIKE ?",
+			"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%",
+		)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -163,6 +166,26 @@ func (r *AuditRepository) GetAuditStats(startDate, endDate time.Time) (map[strin
 		return nil, err
 	}
 	stats["total_count"] = totalCount
+
+	var todayCount int64
+	now := time.Now()
+	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	if err := query.Where("created_at >= ?", startOfToday).Count(&todayCount).Error; err != nil {
+		return nil, err
+	}
+	stats["today_count"] = todayCount
+
+	var successCount int64
+	if err := query.Where("status = ?", "success").Count(&successCount).Error; err != nil {
+		return nil, err
+	}
+	stats["success_count"] = successCount
+
+	var failedCount int64
+	if err := query.Where("status = ?", "failed").Count(&failedCount).Error; err != nil {
+		return nil, err
+	}
+	stats["failed_count"] = failedCount
 
 	// 按操作类型统计
 	var actionStats []struct {
