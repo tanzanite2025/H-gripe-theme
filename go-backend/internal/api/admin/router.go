@@ -105,6 +105,10 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			productTypesGroup.Use(middleware.RequirePermission(auth.PermProductView))
 			{
 				productTypesGroup.GET("", productHandler.ListProductTypes)
+				productTypesGroup.GET("/:id", productHandler.GetProductType)
+				productTypesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProductType)
+				productTypesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProductType)
+				productTypesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProductType)
 			}
 
 			productsGroup := authenticated.Group("/products")

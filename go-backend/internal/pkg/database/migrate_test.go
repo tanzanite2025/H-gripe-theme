@@ -171,7 +171,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	if err := testDB.QueryRowContext(ctx, "SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty); err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 13 || dirty {
+	if version != 14 || dirty {
 		t.Fatalf("unexpected migration state: version=%d dirty=%t", version, dirty)
 	}
 

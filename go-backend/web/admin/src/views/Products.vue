@@ -2,6 +2,12 @@
   <div class="space-y-4">
     <AdminPageHeader title="商品管理" description="管理商品资料、规格、SKU 变体和库存状态">
       <template #actions>
+        <Button variant="outline" as-child>
+          <RouterLink to="/product-types">
+            <Tags class="size-4" />
+            产品类型
+          </RouterLink>
+        </Button>
         <Button v-if="hasPermission('product:create')" @click="showCreateDialog">
           <Plus class="size-4" />
           添加商品
@@ -335,6 +341,7 @@
 
 <script setup>
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   Boxes,
@@ -348,6 +355,7 @@ import {
   RotateCcw,
   Search,
   Star,
+  Tags,
   Trash2,
   TriangleAlert
 } from '@lucide/vue'
@@ -774,6 +782,9 @@ const showEditDialog = async (product) => {
     if (productTypes.value.length === 0) await fetchProductTypes()
     const response = await axios.get(`/api/admin/products/${product.id}`)
     detail = response.data?.product || product
+    if (detail.product_type && !productTypes.value.some((type) => type.id === detail.product_type.id)) {
+      productTypes.value.push(detail.product_type)
+    }
   } catch (error) {
     toast.warning('获取商品详情失败，已使用列表数据编辑')
   }

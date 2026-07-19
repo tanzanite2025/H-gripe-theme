@@ -300,7 +300,8 @@ func (h *ProductHandler) GetFilterableAttributes(c *gin.Context) {
 }
 
 func (h *ProductHandler) ListProductTypes(c *gin.Context) {
-	productTypes, err := h.productService.ListProductTypes(true)
+	includeDisabled := c.Query("include_disabled") == "true"
+	productTypes, err := h.productService.ListProductTypes(includeDisabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

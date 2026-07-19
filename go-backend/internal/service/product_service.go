@@ -26,6 +26,8 @@ var (
 	ErrProductNotFound       = errors.New("product not found")
 	ErrProductSKUExists      = errors.New("product sku already exists")
 	ErrProductTypeNotFound   = errors.New("product type not found")
+	ErrProductTypeInvalid    = errors.New("product type invalid")
+	ErrProductTypeSlugExists = errors.New("product type slug already exists")
 	ErrProductSpecInvalid    = errors.New("product spec invalid")
 	ErrProductVariantInvalid = errors.New("product variant invalid")
 )
