@@ -129,3 +129,127 @@ func (r *ProductRepository) FindProductTypeBySlug(slug string) (*product.Product
 	}
 	return &productType, nil
 }
+
+func (r *ProductRepository) ProductTypeSlugExists(slug string, excludeID uint) (bool, error) {
+	var count int64
+	query := r.db.Model(&product.ProductType{}).Where("slug = ?", slug)
+	if excludeID > 0 {
+		query = query.Where("id <> ?", excludeID)
+	}
+	if err := query.Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *ProductRepository) CreateProductType(productType *product.ProductType) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		definitions := productType.SpecDefinitions
+		isEnabled := productType.IsEnabled
+		productType.SpecDefinitions = nil
+		if err := tx.Create(productType).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(productType).Update("is_enabled", isEnabled).Error; err != nil {
+			return err
+		}
+		productType.IsEnabled = isEnabled
+
+		for index := range definitions {
+			definitions[index].ProductTypeID = productType.ID
+			if err := createSpecDefinition(tx, &definitions[index]); err != nil {
+				return err
+			}
+		}
+		productType.SpecDefinitions = definitions
+		return nil
+	})
+}
+
+func (r *ProductRepository) UpdateProductType(productType *product.ProductType, removedSpecIDs []uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&product.ProductType{}).Where("id = ?", productType.ID).Updates(map[string]interface{}{
+			"name":        productType.Name,
+			"slug":        productType.Slug,
+			"description": productType.Description,
+			"sort_order":  productType.SortOrder,
+			"is_enabled":  productType.IsEnabled,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+
+		for index := range productType.SpecDefinitions {
+			definition := &productType.SpecDefinitions[index]
+			definition.ProductTypeID = productType.ID
+			if definition.ID == 0 {
+				if err := createSpecDefinition(tx, definition); err != nil {
+					return err
+				}
+				continue
+			}
+
+			result = tx.Model(&product.SpecDefinition{}).
+				Where("id = ? AND product_type_id = ?", definition.ID, productType.ID).
+				Updates(specDefinitionUpdates(definition))
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return gorm.ErrRecordNotFound
+			}
+		}
+
+		if len(removedSpecIDs) > 0 {
+			if err := tx.Where("product_type_id = ? AND id IN ?", productType.ID, removedSpecIDs).
+				Delete(&product.SpecDefinition{}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (r *ProductRepository) DeleteProductType(id uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("product_type_id = ?", id).Delete(&product.SpecDefinition{}).Error; err != nil {
+			return err
+		}
+		result := tx.Delete(&product.ProductType{}, id)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
+}
+
+func createSpecDefinition(tx *gorm.DB, definition *product.SpecDefinition) error {
+	updates := specDefinitionUpdates(definition)
+	if err := tx.Create(definition).Error; err != nil {
+		return err
+	}
+	return tx.Model(definition).Updates(updates).Error
+}
+
+func specDefinitionUpdates(definition *product.SpecDefinition) map[string]interface{} {
+	return map[string]interface{}{
+		"group":             definition.Group,
+		"name":              definition.Name,
+		"slug":              definition.Slug,
+		"field_type":        definition.FieldType,
+		"unit":              definition.Unit,
+		"is_required":       definition.IsRequired,
+		"is_filterable":     definition.IsFilterable,
+		"is_visible":        definition.IsVisible,
+		"is_variant_option": definition.IsVariantOption,
+		"sort_order":        definition.SortOrder,
+		"options":           definition.Options,
+		"validation":        definition.Validation,
+	}
+}

@@ -124,37 +124,3 @@ WHERE oi.variant_id IS NULL
 
 ALTER TABLE cart_items ALTER COLUMN variant_id SET NOT NULL;
 ALTER TABLE order_items ALTER COLUMN variant_id SET NOT NULL;
-
-WITH carbon AS (
-    SELECT id AS product_type_id FROM product_types WHERE slug = 'carbon_rim'
-)
-INSERT INTO product_spec_definitions (
-    product_type_id, "group", name, slug, field_type, unit,
-    is_required, is_filterable, is_visible, is_variant_option, sort_order, options, created_at, updated_at
-)
-SELECT carbon.product_type_id, 'Appearance', 'Color', 'color', 'select', '',
-       FALSE, TRUE, TRUE, TRUE, 45, '["black","white","silver","red","blue","custom"]', NOW(), NOW()
-FROM carbon
-ON CONFLICT (product_type_id, slug) DO UPDATE SET
-    "group" = EXCLUDED."group",
-    name = EXCLUDED.name,
-    field_type = EXCLUDED.field_type,
-    unit = EXCLUDED.unit,
-    is_filterable = EXCLUDED.is_filterable,
-    is_visible = EXCLUDED.is_visible,
-    is_variant_option = EXCLUDED.is_variant_option,
-    sort_order = EXCLUDED.sort_order,
-    options = EXCLUDED.options,
-    updated_at = NOW();
-
-UPDATE product_spec_definitions
-SET is_variant_option = TRUE,
-    updated_at = NOW()
-WHERE slug IN (
-    'color',
-    'wheel_size',
-    'brake_type',
-    'spoke_holes',
-    'frame_size',
-    'material'
-);
