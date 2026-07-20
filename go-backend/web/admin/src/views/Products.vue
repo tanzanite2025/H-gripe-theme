@@ -284,11 +284,11 @@
               <p v-if="formErrors.variants" class="mt-2 text-xs font-medium text-destructive">{{ formErrors.variants }}</p>
             </FormSection>
 
-            <FormSection title="发布设置" description="控制商品的库存辅助信息和前台可见状态。">
+            <FormSection title="发布设置" description="控制商品的公开状态和前台可见性。">
               <div class="grid gap-4 md:grid-cols-2">
-                <FormField label="重量（克）">
-                  <Input v-model.number="productForm.weight_grams" type="number" min="0" />
-                </FormField>
+                <div class="md:col-span-2 rounded-lg border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+                  重量现在只在 SKU 变体里维护，前台会按当前选中的 SKU 显示对应重量。
+                </div>
                 <FormField label="状态" required>
                   <Select v-model="productForm.status">
                     <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
@@ -428,10 +428,10 @@ const FormSection = defineComponent({
     description: { type: String, default: '' }
   },
   setup(props, { slots }) {
-    return () => h('section', { class: 'grid gap-4 border-t pt-6 first:border-t-0 first:pt-0 xl:grid-cols-[190px_minmax(0,1fr)]' }, [
-      h('div', {}, [
+    return () => h('section', { class: 'space-y-4 border-t pt-6 first:border-t-0 first:pt-0' }, [
+      h('div', { class: 'space-y-1' }, [
         h('h3', { class: 'text-sm font-semibold' }, props.title),
-        props.description ? h('p', { class: 'mt-1 text-xs leading-5 text-muted-foreground' }, props.description) : null
+        props.description ? h('p', { class: 'max-w-2xl text-xs leading-5 text-muted-foreground' }, props.description) : null
       ]),
       h('div', { class: 'min-w-0' }, slots.default?.())
     ])
@@ -615,6 +615,17 @@ const buildVariantFormValues = (product) => {
   return variants
 }
 
+const getPrimaryVariantWeight = (variants) => {
+  const primaryVariant = variants.find((variant) => variant.is_default) || variants[0]
+  const primaryWeight = Number(primaryVariant?.weight_grams ?? 0)
+  if (Number.isFinite(primaryWeight) && primaryWeight > 0) {
+    return primaryWeight
+  }
+
+  const fallbackWeight = Number(productForm.weight_grams || 0)
+  return Number.isFinite(fallbackWeight) && fallbackWeight > 0 ? fallbackWeight : 0
+}
+
 const addVariant = () => {
   productForm.variants.push(createEmptyVariant({ is_default: productForm.variants.length === 0 }))
   clearFieldError('variants')
@@ -648,29 +659,32 @@ const normalizeFormVariants = () => {
       price: Number(variant.price || 0),
       sale_price: variant.sale_price === '' || variant.sale_price == null ? null : Number(variant.sale_price),
       stock: Number(variant.stock || 0),
-      weight_grams: Number(variant.weight_grams || productForm.weight_grams || 0),
+      weight_grams: Number(variant.weight_grams || 0),
       is_default: Boolean(variant.is_default),
       is_active: variant.is_active !== false,
       sort_order: Number(variant.sort_order ?? index * 10)
     }
   })
 }
-const buildProductPayload = () => ({
-  id: productForm.id,
-  product_type_id: productForm.product_type_id,
-  name: productForm.name.trim(),
-  slug: productForm.slug.trim(),
-  description: productForm.description,
-  short_description: productForm.short_description,
-  weight_grams: Number(productForm.weight_grams || 0),
-  status: productForm.status,
-  locale: productForm.locale,
-  featured: productForm.featured,
-  meta_title: productForm.meta_title,
-  meta_description: productForm.meta_description,
-  specs: { ...productForm.specs },
-  variants: normalizeFormVariants()
-})
+const buildProductPayload = () => {
+  const variants = normalizeFormVariants()
+  return {
+    id: productForm.id,
+    product_type_id: productForm.product_type_id,
+    name: productForm.name.trim(),
+    slug: productForm.slug.trim(),
+    description: productForm.description,
+    short_description: productForm.short_description,
+    weight_grams: getPrimaryVariantWeight(variants),
+    status: productForm.status,
+    locale: productForm.locale,
+    featured: productForm.featured,
+    meta_title: productForm.meta_title,
+    meta_description: productForm.meta_description,
+    specs: { ...productForm.specs },
+    variants,
+  }
+}
 
 const clearFormErrors = () => Object.keys(formErrors).forEach((key) => delete formErrors[key])
 const clearFieldError = (field) => { delete formErrors[field] }
