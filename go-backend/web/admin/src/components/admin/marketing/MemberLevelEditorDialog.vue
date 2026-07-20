@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl" @open-auto-focus.prevent>
+    <DialogContent size="md" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
       <form class="space-y-5" @submit.prevent="emit('submit')">
         <DialogHeader>
           <DialogTitle>{{ mode === 'create' ? '创建会员等级' : '编辑会员等级' }}</DialogTitle>

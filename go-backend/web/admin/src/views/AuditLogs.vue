@@ -111,7 +111,7 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="detailDialogVisible">
-      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-4xl" @open-auto-focus.prevent>
+      <DialogContent size="lg" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
         <DialogHeader>
           <DialogTitle>日志详情</DialogTitle>
           <DialogDescription v-if="currentLog">审计日志 #{{ currentLog.id }}</DialogDescription>

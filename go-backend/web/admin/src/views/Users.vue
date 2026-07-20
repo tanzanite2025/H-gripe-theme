@@ -176,7 +176,7 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="dialogVisible">
-      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent size="md" class="max-h-[90dvh] overflow-y-auto">
         <form @submit="submitUserForm">
           <DialogHeader>
             <DialogTitle>{{ dialogMode === 'create' ? '添加用户' : '编辑用户' }}</DialogTitle>

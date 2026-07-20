@@ -101,7 +101,7 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="dialogVisible">
-      <DialogContent class="sm:max-w-xl" @open-auto-focus.prevent>
+      <DialogContent size="md" @open-auto-focus.prevent>
         <form class="space-y-5" @submit.prevent="submitGalleryForm">
           <DialogHeader>
             <DialogTitle>{{ dialogMode === 'create' ? '创建图库' : '编辑图库' }}</DialogTitle>
@@ -130,7 +130,7 @@
     </Dialog>
 
     <Dialog v-model:open="imagesDialogVisible">
-      <DialogContent class="max-h-[92vh] overflow-y-auto p-0 sm:max-w-6xl" @open-auto-focus.prevent>
+      <DialogContent size="xl" class="max-h-[92dvh] overflow-y-auto p-0" @open-auto-focus.prevent>
         <DialogHeader class="border-b px-5 py-4 pr-12">
           <DialogTitle>{{ currentGallery ? galleryTitle(currentGallery) : '图库图片' }}</DialogTitle>
           <DialogDescription>查看和维护图库内图片、缩略图、标签及展示顺序。</DialogDescription>
@@ -237,7 +237,7 @@
     </Dialog>
 
     <Dialog v-model:open="imageDialogVisible">
-      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl" @open-auto-focus.prevent>
+      <DialogContent size="md" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
         <form class="space-y-5" @submit.prevent="submitImageForm">
           <DialogHeader>
             <DialogTitle>{{ imageDialogMode === 'create' ? '添加图片' : '编辑图片' }}</DialogTitle>
@@ -281,7 +281,7 @@
     </Dialog>
 
     <Dialog v-model:open="previewDialogVisible">
-      <DialogContent class="overflow-hidden p-0 sm:max-w-4xl">
+      <DialogContent size="lg" class="overflow-hidden p-0">
         <DialogHeader class="sr-only">
           <DialogTitle>{{ previewImage.title || '图片预览' }}</DialogTitle>
           <DialogDescription>图库图片大图预览</DialogDescription>

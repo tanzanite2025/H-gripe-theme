@@ -18,12 +18,19 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<DialogContentProps & { class?: HTMLAttributes['class'], showCloseButton?: boolean }>(), {
+type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
+
+const props = withDefaults(defineProps<DialogContentProps & {
+  class?: HTMLAttributes['class']
+  showCloseButton?: boolean
+  size?: DialogSize
+}>(), {
   showCloseButton: true,
+  size: 'md',
 })
 const emits = defineEmits<DialogContentEmits>()
 
-const delegatedProps = reactiveOmit(props, 'class')
+const delegatedProps = reactiveOmit(props, 'class', 'size')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
@@ -33,8 +40,9 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     <DialogOverlay />
     <DialogContent
       data-slot="dialog-content"
+      :data-size="size"
       v-bind="{ ...$attrs, ...forwarded }"
-      :class="cn('bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-4 rounded-lg p-4 text-sm ring-1 duration-100 sm:max-w-sm fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none', props.class)"
+      :class="cn('bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-h-[calc(100dvh-2rem)] min-w-0 gap-4 overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg p-4 text-sm ring-1 duration-100 data-[size=sm]:w-[min(max(20rem,32dvw),40rem,calc(100dvw-2rem))] data-[size=md]:w-[min(max(28rem,44dvw),56rem,calc(100dvw-2rem))] data-[size=lg]:w-[min(max(40rem,64dvw),72rem,calc(100dvw-2rem))] data-[size=xl]:w-[min(max(56rem,78dvw),90rem,calc(100dvw-2rem))] data-[size=full]:w-[min(96dvw,112rem,calc(100dvw-1rem))] fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none', props.class)"
     >
       <slot />
 

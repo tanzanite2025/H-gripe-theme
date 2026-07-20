@@ -169,7 +169,7 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="detailDialogVisible">
-      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
+      <DialogContent size="xl" class="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>订单详情</DialogTitle>
           <DialogDescription>{{ currentOrder?.order_number || '订单信息' }}</DialogDescription>
@@ -266,7 +266,7 @@
     </Dialog>
 
     <Dialog v-model:open="statusDialogVisible">
-      <DialogContent class="sm:max-w-lg">
+      <DialogContent size="sm">
         <form @submit.prevent="submitStatus">
           <DialogHeader>
             <DialogTitle>状态管理</DialogTitle>

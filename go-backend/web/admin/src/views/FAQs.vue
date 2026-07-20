@@ -140,7 +140,7 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="dialogVisible">
-      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl" @open-auto-focus.prevent>
+      <DialogContent size="md" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
         <form class="space-y-5" @submit.prevent="submitForm">
           <DialogHeader>
             <DialogTitle>{{ dialogMode === 'create' ? '添加 FAQ' : '编辑 FAQ' }}</DialogTitle>
