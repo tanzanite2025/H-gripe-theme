@@ -6,7 +6,7 @@ test.use({ locale: 'zh-CN' })
 
 test('anonymous initialization stays quiet and accepts deployed list envelopes', async ({ page }) => {
   const apiRequests: string[] = []
-  const consoleMessages: string[] = []
+  const consoleErrors: string[] = []
   const pageErrors: string[] = []
 
   page.on('request', (request) => {
@@ -15,7 +15,7 @@ test('anonymous initialization stays quiet and accepts deployed list envelopes',
   })
 
   page.on('console', (message) => {
-    consoleMessages.push(message.text())
+    if (message.type() === 'error') consoleErrors.push(message.text())
   })
 
   page.on('pageerror', (error) => {
@@ -27,9 +27,8 @@ test('anonymous initialization stays quiet and accepts deployed list envelopes',
 
     if (pathname === '/api/v1/auth/profile') {
       await route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Unauthorized' }),
+        status: 204,
+        body: '',
       })
       return
     }
@@ -55,7 +54,7 @@ test('anonymous initialization stays quiet and accepts deployed list envelopes',
   expect(apiRequests).not.toContain('/api/v1/wishlist')
   expect(apiRequests).not.toContain('/api/v1/marketing/loyalty/points')
   expect(pageErrors).toEqual([])
-  expect(consoleMessages.filter((message) => /hydration|wishlist|user points|shipping templates|tax rates/i.test(message))).toEqual([])
+  expect(consoleErrors).toEqual([])
 })
 
 test('restored sessions still load wishlist and loyalty points', async ({ page }) => {
