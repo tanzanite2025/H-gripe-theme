@@ -12,7 +12,7 @@
 
       <!-- Products page content -->
       <section class="products-content">
-        <div class="products-content__inner">
+        <div class="products-content__inner page-content-shell">
           <slot />
         </div>
       </section>
@@ -66,26 +66,11 @@ const policiesNavItems = [
 
 
 .products-content {
-  padding: 1rem 1.5rem 3rem;
+  padding: 1rem 0 3rem;
 }
 
 .products-content__inner {
-  max-width: 960px;
-  margin: 0 auto;
-}
-
-@media (max-width: 768px) {
-
-
-  .products-content {
-    padding-inline: 1rem;
-  }
-}
-
-@media (max-width: 400px) {
-  .products-content {
-    padding-inline: 0.75rem;
-  }
+  max-width: none;
 }
 
 @media (min-width: 768px) {

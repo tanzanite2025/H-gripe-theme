@@ -24,6 +24,13 @@
 
 @layer components {
 
+  .page-content-shell {
+    width: min(95%, calc(100% - 2rem));
+    max-width: none;
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
   /* 全局统一的高级卡片样式 */
   /* 背景色参考 FAQ 组件: #11151e */
   /* 阴影参考全局柔和阴影标准 */
@@ -47,5 +54,11 @@
   .premium-button--active {
     @apply bg-white text-slate-900 font-semibold;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@media (max-width: 767px) {
+  .page-content-shell {
+    width: calc(100% - 4px);
   }
 }

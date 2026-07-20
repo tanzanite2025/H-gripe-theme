@@ -120,7 +120,8 @@ useHead({
 
 <style scoped>
 .company-page {
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
   padding: 0 16px;
   display: flex;
@@ -132,10 +133,10 @@ useHead({
   margin-top: 0.5rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .company-page {
     max-width: 100%;
-    padding: 0 2px;
+    padding-inline: 0;
   }
 }
 </style>

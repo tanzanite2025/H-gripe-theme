@@ -1,6 +1,6 @@
 <template>
   <section class="bg-transparent text-white pt-6 pb-2">
-    <div class="mx-auto max-w-6xl px-1 sm:px-4">
+    <div class="page-content-shell px-0 md:px-4">
       
       <!-- Tab Navigation -->
       <div class="flex justify-center mb-4 sm:mb-8">

@@ -15,10 +15,12 @@
 
     <!-- FAQ Preview Section -->
     <div class="pt-[21px] pb-0">
-      <HomeFaqPreview :max-items-per-category="4" wide />
+      <div class="page-content-shell">
+        <HomeFaqPreview :max-items-per-category="4" wide fluid />
+      </div>
     </div>
 
-    <section class="max-w-6xl mx-auto px-1 sm:px-4 pt-[21px] pb-0">
+    <section class="page-content-shell px-0 md:px-4 pt-[21px] pb-0">
       <ContactLocationMap variant="compact" title-tag="h2" layout="split" />
     </section>
 

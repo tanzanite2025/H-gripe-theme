@@ -6,7 +6,7 @@
       'py-4 md:py-6'
     ]"
   >
-    <div class="w-full max-w-[960px] mx-auto">
+    <div class="w-full max-w-none mx-auto">
       <!-- Main Page Header (Optional, if page title not sufficient) -->
       <div v-if="displayTitle || faqData?.subtitle" class="text-center mb-8">
         <h3 

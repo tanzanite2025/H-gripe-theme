@@ -55,7 +55,8 @@ useHead({
 }
 
 .support-hero__inner {
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
 }
 
 .support-hero__eyebrow {
@@ -93,7 +94,7 @@ useHead({
 
 .feedback-section {
   width: 100%;
-  max-width: 960px;
+  max-width: none;
 }
 
 @media (max-width: 768px) {

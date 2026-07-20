@@ -1,6 +1,6 @@
 <template>
   <section class="bg-transparent text-white py-8 sm:py-12 lg:py-20">
-    <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <div class="page-content-shell px-0 md:px-6">
       
       <div class="grid lg:grid-cols-12 gap-5 sm:gap-10 lg:gap-16 items-start">
         

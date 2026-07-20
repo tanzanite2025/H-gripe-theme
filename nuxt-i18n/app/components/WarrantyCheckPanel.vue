@@ -195,7 +195,8 @@ const resetForm = () => {
 
 <style scoped>
 .warranty-check__container {
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
 }
 

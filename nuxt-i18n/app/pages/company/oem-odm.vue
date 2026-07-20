@@ -2,17 +2,17 @@
   <div class="w-full pt-4 md:pt-8 pb-6">
     <h1 class="sr-only">{{ t('company.nav.oemOdm') }}</h1>
     
-    <div class="max-w-7xl mx-auto">
+    <div class="w-full max-w-none">
       <OemOdmServices />
     </div>
 
     <!-- FAQ Section -->
-    <div class="max-w-[960px] mx-auto mt-4 px-0">
+    <div class="w-full max-w-none mt-4 px-0">
       <PageFaq pageId="company-oem-odm" />
     </div>
 
     <!-- Feedback Section -->
-    <div class="max-w-4xl mx-auto px-0 mt-4">
+    <div class="w-full max-w-none px-0 mt-4">
       <UserFeedbackThread
         threadKey="company-oem-odm"
         title="Share your feedback about our OEM/ODM Services"

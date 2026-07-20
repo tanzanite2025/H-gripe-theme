@@ -350,7 +350,8 @@ const goToAboutAppearance = async () => {
 
 .wheelset-page {
   margin: 0.25rem auto 0;
-  max-width: 900px;
+  width: 100%;
+  max-width: none;
 }
 
 /* .wheelset-tabs styles removed in favor of global .nav-pill-tabs */
