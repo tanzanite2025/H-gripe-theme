@@ -15,7 +15,7 @@
       <Sheet v-model:open="mobileSidebarOpen">
         <SheetContent
           side="left"
-          class="w-64 gap-0 p-0 sm:max-w-64"
+          class="gap-0 p-0"
         >
           <SheetTitle class="sr-only">后台导航</SheetTitle>
           <SheetDescription class="sr-only">选择要进入的后台管理模块</SheetDescription>

@@ -152,7 +152,7 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="dialogVisible">
-      <DialogContent class="max-h-[92vh] overflow-y-auto p-0 sm:max-w-5xl" @open-auto-focus.prevent>
+      <DialogContent size="xl" class="max-h-[92dvh] overflow-y-auto p-0" @open-auto-focus.prevent>
         <form @submit.prevent="submitForm">
           <DialogHeader class="border-b px-5 py-4 pr-12">
             <DialogTitle>{{ dialogMode === 'create' ? '添加文章' : '编辑文章' }}</DialogTitle>
@@ -232,7 +232,7 @@
             </FormSection>
           </div>
 
-          <DialogFooter class="sticky bottom-0 border-t bg-background px-5 py-4">
+          <DialogFooter class="sticky bottom-0 mx-0 mb-0 rounded-b-lg border-t bg-background px-5 py-4">
             <Button type="button" variant="outline" @click="dialogVisible = false">取消</Button>
             <Button type="submit" :disabled="submitting">
               <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
@@ -244,7 +244,7 @@
     </Dialog>
 
     <Dialog v-model:open="translationsDialogVisible">
-      <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent size="md" class="max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>翻译管理</DialogTitle>
           <DialogDescription v-if="currentPost">

@@ -173,14 +173,18 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="dialogVisible">
-      <DialogContent class="max-h-[92vh] overflow-y-auto p-0 sm:max-w-6xl" @open-auto-focus.prevent>
-        <form @submit.prevent="submitForm">
-          <DialogHeader class="border-b px-5 py-4 pr-12">
+      <DialogContent
+        size="full"
+        class="h-[94dvh] max-h-[calc(100dvh-1rem)] overflow-hidden p-0"
+        @open-auto-focus.prevent
+      >
+        <form class="flex h-full min-h-0 min-w-0 flex-col" @submit.prevent="submitForm">
+          <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
             <DialogTitle>{{ dialogMode === 'create' ? '添加商品' : '编辑商品' }}</DialogTitle>
             <DialogDescription>维护商品基础资料、规格模板和 SKU 级价格库存。</DialogDescription>
           </DialogHeader>
 
-          <div class="space-y-7 px-5 py-5">
+          <div class="min-h-0 min-w-0 flex-1 space-y-7 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-5 [scrollbar-gutter:stable]">
             <FormSection title="基础信息" description="用于商品识别、展示和多语言归属。">
               <div class="grid gap-4 md:grid-cols-2">
                 <FormField label="商品名称" required :error="formErrors.name">
@@ -266,12 +270,12 @@
             </FormSection>
 
             <FormSection title="SKU 变体矩阵" description="每个商品至少保留一个变体，价格和库存均以变体为准。">
-              <div class="overflow-x-auto rounded-lg border">
+              <div class="min-w-0 rounded-lg border">
                 <ProductVariantEditor
                   :variants="productForm.variants"
                   :spec-definitions="variantSpecDefinitions"
                   :default-index="defaultVariantIndex"
-                  class="min-w-max p-3"
+                  class="min-w-0 p-3"
                   @add="addVariant"
                   @remove="removeVariant"
                   @set-default="setDefaultVariant"
@@ -317,7 +321,7 @@
             </FormSection>
           </div>
 
-          <DialogFooter class="sticky bottom-0 border-t bg-background px-5 py-4">
+          <DialogFooter class="mx-0 mb-0 shrink-0 rounded-b-lg border-t bg-background px-5 py-4">
             <Button type="button" variant="outline" @click="dialogVisible = false">取消</Button>
             <Button type="submit" :disabled="submitting">
               <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
@@ -424,7 +428,7 @@ const FormSection = defineComponent({
     description: { type: String, default: '' }
   },
   setup(props, { slots }) {
-    return () => h('section', { class: 'grid gap-4 border-t pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[190px_minmax(0,1fr)]' }, [
+    return () => h('section', { class: 'grid gap-4 border-t pt-6 first:border-t-0 first:pt-0 xl:grid-cols-[190px_minmax(0,1fr)]' }, [
       h('div', {}, [
         h('h3', { class: 'text-sm font-semibold' }, props.title),
         props.description ? h('p', { class: 'mt-1 text-xs leading-5 text-muted-foreground' }, props.description) : null

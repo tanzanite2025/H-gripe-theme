@@ -288,7 +288,7 @@
     />
 
     <Dialog v-model:open="giftCardDetailVisible">
-      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-3xl" @open-auto-focus.prevent>
+      <DialogContent size="lg" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
         <DialogHeader>
           <DialogTitle>礼品卡详情</DialogTitle>
           <DialogDescription v-if="currentGiftCard" class="font-mono">{{ currentGiftCard.code }}</DialogDescription>

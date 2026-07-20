@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-h-[92vh] overflow-y-auto sm:max-w-3xl" @open-auto-focus.prevent>
+    <DialogContent size="lg" class="max-h-[92dvh] overflow-y-auto" @open-auto-focus.prevent>
       <form class="space-y-5" @submit.prevent="emit('submit')">
         <DialogHeader>
           <DialogTitle>{{ mode === 'create' ? '创建优惠券' : '编辑优惠券' }}</DialogTitle>

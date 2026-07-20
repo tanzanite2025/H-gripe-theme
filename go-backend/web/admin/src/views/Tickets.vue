@@ -99,7 +99,7 @@
     </AdminTablePanel>
 
     <Dialog v-model:open="detailDialogVisible">
-      <DialogContent class="max-h-[92vh] overflow-y-auto p-0 sm:max-w-6xl" @open-auto-focus.prevent>
+      <DialogContent size="xl" class="max-h-[92dvh] overflow-y-auto p-0" @open-auto-focus.prevent>
         <DialogHeader class="border-b px-5 py-4 pr-12">
           <DialogTitle>{{ currentTicket?.ticket_number || '工单详情' }}</DialogTitle>
           <DialogDescription>{{ currentTicket?.subject || '查看工单信息和消息记录' }}</DialogDescription>
@@ -206,7 +206,7 @@
     </Dialog>
 
     <Dialog v-model:open="assignDialogVisible">
-      <DialogContent class="sm:max-w-md" @open-auto-focus.prevent>
+      <DialogContent size="sm" @open-auto-focus.prevent>
         <form class="space-y-5" @submit.prevent="assignTicket">
           <DialogHeader>
             <DialogTitle>分配工单</DialogTitle>
