@@ -1,5 +1,9 @@
 <template>
-  <section class="product-information" :aria-label="t('sectionLabel')">
+  <section
+    class="product-information"
+    :aria-label="t('sectionLabel')"
+    :data-hydrated="isHydrated"
+  >
     <div
       class="product-information__tabs"
       role="tablist"
@@ -47,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
 const { t } = useI18n({
   useScope: 'local',
@@ -133,6 +137,11 @@ const tabs = computed<ReadonlyArray<{
 ])
 
 const activeTab = ref<ProductInformationTab>('details')
+const isHydrated = ref(false)
+
+onMounted(() => {
+  isHydrated.value = true
+})
 
 const contentByTab = computed<Record<ProductInformationTab, string>>(() => ({
   details: props.detailsHtml?.trim() || '',
