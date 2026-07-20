@@ -4,7 +4,7 @@
       <Info class="size-4" />
       <AlertTitle>价格与库存按 SKU 维护</AlertTitle>
       <AlertDescription>
-        商品列表会汇总默认变体价格和全部启用变体的库存。
+        每个 SKU 都可以单独维护重量、价格和库存，前台会按当前选中的 SKU 显示。
       </AlertDescription>
     </Alert>
 
@@ -12,7 +12,7 @@
       :model-value="String(defaultIndex)"
       @update:model-value="emit('set-default', Number($event))"
     >
-      <Table class="min-w-[920px]">
+      <Table class="min-w-[980px]">
         <TableHeader>
           <TableRow>
             <TableHead class="w-16 text-center">默认</TableHead>
@@ -22,7 +22,8 @@
             </TableHead>
             <TableHead class="w-32">价格</TableHead>
             <TableHead class="w-32">促销价</TableHead>
-            <TableHead class="w-28">库存</TableHead>
+            <TableHead class="w-28">重量（克）</TableHead>
+            <TableHead class="w-24">库存</TableHead>
             <TableHead class="w-20 text-center">启用</TableHead>
             <TableHead class="w-16 text-right">操作</TableHead>
           </TableRow>
@@ -67,6 +68,9 @@
             </TableCell>
             <TableCell>
               <Input v-model.number="variant.sale_price" type="number" min="0" step="0.01" placeholder="可选" />
+            </TableCell>
+            <TableCell>
+              <Input v-model.number="variant.weight_grams" type="number" min="0" step="1" placeholder="克" />
             </TableCell>
             <TableCell>
               <Input v-model.number="variant.stock" type="number" min="0" step="1" />
