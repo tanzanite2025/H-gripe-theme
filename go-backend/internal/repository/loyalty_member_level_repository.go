@@ -20,15 +20,15 @@ func (r *LoyaltyRepository) FindMemberLevelByID(id uint) (*loyalty.MemberLevel, 
 // FindAllMemberLevels 查找所有会员等级
 func (r *LoyaltyRepository) FindAllMemberLevels() ([]loyalty.MemberLevel, error) {
 	var levels []loyalty.MemberLevel
-	err := r.db.Order("level ASC").Find(&levels).Error
+	err := r.db.Order("sort_order ASC, min_points ASC, id ASC").Find(&levels).Error
 	return levels, err
 }
 
 // FindMemberLevelByPoints 根据积分查找对应等级
 func (r *LoyaltyRepository) FindMemberLevelByPoints(points int) (*loyalty.MemberLevel, error) {
 	var level loyalty.MemberLevel
-	err := r.db.Where("required_points <= ?", points).
-		Order("required_points DESC").First(&level).Error
+	err := r.db.Where("min_points <= ?", points).
+		Order("min_points DESC").First(&level).Error
 	if err != nil {
 		return nil, err
 	}

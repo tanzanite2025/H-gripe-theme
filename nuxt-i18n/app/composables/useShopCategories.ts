@@ -1,3 +1,4 @@
+import { useRuntimeConfig } from '#imports'
 import { ref } from 'vue'
 
 export interface ShopCategory {
@@ -5,9 +6,37 @@ export interface ShopCategory {
   slug: string
   name: string
   count?: number
+  isProductType?: boolean
+}
+
+const extractProductTypes = (payload: unknown): ShopCategory[] => {
+  let current = payload
+
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (Array.isArray(current)) {
+      return current.flatMap((item) => {
+        if (!item || typeof item !== 'object') return []
+
+        const record = item as Record<string, unknown>
+        const id = Number(record.id)
+        const slug = String(record.slug || '').trim()
+        const name = String(record.name || '').trim()
+
+        if (!Number.isFinite(id) || !slug || !name || record.is_enabled === false) return []
+        return [{ id, slug, name, isProductType: true }]
+      })
+    }
+
+    if (!current || typeof current !== 'object') break
+    current = (current as Record<string, unknown>).data
+  }
+
+  return []
 }
 
 export const useShopCategories = () => {
+  const config = useRuntimeConfig()
+  const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
   const categories = ref<ShopCategory[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -27,9 +56,9 @@ export const useShopCategories = () => {
     error.value = null
 
     try {
-      // TODO: Implement /categories endpoint in Go backend.
-      // For now, immediately resolve to fallback categories to prevent 404 errors.
-      categories.value = fallbackCategories
+      const response = await $fetch<unknown>(`${baseURL}/products/types`)
+      const productTypes = extractProductTypes(response)
+      categories.value = productTypes.length ? productTypes : fallbackCategories
     } catch (e: any) {
       // eslint-disable-next-line no-console
       console.error('Failed to load shop categories:', e)
