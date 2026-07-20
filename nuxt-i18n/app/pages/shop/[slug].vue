@@ -1,5 +1,5 @@
 <template>
-  <main v-if="product" class="product-page" :aria-label="metaTitle">
+  <section v-if="product" class="product-page" :aria-label="metaTitle">
     <div class="product-hero">
       <figure v-if="primaryImage" class="product-image">
         <NuxtImg :src="primaryImage" :alt="product.name || metaTitle" loading="lazy" format="webp" />
@@ -8,7 +8,7 @@
         <h1 class="product-title">{{ product.name }}</h1>
         <p v-if="product.short_description" class="product-description" v-html="product.short_description" />
         <p v-else-if="product.description" class="product-description" v-html="product.description" />
-        <div class="product-meta">
+        <div class="product-meta" aria-live="polite" aria-atomic="true">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
           <span v-if="displaySKU" class="product-sku">SKU: {{ displaySKU }}</span>
           <span v-if="product.product_type?.name" class="product-sku">{{ product.product_type.name }}</span>
@@ -24,7 +24,7 @@
               {{ variantLabel(variant) }}
             </option>
           </select>
-          <p class="variant-stock">Stock: {{ selectedVariant?.stock ?? 0 }}</p>
+          <p class="variant-stock" role="status" aria-live="polite">Stock: {{ selectedVariant?.stock ?? 0 }}</p>
         </div>
         <button
           type="button"
@@ -46,10 +46,7 @@
       </ul>
     </section>
 
-    <section v-if="product.description" class="product-content" aria-label="Product details">
-      <h2>Details</h2>
-      <article v-html="product.description" />
-    </section>
+    <ProductInformationTabs :key="product.id" :details-html="product.description" />
 
     <section v-if="specGroups.length" class="product-specs" aria-label="Product specifications">
       <h2>Specifications</h2>
@@ -63,7 +60,7 @@
         </dl>
       </div>
     </section>
-  </main>
+  </section>
   <section v-else-if="pending" class="product-page product-page--pending">Loading...</section>
   <section v-else class="product-page product-page--error" role="alert">Product not found.</section>
 </template>
@@ -140,6 +137,7 @@ interface GoProduct {
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const { locale } = useI18n()
 const selectedVariantId = ref<number | null>(null)
 const { addToCart, openCart } = useCart()
 const { toCartItem } = useShopProducts()
@@ -280,7 +278,7 @@ const formattedPrice = computed(() => {
   const numeric = Number(raw)
   if (!Number.isFinite(numeric)) return ''
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(locale.value.replace('_', '-'), {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
@@ -447,12 +445,14 @@ useHead(() => {
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
+  color: #f8fafc;
   padding: 2rem 1rem 4rem;
 }
 
 .product-page--pending,
 .product-page--error {
   padding: 4rem 1rem;
+  color: #e2e8f0;
   text-align: center;
   font-size: 1.1rem;
 }
@@ -490,8 +490,14 @@ useHead(() => {
 
 .product-title {
   margin: 0;
+  color: #f8fafc;
   font-size: clamp(1.8rem, 2.4vw + 1rem, 2.8rem);
   font-weight: 600;
+}
+
+.product-description {
+  color: #cbd5e1;
+  line-height: 1.65;
 }
 
 .product-description :deep(p) {
@@ -502,17 +508,23 @@ useHead(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+  color: #cbd5e1;
   font-size: 1rem;
 }
 
 .product-price {
+  color: #f8fafc;
   font-weight: 600;
   font-size: 1.15rem;
 }
 
+.product-sku {
+  color: #cbd5e1;
+}
+
 @media (max-width: 767px) {
   .product-page {
-    padding-inline: 0;
+    padding-inline: 1rem;
   }
 }
 
@@ -535,8 +547,14 @@ useHead(() => {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 0.8rem;
   background: rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
   color: #fff;
   padding: 0.7rem 0.9rem;
+}
+
+.product-variants option {
+  background: #111827;
+  color: #f8fafc;
 }
 
 .variant-stock {
@@ -560,15 +578,24 @@ useHead(() => {
   transform: translateY(-1px);
 }
 
+.product-variants select:focus-visible,
+.product-add-button:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 3px;
+}
+
 .product-add-button:disabled {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 1;
 }
 
 .product-gallery h2,
-.product-content h2,
 .product-specs h2 {
   margin-bottom: 0.75rem;
+  color: #f8fafc;
   font-size: 1.5rem;
 }
 
@@ -591,11 +618,6 @@ useHead(() => {
   width: 100%;
   display: block;
   object-fit: cover;
-}
-
-.product-content article :deep(p) {
-  margin-bottom: 1rem;
-  line-height: 1.6;
 }
 
 .product-specs {
