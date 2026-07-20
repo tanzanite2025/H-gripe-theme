@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,7 +36,7 @@ func TestAnonymousProfileProbeReturnsNoContent(t *testing.T) {
 	RegisterRoutes(router, &app.Dependencies{}, cfg)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/profile", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/auth/profile", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNoContent {
