@@ -45,8 +45,8 @@ func (r *LoyaltyRepository) GetLoyaltyStats() (map[string]interface{}, error) {
 		Count   int64
 	}
 	if err := r.db.Model(&loyalty.UserLoyalty{}).
-		Select("level_id, count(*) as count").
-		Group("level_id").
+		Select("member_level_id AS level_id, count(*) as count").
+		Group("member_level_id").
 		Scan(&levelStats).Error; err != nil {
 		return nil, err
 	}

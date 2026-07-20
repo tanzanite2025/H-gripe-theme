@@ -1,5 +1,6 @@
 <template>
-  <Teleport to="body">
+  <ClientOnly>
+    <Teleport to="body">
     <!-- 第一步：底部简洁横条 -->
     <Transition name="cookie-slide">
       <div 
@@ -10,7 +11,7 @@
           <p class="text-sm text-slate-300 text-center sm:text-left">
             We use cookies for a better experience. 
             <NuxtLink 
-              to="/cookie-policy" 
+              to="/policies/cookie"
               class="text-cyan-400 hover:text-cyan-300 underline"
               @click="hideBanner"
             >
@@ -66,7 +67,7 @@
               We use cookies to improve your experience on this website. You may choose which types 
               of cookies to allow and change your preferences at any time. Disabling cookies may 
               impact your experience on this website. You can learn more by viewing our 
-              <NuxtLink to="/cookie-policy" class="text-cyan-400 hover:text-cyan-300 hover:underline" @click="hideAll">
+              <NuxtLink to="/policies/cookie" class="text-cyan-400 hover:text-cyan-300 hover:underline" @click="hideAll">
                 Cookie Policy
               </NuxtLink>.
             </p>
@@ -159,7 +160,8 @@
         </div>
       </div>
     </Transition>
-  </Teleport>
+    </Teleport>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">

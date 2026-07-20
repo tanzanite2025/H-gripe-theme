@@ -21,7 +21,21 @@ const wishlistMessage = (err: unknown, fallback: string) => {
 export const useWishlist = () => {
   const auth = useAuth()
 
+  const ensureAuthenticated = async () => {
+    if (!auth.initialized.value) {
+      await auth.ensureSession()
+    }
+
+    return auth.isAuthenticated.value
+  }
+
   const loadWishlist = async () => {
+    if (!(await ensureAuthenticated())) {
+      items.value = []
+      error.value = 'Please log in to view your wishlist.'
+      loadedOnce.value = true
+      return
+    }
     if (loading.value) return
     loading.value = true
     error.value = null
@@ -45,6 +59,11 @@ export const useWishlist = () => {
 
   const addToWishlist = async (productId: number) => {
     if (!productId) return { success: false, message: 'Invalid product id' }
+    if (!(await ensureAuthenticated())) {
+      const message = 'Please log in to use wishlist.'
+      error.value = message
+      return { success: false, message }
+    }
     error.value = null
     try {
       const response = await auth.request<{ item: WishlistItem }>(
@@ -77,6 +96,11 @@ export const useWishlist = () => {
 
   const removeFromWishlist = async (wishlistId: number) => {
     if (!wishlistId) return { success: false, message: 'Invalid wishlist id' }
+    if (!(await ensureAuthenticated())) {
+      const message = 'Please log in to use wishlist.'
+      error.value = message
+      return { success: false, message }
+    }
     error.value = null
     try {
       await auth.request(

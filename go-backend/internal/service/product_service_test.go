@@ -168,6 +168,31 @@ func TestProductServiceSearchPublicFiltersByTemplateSpec(t *testing.T) {
 	assert.Equal(t, discRim.ID, results[0].ID)
 }
 
+func TestProductServicePublicListsFallBackToEnglish(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+	englishRim := createProductWithSpecs(t, productService, productType.ID, "RIM-EN", "english-rim", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+
+	listed, listTotal, err := productService.List("zh", "active", false, 1, 20)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), listTotal)
+	require.Len(t, listed, 1)
+	assert.Equal(t, englishRim.ID, listed[0].ID)
+
+	searched, searchTotal, err := productService.SearchPublic(ProductSearchInput{
+		Locale:   "zh",
+		Status:   "active",
+		Page:     1,
+		PageSize: 20,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), searchTotal)
+	require.Len(t, searched, 1)
+	assert.Equal(t, englishRim.ID, searched[0].ID)
+}
+
 func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 	t.Helper()
 

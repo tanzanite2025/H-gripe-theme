@@ -259,8 +259,12 @@ const joinUniqueSearchParts = (parts: Array<string | null | undefined>) => {
 
 const buildProductKeyword = (payload?: ProductSearchPayload) => joinUniqueSearchParts([
   payload?.query,
-  selectedCategory.value?.name || selectedCategory.value?.slug,
-  payload?.chipCategorySlug ? categorySlugToKeyword(payload.chipCategorySlug) : null,
+  selectedCategory.value && !selectedCategory.value.isProductType
+    ? selectedCategory.value.name || selectedCategory.value.slug
+    : null,
+  payload?.chipCategorySlug && !categories.value.some(category => category.slug === payload.chipCategorySlug)
+    ? categorySlugToKeyword(payload.chipCategorySlug)
+    : null,
 ])
 
 const runQuickSearch = () => {
@@ -274,6 +278,10 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
   const params: Record<string, any> = {
     per_page: 24,
     status: 'active',
+  }
+
+  if (selectedCategory.value?.slug && selectedCategory.value.isProductType) {
+    params.product_type = selectedCategory.value.slug
   }
 
   if (payload) {

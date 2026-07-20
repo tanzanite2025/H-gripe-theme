@@ -90,7 +90,11 @@ func (s *ProductService) GetBySlug(slug, locale string) (*product.Product, error
 
 func (s *ProductService) List(locale, status string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
 	offset := (page - 1) * pageSize
-	return s.productRepo.List(locale, status, featured, offset, pageSize)
+	products, total, err := s.productRepo.List(locale, status, featured, offset, pageSize)
+	if err == nil && total == 0 && locale != "" && locale != "en" {
+		return s.productRepo.List("en", status, featured, offset, pageSize)
+	}
+	return products, total, err
 }
 
 func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Product, int64, error) {
@@ -103,7 +107,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 		pageSize = 20
 	}
 	offset := (page - 1) * pageSize
-	return s.productRepo.SearchPublic(repository.ProductSearchQuery{
+	query := repository.ProductSearchQuery{
 		Locale:      input.Locale,
 		Status:      input.Status,
 		Keyword:     input.Keyword,
@@ -113,7 +117,13 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 		SpecFilters: input.SpecFilters,
 		Offset:      offset,
 		Limit:       pageSize,
-	})
+	}
+	products, total, err := s.productRepo.SearchPublic(query)
+	if err == nil && total == 0 && input.Locale != "" && input.Locale != "en" {
+		query.Locale = "en"
+		return s.productRepo.SearchPublic(query)
+	}
+	return products, total, err
 }
 
 func (s *ProductService) Create(p *product.Product) error {

@@ -1,4 +1,4 @@
-import { useState } from 'nuxt/app'
+import { useNuxtApp, useState } from 'nuxt/app'
 import { computed } from 'vue'
 
 interface LoginPayload {
@@ -37,6 +37,8 @@ interface AuthUser {
   [key: string]: unknown
 }
 
+const sessionRequests = new WeakMap<object, Promise<AuthUser | null>>()
+
 // API 响应格式
 const unwrapData = <T>(payload: T | { data?: T } | null | undefined): T | null => {
   if (!payload || typeof payload !== 'object') {
@@ -49,6 +51,7 @@ const unwrapData = <T>(payload: T | { data?: T } | null | undefined): T | null =
 }
 
 export function useAuth() {
+  const nuxtApp = useNuxtApp()
   const { baseURL, request } = useApiRequest()
 
   const user = useState<AuthUser | null>('auth-user', () => null)
@@ -62,20 +65,39 @@ export function useAuth() {
       initialized.value = true
       return null
     }
+
+    const pendingRequest = sessionRequests.get(nuxtApp)
+    if (pendingRequest) {
+      return pendingRequest
+    }
+
     if (initialized.value && !force) {
       return user.value
     }
 
-    initialized.value = true
+    const sessionRequest = (async () => {
+      try {
+        const response = await request<AuthUser | { data?: AuthUser }>('/auth/profile', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
+        const data = unwrapData<AuthUser>(response)
+        user.value = data
+        error.value = null
+        return data
+      } catch (_) {
+        user.value = null
+        return null
+      } finally {
+        initialized.value = true
+      }
+    })()
+
+    sessionRequests.set(nuxtApp, sessionRequest)
+
     try {
-      const response = await request<AuthUser | { data?: AuthUser }>('/auth/profile', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
-      const data = unwrapData<AuthUser>(response)
-      user.value = data
-      error.value = null
-      return data
-    } catch (_) {
-      user.value = null
-      return null
+      return await sessionRequest
+    } finally {
+      if (sessionRequests.get(nuxtApp) === sessionRequest) {
+        sessionRequests.delete(nuxtApp)
+      }
     }
   }
 

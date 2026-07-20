@@ -171,8 +171,18 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	if err := testDB.QueryRowContext(ctx, "SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty); err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 14 || dirty {
+	if version != 15 || dirty {
 		t.Fatalf("unexpected migration state: version=%d dirty=%t", version, dirty)
+	}
+
+	// The catalog seed is deliberately idempotent so a manual recovery rerun cannot
+	// duplicate products, variants, or images.
+	catalogMigration, err := os.ReadFile(filepath.Join(backendRoot, "migrations", "015_seed_g35_catalog.up.sql"))
+	if err != nil {
+		t.Fatalf("read G35 catalog migration: %v", err)
+	}
+	if _, err := testDB.ExecContext(ctx, string(catalogMigration)); err != nil {
+		t.Fatalf("rerun G35 catalog migration: %v", err)
 	}
 
 	requiredTables := []string{
@@ -201,7 +211,6 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 
 	emptyBusinessTables := []string{
 		"users",
-		"products",
 		"faqs",
 		"galleries",
 		"gallery_images",
@@ -220,5 +229,189 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		if count != 0 {
 			t.Fatalf("business table %s contains %d seeded rows", table, count)
 		}
+	}
+
+	assertG35CatalogSeed(t, ctx, testDB)
+}
+
+func assertG35CatalogSeed(t *testing.T, ctx context.Context, db *sql.DB) {
+	t.Helper()
+
+	var productCount int
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM products").Scan(&productCount); err != nil {
+		t.Fatalf("count catalog products: %v", err)
+	}
+	if productCount != 1 {
+		t.Fatalf("expected one catalog product, got %d", productCount)
+	}
+
+	var (
+		productSKU    string
+		productName   string
+		productSlug   string
+		productPrice  string
+		productStock  int
+		productStatus string
+		productLocale string
+		productType   string
+		featured      bool
+	)
+	if err := db.QueryRowContext(ctx, `
+		SELECT p.sku, p.name, p.slug, p.price::text, p.stock, p.status, p.locale,
+		       pt.slug, p.featured
+		FROM products p
+		JOIN product_types pt ON pt.id = p.product_type_id
+	`).Scan(
+		&productSKU,
+		&productName,
+		&productSlug,
+		&productPrice,
+		&productStock,
+		&productStatus,
+		&productLocale,
+		&productType,
+		&featured,
+	); err != nil {
+		t.Fatalf("read G35 catalog product: %v", err)
+	}
+
+	if productSKU != "G35-370G-1PC" || productName != "G35 Carbon Rim" || productSlug != "g35-carbon-rim" {
+		t.Fatalf("unexpected G35 identity: sku=%q name=%q slug=%q", productSKU, productName, productSlug)
+	}
+	if productPrice != "111.14" || productStock != 0 || productStatus != "active" || productLocale != "en" {
+		t.Fatalf(
+			"unexpected G35 summary: price=%s stock=%d status=%q locale=%q",
+			productPrice,
+			productStock,
+			productStatus,
+			productLocale,
+		)
+	}
+	if productType != "carbon_rim" || featured {
+		t.Fatalf("unexpected G35 catalog classification: type=%q featured=%t", productType, featured)
+	}
+
+	var specCount int
+	if err := db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM product_spec_definitions psd
+		JOIN product_types pt ON pt.id = psd.product_type_id
+		WHERE pt.slug = 'carbon_rim'
+		  AND psd.slug IN ('listed_weight', 'pack_size')
+		  AND psd.is_required = TRUE
+		  AND psd.is_variant_option = TRUE
+	`).Scan(&specCount); err != nil {
+		t.Fatalf("count G35 variant definitions: %v", err)
+	}
+	if specCount != 2 {
+		t.Fatalf("expected two G35 variant definitions, got %d", specCount)
+	}
+
+	type expectedVariant struct {
+		sku          string
+		title        string
+		optionValues string
+		price        string
+		isDefault    bool
+		sortOrder    int
+	}
+	expectedVariants := []expectedVariant{
+		{"G35-370G-1PC", "370 g / 1 piece", `{"listed_weight":"370 g","pack_size":"1 piece"}`, "111.14", true, 10},
+		{"G35-370G-2PC", "370 g / 2 pieces", `{"listed_weight":"370 g","pack_size":"2 pieces"}`, "222.28", false, 20},
+		{"G35-460G-1PC", "460 g / 1 piece", `{"listed_weight":"460 g","pack_size":"1 piece"}`, "78.73", false, 30},
+		{"G35-460G-2PC", "460 g / 2 pieces", `{"listed_weight":"460 g","pack_size":"2 pieces"}`, "157.45", false, 40},
+	}
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT pv.sku, pv.title, pv.option_values, pv.price::text, pv.stock,
+		       pv.weight_grams, pv.is_default, pv.is_active, pv.sort_order
+		FROM product_variants pv
+		JOIN products p ON p.id = pv.product_id
+		WHERE p.sku = 'G35-370G-1PC'
+		ORDER BY pv.sort_order, pv.id
+	`)
+	if err != nil {
+		t.Fatalf("query G35 variants: %v", err)
+	}
+	defer rows.Close()
+
+	variantIndex := 0
+	for rows.Next() {
+		if variantIndex >= len(expectedVariants) {
+			t.Fatal("G35 catalog contains more than four variants")
+		}
+		expected := expectedVariants[variantIndex]
+		var (
+			sku          string
+			title        string
+			optionValues string
+			price        string
+			stock        int
+			weight       int
+			isDefault    bool
+			isActive     bool
+			sortOrder    int
+		)
+		if err := rows.Scan(
+			&sku,
+			&title,
+			&optionValues,
+			&price,
+			&stock,
+			&weight,
+			&isDefault,
+			&isActive,
+			&sortOrder,
+		); err != nil {
+			t.Fatalf("scan G35 variant %d: %v", variantIndex, err)
+		}
+		if sku != expected.sku || title != expected.title || optionValues != expected.optionValues ||
+			price != expected.price || isDefault != expected.isDefault || sortOrder != expected.sortOrder {
+			t.Fatalf(
+				"unexpected G35 variant %d: sku=%q title=%q options=%q price=%s default=%t sort=%d",
+				variantIndex,
+				sku,
+				title,
+				optionValues,
+				price,
+				isDefault,
+				sortOrder,
+			)
+		}
+		if stock != 0 || weight != 0 || !isActive {
+			t.Fatalf("unsafe G35 variant %q: stock=%d weight=%d active=%t", sku, stock, weight, isActive)
+		}
+		variantIndex++
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate G35 variants: %v", err)
+	}
+	if variantIndex != len(expectedVariants) {
+		t.Fatalf("expected four G35 variants, got %d", variantIndex)
+	}
+
+	var (
+		imageCount int
+		imageURL   string
+		imageAlt   string
+		imageOrder int
+	)
+	if err := db.QueryRowContext(ctx, `
+		SELECT COUNT(*), MIN(pi.url), MIN(pi.alt), MIN(pi."order")
+		FROM product_images pi
+		JOIN products p ON p.id = pi.product_id
+		WHERE p.sku = 'G35-370G-1PC'
+	`).Scan(&imageCount, &imageURL, &imageAlt, &imageOrder); err != nil {
+		t.Fatalf("read G35 image: %v", err)
+	}
+	if imageCount != 1 || imageURL != "/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp" ||
+		imageAlt != "Carbon rim finish reference" || imageOrder != 0 {
+		t.Fatalf(
+			"unexpected G35 image: count=%d url=%q alt=%q order=%d",
+			imageCount,
+			imageURL,
+			imageAlt,
+			imageOrder,
+		)
 	}
 }

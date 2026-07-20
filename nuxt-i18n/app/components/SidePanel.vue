@@ -1,5 +1,6 @@
 <template>
-  <teleport to="body">
+  <ClientOnly>
+    <teleport to="body">
     <!-- 背景蒙版 -->
     <transition
       enter-active-class="transition-opacity duration-300 ease-out"
@@ -50,7 +51,8 @@
         </div>
       </section>
     </aside>
-  </teleport>
+    </teleport>
+  </ClientOnly>
 </template>
 
 <script setup>

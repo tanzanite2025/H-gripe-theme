@@ -1,5 +1,6 @@
 <template>
-  <Teleport to="body">
+  <ClientOnly>
+    <Teleport to="body">
     <Transition name="wa-drawer">
       <div
         v-if="modelValue"
@@ -127,7 +128,8 @@
         </div>
       </div>
     </Transition>
-  </Teleport>
+    </Teleport>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
