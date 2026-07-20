@@ -231,10 +231,10 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		}
 	}
 
-	assertG35CatalogSeed(t, ctx, testDB)
+	assertG35CatalogSeed(ctx, t, testDB)
 }
 
-func assertG35CatalogSeed(t *testing.T, ctx context.Context, db *sql.DB) {
+func assertG35CatalogSeed(ctx context.Context, t *testing.T, db *sql.DB) {
 	t.Helper()
 
 	var productCount int
