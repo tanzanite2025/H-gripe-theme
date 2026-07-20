@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 interface BrowsingHistoryItem {
   id: number
@@ -39,7 +39,8 @@ const unwrapResponseData = <T>(response: T | { data?: T } | null | undefined): T
 }
 
 export const useBrowsingHistory = () => {
-  const history = ref<BrowsingHistoryItem[]>([])
+  const history = useState<BrowsingHistoryItem[]>('tz-browsing-history', () => [])
+  const initialized = useState<boolean>('tz-browsing-history-initialized', () => false)
   const auth = useAuth()
   const { isAuthenticated } = auth
 
@@ -58,6 +59,8 @@ export const useBrowsingHistory = () => {
     } catch (error) {
       console.error('[BrowsingHistory] Failed to load local history:', error)
       history.value = []
+    } finally {
+      initialized.value = true
     }
   }
 
@@ -191,7 +194,7 @@ export const useBrowsingHistory = () => {
   const historyCount = computed(() => history.value.length)
   const hasHistory = computed(() => history.value.length > 0)
 
-  if (import.meta.client) {
+  if (import.meta.client && !initialized.value) {
     loadHistory()
     if (isAuthenticated.value) {
       loadFromBackend()

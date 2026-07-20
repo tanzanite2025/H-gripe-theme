@@ -1,5 +1,5 @@
 <template>
-  <main class="shop-page max-w-5xl mx-auto pt-0 pb-16 space-y-6">
+  <main class="shop-page w-full pt-0 pb-16 space-y-6">
     <section class="rounded-xl bg-white/5 p-4 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
       <div class="flex flex-col gap-2">
         <div class="shop-search-row">

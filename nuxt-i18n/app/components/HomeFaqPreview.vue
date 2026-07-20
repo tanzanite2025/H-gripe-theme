@@ -1,5 +1,5 @@
 <template>
-  <section class="home-faq" :class="{ 'home-faq--wide': wide }">
+  <section class="home-faq" :class="{ 'home-faq--wide': wide, 'home-faq--fluid': fluid }">
     <!-- Premium Card Container -->
     <div class="rounded-2xl premium-card p-3 md:p-4">
       
@@ -81,12 +81,14 @@ interface Props {
   maxItemsPerCategory?: number
   defaultCategory?: string
   wide?: boolean
+  fluid?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxItemsPerCategory: 3,
   defaultCategory: '',
   wide: false,
+  fluid: false,
 })
 
 const wide = computed(() => props.wide)
@@ -170,6 +172,11 @@ const displayItems = computed<FlatItem[]>(() => {
   .home-faq--wide {
     padding: 2rem 1rem;
   }
+}
+
+.home-faq--fluid {
+  max-width: none;
+  padding-inline: 0;
 }
 
 .home-faq__header {

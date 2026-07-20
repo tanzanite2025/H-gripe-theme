@@ -1,6 +1,6 @@
 <template>
   <section class="bg-transparent text-white pt-[var(--site-header-offset,140px)] md:pt-[var(--site-header-offset,96px)]">
-    <div class="mx-auto max-w-6xl px-1 sm:px-4 pb-6 pt-2 lg:pb-8 lg:pt-3">
+    <div class="page-content-shell px-0 md:px-4 pb-6 pt-2 lg:pb-8 lg:pt-3">
       <div class="flex flex-col items-center text-center">
         <!-- Mobile: Media above CTAs -->
         <h1 class="mt-4 px-2 text-xl font-semibold leading-[1.05] tracking-tight sm:text-3xl lg:text-4xl">

@@ -2,7 +2,7 @@
   <div class="w-full">
     <h1 class="sr-only">Our Story</h1>
 
-    <section id="story" class="w-full max-w-4xl mx-auto mt-4 md:mt-8">
+    <section id="story" class="w-full max-w-none mt-4 md:mt-8">
       
       <!-- Premium Container -->
       <div class="relative bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-2xl md:rounded-3xl px-4 md:px-10 pb-5 pt-4 md:pb-8 md:pt-6 shadow-2xl overflow-hidden">
@@ -55,12 +55,12 @@
     </section>
 
     <!-- FAQ Section -->
-    <div class="max-w-[960px] mx-auto mt-4 px-0">
+    <div class="w-full max-w-none mt-4 px-0">
       <PageFaq pageId="company-ourstory" />
     </div>
 
     <!-- Feedback Section -->
-    <div class="max-w-4xl mx-auto px-0 mt-4 mb-6">
+    <div class="w-full max-w-none px-0 mt-4 mb-6">
       <UserFeedbackThread
         threadKey="company-ourstory"
         title="Share your feedback about Our Story"

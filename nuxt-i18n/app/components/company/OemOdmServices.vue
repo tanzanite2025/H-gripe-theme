@@ -12,7 +12,7 @@
     </section>
 
     <!-- Core Services (OEM vs ODM) -->
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto w-full">
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-none w-full">
       <!-- OEM Card -->
       <div class="relative group bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 hover:border-amber-500/50 rounded-3xl p-4 md:p-6 transition-all duration-300 shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1">
         <div class="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -65,7 +65,7 @@
     </section>
 
     <!-- Why Choose Us -->
-    <section class="max-w-6xl mx-auto w-full">
+    <section class="max-w-none w-full">
       <h3 class="text-xl font-bold text-white text-center mb-6">Why Partner with Tanzanite?</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
          <!-- Advantage 1 -->
@@ -96,7 +96,7 @@
     </section>
 
     <!-- Workflow Process -->
-    <section class="max-w-5xl mx-auto w-full">
+    <section class="max-w-none w-full">
       <h3 class="text-xl font-bold text-white text-center mb-6">Cooperation Process</h3>
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div v-for="(step, index) in steps" :key="index" class="relative group">

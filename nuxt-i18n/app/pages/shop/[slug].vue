@@ -74,6 +74,10 @@ import { useRoute, useRuntimeConfig, useAsyncData, useHead } from '#imports'
 import { useCart } from '~/composables/useCart'
 import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
 
+definePageMeta({
+  layout: 'products',
+})
+
 interface ProductImage {
   id?: number | string
   url: string
@@ -139,6 +143,7 @@ const config = useRuntimeConfig()
 const selectedVariantId = ref<number | null>(null)
 const { addToCart, openCart } = useCart()
 const { toCartItem } = useShopProducts()
+const { addToHistory } = useBrowsingHistory()
 
 const slug = computed(() => String(route.params.slug || ''))
 
@@ -285,6 +290,21 @@ const formattedPrice = computed(() => {
     return `$${numeric.toFixed(2)}`
   }
 })
+
+watch(product, (currentProduct) => {
+  if (!import.meta.client || !currentProduct) return
+
+  const productID = Number(currentProduct.id)
+  if (!Number.isInteger(productID) || productID <= 0) return
+
+  addToHistory({
+    id: productID,
+    title: currentProduct.name,
+    thumbnail: primaryImage.value || '',
+    price: formattedPrice.value,
+    url: route.path,
+  })
+}, { immediate: true })
 
 const addSelectedToCart = () => {
   if (!product.value || !shopProduct.value || !canAddToCart.value) return
@@ -488,6 +508,12 @@ useHead(() => {
 .product-price {
   font-weight: 600;
   font-size: 1.15rem;
+}
+
+@media (max-width: 767px) {
+  .product-page {
+    padding-inline: 0;
+  }
 }
 
 .product-variants {

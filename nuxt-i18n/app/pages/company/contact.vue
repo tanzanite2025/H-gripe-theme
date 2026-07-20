@@ -2,7 +2,7 @@
   <div class="w-full pt-4 md:pt-8 pb-6">
     <h1 class="sr-only">{{ t('company.nav.contact') }}</h1>
 
-    <div class="max-w-6xl mx-auto">
+    <div class="w-full max-w-none">
       
       <!-- Hero / Introduction -->
       <div class="text-center mb-8 md:mb-10">
@@ -15,7 +15,7 @@
       </div>
 
       <!-- Address Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-6xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full">
         <!-- HK HQ -->
         <div class="relative bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden group hover:border-teal-500/30 transition-all duration-300 flex flex-col">
             <h3 class="text-lg font-bold text-white mb-1">Global Headquarters</h3>
@@ -98,12 +98,12 @@
     </div>
 
     <!-- FAQ Section -->
-    <div class="max-w-[960px] mx-auto mt-4 px-0">
+    <div class="w-full max-w-none mt-4 px-0">
       <PageFaq pageId="company-contact" />
     </div>
 
     <!-- Feedback Section -->
-    <div class="max-w-4xl mx-auto px-0 mt-4">
+    <div class="w-full max-w-none px-0 mt-4">
       <UserFeedbackThread
         threadKey="company-contact"
         title="Share your feedback about our Service"

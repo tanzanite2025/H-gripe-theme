@@ -2,7 +2,7 @@
   <div class="w-full pt-4 md:pt-8 pb-6">
     <h1 class="sr-only">{{ t('company.nav.globalPartners') }}</h1>
 
-    <div class="max-w-6xl mx-auto">
+    <div class="w-full max-w-none">
       <section class="rounded-2xl bg-slate-950/60 p-4 md:p-6 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
         <h2 class="mb-1 text-lg font-semibold text-slate-100">
           {{ t('company.nav.globalPartners') }}
@@ -150,12 +150,12 @@
     </div>
 
     <!-- FAQ Section -->
-    <div class="max-w-[960px] mx-auto mt-4 px-0">
+    <div class="w-full max-w-none mt-4 px-0">
       <PageFaq pageId="company-global-partners" />
     </div>
 
     <!-- Feedback Section -->
-    <div class="max-w-4xl mx-auto px-0 mt-4">
+    <div class="w-full max-w-none px-0 mt-4">
       <UserFeedbackThread
         threadKey="company-global-partners"
         title="Share your feedback about our Partnership Program"

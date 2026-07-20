@@ -12,7 +12,7 @@
     </section>
 
     <!-- UCI Accreditation (Highlight) -->
-    <section class="max-w-6xl mx-auto w-full">
+    <section class="max-w-none w-full">
       <div class="relative bg-gradient-to-br from-[#1a1f2e] to-[#0f1219] rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl">
         <div class="grid grid-cols-1 md:grid-cols-2">
             <!-- Content -->
@@ -59,7 +59,7 @@
     </section>
 
     <!-- Standards & Certificates Grid -->
-    <section class="max-w-6xl mx-auto w-full">
+    <section class="max-w-none w-full">
         <div class="text-center mb-6">
             <h3 class="text-xl md:text-2xl font-bold text-white mb-3">Global Standards Compliance</h3>
             <p class="text-slate-400 text-sm max-w-2xl mx-auto">Verified by leading third-party testing laboratories including SGS and Intertek.</p>
@@ -82,7 +82,7 @@
     </section>
 
     <!-- Internal Standards -->
-    <section class="max-w-4xl mx-auto w-full">
+    <section class="max-w-none w-full">
         <div class="bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-800 p-4 md:p-8 text-center relative overflow-hidden">
              <!-- Background Glow -->
              <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-lg bg-teal-500/5 blur-[80px] pointer-events-none"></div>

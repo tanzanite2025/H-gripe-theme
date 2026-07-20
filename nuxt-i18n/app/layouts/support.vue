@@ -9,7 +9,7 @@
 
       <!-- Support page content -->
       <section class="support-content">
-        <div class="support-content__inner">
+        <div class="support-content__inner page-content-shell">
           <slot />
         </div>
       </section>
@@ -83,13 +83,11 @@ const isProductsNavForced = computed(() => navContext.value === 'products')
 }
 
 .support-content {
-  padding: 2rem 1.5rem 3rem;
+  padding: 2rem 0 3rem;
 }
 
 .support-content__inner {
-  max-width: 960px;
-  margin: 0 auto;
-  width: 100%;
+  max-width: none;
 }
 
 @media (max-width: 768px) {
@@ -111,8 +109,6 @@ const isProductsNavForced = computed(() => navContext.value === 'products')
 
   .support-content__inner {
     max-width: none;
-    margin: 0;
-    padding-inline: 1rem;
   }
 }
 

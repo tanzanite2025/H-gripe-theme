@@ -283,7 +283,7 @@ const loadMoreGroups = () => {
 <style scoped>
 .faqs-page {
   width: 100%; /* Use full available width (parent handles padding) */
-  max-width: 960px;
+  max-width: none;
   margin: 0 auto;
   padding: 0;
 }

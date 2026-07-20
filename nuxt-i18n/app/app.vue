@@ -6,9 +6,6 @@
         <template #left>
           <SidebarContent />
         </template>
-        <template #right>
-          <ProductSearchResults />
-        </template>
       </SidePanel>
       <!-- Render the current page inside the active layout -->
       <NuxtPage />
@@ -35,7 +32,6 @@
 import { ref } from 'vue'
 import SidePanel from './components/SidePanel.vue'
 import SidebarContent from './components/SidebarContent.vue'
-import ProductSearchResults from './components/ProductSearchResults.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 
