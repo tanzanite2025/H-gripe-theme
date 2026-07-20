@@ -16,10 +16,7 @@ test('product detail keeps readable text and persistent information tabs', async
   })
 
   await page.goto(productDetailUrl)
-  await page.waitForFunction(() => {
-    const nuxtRoot = document.querySelector('#__nuxt') as HTMLElement & { __vue_app__?: unknown }
-    return Boolean(nuxtRoot?.__vue_app__)
-  })
+  await expect(page.locator('.product-information')).toHaveAttribute('data-hydrated', 'true')
 
   const title = page.getByRole('heading', { level: 1, name: 'G35 Carbon Rim' })
   await expect(title).toBeVisible()
