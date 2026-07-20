@@ -107,7 +107,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			authGroup.POST("/login", authHandler.Login)
 			authGroup.POST("/google-login", authHandler.GoogleLogin)
 			authGroup.POST("/logout", authHandler.Logout)
-			authGroup.GET("/profile", middleware.AuthMiddleware(authService), authHandler.GetProfile)
+			authGroup.GET("/profile", middleware.OptionalAuthMiddleware(authService), authHandler.GetProfile)
 		}
 
 		// 内容路由（公开）

@@ -119,7 +119,7 @@ func (h *Handler) GoogleLogin(c *gin.Context) {
 func (h *Handler) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		apierror.RespondUnauthorized(c)
+		response.NoContent(c)
 		return
 	}
 

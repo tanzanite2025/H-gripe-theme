@@ -158,3 +158,53 @@ func TestLoginHandler(t *testing.T) {
 	assert.NotEmpty(t, w.Result().Cookies())
 	mockRepo.AssertExpectations(t)
 }
+
+func TestGetProfileHandlerReturnsNoContentWithoutSession(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	authService := service.NewAuthService(mockRepo, config.JWTConfig{Secret: "test-secret"})
+	handler := NewHandler(authService)
+
+	router := setupTestRouter()
+	router.GET("/profile", handler.GetProfile)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/profile", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.String())
+	mockRepo.AssertNotCalled(t, "FindByID", mock.Anything)
+}
+
+func TestGetProfileHandlerReturnsAuthenticatedUser(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	authService := service.NewAuthService(mockRepo, config.JWTConfig{Secret: "test-secret"})
+	handler := NewHandler(authService)
+
+	testUser := &user.User{
+		ID:       7,
+		Email:    "returning@example.com",
+		Username: "returning-user",
+		Role:     "user",
+		Status:   "active",
+	}
+	mockRepo.On("FindByID", uint(7)).Return(testUser, nil).Once()
+
+	router := setupTestRouter()
+	router.GET("/profile", func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+		c.Next()
+	}, handler.GetProfile)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/profile", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var payload map[string]interface{}
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &payload))
+	data, ok := payload["data"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, float64(7), data["id"])
+	mockRepo.AssertExpectations(t)
+}
