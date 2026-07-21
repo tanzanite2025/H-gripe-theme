@@ -148,6 +148,36 @@ func (r *UserRepository) FindAllCustomerServiceAgentProfiles(limit int) ([]user.
 	return profiles, err
 }
 
+func (r *UserRepository) FindCustomerServiceAgentProfileByUserID(userID uint) (*user.AgentProfile, error) {
+	var profile user.AgentProfile
+	err := r.db.Preload("User").
+		Where("user_id = ?", userID).
+		First(&profile).Error
+	if err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
+func (r *UserRepository) FindCustomerServiceAgentProfileByAgentID(agentID string) (*user.AgentProfile, error) {
+	var profile user.AgentProfile
+	err := r.db.Preload("User").
+		Where("agent_id = ?", agentID).
+		First(&profile).Error
+	if err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
+func (r *UserRepository) CreateCustomerServiceAgentProfile(profile *user.AgentProfile) error {
+	return r.db.Create(profile).Error
+}
+
+func (r *UserRepository) UpdateCustomerServiceAgentProfile(profile *user.AgentProfile) error {
+	return r.db.Save(profile).Error
+}
+
 // UpdateStatus 更新用户状态
 func (r *UserRepository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&user.User{}).Where("id = ?", id).Update("status", status).Error
