@@ -16,54 +16,35 @@
 					</div>
 
 					<!-- Nav (Centered) -->
-					<nav class="flex items-center justify-center gap-4 lg:gap-8 relative">
+					<nav class="flex items-center justify-center gap-2 lg:gap-3 relative" data-header-mega-nav>
 						<!-- Vertical Divider Left -->
 						<div class="w-px h-6 bg-white/10 absolute left-0 hidden xl:block"></div>
 						
-						<NuxtLink
-							:to="localePath('/products')"
-							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
-							active-class="!text-white"
+						<button
+							v-for="section in primaryMegaNavSections"
+							:key="section.id"
+							type="button"
+							class="relative inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[15px] font-medium transition-all duration-200"
+							:class="isMegaSectionActive(section) || activeMegaNavId === section.id ? 'bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-white/60 hover:bg-white/[0.05] hover:text-white'"
+							:aria-controls="megaPanelId"
+							:aria-expanded="activeMegaNavId === section.id"
+							aria-haspopup="dialog"
+							@click.stop="toggleMegaNav(section.id)"
+							@keydown.enter.prevent="toggleMegaNav(section.id)"
+							@keydown.space.prevent="toggleMegaNav(section.id)"
+							@keydown.down.prevent="openMegaNav(section.id)"
 						>
-							{{ $t('footer.menus.products', 'Products') }}
+							<span>{{ t(section.labelKey, section.labelFallback) }}</span>
+							<Icon
+								name="lucide:chevron-down"
+								class="h-3.5 w-3.5 transition-transform duration-200"
+								:class="{ 'rotate-180 text-[#40ffaa]': activeMegaNavId === section.id }"
+							/>
 							<span 
-								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
-								:class="route.path.startsWith(localePath('/products')) ? 'opacity-100' : 'opacity-0'"
+								class="absolute bottom-[-4px] left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] transition-opacity"
+								:class="isMegaSectionActive(section) || activeMegaNavId === section.id ? 'opacity-100' : 'opacity-0'"
 							></span>
-						</NuxtLink>
-						<NuxtLink
-							:to="localePath('/support')"
-							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
-							active-class="!text-white"
-						>
-							{{ $t('footer.menus.support', 'Support') }}
-							<span 
-								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
-								:class="route.path.startsWith(localePath('/support')) ? 'opacity-100' : 'opacity-0'"
-							></span>
-						</NuxtLink>
-						<NuxtLink
-							:to="localePath('/company')"
-							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
-							active-class="!text-white"
-						>
-							{{ $t('footer.menus.company', 'Company') }}
-							<span 
-								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
-								:class="route.path.startsWith(localePath('/company')) ? 'opacity-100' : 'opacity-0'"
-							></span>
-						</NuxtLink>
-						<NuxtLink
-							:to="localePath('/guides')"
-							class="text-[15px] font-medium text-white/60 hover:text-white transition-colors relative group"
-							active-class="!text-white"
-						>
-							Guides
-							<span 
-								class="absolute bottom-[-4px] left-0 right-0 h-[2px] bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] rounded-full transition-opacity"
-								:class="route.path.startsWith(localePath('/guides')) ? 'opacity-100' : 'opacity-0'"
-							></span>
-						</NuxtLink>
+						</button>
 
 						<!-- Vertical Divider Right -->
 						<div class="w-px h-6 bg-white/10 absolute right-0 hidden xl:block"></div>
@@ -88,6 +69,7 @@
 							<button
 								class="w-9 h-9 rounded-full bg-slate-900/70 flex items-center justify-center text-[11px] font-bold text-slate-200 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-sky-300 hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
 								@click.stop="toggleDropdown"
+								@keydown="onButtonKeydown"
 								:id="buttonId"
 								aria-haspopup="listbox"
 								:aria-expanded="isOpen"
@@ -179,6 +161,12 @@
 				</nav>
 			</div>
 
+			<HeaderMegaMenu
+				:section="activeMegaNavSection"
+				:panel-id="megaPanelId"
+				@navigate="closeMegaNav"
+			/>
+
 			<!-- 移动端：新版极简双行布局 -->
 			<div class="md:hidden flex flex-col gap-3">
 				
@@ -217,6 +205,7 @@
 							<button
 								class="text-white/70 hover:text-white transition-colors flex items-center gap-1 p-1"
 								@click.stop="toggleDropdown"
+								@keydown="onButtonKeydown"
 								:id="buttonId"
 								aria-haspopup="listbox"
 								:aria-expanded="isOpen"
@@ -336,11 +325,16 @@ import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import HeaderMegaMenu from '~/components/HeaderMegaMenu.vue'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
-import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { productsNavItems } from '~/utils/productsNav'
 import { supportNavItems } from '~/utils/supportNav'
 import { companyNavItems } from '~/utils/companyNav'
+import {
+  primaryMegaNavSections,
+  type PrimaryMegaNavId,
+  type PrimaryMegaNavSection,
+} from '~/utils/primaryMegaNav'
 
 // Site Title
 const props = defineProps<{ title?: string }>()
@@ -352,6 +346,36 @@ const titleText = computed(() => {
 
 const headerRootRef = ref<HTMLElement | null>(null)
 let headerResizeObserver: ResizeObserver | null = null
+
+const megaPanelId = 'header-primary-mega-menu'
+const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
+
+const closeMegaNav = () => {
+  activeMegaNavId.value = null
+}
+
+const activeMegaNavSection = computed<PrimaryMegaNavSection | null>(() => {
+  if (!activeMegaNavId.value) return null
+  return primaryMegaNavSections.find(section => section.id === activeMegaNavId.value) || null
+})
+
+const openMegaNav = (id: PrimaryMegaNavId) => {
+  activeMegaNavId.value = id
+  isOpen.value = false
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-mega-nav' } }))
+  }
+}
+
+const toggleMegaNav = (id: PrimaryMegaNavId) => {
+  if (activeMegaNavId.value === id) {
+    closeMegaNav()
+    return
+  }
+
+  openMegaNav(id)
+}
 
 const updateHeaderOffset = () => {
   if (typeof window === 'undefined') return
@@ -369,6 +393,8 @@ const throttledUpdateHeaderOffset = useThrottleFn(updateHeaderOffset, 150)
 const shareOpen = ref(false)
 
 const toggleShare = () => {
+  closeMegaNav()
+  isOpen.value = false
   shareOpen.value = !shareOpen.value
   if (shareOpen.value && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-share' } }))
@@ -377,6 +403,8 @@ const toggleShare = () => {
 
 // Open Sidebar (Search)
 const openSidebar = () => {
+  closeMegaNav()
+  isOpen.value = false
   openShopSearch()
 }
 
@@ -387,6 +415,41 @@ const { locale, locales, setLocale, t } = useI18n() as any
 const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
+
+const queryNavValue = computed(() => {
+  const rawNav = route.query?.nav
+  return Array.isArray(rawNav) ? rawNav[0] : rawNav
+})
+
+const pathMatches = (to: string) => {
+  const pathWithoutHash = to.split('#')[0] || '/'
+  const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
+  const targetPath = localePath(pathWithoutQuery)
+  const currentPath = route.path || ''
+
+  return (
+    currentPath === targetPath ||
+    (currentPath.startsWith(targetPath) && currentPath[targetPath.length] === '/')
+  )
+}
+
+const currentMegaNavId = computed<PrimaryMegaNavId>(() => {
+  const forcedProducts = typeof queryNavValue.value === 'string' && queryNavValue.value.toLowerCase() === 'products'
+
+  if (forcedProducts && (pathMatches('/guides') || pathMatches('/support/test-report'))) {
+    return 'products'
+  }
+
+  if (pathMatches('/company')) return 'company'
+  if (pathMatches('/support')) return 'support'
+  if (pathMatches('/guides') || pathMatches('/blog')) return 'guides'
+
+  return 'products'
+})
+
+const isMegaSectionActive = (section: PrimaryMegaNavSection) => {
+  return currentMegaNavId.value === section.id
+}
 
 const alternateLinksOverride = useState<{ code: string; path: string }[] | null>(
   'alternateLinksOverride',
@@ -660,6 +723,9 @@ const setOptionRefAt = (index: number) => {
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
+  if (isOpen.value) {
+    closeMegaNav()
+  }
   if (isOpen.value && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'language' } }))
   }
@@ -670,10 +736,14 @@ const onButtonKeydown = (e: KeyboardEvent) => {
     e.preventDefault()
     isOpen.value = !isOpen.value
     if (isOpen.value) {
+      closeMegaNav()
+    }
+    if (isOpen.value) {
       nextTick(() => optionRefs.value[0]?.focus())
     }
   } else if (e.key === 'Escape') {
     isOpen.value = false
+    closeMegaNav()
   }
 }
 
@@ -691,6 +761,7 @@ const onListKeydown = (e: KeyboardEvent) => {
     refs[prevIndex]?.focus()
   } else if (e.key === 'Escape') {
     isOpen.value = false
+    closeMegaNav()
     document.getElementById(buttonId)?.focus()
   }
 }
@@ -716,6 +787,7 @@ const switchLanguage = async (code: string) => {
     }
   } finally {
     isOpen.value = false
+    closeMegaNav()
   }
 }
 
@@ -725,10 +797,28 @@ const handleClickOutside = (event: MouseEvent) => {
   if (!target.closest('[data-lang-wrapper]') && !target.closest('#' + dropdownId)) {
     isOpen.value = false
   }
+  if (!target.closest('.site-header-root')) {
+    closeMegaNav()
+  }
 }
+
+const handleHeaderKeydown = (event: KeyboardEvent) => {
+  if (event.key !== 'Escape') return
+  isOpen.value = false
+  closeMegaNav()
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    closeMegaNav()
+    nextTick(updateHeaderOffset)
+  },
+)
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleHeaderKeydown)
 
   nextTick(() => {
     updateHeaderOffset()
@@ -748,6 +838,9 @@ onMounted(() => {
       if (id !== 'language') {
         isOpen.value = false
       }
+      if (id !== 'header-mega-nav') {
+        closeMegaNav()
+      }
     } catch {}
   }
   window.addEventListener('ui:popup-open', onGlobalPopup as EventListener)
@@ -758,6 +851,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleHeaderKeydown)
 
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', throttledUpdateHeaderOffset)
