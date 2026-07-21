@@ -25,7 +25,7 @@
 							:key="section.id"
 							type="button"
 							class="relative inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[15px] font-medium transition-all duration-200"
-							:class="isMegaSectionActive(section) || activeMegaNavId === section.id ? 'bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-white/60 hover:bg-white/[0.05] hover:text-white'"
+							:class="currentMegaNavId === section.id ? 'text-white' : 'text-white/60 hover:text-white'"
 							:aria-controls="megaPanelId"
 							:aria-expanded="activeMegaNavId === section.id"
 							aria-haspopup="dialog"
@@ -42,7 +42,7 @@
 							/>
 							<span 
 								class="absolute bottom-[-4px] left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] transition-opacity"
-								:class="isMegaSectionActive(section) || activeMegaNavId === section.id ? 'opacity-100' : 'opacity-0'"
+								:class="currentMegaNavId === section.id ? 'opacity-100' : 'opacity-0'"
 							></span>
 						</button>
 
@@ -320,7 +320,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type ComponentPublicInstance } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, unref, watch, type ComponentPublicInstance } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
@@ -414,11 +414,28 @@ const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
 
+const normalizeNavPath = (path: string) => {
+  const pathWithoutHash = path.split('#')[0] || '/'
+  const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
+  const absolutePath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
+  const segments = absolutePath.split('/').filter(Boolean)
+  const localeCodes = (unref(locales) || [])
+    .map((item: any) => (typeof item === 'string' ? item : item?.code))
+    .filter(Boolean)
+
+  const withoutLocale =
+    segments.length > 1 && localeCodes.includes(segments[0])
+      ? `/${segments.slice(1).join('/')}`
+      : absolutePath
+
+  return withoutLocale.replace(/\/+$/, '') || '/'
+}
+
 const pathMatches = (to: string) => {
   const pathWithoutHash = to.split('#')[0] || '/'
   const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
-  const targetPath = localePath(pathWithoutQuery)
-  const currentPath = route.path || ''
+  const targetPath = normalizeNavPath(pathWithoutQuery)
+  const currentPath = normalizeNavPath(route.path || '/')
 
   return (
     currentPath === targetPath ||
@@ -433,10 +450,6 @@ const currentMegaNavId = computed<PrimaryMegaNavId>(() => {
 
   return 'products'
 })
-
-const isMegaSectionActive = (section: PrimaryMegaNavSection) => {
-  return currentMegaNavId.value === section.id
-}
 
 const alternateLinksOverride = useState<{ code: string; path: string }[] | null>(
   'alternateLinksOverride',
