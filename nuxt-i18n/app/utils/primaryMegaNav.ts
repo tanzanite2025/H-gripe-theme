@@ -60,17 +60,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     overviewLabel: 'Open products hub',
     cards: [
       {
-        id: 'products-hub',
-        labelKey: 'footer.menus.products',
-        labelFallback: 'Products',
-        title: 'Product hub',
-        description: 'A clean entry point for Tanzanite products, tools, guides, and product resources.',
-        to: '/products',
-        icon: 'lucide:layout-dashboard',
-        size: 'feature',
-        accent: 'mint',
-      },
-      {
         id: 'shop',
         labelKey: 'products.nav.shop',
         labelFallback: 'Shop',
@@ -88,7 +77,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Tire size, pressure, tubeless setup, installation, and compatibility references.',
         to: '/guides/tireguides',
         icon: 'lucide:ruler',
-        size: 'wide',
+        size: 'feature',
         accent: 'violet',
       },
       {
@@ -108,7 +97,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Calculate spoke length using hub, rim, lacing, and ERD parameters.',
         to: '/spoke-calculator',
         icon: 'lucide:calculator',
-        size: 'standard',
+        size: 'wide',
         accent: 'mint',
       },
       {
@@ -118,7 +107,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Technical reports and test references for product confidence.',
         to: '/support/test-report',
         icon: 'lucide:clipboard-check',
-        size: 'standard',
+        size: 'wide',
         accent: 'blue',
       },
       {
@@ -153,17 +142,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     overviewLabel: 'Open support hub',
     cards: [
       {
-        id: 'support-hub',
-        labelKey: 'footer.menus.support',
-        labelFallback: 'Support',
-        title: 'Support hub',
-        description: 'Start here for service information, product help, and after-sales support.',
-        to: '/support',
-        icon: 'lucide:life-buoy',
-        size: 'feature',
-        accent: 'blue',
-      },
-      {
         id: 'faqs',
         labelKey: 'support.nav.faqs',
         labelFallback: 'All FAQs',
@@ -190,7 +168,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Shipping policy, delivery expectations, tracking, and logistics notes.',
         to: '/support/shipping',
         icon: 'lucide:truck',
-        size: 'wide',
+        size: 'feature',
         accent: 'amber',
       },
       {
@@ -210,7 +188,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Check product serial number and warranty status.',
         to: '/support/warranty-check',
         icon: 'lucide:badge-check',
-        size: 'standard',
+        size: 'wide',
         accent: 'blue',
       },
       {
@@ -244,17 +222,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     overviewTo: '/company',
     overviewLabel: 'Open company hub',
     cards: [
-      {
-        id: 'company-hub',
-        labelKey: 'footer.menus.company',
-        labelFallback: 'Company',
-        title: 'Company hub',
-        description: 'The overview for Tanzanite background, services, and business information.',
-        to: '/company',
-        icon: 'lucide:building-2',
-        size: 'feature',
-        accent: 'violet',
-      },
       {
         id: 'our-story',
         labelKey: 'company.nav.ourStory',
@@ -292,7 +259,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Custom manufacturing, private label, and wheel project cooperation.',
         to: '/company/oem-odm',
         icon: 'lucide:factory',
-        size: 'standard',
+        size: 'feature',
         accent: 'rose',
       },
       {
@@ -312,7 +279,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Reach Tanzanite for sales, service, and business communication.',
         to: '/company/contact',
         icon: 'lucide:mail',
-        size: 'compact',
+        size: 'wide',
         accent: 'mint',
       },
     ],
@@ -326,17 +293,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     overviewTo: '/guides',
     overviewLabel: 'Open guides hub',
     cards: [
-      {
-        id: 'guides-hub',
-        labelKey: 'breadcrumbs.guides',
-        labelFallback: 'Guides',
-        title: 'Guides hub',
-        description: 'Start from the full guide index and choose the topic you need.',
-        to: '/guides',
-        icon: 'lucide:book-open',
-        size: 'feature',
-        accent: 'mint',
-      },
       {
         id: 'tire-guides',
         labelKey: 'products.nav.tireSizeCharts',
@@ -376,7 +332,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Tire and tubeless setup workflow from the tire guide.',
         to: '/guides/tireguides#installation',
         icon: 'lucide:wrench',
-        size: 'standard',
+        size: 'wide',
         accent: 'rose',
       },
       {
@@ -387,7 +343,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Articles, updates, and long-form wheelbuilding knowledge.',
         to: '/blog',
         icon: 'lucide:newspaper',
-        size: 'standard',
+        size: 'wide',
         accent: 'blue',
       },
       {
