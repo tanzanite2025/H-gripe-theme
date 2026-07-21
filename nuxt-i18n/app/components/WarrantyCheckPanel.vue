@@ -54,7 +54,7 @@
           <li>{{ $t('warranty.errors.check_tips.1') }}</li>
         </ul>
         <p class="warranty-check__error-contact">{{ $t('warranty.errors.error_contact') }}</p>
-        <NuxtLink to="/support" class="warranty-check__contact-btn">
+        <NuxtLink :to="localePath('/company/contact')" class="warranty-check__contact-btn">
           {{ $t('warranty.actions.contact_support') }}
         </NuxtLink>
       </div>
@@ -147,7 +147,7 @@
             {{ $t('warranty.actions.check_another') }}
           </button>
           <NuxtLink
-            to="/support"
+            :to="localePath('/company/contact')"
             class="warranty-check__action-btn warranty-check__action-btn--secondary"
           >
             {{ $t('warranty.actions.contact_support') }}
@@ -171,6 +171,7 @@ const emit = defineEmits<{
 }>()
 
 const { locale } = useI18n()
+const localePath = useLocalePath()
 const resultLocale = computed(() => locale.value)
 
 const {
