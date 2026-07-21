@@ -111,7 +111,9 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if err != nil {
 		return nil, fmt.Errorf("initialize storage: %w", err)
 	}
-	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment)
+	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment, repos.Shipping)
+
+	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
 
 	services := Services{
 		Auth:         service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
@@ -122,7 +124,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		FAQ:          service.NewFAQService(repos.FAQ),
 		Gallery:      service.NewGalleryService(repos.Gallery),
 		Registration: service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
-		Checkout:     service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty),
+		Checkout:     service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
 		Marketing:    service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty),
 		Review:       service.NewReviewService(repos.Review),
 		Ticket:       service.NewTicketService(repos.Ticket, repos.User),
@@ -137,7 +139,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		User:      service.NewUserService(repos.User),
 		Dashboard: service.NewDashboardService(repos.Order, repos.User, repos.Ticket, repos.Subscription),
 		Audit:     service.NewAuditService(repos.Audit),
-		Shipping:  service.NewShippingService(repos.Shipping),
+		Shipping:  shippingService,
 		Spoke:     service.NewSpokeService(repos.Spoke),
 		Chat:      service.NewChatService(repos.Chat),
 	}

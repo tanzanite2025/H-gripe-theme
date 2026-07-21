@@ -178,10 +178,13 @@ const auth = useAuth()
 const typedPriceBreakdown = priceBreakdown as ComputedRef<CartPriceBreakdown>
 const checkoutQuote = ref<CheckoutQuote | null>(null)
 const isFetchingCheckoutQuote = ref(false)
+const checkoutQuoteError = ref<string | null>(null)
 
 const shippingState = computed<CartPriceBreakdown['shippingState']>(() => {
   if (!form.value.country) return 'select'
+  if (checkoutQuoteError.value) return 'unavailable'
   if (!shippingValidation.value?.isShippable) return 'unavailable'
+  if (isFetchingCheckoutQuote.value || !checkoutQuote.value) return 'checking'
   return 'available'
 })
 
@@ -203,9 +206,9 @@ const stepperOrderSummary = computed(() => {
     items,
     totals: {
       subtotal: quote?.subtotal_amount ?? localTotals.subtotal ?? 0,
-      shipping: quote ? quote.shipping_fee : localTotals.shipping ?? null,
+      shipping: quote ? quote.shipping_fee : null,
       shippingLabel: matchedRule?.service_label,
-      shippingState: isFetchingCheckoutQuote.value ? 'checking' : shippingState.value,
+      shippingState: shippingState.value,
       tax: quote?.tax_amount ?? localTotals.tax ?? 0,
       pointsDiscount: quote?.points_discount ?? localTotals.pointsDiscount ?? 0,
       couponDiscount: quote?.coupon_discount ?? localTotals.couponDiscount ?? 0,
@@ -428,10 +431,18 @@ const buildShippingAddressPayload = () => {
 const fetchCheckoutQuote = async (showError = false) => {
   if (!isCheckoutOpen.value || !cartItems.value?.length) {
     checkoutQuote.value = null
+    checkoutQuoteError.value = null
+    return false
+  }
+
+  if (!form.value.country) {
+    checkoutQuote.value = null
+    checkoutQuoteError.value = null
     return false
   }
 
   isFetchingCheckoutQuote.value = true
+  checkoutQuoteError.value = null
   try {
     const response = await auth.request<ApiResponse<CheckoutQuote>>('/checkout/quote', {
       method: 'POST',
@@ -447,10 +458,12 @@ const fetchCheckoutQuote = async (showError = false) => {
       throw new Error('Invalid checkout quote response')
     }
     checkoutQuote.value = quote
+    checkoutQuoteError.value = null
     return true
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to refresh checkout quote'
     checkoutQuote.value = null
+    checkoutQuoteError.value = message
     if (showError) {
       alert(message)
     } else {
@@ -489,7 +502,7 @@ const normalizedShippingValidation = computed(() => {
       : undefined
   return {
     isShippable: Boolean(val.isShippable),
-    reason: val.reason,
+    reason: checkoutQuoteError.value || val.reason,
     matchedRule,
   }
 })
@@ -672,7 +685,8 @@ const handleSubmit = async () => {
     // 适配后端 CreateOrderRequest 数据结构
     const orderPayload = {
       items: cartItems.value.map((item: any) => ({
-        product_id: item.id || 0,
+        product_id: item.product_id || item.id || 0,
+        variant_id: item.variant_id || null,
         quantity: item.quantity || 1
       })),
       shipping_address: buildShippingAddressPayload(),

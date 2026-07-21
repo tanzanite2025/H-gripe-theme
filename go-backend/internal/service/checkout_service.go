@@ -10,10 +10,11 @@ import (
 )
 
 type CheckoutService struct {
-	productRepo *repository.ProductRepository
-	couponRepo  *repository.CouponRepository
-	paymentRepo *repository.PaymentRepository
-	loyaltyRepo *repository.LoyaltyRepository
+	productRepo     *repository.ProductRepository
+	couponRepo      *repository.CouponRepository
+	paymentRepo     *repository.PaymentRepository
+	loyaltyRepo     *repository.LoyaltyRepository
+	shippingService *ShippingService
 }
 
 type CheckoutQuoteInput struct {
@@ -28,6 +29,7 @@ type CheckoutQuote struct {
 	Items          []order.OrderItem `json:"items"`
 	SubtotalAmount float64           `json:"subtotal_amount"`
 	ShippingFee    float64           `json:"shipping_fee"`
+	ShippingQuote  *ShippingQuote    `json:"shipping_quote,omitempty"`
 	TaxAmount      float64           `json:"tax_amount"`
 	MemberDiscount float64           `json:"member_discount"`
 	PointsDiscount float64           `json:"points_discount"`
@@ -40,10 +42,11 @@ type CheckoutQuote struct {
 }
 
 type checkoutRepositories struct {
-	productRepo *repository.ProductRepository
-	couponRepo  *repository.CouponRepository
-	paymentRepo *repository.PaymentRepository
-	loyaltyRepo *repository.LoyaltyRepository
+	productRepo     *repository.ProductRepository
+	couponRepo      *repository.CouponRepository
+	paymentRepo     *repository.PaymentRepository
+	loyaltyRepo     *repository.LoyaltyRepository
+	shippingService *ShippingService
 }
 
 func NewCheckoutService(
@@ -51,30 +54,41 @@ func NewCheckoutService(
 	couponRepo *repository.CouponRepository,
 	paymentRepo *repository.PaymentRepository,
 	loyaltyRepo *repository.LoyaltyRepository,
+	shippingServices ...*ShippingService,
 ) *CheckoutService {
-	return &CheckoutService{
+	checkoutService := &CheckoutService{
 		productRepo: productRepo,
 		couponRepo:  couponRepo,
 		paymentRepo: paymentRepo,
 		loyaltyRepo: loyaltyRepo,
 	}
+	if len(shippingServices) > 0 {
+		checkoutService.shippingService = shippingServices[0]
+	}
+	return checkoutService
 }
 
 func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error) {
 	return s.quote(input, checkoutRepositories{
-		productRepo: s.productRepo,
-		couponRepo:  s.couponRepo,
-		paymentRepo: s.paymentRepo,
-		loyaltyRepo: s.loyaltyRepo,
+		productRepo:     s.productRepo,
+		couponRepo:      s.couponRepo,
+		paymentRepo:     s.paymentRepo,
+		loyaltyRepo:     s.loyaltyRepo,
+		shippingService: s.shippingService,
 	})
 }
 
 func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos repository.TxRepositories) (*CheckoutQuote, error) {
+	shippingService := s.shippingService
+	if repos.Shipping != nil {
+		shippingService = NewShippingService(repos.Shipping)
+	}
 	return s.quote(input, checkoutRepositories{
-		productRepo: repos.Product,
-		couponRepo:  repos.Coupon,
-		paymentRepo: repos.Payment,
-		loyaltyRepo: repos.Loyalty,
+		productRepo:     repos.Product,
+		couponRepo:      repos.Coupon,
+		paymentRepo:     repos.Payment,
+		loyaltyRepo:     repos.Loyalty,
+		shippingService: shippingService,
 	})
 }
 
@@ -84,6 +98,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	}
 
 	items := make([]order.OrderItem, len(input.Items))
+	shippingItems := make([]ShippingQuoteItemInput, 0, len(input.Items))
 	var subtotal float64
 	for i, item := range input.Items {
 		if item.Quantity <= 0 {
@@ -117,9 +132,32 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		items[i].Attributes = attributes
 		items[i].Total = items[i].Subtotal
 		subtotal += items[i].Subtotal
+
+		if variant.Weight <= 0 {
+			return nil, fmt.Errorf("shipping weight is missing for SKU %s", variant.SKU)
+		}
+		shippingItems = append(shippingItems, ShippingQuoteItemInput{
+			ProductID:     product.ID,
+			VariantID:     variantID,
+			ProductTypeID: product.ProductTypeID,
+			Quantity:      item.Quantity,
+			UnitPrice:     price,
+			WeightGrams:   variant.Weight,
+		})
 	}
 
-	shippingFee := s.calculateShippingFee(subtotal)
+	if repos.shippingService == nil {
+		return nil, errors.New("shipping quote service is not configured")
+	}
+	shippingQuote, err := repos.shippingService.QuoteResolvedItems(ShippingQuoteInput{
+		Country: input.ShippingAddress.Country,
+		Amount:  subtotal,
+		Items:   shippingItems,
+	})
+	if err != nil {
+		return nil, err
+	}
+	shippingFee := shippingQuote.ShippingFee
 	taxAmount := s.calculateTax(repos.paymentRepo, subtotal, input.ShippingAddress.Country, input.ShippingAddress.State)
 	memberDiscount := s.calculateMemberDiscount(repos.loyaltyRepo, input.UserID, subtotal)
 	pointsToUse, pointsDiscount, err := s.calculatePointsDiscount(repos.loyaltyRepo, input.UserID, input.PointsToUse, subtotal)
@@ -146,6 +184,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		Items:          items,
 		SubtotalAmount: subtotal,
 		ShippingFee:    shippingFee,
+		ShippingQuote:  shippingQuote,
 		TaxAmount:      taxAmount,
 		MemberDiscount: memberDiscount,
 		PointsDiscount: pointsDiscount,
@@ -223,13 +262,6 @@ func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository
 	}
 
 	return c, c.CalculateDiscount(amount), nil
-}
-
-func (s *CheckoutService) calculateShippingFee(amount float64) float64 {
-	if amount >= 100 {
-		return 0
-	}
-	return 10.0
 }
 
 func (s *CheckoutService) calculateTax(paymentRepo *repository.PaymentRepository, amount float64, country, state string) float64 {

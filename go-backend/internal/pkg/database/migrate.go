@@ -70,6 +70,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&shipping.ShippingZone{},
 		&shipping.PackagingRule{},
 		&shipping.PackagingRuleApply{},
+		&shipping.ShippingTemplateBinding{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
 		&coupon.GiftCard{},

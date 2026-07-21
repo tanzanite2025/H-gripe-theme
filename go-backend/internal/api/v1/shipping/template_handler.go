@@ -62,3 +62,19 @@ func (h *Handler) CalculateShipping(c *gin.Context) {
 
 	response.Success(c, quote)
 }
+
+func (h *Handler) QuoteShipping(c *gin.Context) {
+	var req service.ShippingQuoteInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	quote, err := h.shippingService.QuoteCart(req)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, quote)
+}

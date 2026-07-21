@@ -11,6 +11,7 @@ import (
 	"tanzanite/internal/domain/order"
 	paymentdomain "tanzanite/internal/domain/payment"
 	"tanzanite/internal/domain/product"
+	shippingdomain "tanzanite/internal/domain/shipping"
 	"tanzanite/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -94,6 +95,7 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 		Price:        90,
 		SalePrice:    &salePrice,
 		Stock:        3,
+		Weight:       11000,
 		IsDefault:    true,
 		IsActive:     true,
 	}
@@ -255,6 +257,9 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&loyalty.UserLoyalty{},
 		&loyalty.LoyaltyTransaction{},
 		&paymentdomain.TaxRate{},
+		&shippingdomain.ShippingTemplate{},
+		&shippingdomain.ShippingRule{},
+		&shippingdomain.ShippingTemplateBinding{},
 	))
 
 	orderRepo := repository.NewOrderRepository(db)
@@ -262,8 +267,11 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	couponRepo := repository.NewCouponRepository(db)
 	paymentRepo := repository.NewPaymentRepository(db)
 	loyaltyRepo := repository.NewLoyaltyRepository(db)
-	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo)
-	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo)
+	shippingRepo := repository.NewShippingRepository(db)
+	shippingService := NewShippingService(shippingRepo, productRepo)
+	seedDefaultShippingTemplate(t, db)
+	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo, shippingService)
+	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
 
 	return db, NewOrderService(txManager, orderRepo, checkoutService)
 }
@@ -279,6 +287,7 @@ func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Pr
 		OptionValues: "{}",
 		Price:        price,
 		Stock:        stock,
+		Weight:       9000,
 		IsDefault:    true,
 		IsActive:     true,
 	}).Error)
@@ -289,14 +298,42 @@ func seedProductShell(t *testing.T, db *gorm.DB, price float64, stock int) produ
 	t.Helper()
 
 	record := product.Product{
-		SKU:   "SKU-TEST",
-		Name:  "Test Product",
-		Slug:  "test-product",
-		Price: price,
-		Stock: stock,
+		SKU:    "SKU-TEST",
+		Name:   "Test Product",
+		Slug:   "test-product",
+		Price:  price,
+		Stock:  stock,
+		Weight: 9000,
 	}
 	require.NoError(t, db.Create(&record).Error)
 	return record
+}
+
+func seedDefaultShippingTemplate(t *testing.T, db *gorm.DB) {
+	t.Helper()
+
+	template := shippingdomain.ShippingTemplate{
+		Name:          "Test standard shipping",
+		Type:          "weight",
+		FreeShipping:  true,
+		FreeThreshold: 100,
+		DefaultFee:    10,
+		Enabled:       true,
+		Rules: []shippingdomain.ShippingRule{
+			{
+				Region:   "US",
+				MinValue: 0,
+				MaxValue: 0,
+				Fee:      10,
+			},
+		},
+	}
+	require.NoError(t, db.Create(&template).Error)
+	require.NoError(t, db.Create(&shippingdomain.ShippingTemplateBinding{
+		TemplateID: template.ID,
+		Scope:      "default",
+		Enabled:    true,
+	}).Error)
 }
 
 func seedUserLoyalty(t *testing.T, db *gorm.DB, userID uint, points int) {

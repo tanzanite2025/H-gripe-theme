@@ -341,24 +341,44 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				settingsGroup.GET("/:key", settingsHandler.GetSetting)
 			}
 
-			// 物流包装箱规则与承运商管理（需要设置管理权限）
+			// 物流包装箱规则与承运商管理（需要物流管理权限）
 			shippingGroup := authenticated.Group("/shipping")
-			shippingGroup.Use(middleware.RequirePermission(auth.PermSettingsView))
+			shippingGroup.Use(middleware.RequirePermission(auth.PermShippingView))
 			{
+				shippingGroup.GET("/templates", shippingHandler.ListTemplates)
+				shippingGroup.GET("/templates/:id", shippingHandler.GetTemplate)
+				shippingGroup.POST("/templates", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateTemplate)
+				shippingGroup.PUT("/templates/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTemplate)
+				shippingGroup.DELETE("/templates/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteTemplate)
+				shippingGroup.POST("/templates/:id/rules", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.CreateTemplateRule)
+				shippingGroup.PUT("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTemplateRule)
+				shippingGroup.DELETE("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.DeleteTemplateRule)
+				shippingGroup.GET("/template-bindings", shippingHandler.ListTemplateBindings)
+				shippingGroup.GET("/template-bindings/:id", shippingHandler.GetTemplateBinding)
+				shippingGroup.POST("/template-bindings", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateTemplateBinding)
+				shippingGroup.PUT("/template-bindings/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTemplateBinding)
+				shippingGroup.DELETE("/template-bindings/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteTemplateBinding)
+
+				shippingGroup.GET("/zones", shippingHandler.ListZones)
+				shippingGroup.GET("/zones/:id", shippingHandler.GetZone)
+				shippingGroup.POST("/zones", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateZone)
+				shippingGroup.PUT("/zones/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateZone)
+				shippingGroup.DELETE("/zones/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteZone)
+
 				shippingGroup.GET("/packaging-rules", shippingHandler.ListPackagingRules)
 				shippingGroup.GET("/packaging-rules/:id", shippingHandler.GetPackagingRule)
-				shippingGroup.POST("/packaging-rules", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.CreatePackagingRule)
-				shippingGroup.PUT("/packaging-rules/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.UpdatePackagingRule)
-				shippingGroup.DELETE("/packaging-rules/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.DeletePackagingRule)
-				shippingGroup.POST("/packaging-rules/apply", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.CreatePackagingRuleApply)
-				shippingGroup.DELETE("/packaging-rules/apply/:applyId", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.DeletePackagingRuleApply)
+				shippingGroup.POST("/packaging-rules", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreatePackagingRule)
+				shippingGroup.PUT("/packaging-rules/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdatePackagingRule)
+				shippingGroup.DELETE("/packaging-rules/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeletePackagingRule)
+				shippingGroup.POST("/packaging-rules/apply", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.CreatePackagingRuleApply)
+				shippingGroup.DELETE("/packaging-rules/apply/:applyId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.DeletePackagingRuleApply)
 
 				// 承运商（Carriers）CRUD 管理端点
 				shippingGroup.GET("/carriers", shippingHandler.ListCarriers)
 				shippingGroup.GET("/carriers/:id", shippingHandler.GetCarrier)
-				shippingGroup.POST("/carriers", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.CreateCarrier)
-				shippingGroup.PUT("/carriers/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.UpdateCarrier)
-				shippingGroup.DELETE("/carriers/:id", middleware.RequirePermission(auth.PermSettingsEdit), shippingHandler.DeleteCarrier)
+				shippingGroup.POST("/carriers", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateCarrier)
+				shippingGroup.PUT("/carriers/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateCarrier)
+				shippingGroup.DELETE("/carriers/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteCarrier)
 			}
 
 			// 审计日志（需要日志查看权限）
