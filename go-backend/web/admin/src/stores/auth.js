@@ -107,7 +107,8 @@ export const useAuthStore = defineStore('auth', () => {
         return { valid: false, reason: 'Session expired' }
       }
 
-      return { valid: !!user.value, updated: false, warning: 'Network error' }
+      clearSession()
+      return { valid: false, reason: 'Permission verification failed' }
     }
   }
 
