@@ -4,7 +4,7 @@
       <Info class="size-4" />
       <AlertTitle>价格与库存按 SKU 维护</AlertTitle>
       <AlertDescription>
-        每个 SKU 都可以单独维护重量、价格和库存，前台会按当前选中的 SKU 显示。
+        每个 SKU 都可以单独维护重量、价格和库存，前台会按当前选中的 SKU 显示对应重量。
       </AlertDescription>
     </Alert>
 
