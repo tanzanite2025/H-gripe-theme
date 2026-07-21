@@ -38,6 +38,12 @@ const routes = [
         meta: { title: '订单管理', permission: 'order:view' }
       },
       {
+        path: 'shipping',
+        name: 'Shipping',
+        component: () => import('@/views/Shipping.vue'),
+        meta: { title: '物流管理', permission: 'shipping:view' }
+      },
+      {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/Users.vue'),

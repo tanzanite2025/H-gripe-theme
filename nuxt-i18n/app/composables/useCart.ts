@@ -31,6 +31,7 @@ const normalizeBackendCartItem = (item: any): CartItem => {
   const product = item.product || {}
   const variant = item.variant || {}
   const stock = variant.stock ?? product.stock ?? 0
+  const weightGrams = variant.weight_grams ?? product.weight_grams ?? null
 
   return {
     id: cartItemKey(productId, variantId),
@@ -40,6 +41,7 @@ const normalizeBackendCartItem = (item: any): CartItem => {
     title: product.name || 'Unknown Product',
     slug: product.slug || '',
     sku: variant.sku || product.sku || '',
+    product_type_id: product.product_type_id ?? null,
     price: item.price,
     sale_price: variant.sale_price ?? product.sale_price,
     quantity: item.quantity,
@@ -47,6 +49,8 @@ const normalizeBackendCartItem = (item: any): CartItem => {
     categories: product.categories || [],
     stock,
     maxStock: stock,
+    weight_grams: weightGrams,
+    weight: weightGrams ? weightGrams / 1000 : undefined,
   }
 }
 
@@ -216,6 +220,10 @@ export const useCart = () => {
     const variantId = product.variant_id || null
     const itemId = cartItemKey(productId, variantId)
     const existingItem = cartItems.value.find(item => item.id === itemId)
+    const normalizedProduct = {
+      ...product,
+      weight: product.weight ?? (product.weight_grams ? product.weight_grams / 1000 : undefined),
+    }
 
     if (existingItem) {
       if (existingItem.maxStock && existingItem.quantity >= existingItem.maxStock) {
@@ -224,7 +232,7 @@ export const useCart = () => {
       existingItem.quantity++
       syncAction('update', productId, existingItem.quantity, variantId)
     } else {
-      cartItems.value.push({ ...product, id: itemId, product_id: productId, variant_id: variantId, quantity: 1 })
+      cartItems.value.push({ ...normalizedProduct, id: itemId, product_id: productId, variant_id: variantId, quantity: 1 })
       syncAction('add', productId, 1, variantId)
     }
 

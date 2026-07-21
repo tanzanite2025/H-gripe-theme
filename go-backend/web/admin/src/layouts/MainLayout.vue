@@ -141,6 +141,7 @@ import {
   Settings,
   ShoppingCart,
   Tags,
+  Truck,
   Users
 } from '@lucide/vue'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
@@ -183,6 +184,7 @@ const navigationItems = [
   { path: '/products', routeName: 'Products', label: '商品管理', icon: Package, permission: 'product:view' },
   { path: '/product-types', routeName: 'ProductTypes', label: '产品类型', icon: Tags, permission: 'product:view' },
   { path: '/orders', routeName: 'Orders', label: '订单管理', icon: ShoppingCart, permission: 'order:view' },
+  { path: '/shipping', routeName: 'Shipping', label: '物流管理', icon: Truck, permission: 'shipping:view' },
   { path: '/users', routeName: 'Users', label: '用户管理', icon: Users, permission: 'user:view' },
   { path: '/content', routeName: 'Content', label: '内容管理', icon: FileText, permission: 'content:view' },
   { path: '/faqs', routeName: 'FAQs', label: 'FAQ 管理', icon: CircleHelp, permission: 'faq:view' },

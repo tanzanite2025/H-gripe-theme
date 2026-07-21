@@ -370,6 +370,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			shippingGroup.GET("/templates", shippingHandler.ListTemplates)
 			shippingGroup.GET("/templates/:id", shippingHandler.GetTemplate)
 			shippingGroup.POST("/calculate", shippingHandler.CalculateShipping)
+			shippingGroup.POST("/quote", shippingHandler.QuoteShipping)
 			shippingGroup.GET("/carriers", shippingHandler.ListCarriers)
 			shippingGroup.GET("/carriers/:id", shippingHandler.GetCarrier)
 			shippingGroup.GET("/zones", shippingHandler.ListZones)

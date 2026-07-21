@@ -14,6 +14,8 @@ export interface CartItem {
   maxStock?: number
   stock?: number
   weight?: number
+  weight_grams?: number
+  product_type_id?: number | null
   category?: string
   categories?: unknown[]
   tags?: string[]

@@ -15,15 +15,21 @@ export interface CartShippingTemplate {
   id: number
   name: string
   template_name?: string
-  type: 'weight' | 'quantity' | 'volume' | 'amount' | 'items'
-  base_fee: number
+  type: 'weight' | 'quantity' | 'volume' | 'amount' | 'items' | 'price'
+  base_fee?: number
+  default_fee?: number
   free_threshold?: number
+  free_shipping?: boolean
+  enabled?: boolean
   is_active?: boolean
   rules: Array<{
     type?: string
     min: number | null
     max: number | null
+    min_value?: number | null
+    max_value?: number | null
     fee: number
+    region?: string
     free_over?: number | null
     regions?: string[]
     zip_ranges?: string[]
@@ -75,9 +81,13 @@ export interface CouponValidationResponse {
 
 // 购物车商品
 export interface CartItem {
+  product_id?: number
+  variant_id?: number | null
+  product_type_id?: number | null
   price: number
   quantity: number
   weight?: number
+  weight_grams?: number
 }
 
 // 运费计算结果

@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"encoding/json"
+	"strings"
 	"tanzanite/internal/domain/shipping"
 
 	"gorm.io/gorm"
@@ -14,12 +16,18 @@ func NewShippingRepository(db *gorm.DB) *ShippingRepository {
 	return &ShippingRepository{db: db}
 }
 
+func (r *ShippingRepository) WithTx(tx *gorm.DB) *ShippingRepository {
+	return &ShippingRepository{db: tx}
+}
+
 // ShippingTemplate 閻╃鍙ч弬瑙勭《
 
 // FindTemplateByID 閺嶈宓両D閺屻儲澹樺Ο鈩冩緲
 func (r *ShippingRepository) FindTemplateByID(id uint) (*shipping.ShippingTemplate, error) {
 	var t shipping.ShippingTemplate
-	err := r.db.Preload("Rules").First(&t, id).Error
+	err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
+		return db.Order("min_value ASC, id ASC")
+	}).First(&t, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -29,8 +37,126 @@ func (r *ShippingRepository) FindTemplateByID(id uint) (*shipping.ShippingTempla
 // FindAllTemplates 閺屻儲澹橀幍鈧張澶嬆侀弶?
 func (r *ShippingRepository) FindAllTemplates() ([]shipping.ShippingTemplate, error) {
 	var templates []shipping.ShippingTemplate
-	err := r.db.Preload("Rules").Find(&templates).Error
+	err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
+		return db.Order("min_value ASC, id ASC")
+	}).Find(&templates).Error
 	return templates, err
+}
+
+func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		template.Rules = nil
+		if err := tx.Create(template).Error; err != nil {
+			return err
+		}
+
+		if len(rules) > 0 {
+			for i := range rules {
+				rules[i].ID = 0
+				rules[i].TemplateID = template.ID
+			}
+			if err := tx.Create(&rules).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Preload("Rules").First(template, template.ID).Error
+	})
+}
+
+func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		updates := map[string]interface{}{
+			"name":           template.Name,
+			"type":           template.Type,
+			"free_shipping":  template.FreeShipping,
+			"free_threshold": template.FreeThreshold,
+			"default_fee":    template.DefaultFee,
+			"description":    template.Description,
+			"enabled":        template.Enabled,
+		}
+		if err := tx.Model(&shipping.ShippingTemplate{}).Where("id = ?", template.ID).Updates(updates).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("template_id = ?", template.ID).Delete(&shipping.ShippingRule{}).Error; err != nil {
+			return err
+		}
+
+		if len(rules) > 0 {
+			for i := range rules {
+				rules[i].ID = 0
+				rules[i].TemplateID = template.ID
+			}
+			if err := tx.Create(&rules).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Preload("Rules").First(template, template.ID).Error
+	})
+}
+
+func (r *ShippingRepository) DeleteTemplate(id uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingRule{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingTemplateBinding{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&shipping.ShippingTemplate{}, id).Error
+	})
+}
+
+func (r *ShippingRepository) FindAllTemplateBindings() ([]shipping.ShippingTemplateBinding, error) {
+	var bindings []shipping.ShippingTemplateBinding
+	err := r.db.Preload("Template").Order("priority DESC").Order("id DESC").Find(&bindings).Error
+	return bindings, err
+}
+
+func (r *ShippingRepository) FindEnabledTemplateBindingsWithTemplates() ([]shipping.ShippingTemplateBinding, error) {
+	var bindings []shipping.ShippingTemplateBinding
+	err := r.db.
+		Preload("Template.Rules", func(db *gorm.DB) *gorm.DB {
+			return db.Order("min_value ASC, id ASC")
+		}).
+		Preload("Template").
+		Where("enabled = ?", true).
+		Order("priority DESC").
+		Order("id DESC").
+		Find(&bindings).Error
+	return bindings, err
+}
+
+func (r *ShippingRepository) FindTemplateBindingByID(id uint) (*shipping.ShippingTemplateBinding, error) {
+	var binding shipping.ShippingTemplateBinding
+	err := r.db.Preload("Template").First(&binding, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &binding, nil
+}
+
+func (r *ShippingRepository) CreateTemplateBinding(binding *shipping.ShippingTemplateBinding) error {
+	return r.db.Create(binding).Error
+}
+
+func (r *ShippingRepository) UpdateTemplateBinding(binding *shipping.ShippingTemplateBinding) error {
+	updates := map[string]interface{}{
+		"template_id":     binding.TemplateID,
+		"scope":           binding.Scope,
+		"product_type_id": binding.ProductTypeID,
+		"product_id":      binding.ProductID,
+		"variant_id":      binding.VariantID,
+		"priority":        binding.Priority,
+		"enabled":         binding.Enabled,
+	}
+	return r.db.Model(&shipping.ShippingTemplateBinding{}).Where("id = ?", binding.ID).Updates(updates).Error
+}
+
+func (r *ShippingRepository) DeleteTemplateBinding(id uint) error {
+	return r.db.Delete(&shipping.ShippingTemplateBinding{}, id).Error
 }
 
 // ShippingRule 閻╃鍙ч弬瑙勭《
@@ -52,9 +178,27 @@ func (r *ShippingRepository) UpdateRule(rule *shipping.ShippingRule) error {
 	return r.db.Save(rule).Error
 }
 
+func (r *ShippingRepository) UpdateRuleForTemplate(rule *shipping.ShippingRule) error {
+	updates := map[string]interface{}{
+		"region":      rule.Region,
+		"min_value":   rule.MinValue,
+		"max_value":   rule.MaxValue,
+		"fee":         rule.Fee,
+		"additional":  rule.Additional,
+		"template_id": rule.TemplateID,
+	}
+	return r.db.Model(&shipping.ShippingRule{}).
+		Where("id = ? AND template_id = ?", rule.ID, rule.TemplateID).
+		Updates(updates).Error
+}
+
 // DeleteRule 閸掔娀娅庣憴鍕灟
 func (r *ShippingRepository) DeleteRule(id uint) error {
 	return r.db.Delete(&shipping.ShippingRule{}, id).Error
+}
+
+func (r *ShippingRepository) DeleteRuleForTemplate(templateID uint, ruleID uint) error {
+	return r.db.Where("id = ? AND template_id = ?", ruleID, templateID).Delete(&shipping.ShippingRule{}).Error
 }
 
 // Carrier 閻╃鍙ч弬瑙勭《
@@ -142,14 +286,65 @@ func (r *ShippingRepository) FindAllZones() ([]shipping.ShippingZone, error) {
 	return zones, err
 }
 
+func (r *ShippingRepository) CreateZone(zone *shipping.ShippingZone) error {
+	return r.db.Create(zone).Error
+}
+
+func (r *ShippingRepository) UpdateZone(zone *shipping.ShippingZone) error {
+	updates := map[string]interface{}{
+		"name":         zone.Name,
+		"countries":    zone.Countries,
+		"states":       zone.States,
+		"postal_codes": zone.PostalCodes,
+		"enabled":      zone.Enabled,
+	}
+	return r.db.Model(&shipping.ShippingZone{}).Where("id = ?", zone.ID).Updates(updates).Error
+}
+
+func (r *ShippingRepository) DeleteZone(id uint) error {
+	return r.db.Delete(&shipping.ShippingZone{}, id).Error
+}
+
 // FindZoneByCountry 閺嶈宓侀崶钘夘啀閺屻儲澹橀崠鍝勭厵
 func (r *ShippingRepository) FindZoneByCountry(country string) (*shipping.ShippingZone, error) {
-	var z shipping.ShippingZone
-	err := r.db.Where("? = ANY(countries)", country).First(&z).Error
-	if err != nil {
+	var zones []shipping.ShippingZone
+	if err := r.db.Where("enabled = ?", true).Order("name ASC").Find(&zones).Error; err != nil {
 		return nil, err
 	}
-	return &z, nil
+
+	normalizedCountry := strings.ToUpper(strings.TrimSpace(country))
+	for i := range zones {
+		if countryMatchesZone(normalizedCountry, zones[i].Countries) {
+			return &zones[i], nil
+		}
+	}
+
+	return nil, gorm.ErrRecordNotFound
+}
+
+func countryMatchesZone(country string, countriesValue string) bool {
+	if country == "" || strings.TrimSpace(countriesValue) == "" {
+		return false
+	}
+
+	var countries []string
+	if err := json.Unmarshal([]byte(countriesValue), &countries); err == nil {
+		for _, candidate := range countries {
+			if strings.ToUpper(strings.TrimSpace(candidate)) == country {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, candidate := range strings.FieldsFunc(countriesValue, func(r rune) bool {
+		return r == ',' || r == ';' || r == '|' || r == '\n' || r == '\r' || r == '\t'
+	}) {
+		if strings.ToUpper(strings.TrimSpace(candidate)) == country {
+			return true
+		}
+	}
+	return false
 }
 
 // FindPackagingRuleByID 閺嶈宓両D閺屻儲澹橀崠鍛邦棅鐟欏嫭鐗哥憴鍕灟
