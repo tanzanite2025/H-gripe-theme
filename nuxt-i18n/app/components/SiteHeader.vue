@@ -193,7 +193,7 @@
 
 						<!-- Guides (Icon) -->
 						<NuxtLink
-							:to="localePath('/guides')"
+							:to="localePath('/guides/tireguides')"
 							class="text-white/70 hover:text-white transition-colors p-1"
 							aria-label="Guides"
 						>
@@ -231,25 +231,25 @@
 				<!-- 第二行：主要导航 (Segmented Control Style) -->
 				<nav class="bg-white/5 rounded-xl p-1 flex items-center justify-between relative" aria-label="Mobile primary navigation">
 					<NuxtLink
-						:to="localePath('/products')"
+						:to="localePath('/shop')"
 						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="route.path.startsWith(localePath('/products')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+						:class="currentMegaNavId === 'products' ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
 					>
 						{{ $t('footer.menus.products', 'Products') }}
 					</NuxtLink>
 					
 					<NuxtLink
-						:to="localePath('/support')"
+						:to="localePath('/support/faqs')"
 						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="route.path.startsWith(localePath('/support')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+						:class="currentMegaNavId === 'support' ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
 					>
 						{{ $t('footer.menus.support', 'Support') }}
 					</NuxtLink>
 					
 					<NuxtLink
-						:to="localePath('/company')"
+						:to="localePath('/company/about')"
 						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="route.path.startsWith(localePath('/company')) ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+						:class="currentMegaNavId === 'company' ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
 					>
 						{{ $t('footer.menus.company', 'Company') }}
 					</NuxtLink>
@@ -327,11 +327,9 @@ import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import HeaderMegaMenu from '~/components/HeaderMegaMenu.vue'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
-import { productsNavItems } from '~/utils/productsNav'
-import { supportNavItems } from '~/utils/supportNav'
-import { companyNavItems } from '~/utils/companyNav'
 import {
   primaryMegaNavSections,
+  type PrimaryMegaNavCard,
   type PrimaryMegaNavId,
   type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
@@ -416,11 +414,6 @@ const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
 
-const queryNavValue = computed(() => {
-  const rawNav = route.query?.nav
-  return Array.isArray(rawNav) ? rawNav[0] : rawNav
-})
-
 const pathMatches = (to: string) => {
   const pathWithoutHash = to.split('#')[0] || '/'
   const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
@@ -434,12 +427,6 @@ const pathMatches = (to: string) => {
 }
 
 const currentMegaNavId = computed<PrimaryMegaNavId>(() => {
-  const forcedProducts = typeof queryNavValue.value === 'string' && queryNavValue.value.toLowerCase() === 'products'
-
-  if (forcedProducts && (pathMatches('/guides') || pathMatches('/support/test-report'))) {
-    return 'products'
-  }
-
   if (pathMatches('/company')) return 'company'
   if (pathMatches('/support')) return 'support'
   if (pathMatches('/guides') || pathMatches('/blog')) return 'guides'
@@ -461,21 +448,33 @@ interface BreadcrumbItem {
   to?: string
 }
 
-const matchNavItemForPath = (
-  items: { to: string; labelKey: string }[],
-): { label: string; to: string } | null => {
-  const currentPath = route.path || ''
+const routePathFromTo = (to: string) => {
+  return to.split('#')[0]?.split('?')[0] || '/'
+}
 
-  for (const item of items) {
-    const targetPath = localePath(item.to)
-    if (
-      currentPath === targetPath ||
-      (currentPath.startsWith(targetPath) && currentPath[targetPath.length] === '/')
-    ) {
-      return {
-        label: t(item.labelKey) as string,
-        to: targetPath,
-      }
+const isSameOrNestedPath = (currentPath: string, targetPath: string) => {
+  return (
+    currentPath === targetPath ||
+    (currentPath.startsWith(targetPath) && currentPath[targetPath.length] === '/')
+  )
+}
+
+const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
+  return card.title || (t(card.labelKey, card.labelFallback) as string)
+}
+
+const findCurrentMegaCard = (): { section: PrimaryMegaNavSection; card: PrimaryMegaNavCard } | null => {
+  const currentPath = route.path || ''
+  const currentSection =
+    primaryMegaNavSections.find(section => section.id === currentMegaNavId.value) ||
+    primaryMegaNavSections[0]
+
+  if (!currentSection) return null
+
+  for (const card of currentSection.cards) {
+    const targetPath = localePath(routePathFromTo(card.to))
+    if (isSameOrNestedPath(currentPath, targetPath)) {
+      return { section: currentSection, card }
     }
   }
 
@@ -522,23 +521,10 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
-  // Products hub: Home / Products
-  const productsHub = localePath('/products')
-  if (currentPath === productsHub) {
-    items.push({ label: t('footer.menus.products', 'Products') as string })
-    return items
-  }
-
-  // Guides is its own top-level section (All Guides hub)
+  // Guides category: Home / Guides / {具体页面}
   const guidesHub = localePath('/guides')
-  if (currentPath === guidesHub) {
-    items.push({ label: t('breadcrumbs.guides', 'Guides') as string })
-    return items
-  }
-
-  // 单个 Guides 子页面：Home / Guides / {具体页面}
   if (currentPath.startsWith(guidesHub + '/')) {
-    items.push({ label: t('breadcrumbs.guides', 'Guides') as string, to: guidesHub })
+    items.push({ label: t('breadcrumbs.guides', 'Guides') as string })
 
     // 根据具体路径映射更友好的标题
 
@@ -553,27 +539,6 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
       items.push({ label: last })
     }
 
-    return items
-  }
-
-  // Support hub: Home / Support
-  const supportHub = localePath('/support')
-  if (currentPath === supportHub) {
-    items.push({ label: t('footer.menus.support', 'Support') as string })
-    return items
-  }
-
-  // Company hub: Home / Company
-  const companyHub = localePath('/company')
-  if (currentPath === companyHub) {
-    items.push({ label: t('footer.menus.company', 'Company') as string })
-    return items
-  }
-
-  // /shop 作为独立页面：直接显示 Home / Shop
-  const shopPath = localePath('/shop')
-  if (currentPath === shopPath) {
-    items.push({ label: t('products.nav.shop', 'Shop') as string })
     return items
   }
 
@@ -621,45 +586,11 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
-  // Products layout 子页面：Home / Products / {具体页面}
-  const productMatch = matchNavItemForPath(productsNavItems)
-  if (productMatch) {
-    items.push({
-      label: t('footer.menus.products', 'Products') as string,
-      to: localePath('/products'),
-    })
-    const last = items[items.length - 1]
-    if (!last || productMatch.to !== last.to) {
-      items.push({ label: productMatch.label })
-    }
-    return items
-  }
-
-  // Support layout 子页面：Home / Support / {具体页面}
-  const supportMatch = matchNavItemForPath(supportNavItems)
-  if (supportMatch) {
-    items.push({
-      label: t('footer.menus.support', 'Support') as string,
-      to: localePath('/support'),
-    })
-    const last = items[items.length - 1]
-    if (!last || supportMatch.to !== last.to) {
-      items.push({ label: supportMatch.label })
-    }
-    return items
-  }
-
-  // Company layout 子页面：Home / Company / {具体页面}
-  const companyMatch = matchNavItemForPath(companyNavItems)
-  if (companyMatch) {
-    items.push({
-      label: t('footer.menus.company', 'Company') as string,
-      to: localePath('/company'),
-    })
-    const last = items[items.length - 1]
-    if (!last || companyMatch.to !== last.to) {
-      items.push({ label: companyMatch.label })
-    }
+  // Header mega menu categories are the single source of truth for section breadcrumbs.
+  const megaMatch = findCurrentMegaCard()
+  if (megaMatch) {
+    items.push({ label: t(megaMatch.section.labelKey, megaMatch.section.labelFallback) as string })
+    items.push({ label: cardDisplayLabel(megaMatch.card) })
     return items
   }
 

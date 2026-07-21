@@ -12,26 +12,6 @@
         <div class="header-mega__content">
           <div class="header-mega__grid">
             <NuxtLink
-              class="header-mega-hero-card"
-              :to="localizedTo(section.overviewTo)"
-              @click="emit('navigate')"
-            >
-              <span class="header-mega-hero-card__glow" aria-hidden="true"></span>
-              <span class="header-mega-hero-card__copy">
-                <span class="header-mega-hero-card__eyebrow">{{ section.eyebrow }}</span>
-                <span class="header-mega-hero-card__title">{{ sectionLabel }}</span>
-                <span class="header-mega-hero-card__description">{{ section.description }}</span>
-              </span>
-
-              <span class="header-mega-hero-card__side">
-                <span class="header-mega-hero-card__badge">{{ section.overviewLabel }}</span>
-                <span class="header-mega-hero-card__arrow" aria-hidden="true">
-                  <Icon name="lucide:arrow-up-right" />
-                </span>
-              </span>
-            </NuxtLink>
-
-            <NuxtLink
               v-for="card in section.cards"
               :key="card.id"
               class="header-mega-card"
@@ -187,123 +167,8 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 .header-mega__grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-flow: dense;
   gap: 12px;
-}
-
-.header-mega-hero-card {
-  grid-column: 1 / -1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  min-width: 0;
-  min-height: 160px;
-  padding: 22px 24px;
-  overflow: hidden;
-  border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(circle at top left, rgba(64, 255, 170, 0.17), transparent 30%),
-    radial-gradient(circle at 80% 20%, rgba(107, 115, 255, 0.2), transparent 28%),
-    linear-gradient(135deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.96));
-  color: inherit;
-  text-decoration: none;
-  box-shadow: 0 24px 52px -28px rgba(0, 0, 0, 1);
-}
-
-.header-mega-hero-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 5px;
-  background: linear-gradient(180deg, #40ffaa, #6b73ff);
-  opacity: 0.9;
-}
-
-.header-mega-hero-card__glow {
-  position: absolute;
-  inset: auto -42px -36px auto;
-  width: 180px;
-  height: 180px;
-  border-radius: 999px;
-  background: rgba(64, 255, 170, 0.12);
-  filter: blur(10px);
-}
-
-.header-mega-hero-card__copy {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
-.header-mega-hero-card__eyebrow {
-  margin: 0 0 7px;
-  color: rgba(64, 255, 170, 0.86);
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: 0.18em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.header-mega-hero-card__title {
-  margin: 0;
-  color: #f8fafc;
-  font-size: clamp(24px, 2.2vw, 34px);
-  font-weight: 900;
-  letter-spacing: -0.045em;
-  line-height: 1;
-}
-
-.header-mega-hero-card__description {
-  max-width: 720px;
-  margin: 10px 0 0;
-  color: rgba(226, 232, 240, 0.76);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-.header-mega-hero-card__side {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-mega-hero-card__badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(64, 255, 170, 0.24);
-  background: rgba(15, 23, 42, 0.72);
-  color: rgba(240, 253, 244, 0.95);
-  font-size: 12px;
-  font-weight: 750;
-  white-space: nowrap;
-}
-
-.header-mega-hero-card__arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #40ffaa, #6b73ff);
-  color: #020617;
-  box-shadow: 0 16px 30px -18px rgba(64, 255, 170, 0.85);
-}
-
-.header-mega-hero-card__arrow :deep(svg) {
-  width: 22px;
-  height: 22px;
 }
 
 .header-mega-card {
@@ -494,7 +359,7 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 }
 
 .header-mega-card--wide {
-  grid-column: span 4;
+  grid-column: span 6;
   min-height: 142px;
 }
 
@@ -571,15 +436,6 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
     grid-template-columns: repeat(8, minmax(0, 1fr));
   }
 
-  .header-mega-hero-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-mega-hero-card__side {
-    align-self: flex-end;
-  }
-
   .header-mega-card--feature {
     grid-column: span 4;
   }
@@ -598,26 +454,6 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 }
 
 @media (max-width: 640px) {
-  .header-mega-hero-card {
-    padding: 18px;
-    min-height: 0;
-  }
-
-  .header-mega-hero-card__side {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .header-mega-hero-card__badge {
-    min-height: 34px;
-    padding-inline: 12px;
-  }
-
-  .header-mega-hero-card__arrow {
-    width: 42px;
-    height: 42px;
-  }
-
   .header-mega-card--feature,
   .header-mega-card--wide,
   .header-mega-card--standard,

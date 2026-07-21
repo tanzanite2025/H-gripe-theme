@@ -35,29 +35,20 @@ export interface PrimaryMegaNavSection {
   id: PrimaryMegaNavId
   labelKey: string
   labelFallback: string
-  eyebrow: string
-  description: string
-  overviewTo: string
-  overviewLabel: string
   cards: PrimaryMegaNavCard[]
 }
 
 /**
  * Desktop header mega-menu data.
  *
- * Keep this separate from page-level horizontal tab navigation:
- * - ProductsTopNav / SupportTopNav own in-page context switching.
- * - This file owns the top header's click-to-open card menu.
+ * This is the single source of truth for top-level header navigation.
+ * Legacy hub routes redirect; header panels only list concrete child routes.
  */
 export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
   {
     id: 'products',
     labelKey: 'footer.menus.products',
     labelFallback: 'Products',
-    eyebrow: 'Products & tools',
-    description: 'Shop wheel products, compare technical guides, and jump into product-related utilities.',
-    overviewTo: '/products',
-    overviewLabel: 'Open products hub',
     cards: [
       {
         id: 'shop',
@@ -136,10 +127,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     id: 'support',
     labelKey: 'footer.menus.support',
     labelFallback: 'Support',
-    eyebrow: 'Help center',
-    description: 'Customer support, order help, warranty, shipping, payment, and feedback routes.',
-    overviewTo: '/support',
-    overviewLabel: 'Open support hub',
     cards: [
       {
         id: 'faqs',
@@ -217,10 +204,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     id: 'company',
     labelKey: 'footer.menus.company',
     labelFallback: 'Company',
-    eyebrow: 'About Tanzanite',
-    description: 'Company story, capability, partners, certificates, and direct contact routes.',
-    overviewTo: '/company',
-    overviewLabel: 'Open company hub',
     cards: [
       {
         id: 'our-story',
@@ -288,10 +271,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     id: 'guides',
     labelKey: 'breadcrumbs.guides',
     labelFallback: 'Guides',
-    eyebrow: 'Guides & knowledge',
-    description: 'Learning content, technical references, buying guides, and wheelbuild articles.',
-    overviewTo: '/guides',
-    overviewLabel: 'Open guides hub',
     cards: [
       {
         id: 'tire-guides',
