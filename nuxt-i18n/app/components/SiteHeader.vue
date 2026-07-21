@@ -522,15 +522,17 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   }
 
   // Guides category: Home / Guides / {具体页面}
-  const guidesHub = localePath('/guides')
-  if (currentPath.startsWith(guidesHub + '/')) {
+  const tireGuidesPath = localePath('/guides/tireguides')
+  const wheelsetGuidePath = localePath('/guides/wheelset-buyers')
+  const guidesPrefix = tireGuidesPath.replace(/\/tireguides\/?$/, '')
+  if (currentPath.startsWith(`${guidesPrefix}/`)) {
     items.push({ label: t('breadcrumbs.guides', 'Guides') as string })
 
     // 根据具体路径映射更友好的标题
 
-    if (currentPath === localePath('/guides/tireguides')) {
+    if (currentPath === tireGuidesPath) {
       items.push({ label: t('products.nav.tireSizeCharts', 'Tire Guides') as string })
-    } else if (currentPath === localePath('/guides/wheelset-buyers')) {
+    } else if (currentPath === wheelsetGuidePath) {
       items.push({ label: t('products.nav.wheelsetBuyersGuide', 'Wheelset Buyers Guide') as string })
     } else {
       // 其它 /guides/* 页面，使用最后一段路径作为标题占位
