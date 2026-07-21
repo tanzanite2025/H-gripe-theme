@@ -2,7 +2,7 @@
   <section id="accidental-damage" class="support-section">
     <h2 class="support-section__title text-center mb-8 text-white">Accidental Damage</h2>
 
-    <div class="max-w-3xl mx-auto text-left space-y-10">
+    <div class="w-full max-w-none text-left space-y-10">
       <div class="space-y-8">
          <!-- 1. Scope -->
          <div class="relative pl-12">

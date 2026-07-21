@@ -2,7 +2,7 @@
   <section id="submit-warranty" class="support-section">
     <h2 class="support-section__title text-center mb-6 text-white">Submit Warranty Claim</h2>
     
-    <div class="max-w-xl mx-auto">
+    <div class="w-full max-w-none">
       <div v-if="submitMessage" :class="['p-4 rounded mb-6 text-center', submitStatus === 'success' ? 'bg-green-500/20 text-green-200 border border-green-500/30' : 'bg-red-500/20 text-red-200 border border-red-500/30']">
         {{ submitMessage }}
       </div>

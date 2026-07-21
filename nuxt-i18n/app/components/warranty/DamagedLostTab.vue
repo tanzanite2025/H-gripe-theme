@@ -2,7 +2,7 @@
   <section id="damaged-lost" class="support-section">
     <h2 class="support-section__title text-center mb-8 text-white">Damaged or Lost Goods</h2>
 
-    <div class="max-w-3xl mx-auto text-left space-y-8">
+    <div class="w-full max-w-none text-left space-y-8">
       <!-- Intro Alert -->
       <div class="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
         <p class="text-indigo-200 font-medium">Please carefully inspect the package before signing for it.</p>

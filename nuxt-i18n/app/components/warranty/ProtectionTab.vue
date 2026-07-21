@@ -2,7 +2,7 @@
   <section id="protection" class="support-section">
     <h2 class="support-section__title text-center mb-8 text-white">Protection</h2>
 
-    <div class="max-w-3xl mx-auto text-left space-y-10">
+    <div class="w-full max-w-none text-left space-y-10">
       <!-- Intro Header -->
       <div class="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
         <h3 class="text-indigo-200 font-bold text-lg mb-1">Buyer Protection (PayPal Policy)</h3>
