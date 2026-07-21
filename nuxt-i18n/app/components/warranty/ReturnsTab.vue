@@ -2,7 +2,7 @@
   <section id="returns" class="support-section">
     <h2 class="support-section__title text-center mb-8 text-white">Returns</h2>
 
-    <div class="max-w-3xl mx-auto text-left space-y-10">
+    <div class="w-full max-w-none text-left space-y-10">
       <!-- Intro -->
       <div class="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
         <p class="text-slate-300 leading-relaxed">
