@@ -171,7 +171,8 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	if err := testDB.QueryRowContext(ctx, "SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty); err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 15 || dirty {
+	expectedVersion := latestUpMigrationVersion(t, filepath.Join(backendRoot, "migrations"))
+	if version != expectedVersion || dirty {
 		t.Fatalf("unexpected migration state: version=%d dirty=%t", version, dirty)
 	}
 
@@ -232,6 +233,35 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	}
 
 	assertG35CatalogSeed(ctx, t, testDB)
+}
+
+func latestUpMigrationVersion(t *testing.T, migrationDir string) int {
+	t.Helper()
+
+	entries, err := os.ReadDir(migrationDir)
+	if err != nil {
+		t.Fatalf("read migrations: %v", err)
+	}
+
+	latest := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !upMigrationNamePattern.MatchString(entry.Name()) {
+			continue
+		}
+		versionText, _, _ := strings.Cut(entry.Name(), "_")
+		version, err := strconv.Atoi(versionText)
+		if err != nil {
+			t.Fatalf("parse migration version from %q: %v", entry.Name(), err)
+		}
+		if version > latest {
+			latest = version
+		}
+	}
+	if latest == 0 {
+		t.Fatal("no SQL migrations found")
+	}
+
+	return latest
 }
 
 func assertG35CatalogSeed(ctx context.Context, t *testing.T, db *sql.DB) {
