@@ -1,11 +1,7 @@
 <template>
   <div class="layout layout--support">
     <main class="layout-main">
-      <!-- Support hero / banner -->
-      <!-- Top horizontal Support navigation -->
       <div class="support-header-spacer" aria-hidden="true"></div>
-      <ProductsTopNav v-if="isProductsNavForced" />
-      <SupportTopNav v-else />
 
       <!-- Support page content -->
       <section class="support-content">
@@ -21,19 +17,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
-import ProductsTopNav from '~/components/ProductsTopNav.vue'
-import SupportTopNav from '~/components/SupportTopNav.vue'
-import { getNavContextFromRoute } from '~/utils/navContext'
-
-const route = useRoute()
-
-const navContext = computed(() => getNavContextFromRoute(route))
-
-const isProductsNavForced = computed(() => navContext.value === 'products')
 </script>
 
 <style scoped>
@@ -114,7 +99,6 @@ const isProductsNavForced = computed(() => navContext.value === 'products')
 
 @media (min-width: 768px) {
   .support-header-spacer {
-    /* Desktop: push SupportTopNav slightly below the fixed SiteHeader */
     height: 130px;
   }
 }

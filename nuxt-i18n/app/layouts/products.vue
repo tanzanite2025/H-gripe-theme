@@ -1,14 +1,7 @@
 <template>
   <div class="layout layout--products">
     <main class="layout-main">
-      <!-- Products hero / banner (copy support spacing & background) -->
-      <!-- Top horizontal Products navigation (same style as Support) -->
       <div class="products-header-spacer" aria-hidden="true"></div>
-      <ProductsTopNav
-        v-if="isPolicies"
-        :items-override="policiesNavItems"
-      />
-      <ProductsTopNav v-else />
 
       <!-- Products page content -->
       <section class="products-content">
@@ -24,24 +17,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
-import ProductsTopNav from '~/components/ProductsTopNav.vue'
-
-const route = useRoute()
-const isPolicies = computed(() => {
-  const path = route.path || ''
-  return path.split('/').includes('policies')
-})
-
-const policiesNavItems = [
-  { id: 'policies-cookie', to: '/policies/cookie', labelKey: 'policyTabs.cookie' },
-  { id: 'policies-privacy', to: '/policies/privacy', labelKey: 'policyTabs.privacy' },
-  { id: 'policies-refund-return', to: '/policies/refund-return', labelKey: 'policyTabs.refundReturn' },
-  { id: 'policies-terms', to: '/policies/terms', labelKey: 'policyTabs.terms' },
-]
 </script>
 
 <style scoped>
@@ -75,7 +52,6 @@ const policiesNavItems = [
 
 @media (min-width: 768px) {
   .products-header-spacer {
-    /* Desktop: push ProductsTopNav slightly below the fixed SiteHeader */
     height: 130px;
   }
 }
