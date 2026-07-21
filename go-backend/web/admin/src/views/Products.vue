@@ -269,7 +269,7 @@
               </div>
             </FormSection>
 
-            <FormSection title="SKU 变体矩阵" description="每个商品至少保留一个变体，价格和库存均以变体为准。">
+            <FormSection title="SKU 变体矩阵" description="每个商品至少保留一个变体，价格、重量和库存均以 SKU 变体为准。">
               <div class="min-w-0 rounded-lg border">
                 <ProductVariantEditor
                   :variants="productForm.variants"
