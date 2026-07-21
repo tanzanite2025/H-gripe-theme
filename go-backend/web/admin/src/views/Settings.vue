@@ -180,11 +180,23 @@
             <AlertDescription>公开客服需绑定活跃用户，且角色为 admin、manager 或 support。</AlertDescription>
           </Alert>
 
-          <div class="flex justify-end">
-            <Button variant="outline" size="sm" :disabled="loadingPublicChatAgents" @click="fetchPublicChatAgents">
-              <RefreshCw :class="['size-3.5', { 'animate-spin': loadingPublicChatAgents }]" />
-              刷新概览
-            </Button>
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-muted-foreground">从已有后台用户中选择客服账号，生成或更新 Public Chat 对外 Profile。</p>
+            <div class="flex flex-wrap justify-end gap-2">
+              <Button
+                v-if="hasPermission('settings:edit')"
+                size="sm"
+                :disabled="loadingPublicChatAgentCandidates"
+                @click="openPublicChatAgentDialog"
+              >
+                <Plus class="size-3.5" />
+                添加客服 Profile
+              </Button>
+              <Button variant="outline" size="sm" :disabled="loadingPublicChatAgents" @click="fetchPublicChatAgents">
+                <RefreshCw :class="['size-3.5', { 'animate-spin': loadingPublicChatAgents }]" />
+                刷新概览
+              </Button>
+            </div>
           </div>
 
           <section class="grid gap-3 sm:grid-cols-2" aria-label="Public Chat 客服统计">
@@ -256,6 +268,82 @@
         </TabsContent>
       </Tabs>
     </div>
+
+    <Dialog v-model:open="publicChatAgentDialogOpen">
+      <DialogContent size="lg" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
+        <form class="space-y-4" @submit.prevent="savePublicChatAgent">
+          <DialogHeader>
+            <DialogTitle>添加 Public Chat 客服 Profile</DialogTitle>
+            <DialogDescription>
+              选择已存在的后台用户，保存后该用户会作为公开客服出现在 Public Chat 的客服列表里。
+            </DialogDescription>
+          </DialogHeader>
+
+          <Alert v-if="selectedPublicChatAgentCandidate?.has_profile" class="border-blue-200 bg-blue-50 text-blue-900">
+            <Info class="size-4" />
+            <AlertTitle>该用户已有 Profile</AlertTitle>
+            <AlertDescription>再次保存会更新现有 Profile，不会重复创建。</AlertDescription>
+          </Alert>
+
+          <div v-if="publicChatAgentCandidates.length === 0 && !loadingPublicChatAgentCandidates" class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            暂无可绑定的活跃后台用户。候选用户必须是 active 且角色为 admin、manager 或 support。
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <AdminFormField label="后台用户" required description="候选来自 active 的 admin、manager、support 用户。">
+              <Select v-model="publicChatAgentForm.user_id" :disabled="loadingPublicChatAgentCandidates || publicChatAgentSaving">
+                <SelectTrigger class="w-full">
+                  <SelectValue :placeholder="loadingPublicChatAgentCandidates ? '正在加载候选用户' : '选择已有后台用户'" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="candidate in publicChatAgentCandidates" :key="candidate.user_id" :value="String(candidate.user_id)">
+                    {{ publicChatAgentCandidateLabel(candidate) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </AdminFormField>
+
+            <AdminFormField label="Profile 状态" required>
+              <Select v-model="publicChatAgentForm.status" :disabled="publicChatAgentSaving">
+                <SelectTrigger class="w-full"><SelectValue placeholder="请选择状态" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">active · 对外展示</SelectItem>
+                  <SelectItem value="inactive">inactive · 暂不展示</SelectItem>
+                </SelectContent>
+              </Select>
+            </AdminFormField>
+
+            <AdminFormField label="Agent ID" description="不填写时自动使用 user-用户ID；如需对接外部系统可手动改。">
+              <Input v-model="publicChatAgentForm.agent_id" :disabled="publicChatAgentSaving" placeholder="user-1" maxlength="50" />
+            </AdminFormField>
+
+            <AdminFormField label="公开名称" description="不填写时使用后台用户显示名。">
+              <Input v-model="publicChatAgentForm.name" :disabled="publicChatAgentSaving" placeholder="客服名称" />
+            </AdminFormField>
+
+            <AdminFormField label="公开邮箱" description="不填写时使用后台用户邮箱。">
+              <Input v-model="publicChatAgentForm.email" :disabled="publicChatAgentSaving" type="email" placeholder="support@example.com" />
+            </AdminFormField>
+
+            <AdminFormField label="WhatsApp">
+              <Input v-model="publicChatAgentForm.whatsapp" :disabled="publicChatAgentSaving" placeholder="+1 000 000 0000" />
+            </AdminFormField>
+
+            <AdminFormField label="头像 URL" class="md:col-span-2">
+              <Input v-model="publicChatAgentForm.avatar" :disabled="publicChatAgentSaving" type="url" placeholder="https://..." />
+            </AdminFormField>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" :disabled="publicChatAgentSaving" @click="publicChatAgentDialogOpen = false">取消</Button>
+            <Button type="submit" :disabled="publicChatAgentSaving || !publicChatAgentForm.user_id">
+              <LoaderCircle v-if="publicChatAgentSaving" class="size-4 animate-spin" />
+              保存 Profile
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -271,6 +359,7 @@ import {
   Info,
   LoaderCircle,
   Mail,
+  Plus,
   RefreshCw,
   Save,
   SearchCheck,
@@ -284,6 +373,7 @@ import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
@@ -328,6 +418,22 @@ const publicChatAgentsOverview = ref(null)
 const publicChatAgentsSummary = computed(() => publicChatAgentsOverview.value?.summary || {})
 const publicChatAgents = computed(() => publicChatAgentsOverview.value?.agents || [])
 const publicChatAgentWarnings = computed(() => publicChatAgentsOverview.value?.warnings || [])
+const loadingPublicChatAgentCandidates = ref(false)
+const publicChatAgentCandidates = ref([])
+const publicChatAgentDialogOpen = ref(false)
+const publicChatAgentSaving = ref(false)
+const publicChatAgentForm = reactive({
+  user_id: '',
+  agent_id: '',
+  name: '',
+  email: '',
+  avatar: '',
+  whatsapp: '',
+  status: 'active'
+})
+const selectedPublicChatAgentCandidate = computed(() =>
+  publicChatAgentCandidates.value.find((candidate) => String(candidate.user_id) === String(publicChatAgentForm.user_id))
+)
 
 const socialFields = [
   { key: 'facebook', label: 'Facebook', placeholder: 'Facebook 页面 URL' },
@@ -431,6 +537,73 @@ const fetchPublicChatAgents = async () => {
   }
 }
 
+const fetchPublicChatAgentCandidates = async () => {
+  loadingPublicChatAgentCandidates.value = true
+  try {
+    const response = await axios.get('/api/admin/settings/public-chat-agent-candidates')
+    publicChatAgentCandidates.value = Array.isArray(response.data?.candidates) ? response.data.candidates : []
+  } catch (error) {
+    console.error('Failed to fetch Public Chat agent candidates:', error)
+  } finally {
+    loadingPublicChatAgentCandidates.value = false
+  }
+}
+
+const resetPublicChatAgentForm = () => {
+  Object.assign(publicChatAgentForm, {
+    user_id: '',
+    agent_id: '',
+    name: '',
+    email: '',
+    avatar: '',
+    whatsapp: '',
+    status: 'active'
+  })
+}
+
+const applyPublicChatCandidateDefaults = (candidate) => {
+  if (!candidate) return
+  publicChatAgentForm.agent_id = candidate.agent_id || `user-${candidate.user_id}`
+  publicChatAgentForm.name = candidate.profile_name || candidate.display_name || candidate.username || ''
+  publicChatAgentForm.email = candidate.profile_email || candidate.email || ''
+  publicChatAgentForm.avatar = candidate.profile_avatar || ''
+  publicChatAgentForm.whatsapp = candidate.profile_whatsapp || ''
+  publicChatAgentForm.status = candidate.profile_status || 'active'
+}
+
+const openPublicChatAgentDialog = async () => {
+  resetPublicChatAgentForm()
+  publicChatAgentDialogOpen.value = true
+  await fetchPublicChatAgentCandidates()
+}
+
+const savePublicChatAgent = async () => {
+  if (!publicChatAgentForm.user_id) {
+    toast.error('请选择一个后台用户')
+    return
+  }
+
+  publicChatAgentSaving.value = true
+  try {
+    const response = await axios.post('/api/admin/settings/public-chat-agents', {
+      user_id: Number(publicChatAgentForm.user_id),
+      agent_id: publicChatAgentForm.agent_id.trim(),
+      name: publicChatAgentForm.name.trim(),
+      email: publicChatAgentForm.email.trim(),
+      avatar: publicChatAgentForm.avatar.trim(),
+      whatsapp: publicChatAgentForm.whatsapp.trim(),
+      status: publicChatAgentForm.status
+    })
+    toast.success(response.data?.created ? '已添加 Public Chat 客服 Profile' : '已更新 Public Chat 客服 Profile')
+    publicChatAgentDialogOpen.value = false
+    await fetchPublicChatAgents()
+  } catch (error) {
+    console.error('Failed to save Public Chat agent profile:', error)
+  } finally {
+    publicChatAgentSaving.value = false
+  }
+}
+
 const saveSettings = async () => {
   const group = activeTab.value
   const definition = groupDefinitions[group]
@@ -461,6 +634,18 @@ const agentInitials = (agent) => {
   const name = agent.display_name || agent.username || agent.email || '?'
   return name.slice(0, 2).toUpperCase()
 }
+
+const publicChatAgentCandidateLabel = (candidate) => {
+  const name = candidate.display_name || candidate.username || candidate.email || `User #${candidate.user_id}`
+  const role = candidate.normalized_role || candidate.raw_role || 'unknown'
+  const profileSuffix = candidate.has_profile ? ' · 已有 Profile' : ''
+  return `${name} · ${role} · #${candidate.user_id}${profileSuffix}`
+}
+
+watch(() => publicChatAgentForm.user_id, (userID) => {
+  if (!userID) return
+  applyPublicChatCandidateDefaults(selectedPublicChatAgentCandidate.value)
+})
 
 watch(activeTab, (tab) => {
   if (tab === 'public_chat') fetchPublicChatAgents()
