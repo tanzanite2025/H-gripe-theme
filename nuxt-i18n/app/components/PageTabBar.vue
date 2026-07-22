@@ -89,11 +89,18 @@ watch(
 
 <style scoped>
 .page-tab-bar {
-  width: 100%;
-  margin: 0 0 2rem;
-  padding: 0.45rem;
+  box-sizing: border-box;
+  width: 100vw;
+  width: 100dvw;
+  max-width: 100vw;
+  max-width: 100dvw;
+  margin: 0 calc(50% - 50vw) 2rem;
+  margin: 0 calc(50% - 50dvw) 2rem;
+  padding: 0.55rem clamp(1rem, 3vw, 3.5rem);
   border: 1px solid rgba(45, 212, 191, 0.14);
-  border-radius: 1.65rem;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
   background:
     linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.78)),
     radial-gradient(circle at 50% 0%, rgba(45, 212, 191, 0.12), transparent 46%);
@@ -162,8 +169,7 @@ watch(
 
 @media (max-width: 900px) {
   .page-tab-bar {
-    padding: 0.45rem;
-    border-radius: 1.15rem;
+    padding: 0.55rem clamp(0.9rem, 4vw, 1.25rem);
   }
 
   .page-tab-bar__mobile-trigger {
