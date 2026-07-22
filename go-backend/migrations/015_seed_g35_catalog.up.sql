@@ -83,24 +83,3 @@ WHERE p.sku = 'G35-370G-1PC'
   )
   AND p.deleted_at IS NULL
 ON CONFLICT DO NOTHING;
-
-INSERT INTO product_images (product_id, url, alt, "order")
-SELECT
-    p.id,
-    '/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp',
-    'Carbon rim finish reference',
-    0
-FROM products p
-WHERE p.sku = 'G35-370G-1PC'
-  AND p.slug = 'g35-carbon-rim'
-  AND p.locale = 'en'
-  AND p.product_type_id = (
-      SELECT id FROM product_types WHERE slug = 'carbon_rim'
-  )
-  AND p.deleted_at IS NULL
-  AND NOT EXISTS (
-      SELECT 1
-      FROM product_images pi
-      WHERE pi.product_id = p.id
-        AND pi.url = '/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp'
-  );

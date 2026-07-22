@@ -25,6 +25,18 @@ let eventListenersAdded = false
 
 const cartItemKey = (productId: number, variantId?: number | null) => variantId || productId
 
+const resolveProductThumbnail = (product: any): string => {
+  const media = Array.isArray(product?.media) ? product.media : []
+  const imageMedia = media.filter((item: any) => {
+    return item?.media_type === 'image' && item?.url && item?.is_visible !== false
+  })
+  const primaryImage =
+    imageMedia.find((item: any) => item?.is_primary || item?.role === 'primary') ||
+    imageMedia[0]
+
+  return product?.thumbnail || product?.featured_image || primaryImage?.url || ''
+}
+
 const normalizeBackendCartItem = (item: any): CartItem => {
   const productId = item.product_id
   const variantId = item.variant_id || null
@@ -45,7 +57,7 @@ const normalizeBackendCartItem = (item: any): CartItem => {
     price: item.price,
     sale_price: variant.sale_price ?? product.sale_price,
     quantity: item.quantity,
-    image: product.images?.[0]?.url || '',
+    image: resolveProductThumbnail(product),
     categories: product.categories || [],
     stock,
     maxStock: stock,

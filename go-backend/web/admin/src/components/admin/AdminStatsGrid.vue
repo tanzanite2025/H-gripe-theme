@@ -3,13 +3,14 @@
     <div
       v-for="item in items"
       :key="item.key || item.label"
-      class="flex min-h-24 items-start justify-between gap-3 rounded-lg border bg-card p-4 text-card-foreground shadow-xs"
+      class="group relative flex min-h-24 items-start justify-between gap-3 rounded-[24px] border border-dashed border-border/80 bg-card p-4 text-card-foreground shadow-xs overflow-hidden transition-all hover:border-primary/40"
     >
-      <div class="min-w-0">
-        <span class="block text-xs font-medium text-muted-foreground">{{ item.label }}</span>
-        <strong class="mt-2 block truncate text-2xl font-semibold tabular-nums">{{ item.value }}</strong>
+      <div class="uds-glow-bg opacity-30 group-hover:opacity-100 transition-opacity" />
+      <div class="relative z-10 min-w-0">
+        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ item.label }}</span>
+        <strong class="mt-1.5 block truncate text-2xl font-black italic tracking-tighter tabular-nums text-foreground">{{ item.value }}</strong>
       </div>
-      <span v-if="item.icon" class="flex size-9 shrink-0 items-center justify-center rounded-lg" :class="toneClass(item.tone)">
+      <span v-if="item.icon" class="relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full" :class="toneClass(item.tone)">
         <component :is="item.icon" class="size-4" />
       </span>
     </div>

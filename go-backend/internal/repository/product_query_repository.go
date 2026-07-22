@@ -34,8 +34,8 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return orderProductImages(db)
+	query := r.db.Model(&product.Product{}).Preload("Media", func(db *gorm.DB) *gorm.DB {
+		return orderProductMedia(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	}).Where(activeVariantExistsSQL("pv_list"))
@@ -62,8 +62,8 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return orderProductImages(db)
+	query := r.db.Model(&product.Product{}).Preload("Media", func(db *gorm.DB) *gorm.DB {
+		return orderProductMedia(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	}).Where(activeVariantExistsSQL("pv_public"))
@@ -150,8 +150,8 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return orderProductImages(db)
+	query := r.db.Model(&product.Product{}).Preload("Media", func(db *gorm.DB) *gorm.DB {
+		return orderProductMedia(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	})

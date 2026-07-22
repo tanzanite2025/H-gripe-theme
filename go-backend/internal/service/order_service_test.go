@@ -247,7 +247,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&product.ProductType{},
 		&product.SpecDefinition{},
 		&product.Product{},
-		&product.ProductImage{},
+		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
 		&order.Order{},

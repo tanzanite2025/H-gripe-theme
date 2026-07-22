@@ -1,12 +1,12 @@
 <template>
   <div class="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
-    <span v-if="!collapsed" class="mx-auto w-full max-w-48 shrink-0 px-2 pb-2 pt-5 text-[10px] font-semibold text-muted-foreground">
-      工作台
+    <span v-if="!collapsed" class="mx-auto w-full max-w-48 shrink-0 px-2 pb-2 pt-4 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+      WORKSPACE / 工作台
     </span>
 
     <nav
       class="min-h-0 flex-1 overflow-y-auto px-0 pb-3"
-      :class="collapsed ? 'pt-5' : 'pt-2'"
+      :class="collapsed ? 'pt-5' : 'pt-1'"
       aria-label="后台导航"
     >
       <TooltipProvider :delay-duration="0">
@@ -18,10 +18,10 @@
             <TooltipTrigger as-child>
               <RouterLink
                 :to="{ name: item.routeName }"
-                class="mb-1 flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium text-muted-foreground no-underline transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                class="mb-1 flex h-9 items-center gap-2.5 rounded-xl px-2.5 text-xs font-bold tracking-tight text-muted-foreground no-underline transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:scale-[0.98]"
                 :class="[
                   collapsed ? 'w-9 justify-center px-0' : 'w-full',
-                  isActive(item.path) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
+                  isActive(item.path) ? 'bg-sidebar-accent text-sidebar-accent-foreground font-black shadow-xs border border-dashed border-primary/20' : ''
                 ]"
                 :aria-current="isActive(item.path) ? 'page' : undefined"
                 @click="emit('navigate')"
@@ -30,7 +30,7 @@
                 <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
               </RouterLink>
             </TooltipTrigger>
-            <TooltipContent v-if="collapsed" side="right">
+            <TooltipContent v-if="collapsed" side="right" class="font-bold text-xs">
               {{ item.label }}
             </TooltipContent>
           </Tooltip>

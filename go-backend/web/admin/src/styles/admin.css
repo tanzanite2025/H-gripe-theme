@@ -156,3 +156,64 @@
   border-radius: 8px;
   background-clip: padding-box;
 }
+
+/* ==========================================================================
+   ERP UDS 视觉系统规范 (v1.0) 实用类
+   注：所有类严格保持现有布局高密度，不扩充高度与间距
+   ========================================================================== */
+
+/* 排版 - 工业级规范 */
+.uds-title-main {
+  @apply text-lg font-black tracking-tighter italic uppercase;
+}
+
+.uds-title-card {
+  @apply text-sm font-black tracking-tighter italic;
+}
+
+.uds-label {
+  @apply text-[10px] font-black uppercase tracking-widest text-muted-foreground/60;
+}
+
+.uds-desc {
+  @apply text-[9px] font-black uppercase tracking-widest opacity-60;
+}
+
+.uds-mono {
+  @apply text-[8px] font-mono;
+}
+
+/* 物理容器与工业虚线边框 */
+.uds-header-box {
+  @apply rounded-[32px] border border-dashed border-border/70 bg-muted/10 relative overflow-hidden;
+}
+
+.uds-card-box {
+  @apply rounded-[24px] border border-dashed border-border/80 bg-card relative overflow-hidden;
+}
+
+.uds-glow-bg {
+  @apply absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none;
+}
+
+/* 工业级状态语义徽章 */
+.uds-badge-healthy {
+  @apply bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full font-mono text-[8px] h-4 px-2 inline-flex items-center gap-1 font-bold;
+}
+
+.uds-badge-alert {
+  @apply bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-full font-mono text-[8px] h-4 px-2 inline-flex items-center gap-1 font-bold;
+}
+
+.uds-badge-critical {
+  @apply bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-full font-mono text-[8px] h-4 px-2 inline-flex items-center gap-1 font-bold animate-pulse;
+}
+
+/* 按钮 - 工业主胶囊与幽灵按钮 */
+.uds-btn-primary {
+  @apply rounded-full h-9 px-4 font-black text-[10px] uppercase tracking-widest bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 transition-all active:scale-[0.98];
+}
+
+.uds-btn-ghost {
+  @apply rounded-full h-9 px-3 font-black text-[10px] uppercase tracking-widest hover:bg-muted transition-all;
+}

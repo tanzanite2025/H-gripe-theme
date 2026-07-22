@@ -4,7 +4,6 @@ import (
 	"tanzanite/internal/domain/product"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type ProductRepository struct {
@@ -20,10 +19,8 @@ func (r *ProductRepository) WithTx(tx *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: tx}
 }
 
-func orderProductImages(db *gorm.DB) *gorm.DB {
-	return db.Order(clause.OrderByColumn{
-		Column: clause.Column{Table: "product_images", Name: "order"},
-	})
+func orderProductMedia(db *gorm.DB) *gorm.DB {
+	return db.Order("product_media.sort_order ASC, product_media.id ASC")
 }
 
 func orderSpecDefinitions(db *gorm.DB) *gorm.DB {
@@ -44,6 +41,10 @@ func (r *ProductRepository) CreateWithSpecValues(p *product.Product, specValues 
 }
 
 func (r *ProductRepository) CreateWithSpecValuesAndVariants(p *product.Product, specValues []product.ProductSpecValue, variants []product.ProductVariant) error {
+	return r.CreateWithSpecValuesVariantsAndMedia(p, specValues, variants, nil)
+}
+
+func (r *ProductRepository) CreateWithSpecValuesVariantsAndMedia(p *product.Product, specValues []product.ProductSpecValue, variants []product.ProductVariant, mediaItems []product.ProductMedia) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		syncProductSummaryFromVariants(p, variants)
 		if err := tx.Create(p).Error; err != nil {
@@ -68,6 +69,15 @@ func (r *ProductRepository) CreateWithSpecValuesAndVariants(p *product.Product, 
 			}
 		}
 
+		if len(mediaItems) > 0 {
+			for i := range mediaItems {
+				mediaItems[i].ProductID = p.ID
+			}
+			if err := tx.Create(&mediaItems).Error; err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 }
@@ -75,8 +85,8 @@ func (r *ProductRepository) CreateWithSpecValuesAndVariants(p *product.Product, 
 // FindByID 鏍规嵁ID鏌ユ壘浜у搧
 func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 	var p product.Product
-	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return orderProductImages(db)
+	err := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
+		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
@@ -93,8 +103,8 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 // FindBySlug 鏍规嵁slug鍜岃瑷€鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, error) {
 	var p product.Product
-	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
-		return orderProductImages(db)
+	err := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
+		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
@@ -111,7 +121,7 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 // FindBySKU 鏍规嵁SKU鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	var p product.Product
-	err := r.db.Preload("Images").
+	err := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) }).
 		Where("sku = ?", sku).First(&p).Error
 	if err != nil {
@@ -141,6 +151,10 @@ func (r *ProductRepository) UpdateWithSpecValues(p *product.Product, specValues 
 }
 
 func (r *ProductRepository) UpdateWithSpecValuesAndVariants(p *product.Product, specValues []product.ProductSpecValue, replaceSpecs bool, variants []product.ProductVariant, replaceVariants bool) error {
+	return r.UpdateWithSpecValuesVariantsAndMedia(p, specValues, replaceSpecs, variants, replaceVariants, nil, false)
+}
+
+func (r *ProductRepository) UpdateWithSpecValuesVariantsAndMedia(p *product.Product, specValues []product.ProductSpecValue, replaceSpecs bool, variants []product.ProductVariant, replaceVariants bool, mediaItems []product.ProductMedia, replaceMedia bool) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if replaceVariants {
 			syncProductSummaryFromVariants(p, variants)
@@ -166,6 +180,12 @@ func (r *ProductRepository) UpdateWithSpecValuesAndVariants(p *product.Product, 
 
 		if replaceVariants {
 			if err := replaceProductVariants(tx, p.ID, variants); err != nil {
+				return err
+			}
+		}
+
+		if replaceMedia {
+			if err := replaceProductMedia(tx, p.ID, mediaItems); err != nil {
 				return err
 			}
 		}

@@ -73,8 +73,14 @@ export const normalizeShopProduct = (item: any): ShopProduct => {
   )
   const priceNumber = sale > 0 ? sale : regular > 0 ? regular : 0
   const slug = String(item?.slug || id)
-  const images = Array.isArray(item?.images) ? item.images : []
-  const thumbnail = item?.thumbnail || item?.featured_image || images[0]?.url || undefined
+  const media = Array.isArray(item?.media) ? item.media : []
+  const imageMedia = media.filter((mediaItem: any) => {
+    return mediaItem?.media_type === 'image' && mediaItem?.url && mediaItem?.is_visible !== false
+  })
+  const primaryMediaImage =
+    imageMedia.find((mediaItem: any) => mediaItem?.is_primary || mediaItem?.role === 'primary') ||
+    imageMedia[0]
+  const thumbnail = item?.thumbnail || item?.featured_image || primaryMediaImage?.url || undefined
   const stock =
     typeof item?.stock === 'object'
       ? toOptionalNumber(item?.stock?.quantity)

@@ -25,7 +25,7 @@ type Product struct {
 	ViewCount     int                `gorm:"default:0" json:"view_count"`
 	MetaTitle     string             `json:"meta_title"`
 	MetaDesc      string             `gorm:"type:text" json:"meta_description"`
-	Images        []ProductImage     `gorm:"foreignKey:ProductID" json:"images"`
+	Media         []ProductMedia     `gorm:"foreignKey:ProductID" json:"media,omitempty"`
 	ProductType   *ProductType       `gorm:"foreignKey:ProductTypeID" json:"product_type,omitempty"`
 	SpecValues    []ProductSpecValue `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`
 	Variants      []ProductVariant   `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
@@ -50,19 +50,32 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// ProductImage 产品图片
-type ProductImage struct {
-	ID        uint      `gorm:"primarykey" json:"id"`
-	ProductID uint      `gorm:"not null;index" json:"product_id"`
-	URL       string    `gorm:"not null" json:"url"`
-	Alt       string    `json:"alt"`
-	Order     int       `gorm:"default:0" json:"order"`
-	CreatedAt time.Time `json:"created_at"`
+// ProductMedia stores product-owned media placement.
+// Galleries are intentionally separate showcase collections and should not be
+// used as the source of truth for product images or videos.
+type ProductMedia struct {
+	ID           uint           `gorm:"primarykey" json:"id"`
+	ProductID    uint           `gorm:"not null;index" json:"product_id"`
+	VariantID    *uint          `gorm:"index" json:"variant_id,omitempty"`
+	MediaAssetID *uint          `gorm:"index" json:"media_asset_id,omitempty"`
+	MediaType    string         `gorm:"default:'image';not null;index" json:"media_type"`
+	Role         string         `gorm:"default:'gallery';not null;index" json:"role"`
+	URL          string         `gorm:"not null" json:"url"`
+	ThumbnailURL string         `json:"thumbnail_url"`
+	PosterURL    string         `json:"poster_url"`
+	Alt          string         `json:"alt"`
+	Title        string         `json:"title"`
+	Locale       string         `gorm:"index" json:"locale"`
+	SortOrder    int            `gorm:"default:0;not null" json:"sort_order"`
+	IsPrimary    bool           `gorm:"default:false;not null" json:"is_primary"`
+	IsVisible    bool           `gorm:"default:true;not null" json:"is_visible"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// TableName 指定表名
-func (ProductImage) TableName() string {
-	return "product_images"
+func (ProductMedia) TableName() string {
+	return "product_media"
 }
 
 // ProductListResponse 产品列表响应
@@ -100,9 +113,13 @@ func (p *Product) ToListResponse() *ProductListResponse {
 		VariantCount: len(p.Variants),
 	}
 
-	// 获取第一张图片作为特色图片
-	if len(p.Images) > 0 {
-		resp.FeaturedImg = p.Images[0].URL
+	if len(p.Media) > 0 {
+		for _, item := range p.Media {
+			if item.MediaType == "image" && item.IsVisible && item.URL != "" {
+				resp.FeaturedImg = item.URL
+				break
+			}
+		}
 	}
 
 	return resp

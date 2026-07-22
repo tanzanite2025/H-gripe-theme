@@ -88,7 +88,7 @@ func newTestCartService(t *testing.T) (*gorm.DB, *CartService) {
 		&product.ProductType{},
 		&product.SpecDefinition{},
 		&product.Product{},
-		&product.ProductImage{},
+		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
 		&product.Cart{},

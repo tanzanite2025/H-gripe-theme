@@ -36,6 +36,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	dashboardHandler := NewDashboardHandler(dashboardService)
 	userHandler := NewUserHandler(userService)
 	productHandler := NewProductHandler(productService)
+	mediaHandler := NewMediaHandler(services.Media)
 	orderHandler := NewOrderHandler(orderService)
 	paymentHandler := NewPaymentHandler(paymentService)
 	contentHandler := NewContentHandler(postService)
@@ -123,6 +124,12 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProduct)
 				productsGroup.POST("/batch-status", middleware.RequirePermission(auth.PermProductEdit), productHandler.BatchUpdateStatus)
 				productsGroup.POST("/batch-delete", middleware.RequirePermission(auth.PermProductDelete), productHandler.BatchDelete)
+			}
+
+			mediaGroup := authenticated.Group("/media")
+			mediaGroup.Use(middleware.RequireAnyPermission(auth.PermProductCreate, auth.PermProductEdit))
+			{
+				mediaGroup.POST("/assets", mediaHandler.UploadAsset)
 			}
 
 			// 属性管理（需要商品管理权限）

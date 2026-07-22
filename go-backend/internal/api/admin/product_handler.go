@@ -101,6 +101,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		MetaDesc:      req.MetaDesc,
 		SpecValues:    normalizeRequestSpecs(req.Specs),
 		Variants:      normalizeVariantRequests(req.Variants),
+		Media:         normalizeMediaRequests(req.Media),
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to create product")
@@ -138,6 +139,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateProductTypeID := raw["product_type_id"]
 	_, updateSpecs := raw["specs"]
 	_, updateVariants := raw["variants"]
+	_, updateMedia := raw["media"]
 	if updateProductTypeID && !updateSpecs {
 		updateSpecs = true
 	}
@@ -164,6 +166,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		UpdateSpecValues:    updateSpecs,
 		Variants:            normalizeVariantRequests(req.Variants),
 		UpdateVariants:      updateVariants,
+		Media:               normalizeMediaRequests(req.Media),
+		UpdateMedia:         updateMedia,
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to update product")

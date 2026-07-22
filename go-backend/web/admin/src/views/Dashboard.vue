@@ -1,12 +1,13 @@
 <template>
-  <div class="space-y-4">
-    <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-normal">仪表板</h1>
-        <p class="mt-1 text-sm text-muted-foreground">今日经营与服务概览</p>
+  <div class="space-y-4 animate-in fade-in duration-500">
+    <header class="uds-header-box px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div class="uds-glow-bg" />
+      <div class="relative z-10">
+        <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">OVERVIEW / 综合监控</span>
+        <h1 class="text-lg font-black tracking-tighter italic uppercase text-foreground">仪表板</h1>
       </div>
-      <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <CalendarDays class="size-3.5" />
+      <div class="relative z-10 flex items-center gap-1.5 text-[10px] font-mono font-bold text-muted-foreground/75 bg-background/70 backdrop-blur-xs px-3 py-1 rounded-full border border-dashed border-border/80">
+        <CalendarDays class="size-3.5 text-primary" />
         <span>{{ currentDate }}</span>
       </div>
     </header>
@@ -16,37 +17,40 @@
         v-for="metric in metricCards"
         :key="metric.key"
         type="button"
-        class="group flex min-h-31 flex-col justify-between rounded-lg border bg-card p-4 text-left text-card-foreground shadow-xs transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-foreground/15 hover:shadow-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+        class="group relative flex min-h-31 flex-col justify-between rounded-[24px] border border-dashed border-border/80 bg-card p-4 text-left text-card-foreground overflow-hidden shadow-xs transition-all hover:-translate-y-px hover:border-primary/40 focus-visible:outline-none"
         @click="navigateTo(metric.path)"
       >
-        <div class="flex items-start justify-between gap-3">
+        <div class="uds-glow-bg opacity-40 group-hover:opacity-100 transition-opacity" />
+        <div class="relative z-10 flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <span class="block text-xs font-medium text-muted-foreground">{{ metric.label }}</span>
-            <strong class="mt-1.5 block truncate text-2xl font-semibold tabular-nums">{{ metric.value }}</strong>
+            <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ metric.label }}</span>
+            <strong class="mt-1 block truncate text-2xl font-black italic tracking-tighter tabular-nums text-foreground">{{ metric.value }}</strong>
           </div>
-          <span class="flex size-9 shrink-0 items-center justify-center rounded-lg" :class="metricToneClass(metric.tone)">
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-full" :class="metricToneClass(metric.tone)">
             <component :is="metric.icon" class="size-4" />
           </span>
         </div>
-        <div class="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span>{{ metric.detailLabel }}</span>
-          <strong class="font-medium tabular-nums text-foreground/75">{{ metric.detailValue }}</strong>
+        <div class="relative z-10 flex items-center justify-between gap-2 text-[10px] font-mono text-muted-foreground/75">
+          <span class="uppercase tracking-widest font-black text-[9px] opacity-60">{{ metric.detailLabel }}</span>
+          <strong class="font-bold tabular-nums text-foreground/80">{{ metric.detailValue }}</strong>
         </div>
       </button>
     </section>
 
     <section class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,0.8fr)]">
-      <Card class="min-w-0 gap-0 py-0 shadow-none">
-        <CardHeader class="flex flex-row items-center justify-between border-b py-4">
+      <Card class="min-w-0 gap-0 py-0 shadow-none rounded-[24px] border-dashed border-border/80">
+        <div class="uds-glow-bg" />
+        <CardHeader class="relative z-10 flex flex-row items-center justify-between border-b border-dashed border-border/70 py-3.5">
           <div>
-            <CardTitle class="text-sm font-semibold">销售趋势</CardTitle>
-            <CardDescription class="mt-1 text-xs">最近 30 天</CardDescription>
+            <CardTitle class="text-sm font-black tracking-tighter italic uppercase">销售趋势</CardTitle>
+            <CardDescription class="mt-0.5 text-[9px] font-black uppercase tracking-widest opacity-60">最近 30 天表现</CardDescription>
           </div>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
                 variant="outline"
                 size="icon"
+                class="rounded-full border-dashed size-8"
                 aria-label="刷新销售趋势"
                 :disabled="chartLoading"
                 @click="fetchSalesChart"
@@ -54,122 +58,124 @@
                 <RefreshCw class="size-3.5" :class="chartLoading ? 'animate-spin' : ''" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>刷新销售趋势</TooltipContent>
+            <TooltipContent class="font-bold text-xs">刷新销售趋势</TooltipContent>
           </Tooltip>
         </CardHeader>
-        <CardContent class="flex h-80 items-center justify-center p-4">
+        <CardContent class="relative z-10 flex h-80 items-center justify-center p-4">
           <div v-if="chartLoading" class="w-full space-y-4">
-            <Skeleton class="h-4 w-36" />
-            <Skeleton class="h-56 w-full" />
+            <Skeleton class="h-4 w-36 rounded-full" />
+            <Skeleton class="h-56 w-full rounded-2xl" />
           </div>
           <v-chart v-else-if="chartOption" class="h-full w-full" :option="chartOption" autoresize />
           <div v-else class="flex flex-col items-center text-center text-muted-foreground">
-            <ChartNoAxesCombined class="mb-3 size-8 opacity-55" />
-            <p class="text-sm font-medium text-foreground/75">暂无销售数据</p>
+            <ChartNoAxesCombined class="mb-3 size-8 opacity-55 text-primary" />
+            <p class="text-xs font-black uppercase tracking-wider text-foreground/75">暂无销售数据</p>
           </div>
         </CardContent>
       </Card>
 
-      <Card class="min-w-0 gap-0 py-0 shadow-none">
-        <CardHeader class="border-b py-4">
-          <CardTitle class="text-sm font-semibold">快速操作</CardTitle>
-          <CardDescription class="text-xs">常用管理入口</CardDescription>
+      <Card class="min-w-0 gap-0 py-0 shadow-none rounded-[24px] border-dashed border-border/80">
+        <div class="uds-glow-bg" />
+        <CardHeader class="relative z-10 border-b border-dashed border-border/70 py-3.5">
+          <CardTitle class="text-sm font-black tracking-tighter italic uppercase">快速操作</CardTitle>
+          <CardDescription class="text-[9px] font-black uppercase tracking-widest opacity-60">常用管理入口</CardDescription>
         </CardHeader>
-        <CardContent class="grid grid-cols-1 gap-1 p-2 sm:grid-cols-2 xl:grid-cols-1">
+        <CardContent class="relative z-10 grid grid-cols-1 gap-1.5 p-3 sm:grid-cols-2 xl:grid-cols-1">
           <Button
             v-for="action in visibleQuickActions"
             :key="action.path"
             variant="ghost"
-            class="h-10 w-full justify-start gap-2.5 px-2.5"
+            class="h-9 w-full justify-start gap-2.5 px-3 rounded-full hover:bg-primary/10 transition-all font-bold text-xs"
             @click="navigateTo(action.path)"
           >
-            <span class="flex size-7 shrink-0 items-center justify-center rounded-md" :class="metricToneClass(action.tone)">
-              <component :is="action.icon" class="size-3.5" />
+            <span class="flex size-6 shrink-0 items-center justify-center rounded-full" :class="metricToneClass(action.tone)">
+              <component :is="action.icon" class="size-3" />
             </span>
-            <span class="truncate">{{ action.label }}</span>
-            <ArrowRight class="ml-auto size-3.5 text-muted-foreground" />
+            <span class="truncate tracking-tight">{{ action.label }}</span>
+            <ArrowRight class="ml-auto size-3.5 text-muted-foreground/60" />
           </Button>
         </CardContent>
       </Card>
     </section>
 
-    <Card class="gap-0 py-0 shadow-none">
-      <Tabs v-model="activeActivity">
-        <CardHeader class="flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card class="gap-0 py-0 shadow-none rounded-[24px] border-dashed border-border/80">
+      <div class="uds-glow-bg" />
+      <Tabs v-model="activeActivity" class="relative z-10">
+        <CardHeader class="flex flex-col gap-3 border-b border-dashed border-border/70 py-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle class="text-sm font-semibold">最近活动</CardTitle>
-            <CardDescription class="mt-1 text-xs">最新业务记录</CardDescription>
+            <CardTitle class="text-sm font-black tracking-tighter italic uppercase">最近活动</CardTitle>
+            <CardDescription class="mt-0.5 text-[9px] font-black uppercase tracking-widest opacity-60">最新业务动态记录</CardDescription>
           </div>
-          <TabsList variant="line">
-            <TabsTrigger value="orders">订单</TabsTrigger>
-            <TabsTrigger value="users">用户</TabsTrigger>
-            <TabsTrigger value="tickets">工单</TabsTrigger>
+          <TabsList variant="line" class="rounded-full bg-muted/40 p-1">
+            <TabsTrigger value="orders" class="rounded-full text-xs font-bold px-3">订单</TabsTrigger>
+            <TabsTrigger value="users" class="rounded-full text-xs font-bold px-3">用户</TabsTrigger>
+            <TabsTrigger value="tickets" class="rounded-full text-xs font-bold px-3">工单</TabsTrigger>
           </TabsList>
         </CardHeader>
 
         <CardContent class="pb-4 pt-2">
           <TabsContent value="orders" class="mt-0">
             <div class="flex min-h-9 items-center justify-between">
-              <strong class="text-xs font-medium text-foreground/75">最近订单</strong>
-              <Button variant="link" size="sm" class="px-0" @click="navigateTo('/orders')">
+              <strong class="text-xs font-black uppercase tracking-wider text-foreground/80">最近订单</strong>
+              <Button variant="link" size="sm" class="px-0 font-bold text-xs" @click="navigateTo('/orders')">
                 查看全部
-                <ArrowRight class="size-3.5" />
+                <ArrowRight class="size-3.5 ml-1" />
               </Button>
             </div>
             <EmptyActivity v-if="recentOrders.length === 0" label="暂无订单" />
             <div v-else class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
-              <div v-for="order in recentOrders" :key="order.id" class="flex min-w-0 items-center justify-between gap-4 border-b py-3">
+              <div v-for="order in recentOrders" :key="order.id" class="flex min-w-0 items-center justify-between gap-4 border-b border-dashed border-border/60 py-2.5">
                 <div class="min-w-0">
-                  <strong class="block truncate text-xs font-medium">#{{ order.order_number }}</strong>
-                  <span class="mt-1 block truncate text-xs text-muted-foreground">¥{{ formatNumber(order.total_amount) }}</span>
+                  <strong class="block truncate text-xs font-mono font-bold">#{{ order.order_number }}</strong>
+                  <span class="mt-0.5 block truncate text-[11px] font-mono text-muted-foreground">¥{{ formatNumber(order.total_amount) }}</span>
                 </div>
-                <Badge variant="outline" :class="orderStatusClass(order.status)">
+                <AdminStatusBadge :tone="orderStatusTone(order.status)">
                   {{ getOrderStatusName(order.status) }}
-                </Badge>
+                </AdminStatusBadge>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="users" class="mt-0">
             <div class="flex min-h-9 items-center justify-between">
-              <strong class="text-xs font-medium text-foreground/75">最近用户</strong>
-              <Button variant="link" size="sm" class="px-0" @click="navigateTo('/users')">
+              <strong class="text-xs font-black uppercase tracking-wider text-foreground/80">最近用户</strong>
+              <Button variant="link" size="sm" class="px-0 font-bold text-xs" @click="navigateTo('/users')">
                 查看全部
-                <ArrowRight class="size-3.5" />
+                <ArrowRight class="size-3.5 ml-1" />
               </Button>
             </div>
             <EmptyActivity v-if="recentUsers.length === 0" label="暂无用户" />
             <div v-else class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
-              <div v-for="recentUser in recentUsers" :key="recentUser.id" class="flex min-w-0 items-center justify-between gap-4 border-b py-3">
+              <div v-for="recentUser in recentUsers" :key="recentUser.id" class="flex min-w-0 items-center justify-between gap-4 border-b border-dashed border-border/60 py-2.5">
                 <div class="min-w-0">
-                  <strong class="block truncate text-xs font-medium">{{ recentUser.username }}</strong>
-                  <span class="mt-1 block truncate text-xs text-muted-foreground">{{ recentUser.email }}</span>
+                  <strong class="block truncate text-xs font-bold">{{ recentUser.username }}</strong>
+                  <span class="mt-0.5 block truncate text-[11px] font-mono text-muted-foreground">{{ recentUser.email }}</span>
                 </div>
-                <Badge variant="outline" :class="roleStatusClass(recentUser.role)">
+                <AdminStatusBadge :tone="roleTone(recentUser.role)">
                   {{ getRoleName(recentUser.role) }}
-                </Badge>
+                </AdminStatusBadge>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="tickets" class="mt-0">
             <div class="flex min-h-9 items-center justify-between">
-              <strong class="text-xs font-medium text-foreground/75">最近工单</strong>
-              <Button variant="link" size="sm" class="px-0" @click="navigateTo('/tickets')">
+              <strong class="text-xs font-black uppercase tracking-wider text-foreground/80">最近工单</strong>
+              <Button variant="link" size="sm" class="px-0 font-bold text-xs" @click="navigateTo('/tickets')">
                 查看全部
-                <ArrowRight class="size-3.5" />
+                <ArrowRight class="size-3.5 ml-1" />
               </Button>
             </div>
             <EmptyActivity v-if="recentTickets.length === 0" label="暂无工单" />
             <div v-else class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
-              <div v-for="ticket in recentTickets" :key="ticket.id" class="flex min-w-0 items-center justify-between gap-4 border-b py-3">
+              <div v-for="ticket in recentTickets" :key="ticket.id" class="flex min-w-0 items-center justify-between gap-4 border-b border-dashed border-border/60 py-2.5">
                 <div class="min-w-0">
-                  <strong class="block truncate text-xs font-medium">{{ ticket.subject }}</strong>
-                  <span class="mt-1 block truncate text-xs text-muted-foreground">{{ ticket.category }}</span>
+                  <strong class="block truncate text-xs font-bold">{{ ticket.subject }}</strong>
+                  <span class="mt-0.5 block truncate text-[11px] font-mono text-muted-foreground">{{ ticket.category }}</span>
                 </div>
-                <Badge variant="outline" :class="ticketStatusClass(ticket.status)">
+                <AdminStatusBadge :tone="ticketStatusTone(ticket.status)">
                   {{ getTicketStatusName(ticket.status) }}
-                </Badge>
+                </AdminStatusBadge>
               </div>
             </div>
           </TabsContent>
@@ -202,6 +208,7 @@ import { LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import VChart from 'vue-echarts'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -333,15 +340,15 @@ const getRoleName = (role) => {
   return roleMap[role] || role
 }
 
-const roleStatusClass = (role) => {
-  const classes = {
-    admin: 'border-rose-200 bg-rose-50 text-rose-700',
-    manager: 'border-amber-200 bg-amber-50 text-amber-700',
-    editor: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    support: 'border-blue-200 bg-blue-50 text-blue-700',
-    viewer: 'border-border bg-muted text-muted-foreground'
+const roleTone = (role) => {
+  const tones = {
+    admin: 'coral',
+    manager: 'amber',
+    editor: 'green',
+    support: 'blue',
+    viewer: 'gray'
   }
-  return classes[role] || classes.viewer
+  return tones[role] || 'gray'
 }
 
 const getOrderStatusName = (status) => {
@@ -355,15 +362,15 @@ const getOrderStatusName = (status) => {
   return statusMap[status] || status
 }
 
-const orderStatusClass = (status) => {
-  const classes = {
-    pending: 'border-amber-200 bg-amber-50 text-amber-700',
-    paid: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    shipped: 'border-blue-200 bg-blue-50 text-blue-700',
-    completed: 'border-border bg-muted text-muted-foreground',
-    cancelled: 'border-rose-200 bg-rose-50 text-rose-700'
+const orderStatusTone = (status) => {
+  const tones = {
+    pending: 'amber',
+    paid: 'green',
+    shipped: 'blue',
+    completed: 'gray',
+    cancelled: 'coral'
   }
-  return classes[status] || classes.completed
+  return tones[status] || 'gray'
 }
 
 const getTicketStatusName = (status) => {
@@ -376,14 +383,14 @@ const getTicketStatusName = (status) => {
   return statusMap[status] || status
 }
 
-const ticketStatusClass = (status) => {
-  const classes = {
-    open: 'border-rose-200 bg-rose-50 text-rose-700',
-    pending: 'border-amber-200 bg-amber-50 text-amber-700',
-    resolved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    closed: 'border-border bg-muted text-muted-foreground'
+const ticketStatusTone = (status) => {
+  const tones = {
+    open: 'coral',
+    pending: 'amber',
+    resolved: 'green',
+    closed: 'gray'
   }
-  return classes[status] || classes.closed
+  return tones[status] || 'gray'
 }
 
 const notifyLoadFailure = () => {

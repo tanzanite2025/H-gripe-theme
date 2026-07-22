@@ -30,6 +30,7 @@ var (
 	ErrProductTypeSlugExists = errors.New("product type slug already exists")
 	ErrProductSpecInvalid    = errors.New("product spec invalid")
 	ErrProductVariantInvalid = errors.New("product variant invalid")
+	ErrProductMediaInvalid   = errors.New("product media invalid")
 )
 
 type ProductSearchInput struct {

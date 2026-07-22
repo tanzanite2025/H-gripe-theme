@@ -34,6 +34,7 @@ type Repositories struct {
 	Review             *repository.ReviewRepository
 	Ticket             *repository.TicketRepository
 	Gallery            *repository.GalleryRepository
+	Media              *repository.MediaRepository
 	Registration       *repository.RegistrationRepository
 	Audit              *repository.AuditRepository
 	Showcase           *repository.ShowcaseRepository
@@ -55,6 +56,7 @@ type Services struct {
 	AdminPublicChat    *service.AdminPublicChatAgentService
 	FAQ                *service.FAQService
 	Gallery            *service.GalleryService
+	Media              *service.MediaService
 	Registration       *service.RegistrationService
 	Checkout           *service.CheckoutService
 	Order              *service.OrderService
@@ -92,6 +94,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Review:             repository.NewReviewRepository(db),
 		Ticket:             repository.NewTicketRepository(db),
 		Gallery:            repository.NewGalleryRepository(db),
+		Media:              repository.NewMediaRepository(db),
 		Registration:       repository.NewRegistrationRepository(db),
 		Audit:              repository.NewAuditRepository(db),
 		Showcase:           repository.NewShowcaseRepository(db),
@@ -123,6 +126,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Setting:      service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL),
 		FAQ:          service.NewFAQService(repos.FAQ),
 		Gallery:      service.NewGalleryService(repos.Gallery),
+		Media:        service.NewMediaService(repos.Media, storageSvc),
 		Registration: service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
 		Checkout:     service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
 		Marketing:    service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty),

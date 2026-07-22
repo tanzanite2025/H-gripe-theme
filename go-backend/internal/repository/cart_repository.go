@@ -17,7 +17,9 @@ func NewCartRepository(db *gorm.DB) *CartRepository {
 // FindByUserID 根据用户ID查找购物车
 func (r *CartRepository) FindByUserID(userID uint) (*product.Cart, error) {
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Images").Preload("Items.Variant").Where("user_id = ?", userID).First(&cart).Error
+	err := r.db.Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_media.sort_order ASC, product_media.id ASC")
+	}).Preload("Items.Variant").Where("user_id = ?", userID).First(&cart).Error
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +29,9 @@ func (r *CartRepository) FindByUserID(userID uint) (*product.Cart, error) {
 // FindBySessionID 根据会话ID查找购物车
 func (r *CartRepository) FindBySessionID(sessionID string) (*product.Cart, error) {
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Images").Preload("Items.Variant").Where("session_id = ?", sessionID).First(&cart).Error
+	err := r.db.Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_media.sort_order ASC, product_media.id ASC")
+	}).Preload("Items.Variant").Where("session_id = ?", sessionID).First(&cart).Error
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +87,9 @@ func (r *CartRepository) ClearCart(cartID uint) error {
 // GetSummary 获取购物车摘要
 func (r *CartRepository) GetSummary(cartID uint) (*product.CartSummary, error) {
 	var items []product.CartItem
-	err := r.db.Preload("Product.Images").Preload("Variant").Where("cart_id = ?", cartID).Find(&items).Error
+	err := r.db.Preload("Product.Media", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_media.sort_order ASC, product_media.id ASC")
+	}).Preload("Variant").Where("cart_id = ?", cartID).Find(&items).Error
 	if err != nil {
 		return nil, err
 	}
