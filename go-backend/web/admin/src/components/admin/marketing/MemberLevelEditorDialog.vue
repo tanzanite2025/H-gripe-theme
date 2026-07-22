@@ -30,8 +30,8 @@
           </AdminFormField>
           <AdminFormField label="颜色" class="sm:col-span-2">
             <div class="flex gap-2">
-              <input v-model="form.color" type="color" class="h-9 w-12 cursor-pointer rounded-md border bg-transparent p-1" aria-label="选择等级颜色" />
-              <Input v-model="form.color" class="font-mono" placeholder="#2563eb" />
+              <input v-model="form.color" type="color" class="h-9 w-12 cursor-pointer rounded-xl border border-dashed bg-transparent p-1" aria-label="选择等级颜色" />
+              <Input v-model="form.color" class="font-mono text-xs uppercase" placeholder="#2563eb" />
             </div>
           </AdminFormField>
           <AdminFormField label="权益说明" class="sm:col-span-2">

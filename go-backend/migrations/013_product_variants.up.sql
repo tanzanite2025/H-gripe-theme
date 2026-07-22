@@ -1,4 +1,4 @@
--- Product variants become the source of truth for purchasable SKU, price and stock.
+-- Product variants become the source of truth for purchasable SKU, price, stock and shipping weight.
 -- Products remain the catalog shell; products.price/stock are summary fields for old read paths.
 
 ALTER TABLE product_spec_definitions
@@ -94,7 +94,7 @@ SELECT
     p.price,
     p.sale_price,
     COALESCE(p.stock, 0),
-    COALESCE(p.weight_grams, 0),
+    0,
     TRUE,
     TRUE,
     0,

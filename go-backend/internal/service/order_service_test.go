@@ -298,12 +298,11 @@ func seedProductShell(t *testing.T, db *gorm.DB, price float64, stock int) produ
 	t.Helper()
 
 	record := product.Product{
-		SKU:    "SKU-TEST",
-		Name:   "Test Product",
-		Slug:   "test-product",
-		Price:  price,
-		Stock:  stock,
-		Weight: 9000,
+		SKU:   "SKU-TEST",
+		Name:  "Test Product",
+		Slug:  "test-product",
+		Price: price,
+		Stock: stock,
 	}
 	require.NoError(t, db.Create(&record).Error)
 	return record

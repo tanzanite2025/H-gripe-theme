@@ -12,27 +12,38 @@
     <AdminStatsGrid :items="statItems" />
 
     <AdminFilterPanel>
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label class="w-full space-y-1.5 sm:w-52">
-          <span class="text-xs font-medium text-muted-foreground">状态</span>
-          <Select v-model="filters.status" @update:model-value="applyFilters">
-            <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_minmax(140px,0.7fr)_auto]" @submit.prevent="applyFilters">
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
+            <Input v-model="filters.search" class="h-9 pl-9" placeholder="搜索 Email" />
+          </div>
+        </label>
+
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 状态</span>
+          <Select v-model="filters.status">
+            <SelectTrigger class="h-9 w-full">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="active">活跃</SelectItem>
-              <SelectItem value="unsubscribed">已退订</SelectItem>
+              <SelectItem value="active">已订阅</SelectItem>
             </SelectContent>
           </Select>
         </label>
-        <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-          <RotateCcw class="size-4" />
-          重置
-        </Button>
-        <Button type="button" variant="ghost" class="h-9" @click="refreshSubscriptions">
-          <RefreshCw class="size-4" />
-          刷新
-        </Button>
-      </div>
+        <div class="flex items-end gap-2">
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
+            搜索
+          </Button>
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
+            重置
+          </Button>
+        </div>
+      </form>
     </AdminFilterPanel>
 
     <AdminTablePanel :loading="loading" :batch-visible="selectedSubscriptions.length > 0">

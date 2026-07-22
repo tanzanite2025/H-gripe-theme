@@ -47,9 +47,6 @@ func syncProductSummaryFromVariants(p *product.Product, variants []product.Produ
 	p.Price = defaultVariant.Price
 	p.SalePrice = defaultVariant.SalePrice
 	p.Stock = totalStock
-	if defaultVariant.Weight > 0 {
-		p.Weight = defaultVariant.Weight
-	}
 }
 
 func replaceProductVariants(tx *gorm.DB, productID uint, variants []product.ProductVariant) error {

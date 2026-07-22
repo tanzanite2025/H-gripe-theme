@@ -12,12 +12,12 @@
     <AdminStatsGrid :items="statItems" />
 
     <AdminFilterPanel>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" @submit.prevent="applyFilters">
-        <label class="space-y-1.5 xl:col-span-2">
-          <span class="text-xs font-medium text-muted-foreground">搜索</span>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(200px,1.2fr)_repeat(3,minmax(130px,0.7fr))_repeat(2,minmax(130px,0.7fr))_auto]" @submit.prevent="applyFilters">
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
           <div class="relative">
-            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input v-model="filters.search" class="h-9 pl-9" placeholder="订单号、客户姓名或邮箱" />
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
+            <Input v-model="filters.search" class="h-9 pl-9" placeholder="订单号、客户或 Email" />
           </div>
         </label>
 
@@ -25,23 +25,23 @@
         <FilterSelect v-model="filters.payment_status" label="支付状态" :options="paymentStatusOptions" />
         <FilterSelect v-model="filters.shipping_status" label="物流状态" :options="shippingStatusOptions" />
 
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">开始日期</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">START DATE / 开始日期</span>
           <Input v-model="filters.start_date" type="date" class="h-9" />
         </label>
 
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">结束日期</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">END DATE / 结束日期</span>
           <Input v-model="filters.end_date" type="date" class="h-9" />
         </label>
 
         <div class="flex items-end gap-2">
-          <Button type="submit" class="h-9">
-            <Search class="size-4" />
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
             搜索
           </Button>
-          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-            <RotateCcw class="size-4" />
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
             重置
           </Button>
         </div>
@@ -111,9 +111,9 @@
                 @update:model-value="toggleOrder(order, $event)"
               />
             </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{ order.id }}</TableCell>
-            <TableCell class="font-mono text-xs font-medium">{{ order.order_number }}</TableCell>
-            <TableCell>{{ shippingName(order.shipping_address) }}</TableCell>
+            <TableCell class="font-mono text-[10px] font-bold text-muted-foreground">{{ order.id }}</TableCell>
+            <TableCell class="font-mono text-xs font-bold">{{ order.order_number }}</TableCell>
+            <TableCell class="font-bold text-xs">{{ shippingName(order.shipping_address) }}</TableCell>
             <TableCell>
               <AdminStatusBadge :tone="orderStatusTone(order.status)">{{ getOrderStatusName(order.status) }}</AdminStatusBadge>
             </TableCell>
@@ -123,8 +123,8 @@
             <TableCell>
               <AdminStatusBadge :tone="shippingStatusTone(order.shipping_status)">{{ getShippingStatusName(order.shipping_status) }}</AdminStatusBadge>
             </TableCell>
-            <TableCell class="text-right font-medium tabular-nums">¥{{ formatMoney(order.total_amount) }}</TableCell>
-            <TableCell class="text-xs text-muted-foreground">{{ formatDate(order.created_at) }}</TableCell>
+            <TableCell class="text-right font-mono text-xs font-bold tabular-nums">¥{{ formatMoney(order.total_amount) }}</TableCell>
+            <TableCell class="font-mono text-[10px] text-muted-foreground/80">{{ formatDate(order.created_at) }}</TableCell>
             <TableCell class="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
@@ -234,7 +234,7 @@
               <AmountRow label="运费" :value="currentOrder.shipping_fee" />
               <AmountRow label="税费" :value="currentOrder.tax_amount" />
               <AmountRow label="优惠" :value="-Number(currentOrder.discount_amount || 0)" />
-              <div class="flex items-center justify-between border-t pt-3 text-base font-semibold">
+              <div class="flex items-center justify-between border-t border-dashed pt-3 text-base font-black italic uppercase">
                 <dt>订单总额</dt>
                 <dd class="tabular-nums text-primary">¥{{ formatMoney(currentOrder.total_amount) }}</dd>
               </div>
@@ -244,7 +244,7 @@
           <OrderDetailSection title="备注">
             <div class="space-y-4">
               <div>
-                <span class="text-xs font-medium text-muted-foreground">客户备注</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">NOTE / 客户备注</span>
                 <p class="mt-1 text-sm">{{ currentOrder.customer_note || '-' }}</p>
               </div>
               <div>
@@ -253,7 +253,7 @@
                 <Button
                   v-if="hasPermission('order:edit')"
                   size="sm"
-                  class="mt-2"
+                  class="mt-2 rounded-full"
                   @click="updateAdminNote"
                 >
                   保存备注
@@ -274,8 +274,8 @@
           </DialogHeader>
 
           <div class="space-y-4 py-5">
-            <label class="block space-y-1.5">
-              <span class="text-xs font-medium text-muted-foreground">订单状态</span>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 订单状态</span>
               <Select v-model="statusForm.status">
                 <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -284,8 +284,8 @@
               </Select>
             </label>
 
-            <label class="block space-y-1.5">
-              <span class="text-xs font-medium text-muted-foreground">物流状态</span>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SHIPPING / 物流状态</span>
               <Select v-model="statusForm.shipping_status">
                 <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -294,13 +294,13 @@
               </Select>
             </label>
 
-            <label class="block space-y-1.5">
-              <span class="text-xs font-medium text-muted-foreground">物流单号</span>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">TRACKING / 物流单号</span>
               <Input v-model="statusForm.tracking_number" />
             </label>
 
-            <label class="block space-y-1.5">
-              <span class="text-xs font-medium text-muted-foreground">物流公司代码</span>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">CARRIER / 物流公司代码</span>
               <Input v-model="statusForm.carrier_code" />
             </label>
           </div>
@@ -394,8 +394,8 @@ const FilterSelect = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('label', { class: 'space-y-1.5' }, [
-      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+    return () => h('label', { class: 'space-y-1 block' }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
       h(Select, {
         modelValue: props.modelValue,
         'onUpdate:modelValue': (value) => emit('update:modelValue', value)
@@ -414,8 +414,8 @@ const FilterSelect = defineComponent({
 const OrderDetailSection = defineComponent({
   props: { title: { type: String, required: true } },
   setup(props, { slots }) {
-    return () => h('section', { class: 'space-y-3 border-t pt-5 first:border-t-0 first:pt-0' }, [
-      h('h3', { class: 'text-sm font-semibold' }, props.title),
+    return () => h('section', { class: 'space-y-3 border-t border-dashed pt-5 first:border-t-0 first:pt-0' }, [
+      h('h3', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
       slots.default?.()
     ])
   }
@@ -425,8 +425,8 @@ const DetailItem = defineComponent({
   props: { label: { type: String, required: true } },
   setup(props, { slots, attrs }) {
     return () => h('div', { ...attrs, class: ['border-b p-3 last:border-b-0 sm:border-r sm:last:border-r-0', attrs.class] }, [
-      h('dt', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
-      h('dd', { class: 'mt-1 text-sm' }, slots.default?.())
+      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
+      h('dd', { class: 'mt-1 text-xs font-bold' }, slots.default?.())
     ])
   }
 })

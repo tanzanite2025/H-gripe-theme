@@ -175,6 +175,16 @@
   @apply text-[10px] font-black uppercase tracking-widest text-muted-foreground/60;
 }
 
+/* 全局表格表头工业强效规范 */
+th, [data-slot="table-head"] {
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  color: var(--muted-foreground) !important;
+  opacity: 0.75 !important;
+}
+
 .uds-desc {
   @apply text-[9px] font-black uppercase tracking-widest opacity-60;
 }

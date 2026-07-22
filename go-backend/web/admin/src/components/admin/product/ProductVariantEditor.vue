@@ -12,6 +12,15 @@
       :model-value="String(defaultIndex)"
       @update:model-value="emit('set-default', Number($event))"
     >
+      <div class="mb-3 rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
+        <span v-if="specDefinitions.length">
+          SKU 选项列来自已绑定产品模板；每一行仍单独维护价格、重量和库存。
+        </span>
+        <span v-else>
+          当前没有模板 SKU 选项字段；先维护默认 SKU、价格、重量和库存即可。
+        </span>
+      </div>
+
       <Table class="min-w-[980px]">
         <TableHeader>
           <TableRow>

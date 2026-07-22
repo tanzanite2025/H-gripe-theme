@@ -16,7 +16,7 @@
 
           <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
             <div>
-              <span class="text-xs font-medium">启用区域</span>
+              <span class="text-xs font-bold uppercase tracking-wider">启用区域 / ENABLED</span>
               <p class="mt-0.5 text-xs text-muted-foreground">停用后不参与运费区域匹配。</p>
             </div>
             <Switch v-model="form.enabled" aria-label="启用配送区域" />

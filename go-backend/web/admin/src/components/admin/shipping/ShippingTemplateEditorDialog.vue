@@ -27,8 +27,8 @@
 
           <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
             <div>
-              <span class="text-xs font-medium">启用模板</span>
-              <p class="mt-0.5 text-xs text-muted-foreground">停用后不参与前台报价。</p>
+              <span class="text-xs font-bold uppercase tracking-wider">启用模板 / ENABLED</span>
+              <p class="mt-0.5 text-xs text-muted-foreground">停用后不会参与运费规则计算。</p>
             </div>
             <Switch v-model="form.enabled" aria-label="启用运费模板" />
           </div>
@@ -41,9 +41,9 @@
             <Input v-model.number="form.free_threshold" type="number" min="0" step="0.01" />
           </AdminFormField>
 
-          <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 lg:col-span-2">
+          <div class="flex items-end justify-between gap-3 rounded-lg border px-3 py-2.5">
             <div>
-              <span class="text-xs font-medium">开启免运</span>
+              <span class="text-xs font-bold uppercase tracking-wider">开启免运 / FREE SHIPPING</span>
               <p class="mt-0.5 text-xs text-muted-foreground">订单金额达到门槛时返回 0 运费。</p>
             </div>
             <Switch v-model="form.free_shipping" aria-label="开启免运" />
@@ -54,11 +54,11 @@
           </AdminFormField>
         </section>
 
-        <section class="space-y-3 border-t pt-5">
+        <section class="space-y-3 border-t border-dashed pt-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 class="text-sm font-semibold">规则矩阵</h3>
-              <p class="mt-1 text-xs text-muted-foreground">Region 建议填国家/区域代码，例如 US、EU、CN；最大值为 0 表示不设上限。</p>
+              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">规则矩阵</h3>
+              <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Region 建议填国家/区域代码，例如 US、EU、CN；最大值为 0 表示不设上限。</p>
             </div>
             <Button type="button" variant="outline" size="sm" @click="addRule">
               <Plus class="size-3.5" />

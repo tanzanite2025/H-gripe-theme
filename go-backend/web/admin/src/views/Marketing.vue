@@ -22,8 +22,8 @@
 
       <TabsContent value="coupons" class="space-y-3">
         <div class="flex flex-wrap items-end justify-between gap-3">
-          <label class="w-48 space-y-1.5">
-            <span class="text-xs font-medium text-muted-foreground">状态</span>
+          <label class="w-48 space-y-1 block">
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 状态</span>
             <Select v-model="couponFilters.status" @update:model-value="applyCouponFilter">
               <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -63,7 +63,7 @@
                 </div>
               </TableEmpty>
               <TableRow v-for="coupon in coupons" :key="coupon.id">
-                <TableCell class="font-mono text-xs font-semibold">{{ coupon.code }}</TableCell>
+                <TableCell class="font-mono text-xs font-bold">{{ coupon.code }}</TableCell>
                 <TableCell>{{ coupon.type === 'fixed' ? '固定金额' : '百分比' }}</TableCell>
                 <TableCell class="text-right font-medium tabular-nums">{{ couponValue(coupon) }}</TableCell>
                 <TableCell class="max-w-64 truncate text-muted-foreground">{{ coupon.description || '-' }}</TableCell>
@@ -157,11 +157,11 @@
                 </div>
               </TableEmpty>
               <TableRow v-for="giftCard in giftCards" :key="giftCard.id">
-                <TableCell class="font-mono text-xs font-semibold">{{ giftCard.code }}</TableCell>
+                <TableCell class="font-mono text-xs font-bold">{{ giftCard.code }}</TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatCurrency(giftCard.initial_value, giftCard.currency) }}</TableCell>
-                <TableCell class="text-right font-semibold tabular-nums">{{ formatCurrency(giftCard.balance, giftCard.currency) }}</TableCell>
+                <TableCell class="text-right font-bold tabular-nums">{{ formatCurrency(giftCard.balance, giftCard.currency) }}</TableCell>
                 <TableCell>
-                  <span class="block font-medium">{{ giftCard.recipient_name || '-' }}</span>
+                  <span class="block font-bold text-xs">{{ giftCard.recipient_name || '-' }}</span>
                   <span class="block text-xs text-muted-foreground">{{ giftCard.recipient_email || '-' }}</span>
                 </TableCell>
                 <TableCell>
@@ -221,7 +221,7 @@
                 <TableCell>
                   <div class="flex items-center gap-2">
                     <span class="size-3 rounded-full border" :style="{ backgroundColor: level.color || '#94a3b8' }" />
-                    <span class="font-medium">{{ level.name }}</span>
+                    <span class="font-bold text-xs">{{ level.name }}</span>
                   </div>
                 </TableCell>
                 <TableCell class="tabular-nums">{{ level.min_points }} - {{ level.max_points }}</TableCell>
@@ -313,7 +313,7 @@
           </dl>
 
           <div v-if="currentGiftCard.message" class="space-y-1.5">
-            <h3 class="text-sm font-semibold">祝福语</h3>
+            <h3 class="text-sm font-black tracking-tighter italic uppercase">祝福语</h3>
             <p class="whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-sm leading-6">{{ currentGiftCard.message }}</p>
           </div>
 
@@ -338,7 +338,7 @@
 
           <section class="space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-semibold">交易记录</h3>
+              <h3 class="text-sm font-black tracking-tighter italic uppercase">交易记录</h3>
               <span class="text-xs text-muted-foreground">{{ giftCardTransactions.length }} 条</span>
             </div>
             <div class="overflow-x-auto rounded-lg border">
@@ -406,8 +406,8 @@ const DetailItem = defineComponent({
   props: { label: { type: String, required: true } },
   setup(props, { slots }) {
     return () => h('div', { class: 'border-b p-3 last:border-b-0 sm:border-b sm:border-r sm:nth-[3n]:border-r-0' }, [
-      h('dt', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
-      h('dd', { class: 'mt-1 break-words text-sm' }, slots.default?.())
+      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
+      h('dd', { class: 'mt-1 break-words text-xs font-bold' }, slots.default?.())
     ])
   }
 })

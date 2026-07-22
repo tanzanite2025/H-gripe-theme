@@ -48,7 +48,7 @@
           <div class="rounded-lg border bg-card p-4 shadow-xs">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h2 class="text-sm font-semibold">当前已接入</h2>
+                <h2 class="text-sm font-black tracking-tighter italic uppercase">当前已接入</h2>
                 <p class="mt-1 text-xs text-muted-foreground">已把核心配置入口放到独立物流后台里。</p>
               </div>
               <Badge variant="outline" class="border-emerald-200 bg-emerald-50 text-emerald-700">Phase 1/2</Badge>
@@ -65,7 +65,7 @@
           <div class="rounded-lg border bg-card p-4 shadow-xs">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h2 class="text-sm font-semibold">下一阶段</h2>
+                <h2 class="text-sm font-black tracking-tighter italic uppercase">下一阶段</h2>
                 <p class="mt-1 text-xs text-muted-foreground">下一步进入真正报价链路和追踪集成。</p>
               </div>
               <Badge variant="outline" class="border-amber-200 bg-amber-50 text-amber-700">Phase 4</Badge>
@@ -80,7 +80,7 @@
           <div class="rounded-lg border bg-card p-4 shadow-xs">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h2 class="text-sm font-semibold">前台原则</h2>
+                <h2 class="text-sm font-black tracking-tighter italic uppercase">前台原则</h2>
                 <p class="mt-1 text-xs text-muted-foreground">Nuxt 不再用硬编码运费，后续统一调用后端报价。</p>
               </div>
               <Badge variant="outline" class="border-blue-200 bg-blue-50 text-blue-700">Nuxt</Badge>
@@ -97,7 +97,7 @@
       <TabsContent value="templates" class="space-y-3">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 class="text-sm font-semibold">运费模板</h2>
+            <h2 class="text-sm font-black tracking-tighter italic uppercase">运费模板</h2>
             <p class="mt-1 text-xs text-muted-foreground">维护基础计费方式、默认费用、免运门槛和区域规则矩阵。</p>
           </div>
           <Button v-if="hasPermission('shipping:create')" size="sm" @click="showCreateTemplateDialog">
@@ -128,8 +128,8 @@
               </TableEmpty>
               <TableRow v-for="template in templates" :key="template.id">
                 <TableCell>
-                  <span class="block font-medium">{{ template.name || '-' }}</span>
-                  <span class="block max-w-96 truncate text-xs text-muted-foreground">{{ template.description || '暂无说明' }}</span>
+                  <span class="block font-bold text-xs">{{ template.name || '-' }}</span>
+                  <span class="block max-w-96 truncate text-[10px] text-muted-foreground/70">{{ template.description || '暂无说明' }}</span>
                 </TableCell>
                 <TableCell>{{ templateTypeLabel(template.type) }}</TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatMoney(template.default_fee) }}</TableCell>
@@ -174,7 +174,7 @@
       <TabsContent value="zones" class="space-y-3">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 class="text-sm font-semibold">配送区域</h2>
+            <h2 class="text-sm font-black tracking-tighter italic uppercase">配送区域</h2>
             <p class="mt-1 text-xs text-muted-foreground">按国家/地区、州省和邮编范围组织区域，供运费模板匹配使用。</p>
           </div>
           <Button v-if="hasPermission('shipping:create')" size="sm" @click="showCreateZoneDialog">
@@ -203,10 +203,10 @@
                 </div>
               </TableEmpty>
               <TableRow v-for="zone in zones" :key="zone.id">
-                <TableCell class="font-medium">{{ zone.name || '-' }}</TableCell>
-                <TableCell class="max-w-72 truncate text-xs text-muted-foreground">{{ compactListLabel(zone.countries) }}</TableCell>
-                <TableCell class="max-w-56 truncate text-xs text-muted-foreground">{{ compactListLabel(zone.states) }}</TableCell>
-                <TableCell class="max-w-56 truncate text-xs text-muted-foreground">{{ compactListLabel(zone.postal_codes) }}</TableCell>
+                <TableCell class="font-bold text-xs">{{ zone.name || '-' }}</TableCell>
+                <TableCell class="max-w-72 truncate text-[10px] text-muted-foreground/70">{{ compactListLabel(zone.countries) }}</TableCell>
+                <TableCell class="max-w-56 truncate text-[10px] text-muted-foreground/70">{{ compactListLabel(zone.states) }}</TableCell>
+                <TableCell class="max-w-56 truncate text-[10px] text-muted-foreground/70">{{ compactListLabel(zone.postal_codes) }}</TableCell>
                 <TableCell>
                   <AdminStatusBadge :tone="zone.enabled ? 'green' : 'gray'">
                     {{ zone.enabled ? '启用' : '停用' }}
@@ -244,7 +244,7 @@
       <TabsContent value="carriers" class="space-y-3">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 class="text-sm font-semibold">承运商</h2>
+            <h2 class="text-sm font-black tracking-tighter italic uppercase">承运商</h2>
             <p class="mt-1 text-xs text-muted-foreground">维护 DHL、FedEx、UPS、邮政小包、专线等物流公司基础资料。</p>
           </div>
           <Button v-if="hasPermission('shipping:create')" size="sm" @click="showCreateCarrierDialog">
@@ -274,9 +274,9 @@
                 </div>
               </TableEmpty>
               <TableRow v-for="carrier in carriers" :key="carrier.id">
-                <TableCell class="font-mono text-xs font-semibold">{{ carrier.code || '-' }}</TableCell>
+                <TableCell class="font-mono text-xs font-bold">{{ carrier.code || '-' }}</TableCell>
                 <TableCell>
-                  <span class="block font-medium">{{ carrier.name || '-' }}</span>
+                  <span class="block font-bold text-xs">{{ carrier.name || '-' }}</span>
                   <span class="block truncate text-xs text-muted-foreground">{{ carrier.tracking_url || '未配置查询链接' }}</span>
                 </TableCell>
                 <TableCell>
@@ -322,7 +322,7 @@
       <TabsContent value="packaging" class="space-y-3">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 class="text-sm font-semibold">包装规则</h2>
+            <h2 class="text-sm font-black tracking-tighter italic uppercase">包装规则</h2>
             <p class="mt-1 text-xs text-muted-foreground">先管理包装箱重量、尺寸和最大承重；产品/SKU 绑定后续单独做。</p>
           </div>
           <Button v-if="hasPermission('shipping:create')" size="sm" @click="showCreatePackagingDialog">
@@ -353,7 +353,7 @@
               </TableEmpty>
               <TableRow v-for="rule in packagingRules" :key="rule.id">
                 <TableCell>
-                  <span class="block font-medium">{{ rule.rule_name || '-' }}</span>
+                  <span class="block font-bold text-xs">{{ rule.rule_name || '-' }}</span>
                   <span class="block max-w-96 truncate text-xs text-muted-foreground">{{ rule.description || '暂无说明' }}</span>
                 </TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatWeight(rule.box_weight) }}</TableCell>
@@ -397,7 +397,7 @@
       <TabsContent value="bindings" class="space-y-3">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 class="text-sm font-semibold">产品/SKU 绑定</h2>
+            <h2 class="text-sm font-black tracking-tighter italic uppercase">产品/SKU 绑定</h2>
             <p class="mt-1 text-xs text-muted-foreground">设置默认、产品类型、产品或 SKU 应使用的运费模板。</p>
           </div>
           <Button v-if="hasPermission('shipping:create')" size="sm" :disabled="templates.length === 0" @click="showCreateBindingDialog">
@@ -429,7 +429,7 @@
                 <TableCell>{{ bindingScopeLabel(binding.scope) }}</TableCell>
                 <TableCell class="font-mono text-xs text-muted-foreground">{{ bindingTargetLabel(binding) }}</TableCell>
                 <TableCell>
-                  <span class="block font-medium">{{ bindingTemplateName(binding) }}</span>
+                  <span class="block font-bold text-xs">{{ bindingTemplateName(binding) }}</span>
                   <span class="block text-xs text-muted-foreground">ID: {{ binding.template_id }}</span>
                 </TableCell>
                 <TableCell class="text-right tabular-nums">{{ binding.priority || 0 }}</TableCell>
@@ -590,7 +590,7 @@ const RoadmapPanel = defineComponent({
     return () => h('section', { class: 'rounded-lg border bg-card p-5 shadow-xs' }, [
       h('div', { class: 'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between' }, [
         h('div', { class: 'min-w-0' }, [
-          h('h2', { class: 'text-base font-semibold' }, props.title),
+          h('h2', { class: 'text-base font-black tracking-tighter italic uppercase text-foreground' }, props.title),
           h('p', { class: 'mt-1 max-w-3xl text-sm text-muted-foreground' }, props.description),
         ]),
         h(Badge, { variant: 'outline', class: 'w-fit border-amber-200 bg-amber-50 text-amber-700' }, () => props.badge),

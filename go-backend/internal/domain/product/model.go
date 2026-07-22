@@ -17,8 +17,7 @@ type Product struct {
 	Price         float64            `gorm:"not null" json:"price"`
 	SalePrice     *float64           `json:"sale_price"`
 	Stock         int                `gorm:"default:0" json:"stock"`
-	Weight        int                `gorm:"column:weight_grams" json:"weight_grams"` // 克
-	Status        string             `gorm:"default:'active';index" json:"status"`    // active, inactive, out_of_stock
+	Status        string             `gorm:"default:'active';index" json:"status"` // active, inactive, out_of_stock
 	Locale        string             `gorm:"uniqueIndex:idx_product_slug_locale;default:'en';index" json:"locale"`
 	ParentID      *uint              `gorm:"index" json:"parent_id"` // 翻译关联
 	Featured      bool               `gorm:"default:false" json:"featured"`

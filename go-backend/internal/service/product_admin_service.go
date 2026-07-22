@@ -30,7 +30,6 @@ type ProductCreateInput struct {
 	Slug          string
 	Description   string
 	ShortDesc     string
-	Weight        int
 	Status        string
 	Locale        string
 	ParentID      *uint
@@ -49,7 +48,6 @@ type ProductUpdateInput struct {
 	Slug                *string
 	Description         *string
 	ShortDesc           *string
-	Weight              *int
 	Status              *string
 	Locale              *string
 	ParentID            *uint
@@ -102,7 +100,6 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		Slug:          input.Slug,
 		Description:   input.Description,
 		ShortDesc:     input.ShortDesc,
-		Weight:        input.Weight,
 		Status:        input.Status,
 		Locale:        input.Locale,
 		ParentID:      input.ParentID,
@@ -140,9 +137,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	}
 	if input.ShortDesc != nil {
 		existingProduct.ShortDesc = *input.ShortDesc
-	}
-	if input.Weight != nil {
-		existingProduct.Weight = *input.Weight
 	}
 	if input.Status != nil {
 		existingProduct.Status = *input.Status

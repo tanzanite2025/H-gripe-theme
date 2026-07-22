@@ -18,10 +18,10 @@
             <TooltipTrigger as-child>
               <RouterLink
                 :to="{ name: item.routeName }"
-                class="mb-1 flex h-9 items-center gap-2.5 rounded-xl px-2.5 text-xs font-bold tracking-tight text-muted-foreground no-underline transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:scale-[0.98]"
+                class="mb-1 flex h-9 items-center gap-2.5 rounded-full px-3 text-xs font-black uppercase tracking-wider text-muted-foreground no-underline transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:scale-[0.98]"
                 :class="[
                   collapsed ? 'w-9 justify-center px-0' : 'w-full',
-                  isActive(item.path) ? 'bg-sidebar-accent text-sidebar-accent-foreground font-black shadow-xs border border-dashed border-primary/20' : ''
+                  isActive(item.path) ? 'bg-sidebar-accent text-sidebar-accent-foreground font-black shadow-xs border border-dashed border-primary/40' : ''
                 ]"
                 :aria-current="isActive(item.path) ? 'page' : undefined"
                 @click="emit('navigate')"
