@@ -1,12 +1,12 @@
 <template>
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <span class="text-xs text-muted-foreground">
-      共 {{ total }} 项<span v-if="total">，显示 {{ rangeStart }}-{{ rangeEnd }}</span>
+    <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/70">
+      TOTAL: {{ total }}<span v-if="total"> ({{ rangeStart }}-{{ rangeEnd }})</span>
     </span>
 
     <div class="flex flex-wrap items-center gap-2">
       <Select v-model="pageSizeModel">
-        <SelectTrigger class="h-8 w-24">
+        <SelectTrigger class="h-8 w-24 rounded-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -20,6 +20,7 @@
         <Button
           variant="outline"
           size="icon"
+          class="rounded-full size-8"
           :disabled="page <= 1"
           aria-label="上一页"
           @click="goTo(page - 1)"
@@ -33,19 +34,21 @@
             :key="pageNumber"
             :variant="pageNumber === page ? 'default' : 'outline'"
             size="icon"
+            class="rounded-full size-8 font-mono font-bold text-xs"
             @click="goTo(pageNumber)"
           >
             {{ pageNumber }}
           </Button>
         </div>
 
-        <span class="min-w-14 text-center text-xs text-muted-foreground sm:hidden">
+        <span class="min-w-14 text-center text-[10px] font-mono font-bold text-muted-foreground sm:hidden">
           {{ page }}/{{ totalPages }}
         </span>
 
         <Button
           variant="outline"
           size="icon"
+          class="rounded-full size-8"
           :disabled="page >= totalPages"
           aria-label="下一页"
           @click="goTo(page + 1)"
@@ -54,18 +57,18 @@
         </Button>
       </div>
 
-      <label class="hidden items-center gap-1 text-xs text-muted-foreground lg:flex">
-        前往
+      <label class="hidden items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/70 lg:flex">
+        GOTO / 前往
         <Input
           v-model="jumpValue"
           type="number"
           min="1"
           :max="totalPages"
-          class="h-8 w-16 text-center"
+          class="h-8 w-16 text-center font-mono font-bold text-xs rounded-xl"
           @keyup.enter="jumpToPage"
           @change="jumpToPage"
         />
-        页
+        PAGE
       </label>
     </div>
   </div>

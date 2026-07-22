@@ -48,7 +48,7 @@
             </TableCell>
             <TableCell>
               <button type="button" class="block max-w-72 text-left" @click="viewImages(gallery)">
-                <span class="block truncate font-medium hover:text-primary">{{ galleryTitle(gallery) }}</span>
+                <span class="block truncate font-bold text-xs hover:text-primary">{{ galleryTitle(gallery) }}</span>
                 <span class="mt-1 block truncate font-mono text-xs text-muted-foreground">{{ gallery.slug || '-' }}</span>
               </button>
             </TableCell>
@@ -200,7 +200,7 @@
                       <img :src="image.thumbnail || image.url" :alt="image.title" class="size-full object-cover" />
                     </button>
                   </TableCell>
-                  <TableCell class="max-w-64 font-medium">{{ image.title || '-' }}</TableCell>
+                  <TableCell class="max-w-64 font-bold text-xs">{{ image.title || '-' }}</TableCell>
                   <TableCell class="max-w-72"><p class="line-clamp-2 text-muted-foreground">{{ image.description || '-' }}</p></TableCell>
                   <TableCell class="max-w-40 truncate text-xs text-muted-foreground">{{ image.tags || '-' }}</TableCell>
                   <TableCell class="text-right tabular-nums">{{ image.order ?? image.sort_order ?? 0 }}</TableCell>
@@ -341,8 +341,8 @@ const FormField = defineComponent({
     error: { type: String, default: '' }
   },
   setup(props, { slots, attrs }) {
-    return () => h('label', { ...attrs, class: ['block space-y-1.5', attrs.class] }, [
-      h('span', { class: 'text-xs font-medium' }, [
+    return () => h('label', { ...attrs, class: ['block space-y-1', attrs.class] }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, [
         props.label,
         props.required ? h('span', { class: 'ml-0.5 text-destructive', 'aria-hidden': 'true' }, '*') : null
       ]),

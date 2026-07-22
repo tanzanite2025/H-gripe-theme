@@ -10,12 +10,12 @@
     </AdminPageHeader>
 
     <AdminFilterPanel>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.4fr)_repeat(3,minmax(140px,0.7fr))_auto]" @submit.prevent="applyFilters">
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">搜索</span>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_repeat(3,minmax(140px,0.7fr))_auto]" @submit.prevent="applyFilters">
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
           <div class="relative">
-            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input v-model="filters.search" class="h-9 pl-9" placeholder="问题或答案" />
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
+            <Input v-model="filters.search" class="h-9 pl-9" placeholder="问题或回答内容" />
           </div>
         </label>
 
@@ -24,12 +24,12 @@
         <FilterSelect v-model="filters.locale" label="语言" :options="localeFilterOptions" />
 
         <div class="flex items-end gap-2">
-          <Button type="submit" class="h-9">
-            <Search class="size-4" />
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
             搜索
           </Button>
-          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-            <RotateCcw class="size-4" />
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
             重置
           </Button>
         </div>
@@ -86,7 +86,7 @@
             </TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{{ faq.id }}</TableCell>
             <TableCell class="max-w-72">
-              <p class="line-clamp-2 font-medium leading-5">{{ faq.question }}</p>
+              <p class="line-clamp-2 font-bold text-xs leading-5">{{ faq.question }}</p>
             </TableCell>
             <TableCell class="max-w-80">
               <p class="line-clamp-2 text-muted-foreground">{{ faq.answer }}</p>
@@ -271,8 +271,8 @@ const FilterSelect = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('label', { class: 'space-y-1.5' }, [
-      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+    return () => h('label', { class: 'space-y-1 block' }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
       h(Select, {
         modelValue: props.modelValue,
         'onUpdate:modelValue': (value) => emit('update:modelValue', value)
@@ -295,8 +295,8 @@ const FormField = defineComponent({
     error: { type: String, default: '' }
   },
   setup(props, { slots, attrs }) {
-    return () => h('label', { ...attrs, class: ['block space-y-1.5', attrs.class] }, [
-      h('span', { class: 'text-xs font-medium' }, [
+    return () => h('label', { ...attrs, class: ['block space-y-1', attrs.class] }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, [
         props.label,
         props.required ? h('span', { class: 'ml-0.5 text-destructive', 'aria-hidden': 'true' }, '*') : null
       ]),

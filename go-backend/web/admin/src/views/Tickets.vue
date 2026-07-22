@@ -5,18 +5,29 @@
     <AdminStatsGrid :items="statItems" />
 
     <AdminFilterPanel>
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_repeat(2,minmax(140px,0.7fr))_auto]" @submit.prevent="applyFilters">
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
+            <Input v-model="filters.search" class="h-9 pl-9" placeholder="主题、单号或回复" />
+          </div>
+        </label>
+
         <FilterSelect v-model="filters.status" label="状态" :options="statusFilterOptions" />
         <FilterSelect v-model="filters.priority" label="优先级" :options="priorityFilterOptions" />
-        <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-          <RotateCcw class="size-4" />
-          重置
-        </Button>
-        <Button type="button" variant="ghost" class="h-9" @click="refreshTickets">
-          <RefreshCw class="size-4" />
-          刷新
-        </Button>
-      </div>
+
+        <div class="flex items-end gap-2">
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
+            搜索
+          </Button>
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
+            重置
+          </Button>
+        </div>
+      </form>
     </AdminFilterPanel>
 
     <AdminTablePanel :loading="loading">
@@ -43,8 +54,8 @@
           </TableEmpty>
 
           <TableRow v-for="ticket in tickets" :key="ticket.id">
-            <TableCell class="font-mono text-xs font-medium">{{ ticket.ticket_number }}</TableCell>
-            <TableCell class="max-w-80 truncate font-medium">{{ ticket.subject }}</TableCell>
+            <TableCell class="font-mono text-xs font-bold">{{ ticket.ticket_number }}</TableCell>
+            <TableCell class="max-w-80 truncate font-bold text-xs">{{ ticket.subject }}</TableCell>
             <TableCell>{{ categoryName(ticket.category) }}</TableCell>
             <TableCell>
               <AdminStatusBadge :tone="statusTone(ticket.status)">{{ statusName(ticket.status) }}</AdminStatusBadge>
@@ -113,7 +124,7 @@
           <div v-if="currentTicket" class="grid lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside class="space-y-6 border-b p-5 lg:border-b-0 lg:border-r">
               <section class="space-y-3">
-                <h3 class="text-sm font-semibold">工单信息</h3>
+                <h3 class="text-sm font-black tracking-tighter italic uppercase">工单信息</h3>
                 <dl class="divide-y rounded-lg border">
                   <DetailItem label="状态">
                     <AdminStatusBadge :tone="statusTone(currentTicket.status)">{{ statusName(currentTicket.status) }}</AdminStatusBadge>
@@ -131,9 +142,9 @@
               </section>
 
               <section v-if="hasPermission('ticket:edit')" class="space-y-3 border-t pt-5">
-                <h3 class="text-sm font-semibold">处理操作</h3>
+                <h3 class="text-sm font-black tracking-tighter italic uppercase">处理操作</h3>
                 <label class="block space-y-1.5">
-                  <span class="text-xs font-medium text-muted-foreground">状态</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">状态</span>
                   <Select v-model="statusUpdate">
                     <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -156,7 +167,7 @@
 
             <section class="flex min-h-[620px] min-w-0 flex-col">
               <div class="flex items-center justify-between border-b px-5 py-3">
-                <h3 class="text-sm font-semibold">消息记录</h3>
+                <h3 class="text-sm font-black tracking-tighter italic uppercase">消息记录</h3>
                 <span class="text-xs text-muted-foreground">{{ messages.length }} 条</span>
               </div>
 
@@ -177,7 +188,7 @@
                   >
                     <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-semibold">{{ messageSender(message) }}</span>
+                        <span class="text-xs font-bold">{{ messageSender(message) }}</span>
                         <AdminStatusBadge :tone="message.is_staff ? 'blue' : 'gray'">
                           {{ message.is_staff ? '客服' : '客户' }}
                         </AdminStatusBadge>
@@ -213,7 +224,7 @@
             <DialogDescription>{{ currentTicket?.ticket_number }} · {{ currentTicket?.subject }}</DialogDescription>
           </DialogHeader>
           <label class="block space-y-1.5">
-            <span class="text-xs font-medium">负责人</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">负责人</span>
             <Select v-model="assignTo">
               <SelectTrigger class="w-full"><SelectValue placeholder="请选择负责人" /></SelectTrigger>
               <SelectContent>
@@ -301,8 +312,8 @@ const FilterSelect = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('label', { class: 'w-full space-y-1.5 sm:w-52' }, [
-      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+    return () => h('label', { class: 'space-y-1 block' }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
       h(Select, {
         modelValue: props.modelValue,
         'onUpdate:modelValue': (value) => {
@@ -322,11 +333,14 @@ const FilterSelect = defineComponent({
 })
 
 const DetailItem = defineComponent({
-  props: { label: { type: String, required: true } },
+  props: {
+    label: { type: String, required: true },
+    value: { type: [String, Number], default: '' }
+  },
   setup(props, { slots }) {
-    return () => h('div', { class: 'grid grid-cols-[86px_minmax(0,1fr)] gap-3 px-3 py-2.5' }, [
-      h('dt', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
-      h('dd', { class: 'min-w-0 break-words text-xs' }, slots.default?.())
+    return () => h('div', { class: 'space-y-1' }, [
+      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
+      h('dd', { class: 'text-xs font-bold' }, slots.default ? slots.default() : (props.value || '-'))
     ])
   }
 })

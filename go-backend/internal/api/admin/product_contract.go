@@ -16,7 +16,6 @@ type productCreateRequest struct {
 	Slug          string                  `json:"slug" binding:"required"`
 	Description   string                  `json:"description"`
 	ShortDesc     string                  `json:"short_description"`
-	Weight        int                     `json:"weight_grams" binding:"gte=0"`
 	Status        string                  `json:"status" binding:"required,oneof=active inactive out_of_stock"`
 	Locale        string                  `json:"locale"`
 	ParentID      *uint                   `json:"parent_id"`
@@ -34,7 +33,6 @@ type productUpdateRequest struct {
 	Slug          *string                 `json:"slug" binding:"omitempty,min=1"`
 	Description   *string                 `json:"description"`
 	ShortDesc     *string                 `json:"short_description"`
-	Weight        *int                    `json:"weight_grams" binding:"omitempty,gte=0"`
 	Status        *string                 `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
 	Locale        *string                 `json:"locale"`
 	ParentID      *uint                   `json:"parent_id"`

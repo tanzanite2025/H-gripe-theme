@@ -11,16 +11,16 @@
 
     <AdminFilterPanel>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.4fr)_minmax(150px,0.7fr)_minmax(150px,0.7fr)_auto]" @submit.prevent="applyFilters">
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">搜索</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
           <div class="relative">
-            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
             <Input v-model="filters.search" class="h-9 pl-9" placeholder="邮箱、用户名或姓名" />
           </div>
         </label>
 
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">角色</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">ROLE / 角色</span>
           <Select v-model="filters.role">
             <SelectTrigger class="h-9 w-full">
               <SelectValue />
@@ -36,8 +36,8 @@
           </Select>
         </label>
 
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">状态</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 状态</span>
           <Select v-model="filters.status">
             <SelectTrigger class="h-9 w-full">
               <SelectValue />
@@ -52,12 +52,12 @@
         </label>
 
         <div class="flex items-end gap-2">
-          <Button type="submit" class="h-9">
-            <Search class="size-4" />
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
             搜索
           </Button>
-          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-            <RotateCcw class="size-4" />
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
             重置
           </Button>
         </div>
@@ -67,7 +67,7 @@
     <AdminTablePanel :loading="loading" :batch-visible="selectedUsers.length > 0">
       <template #batch>
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="text-xs font-medium">已选择 {{ selectedUsers.length }} 个用户</span>
+          <span class="text-xs font-bold text-muted-foreground/80">已选择 {{ selectedUsers.length }} 个用户</span>
           <Button
             v-if="hasPermission('user:delete')"
             variant="destructive"
@@ -118,7 +118,7 @@
               />
             </TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{{ user.id }}</TableCell>
-            <TableCell class="font-medium">{{ user.username }}</TableCell>
+            <TableCell class="font-bold text-xs">{{ user.username }}</TableCell>
             <TableCell class="max-w-64 truncate text-muted-foreground">{{ user.email }}</TableCell>
             <TableCell>{{ formatFullName(user) }}</TableCell>
             <TableCell>

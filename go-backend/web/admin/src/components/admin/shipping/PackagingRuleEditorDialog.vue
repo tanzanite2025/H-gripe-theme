@@ -36,7 +36,7 @@
 
           <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
             <div>
-              <span class="text-xs font-medium">启用规则</span>
+              <span class="text-xs font-bold uppercase tracking-wider">启用规则 / ENABLED</span>
               <p class="mt-0.5 text-xs text-muted-foreground">停用后不会参与包装匹配。</p>
             </div>
             <Switch v-model="form.is_active" aria-label="启用包装规则" />

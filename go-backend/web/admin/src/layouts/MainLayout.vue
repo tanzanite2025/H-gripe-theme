@@ -67,22 +67,22 @@
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="h-auto gap-2 px-1.5 py-1 sm:px-2">
-                <Avatar class="size-8 rounded-lg">
-                  <AvatarFallback class="rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                <Avatar class="size-8 rounded-full">
+                  <AvatarFallback class="rounded-full bg-primary/10 font-mono text-xs font-black text-primary">
                     {{ userInitials }}
                   </AvatarFallback>
                 </Avatar>
                 <span class="hidden max-w-36 flex-col items-start leading-tight sm:flex">
-                  <strong class="w-full truncate text-xs font-medium">{{ user?.username || '管理员' }}</strong>
-                  <small class="mt-0.5 text-[10px] text-muted-foreground">{{ roleLabel }}</small>
+                  <strong class="w-full truncate text-xs font-bold">{{ user?.username || '管理员' }}</strong>
+                  <small class="mt-0.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ roleLabel }}</small>
                 </span>
                 <ChevronDown class="size-3.5 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" class="w-60">
               <DropdownMenuLabel class="font-normal">
-                <span class="block text-xs font-medium">{{ user?.username || '管理员' }}</span>
-                <span class="mt-1 block truncate text-xs text-muted-foreground">{{ user?.email }}</span>
+                <span class="block text-xs font-bold">{{ user?.username || '管理员' }}</span>
+                <span class="mt-1 block truncate font-mono text-[10px] text-muted-foreground/70">{{ user?.email }}</span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem class="text-destructive focus:text-destructive" @select="logoutDialogOpen = true">
@@ -182,7 +182,7 @@ const user = computed(() => authStore.user)
 const navigationItems = [
   { path: '/', routeName: 'Dashboard', label: '仪表板', icon: LayoutDashboard },
   { path: '/products', routeName: 'Products', label: '商品管理', icon: Package, permission: 'product:view' },
-  { path: '/product-types', routeName: 'ProductTypes', label: '产品类型', icon: Tags, permission: 'product:view' },
+  { path: '/product-types', routeName: 'ProductTypes', label: '产品模板', icon: Tags, permission: 'product:view' },
   { path: '/orders', routeName: 'Orders', label: '订单管理', icon: ShoppingCart, permission: 'order:view' },
   { path: '/shipping', routeName: 'Shipping', label: '物流管理', icon: Truck, permission: 'shipping:view' },
   { path: '/users', routeName: 'Users', label: '用户管理', icon: Users, permission: 'user:view' },

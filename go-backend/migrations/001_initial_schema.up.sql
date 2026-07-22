@@ -92,7 +92,6 @@ CREATE TABLE IF NOT EXISTS products (
     price DECIMAL(10, 2) NOT NULL,
     sale_price DECIMAL(10, 2),
     stock INT DEFAULT 0,
-    weight_grams INT,
     status VARCHAR(20) DEFAULT 'active',
     locale VARCHAR(10) DEFAULT 'en',
     parent_id BIGINT,

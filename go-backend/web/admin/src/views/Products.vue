@@ -5,7 +5,7 @@
         <Button variant="outline" as-child>
           <RouterLink to="/product-types">
             <Tags class="size-4" />
-            产品类型
+            产品模板
           </RouterLink>
         </Button>
         <Button v-if="hasPermission('product:create')" @click="showCreateDialog">
@@ -19,10 +19,10 @@
 
     <AdminFilterPanel>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_repeat(3,minmax(140px,0.7fr))_auto]" @submit.prevent="applyFilters">
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">搜索</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
           <div class="relative">
-            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
             <Input v-model="filters.search" class="h-9 pl-9" placeholder="商品名称、SKU 或描述" />
           </div>
         </label>
@@ -32,12 +32,12 @@
         <FilterSelect v-model="filters.featured" label="精选" :options="featuredFilterOptions" />
 
         <div class="flex items-end gap-2">
-          <Button type="submit" class="h-9">
-            <Search class="size-4" />
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
             搜索
           </Button>
-          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-            <RotateCcw class="size-4" />
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
             重置
           </Button>
         </div>
@@ -65,7 +65,7 @@
         </div>
       </template>
 
-      <Table class="min-w-[1080px]">
+      <Table class="min-w-[1160px]">
         <TableHeader>
           <TableRow>
             <TableHead class="w-11">
@@ -77,6 +77,7 @@
             </TableHead>
             <TableHead class="w-16">ID</TableHead>
             <TableHead class="w-36">SKU</TableHead>
+            <TableHead class="w-20">图片</TableHead>
             <TableHead>商品名称</TableHead>
             <TableHead class="w-32">价格</TableHead>
             <TableHead class="w-24">库存</TableHead>
@@ -88,7 +89,7 @@
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableEmpty v-if="products.length === 0" :colspan="11">
+          <TableEmpty v-if="products.length === 0" :colspan="12">
             <div class="flex flex-col items-center text-muted-foreground">
               <PackageOpen class="mb-2 size-7 opacity-55" />
               <span class="text-xs">暂无商品</span>
@@ -103,13 +104,16 @@
                 @update:model-value="toggleProduct(product, $event)"
               />
             </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{ product.id }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ product.sku || '-' }}</TableCell>
-            <TableCell class="max-w-72 truncate font-medium">{{ product.name }}</TableCell>
+            <TableCell class="font-mono text-[10px] font-bold text-muted-foreground">{{ product.id }}</TableCell>
+            <TableCell class="font-mono text-[11px] font-bold text-muted-foreground/80">{{ product.sku || '-' }}</TableCell>
+            <TableCell>
+              <ProductThumbnail :product="product" />
+            </TableCell>
+            <TableCell class="max-w-72 truncate font-bold text-xs">{{ product.name }}</TableCell>
             <TableCell>
               <div class="flex items-baseline gap-1.5 tabular-nums">
-                <span v-if="product.sale_price" class="font-semibold text-destructive">¥{{ formatMoney(product.sale_price) }}</span>
-                <span :class="product.sale_price ? 'text-xs text-muted-foreground line-through' : 'font-medium'">
+                <span v-if="product.sale_price" class="font-mono text-xs font-bold text-destructive">¥{{ formatMoney(product.sale_price) }}</span>
+                <span :class="product.sale_price ? 'font-mono text-[10px] text-muted-foreground/70 line-through' : 'font-mono text-xs font-bold'">
                   ¥{{ formatMoney(product.price) }}
                 </span>
               </div>
@@ -117,17 +121,17 @@
             <TableCell>
               <AdminStatusBadge v-if="Number(product.stock) === 0" tone="coral">缺货</AdminStatusBadge>
               <AdminStatusBadge v-else-if="Number(product.stock) < 10" tone="amber">{{ product.stock }}</AdminStatusBadge>
-              <span v-else class="tabular-nums">{{ product.stock }}</span>
+              <span v-else class="font-mono text-xs font-bold tabular-nums">{{ product.stock }}</span>
             </TableCell>
             <TableCell>
               <AdminStatusBadge :tone="statusTone(product.status)">{{ getStatusName(product.status) }}</AdminStatusBadge>
             </TableCell>
             <TableCell class="text-center">
               <Star v-if="product.featured" class="mx-auto size-4 fill-amber-400 text-amber-500" aria-label="精选商品" />
-              <span v-else class="text-muted-foreground">-</span>
+              <span v-else class="text-muted-foreground/50">-</span>
             </TableCell>
-            <TableCell>{{ localeName(product.locale) }}</TableCell>
-            <TableCell class="text-xs text-muted-foreground">{{ formatDate(product.created_at) }}</TableCell>
+            <TableCell class="font-bold text-xs">{{ localeName(product.locale) }}</TableCell>
+            <TableCell class="font-mono text-[10px] text-muted-foreground/80">{{ formatDate(product.created_at) }}</TableCell>
             <TableCell class="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
@@ -181,12 +185,35 @@
         <form class="flex h-full min-h-0 min-w-0 flex-col" @submit.prevent="submitForm">
           <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
             <DialogTitle>{{ dialogMode === 'create' ? '添加商品' : '编辑商品' }}</DialogTitle>
-            <DialogDescription>维护商品基础资料、规格模板和 SKU 级价格库存。</DialogDescription>
+            <DialogDescription>先录入商品基础识别信息，再绑定产品模板；模板决定下方商品字段和 SKU 选项列。</DialogDescription>
           </DialogHeader>
 
-          <div class="min-h-0 min-w-0 flex-1 space-y-7 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-5 [scrollbar-gutter:stable]">
-            <FormSection title="基础信息" description="用于商品识别、展示和多语言归属。">
-              <div class="grid gap-4 md:grid-cols-2">
+          <div class="min-h-0 min-w-0 flex-1 space-y-5 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-5 [scrollbar-gutter:stable]">
+            <div class="grid gap-2 rounded-2xl border border-dashed bg-muted/20 p-3 text-xs leading-5 text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
+              <div class="rounded-xl bg-background/70 px-3 py-2">
+                <span class="font-mono text-[10px] font-black text-primary">01</span>
+                <strong class="mt-0.5 block text-foreground">基础识别</strong>
+                <span>名称、Slug、语言和描述，只负责识别这个商品。</span>
+              </div>
+              <div class="rounded-xl bg-background/70 px-3 py-2">
+                <span class="font-mono text-[10px] font-black text-primary">02</span>
+                <strong class="mt-0.5 block text-foreground">绑定模板</strong>
+                <span>车圈、车架等模板决定后续字段结构。</span>
+              </div>
+              <div class="rounded-xl bg-background/70 px-3 py-2">
+                <span class="font-mono text-[10px] font-black text-primary">03</span>
+                <strong class="mt-0.5 block text-foreground">填写参数</strong>
+                <span>商品参数来自模板，但具体值只属于当前商品。</span>
+              </div>
+              <div class="rounded-xl bg-background/70 px-3 py-2">
+                <span class="font-mono text-[10px] font-black text-primary">04</span>
+                <strong class="mt-0.5 block text-foreground">维护 SKU</strong>
+                <span>价格、重量、库存和 SKU 选项按每行变体维护。</span>
+              </div>
+            </div>
+
+            <FormSection title="基础信息" description="这里不放规格字段；规格字段必须先通过产品模板统一定义，再在下方录入具体值。">
+              <div class="grid gap-4 md:grid-cols-3">
                 <FormField label="商品名称" required :error="formErrors.name">
                   <Input v-model="productForm.name" placeholder="请输入商品名称" @input="clearFieldError('name')" />
                 </FormField>
@@ -202,24 +229,162 @@
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label="产品类型">
-                  <Select :model-value="productTypeSelectValue" @update:model-value="handleProductTypeSelect">
-                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择产品类型" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">未选择</SelectItem>
-                      <SelectItem v-for="type in productTypes" :key="type.id" :value="String(type.id)">
-                        {{ type.name }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label="简短描述" class="md:col-span-2">
+                <FormField label="简短描述" class="md:col-span-3">
                   <Textarea v-model="productForm.short_description" class="min-h-20" placeholder="用于列表和摘要展示" />
                 </FormField>
-                <FormField label="详细描述" class="md:col-span-2">
+                <FormField label="详细描述" class="md:col-span-3">
                   <Textarea v-model="productForm.description" class="min-h-28" placeholder="请输入商品详细描述" />
                 </FormField>
               </div>
+            </FormSection>
+
+            <FormSection title="绑定产品模板" description="这是商品资料和模板字段之间的总开关。选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
+              <div class="grid gap-4 xl:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.1fr)]">
+                <div class="space-y-2">
+                  <FormField label="产品模板">
+                    <Select :model-value="productTypeSelectValue" @update:model-value="handleProductTypeSelect">
+                      <SelectTrigger class="w-full"><SelectValue placeholder="请选择产品模板" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">未选择模板</SelectItem>
+                        <SelectItem v-for="type in productTypes" :key="type.id" :value="String(type.id)">
+                          {{ type.name }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <p class="text-xs leading-5 text-muted-foreground">
+                    模板只定义“要填哪些字段”，不保存某个商品的具体重量、价格、库存或尺寸值。
+                  </p>
+                  <Button type="button" variant="outline" size="sm" as-child>
+                    <RouterLink to="/product-types">
+                      <Tags class="size-3.5" />
+                      维护产品模板
+                    </RouterLink>
+                  </Button>
+                </div>
+
+                <div class="rounded-2xl border border-dashed bg-muted/20 p-4">
+                  <div v-if="selectedProductType" class="space-y-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="text-sm font-bold">{{ selectedProductType.name }}</span>
+                      <span class="rounded-full bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+                        {{ selectedProductType.slug }}
+                      </span>
+                    </div>
+                    <p v-if="selectedProductType.description" class="text-xs leading-5 text-muted-foreground">
+                      {{ selectedProductType.description }}
+                    </p>
+                    <div class="grid gap-2 sm:grid-cols-2">
+                      <div class="rounded-xl bg-background/70 px-3 py-2">
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">商品字段</span>
+                        <strong class="mt-1 block font-mono text-lg">{{ selectedSpecDefinitions.length }}</strong>
+                      </div>
+                      <div class="rounded-xl bg-background/70 px-3 py-2">
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SKU 选项字段</span>
+                        <strong class="mt-1 block font-mono text-lg">{{ variantSpecDefinitions.length }}</strong>
+                      </div>
+                    </div>
+                    <div v-if="templateScopedValuesTouched" class="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                      如果切换模板，旧模板下的商品字段值和 SKU 选项值会清空；SKU 价格、重量、库存和商品媒体会保留。
+                    </div>
+                    <div class="grid gap-3 lg:grid-cols-2">
+                      <div class="min-w-0 rounded-xl bg-background/70 p-3">
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">商品参数字段</span>
+                        <div v-if="selectedSpecDefinitions.length" class="mt-2 flex flex-wrap gap-1.5">
+                          <span
+                            v-for="spec in selectedSpecDefinitions"
+                            :key="`product-${spec.id || spec.slug}`"
+                            class="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                          >
+                            {{ getSpecLabel(spec) }}
+                          </span>
+                        </div>
+                        <p v-else class="mt-2 text-xs text-muted-foreground">该模板没有商品级参数字段。</p>
+                      </div>
+                      <div class="min-w-0 rounded-xl bg-background/70 p-3">
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SKU 选项字段</span>
+                        <div v-if="variantSpecDefinitions.length" class="mt-2 flex flex-wrap gap-1.5">
+                          <span
+                            v-for="spec in variantSpecDefinitions"
+                            :key="`variant-${spec.id || spec.slug}`"
+                            class="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                          >
+                            {{ getSpecLabel(spec) }}
+                          </span>
+                        </div>
+                        <p v-else class="mt-2 text-xs text-muted-foreground">该模板没有 SKU 选项字段，仅维护默认 SKU 的价格、重量和库存。</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p v-else class="text-xs leading-5 text-muted-foreground">
+                    未选择模板时，下方不会出现商品参数字段，也不会给 SKU 生成选项列。建议先在“产品模板”页面创建车圈、车架等模板，再回到这里绑定。
+                  </p>
+                </div>
+              </div>
+            </FormSection>
+
+            <FormSection
+              title="商品参数（来自模板）"
+              :description="selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定产品模板，但具体值不写回模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
+            >
+              <div v-if="selectedSpecDefinitions.length" class="grid gap-4 md:grid-cols-2">
+                <FormField
+                  v-for="spec in selectedSpecDefinitions"
+                  :key="spec.id || spec.slug"
+                  :label="getSpecLabel(spec)"
+                  :required="spec.is_required"
+                  :error="formErrors[`spec:${spec.slug}`]"
+                >
+                  <Input
+                    v-if="spec.field_type === 'number'"
+                    v-model.number="productForm.specs[spec.slug]"
+                    type="number"
+                    min="0"
+                    @input="clearFieldError(`spec:${spec.slug}`)"
+                  />
+                  <Select
+                    v-else-if="spec.field_type === 'select'"
+                    :model-value="specSelectValue(productForm.specs[spec.slug])"
+                    @update:model-value="setSpecSelectValue(spec.slug, $event)"
+                  >
+                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__empty__">未设置</SelectItem>
+                      <SelectItem v-for="option in parseSpecOptions(spec)" :key="String(option)" :value="String(option)">
+                        {{ formatSpecOption(option) }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div v-else-if="spec.field_type === 'boolean'" class="flex h-9 items-center gap-2">
+                    <Switch v-model="productForm.specs[spec.slug]" :aria-label="spec.name" />
+                    <span class="text-xs text-muted-foreground">{{ productForm.specs[spec.slug] ? '是' : '否' }}</span>
+                  </div>
+                  <Input
+                    v-else
+                    v-model="productForm.specs[spec.slug]"
+                    :placeholder="`请输入${spec.name}`"
+                    @input="clearFieldError(`spec:${spec.slug}`)"
+                  />
+                </FormField>
+              </div>
+              <div v-else class="rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center text-xs text-muted-foreground">
+                {{ selectedProductType ? '这个模板没有商品级字段。' : '选择产品模板后，商品级字段会显示在这里。' }}
+              </div>
+            </FormSection>
+
+            <FormSection title="SKU 变体矩阵" description="SKU 选项列来自产品模板；价格、重量和库存永远按每一行 SKU 独立维护，前台按用户选中的 SKU 显示对应重量。">
+              <div class="min-w-0 rounded-lg border">
+                <ProductVariantEditor
+                  :variants="productForm.variants"
+                  :spec-definitions="variantSpecDefinitions"
+                  :default-index="defaultVariantIndex"
+                  class="min-w-0 p-3"
+                  @add="addVariant"
+                  @remove="removeVariant"
+                  @set-default="setDefaultVariant"
+                />
+              </div>
+              <p v-if="formErrors.variants" class="mt-2 text-xs font-medium text-destructive">{{ formErrors.variants }}</p>
             </FormSection>
 
             <FormSection title="商品媒体" description="商品主图、轮播图、详情图和视频都属于商品本身，不使用图库数据。">
@@ -302,7 +467,7 @@
                         </span>
                         <span
                           v-if="mediaItem.is_primary"
-                          class="absolute right-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+                          class="absolute right-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm"
                         >
                           主图
                         </span>
@@ -385,68 +550,6 @@
                   暂未添加商品媒体。新商品上线前建议至少上传一张商品主图。
                 </div>
               </div>
-            </FormSection>
-
-            <FormSection
-              v-if="selectedSpecDefinitions.length"
-              title="规格模板"
-              description="这些规格来自所选产品类型，保存为商品级属性。"
-            >
-              <div class="grid gap-4 md:grid-cols-2">
-                <FormField
-                  v-for="spec in selectedSpecDefinitions"
-                  :key="spec.id"
-                  :label="getSpecLabel(spec)"
-                  :required="spec.is_required"
-                  :error="formErrors[`spec:${spec.slug}`]"
-                >
-                  <Input
-                    v-if="spec.field_type === 'number'"
-                    v-model.number="productForm.specs[spec.slug]"
-                    type="number"
-                    min="0"
-                    @input="clearFieldError(`spec:${spec.slug}`)"
-                  />
-                  <Select
-                    v-else-if="spec.field_type === 'select'"
-                    :model-value="specSelectValue(productForm.specs[spec.slug])"
-                    @update:model-value="setSpecSelectValue(spec.slug, $event)"
-                  >
-                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__empty__">未设置</SelectItem>
-                      <SelectItem v-for="option in parseSpecOptions(spec)" :key="String(option)" :value="String(option)">
-                        {{ formatSpecOption(option) }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div v-else-if="spec.field_type === 'boolean'" class="flex h-9 items-center gap-2">
-                    <Switch v-model="productForm.specs[spec.slug]" :aria-label="spec.name" />
-                    <span class="text-xs text-muted-foreground">{{ productForm.specs[spec.slug] ? '是' : '否' }}</span>
-                  </div>
-                  <Input
-                    v-else
-                    v-model="productForm.specs[spec.slug]"
-                    :placeholder="`请输入${spec.name}`"
-                    @input="clearFieldError(`spec:${spec.slug}`)"
-                  />
-                </FormField>
-              </div>
-            </FormSection>
-
-            <FormSection title="SKU 变体矩阵" description="每个商品至少保留一个变体，价格、重量和库存均以 SKU 变体为准。">
-              <div class="min-w-0 rounded-lg border">
-                <ProductVariantEditor
-                  :variants="productForm.variants"
-                  :spec-definitions="variantSpecDefinitions"
-                  :default-index="defaultVariantIndex"
-                  class="min-w-0 p-3"
-                  @add="addVariant"
-                  @remove="removeVariant"
-                  @set-default="setDefaultVariant"
-                />
-              </div>
-              <p v-if="formErrors.variants" class="mt-2 text-xs font-medium text-destructive">{{ formErrors.variants }}</p>
             </FormSection>
 
             <FormSection title="发布设置" description="控制商品的公开状态和前台可见性。">
@@ -572,8 +675,8 @@ const FilterSelect = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('label', { class: 'space-y-1.5' }, [
-      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+    return () => h('label', { class: 'space-y-1 block' }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
       h(Select, {
         modelValue: props.modelValue,
         'onUpdate:modelValue': (value) => emit('update:modelValue', value)
@@ -595,10 +698,10 @@ const FormSection = defineComponent({
     description: { type: String, default: '' }
   },
   setup(props, { slots }) {
-    return () => h('section', { class: 'space-y-4 border-t pt-6 first:border-t-0 first:pt-0' }, [
+    return () => h('section', { class: 'space-y-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0' }, [
       h('div', { class: 'space-y-1' }, [
-        h('h3', { class: 'text-sm font-semibold' }, props.title),
-        props.description ? h('p', { class: 'max-w-2xl text-xs leading-5 text-muted-foreground' }, props.description) : null
+        h('h3', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
+        props.description ? h('p', { class: 'max-w-2xl text-[9px] font-black uppercase tracking-widest text-muted-foreground/60' }, props.description) : null
       ]),
       h('div', { class: 'min-w-0' }, slots.default?.())
     ])
@@ -612,14 +715,122 @@ const FormField = defineComponent({
     error: { type: String, default: '' }
   },
   setup(props, { slots, attrs }) {
-    return () => h('label', { ...attrs, class: ['block space-y-1.5', attrs.class] }, [
-      h('span', { class: 'text-xs font-medium' }, [
+    return () => h('label', { ...attrs, class: ['block space-y-1', attrs.class] }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, [
         props.label,
         props.required ? h('span', { class: 'ml-0.5 text-destructive', 'aria-hidden': 'true' }, '*') : null
       ]),
       slots.default?.(),
       props.error ? h('span', { class: 'block text-xs font-medium text-destructive' }, props.error) : null
     ])
+  }
+})
+
+const getPublicSiteOrigin = () => {
+  const configured = String(import.meta.env.VITE_PUBLIC_SITE_URL || '').trim().replace(/\/+$/, '')
+  if (configured) return configured
+
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const { protocol, hostname, port } = window.location
+    if (hostname.startsWith('admin.')) {
+      return `${protocol}//${hostname.replace(/^admin\./, '')}${port ? `:${port}` : ''}`
+    }
+  }
+
+  return 'https://tanzanite.site'
+}
+
+const resolveMediaUrl = (url) => {
+  const value = String(url || '').trim()
+  if (!value) return ''
+  if (/^(?:https?:)?\/\//i.test(value) || /^data:/i.test(value) || /^blob:/i.test(value)) return value
+
+  const origin = getPublicSiteOrigin()
+  const path = value.startsWith('/') ? value : `/${value}`
+  return `${origin}${path}`
+}
+
+const getProductThumbnail = (product) => {
+  const mediaItems = Array.isArray(product?.media) ? product.media : []
+  const visibleItems = mediaItems.filter((item) => item && item.is_visible !== false)
+  const hasUrl = (item) => String(item?.url || '').trim().length > 0
+
+  const primaryImage = visibleItems.find((item) => (
+    item.media_type === 'image' && hasUrl(item) && (item.is_primary || item.role === 'primary')
+  ))
+  const fallbackImage = visibleItems.find((item) => item.media_type === 'image' && hasUrl(item))
+  const image = primaryImage || fallbackImage
+
+  if (image) {
+    return {
+      kind: 'image',
+      src: resolveMediaUrl(image.url),
+      alt: String(image.alt || image.title || product?.name || '商品图片').trim(),
+      label: image.is_primary || image.role === 'primary' ? '主图' : '图片'
+    }
+  }
+
+  const primaryVideo = visibleItems.find((item) => (
+    item.media_type === 'video' && hasUrl(item) && (item.is_primary || item.role === 'video' || item.role === 'detail')
+  ))
+  const fallbackVideo = visibleItems.find((item) => item.media_type === 'video' && hasUrl(item))
+  const video = primaryVideo || fallbackVideo
+
+  if (video) {
+    const poster = resolveMediaUrl(video.poster_url || video.thumbnail_url || '')
+    return {
+      kind: 'video',
+      src: poster,
+      alt: String(video.alt || video.title || product?.name || '商品视频').trim(),
+      label: '视频'
+    }
+  }
+
+  return {
+    kind: 'empty',
+    src: '',
+    alt: String(product?.name || '商品').trim(),
+    label: '无图'
+  }
+}
+
+const ProductThumbnail = defineComponent({
+  name: 'ProductThumbnail',
+  props: {
+    product: {
+      type: Object,
+      required: true
+    }
+  },
+  setup(props) {
+    const thumbnail = computed(() => getProductThumbnail(props.product))
+
+    return () => {
+      const current = thumbnail.value
+      const shellClass = 'relative flex h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-dashed bg-muted/30 shadow-sm'
+      const badgeClass = 'absolute left-1 top-1 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white backdrop-blur'
+
+      if ((current.kind === 'image' || current.kind === 'video') && current.src) {
+        return h('div', { class: shellClass, title: current.alt }, [
+          h('img', {
+            src: current.src,
+            alt: current.alt,
+            class: 'h-full w-full object-cover'
+          }),
+          h('span', { class: badgeClass }, current.label)
+        ])
+      }
+
+      return h('div', {
+        class: 'flex h-14 w-14 items-center justify-center rounded-xl border border-dashed bg-muted/20 text-muted-foreground',
+        title: current.alt
+      }, [
+        h('div', { class: 'flex flex-col items-center gap-0.5' }, [
+          h(current.kind === 'video' ? Video : ImageIcon, { class: 'size-5' }),
+          h('span', { class: 'text-[10px] font-medium leading-none' }, current.label)
+        ])
+      ])
+    }
   }
 })
 
@@ -644,7 +855,6 @@ const productForm = reactive({
   slug: '',
   description: '',
   short_description: '',
-  weight_grams: 0,
   status: 'active',
   locale: 'zh',
   featured: false,
@@ -696,6 +906,17 @@ const defaultVariantIndex = computed(() => {
   return index >= 0 ? index : 0
 })
 const productTypeSelectValue = computed(() => productForm.product_type_id == null ? '__none__' : String(productForm.product_type_id))
+const hasMeaningfulTemplateValue = (value) => {
+  if (value === undefined || value === null || value === '') return false
+  if (value === false) return false
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'object') return Object.keys(value).length > 0
+  return true
+}
+const templateScopedValuesTouched = computed(() => (
+  Object.values(productForm.specs || {}).some(hasMeaningfulTemplateValue) ||
+  productForm.variants.some((variant) => Object.values(variant.option_values || {}).some(hasMeaningfulTemplateValue))
+))
 const selectionState = computed(() => {
   if (products.value.length === 0 || selectedProducts.value.length === 0) return false
   return selectedProducts.value.length === products.value.length ? true : 'indeterminate'
@@ -779,7 +1000,7 @@ const buildVariantFormValues = (product) => {
     is_active: variant.is_active !== false,
     sort_order: variant.sort_order ?? index * 10
   }))
-  if (variants.length === 0) variants.push(createEmptyVariant({ weight_grams: product.weight_grams ?? product.weight ?? 0, is_default: true }))
+  if (variants.length === 0) variants.push(createEmptyVariant({ is_default: true }))
   if (!variants.some((variant) => variant.is_default)) variants[0].is_default = true
   return variants
 }
@@ -959,17 +1180,6 @@ const normalizeFormMedia = () => {
     }))
 }
 
-const getPrimaryVariantWeight = (variants) => {
-  const primaryVariant = variants.find((variant) => variant.is_default) || variants[0]
-  const primaryWeight = Number(primaryVariant?.weight_grams ?? 0)
-  if (Number.isFinite(primaryWeight) && primaryWeight > 0) {
-    return primaryWeight
-  }
-
-  const fallbackWeight = Number(productForm.weight_grams || 0)
-  return Number.isFinite(fallbackWeight) && fallbackWeight > 0 ? fallbackWeight : 0
-}
-
 const addVariant = () => {
   productForm.variants.push(createEmptyVariant({ is_default: productForm.variants.length === 0 }))
   clearFieldError('variants')
@@ -1020,7 +1230,6 @@ const buildProductPayload = () => {
     slug: productForm.slug.trim(),
     description: productForm.description,
     short_description: productForm.short_description,
-    weight_grams: getPrimaryVariantWeight(variants),
     status: productForm.status,
     locale: productForm.locale,
     featured: productForm.featured,
@@ -1059,7 +1268,11 @@ const validateForm = (payload) => {
 }
 
 const handleProductTypeSelect = (value) => {
-  productForm.product_type_id = value === '__none__' ? null : Number(value)
+  const nextProductTypeID = value === '__none__' ? null : Number(value)
+  if (productForm.product_type_id === nextProductTypeID) return
+
+  const hadTemplateValues = templateScopedValuesTouched.value
+  productForm.product_type_id = nextProductTypeID
   const nextSpecs = {}
   selectedSpecDefinitions.value.forEach((spec) => {
     if (spec.field_type === 'boolean') nextSpecs[spec.slug] = false
@@ -1067,6 +1280,9 @@ const handleProductTypeSelect = (value) => {
   productForm.specs = nextSpecs
   productForm.variants.forEach((variant) => { variant.option_values = {} })
   clearFormErrors()
+  if (hadTemplateValues) {
+    toast.info('已切换产品模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
+  }
 }
 const resetForm = () => {
   Object.assign(productForm, {
@@ -1076,7 +1292,6 @@ const resetForm = () => {
     slug: '',
     description: '',
     short_description: '',
-    weight_grams: 0,
     status: 'active',
     locale: 'zh',
     featured: false,
@@ -1162,7 +1377,6 @@ const showEditDialog = async (product) => {
     slug: detail.slug || '',
     description: detail.description || '',
     short_description: detail.short_description || detail.short_desc || '',
-    weight_grams: detail.weight_grams ?? detail.weight ?? 0,
     status: detail.status || 'active',
     locale: detail.locale || 'zh',
     featured: Boolean(detail.featured),

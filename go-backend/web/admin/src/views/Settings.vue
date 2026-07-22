@@ -200,13 +200,13 @@
           </div>
 
           <section class="grid gap-3 sm:grid-cols-2" aria-label="Public Chat 客服统计">
-            <div class="rounded-lg border bg-card p-4 shadow-xs">
-              <span class="text-xs font-medium text-muted-foreground">Profile 总数</span>
-              <strong class="mt-2 block text-2xl font-semibold tabular-nums">{{ publicChatAgentsSummary.profile_count || 0 }}</strong>
+            <div class="rounded-[20px] border border-dashed border-border/80 bg-muted/20 p-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">可分配 Agent Profile</span>
+              <strong class="mt-1 block text-2xl font-black italic tracking-tighter tabular-nums">{{ publicChatAgentsSummary.profile_count || 0 }}</strong>
             </div>
-            <div class="rounded-lg border bg-card p-4 shadow-xs">
-              <span class="text-xs font-medium text-muted-foreground">公开客服数</span>
-              <strong class="mt-2 block text-2xl font-semibold tabular-nums">{{ publicChatAgentsSummary.exposed_agents || 0 }}</strong>
+            <div class="rounded-[20px] border border-dashed border-border/80 bg-muted/20 p-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">目前生效（只读）</span>
+              <strong class="mt-1 block text-2xl font-black italic tracking-tighter tabular-nums">{{ publicChatAgentsSummary.exposed_agents || 0 }}</strong>
             </div>
           </section>
 
@@ -248,7 +248,7 @@
                         <AvatarFallback>{{ agentInitials(agent) }}</AvatarFallback>
                       </Avatar>
                       <div class="min-w-0">
-                        <span class="block truncate font-medium">{{ agent.display_name || agent.username || '-' }}</span>
+                        <span class="block truncate font-bold text-xs">{{ agent.display_name || agent.username || '-' }}</span>
                         <span class="block truncate text-xs text-muted-foreground">{{ agent.email || agent.whatsapp || '-' }}</span>
                       </div>
                     </div>
@@ -391,8 +391,8 @@ const SettingsSection = defineComponent({
   setup(props, { slots }) {
     return () => h('section', { class: 'grid max-w-5xl gap-5 lg:grid-cols-[190px_minmax(0,1fr)]' }, [
       h('div', {}, [
-        h('h2', { class: 'text-sm font-semibold' }, props.title),
-        props.description ? h('p', { class: 'mt-1 text-xs leading-5 text-muted-foreground' }, props.description) : null
+        h('h2', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
+        props.description ? h('p', { class: 'mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60' }, props.description) : null
       ]),
       h('div', { class: 'min-w-0' }, slots.default?.())
     ])

@@ -13,38 +13,38 @@
 
     <AdminFilterPanel>
       <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" @submit.prevent="applyFilters">
-        <label class="space-y-1.5 xl:col-span-2">
-          <span class="text-xs font-medium text-muted-foreground">关键词</span>
+        <label class="space-y-1 block xl:col-span-2">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">KEYWORD / 关键词</span>
           <div class="relative">
-            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
             <Input v-model="filters.keyword" class="h-9 pl-9" placeholder="用户、操作、资源、路径或错误信息" />
           </div>
         </label>
         <FilterSelect v-model="filters.action" label="操作" :options="actionFilterOptions" />
         <FilterSelect v-model="filters.resource" label="资源" :options="resourceFilterOptions" />
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">用户 ID</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">USER ID / 用户 ID</span>
           <Input v-model="filters.user_id" type="number" min="1" class="h-9" placeholder="全部用户" />
         </label>
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">IP 地址</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">IP ADDRESS / IP 地址</span>
           <Input v-model="filters.ip_address" class="h-9 font-mono" placeholder="全部地址" />
         </label>
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">开始日期</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">START DATE / 开始日期</span>
           <Input v-model="filters.start_date" type="date" class="h-9" />
         </label>
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">结束日期</span>
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">END DATE / 结束日期</span>
           <Input v-model="filters.end_date" type="date" class="h-9" />
         </label>
         <div class="flex items-end gap-2 xl:col-span-4">
-          <Button type="submit" class="h-9">
-            <Search class="size-4" />
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
             查询
           </Button>
-          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-            <RotateCcw class="size-4" />
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
             重置
           </Button>
         </div>
@@ -176,12 +176,17 @@ const FilterSelect = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('label', { class: 'space-y-1.5' }, [
-      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
-      h(Select, { modelValue: props.modelValue, 'onUpdate:modelValue': (value) => emit('update:modelValue', value) }, {
+    return () => h('label', { class: 'space-y-1 block' }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
+      h(Select, {
+        modelValue: props.modelValue,
+        'onUpdate:modelValue': (value) => emit('update:modelValue', value)
+      }, {
         default: () => [
           h(SelectTrigger, { class: 'h-9 w-full' }, { default: () => h(SelectValue) }),
-          h(SelectContent, {}, { default: () => props.options.map((option) => h(SelectItem, { value: option.value }, { default: () => option.label })) })
+          h(SelectContent, {}, {
+            default: () => props.options.map((option) => h(SelectItem, { value: option.value }, { default: () => option.label }))
+          })
         ]
       })
     ])
@@ -189,11 +194,14 @@ const FilterSelect = defineComponent({
 })
 
 const DetailItem = defineComponent({
-  props: { label: { type: String, required: true } },
-  setup(props, { slots, attrs }) {
-    return () => h('div', { ...attrs, class: ['border-b p-3 sm:border-r', attrs.class] }, [
-      h('dt', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
-      h('dd', { class: 'mt-1 min-w-0 text-sm' }, slots.default?.())
+  props: {
+    label: { type: String, required: true },
+    value: { type: [String, Number], default: '' }
+  },
+  setup(props, { slots }) {
+    return () => h('div', { class: 'space-y-1' }, [
+      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
+      h('dd', { class: 'text-xs font-bold' }, slots.default ? slots.default() : (props.value || '-'))
     ])
   }
 })
@@ -202,8 +210,8 @@ const JsonSection = defineComponent({
   props: { title: { type: String, required: true }, value: { type: String, required: true } },
   setup(props) {
     return () => h('section', { class: 'min-w-0 space-y-2' }, [
-      h('h3', { class: 'text-sm font-semibold' }, props.title),
-      h('pre', { class: 'max-h-80 overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-5 whitespace-pre-wrap break-words' }, formatJSON(props.value))
+      h('h3', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
+      h('pre', { class: 'max-h-80 overflow-auto rounded-lg border border-dashed bg-muted/40 p-3 font-mono text-xs leading-5 whitespace-pre-wrap break-words' }, formatJSON(props.value))
     ])
   }
 })

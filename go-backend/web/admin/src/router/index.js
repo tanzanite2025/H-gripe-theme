@@ -29,7 +29,7 @@ const routes = [
         path: 'product-types',
         name: 'ProductTypes',
         component: () => import('@/views/ProductTypes.vue'),
-        meta: { title: '产品类型', permission: 'product:view' }
+        meta: { title: '产品模板', permission: 'product:view' }
       },
       {
         path: 'orders',

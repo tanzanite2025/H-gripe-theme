@@ -12,12 +12,12 @@
     <AdminStatsGrid :items="statItems" />
 
     <AdminFilterPanel>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.5fr)_minmax(150px,0.7fr)_minmax(150px,0.7fr)_auto]" @submit.prevent="applyFilters">
-        <label class="space-y-1.5">
-          <span class="text-xs font-medium text-muted-foreground">搜索</span>
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_repeat(2,minmax(140px,0.7fr))_auto]" @submit.prevent="applyFilters">
+        <label class="space-y-1 block">
+          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
           <div class="relative">
-            <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input v-model="filters.search" class="h-9 pl-9" placeholder="文章标题或内容" />
+            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
+            <Input v-model="filters.search" class="h-9 pl-9" placeholder="标题、Slug 或正文" />
           </div>
         </label>
 
@@ -25,12 +25,12 @@
         <FilterSelect v-model="filters.locale" label="语言" :options="localeFilterOptions" />
 
         <div class="flex items-end gap-2">
-          <Button type="submit" class="h-9">
-            <Search class="size-4" />
+          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+            <Search class="size-3.5" />
             搜索
           </Button>
-          <Button type="button" variant="outline" class="h-9" @click="resetFilters">
-            <RotateCcw class="size-4" />
+          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+            <RotateCcw class="size-3.5" />
             重置
           </Button>
         </div>
@@ -95,7 +95,7 @@
               />
             </TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{{ post.id }}</TableCell>
-            <TableCell class="max-w-80 truncate font-medium">{{ post.title }}</TableCell>
+            <TableCell class="max-w-80 truncate font-bold text-xs">{{ post.title }}</TableCell>
             <TableCell class="max-w-56 truncate font-mono text-xs text-muted-foreground">{{ post.slug }}</TableCell>
             <TableCell>
               <AdminStatusBadge :tone="statusTone(post.status)">{{ getStatusName(post.status) }}</AdminStatusBadge>
@@ -354,8 +354,8 @@ const FilterSelect = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('label', { class: 'space-y-1.5' }, [
-      h('span', { class: 'text-xs font-medium text-muted-foreground' }, props.label),
+    return () => h('label', { class: 'space-y-1 block' }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
       h(Select, {
         modelValue: props.modelValue,
         'onUpdate:modelValue': (value) => emit('update:modelValue', value)
@@ -377,10 +377,10 @@ const FormSection = defineComponent({
     description: { type: String, default: '' }
   },
   setup(props, { slots }) {
-    return () => h('section', { class: 'grid gap-4 border-t pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]' }, [
+    return () => h('section', { class: 'grid gap-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]' }, [
       h('div', {}, [
-        h('h3', { class: 'text-sm font-semibold' }, props.title),
-        props.description ? h('p', { class: 'mt-1 text-xs leading-5 text-muted-foreground' }, props.description) : null
+        h('h3', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
+        props.description ? h('p', { class: 'mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60' }, props.description) : null
       ]),
       h('div', { class: 'min-w-0' }, slots.default?.())
     ])
@@ -394,8 +394,8 @@ const FormField = defineComponent({
     error: { type: String, default: '' }
   },
   setup(props, { slots, attrs }) {
-    return () => h('label', { ...attrs, class: ['block space-y-1.5', attrs.class] }, [
-      h('span', { class: 'text-xs font-medium' }, [
+    return () => h('label', { ...attrs, class: ['block space-y-1', attrs.class] }, [
+      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, [
         props.label,
         props.required ? h('span', { class: 'ml-0.5 text-destructive', 'aria-hidden': 'true' }, '*') : null
       ]),

@@ -45,7 +45,7 @@
           </AdminFormField>
           <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
             <div>
-              <span class="text-xs font-medium">启用优惠券</span>
+              <span class="text-xs font-bold uppercase tracking-wider">启用优惠券 / ENABLED</span>
               <p class="mt-0.5 text-xs text-muted-foreground">停用后无法在结账时使用。</p>
             </div>
             <Switch v-model="form.enabled" aria-label="启用优惠券" />
@@ -61,8 +61,8 @@
           </AdminFormField>
         </div>
 
-        <div class="space-y-4 border-t pt-5">
-          <h3 class="text-sm font-semibold">适用范围</h3>
+        <div class="space-y-4 border-t border-dashed pt-5">
+          <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">适用范围</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <AdminFormField label="适用商品" description="JSON 数组；留空表示全部商品">
               <Textarea v-model="form.applicable_products" class="min-h-20 font-mono text-xs" placeholder='[1, 2, 3]' />
