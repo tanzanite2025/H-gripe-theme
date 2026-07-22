@@ -4,18 +4,12 @@
     <h1 class="support-page__title support-page__title--sr-only">Warranty</h1>
 
     <!-- Tabs header -->
-    <div class="nav-pill-tabs" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        type="button"
-        class="nav-pill-item"
-        :class="{ 'nav-pill-item--active': activeTab === tab.id }"
-        @click="setActiveTab(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
+    <PageTabBar
+      :tabs="tabs"
+      :active-id="activeTab"
+      aria-label="Warranty sections"
+      @select="setActiveTab"
+    />
 
     <!-- Tab Components -->
     <WarrantyChangeCancelTab 

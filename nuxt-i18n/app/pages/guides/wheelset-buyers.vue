@@ -3,18 +3,12 @@
     <h2 class="products-page__title products-page__title--sr-only">Wheelset Buyers Guide</h2>
 
     <div class="wheelset-page">
-      <div class="nav-pill-tabs" role="tablist">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          type="button"
-          class="nav-pill-item"
-          :class="{ 'nav-pill-item--active': activeTab === tab.id }"
-          @click="setActiveTab(tab.id)"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+      <PageTabBar
+        :tabs="tabs"
+        :active-id="activeTab"
+        aria-label="Wheelset buyer guide sections"
+        @select="setActiveTab"
+      />
 
       <!-- Safety instructions -->
       <section
@@ -250,11 +244,13 @@ const tabs: { id: WheelsetTabId; label: string }[] = [
 const activeTab = ref<WheelsetTabId>('safety-instructions')
 const quickOpen = ref(false)
 
-const setActiveTab = (id: WheelsetTabId) => {
-  activeTab.value = id
+const setActiveTab = (id: WheelsetTabId | string) => {
+  if (!tabs.some((tab) => tab.id === id)) return
+  const next = id as WheelsetTabId
+  activeTab.value = next
   if (typeof window !== 'undefined') {
     const url = new URL(window.location.href)
-    url.hash = `#${id}`
+    url.hash = `#${next}`
     window.history.replaceState(null, '', url.toString())
   }
 }
@@ -354,7 +350,7 @@ const goToAboutAppearance = async () => {
   max-width: none;
 }
 
-/* .wheelset-tabs styles removed in favor of global .nav-pill-tabs */
+/* Page-level tabs are handled by PageTabBar. */
 .wheelset-section--sample > p {
   color: #f9fafb;
   text-align: center;

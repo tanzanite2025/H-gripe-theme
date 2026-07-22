@@ -3,18 +3,12 @@
     <h1 class="sr-only">Spoke Calculator</h1>
 
     <div class="spoke-page">
-      <div class="nav-pill-tabs" role="tablist">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          type="button"
-          class="nav-pill-item"
-          :class="{ 'nav-pill-item--active': activeTab === tab.id }"
-          @click="setActiveTab(tab.id)"
-        >
-          {{ $t(tab.labelKey, tab.fallback) }}
-        </button>
-      </div>
+      <PageTabBar
+        :tabs="tabs"
+        :active-id="activeTab"
+        aria-label="Spoke calculator sections"
+        @select="setActiveTab"
+      />
 
       <section v-show="activeTab === 'calculator'">
         <div class="support-page__calculator-wrapper">
@@ -234,11 +228,13 @@ watch(
   { immediate: true }
 )
 
-const setActiveTab = (id: SpokeCalculatorTabId) => {
-  activeTab.value = id
+const setActiveTab = (id: SpokeCalculatorTabId | string) => {
+  if (!tabs.some((tab) => tab.id === id)) return
+  const next = id as SpokeCalculatorTabId
+  activeTab.value = next
   if (typeof window !== 'undefined') {
     const url = new URL(window.location.href)
-    url.hash = `#${id}`
+    url.hash = `#${next}`
     window.history.replaceState(null, '', url.toString())
   }
 }
@@ -270,7 +266,7 @@ useHead({
    max-width: none;
  }
 
-/* .wheelset-tabs styles removed in favor of global .nav-pill-tabs */
+/* Page-level tabs are handled by PageTabBar. */
 
  .spoke-parameter {
    margin-top: 0.75rem;
