@@ -84,7 +84,7 @@ services:
     logging: *default-logging
 
   migrate:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:-master}
     pull_policy: always
     restart: "no"
     command: ["migrate"]
@@ -105,7 +105,7 @@ services:
     logging: *default-logging
 
   api:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:
@@ -140,7 +140,7 @@ services:
     logging: *default-logging
 
   storefront:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-storefront:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ghcr.io/tanzanite2025/tanzanite-theme-storefront:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:
@@ -173,7 +173,7 @@ services:
     logging: *default-logging
 
   admin:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-admin:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ghcr.io/tanzanite2025/tanzanite-theme-admin:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:
@@ -197,7 +197,7 @@ services:
     logging: *default-logging
 
   web:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-web:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ghcr.io/tanzanite2025/tanzanite-theme-web:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:

@@ -63,13 +63,18 @@ Every commit pushed to `master` produces one complete deployable release. GitHub
 - `ghcr.io/tanzanite2025/tanzanite-theme-admin`
 - `ghcr.io/tanzanite2025/tanzanite-theme-web`
 
-Production uses the immutable full tag `sha-<40-character-commit>` generated from the tested commit. Publishing on every `master` commit is intentional: `deploy.sh` always resolves `origin/master`, so the branch head must always have a matching four-image release. The GHCR packages must be public or the VPS must have read-only registry credentials.
+Production images are published with both a mutable `master` tag and an immutable full tag `sha-<40-character-commit>`.
+
+- Hostinger Docker Manager / MCP Project Update uses `IMAGE_TAG=master` so a normal Project Update pulls the latest tested `master` images.
+- `deploy.sh` overrides `IMAGE_TAG` at runtime with `sha-<full-commit>` for immutable SSH releases and rollback.
+
+Publishing on every `master` commit is intentional: both deployment paths require the branch head to have a matching four-image release. The GHCR packages must be public or the VPS must have read-only registry credentials.
 
 `.github/workflows/go-backend-ci.yml` and `.github/workflows/ci.yml` are validation only. They must not publish production images or deploy Kubernetes. `.github/workflows/publish-images.yml` is the only production image publisher.
 
 ## Create The Hostinger Project
 
-Create `deployment/production.env` from the example and replace every `CHANGE_ME` value. Keep the real file outside Git. The file does not contain `IMAGE_TAG`; `deploy.sh` derives it from Git.
+Create `deployment/production.env` from the example and replace every `CHANGE_ME` value. Keep the real file outside Git. Keep `IMAGE_TAG=master` when the project is managed through Hostinger Docker Manager or MCP Project Update.
 
 The recommended release path is a repository clone on the VPS:
 
@@ -84,10 +89,10 @@ In Hostinger Docker Manager create:
 ```text
 Project name: tanzanite-theme
 Compose source: compose.prod.yml
-Environment: deployment/production.env values plus IMAGE_TAG=sha-<full-commit>
+Environment: deployment/production.env values, including IMAGE_TAG=master
 ```
 
-Hostinger Docker Manager cannot derive the Git commit tag itself. When using the Manager instead of `deploy.sh`, update `IMAGE_TAG` manually for every release.
+Hostinger Docker Manager cannot derive the Git commit tag itself. When using the Manager or MCP Project Update, keep `IMAGE_TAG=master`; the publish workflow moves that tag after validation. Set `IMAGE_TAG=sha-<full-commit>` only for a deliberate pinned release or rollback.
 
 Before deployment, confirm the external Docker network `tanzanite-edge` exists.
 
@@ -167,10 +172,11 @@ Also verify:
 Normal release:
 
 1. Push the tested commit to `master`.
-2. Run `./deploy.sh` on the VPS; it waits for the matching workflow images.
-3. Verify all containers and smoke tests.
+2. Wait for the publish-images workflow to finish.
+3. Run Hostinger/MCP Project Update, or run `./deploy.sh` on the VPS for an immutable SHA release.
+4. Verify all containers and smoke tests.
 
-For a Hostinger Docker Manager release, wait for the workflow, set `IMAGE_TAG=sha-<full-commit>`, and run Project Update.
+For a Hostinger Docker Manager release, keep `IMAGE_TAG=master` and run Project Update.
 
 Rollback:
 
