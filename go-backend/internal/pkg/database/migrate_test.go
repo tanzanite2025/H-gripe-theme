@@ -177,7 +177,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	}
 
 	// The catalog seed is deliberately idempotent so a manual recovery rerun cannot
-	// duplicate products, variants, or images.
+	// duplicate products or variants.
 	catalogMigration, err := os.ReadFile(filepath.Join(backendRoot, "migrations", "015_seed_g35_catalog.up.sql"))
 	if err != nil {
 		t.Fatalf("read G35 catalog migration: %v", err)
@@ -421,27 +421,33 @@ func assertG35CatalogSeed(ctx context.Context, t *testing.T, db *sql.DB) {
 	}
 
 	var (
-		imageCount int
-		imageURL   string
-		imageAlt   string
-		imageOrder int
+		mediaCount int
+		mediaURL   string
+		mediaAlt   string
+		mediaRole  string
+		mediaOrder int
+		isPrimary  bool
 	)
 	if err := db.QueryRowContext(ctx, `
-		SELECT COUNT(*), MIN(pi.url), MIN(pi.alt), MIN(pi."order")
-		FROM product_images pi
-		JOIN products p ON p.id = pi.product_id
+		SELECT COUNT(*), MIN(pm.url), MIN(pm.alt), MIN(pm.role), MIN(pm.sort_order), COALESCE(BOOL_OR(pm.is_primary), FALSE)
+		FROM product_media pm
+		JOIN products p ON p.id = pm.product_id
 		WHERE p.sku = 'G35-370G-1PC'
-	`).Scan(&imageCount, &imageURL, &imageAlt, &imageOrder); err != nil {
-		t.Fatalf("read G35 image: %v", err)
+		  AND pm.media_type = 'image'
+		  AND pm.deleted_at IS NULL
+	`).Scan(&mediaCount, &mediaURL, &mediaAlt, &mediaRole, &mediaOrder, &isPrimary); err != nil {
+		t.Fatalf("read G35 media: %v", err)
 	}
-	if imageCount != 1 || imageURL != "/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp" ||
-		imageAlt != "Carbon rim finish reference" || imageOrder != 0 {
+	if mediaCount != 1 || mediaURL != "/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp" ||
+		mediaAlt != "Carbon rim finish reference" || mediaRole != "primary" || mediaOrder != 0 || !isPrimary {
 		t.Fatalf(
-			"unexpected G35 image: count=%d url=%q alt=%q order=%d",
-			imageCount,
-			imageURL,
-			imageAlt,
-			imageOrder,
+			"unexpected G35 media: count=%d url=%q alt=%q role=%q order=%d primary=%t",
+			mediaCount,
+			mediaURL,
+			mediaAlt,
+			mediaRole,
+			mediaOrder,
+			isPrimary,
 		)
 	}
 }

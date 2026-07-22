@@ -222,6 +222,171 @@
               </div>
             </FormSection>
 
+            <FormSection title="商品媒体" description="商品主图、轮播图、详情图和视频都属于商品本身，不使用图库数据。">
+              <div class="space-y-4">
+                <div class="grid gap-3 md:grid-cols-2">
+                  <label class="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5">
+                    <input
+                      class="sr-only"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      multiple
+                      :disabled="uploadingMedia"
+                      @change="handleMediaUpload($event, 'image')"
+                    />
+                    <ImageIcon class="size-5 text-muted-foreground" />
+                    <span class="text-sm font-medium">上传商品图片</span>
+                    <span class="text-xs text-muted-foreground">主图、轮播图、详情图，最多按商品排序展示</span>
+                  </label>
+
+                  <label class="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5">
+                    <input
+                      class="sr-only"
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm"
+                      multiple
+                      :disabled="uploadingMedia"
+                      @change="handleMediaUpload($event, 'video')"
+                    />
+                    <Video class="size-5 text-muted-foreground" />
+                    <span class="text-sm font-medium">上传商品视频</span>
+                    <span class="text-xs text-muted-foreground">支持 MP4 / MOV / WEBM，视频可配置封面图</span>
+                  </label>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" size="sm" @click="addMediaUrl('image')">
+                    <Plus class="size-3.5" />
+                    添加图片 URL
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" @click="addMediaUrl('video')">
+                    <Plus class="size-3.5" />
+                    添加视频 URL
+                  </Button>
+                  <span v-if="uploadingMedia" class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <LoaderCircle class="size-3.5 animate-spin" />
+                    媒体上传中…
+                  </span>
+                </div>
+
+                <p v-if="formErrors.media" class="text-xs font-medium text-destructive">{{ formErrors.media }}</p>
+
+                <div v-if="productForm.media.length" class="grid gap-3 lg:grid-cols-2">
+                  <div
+                    v-for="(mediaItem, index) in productForm.media"
+                    :key="mediaItem.local_key || mediaItem.id || `${mediaItem.media_type}-${index}`"
+                    class="min-w-0 rounded-xl border bg-background/80 p-3"
+                  >
+                    <div class="grid gap-3 md:grid-cols-[9rem_minmax(0,1fr)]">
+                      <div class="relative aspect-square overflow-hidden rounded-lg border bg-muted/40">
+                        <img
+                          v-if="mediaItem.media_type === 'image' && mediaItem.url"
+                          :src="mediaItem.url"
+                          :alt="mediaItem.alt || mediaItem.title || '商品图片'"
+                          class="h-full w-full object-contain"
+                        />
+                        <video
+                          v-else-if="mediaItem.media_type === 'video' && mediaItem.url"
+                          :src="mediaItem.url"
+                          :poster="mediaItem.poster_url || mediaItem.thumbnail_url"
+                          class="h-full w-full bg-slate-950 object-contain"
+                          controls
+                          preload="metadata"
+                        />
+                        <div v-else class="flex h-full w-full items-center justify-center text-muted-foreground">
+                          <ImageIcon v-if="mediaItem.media_type === 'image'" class="size-7" />
+                          <Video v-else class="size-7" />
+                        </div>
+                        <span class="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-medium shadow-sm">
+                          {{ mediaTypeLabel(mediaItem.media_type) }}
+                        </span>
+                        <span
+                          v-if="mediaItem.is_primary"
+                          class="absolute right-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+                        >
+                          主图
+                        </span>
+                      </div>
+
+                      <div class="min-w-0 space-y-3">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                          <FormField label="用途">
+                            <Select v-model="mediaItem.role">
+                              <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem
+                                  v-for="option in mediaRoleOptions(mediaItem.media_type)"
+                                  :key="option.value"
+                                  :value="option.value"
+                                >
+                                  {{ option.label }}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormField>
+                          <FormField label="排序">
+                            <Input v-model.number="mediaItem.sort_order" type="number" min="0" />
+                          </FormField>
+                        </div>
+
+                        <FormField label="媒体 URL" required>
+                          <Input v-model="mediaItem.url" placeholder="上传后自动填充，也可粘贴外部 CDN URL" @input="clearFieldError('media')" />
+                        </FormField>
+
+                        <div class="grid gap-3 sm:grid-cols-2">
+                          <FormField label="标题">
+                            <Input v-model="mediaItem.title" placeholder="内部识别标题" />
+                          </FormField>
+                          <FormField label="Alt 文案">
+                            <Input v-model="mediaItem.alt" placeholder="图片替代文本 / 视频说明" />
+                          </FormField>
+                        </div>
+
+                        <FormField v-if="mediaItem.media_type === 'video'" label="视频封面 URL">
+                          <Input v-model="mediaItem.poster_url" placeholder="视频封面图 URL，可后续上传图片后粘贴" />
+                        </FormField>
+
+                        <div class="flex flex-wrap justify-between gap-2">
+                          <div class="flex flex-wrap gap-2">
+                            <Button
+                              v-if="mediaItem.media_type === 'image'"
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              @click="setPrimaryMedia(index)"
+                            >
+                              <Star class="size-3.5" />
+                              设为主图
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" :disabled="index === 0" @click="moveMedia(index, -1)">
+                              上移
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              :disabled="index === productForm.media.length - 1"
+                              @click="moveMedia(index, 1)"
+                            >
+                              下移
+                            </Button>
+                          </div>
+                          <Button type="button" variant="destructive" size="sm" @click="removeMedia(index)">
+                            <Trash2 class="size-3.5" />
+                            删除
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else class="rounded-xl border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+                  暂未添加商品媒体。新商品上线前建议至少上传一张商品主图。
+                </div>
+              </div>
+            </FormSection>
+
             <FormSection
               v-if="selectedSpecDefinitions.length"
               title="规格模板"
@@ -351,6 +516,7 @@ import {
   Boxes,
   CircleCheck,
   CircleOff,
+  ImageIcon,
   LoaderCircle,
   MoreHorizontal,
   PackageOpen,
@@ -361,7 +527,8 @@ import {
   Star,
   Tags,
   Trash2,
-  TriangleAlert
+  TriangleAlert,
+  Video
 } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
@@ -464,6 +631,7 @@ const productTypes = ref([])
 const dialogVisible = ref(false)
 const dialogMode = ref('create')
 const submitting = ref(false)
+const uploadingMedia = ref(false)
 const stats = ref({})
 const formErrors = reactive({})
 
@@ -483,7 +651,8 @@ const productForm = reactive({
   meta_title: '',
   meta_description: '',
   specs: {},
-  variants: []
+  variants: [],
+  media: []
 })
 const confirmation = reactive({
   open: false,
@@ -615,6 +784,181 @@ const buildVariantFormValues = (product) => {
   return variants
 }
 
+const createMediaItem = (overrides = {}) => ({
+  id: null,
+  local_key: `media-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  variant_id: null,
+  media_asset_id: null,
+  media_type: 'image',
+  role: 'gallery',
+  url: '',
+  thumbnail_url: '',
+  poster_url: '',
+  alt: '',
+  title: '',
+  locale: '',
+  sort_order: productForm.media.length * 10,
+  is_primary: false,
+  is_visible: true,
+  ...overrides
+})
+
+const buildMediaFormValues = (product) => {
+  return (product.media || []).map((item, index) => createMediaItem({
+    id: item.id || null,
+    variant_id: item.variant_id || null,
+    media_asset_id: item.media_asset_id || null,
+    media_type: item.media_type || 'image',
+    role: item.role || (item.media_type === 'video' ? 'video' : 'gallery'),
+    url: item.url || '',
+    thumbnail_url: item.thumbnail_url || '',
+    poster_url: item.poster_url || '',
+    alt: item.alt || '',
+    title: item.title || '',
+    locale: item.locale || '',
+    sort_order: item.sort_order ?? index * 10,
+    is_primary: Boolean(item.is_primary),
+    is_visible: item.is_visible !== false
+  }))
+}
+
+const mediaTypeLabel = (type) => ({ image: '图片', video: '视频' })[type] || type
+const mediaRoleOptions = (type) => type === 'video'
+  ? [
+      { label: '商品视频', value: 'video' },
+      { label: '详情视频', value: 'detail' }
+    ]
+  : [
+      { label: '主图', value: 'primary' },
+      { label: '轮播图', value: 'gallery' },
+      { label: '详情图', value: 'detail' }
+    ]
+
+const normalizeMediaOrder = () => {
+  productForm.media.forEach((item, index) => {
+    item.sort_order = index * 10
+  })
+}
+
+const ensureSinglePrimaryImage = () => {
+  let primaryIndex = productForm.media.findIndex((item) => (
+    item.media_type === 'image' && (item.is_primary || item.role === 'primary')
+  ))
+  if (primaryIndex === -1) {
+    primaryIndex = productForm.media.findIndex((item) => item.media_type === 'image' && String(item.url || '').trim())
+  }
+  productForm.media.forEach((item, index) => {
+    if (item.media_type !== 'image') return
+    const isPrimary = index === primaryIndex
+    item.is_primary = isPrimary
+    if (isPrimary) {
+      item.role = 'primary'
+    } else if (item.role === 'primary') {
+      item.role = 'gallery'
+    }
+  })
+}
+
+const addMediaUrl = (type) => {
+  const hasPrimaryImage = productForm.media.some((item) => item.media_type === 'image' && item.is_primary)
+  productForm.media.push(createMediaItem({
+    media_type: type,
+    role: type === 'video' ? 'video' : hasPrimaryImage ? 'gallery' : 'primary',
+    is_primary: type === 'image' && !hasPrimaryImage
+  }))
+  normalizeMediaOrder()
+  clearFieldError('media')
+}
+
+const appendUploadedMedia = (asset, type) => {
+  const mediaType = asset?.media_type || type
+  const hasPrimaryImage = productForm.media.some((item) => item.media_type === 'image' && item.is_primary)
+  productForm.media.push(createMediaItem({
+    media_asset_id: asset?.id || null,
+    media_type: mediaType,
+    role: mediaType === 'video' ? 'video' : hasPrimaryImage ? 'gallery' : 'primary',
+    url: asset?.url || '',
+    alt: asset?.alt || '',
+    title: asset?.original_filename || asset?.filename || '',
+    is_primary: mediaType === 'image' && !hasPrimaryImage
+  }))
+  normalizeMediaOrder()
+}
+
+const handleMediaUpload = async (event, type) => {
+  const files = Array.from(event.target.files || [])
+  event.target.value = ''
+  if (!files.length) return
+
+  uploadingMedia.value = true
+  try {
+    for (const file of files) {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('media_type', type)
+      const response = await axios.post('/api/admin/media/assets', formData)
+      appendUploadedMedia(response.data?.asset, type)
+    }
+    clearFieldError('media')
+    toast.success(`${files.length} 个商品媒体已上传`)
+  } catch (error) {
+    console.error('Failed to upload product media:', error)
+    toast.error('商品媒体上传失败，请检查文件类型和大小')
+  } finally {
+    uploadingMedia.value = false
+  }
+}
+
+const setPrimaryMedia = (index) => {
+  productForm.media.forEach((item, currentIndex) => {
+    if (item.media_type !== 'image') return
+    item.is_primary = currentIndex === index
+    item.role = currentIndex === index ? 'primary' : (item.role === 'primary' ? 'gallery' : item.role)
+  })
+}
+
+const moveMedia = (index, direction) => {
+  const nextIndex = index + direction
+  if (nextIndex < 0 || nextIndex >= productForm.media.length) return
+  const [item] = productForm.media.splice(index, 1)
+  productForm.media.splice(nextIndex, 0, item)
+  normalizeMediaOrder()
+}
+
+const removeMedia = (index) => {
+  const [removed] = productForm.media.splice(index, 1)
+  if (removed?.is_primary) {
+    const nextImage = productForm.media.find((item) => item.media_type === 'image')
+    if (nextImage) {
+      nextImage.is_primary = true
+      nextImage.role = 'primary'
+    }
+  }
+  normalizeMediaOrder()
+}
+
+const normalizeFormMedia = () => {
+  ensureSinglePrimaryImage()
+  return productForm.media
+    .filter((item) => String(item.url || '').trim())
+    .map((item, index) => ({
+      id: item.id || undefined,
+      variant_id: item.variant_id || undefined,
+      media_asset_id: item.media_asset_id || undefined,
+      media_type: item.media_type || 'image',
+      role: item.role || (item.media_type === 'video' ? 'video' : 'gallery'),
+      url: String(item.url || '').trim(),
+      thumbnail_url: String(item.thumbnail_url || '').trim(),
+      poster_url: String(item.poster_url || '').trim(),
+      alt: String(item.alt || '').trim(),
+      title: String(item.title || '').trim(),
+      locale: String(item.locale || '').trim(),
+      sort_order: Number(item.sort_order ?? index * 10),
+      is_primary: Boolean(item.is_primary),
+      is_visible: item.is_visible !== false
+    }))
+}
+
 const getPrimaryVariantWeight = (variants) => {
   const primaryVariant = variants.find((variant) => variant.is_default) || variants[0]
   const primaryWeight = Number(primaryVariant?.weight_grams ?? 0)
@@ -668,6 +1012,7 @@ const normalizeFormVariants = () => {
 }
 const buildProductPayload = () => {
   const variants = normalizeFormVariants()
+  const media = normalizeFormMedia()
   return {
     id: productForm.id,
     product_type_id: productForm.product_type_id,
@@ -683,6 +1028,7 @@ const buildProductPayload = () => {
     meta_description: productForm.meta_description,
     specs: { ...productForm.specs },
     variants,
+    media,
   }
 }
 
@@ -703,6 +1049,8 @@ const validateForm = (payload) => {
   else if (new Set(payload.variants.map((variant) => variant.sku.toLowerCase())).size !== payload.variants.length) formErrors.variants = '变体 SKU 不能重复'
   else if (payload.variants.some((variant) => Number(variant.price) <= 0)) formErrors.variants = '每个变体价格必须大于 0'
   else if (payload.variants.some((variant) => Number(variant.stock) < 0)) formErrors.variants = '变体库存不能为负数'
+  if (productForm.media.some((item) => !String(item.url || '').trim())) formErrors.media = '媒体条目必须填写 URL，空条目请删除'
+  else if (payload.media.filter((item) => item.media_type === 'image' && item.is_primary).length > 1) formErrors.media = '商品主图只能设置一张'
   if (Object.keys(formErrors).length > 0) {
     toast.error('请检查商品表单中的必填项')
     return false
@@ -735,7 +1083,8 @@ const resetForm = () => {
     meta_title: '',
     meta_description: '',
     specs: {},
-    variants: []
+    variants: [],
+    media: []
   })
   productForm.variants = [createEmptyVariant({ is_default: true })]
   clearFormErrors()
@@ -820,7 +1169,8 @@ const showEditDialog = async (product) => {
     meta_title: detail.meta_title || '',
     meta_description: detail.meta_description || detail.meta_desc || '',
     specs: buildSpecFormValues(detail),
-    variants: buildVariantFormValues(detail)
+    variants: buildVariantFormValues(detail),
+    media: buildMediaFormValues(detail)
   })
   clearFormErrors()
   dialogVisible.value = true

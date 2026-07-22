@@ -25,6 +25,7 @@ type productCreateRequest struct {
 	MetaDesc      string                  `json:"meta_description"`
 	Specs         map[string]interface{}  `json:"specs"`
 	Variants      []productVariantRequest `json:"variants"`
+	Media         []productMediaRequest   `json:"media"`
 }
 
 type productUpdateRequest struct {
@@ -42,6 +43,7 @@ type productUpdateRequest struct {
 	MetaDesc      *string                 `json:"meta_description"`
 	Specs         map[string]interface{}  `json:"specs"`
 	Variants      []productVariantRequest `json:"variants"`
+	Media         []productMediaRequest   `json:"media"`
 }
 
 type productVariantRequest struct {
@@ -58,6 +60,23 @@ type productVariantRequest struct {
 	SortOrder    int                    `json:"sort_order"`
 }
 
+type productMediaRequest struct {
+	ID           *uint  `json:"id"`
+	VariantID    *uint  `json:"variant_id"`
+	MediaAssetID *uint  `json:"media_asset_id"`
+	MediaType    string `json:"media_type"`
+	Role         string `json:"role"`
+	URL          string `json:"url"`
+	ThumbnailURL string `json:"thumbnail_url"`
+	PosterURL    string `json:"poster_url"`
+	Alt          string `json:"alt"`
+	Title        string `json:"title"`
+	Locale       string `json:"locale"`
+	SortOrder    int    `json:"sort_order"`
+	IsPrimary    bool   `json:"is_primary"`
+	IsVisible    *bool  `json:"is_visible"`
+}
+
 func respondProductServiceError(c *gin.Context, err error, fallbackMessage string) {
 	switch {
 	case errors.Is(err, service.ErrProductNotFound):
@@ -69,6 +88,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 	case errors.Is(err, service.ErrProductSpecInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductVariantInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductMediaInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fallbackMessage})
@@ -126,4 +147,31 @@ func normalizeVariantRequests(raw []productVariantRequest) []service.ProductVari
 		})
 	}
 	return variants
+}
+
+func normalizeMediaRequests(raw []productMediaRequest) []service.ProductMediaInput {
+	if len(raw) == 0 {
+		return nil
+	}
+
+	items := make([]service.ProductMediaInput, 0, len(raw))
+	for _, item := range raw {
+		items = append(items, service.ProductMediaInput{
+			ID:           item.ID,
+			VariantID:    item.VariantID,
+			MediaAssetID: item.MediaAssetID,
+			MediaType:    item.MediaType,
+			Role:         item.Role,
+			URL:          item.URL,
+			ThumbnailURL: item.ThumbnailURL,
+			PosterURL:    item.PosterURL,
+			Alt:          item.Alt,
+			Title:        item.Title,
+			Locale:       item.Locale,
+			SortOrder:    item.SortOrder,
+			IsPrimary:    item.IsPrimary,
+			IsVisible:    item.IsVisible,
+		})
+	}
+	return items
 }

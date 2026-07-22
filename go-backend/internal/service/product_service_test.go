@@ -212,7 +212,7 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 		&product.ProductType{},
 		&product.SpecDefinition{},
 		&product.Product{},
-		&product.ProductImage{},
+		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
 	))

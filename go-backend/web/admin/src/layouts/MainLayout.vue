@@ -2,7 +2,7 @@
   <TooltipProvider>
     <div class="flex h-screen h-dvh overflow-hidden bg-background">
       <aside
-        class="hidden shrink-0 border-r border-sidebar-border bg-sidebar transition-[width] duration-200 lg:flex"
+        class="hidden shrink-0 border-r border-dashed border-sidebar-border bg-sidebar transition-[width] duration-200 lg:flex"
         :class="isCollapse ? 'w-[72px]' : 'w-[232px]'"
       >
         <AdminSidebar
@@ -15,7 +15,7 @@
       <Sheet v-model:open="mobileSidebarOpen">
         <SheetContent
           side="left"
-          class="gap-0 p-0"
+          class="gap-0 p-0 border-dashed"
         >
           <SheetTitle class="sr-only">后台导航</SheetTitle>
           <SheetDescription class="sr-only">选择要进入的后台管理模块</SheetDescription>
@@ -28,12 +28,12 @@
       </Sheet>
 
       <section class="flex min-w-0 flex-1 flex-col">
-        <header class="flex h-14 shrink-0 items-center justify-between border-b bg-card px-3 sm:px-4">
+        <header class="flex h-14 shrink-0 items-center justify-between border-b border-dashed border-border bg-card px-3 sm:px-4">
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
-              class="lg:hidden"
+              class="lg:hidden rounded-full"
               aria-label="打开导航"
               @click="mobileSidebarOpen = true"
             >
@@ -45,7 +45,7 @@
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="hidden lg:inline-flex"
+                  class="hidden lg:inline-flex rounded-full"
                   :aria-label="isCollapse ? '展开导航' : '收起导航'"
                   @click="isCollapse = !isCollapse"
                 >
@@ -59,8 +59,8 @@
             </Tooltip>
 
             <div class="min-w-0">
-              <span class="hidden text-[10px] font-medium text-muted-foreground sm:block">运营后台</span>
-              <strong class="block truncate text-sm font-semibold">{{ routeTitle }}</strong>
+              <span class="hidden text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 sm:block">SYSTEM CONTROL / 运营后台</span>
+              <strong class="block truncate text-sm font-black tracking-tighter italic uppercase">{{ routeTitle }}</strong>
             </div>
           </div>
 

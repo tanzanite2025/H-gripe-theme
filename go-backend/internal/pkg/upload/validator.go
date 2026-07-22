@@ -68,6 +68,16 @@ var (
 		AllowedExtensions:   []string{".mp4", ".mov", ".webm"},
 		AllowedContentTypes: []string{"video/mp4", "video/quicktime", "video/webm"},
 	}
+	ProductImageRule = FileRule{
+		MaxSize:             12 << 20,
+		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp", ".gif"},
+		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp", "image/gif"},
+	}
+	ProductVideoRule = FileRule{
+		MaxSize:             200 << 20,
+		AllowedExtensions:   []string{".mp4", ".mov", ".webm"},
+		AllowedContentTypes: []string{"video/mp4", "video/quicktime", "video/webm"},
+	}
 )
 
 func ValidateFile(file *multipart.FileHeader, rule FileRule) error {

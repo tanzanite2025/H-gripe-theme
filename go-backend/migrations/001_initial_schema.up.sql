@@ -112,19 +112,6 @@ CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
 CREATE INDEX IF NOT EXISTS idx_products_locale ON products(locale);
 CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON products(deleted_at);
 
--- Product Images Table
-CREATE TABLE IF NOT EXISTS product_images (
-    id BIGSERIAL PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    url VARCHAR(500) NOT NULL,
-    alt VARCHAR(255),
-    "order" INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id);
-
 -- Carts Table
 CREATE TABLE IF NOT EXISTS carts (
     id BIGSERIAL PRIMARY KEY,

@@ -76,10 +76,7 @@ func normalizePublicChatProductStatus(status string) string {
 }
 
 func makePublicChatProduct(item productdomain.Product) gin.H {
-	thumbnail := ""
-	if len(item.Images) > 0 {
-		thumbnail = item.Images[0].URL
-	}
+	thumbnail := primaryProductMediaImageURL(item)
 
 	salePrice := 0.0
 	price, sale := item.DisplayPrices()
@@ -99,6 +96,9 @@ func makePublicChatProduct(item productdomain.Product) gin.H {
 		"slug":               item.Slug,
 		"sku":                item.DisplaySKU(),
 		"thumbnail":          thumbnail,
+		"media":              makePublicProductMedia(item.Media),
+		"images":             makePublicProductMediaImages(item.Media),
+		"videos":             makePublicProductVideos(item.Media),
 		"default_variant_id": defaultVariantID,
 		"variant_count":      len(item.ActiveVariants()),
 		"variants":           makePublicVariants(item.ActiveVariants()),
@@ -115,6 +115,77 @@ func makePublicChatProduct(item productdomain.Product) gin.H {
 		"updated_at":  item.UpdatedAt,
 		"created_at":  item.CreatedAt,
 	}
+}
+
+func primaryProductMediaImageURL(item productdomain.Product) string {
+	for _, mediaItem := range item.Media {
+		if mediaItem.MediaType == "image" && mediaItem.IsVisible && mediaItem.URL != "" && (mediaItem.IsPrimary || mediaItem.Role == "primary") {
+			return mediaItem.URL
+		}
+	}
+	for _, mediaItem := range item.Media {
+		if mediaItem.MediaType == "image" && mediaItem.IsVisible && mediaItem.URL != "" {
+			return mediaItem.URL
+		}
+	}
+	return ""
+}
+
+func makePublicProductMedia(mediaItems []productdomain.ProductMedia) []gin.H {
+	items := make([]gin.H, 0, len(mediaItems))
+	for _, mediaItem := range mediaItems {
+		if !mediaItem.IsVisible || mediaItem.URL == "" {
+			continue
+		}
+		items = append(items, gin.H{
+			"id":            mediaItem.ID,
+			"variant_id":    mediaItem.VariantID,
+			"media_type":    mediaItem.MediaType,
+			"role":          mediaItem.Role,
+			"url":           mediaItem.URL,
+			"thumbnail_url": mediaItem.ThumbnailURL,
+			"poster_url":    mediaItem.PosterURL,
+			"alt":           mediaItem.Alt,
+			"title":         mediaItem.Title,
+			"sort_order":    mediaItem.SortOrder,
+			"is_primary":    mediaItem.IsPrimary,
+		})
+	}
+	return items
+}
+
+func makePublicProductMediaImages(mediaItems []productdomain.ProductMedia) []gin.H {
+	media := makePublicProductMedia(mediaItems)
+	images := make([]gin.H, 0, len(media))
+	for _, item := range media {
+		if item["media_type"] == "image" {
+			images = append(images, item)
+		}
+	}
+	return images
+}
+
+func makePublicProductVideos(mediaItems []productdomain.ProductMedia) []gin.H {
+	videos := make([]gin.H, 0)
+	for _, mediaItem := range mediaItems {
+		if mediaItem.MediaType != "video" || !mediaItem.IsVisible || mediaItem.URL == "" {
+			continue
+		}
+		videos = append(videos, gin.H{
+			"id":            mediaItem.ID,
+			"variant_id":    mediaItem.VariantID,
+			"media_type":    mediaItem.MediaType,
+			"role":          mediaItem.Role,
+			"url":           mediaItem.URL,
+			"thumbnail_url": mediaItem.ThumbnailURL,
+			"poster_url":    mediaItem.PosterURL,
+			"alt":           mediaItem.Alt,
+			"title":         mediaItem.Title,
+			"sort_order":    mediaItem.SortOrder,
+			"is_primary":    mediaItem.IsPrimary,
+		})
+	}
+	return videos
 }
 
 func makePublicVariants(variants []productdomain.ProductVariant) []gin.H {

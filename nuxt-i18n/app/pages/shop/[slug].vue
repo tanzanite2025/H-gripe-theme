@@ -37,11 +37,19 @@
       </div>
     </div>
 
-    <section v-if="product.images?.length" class="product-gallery" aria-label="Product gallery">
+    <section v-if="productImages.length || productVideos.length" class="product-gallery" aria-label="Product gallery">
       <h2>Gallery</h2>
       <ul class="gallery-list">
-        <li v-for="image in product.images" :key="image.id || image.url" class="gallery-item">
+        <li v-for="image in productImages" :key="image.id || image.url" class="gallery-item">
           <NuxtImg :src="image.url" :alt="image.alt || product.name || 'Product image'" loading="lazy" format="webp" />
+        </li>
+        <li v-for="video in productVideos" :key="video.id || video.url" class="gallery-item gallery-item--video">
+          <video
+            :src="video.url"
+            :poster="video.poster_url || video.thumbnail_url"
+            controls
+            preload="metadata"
+          />
         </li>
       </ul>
     </section>
@@ -75,10 +83,23 @@ definePageMeta({
   layout: 'products',
 })
 
-interface ProductImage {
+interface ProductMediaImage {
   id?: number | string
   url: string
   alt?: string
+}
+
+interface ProductMedia {
+  id?: number | string
+  url: string
+  media_type?: 'image' | 'video' | string
+  role?: string
+  thumbnail_url?: string
+  poster_url?: string
+  alt?: string
+  title?: string
+  is_primary?: boolean
+  is_visible?: boolean
 }
 
 interface ProductType {
@@ -127,7 +148,7 @@ interface GoProduct {
   price: number
   sale_price?: number
   stock?: number
-  images?: ProductImage[]
+  media?: ProductMedia[]
   thumbnail?: string
   meta_title?: string
   meta_description?: string
@@ -199,16 +220,36 @@ const metaDescription = computed(() => {
   return `${text.slice(0, 157)}...`
 })
 
-const productImages = computed(() => {
-  return product.value?.images || []
+const productMediaImages = computed<ProductMedia[]>(() => {
+  return (product.value?.media || []).filter((item) => {
+    return item.media_type === 'image' && item.url && item.is_visible !== false
+  })
+})
+
+const productImages = computed<ProductMediaImage[]>(() => {
+  return productMediaImages.value.map((item) => ({
+    id: item.id,
+    url: item.url,
+    alt: item.alt || item.title,
+  }))
+})
+
+const productVideos = computed<ProductMedia[]>(() => {
+  return (product.value?.media || []).filter((item) => {
+    return item.media_type === 'video' && item.url && item.is_visible !== false
+  })
 })
 
 const primaryImage = computed(() => {
   if (product.value?.thumbnail) {
     return product.value.thumbnail
   }
-  const firstProductImage = productImages.value.find((img) => img.url)
-  return firstProductImage?.url || null
+  const primaryMediaImage = productMediaImages.value.find((img) => img.is_primary || img.role === 'primary')
+  if (primaryMediaImage?.url) {
+    return primaryMediaImage.url
+  }
+  const firstProductMediaImage = productImages.value.find((img) => img.url)
+  return firstProductMediaImage?.url || null
 })
 
 const canonicalUrl = computed(() => `${siteOrigin.value}/shop/${product.value?.slug || slug.value}`)
@@ -633,6 +674,14 @@ useHead(() => {
   height: 100%;
   display: block;
   object-fit: contain;
+}
+
+.gallery-item video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #020617;
 }
 
 .product-specs {

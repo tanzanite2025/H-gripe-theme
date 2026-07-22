@@ -1,10 +1,11 @@
 <template>
-  <Card class="relative gap-0 overflow-hidden py-0 shadow-none">
-    <div v-if="batchVisible && $slots.batch" class="border-b bg-muted/35 px-3 py-2.5 sm:px-4">
+  <Card class="relative gap-0 overflow-hidden py-0 shadow-none rounded-[24px] border-dashed border-border/80 bg-card">
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+    <div v-if="batchVisible && $slots.batch" class="relative z-10 border-b border-dashed border-border/70 bg-muted/20 px-3 py-2.5 sm:px-4">
       <slot name="batch" />
     </div>
 
-    <div class="relative min-h-40 overflow-x-auto">
+    <div class="relative z-10 min-h-40 overflow-x-auto">
       <div
         v-if="loading"
         class="absolute inset-0 z-10 flex items-center justify-center bg-card/80 backdrop-blur-[1px]"
@@ -14,7 +15,7 @@
       <slot />
     </div>
 
-    <div v-if="$slots.footer" class="border-t px-3 py-3 sm:px-4">
+    <div v-if="$slots.footer" class="relative z-10 border-t border-dashed border-border/70 px-3 py-3 sm:px-4">
       <slot name="footer" />
     </div>
   </Card>
