@@ -88,6 +88,9 @@ cache:
 
 worker:
   enabled: false
+  tracking_polling_enabled: false
+  tracking_polling_interval_seconds: 300
+  tracking_polling_batch_limit: 20
 
 log:
   level: info

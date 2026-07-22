@@ -36,7 +36,8 @@ useHead({
 
 .company-page__title {
   margin: 0 0 0.75rem;
-  font-size: 1.5rem;
+  font-size: var(--tz-type-page-title);
+  line-height: 1.18;
   font-weight: 600;
   color: #f9fafb;
 }

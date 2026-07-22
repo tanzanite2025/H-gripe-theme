@@ -69,7 +69,8 @@ useHead({
 
 .support-page__title {
   margin: 0 0 0.75rem;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-size: var(--tz-type-page-title);
+  line-height: 1.18;
   font-weight: 700;
   color: #f9fafb;
 }

@@ -124,6 +124,7 @@ import type { useCartCalculation } from '~/composables/useCartCalculation'
 import ChatStartButton from '~/components/ChatStartButton.vue'
 import { COUNTRIES } from '~/data/countries'
 import { useShippingValidation } from '~/composables/useShippingValidation'
+import type { ShippingQuoteResult } from '~/composables/useShippingQuote'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useAuth } from '~/composables/useAuth'
 
@@ -142,6 +143,7 @@ type ApiResponse<T> = T | { data?: T }
 type CheckoutQuote = {
   subtotal_amount: number
   shipping_fee: number
+  shipping_quote?: ShippingQuoteResult
   tax_amount: number
   member_discount: number
   points_discount: number
@@ -180,6 +182,20 @@ const checkoutQuote = ref<CheckoutQuote | null>(null)
 const isFetchingCheckoutQuote = ref(false)
 const checkoutQuoteError = ref<string | null>(null)
 
+const shippingOptionLabel = (option: ShippingQuoteResult['selected_option'] | null | undefined) => {
+  if (!option) return ''
+  const carrierName = option.carrier_name?.trim()
+  const routeName = option.route_name?.trim()
+  const serviceName = option.service_name?.trim()
+  const serviceCode = option.service_code?.trim()
+  const serviceLabel = serviceName
+    ? serviceCode ? `${serviceName} (${serviceCode})` : serviceName
+    : serviceCode || ''
+  return [carrierName, routeName && routeName !== serviceName ? routeName : '', serviceLabel]
+    .filter(Boolean)
+    .join(' / ')
+}
+
 const shippingState = computed<CartPriceBreakdown['shippingState']>(() => {
   if (!form.value.country) return 'select'
   if (checkoutQuoteError.value) return 'unavailable'
@@ -201,13 +217,20 @@ const stepperOrderSummary = computed(() => {
   const localTotals = typedPriceBreakdown.value || ({} as CartPriceBreakdown)
   const quote = checkoutQuote.value
   const matchedRule = shippingValidation.value?.matchedRule as { service_label?: string } | undefined
+  const selectedOptionLabel = shippingOptionLabel(quote?.shipping_quote?.selected_option)
+  const shippingQuoteLabels = Array.from(new Set(
+    quote?.shipping_quote?.items
+      ?.map(item => item.template_name)
+      .filter(Boolean) || []
+  ))
+  const shippingLabel = selectedOptionLabel || (shippingQuoteLabels.length ? shippingQuoteLabels.join(', ') : matchedRule?.service_label)
 
   return {
     items,
     totals: {
       subtotal: quote?.subtotal_amount ?? localTotals.subtotal ?? 0,
       shipping: quote ? quote.shipping_fee : null,
-      shippingLabel: matchedRule?.service_label,
+      shippingLabel,
       shippingState: shippingState.value,
       tax: quote?.tax_amount ?? localTotals.tax ?? 0,
       pointsDiscount: quote?.points_discount ?? localTotals.pointsDiscount ?? 0,

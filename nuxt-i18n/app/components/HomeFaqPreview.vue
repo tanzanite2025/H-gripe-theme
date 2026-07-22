@@ -4,9 +4,9 @@
     <div class="rounded-2xl premium-card p-3 md:p-4">
       
       <div class="home-faq__header">
-        <h2 class="home-faq__title">Frequently Asked Questions</h2>
+        <h2 class="home-faq__title tz-faq-title">Frequently Asked Questions</h2>
         <div class="mt-[6px] mb-[3px] h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
-        <p class="home-faq__subtitle">Quick answers to common questions</p>
+        <p class="home-faq__subtitle tz-faq-subtitle">Quick answers to common questions</p>
       </div>
 
       <!-- 分类标签 -->
@@ -35,7 +35,7 @@
             class="home-faq__question group"
             @click="toggleItem(item.id)"
           >
-            <span class="home-faq__question-text group-hover:text-sky-400 transition-colors">{{ item.question }}</span>
+            <span class="home-faq__question-text tz-faq-question group-hover:text-sky-400 transition-colors">{{ item.question }}</span>
             <svg 
               class="home-faq__icon"
               :class="{ 'home-faq__icon--open': expandedItems.has(item.id) }"
@@ -54,7 +54,7 @@
             leave-from-class="opacity-100 max-h-[500px]"
             leave-to-class="opacity-0 max-h-0"
           >
-            <div v-if="expandedItems.has(item.id)" class="home-faq__answer bg-slate-900/30" v-html="item.answer" />
+            <div v-if="expandedItems.has(item.id)" class="home-faq__answer tz-faq-answer bg-slate-900/30" v-html="item.answer" />
           </Transition>
         </div>
       </div>
@@ -186,14 +186,11 @@ const displayItems = computed<FlatItem[]>(() => {
 
 .home-faq__title {
   margin: 0 0 0.35rem;
-  font-size: 1.5rem;
-  font-weight: 700;
   color: #f1f5f9;
 }
 
 .home-faq__subtitle {
   margin: 0;
-  font-size: 0.9rem;
   color: #94a3b8;
 }
 
@@ -219,8 +216,6 @@ const displayItems = computed<FlatItem[]>(() => {
 
 .home-faq__question-text {
   flex: 1;
-  font-size: 0.9rem;
-  font-weight: 500;
   color: #e2e8f0;
 }
 
@@ -243,30 +238,8 @@ const displayItems = computed<FlatItem[]>(() => {
 
 .home-faq__answer {
   padding: 0 1.25rem 1.25rem 1.25rem;
-  font-size: 0.85rem;
-  line-height: 1.7;
   color: #94a3b8;
   overflow: hidden;
-}
-
-.home-faq__answer :deep(ul),
-.home-faq__answer :deep(ol) {
-  padding-left: 1.25rem;
-  margin: 0.5rem 0;
-}
-
-.home-faq__answer :deep(li) {
-  margin: 0.25rem 0;
-}
-
-.home-faq__answer :deep(strong) {
-  color: #f1f5f9;
-}
-
-.home-faq__answer :deep(a) {
-  color: #38bdf8;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 .home-faq__footer {

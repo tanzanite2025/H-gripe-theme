@@ -430,7 +430,8 @@ const resetForm = () => {
 }
 
 .feedback-card__title {
-  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-size: var(--tz-type-page-title);
+  line-height: 1.18;
   font-weight: 700;
   color: #f8fafc;
   margin: 0 0 0.25rem;
@@ -458,7 +459,8 @@ const resetForm = () => {
 }
 
 .feedback-card__stat-value {
-  font-size: 1.1rem;
+  font-size: var(--tz-type-card-title);
+  line-height: 1.35;
   font-weight: 600;
   color: #e0e7ff;
   margin: 0;

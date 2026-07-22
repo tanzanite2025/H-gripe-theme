@@ -13,6 +13,11 @@ const unwrapList = (response, key) => {
 }
 
 export const shippingApi = {
+  async quote(payload) {
+    const response = await axios.post('/api/admin/shipping/quote', payload)
+    return unwrapPayload(response)
+  },
+
   async listTemplates() {
     const response = await axios.get('/api/admin/shipping/templates')
     return unwrapList(response, 'templates')
@@ -113,6 +118,116 @@ export const shippingApi = {
     return unwrapPayload(response)
   },
 
+  async listTrackingProviders(params = {}) {
+    const response = await axios.get('/api/admin/shipping/tracking-providers', { params })
+    return unwrapList(response, 'tracking_providers')
+  },
+
+  async getTrackingProvider(id) {
+    const response = await axios.get(`/api/admin/shipping/tracking-providers/${id}`)
+    return unwrapPayload(response)
+  },
+
+  async createTrackingProvider(payload) {
+    const response = await axios.post('/api/admin/shipping/tracking-providers', payload)
+    return unwrapPayload(response)
+  },
+
+  async updateTrackingProvider(id, payload) {
+    const response = await axios.put(`/api/admin/shipping/tracking-providers/${id}`, payload)
+    return unwrapPayload(response)
+  },
+
+  async deleteTrackingProvider(id) {
+    const response = await axios.delete(`/api/admin/shipping/tracking-providers/${id}`)
+    return unwrapPayload(response)
+  },
+
+  async listTrackingCarrierMappings(params = {}) {
+    const response = await axios.get('/api/admin/shipping/tracking-carrier-mappings', { params })
+    return unwrapList(response, 'tracking_carrier_mappings')
+  },
+
+  async getTrackingCarrierMapping(id) {
+    const response = await axios.get(`/api/admin/shipping/tracking-carrier-mappings/${id}`)
+    return unwrapPayload(response)
+  },
+
+  async createTrackingCarrierMapping(payload) {
+    const response = await axios.post('/api/admin/shipping/tracking-carrier-mappings', payload)
+    return unwrapPayload(response)
+  },
+
+  async updateTrackingCarrierMapping(id, payload) {
+    const response = await axios.put(`/api/admin/shipping/tracking-carrier-mappings/${id}`, payload)
+    return unwrapPayload(response)
+  },
+
+  async deleteTrackingCarrierMapping(id) {
+    const response = await axios.delete(`/api/admin/shipping/tracking-carrier-mappings/${id}`)
+    return unwrapPayload(response)
+  },
+
+  async listTrackingShipments(params = {}) {
+    const response = await axios.get('/api/admin/shipping/tracking-shipments', { params })
+    return unwrapList(response, 'tracking_shipments')
+  },
+
+  async listTrackingEvents(orderId) {
+    const response = await axios.get(`/api/admin/shipping/tracking-shipments/${orderId}/events`)
+    return unwrapList(response, 'tracking_events')
+  },
+
+  async getTrackingPollingState() {
+    const response = await axios.get('/api/admin/shipping/tracking-polling')
+    return unwrapPayload(response)
+  },
+
+  async getTrackingWebhookState() {
+    const response = await axios.get('/api/admin/shipping/tracking-webhook')
+    return unwrapPayload(response)
+  },
+
+  async syncDueTrackingShipments(params = {}) {
+    const response = await axios.post('/api/admin/shipping/tracking-shipments/sync-due', null, { params })
+    return unwrapPayload(response)
+  },
+
+  async registerTrackingShipment(orderId) {
+    const response = await axios.post(`/api/admin/shipping/tracking-shipments/${orderId}/register`)
+    return unwrapPayload(response)
+  },
+
+  async syncTrackingShipment(orderId) {
+    const response = await axios.post(`/api/admin/shipping/tracking-shipments/${orderId}/sync`)
+    return unwrapPayload(response)
+  },
+
+  async listCarrierServices(params = {}) {
+    const response = await axios.get('/api/admin/shipping/carrier-services', { params })
+    return unwrapList(response, 'carrier_services')
+  },
+
+  async getCarrierService(id) {
+    const response = await axios.get(`/api/admin/shipping/carrier-services/${id}`)
+    return unwrapPayload(response)
+  },
+
+  async createCarrierService(payload) {
+    const response = await axios.post('/api/admin/shipping/carrier-services', payload)
+    return unwrapPayload(response)
+  },
+
+  async updateCarrierService(id, payload) {
+    const response = await axios.put(`/api/admin/shipping/carrier-services/${id}`, payload)
+    return unwrapPayload(response)
+  },
+
+  async deleteCarrierService(id) {
+    const response = await axios.delete(`/api/admin/shipping/carrier-services/${id}`)
+    return unwrapPayload(response)
+  },
+
   async listPackagingRules() {
     const response = await axios.get('/api/admin/shipping/packaging-rules')
     return unwrapList(response, 'packaging_rules')
@@ -135,6 +250,16 @@ export const shippingApi = {
 
   async deletePackagingRule(id) {
     const response = await axios.delete(`/api/admin/shipping/packaging-rules/${id}`)
+    return unwrapPayload(response)
+  },
+
+  async createPackagingRuleApply(payload) {
+    const response = await axios.post('/api/admin/shipping/packaging-rules/apply', payload)
+    return unwrapPayload(response)
+  },
+
+  async deletePackagingRuleApply(applyId) {
+    const response = await axios.delete(`/api/admin/shipping/packaging-rules/apply/${applyId}`)
     return unwrapPayload(response)
   },
 }

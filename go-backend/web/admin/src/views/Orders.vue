@@ -188,10 +188,50 @@
               <DetailItem label="支付方式">{{ currentOrder.payment_method || '-' }}</DetailItem>
               <DetailItem label="物流方式">{{ currentOrder.shipping_method || '-' }}</DetailItem>
               <DetailItem label="物流单号">{{ currentOrder.tracking_number || '-' }}</DetailItem>
-              <DetailItem label="物流公司">{{ currentOrder.carrier_code || '-' }}</DetailItem>
+              <DetailItem label="本地承运商">{{ orderCarrierLabel(currentOrder) }}</DetailItem>
+              <DetailItem label="线路服务">{{ orderCarrierServiceLabel(currentOrder) }}</DetailItem>
+              <DetailItem label="Provider Code">{{ currentOrder.provider_carrier_code || '-' }}</DetailItem>
               <DetailItem label="创建时间">{{ formatDate(currentOrder.created_at) }}</DetailItem>
               <DetailItem label="支付时间">{{ currentOrder.paid_at ? formatDate(currentOrder.paid_at) : '-' }}</DetailItem>
             </dl>
+            <div v-if="currentOrder.tracking_number" class="rounded-xl border bg-muted/30 p-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">TRACKING SYNC / 轨迹同步</p>
+                  <p class="mt-1 text-xs text-muted-foreground">来自订单发货信息的追踪状态记录，后续自动轮询和 webhook 都会围绕这里更新。</p>
+                </div>
+                <AdminStatusBadge :tone="trackingSyncStatusTone(currentTrackingShipment?.sync_status)">
+                  {{ trackingSyncStatusName(currentTrackingShipment?.sync_status) }}
+                </AdminStatusBadge>
+              </div>
+              <dl class="mt-3 grid gap-2 text-xs sm:grid-cols-4">
+                <div class="rounded-lg bg-background/80 p-2">
+                  <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">登记状态</dt>
+                  <dd class="mt-1 font-bold">{{ trackingRegistrationStatusName(currentTrackingShipment?.registration_status) }}</dd>
+                </div>
+                <div class="rounded-lg bg-background/80 p-2">
+                  <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">事件数量</dt>
+                  <dd class="mt-1 font-mono font-bold">{{ currentTrackingShipment?.event_count ?? currentTrackingEvents.length }}</dd>
+                </div>
+                <div class="rounded-lg bg-background/80 p-2">
+                  <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">最后同步</dt>
+                  <dd class="mt-1 font-mono text-[10px] font-bold">{{ formatDate(currentTrackingShipment?.last_synced_at) }}</dd>
+                </div>
+                <div class="rounded-lg bg-background/80 p-2">
+                  <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">下次自动同步</dt>
+                  <dd class="mt-1 font-mono text-[10px] font-bold">{{ formatDate(currentTrackingShipment?.next_sync_at) }}</dd>
+                </div>
+              </dl>
+              <p v-if="currentTrackingShipment?.last_error" class="mt-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                {{ currentTrackingShipment.last_error }}
+              </p>
+            </div>
+            <div v-if="currentOrder.tracking_number && hasPermission('order:edit')" class="flex justify-end">
+              <Button variant="outline" size="sm" class="rounded-full" :disabled="syncingTracking" @click="syncCurrentOrderTracking">
+                <RefreshCw :class="['size-3.5', syncingTracking ? 'animate-spin' : '']" />
+                {{ syncingTracking ? '同步中' : '同步轨迹' }}
+              </Button>
+            </div>
           </OrderDetailSection>
 
           <OrderDetailSection title="收货地址">
@@ -244,6 +284,28 @@
             </dl>
           </OrderDetailSection>
 
+          <OrderDetailSection title="物流轨迹">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead class="w-44">时间</TableHead>
+                  <TableHead class="w-32">状态</TableHead>
+                  <TableHead class="w-40">位置</TableHead>
+                  <TableHead>描述</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableEmpty v-if="currentTrackingEvents.length === 0" :colspan="4">暂无物流轨迹</TableEmpty>
+                <TableRow v-for="event in currentTrackingEvents" :key="event.id || `${event.tracking_number}-${event.event_time}-${event.status}`">
+                  <TableCell class="font-mono text-[10px] text-muted-foreground">{{ formatDate(event.event_time) }}</TableCell>
+                  <TableCell><AdminStatusBadge tone="blue">{{ event.status || '-' }}</AdminStatusBadge></TableCell>
+                  <TableCell class="text-xs">{{ event.location || '-' }}</TableCell>
+                  <TableCell class="text-xs">{{ event.description || '-' }}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </OrderDetailSection>
+
           <OrderDetailSection title="备注">
             <div class="space-y-4">
               <div>
@@ -269,7 +331,7 @@
     </Dialog>
 
     <Dialog v-model:open="statusDialogVisible">
-      <DialogContent size="sm">
+      <DialogContent size="lg">
         <form @submit.prevent="submitStatus">
           <DialogHeader>
             <DialogTitle>状态管理</DialogTitle>
@@ -303,9 +365,50 @@
             </label>
 
             <label class="block space-y-1">
-              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">CARRIER / 物流公司代码</span>
-              <Input v-model="statusForm.carrier_code" />
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">PROVIDER / 追踪服务商</span>
+              <Select v-model="statusForm.tracking_provider_id">
+                <SelectTrigger class="w-full"><SelectValue placeholder="请选择追踪 Provider" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">请选择追踪 Provider</SelectItem>
+                  <SelectItem v-for="provider in trackingProviders" :key="provider.id" :value="String(provider.id)">
+                    {{ provider.provider_name }} / {{ provider.provider_code }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </label>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block space-y-1">
+                <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">CARRIER / 本地承运商</span>
+                <Select v-model="statusForm.carrier_id" @update:model-value="handleStatusCarrierChange">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="可选：选择承运商" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">不指定承运商</SelectItem>
+                    <SelectItem v-for="carrier in carriers" :key="carrier.id" :value="String(carrier.id)">
+                      {{ carrier.name }} / {{ carrier.code }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+
+              <label class="block space-y-1">
+                <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SERVICE / 线路服务</span>
+                <Select v-model="statusForm.carrier_service_id" @update:model-value="handleStatusCarrierServiceChange">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="可选：选择线路服务" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">不指定线路服务</SelectItem>
+                    <SelectItem v-for="service in filteredStatusCarrierServices" :key="service.id" :value="String(service.id)">
+                      {{ service.service_name }} / {{ service.service_code }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
+
+            <div class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
+              保存时系统会按“线路服务映射优先、承运商映射其次”解析 Provider Carrier Code。
+              当前可预览：<span class="font-mono font-bold text-foreground">{{ resolvedProviderCarrierCodeLabel }}</span>
+            </div>
           </div>
 
           <DialogFooter>
@@ -386,6 +489,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { shippingApi } from '@/api/shipping'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
@@ -454,8 +558,15 @@ const selectedOrders = ref([])
 const detailDialogVisible = ref(false)
 const statusDialogVisible = ref(false)
 const submitting = ref(false)
+const syncingTracking = ref(false)
 const currentOrder = ref(null)
+const currentTrackingEvents = ref([])
+const currentTrackingShipment = ref(null)
 const stats = ref({})
+const carriers = ref([])
+const carrierServices = ref([])
+const trackingProviders = ref([])
+const trackingCarrierMappings = ref([])
 
 const filters = reactive({
   search: '',
@@ -473,7 +584,9 @@ const statusForm = reactive({
   status: 'pending',
   shipping_status: 'pending',
   tracking_number: '',
-  carrier_code: ''
+  tracking_provider_id: 'none',
+  carrier_id: 'none',
+  carrier_service_id: 'none'
 })
 const adminNoteForm = reactive({ admin_note: '' })
 const confirmation = reactive({
@@ -523,6 +636,45 @@ const selectionState = computed(() => {
   if (orders.value.length === 0 || selectedOrders.value.length === 0) return false
   return selectedOrders.value.length === orders.value.length ? true : 'indeterminate'
 })
+const filteredStatusCarrierServices = computed(() => {
+  const carrierID = numericSelectID(statusForm.carrier_id)
+  if (!carrierID) return carrierServices.value
+  return carrierServices.value.filter((service) => Number(service.carrier_id) === carrierID)
+})
+const selectedStatusCarrierService = computed(() => {
+  const serviceID = numericSelectID(statusForm.carrier_service_id)
+  if (!serviceID) return null
+  return carrierServices.value.find((service) => Number(service.id) === serviceID) || null
+})
+const selectedTrackingCarrierMapping = computed(() => {
+  const providerID = numericSelectID(statusForm.tracking_provider_id)
+  if (!providerID) return null
+
+  const serviceID = numericSelectID(statusForm.carrier_service_id)
+  if (serviceID) {
+    const serviceMapping = trackingCarrierMappings.value.find((mapping) =>
+      Number(mapping.provider_id) === providerID &&
+      mapping.scope === 'carrier_service' &&
+      Number(mapping.carrier_service_id) === serviceID
+    )
+    if (serviceMapping) return serviceMapping
+  }
+
+  const serviceCarrierID = selectedStatusCarrierService.value?.carrier_id
+  const carrierID = numericSelectID(statusForm.carrier_id) || (serviceCarrierID ? Number(serviceCarrierID) : null)
+  if (!carrierID) return null
+
+  return trackingCarrierMappings.value.find((mapping) =>
+    Number(mapping.provider_id) === providerID &&
+    mapping.scope === 'carrier' &&
+    Number(mapping.carrier_id) === carrierID
+  ) || null
+})
+const resolvedProviderCarrierCodeLabel = computed(() => {
+  const mapping = selectedTrackingCarrierMapping.value
+  if (!mapping) return '未匹配映射'
+  return `${mapping.provider_carrier_code}${mapping.provider_carrier_name ? ` / ${mapping.provider_carrier_name}` : ''}`
+})
 
 const hasPermission = (permission) => authStore.hasPermission(permission)
 
@@ -534,11 +686,75 @@ const getPaymentStatusName = (status) => paymentStatusOptions.find((option) => o
 const paymentStatusTone = (status) => ({ unpaid: 'gray', paid: 'green', refunded: 'amber' })[status] || 'gray'
 const getShippingStatusName = (status) => shippingStatusOptions.find((option) => option.value === status)?.label || status
 const shippingStatusTone = (status) => ({ pending: 'gray', processing: 'amber', shipped: 'blue', delivered: 'green' })[status] || 'gray'
+const trackingSyncStatusName = (status) => ({
+  pending: '待同步',
+  syncing: '同步中',
+  synced: '已同步',
+  failed: '同步失败'
+})[status] || '未建立'
+const trackingSyncStatusTone = (status) => ({
+  pending: 'gray',
+  syncing: 'blue',
+  synced: 'green',
+  failed: 'coral'
+})[status] || 'gray'
+const trackingRegistrationStatusName = (status) => ({
+  pending: '待登记',
+  registered: '已登记',
+  failed: '登记失败'
+})[status] || '未建立'
 
 const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 const formatMoney = (amount) => Number(amount || 0).toFixed(2)
 const shippingName = (address) => [address?.first_name, address?.last_name].filter(Boolean).join(' ') || '-'
 const shippingAddressLine = (address) => [address?.address_1, address?.address_2].filter(Boolean).join(' ') || '-'
+const numericSelectID = (value) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+const selectValueFromID = (value) => numericSelectID(value) ? String(value) : 'none'
+const defaultTrackingProviderValue = () => trackingProviders.value[0]?.id ? String(trackingProviders.value[0].id) : 'none'
+const providerValueForLocalShippingSource = (carrierIDValue, carrierServiceIDValue) => {
+  const carrierServiceID = numericSelectID(carrierServiceIDValue)
+  if (carrierServiceID) {
+    const serviceMapping = trackingCarrierMappings.value.find((mapping) =>
+      mapping.scope === 'carrier_service' &&
+      Number(mapping.carrier_service_id) === carrierServiceID
+    )
+    if (serviceMapping?.provider_id) return String(serviceMapping.provider_id)
+  }
+
+  const service = carrierServiceID
+    ? carrierServices.value.find((item) => Number(item.id) === carrierServiceID)
+    : null
+  const carrierID = numericSelectID(carrierIDValue) || numericSelectID(service?.carrier_id)
+  if (carrierID) {
+    const carrierMapping = trackingCarrierMappings.value.find((mapping) =>
+      mapping.scope === 'carrier' &&
+      Number(mapping.carrier_id) === carrierID
+    )
+    if (carrierMapping?.provider_id) return String(carrierMapping.provider_id)
+  }
+
+  return defaultTrackingProviderValue()
+}
+const defaultTrackingProviderForOrder = (order) => {
+  const storedProvider = selectValueFromID(order?.tracking_provider_id)
+  if (storedProvider !== 'none') return storedProvider
+  return providerValueForLocalShippingSource(order?.carrier_id, order?.carrier_service_id)
+}
+const orderCarrierLabel = (order) => {
+  const carrierID = Number(order?.carrier_id)
+  if (!Number.isFinite(carrierID) || carrierID <= 0) return '-'
+  const carrier = carriers.value.find((item) => Number(item.id) === carrierID)
+  return carrier ? `${carrier.name} / ${carrier.code}` : `Carrier #${carrierID}`
+}
+const orderCarrierServiceLabel = (order) => {
+  const serviceID = Number(order?.carrier_service_id)
+  if (!Number.isFinite(serviceID) || serviceID <= 0) return '-'
+  const service = carrierServices.value.find((item) => Number(item.id) === serviceID)
+  return service ? `${service.service_name} / ${service.service_code}` : `Carrier service #${serviceID}`
+}
 
 const buildFilterParams = () => ({
   ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
@@ -574,6 +790,46 @@ const fetchOrders = async () => {
   }
 }
 
+const fetchShippingLookups = async () => {
+  try {
+    const [providerList, carrierList, serviceList, mappingList] = await Promise.all([
+      shippingApi.listTrackingProviders({ enabled: 'true' }),
+      shippingApi.listCarriers({ enabled: 'true' }),
+      shippingApi.listCarrierServices({ enabled: 'true' }),
+      shippingApi.listTrackingCarrierMappings({ enabled: 'true' })
+    ])
+    trackingProviders.value = providerList
+    carriers.value = carrierList
+    carrierServices.value = serviceList
+    trackingCarrierMappings.value = mappingList
+  } catch (error) {
+    console.error('Failed to fetch shipping lookups:', error)
+  }
+}
+
+const unwrapTrackingEvents = (response) => {
+  const payload = response.data?.data ?? response.data ?? {}
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload.data)) return payload.data
+  if (Array.isArray(payload.events)) return payload.events
+  return []
+}
+
+const fetchOrderTrackingEvents = async (orderID) => {
+  if (!orderID) {
+    currentTrackingEvents.value = []
+    return
+  }
+
+  try {
+    const response = await axios.get(`/api/v1/shipping/orders/${orderID}/tracking`)
+    currentTrackingEvents.value = unwrapTrackingEvents(response)
+  } catch (error) {
+    currentTrackingEvents.value = []
+    console.error('Failed to fetch order tracking events:', error)
+  }
+}
+
 const refreshOrders = () => Promise.all([fetchOrders(), fetchStats()])
 const applyFilters = () => { pagination.page = 1; fetchOrders() }
 const resetFilters = () => {
@@ -586,8 +842,14 @@ const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; paginatio
 
 const showOrderDetail = async (order) => {
   try {
-    const response = await axios.get(`/api/admin/orders/${order.id}`)
+    currentTrackingShipment.value = null
+    const [response] = await Promise.all([
+      axios.get(`/api/admin/orders/${order.id}`),
+      fetchShippingLookups(),
+      fetchOrderTrackingEvents(order.id)
+    ])
     currentOrder.value = response.data.order
+    currentTrackingShipment.value = response.data.tracking_shipment || null
     adminNoteForm.admin_note = currentOrder.value.admin_note || ''
     detailDialogVisible.value = true
   } catch (error) {
@@ -595,16 +857,47 @@ const showOrderDetail = async (order) => {
   }
 }
 
-const showStatusDialog = (order) => {
+const showStatusDialog = async (order) => {
+  await fetchShippingLookups()
   Object.assign(statusForm, {
     id: order.id,
     order_number: order.order_number,
     status: order.status,
     shipping_status: order.shipping_status,
     tracking_number: order.tracking_number || '',
-    carrier_code: order.carrier_code || ''
+    tracking_provider_id: defaultTrackingProviderForOrder(order),
+    carrier_id: selectValueFromID(order.carrier_id),
+    carrier_service_id: selectValueFromID(order.carrier_service_id)
   })
   statusDialogVisible.value = true
+}
+
+const handleStatusCarrierChange = (value) => {
+  const carrierID = numericSelectID(value)
+  if (!carrierID) {
+    statusForm.carrier_id = 'none'
+    return
+  }
+
+  const service = selectedStatusCarrierService.value
+  if (service && Number(service.carrier_id) !== carrierID) {
+    statusForm.carrier_service_id = 'none'
+  }
+  statusForm.tracking_provider_id = providerValueForLocalShippingSource(carrierID, statusForm.carrier_service_id)
+}
+
+const handleStatusCarrierServiceChange = (value) => {
+  const serviceID = numericSelectID(value)
+  if (!serviceID) {
+    statusForm.carrier_service_id = 'none'
+    return
+  }
+
+  const service = carrierServices.value.find((item) => Number(item.id) === serviceID)
+  if (service?.carrier_id) {
+    statusForm.carrier_id = String(service.carrier_id)
+  }
+  statusForm.tracking_provider_id = providerValueForLocalShippingSource(statusForm.carrier_id, serviceID)
 }
 
 const submitStatus = async () => {
@@ -612,10 +905,26 @@ const submitStatus = async () => {
   try {
     await axios.patch(`/api/admin/orders/${statusForm.id}/status`, { status: statusForm.status })
     await axios.patch(`/api/admin/orders/${statusForm.id}/shipping-status`, { shipping_status: statusForm.shipping_status })
-    if (statusForm.tracking_number) {
+    const trackingNumber = statusForm.tracking_number?.trim()
+    if (trackingNumber) {
+      const trackingProviderID = numericSelectID(statusForm.tracking_provider_id)
+      const carrierID = numericSelectID(statusForm.carrier_id)
+      const carrierServiceID = numericSelectID(statusForm.carrier_service_id)
+
+      if (!trackingProviderID) {
+        toast.error('请选择追踪 Provider')
+        return
+      }
+      if (!carrierID && !carrierServiceID) {
+        toast.error('请选择本地承运商或线路服务')
+        return
+      }
+
       await axios.patch(`/api/admin/orders/${statusForm.id}/tracking`, {
-        tracking_number: statusForm.tracking_number,
-        carrier_code: statusForm.carrier_code
+        tracking_number: trackingNumber,
+        tracking_provider_id: trackingProviderID,
+        carrier_id: carrierID,
+        carrier_service_id: carrierServiceID
       })
     }
     toast.success('订单状态已更新')
@@ -625,6 +934,23 @@ const submitStatus = async () => {
     console.error('Failed to update order status:', error)
   } finally {
     submitting.value = false
+  }
+}
+
+const syncCurrentOrderTracking = async () => {
+  if (!currentOrder.value?.id) return
+
+  syncingTracking.value = true
+  try {
+    const response = await axios.post(`/api/admin/orders/${currentOrder.value.id}/tracking/sync`)
+    currentTrackingEvents.value = response.data?.tracking?.events || []
+    currentTrackingShipment.value = response.data?.tracking?.shipment || currentTrackingShipment.value
+    toast.success(`物流轨迹已同步：${currentTrackingEvents.value.length} 条`)
+  } catch (error) {
+    console.error('Failed to sync tracking info:', error)
+    toast.error(error.response?.data?.error || '物流轨迹同步失败')
+  } finally {
+    syncingTracking.value = false
   }
 }
 
@@ -698,5 +1024,8 @@ const exportOrders = async () => {
   }
 }
 
-onMounted(refreshOrders)
+onMounted(() => {
+  refreshOrders()
+  fetchShippingLookups()
+})
 </script>

@@ -12,6 +12,12 @@ type TrackingService interface {
 	DetectCarrier(ctx context.Context, trackingNumber string) ([]string, error)
 }
 
+// TrackingRegistrar is implemented by providers that require tracking numbers
+// to be registered before webhook updates or scheduled detail syncs are reliable.
+type TrackingRegistrar interface {
+	RegisterTrackings(ctx context.Context, trackings []TrackingRequest) error
+}
+
 // TrackingRequest 追踪请求
 type TrackingRequest struct {
 	TrackingNumber string `json:"tracking_number"`

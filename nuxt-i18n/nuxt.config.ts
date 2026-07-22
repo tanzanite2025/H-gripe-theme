@@ -9,6 +9,82 @@ const publicApiBase = trimTrailingSlash(
 )
 const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9000')
 
+type RollupBuildWarning = {
+  code?: string
+  id?: string
+  message?: string
+  plugin?: string
+}
+
+const normalizeModuleId = (id: string) => id.replace(/\\/g, '/')
+
+const getManualChunkName = (id: string) => {
+  const moduleId = normalizeModuleId(id)
+  if (!moduleId.includes('/node_modules/')) return undefined
+
+  if (
+    moduleId.includes('/vue/') ||
+    moduleId.includes('/@vue/') ||
+    moduleId.includes('/vue-router/') ||
+    moduleId.includes('/pinia/') ||
+    moduleId.includes('/@pinia/')
+  ) {
+    return 'vendor-vue'
+  }
+
+  if (
+    moduleId.includes('/@intlify/') ||
+    moduleId.includes('/vue-i18n/') ||
+    moduleId.includes('/@nuxtjs/i18n/')
+  ) {
+    return 'vendor-i18n'
+  }
+
+  if (
+    moduleId.includes('/@iconify/') ||
+    moduleId.includes('/@nuxt/icon/')
+  ) {
+    return 'vendor-icons'
+  }
+
+  if (
+    moduleId.includes('/@vueuse/') ||
+    moduleId.includes('/focus-trap/') ||
+    moduleId.includes('/zod/')
+  ) {
+    return 'vendor-utils'
+  }
+
+  return undefined
+}
+
+const shouldIgnoreBuildWarning = (warning: RollupBuildWarning) => {
+  const message = warning.message || ''
+  const id = normalizeModuleId(warning.id || '')
+
+  return (
+    (
+      warning.plugin === 'nuxt:module-preload-polyfill' &&
+      message.includes('Sourcemap is likely to be incorrect')
+    ) ||
+    (
+      warning.code === 'INVALID_ANNOTATION' &&
+      message.includes('#__PURE__') &&
+      (id.includes('/node_modules/@vueuse/core/dist/index.js') || message.includes('@vueuse/core'))
+    )
+  )
+}
+
+const shouldIgnoreNitroBuildWarning = (warning: RollupBuildWarning) => {
+  const message = warning.message || ''
+
+  return (
+    shouldIgnoreBuildWarning(warning) ||
+    ['CIRCULAR_DEPENDENCY', 'EVAL'].includes(warning.code || '') ||
+    message.includes('Unsupported source map comment')
+  )
+}
+
 export default defineNuxtConfig({
   extends: ['./layers/admin', './layers/shop'],
   compatibilityDate: '2025-07-15',
@@ -79,6 +155,24 @@ export default defineNuxtConfig({
     },
   },
 
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: getManualChunkName,
+        },
+        onwarn(warning, warn) {
+          if (shouldIgnoreBuildWarning(warning as RollupBuildWarning)) return
+          warn(warning)
+        },
+        onLog(level, log, handler) {
+          if (level === 'warn' && shouldIgnoreBuildWarning(log as RollupBuildWarning)) return
+          handler(level, log)
+        },
+      },
+    },
+  },
+
   app: {
     baseURL: '/',
     buildAssetsDir: '_nuxt/',
@@ -95,7 +189,17 @@ export default defineNuxtConfig({
   ssr: true,
 
   nitro: {
-    preset: env.NITRO_PRESET || 'node-server'
+    preset: env.NITRO_PRESET || 'node-server',
+    rollupConfig: {
+      onwarn(warning, warn) {
+        if (shouldIgnoreNitroBuildWarning(warning as RollupBuildWarning)) return
+        warn(warning)
+      },
+      onLog(level, log, handler) {
+        if (level === 'warn' && shouldIgnoreNitroBuildWarning(log as RollupBuildWarning)) return
+        handler(level, log)
+      },
+    },
   },
 
   runtimeConfig: {

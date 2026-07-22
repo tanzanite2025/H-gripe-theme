@@ -132,10 +132,15 @@ func (r *OrderRepository) UpdateShippingStatus(id uint, shippingStatus string) e
 }
 
 // UpdateTrackingInfo 更新物流追踪信息
-func (r *OrderRepository) UpdateTrackingInfo(id uint, trackingNumber, carrierCode string) error {
+func (r *OrderRepository) UpdateTrackingInfo(id uint, info order.TrackingInfoUpdate) error {
 	updates := map[string]interface{}{
-		"tracking_number": trackingNumber,
-		"carrier_code":    carrierCode,
+		"tracking_number":             info.TrackingNumber,
+		"tracking_provider_id":        info.TrackingProviderID,
+		"carrier_id":                  info.CarrierID,
+		"carrier_service_id":          info.CarrierServiceID,
+		"tracking_carrier_mapping_id": info.TrackingCarrierMappingID,
+		"provider_carrier_code":       info.ProviderCarrierCode,
+		"provider_carrier_name":       info.ProviderCarrierName,
 	}
 
 	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(updates).Error

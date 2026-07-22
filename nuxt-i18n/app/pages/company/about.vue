@@ -164,7 +164,8 @@ useHead({
 
 .company-page__title {
   margin: 0 0 0.75rem;
-  font-size: 1.5rem;
+  font-size: var(--tz-type-page-title);
+  line-height: 1.18;
   font-weight: 600;
   color: #f9fafb;
 }
@@ -195,7 +196,8 @@ useHead({
 
 .company-section__title {
   margin: 0 0 0.5rem;
-  font-size: 1.1rem;
+  font-size: var(--tz-type-section-title);
+  line-height: 1.35;
   font-weight: 600;
   color: #e5e7eb;
   text-align: center;
@@ -312,10 +314,6 @@ useHead({
 }
 
 @media (min-width: 768px) {
-  .company-page__title {
-    font-size: 1.75rem;
-  }
-
   .company-values {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

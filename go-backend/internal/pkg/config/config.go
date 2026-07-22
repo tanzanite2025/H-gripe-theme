@@ -99,7 +99,10 @@ type LogConfig struct {
 }
 
 type WorkerConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled                        bool `mapstructure:"enabled"`
+	TrackingPollingEnabled         bool `mapstructure:"tracking_polling_enabled"`
+	TrackingPollingIntervalSeconds int  `mapstructure:"tracking_polling_interval_seconds"`
+	TrackingPollingBatchLimit      int  `mapstructure:"tracking_polling_batch_limit"`
 }
 
 // Load 加载配置文件
@@ -203,6 +206,9 @@ func setDefaults() {
 	viper.SetDefault("log.output", "stdout")
 
 	viper.SetDefault("worker.enabled", false)
+	viper.SetDefault("worker.tracking_polling_enabled", false)
+	viper.SetDefault("worker.tracking_polling_interval_seconds", 300)
+	viper.SetDefault("worker.tracking_polling_batch_limit", 20)
 }
 
 func bindEnvironment() {
@@ -241,6 +247,9 @@ func bindEnvironment() {
 	_ = viper.BindEnv("log.output", "LOG_OUTPUT")
 
 	_ = viper.BindEnv("worker.enabled", "WORKER_ENABLED", "ASYNQ_WORKER_ENABLED")
+	_ = viper.BindEnv("worker.tracking_polling_enabled", "WORKER_TRACKING_POLLING_ENABLED", "TRACKING_POLLING_ENABLED")
+	_ = viper.BindEnv("worker.tracking_polling_interval_seconds", "WORKER_TRACKING_POLLING_INTERVAL_SECONDS", "TRACKING_POLLING_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.tracking_polling_batch_limit", "WORKER_TRACKING_POLLING_BATCH_LIMIT", "TRACKING_POLLING_BATCH_LIMIT")
 }
 
 func splitEnvList(value string) []string {

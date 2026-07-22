@@ -52,3 +52,7 @@ func (s *MockTrackingService) BatchTrack(ctx context.Context, trackings []Tracki
 func (s *MockTrackingService) DetectCarrier(ctx context.Context, trackingNumber string) ([]string, error) {
 	return []string{"ups", "fedex", "dhl"}, nil
 }
+
+func (s *MockTrackingService) RegisterTrackings(ctx context.Context, trackings []TrackingRequest) error {
+	return validateBatchTrackingRequest(trackings)
+}

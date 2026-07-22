@@ -328,7 +328,10 @@ import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import HeaderMegaMenu from '~/components/HeaderMegaMenu.vue'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import {
+  findPrimaryMegaNavSectionByPath,
+  normalizePrimaryMegaNavPath,
   primaryMegaNavSections,
+  primaryMegaNavPathMatches,
   type PrimaryMegaNavCard,
   type PrimaryMegaNavId,
   type PrimaryMegaNavSection,
@@ -414,41 +417,18 @@ const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
 
-const normalizeNavPath = (path: string) => {
-  const pathWithoutHash = path.split('#')[0] || '/'
-  const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
-  const absolutePath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
-  const segments = absolutePath.split('/').filter(Boolean)
-  const localeCodes = (unref(locales) || [])
+const getLocaleCodes = () => {
+  return (unref(locales) || [])
     .map((item: any) => (typeof item === 'string' ? item : item?.code))
     .filter(Boolean)
-
-  const withoutLocale =
-    segments.length > 1 && localeCodes.includes(segments[0])
-      ? `/${segments.slice(1).join('/')}`
-      : absolutePath
-
-  return withoutLocale.replace(/\/+$/, '') || '/'
 }
 
-const pathMatches = (to: string) => {
-  const pathWithoutHash = to.split('#')[0] || '/'
-  const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
-  const targetPath = normalizeNavPath(pathWithoutQuery)
-  const currentPath = normalizeNavPath(route.path || '/')
+const normalizeNavPath = (path: string) => normalizePrimaryMegaNavPath(path, getLocaleCodes())
 
-  return (
-    currentPath === targetPath ||
-    (currentPath.startsWith(targetPath) && currentPath[targetPath.length] === '/')
-  )
-}
+const currentMegaNavId = computed<PrimaryMegaNavId | null>(() => {
+  const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getLocaleCodes())
 
-const currentMegaNavId = computed<PrimaryMegaNavId>(() => {
-  if (pathMatches('/company')) return 'company'
-  if (pathMatches('/support')) return 'support'
-  if (pathMatches('/guides') || pathMatches('/blog')) return 'guides'
-
-  return 'products'
+  return section?.id || null
 })
 
 const alternateLinksOverride = useState<{ code: string; path: string }[] | null>(
@@ -466,10 +446,7 @@ const routePathFromTo = (to: string) => {
 }
 
 const isSameOrNestedPath = (currentPath: string, targetPath: string) => {
-  return (
-    currentPath === targetPath ||
-    (currentPath.startsWith(targetPath) && currentPath[targetPath.length] === '/')
-  )
+  return primaryMegaNavPathMatches(currentPath, targetPath, getLocaleCodes())
 }
 
 const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
@@ -477,15 +454,15 @@ const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
 }
 
 const findCurrentMegaCard = (): { section: PrimaryMegaNavSection; card: PrimaryMegaNavCard } | null => {
-  const currentPath = route.path || ''
-  const currentSection =
-    primaryMegaNavSections.find(section => section.id === currentMegaNavId.value) ||
-    primaryMegaNavSections[0]
+  const currentPath = normalizeNavPath(route.path || '/')
+  const currentSection = currentMegaNavId.value
+    ? primaryMegaNavSections.find(section => section.id === currentMegaNavId.value)
+    : null
 
   if (!currentSection) return null
 
   for (const card of currentSection.cards) {
-    const targetPath = localePath(routePathFromTo(card.to))
+    const targetPath = normalizeNavPath(routePathFromTo(card.to))
     if (isSameOrNestedPath(currentPath, targetPath)) {
       return { section: currentSection, card }
     }

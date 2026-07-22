@@ -324,7 +324,8 @@ const { openWheelsetVideo, goToWheelsetAssembly } = defineProps<{
 <style scoped>
 .support-section__title {
   margin: 0 0 0.5rem;
-  font-size: 1.05rem;
+  font-size: var(--tz-type-section-title);
+  line-height: 1.35;
   font-weight: 600;
   color: #e5e7eb;
 }

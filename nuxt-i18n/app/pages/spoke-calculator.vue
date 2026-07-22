@@ -251,7 +251,8 @@ useHead({
 <style scoped>
 .support-page__title {
   margin: 0 0 0.75rem;
-  font-size: 1.5rem;
+  font-size: var(--tz-type-page-title);
+  line-height: 1.18;
   font-weight: 600;
   color: #f9fafb;
 }
@@ -274,11 +275,12 @@ useHead({
  }
 
  .spoke-parameter__title {
-   margin: 0 0 0.35rem;
-   font-size: 1rem;
-   font-weight: 600;
-   color: #e5e7eb;
-   text-align: center;
+    margin: 0 0 0.35rem;
+    font-size: var(--tz-type-section-title);
+    line-height: 1.35;
+    font-weight: 600;
+    color: #e5e7eb;
+    text-align: center;
  }
 
  .spoke-parameter__content {

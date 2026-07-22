@@ -3,9 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 nuxt build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build",
     "dev": "nuxt dev",
-    "generate": "cross-env NODE_OPTIONS=--max-old-space-size=8192 nuxt generate",
+    "generate": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "sync-data": "node scripts/sync-spoke-data.mjs",

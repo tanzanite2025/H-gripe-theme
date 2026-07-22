@@ -90,6 +90,9 @@ watch(
 <style scoped>
 .page-tab-bar {
   box-sizing: border-box;
+  position: sticky;
+  top: var(--page-tab-bar-sticky-top, var(--site-header-offset, 120px));
+  z-index: 90;
   width: 100vw;
   width: 100dvw;
   max-width: 100vw;
@@ -104,6 +107,7 @@ watch(
   background:
     linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.78)),
     radial-gradient(circle at 50% 0%, rgba(45, 212, 191, 0.12), transparent 46%);
+  backdrop-filter: blur(18px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 16px 34px rgba(0, 0, 0, 0.34);

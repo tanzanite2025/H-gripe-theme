@@ -18,6 +18,7 @@ import (
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/database"
 	"tanzanite/internal/pkg/logger"
+	"tanzanite/internal/pkg/scheduler"
 	"tanzanite/internal/pkg/worker"
 
 	"github.com/gin-gonic/gin"
@@ -101,7 +102,12 @@ func main() {
 		_ = redisCache.Close()
 	}()
 
-	router := setupRouter(db, redisCache, cfg)
+	deps, err := app.NewDependencies(db, redisCache, cfg)
+	if err != nil {
+		logger.Fatal("dependency initialization failed", zap.Error(err))
+	}
+
+	router := setupRouter(db, redisCache, cfg, deps)
 
 	server := &http.Server{
 		Addr:         cfg.Server.Port,
@@ -118,6 +124,15 @@ func main() {
 		}
 	} else {
 		logger.Info("Asynq worker disabled")
+	}
+
+	var trackingScheduler *scheduler.TrackingScheduler
+	if cfg.Worker.TrackingPollingEnabled {
+		trackingScheduler = scheduler.NewTrackingScheduler(deps.Services.Shipping, cfg.Worker)
+		trackingScheduler.Start(context.Background())
+	} else {
+		deps.Services.Shipping.ConfigureTrackingPolling(false, time.Duration(cfg.Worker.TrackingPollingIntervalSeconds)*time.Second, cfg.Worker.TrackingPollingBatchLimit)
+		logger.Info("tracking scheduler disabled")
 	}
 
 	go func() {
@@ -146,11 +161,14 @@ func main() {
 	if workerServer != nil {
 		workerServer.Stop()
 	}
+	if trackingScheduler != nil {
+		trackingScheduler.Stop()
+	}
 
 	logger.Info("server stopped")
 }
 
-func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) *gin.Engine {
+func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, deps *app.Dependencies) *gin.Engine {
 	router := gin.New()
 	if err := router.SetTrustedProxies(cfg.Server.TrustedProxies); err != nil {
 		logger.Fatal("trusted proxy configuration failed", zap.Error(err))
@@ -174,10 +192,6 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) 
 
 	health.RegisterRoutes(router.Group(""), db, redisCache.Client(), Version, BuildTime)
 
-	deps, err := app.NewDependencies(db, redisCache, cfg)
-	if err != nil {
-		logger.Fatal("dependency initialization failed", zap.Error(err))
-	}
 	v1.RegisterRoutes(router, deps, cfg)
 	admin.RegisterAdminRoutes(router, deps, cfg)
 

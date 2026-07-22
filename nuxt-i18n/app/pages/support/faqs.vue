@@ -56,8 +56,8 @@
           :key="group.pageId"
           class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-4 mb-8"
         >
-          <div class="flex items-center justify-center mb-6 pb-4 border-b border-slate-800/50">
-            <h3 class="text-xl font-bold uppercase tracking-wider text-slate-200 text-center">
+          <div class="faqs-group__header flex items-center justify-center border-b border-slate-800/50">
+            <h3 class="faqs-group__title tz-faq-category-title text-slate-200 text-center">
               {{ group.pageTitle }}
             </h3>
           </div>
@@ -79,7 +79,7 @@
                   {{ item.category }}
                 </span>
                 <span 
-                  class="flex-1 text-sm font-semibold text-slate-200 group-hover:text-sky-400 transition-colors"
+                  class="faqs-item__question tz-faq-question flex-1 text-slate-200 group-hover:text-sky-400 transition-colors"
                    :class="{ 'text-sky-400': expandedItems.has(item.id) }"
                 >
                   {{ item.question }}
@@ -102,7 +102,7 @@
                 leave-to-class="opacity-0 max-h-0"
               >
                 <div v-if="expandedItems.has(item.id)" class="overflow-hidden bg-slate-950/30">
-                  <div class="px-4 pb-4 pt-1 text-sm leading-relaxed text-slate-400" v-html="item.answer" />
+                  <div class="faqs-item__answer tz-faq-answer px-4 pb-4 pt-1 text-slate-400" v-html="item.answer" />
                 </div>
               </Transition>
             </div>
@@ -288,14 +288,6 @@ const loadMoreGroups = () => {
   padding: 0;
 }
 
-.faqs-page__title {
-  margin: 0 0 0.5rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  text-align: center;
-}
-
 .faqs-page__intro {
   margin: 0 auto 1.5rem;
   font-size: 0.95rem;
@@ -356,27 +348,9 @@ const loadMoreGroups = () => {
   justify-content: center;
 }
 
-
-
-/* FAQ Item inner styles */
-:deep(.faqs-item__answer ul),
-:deep(.faqs-item__answer ol) {
-  padding-left: 1.25rem;
-  margin: 0.5rem 0;
-}
-
-:deep(.faqs-item__answer li) {
-  margin: 0.25rem 0;
-}
-
-:deep(.faqs-item__answer strong) {
-  color: #e2e8f0;
-}
-
-:deep(.faqs-item__answer a) {
-  color: #38bdf8;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.faqs-group__header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
 }
 
 .faqs-empty {
