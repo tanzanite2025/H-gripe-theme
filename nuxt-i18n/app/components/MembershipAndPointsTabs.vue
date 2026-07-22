@@ -1,6 +1,14 @@
 <template>
   <div class="membership-tabs" :class="{ 'membership-tabs--modal': isModal, 'membership-tabs--sticky': isModal }">
-    <div class="nav-pill-tabs" role="tablist">
+    <PageTabBar
+      v-if="!isModal"
+      :tabs="tabs"
+      :active-id="activeTab"
+      aria-label="Membership sections"
+      @select="setActiveTab"
+    />
+
+    <div v-else class="nav-pill-tabs" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -280,8 +288,9 @@ const tabs: { id: MembershipTabId; labelKey: string; fallback: string }[] = [
 
 const activeTab = ref<MembershipTabId>('myinfo')
 
-const setActiveTab = (id: MembershipTabId) => {
-  activeTab.value = id
+const setActiveTab = (id: MembershipTabId | string) => {
+  if (!tabs.some((tab) => tab.id === id)) return
+  activeTab.value = id as MembershipTabId
 }
 
 const localePath = useLocalePath()

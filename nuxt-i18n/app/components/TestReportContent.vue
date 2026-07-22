@@ -1,18 +1,12 @@
 <template>
   <div class="support-test-report-content">
     <!-- Tabs header -->
-    <div class="nav-pill-tabs" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        type="button"
-        class="nav-pill-item"
-        :class="{ 'nav-pill-item--active': activeTab === tab.id }"
-        @click="setActiveTab(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
+    <PageTabBar
+      :tabs="tabs"
+      :active-id="activeTab"
+      aria-label="Test report sections"
+      @select="setActiveTab"
+    />
 
     <!-- Rim Test Report -->
     <section
@@ -142,11 +136,13 @@ const openWheelsetVideo = () => {
   showWheelsetVideo.value = true
 }
 
-const setActiveTab = (id: TestReportTabId) => {
-  activeTab.value = id
+const setActiveTab = (id: TestReportTabId | string) => {
+  if (!tabs.some((tab) => tab.id === id)) return
+  const next = id as TestReportTabId
+  activeTab.value = next
   if (props.syncWithUrl && typeof window !== 'undefined') {
     const url = new URL(window.location.href)
-    url.hash = `#${id}`
+    url.hash = `#${next}`
     window.history.replaceState(null, '', url.toString())
   }
 }

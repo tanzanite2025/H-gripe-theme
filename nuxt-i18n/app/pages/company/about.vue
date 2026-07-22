@@ -3,18 +3,12 @@
 
     <h1 class="company-page__title company-page__title--sr-only">About us</h1>
 
-    <div class="nav-pill-tabs" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        type="button"
-        class="nav-pill-item"
-        :class="{ 'nav-pill-item--active': activeTab === tab.id }"
-        @click="setActiveTab(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
+    <PageTabBar
+      :tabs="tabs"
+      :active-id="activeTab"
+      aria-label="Company sections"
+      @select="setActiveTab"
+    />
 
     <AboutFactory
       v-show="activeTab === 'factory'"
@@ -139,11 +133,13 @@ watch(
   { immediate: true }
 )
 
-const setActiveTab = (id: OurStoryTabId) => {
-  activeTab.value = id
+const setActiveTab = (id: OurStoryTabId | string) => {
+  if (!tabs.some((tab) => tab.id === id)) return
+  const next = id as OurStoryTabId
+  activeTab.value = next
   if (typeof window !== 'undefined') {
     const url = new URL(window.location.href)
-    url.hash = `#${id}`
+    url.hash = `#${next}`
     window.history.replaceState(null, '', url.toString())
   }
 }
@@ -191,7 +187,7 @@ useHead({
   color: rgba(148, 163, 184, 0.9);
 }
 
-/* .company-tabs styles removed in favor of global .nav-pill-tabs */
+/* Page-level tabs are handled by PageTabBar. */
 
 .company-section {
   margin-top: 0;

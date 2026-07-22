@@ -6,18 +6,12 @@
     </p>
 
     <div class="sizecharts-page">
-      <div class="nav-pill-tabs" role="tablist">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          type="button"
-          class="nav-pill-item"
-          :class="{ 'nav-pill-item--active': activeTab === tab.id }"
-          @click="setActiveTab(tab.id)"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+      <PageTabBar
+        :tabs="tabs"
+        :active-id="activeTab"
+        aria-label="Tire guide sections"
+        @select="setActiveTab"
+      />
 
       <!-- Tire size (new top-level tab) -->
       <section
@@ -226,11 +220,13 @@ watch(
   { immediate: true }
 )
 
-const setActiveTab = (id: SizeChartsTabId) => {
-  activeTab.value = id
+const setActiveTab = (id: SizeChartsTabId | string) => {
+  if (!tabs.some((tab) => tab.id === id)) return
+  const next = id as SizeChartsTabId
+  activeTab.value = next
   if (typeof window !== 'undefined') {
     const url = new URL(window.location.href)
-    url.hash = `#${id}`
+    url.hash = `#${next}`
     window.history.replaceState(null, '', url.toString())
   }
 }
@@ -292,7 +288,7 @@ const setActiveTab = (id: SizeChartsTabId) => {
   max-width: none;
 }
 
-/* .sizecharts-tabs styles removed in favor of global .nav-pill-tabs */
+/* Page-level tabs are handled by PageTabBar. */
 
 
 .sizecharts-brand-button {
