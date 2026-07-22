@@ -17,16 +17,19 @@
         <FilterSelect v-model="filters.status" label="状态" :options="statusFilterOptions" />
         <FilterSelect v-model="filters.priority" label="优先级" :options="priorityFilterOptions" />
 
-        <div class="flex items-end gap-2">
-          <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
-            <Search class="size-3.5" />
-            搜索
-          </Button>
-          <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
-            <RotateCcw class="size-3.5" />
-            重置
-          </Button>
-        </div>
+        <label class="space-y-1 block">
+          <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">ACTION / 操作</span>
+          <div class="flex items-center gap-2">
+            <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
+              <Search class="size-3.5" />
+              搜索
+            </Button>
+            <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
+              <RotateCcw class="size-3.5" />
+              重置
+            </Button>
+          </div>
+        </label>
       </form>
     </AdminFilterPanel>
 
