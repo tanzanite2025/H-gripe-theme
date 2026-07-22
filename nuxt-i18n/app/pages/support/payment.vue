@@ -262,7 +262,8 @@ const openQuickFromPayment = () => {
 <style scoped>
 .support-page__title {
   margin: 0 0 0.75rem;
-  font-size: 1.5rem;
+  font-size: var(--tz-type-page-title);
+  line-height: 1.18;
   font-weight: 600;
   color: #f9fafb;
 }
@@ -295,7 +296,8 @@ const openQuickFromPayment = () => {
 
 .support-section__title {
   margin: 0 0 1rem;
-  font-size: 1.1rem;
+  font-size: var(--tz-type-section-title);
+  line-height: 1.35;
   font-weight: 700;
   color: #f1f5f9;
   text-transform: uppercase;
@@ -330,7 +332,8 @@ const openQuickFromPayment = () => {
 
 .support-card__title {
   margin: 0 0 0.75rem;
-  font-size: 1.1rem;
+  font-size: var(--tz-type-card-title);
+  line-height: 1.35;
   font-weight: 700;
   color: #f1f5f9;
   display: flex;

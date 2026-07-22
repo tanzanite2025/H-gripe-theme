@@ -106,6 +106,9 @@ cache:
 
 worker:
   enabled: false  # Enable only after registering Asynq task handlers
+  tracking_polling_enabled: false  # Tracking polling scheduler can run without Asynq worker
+  tracking_polling_interval_seconds: 300
+  tracking_polling_batch_limit: 20
 
 log:
   level: "info"  # debug, info, warn, error

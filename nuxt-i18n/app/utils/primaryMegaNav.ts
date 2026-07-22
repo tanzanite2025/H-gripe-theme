@@ -35,7 +35,52 @@ export interface PrimaryMegaNavSection {
   id: PrimaryMegaNavId
   labelKey: string
   labelFallback: string
+  /**
+   * Canonical path prefixes that make a route belong to this top-level section.
+   * Keep explicit route families in their own section: /guides stays in Guides,
+   * /support stays in Support, and /company stays in Company.
+   */
+  routePrefixes: string[]
   cards: PrimaryMegaNavCard[]
+}
+
+export const normalizePrimaryMegaNavPath = (path: string, localeCodes: string[] = []) => {
+  const pathWithoutHash = (path || '/').split('#')[0] || '/'
+  const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
+  const absolutePath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
+  const segments = absolutePath.split('/').filter(Boolean)
+  const withoutLocale =
+    segments.length >= 1 && localeCodes.includes(segments[0])
+      ? `/${segments.slice(1).join('/')}`
+      : absolutePath
+
+  return withoutLocale.replace(/\/+$/, '') || '/'
+}
+
+export const primaryMegaNavPathMatches = (
+  currentPath: string,
+  targetPath: string,
+  localeCodes: string[] = []
+) => {
+  const current = normalizePrimaryMegaNavPath(currentPath, localeCodes)
+  const target = normalizePrimaryMegaNavPath(targetPath, localeCodes)
+
+  return (
+    current === target ||
+    (current.startsWith(target) && current[target.length] === '/')
+  )
+}
+
+export const findPrimaryMegaNavSectionByPath = (
+  path: string,
+  sections: PrimaryMegaNavSection[],
+  localeCodes: string[] = []
+) => {
+  const currentPath = normalizePrimaryMegaNavPath(path, localeCodes)
+
+  return sections.find((section) =>
+    section.routePrefixes.some((prefix) => primaryMegaNavPathMatches(currentPath, prefix))
+  ) || null
 }
 
 /**
@@ -43,12 +88,15 @@ export interface PrimaryMegaNavSection {
  *
  * This is the single source of truth for top-level header navigation.
  * Legacy hub routes redirect; header panels only list concrete child routes.
+ * Do not cross-list routes with another section prefix here; the current route
+ * ownership and the sticky section tab bar both derive from this file.
  */
 export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
   {
     id: 'products',
     labelKey: 'footer.menus.products',
     labelFallback: 'Products',
+    routePrefixes: ['/shop', '/products', '/spoke-calculator', '/membershipandpoints', '/picture-warehouse'],
     cards: [
       {
         id: 'shop',
@@ -62,26 +110,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         accent: 'blue',
       },
       {
-        id: 'tire-size-charts',
-        labelKey: 'products.nav.tireSizeCharts',
-        labelFallback: 'Tire Guides',
-        description: 'Tire size, pressure, tubeless setup, installation, and compatibility references.',
-        to: '/guides/tireguides',
-        icon: 'lucide:ruler',
-        size: 'feature',
-        accent: 'violet',
-      },
-      {
-        id: 'wheelset-buyers',
-        labelKey: 'products.nav.wheelsetBuyersGuide',
-        labelFallback: 'Wheelset Buyers Guide',
-        description: 'Selection notes for riders choosing wheelsets, hubs, rims, spokes, and specs.',
-        to: '/guides/wheelset-buyers',
-        icon: 'lucide:route',
-        size: 'wide',
-        accent: 'amber',
-      },
-      {
         id: 'spoke-calculator',
         labelKey: 'support.nav.spokeCalculator',
         labelFallback: 'Spoke Calculator',
@@ -90,16 +118,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         icon: 'lucide:calculator',
         size: 'wide',
         accent: 'mint',
-      },
-      {
-        id: 'test-report',
-        labelKey: 'support.nav.testReport',
-        labelFallback: 'Test Report',
-        description: 'Technical reports and test references for product confidence.',
-        to: '/support/test-report',
-        icon: 'lucide:clipboard-check',
-        size: 'wide',
-        accent: 'blue',
       },
       {
         id: 'membership-and-points',
@@ -127,6 +145,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     id: 'support',
     labelKey: 'footer.menus.support',
     labelFallback: 'Support',
+    routePrefixes: ['/support'],
     cards: [
       {
         id: 'faqs',
@@ -204,6 +223,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     id: 'company',
     labelKey: 'footer.menus.company',
     labelFallback: 'Company',
+    routePrefixes: ['/company'],
     cards: [
       {
         id: 'our-story',
@@ -271,6 +291,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
     id: 'guides',
     labelKey: 'breadcrumbs.guides',
     labelFallback: 'Guides',
+    routePrefixes: ['/guides', '/blog'],
     cards: [
       {
         id: 'tire-guides',

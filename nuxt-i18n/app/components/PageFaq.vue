@@ -8,17 +8,17 @@
   >
     <div class="w-full max-w-none mx-auto">
       <!-- Main Page Header (Optional, if page title not sufficient) -->
-      <div v-if="displayTitle || faqData?.subtitle" class="text-center mb-8">
+      <div v-if="displayTitle || faqData?.subtitle" class="page-faq__header text-center">
         <h3 
           v-if="displayTitle"
-          class="text-xl md:text-2xl font-bold mb-2 hidden"
+          class="page-faq__title tz-faq-title hidden"
           :class="theme === 'dark' ? 'text-white/90' : 'text-gray-800'"
         >
           {{ displayTitle }}
         </h3>
         <p 
           v-if="faqData?.subtitle"
-          class="text-sm md:text-base max-w-2xl mx-auto"
+          class="page-faq__subtitle tz-faq-subtitle max-w-2xl mx-auto"
           :class="theme === 'dark' ? 'text-slate-400' : 'text-gray-500'"
         >
           {{ faqData.subtitle }}
@@ -37,11 +37,11 @@
           <!-- Category Header -->
           <div 
             v-if="showCategories"
-            class="flex items-center justify-center gap-3 mb-6 pb-4 border-b"
+            class="page-faq__category-header flex items-center justify-center gap-3 border-b"
             :class="theme === 'dark' ? 'border-slate-800/50' : 'border-gray-100'"
           >
             <h4 
-              class="text-lg font-bold uppercase tracking-wider"
+              class="page-faq__category-title tz-faq-category-title"
               :class="theme === 'dark' ? 'text-slate-200' : 'text-gray-800'"
             >
               {{ category.name }}
@@ -74,7 +74,7 @@
                 @click="toggleItem(item.id)"
               >
                 <span 
-                  class="text-sm font-semibold flex-1 transition-colors"
+                  class="page-faq__question-text tz-faq-question flex-1 transition-colors"
                   :class="[
                     theme === 'dark' ? 'text-slate-300' : 'text-gray-800',
                     expandedItems.has(item.id) ? (theme === 'dark' ? 'text-sky-400' : 'text-blue-600') : 'group-hover:text-sky-400'
@@ -111,7 +111,7 @@
                   :class="theme === 'dark' ? 'bg-slate-950/30' : 'bg-gray-50/50'"
                 >
                   <div 
-                    class="px-4 pb-4 pt-1 text-sm leading-relaxed"
+                    class="page-faq__answer tz-faq-answer px-4 pb-4 pt-1"
                     :class="theme === 'dark' ? 'text-slate-400' : 'text-gray-600'"
                     v-html="item.answer"
                   />
@@ -239,30 +239,23 @@ const hasMoreItems = computed(() => {
   scroll-margin-top: 80px;
 }
 
-/* Ensure answer content links are styled */
-.faq-item :deep(a) {
-  color: #38bdf8; /* sky-400 */
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.page-faq__header {
+  margin-bottom: 1.5rem;
 }
 
-.faq-item :deep(a:hover) {
-  color: #22d3ee; /* cyan-400 */
+.page-faq__category-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
 }
 
-/* List styling in answers */
-.faq-item :deep(ul),
-.faq-item :deep(ol) {
-  padding-left: 1.5rem;
-  margin: 0.5rem 0;
-}
+@media (min-width: 768px) {
+  .page-faq__header {
+    margin-bottom: 2rem;
+  }
 
-.faq-item :deep(li) {
-  margin: 0.25rem 0;
-}
-
-.faq-item :deep(strong) {
-  color: inherit;
-  font-weight: 600;
+  .page-faq__category-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.9rem;
+  }
 }
 </style>

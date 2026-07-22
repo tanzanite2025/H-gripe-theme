@@ -10,24 +10,39 @@ type OrderService struct {
 	txManager *repository.TxManager
 	orderRepo *repository.OrderRepository
 	checkout  *CheckoutService
+	shipping  *ShippingService
 }
 
 var (
-	ErrOrderNotFound            = errors.New("order not found")
-	ErrOrderDeleteNotAllowed    = errors.New("only cancelled or refunded orders can be deleted")
-	ErrSystemManagedOrderStatus = errors.New("order status is managed by payment workflow")
+	ErrOrderNotFound              = errors.New("order not found")
+	ErrOrderDeleteNotAllowed      = errors.New("only cancelled or refunded orders can be deleted")
+	ErrSystemManagedOrderStatus   = errors.New("order status is managed by payment workflow")
+	ErrTrackingNumberRequired     = errors.New("tracking number is required")
+	ErrOrderShippingNotConfigured = errors.New("order shipping service is not configured")
 )
 
 func NewOrderService(
 	txManager *repository.TxManager,
 	orderRepo *repository.OrderRepository,
 	checkout *CheckoutService,
+	shippingServices ...*ShippingService,
 ) *OrderService {
-	return &OrderService{
+	service := &OrderService{
 		txManager: txManager,
 		orderRepo: orderRepo,
 		checkout:  checkout,
 	}
+	if len(shippingServices) > 0 {
+		service.shipping = shippingServices[0]
+	}
+	return service
+}
+
+type OrderTrackingUpdateInput struct {
+	TrackingNumber     string
+	TrackingProviderID uint
+	CarrierID          *uint
+	CarrierServiceID   *uint
 }
 
 func (s *OrderService) GetOrder(id uint, userID uint) (*order.Order, error) {

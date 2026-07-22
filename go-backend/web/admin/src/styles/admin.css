@@ -185,6 +185,26 @@ th, [data-slot="table-head"] {
   opacity: 0.75 !important;
 }
 
+/* 全局终极强效覆盖：全后台所有 Input/Textarea/Select 的提示字 (Placeholder) 100% 强制 11px 400 细刻度 */
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder,
+input::-moz-placeholder,
+textarea::-moz-placeholder,
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder,
+input::placeholder,
+textarea::placeholder,
+[data-slot="input"]::placeholder,
+[data-slot="textarea"]::placeholder,
+[data-slot="select-trigger"] [data-placeholder] {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.02em !important;
+  color: var(--muted-foreground) !important;
+  opacity: 0.55 !important;
+  -webkit-text-fill-color: var(--muted-foreground) !important;
+}
+
 .uds-desc {
   @apply text-[9px] font-black uppercase tracking-widest opacity-60;
 }

@@ -137,6 +137,64 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 	assert.Equal(t, 1, savedProduct.Stock)
 }
 
+func TestOrderServiceCreateOrderPersistsSelectedCarrierService(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 50, 5)
+
+	var template shippingdomain.ShippingTemplate
+	require.NoError(t, db.Where("name = ?", "Test standard shipping").First(&template).Error)
+
+	carrier := shippingdomain.Carrier{
+		Name:    "DHL",
+		Code:    "DHL",
+		Enabled: true,
+	}
+	require.NoError(t, db.Create(&carrier).Error)
+
+	carrierService := shippingdomain.CarrierService{
+		CarrierID:   carrier.ID,
+		TemplateID:  &template.ID,
+		ServiceCode: "EXP-US",
+		ServiceName: "Express",
+		RouteName:   "US Express",
+		Countries:   `["US"]`,
+		Currency:    "USD",
+		BillingMode: "actual_weight",
+		Enabled:     true,
+		Description: "Default checkout route",
+	}
+	require.NoError(t, db.Create(&carrierService).Error)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	require.NotNil(t, createdOrder.CarrierID)
+	require.NotNil(t, createdOrder.CarrierServiceID)
+	assert.Equal(t, carrier.ID, *createdOrder.CarrierID)
+	assert.Equal(t, carrierService.ID, *createdOrder.CarrierServiceID)
+	assert.Equal(t, "DHL / US Express / Express (EXP-US)", createdOrder.ShippingMethod)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, createdOrder.ID).Error)
+	require.NotNil(t, savedOrder.CarrierID)
+	require.NotNil(t, savedOrder.CarrierServiceID)
+	assert.Equal(t, carrier.ID, *savedOrder.CarrierID)
+	assert.Equal(t, carrierService.ID, *savedOrder.CarrierServiceID)
+	assert.Equal(t, "DHL / US Express / Express (EXP-US)", savedOrder.ShippingMethod)
+}
+
 func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	userID := uint(42)
@@ -221,6 +279,127 @@ func TestOrderServiceRejectsPaymentManagedStatusUpdates(t *testing.T) {
 	assert.Equal(t, "unpaid", savedOrder.PaymentStatus)
 }
 
+func TestOrderServiceUpdateTrackingInfoResolvesProviderCarrierCode(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, carrier, carrierService := seedTrackingProviderCarrierAndService(t, db)
+	mapping := seedTrackingCarrierMapping(t, db, provider.ID, "carrier", &carrier.ID, nil, "DHL")
+
+	orderRecord := order.Order{
+		OrderNumber: "ORD-TRACKING",
+		UserID:      42,
+		Status:      "processing",
+		TotalAmount: 100,
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	err := orderService.UpdateTrackingInfo(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACK123456",
+		TrackingProviderID: provider.ID,
+		CarrierServiceID:   &carrierService.ID,
+	})
+
+	require.NoError(t, err)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "TRACK123456", savedOrder.TrackingNumber)
+	assert.NotNil(t, savedOrder.TrackingProviderID)
+	assert.Equal(t, provider.ID, *savedOrder.TrackingProviderID)
+	assert.NotNil(t, savedOrder.CarrierID)
+	assert.Equal(t, carrier.ID, *savedOrder.CarrierID)
+	assert.NotNil(t, savedOrder.CarrierServiceID)
+	assert.Equal(t, carrierService.ID, *savedOrder.CarrierServiceID)
+	assert.NotNil(t, savedOrder.TrackingCarrierMappingID)
+	assert.Equal(t, mapping.ID, *savedOrder.TrackingCarrierMappingID)
+	assert.Equal(t, "DHL", savedOrder.ProviderCarrierCode)
+
+	var shipment shippingdomain.TrackingShipment
+	require.NoError(t, db.Where("order_id = ?", orderRecord.ID).First(&shipment).Error)
+	assert.Equal(t, provider.ID, shipment.TrackingProviderID)
+	assert.Equal(t, "TRACK123456", shipment.TrackingNumber)
+	assert.Equal(t, "DHL", shipment.ProviderCarrierCode)
+	assert.Equal(t, "pending", shipment.RegistrationStatus)
+	assert.Equal(t, "pending", shipment.SyncStatus)
+}
+
+func TestOrderServiceUpdateTrackingInfoDefaultsToOrderCarrierService(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, carrier, carrierService := seedTrackingProviderCarrierAndService(t, db)
+	mapping := seedTrackingCarrierMapping(t, db, provider.ID, "carrier_service", nil, &carrierService.ID, "DHL-EXP-US")
+
+	orderRecord := order.Order{
+		OrderNumber:      "ORD-TRACKING-DEFAULT-SERVICE",
+		UserID:           42,
+		Status:           "processing",
+		CarrierID:        &carrier.ID,
+		CarrierServiceID: &carrierService.ID,
+		TotalAmount:      100,
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	err := orderService.UpdateTrackingInfo(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACKDEFAULT123",
+		TrackingProviderID: provider.ID,
+	})
+
+	require.NoError(t, err)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "TRACKDEFAULT123", savedOrder.TrackingNumber)
+	require.NotNil(t, savedOrder.CarrierID)
+	require.NotNil(t, savedOrder.CarrierServiceID)
+	require.NotNil(t, savedOrder.TrackingCarrierMappingID)
+	assert.Equal(t, carrier.ID, *savedOrder.CarrierID)
+	assert.Equal(t, carrierService.ID, *savedOrder.CarrierServiceID)
+	assert.Equal(t, mapping.ID, *savedOrder.TrackingCarrierMappingID)
+	assert.Equal(t, "DHL-EXP-US", savedOrder.ProviderCarrierCode)
+
+	var shipment shippingdomain.TrackingShipment
+	require.NoError(t, db.Where("order_id = ?", orderRecord.ID).First(&shipment).Error)
+	assert.Equal(t, carrier.ID, *shipment.CarrierID)
+	assert.Equal(t, carrierService.ID, *shipment.CarrierServiceID)
+	assert.Equal(t, "DHL-EXP-US", shipment.ProviderCarrierCode)
+}
+
+func TestOrderServiceSyncOrderTrackingUsesStoredTrackingSource(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider := shippingdomain.TrackingProviderConfig{
+		ProviderCode: "mock",
+		ProviderName: "Mock Provider",
+		Enabled:      true,
+	}
+	require.NoError(t, db.Create(&provider).Error)
+
+	orderRecord := order.Order{
+		OrderNumber:         "ORD-SYNC-TRACKING",
+		UserID:              42,
+		Status:              "shipped",
+		TrackingNumber:      "MOCK123456",
+		TrackingProviderID:  &provider.ID,
+		ProviderCarrierCode: "DHL",
+		TotalAmount:         100,
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	result, err := orderService.SyncOrderTracking(context.Background(), orderRecord.ID)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Events, 2)
+	require.NotNil(t, result.Shipment)
+	assert.Equal(t, "synced", result.Shipment.SyncStatus)
+	assert.Equal(t, 2, result.Shipment.EventCount)
+	assert.NotNil(t, result.Shipment.LastSyncedAt)
+
+	var events []shippingdomain.TrackingEvent
+	require.NoError(t, db.Where("order_id = ?", orderRecord.ID).Order("event_time DESC").Find(&events).Error)
+	require.Len(t, events, 2)
+	assert.Equal(t, orderRecord.ID, events[0].OrderID)
+	assert.Equal(t, "MOCK123456", events[0].TrackingNumber)
+	assert.Equal(t, "DHL", events[0].ProviderCarrierCode)
+}
+
 func TestOrderServiceGenerateOrderNumberFormat(t *testing.T) {
 	orderNumber := (&OrderService{}).generateOrderNumber()
 
@@ -257,8 +436,16 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&loyalty.UserLoyalty{},
 		&loyalty.LoyaltyTransaction{},
 		&paymentdomain.TaxRate{},
+		&shippingdomain.Carrier{},
+		&shippingdomain.CarrierService{},
+		&shippingdomain.TrackingProviderConfig{},
+		&shippingdomain.TrackingCarrierMapping{},
+		&shippingdomain.TrackingShipment{},
+		&shippingdomain.TrackingEvent{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.ShippingRule{},
+		&shippingdomain.PackagingRule{},
+		&shippingdomain.PackagingRuleApply{},
 		&shippingdomain.ShippingTemplateBinding{},
 	))
 
@@ -273,7 +460,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo, shippingService)
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
 
-	return db, NewOrderService(txManager, orderRepo, checkoutService)
+	return db, NewOrderService(txManager, orderRepo, checkoutService, shippingService)
 }
 
 func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {

@@ -95,6 +95,22 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
 	spokeHandler := spoke.NewHandler(services.Spoke)
 	chatHandler := chat.NewChatHandler(chatService)
+
+	// 公网 Webhook 回调入口不挂 CSRF。
+	// 第三方平台（支付网关、17TRACK 等）不会携带浏览器 CSRF token，安全边界由各自 handler 内的签名验签负责。
+	webhookV1 := r.Group("/api/v1")
+	{
+		paymentWebhookGroup := webhookV1.Group("/payment")
+		{
+			paymentWebhookGroup.POST("/webhook/:provider", paymentHandler.HandleWebhook)
+		}
+
+		shippingWebhookGroup := webhookV1.Group("/shipping")
+		{
+			shippingWebhookGroup.POST("/webhook/:provider", shippingHandler.HandleTrackingWebhook)
+		}
+	}
+
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
 	v1.Use(middleware.CSRFProtection(cfg.CORS.AllowedOrigins))
@@ -342,9 +358,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		// 支付路由
 		paymentGroup := v1.Group("/payment")
 		{
-			// 公网暴露的 Webhook 回调路由（免鉴权，内部负责验签）
-			paymentGroup.POST("/webhook/:provider", paymentHandler.HandleWebhook)
-
 			// 公开端点
 			paymentGroup.GET("/methods", paymentHandler.ListPaymentMethods)
 			paymentGroup.GET("/methods/:id", paymentHandler.GetPaymentMethod)
@@ -373,6 +386,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			shippingGroup.POST("/quote", shippingHandler.QuoteShipping)
 			shippingGroup.GET("/carriers", shippingHandler.ListCarriers)
 			shippingGroup.GET("/carriers/:id", shippingHandler.GetCarrier)
+			shippingGroup.GET("/carrier-services", shippingHandler.ListCarrierServices)
+			shippingGroup.GET("/carrier-services/:id", shippingHandler.GetCarrierService)
 			shippingGroup.GET("/zones", shippingHandler.ListZones)
 			shippingGroup.GET("/zones/:id", shippingHandler.GetZone)
 			shippingGroup.GET("/track/:tracking_number", shippingHandler.TrackShipment)

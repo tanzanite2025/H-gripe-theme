@@ -77,9 +77,6 @@ CREATE TABLE IF NOT EXISTS carriers (
     name TEXT NOT NULL,
     code TEXT NOT NULL UNIQUE,
     tracking_url TEXT,
-    api_endpoint TEXT,
-    api_key TEXT,
-    api_secret TEXT,
     contact TEXT,
     phone TEXT,
     email TEXT,
@@ -94,9 +91,6 @@ CREATE TABLE IF NOT EXISTS carriers (
 ALTER TABLE carriers ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE carriers ADD COLUMN IF NOT EXISTS code TEXT;
 ALTER TABLE carriers ADD COLUMN IF NOT EXISTS tracking_url TEXT;
-ALTER TABLE carriers ADD COLUMN IF NOT EXISTS api_endpoint TEXT;
-ALTER TABLE carriers ADD COLUMN IF NOT EXISTS api_key TEXT;
-ALTER TABLE carriers ADD COLUMN IF NOT EXISTS api_secret TEXT;
 ALTER TABLE carriers ADD COLUMN IF NOT EXISTS contact TEXT;
 ALTER TABLE carriers ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE carriers ADD COLUMN IF NOT EXISTS email TEXT;
@@ -115,7 +109,7 @@ CREATE TABLE IF NOT EXISTS tracking_events (
     id BIGSERIAL PRIMARY KEY,
     order_id BIGINT NOT NULL,
     tracking_number TEXT,
-    carrier_code TEXT,
+    provider_carrier_code TEXT,
     status TEXT,
     location TEXT,
     description TEXT,
@@ -125,7 +119,7 @@ CREATE TABLE IF NOT EXISTS tracking_events (
 
 ALTER TABLE tracking_events ADD COLUMN IF NOT EXISTS order_id BIGINT;
 ALTER TABLE tracking_events ADD COLUMN IF NOT EXISTS tracking_number TEXT;
-ALTER TABLE tracking_events ADD COLUMN IF NOT EXISTS carrier_code TEXT;
+ALTER TABLE tracking_events ADD COLUMN IF NOT EXISTS provider_carrier_code TEXT;
 ALTER TABLE tracking_events ADD COLUMN IF NOT EXISTS status TEXT;
 ALTER TABLE tracking_events ADD COLUMN IF NOT EXISTS location TEXT;
 ALTER TABLE tracking_events ADD COLUMN IF NOT EXISTS description TEXT;

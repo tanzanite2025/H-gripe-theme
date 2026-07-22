@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/pkg/logger"
@@ -48,25 +49,46 @@ func (s *OrderService) CreateOrder(
 			return err
 		}
 
+		shippingMethodSnapshot := strings.TrimSpace(shippingMethod)
+		var carrierID *uint
+		var carrierServiceID *uint
+		if quote.ShippingQuote != nil && quote.ShippingQuote.SelectedOption != nil {
+			selectedOption := quote.ShippingQuote.SelectedOption
+			if selectedOption.CarrierID > 0 {
+				carrierID = uintPtr(selectedOption.CarrierID)
+			}
+			if selectedOption.CarrierServiceID > 0 {
+				carrierServiceID = uintPtr(selectedOption.CarrierServiceID)
+			}
+			if label := shippingQuoteOptionSnapshot(*selectedOption); label != "" {
+				shippingMethodSnapshot = label
+			}
+		}
+		if shippingMethodSnapshot == "" {
+			shippingMethodSnapshot = "standard"
+		}
+
 		o := &order.Order{
-			OrderNumber:     s.generateOrderNumber(),
-			UserID:          userID,
-			Status:          "pending",
-			PaymentMethod:   paymentMethod,
-			PaymentStatus:   "unpaid",
-			ShippingMethod:  shippingMethod,
-			ShippingStatus:  "pending",
-			SubtotalAmount:  quote.SubtotalAmount,
-			TotalAmount:     quote.TotalAmount,
-			ShippingFee:     quote.ShippingFee,
-			TaxAmount:       quote.TaxAmount,
-			DiscountAmount:  quote.DiscountAmount,
-			CouponCode:      quote.CouponCode,
-			PointsUsed:      quote.PointsToUse,
-			PointsValue:     quote.PointsDiscount,
-			Items:           quote.Items,
-			ShippingAddress: shippingAddress,
-			BillingAddress:  billingAddress,
+			OrderNumber:      s.generateOrderNumber(),
+			UserID:           userID,
+			Status:           "pending",
+			PaymentMethod:    paymentMethod,
+			PaymentStatus:    "unpaid",
+			ShippingMethod:   shippingMethodSnapshot,
+			ShippingStatus:   "pending",
+			CarrierID:        carrierID,
+			CarrierServiceID: carrierServiceID,
+			SubtotalAmount:   quote.SubtotalAmount,
+			TotalAmount:      quote.TotalAmount,
+			ShippingFee:      quote.ShippingFee,
+			TaxAmount:        quote.TaxAmount,
+			DiscountAmount:   quote.DiscountAmount,
+			CouponCode:       quote.CouponCode,
+			PointsUsed:       quote.PointsToUse,
+			PointsValue:      quote.PointsDiscount,
+			Items:            quote.Items,
+			ShippingAddress:  shippingAddress,
+			BillingAddress:   billingAddress,
 		}
 
 		variantItemsMap := make(map[uint]int)
@@ -122,6 +144,31 @@ func (s *OrderService) CreateOrder(
 	}
 
 	return createdOrder, nil
+}
+
+func shippingQuoteOptionSnapshot(option ShippingQuoteOption) string {
+	parts := []string{}
+	carrier := strings.TrimSpace(option.CarrierName)
+	serviceName := strings.TrimSpace(option.ServiceName)
+	routeName := strings.TrimSpace(option.RouteName)
+	serviceCode := strings.TrimSpace(option.ServiceCode)
+
+	if carrier != "" {
+		parts = append(parts, carrier)
+	}
+	if routeName != "" && routeName != serviceName {
+		parts = append(parts, routeName)
+	}
+	if serviceName != "" {
+		if serviceCode != "" {
+			serviceName = fmt.Sprintf("%s (%s)", serviceName, serviceCode)
+		}
+		parts = append(parts, serviceName)
+	} else if serviceCode != "" {
+		parts = append(parts, serviceCode)
+	}
+
+	return strings.Join(parts, " / ")
 }
 
 func (s *OrderService) generateOrderNumber() string {

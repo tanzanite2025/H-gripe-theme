@@ -161,6 +161,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				ordersGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateOrderStatus)
 				ordersGroup.PATCH("/:id/shipping-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateShippingStatus)
 				ordersGroup.PATCH("/:id/tracking", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateTrackingInfo)
+				ordersGroup.POST("/:id/tracking/sync", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SyncTrackingInfo)
 				ordersGroup.PATCH("/:id/admin-note", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateAdminNote)
 				ordersGroup.POST("/batch-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.BatchUpdateStatus)
 				ordersGroup.DELETE("/:id", middleware.RequirePermission(auth.PermOrderDelete), orderHandler.DeleteOrder)
@@ -354,6 +355,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			shippingGroup := authenticated.Group("/shipping")
 			shippingGroup.Use(middleware.RequirePermission(auth.PermShippingView))
 			{
+				shippingGroup.POST("/quote", shippingHandler.QuoteShipping)
+
 				shippingGroup.GET("/templates", shippingHandler.ListTemplates)
 				shippingGroup.GET("/templates/:id", shippingHandler.GetTemplate)
 				shippingGroup.POST("/templates", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateTemplate)
@@ -388,6 +391,31 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				shippingGroup.POST("/carriers", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateCarrier)
 				shippingGroup.PUT("/carriers/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateCarrier)
 				shippingGroup.DELETE("/carriers/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteCarrier)
+
+				shippingGroup.GET("/carrier-services", shippingHandler.ListCarrierServices)
+				shippingGroup.GET("/carrier-services/:id", shippingHandler.GetCarrierService)
+				shippingGroup.POST("/carrier-services", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateCarrierService)
+				shippingGroup.PUT("/carrier-services/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateCarrierService)
+				shippingGroup.DELETE("/carrier-services/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteCarrierService)
+
+				shippingGroup.GET("/tracking-providers", shippingHandler.ListTrackingProviderConfigs)
+				shippingGroup.GET("/tracking-providers/:id", shippingHandler.GetTrackingProviderConfig)
+				shippingGroup.POST("/tracking-providers", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateTrackingProviderConfig)
+				shippingGroup.PUT("/tracking-providers/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTrackingProviderConfig)
+				shippingGroup.DELETE("/tracking-providers/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteTrackingProviderConfig)
+
+				shippingGroup.GET("/tracking-carrier-mappings", shippingHandler.ListTrackingCarrierMappings)
+				shippingGroup.GET("/tracking-carrier-mappings/:id", shippingHandler.GetTrackingCarrierMapping)
+				shippingGroup.POST("/tracking-carrier-mappings", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateTrackingCarrierMapping)
+				shippingGroup.PUT("/tracking-carrier-mappings/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTrackingCarrierMapping)
+				shippingGroup.DELETE("/tracking-carrier-mappings/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteTrackingCarrierMapping)
+				shippingGroup.GET("/tracking-shipments", shippingHandler.ListTrackingShipments)
+				shippingGroup.GET("/tracking-polling", shippingHandler.GetTrackingPollingState)
+				shippingGroup.GET("/tracking-webhook", shippingHandler.GetTrackingWebhookState)
+				shippingGroup.GET("/tracking-shipments/:orderID/events", shippingHandler.ListTrackingEvents)
+				shippingGroup.POST("/tracking-shipments/:orderID/register", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.RegisterTrackingShipment)
+				shippingGroup.POST("/tracking-shipments/:orderID/sync", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.SyncTrackingShipment)
+				shippingGroup.POST("/tracking-shipments/sync-due", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.SyncDueTrackingShipments)
 			}
 
 			// 审计日志（需要日志查看权限）

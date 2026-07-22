@@ -5,7 +5,7 @@
         <DialogHeader>
           <DialogTitle>{{ mode === 'create' ? '新增承运商' : '编辑承运商' }}</DialogTitle>
           <DialogDescription>
-            维护物流公司、官方查询链接和可选的承运商接口信息。17TRACK 统一配置会放在后续的追踪设置里。
+            维护物流公司、官方查询链接和服务区域。API 凭证只在「追踪配置」里维护，避免多处数据源。
           </DialogDescription>
         </DialogHeader>
 
@@ -49,18 +49,6 @@
 
           <AdminFormField label="邮箱">
             <Input v-model.trim="form.email" type="email" placeholder="support@example.com" />
-          </AdminFormField>
-
-          <AdminFormField label="承运商 API 地址" class="lg:col-span-3" description="承运商自有接口；17TRACK 全局 API 不放在这里。">
-            <Input v-model.trim="form.api_endpoint" placeholder="https://api.carrier.example.com" />
-          </AdminFormField>
-
-          <AdminFormField label="API Key" class="lg:col-span-2">
-            <Input v-model.trim="form.api_key" class="font-mono" autocomplete="off" />
-          </AdminFormField>
-
-          <AdminFormField label="API Secret">
-            <Input v-model.trim="form.api_secret" class="font-mono" type="password" autocomplete="new-password" />
           </AdminFormField>
 
           <AdminFormField

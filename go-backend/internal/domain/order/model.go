@@ -8,16 +8,21 @@ import (
 
 // Order 订单模型
 type Order struct {
-	ID             uint   `gorm:"primarykey" json:"id"`
-	OrderNumber    string `gorm:"uniqueIndex;not null" json:"order_number"`
-	UserID         uint   `gorm:"index" json:"user_id"`
-	Status         string `gorm:"index;default:'pending'" json:"status"` // pending, paid, processing, shipped, completed, cancelled, refunded
-	PaymentMethod  string `json:"payment_method"`
-	PaymentStatus  string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, refunded
-	ShippingMethod string `json:"shipping_method"`
-	ShippingStatus string `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
-	TrackingNumber string `json:"tracking_number"`
-	CarrierCode    string `json:"carrier_code"`
+	ID                       uint   `gorm:"primarykey" json:"id"`
+	OrderNumber              string `gorm:"uniqueIndex;not null" json:"order_number"`
+	UserID                   uint   `gorm:"index" json:"user_id"`
+	Status                   string `gorm:"index;default:'pending'" json:"status"` // pending, paid, processing, shipped, completed, cancelled, refunded
+	PaymentMethod            string `json:"payment_method"`
+	PaymentStatus            string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, refunded
+	ShippingMethod           string `json:"shipping_method"`
+	ShippingStatus           string `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
+	TrackingNumber           string `json:"tracking_number"`
+	TrackingProviderID       *uint  `gorm:"index" json:"tracking_provider_id"`
+	CarrierID                *uint  `gorm:"index" json:"carrier_id"`
+	CarrierServiceID         *uint  `gorm:"index" json:"carrier_service_id"`
+	TrackingCarrierMappingID *uint  `gorm:"index" json:"tracking_carrier_mapping_id"`
+	ProviderCarrierCode      string `json:"provider_carrier_code"`
+	ProviderCarrierName      string `json:"provider_carrier_name"`
 
 	// 金额相关
 	SubtotalAmount float64 `gorm:"not null" json:"subtotal_amount"`
@@ -65,6 +70,18 @@ type Address struct {
 	Country    string `json:"country"`
 	Phone      string `json:"phone"`
 	Email      string `json:"email"`
+}
+
+// TrackingInfoUpdate is the normalized logistics payload stored on an order.
+// Local carrier/service IDs are the editable source; provider carrier code is a resolved snapshot.
+type TrackingInfoUpdate struct {
+	TrackingNumber           string
+	TrackingProviderID       *uint
+	CarrierID                *uint
+	CarrierServiceID         *uint
+	TrackingCarrierMappingID *uint
+	ProviderCarrierCode      string
+	ProviderCarrierName      string
 }
 
 // OrderItem 订单商品项

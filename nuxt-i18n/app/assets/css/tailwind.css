@@ -13,6 +13,21 @@
 }
 
 @layer base {
+  :root {
+    /*
+      Frontend typography ladder.
+      Keep user-facing page titles, section titles and embedded FAQ content
+      on predictable steps instead of letting every page invent its own size.
+    */
+    --tz-type-page-title: clamp(1.35rem, 0.65vw + 1.1rem, 1.85rem);
+    --tz-type-section-title: clamp(1rem, 0.24vw + 0.94rem, 1.16rem);
+    --tz-type-card-title: clamp(0.94rem, 0.2vw + 0.88rem, 1.08rem);
+    --tz-type-faq-title: clamp(1.18rem, 0.5vw + 1rem, 1.5rem);
+    --tz-type-faq-category: clamp(0.92rem, 0.22vw + 0.84rem, 1.05rem);
+    --tz-type-faq-question: clamp(0.88rem, 0.12vw + 0.84rem, 0.95rem);
+    --tz-type-faq-answer: clamp(0.84rem, 0.1vw + 0.8rem, 0.9rem);
+  }
+
   html {
     @apply overflow-x-hidden overscroll-x-none;
   }
@@ -29,6 +44,130 @@
     max-width: none;
     margin-inline: auto;
     box-sizing: border-box;
+  }
+
+  .tz-page-title {
+    margin: 0 0 0.75rem;
+    font-size: var(--tz-type-page-title);
+    line-height: 1.18;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .tz-section-title {
+    margin: 0 0 0.5rem;
+    font-size: var(--tz-type-section-title);
+    line-height: 1.35;
+    font-weight: 600;
+  }
+
+  .tz-card-title {
+    margin: 0;
+    font-size: var(--tz-type-card-title);
+    line-height: 1.35;
+    font-weight: 700;
+  }
+
+  .support-page__title,
+  .company-page__title,
+  .products-page__title {
+    font-size: var(--tz-type-page-title);
+    line-height: 1.18;
+  }
+
+  .support-section__title,
+  .company-section__title,
+  .sizecharts-section__title {
+    font-size: var(--tz-type-section-title);
+    line-height: 1.35;
+  }
+
+  .support-card__title,
+  .company-card__title,
+  .sizecharts-section__subheading {
+    font-size: var(--tz-type-card-title);
+    line-height: 1.35;
+  }
+
+  .tz-faq-title {
+    margin: 0 0 0.35rem;
+    font-size: var(--tz-type-faq-title);
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .tz-faq-subtitle {
+    margin: 0;
+    font-size: clamp(0.86rem, 0.16vw + 0.82rem, 0.95rem);
+    line-height: 1.55;
+  }
+
+  .tz-faq-category-title {
+    margin: 0;
+    font-size: var(--tz-type-faq-category);
+    line-height: 1.35;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .tz-faq-question {
+    font-size: var(--tz-type-faq-question);
+    line-height: 1.45;
+    font-weight: 600;
+  }
+
+  .tz-faq-answer {
+    font-size: var(--tz-type-faq-answer);
+    line-height: 1.7;
+  }
+
+  .tz-faq-answer :where(h1, h2, h3, h4, h5, h6) {
+    margin: 0.75rem 0 0.35rem;
+    font-size: var(--tz-type-faq-category);
+    line-height: 1.35;
+    font-weight: 700;
+  }
+
+  .tz-faq-answer :where(h1:first-child, h2:first-child, h3:first-child, h4:first-child, h5:first-child, h6:first-child) {
+    margin-top: 0;
+  }
+
+  .tz-faq-answer :where(p) {
+    margin: 0.45rem 0;
+  }
+
+  .tz-faq-answer :where(p:first-child) {
+    margin-top: 0;
+  }
+
+  .tz-faq-answer :where(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .tz-faq-answer :where(ul, ol) {
+    margin: 0.5rem 0;
+    padding-left: 1.25rem;
+  }
+
+  .tz-faq-answer :where(li) {
+    margin: 0.25rem 0;
+  }
+
+  .tz-faq-answer :where(strong) {
+    color: inherit;
+    font-weight: 700;
+  }
+
+  .tz-faq-answer :where(a) {
+    color: #38bdf8;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .tz-faq-answer :where(a:hover) {
+    color: #22d3ee;
   }
 
   /* 全局统一的高级卡片样式 */

@@ -2,6 +2,7 @@
   <div class="layout layout--support">
     <main class="layout-main">
       <div class="support-header-spacer" aria-hidden="true"></div>
+      <PrimarySectionTabBar />
 
       <!-- Support page content -->
       <section class="support-content">
@@ -19,10 +20,12 @@
 <script setup lang="ts">
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
+import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 </script>
 
 <style scoped>
 .layout--support {
+  --page-tab-bar-sticky-top: calc(var(--site-header-offset, 120px) + var(--primary-section-tab-bar-height, 58px));
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -36,7 +39,7 @@ import GradientDockMenu from '~/components/GradientDockMenu.vue'
 }
 
 .support-header-spacer {
-  height: 145px;
+  height: var(--site-header-offset, 145px);
 }
 
 .support-hero {
@@ -99,21 +102,7 @@ import GradientDockMenu from '~/components/GradientDockMenu.vue'
 
 @media (min-width: 768px) {
   .support-header-spacer {
-    height: 130px;
-  }
-}
-
-/* tablet-768: 768x1024 等宽度段，使用 160px 的顶部空白 */
-@media (min-width: 768px) and (max-width: 819px) {
-  .support-header-spacer {
-    height: 145px;
-  }
-}
-
-/* tablet-820: 820x1180 等宽度段，使用 160px 的顶部空白 */
-@media (min-width: 820px) and (max-width: 1023px) {
-  .support-header-spacer {
-    height: 145px;
+    height: var(--site-header-offset, 112px);
   }
 }
 </style>

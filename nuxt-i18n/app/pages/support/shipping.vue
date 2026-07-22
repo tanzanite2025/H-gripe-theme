@@ -69,7 +69,8 @@ useHead({
 <style scoped>
 .support-page__title {
   margin: 0 0 0.75rem;
-  font-size: 1.5rem;
+  font-size: var(--tz-type-page-title);
+  line-height: 1.18;
   font-weight: 600;
   color: #f9fafb;
 }
@@ -86,7 +87,8 @@ useHead({
 
 .support-section__title {
   margin: 0 0 0.5rem;
-  font-size: 1.05rem;
+  font-size: var(--tz-type-section-title);
+  line-height: 1.35;
   font-weight: 600;
   color: #e5e7eb;
 }

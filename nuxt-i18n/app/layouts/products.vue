@@ -2,6 +2,7 @@
   <div class="layout layout--products">
     <main class="layout-main">
       <div class="products-header-spacer" aria-hidden="true"></div>
+      <PrimarySectionTabBar />
 
       <!-- Products page content -->
       <section class="products-content">
@@ -19,10 +20,12 @@
 <script setup lang="ts">
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
+import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 </script>
 
 <style scoped>
 .layout--products {
+  --page-tab-bar-sticky-top: calc(var(--site-header-offset, 120px) + var(--primary-section-tab-bar-height, 58px));
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -37,10 +40,8 @@ import GradientDockMenu from '~/components/GradientDockMenu.vue'
 }
 
 .products-header-spacer {
-  height: 145px;
+  height: var(--site-header-offset, 145px);
 }
-
-
 
 .products-content {
   padding: 1rem 0 3rem;
@@ -52,21 +53,7 @@ import GradientDockMenu from '~/components/GradientDockMenu.vue'
 
 @media (min-width: 768px) {
   .products-header-spacer {
-    height: 130px;
-  }
-}
-
-/* tablet-768: 768x1024 等宽度段，使用 160px 的顶部空白 */
-@media (min-width: 768px) and (max-width: 819px) {
-  .products-header-spacer {
-    height: 145px;
-  }
-}
-
-/* tablet-820: 820x1180 等宽度段，使用 160px 的顶部空白 */
-@media (min-width: 820px) and (max-width: 1023px) {
-  .products-header-spacer {
-    height: 145px;
+    height: var(--site-header-offset, 112px);
   }
 }
 </style>

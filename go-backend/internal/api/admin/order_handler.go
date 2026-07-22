@@ -70,9 +70,15 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 		respondOrderServiceError(c, err, "Failed to fetch order", http.StatusInternalServerError)
 		return
 	}
+	trackingShipment, err := h.orderService.GetAdminOrderTrackingShipment(uint(id))
+	if err != nil {
+		respondOrderServiceError(c, err, "Failed to fetch order tracking status", http.StatusInternalServerError)
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"order": order,
+		"order":             order,
+		"tracking_shipment": trackingShipment,
 	})
 }
 
@@ -141,13 +147,34 @@ func (h *OrderHandler) UpdateTrackingInfo(c *gin.Context) {
 		return
 	}
 
-	if err := h.orderService.UpdateTrackingInfo(uint(id), req.TrackingNumber, req.CarrierCode); err != nil {
+	if err := h.orderService.UpdateTrackingInfo(c.Request.Context(), uint(id), req.toServiceInput()); err != nil {
 		respondOrderServiceError(c, err, "Failed to update tracking info", http.StatusInternalServerError)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Tracking info updated successfully",
+	})
+}
+
+// SyncTrackingInfo 同步物流追踪轨迹
+// POST /api/admin/orders/:id/tracking/sync
+func (h *OrderHandler) SyncTrackingInfo(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+
+	result, err := h.orderService.SyncOrderTracking(c.Request.Context(), uint(id))
+	if err != nil {
+		respondOrderServiceError(c, err, "Failed to sync tracking info", http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Tracking info synced successfully",
+		"tracking": result,
 	})
 }
 

@@ -31,12 +31,19 @@ func validateTrackingNumber(trackingNumber string) error {
 
 // validateBatchTrackingRequest 验证批量追踪请求
 func validateBatchTrackingRequest(trackings []TrackingRequest) error {
+	return validateBatchTrackingRequestWithLimit(trackings, 100)
+}
+
+func validateBatchTrackingRequestWithLimit(trackings []TrackingRequest, limit int) error {
 	if len(trackings) == 0 {
 		return fmt.Errorf("no tracking requests provided")
 	}
 
-	if len(trackings) > 100 {
-		return fmt.Errorf("too many tracking requests: maximum 100 allowed")
+	if limit <= 0 {
+		limit = 100
+	}
+	if len(trackings) > limit {
+		return fmt.Errorf("too many tracking requests: maximum %d allowed", limit)
 	}
 
 	for i, req := range trackings {

@@ -150,26 +150,6 @@
 
         <!-- 底部汇总 -->
         <div v-if="cartItems.length > 0" class="border-t border-white/10 px-6 py-4 bg-white/[0.03] relative z-10">
-          <!-- 免运费进度条 -->
-          <div v-if="freeShippingThreshold > 0 && subtotal < freeShippingThreshold" class="mb-4">
-            <div class="flex justify-between text-xs text-white/70 mb-1">
-              <span>{{ formatPrice(freeShippingThreshold - subtotal) }} away from free shipping</span>
-              <span>{{ Math.round((subtotal / freeShippingThreshold) * 100) }}%</span>
-            </div>
-            <div class="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-gradient-to-r from-[#6b73ff] to-[#a78bfa] transition-all duration-300"
-                :style="{ width: Math.min((subtotal / freeShippingThreshold) * 100, 100) + '%' }"
-              ></div>
-            </div>
-          </div>
-          <div v-else-if="freeShippingThreshold > 0 && subtotal >= freeShippingThreshold" class="mb-4">
-            <div class="flex items-center gap-2 text-green-400 text-sm">
-              <Icon name="lucide:check" class="w-4 h-4" />
-              <span>🎉 You've unlocked free shipping!</span>
-            </div>
-          </div>
-
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-sm">
               <span class="text-white/70">Subtotal</span>
@@ -177,10 +157,8 @@
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-white/70">Shipping</span>
-              <span class="font-medium text-white">
-                <span v-if="shipping === 0" class="text-green-400">Free</span>
-                <span v-else>{{ formatPrice(shipping) }}</span>
-                <span class="text-white/50 text-xs ml-1">(estimated)</span>
+              <span class="font-medium text-white text-right">
+                Calculated at checkout
               </span>
             </div>
             <div class="flex justify-between text-sm">
@@ -188,13 +166,13 @@
               <span class="font-medium text-white">{{ formatPrice(tax) }}</span>
             </div>
             <div class="flex justify-between text-base font-semibold pt-2 border-t border-white/10">
-              <span class="text-white">Total</span>
+              <span class="text-white">Estimated total</span>
               <span class="text-white">{{ formatPrice(total) }}</span>
             </div>
           </div>
 
           <p class="text-xs text-white/50 mb-3 text-center">
-            Final shipping calculated at checkout based on your location
+            Final shipping uses the backend quote after you choose a destination.
           </p>
 
           <div class="flex gap-3">
@@ -219,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { watch, onBeforeUnmount } from 'vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { useWishlist } from '~/composables/useWishlist'
 import { useCart } from '~/composables/useCart'
@@ -231,7 +209,6 @@ const {
   cartVariant,
   cartCount,
   subtotal,
-  shipping,
   tax,
   total,
   closeCart,
@@ -242,9 +219,6 @@ const {
   openCheckout,
   formatPrice,
 } = useCart()
-
-// 免运费门槛（默认 100 美元）
-const freeShippingThreshold = ref(100)
 
 const { addToWishlist } = useWishlist()
 
