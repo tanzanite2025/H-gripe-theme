@@ -1,155 +1,163 @@
 <template>
-  <div class="inner-tube-guide space-y-8">
+  <div class="inner-tube-guide space-y-5 md:space-y-6">
     <!-- Step 1: Search / Intro Card -->
-     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
-       <div class="flex items-center justify-center gap-3 mb-6">
-         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 text-lg font-bold">1</span>
-           <h3 class="text-xl font-bold text-slate-100 uppercase tracking-wide">
-             Choose Your Size
-           </h3>
-        </div>
-      
-       <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
-         All necessary size information (ETRTO or Inch) can be found on your tire sidewall.
-       </p>
+     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5">
+       <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div class="text-center md:text-left">
+          <div class="sizecharts-section__step-header sizecharts-section__step-header--compact md:justify-start">
+            <span class="sizecharts-section__step-badge">1</span>
+            <h3 class="sizecharts-section__step-title">
+              {{ $t('guidesTireguides.innerTube.steps.size.title') }}
+            </h3>
+          </div>
 
-       <div class="flex justify-center">
+          <p class="text-slate-400 text-sm leading-relaxed max-w-3xl md:max-w-none">
+            {{ $t('guidesTireguides.innerTube.steps.size.description') }}
+          </p>
+        </div>
+
+       <div class="flex justify-center md:justify-end">
          <button
           type="button"
-          class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-8 py-3 text-sm font-bold uppercase tracking-wider text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
+          class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-7 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
           @click="openInnerTubeSearch"
         >
-          Find My Tube
+          {{ $t('guidesTireguides.innerTube.actions.findTube') }}
         </button>
+       </div>
        </div>
     </div>
 
 
     <!-- Step 2: Valve Selection Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
-       <div class="flex items-center justify-center gap-3 mb-8">
-         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 text-lg font-bold">2</span>
-           <h3 class="text-xl font-bold text-slate-100 uppercase tracking-wide">
-             Select Valve Type
+    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5 text-center">
+       <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
+         <span class="sizecharts-section__step-badge">2</span>
+           <h3 class="sizecharts-section__step-title">
+             {{ $t('guidesTireguides.innerTube.steps.valve.title') }}
            </h3>
        </div>
 
-       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
           <!-- AV -->
-          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
-             <strong class="text-sky-400 text-lg font-bold mb-1">AV</strong>
-             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Auto / Schrader</span>
-             <p class="text-xs text-slate-400">Standard car valve. Length typical 40mm.</p>
+          <div class="bg-slate-800/40 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+             <strong class="sizecharts-section__card-title text-sky-400 mb-1">AV</strong>
+             <span class="sizecharts-section__card-meta text-slate-500">{{ $t('guidesTireguides.innerTube.valves.av.type') }}</span>
+             <p class="text-xs text-slate-400">{{ $t('guidesTireguides.innerTube.valves.av.description') }}</p>
           </div>
           <!-- DV -->
-          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
-             <strong class="text-sky-400 text-lg font-bold mb-1">DV</strong>
-             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Dunlop / Woods</span>
-             <p class="text-xs text-slate-400">Classic bicycle valve. Length 32/40mm.</p>
+          <div class="bg-slate-800/40 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+             <strong class="sizecharts-section__card-title text-sky-400 mb-1">DV</strong>
+             <span class="sizecharts-section__card-meta text-slate-500">{{ $t('guidesTireguides.innerTube.valves.dv.type') }}</span>
+             <p class="text-xs text-slate-400">{{ $t('guidesTireguides.innerTube.valves.dv.description') }}</p>
           </div>
           <!-- SV -->
-          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center border border-sky-500/30">
-             <strong class="text-sky-400 text-lg font-bold mb-1">SV</strong>
-             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Presta / French</span>
-             <p class="text-xs text-slate-400">Sport valve. Available in 40/50/60/80mm.</p>
+          <div class="bg-slate-800/40 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center border border-sky-500/30">
+             <strong class="sizecharts-section__card-title text-sky-400 mb-1">SV</strong>
+             <span class="sizecharts-section__card-meta text-slate-500">{{ $t('guidesTireguides.innerTube.valves.sv.type') }}</span>
+             <p class="text-xs text-slate-400">{{ $t('guidesTireguides.innerTube.valves.sv.description') }}</p>
           </div>
        </div>
 
-        <div class="w-full max-w-2xl mx-auto mb-8">
+       <div class="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+        <div class="w-full max-w-xl mx-auto lg:max-w-none">
            <GuideImage
             class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
             src="/public/tiresizecharts/innertube/tanzanite-schwalbe-innertube-valve.webp"
-            alt="Schwalbe inner tube valve types and lengths overview"
+            :alt="$t('guidesTireguides.innerTube.images.valveOverviewAlt')"
             :zoomOnClick="true"
           />
         </div>
 
+        <div class="w-full">
         <!-- Compatibility Table -->
-         <h4 class="text-base font-bold text-slate-200 mb-4 flex items-center justify-center gap-2">
-            <span>🔧</span> Pump & Rim Compatibility
+         <h4 class="text-sm font-semibold text-slate-200 mb-3 flex items-center justify-center gap-2">
+            <span>🔧</span> {{ $t('guidesTireguides.innerTube.compatibility.title') }}
          </h4>
-        <div class="overflow-x-auto rounded-xl bg-slate-950/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)] inline-block w-full max-w-4xl">
+        <div class="overflow-x-auto rounded-xl bg-slate-950/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)] inline-block w-full">
            <table class="min-w-full text-center text-xs sm:text-sm text-slate-100">
             <thead class="bg-slate-900/80">
               <tr>
-                <th class="px-4 py-3 font-bold text-slate-400">Rim Height</th>
-                <th class="px-4 py-3 font-bold text-sky-400">Rec. Valve</th>
-                <th class="px-4 py-3 font-bold text-slate-400">Notes</th>
+                <th class="px-3 py-2.5 font-semibold text-slate-400">{{ $t('guidesTireguides.innerTube.compatibility.headers.rimHeight') }}</th>
+                <th class="px-3 py-2.5 font-semibold text-sky-400">{{ $t('guidesTireguides.innerTube.compatibility.headers.recommendedValve') }}</th>
+                <th class="px-3 py-2.5 font-semibold text-slate-400">{{ $t('guidesTireguides.innerTube.compatibility.headers.notes') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800 bg-slate-800/20">
               <tr class="hover:bg-slate-800/40 transition-colors">
-                <td class="px-4 py-3 font-semibold text-slate-300">≤25mm</td>
-                <td class="px-4 py-3 text-sky-300 font-mono">40mm</td>
-                <td class="px-4 py-3 text-slate-400 text-xs">Standard</td>
+                <td class="px-3 py-2.5 font-semibold text-slate-300">≤25mm</td>
+                <td class="px-3 py-2.5 text-sky-300 font-mono">40mm</td>
+                <td class="px-3 py-2.5 text-slate-400 text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.standard') }}</td>
               </tr>
               <tr class="hover:bg-slate-800/40 transition-colors">
-                <td class="px-4 py-3 font-semibold text-slate-300">30–45mm</td>
-                <td class="px-4 py-3 text-sky-300 font-mono">60mm</td>
-                <td class="px-4 py-3 text-slate-400 text-xs">Deep rim</td>
+                <td class="px-3 py-2.5 font-semibold text-slate-300">30–45mm</td>
+                <td class="px-3 py-2.5 text-sky-300 font-mono">60mm</td>
+                <td class="px-3 py-2.5 text-slate-400 text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.deepRim') }}</td>
               </tr>
               <tr class="hover:bg-slate-800/40 transition-colors">
-                <td class="px-4 py-3 font-semibold text-slate-300">50–65mm</td>
-                <td class="px-4 py-3 text-sky-300 font-mono">80mm</td>
-                <td class="px-4 py-3 text-slate-400 text-xs">Aero rim</td>
+                <td class="px-3 py-2.5 font-semibold text-slate-300">50–65mm</td>
+                <td class="px-3 py-2.5 text-sky-300 font-mono">80mm</td>
+                <td class="px-3 py-2.5 text-slate-400 text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.aeroRim') }}</td>
               </tr>
                <tr class="hover:bg-slate-800/40 transition-colors">
-                <td class="px-4 py-3 font-semibold text-slate-300">≥70mm</td>
-                <td class="px-4 py-3 text-amber-300 font-mono">Extender</td>
-                <td class="px-4 py-3 text-slate-400 text-xs">Valve extender needed</td>
+                <td class="px-3 py-2.5 font-semibold text-slate-300">≥70mm</td>
+                <td class="px-3 py-2.5 text-amber-300 font-mono">{{ $t('guidesTireguides.innerTube.compatibility.valves.extender') }}</td>
+                <td class="px-3 py-2.5 text-slate-400 text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.extenderNeeded') }}</td>
               </tr>
             </tbody>
            </table>
         </div>
+        </div>
+       </div>
     </div>
 
     <!-- Step 3: Tube Type Selection -->
-     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
-       <div class="flex items-center justify-center gap-3 mb-8">
-         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 text-lg font-bold">3</span>
-           <h3 class="text-xl font-bold text-slate-100 uppercase tracking-wide">
-             Choose Model Type
+     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5 text-center">
+       <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
+         <span class="sizecharts-section__step-badge">3</span>
+           <h3 class="sizecharts-section__step-title">
+             {{ $t('guidesTireguides.innerTube.steps.model.title') }}
            </h3>
        </div>
 
        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Standard -->
-          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
-              <strong class="block text-slate-200 text-sm font-bold mb-2">Standard</strong>
+          <div class="bg-slate-800/40 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-slate-200 text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.standard.title') }}</strong>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Reliable hold. Good purity rubber. Uniform wall thickness.
+                {{ $t('guidesTireguides.innerTube.models.standard.description') }}
               </p>
           </div>
 
           <!-- Air Plus -->
-          <div class="bg-indigo-500/10 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-indigo-500/20">
-              <strong class="block text-indigo-400 text-sm font-bold mb-2">Air Plus</strong>
+          <div class="bg-indigo-500/10 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-indigo-500/20">
+              <strong class="block text-indigo-400 text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.airPlus.title') }}</strong>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Thicker walls. Holds air longer. Better puncture protection.
+                {{ $t('guidesTireguides.innerTube.models.airPlus.description') }}
               </p>
           </div>
 
           <!-- Extralight -->
-          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
-              <strong class="block text-amber-400 text-sm font-bold mb-2">Extralight / XXLight</strong>
+          <div class="bg-slate-800/40 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-amber-400 text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.extralight.title') }}</strong>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Reduced weight for racing. Available in select sizes.
+                {{ $t('guidesTireguides.innerTube.models.extralight.description') }}
               </p>
           </div>
 
            <!-- Freeride -->
-          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
-              <strong class="block text-slate-200 text-sm font-bold mb-2">Freeride</strong>
+          <div class="bg-slate-800/40 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-slate-200 text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.freeride.title') }}</strong>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Large volume, low weight.
+                {{ $t('guidesTireguides.innerTube.models.freeride.description') }}
               </p>
           </div>
 
            <!-- Downhill -->
-          <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
-              <strong class="block text-slate-200 text-sm font-bold mb-2">Downhill</strong>
+          <div class="bg-slate-800/40 p-3 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-slate-800/60 transition-colors">
+              <strong class="block text-slate-200 text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.downhill.title') }}</strong>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Extremely robust. Reinforced base. Valve shear protection.
+                {{ $t('guidesTireguides.innerTube.models.downhill.description') }}
               </p>
           </div>
        </div>

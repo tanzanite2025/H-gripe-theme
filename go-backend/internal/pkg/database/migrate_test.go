@@ -232,7 +232,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		}
 	}
 
-	assertG35CatalogSeed(ctx, t, testDB)
+	assertProductTemplateSourceReset(ctx, t, testDB)
 }
 
 func latestUpMigrationVersion(t *testing.T, migrationDir string) int {
@@ -264,190 +264,32 @@ func latestUpMigrationVersion(t *testing.T, migrationDir string) int {
 	return latest
 }
 
-func assertG35CatalogSeed(ctx context.Context, t *testing.T, db *sql.DB) {
+func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql.DB) {
 	t.Helper()
 
-	var productCount int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM products").Scan(&productCount); err != nil {
-		t.Fatalf("count catalog products: %v", err)
-	}
-	if productCount != 1 {
-		t.Fatalf("expected one catalog product, got %d", productCount)
-	}
-
-	var (
-		productSKU    string
-		productName   string
-		productSlug   string
-		productPrice  string
-		productStock  int
-		productStatus string
-		productLocale string
-		productType   string
-		featured      bool
-	)
-	if err := db.QueryRowContext(ctx, `
-		SELECT p.sku, p.name, p.slug, p.price::text, p.stock, p.status, p.locale,
-		       pt.slug, p.featured
-		FROM products p
-		JOIN product_types pt ON pt.id = p.product_type_id
-	`).Scan(
-		&productSKU,
-		&productName,
-		&productSlug,
-		&productPrice,
-		&productStock,
-		&productStatus,
-		&productLocale,
-		&productType,
-		&featured,
-	); err != nil {
-		t.Fatalf("read G35 catalog product: %v", err)
+	for _, table := range []string{"products", "product_variants", "product_media", "product_spec_values", "shipping_template_bindings", "shipping_packaging_rule_applies"} {
+		var count int
+		if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+pq.QuoteIdentifier(table)).Scan(&count); err != nil {
+			t.Fatalf("count rows in %s: %v", table, err)
+		}
+		if count != 0 {
+			t.Fatalf("expected empty %s table, got %d rows", table, count)
+		}
 	}
 
-	if productSKU != "G35-370G-1PC" || productName != "G35 Carbon Rim" || productSlug != "g35-carbon-rim" {
-		t.Fatalf("unexpected G35 identity: sku=%q name=%q slug=%q", productSKU, productName, productSlug)
+	var productTypeCount int
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_types").Scan(&productTypeCount); err != nil {
+		t.Fatalf("count product types: %v", err)
 	}
-	if productPrice != "111.14" || productStock != 0 || productStatus != "active" || productLocale != "en" {
-		t.Fatalf(
-			"unexpected G35 summary: price=%s stock=%d status=%q locale=%q",
-			productPrice,
-			productStock,
-			productStatus,
-			productLocale,
-		)
-	}
-	if productType != "carbon_rim" || featured {
-		t.Fatalf("unexpected G35 catalog classification: type=%q featured=%t", productType, featured)
+	if productTypeCount != 4 {
+		t.Fatalf("expected four product templates, got %d", productTypeCount)
 	}
 
 	var specCount int
-	if err := db.QueryRowContext(ctx, `
-		SELECT COUNT(*)
-		FROM product_spec_definitions psd
-		JOIN product_types pt ON pt.id = psd.product_type_id
-		WHERE pt.slug = 'carbon_rim'
-		  AND psd.slug IN ('listed_weight', 'pack_size')
-		  AND psd.is_required = TRUE
-		  AND psd.is_variant_option = TRUE
-	`).Scan(&specCount); err != nil {
-		t.Fatalf("count G35 variant definitions: %v", err)
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_spec_definitions").Scan(&specCount); err != nil {
+		t.Fatalf("count product spec definitions: %v", err)
 	}
-	if specCount != 2 {
-		t.Fatalf("expected two G35 variant definitions, got %d", specCount)
-	}
-
-	type expectedVariant struct {
-		sku          string
-		title        string
-		optionValues string
-		price        string
-		isDefault    bool
-		sortOrder    int
-	}
-	expectedVariants := []expectedVariant{
-		{"G35-370G-1PC", "370 g / 1 piece", `{"listed_weight":"370 g","pack_size":"1 piece"}`, "111.14", true, 10},
-		{"G35-370G-2PC", "370 g / 2 pieces", `{"listed_weight":"370 g","pack_size":"2 pieces"}`, "222.28", false, 20},
-		{"G35-460G-1PC", "460 g / 1 piece", `{"listed_weight":"460 g","pack_size":"1 piece"}`, "78.73", false, 30},
-		{"G35-460G-2PC", "460 g / 2 pieces", `{"listed_weight":"460 g","pack_size":"2 pieces"}`, "157.45", false, 40},
-	}
-
-	rows, err := db.QueryContext(ctx, `
-		SELECT pv.sku, pv.title, pv.option_values, pv.price::text, pv.stock,
-		       pv.weight_grams, pv.is_default, pv.is_active, pv.sort_order
-		FROM product_variants pv
-		JOIN products p ON p.id = pv.product_id
-		WHERE p.sku = 'G35-370G-1PC'
-		ORDER BY pv.sort_order, pv.id
-	`)
-	if err != nil {
-		t.Fatalf("query G35 variants: %v", err)
-	}
-	defer rows.Close()
-
-	variantIndex := 0
-	for rows.Next() {
-		if variantIndex >= len(expectedVariants) {
-			t.Fatal("G35 catalog contains more than four variants")
-		}
-		expected := expectedVariants[variantIndex]
-		var (
-			sku          string
-			title        string
-			optionValues string
-			price        string
-			stock        int
-			weight       int
-			isDefault    bool
-			isActive     bool
-			sortOrder    int
-		)
-		if err := rows.Scan(
-			&sku,
-			&title,
-			&optionValues,
-			&price,
-			&stock,
-			&weight,
-			&isDefault,
-			&isActive,
-			&sortOrder,
-		); err != nil {
-			t.Fatalf("scan G35 variant %d: %v", variantIndex, err)
-		}
-		if sku != expected.sku || title != expected.title || optionValues != expected.optionValues ||
-			price != expected.price || isDefault != expected.isDefault || sortOrder != expected.sortOrder {
-			t.Fatalf(
-				"unexpected G35 variant %d: sku=%q title=%q options=%q price=%s default=%t sort=%d",
-				variantIndex,
-				sku,
-				title,
-				optionValues,
-				price,
-				isDefault,
-				sortOrder,
-			)
-		}
-		if stock != 0 || weight != 0 || !isActive {
-			t.Fatalf("unsafe G35 variant %q: stock=%d weight=%d active=%t", sku, stock, weight, isActive)
-		}
-		variantIndex++
-	}
-	if err := rows.Err(); err != nil {
-		t.Fatalf("iterate G35 variants: %v", err)
-	}
-	if variantIndex != len(expectedVariants) {
-		t.Fatalf("expected four G35 variants, got %d", variantIndex)
-	}
-
-	var (
-		mediaCount int
-		mediaURL   string
-		mediaAlt   string
-		mediaRole  string
-		mediaOrder int
-		isPrimary  bool
-	)
-	if err := db.QueryRowContext(ctx, `
-		SELECT COUNT(*), MIN(pm.url), MIN(pm.alt), MIN(pm.role), MIN(pm.sort_order), COALESCE(BOOL_OR(pm.is_primary), FALSE)
-		FROM product_media pm
-		JOIN products p ON p.id = pm.product_id
-		WHERE p.sku = 'G35-370G-1PC'
-		  AND pm.media_type = 'image'
-		  AND pm.deleted_at IS NULL
-	`).Scan(&mediaCount, &mediaURL, &mediaAlt, &mediaRole, &mediaOrder, &isPrimary); err != nil {
-		t.Fatalf("read G35 media: %v", err)
-	}
-	if mediaCount != 1 || mediaURL != "/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp" ||
-		mediaAlt != "Carbon rim finish reference" || mediaRole != "primary" || mediaOrder != 0 || !isPrimary {
-		t.Fatalf(
-			"unexpected G35 media: count=%d url=%q alt=%q role=%q order=%d primary=%t",
-			mediaCount,
-			mediaURL,
-			mediaAlt,
-			mediaRole,
-			mediaOrder,
-			isPrimary,
-		)
+	if specCount != 33 {
+		t.Fatalf("expected thirty-three product spec definitions, got %d", specCount)
 	}
 }

@@ -23,3 +23,11 @@ func (s *ProductService) clearProductCache(p *product.Product) {
 		_ = s.cache.Delete(productSlugCacheKey(p.Slug, p.Locale))
 	}
 }
+
+func (s *ProductService) invalidateStorefrontHTMLCache(reason string) {
+	if s.storefrontHTMLCacheInvalidator == nil {
+		return
+	}
+
+	s.storefrontHTMLCacheInvalidator.PurgeAllAsync(reason)
+}

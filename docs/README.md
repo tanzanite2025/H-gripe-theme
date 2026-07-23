@@ -12,6 +12,7 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Backend module notes: `../go-backend/docs/`
 - Admin console guide: `../go-backend/web/admin/README.md`
 - Storefront notes: `../nuxt-i18n/docs/notes/`
+- Storefront i18n current status: `../nuxt-i18n/docs/notes/I18N-CURRENT-STATUS.md`
 
 ## Archive
 
@@ -33,4 +34,4 @@ Archived files are historical context only. They should not be used to claim pro
 - Prefer one source of truth for each area: backend docs under `go-backend/`, storefront notes under `nuxt-i18n/`, project-level docs under `docs/`.
 - Remove legacy WordPress compatibility docs unless they describe an explicit migration-only tool.
 
-Last updated: 2026-07-02.
+Last updated: 2026-07-23.

@@ -6,7 +6,8 @@ import (
 )
 
 type FAQService struct {
-	faqRepo *repository.FAQRepository
+	faqRepo                        *repository.FAQRepository
+	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
 }
 
 type FAQAdminUpdateInput struct {
@@ -17,6 +18,10 @@ type FAQAdminUpdateInput struct {
 	Locale   string
 	Status   string
 	Order    int
+}
+
+func (s *FAQService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
+	s.storefrontHTMLCacheInvalidator = invalidator
 }
 
 func NewFAQService(faqRepo *repository.FAQRepository) *FAQService {
@@ -50,12 +55,20 @@ func (s *FAQService) GetCategories(locale string) ([]string, error) {
 
 // Create 创建FAQ
 func (s *FAQService) Create(f *faq.FAQ) error {
-	return s.faqRepo.Create(f)
+	if err := s.faqRepo.Create(f); err != nil {
+		return err
+	}
+	s.invalidateStorefrontHTMLCache("admin faq create")
+	return nil
 }
 
 // Update 更新FAQ
 func (s *FAQService) Update(f *faq.FAQ) error {
-	return s.faqRepo.Update(f)
+	if err := s.faqRepo.Update(f); err != nil {
+		return err
+	}
+	s.invalidateStorefrontHTMLCache("admin faq update")
+	return nil
 }
 
 func (s *FAQService) UpdateAdminFAQ(id uint, input FAQAdminUpdateInput) (*faq.FAQ, error) {
@@ -93,15 +106,28 @@ func (s *FAQService) UpdateAdminFAQ(id uint, input FAQAdminUpdateInput) (*faq.FA
 
 // Delete 删除FAQ
 func (s *FAQService) Delete(id uint) error {
-	return s.faqRepo.Delete(id)
+	return s.deleteFAQByID(id, true)
+}
+
+func (s *FAQService) deleteFAQByID(id uint, shouldInvalidateHTML bool) error {
+	if err := s.faqRepo.Delete(id); err != nil {
+		return err
+	}
+	if shouldInvalidateHTML {
+		s.invalidateStorefrontHTMLCache("admin faq delete")
+	}
+	return nil
 }
 
 func (s *FAQService) BatchDelete(ids []uint) (int, error) {
 	deleted := 0
 	for _, id := range ids {
-		if err := s.Delete(id); err == nil {
+		if err := s.deleteFAQByID(id, false); err == nil {
 			deleted++
 		}
+	}
+	if deleted > 0 {
+		s.invalidateStorefrontHTMLCache("admin faq batch delete")
 	}
 	return deleted, nil
 }
@@ -114,12 +140,22 @@ func (s *FAQService) Search(keyword, locale string, page, pageSize int) ([]faq.F
 
 // UpdateOrder 更新排序
 func (s *FAQService) UpdateOrder(id uint, order int) error {
-	return s.faqRepo.UpdateOrder(id, order)
+	if err := s.faqRepo.UpdateOrder(id, order); err != nil {
+		return err
+	}
+	s.invalidateStorefrontHTMLCache("admin faq order update")
+	return nil
 }
 
 // BatchUpdateOrder 批量更新排序
 func (s *FAQService) BatchUpdateOrder(orders map[uint]int) error {
-	return s.faqRepo.BatchUpdateOrder(orders)
+	if err := s.faqRepo.BatchUpdateOrder(orders); err != nil {
+		return err
+	}
+	if len(orders) > 0 {
+		s.invalidateStorefrontHTMLCache("admin faq batch order update")
+	}
+	return nil
 }
 
 // IncrementViewCount 增加浏览次数
@@ -138,4 +174,12 @@ func (s *FAQService) GetPopular(locale string, limit int) ([]faq.FAQ, error) {
 		limit = 10
 	}
 	return s.faqRepo.GetPopular(locale, limit)
+}
+
+func (s *FAQService) invalidateStorefrontHTMLCache(reason string) {
+	if s.storefrontHTMLCacheInvalidator == nil {
+		return
+	}
+
+	s.storefrontHTMLCacheInvalidator.PurgeAllAsync(reason)
 }

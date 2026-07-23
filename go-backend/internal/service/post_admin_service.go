@@ -95,6 +95,7 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 	if err := s.postRepo.Create(newPost); err != nil {
 		return nil, err
 	}
+	s.invalidateStorefrontHTMLCache("admin post create")
 
 	return newPost, nil
 }
@@ -170,11 +171,16 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 
 	s.clearPostCache(&previousPost)
 	s.clearPostCache(existingPost)
+	s.invalidateStorefrontHTMLCache("admin post update")
 
 	return existingPost, nil
 }
 
 func (s *PostService) Delete(id uint) error {
+	return s.deletePostByID(id, true)
+}
+
+func (s *PostService) deletePostByID(id uint, shouldInvalidateHTML bool) error {
 	existingPost, err := s.findPost(id)
 	if err != nil {
 		return err
@@ -185,11 +191,18 @@ func (s *PostService) Delete(id uint) error {
 	}
 
 	s.clearPostCache(existingPost)
+	if shouldInvalidateHTML {
+		s.invalidateStorefrontHTMLCache("admin post delete")
+	}
 
 	return nil
 }
 
 func (s *PostService) UpdateStatus(id uint, status string) error {
+	return s.updatePostStatusByID(id, status, true)
+}
+
+func (s *PostService) updatePostStatusByID(id uint, status string, shouldInvalidateHTML bool) error {
 	existingPost, err := s.findPost(id)
 	if err != nil {
 		return err
@@ -200,6 +213,9 @@ func (s *PostService) UpdateStatus(id uint, status string) error {
 	}
 
 	s.clearPostCache(existingPost)
+	if shouldInvalidateHTML {
+		s.invalidateStorefrontHTMLCache("admin post status update")
+	}
 
 	return nil
 }
@@ -207,13 +223,16 @@ func (s *PostService) UpdateStatus(id uint, status string) error {
 func (s *PostService) BatchUpdateStatus(ids []uint, status string) (int, error) {
 	updated := 0
 	for _, id := range ids {
-		if err := s.UpdateStatus(id, status); err != nil {
+		if err := s.updatePostStatusByID(id, status, false); err != nil {
 			if errors.Is(err, ErrPostNotFound) {
 				continue
 			}
 			return updated, err
 		}
 		updated++
+	}
+	if updated > 0 {
+		s.invalidateStorefrontHTMLCache("admin post batch status update")
 	}
 
 	return updated, nil
@@ -222,13 +241,16 @@ func (s *PostService) BatchUpdateStatus(ids []uint, status string) (int, error) 
 func (s *PostService) BatchDelete(ids []uint) (int, error) {
 	deleted := 0
 	for _, id := range ids {
-		if err := s.Delete(id); err != nil {
+		if err := s.deletePostByID(id, false); err != nil {
 			if errors.Is(err, ErrPostNotFound) {
 				continue
 			}
 			return deleted, err
 		}
 		deleted++
+	}
+	if deleted > 0 {
+		s.invalidateStorefrontHTMLCache("admin post batch delete")
 	}
 
 	return deleted, nil

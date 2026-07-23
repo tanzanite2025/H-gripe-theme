@@ -50,24 +50,22 @@
       </div>
     </section>
 
-    <section class="flex gap-4">
-      <!-- 桌面端左侧分类栏 -->
-      <aside class="hidden md:block w-56 flex-shrink-0">
-        <section class="rounded-xl bg-white/5 p-4 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
-          <CategorySidebar
-            :categories="categories"
-            :selected="selectedCategory"
-            :loading="categoriesLoading"
-            :error="categoriesError"
-            @select="onCategorySelect"
-          />
-        </section>
+    <section class="shop-catalog-layout">
+      <!-- Desktop category rail: local component, no external dependency. -->
+      <aside class="shop-category-rail" aria-label="Shop category navigation">
+        <ShopCategoryVerticalMenu
+          :categories="categories"
+          :selected="selectedCategory"
+          :loading="categoriesLoading"
+          :error="categoriesError"
+          @select="onCategorySelect"
+        />
       </aside>
 
       <!-- 右侧商品列表区域 -->
-      <div class="flex-1">
+      <div class="shop-catalog-main">
         <!-- 移动端分类 chips -->
-        <div class="md:hidden mb-3 overflow-x-auto">
+        <div class="shop-mobile-categories">
           <CategoryChips
             :categories="categories"
             :selected="selectedCategory"
@@ -160,8 +158,8 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import CategorySidebar from '~/components/CategorySidebar.vue'
 import CategoryChips from '~/components/CategoryChips.vue'
+import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
 import PopularSearchChips from '~/components/PopularSearchChips.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useShopCategories } from '~/composables/useShopCategories'
@@ -432,9 +430,59 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   padding-inline: 1.5rem;
 }
 
+.shop-catalog-layout {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  display: grid;
+  grid-template-columns: clamp(10rem, 16vw, 18rem) minmax(0, 1fr);
+  gap: clamp(1rem, 2vw, 2.5rem);
+  padding-inline: clamp(0.5rem, 1.2vw, 1.5rem) clamp(1rem, 2.5vw, 3rem);
+  box-sizing: border-box;
+}
+
+.shop-category-rail {
+  position: sticky;
+  top: calc(var(--page-tab-bar-sticky-top, 172px) + 0.75rem);
+  min-height: calc(100dvh - var(--page-tab-bar-sticky-top, 172px) - 2rem);
+  max-height: calc(100dvh - var(--page-tab-bar-sticky-top, 172px) - 2rem);
+  display: flex;
+  align-items: center;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.shop-category-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-catalog-main {
+  min-width: 0;
+}
+
+.shop-mobile-categories {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .shop-page {
     padding-inline: 0;
+  }
+
+  .shop-catalog-layout {
+    width: auto;
+    margin-inline: 0;
+    display: block;
+    padding-inline: 0;
+  }
+
+  .shop-category-rail {
+    display: none;
+  }
+
+  .shop-mobile-categories {
+    display: block;
+    margin-bottom: 0.75rem;
+    overflow-x: auto;
   }
 }
 

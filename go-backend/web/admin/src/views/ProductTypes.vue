@@ -127,7 +127,7 @@
         class="flex h-[92dvh] max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0"
         @open-auto-focus.prevent
       >
-        <form class="relative z-10 flex min-h-0 flex-1 flex-col" @submit.prevent="submitForm">
+        <form class="flex min-h-0 min-w-0 flex-1 flex-col" @submit.prevent="submitForm">
           <DialogHeader class="shrink-0 border-b px-5 py-3 pr-12">
             <DialogTitle>{{ dialogMode === 'create' ? '添加产品模板' : '编辑产品模板' }}</DialogTitle>
             <DialogDescription>
@@ -136,33 +136,6 @@
           </DialogHeader>
 
           <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
-            <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
-              <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-sm font-black tracking-tighter italic uppercase">模板预设</h3>
-                  <p class="mt-1 text-xs text-muted-foreground">先选一个长期可复用的商品模板，再按实际业务增减字段。</p>
-                </div>
-                <span class="rounded-full bg-muted px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground/75">
-                  预设只补齐缺失字段
-                </span>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]">
-                <button
-                  v-for="preset in templatePresets"
-                  :key="preset.key"
-                  type="button"
-                  class="rounded-2xl border border-dashed bg-background/80 p-4 text-left transition hover:border-primary/40 hover:bg-primary/5"
-                  @click="applyTemplatePreset(preset)"
-                >
-                  <span class="text-sm font-bold">{{ preset.name }}</span>
-                  <span class="mt-1 block text-xs leading-5 text-muted-foreground">{{ preset.description }}</span>
-                  <span class="mt-3 inline-flex rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground">
-                    {{ preset.specs.length }} 个字段模板
-                  </span>
-                </button>
-              </div>
-            </section>
-
             <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
               <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -202,6 +175,16 @@
                   <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
                     {{ typeForm.spec_definitions.length }} 个字段
                   </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :aria-pressed="showSpecAdvanced"
+                    @click="showSpecAdvanced = !showSpecAdvanced"
+                  >
+                    <SlidersHorizontal class="size-3.5" />
+                    {{ showSpecAdvanced ? '隐藏属性' : '字段属性' }}
+                  </Button>
                   <Button type="button" variant="outline" size="sm" @click="addSpecDefinition">
                     <Plus class="size-3.5" />
                     添加字段
@@ -209,37 +192,32 @@
                 </div>
               </div>
 
-              <div class="min-w-0 space-y-3">
-                <div v-if="typeForm.spec_definitions.length === 0" class="rounded-xl border border-dashed py-8 text-center text-xs text-muted-foreground">
+              <div class="grid min-w-0 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                <div v-if="typeForm.spec_definitions.length === 0" class="rounded-xl border border-dashed py-8 text-center text-xs text-muted-foreground lg:col-span-2 xl:col-span-3">
                   暂无字段模板。添加后，这些字段会出现在商品编辑页。
                 </div>
 
                 <section
                   v-for="(spec, index) in typeForm.spec_definitions"
                   :key="spec.clientKey"
-                  class="space-y-3 rounded-2xl border bg-background/80 p-4"
+                  class="rounded-xl border bg-background/80 p-3"
                 >
-                  <div class="flex items-center justify-between gap-3">
-                    <div class="min-w-0">
-                      <strong class="text-sm">字段 {{ index + 1 }}</strong>
-                      <p class="mt-1 text-xs text-muted-foreground">
-                        {{ spec.is_variant_option ? 'SKU 选项字段：具体值在 SKU 变体矩阵里填写。' : '商品资料字段：具体值在单个商品里填写。' }}
-                      </p>
-                    </div>
-                    <Button type="button" variant="ghost" size="icon" :aria-label="`删除字段 ${index + 1}`" @click="removeSpecDefinition(index)">
+                  <div class="mb-2 flex items-center justify-between gap-2">
+                    <strong class="text-xs font-black uppercase tracking-wider text-muted-foreground">字段 {{ index + 1 }}</strong>
+                    <Button type="button" variant="ghost" size="icon" class="size-8" :aria-label="`删除字段 ${index + 1}`" @click="removeSpecDefinition(index)">
                       <Trash2 class="size-4 text-destructive" />
                     </Button>
                   </div>
 
                   <div
                     v-if="isProductSpecificSelect(spec)"
-                    class="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200"
+                    class="mb-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200"
                   >
                     这个字段看起来像每个产品/SKU 自己决定的值。若不同产品的可选值不同，请把字段类型改成“文本/数字”，不要在产品模板里固定列出选项。
                   </div>
 
-                  <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_150px_120px_100px]">
-                    <FormField label="字段名称" required :error="formErrors[`spec:${index}:name`]" description="例如：颜色、材质、刹车类型。">
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    <FormField label="字段名称" required :error="formErrors[`spec:${index}:name`]">
                       <Input v-model="spec.name" placeholder="字段显示名" @input="clearFieldError(`spec:${index}:name`)" />
                     </FormField>
                     <FormField label="字段标识" required :error="formErrors[`spec:${index}:slug`]">
@@ -266,20 +244,20 @@
                       v-if="spec.field_type === 'select'"
                       label="固定选项"
                       required
-                      class="md:col-span-2 xl:col-span-5"
+                      class="sm:col-span-2"
                       :error="formErrors[`spec:${index}:options`]"
-                      description="只适合所有该类型产品共用的值。像每个产品不同的重量/尺寸，请改用文本或数字，让具体值在商品/SKU 中填写。"
+                      description="只填写所有该类型产品共用的选项；每行一个。"
                     >
                       <Textarea
                         v-model="spec.optionsText"
-                        class="min-h-16 font-mono text-xs"
+                        class="min-h-12 font-mono text-xs"
                         placeholder="每行一个全类型共用选项，例如：Black&#10;White"
                         @input="clearFieldError(`spec:${index}:options`)"
                       />
                     </FormField>
                   </div>
 
-                  <div class="grid gap-2 border-t border-dashed pt-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div v-if="showSpecAdvanced" class="mt-2 grid gap-2 border-t border-dashed pt-2 sm:grid-cols-2">
                     <label class="flex items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2 text-xs font-bold uppercase tracking-wider">
                       <span>必填</span>
                       <Switch v-model="spec.is_required" :aria-label="`${spec.name || '字段'}必填`" />
@@ -302,7 +280,7 @@
             </section>
           </div>
 
-          <DialogFooter class="shrink-0 border-t bg-background/95 px-5 py-3 backdrop-blur">
+          <DialogFooter class="mx-0 mb-0 shrink-0 rounded-none border-t bg-background/95 px-5 py-3 backdrop-blur sm:flex-row sm:flex-nowrap sm:justify-end">
             <Button type="button" variant="outline" @click="dialogVisible = false">取消</Button>
             <Button type="submit" :disabled="submitting">
               <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
@@ -340,6 +318,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  SlidersHorizontal,
   Tags,
   Trash2
 } from '@lucide/vue'
@@ -401,6 +380,7 @@ const loading = ref(false)
 const submitting = ref(false)
 const dialogVisible = ref(false)
 const dialogMode = ref('create')
+const showSpecAdvanced = ref(false)
 const productTypes = ref([])
 const filters = reactive({ search: '', status: 'all' })
 const formErrors = reactive({})
@@ -444,81 +424,6 @@ const isProductSpecificSelect = (spec) => (
   productSpecificSpecPattern.test(`${spec.name || ''} ${spec.slug || ''}`)
 )
 
-const templatePresets = [
-  {
-    key: 'blank',
-    name: '空白模板',
-    slug: '',
-    description: '从空字段开始，适合还没固定结构的新产品线。',
-    specs: []
-  },
-  {
-    key: 'carbon_rim',
-    name: '车圈模板',
-    slug: 'carbon_rim',
-    description: '定义车圈通用字段；具体重量和每个 SKU 的价格库存仍在 SKU 矩阵维护。',
-    specs: [
-      { name: '材质', slug: 'material', field_type: 'select', options: ['Carbon Fiber', 'Aluminum'], is_filterable: true, is_visible: true, sort_order: 10 },
-      { name: '刹车类型', slug: 'brake_type', field_type: 'select', options: ['Disc Brake', 'Rim Brake'], is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 20 },
-      { name: '胎型', slug: 'tire_type', field_type: 'select', options: ['Clincher', 'Tubeless', 'Tubular'], is_filterable: true, is_visible: true, sort_order: 30 },
-      { name: '轮径', slug: 'wheel_size', field_type: 'text', unit: '', is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 40 },
-      { name: '框高', slug: 'rim_depth', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, sort_order: 50 },
-      { name: '内宽', slug: 'inner_width', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, sort_order: 60 },
-      { name: '外宽', slug: 'outer_width', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, sort_order: 70 },
-      { name: '孔数', slug: 'spoke_holes', field_type: 'number', unit: 'H', is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 80 },
-      { name: 'ERD', slug: 'erd', field_type: 'number', unit: 'mm', is_filterable: false, is_visible: true, sort_order: 90 }
-    ]
-  },
-  {
-    key: 'carbon_frame',
-    name: '车架模板',
-    slug: 'carbon_frame',
-    description: '定义车架通用字段；尺码可以作为 SKU 选项，重量继续按 SKU 或商品实际维护。',
-    specs: [
-      { name: '材质', slug: 'material', field_type: 'select', options: ['Carbon Fiber', 'Aluminum', 'Titanium', 'Steel'], is_filterable: true, is_visible: true, sort_order: 10 },
-      { name: '尺码', slug: 'frame_size', field_type: 'text', is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 20 },
-      { name: '适配轮径', slug: 'wheel_size', field_type: 'text', is_filterable: true, is_visible: true, sort_order: 30 },
-      { name: '刹车类型', slug: 'brake_type', field_type: 'select', options: ['Disc Brake', 'Rim Brake'], is_filterable: true, is_visible: true, sort_order: 40 },
-      { name: '头管规格', slug: 'headtube_standard', field_type: 'text', is_filterable: false, is_visible: true, sort_order: 50 },
-      { name: '五通规格', slug: 'bottom_bracket', field_type: 'text', is_filterable: true, is_visible: true, sort_order: 60 },
-      { name: '轴规格', slug: 'axle_standard', field_type: 'text', is_filterable: true, is_visible: true, sort_order: 70 },
-      { name: '座管规格', slug: 'seatpost_standard', field_type: 'text', is_filterable: false, is_visible: true, sort_order: 80 }
-    ]
-  },
-  {
-    key: 'wheelset',
-    name: '轮组模板',
-    slug: 'wheelset',
-    description: '定义整套轮组字段；前/后轮配置可以做商品字段，重量和价格库存仍按 SKU 维护。',
-    specs: [
-      { name: '材质', slug: 'material', field_type: 'select', options: ['Carbon Fiber', 'Aluminum'], is_filterable: true, is_visible: true, sort_order: 10 },
-      { name: '刹车类型', slug: 'brake_type', field_type: 'select', options: ['Disc Brake', 'Rim Brake'], is_filterable: true, is_visible: true, sort_order: 20 },
-      { name: '胎型', slug: 'tire_type', field_type: 'select', options: ['Clincher', 'Tubeless', 'Tubular'], is_filterable: true, is_visible: true, sort_order: 30 },
-      { name: '轮径', slug: 'wheel_size', field_type: 'text', is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 40 },
-      { name: '前轮框高', slug: 'front_rim_depth', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, sort_order: 50 },
-      { name: '后轮框高', slug: 'rear_rim_depth', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, sort_order: 60 },
-      { name: '花鼓接口', slug: 'hub_interface', field_type: 'text', is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 70 },
-      { name: '塔基规格', slug: 'freehub_body', field_type: 'select', options: ['Shimano HG', 'SRAM XDR', 'Campagnolo N3W'], is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 80 },
-      { name: '辐条类型', slug: 'spoke_type', field_type: 'text', is_filterable: false, is_visible: true, sort_order: 90 }
-    ]
-  },
-  {
-    key: 'handlebar',
-    name: '把组模板',
-    slug: 'handlebar',
-    description: '定义车把/把组通用字段；宽度、把立长度等可作为 SKU 选项。',
-    specs: [
-      { name: '材质', slug: 'material', field_type: 'select', options: ['Carbon Fiber', 'Aluminum'], is_filterable: true, is_visible: true, sort_order: 10 },
-      { name: '宽度', slug: 'bar_width', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 20 },
-      { name: '把立长度', slug: 'stem_length', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, is_variant_option: true, sort_order: 30 },
-      { name: 'Reach', slug: 'reach', field_type: 'number', unit: 'mm', is_filterable: false, is_visible: true, sort_order: 40 },
-      { name: 'Drop', slug: 'drop', field_type: 'number', unit: 'mm', is_filterable: false, is_visible: true, sort_order: 50 },
-      { name: '夹径', slug: 'clamp_diameter', field_type: 'number', unit: 'mm', is_filterable: true, is_visible: true, sort_order: 60 },
-      { name: '走线方式', slug: 'cable_routing', field_type: 'select', options: ['Internal', 'Semi-internal', 'External'], is_filterable: true, is_visible: true, sort_order: 70 }
-    ]
-  }
-]
-
 const createEmptySpec = (overrides = {}) => ({
   id: 0,
   clientKey: nextSpecKey++,
@@ -535,20 +440,6 @@ const createEmptySpec = (overrides = {}) => ({
   optionsText: '',
   validation: '',
   ...overrides
-})
-
-const presetSpecToForm = (spec) => createEmptySpec({
-  group: '',
-  name: spec.name || '',
-  slug: spec.slug || '',
-  field_type: spec.field_type || 'text',
-  unit: spec.unit || '',
-  is_required: Boolean(spec.is_required),
-  is_filterable: Boolean(spec.is_filterable),
-  is_visible: spec.is_visible !== false,
-  is_variant_option: Boolean(spec.is_variant_option),
-  sort_order: Number(spec.sort_order || 0),
-  optionsText: Array.isArray(spec.options) ? spec.options.join('\n') : ''
 })
 
 const optionsToText = (options) => {
@@ -584,11 +475,13 @@ const resetForm = () => {
 const showCreateDialog = () => {
   dialogMode.value = 'create'
   resetForm()
+  showSpecAdvanced.value = false
   dialogVisible.value = true
 }
 
 const showEditDialog = (type) => {
   dialogMode.value = 'edit'
+  showSpecAdvanced.value = false
   Object.assign(typeForm, {
     id: type.id,
     name: type.name || '',
@@ -600,36 +493,6 @@ const showEditDialog = (type) => {
   })
   clearFormErrors()
   dialogVisible.value = true
-}
-
-const applyTemplatePreset = (preset) => {
-  if (!preset) return
-
-  if (!typeForm.name.trim() && preset.name) typeForm.name = preset.name
-  if (!typeForm.slug.trim() && preset.slug) typeForm.slug = preset.slug
-  if (!typeForm.description.trim() && preset.description) typeForm.description = preset.description
-
-  const existingSlugs = new Set(
-    typeForm.spec_definitions
-      .map((spec) => String(spec.slug || '').trim().toLowerCase())
-      .filter(Boolean)
-  )
-  const additions = (preset.specs || [])
-    .filter((spec) => {
-      const slug = String(spec.slug || '').trim().toLowerCase()
-      return slug && !existingSlugs.has(slug)
-    })
-    .map(presetSpecToForm)
-
-  if (additions.length > 0) {
-    typeForm.spec_definitions.push(...additions)
-    toast.success(`已补齐 ${additions.length} 个字段模板`)
-  } else if (preset.key === 'blank') {
-    toast.info('已选择空白模板，可手动添加字段')
-  } else {
-    toast.info('当前模板已包含这些字段')
-  }
-  clearFormErrors()
 }
 
 const addSpecDefinition = () => {

@@ -34,6 +34,9 @@ x-api-environment: &api-environment
   STORAGE_TYPE: local
   STORAGE_LOCAL_PATH: /app/uploads
   STORAGE_BASE_URL: ${SERVER_BASE_URL:?SERVER_BASE_URL is required}
+  STOREFRONT_HTML_CACHE_PURGE_URL: http://storefront:3000/_internal/html-cache/purge
+  STOREFRONT_HTML_CACHE_PURGE_TOKEN: ${NUXT_HTML_CACHE_PURGE_TOKEN:?NUXT_HTML_CACHE_PURGE_TOKEN is required}
+  STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS: ${STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS:-500}
 
 services:
   db:
@@ -151,11 +154,23 @@ services:
       PORT: "3000"
       NUXT_PUBLIC_API_BASE: /api/v1
       NUXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      NUXT_HTML_CACHE_DRIVER: ${NUXT_HTML_CACHE_DRIVER:-redis}
+      NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-tanzanite:storefront:html-cache}
+      NUXT_HTML_CACHE_REDIS_HOST: redis
+      NUXT_HTML_CACHE_REDIS_PORT: "6379"
+      NUXT_HTML_CACHE_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      NUXT_HTML_CACHE_REDIS_DB: ${NUXT_HTML_CACHE_REDIS_DB:-1}
+      NUXT_HTML_CACHE_REDIS_TTL_SECONDS: ${NUXT_HTML_CACHE_REDIS_TTL_SECONDS:-604800}
+      NUXT_HTML_CACHE_REDIS_SCAN_COUNT: ${NUXT_HTML_CACHE_REDIS_SCAN_COUNT:-100}
+      NUXT_HTML_CACHE_PURGE_TOKEN: ${NUXT_HTML_CACHE_PURGE_TOKEN:?NUXT_HTML_CACHE_PURGE_TOKEN is required}
     depends_on:
       api:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - app
+      - data
     read_only: true
     tmpfs:
       - /tmp

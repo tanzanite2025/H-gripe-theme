@@ -92,25 +92,16 @@ watch(
   box-sizing: border-box;
   position: sticky;
   top: var(--page-tab-bar-sticky-top, var(--site-header-offset, 120px));
-  z-index: 90;
-  width: 100vw;
-  width: 100dvw;
-  max-width: 100vw;
-  max-width: 100dvw;
-  margin: 0 calc(50% - 50vw) 2rem;
-  margin: 0 calc(50% - 50dvw) 2rem;
-  padding: 0.55rem clamp(1rem, 3vw, 3.5rem);
-  border: 1px solid rgba(45, 212, 191, 0.14);
-  border-right: 0;
-  border-left: 0;
+  z-index: 87;
+  width: 100%;
+  max-width: none;
+  margin: var(--page-tab-bar-flow-offset, 0px) auto 1.65rem;
+  padding: 0.15rem 0 0.25rem;
+  border: 0;
   border-radius: 0;
-  background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.78)),
-    radial-gradient(circle at 50% 0%, rgba(45, 212, 191, 0.12), transparent 46%);
-  backdrop-filter: blur(18px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 16px 34px rgba(0, 0, 0, 0.34);
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .page-tab-bar__mobile-trigger {
@@ -123,6 +114,7 @@ watch(
   align-items: center;
   justify-content: center;
   gap: clamp(0.35rem, 0.55vw, 0.7rem);
+  padding: 0.2rem 0;
 }
 
 .page-tab-bar__item {
@@ -173,7 +165,7 @@ watch(
 
 @media (max-width: 900px) {
   .page-tab-bar {
-    padding: 0.55rem clamp(0.9rem, 4vw, 1.25rem);
+    padding: 0.15rem 0 0.25rem;
   }
 
   .page-tab-bar__mobile-trigger {

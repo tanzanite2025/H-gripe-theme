@@ -1,0 +1,75 @@
+{
+  "innerTube": {
+    "steps": {
+      "size": {
+        "title": "选择尺寸",
+        "description": "所需的尺寸信息（ETRTO 或英寸）通常可以在外胎胎侧找到。"
+      },
+      "valve": {
+        "title": "选择气嘴类型"
+      },
+      "model": {
+        "title": "选择内胎型号"
+      }
+    },
+    "actions": {
+      "findTube": "查找内胎"
+    },
+    "valves": {
+      "av": {
+        "type": "美嘴 / Schrader",
+        "description": "标准汽车气嘴，常见长度约 40mm。"
+      },
+      "dv": {
+        "type": "英嘴 / Dunlop / Woods",
+        "description": "经典自行车气嘴，常见长度 32/40mm。"
+      },
+      "sv": {
+        "type": "法嘴 / Presta",
+        "description": "运动自行车常用气嘴，提供 40/50/60/80mm 等长度。"
+      }
+    },
+    "images": {
+      "valveOverviewAlt": "Schwalbe 内胎气嘴类型与长度示意图"
+    },
+    "compatibility": {
+      "title": "打气筒与车圈兼容性",
+      "headers": {
+        "rimHeight": "车圈高度",
+        "recommendedValve": "推荐气嘴",
+        "notes": "说明"
+      },
+      "valves": {
+        "extender": "延长杆"
+      },
+      "notes": {
+        "standard": "标准",
+        "deepRim": "高框车圈",
+        "aeroRim": "气动车圈",
+        "extenderNeeded": "需要气嘴延长杆"
+      }
+    },
+    "models": {
+      "standard": {
+        "title": "标准款",
+        "description": "保气稳定，橡胶纯度高，管壁厚度均匀。"
+      },
+      "airPlus": {
+        "title": "Air Plus",
+        "description": "管壁更厚，保气时间更长，抗刺穿能力更好。"
+      },
+      "extralight": {
+        "title": "轻量款 / XXLight",
+        "description": "面向竞赛减重，部分尺寸可选。"
+      },
+      "freeride": {
+        "title": "Freeride",
+        "description": "大容量，同时保持较低重量。"
+      },
+      "downhill": {
+        "title": "Downhill",
+        "description": "结构极其坚固，底部加强，并提供气嘴防剪切保护。"
+      }
+    }
+  }
+}

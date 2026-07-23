@@ -22,6 +22,8 @@ func respondMarketingError(c *gin.Context, err error, notFoundResource string) {
 		apierror.RespondNotFound(c, notFoundResource)
 	case errors.Is(err, service.ErrCouponCodeExists), errors.Is(err, service.ErrGiftCardCodeExists):
 		apierror.RespondConflict(c, err.Error())
+	case errors.Is(err, service.ErrInvalidGiftCardStatusTransition), errors.Is(err, service.ErrInvalidMemberLevel):
+		apierror.RespondBadRequest(c, err.Error())
 	default:
 		apierror.RespondInternalError(c, err)
 	}

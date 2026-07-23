@@ -118,6 +118,7 @@ func (s *ProductService) CreateProductType(input ProductTypeInput) (*product.Pro
 	if err := s.productRepo.CreateProductType(productType); err != nil {
 		return nil, err
 	}
+	s.invalidateStorefrontHTMLCache("admin product type create")
 	return s.productRepo.FindProductTypeByID(productType.ID)
 }
 
@@ -170,6 +171,7 @@ func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*pr
 		}
 		return nil, err
 	}
+	s.invalidateStorefrontHTMLCache("admin product type update")
 	return s.productRepo.FindProductTypeByID(id)
 }
 
@@ -183,6 +185,7 @@ func (s *ProductService) DeleteProductType(id uint) error {
 		}
 		return err
 	}
+	s.invalidateStorefrontHTMLCache("admin product type delete")
 	return nil
 }
 

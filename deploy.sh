@@ -33,6 +33,86 @@ if grep -Eq '^[A-Za-z_][A-Za-z0-9_]*=CHANGE_ME' "${ENV_FILE}"; then
   exit 1
 fi
 
+env_value() {
+  local key="$1"
+  local line
+  line="$(grep -E "^[[:space:]]*${key}=" "${ENV_FILE}" | tail -n 1 || true)"
+  line="${line#*=}"
+  line="${line%$'\r'}"
+  printf '%s' "${line}"
+}
+
+require_env_key() {
+  local key="$1"
+  if ! grep -Eq "^[[:space:]]*${key}=" "${ENV_FILE}"; then
+    echo "ERR: ${ENV_FILE} is missing ${key}." >&2
+    exit 1
+  fi
+}
+
+require_positive_int_env() {
+  local key="$1"
+  local value
+  require_env_key "${key}"
+  value="$(env_value "${key}")"
+  if [[ ! "${value}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "ERR: ${key} must be a positive integer." >&2
+    exit 1
+  fi
+}
+
+require_non_negative_int_env() {
+  local key="$1"
+  local value
+  require_env_key "${key}"
+  value="$(env_value "${key}")"
+  if [[ ! "${value}" =~ ^[0-9]+$ ]]; then
+    echo "ERR: ${key} must be a non-negative integer." >&2
+    exit 1
+  fi
+}
+
+for required_env_key in \
+  REDIS_PASSWORD \
+  JWT_SECRET \
+  NUXT_HTML_CACHE_DRIVER \
+  NUXT_HTML_CACHE_PREFIX \
+  NUXT_HTML_CACHE_REDIS_DB \
+  NUXT_HTML_CACHE_REDIS_TTL_SECONDS \
+  NUXT_HTML_CACHE_REDIS_SCAN_COUNT \
+  NUXT_HTML_CACHE_PURGE_TOKEN \
+  STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS; do
+  require_env_key "${required_env_key}"
+done
+
+html_cache_driver="$(env_value NUXT_HTML_CACHE_DRIVER)"
+if [[ "${html_cache_driver}" != "redis" ]]; then
+  echo "ERR: NUXT_HTML_CACHE_DRIVER must be redis in production." >&2
+  exit 1
+fi
+
+html_cache_prefix="$(env_value NUXT_HTML_CACHE_PREFIX)"
+if [[ -z "${html_cache_prefix}" ]]; then
+  echo "ERR: NUXT_HTML_CACHE_PREFIX must not be empty." >&2
+  exit 1
+fi
+
+require_non_negative_int_env NUXT_HTML_CACHE_REDIS_DB
+require_positive_int_env NUXT_HTML_CACHE_REDIS_TTL_SECONDS
+require_positive_int_env NUXT_HTML_CACHE_REDIS_SCAN_COUNT
+require_positive_int_env STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS
+
+html_cache_purge_token="$(env_value NUXT_HTML_CACHE_PURGE_TOKEN)"
+if (( ${#html_cache_purge_token} < 32 )); then
+  echo "ERR: NUXT_HTML_CACHE_PURGE_TOKEN must be at least 32 characters." >&2
+  exit 1
+fi
+
+if [[ "${html_cache_purge_token}" == "$(env_value REDIS_PASSWORD)" ]] || [[ "${html_cache_purge_token}" == "$(env_value JWT_SECRET)" ]]; then
+  echo "ERR: NUXT_HTML_CACHE_PURGE_TOKEN must be unique and must not reuse REDIS_PASSWORD or JWT_SECRET." >&2
+  exit 1
+fi
+
 if [[ ! "${PULL_ATTEMPTS}" =~ ^[1-9][0-9]*$ ]] || [[ ! "${PULL_DELAY_SECONDS}" =~ ^[1-9][0-9]*$ ]]; then
   echo "ERR: PULL_ATTEMPTS and PULL_DELAY_SECONDS must be positive integers." >&2
   exit 1

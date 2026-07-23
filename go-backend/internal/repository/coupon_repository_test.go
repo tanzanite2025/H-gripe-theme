@@ -53,8 +53,8 @@ func TestUpdateGiftCardBalanceRequiresSufficientBalanceForDebit(t *testing.T) {
 	repo, mock, cleanup := newMockCouponRepository(t)
 	defer cleanup()
 
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "gift_cards" SET "balance"=balance + $1 WHERE id = $2 AND balance >= $3 AND "gift_cards"."deleted_at" IS NULL`)).
-		WithArgs(-8.0, sqlmock.AnyArg(), 8.0).
+	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "gift_cards" SET "balance_cents"=balance_cents + $1 WHERE id = $2 AND balance_cents >= $3 AND "gift_cards"."deleted_at" IS NULL`)).
+		WithArgs(int64(-800), sqlmock.AnyArg(), int64(800)).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
 	err := repo.UpdateGiftCardBalance(42, -8)

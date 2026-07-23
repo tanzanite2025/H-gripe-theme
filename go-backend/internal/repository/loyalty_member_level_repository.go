@@ -27,12 +27,23 @@ func (r *LoyaltyRepository) FindAllMemberLevels() ([]loyalty.MemberLevel, error)
 // FindMemberLevelByPoints 根据积分查找对应等级
 func (r *LoyaltyRepository) FindMemberLevelByPoints(points int) (*loyalty.MemberLevel, error) {
 	var level loyalty.MemberLevel
-	err := r.db.Where("min_points <= ?", points).
+	err := r.db.Where("min_points <= ? AND max_points >= ?", points, points).
 		Order("min_points DESC").First(&level).Error
 	if err != nil {
 		return nil, err
 	}
 	return &level, nil
+}
+
+func (r *LoyaltyRepository) CountOverlappingMemberLevels(excludeID uint, minPoints, maxPoints int) (int64, error) {
+	var count int64
+	query := r.db.Model(&loyalty.MemberLevel{}).
+		Where("min_points <= ? AND max_points >= ?", maxPoints, minPoints)
+	if excludeID > 0 {
+		query = query.Where("id <> ?", excludeID)
+	}
+	err := query.Count(&count).Error
+	return count, err
 }
 
 // UpdateMemberLevel 更新会员等级

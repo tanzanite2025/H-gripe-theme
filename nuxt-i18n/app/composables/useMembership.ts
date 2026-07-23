@@ -26,6 +26,8 @@ interface RedeemGiftCardOption {
   cover_image?: string
 }
 
+const emptyTierInfo = () => ({ current: null, next: null, pct: 0 })
+
 export function useMembership() {
   const auth = useAuth()
 
@@ -37,14 +39,16 @@ export function useMembership() {
   const points = computed(() => userData.value?.loyalty?.points ?? 0)
   const profileInfo = computed(() => userData.value?.profile || null)
   const tiers = computed(() => {
-    if (!userData.value?.loyalty?.tiers) throw new Error("[CRITICAL] tiers missing");
-    return userData.value.loyalty.tiers as any[];
+    const tierList = userData.value?.loyalty?.tiers
+    return Array.isArray(tierList) ? tierList : []
   })
 
   // ========== 等级进度 ==========
   const tierInfo = computed(() => {
     const pts = points.value
     const tierList = tiers.value as any[]
+    if (!tierList.length) return emptyTierInfo()
+
     let current: any = null
     let next: any = null
 
@@ -94,7 +98,7 @@ export function useMembership() {
       const response = await auth.request<any>('/marketing/loyalty/levels')
       const tiers = Array.isArray(response) ? response : response?.tiers
 
-      if (tiers) {
+      if (Array.isArray(tiers)) {
         tierConfigs.value = tiers.map((tier: any) => ({
           key: tier.key,
           name: tier.name ?? tier.label ?? String(tier.key || '').toUpperCase(),
@@ -171,10 +175,7 @@ export function useMembership() {
 
     try {
       const data = await auth.request<any>('/marketing/loyalty/redeem-options')
-      const allCards = data.items || data;
-      if (!allCards || (Array.isArray(allCards) && allCards.length === 0 && !data.items && !data)) {
-        throw new Error("[CRITICAL] gift cards missing");
-      }
+      const allCards = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : [])
       availableGiftcards.value = allCards.filter((card: any) => card.status === 'active')
     } catch (error) {
       console.error('Failed to fetch gift cards:', error)
@@ -267,8 +268,13 @@ export function useMembership() {
 
   // ========== 初始化 ==========
   const initMembership = async () => {
-    await auth.ensureSession()
-    await Promise.all([
+    try {
+      await auth.ensureSession()
+    } catch (error) {
+      console.error('Failed to initialize membership session:', error)
+    }
+
+    await Promise.allSettled([
       loadTierConfigs(),
       fetchUserAssets(),
       fetchAvailableGiftcards()
@@ -277,9 +283,16 @@ export function useMembership() {
 
   // ========== 刷新数据 ==========
   const refreshData = async () => {
-    await auth.ensureSession()
-    await fetchUserAssets()
-    await fetchAvailableGiftcards()
+    try {
+      await auth.ensureSession()
+    } catch (error) {
+      console.error('Failed to refresh membership session:', error)
+    }
+
+    await Promise.allSettled([
+      fetchUserAssets(),
+      fetchAvailableGiftcards()
+    ])
   }
 
   return {

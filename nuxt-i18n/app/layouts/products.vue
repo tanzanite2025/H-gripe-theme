@@ -25,6 +25,8 @@ import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 
 <style scoped>
 .layout--products {
+  --primary-section-tab-bar-height: 58px;
+  --page-tab-bar-flow-offset: -0.75rem;
   --page-tab-bar-sticky-top: calc(var(--site-header-offset, 120px) + var(--primary-section-tab-bar-height, 58px));
   min-height: 100vh;
   min-height: 100dvh;
@@ -54,6 +56,12 @@ import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 @media (min-width: 768px) {
   .products-header-spacer {
     height: var(--site-header-offset, 112px);
+  }
+}
+
+@media (max-width: 900px) {
+  .layout--products {
+    --primary-section-tab-bar-height: 56px;
   }
 }
 </style>

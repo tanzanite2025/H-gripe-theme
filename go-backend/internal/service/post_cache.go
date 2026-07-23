@@ -23,3 +23,11 @@ func (s *PostService) clearPostCache(p *post.Post) {
 		_ = s.cache.Delete(postSlugCacheKey(p.Slug, p.Locale))
 	}
 }
+
+func (s *PostService) invalidateStorefrontHTMLCache(reason string) {
+	if s.storefrontHTMLCacheInvalidator == nil {
+		return
+	}
+
+	s.storefrontHTMLCacheInvalidator.PurgeAllAsync(reason)
+}

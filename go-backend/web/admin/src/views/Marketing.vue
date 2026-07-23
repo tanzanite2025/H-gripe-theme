@@ -14,6 +14,10 @@
           <Gift class="size-4" />
           礼品卡
         </TabsTrigger>
+        <TabsTrigger value="loyalty" class="h-9 flex-none px-4">
+          <Coins class="size-4" />
+          积分
+        </TabsTrigger>
         <TabsTrigger value="levels" class="h-9 flex-none px-4">
           <Crown class="size-4" />
           会员等级
@@ -189,6 +193,85 @@
         </AdminTablePanel>
       </TabsContent>
 
+      <TabsContent value="loyalty" class="space-y-3">
+        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <section class="space-y-3">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+              <AdminFormField label="用户 ID" class="w-48">
+                <Input v-model.number="loyaltyFilters.user_id" type="number" min="1" step="1" placeholder="输入用户 ID 查询" @keyup.enter="applyLoyaltyFilter" />
+              </AdminFormField>
+              <Button size="sm" @click="applyLoyaltyFilter">
+                <Search class="size-3.5" />
+                查询流水
+              </Button>
+            </div>
+            <AdminTablePanel :loading="loyaltyLoading">
+              <Table class="min-w-[760px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead class="w-28">类型</TableHead>
+                    <TableHead class="w-28 text-right">积分</TableHead>
+                    <TableHead class="w-28 text-right">余额</TableHead>
+                    <TableHead class="w-32">来源</TableHead>
+                    <TableHead>说明</TableHead>
+                    <TableHead class="w-44">时间</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableEmpty v-if="loyaltyTransactions.length === 0" :colspan="6">
+                    <div class="flex flex-col items-center text-muted-foreground">
+                      <Coins class="mb-2 size-7 opacity-55" />
+                      <span class="text-xs">{{ loyaltyFilters.user_id ? '暂无积分流水' : '请输入用户 ID 查询积分流水' }}</span>
+                    </div>
+                  </TableEmpty>
+                  <TableRow v-for="transaction in loyaltyTransactions" :key="transaction.id">
+                    <TableCell>{{ loyaltyTypeName(transaction.type) }}</TableCell>
+                    <TableCell class="text-right font-bold tabular-nums" :class="Number(transaction.points) >= 0 ? 'text-emerald-600' : 'text-destructive'">
+                      {{ Number(transaction.points) > 0 ? '+' : '' }}{{ transaction.points }}
+                    </TableCell>
+                    <TableCell class="text-right tabular-nums">{{ transaction.balance }}</TableCell>
+                    <TableCell class="font-mono text-xs">{{ transaction.source || '-' }} #{{ transaction.source_id || 0 }}</TableCell>
+                    <TableCell class="max-w-80 truncate text-muted-foreground">{{ transaction.description || '-' }}</TableCell>
+                    <TableCell class="text-xs text-muted-foreground">{{ formatDate(transaction.created_at) }}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+              <template #footer>
+                <AdminPagination
+                  :page="loyaltyPagination.page"
+                  :page-size="loyaltyPagination.pageSize"
+                  :total="loyaltyPagination.total"
+                  @update:page="updateLoyaltyPage"
+                  @update:page-size="updateLoyaltyPageSize"
+                />
+              </template>
+            </AdminTablePanel>
+          </section>
+
+          <section v-if="hasPermission('marketing:create')" class="rounded-xl border bg-card p-4 shadow-sm">
+            <div class="mb-4 space-y-1">
+              <h3 class="text-sm font-black tracking-tighter italic uppercase">手动调整积分</h3>
+              <p class="text-xs text-muted-foreground">所有调整都会写入积分流水，负数表示扣减。</p>
+            </div>
+            <form class="space-y-4" @submit.prevent="submitLoyaltyAdjustment">
+              <AdminFormField label="用户 ID" required :error="loyaltyErrors.user_id">
+                <Input v-model.number="loyaltyForm.user_id" type="number" min="1" step="1" @input="clearLoyaltyError('user_id')" />
+              </AdminFormField>
+              <AdminFormField label="调整积分" required :error="loyaltyErrors.points">
+                <Input v-model.number="loyaltyForm.points" type="number" step="1" placeholder="例如 100 或 -50" @input="clearLoyaltyError('points')" />
+              </AdminFormField>
+              <AdminFormField label="调整原因" required :error="loyaltyErrors.description">
+                <Textarea v-model="loyaltyForm.description" class="min-h-24" placeholder="必须写清楚原因，方便后续审计" @input="clearLoyaltyError('description')" />
+              </AdminFormField>
+              <Button class="w-full" type="submit" :disabled="loyaltySubmitting">
+                <LoaderCircle v-if="loyaltySubmitting" class="size-4 animate-spin" />
+                {{ loyaltySubmitting ? '提交中' : '提交调整' }}
+              </Button>
+            </form>
+          </section>
+        </div>
+      </TabsContent>
+
       <TabsContent value="levels" class="space-y-3">
         <div class="flex justify-end">
           <Button v-if="hasPermission('marketing:create')" size="sm" @click="showCreateLevelDialog">
@@ -323,10 +406,9 @@
               <Select v-model="giftCardStatusUpdate">
                 <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">活跃</SelectItem>
-                  <SelectItem value="used">已使用</SelectItem>
-                  <SelectItem value="expired">已过期</SelectItem>
-                  <SelectItem value="cancelled">已取消</SelectItem>
+                  <SelectItem v-for="option in giftCardStatusOptions(currentGiftCard)" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </label>
@@ -381,10 +463,11 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { BadgePercent, Crown, Eye, Gift, LoaderCircle, MoreHorizontal, Pencil, Plus, TicketCheck, Trash2, UsersRound } from '@lucide/vue'
+import { BadgePercent, Coins, Crown, Eye, Gift, LoaderCircle, MoreHorizontal, Pencil, Plus, Search, TicketCheck, Trash2, UsersRound } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
+import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
@@ -396,9 +479,11 @@ import MemberLevelEditorDialog from '@/components/admin/marketing/MemberLevelEdi
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
@@ -447,6 +532,17 @@ const currentGiftCard = ref(null)
 const giftCardTransactions = ref([])
 const giftCardStatusUpdate = ref('active')
 const giftCardStatusSubmitting = ref(false)
+const couponsLoaded = ref(false)
+const giftCardsLoaded = ref(false)
+const levelsLoaded = ref(false)
+
+const loyaltyLoading = ref(false)
+const loyaltyTransactions = ref([])
+const loyaltyFilters = reactive({ user_id: '' })
+const loyaltyPagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const loyaltySubmitting = ref(false)
+const loyaltyErrors = reactive({})
+const loyaltyForm = reactive({ user_id: '', points: 0, description: '' })
 
 const levelsLoading = ref(false)
 const levels = ref([])
@@ -491,6 +587,16 @@ const couponStatus = (coupon) => {
 const giftCardStatusName = (status) => ({ active: '活跃', used: '已使用', expired: '已过期', cancelled: '已取消' })[status] || status || '-'
 const giftCardStatusTone = (status) => ({ active: 'green', used: 'blue', expired: 'amber', cancelled: 'coral' })[status] || 'gray'
 const transactionTypeName = (type) => ({ issue: '发行', use: '消费', refund: '退款' })[type] || type || '-'
+const loyaltyTypeName = (type) => ({ earn: '获得', spend: '消费', expire: '过期', adjust: '调整', refund: '退回' })[type] || type || '-'
+const giftCardStatusOptions = (card) => {
+  const current = card?.status || 'active'
+  const options = [{ value: current, label: giftCardStatusName(current) }]
+  if (current === 'active') {
+    if (Number(card?.balance || 0) <= 0) options.push({ value: 'used', label: '已使用' })
+    options.push({ value: 'expired', label: '已过期' }, { value: 'cancelled', label: '已取消' })
+  }
+  return options
+}
 const toDateTimeLocal = (value) => {
   if (!value) return ''
   const date = new Date(value)
@@ -502,6 +608,7 @@ const toISO = (value) => value ? new Date(value).toISOString() : null
 const clearErrors = (errors) => Object.keys(errors).forEach((key) => delete errors[key])
 const clearCouponError = (field) => { delete couponErrors[field] }
 const clearGiftCardError = (field) => { delete giftCardErrors[field] }
+const clearLoyaltyError = (field) => { delete loyaltyErrors[field] }
 const clearLevelError = (field) => { delete levelErrors[field] }
 
 const fetchStats = async () => {
@@ -522,6 +629,7 @@ const fetchCoupons = async () => {
     const data = apiData(response)
     coupons.value = Array.isArray(data) ? data : data.coupons || []
     couponPagination.total = response.data.pagination?.total ?? coupons.value.length
+    couponsLoaded.value = true
   } catch (error) {
     console.error('Failed to fetch coupons:', error)
   } finally {
@@ -606,6 +714,7 @@ const fetchGiftCards = async () => {
     const data = apiData(response)
     giftCards.value = data.gift_cards || []
     giftCardPagination.total = response.data.pagination?.total ?? giftCards.value.length
+    giftCardsLoaded.value = true
   } catch (error) {
     console.error('Failed to fetch gift cards:', error)
   } finally {
@@ -681,11 +790,64 @@ const updateGiftCardStatus = async () => {
   }
 }
 
+const fetchLoyaltyTransactions = async () => {
+  if (!loyaltyFilters.user_id) {
+    loyaltyTransactions.value = []
+    loyaltyPagination.total = 0
+    return
+  }
+  loyaltyLoading.value = true
+  try {
+    const response = await axios.get('/api/admin/marketing/loyalty/transactions', {
+      params: { user_id: loyaltyFilters.user_id, page: loyaltyPagination.page, page_size: loyaltyPagination.pageSize }
+    })
+    const data = apiData(response)
+    loyaltyTransactions.value = data.transactions || []
+    loyaltyPagination.total = response.data.pagination?.total ?? data.total ?? loyaltyTransactions.value.length
+  } catch (error) {
+    console.error('Failed to fetch loyalty transactions:', error)
+  } finally {
+    loyaltyLoading.value = false
+  }
+}
+const applyLoyaltyFilter = () => { loyaltyPagination.page = 1; fetchLoyaltyTransactions() }
+const updateLoyaltyPage = (page) => { loyaltyPagination.page = page; fetchLoyaltyTransactions() }
+const updateLoyaltyPageSize = (pageSize) => { loyaltyPagination.pageSize = pageSize; loyaltyPagination.page = 1; fetchLoyaltyTransactions() }
+const validateLoyaltyAdjustment = () => {
+  clearErrors(loyaltyErrors)
+  if (!Number(loyaltyForm.user_id)) loyaltyErrors.user_id = '请输入用户 ID'
+  if (!Number(loyaltyForm.points)) loyaltyErrors.points = '积分不能为 0'
+  if (!loyaltyForm.description.trim()) loyaltyErrors.description = '请输入调整原因'
+  if (Object.keys(loyaltyErrors).length) { toast.error('请检查积分调整表单'); return false }
+  return true
+}
+const submitLoyaltyAdjustment = async () => {
+  if (!validateLoyaltyAdjustment()) return
+  loyaltySubmitting.value = true
+  try {
+    await axios.post('/api/admin/marketing/loyalty/transactions', {
+      user_id: Number(loyaltyForm.user_id),
+      points: Number(loyaltyForm.points),
+      description: loyaltyForm.description.trim()
+    })
+    toast.success('积分调整已写入流水')
+    loyaltyFilters.user_id = loyaltyForm.user_id
+    loyaltyForm.points = 0
+    loyaltyForm.description = ''
+    await Promise.all([fetchLoyaltyTransactions(), fetchStats()])
+  } catch (error) {
+    console.error('Failed to adjust loyalty points:', error)
+  } finally {
+    loyaltySubmitting.value = false
+  }
+}
+
 const fetchLevels = async () => {
   levelsLoading.value = true
   try {
     const response = await axios.get('/api/admin/marketing/levels')
     levels.value = apiData(response).levels || []
+    levelsLoaded.value = true
   } catch (error) {
     console.error('Failed to fetch member levels:', error)
   } finally {
@@ -775,5 +937,14 @@ const executeDelete = async () => {
   }
 }
 
-onMounted(() => Promise.all([fetchStats(), fetchCoupons(), fetchGiftCards(), fetchLevels()]))
+const ensureActiveTabLoaded = () => {
+  if (activeTab.value === 'coupons' && !couponsLoaded.value) return fetchCoupons()
+  if (activeTab.value === 'giftcards' && !giftCardsLoaded.value) return fetchGiftCards()
+  if (activeTab.value === 'levels' && !levelsLoaded.value) return fetchLevels()
+  return Promise.resolve()
+}
+
+watch(activeTab, ensureActiveTabLoaded)
+
+onMounted(() => Promise.all([fetchStats(), ensureActiveTabLoaded()]))
 </script>
