@@ -2,7 +2,7 @@
   <div class="company-page">
     <h1 class="sr-only">Terms of Service</h1>
 
-    <div class="policies-content mt-4 space-y-8 tz-text-secondary">
+    <div class="policies-content space-y-8 tz-text-secondary">
       <p class="text-sm tz-text-secondary">
         Please read these terms carefully before using our website or making a purchase.
       </p>
@@ -130,7 +130,7 @@ useHead({
 }
 
 .policies-content {
-  margin-top: 0.5rem;
+  margin-top: 0;
 }
 
 @media (max-width: 767px) {

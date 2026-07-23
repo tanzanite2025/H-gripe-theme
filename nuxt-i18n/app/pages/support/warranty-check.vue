@@ -5,15 +5,6 @@
       @login-request="handleLogin"
     />
 
-    <!-- FAQ Section -->
-    <section class="warranty-check__faq">
-      <PageFaq 
-        page-id="support-warranty-check"
-        theme="dark"
-        :show-categories="true"
-      />
-    </section>
-
     <!-- 登录弹窗：复用全局 AuthModal，嵌入模式 -->
     <AuthModal
       v-model="showAuthModal"
@@ -28,7 +19,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
-import PageFaq from '~/components/PageFaq.vue'
 import WarrantyCheckPanel from '~/components/WarrantyCheckPanel.vue'
 import AuthModal from '~/components/AuthModal.vue'
 
@@ -67,11 +57,4 @@ const handleAuthSuccess = () => {
   /* Removed padding to align with global support layout (padding handled by layout) */
 }
 
-.warranty-check__faq {
-  width: 100%;
-  max-width: none;
-  margin: 3rem auto 0;
-  padding-top: 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
 </style>

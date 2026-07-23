@@ -4,19 +4,10 @@
     
     <TestReportContent :sync-with-url="true" />
 
-    <!-- FAQ Section - 放在所有 tab 内容之后 -->
-    <section class="support-section">
-      <PageFaq
-        page-id="support-test-report"
-        theme="dark"
-        :show-categories="true"
-      />
-    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import PageFaq from '~/components/PageFaq.vue'
 import TestReportContent from '~/components/TestReportContent.vue'
 
 definePageMeta({
@@ -50,7 +41,7 @@ useHead({
 }
 
 .support-test-report {
-  margin-top: -1rem;
+  margin-top: 0;
 }
 
 .support-section {

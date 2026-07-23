@@ -43,21 +43,12 @@
       v-show="activeTab === 'submit-warranty'" 
     />
 
-    <!-- FAQ Section -->
-    <section class="support-section mt-8">
-      <PageFaq 
-        page-id="support-warranty"
-        theme="dark"
-        :show-categories="true"
-      />
-    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from '#imports'
-import PageFaq from '~/components/PageFaq.vue'
 import WarrantyChangeCancelTab from '~/components/warranty/ChangeCancelTab.vue'
 import WarrantyDamagedLostTab from '~/components/warranty/DamagedLostTab.vue'
 import WarrantyReturnsTab from '~/components/warranty/ReturnsTab.vue'
@@ -130,7 +121,7 @@ watch(
 
 <style scoped>
 .support-warranty {
-  margin-top: -1rem;
+  margin-top: 0;
 }
 
 .support-page__title {

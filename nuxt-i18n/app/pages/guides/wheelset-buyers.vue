@@ -173,15 +173,6 @@
         <p class="sizecharts-section__intro">Here is some new content.</p>
       </section>
 
-      <!-- FAQ Section - 放在所有 tab 内容之后 -->
-      <section class="wheelset-section wheelset-faq">
-        <PageFaq
-          page-id="guides-wheelset-buyers"
-          theme="dark"
-          :show-categories="true"
-        />
-      </section>
-
       <!-- Feedback / Leave a message -->
       <section class="wheelset-feedback">
         <UserFeedbackThread
@@ -197,7 +188,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useLocalePath, useRouter, useRoute } from '#imports'
-import PageFaq from '~/components/PageFaq.vue'
 import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
 import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
@@ -346,7 +336,7 @@ const goToAboutAppearance = async () => {
 }
 
 .wheelset-page {
-  margin: 0.25rem auto 0;
+  margin: 0 auto;
   width: 100%;
   max-width: none;
 }

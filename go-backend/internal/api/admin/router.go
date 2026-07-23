@@ -202,7 +202,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			faqsGroup.Use(middleware.RequirePermission(auth.PermFAQView))
 			{
 				faqsGroup.GET("", faqHandler.ListFAQs)
+				faqsGroup.GET("/structure", faqHandler.ListStructure)
 				faqsGroup.GET("/categories", faqHandler.GetCategories)
+				faqsGroup.POST("/categories", middleware.RequirePermission(auth.PermFAQCreate), faqHandler.CreateCategory)
+				faqsGroup.PUT("/categories/:id", middleware.RequirePermission(auth.PermFAQEdit), faqHandler.UpdateCategory)
+				faqsGroup.DELETE("/categories/:id", middleware.RequirePermission(auth.PermFAQDelete), faqHandler.DeleteCategory)
+				faqsGroup.PUT("/pages/:page_id", middleware.RequirePermission(auth.PermFAQEdit), faqHandler.UpdatePage)
+				faqsGroup.POST("/answer-image", middleware.RequireAnyPermission(auth.PermFAQCreate, auth.PermFAQEdit), faqHandler.UploadAnswerImage)
 				faqsGroup.GET("/:id", faqHandler.GetFAQ)
 				faqsGroup.POST("", middleware.RequirePermission(auth.PermFAQCreate), faqHandler.CreateFAQ)
 				faqsGroup.PUT("/:id", middleware.RequirePermission(auth.PermFAQEdit), faqHandler.UpdateFAQ)

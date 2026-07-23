@@ -75,15 +75,6 @@
         <InnerTubeGuide />
       </section>
 
-      <section class="mt-6">
-        <h2 class="products-page__title products-page__title--sr-only">Tire Guides FAQ</h2>
-        <PageFaq
-          page-id="guides-tireguides"
-          theme="dark"
-          :show-categories="true"
-        />
-      </section>
-
       <div class="sizecharts-feedback">
         <UserFeedbackThread
           threadKey="guides-tireguides"
@@ -284,7 +275,7 @@ const setActiveTab = (id: SizeChartsTabId | string) => {
 }
 
 .sizecharts-page {
-  margin: 0.25rem auto 0;
+  margin: 0 auto;
   width: 100%;
   max-width: none;
 }

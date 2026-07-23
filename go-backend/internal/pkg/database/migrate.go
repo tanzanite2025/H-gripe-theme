@@ -84,6 +84,8 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&loyalty.Referral{},
 		&loyalty.MemberLevel{},
 		&loyalty.UserLoyalty{},
+		&faq.FAQPage{},
+		&faq.FAQCategory{},
 		&faq.FAQ{},
 		&gallery.Gallery{},
 		&gallery.GalleryImage{},

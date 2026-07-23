@@ -2,7 +2,8 @@
  * FAQ System Type Definitions
  * 
  * This file defines the data structures for the page-embedded FAQ system.
- * All FAQ content is managed statically on the frontend.
+ * The Go backend is the editable source for page/category metadata and FAQ
+ * content. Static frontend files are kept as a storefront fallback.
  */
 
 /**
@@ -15,6 +16,14 @@ export interface FaqItem {
   question: string
   /** The answer text (supports HTML for rich formatting) */
   answer: string
+  /** Optional dedicated FAQ answer image. Must be a backend-validated 800x800 WebP. */
+  answerImageUrl?: string
+  /** Alt text for the dedicated FAQ answer image */
+  answerImageAlt?: string
+  /** Validated image width */
+  answerImageWidth?: number
+  /** Validated image height */
+  answerImageHeight?: number
   /** Optional tags for categorization and filtering */
   tags?: string[]
 }
@@ -53,6 +62,8 @@ export interface PageFaqData {
 export interface PageFaqProps {
   /** Page identifier to load FAQ data */
   pageId: string
+  /** Optional resolved FAQ data, used by the automatic route slot */
+  data?: PageFaqData
   /** Optional custom title override */
   title?: string
   /** Theme variant */

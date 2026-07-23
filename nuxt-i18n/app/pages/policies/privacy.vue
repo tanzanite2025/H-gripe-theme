@@ -6,7 +6,7 @@
       <p class="text-sm tz-text-secondary mb-6">
         This page describes how Tanzanite collects, uses, and protects your personal data when you browse our site or use our services.
       </p>
-      <div class="mt-4">
+      <div>
         <PrivacyStatementContent />
       </div>
     </div>
@@ -38,7 +38,7 @@ useHead({
 }
 
 .policies-content {
-  margin-top: 0.5rem;
+  margin-top: 0;
 }
 
 @media (max-width: 767px) {

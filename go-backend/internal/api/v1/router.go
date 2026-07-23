@@ -131,6 +131,9 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			contentGroup.GET("/posts", contentHandler.ListPosts)
 			contentGroup.GET("/posts/:id", contentHandler.GetPost)
+			contentGroup.GET("/faq-pages", contentHandler.ListFAQPages)
+			contentGroup.GET("/faq-pages/by-route", contentHandler.GetFAQPageByRoute)
+			contentGroup.GET("/faq-pages/:page_id", contentHandler.GetFAQPage)
 			contentGroup.GET("/faqs", contentHandler.ListFAQs)
 			contentGroup.GET("/faqs/:id", contentHandler.GetFAQ)
 			contentGroup.GET("/faq-categories", contentHandler.GetFAQCategories)

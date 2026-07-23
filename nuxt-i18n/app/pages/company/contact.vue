@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full pt-4 md:pt-8 pb-6">
+  <div class="w-full pb-6">
     <h1 class="sr-only">{{ t('company.nav.contact') }}</h1>
 
     <div class="w-full max-w-none">
@@ -97,11 +97,6 @@
 
     </div>
 
-    <!-- FAQ Section -->
-    <div class="w-full max-w-none mt-4 px-0">
-      <PageFaq pageId="company-contact" />
-    </div>
-
     <!-- Feedback Section -->
     <div class="w-full max-w-none px-0 mt-4">
       <UserFeedbackThread
@@ -116,7 +111,6 @@
 import { definePageMeta, useHead, useI18n } from '#imports'
 import ContactLocationMap from '~/components/ContactLocationMap.vue'
 import { contactLocation } from '~/utils/contactLocation'
-import PageFaq from '~/components/PageFaq.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 const { t } = useI18n()

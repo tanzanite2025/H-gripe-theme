@@ -126,7 +126,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Product:      service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL),
 		Cart:         service.NewCartService(repos.Cart, repos.Product),
 		Setting:      service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL),
-		FAQ:          service.NewFAQService(repos.FAQ),
+		FAQ:          service.NewFAQService(repos.FAQ, storageSvc),
 		Gallery:      service.NewGalleryService(repos.Gallery),
 		Media:        service.NewMediaService(repos.Media, storageSvc),
 		Registration: service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
