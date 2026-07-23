@@ -4,10 +4,10 @@
 
     <div class="w-full max-w-none">
       <section class="rounded-2xl bg-slate-950/60 p-4 md:p-6 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
-        <h2 class="mb-1 text-lg font-semibold text-slate-100">
+        <h2 class="mb-1 text-lg font-semibold tz-text-primary">
           {{ t('company.nav.globalPartners') }}
         </h2>
-        <p class="mb-4 text-sm text-slate-400">
+        <p class="mb-4 text-sm tz-text-secondary">
           Trusted by leading brands worldwide
         </p>
         <div class="mb-4 flex flex-wrap items-center justify-center gap-3">
@@ -17,7 +17,7 @@
           >
             Contact us about partnerships
           </NuxtLink>
-          <span class="flex items-center gap-2 text-xs text-slate-400">
+          <span class="flex items-center gap-2 text-xs tz-text-secondary">
             <span>or email</span>
             <a
               href="mailto:support@tanzanite.site"
@@ -35,13 +35,13 @@
           <div
             class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
           >
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
               Countries / regions
             </p>
             <p class="mt-2 text-3xl font-semibold text-slate-50">
               30<span class="align-top text-lg">+</span>
             </p>
-            <p class="mt-1 text-xs text-slate-400">
+            <p class="mt-1 text-xs tz-text-secondary">
               Served worldwide from Xiamen.
             </p>
           </div>
@@ -50,13 +50,13 @@
           <div
             class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
           >
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
               Brand partners
             </p>
             <p class="mt-2 text-3xl font-semibold text-slate-50">
               100<span class="align-top text-lg">+</span>
             </p>
-            <p class="mt-1 text-xs text-slate-400">
+            <p class="mt-1 text-xs tz-text-secondary">
               OEM / ODM collaborations globally.
             </p>
           </div>
@@ -65,13 +65,13 @@
           <div
             class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
           >
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
               Products delivered
             </p>
             <p class="mt-2 text-3xl font-semibold text-slate-50">
               500,000<span class="align-top text-lg">+</span>
             </p>
-            <p class="mt-1 text-xs text-slate-400">
+            <p class="mt-1 text-xs tz-text-secondary">
               Wheel components shipped since launch.
             </p>
           </div>
@@ -90,7 +90,7 @@
 
         <!-- Value proposition: Why partner with us -->
         <section class="mt-8">
-          <h3 class="mb-3 text-sm font-semibold text-slate-100 text-center">
+          <h3 class="mb-3 text-sm font-semibold tz-text-primary text-center">
             Why Partner With Us
           </h3>
           <div class="grid gap-4 sm:grid-cols-3">
@@ -103,10 +103,10 @@
               >
                 01
               </div>
-              <p class="text-sm font-semibold text-slate-100">
+              <p class="text-sm font-semibold tz-text-primary">
                 Long-term trust
               </p>
-              <p class="mt-1 text-xs text-slate-400">
+              <p class="mt-1 text-xs tz-text-secondary">
                 Reliable delivery and consistent quality for your catalog.
               </p>
             </div>
@@ -120,10 +120,10 @@
               >
                 02
               </div>
-              <p class="text-sm font-semibold text-slate-100">
+              <p class="text-sm font-semibold tz-text-primary">
                 Technology leadership
               </p>
-              <p class="mt-1 text-xs text-slate-400">
+              <p class="mt-1 text-xs tz-text-secondary">
                 Continuous R&amp;D in carbon rims, wheel builds and silent hubs.
               </p>
             </div>
@@ -137,10 +137,10 @@
               >
                 03
               </div>
-              <p class="text-sm font-semibold text-slate-100">
+              <p class="text-sm font-semibold tz-text-primary">
                 Global support
               </p>
-              <p class="mt-1 text-xs text-slate-400">
+              <p class="mt-1 text-xs tz-text-secondary">
                 Cross-regional service from Xiamen to your distribution markets.
               </p>
             </div>

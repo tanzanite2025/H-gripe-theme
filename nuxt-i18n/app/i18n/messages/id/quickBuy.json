@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Langkah beli cepat",
+  "fallbackNotice": "Pratinjau pengaturan Quick Buy: langkah backend belum dikonfigurasi, jadi modal ini menampilkan alur placeholder default.",
+  "search": {
+    "categoryLabel": "Kategori",
+    "placeholder": "Cari produk... (Enter atau jeda untuk mencari)"
+  },
+  "placeholder": {
+    "stepTitle": "Langkah {step}",
+    "stepName": "Langkah {step}"
+  },
+  "summary": {
+    "items": "Item",
+    "weight": "Berat",
+    "price": "Harga"
+  },
+  "actions": {
+    "toCart": "Ke keranjang",
+    "payment": "Pembayaran"
+  },
+  "defaultSteps": {
+    "productSearch": "Cari produk",
+    "specifications": "Pilih spesifikasi",
+    "quantity": "Konfirmasi jumlah",
+    "cartReview": "Tinjau keranjang",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Cari atau filter produk",
+    "step2": "Pilih spesifikasi/jumlah",
+    "step3": "Konfirmasi informasi produk",
+    "step4": "Selesaikan pesanan Anda",
+    "step5": "Selesaikan dan tinjau",
+    "default": "Selesaikan langkah ini"
+  },
+  "footer": {
+    "step1": "Masukkan kata kunci di kotak pencarian untuk memfilter produk",
+    "step2": "Pilih spesifikasi produk dan jumlah untuk melanjutkan",
+    "step3": "Pastikan informasi produk sudah benar",
+    "step4": "Selesaikan langkah ini untuk mengirim/melanjutkan proses",
+    "step5": "Semua langkah selesai",
+    "default": "Selesaikan langkah ini untuk melanjutkan"
+  }
+}

@@ -26,6 +26,17 @@
     --tz-type-faq-category: clamp(0.84rem, 0.16vw + 0.8rem, 0.95rem);
     --tz-type-faq-question: clamp(0.84rem, 0.1vw + 0.8rem, 0.92rem);
     --tz-type-faq-answer: clamp(0.82rem, 0.08vw + 0.79rem, 0.88rem);
+
+    /*
+      Semantic text colors for the dark storefront.
+      Keep these in one place so mobile and desktop surfaces do not drift
+      into low-contrast one-off grays.
+    */
+    --tz-text-primary: #f8fafc;
+    --tz-text-secondary: #cbd5e1;
+    --tz-text-muted: #94a3b8;
+    --tz-text-disabled: #64748b;
+    --tz-text-accent: #67e8f9;
   }
 
   html {
@@ -34,6 +45,7 @@
 
   body {
     @apply overflow-x-hidden overscroll-x-none bg-black;
+    color: var(--tz-text-primary);
   }
 }
 
@@ -182,6 +194,7 @@
   /* 用于 Read More, View All, Tabs 等 */
   .premium-button {
     @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold text-slate-300 bg-slate-800/50 cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+    color: var(--tz-text-secondary);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   }
 
@@ -193,6 +206,33 @@
   .premium-button--active {
     @apply bg-white text-slate-900 font-semibold;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@layer utilities {
+  /*
+    Semantic text utilities intentionally live after the generated Tailwind
+    color utilities. If a legacy color class remains on a node during the
+    migration, the semantic choice stays authoritative.
+  */
+  .tz-text-primary {
+    color: var(--tz-text-primary);
+  }
+
+  .tz-text-secondary {
+    color: var(--tz-text-secondary);
+  }
+
+  .tz-text-muted {
+    color: var(--tz-text-muted);
+  }
+
+  .tz-text-disabled {
+    color: var(--tz-text-disabled);
+  }
+
+  .tz-text-accent {
+    color: var(--tz-text-accent);
   }
 }
 

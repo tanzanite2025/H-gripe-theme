@@ -5,7 +5,7 @@
       <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
         Tubeless Installation Guide
       </h2>
-      <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
+      <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
          The tubeless system relies on an airtight seal between the tire, rim, and valve, replacing the traditional inner tube.
          <br>
          The process involves 3 main steps: <strong>Installation</strong>, <strong>Sealant Filling</strong>, and <strong>Inflation</strong>.
@@ -14,7 +14,7 @@
       <div class="flex justify-center mb-4">
          <button
             type="button"
-            class="inline-flex items-center justify-center rounded-full bg-slate-800 border border-slate-700 px-6 py-2 text-xs font-bold uppercase tracking-wider text-slate-300 hover:bg-slate-700 transition-colors"
+              class="inline-flex items-center justify-center rounded-full bg-slate-800 border border-slate-700 px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-700 transition-colors"
             @click="$emit('changeTab', 'tubeless')"
           >
             View Required Accessories
@@ -22,7 +22,7 @@
       </div>
 
        <div class="mt-8">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Essential Components</h4>
+        <h4 class="text-xs font-bold uppercase tracking-wider tz-text-muted mb-4">Essential Components</h4>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <GuideImage
             class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
@@ -61,7 +61,7 @@
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Preparation & Rim Taping</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+          <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-2 list-none pl-0">
                  <li class="flex gap-2"><span class="text-sky-500">1.</span> Clean the rim bed thoroughly.</li>
                  <li class="flex gap-2"><span class="text-sky-500">2.</span> Apply tubeless tape tightly, covering spoke holes.</li>
@@ -102,7 +102,7 @@
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Install the Tire</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+          <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <p>Install the tire like a standard clincher. Push the bead into the center channel (drop center) of the rim to make mounting easier. "Massage" the tire to ensure even seating.</p>
                <div class="bg-indigo-500/10 p-3 rounded-lg border border-indigo-500/20 text-xs">
                   <strong>Pro Tip:</strong> Use soapy water or mounting fluid on the bead to help it slip into place.
@@ -141,7 +141,7 @@
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Inject Sealant</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+          <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-2 list-none pl-0">
                  <li class="flex gap-2"><span class="text-indigo-400">1.</span> Remove the valve core.</li>
                  <li class="flex gap-2"><span class="text-indigo-400">2.</span> Inject ~30-60ml (Road) of sealant through the valve.</li>
@@ -181,7 +181,7 @@
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Inflate & Shake</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+          <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <p>Inflate quickly (using a pump with a reservoir or CO2 helps) to snap the beads into place. You should hear a satisfying "pop".</p>
                <p>Shake the wheel to distribute sealant evenly.</p>
                <div class="flex items-center justify-center gap-2 text-emerald-400 font-bold mt-2">

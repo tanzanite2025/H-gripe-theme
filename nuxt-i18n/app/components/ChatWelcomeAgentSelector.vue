@@ -15,7 +15,7 @@
 
             <span
               class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden"
-              :class="isSelected(agent) ? 'text-black/80' : 'text-white/85'"
+              :class="isSelected(agent) ? 'text-black/80' : 'tz-text-primary'"
             >
               <template v-if="getAvatarSrc(agent)">
                 <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full" :class="getAvatarImgFitClass(agent)" />
@@ -35,21 +35,21 @@
             <span class="flex items-center gap-2">
               <span
                 class="text-sm font-semibold truncate"
-                :class="isSelected(agent) ? 'text-black' : 'text-white/95'"
+                :class="isSelected(agent) ? 'text-black' : 'tz-text-primary'"
               >
                 {{ agent.name }}
               </span>
-              <span class="text-[11px] text-emerald-300/95">Online</span>
+              <span class="text-[11px] text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
             </span>
             <span
               class="mt-0.5 block text-xs truncate"
-              :class="isSelected(agent) ? 'text-black/70' : 'text-white/70'"
+              :class="isSelected(agent) ? 'text-black/70' : 'tz-text-secondary'"
             >
               {{ getAgentDescription(agent.name) }}
             </span>
           </span>
 
-          <span class="shrink-0" :class="isSelected(agent) ? 'text-black/70' : 'text-white/55'">→</span>
+          <span class="shrink-0" :class="isSelected(agent) ? 'text-black/70' : 'tz-text-muted'">→</span>
         </div>
       </button>
     </div>
@@ -64,7 +64,7 @@
       >
         <div class="flex items-center gap-3 px-3 py-2">
           <span class="relative shrink-0 w-14 h-14">
-            <span class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden text-white/85">
+            <span class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden tz-text-primary">
               <template v-if="getAvatarSrc(agent)">
                 <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full" :class="getAvatarImgFitClass(agent)" />
               </template>
@@ -80,13 +80,13 @@
 
           <span class="min-w-0 flex-1">
             <span class="flex items-center gap-2">
-              <span class="text-sm font-semibold text-white/95 truncate">{{ agent.name }}</span>
-              <span class="text-[11px] text-emerald-300/95">Online</span>
+              <span class="text-sm font-semibold tz-text-primary truncate">{{ agent.name }}</span>
+              <span class="text-[11px] text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
             </span>
-            <span class="mt-0.5 block text-xs text-white/70 truncate">{{ getAgentDescription(agent.name) }}</span>
+            <span class="mt-0.5 block text-xs tz-text-secondary truncate">{{ getAgentDescription(agent.name) }}</span>
           </span>
 
-          <span class="shrink-0 text-white/55">→</span>
+          <span class="shrink-0 tz-text-muted">→</span>
         </div>
       </button>
     </div>
@@ -95,6 +95,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from '#imports'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   agents: any[]
@@ -182,9 +185,9 @@ const getAvatarImgFitClass = (agent: any): string => {
 
 const getAgentDescription = (name: string) => {
   const key = String(name || '').toLowerCase()
-  if (key.includes('tech')) return 'Compatibility, specs, setup, and troubleshooting'
-  if (key.includes('after')) return 'Order tracking, warranty, returns, and post-purchase help'
-  if (key.includes('sale')) return 'Pre-sales questions, pricing, and quotes'
-  return 'Chat with our team for help and guidance'
+  if (key.includes('tech')) return t('chatModal.agentSelector.descriptions.tech')
+  if (key.includes('after')) return t('chatModal.agentSelector.descriptions.afterSales')
+  if (key.includes('sale')) return t('chatModal.agentSelector.descriptions.sales')
+  return t('chatModal.agentSelector.descriptions.default')
 }
 </script>

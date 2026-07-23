@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Kewayawa ta rukunonin shago",
+  "products": {
+    "loading": "Ana loda kayayyaki...",
+    "empty": {
+      "title": "Babu kayayyaki da ke samuwa tukuna.",
+      "description": "Da zarar an buga kayayyaki ta hanyar plugin na Tanzanite, za su bayyana a nan ta atomatik."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Ƙara zuwa jerin so",
+    "view": "Duba"
+  },
+  "feedback": {
+    "title": "Raba ra’ayinka game da shagon Tanzanite"
+  }
+}

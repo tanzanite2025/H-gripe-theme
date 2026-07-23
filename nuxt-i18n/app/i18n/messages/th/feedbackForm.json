@@ -52,7 +52,8 @@
   "actions": {
     "removeAttachment": "Remove",
     "submit": "Send feedback",
-    "reset": "Start over"
+    "reset": "Start over",
+    "authCta": "Register / Login"
   },
   "messages": {
     "submitting": "Sending your feedback…",

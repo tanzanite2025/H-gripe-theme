@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Kikapu cha ununuzi",
+  "title": "Kikapu",
+  "closeAriaLabel": "Funga kikapu",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Ongeza kwenye orodha pendwa",
+    "remove": "Ondoa",
+    "continueShopping": "Endelea kununua",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Kikapu chako kiko tupu",
+    "description": "Ongeza bidhaa chache ili kuanza!"
+  },
+  "summary": {
+    "subtotal": "Jumla ndogo",
+    "shipping": "Usafirishaji",
+    "calculatedAtCheckout": "Itahesabiwa kwenye checkout",
+    "tax": "Kodi",
+    "estimatedTotal": "Jumla iliyokadiriwa",
+    "finalShippingNote": "Usafirishaji wa mwisho hutumia nukuu ya backend baada ya kuchagua mahali pa kwenda."
+  }
+}

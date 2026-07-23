@@ -11,19 +11,19 @@
             {{ user?.display_name?.charAt(0) || 'A' }}
           </div>
           <div>
-            <div class="text-white font-medium text-sm">{{ user?.display_name || 'Agent' }}</div>
+            <div class="text-white font-medium text-sm">{{ user?.display_name || t('chatModal.fallback.agent') }}</div>
             <div class="relative">
               <button
                 type="button"
                 class="text-xs flex items-center gap-1 hover:opacity-80 transition-opacity"
-                :class="agentStatusColors[currentAgentStatus]?.text || 'text-gray-400'"
+                :class="agentStatusColors[currentAgentStatus]?.text || 'tz-text-muted'"
                 @click="emit('update:showStatusDropdown', !showStatusDropdown)"
               >
                 <span
                   class="w-2 h-2 rounded-full"
                   :class="[agentStatusColors[currentAgentStatus]?.dot || 'bg-gray-500', currentAgentStatus === 'online' ? 'animate-pulse' : '']"
                 ></span>
-                {{ agentStatusLabels[currentAgentStatus] || 'Offline' }}
+                {{ agentStatusLabels[currentAgentStatus] || t('chatModal.agentPanel.status.offline') }}
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M6 9l6 6 6-6"/>
                 </svg>
@@ -44,7 +44,7 @@
                     class="w-2 h-2 rounded-full"
                     :class="agentStatusColors[status]?.dot || 'bg-gray-500'"
                   ></span>
-                  <span :class="agentStatusColors[status]?.text || 'text-gray-400'">
+                  <span :class="agentStatusColors[status]?.text || 'tz-text-muted'">
                     {{ agentStatusLabels[status] }}
                   </span>
                 </button>
@@ -54,7 +54,8 @@
         </div>
         <button
           type="button"
-          class="w-9 h-9 rounded-full border-2 border-white/20 text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+          class="w-9 h-9 rounded-full border-2 border-white/20 tz-text-secondary flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+          :aria-label="t('chatModal.actions.close')"
           @click="emit('close')"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -64,15 +65,15 @@
       </div>
 
       <div class="flex-1 overflow-y-auto p-4">
-        <div class="text-white/50 text-xs uppercase tracking-wider mb-3">Conversations</div>
+        <div class="tz-text-muted text-xs uppercase tracking-wider mb-3">{{ t('chatModal.agentPanel.conversations') }}</div>
 
         <div v-if="isLoadingConversations" class="flex items-center justify-center py-8">
           <div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
 
         <div v-else-if="agentConversations.length === 0" class="text-center py-8">
-          <div class="text-white/30 text-4xl mb-2">💬</div>
-          <div class="text-white/50 text-sm">No conversations yet</div>
+          <div class="tz-text-muted text-4xl mb-2">💬</div>
+          <div class="tz-text-secondary text-sm">{{ t('chatModal.agentPanel.emptyConversations') }}</div>
         </div>
 
         <div v-else class="space-y-2">
@@ -89,10 +90,10 @@
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between">
-                  <span class="text-white font-medium text-sm truncate">{{ conv.customer_name || 'Unknown' }}</span>
-                  <span class="text-white/40 text-xs">{{ formatTime(conv.updated_at) }}</span>
+                  <span class="text-white font-medium text-sm truncate">{{ conv.customer_name || t('chatModal.fallback.unknown') }}</span>
+                  <span class="tz-text-muted text-xs">{{ formatTime(conv.updated_at) }}</span>
                 </div>
-                <div class="text-white/50 text-xs truncate">{{ conv.last_message || 'No messages' }}</div>
+                <div class="tz-text-secondary text-xs truncate">{{ conv.last_message || t('chatModal.agentPanel.noMessages') }}</div>
               </div>
               <div v-if="conv.unread_count > 0" class="w-5 h-5 rounded-full bg-emerald-500 text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
                 {{ conv.unread_count > 9 ? '9+' : conv.unread_count }}
@@ -108,7 +109,7 @@
           class="w-full py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-colors"
           @click="emit('refreshConversations')"
         >
-          Refresh Conversations
+          {{ t('chatModal.agentPanel.refreshConversations') }}
         </button>
       </div>
     </div>
@@ -121,7 +122,8 @@
       <div class="border-b border-white/10 bg-black/70 backdrop-blur-md px-4 py-3 flex items-center gap-3">
         <button
           type="button"
-          class="w-9 h-9 rounded-full border border-white/20 text-white/60 flex items-center justify-center hover:border-white/40 hover:text-white transition-colors"
+          class="w-9 h-9 rounded-full border border-white/20 tz-text-secondary flex items-center justify-center hover:border-white/40 hover:text-white transition-colors"
+          :aria-label="t('chatModal.agentPanel.backToList')"
           @click="emit('backToConversationList')"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -134,12 +136,13 @@
           {{ selectedConversation.customer_name?.charAt(0) || 'U' }}
         </div>
         <div class="flex-1 min-w-0">
-          <div class="text-white font-medium text-sm truncate">{{ selectedConversation.customer_name || 'Customer' }}</div>
-          <div class="text-white/50 text-xs truncate">{{ selectedConversation.customer_email || '' }}</div>
+          <div class="text-white font-medium text-sm truncate">{{ selectedConversation.customer_name || t('chatModal.fallback.customer') }}</div>
+          <div class="tz-text-muted text-xs truncate">{{ selectedConversation.customer_email || '' }}</div>
         </div>
         <button
           type="button"
-          class="w-9 h-9 rounded-full border-2 border-white/20 text-white/60 flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+          class="w-9 h-9 rounded-full border-2 border-white/20 tz-text-secondary flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-colors"
+          :aria-label="t('chatModal.actions.close')"
           @click="emit('close')"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -169,7 +172,7 @@
           <input
             :value="newMessage"
             type="text"
-            placeholder="Type a message..."
+            :placeholder="t('chatModal.agentPanel.messagePlaceholder')"
             class="flex-1 px-4 py-2 rounded-full text-white text-sm placeholder-white/40 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
             @input="emit('update:newMessage', ($event.target as HTMLInputElement).value)"
             @keyup.enter="emit('sendMessage')"
@@ -192,6 +195,9 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
+import { useI18n } from '#imports'
+
+const { t, locale } = useI18n()
 
 type AgentStatusClasses = Record<string, { dot: string; text: string }>
 
@@ -236,9 +242,9 @@ const formatTime = (dateStr: string) => {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
 
-  if (diff < 60 * 1000) return 'Just now'
+  if (diff < 60 * 1000) return t('chatModal.agentPanel.justNow')
   if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)}m`
   if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)}h`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
 }
 </script>

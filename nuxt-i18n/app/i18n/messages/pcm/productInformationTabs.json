@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Product information",
+  "tabListLabel": "Product information sections",
+  "tabs": {
+    "details": "Details",
+    "afterSales": "After-sales",
+    "packaging": "Packaging",
+    "shipping": "Shipping"
+  },
+  "empty": {
+    "details": "Product details never dey added yet.",
+    "afterSales": "After-sales information never dey added yet.",
+    "packaging": "Packaging information never dey added yet.",
+    "shipping": "Shipping information never dey added yet."
+  }
+}

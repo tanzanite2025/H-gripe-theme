@@ -1,0 +1,38 @@
+{
+  "banner": {
+    "message": "我们使用 Cookie 来提供更好的浏览体验。",
+    "learnMore": "了解更多",
+    "customize": "自定义",
+    "accept": "接受"
+  },
+  "modal": {
+    "title": "Cookie 偏好设置",
+    "closeAriaLabel": "关闭 Cookie 偏好设置",
+    "descriptionBeforePolicy": "我们使用 Cookie 来改善你在本站的体验。你可以选择允许哪些类型的 Cookie，也可以随时更改偏好设置。停用部分 Cookie 可能会影响网站体验。更多信息请查看我们的",
+    "policyLink": "Cookie 政策",
+    "descriptionAfterPolicy": "。"
+  },
+  "options": {
+    "essential": {
+      "title": "必要 Cookie",
+      "description": "用于启用网站基础功能所必需的 Cookie。"
+    },
+    "performance": {
+      "title": "性能 Cookie",
+      "description": "用于了解网站使用情况的 Cookie。"
+    },
+    "preference": {
+      "title": "偏好 Cookie",
+      "description": "用于增强网站功能与个性化体验的 Cookie。"
+    },
+    "advertising": {
+      "title": "广告 Cookie",
+      "description": "用于投放更符合你兴趣的广告内容。"
+    }
+  },
+  "actions": {
+    "savePreferences": "保存偏好",
+    "rejectAll": "拒绝全部 Cookie",
+    "acceptAll": "接受全部 Cookie"
+  }
+}

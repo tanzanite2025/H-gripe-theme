@@ -29,6 +29,56 @@
     "registerSuccessMessage": "账户已创建，点击下方按钮一键登录并返回。",
     "registerSuccessCta": "一键登录"
   },
+  "authModal": {
+    "privacyNotice": "我们重视你的隐私。所有连接均经过加密，你的数据始终归你所有。",
+    "intro": {
+      "login": "欢迎回来！请选择一种方式登录：",
+      "register": "几秒钟即可创建账户："
+    },
+    "divider": {
+      "email": "或使用邮箱"
+    },
+    "fields": {
+      "username": "用户名",
+      "email": "邮箱",
+      "password": "密码",
+      "rememberMe": "记住我"
+    },
+    "actions": {
+      "close": "关闭登录弹窗",
+      "signIn": "登录",
+      "signUp": "注册",
+      "signingIn": "登录中...",
+      "signingUp": "注册中...",
+      "continueWithGoogle": "使用 Google 继续"
+    },
+    "switch": {
+      "noAccount": "还没有账户？",
+      "hasAccount": "已经有账户？",
+      "signUpHere": "在这里注册",
+      "signInHere": "在这里登录"
+    },
+    "completion": {
+      "loginTitle": "登录成功",
+      "loginMessage": "你的账户数据已同步，点击下方按钮继续。",
+      "googleLoginMessage": "Google 账户已登录，数据已同步。",
+      "loginCta": "好的，返回",
+      "registerTitle": "注册成功",
+      "registerMessage": "账户已创建，点击下方按钮登录并返回。",
+      "registerCta": "立即登录"
+    },
+    "validation": {
+      "invalidEmail": "请输入有效的邮箱地址。",
+      "passwordMin": "密码至少需要 8 个字符。",
+      "passwordUppercase": "密码必须包含至少一个大写字母。"
+    },
+    "errors": {
+      "loginFailed": "登录失败，请重试。",
+      "registrationFailed": "注册失败，请重试。",
+      "googleLoginFailed": "Google 登录失败，请重试。",
+      "googleInitFailed": "无法启动 Google 登录，请重试。"
+    }
+  },
   "blog": {
     "nav": {
       "all": "All",
@@ -74,6 +124,291 @@
       "items": "Items",
       "price": "Price",
       "openCart": "View cart summary"
+    }
+  },
+  "cartDrawer": {
+    "ariaLabel": "购物车",
+    "title": "购物车",
+    "closeAriaLabel": "关闭购物车",
+    "item": {
+      "sku": "SKU"
+    },
+    "actions": {
+      "addToWishlist": "加入心愿单",
+      "remove": "移除",
+      "continueShopping": "继续购物",
+      "checkout": "结账"
+    },
+    "empty": {
+      "title": "购物车是空的",
+      "description": "先添加一些产品吧！"
+    },
+    "summary": {
+      "subtotal": "小计",
+      "shipping": "运费",
+      "calculatedAtCheckout": "结账时计算",
+      "tax": "税费",
+      "estimatedTotal": "预估总计",
+      "finalShippingNote": "最终运费会在你选择目的地后使用后台报价计算。"
+    }
+  },
+  "chatModal": {
+    "actions": {
+      "close": "关闭聊天",
+      "closeHistory": "关闭浏览记录",
+      "backToWelcome": "返回欢迎页",
+      "switchToChat": "切换到聊天",
+      "contactViaWhatsApp": "通过 WhatsApp 联系",
+      "whatsapp": "WhatsApp",
+      "email": "邮箱"
+    },
+    "fallback": {
+      "agent": "客服",
+      "customer": "客户",
+      "unknown": "未知"
+    },
+    "history": {
+      "title": "浏览记录"
+    },
+    "welcome": {
+      "logoAlt": "Tanzanite 客服聊天",
+      "title": "你好！",
+      "description": "你可以与我们的团队聊天、查询订单，或在 FAQ 中查找答案。",
+      "onlineTeam": "在线客服团队",
+      "onlineSummary": "当前有 {count}{agentLabel}在线 · 我们通常会在几分钟内回复。",
+      "agentSingular": "位客服",
+      "agentPlural": "位客服",
+      "startCta": "开始 — 聊天、订单与 FAQ",
+      "continueCta": "继续 — 聊天、订单与 FAQ"
+    },
+    "agentSelector": {
+      "online": "在线",
+      "descriptions": {
+        "tech": "兼容性、规格、安装与故障排查",
+        "afterSales": "订单跟踪、保修、退货与售后支持",
+        "sales": "售前问题、价格与报价",
+        "default": "与我们的团队聊天，获取帮助与建议"
+      }
+    },
+    "agentPanel": {
+      "status": {
+        "online": "在线",
+        "busy": "忙碌",
+        "away": "暂离",
+        "offline": "离线"
+      },
+      "conversations": "会话",
+      "emptyConversations": "还没有会话",
+      "noMessages": "暂无消息",
+      "refreshConversations": "刷新会话",
+      "backToList": "返回会话列表",
+      "messagePlaceholder": "输入消息...",
+      "justNow": "刚刚"
+    },
+    "tabs": {
+      "products": "商品",
+      "orders": "订单",
+      "test": "测试报告",
+      "tire": "轮胎",
+      "faq": "FAQ",
+      "warranty": "保修",
+      "member": "会员",
+      "calculator": "计算器"
+    },
+    "transfer": {
+      "title": "转接会话",
+      "targetAgentLabel": "目标客服 *",
+      "targetAgentPlaceholder": "请选择客服",
+      "noteLabel": "转接备注（可选）",
+      "notePlaceholder": "例如：客户需要技术支持...",
+      "cancel": "取消",
+      "transferring": "转接中...",
+      "confirm": "确认转接",
+      "alertSelectAgent": "请选择要转接的客服。",
+      "alertCurrentAgent": "不能转接给当前客服。",
+      "alertSuccess": "会话已转接给 {agent}。",
+      "alertFailed": "转接失败。",
+      "alertRetry": "转接失败，请稍后重试。",
+      "requestFailed": "转接请求失败"
+    }
+  },
+  "checkout": {
+    "modal": {
+      "title": "结账",
+      "closeAriaLabel": "关闭结账弹窗",
+      "sslAlt": "安全 SSL",
+      "sslNote": "页面使用受信任 SSL 的 HTTPS 连接；我们只保存订单结果，不保存你的银行卡详情。",
+      "pointsHint": "1 积分 = $0.01，最多抵扣订单 50%",
+      "actions": {
+        "viewCart": "查看购物车",
+        "livechat": "在线客服",
+        "email": "邮件"
+      },
+      "messages": {
+        "invalidQuote": "无效的结账报价响应",
+        "unableRefreshQuote": "无法刷新结账报价",
+        "cartSaved": "购物车已保存。等你的地区支持配送后，我们会通知你。",
+        "couponApplied": "优惠券已应用！",
+        "completeShipping": "请先填写完整配送地址和联系方式，我们需要确认该地区可配送后再继续。",
+        "selectPaypalCountry": "继续跳转 PayPal 前，请先选择一个可配送的国家/地区。",
+        "orderSuccess": "订单提交成功！",
+        "orderFailed": "订单提交失败，请重试"
+      }
+    },
+    "order": {
+      "itemFallback": "商品"
+    },
+    "payment": {
+      "card": {
+        "title": "信用卡 / 借记卡",
+        "subtitle": "安全银行卡页面",
+        "description": "银行卡信息会在支付服务商的安全页面输入；我们只保存你的订单结果。",
+        "stepperDescription": "请先填写完整配送信息和联系电话，然后我们会跳转到符合 PCI 标准的银行卡页面。我们不会保存你的卡号或 CVC。",
+        "cta": "继续前往安全支付",
+        "points": {
+          "shipping": "必填：完整配送信息 + 联系电话",
+          "immediate": "适合想用 Visa / Mastercard 立即付款的客户。"
+        }
+      },
+      "paypal": {
+        "title": "使用 PayPal 付款",
+        "optionTitle": "PayPal",
+        "subtitle": "快捷结账",
+        "description": "你将跳转到 PayPal。我们不会看到或保存你的 PayPal 登录信息或银行卡信息。",
+        "stepperDescription": "我们会尽量使用你 PayPal 账户里保存的配送地址；继续前请先选择一个支持配送的国家，以便确认履约。",
+        "cta": "继续前往 PayPal",
+        "points": {
+          "country": "必填：继续前请选择一个可配送国家。"
+        }
+      },
+      "alipay": {
+        "title": "支付宝 / 微信 / 银联",
+        "optionTitle": "支付宝 / 微信 / 银联",
+        "subtitle": "本地钱包",
+        "description": "你会在本地钱包中确认付款。我们仍会在这里收集配送信息，用于准备发货。",
+        "stepperDescription": "请在你常用的钱包中确认付款。我们仍会收集配送信息，用于准备发货并确认清关信息。",
+        "cta": "使用本地钱包付款",
+        "points": {
+          "recipient": "必填：收件人姓名 + 电话",
+          "wallets": "适合中国大陆钱包和银联用户。"
+        }
+      },
+      "stripe": {
+        "title": "使用 Stripe 付款",
+        "optionTitle": "Stripe",
+        "subtitle": "支持 3D Secure",
+        "description": "Stripe 会处理你的银行卡详情和额外验证。我们只保存支付状态。",
+        "stepperDescription": "Stripe 会处理银行卡输入和额外验证。这里保持表单尽量简洁，敏感字段交给 Stripe 管理。",
+        "cta": "继续前往 Stripe",
+        "points": {
+          "sca": "适合需要 SCA/3DS 验证的客户。"
+        }
+      },
+      "bank": {
+        "title": "银行转账",
+        "subtitle": "人工发票",
+        "description": "先提交订单，然后按下一步显示的转账信息付款，并使用我们提供的订单参考号。",
+        "stepperDescription": "先提交订单，然后根据下一步显示的银行信息转账。请记得把订单号写进付款备注。",
+        "cta": "提交银行转账订单",
+        "points": {
+          "reference": "请把订单号作为付款参考。"
+        }
+      },
+      "worldfirst": {
+        "title": "WorldFirst",
+        "optionTitle": "WorldFirst",
+        "subtitle": "跨境付款",
+        "description": "可用你的本币付款到 WorldFirst 本地账户。我们不会访问你的银行凭证。",
+        "stepperDescription": "适合国际订单或企业订单。你用本币支付到区域 WorldFirst 账户，由他们结算转换后的资金给我们。",
+        "cta": "继续使用 WorldFirst",
+        "points": {
+          "b2b": "推荐用于 B2B 跨境付款。"
+        }
+      }
+    },
+    "stepper": {
+      "common": {
+        "optional": "可选"
+      },
+      "steps": {
+        "payment": "选择支付方式",
+        "shipping": "配送信息",
+        "review": "核对并付款"
+      },
+      "payment": {
+        "pickProvider": "选择支付服务",
+        "stepCount": "第 {current} 步，共 {total} 步",
+        "tapCardHint": "点击卡片查看详情",
+        "iconAltSuffix": "图标",
+        "selected": "已选择",
+        "tapToView": "点击查看",
+        "continueWithMethod": "使用此方式继续"
+      },
+      "shipping": {
+        "changePaymentMethod": "更改支付方式",
+        "addressTitle": "配送地址",
+        "addressHelp": "如果你的地区暂时不可配送，并不一定代表我们无法送达。联系我们，我们会为你确认可用方案。",
+        "countryRegion": "国家 / 地区",
+        "searchCountryPlaceholder": "搜索国家或地区",
+        "selectCountry": "选择国家",
+        "availableForShipping": "可配送",
+        "otherCountries": "其它国家",
+        "recipient": "收件人",
+        "recipientPlaceholder": "输入收件人姓名",
+        "phone": "电话",
+        "phonePlaceholder": "输入电话号码",
+        "address": "地址",
+        "addressPlaceholder": "输入详细地址",
+        "unavailableFallback": "该国家暂不可配送。",
+        "optionsIntro": "别担心，我们还有其它方案：",
+        "contactSpecialShipping": "联系我们安排特殊配送",
+        "useFreightForwarder": "使用货运代理服务",
+        "saveCartLater": "保存购物车，稍后再查看",
+        "estimatedDelivery": "预计送达：{estimatedDelivery}",
+        "city": "城市",
+        "cityPlaceholder": "城市",
+        "zipCode": "邮编",
+        "zipPlaceholder": "邮编",
+        "continueToReview": "继续核对 →",
+        "completeShippingFirst": "请先完成配送信息",
+        "notRequiredForMethod": "此支付方式不需要先填写配送详情。",
+        "state": {
+          "selectCountry": "选择国家",
+          "unavailable": "不可用",
+          "calculating": "正在计算...",
+          "free": "免费"
+        }
+      },
+      "review": {
+        "backToShipping": "返回配送信息",
+        "coupon": "优惠券",
+        "couponPlaceholder": "输入代码",
+        "applyingCoupon": "正在应用…",
+        "applyCoupon": "应用",
+        "couponApplied": "已应用优惠券：{coupon}",
+        "usePointsDiscount": "使用积分抵扣",
+        "pointsAvailable": "可用：{points} 积分",
+        "noPoints": "暂无可用积分",
+        "usePoints": "使用积分",
+        "pointsUnavailable": "积分不可用",
+        "pointsToUse": "使用积分数",
+        "earnPointsHint": "下一笔订单可赚取积分，并在这里即时抵扣。",
+        "orderNotes": "订单备注",
+        "orderNotesPlaceholder": "添加配送说明或特殊要求…",
+        "orderSummary": "订单汇总",
+        "continueToCheckout": "继续结账"
+      },
+      "summary": {
+        "qty": "数量",
+        "empty": "购物车中有商品后，订单详情会显示在这里。",
+        "subtotal": "小计",
+        "shipping": "运费",
+        "tax": "税费",
+        "pointsDiscount": "积分抵扣",
+        "couponDiscount": "优惠券抵扣",
+        "giftCardDiscount": "礼品卡抵扣",
+        "total": "总计"
+      }
     }
   },
   "common": {
@@ -144,98 +479,148 @@
     "previewAlt": "Map preview",
     "iframeTitle": "Google map"
   },
+  "cookieConsent": {
+    "banner": {
+      "message": "我们使用 Cookie 来提供更好的浏览体验。",
+      "learnMore": "了解更多",
+      "customize": "自定义",
+      "accept": "接受"
+    },
+    "modal": {
+      "title": "Cookie 偏好设置",
+      "closeAriaLabel": "关闭 Cookie 偏好设置",
+      "descriptionBeforePolicy": "我们使用 Cookie 来改善你在本站的体验。你可以选择允许哪些类型的 Cookie，也可以随时更改偏好设置。停用部分 Cookie 可能会影响网站体验。更多信息请查看我们的",
+      "policyLink": "Cookie 政策",
+      "descriptionAfterPolicy": "。"
+    },
+    "options": {
+      "essential": {
+        "title": "必要 Cookie",
+        "description": "用于启用网站基础功能所必需的 Cookie。"
+      },
+      "performance": {
+        "title": "性能 Cookie",
+        "description": "用于了解网站使用情况的 Cookie。"
+      },
+      "preference": {
+        "title": "偏好 Cookie",
+        "description": "用于增强网站功能与个性化体验的 Cookie。"
+      },
+      "advertising": {
+        "title": "广告 Cookie",
+        "description": "用于投放更符合你兴趣的广告内容。"
+      }
+    },
+    "actions": {
+      "savePreferences": "保存偏好",
+      "rejectAll": "拒绝全部 Cookie",
+      "acceptAll": "接受全部 Cookie"
+    }
+  },
+  "dockMenu": {
+    "openSidebar": "打开侧边栏",
+    "menu": "菜单",
+    "chat": "聊天",
+    "quickBuy": "快速购买",
+    "quick": "快购",
+    "openCart": "打开购物车",
+    "cart": "购物车",
+    "openWishlist": "打开心愿单",
+    "saved": "收藏"
+  },
   "faq": {
     "title": "Frequently Asked Questions",
     "subtitle": "Find answers to common questions about our products and services"
   },
   "feedback": {
-    "defaultSubtitle": "Help us improve this page and the tools you use every day.",
-    "empty": "No feedback has been submitted for this page yet.",
-    "formIntro": "Share your thoughts or report a problem about this page.",
-    "messageLabel": "Message",
-    "messagePlaceholder": "Tell us what you think or what went wrong...",
-    "optionalName": "Your name (optional)",
-    "namePlaceholder": "Enter your name (optional)",
-    "optionalEmail": "Your email (optional)",
-    "emailPlaceholder": "Enter your email (optional)",
-    "submit": "Submit feedback",
-    "loading": "Loading feedback...",
-    "loginRequired": "Please sign in to leave feedback.",
-    "loginCta": "Sign in or create an account",
-    "liveChatCta": "To live chat",
-    "searchLabel": "Search feedback",
-    "searchPlaceholder": "Type to filter comments on this page...",
-    "anonymous": "Member",
-    "submitting": "Submitting...",
-    "defaultTitle": "Share your feedback",
-    "required": "Please enter your feedback before submitting.",
-    "submitFailed": "Failed to submit feedback. Please try again.",
-    "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed."
+    "defaultSubtitle": "帮助我们改进这个页面以及您每天使用的工具。",
+    "empty": "此页面目前还没有提交任何反馈。",
+    "formIntro": "分享您的想法，或反馈此页面的问题。",
+    "messageLabel": "留言",
+    "messagePlaceholder": "告诉我们您的想法，或者哪里出了问题……",
+    "optionalName": "您的姓名（可选）",
+    "namePlaceholder": "请输入您的姓名（可选）",
+    "optionalEmail": "您的邮箱（可选）",
+    "emailPlaceholder": "请输入您的邮箱（可选）",
+    "submit": "提交反馈",
+    "loading": "正在加载反馈……",
+    "loginRequired": "请先登录后再留下反馈。",
+    "loginCta": "登录或创建账号",
+    "liveChatCta": "转到在线聊天",
+    "searchLabel": "搜索反馈",
+    "searchPlaceholder": "输入内容以筛选本页评论……",
+    "anonymous": "成员",
+    "submitting": "提交中……",
+    "defaultTitle": "分享您的反馈",
+    "required": "请先输入反馈内容再提交。",
+    "submitFailed": "反馈提交失败，请重试。",
+    "pendingMessage": "提交成功。您的反馈将在审核后显示。"
   },
   "feedbackForm": {
-    "pageEyebrow": "Product feedback",
-    "pageTitle": "Help Us Build Better Wheels",
-    "pageIntro": "Share your riding experience, product ideas, and issues. Every submission is reviewed by our product and service teams.",
-    "eyebrow": "Feedback & Suggestions",
-    "title": "Tell us about your experience",
-    "subtitle": "Detailed context helps us reproduce your setup faster.",
+    "pageEyebrow": "产品反馈",
+    "pageTitle": "帮助我们打造更好的轮组",
+    "pageIntro": "分享您的骑行体验、产品想法和遇到的问题。每条提交都会由我们的产品与服务团队审核。",
+    "eyebrow": "反馈与建议",
+    "title": "告诉我们您的体验",
+    "subtitle": "更详细的上下文有助于我们更快复现您的配置。",
     "stat": {
-      "responses": "Avg. monthly responses",
+      "responses": "每月平均回复",
       "responsesValue": "240+",
-      "reviewTime": "Review window",
-      "reviewTimeValue": "< 48 hrs"
+      "reviewTime": "审核时长",
+      "reviewTimeValue": "< 48 小时"
     },
     "fields": {
-      "fullName": "Full name",
-      "email": "Email",
-      "country": "Country / Region",
-      "orderNumber": "Order number",
-      "productCategory": "Product category",
-      "requestType": "Feedback type",
-      "message": "Describe your feedback",
-      "attachments": "Attach photos",
-      "membersOnly": "Members only",
-      "consent": "I agree to share this information so the Tanzanite team can follow up."
+      "fullName": "姓名",
+      "email": "邮箱",
+      "country": "国家 / 地区",
+      "orderNumber": "订单号",
+      "productCategory": "产品类别",
+      "requestType": "反馈类型",
+      "message": "描述您的反馈",
+      "attachments": "上传图片",
+      "membersOnly": "仅限会员",
+      "consent": "我同意共享这些信息，以便 Tanzanite 团队跟进。"
     },
     "placeholders": {
-      "fullName": "e.g. Alex Chen",
+      "fullName": "例如：张三",
       "email": "alex\\u0040example.com",
-      "country": "Select a country",
-      "orderNumber": "e.g. TZ-45821",
-      "productCategory": "Select a category",
-      "message": "Describe what happened, which product you used, and what you’d like to improve."
+      "country": "选择国家 / 地区",
+      "orderNumber": "例如：TZ-45821",
+      "productCategory": "选择类别",
+      "message": "描述发生了什么、您使用了哪个产品，以及您希望改进什么。"
     },
     "productCategories": {
-      "mtb": "MTB / Trail",
-      "road": "Road / All-road",
-      "gravel": "Gravel / CX",
-      "accessories": "Accessories",
-      "other": "Other / custom"
+      "mtb": "山地 / 越野",
+      "road": "公路 / 全路况",
+      "gravel": "碎石路 / CX",
+      "accessories": "配件",
+      "other": "其他 / 自定义"
     },
     "requestTypes": {
-      "product": "Product suggestions",
-      "service": "Customer service",
-      "logistics": "Logistics / shipping",
-      "warranty": "Warranty / quality",
-      "other": "Other"
+      "product": "产品建议",
+      "service": "客服支持",
+      "logistics": "物流 / 运输",
+      "warranty": "保修 / 品质",
+      "other": "其他"
     },
     "upload": {
-      "prompt": "Drop images or click to upload (WEBP/JPG/PNG)",
-      "limit": "Max 3 files, 800×800 recommended."
+      "prompt": "拖放图片，或点击上传（WEBP/JPG/PNG）",
+      "limit": "最多 3 个文件，建议尺寸 800×800。"
     },
     "actions": {
-      "removeAttachment": "Remove",
-      "submit": "Send feedback",
-      "reset": "Start over"
+      "removeAttachment": "移除",
+      "submit": "发送反馈",
+      "reset": "重新开始",
+      "authCta": "注册 / 登录"
     },
     "messages": {
-      "submitting": "Sending your feedback…",
-      "submitted": "Thanks! Your submission is queued for review.",
-      "loginRequired": "Log in to attach files.",
-      "membersOnly": "Attachments are available for eligible members.",
-      "submitError": "We could not submit your feedback. Please try again."
+      "submitting": "正在发送您的反馈……",
+      "submitted": "谢谢！您的提交已进入审核队列。",
+      "loginRequired": "请登录后再上传附件。",
+      "membersOnly": "符合条件的会员可上传附件。",
+      "submitError": "我们无法提交您的反馈，请重试。"
     },
-    "charactersLeft": "{count} characters left"
+    "charactersLeft": "还可输入 {count} 个字符"
   },
   "filter": {
     "title": "高级筛选",
@@ -809,6 +1194,22 @@
     "section9Title": "9. 本政策的变更",
     "section9Body": "我们可能会不时更新本隐私政策。任何变更都会在本页面公布，并更新生效日期。"
   },
+  "productInformationTabs": {
+    "sectionLabel": "商品信息",
+    "tabListLabel": "商品信息分类",
+    "tabs": {
+      "details": "商品详情",
+      "afterSales": "售后说明",
+      "packaging": "包装说明",
+      "shipping": "运输方式"
+    },
+    "empty": {
+      "details": "暂未添加商品详情。",
+      "afterSales": "暂未添加售后说明。",
+      "packaging": "暂未添加包装说明。",
+      "shipping": "暂未添加运输方式说明。"
+    }
+  },
   "products": {
     "searchResults": "搜索结果",
     "searchFor": "搜索",
@@ -843,9 +1244,75 @@
   "promo": {
     "memberCta": "会员最高享受 50% 折扣"
   },
+  "quickBuy": {
+    "stepsAriaLabel": "快速购买步骤",
+    "fallbackNotice": "Quick Buy 设置预览：后台步骤还没有配置，所以当前弹窗先显示默认占位流程。",
+    "search": {
+      "categoryLabel": "分类",
+      "placeholder": "搜索产品...（按 Enter 或停止输入后搜索）"
+    },
+    "placeholder": {
+      "stepTitle": "第 {step} 步",
+      "stepName": "第 {step} 步"
+    },
+    "summary": {
+      "items": "件数",
+      "weight": "重量",
+      "price": "价格"
+    },
+    "actions": {
+      "toCart": "去购物车",
+      "payment": "付款"
+    },
+    "defaultSteps": {
+      "productSearch": "搜索产品",
+      "specifications": "选择规格",
+      "quantity": "确认数量",
+      "cartReview": "核对购物车",
+      "checkout": "结账"
+    },
+    "hints": {
+      "step1": "搜索或筛选产品",
+      "step2": "选择规格/数量",
+      "step3": "确认产品信息",
+      "step4": "完成订单",
+      "step5": "完成并核对",
+      "default": "完成当前步骤"
+    },
+    "footer": {
+      "step1": "在搜索框输入关键词来筛选产品",
+      "step2": "选择产品规格和数量后继续",
+      "step3": "请确认产品信息正确",
+      "step4": "完成这一步以提交/继续流程",
+      "step5": "所有步骤已完成",
+      "default": "完成当前步骤后继续"
+    }
+  },
   "search": {
     "placeholder": "搜索...",
     "button": "搜索"
+  },
+  "shopCategoryMenu": {
+    "ariaLabel": "商品分类",
+    "loading": "正在加载分类...",
+    "all": "全部"
+  },
+  "shopPage": {
+    "categoryRailLabel": "商品分类导航",
+    "products": {
+      "loading": "正在加载商品...",
+      "empty": {
+        "title": "暂时没有可用商品。",
+        "description": "商品通过 Tanzanite 插件发布后，会自动显示在这里。"
+      }
+    },
+    "actions": {
+      "addToWishlist": "添加到心愿单",
+      "view": "查看"
+    },
+    "feedback": {
+      "title": "分享你对 Tanzanite 商店的反馈"
+    }
   },
   "sidebar": {
     "page1": "Category",
@@ -963,5 +1430,21 @@
     },
     "cardDesc": "Enter your product code to check warranty status and history.",
     "checkNow": "Check Now"
+  },
+  "wishlistDrawer": {
+    "title": "心愿单",
+    "subtitle": "加入心愿单的产品会显示在这里。",
+    "closeAriaLabel": "关闭心愿单",
+    "loading": "正在加载心愿单...",
+    "productImageAlt": "产品图片",
+    "productFallback": "产品",
+    "empty": {
+      "title": "心愿单是空的",
+      "description": "把喜欢的产品保存到心愿单，之后就能快速找到并分享。"
+    },
+    "actions": {
+      "shareToChat": "分享到聊天",
+      "remove": "移除"
+    }
   }
 }

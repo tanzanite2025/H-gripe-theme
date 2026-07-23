@@ -2,10 +2,10 @@
   <div class="wheelset-assembly-section space-y-12">
     <!-- Intro / Overview Card -->
     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
-      <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
+      <h2 class="text-xl font-bold tz-text-primary mb-4 flex items-center justify-center gap-2">
         Wheelset Assembly Instructions
       </h2>
-      <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
+      <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
          This guide outlines the standard procedure for assembling Tanzanite wheelsets, ensuring durability, safety, and optimal performance.
       </p>
     </div>
@@ -21,8 +21,8 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold text-slate-100 mb-3">Preparation</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+             <h3 class="text-lg font-bold tz-text-primary mb-3">Preparation</h3>
+             <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-4 list-none pl-0">
                  <li class="flex gap-2">
                    <span class="text-sky-500 shrink-0">1.</span> 
@@ -62,8 +62,8 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold text-slate-100 mb-3">Lacing the Wheel</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+             <h3 class="text-lg font-bold tz-text-primary mb-3">Lacing the Wheel</h3>
+             <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
                  <li>Insert the spokes into the hub flange according to the selected lacing pattern (e.g., 3-cross). To avoid scratches, use a dedicated lacing jig.</li>
                  <li>Thread the spokes through the rim holes in sequence, alternating inside and outside spokes to maintain balance.</li>
@@ -95,8 +95,8 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold text-slate-100 mb-3">Installing Nipples</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+             <h3 class="text-lg font-bold tz-text-primary mb-3">Installing Nipples</h3>
+             <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
                  <li>Screw the nipples onto the ends of the spokes, tightening them lightly at first.</li>
                  <li>
@@ -134,8 +134,8 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold text-slate-100 mb-3">Tensioning the Spokes</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+             <h3 class="text-lg font-bold tz-text-primary mb-3">Tensioning the Spokes</h3>
+             <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
                  <li>Gradually and evenly tighten the nipples, working around the rim in multiple passes.</li>
                  <li>Use a tension meter to check spoke tension, slowly narrowing the tension differences on the same side.</li>
@@ -167,8 +167,8 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold text-slate-100 mb-3">Truing the Wheel</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+             <h3 class="text-lg font-bold tz-text-primary mb-3">Truing the Wheel</h3>
+             <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
                  <li>Place the wheelset in the truing stand (our proprietary truing station ensures precise centering).</li>
                  <li>Adjust spoke tension to correct lateral deviations (side-to-side) and radial deviations (up-and-down).</li>
@@ -201,8 +201,8 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold text-slate-100 mb-3">Stress Relief</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+             <h3 class="text-lg font-bold tz-text-primary mb-3">Stress Relief</h3>
+             <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
                  <li>Perform stress relief using appropriate equipment, typically 3–5 times, until spoke tension and trueness remain stable without noticeable changes.</li>
                  <li>If tension or trueness shifts after stress relief, continue adjusting and repeat the process until stability is achieved.</li>
@@ -243,8 +243,8 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold text-slate-100 mb-3">Final Inspection</h3>
-            <div class="text-slate-400 text-sm leading-relaxed space-y-4">
+             <h3 class="text-lg font-bold tz-text-primary mb-3">Final Inspection</h3>
+             <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-emerald-500">
                  <li>Confirm uniform spoke tension and apply low-strength threadlocker to ensure long-term stability of the wheelset.</li>
                  <li>Spin the wheel to check for smooth rotation and proper centering.</li>
@@ -276,15 +276,15 @@
 
     <!-- Notes Section -->
     <div class="rounded-2xl bg-[#11151e] border border-slate-700/50 p-6 md:p-8 mt-12">
-      <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
+       <h3 class="text-lg font-bold tz-text-primary mb-4 flex items-center gap-2">
         <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
         Important Technical Notes
       </h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-400">
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm tz-text-secondary">
         <div class="bg-slate-800/30 p-4 rounded-lg">
-           <h4 class="text-slate-300 font-bold mb-2">Spoke Tension</h4>
+            <h4 class="tz-text-primary font-bold mb-2">Spoke Tension</h4>
            <p class="leading-relaxed">
-             Tension values vary by specific configurations. Typical ranges are <strong class="text-slate-200">100–135 KGF</strong>. Tension differences on the same side should generally be within <strong class="text-slate-200">15 KGF</strong>.
+              Tension values vary by specific configurations. Typical ranges are <strong class="tz-text-primary">100–135 KGF</strong>. Tension differences on the same side should generally be within <strong class="tz-text-primary">15 KGF</strong>.
            </p>
            <div class="mt-4">
              <NuxtLink
@@ -296,14 +296,14 @@
            </div>
         </div>
         <div class="bg-slate-800/30 p-4 rounded-lg">
-           <h4 class="text-slate-300 font-bold mb-2">Tolerances</h4>
+            <h4 class="tz-text-primary font-bold mb-2">Tolerances</h4>
            <ul class="list-none space-y-1">
-             <li>Lateral/Radial runout: <strong class="text-slate-200">≤ 0.2 mm</strong></li>
-             <li>Dish offset: <strong class="text-slate-200">≤ 0.5 mm</strong></li>
+              <li>Lateral/Radial runout: <strong class="tz-text-primary">≤ 0.2 mm</strong></li>
+              <li>Dish offset: <strong class="tz-text-primary">≤ 0.5 mm</strong></li>
            </ul>
         </div>
         <div class="md:col-span-2 bg-slate-800/30 p-4 rounded-lg">
-           <h4 class="text-slate-300 font-bold mb-2">Measurement Standards</h4>
+            <h4 class="tz-text-primary font-bold mb-2">Measurement Standards</h4>
            <p class="leading-relaxed">
              All measurements must be quantified using standard tools. Subjective feedback such as "visual impression" will be considered technically unreliable, and the company reserves the right to deny after-sales service in such cases.
            </p>
@@ -383,7 +383,7 @@ const showStressReliefVideo = ref(false)
   right: 1rem;
   background: rgba(0, 0, 0, 0.5);
   border: none;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   font-size: 2rem;
   line-height: 1;
   cursor: pointer;

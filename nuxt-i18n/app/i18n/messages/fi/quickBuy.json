@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Pikaoston vaiheet",
+  "fallbackNotice": "Quick Buy -asetuksen esikatselu: backend-vaiheita ei ole vielä määritetty, joten tämä ikkuna näyttää oletuspolun.",
+  "search": {
+    "categoryLabel": "Kategoria",
+    "placeholder": "Hae tuotteita... (Enter tai tauko hakee)"
+  },
+  "placeholder": {
+    "stepTitle": "Vaihe {step}",
+    "stepName": "Vaihe {step}"
+  },
+  "summary": {
+    "items": "Tuotteet",
+    "weight": "Paino",
+    "price": "Hinta"
+  },
+  "actions": {
+    "toCart": "Koriin",
+    "payment": "Maksu"
+  },
+  "defaultSteps": {
+    "productSearch": "Hae tuotteita",
+    "specifications": "Valitse tekniset tiedot",
+    "quantity": "Vahvista määrä",
+    "cartReview": "Tarkista kori",
+    "checkout": "Kassalle"
+  },
+  "hints": {
+    "step1": "Hae tai suodata tuotteita",
+    "step2": "Valitse tekniset tiedot/määrä",
+    "step3": "Vahvista tuotetiedot",
+    "step4": "Viimeistele tilaus",
+    "step5": "Viimeistele ja tarkista",
+    "default": "Suorita tämä vaihe"
+  },
+  "footer": {
+    "step1": "Kirjoita hakusanoja hakukenttään suodattaaksesi tuotteita",
+    "step2": "Valitse tuotteen tekniset tiedot ja määrä jatkaaksesi",
+    "step3": "Vahvista, että tuotetiedot ovat oikein",
+    "step4": "Suorita tämä vaihe lähettääksesi/jatkaaksesi prosessia",
+    "step5": "Kaikki vaiheet suoritettu",
+    "default": "Suorita tämä vaihe jatkaaksesi"
+  }
+}

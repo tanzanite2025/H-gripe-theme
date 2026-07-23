@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "ஷாப்பிங் கார்ட்",
+  "title": "கார்ட்",
+  "closeAriaLabel": "கார்டை மூடு",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "விருப்பப் பட்டியலில் சேர்",
+    "remove": "நீக்கு",
+    "continueShopping": "ஷாப்பிங் தொடரவும்",
+    "checkout": "செக் அவுட்"
+  },
+  "empty": {
+    "title": "உங்கள் கார்ட் காலியாக உள்ளது",
+    "description": "தொடங்க சில தயாரிப்புகளைச் சேர்க்கவும்!"
+  },
+  "summary": {
+    "subtotal": "இடைத் தொகை",
+    "shipping": "அனுப்புதல்",
+    "calculatedAtCheckout": "செக் அவுட் போது கணக்கிடப்படும்",
+    "tax": "வரி",
+    "estimatedTotal": "மதிப்பிடப்பட்ட மொத்தம்",
+    "finalShippingNote": "நீங்கள் இலக்கைத் தேர்ந்தெடுத்த பிறகு இறுதி அனுப்புதல் backend quote-ஐ பயன்படுத்தும்."
+  }
+}

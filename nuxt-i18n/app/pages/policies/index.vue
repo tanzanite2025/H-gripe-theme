@@ -88,7 +88,7 @@ useHead({
 .company-page__intro {
   margin: 0 0 1.25rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .company-grid {
@@ -149,7 +149,7 @@ useHead({
 .company-card__description {
   margin: 0;
   font-size: 0.85rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .company-card__cta {

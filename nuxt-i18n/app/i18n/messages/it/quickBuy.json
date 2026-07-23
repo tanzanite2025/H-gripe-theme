@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Passaggi acquisto rapido",
+  "fallbackNotice": "Anteprima configurazione Quick Buy: i passaggi backend non sono ancora configurati, quindi questa finestra mostra il flusso predefinito.",
+  "search": {
+    "categoryLabel": "Categoria",
+    "placeholder": "Cerca prodotti... (Invio o pausa per cercare)"
+  },
+  "placeholder": {
+    "stepTitle": "Passaggio {step}",
+    "stepName": "Passaggio {step}"
+  },
+  "summary": {
+    "items": "Articoli",
+    "weight": "Peso",
+    "price": "Prezzo"
+  },
+  "actions": {
+    "toCart": "Al carrello",
+    "payment": "Pagamento"
+  },
+  "defaultSteps": {
+    "productSearch": "Cerca prodotti",
+    "specifications": "Scegli specifiche",
+    "quantity": "Conferma quantità",
+    "cartReview": "Rivedi carrello",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Cerca o filtra prodotti",
+    "step2": "Seleziona specifiche/quantità",
+    "step3": "Conferma le informazioni prodotto",
+    "step4": "Completa il tuo ordine",
+    "step5": "Finalizza e controlla",
+    "default": "Completa questo passaggio"
+  },
+  "footer": {
+    "step1": "Inserisci parole chiave nella ricerca per filtrare i prodotti",
+    "step2": "Seleziona specifiche e quantità per continuare",
+    "step3": "Conferma che le informazioni prodotto siano corrette",
+    "step4": "Completa questo passaggio per inviare/continuare il processo",
+    "step5": "Tutti i passaggi completati",
+    "default": "Completa questo passaggio per continuare"
+  }
+}

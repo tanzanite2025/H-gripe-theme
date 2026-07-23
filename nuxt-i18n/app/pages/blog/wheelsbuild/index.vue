@@ -4,7 +4,7 @@
       <h1 class="text-2xl font-semibold text-slate-50">
         {{ t('blog.pages.wheelsbuild.title') }}
       </h1>
-      <p class="mt-2 text-sm text-slate-300">
+      <p class="mt-2 text-sm tz-text-secondary">
         {{ t('blog.pages.wheelsbuild.intro') }}
       </p>
     </header>
@@ -21,11 +21,11 @@
             <h2 class="text-sm font-semibold text-white sm:text-base">
               {{ post.title }}
             </h2>
-            <p class="mt-2 text-xs text-slate-300 sm:text-sm">
+            <p class="mt-2 text-xs tz-text-secondary sm:text-sm">
               {{ post.excerpt }}
             </p>
           </div>
-          <span class="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-slate-200">
+          <span class="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium tz-text-secondary">
             {{ formatDate(post.date) }}
           </span>
         </div>
@@ -46,7 +46,7 @@
       </button>
     </div>
 
-    <p v-else-if="visiblePosts.length === 0" class="mt-6 text-sm text-slate-300">
+    <p v-else-if="visiblePosts.length === 0" class="mt-6 text-sm tz-text-secondary">
       {{ t('blog.empty') }}
     </p>
   </div>

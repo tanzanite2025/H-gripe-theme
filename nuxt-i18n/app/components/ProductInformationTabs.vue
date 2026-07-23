@@ -1,14 +1,14 @@
 <template>
   <section
     class="product-information"
-    :aria-label="t('sectionLabel')"
+    :aria-label="t('productInformationTabs.sectionLabel')"
     :data-hydrated="isHydrated"
   >
     <div
       class="product-information__tabs"
       role="tablist"
       aria-orientation="horizontal"
-      :aria-label="t('tabListLabel')"
+      :aria-label="t('productInformationTabs.tabListLabel')"
     >
       <button
         v-for="(tab, index) in tabs"
@@ -53,45 +53,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-const { t } = useI18n({
-  useScope: 'local',
-  inheritLocale: true,
-  fallbackLocale: 'en',
-  messages: {
-    en: {
-      sectionLabel: 'Product information',
-      tabListLabel: 'Product information sections',
-      tabs: {
-        details: 'Details',
-        afterSales: 'After-sales',
-        packaging: 'Packaging',
-        shipping: 'Shipping',
-      },
-      empty: {
-        details: 'Product details have not been added yet.',
-        afterSales: 'After-sales information has not been added yet.',
-        packaging: 'Packaging information has not been added yet.',
-        shipping: 'Shipping information has not been added yet.',
-      },
-    },
-    zh_cn: {
-      sectionLabel: '商品信息',
-      tabListLabel: '商品信息分类',
-      tabs: {
-        details: '商品详情',
-        afterSales: '售后说明',
-        packaging: '包装说明',
-        shipping: '运输方式',
-      },
-      empty: {
-        details: '暂未添加商品详情。',
-        afterSales: '暂未添加售后说明。',
-        packaging: '暂未添加包装说明。',
-        shipping: '暂未添加运输方式说明。',
-      },
-    },
-  },
-})
+const { t } = useI18n()
 
 type ProductInformationTab = 'details' | 'after-sales' | 'packaging' | 'shipping'
 
@@ -116,23 +78,23 @@ const tabs = computed<ReadonlyArray<{
 }>>(() => [
   {
     id: 'details',
-    label: t('tabs.details'),
-    emptyMessage: t('empty.details'),
+    label: t('productInformationTabs.tabs.details'),
+    emptyMessage: t('productInformationTabs.empty.details'),
   },
   {
     id: 'after-sales',
-    label: t('tabs.afterSales'),
-    emptyMessage: t('empty.afterSales'),
+    label: t('productInformationTabs.tabs.afterSales'),
+    emptyMessage: t('productInformationTabs.empty.afterSales'),
   },
   {
     id: 'packaging',
-    label: t('tabs.packaging'),
-    emptyMessage: t('empty.packaging'),
+    label: t('productInformationTabs.tabs.packaging'),
+    emptyMessage: t('productInformationTabs.empty.packaging'),
   },
   {
     id: 'shipping',
-    label: t('tabs.shipping'),
-    emptyMessage: t('empty.shipping'),
+    label: t('productInformationTabs.tabs.shipping'),
+    emptyMessage: t('productInformationTabs.empty.shipping'),
   },
 ])
 
@@ -188,7 +150,7 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
 
 <style scoped>
 .product-information {
-  color: #f8fafc;
+  color: var(--tz-text-primary);
 }
 
 .product-information__tabs {
@@ -206,7 +168,7 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
   cursor: pointer;
   font: inherit;
   font-size: 0.95rem;
@@ -216,7 +178,7 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
 }
 
 .product-information__tab:hover {
-  color: #e2e8f0;
+  color: var(--tz-text-primary);
 }
 
 .product-information__tab--active {
@@ -240,7 +202,7 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
 }
 
 .product-information__content {
-  color: #cbd5e1;
+  color: var(--tz-text-secondary);
   line-height: 1.75;
 }
 
@@ -288,7 +250,7 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
   margin: 0;
   border-block: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(15, 23, 42, 0.5);
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
   padding: 1.25rem;
 }
 

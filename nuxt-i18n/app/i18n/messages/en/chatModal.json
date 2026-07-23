@@ -1,0 +1,80 @@
+{
+  "actions": {
+    "close": "Close chat",
+    "closeHistory": "Close browsing history",
+    "backToWelcome": "Back to welcome",
+    "switchToChat": "Switch to chat",
+    "contactViaWhatsApp": "Contact via WhatsApp",
+    "whatsapp": "WhatsApp",
+    "email": "Email"
+  },
+  "fallback": {
+    "agent": "Agent",
+    "customer": "Customer",
+    "unknown": "Unknown"
+  },
+  "history": {
+    "title": "Browsing history"
+  },
+  "welcome": {
+    "logoAlt": "Tanzanite chat",
+    "title": "Hi there!",
+    "description": "Chat with our team, track your orders, or find answers in our FAQ.",
+    "onlineTeam": "Online support team",
+    "onlineSummary": "{count} {agentLabel} online · Our team typically replies in a few minutes.",
+    "agentSingular": "agent",
+    "agentPlural": "agents",
+    "startCta": "Start — Chat, Orders & FAQ",
+    "continueCta": "Continue — Chat, Orders & FAQ"
+  },
+  "agentSelector": {
+    "online": "Online",
+    "descriptions": {
+      "tech": "Compatibility, specs, setup, and troubleshooting",
+      "afterSales": "Order tracking, warranty, returns, and post-purchase help",
+      "sales": "Pre-sales questions, pricing, and quotes",
+      "default": "Chat with our team for help and guidance"
+    }
+  },
+  "agentPanel": {
+    "status": {
+      "online": "Online",
+      "busy": "Busy",
+      "away": "Away",
+      "offline": "Offline"
+    },
+    "conversations": "Conversations",
+    "emptyConversations": "No conversations yet",
+    "noMessages": "No messages",
+    "refreshConversations": "Refresh conversations",
+    "backToList": "Back to conversation list",
+    "messagePlaceholder": "Type a message...",
+    "justNow": "Just now"
+  },
+  "tabs": {
+    "products": "Products",
+    "orders": "Orders",
+    "test": "Test",
+    "tire": "Tire",
+    "faq": "FAQ",
+    "warranty": "Warranty",
+    "member": "Member",
+    "calculator": "Calculator"
+  },
+  "transfer": {
+    "title": "Transfer conversation",
+    "targetAgentLabel": "Target agent *",
+    "targetAgentPlaceholder": "Select an agent",
+    "noteLabel": "Transfer note (optional)",
+    "notePlaceholder": "For example: the customer needs technical support...",
+    "cancel": "Cancel",
+    "transferring": "Transferring...",
+    "confirm": "Confirm transfer",
+    "alertSelectAgent": "Select an agent to transfer this conversation to.",
+    "alertCurrentAgent": "You cannot transfer the conversation to the current agent.",
+    "alertSuccess": "Conversation transferred to {agent}.",
+    "alertFailed": "Transfer failed.",
+    "alertRetry": "Transfer failed. Please try again later.",
+    "requestFailed": "Transfer request failed"
+  }
+}

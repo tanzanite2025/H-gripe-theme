@@ -14,10 +14,10 @@
         <div class="relative z-10">
           <!-- Header -->
           <div class="text-center mb-5">
-            <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">{{ t('company.ourStory.story.title') }}</h2>
+            <h2 class="text-2xl md:text-3xl font-bold tz-text-primary mb-3">{{ t('company.ourStory.story.title') }}</h2>
             
             <NuxtLink
-              class="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white text-sm font-medium transition-all shadow-lg border border-white/10 hover:border-teal-500/30 group"
+              class="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-slate-800/80 hover:bg-slate-700 tz-text-primary text-sm font-medium transition-all shadow-lg border border-white/10 hover:border-teal-500/30 group"
               :to="factoryTabTo"
             >
               <span>{{ t('company.ourStory.story.factoryButton') }}</span>
@@ -39,7 +39,7 @@
           </div>
 
           <!-- Story Text -->
-          <div class="space-y-4 text-base text-slate-300 leading-relaxed font-light tracking-wide">
+          <div class="space-y-4 text-base tz-text-secondary leading-relaxed font-light tracking-wide">
             <template v-for="(paragraph, index) in storyParagraphs" :key="index">
               <p class="first-letter:text-5xl first-letter:font-serif first-letter:text-teal-500 first-letter:float-left first-letter:mr-3 first-letter:mt-[-6px]" v-if="index === 0">
                 {{ paragraph }}

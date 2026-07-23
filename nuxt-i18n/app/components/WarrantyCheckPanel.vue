@@ -216,7 +216,7 @@ const resetForm = () => {
 
 .warranty-check__subtitle {
   font-size: 0.9rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   margin: 0;
 }
 
@@ -238,7 +238,7 @@ const resetForm = () => {
 }
 
 .warranty-check__login-required p {
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   margin-bottom: 1.5rem;
 }
 
@@ -267,7 +267,7 @@ const resetForm = () => {
 .warranty-check__label {
   display: block;
   font-size: 0.9rem;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -282,7 +282,7 @@ const resetForm = () => {
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
   border: none;
   border-radius: 9999px;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   font-size: 1rem;
   box-shadow:
     0 2px 6px -3px rgba(0, 0, 0, 0.9),
@@ -297,7 +297,7 @@ const resetForm = () => {
 }
 
 .warranty-check__input::placeholder {
-  color: rgba(148, 163, 184, 0.6);
+  color: var(--tz-text-muted);
 }
 
 .warranty-check__submit-btn {
@@ -341,7 +341,7 @@ const resetForm = () => {
 
 .warranty-check__help {
   font-size: 0.8rem;
-  color: rgba(148, 163, 184, 0.7);
+  color: var(--tz-text-muted);
   margin-top: 0.5rem;
 }
 
@@ -365,14 +365,14 @@ const resetForm = () => {
 }
 
 .warranty-check__error p {
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   margin: 0 0 1rem;
 }
 
 .warranty-check__tips {
   text-align: left;
   padding-left: 1.5rem;
-  color: rgba(148, 163, 184, 0.8);
+  color: var(--tz-text-secondary);
   font-size: 0.85rem;
   margin-bottom: 1rem;
 }
@@ -392,7 +392,7 @@ const resetForm = () => {
   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
   border: none;
   border-radius: 9999px;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   text-decoration: none;
   font-size: 0.85rem;
   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
@@ -453,7 +453,7 @@ const resetForm = () => {
 }
 
 .warranty-check__info-label {
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   font-size: 0.85rem;
 }
 
@@ -525,12 +525,12 @@ const resetForm = () => {
 }
 
 .warranty-check__record-date {
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .warranty-check__record-desc {
   width: 100%;
-  color: rgba(148, 163, 184, 0.8);
+  color: var(--tz-text-secondary);
 }
 
 .warranty-check__no-records {
@@ -539,7 +539,7 @@ const resetForm = () => {
 }
 
 .warranty-check__no-records p {
-  color: rgba(148, 163, 184, 0.7);
+  color: var(--tz-text-muted);
   font-size: 0.85rem;
   margin: 0;
 }

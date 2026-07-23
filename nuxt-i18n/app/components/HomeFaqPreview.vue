@@ -186,12 +186,12 @@ const displayItems = computed<FlatItem[]>(() => {
 
 .home-faq__title {
   margin: 0 0 0.35rem;
-  color: #f1f5f9;
+  color: var(--tz-text-primary);
 }
 
 .home-faq__subtitle {
   margin: 0;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
 }
 
 /* Global classes .nav-pill-tabs and .nav-pill-item are used now */
@@ -216,19 +216,19 @@ const displayItems = computed<FlatItem[]>(() => {
 
 .home-faq__question-text {
   flex: 1;
-  color: #e2e8f0;
+  color: var(--tz-text-secondary);
 }
 
 .home-faq__icon {
   flex-shrink: 0;
   width: 1.1rem;
   height: 1.1rem;
-  color: #64748b;
+  color: var(--tz-text-muted);
   transition: transform 0.2s, color 0.2s;
 }
 
 .home-faq__question:hover .home-faq__icon {
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
 }
 
 .home-faq__icon--open {
@@ -238,7 +238,7 @@ const displayItems = computed<FlatItem[]>(() => {
 
 .home-faq__answer {
   padding: 0 1.25rem 1.25rem 1.25rem;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
   overflow: hidden;
 }
 

@@ -1,9 +1,9 @@
 <template>
-  <div class="text-sm text-white/80 leading-relaxed space-y-4">
+  <div class="text-sm tz-text-secondary leading-relaxed space-y-4">
     <p class="font-semibold text-white">
       {{ $t('privacy.policyHeading', 'Privacy Policy for E-Commerce Website') }}
     </p>
-    <p class="text-white/60 text-xs">
+    <p class="tz-text-muted text-xs">
       {{ $t('privacy.effectiveDate', 'Effective Date: [2025/11/11]') }}
     </p>
 

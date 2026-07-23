@@ -3,11 +3,11 @@
     <h1 class="sr-only">Cookie Policy</h1>
 
     <div class="policies-content">
-      <p class="text-sm text-slate-400 mb-6">
+      <p class="text-sm tz-text-secondary mb-6">
         This page explains how Tanzanite uses cookies and similar technologies to improve your browsing experience.
       </p>
 
-      <div class="mt-4 space-y-8 text-slate-300">
+      <div class="mt-4 space-y-8 tz-text-secondary">
         <section>
           <h2 class="text-lg font-semibold text-white mb-3">What are Cookies?</h2>
           <p class="text-sm leading-relaxed">
@@ -23,7 +23,7 @@
               <p class="text-sm leading-relaxed mb-2">
                 These cookies are necessary for the website to function properly. They enable basic features like page navigation, secure areas access, and shopping cart functionality.
               </p>
-              <p class="text-xs text-slate-500">Cannot be disabled</p>
+              <p class="text-xs tz-text-muted">Cannot be disabled</p>
             </div>
 
             <div class="rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
@@ -31,7 +31,7 @@
               <p class="text-sm leading-relaxed mb-2">
                 These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously. This helps us improve our website's performance.
               </p>
-              <p class="text-xs text-slate-500">Can be disabled</p>
+              <p class="text-xs tz-text-muted">Can be disabled</p>
             </div>
 
             <div class="rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
@@ -39,7 +39,7 @@
               <p class="text-sm leading-relaxed mb-2">
                 These cookies enable enhanced functionality and personalization, such as remembering your language preference or region. They may be set by us or by third-party providers.
               </p>
-              <p class="text-xs text-slate-500">Can be disabled</p>
+              <p class="text-xs tz-text-muted">Can be disabled</p>
             </div>
 
             <div class="rounded-xl p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
@@ -47,7 +47,7 @@
               <p class="text-sm leading-relaxed mb-2">
                 These cookies are used to deliver advertisements that are more relevant to you and your interests. They also help limit the number of times you see an advertisement.
               </p>
-              <p class="text-xs text-slate-500">Can be disabled</p>
+              <p class="text-xs tz-text-muted">Can be disabled</p>
             </div>
           </div>
         </section>
@@ -57,13 +57,13 @@
           <p class="text-sm leading-relaxed mb-4">
             You can manage your cookie preferences at any time. Most web browsers allow you to control cookies through their settings. You can:
           </p>
-          <ul class="list-disc list-inside text-sm space-y-2 text-slate-400">
+          <ul class="list-disc list-inside text-sm space-y-2 tz-text-secondary">
             <li>View what cookies are stored on your device</li>
             <li>Delete all or specific cookies</li>
             <li>Block cookies from being set</li>
             <li>Set your browser to notify you when cookies are being set</li>
           </ul>
-          <p class="text-sm leading-relaxed mt-4 text-slate-400">
+          <p class="text-sm leading-relaxed mt-4 tz-text-secondary">
             Please note that disabling certain cookies may affect the functionality of our website.
           </p>
         </section>
@@ -93,7 +93,7 @@
         </section>
 
         <div class="pt-6 border-t border-slate-800">
-          <p class="text-xs text-slate-500">Last updated: December 2024</p>
+        <p class="text-xs tz-text-muted">Last updated: December 2024</p>
         </div>
       </div>
     </div>

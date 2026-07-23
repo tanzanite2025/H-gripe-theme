@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Hatua za ununuzi wa haraka",
+  "fallbackNotice": "Onyesho la usanidi wa Quick Buy: hatua za backend bado hazijasanidiwa, kwa hivyo dirisha hili linaonyesha mtiririko chaguomsingi.",
+  "search": {
+    "categoryLabel": "Kategoria",
+    "placeholder": "Tafuta bidhaa... (Enter au simama kidogo kutafuta)"
+  },
+  "placeholder": {
+    "stepTitle": "Hatua {step}",
+    "stepName": "Hatua {step}"
+  },
+  "summary": {
+    "items": "Vipengee",
+    "weight": "Uzito",
+    "price": "Bei"
+  },
+  "actions": {
+    "toCart": "Kwenye kikapu",
+    "payment": "Malipo"
+  },
+  "defaultSteps": {
+    "productSearch": "Tafuta bidhaa",
+    "specifications": "Chagua vipimo",
+    "quantity": "Thibitisha idadi",
+    "cartReview": "Kagua kikapu",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Tafuta au chuja bidhaa",
+    "step2": "Chagua vipimo/idadi",
+    "step3": "Thibitisha taarifa za bidhaa",
+    "step4": "Kamilisha oda yako",
+    "step5": "Maliza na kagua",
+    "default": "Kamilisha hatua hii"
+  },
+  "footer": {
+    "step1": "Weka maneno muhimu kwenye kisanduku cha utafutaji kuchuja bidhaa",
+    "step2": "Chagua vipimo vya bidhaa na idadi ili kuendelea",
+    "step3": "Tafadhali thibitisha taarifa za bidhaa ni sahihi",
+    "step4": "Kamilisha hatua hii ili kutuma/kuendelea na mchakato",
+    "step5": "Hatua zote zimekamilika",
+    "default": "Kamilisha hatua hii ili kuendelea"
+  }
+}

@@ -21,7 +21,7 @@
     <section v-show="activeTab === 'riders'" class="mt-4 space-y-3">
       <div>
         <h2 class="mb-1 text-sm font-semibold text-white">Riders photos</h2>
-        <p class="mb-3 text-xs text-slate-400">
+        <p class="mb-3 text-xs tz-text-secondary">
           Real builds from riders around the world.
         </p>
 
@@ -43,7 +43,7 @@
 
           <template v-else>
             <!-- Riders 无数据 -->
-            <p v-if="!userPhotos.length" class="text-xs text-slate-400">
+            <p v-if="!userPhotos.length" class="text-xs tz-text-secondary">
               No rider photos published yet.
             </p>
 
@@ -61,10 +61,10 @@
                     class="aspect-square w-full bg-slate-800/90 group-hover:bg-slate-700/90 transition-colors"
                   ></div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
-                    <p class="text-[11px] font-medium text-slate-100 truncate">
+                    <p class="text-[11px] font-medium tz-text-primary truncate">
                       {{ photo.title }}
                     </p>
-                    <p class="text-[10px] text-slate-400 truncate">
+                    <p class="text-[10px] tz-text-muted truncate">
                       {{ photo.region }}<span v-if="photo.nickname"> · {{ photo.nickname }}</span>
                     </p>
                   </div>
@@ -90,7 +90,7 @@
     <section v-show="activeTab === 'brand'" class="mt-4 space-y-3">
       <div>
         <h2 class="mb-1 text-sm font-semibold text-white">Tanzanite photos</h2>
-        <p class="mb-3 text-xs text-slate-400">
+        <p class="mb-3 text-xs tz-text-secondary">
           Official product and detail shots curated by the Tanzanite team.
         </p>
 
@@ -112,7 +112,7 @@
 
           <template v-else>
             <!-- 无数据 -->
-            <p v-if="!brandPhotos.length" class="text-xs text-slate-400">
+            <p v-if="!brandPhotos.length" class="text-xs tz-text-secondary">
               No brand photos published yet.
             </p>
 
@@ -130,10 +130,10 @@
                     class="aspect-square w-full bg-slate-900/90 group-hover:bg-slate-800/90 transition-colors"
                   ></div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
-                    <p class="text-[11px] font-medium text-slate-100 truncate">
+                    <p class="text-[11px] font-medium tz-text-primary truncate">
                       {{ photo.title }}
                     </p>
-                    <p class="text-[10px] text-slate-400 truncate">
+                    <p class="text-[10px] tz-text-muted truncate">
                       {{ photo.region }}<span v-if="photo.nickname"> · {{ photo.nickname }}</span>
                     </p>
                   </div>
@@ -159,10 +159,10 @@
     <section class="mt-10 border-t border-white/10 pt-8">
       <div class="mx-auto max-w-3xl rounded-2xl px-4 py-4 sm:px-6 sm:py-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] backdrop-blur-xl shadow-[0_3px_9px_rgba(0,0,0,0.9)]">
         <div class="mb-4 text-center">
-          <h4 class="text-sm font-semibold text-slate-100">
+          <h4 class="text-sm font-semibold tz-text-primary">
             Share your build (login required)
           </h4>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs tz-text-secondary">
             Join the gallery! WEBP only, longest side up to 800px. Uploaded photos will appear after review.
           </p>
         </div>
@@ -170,7 +170,7 @@
         <form class="space-y-3" @submit.prevent="submitUpload">
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] text-slate-300">
+              <label class="text-[11px] tz-text-secondary">
                 Region <span class="text-red-400">*</span>
               </label>
               <input
@@ -182,7 +182,7 @@
               />
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] text-slate-300">Location</label>
+              <label class="text-[11px] tz-text-secondary">Location</label>
               <input
                 v-model="uploadLocation"
                 type="text"
@@ -194,7 +194,7 @@
 
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] text-slate-300">Nickname</label>
+              <label class="text-[11px] tz-text-secondary">Nickname</label>
               <input
                 v-model="uploadNickname"
                 type="text"
@@ -203,7 +203,7 @@
               />
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] text-slate-300">Bike / wheelset</label>
+              <label class="text-[11px] tz-text-secondary">Bike / wheelset</label>
               <input
                 v-model="uploadBikeModel"
                 type="text"
@@ -214,7 +214,7 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[11px] text-slate-300">Notes</label>
+            <label class="text-[11px] tz-text-secondary">Notes</label>
             <textarea
               v-model="uploadNotes"
               rows="2"
@@ -224,13 +224,13 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[11px] text-slate-300">Photos (WEBP, Max 10)</label>
+            <label class="text-[11px] tz-text-secondary">Photos (WEBP, Max 10)</label>
             <input
               type="file"
               accept="image/webp"
               multiple
               @change="onUploadFileChange"
-              class="block w-full text-xs text-slate-200 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-slate-100 hover:file:bg-white/20 transition-colors"
+              class="block w-full text-xs tz-text-secondary file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-slate-100 hover:file:bg-white/20 transition-colors"
             />
           </div>
 
@@ -309,7 +309,7 @@
                     alt="Photo"
                     class="max-w-full max-h-[65vh] object-contain rounded shadow-lg"
                   />
-                  <div v-else class="w-full max-w-[500px] aspect-square bg-slate-800 rounded flex items-center justify-center text-slate-500">
+                  <div v-else class="w-full max-w-[500px] aspect-square bg-slate-800 rounded flex items-center justify-center tz-text-muted">
                     No image
                   </div>
                 </div>
@@ -370,7 +370,7 @@
                   </button>
                   <button
                     type="button"
-                    class="px-3 py-1 rounded-full bg-white/10 text-slate-100 border border-white/20 hover:bg-white/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    class="px-3 py-1 rounded-full bg-white/10 tz-text-primary border border-white/20 hover:bg-white/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     @click="copyShareLink"
                     :disabled="shareCopying || !activePhoto"
                   >
@@ -378,14 +378,14 @@
                     <span v-else>Copy link</span>
                   </button>
                 </div>
-                <p v-if="shareMessage" class="mb-2 text-[10px] text-slate-400">
+                <p v-if="shareMessage" class="mb-2 text-[10px] tz-text-muted">
                   {{ shareMessage }}
                 </p>
-                <div class="rounded-lg border border-white/15 px-3 py-3 text-[11px] text-slate-200">
+                <div class="rounded-lg border border-white/15 px-3 py-3 text-[11px] tz-text-secondary">
                   <!-- 评论列表 -->
                   <div class="mb-2 flex items-center justify-between">
-                    <h4 class="font-semibold text-slate-100">Comments</h4>
-                    <span v-if="commentsLoading" class="text-[10px] text-slate-400">
+                    <h4 class="font-semibold tz-text-primary">Comments</h4>
+                    <span v-if="commentsLoading" class="text-[10px] tz-text-muted">
                       Loading...
                     </span>
                   </div>
@@ -394,7 +394,7 @@
                     Unable to load comments. Please try again later.
                   </div>
 
-                  <div v-else-if="!commentsLoading && !comments.length" class="mb-2 text-[10px] text-slate-400">
+                  <div v-else-if="!commentsLoading && !comments.length" class="mb-2 text-[10px] tz-text-muted">
                     No comments yet.
                   </div>
 
@@ -405,17 +405,17 @@
                       class="rounded-lg px-2.5 py-1.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
                     >
                       <div class="mb-0.5 flex items-center justify-between gap-2">
-                        <span class="font-semibold text-[10px] text-slate-100">
+                        <span class="font-semibold text-[10px] tz-text-primary">
                           {{ comment.author }}
                         </span>
-                        <span class="text-[9px] text-slate-500">
+                        <span class="text-[9px] tz-text-muted">
                           {{ comment.dateGmtFormatted }}
                         </span>
                       </div>
-                      <p class="text-[10px] text-slate-200">
+                      <p class="text-[10px] tz-text-secondary">
                         {{ comment.content }}
                       </p>
-                      <p v-if="comment.location" class="mt-0.5 text-[9px] text-slate-400">
+                      <p v-if="comment.location" class="mt-0.5 text-[9px] tz-text-muted">
                         {{ comment.location }}
                       </p>
                     </li>
@@ -459,13 +459,13 @@
 
               <!-- 右：推荐模块 -->
               <div
-                class="px-4 py-3 border-t md:border-t-0 md:border-l border-white/10 text-[11px] text-slate-300"
+                class="px-4 py-3 border-t md:border-t-0 md:border-l border-white/10 text-[11px] tz-text-secondary"
               >
-                <div class="mb-2 font-semibold text-slate-100">Like This? Get The Same Build.</div>
+                <div class="mb-2 font-semibold tz-text-primary">Like This? Get The Same Build.</div>
                 <div class="space-y-2">
                   <div>
-                    <p class="mb-0.5 font-semibold text-slate-200">Rim</p>
-                    <p v-if="activePhoto?.productRefs?.rim" class="text-slate-200 truncate">
+                    <p class="mb-0.5 font-semibold tz-text-primary">Rim</p>
+                    <p v-if="activePhoto?.productRefs?.rim" class="tz-text-secondary truncate">
                       <a
                         :href="activePhoto?.productRefs?.rim"
                         target="_blank"
@@ -478,8 +478,8 @@
                   </div>
 
                   <div>
-                    <p class="mb-0.5 font-semibold text-slate-200">Wheel(s)</p>
-                    <p v-if="activePhoto?.productRefs?.wheel" class="text-slate-200 truncate">
+                    <p class="mb-0.5 font-semibold tz-text-primary">Wheel(s)</p>
+                    <p v-if="activePhoto?.productRefs?.wheel" class="tz-text-secondary truncate">
                       <a
                         :href="activePhoto?.productRefs?.wheel"
                         target="_blank"
@@ -492,8 +492,8 @@
                   </div>
 
                   <div>
-                    <p class="mb-0.5 font-semibold text-slate-200">Hub</p>
-                    <p v-if="activePhoto?.productRefs?.hub" class="text-slate-200 truncate">
+                    <p class="mb-0.5 font-semibold tz-text-primary">Hub</p>
+                    <p v-if="activePhoto?.productRefs?.hub" class="tz-text-secondary truncate">
                       <a
                         :href="activePhoto?.productRefs?.hub"
                         target="_blank"
@@ -506,8 +506,8 @@
                   </div>
 
                   <div>
-                    <p class="mb-0.5 font-semibold text-slate-200">Tire</p>
-                    <p v-if="activePhoto?.productRefs?.tire" class="text-slate-200 truncate">
+                    <p class="mb-0.5 font-semibold tz-text-primary">Tire</p>
+                    <p v-if="activePhoto?.productRefs?.tire" class="tz-text-secondary truncate">
                       <a
                         :href="activePhoto?.productRefs?.tire"
                         target="_blank"
@@ -1080,7 +1080,7 @@ const copyShareLink = async () => {
 .company-page__intro {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 /* Tabs 样式（对齐 ourstory） */
@@ -1107,7 +1107,7 @@ const copyShareLink = async () => {
   padding: 8px 18px;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   background: rgba(31, 41, 55, 0.9);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1122,7 +1122,7 @@ const copyShareLink = async () => {
 
 .company-tabs__item:hover {
   background: rgba(51, 65, 85, 0.95);
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 .company-tabs__item--active {

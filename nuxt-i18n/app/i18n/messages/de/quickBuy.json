@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Quick-Buy-Schritte",
+  "fallbackNotice": "Vorschau der Quick-Buy-Einrichtung: Die Backend-Schritte sind noch nicht konfiguriert, daher zeigt dieses Fenster den Standardablauf.",
+  "search": {
+    "categoryLabel": "Kategorie",
+    "placeholder": "Produkte suchen... (Enter drücken oder kurz warten)"
+  },
+  "placeholder": {
+    "stepTitle": "Schritt {step}",
+    "stepName": "Schritt {step}"
+  },
+  "summary": {
+    "items": "Artikel",
+    "weight": "Gewicht",
+    "price": "Preis"
+  },
+  "actions": {
+    "toCart": "Zum Warenkorb",
+    "payment": "Zahlung"
+  },
+  "defaultSteps": {
+    "productSearch": "Produkte suchen",
+    "specifications": "Spezifikationen wählen",
+    "quantity": "Menge bestätigen",
+    "cartReview": "Warenkorb prüfen",
+    "checkout": "Kasse"
+  },
+  "hints": {
+    "step1": "Produkte suchen oder filtern",
+    "step2": "Spezifikationen/Menge auswählen",
+    "step3": "Produktinformationen bestätigen",
+    "step4": "Bestellung abschließen",
+    "step5": "Fertigstellen und prüfen",
+    "default": "Diesen Schritt abschließen"
+  },
+  "footer": {
+    "step1": "Geben Sie Suchbegriffe ein, um Produkte zu filtern",
+    "step2": "Wählen Sie Spezifikationen und Menge aus, um fortzufahren",
+    "step3": "Bitte bestätigen Sie, dass die Produktinformationen korrekt sind",
+    "step4": "Schließen Sie diesen Schritt ab, um den Vorgang zu senden/fortzusetzen",
+    "step5": "Alle Schritte abgeschlossen",
+    "default": "Schließen Sie diesen Schritt ab, um fortzufahren"
+  }
+}

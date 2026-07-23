@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Ürün bilgileri",
+  "tabListLabel": "Ürün bilgisi bölümleri",
+  "tabs": {
+    "details": "Detaylar",
+    "afterSales": "Satış sonrası",
+    "packaging": "Paketleme",
+    "shipping": "Gönderim"
+  },
+  "empty": {
+    "details": "Ürün detayları henüz eklenmedi.",
+    "afterSales": "Satış sonrası bilgileri henüz eklenmedi.",
+    "packaging": "Paketleme bilgileri henüz eklenmedi.",
+    "shipping": "Gönderim bilgileri henüz eklenmedi."
+  }
+}

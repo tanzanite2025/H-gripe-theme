@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Keranjang belanja",
+  "title": "Keranjang",
+  "closeAriaLabel": "Tutup keranjang",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Tambah ke wishlist",
+    "remove": "Hapus",
+    "continueShopping": "Lanjut belanja",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Keranjang Anda kosong",
+    "description": "Tambahkan beberapa produk untuk mulai!"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "shipping": "Pengiriman",
+    "calculatedAtCheckout": "Dihitung saat checkout",
+    "tax": "Pajak",
+    "estimatedTotal": "Total perkiraan",
+    "finalShippingNote": "Pengiriman akhir memakai kutipan backend setelah Anda memilih tujuan."
+  }
+}

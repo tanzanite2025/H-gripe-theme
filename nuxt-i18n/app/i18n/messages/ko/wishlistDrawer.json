@@ -1,0 +1,16 @@
+{
+  "title": "위시리스트",
+  "subtitle": "위시리스트에 추가한 상품이 여기에 표시됩니다.",
+  "closeAriaLabel": "위시리스트 닫기",
+  "loading": "위시리스트 로딩 중...",
+  "productImageAlt": "상품 이미지",
+  "productFallback": "상품",
+  "empty": {
+    "title": "위시리스트가 비어 있습니다",
+    "description": "마음에 드는 상품을 저장해 나중에 빠르게 찾고 공유하세요."
+  },
+  "actions": {
+    "shareToChat": "채팅으로 공유",
+    "remove": "삭제"
+  }
+}

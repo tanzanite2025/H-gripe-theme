@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Étapes d'achat rapide",
+  "fallbackNotice": "Aperçu de la configuration Quick Buy : les étapes backend ne sont pas encore configurées, cette fenêtre affiche donc le parcours par défaut.",
+  "search": {
+    "categoryLabel": "Catégorie",
+    "placeholder": "Rechercher des produits... (Entrée ou pause pour chercher)"
+  },
+  "placeholder": {
+    "stepTitle": "Étape {step}",
+    "stepName": "Étape {step}"
+  },
+  "summary": {
+    "items": "Articles",
+    "weight": "Poids",
+    "price": "Prix"
+  },
+  "actions": {
+    "toCart": "Au panier",
+    "payment": "Paiement"
+  },
+  "defaultSteps": {
+    "productSearch": "Rechercher des produits",
+    "specifications": "Choisir les spécifications",
+    "quantity": "Confirmer la quantité",
+    "cartReview": "Vérifier le panier",
+    "checkout": "Paiement"
+  },
+  "hints": {
+    "step1": "Rechercher ou filtrer les produits",
+    "step2": "Sélectionner les spécifications/la quantité",
+    "step3": "Confirmer les informations produit",
+    "step4": "Terminer votre commande",
+    "step5": "Finaliser et vérifier",
+    "default": "Terminer cette étape"
+  },
+  "footer": {
+    "step1": "Saisissez des mots-clés dans le champ de recherche pour filtrer les produits",
+    "step2": "Sélectionnez les spécifications et la quantité pour continuer",
+    "step3": "Veuillez confirmer que les informations produit sont correctes",
+    "step4": "Terminez cette étape pour envoyer/continuer le processus",
+    "step5": "Toutes les étapes sont terminées",
+    "default": "Terminez cette étape pour continuer"
+  }
+}

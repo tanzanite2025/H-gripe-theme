@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "购物车",
+  "title": "购物车",
+  "closeAriaLabel": "关闭购物车",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "加入心愿单",
+    "remove": "移除",
+    "continueShopping": "继续购物",
+    "checkout": "结账"
+  },
+  "empty": {
+    "title": "购物车是空的",
+    "description": "先添加一些产品吧！"
+  },
+  "summary": {
+    "subtotal": "小计",
+    "shipping": "运费",
+    "calculatedAtCheckout": "结账时计算",
+    "tax": "税费",
+    "estimatedTotal": "预估总计",
+    "finalShippingNote": "最终运费会在你选择目的地后使用后台报价计算。"
+  }
+}

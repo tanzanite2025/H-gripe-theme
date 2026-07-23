@@ -10,7 +10,8 @@
 }
 
 .nav-pill-item {
-  @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold text-slate-300 bg-slate-800/50 cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+  @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold bg-slate-800/50 cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+  color: var(--tz-text-secondary);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 

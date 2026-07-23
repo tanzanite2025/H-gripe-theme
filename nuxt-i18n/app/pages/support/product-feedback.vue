@@ -89,7 +89,7 @@ useHead({
 .support-page__intro {
   margin: 0;
   font-size: 1rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   max-width: 720px;
 }
 

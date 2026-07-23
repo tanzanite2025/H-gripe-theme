@@ -192,7 +192,7 @@ watch(
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .support-video-modal {

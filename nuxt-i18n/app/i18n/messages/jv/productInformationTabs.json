@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Informasi produk",
+  "tabListLabel": "Bagéan informasi produk",
+  "tabs": {
+    "details": "Rincian",
+    "afterSales": "Layanan sawisé tuku",
+    "packaging": "Kemasan",
+    "shipping": "Pangiriman"
+  },
+  "empty": {
+    "details": "Rincian produk durung ditambahake.",
+    "afterSales": "Informasi layanan sawisé tuku durung ditambahake.",
+    "packaging": "Informasi kemasan durung ditambahake.",
+    "shipping": "Informasi pangiriman durung ditambahake."
+  }
+}

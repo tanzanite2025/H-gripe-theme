@@ -224,7 +224,7 @@ const isOpen = (id: string) => {
 
 .footer-menus__toggle-icon {
   display: none; /* Hidden on Desktop */
-  color: #94a3b8;
+  color: var(--tz-text-muted);
   transition: transform 0.3s ease;
 }
 
@@ -235,7 +235,7 @@ const isOpen = (id: string) => {
 .footer-menus__brand-text {
   font-size: 0.85rem;
   line-height: 1.7;
-  color: #94a3b8; 
+  color: var(--tz-text-secondary);
 }
 
 .footer-menus__brand-paragraph {
@@ -254,7 +254,7 @@ const isOpen = (id: string) => {
 .footer-menus__link {
   font-size: 0.9rem;
   font-weight: 500;
-  color: rgba(248, 250, 252, 0.6);
+  color: var(--tz-text-secondary);
   text-decoration: none;
   display: inline-block;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

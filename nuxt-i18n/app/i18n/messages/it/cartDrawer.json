@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Carrello",
+  "title": "Carrello",
+  "closeAriaLabel": "Chiudi carrello",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Aggiungi ai preferiti",
+    "remove": "Rimuovi",
+    "continueShopping": "Continua gli acquisti",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Il carrello è vuoto",
+    "description": "Aggiungi qualche prodotto per iniziare!"
+  },
+  "summary": {
+    "subtotal": "Subtotale",
+    "shipping": "Spedizione",
+    "calculatedAtCheckout": "Calcolata al checkout",
+    "tax": "Tasse",
+    "estimatedTotal": "Totale stimato",
+    "finalShippingNote": "La spedizione finale usa il preventivo backend dopo la scelta della destinazione."
+  }
+}

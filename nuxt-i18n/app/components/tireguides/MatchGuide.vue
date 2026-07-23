@@ -5,7 +5,7 @@
       <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
         Tire and Frame Clearance Guide
       </h2>
-      <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
+      <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
         With our particularly wide tires, the question often arises as to whether the tires will still fit in the frame. Please
         understand that due to the large number of bicycle models, we cannot check all frames for compatibility with the various
         tires. Below we provide the exact diameters and widths of our extra-wide tires. You can use this information to check
@@ -39,12 +39,12 @@
       <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center justify-center gap-2 uppercase tracking-wide">
         Exact Circumference Guide
       </h3>
-      <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
+      <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
         Exact tire circumferences are often required for precise programming of the bike computer. The wheel circumference varies
         depending on the inner rim width, puncture protection in the tire, air pressure and weight load. For this reason, we cannot
         specify the exact wheel circumferences.
       </p> 
-      <p class="text-slate-400 text-sm leading-relaxed mb-8 max-w-3xl mx-auto">
+      <p class="tz-text-secondary text-sm leading-relaxed mb-8 max-w-3xl mx-auto">
         For precise programming of a wheel computer, we recommend a simple rolling test with
         the rider in the saddle: Align the valve from the front wheel at the bottom 6 o’clock position, make a mark on the floor or
         lay the end of a tape measure at this point, roll the bike forward in as straight a line as possible until the front has done

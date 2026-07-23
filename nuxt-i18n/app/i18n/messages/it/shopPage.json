@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Navigazione categorie del negozio",
+  "products": {
+    "loading": "Caricamento prodotti...",
+    "empty": {
+      "title": "Non sono ancora disponibili prodotti.",
+      "description": "Quando i prodotti saranno pubblicati tramite il plugin Tanzanite, appariranno automaticamente qui."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Aggiungi alla lista desideri",
+    "view": "Vedi"
+  },
+  "feedback": {
+    "title": "Condividi il tuo feedback sul negozio Tanzanite"
+  }
+}

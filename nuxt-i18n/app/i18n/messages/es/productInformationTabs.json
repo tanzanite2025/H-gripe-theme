@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Información del producto",
+  "tabListLabel": "Secciones de información del producto",
+  "tabs": {
+    "details": "Detalles",
+    "afterSales": "Posventa",
+    "packaging": "Embalaje",
+    "shipping": "Envío"
+  },
+  "empty": {
+    "details": "Aún no se han añadido los detalles del producto.",
+    "afterSales": "Aún no se ha añadido la información de posventa.",
+    "packaging": "Aún no se ha añadido la información de embalaje.",
+    "shipping": "Aún no se ha añadido la información de envío."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "title": "心愿单",
+  "subtitle": "加入心愿单的产品会显示在这里。",
+  "closeAriaLabel": "关闭心愿单",
+  "loading": "正在加载心愿单...",
+  "productImageAlt": "产品图片",
+  "productFallback": "产品",
+  "empty": {
+    "title": "心愿单是空的",
+    "description": "把喜欢的产品保存到心愿单，之后就能快速找到并分享。"
+  },
+  "actions": {
+    "shareToChat": "分享到聊天",
+    "remove": "移除"
+  }
+}

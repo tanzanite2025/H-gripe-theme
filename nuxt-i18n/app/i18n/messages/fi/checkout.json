@@ -1,0 +1,179 @@
+{
+  "modal": {
+    "title": "Checkout",
+    "closeAriaLabel": "Close checkout",
+    "sslAlt": "Secure SSL",
+    "sslNote": "Pages use HTTPS with trusted SSL; we only store the result, not your card details.",
+    "pointsHint": "1 point = $0.01, max 50% of order",
+    "actions": {
+      "viewCart": "View cart",
+      "livechat": "Livechat",
+      "email": "Email"
+    },
+    "messages": {
+      "invalidQuote": "Invalid checkout quote response",
+      "unableRefreshQuote": "Unable to refresh checkout quote",
+      "cartSaved": "Your cart has been saved. We'll notify you when shipping becomes available to your region.",
+      "couponApplied": "Coupon applied successfully!",
+      "completeShipping": "Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.",
+      "selectPaypalCountry": "Please select a country/region we can ship to before continuing to PayPal.",
+      "orderSuccess": "Order submitted successfully!",
+      "orderFailed": "Order submission failed, please try again"
+    }
+  },
+  "order": {
+    "itemFallback": "Item"
+  },
+  "payment": {
+    "card": {
+      "title": "Credit / Debit cards",
+      "subtitle": "Secure card page",
+      "description": "Card details are entered on a secure payment page from our provider; we only store your order result.",
+      "stepperDescription": "Enter full shipping info and contact number here, then we redirect you to the PCI-compliant card page. We never store your card number or CVC.",
+      "cta": "Continue to secure payment",
+      "points": {
+        "shipping": "Required: full shipping info + contact number",
+        "immediate": "Use when you want to pay immediately with Visa / Mastercard."
+      }
+    },
+    "paypal": {
+      "title": "Pay with PayPal",
+      "optionTitle": "PayPal",
+      "subtitle": "Express checkout",
+      "description": "You will be redirected to PayPal. We never see or store your PayPal login or card information.",
+      "stepperDescription": "We rely on the shipping address saved in your PayPal account whenever possible. Choose a supported country first so we can confirm fulfillment.",
+      "cta": "Continue to PayPal",
+      "points": {
+        "country": "Required: select a shippable country before continuing."
+      }
+    },
+    "alipay": {
+      "title": "Alipay / WeChat / UnionPay",
+      "optionTitle": "Alipay / WeChat / UnionPay",
+      "subtitle": "Local wallets",
+      "description": "You approve the payment in your local wallet. We still collect shipping info here to prepare dispatch.",
+      "stepperDescription": "Approve payment inside your usual wallet. We still gather shipping details in this tab to prepare dispatch and confirm customs information.",
+      "cta": "Pay with local wallet",
+      "points": {
+        "recipient": "Required: recipient name + phone number",
+        "wallets": "Great for China-mainland wallets and UnionPay."
+      }
+    },
+    "stripe": {
+      "title": "Pay with Stripe",
+      "optionTitle": "Stripe",
+      "subtitle": "3D Secure ready",
+      "description": "Stripe handles your card details and any extra verification. We only store the payment status.",
+      "stepperDescription": "Stripe handles card input and any extra verification. We keep the form minimal here and let Stripe manage the sensitive fields.",
+      "cta": "Continue to Stripe",
+      "points": {
+        "sca": "Great for customers that require SCA/3DS."
+      }
+    },
+    "bank": {
+      "title": "Bank transfer",
+      "subtitle": "Manual invoice",
+      "description": "Place the order first, then send a bank transfer using the reference we show you on the next step.",
+      "stepperDescription": "Place the order, then transfer the funds using the bank instructions shown on the next step. Remember to include your order number as reference.",
+      "cta": "Place order for bank transfer",
+      "points": {
+        "reference": "Include your order number as payment reference."
+      }
+    },
+    "worldfirst": {
+      "title": "WorldFirst",
+      "optionTitle": "WorldFirst",
+      "subtitle": "Cross-border",
+      "description": "Send funds to a local WorldFirst account in your currency. We never access your banking credentials.",
+      "stepperDescription": "Ideal for international or business orders. You pay into a regional WorldFirst account in your currency; they settle the converted funds to us.",
+      "cta": "Continue with WorldFirst",
+      "points": {
+        "b2b": "Recommended for B2B cross-border payments."
+      }
+    }
+  },
+  "stepper": {
+    "common": {
+      "optional": "Optional"
+    },
+    "steps": {
+      "payment": "Choose payment method",
+      "shipping": "Shipping info",
+      "review": "Review & pay"
+    },
+    "payment": {
+      "pickProvider": "Pick a provider",
+      "stepCount": "Step {current} of {total}",
+      "tapCardHint": "Tap a card to view details",
+      "iconAltSuffix": "icon",
+      "selected": "Selected",
+      "tapToView": "Tap to view",
+      "continueWithMethod": "Continue with this method"
+    },
+    "shipping": {
+      "changePaymentMethod": "Change payment method",
+      "addressTitle": "Shipping address",
+      "addressHelp": "If shipping to your area isn't available yet, it doesn't always mean we can't deliver. Contact us and we'll check options for you.",
+      "countryRegion": "Country / Region",
+      "searchCountryPlaceholder": "Search country or region",
+      "selectCountry": "Select a country",
+      "availableForShipping": "Available for shipping",
+      "otherCountries": "Other countries",
+      "recipient": "Recipient",
+      "recipientPlaceholder": "Enter recipient name",
+      "phone": "Phone",
+      "phonePlaceholder": "Enter phone number",
+      "address": "Address",
+      "addressPlaceholder": "Enter detailed address",
+      "unavailableFallback": "Shipping unavailable for this country.",
+      "optionsIntro": "Don’t worry, we have options for you:",
+      "contactSpecialShipping": "Contact us for special shipping arrangements",
+      "useFreightForwarder": "Use a freight forwarder service",
+      "saveCartLater": "Save cart and check back later",
+      "estimatedDelivery": "Estimated delivery: {estimatedDelivery}",
+      "city": "City",
+      "cityPlaceholder": "City",
+      "zipCode": "Zip code",
+      "zipPlaceholder": "Zip code",
+      "continueToReview": "Continue to review →",
+      "completeShippingFirst": "Complete shipping info first",
+      "notRequiredForMethod": "Shipping details are not required for this method.",
+      "state": {
+        "selectCountry": "Select country",
+        "unavailable": "Unavailable",
+        "calculating": "Calculating...",
+        "free": "Free"
+      }
+    },
+    "review": {
+      "backToShipping": "Back to shipping",
+      "coupon": "Coupon",
+      "couponPlaceholder": "Enter code",
+      "applyingCoupon": "Applying…",
+      "applyCoupon": "Apply",
+      "couponApplied": "Coupon applied: {coupon}",
+      "usePointsDiscount": "Use Points Discount",
+      "pointsAvailable": "Available: {points} pts",
+      "noPoints": "No points available yet",
+      "usePoints": "Use points",
+      "pointsUnavailable": "Points unavailable",
+      "pointsToUse": "Points to use",
+      "earnPointsHint": "Earn points on your next order and apply them here for instant discounts.",
+      "orderNotes": "Order notes",
+      "orderNotesPlaceholder": "Add any delivery instructions or special requests…",
+      "orderSummary": "Order summary",
+      "continueToCheckout": "Continue to checkout"
+    },
+    "summary": {
+      "qty": "Qty",
+      "empty": "Order details will appear here once items are in your cart.",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "tax": "Tax",
+      "pointsDiscount": "Points discount",
+      "couponDiscount": "Coupon discount",
+      "giftCardDiscount": "Gift card discount",
+      "total": "Total"
+    }
+  }
+}

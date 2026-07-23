@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Mağaza kategori gezintisi",
+  "products": {
+    "loading": "Ürünler yükleniyor...",
+    "empty": {
+      "title": "Henüz kullanılabilir ürün yok.",
+      "description": "Ürünler Tanzanite eklentisiyle yayınlandığında burada otomatik olarak görünecek."
+    }
+  },
+  "actions": {
+    "addToWishlist": "İstek listesine ekle",
+    "view": "Görüntüle"
+  },
+  "feedback": {
+    "title": "Tanzanite mağazası hakkındaki geri bildiriminizi paylaşın"
+  }
+}

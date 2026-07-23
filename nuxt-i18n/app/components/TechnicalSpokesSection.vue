@@ -28,12 +28,12 @@
         Basic Concepts
       </h3>
       
-      <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-2xl mx-auto hidden">
+      <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-2xl mx-auto hidden">
         Understanding spoke dimensions, materials, and typical use cases is crucial for building a reliable wheelset that matches your riding style.
       </p>
 
       <div class="w-full mb-8">
-        <p class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Common Profiles & Types</p>
+        <p class="text-xs font-bold uppercase tracking-wider tz-text-muted mb-3">Common Profiles & Types</p>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <GuideImage
             src="/public/technical/j-bend-spokeandstraightpull-spoke.webp"
@@ -56,49 +56,49 @@
       <div class="w-full mb-8 text-center">
          <div class="flex items-center gap-3 mb-4 justify-center">
             <span class="h-px w-8 bg-slate-700"></span>
-            <h4 class="text-slate-200 font-bold text-base uppercase tracking-wider">Major Brands & Positioning</h4>
+        <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Major Brands & Positioning</h4>
             <span class="h-px w-8 bg-slate-700"></span>
          </div>
          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
                 <strong class="block text-sky-400 text-sm mb-1">DT Swiss (Switzerland)</strong>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">Renowned for stable craftsmanship and a comprehensive product matrix (straight, butted, aero), with complete engineering support.</p>
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Renowned for stable craftsmanship and a comprehensive product matrix (straight, butted, aero), with complete engineering support.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 text-[10px] font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
                   View DT Swiss Spoke
                 </button>
              </div>
               <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
                 <strong class="block text-sky-400 text-sm mb-1">Sapim (Belgium)</strong>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">Leading in high-end aero spokes (e.g. CX-Ray). Known for lightweight performance and excellent fatigue life.</p>
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Leading in high-end aero spokes (e.g. CX-Ray). Known for lightweight performance and excellent fatigue life.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 text-[10px] font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
                   View Sapim Spoke
                 </button>
              </div>
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
                 <strong class="block text-amber-400 text-sm mb-1">Pillar (Taiwan)</strong>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">Strong cost-performance with a wide range including reinforced (PSR) designs. Suitable for custom and mass production.</p>
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Strong cost-performance with a wide range including reinforced (PSR) designs. Suitable for custom and mass production.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/10 transition-colors">
                   View Pillar Spoke
                 </button>
              </div>
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
-                <strong class="block text-slate-300 text-sm mb-1">Mac / CNSpoke</strong>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">Fast supply chain response. Covers all types balancing cost and performance for diverse applications.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-500/10 transition-colors">
+          <strong class="block tz-text-primary text-sm mb-1">Mac / CNSpoke</strong>
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response. Covers all types balancing cost and performance for diverse applications.</p>
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 text-[10px] font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
                   View Mac / CNSpoke Spoke
                 </button>
              </div>
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
-                <strong class="block text-slate-300 text-sm mb-1">YT Spokes (China)</strong>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">Fast supply chain response, suitable for cost and performance balance.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-500/10 transition-colors">
+          <strong class="block tz-text-primary text-sm mb-1">YT Spokes (China)</strong>
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response, suitable for cost and performance balance.</p>
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 text-[10px] font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
                   View YT Spokes Spoke
                 </button>
              </div>
              <!-- New: Tanzanite Carbon -->
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center ring-1 ring-indigo-500/20">
                 <strong class="block text-indigo-400 text-sm mb-1">TANZANITE CARBON SPOKE</strong>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">The pinnacle of lightweight performance. Designed for ultimate responsiveness and rigidity, drastically reducing rotational weight.</p>
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">The pinnacle of lightweight performance. Designed for ultimate responsiveness and rigidity, drastically reducing rotational weight.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-indigo-500/30 text-[10px] font-bold uppercase tracking-wider text-indigo-400 hover:bg-indigo-500/10 transition-colors">
                   View Tanzanite Carbon Spoke
                 </button>
@@ -110,7 +110,7 @@
       <div class="w-full mb-8 text-center">
           <div class="flex items-center gap-3 mb-4 justify-center">
             <span class="h-px w-8 bg-slate-700"></span>
-            <h4 class="text-slate-200 font-bold text-base uppercase tracking-wider">Spoke Types</h4>
+            <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Spoke Types</h4>
             <span class="h-px w-8 bg-slate-700"></span>
          </div>
 
@@ -120,11 +120,11 @@
                  <h5 class="text-slate-100 font-bold mb-2 flex items-center justify-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-slate-500"></span> Straight Gauge Spokes
                  </h5>
-                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-slate-400 w-full">
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Specs:</span> Commonly 14G (2.0mm), 13G (2.3mm).</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Features:</span> High strength margin, low cost, easy maintenance.</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Examples:</span> DT Champion, Sapim Leader.</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Use:</span> Commuting, touring, cargo, high-tension drive sides.</p>
+                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> Commonly 14G (2.0mm), 13G (2.3mm).</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Features:</span> High strength margin, low cost, easy maintenance.</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Examples:</span> DT Champion, Sapim Leader.</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Use:</span> Commuting, touring, cargo, high-tension drive sides.</p>
                  </div>
              </div>
 
@@ -133,11 +133,11 @@
                  <h5 class="text-slate-100 font-bold mb-2 flex items-center justify-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-sky-500"></span> Double/Triple Butted
                  </h5>
-                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-slate-400 w-full">
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Specs:</span> e.g. 2.0-1.8-2.0mm, 2.0-1.5-2.0mm.</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Features:</span> Lighter, better fatigue resistance (flex in midsection).</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Examples:</span> DT Competition/Revolution, Sapim Race/Laser.</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Use:</span> Endurance road, XC/Gravel, versatile durable builds.</p>
+                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> e.g. 2.0-1.8-2.0mm, 2.0-1.5-2.0mm.</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Features:</span> Lighter, better fatigue resistance (flex in midsection).</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Examples:</span> DT Competition/Revolution, Sapim Race/Laser.</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Use:</span> Endurance road, XC/Gravel, versatile durable builds.</p>
                  </div>
              </div>
 
@@ -146,11 +146,11 @@
                  <h5 class="text-slate-100 font-bold mb-2 flex items-center justify-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Bladed / Aero
                  </h5>
-                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-slate-400 w-full">
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Specs:</span> Flat ~0.9-1.0mm, width 2.0-2.3mm (or wider for TT).</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Features:</span> Aerodynamic, easier torque control (anti-twist).</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Examples:</span> Sapim CX-Ray, DT Aerolite, Pillar PSR X-TRA.</p>
-                    <p><span class="text-slate-500 font-mono text-xs uppercase mr-1">Use:</span> Racing road, disc brake high-tension, aero rims.</p>
+                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> Flat ~0.9-1.0mm, width 2.0-2.3mm (or wider for TT).</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Features:</span> Aerodynamic, easier torque control (anti-twist).</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Examples:</span> Sapim CX-Ray, DT Aerolite, Pillar PSR X-TRA.</p>
+                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Use:</span> Racing road, disc brake high-tension, aero rims.</p>
                  </div>
              </div>
          </div>
@@ -160,21 +160,21 @@
       <div class="w-full text-center">
           <div class="flex items-center gap-3 mb-4 justify-center">
             <span class="h-px w-8 bg-slate-700"></span>
-            <h4 class="text-slate-200 font-bold text-base uppercase tracking-wider">Interfaces</h4>
+            <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Interfaces</h4>
              <span class="h-px w-8 bg-slate-700"></span>
          </div>
          <div class="grid gap-3 sm:grid-cols-3">
             <div class="bg-slate-800/20 p-3 rounded-lg border border-slate-700/20 text-center">
-                 <strong class="block text-slate-300 text-sm mb-1">J-bend</strong>
-                 <p class="text-xs text-slate-500">Highly versatile, standard, easy sourcing.</p>
+                 <strong class="block tz-text-primary text-sm mb-1">J-bend</strong>
+                 <p class="text-xs tz-text-muted">Highly versatile, standard, easy sourcing.</p>
             </div>
              <div class="bg-slate-800/20 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] text-center">
-                 <strong class="block text-slate-300 text-sm mb-1">Straight-pull</strong>
-                 <p class="text-xs text-slate-500">No elbow stress, fast building, specific hubs.</p>
+                 <strong class="block tz-text-primary text-sm mb-1">Straight-pull</strong>
+                 <p class="text-xs tz-text-muted">No elbow stress, fast building, specific hubs.</p>
             </div>
              <div class="bg-slate-800/20 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] text-center">
-                 <strong class="block text-slate-300 text-sm mb-1">Nipples</strong>
-                 <p class="text-xs text-slate-500">Brass (durable) vs Aluminum (light). Washer recommended.</p>
+                 <strong class="block tz-text-primary text-sm mb-1">Nipples</strong>
+                 <p class="text-xs tz-text-muted">Brass (durable) vs Aluminum (light). Washer recommended.</p>
             </div>
          </div>
       </div>
@@ -183,7 +183,7 @@
     <div class="mt-4">
       <div class="flex items-center justify-center gap-2 mb-4">
          <div class="h-px w-12 bg-slate-800"></div>
-         <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Material Comparison</p>
+         <p class="text-xs font-bold uppercase tracking-widest tz-text-muted">Material Comparison</p>
          <div class="h-px w-12 bg-slate-800"></div>
       </div>
 
@@ -207,15 +207,15 @@
             <strong class="text-xl text-slate-100">Stainless Steel</strong>
           </div>
           
-          <div class="w-full max-w-none text-slate-400 text-sm leading-relaxed flex flex-col items-center">
+          <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
             <p class="mb-4 text-center">
               Currently the most mainstream and widely used spoke material on the market, offering the best balance of durability and cost.
             </p>
 
             <!-- Market Context -->
             <div class="mb-6 w-full text-center">
-              <strong class="text-xs uppercase tracking-wider text-slate-500 mb-2 block">Market Landscape</strong>
-              <p class="text-sm text-slate-400 max-w-2xl mx-auto">
+              <strong class="text-xs uppercase tracking-wider tz-text-muted mb-2 block">Market Landscape</strong>
+              <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
                 As detailed in the Basic Concepts above, the stainless steel spoke market is defined by the "Big 2" (DT Swiss, Sapim) setting the quality benchmark, with Pillar and others offering competitive high-value alternatives. All these major brands primarily utilize high-grade stainless steel (e.g., 18/8 or proprietary blends) for their main product lines.
               </p>
             </div>
@@ -249,8 +249,8 @@
               </div>
             </div>
 
-            <p class="mt-4 text-xs font-medium text-slate-500 uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 text-slate-300 text-center">Almost all bicycles, from commuters to pro MTB/Road bikes.</p>
+            <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
+            <p class="mt-1 tz-text-primary text-center">Almost all bicycles, from commuters to pro MTB/Road bikes.</p>
           </div>
         </li>
 
@@ -262,7 +262,7 @@
             <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-500 text-white px-2 py-1 rounded-full">Elite</span>
           </div>
 
-           <div class="w-full max-w-none text-slate-400 text-sm leading-relaxed flex flex-col items-center">
+           <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
             <p class="mb-4 text-center">
               Found on high-end performance wheelsets. Offers extreme weight savings and rigidity.
             </p>
@@ -299,8 +299,8 @@
               </div>
             </div>
 
-             <p class="mt-4 text-xs font-medium text-slate-500 uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 text-slate-300 text-center">High-end road racing, time trials, and weight weenies.</p>
+             <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
+            <p class="mt-1 tz-text-primary text-center">High-end road racing, time trials, and weight weenies.</p>
            </div>
         </li>
 
@@ -308,12 +308,12 @@
         <!-- 3. Titanium Alloy -->
         <li class="mt-6 rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
            <div class="flex items-center justify-center gap-3 mb-4">
-             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 text-slate-400 text-lg font-bold">3</span>
-            <strong class="text-xl text-slate-200">Titanium Alloy</strong>
-            <span class="text-[10px] border border-slate-700 text-slate-500 px-2 py-0.5 rounded">Rare</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">3</span>
+            <strong class="text-xl tz-text-primary">Titanium Alloy</strong>
+            <span class="text-[10px] border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
           </div>
 
-          <div class="w-full max-w-none text-slate-400 text-sm leading-relaxed flex flex-col items-center">
+           <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
              <p class="mb-4 text-center">
                Middle ground between steel and carbon. High strength-to-weight ratio and no rust.
              </p>
@@ -349,20 +349,20 @@
               </div>
             </div>
 
-            <p class="mt-4 text-xs font-medium text-slate-500 uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 text-slate-300 text-center">Custom builds, riders valuing comfort & aesthetics.</p>
+            <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
+            <p class="mt-1 tz-text-primary text-center">Custom builds, riders valuing comfort & aesthetics.</p>
           </div>
         </li>
 
          <!-- 4. Aluminum Alloy -->
         <li class="mt-4 rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
            <div class="flex items-center justify-center gap-3 mb-4">
-             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 text-slate-400 text-lg font-bold">4</span>
-            <strong class="text-xl text-slate-200">Aluminum Alloy</strong>
-             <span class="text-[10px] border border-slate-700 text-slate-500 px-2 py-0.5 rounded">Rare</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">4</span>
+            <strong class="text-xl tz-text-primary">Aluminum Alloy</strong>
+             <span class="text-[10px] border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
           </div>
 
-          <div class="w-full max-w-none text-slate-400 text-sm leading-relaxed flex flex-col items-center">
+           <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
              <p class="mb-4 text-center">
                Used by specific manufacturers (e.g. Campagnolo). Very light but can be problematic.
              </p>
@@ -398,8 +398,8 @@
               </div>
             </div>
 
-             <p class="mt-4 text-xs font-medium text-slate-500 uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 text-slate-300 text-center">Specific factory racing wheelsets.</p>
+             <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
+            <p class="mt-1 tz-text-primary text-center">Specific factory racing wheelsets.</p>
           </div>
         </li>
       </ul>
@@ -415,14 +415,14 @@
        <div class="space-y-8">
          <div class="bg-[#11151e] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] border-t-4 border-emerald-500 p-6 text-center">
             <h3 class="text-xl font-bold text-slate-100 mb-2">Spoke Selection Matrix</h3>
-            <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+            <p class="tz-text-secondary text-sm max-w-2xl mx-auto">
                Compare our supported spoke models to find the perfect match for your building goals—whether it's maximum durability, lightweight performance, or aerodynamic efficiency.
             </p>
          </div>
 
          <div class="overflow-x-auto rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800">
-            <table class="w-full text-sm text-left text-slate-400">
-               <thead class="text-xs text-slate-200 uppercase bg-slate-800/80">
+            <table class="w-full text-sm text-left tz-text-secondary">
+               <thead class="text-xs tz-text-primary uppercase bg-slate-800/80">
                   <tr>
                      <th scope="col" class="px-6 py-4 font-bold">Brand / Model</th>
                      <th scope="col" class="px-6 py-4 font-bold text-center">Type</th>
@@ -437,12 +437,12 @@
                    <!-- 1. Leader -->
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
-                        <strong class="block text-slate-200 text-base">SAPIM Leader</strong>
+                        <strong class="block tz-text-primary text-base">SAPIM Leader</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700">Straight</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-slate-800 tz-text-secondary text-xs font-bold border border-slate-700">Straight</span>
                      </td>
-                     <td class="px-6 py-4 text-center font-mono text-slate-300">6.8g</td>
+                     <td class="px-6 py-4 text-center font-mono tz-text-primary">6.8g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0</td>
                      <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
                         <strong>Stainless (18/8)</strong>. Strength: 1080-1180 N/mm². Durable straight gauge choice.
@@ -452,12 +452,12 @@
                   <!-- 2. Race -->
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
-                        <strong class="block text-slate-200 text-base">SAPIM Race</strong>
+                        <strong class="block tz-text-primary text-base">SAPIM Race</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
                         <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
                      </td>
-                     <td class="px-6 py-4 text-center font-mono text-slate-300">5.7g</td>
+                     <td class="px-6 py-4 text-center font-mono tz-text-primary">5.7g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.8 - 2.0</td>
                      <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
                         <strong>Strength: 1300 N/mm²</strong>. Evolution of classic Competition. Good fatigue adaptability.
@@ -467,12 +467,12 @@
                    <!-- 3. D-Light -->
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
-                        <strong class="block text-slate-200 text-base">SAPIM D-Light</strong>
+                        <strong class="block tz-text-primary text-base">SAPIM D-Light</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
                         <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
                      </td>
-                     <td class="px-6 py-4 text-center font-mono text-slate-300">4.8g</td>
+                     <td class="px-6 py-4 text-center font-mono tz-text-primary">4.8g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.65 - 2.0</td>
                      <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
                          <strong>Strength: 1370 N/mm²</strong>. Designed for top quality MTB/Disc wheels. Max strength, min weight.
@@ -482,12 +482,12 @@
                    <!-- 4. CX-Sprint -->
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
-                        <strong class="block text-slate-200 text-base">SAPIM CX-Sprint</strong>
+                        <strong class="block tz-text-primary text-base">SAPIM CX-Sprint</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
                         <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
                      </td>
-                     <td class="px-6 py-4 text-center font-mono text-slate-300">5.2g</td>
+                     <td class="px-6 py-4 text-center font-mono tz-text-primary">5.2g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.25 x 1.25</td>
                      <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
                         <strong>Strength: 1430 N/mm²</strong>. Aero bladed. High stiffness for drive-side applications.
@@ -498,7 +498,7 @@
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
-                            <strong class="block text-slate-200 text-base">SAPIM CX-Ray</strong>
+                            <strong class="block tz-text-primary text-base">SAPIM CX-Ray</strong>
                             <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold">TOP</span>
                         </div>
                      </td>
@@ -515,7 +515,7 @@
                    <!-- 6. Super-CX -->
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors opacity-75">
                      <td class="px-6 py-4">
-                        <strong class="block text-slate-200 text-base">SAPIM Super-CX</strong>
+                        <strong class="block tz-text-primary text-base">SAPIM Super-CX</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
                         <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
@@ -530,14 +530,14 @@
                   <!-- DT Swiss Comp Race -->
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors border-t-4 border-slate-800">
                      <td class="px-6 py-4">
-                        <strong class="block text-slate-200 text-base">DT Swiss Comp Race</strong>
+                        <strong class="block tz-text-primary text-base">DT Swiss Comp Race</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
                         <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
                      </td>
-                     <td class="px-6 py-4 text-center font-mono text-slate-300">5.7g</td>
+                     <td class="px-6 py-4 text-center font-mono tz-text-primary">5.7g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.6 - 2.0</td>
-                     <td class="px-6 py-4 text-xs italic text-slate-500">
+                     <td class="px-6 py-4 text-xs italic tz-text-muted">
                         Coming Soon
                      </td>
                   </tr>
@@ -545,14 +545,14 @@
                   <!-- YT Aero -->
                   <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
-                        <strong class="block text-slate-200 text-base">YT Aero</strong>
+                        <strong class="block tz-text-primary text-base">YT Aero</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
                         <span class="inline-flex px-2 py-1 rounded bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">Aero</span>
                      </td>
-                     <td class="px-6 py-4 text-center text-slate-500 italic">Coming Soon</td>
-                     <td class="px-6 py-4 text-center text-slate-500 italic">Coming Soon</td>
-                     <td class="px-6 py-4 text-xs italic text-slate-500">
+                     <td class="px-6 py-4 text-center tz-text-muted italic">Coming Soon</td>
+                     <td class="px-6 py-4 text-center tz-text-muted italic">Coming Soon</td>
+                     <td class="px-6 py-4 text-xs italic tz-text-muted">
                         Coming Soon
                      </td>
                   </tr>
@@ -587,12 +587,12 @@
          <!-- Additional Info Cards -->
          <div class="grid md:grid-cols-2 gap-4">
              <div class="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl flex gap-4 items-start">
-                <span class="bg-slate-700/50 p-2 rounded-lg text-slate-300 shrink-0">
+                <span class="bg-slate-700/50 p-2 rounded-lg tz-text-secondary shrink-0">
                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
                 </span>
                 <div>
-                   <h5 class="text-slate-200 font-bold text-sm mb-1">Weight Calculation</h5>
-                   <p class="text-xs text-slate-400">Weights listed are approximations for typical 64pcs (2 wheels, 32H) lengths (260mm-270mm).</p>
+                   <h5 class="tz-text-primary font-bold text-sm mb-1">Weight Calculation</h5>
+                   <p class="text-xs tz-text-secondary">Weights listed are approximations for typical 64pcs (2 wheels, 32H) lengths (260mm-270mm).</p>
                 </div>
              </div>
              <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl flex gap-4 items-start">
@@ -611,7 +611,7 @@
             <div class="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
                <div class="space-y-2">
                   <h4 class="text-lg font-bold text-slate-100">Need Spoke Length Help?</h4>
-                  <p class="text-sm text-slate-400 max-w-xl leading-relaxed">
+                  <p class="text-sm tz-text-secondary max-w-xl leading-relaxed">
                      If you are looking to purchase individual replacement spokes or rebuild a previous TANZANITE wheelset, you may require assistance with spoke length calculations.
                   </p>
                </div>

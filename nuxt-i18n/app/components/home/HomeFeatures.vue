@@ -16,18 +16,18 @@
           
           <div class="h-1 w-20 rounded-full bg-gradient-to-r from-teal-400 to-blue-500 shadow-[0_0_12px_rgba(45,212,191,0.5)]"></div>
           
-          <p class="text-lg text-slate-400 leading-relaxed max-w-md">
+          <p class="text-lg tz-text-secondary leading-relaxed max-w-md">
             {{ t('home.features.subtitle') }}
           </p>
 
           <!-- Decorative Visual (Abstract) -->
           <div class="hidden lg:block mt-12 p-8 rounded-3xl bg-slate-900/50 border border-white/5 relative overflow-hidden">
              <div class="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-blue-600/5"></div>
-             <div class="relative z-10 flex items-center gap-4 text-slate-400 text-sm">
+             <div class="relative z-10 flex items-center gap-4 tz-text-secondary text-sm">
                 <svg class="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 <span>Engineered for efficiency</span>
              </div>
-             <div class="relative z-10 flex items-center gap-4 text-slate-400 text-sm mt-3">
+             <div class="relative z-10 flex items-center gap-4 tz-text-secondary text-sm mt-3">
                 <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <span>Validated Quality Control</span>
              </div>
@@ -44,7 +44,7 @@
 
 
             <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-teal-50 transition-colors">{{ t(item.titleKey) }}</h3>
-            <p class="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">{{ t(item.descriptionKey) }}</p>
+            <p class="text-sm leading-relaxed tz-text-secondary group-hover:text-slate-300 transition-colors">{{ t(item.descriptionKey) }}</p>
           </div>
         </div>
 

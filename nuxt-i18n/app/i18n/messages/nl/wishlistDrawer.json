@@ -1,0 +1,16 @@
+{
+  "title": "Verlanglijst",
+  "subtitle": "Producten die je aan je verlanglijst toevoegt, verschijnen hier.",
+  "closeAriaLabel": "Verlanglijst sluiten",
+  "loading": "Verlanglijst laden...",
+  "productImageAlt": "Productafbeelding",
+  "productFallback": "Product",
+  "empty": {
+    "title": "Je verlanglijst is leeg",
+    "description": "Bewaar producten die je leuk vindt, zodat je ze later snel kunt vinden en delen."
+  },
+  "actions": {
+    "shareToChat": "Delen in chat",
+    "remove": "Verwijderen"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Productinformatie",
+  "tabListLabel": "Secties met productinformatie",
+  "tabs": {
+    "details": "Details",
+    "afterSales": "Service na verkoop",
+    "packaging": "Verpakking",
+    "shipping": "Verzending"
+  },
+  "empty": {
+    "details": "Productdetails zijn nog niet toegevoegd.",
+    "afterSales": "Informatie over service na verkoop is nog niet toegevoegd.",
+    "packaging": "Verpakkingsinformatie is nog niet toegevoegd.",
+    "shipping": "Verzendinformatie is nog niet toegevoegd."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "سلة التسوق",
+  "title": "السلة",
+  "closeAriaLabel": "إغلاق السلة",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "إضافة إلى المفضلة",
+    "remove": "إزالة",
+    "continueShopping": "متابعة التسوق",
+    "checkout": "إتمام الشراء"
+  },
+  "empty": {
+    "title": "سلتك فارغة",
+    "description": "أضف بعض المنتجات للبدء!"
+  },
+  "summary": {
+    "subtotal": "المجموع الفرعي",
+    "shipping": "الشحن",
+    "calculatedAtCheckout": "يُحسب عند الدفع",
+    "tax": "الضريبة",
+    "estimatedTotal": "الإجمالي التقديري",
+    "finalShippingNote": "تستخدم تكلفة الشحن النهائية عرض backend بعد اختيار الوجهة."
+  }
+}

@@ -192,7 +192,7 @@ watch(
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.2rem 0.1rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .category-strip__spinner {
@@ -244,7 +244,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(148, 163, 184, 0.4);
+  color: var(--tz-text-muted);
   font-size: 1.4rem;
 }
 
@@ -300,7 +300,7 @@ watch(
 .category-strip__button--ghost {
   background: rgba(15, 23, 42, 0.9);
   border-color: rgba(148, 163, 184, 0.45);
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
 }
 
 /* Hide scrollbar for WebKit */

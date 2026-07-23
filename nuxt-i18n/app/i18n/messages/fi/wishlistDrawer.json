@@ -1,0 +1,16 @@
+{
+  "title": "Suosikit",
+  "subtitle": "Suosikkeihin lisäämäsi tuotteet näkyvät täällä.",
+  "closeAriaLabel": "Sulje suosikit",
+  "loading": "Ladataan suosikkeja...",
+  "productImageAlt": "Tuotekuva",
+  "productFallback": "Tuote",
+  "empty": {
+    "title": "Suosikkilistasi on tyhjä",
+    "description": "Tallenna tuotteita, joista pidät, jotta löydät ja jaat ne nopeasti myöhemmin."
+  },
+  "actions": {
+    "shareToChat": "Jaa chatissa",
+    "remove": "Poista"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Liste de souhaits",
+  "subtitle": "Les produits ajoutés à votre liste apparaîtront ici.",
+  "closeAriaLabel": "Fermer la liste de souhaits",
+  "loading": "Chargement de la liste...",
+  "productImageAlt": "Image du produit",
+  "productFallback": "Produit",
+  "empty": {
+    "title": "Votre liste de souhaits est vide",
+    "description": "Enregistrez les produits que vous aimez pour les retrouver et les partager rapidement plus tard."
+  },
+  "actions": {
+    "shareToChat": "Partager dans le chat",
+    "remove": "Retirer"
+  }
+}

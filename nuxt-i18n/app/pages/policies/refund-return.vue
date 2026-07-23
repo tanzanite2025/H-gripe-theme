@@ -2,8 +2,8 @@
   <div class="company-page">
     <h1 class="sr-only">Refund & Return Policy</h1>
 
-    <div class="policies-content space-y-8 text-slate-300">
-      <p class="text-sm text-slate-400">
+    <div class="policies-content space-y-8 tz-text-secondary">
+      <p class="text-sm tz-text-secondary">
         How we handle returns, refunds, and exchanges to keep your experience predictable and fair.
       </p>
 
@@ -23,7 +23,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-white mb-3">Process</h2>
-        <ul class="list-disc list-inside text-sm space-y-2 text-slate-400">
+        <ul class="list-disc list-inside text-sm space-y-2 tz-text-secondary">
           <li>Contact our support team with your order number and issue details.</li>
           <li>We will provide return instructions and, if applicable, a return authorization.</li>
           <li>Ship the item using a trackable method; retain proof of shipment.</li>
@@ -62,7 +62,7 @@
       </section>
 
       <div class="pt-6 border-t border-slate-800">
-        <p class="text-xs text-slate-500">Last updated: December 2024</p>
+        <p class="text-xs tz-text-muted">Last updated: December 2024</p>
       </div>
     </div>
   </div>

@@ -7,16 +7,16 @@
     <!-- 标题栏 -->
     <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
       <div class="flex items-center gap-2">
-        <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 tz-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <h3 class="text-sm font-semibold text-white">Recently Viewed</h3>
-        <span class="text-xs text-white/50">({{ historyCount }})</span>
+      <span class="text-xs tz-text-muted">({{ historyCount }})</span>
       </div>
       <button
         v-if="hasHistory"
         @click="handleClearHistory"
-        class="text-xs text-white/50 hover:text-red-400 transition-colors"
+        class="text-xs tz-text-muted hover:text-red-400 transition-colors"
       >
         Clear History
       </button>
@@ -29,8 +29,8 @@
         <svg class="w-16 h-16 text-white/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p class="text-white/50 text-sm">No browsing history</p>
-        <p class="text-white/30 text-xs mt-1">Products you view will appear here</p>
+        <p class="tz-text-secondary text-sm">No browsing history</p>
+        <p class="tz-text-muted text-xs mt-1">Products you view will appear here</p>
       </div>
       
       <!-- 商品列表 -->
@@ -72,7 +72,7 @@
                 class="w-full h-full object-cover"
                 loading="lazy"
               />
-              <div v-else class="w-full h-full flex items-center justify-center text-white/30">
+              <div v-else class="w-full h-full flex items-center justify-center tz-text-muted">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -93,7 +93,7 @@
                 <!-- 加入心愿单按钮 -->
                 <button
                   @click="handleAddToWishlist(item)"
-                  class="w-8 h-8 flex items-center justify-center rounded-full border border-white/25 text-white/80 hover:bg-white/15 transition-colors"
+          class="w-8 h-8 flex items-center justify-center rounded-full border border-white/25 tz-text-secondary hover:bg-white/15 transition-colors"
                   title="Add to wishlist"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +152,7 @@
 
     <!-- 移动端滑动提示 -->
     <div v-if="hasHistory" class="md:hidden px-4 pb-3 text-center">
-      <p class="text-xs text-white/40">← Swipe to see more →</p>
+      <p class="text-xs tz-text-muted">← Swipe to see more →</p>
     </div>
   </div>
 </template>

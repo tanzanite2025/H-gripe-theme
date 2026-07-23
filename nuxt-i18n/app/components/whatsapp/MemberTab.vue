@@ -3,11 +3,11 @@
     <div class="w-full md:max-w-md md:mx-auto rounded-2xl p-3 md:p-4 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md space-y-3 md:space-y-4">
       <!-- 顶部：当前等级 / 提示 -->
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center text-[11px] md:text-xs font-semibold text-white/80 border border-white/20">
+        <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center text-[11px] md:text-xs font-semibold tz-text-primary border border-white/20">
           {{ isMemberLogged ? (levelName || '—') : 'Guest' }}
         </div>
         <div class="flex-1 min-w-0">
-          <div class="text-[11px] text-white/50 truncate">
+          <div class="text-[11px] tz-text-muted truncate">
             {{ isMemberLogged ? 'Your membership' : 'Membership program' }}
           </div>
           <div class="text-sm font-semibold text-white truncate">
@@ -20,25 +20,25 @@
       <!-- 核心指标网格 -->
       <div class="grid grid-cols-2 gap-2 md:gap-3 text-[11px]">
         <div class="rounded-xl px-2.5 md:px-3 py-2 bg-white/5">
-          <div class="text-white/50">Points</div>
+          <div class="tz-text-muted">Points</div>
           <div class="text-sm font-semibold text-white">
             {{ isMemberLogged ? points : '—' }}
           </div>
         </div>
         <div class="rounded-xl px-2.5 md:px-3 py-2 bg-white/5">
-          <div class="text-white/50">Product discount</div>
+          <div class="tz-text-muted">Product discount</div>
           <div class="text-sm font-semibold text-white">
             {{ isMemberLogged ? (levelDiscounts.product + '%') : '—' }}
           </div>
         </div>
         <div class="rounded-xl px-2.5 md:px-3 py-2 bg-white/5">
-          <div class="text-white/50">Points discount</div>
+          <div class="tz-text-muted">Points discount</div>
           <div class="text-sm font-semibold text-white">
             {{ isMemberLogged ? (levelDiscounts.points + '%') : '—' }}
           </div>
         </div>
         <div class="rounded-xl px-2.5 md:px-3 py-2 bg-white/5">
-          <div class="text-white/50">Coupons / Cards</div>
+          <div class="tz-text-muted">Coupons / Cards</div>
           <div class="text-sm font-semibold text-white">
             {{ isMemberLogged ? `× ${userCoupons} / × ${userPointCards}` : '—' }}
           </div>
@@ -53,9 +53,9 @@
             :style="{ width: tierInfo.pct + '%' }"
           ></div>
         </div>
-        <div class="flex items-center justify-between text-[10px] md:text-[11px] text-white/60">
+        <div class="flex items-center justify-between text-[10px] md:text-[11px] tz-text-secondary">
           <span>{{ tierInfo.current ? tierInfo.current.min : 0 }}</span>
-          <span class="font-semibold text-white/80">{{ tierInfo.pct }}%</span>
+          <span class="font-semibold tz-text-primary">{{ tierInfo.pct }}%</span>
           <span>
             {{
               tierInfo.next
@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <div v-else class="text-[11px] text-white/60 space-y-2 md:space-y-3">
+      <div v-else class="text-[11px] tz-text-secondary space-y-2 md:space-y-3">
         <p>Log in or sign up to see your member prices, points and progress.</p>
         <div class="flex gap-1.5 md:gap-2">
           <button

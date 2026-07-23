@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Quick buy steps",
+  "fallbackNotice": "Quick Buy setup preview: backend steps are not configured yet, so this modal is showing the default placeholder flow.",
+  "search": {
+    "categoryLabel": "Category",
+    "placeholder": "Search products... (Enter or pause to search)"
+  },
+  "placeholder": {
+    "stepTitle": "Step {step}",
+    "stepName": "Step {step}"
+  },
+  "summary": {
+    "items": "Items",
+    "weight": "Weight",
+    "price": "Price"
+  },
+  "actions": {
+    "toCart": "To cart",
+    "payment": "Payment"
+  },
+  "defaultSteps": {
+    "productSearch": "Search products",
+    "specifications": "Choose specifications",
+    "quantity": "Confirm quantity",
+    "cartReview": "Review cart",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Search or filter products",
+    "step2": "Select specifications/quantity",
+    "step3": "Confirm product information",
+    "step4": "Complete your order",
+    "step5": "Finish and review",
+    "default": "Complete this step"
+  },
+  "footer": {
+    "step1": "Enter keywords in the search box to filter products",
+    "step2": "Select product specifications and quantity to continue",
+    "step3": "Please confirm the product information is correct",
+    "step4": "Complete this step to submit/continue your process",
+    "step5": "All steps complete",
+    "default": "Complete this step to continue"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Wishlist",
+  "subtitle": "Lalabas dito ang mga produktong idinadagdag mo sa wishlist.",
+  "closeAriaLabel": "Isara ang wishlist",
+  "loading": "Nilo-load ang wishlist...",
+  "productImageAlt": "Larawan ng produkto",
+  "productFallback": "Produkto",
+  "empty": {
+    "title": "Walang laman ang wishlist mo",
+    "description": "I-save ang mga produktong gusto mo para mabilis mong mahanap at maibahagi mamaya."
+  },
+  "actions": {
+    "shareToChat": "I-share sa chat",
+    "remove": "Alisin"
+  }
+}

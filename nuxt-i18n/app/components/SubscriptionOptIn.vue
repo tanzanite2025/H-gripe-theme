@@ -1,6 +1,6 @@
 <template>
   <form class="space-y-2" @submit.prevent="handleSubmit">
-    <label v-if="label" class="block text-xs font-medium text-slate-400 mb-2 tracking-wide uppercase text-center">
+    <label v-if="label" class="block text-xs font-medium tz-text-secondary mb-2 tracking-wide uppercase text-center">
       {{ label }}
     </label>
     <div class="flex gap-2">

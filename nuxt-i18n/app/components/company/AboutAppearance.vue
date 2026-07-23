@@ -3,7 +3,7 @@
     <!-- Intro Header -->
     <div class="text-center mb-10 max-w-3xl mx-auto">
       <h2 class="text-xl sm:text-2xl font-bold text-white mb-4">Appearance & Customization</h2>
-      <p class="text-slate-400">
+      <p class="tz-text-secondary">
         We offer a wide range of carbon fiber weave patterns and surface finishes to meet the aesthetic and performance preferences of every rider.
         All weaves are structural carbon fiber, not printed or laminated.
       </p>
@@ -37,9 +37,9 @@
         <div v-for="item in weavePatterns" :key="item.name" class="premium-card p-5 group hover:bg-slate-800/80 transition-colors">
           <div class="flex justify-between items-start mb-2">
             <h4 class="font-bold text-white group-hover:text-teal-400 transition-colors">{{ item.name }}</h4>
-            <span class="text-xs font-mono uppercase tracking-wider text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-800">{{ item.finish }}</span>
+            <span class="text-xs font-mono uppercase tracking-wider tz-text-muted bg-slate-900 px-2 py-1 rounded border border-slate-800">{{ item.finish }}</span>
           </div>
-          <p class="text-sm text-slate-400">{{ item.desc }}</p>
+          <p class="text-sm tz-text-secondary">{{ item.desc }}</p>
         </div>
       </div>
     </div>
@@ -55,7 +55,7 @@
         <div class="grid grid-cols-1 gap-3">
           <div v-for="item in glossLevels" :key="item.name" class="premium-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
              <div class="font-bold text-white">{{ item.name }}</div>
-             <div class="text-sm text-slate-400">{{ item.desc }}</div>
+             <div class="text-sm tz-text-secondary">{{ item.desc }}</div>
           </div>
         </div>
       </div>
@@ -67,9 +67,9 @@
           <h3 class="text-xl font-bold text-white">Crystal Effects</h3>
         </div>
         <div class="premium-card p-6">
-          <p class="text-sm text-slate-400 mb-4">Crystal finishes use micro-layer coating technology for unique light reflection and color depth.</p>
+          <p class="text-sm tz-text-secondary mb-4">Crystal finishes use micro-layer coating technology for unique light reflection and color depth.</p>
           <div class="flex flex-wrap gap-2">
-            <span v-for="color in crystalEffects" :key="color" class="px-3 py-1.5 rounded-full text-sm font-medium bg-slate-900 border border-slate-700 text-slate-300">
+            <span v-for="color in crystalEffects" :key="color" class="px-3 py-1.5 rounded-full text-sm font-medium bg-slate-900 border border-slate-700 tz-text-secondary">
               {{ color }}
             </span>
           </div>
@@ -81,15 +81,15 @@
     <div class="mb-16">
       <div class="flex items-center gap-3 mb-6">
         <div class="w-1 h-6 bg-orange-500 rounded-full"></div>
-        <h3 class="text-xl font-bold text-white">Brake Track Options <span class="text-sm font-normal text-slate-500 ml-2">(Rim Brake Only)</span></h3>
+        <h3 class="text-xl font-bold text-white">Brake Track Options <span class="text-sm font-normal tz-text-muted ml-2">(Rim Brake Only)</span></h3>
       </div>
       <div class="premium-card p-0 overflow-hidden">
          <div class="grid divide-y divide-slate-800">
-            <div v-for="track in brakeTracks" :key="track" class="p-4 hover:bg-slate-800/50 transition-colors text-slate-300 text-sm">
+            <div v-for="track in brakeTracks" :key="track" class="p-4 hover:bg-slate-800/50 transition-colors tz-text-secondary text-sm">
                {{ track }}
             </div>
          </div>
-         <div class="bg-slate-900/50 p-4 text-xs text-slate-500 border-t border-slate-800">
+         <div class="bg-slate-900/50 p-4 text-xs tz-text-muted border-t border-slate-800">
            All brake tracks are heat-treated and abrasion-tested for compatibility with mainstream brake pads.
          </div>
       </div>
@@ -102,7 +102,7 @@
             <div class="w-1 h-6 bg-teal-400 rounded-full"></div>
             <h3 class="text-xl font-bold text-white">Laser Engraving</h3>
          </div>
-         <div class="prose prose-invert prose-sm max-w-none text-slate-400">
+        <div class="prose prose-invert prose-sm max-w-none tz-text-secondary">
            <p>In addition to traditional decals and painted graphics, we support laser-engraved logos as a <strong>sustainable, faster</strong> option.</p>
            <ul class="my-4 space-y-2 list-none pl-0">
              <li class="flex gap-2">
@@ -145,12 +145,12 @@
     <!-- Presentation Suggestions (Tips) -->
     <div class="premium-card p-6 border-l-4 border-l-blue-500 bg-blue-500/5">
       <h3 class="text-lg font-bold text-white mb-3">Presentation Suggestions</h3>
-      <ul class="space-y-2 text-sm text-slate-300">
+      <ul class="space-y-2 text-sm tz-text-secondary">
         <li>• Organize options into three clear sections: Weave, Brake Track, Finish.</li>
         <li>• Pair each option with a high-resolution image and concise label.</li>
         <li>• Include “Recommended combinations” or “Customer favorites” to guide decision-making.</li>
       </ul>
-      <p class="mt-4 text-xs text-slate-500 pt-3 border-t border-slate-700/30">
+      <p class="mt-4 text-xs tz-text-muted pt-3 border-t border-slate-700/30">
         For OEM clients, team orders, or custom branding requests, we offer logo integration, laser etching, and color matching services. Contact us for tailored solutions.
       </p>
     </div>

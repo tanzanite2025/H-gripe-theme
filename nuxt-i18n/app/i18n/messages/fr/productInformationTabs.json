@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Informations produit",
+  "tabListLabel": "Sections d'informations produit",
+  "tabs": {
+    "details": "Détails",
+    "afterSales": "Service après-vente",
+    "packaging": "Emballage",
+    "shipping": "Livraison"
+  },
+  "empty": {
+    "details": "Les détails du produit n'ont pas encore été ajoutés.",
+    "afterSales": "Les informations de service après-vente n'ont pas encore été ajoutées.",
+    "packaging": "Les informations d'emballage n'ont pas encore été ajoutées.",
+    "shipping": "Les informations de livraison n'ont pas encore été ajoutées."
+  }
+}

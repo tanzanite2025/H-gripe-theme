@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Tuotetiedot",
+  "tabListLabel": "Tuotetietojen osiot",
+  "tabs": {
+    "details": "Tiedot",
+    "afterSales": "Jälkipalvelu",
+    "packaging": "Pakkaus",
+    "shipping": "Toimitus"
+  },
+  "empty": {
+    "details": "Tuotetietoja ei ole vielä lisätty.",
+    "afterSales": "Jälkipalvelutietoja ei ole vielä lisätty.",
+    "packaging": "Pakkaustietoja ei ole vielä lisätty.",
+    "shipping": "Toimitustietoja ei ole vielä lisätty."
+  }
+}

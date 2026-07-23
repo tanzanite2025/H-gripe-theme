@@ -1,8 +1,8 @@
 <template>
-  <aside class="w-full text-xs text-white/80">
-    <h3 class="mb-3 text-sm font-semibold text-white/90">Categories</h3>
+  <aside class="w-full text-xs tz-text-secondary">
+    <h3 class="mb-3 text-sm font-semibold tz-text-primary">Categories</h3>
 
-    <div v-if="loading" class="py-4 text-white/40">
+    <div v-if="loading" class="py-4 tz-text-secondary">
       Loading categories...
     </div>
     <div v-else-if="error" class="py-4 text-red-300">
@@ -30,7 +30,7 @@
           @click="handleSelect(cat)"
         >
           <span class="truncate">{{ cat.name }}</span>
-          <span v-if="typeof cat.count === 'number'" class="text-[10px] text-white/40">
+          <span v-if="typeof cat.count === 'number'" class="text-[10px] tz-text-muted">
             {{ cat.count }}
           </span>
         </button>

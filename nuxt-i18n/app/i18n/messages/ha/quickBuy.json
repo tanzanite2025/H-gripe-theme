@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Matakan saye cikin sauri",
+  "fallbackNotice": "Duban saitin Quick Buy: ba a saita matakan backend ba tukuna, don haka wannan taga tana nuna tsohon tsarin placeholder.",
+  "search": {
+    "categoryLabel": "Rukuni",
+    "placeholder": "Nemi kayayyaki... (Enter ko tsaya kaɗan don nema)"
+  },
+  "placeholder": {
+    "stepTitle": "Mataki {step}",
+    "stepName": "Mataki {step}"
+  },
+  "summary": {
+    "items": "Abubuwa",
+    "weight": "Nauyi",
+    "price": "Farashi"
+  },
+  "actions": {
+    "toCart": "Zuwa kwando",
+    "payment": "Biya"
+  },
+  "defaultSteps": {
+    "productSearch": "Nemi kayayyaki",
+    "specifications": "Zaɓi bayanai",
+    "quantity": "Tabbatar da yawa",
+    "cartReview": "Duba kwando",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Nemi ko tace kayayyaki",
+    "step2": "Zaɓi bayanai/yawa",
+    "step3": "Tabbatar da bayanin kaya",
+    "step4": "Kammala odarka",
+    "step5": "Kammala ka duba",
+    "default": "Kammala wannan mataki"
+  },
+  "footer": {
+    "step1": "Shigar da kalmomin nema a akwatin bincike don tace kayayyaki",
+    "step2": "Zaɓi bayanan kaya da yawa don ci gaba",
+    "step3": "Da fatan ka tabbatar bayanin kaya daidai ne",
+    "step4": "Kammala wannan mataki don aika/ci gaba da tsari",
+    "step5": "An kammala duk matakai",
+    "default": "Kammala wannan mataki don ci gaba"
+  }
+}

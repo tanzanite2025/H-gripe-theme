@@ -1,0 +1,16 @@
+{
+  "title": "İstek listesi",
+  "subtitle": "İstek listenize eklediğiniz ürünler burada görünür.",
+  "closeAriaLabel": "İstek listesini kapat",
+  "loading": "İstek listesi yükleniyor...",
+  "productImageAlt": "Ürün görseli",
+  "productFallback": "Ürün",
+  "empty": {
+    "title": "İstek listeniz boş",
+    "description": "Beğendiğiniz ürünleri kaydedin; sonra hızlıca bulup paylaşabilirsiniz."
+  },
+  "actions": {
+    "shareToChat": "Sohbette paylaş",
+    "remove": "Kaldır"
+  }
+}

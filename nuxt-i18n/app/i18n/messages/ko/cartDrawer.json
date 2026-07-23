@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "장바구니",
+  "title": "장바구니",
+  "closeAriaLabel": "장바구니 닫기",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "위시리스트에 추가",
+    "remove": "삭제",
+    "continueShopping": "계속 쇼핑하기",
+    "checkout": "결제"
+  },
+  "empty": {
+    "title": "장바구니가 비어 있습니다",
+    "description": "시작하려면 상품을 추가해 보세요!"
+  },
+  "summary": {
+    "subtotal": "소계",
+    "shipping": "배송",
+    "calculatedAtCheckout": "결제 시 계산",
+    "tax": "세금",
+    "estimatedTotal": "예상 총액",
+    "finalShippingNote": "최종 배송비는 목적지를 선택한 뒤 백엔드 견적으로 계산됩니다."
+  }
+}

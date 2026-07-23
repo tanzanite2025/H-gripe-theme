@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Hızlı satın alma adımları",
+  "fallbackNotice": "Quick Buy kurulum önizlemesi: backend adımları henüz yapılandırılmadı, bu nedenle bu pencere varsayılan akışı gösteriyor.",
+  "search": {
+    "categoryLabel": "Kategori",
+    "placeholder": "Ürün ara... (Enter ya da kısa bekleme ile ara)"
+  },
+  "placeholder": {
+    "stepTitle": "Adım {step}",
+    "stepName": "Adım {step}"
+  },
+  "summary": {
+    "items": "Ürünler",
+    "weight": "Ağırlık",
+    "price": "Fiyat"
+  },
+  "actions": {
+    "toCart": "Sepete",
+    "payment": "Ödeme"
+  },
+  "defaultSteps": {
+    "productSearch": "Ürün ara",
+    "specifications": "Özellikleri seç",
+    "quantity": "Adedi onayla",
+    "cartReview": "Sepeti gözden geçir",
+    "checkout": "Ödeme"
+  },
+  "hints": {
+    "step1": "Ürün ara veya filtrele",
+    "step2": "Özellikleri/adedi seç",
+    "step3": "Ürün bilgisini onayla",
+    "step4": "Siparişini tamamla",
+    "step5": "Bitir ve gözden geçir",
+    "default": "Bu adımı tamamla"
+  },
+  "footer": {
+    "step1": "Ürünleri filtrelemek için arama kutusuna anahtar kelimeler girin",
+    "step2": "Devam etmek için ürün özelliklerini ve adedi seçin",
+    "step3": "Lütfen ürün bilgilerinin doğru olduğunu onaylayın",
+    "step4": "Göndermek/sürece devam etmek için bu adımı tamamlayın",
+    "step5": "Tüm adımlar tamamlandı",
+    "default": "Devam etmek için bu adımı tamamlayın"
+  }
+}

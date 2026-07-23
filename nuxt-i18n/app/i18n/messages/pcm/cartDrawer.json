@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Shopping cart",
+  "title": "Cart",
+  "closeAriaLabel": "Close cart",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Add to wishlist",
+    "remove": "Remove",
+    "continueShopping": "Continue shopping",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Your cart empty",
+    "description": "Add some products make you start!"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "calculatedAtCheckout": "Dem go calculate am for checkout",
+    "tax": "Tax",
+    "estimatedTotal": "Estimated total",
+    "finalShippingNote": "Final shipping go use backend quote after you choose destination."
+  }
+}

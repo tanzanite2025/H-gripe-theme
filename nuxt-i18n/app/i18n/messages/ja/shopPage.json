@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "ショップカテゴリナビゲーション",
+  "products": {
+    "loading": "商品を読み込み中...",
+    "empty": {
+      "title": "利用可能な商品はまだありません。",
+      "description": "Tanzanite プラグインで商品が公開されると、ここに自動的に表示されます。"
+    }
+  },
+  "actions": {
+    "addToWishlist": "欲しいものリストに追加",
+    "view": "表示"
+  },
+  "feedback": {
+    "title": "Tanzanite ショップについてのフィードバックを共有してください"
+  }
+}

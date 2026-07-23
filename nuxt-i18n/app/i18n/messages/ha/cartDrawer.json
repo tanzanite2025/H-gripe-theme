@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Kwandon siyayya",
+  "title": "Kwando",
+  "closeAriaLabel": "Rufe kwando",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Ƙara zuwa wishlist",
+    "remove": "Cire",
+    "continueShopping": "Ci gaba da siyayya",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Kwandonka babu komai",
+    "description": "Ƙara wasu kayayyaki don farawa!"
+  },
+  "summary": {
+    "subtotal": "Jimla ta farko",
+    "shipping": "Jigila",
+    "calculatedAtCheckout": "Za a lissafa a checkout",
+    "tax": "Haraji",
+    "estimatedTotal": "Jimla ta kiyasta",
+    "finalShippingNote": "Jigilar ƙarshe tana amfani da farashin backend bayan ka zaɓi inda za a aika."
+  }
+}

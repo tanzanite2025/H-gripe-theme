@@ -29,6 +29,56 @@
     "registerSuccessMessage": "账户已创建，点击下方按钮一键登录并返回。",
     "registerSuccessCta": "一键登录"
   },
+  "authModal": {
+    "privacyNotice": "We take your privacy seriously. All connections are encrypted and your data stays yours.",
+    "intro": {
+      "login": "Welcome back! Choose a method to sign in:",
+      "register": "Create an account in seconds:"
+    },
+    "divider": {
+      "email": "or with email"
+    },
+    "fields": {
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Remember me"
+    },
+    "actions": {
+      "close": "Close sign-in dialog",
+      "signIn": "Sign in",
+      "signUp": "Sign up",
+      "signingIn": "Signing in...",
+      "signingUp": "Signing up...",
+      "continueWithGoogle": "Continue with Google"
+    },
+    "switch": {
+      "noAccount": "Don't have an account?",
+      "hasAccount": "Already have an account?",
+      "signUpHere": "Sign up here",
+      "signInHere": "Sign in here"
+    },
+    "completion": {
+      "loginTitle": "Signed in",
+      "loginMessage": "Your account data has been synced. Click below to continue.",
+      "googleLoginMessage": "Your Google account is signed in and your data has been synced.",
+      "loginCta": "OK, return",
+      "registerTitle": "Account created",
+      "registerMessage": "Your account has been created. Click below to sign in and return.",
+      "registerCta": "Sign in now"
+    },
+    "validation": {
+      "invalidEmail": "Please enter a valid email address.",
+      "passwordMin": "Password must be at least 8 characters.",
+      "passwordUppercase": "Password must include at least one uppercase letter."
+    },
+    "errors": {
+      "loginFailed": "Login failed. Please try again.",
+      "registrationFailed": "Registration failed. Please try again.",
+      "googleLoginFailed": "Google sign-in failed. Please try again.",
+      "googleInitFailed": "Google sign-in could not be started. Please try again."
+    }
+  },
   "blog": {
     "nav": {
       "all": "All",
@@ -74,6 +124,291 @@
       "items": "Items",
       "price": "Price",
       "openCart": "View cart summary"
+    }
+  },
+  "cartDrawer": {
+    "ariaLabel": "শপিং কার্ট",
+    "title": "কার্ট",
+    "closeAriaLabel": "কার্ট বন্ধ করুন",
+    "item": {
+      "sku": "SKU"
+    },
+    "actions": {
+      "addToWishlist": "ইচ্ছেতালিকায় যোগ করুন",
+      "remove": "সরান",
+      "continueShopping": "কেনাকাটা চালিয়ে যান",
+      "checkout": "চেকআউট"
+    },
+    "empty": {
+      "title": "আপনার কার্ট খালি",
+      "description": "শুরু করতে কিছু পণ্য যোগ করুন!"
+    },
+    "summary": {
+      "subtotal": "উপমোট",
+      "shipping": "শিপিং",
+      "calculatedAtCheckout": "চেকআউটে হিসাব হবে",
+      "tax": "কর",
+      "estimatedTotal": "আনুমানিক মোট",
+      "finalShippingNote": "গন্তব্য নির্বাচন করার পর চূড়ান্ত শিপিং backend quote দিয়ে হিসাব হবে।"
+    }
+  },
+  "chatModal": {
+    "actions": {
+      "close": "Close chat",
+      "closeHistory": "Close browsing history",
+      "backToWelcome": "Back to welcome",
+      "switchToChat": "Switch to chat",
+      "contactViaWhatsApp": "Contact via WhatsApp",
+      "whatsapp": "WhatsApp",
+      "email": "Email"
+    },
+    "fallback": {
+      "agent": "Agent",
+      "customer": "Customer",
+      "unknown": "Unknown"
+    },
+    "history": {
+      "title": "Browsing history"
+    },
+    "welcome": {
+      "logoAlt": "Tanzanite chat",
+      "title": "Hi there!",
+      "description": "Chat with our team, track your orders, or find answers in our FAQ.",
+      "onlineTeam": "Online support team",
+      "onlineSummary": "{count} {agentLabel} online · Our team typically replies in a few minutes.",
+      "agentSingular": "agent",
+      "agentPlural": "agents",
+      "startCta": "Start — Chat, Orders & FAQ",
+      "continueCta": "Continue — Chat, Orders & FAQ"
+    },
+    "agentSelector": {
+      "online": "Online",
+      "descriptions": {
+        "tech": "Compatibility, specs, setup, and troubleshooting",
+        "afterSales": "Order tracking, warranty, returns, and post-purchase help",
+        "sales": "Pre-sales questions, pricing, and quotes",
+        "default": "Chat with our team for help and guidance"
+      }
+    },
+    "agentPanel": {
+      "status": {
+        "online": "Online",
+        "busy": "Busy",
+        "away": "Away",
+        "offline": "Offline"
+      },
+      "conversations": "Conversations",
+      "emptyConversations": "No conversations yet",
+      "noMessages": "No messages",
+      "refreshConversations": "Refresh conversations",
+      "backToList": "Back to conversation list",
+      "messagePlaceholder": "Type a message...",
+      "justNow": "Just now"
+    },
+    "tabs": {
+      "products": "Products",
+      "orders": "Orders",
+      "test": "Test",
+      "tire": "Tire",
+      "faq": "FAQ",
+      "warranty": "Warranty",
+      "member": "Member",
+      "calculator": "Calculator"
+    },
+    "transfer": {
+      "title": "Transfer conversation",
+      "targetAgentLabel": "Target agent *",
+      "targetAgentPlaceholder": "Select an agent",
+      "noteLabel": "Transfer note (optional)",
+      "notePlaceholder": "For example: the customer needs technical support...",
+      "cancel": "Cancel",
+      "transferring": "Transferring...",
+      "confirm": "Confirm transfer",
+      "alertSelectAgent": "Select an agent to transfer this conversation to.",
+      "alertCurrentAgent": "You cannot transfer the conversation to the current agent.",
+      "alertSuccess": "Conversation transferred to {agent}.",
+      "alertFailed": "Transfer failed.",
+      "alertRetry": "Transfer failed. Please try again later.",
+      "requestFailed": "Transfer request failed"
+    }
+  },
+  "checkout": {
+    "modal": {
+      "title": "Checkout",
+      "closeAriaLabel": "Close checkout",
+      "sslAlt": "Secure SSL",
+      "sslNote": "Pages use HTTPS with trusted SSL; we only store the result, not your card details.",
+      "pointsHint": "1 point = $0.01, max 50% of order",
+      "actions": {
+        "viewCart": "View cart",
+        "livechat": "Livechat",
+        "email": "Email"
+      },
+      "messages": {
+        "invalidQuote": "Invalid checkout quote response",
+        "unableRefreshQuote": "Unable to refresh checkout quote",
+        "cartSaved": "Your cart has been saved. We'll notify you when shipping becomes available to your region.",
+        "couponApplied": "Coupon applied successfully!",
+        "completeShipping": "Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.",
+        "selectPaypalCountry": "Please select a country/region we can ship to before continuing to PayPal.",
+        "orderSuccess": "Order submitted successfully!",
+        "orderFailed": "Order submission failed, please try again"
+      }
+    },
+    "order": {
+      "itemFallback": "Item"
+    },
+    "payment": {
+      "card": {
+        "title": "Credit / Debit cards",
+        "subtitle": "Secure card page",
+        "description": "Card details are entered on a secure payment page from our provider; we only store your order result.",
+        "stepperDescription": "Enter full shipping info and contact number here, then we redirect you to the PCI-compliant card page. We never store your card number or CVC.",
+        "cta": "Continue to secure payment",
+        "points": {
+          "shipping": "Required: full shipping info + contact number",
+          "immediate": "Use when you want to pay immediately with Visa / Mastercard."
+        }
+      },
+      "paypal": {
+        "title": "Pay with PayPal",
+        "optionTitle": "PayPal",
+        "subtitle": "Express checkout",
+        "description": "You will be redirected to PayPal. We never see or store your PayPal login or card information.",
+        "stepperDescription": "We rely on the shipping address saved in your PayPal account whenever possible. Choose a supported country first so we can confirm fulfillment.",
+        "cta": "Continue to PayPal",
+        "points": {
+          "country": "Required: select a shippable country before continuing."
+        }
+      },
+      "alipay": {
+        "title": "Alipay / WeChat / UnionPay",
+        "optionTitle": "Alipay / WeChat / UnionPay",
+        "subtitle": "Local wallets",
+        "description": "You approve the payment in your local wallet. We still collect shipping info here to prepare dispatch.",
+        "stepperDescription": "Approve payment inside your usual wallet. We still gather shipping details in this tab to prepare dispatch and confirm customs information.",
+        "cta": "Pay with local wallet",
+        "points": {
+          "recipient": "Required: recipient name + phone number",
+          "wallets": "Great for China-mainland wallets and UnionPay."
+        }
+      },
+      "stripe": {
+        "title": "Pay with Stripe",
+        "optionTitle": "Stripe",
+        "subtitle": "3D Secure ready",
+        "description": "Stripe handles your card details and any extra verification. We only store the payment status.",
+        "stepperDescription": "Stripe handles card input and any extra verification. We keep the form minimal here and let Stripe manage the sensitive fields.",
+        "cta": "Continue to Stripe",
+        "points": {
+          "sca": "Great for customers that require SCA/3DS."
+        }
+      },
+      "bank": {
+        "title": "Bank transfer",
+        "subtitle": "Manual invoice",
+        "description": "Place the order first, then send a bank transfer using the reference we show you on the next step.",
+        "stepperDescription": "Place the order, then transfer the funds using the bank instructions shown on the next step. Remember to include your order number as reference.",
+        "cta": "Place order for bank transfer",
+        "points": {
+          "reference": "Include your order number as payment reference."
+        }
+      },
+      "worldfirst": {
+        "title": "WorldFirst",
+        "optionTitle": "WorldFirst",
+        "subtitle": "Cross-border",
+        "description": "Send funds to a local WorldFirst account in your currency. We never access your banking credentials.",
+        "stepperDescription": "Ideal for international or business orders. You pay into a regional WorldFirst account in your currency; they settle the converted funds to us.",
+        "cta": "Continue with WorldFirst",
+        "points": {
+          "b2b": "Recommended for B2B cross-border payments."
+        }
+      }
+    },
+    "stepper": {
+      "common": {
+        "optional": "Optional"
+      },
+      "steps": {
+        "payment": "Choose payment method",
+        "shipping": "Shipping info",
+        "review": "Review & pay"
+      },
+      "payment": {
+        "pickProvider": "Pick a provider",
+        "stepCount": "Step {current} of {total}",
+        "tapCardHint": "Tap a card to view details",
+        "iconAltSuffix": "icon",
+        "selected": "Selected",
+        "tapToView": "Tap to view",
+        "continueWithMethod": "Continue with this method"
+      },
+      "shipping": {
+        "changePaymentMethod": "Change payment method",
+        "addressTitle": "Shipping address",
+        "addressHelp": "If shipping to your area isn't available yet, it doesn't always mean we can't deliver. Contact us and we'll check options for you.",
+        "countryRegion": "Country / Region",
+        "searchCountryPlaceholder": "Search country or region",
+        "selectCountry": "Select a country",
+        "availableForShipping": "Available for shipping",
+        "otherCountries": "Other countries",
+        "recipient": "Recipient",
+        "recipientPlaceholder": "Enter recipient name",
+        "phone": "Phone",
+        "phonePlaceholder": "Enter phone number",
+        "address": "Address",
+        "addressPlaceholder": "Enter detailed address",
+        "unavailableFallback": "Shipping unavailable for this country.",
+        "optionsIntro": "Don’t worry, we have options for you:",
+        "contactSpecialShipping": "Contact us for special shipping arrangements",
+        "useFreightForwarder": "Use a freight forwarder service",
+        "saveCartLater": "Save cart and check back later",
+        "estimatedDelivery": "Estimated delivery: {estimatedDelivery}",
+        "city": "City",
+        "cityPlaceholder": "City",
+        "zipCode": "Zip code",
+        "zipPlaceholder": "Zip code",
+        "continueToReview": "Continue to review →",
+        "completeShippingFirst": "Complete shipping info first",
+        "notRequiredForMethod": "Shipping details are not required for this method.",
+        "state": {
+          "selectCountry": "Select country",
+          "unavailable": "Unavailable",
+          "calculating": "Calculating...",
+          "free": "Free"
+        }
+      },
+      "review": {
+        "backToShipping": "Back to shipping",
+        "coupon": "Coupon",
+        "couponPlaceholder": "Enter code",
+        "applyingCoupon": "Applying…",
+        "applyCoupon": "Apply",
+        "couponApplied": "Coupon applied: {coupon}",
+        "usePointsDiscount": "Use Points Discount",
+        "pointsAvailable": "Available: {points} pts",
+        "noPoints": "No points available yet",
+        "usePoints": "Use points",
+        "pointsUnavailable": "Points unavailable",
+        "pointsToUse": "Points to use",
+        "earnPointsHint": "Earn points on your next order and apply them here for instant discounts.",
+        "orderNotes": "Order notes",
+        "orderNotesPlaceholder": "Add any delivery instructions or special requests…",
+        "orderSummary": "Order summary",
+        "continueToCheckout": "Continue to checkout"
+      },
+      "summary": {
+        "qty": "Qty",
+        "empty": "Order details will appear here once items are in your cart.",
+        "subtotal": "Subtotal",
+        "shipping": "Shipping",
+        "tax": "Tax",
+        "pointsDiscount": "Points discount",
+        "couponDiscount": "Coupon discount",
+        "giftCardDiscount": "Gift card discount",
+        "total": "Total"
+      }
     }
   },
   "common": {
@@ -143,6 +478,55 @@
     "loadMap": "Load interactive map",
     "previewAlt": "Map preview",
     "iframeTitle": "Google map"
+  },
+  "cookieConsent": {
+    "banner": {
+      "message": "We use cookies for a better experience.",
+      "learnMore": "Learn more",
+      "customize": "Customize",
+      "accept": "Accept"
+    },
+    "modal": {
+      "title": "Your Cookie Preferences",
+      "closeAriaLabel": "Close cookie preferences",
+      "descriptionBeforePolicy": "We use cookies to improve your experience on this website. You may choose which types of cookies to allow and change your preferences at any time. Disabling cookies may impact your experience on this website. You can learn more by viewing our ",
+      "policyLink": "Cookie Policy",
+      "descriptionAfterPolicy": "."
+    },
+    "options": {
+      "essential": {
+        "title": "Essential Cookies",
+        "description": "Cookies required to enable basic website functionality."
+      },
+      "performance": {
+        "title": "Performance Cookies",
+        "description": "Cookies used to understand how the website is being used."
+      },
+      "preference": {
+        "title": "Preference Cookies",
+        "description": "Cookies that are used to enhance the functionality of the website."
+      },
+      "advertising": {
+        "title": "Advertising Cookies",
+        "description": "Cookies used to deliver advertising that is more relevant to your interests."
+      }
+    },
+    "actions": {
+      "savePreferences": "Save Preferences",
+      "rejectAll": "Reject All Cookies",
+      "acceptAll": "Accept All Cookies"
+    }
+  },
+  "dockMenu": {
+    "openSidebar": "সাইডবার খুলুন",
+    "menu": "মেনু",
+    "chat": "চ্যাট",
+    "quickBuy": "দ্রুত কিনুন",
+    "quick": "দ্রুত",
+    "openCart": "কার্ট খুলুন",
+    "cart": "কার্ট",
+    "openWishlist": "ইচ্ছেতালিকা খুলুন",
+    "saved": "সংরক্ষিত"
   },
   "faq": {
     "title": "Frequently Asked Questions",
@@ -226,7 +610,8 @@
     "actions": {
       "removeAttachment": "Remove",
       "submit": "Send feedback",
-      "reset": "Start over"
+      "reset": "Start over",
+      "authCta": "Register / Login"
     },
     "messages": {
       "submitting": "Sending your feedback…",
@@ -809,6 +1194,22 @@
     "section9Title": "9. এই নীতির পরিবর্তন",
     "section9Body": "আমরা সময়ে সময়ে এই গোপনীয়তা নীতি আপডেট করতে পারি। যেকোনো পরিবর্তন এই পাতায় আপডেটেড কার্যকর তারিখসহ প্রকাশ করা হবে।"
   },
+  "productInformationTabs": {
+    "sectionLabel": "পণ্যের তথ্য",
+    "tabListLabel": "পণ্যের তথ্যের বিভাগ",
+    "tabs": {
+      "details": "বিস্তারিত",
+      "afterSales": "বিক্রয়োত্তর সেবা",
+      "packaging": "প্যাকেজিং",
+      "shipping": "শিপিং"
+    },
+    "empty": {
+      "details": "পণ্যের বিস্তারিত এখনও যোগ করা হয়নি।",
+      "afterSales": "বিক্রয়োত্তর সেবার তথ্য এখনও যোগ করা হয়নি।",
+      "packaging": "প্যাকেজিং তথ্য এখনও যোগ করা হয়নি।",
+      "shipping": "শিপিং তথ্য এখনও যোগ করা হয়নি।"
+    }
+  },
   "products": {
     "searchResults": "অনুসন্ধান ফলাফল",
     "searchFor": "অনুসন্ধান",
@@ -843,9 +1244,75 @@
   "promo": {
     "memberCta": "সদস্যদের জন্য সর্বোচ্চ ৫০% ছাড়"
   },
+  "quickBuy": {
+    "stepsAriaLabel": "দ্রুত কেনার ধাপ",
+    "fallbackNotice": "Quick Buy সেটআপ প্রিভিউ: backend ধাপগুলি এখনও কনফিগার করা হয়নি, তাই এই মডালটি ডিফল্ট placeholder flow দেখাচ্ছে।",
+    "search": {
+      "categoryLabel": "ক্যাটাগরি",
+      "placeholder": "পণ্য খুঁজুন... (Enter চাপুন বা একটু থামুন)"
+    },
+    "placeholder": {
+      "stepTitle": "ধাপ {step}",
+      "stepName": "ধাপ {step}"
+    },
+    "summary": {
+      "items": "আইটেম",
+      "weight": "ওজন",
+      "price": "মূল্য"
+    },
+    "actions": {
+      "toCart": "কার্টে যান",
+      "payment": "পেমেন্ট"
+    },
+    "defaultSteps": {
+      "productSearch": "পণ্য খুঁজুন",
+      "specifications": "স্পেসিফিকেশন বেছে নিন",
+      "quantity": "পরিমাণ নিশ্চিত করুন",
+      "cartReview": "কার্ট দেখুন",
+      "checkout": "চেকআউট"
+    },
+    "hints": {
+      "step1": "পণ্য খুঁজুন বা ফিল্টার করুন",
+      "step2": "স্পেসিফিকেশন/পরিমাণ নির্বাচন করুন",
+      "step3": "পণ্যের তথ্য নিশ্চিত করুন",
+      "step4": "আপনার অর্ডার সম্পন্ন করুন",
+      "step5": "শেষ করে পর্যালোচনা করুন",
+      "default": "এই ধাপটি সম্পন্ন করুন"
+    },
+    "footer": {
+      "step1": "পণ্য ফিল্টার করতে সার্চ বক্সে কীওয়ার্ড লিখুন",
+      "step2": "চালিয়ে যেতে পণ্যের স্পেসিফিকেশন ও পরিমাণ নির্বাচন করুন",
+      "step3": "পণ্যের তথ্য সঠিক কিনা নিশ্চিত করুন",
+      "step4": "প্রক্রিয়া জমা/চালিয়ে যেতে এই ধাপটি সম্পন্ন করুন",
+      "step5": "সব ধাপ সম্পন্ন হয়েছে",
+      "default": "চালিয়ে যেতে এই ধাপটি সম্পন্ন করুন"
+    }
+  },
   "search": {
     "placeholder": "অনুসন্ধান...",
     "button": "অনুসন্ধান"
+  },
+  "shopCategoryMenu": {
+    "ariaLabel": "দোকানের বিভাগ",
+    "loading": "বিভাগ লোড হচ্ছে...",
+    "all": "সব"
+  },
+  "shopPage": {
+    "categoryRailLabel": "দোকানের বিভাগ নেভিগেশন",
+    "products": {
+      "loading": "পণ্য লোড হচ্ছে...",
+      "empty": {
+        "title": "এখনও কোনো পণ্য উপলভ্য নেই।",
+        "description": "Tanzanite প্লাগইনের মাধ্যমে পণ্য প্রকাশিত হলে সেগুলো এখানে স্বয়ংক্রিয়ভাবে দেখা যাবে।"
+      }
+    },
+    "actions": {
+      "addToWishlist": "ইচ্ছেতালিকায় যোগ করুন",
+      "view": "দেখুন"
+    },
+    "feedback": {
+      "title": "Tanzanite দোকান সম্পর্কে আপনার মতামত জানান"
+    }
   },
   "sidebar": {
     "page1": "Category",
@@ -963,5 +1430,21 @@
     },
     "cardDesc": "Enter your product code to check warranty status and history.",
     "checkNow": "Check Now"
+  },
+  "wishlistDrawer": {
+    "title": "ইচ্ছেতালিকা",
+    "subtitle": "আপনি ইচ্ছেতালিকায় যে পণ্য যোগ করবেন তা এখানে দেখা যাবে।",
+    "closeAriaLabel": "ইচ্ছেতালিকা বন্ধ করুন",
+    "loading": "ইচ্ছেতালিকা লোড হচ্ছে...",
+    "productImageAlt": "পণ্যের ছবি",
+    "productFallback": "পণ্য",
+    "empty": {
+      "title": "আপনার ইচ্ছেতালিকা খালি",
+      "description": "পছন্দের পণ্য সংরক্ষণ করুন, যাতে পরে দ্রুত খুঁজে ও শেয়ার করতে পারেন।"
+    },
+    "actions": {
+      "shareToChat": "চ্যাটে শেয়ার করুন",
+      "remove": "সরান"
+    }
   }
 }

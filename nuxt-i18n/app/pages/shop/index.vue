@@ -1,6 +1,6 @@
 <template>
   <main class="shop-page w-full pt-0 pb-16 space-y-6">
-    <section class="rounded-xl bg-white/5 p-4 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
+    <section class="rounded-xl bg-white/5 p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
       <div class="flex flex-col gap-2">
         <div class="shop-search-row">
           <div class="shop-search-input-shell">
@@ -52,7 +52,7 @@
 
     <section class="shop-catalog-layout">
       <!-- Desktop category rail: local component, no external dependency. -->
-      <aside class="shop-category-rail" aria-label="Shop category navigation">
+      <aside class="shop-category-rail" :aria-label="$t('shopPage.categoryRailLabel', 'Shop category navigation')">
         <ShopCategoryVerticalMenu
           :categories="categories"
           :selected="selectedCategory"
@@ -73,9 +73,9 @@
           />
         </div>
 
-        <section class="rounded-xl bg-white/5 p-6 text-sm text-white/80 shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
+        <section class="rounded-xl bg-white/5 p-6 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
           <div v-if="loading" class="flex items-center justify-center py-12">
-            <p class="text-white/70 text-sm">Loading products...</p>
+            <p class="tz-text-secondary text-sm">{{ $t('shopPage.products.loading', 'Loading products...') }}</p>
           </div>
 
           <div v-else-if="error" class="py-8 text-center text-red-300 text-sm">
@@ -83,9 +83,9 @@
           </div>
 
           <div v-else-if="products.length === 0" class="py-10 text-center space-y-2">
-            <p class="text-white/70">No products are available yet.</p>
-            <p class="text-white/40 text-xs">
-              Once products are published via the Tanzanite plugin, they will appear here automatically.
+            <p class="tz-text-primary">{{ $t('shopPage.products.empty.title', 'No products are available yet.') }}</p>
+            <p class="tz-text-secondary text-xs">
+              {{ $t('shopPage.products.empty.description', 'Once products are published via the Tanzanite plugin, they will appear here automatically.') }}
             </p>
           </div>
 
@@ -103,7 +103,7 @@
                   class="w-full h-full object-cover"
                   loading="lazy"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center text-white/30 text-2xl">
+                <div v-else class="w-full h-full flex items-center justify-center tz-text-muted text-2xl">
                   📦
                 </div>
               </div>
@@ -118,8 +118,9 @@
                   <button
                     type="button"
                     @click="handleAddToWishlist(product)"
-                    class="w-8 h-8 flex items-center justify-center rounded-full border border-white/25 text-white/80 hover:bg-white/15 transition-colors"
-                    title="Add to wishlist"
+                    class="w-8 h-8 flex items-center justify-center rounded-full border border-white/25 tz-text-secondary hover:bg-white/15 transition-colors"
+                    :title="$t('shopPage.actions.addToWishlist', 'Add to wishlist')"
+                    :aria-label="$t('shopPage.actions.addToWishlist', 'Add to wishlist')"
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -135,7 +136,7 @@
                     :to="product.url"
                     class="flex-1 px-2 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 rounded text-[11px] text-white text-center transition-all"
                   >
-                    View
+                    {{ $t('shopPage.actions.view', 'View') }}
                   </NuxtLink>
                 </div>
               </div>
@@ -148,7 +149,7 @@
     <section class="mt-10">
       <UserFeedbackThread
         threadKey="shop-page"
-        title="Share your feedback about the Tanzanite shop"
+        :title="$t('shopPage.feedback.title', 'Share your feedback about the Tanzanite shop')"
       />
     </section>
   </main>
@@ -482,7 +483,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   .shop-mobile-categories {
     display: block;
     margin-bottom: 0.75rem;
-    overflow-x: auto;
+    width: 100%;
   }
 }
 
@@ -537,7 +538,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 }
 
 .shop-search-input-inner::placeholder {
-  color: rgba(148,163,184,0.7);
+  color: var(--tz-text-muted);
 }
 
 @media (max-width: 400px) {

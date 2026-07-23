@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Carrito de compras",
+  "title": "Carrito",
+  "closeAriaLabel": "Cerrar carrito",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Añadir a favoritos",
+    "remove": "Eliminar",
+    "continueShopping": "Seguir comprando",
+    "checkout": "Pagar"
+  },
+  "empty": {
+    "title": "Tu carrito está vacío",
+    "description": "¡Añade algunos productos para empezar!"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "shipping": "Envío",
+    "calculatedAtCheckout": "Calculado al pagar",
+    "tax": "Impuestos",
+    "estimatedTotal": "Total estimado",
+    "finalShippingNote": "El envío final usa la cotización del backend después de elegir un destino."
+  }
+}

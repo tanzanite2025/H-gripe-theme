@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Корзина",
+  "title": "Корзина",
+  "closeAriaLabel": "Закрыть корзину",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Добавить в избранное",
+    "remove": "Удалить",
+    "continueShopping": "Продолжить покупки",
+    "checkout": "Оформить"
+  },
+  "empty": {
+    "title": "Ваша корзина пуста",
+    "description": "Добавьте несколько товаров, чтобы начать!"
+  },
+  "summary": {
+    "subtotal": "Промежуточный итог",
+    "shipping": "Доставка",
+    "calculatedAtCheckout": "Рассчитывается при оформлении",
+    "tax": "Налог",
+    "estimatedTotal": "Ориентировочный итог",
+    "finalShippingNote": "Окончательная стоимость доставки рассчитывается backend после выбора пункта назначения."
+  }
+}

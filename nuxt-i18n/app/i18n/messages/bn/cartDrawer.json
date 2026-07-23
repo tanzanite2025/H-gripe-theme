@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "শপিং কার্ট",
+  "title": "কার্ট",
+  "closeAriaLabel": "কার্ট বন্ধ করুন",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "ইচ্ছেতালিকায় যোগ করুন",
+    "remove": "সরান",
+    "continueShopping": "কেনাকাটা চালিয়ে যান",
+    "checkout": "চেকআউট"
+  },
+  "empty": {
+    "title": "আপনার কার্ট খালি",
+    "description": "শুরু করতে কিছু পণ্য যোগ করুন!"
+  },
+  "summary": {
+    "subtotal": "উপমোট",
+    "shipping": "শিপিং",
+    "calculatedAtCheckout": "চেকআউটে হিসাব হবে",
+    "tax": "কর",
+    "estimatedTotal": "আনুমানিক মোট",
+    "finalShippingNote": "গন্তব্য নির্বাচন করার পর চূড়ান্ত শিপিং backend quote দিয়ে হিসাব হবে।"
+  }
+}

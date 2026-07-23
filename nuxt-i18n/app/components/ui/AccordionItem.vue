@@ -5,12 +5,12 @@
     <button
       type="button"
       class="accordion-header w-full text-left p-3 md:p-4 flex items-center justify-between group transition-colors duration-200"
-      :class="{ 'text-sky-400': isActive, 'text-slate-300 hover:bg-white/5': !isActive }"
+      :class="{ 'text-sky-400': isActive, 'tz-text-secondary hover:bg-white/5': !isActive }"
       @click="toggleItem(id)"
     >
       <div class="flex flex-col">
         <span class="text-base font-bold">{{ title }}</span>
-        <span v-if="subtitle" class="text-xs text-slate-500 font-normal mt-0.5">{{ subtitle }}</span>
+        <span v-if="subtitle" class="text-xs tz-text-muted font-normal mt-0.5">{{ subtitle }}</span>
       </div>
       
       <!-- Icon Indicator -->
@@ -29,7 +29,7 @@
           stroke-linecap="round" 
           stroke-linejoin="round"
           class="transition-colors duration-200"
-          :class="{ 'text-sky-400': isActive, 'text-slate-400': !isActive }"
+          :class="{ 'text-sky-400': isActive, 'tz-text-muted': !isActive }"
         >
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>

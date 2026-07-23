@@ -244,7 +244,7 @@ const setActiveTab = (id: SizeChartsTabId | string) => {
 .products-page__intro {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .products-page__title--sr-only {

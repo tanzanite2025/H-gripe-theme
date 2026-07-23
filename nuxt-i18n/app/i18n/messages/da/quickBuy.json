@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Trin for hurtig køb",
+  "fallbackNotice": "Forhåndsvisning af Quick Buy: backend-trinene er ikke konfigureret endnu, så dette vindue viser standardforløbet.",
+  "search": {
+    "categoryLabel": "Kategori",
+    "placeholder": "Søg produkter... (Enter eller pause for at søge)"
+  },
+  "placeholder": {
+    "stepTitle": "Trin {step}",
+    "stepName": "Trin {step}"
+  },
+  "summary": {
+    "items": "Varer",
+    "weight": "Vægt",
+    "price": "Pris"
+  },
+  "actions": {
+    "toCart": "Til kurv",
+    "payment": "Betaling"
+  },
+  "defaultSteps": {
+    "productSearch": "Søg produkter",
+    "specifications": "Vælg specifikationer",
+    "quantity": "Bekræft antal",
+    "cartReview": "Gennemgå kurv",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Søg eller filtrer produkter",
+    "step2": "Vælg specifikationer/antal",
+    "step3": "Bekræft produktoplysninger",
+    "step4": "Gennemfør din ordre",
+    "step5": "Afslut og gennemgå",
+    "default": "Gennemfør dette trin"
+  },
+  "footer": {
+    "step1": "Indtast søgeord i søgefeltet for at filtrere produkter",
+    "step2": "Vælg produktspecifikationer og antal for at fortsætte",
+    "step3": "Bekræft, at produktoplysningerne er korrekte",
+    "step4": "Gennemfør dette trin for at sende/fortsætte processen",
+    "step5": "Alle trin er gennemført",
+    "default": "Gennemfør dette trin for at fortsætte"
+  }
+}

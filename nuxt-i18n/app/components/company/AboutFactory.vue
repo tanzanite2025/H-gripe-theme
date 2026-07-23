@@ -6,7 +6,7 @@
 
         <div>
           <h3 class="text-lg font-bold text-white mb-2">{{ item.title }}</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">{{ item.desc }}</p>
+          <p class="text-sm tz-text-secondary leading-relaxed">{{ item.desc }}</p>
         </div>
       </div>
     </div>
@@ -15,7 +15,7 @@
     <div class="text-center mb-8 lg:mb-12 relative">
         <div class="inline-flex items-center justify-center w-12 h-1 mb-4 rounded-full bg-gradient-to-r from-teal-500 to-blue-500"></div>
         <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Manufacturing Process</h2>
-        <p class="text-slate-400 max-w-2xl mx-auto">From raw material to final packing—precision at every step.</p>
+        <p class="tz-text-secondary max-w-2xl mx-auto">From raw material to final packing—precision at every step.</p>
     </div>
 
     <!-- Process Steps Grid -->
@@ -46,7 +46,7 @@
             <h3 class="text-base font-bold text-white mb-2 group-hover:text-teal-400 transition-colors">
               {{ step.fullTitle }}
             </h3>
-            <p class="text-sm text-slate-400 leading-relaxed">
+            <p class="text-sm tz-text-secondary leading-relaxed">
               {{ step.desc }}
             </p>
           </div>

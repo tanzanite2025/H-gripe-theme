@@ -47,19 +47,19 @@
     >
       <SmartAccordion default-id="rim-build">
         <AccordionItem id="rim-build" title="1. RIM BUILD">
-           <div class="p-4 text-slate-400 text-sm">
+           <div class="p-4 tz-text-secondary text-sm">
               Details about Rim Build...
            </div>
         </AccordionItem>
 
         <AccordionItem id="wheelset-build" title="2. WHEELSET BUILD">
-           <div class="p-4 text-slate-400 text-sm">
+           <div class="p-4 tz-text-secondary text-sm">
               Details about Wheelset Build...
            </div>
         </AccordionItem>
 
         <AccordionItem id="carbon-spoke-build" title="3. CARBON SPOKE BUILD">
-           <div class="p-4 text-slate-400 text-sm">
+           <div class="p-4 tz-text-secondary text-sm">
               Details about Carbon Spoke Build...
            </div>
         </AccordionItem>
@@ -185,7 +185,7 @@ useHead({
 .company-page__intro {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 /* Page-level tabs are handled by PageTabBar. */
@@ -199,14 +199,14 @@ useHead({
   font-size: var(--tz-type-section-title);
   line-height: 1.35;
   font-weight: 600;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   text-align: center;
 }
 
 .company-section__body {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.95);
+  color: var(--tz-text-secondary);
   text-align: center;
 }
 
@@ -215,7 +215,7 @@ useHead({
   padding-left: 0;
   list-style-type: none;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.95);
+  color: var(--tz-text-secondary);
   text-align: center;
 }
 
@@ -229,7 +229,7 @@ useHead({
   border-radius: 9999px;
   border: 1px solid rgba(148, 163, 184, 0.6);
   background: rgba(15, 23, 42, 0.9);
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -271,13 +271,13 @@ useHead({
   margin: 0 0 0.35rem;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .company-values__body {
   margin: 0;
   font-size: 0.9rem;
-  color: rgba(148, 163, 184, 0.95);
+  color: var(--tz-text-secondary);
 }
 
 .company-timeline {
@@ -300,13 +300,13 @@ useHead({
 .company-timeline__year {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   min-width: 3.5rem;
 }
 
 .company-timeline__content {
   font-size: 0.9rem;
-  color: rgba(148, 163, 184, 0.95);
+  color: var(--tz-text-secondary);
 }
 
 .company-feedback {

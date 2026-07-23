@@ -27,7 +27,7 @@
         <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
           Rim Technology
         </h3>
-        <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-2xl mx-auto">
+      <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-2xl mx-auto">
           The rim is the rotating mass furthest from the center. Its weight, aerodynamics, and width directly define the riding character—responsiveness, comfort, and speed.
         </p>
 
@@ -35,15 +35,15 @@
         <div class="grid grid-cols-3 gap-2 md:gap-4 max-w-lg mx-auto mb-4">
           <div class="bg-indigo-500/10 rounded-lg p-3">
              <span class="block text-xl font-bold text-indigo-400">Toray</span>
-             <span class="text-[10px] uppercase tracking-wider text-slate-500">Carbon Fiber</span>
+             <span class="text-[10px] uppercase tracking-wider tz-text-muted">Carbon Fiber</span>
           </div>
           <div class="bg-indigo-500/10 rounded-lg p-3">
              <span class="block text-xl font-bold text-indigo-400">UCI</span>
-             <span class="text-[10px] uppercase tracking-wider text-slate-500">Approved</span>
+             <span class="text-[10px] uppercase tracking-wider tz-text-muted">Approved</span>
           </div>
           <div class="bg-indigo-500/10 rounded-lg p-3">
              <span class="block text-xl font-bold text-indigo-400">3-Year</span>
-             <span class="text-[10px] uppercase tracking-wider text-slate-500">Warranty</span>
+             <span class="text-[10px] uppercase tracking-wider tz-text-muted">Warranty</span>
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@
       <div class="mb-10">
          <div class="flex items-center justify-center gap-2 mb-6">
             <div class="h-px w-8 bg-slate-700"></div>
-            <h4 class="text-slate-200 font-bold text-base uppercase tracking-wider">Rim Profiles</h4>
+        <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Rim Profiles</h4>
             <div class="h-px w-8 bg-slate-700"></div>
          </div>
 
@@ -61,9 +61,9 @@
             <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 transition-transform hover:-translate-y-1">
                <div class="flex justify-between items-start mb-4">
                   <span class="text-sm font-bold text-slate-100">Shallow Depth</span>
-                  <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded">30mm - 40mm</span>
+          <span class="text-xs bg-slate-800 tz-text-muted px-2 py-1 rounded">30mm - 40mm</span>
                </div>
-               <p class="text-xs text-slate-400 leading-relaxed mb-3">
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">
                  Minimized rotational weight for instant acceleration and climbing efficiency. Less affected by crosswinds.
                </p>
                <div class="text-xs text-indigo-400 font-medium uppercase tracking-wide">
@@ -74,9 +74,9 @@
             <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 transition-transform hover:-translate-y-1">
                <div class="flex justify-between items-start mb-4">
                   <span class="text-sm font-bold text-slate-100">Aero Depth</span>
-                  <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded">45mm - 65mm+</span>
+          <span class="text-xs bg-slate-800 tz-text-muted px-2 py-1 rounded">45mm - 65mm+</span>
                </div>
-               <p class="text-xs text-slate-400 leading-relaxed mb-3">
+          <p class="text-xs tz-text-secondary leading-relaxed mb-3">
                  Maximizes aerodynamic advantage by smoothing airflow. Maintains momentum at high speeds (35km/h+).
                </p>
                <div class="text-xs text-indigo-400 font-medium uppercase tracking-wide">
@@ -90,7 +90,7 @@
       <div class="mb-10">
          <div class="flex items-center justify-center gap-2 mb-6">
             <div class="h-px w-8 bg-slate-700"></div>
-            <h4 class="text-slate-200 font-bold text-base uppercase tracking-wider">Rim Width & Tire Fit</h4>
+        <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Rim Width & Tire Fit</h4>
             <div class="h-px w-8 bg-slate-700"></div>
          </div>
          
@@ -98,14 +98,14 @@
            <div class="flex flex-col md:flex-row gap-8 items-center">
               <div class="flex-1 space-y-4">
                  <div>
-                   <strong class="block text-slate-200 text-sm mb-1">Internal Width (ID)</strong>
-                   <p class="text-xs text-slate-400 leading-relaxed">
+          <strong class="block tz-text-primary text-sm mb-1">Internal Width (ID)</strong>
+          <p class="text-xs tz-text-secondary leading-relaxed">
                      Determines the tire shape. Wider ID (e.g., 21mm+) allows tires to "balloon" properly, creating a wider contact patch, lower rolling resistance, and better grip.
                    </p>
                  </div>
                  <div>
-                   <strong class="block text-slate-200 text-sm mb-1">External Width (OD)</strong>
-                   <p class="text-xs text-slate-400 leading-relaxed">
+          <strong class="block tz-text-primary text-sm mb-1">External Width (OD)</strong>
+          <p class="text-xs tz-text-secondary leading-relaxed">
                      Should ideally be slightly wider than the tire (Rule of 105%) for optimal straight-line aerodynamics.
                    </p>
                  </div>
@@ -131,17 +131,17 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
          <!-- Hooked -->
          <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-b-2 border-slate-700">
-            <h5 class="text-slate-200 font-bold mb-3">Hooked (Crotchet)</h5>
-            <p class="text-xs text-slate-400 leading-relaxed mb-4 min-h-[3rem]">
+        <h5 class="tz-text-primary font-bold mb-3">Hooked (Crotchet)</h5>
+            <p class="text-xs tz-text-secondary leading-relaxed mb-4 min-h-[3rem]">
               Traditional design with bead hooks. Compatible with almost all clincher and tubeless tires. High pressure tolerance.
             </p>
-            <span class="inline-block px-3 py-1 bg-slate-800 text-slate-300 text-[10px] uppercase font-bold rounded-full">Universal Compatibility</span>
+            <span class="inline-block px-3 py-1 bg-slate-800 tz-text-secondary text-[10px] uppercase font-bold rounded-full">Universal Compatibility</span>
          </div>
 
          <!-- Hookless -->
          <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-b-2 border-indigo-500">
             <h5 class="text-indigo-400 font-bold mb-3">Hookless (TSS)</h5>
-            <p class="text-xs text-slate-400 leading-relaxed mb-4 min-h-[3rem]">
+            <p class="text-xs tz-text-secondary leading-relaxed mb-4 min-h-[3rem]">
               Modern straight-wall design. Lighter, stronger rim wall, and more aero transition to tire.
               <br/><span class="text-rose-400/80 mt-1 block">*Requires Tubeless-Ready Tires & Max 73psi (5 bar).</span>
             </p>
@@ -158,13 +158,13 @@
           <div>
              <div class="flex items-center justify-center gap-2 mb-6">
                 <div class="h-px w-8 bg-slate-700"></div>
-                <h4 class="text-slate-200 font-bold text-base uppercase tracking-wider">1. Rim Bed Drilling Options</h4>
+                <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">1. Rim Bed Drilling Options</h4>
                 <div class="h-px w-8 bg-slate-700"></div>
              </div>
 
              <div class="overflow-x-auto rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800">
-                <table class="w-full text-sm text-left text-slate-400">
-                   <thead class="text-xs text-slate-200 uppercase bg-slate-800/80">
+                <table class="w-full text-sm text-left tz-text-secondary">
+                   <thead class="text-xs tz-text-primary uppercase bg-slate-800/80">
                       <tr>
                          <th scope="col" class="px-6 py-4 font-bold">Feature</th>
                          <th scope="col" class="px-6 py-4 font-bold text-indigo-400">No-Tape (Undrilled)</th>
@@ -173,27 +173,27 @@
                    </thead>
                    <tbody class="divide-y divide-slate-800">
                       <tr class="bg-[#11151e] hover:bg-slate-800/30">
-                         <td class="px-6 py-4 font-medium text-slate-300">Structure</td>
+                         <td class="px-6 py-4 font-medium tz-text-primary">Structure</td>
                          <td class="px-6 py-4">No spoke access holes in rim bed.</td>
                          <td class="px-6 py-4">Has spoke access holes.</td>
                       </tr>
                       <tr class="bg-[#11151e] hover:bg-slate-800/30">
-                         <td class="px-6 py-4 font-medium text-slate-300">Airtightness</td>
+                         <td class="px-6 py-4 font-medium tz-text-primary">Airtightness</td>
                          <td class="px-6 py-4">Better (Inherently airtight).</td>
                          <td class="px-6 py-4"><span class="text-amber-500">Requires tubeless tape.</span></td>
                       </tr>
                       <tr class="bg-[#11151e] hover:bg-slate-800/30">
-                         <td class="px-6 py-4 font-medium text-slate-300">Weight</td>
+                         <td class="px-6 py-4 font-medium tz-text-primary">Weight</td>
                          <td class="px-6 py-4">Adds ~1-3g (Negligible).</td>
                          <td class="px-6 py-4">Standard weight + Tape weight.</td>
                       </tr>
                        <tr class="bg-[#11151e] hover:bg-slate-800/30">
-                         <td class="px-6 py-4 font-medium text-slate-300">Assembly Difficulty</td>
+                         <td class="px-6 py-4 font-medium tz-text-primary">Assembly Difficulty</td>
                          <td class="px-6 py-4 text-amber-500">More difficult (Nipple guidance required).</td>
                          <td class="px-6 py-4 text-emerald-500">Easier assembly.</td>
                       </tr>
                       <tr class="bg-[#11151e] hover:bg-slate-800/30">
-                         <td class="px-6 py-4 font-medium text-slate-300">Compabitility</td>
+                         <td class="px-6 py-4 font-medium tz-text-primary">Compabitility</td>
                          <td class="px-6 py-4">
                             <div class="space-y-1">
                                <div class="flex items-center gap-2"><span class="text-emerald-500">✓</span> Tubeless Tires</div>
@@ -221,17 +221,17 @@
           <!-- 2. Symmetry & Drilling Pattern -->
           <div class="grid md:grid-cols-2 gap-6">
              <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5">
-                <h5 class="flex items-center gap-2 text-slate-200 font-bold mb-3">
+                <h5 class="flex items-center gap-2 tz-text-primary font-bold mb-3">
                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> 2. Symmetrical Comparison
                 </h5>
                 <div class="space-y-4">
                    <div class="bg-indigo-500/5 p-3 rounded-lg">
                       <strong class="block text-indigo-400 text-sm mb-1">Symmetrical (Default 1:1)</strong>
-                      <p class="text-xs text-slate-400">Most stable load distribution. Recommended standard option.</p>
+                      <p class="text-xs tz-text-secondary">Most stable load distribution. Recommended standard option.</p>
                    </div>
                    <div class="bg-slate-800/30 p-3 rounded-lg border border-slate-700/50">
-                      <strong class="block text-slate-300 text-sm mb-1">Asymmetrical (e.g., 2:1)</strong>
-                      <p class="text-xs text-slate-400">
+                      <strong class="block tz-text-primary text-sm mb-1">Asymmetrical (e.g., 2:1)</strong>
+                      <p class="text-xs tz-text-secondary">
                          Requires specific hub compatibility. Custom option (CAD drawing needed). Please contact support.
                       </p>
                    </div>
@@ -240,22 +240,22 @@
 
              <!-- 4. Drain Holes -->
              <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5">
-                <h5 class="flex items-center gap-2 text-slate-200 font-bold mb-3">
+                <h5 class="flex items-center gap-2 tz-text-primary font-bold mb-3">
                    <span class="w-2 h-2 rounded-full bg-sky-500"></span> 4. Drain Holes
                 </h5>
                 <div class="space-y-3">
                    <div class="flex items-start gap-3">
                       <span class="mt-1 w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
                       <div>
-                         <strong class="text-slate-300 text-sm block">With Drain Holes</strong>
-                         <p class="text-xs text-slate-400">Recommended for frequent wet or rainy riding conditions.</p>
+                         <strong class="tz-text-primary text-sm block">With Drain Holes</strong>
+                         <p class="text-xs tz-text-secondary">Recommended for frequent wet or rainy riding conditions.</p>
                       </div>
                    </div>
                    <div class="flex items-start gap-3">
                       <span class="mt-1 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
                       <div>
-                         <strong class="text-slate-300 text-sm block">Without Drain Holes</strong>
-                         <p class="text-xs text-slate-400">Suitable for dry environments. Reduces extra drilling.</p>
+                         <strong class="tz-text-primary text-sm block">Without Drain Holes</strong>
+                         <p class="text-xs tz-text-secondary">Suitable for dry environments. Reduces extra drilling.</p>
                       </div>
                    </div>
                 </div>
@@ -266,7 +266,7 @@
           <div>
             <div class="flex items-center justify-center gap-2 mb-6">
                 <div class="h-px w-8 bg-slate-700"></div>
-                <h4 class="text-slate-200 font-bold text-base uppercase tracking-wider">3. Valve Hole Standards</h4>
+                <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">3. Valve Hole Standards</h4>
                 <div class="h-px w-8 bg-slate-700"></div>
              </div>
              
@@ -274,10 +274,10 @@
                 <!-- Presta -->
                 <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 border-l-4 border-emerald-500">
                    <div class="flex justify-between items-start mb-3">
-                      <h5 class="text-lg font-bold text-slate-200">Presta Valve</h5>
+                   <h5 class="text-lg font-bold tz-text-primary">Presta Valve</h5>
                       <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded uppercase font-bold">Default</span>
                    </div>
-                   <ul class="space-y-2 text-sm text-slate-400 mb-4">
+                   <ul class="space-y-2 text-sm tz-text-secondary mb-4">
                       <li>• Hole Diameter: ~6.5mm</li>
                       <li>• Lightweight standard for Road/MTB/Tubeless.</li>
                       <li>• All our rims default to Presta.</li>
@@ -290,10 +290,10 @@
                 <!-- Schrader -->
                 <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 opacity-75 grayscale hover:grayscale-0 transition-all duration-300 border-l-4 border-slate-600">
                    <div class="flex justify-between items-start mb-3">
-                      <h5 class="text-lg font-bold text-slate-200">Schrader Valve</h5>
-                      <span class="text-[10px] bg-slate-700 text-slate-400 px-2 py-1 rounded uppercase font-bold">Rare</span>
+                      <h5 class="text-lg font-bold tz-text-primary">Schrader Valve</h5>
+                      <span class="text-[10px] bg-slate-700 tz-text-muted px-2 py-1 rounded uppercase font-bold">Rare</span>
                    </div>
-                   <ul class="space-y-2 text-sm text-slate-400">
+                   <ul class="space-y-2 text-sm tz-text-secondary">
                       <li>• Hole Diameter: ~8.5mm</li>
                       <li>• Common in city/kids/fat bikes.</li>
                       <li>• Rarely used in high-end performance rims.</li>
@@ -310,8 +310,8 @@
              </h5>
              <div class="grid md:grid-cols-2 gap-6 text-sm">
                 <div>
-                   <strong class="block text-slate-200 mb-2">Incorrect Drilling Angle</strong>
-                   <p class="text-slate-400 leading-relaxed mb-2">
+                   <strong class="block tz-text-primary mb-2">Incorrect Drilling Angle</strong>
+                   <p class="tz-text-secondary leading-relaxed mb-2">
                       May cause uneven spoke tension and increase breakage risk.
                    </p>
                    <p class="text-emerald-400 text-xs">
@@ -319,8 +319,8 @@
                    </p>
                 </div>
                 <div>
-                   <strong class="block text-slate-200 mb-2">Closed Tubeless Rim Bed</strong>
-                   <p class="text-slate-400 leading-relaxed">
+                   <strong class="block tz-text-primary mb-2">Closed Tubeless Rim Bed</strong>
+                   <p class="tz-text-secondary leading-relaxed">
                       More difficult to assemble. Requires professional tools/experience. We recommend professional installation or our pre-nipple installation service.
                    </p>
                 </div>

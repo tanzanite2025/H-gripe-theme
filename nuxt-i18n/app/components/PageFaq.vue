@@ -12,14 +12,14 @@
         <h3 
           v-if="displayTitle"
           class="page-faq__title tz-faq-title hidden"
-          :class="theme === 'dark' ? 'text-white/90' : 'text-gray-800'"
+          :class="theme === 'dark' ? 'tz-text-primary' : 'text-gray-800'"
         >
           {{ displayTitle }}
         </h3>
         <p 
           v-if="faqData?.subtitle"
           class="page-faq__subtitle tz-faq-subtitle max-w-2xl mx-auto"
-          :class="theme === 'dark' ? 'text-slate-400' : 'text-gray-500'"
+          :class="theme === 'dark' ? 'tz-text-secondary' : 'text-gray-600'"
         >
           {{ faqData.subtitle }}
         </p>
@@ -42,7 +42,7 @@
           >
             <h4 
               class="page-faq__category-title tz-faq-category-title"
-              :class="theme === 'dark' ? 'text-slate-200' : 'text-gray-800'"
+              :class="theme === 'dark' ? 'tz-text-primary' : 'text-gray-800'"
             >
               {{ category.name }}
             </h4>
@@ -76,7 +76,7 @@
                 <span 
                   class="page-faq__question-text tz-faq-question flex-1 transition-colors"
                   :class="[
-                    theme === 'dark' ? 'text-slate-300' : 'text-gray-800',
+                    theme === 'dark' ? 'tz-text-secondary' : 'text-gray-800',
                     expandedItems.has(item.id) ? (theme === 'dark' ? 'text-sky-400' : 'text-blue-600') : 'group-hover:text-sky-400'
                   ]"
                 >
@@ -87,7 +87,7 @@
                   :class="[
                     expandedItems.has(item.id) 
                       ? (theme === 'dark' ? 'bg-sky-500/10 text-sky-400 rotate-180' : 'bg-blue-100 text-blue-600 rotate-180')
-                      : (theme === 'dark' ? 'text-slate-500 bg-transparent' : 'text-gray-400 bg-transparent')
+                      : (theme === 'dark' ? 'tz-text-muted bg-transparent' : 'text-gray-500 bg-transparent')
                   ]"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +112,7 @@
                 >
                   <div 
                     class="page-faq__answer tz-faq-answer px-4 pb-4 pt-1"
-                    :class="theme === 'dark' ? 'text-slate-400' : 'text-gray-600'"
+                    :class="theme === 'dark' ? 'tz-text-secondary' : 'text-gray-600'"
                     v-html="item.answer"
                   />
                 </div>
@@ -126,7 +126,7 @@
       <div 
         v-else
         class="text-center py-12 rounded-2xl border-2 border-dashed"
-        :class="theme === 'dark' ? 'border-slate-800 text-slate-500' : 'border-gray-200 text-gray-400'"
+        :class="theme === 'dark' ? 'border-slate-800 tz-text-muted' : 'border-gray-200 text-gray-500'"
       >
         <p class="text-sm">No FAQs available for this section.</p>
       </div>
@@ -140,7 +140,7 @@
           :to="localePath('/support/faqs')"
           class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5"
           :class="theme === 'dark' 
-            ? 'bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-slate-900/50' 
+            ? 'bg-slate-800 tz-text-secondary hover:bg-slate-700 hover:text-white hover:shadow-slate-900/50'
             : 'bg-gray-800 text-white hover:bg-gray-700'"
         >
           View All FAQs

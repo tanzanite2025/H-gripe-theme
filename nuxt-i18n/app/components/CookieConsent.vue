@@ -8,30 +8,30 @@
         class="fixed bottom-0 left-0 right-0 z-[9999] bg-slate-900/95 backdrop-blur-sm border-t border-slate-700 shadow-lg"
       >
         <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-center gap-4 sm:justify-between">
-          <p class="text-sm text-slate-300 text-center sm:text-left">
-            We use cookies for a better experience. 
+          <p class="text-sm tz-text-secondary text-center sm:text-left">
+            {{ t('cookieConsent.banner.message') }}
             <NuxtLink 
               to="/policies/cookie"
               class="text-cyan-400 hover:text-cyan-300 underline"
               @click="hideBanner"
             >
-              Learn more
+              {{ t('cookieConsent.banner.learnMore') }}
             </NuxtLink>
           </p>
           <div class="flex items-center gap-3">
             <button 
               type="button"
-              class="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 border border-slate-600 rounded-full hover:bg-slate-700 hover:text-white transition-colors"
+              class="px-4 py-2 text-sm font-medium tz-text-secondary bg-slate-800 border border-slate-600 rounded-full hover:bg-slate-700 hover:text-white transition-colors"
               @click="showModal = true"
             >
-              Customize
+              {{ t('cookieConsent.banner.customize') }}
             </button>
             <button 
               type="button"
               class="px-4 py-2 text-sm font-medium text-black bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full hover:from-cyan-500 hover:to-cyan-600 transition-all shadow-lg shadow-cyan-500/25"
               @click="handleAcceptAll"
             >
-              Accept
+              {{ t('cookieConsent.banner.accept') }}
             </button>
           </div>
         </div>
@@ -48,12 +48,12 @@
         <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl shadow-cyan-500/10 max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <!-- Header -->
           <div class="flex items-center justify-between p-6 pb-4">
-            <h2 class="text-xl font-bold text-white">Your Cookie Preferences</h2>
+            <h2 class="text-xl font-bold text-white">{{ t('cookieConsent.modal.title') }}</h2>
             <button 
               type="button"
-              class="text-slate-400 hover:text-white transition-colors"
+              class="tz-text-secondary hover:text-white transition-colors"
               @click="showModal = false"
-              aria-label="Close"
+              :aria-label="t('cookieConsent.modal.closeAriaLabel')"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -63,13 +63,11 @@
 
           <!-- Description -->
           <div class="px-6 pb-4">
-            <p class="text-sm text-slate-400 leading-relaxed">
-              We use cookies to improve your experience on this website. You may choose which types 
-              of cookies to allow and change your preferences at any time. Disabling cookies may 
-              impact your experience on this website. You can learn more by viewing our 
+            <p class="text-sm tz-text-secondary leading-relaxed">
+              {{ t('cookieConsent.modal.descriptionBeforePolicy') }}
               <NuxtLink to="/policies/cookie" class="text-cyan-400 hover:text-cyan-300 hover:underline" @click="hideAll">
-                Cookie Policy
-              </NuxtLink>.
+                {{ t('cookieConsent.modal.policyLink') }}
+              </NuxtLink>{{ t('cookieConsent.modal.descriptionAfterPolicy') }}
             </p>
           </div>
 
@@ -85,8 +83,8 @@
                 class="mt-1 w-4 h-4 accent-cyan-500 rounded cursor-not-allowed"
               />
               <div>
-                <label for="essential" class="text-sm font-semibold text-white">Essential Cookies</label>
-                <p class="text-xs text-slate-500 mt-0.5">Cookies required to enable basic website functionality.</p>
+                <label for="essential" class="text-sm font-semibold text-white">{{ t('cookieConsent.options.essential.title') }}</label>
+                <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.essential.description') }}</p>
               </div>
             </div>
 
@@ -99,8 +97,8 @@
                 class="mt-1 w-4 h-4 accent-cyan-500 rounded cursor-pointer"
               />
               <div>
-                <label for="performance" class="text-sm font-semibold text-white cursor-pointer">Performance Cookies</label>
-                <p class="text-xs text-slate-500 mt-0.5">Cookies used to understand how the website is being used.</p>
+                <label for="performance" class="text-sm font-semibold text-white cursor-pointer">{{ t('cookieConsent.options.performance.title') }}</label>
+                <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.performance.description') }}</p>
               </div>
             </div>
 
@@ -113,8 +111,8 @@
                 class="mt-1 w-4 h-4 accent-cyan-500 rounded cursor-pointer"
               />
               <div>
-                <label for="preference" class="text-sm font-semibold text-white cursor-pointer">Preference Cookies</label>
-                <p class="text-xs text-slate-500 mt-0.5">Cookies that are used to enhance the functionality of the website.</p>
+                <label for="preference" class="text-sm font-semibold text-white cursor-pointer">{{ t('cookieConsent.options.preference.title') }}</label>
+                <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.preference.description') }}</p>
               </div>
             </div>
 
@@ -127,8 +125,8 @@
                 class="mt-1 w-4 h-4 accent-cyan-500 rounded cursor-pointer"
               />
               <div>
-                <label for="advertising" class="text-sm font-semibold text-white cursor-pointer">Advertising Cookies</label>
-                <p class="text-xs text-slate-500 mt-0.5">Cookies used to deliver advertising that is more relevant to your interests.</p>
+                <label for="advertising" class="text-sm font-semibold text-white cursor-pointer">{{ t('cookieConsent.options.advertising.title') }}</label>
+                <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.advertising.description') }}</p>
               </div>
             </div>
           </div>
@@ -137,24 +135,24 @@
           <div class="flex flex-wrap gap-3 p-6 pt-0">
             <button 
               type="button"
-              class="px-4 py-2.5 text-sm font-medium text-slate-300 bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-white transition-colors"
+              class="px-4 py-2.5 text-sm font-medium tz-text-secondary bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-white transition-colors"
               @click="handleSavePreferences"
             >
-              Save Preferences
+              {{ t('cookieConsent.actions.savePreferences') }}
             </button>
             <button 
               type="button"
-              class="px-4 py-2.5 text-sm font-medium text-slate-300 bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-white transition-colors"
+              class="px-4 py-2.5 text-sm font-medium tz-text-secondary bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-white transition-colors"
               @click="handleRejectAll"
             >
-              Reject All Cookies
+              {{ t('cookieConsent.actions.rejectAll') }}
             </button>
             <button 
               type="button"
               class="px-4 py-2.5 text-sm font-medium text-black bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-lg hover:from-cyan-500 hover:to-cyan-600 transition-all shadow-lg shadow-cyan-500/25"
               @click="handleAcceptAll"
             >
-              Accept All Cookies
+              {{ t('cookieConsent.actions.acceptAll') }}
             </button>
           </div>
         </div>
@@ -166,8 +164,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from '#imports'
 
 const COOKIE_CONSENT_KEY = 'tanzanite_cookie_consent'
+const { t } = useI18n()
 
 interface CookiePreferences {
   essential: boolean

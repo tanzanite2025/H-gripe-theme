@@ -17,10 +17,10 @@
             <div class="flex flex-col gap-1 min-w-0">
               <div class="wa-drawer-title">
                 Search results
-                <span v-if="agent" class="text-xs text-white/60 ml-1">({{ agent.name }})</span>
+                <span v-if="agent" class="text-xs tz-text-secondary ml-1">({{ agent.name }})</span>
               </div>
-              <div v-if="query" class="text-[11px] text-white/50 truncate">
-                Keyword: <span class="text-white/80">{{ query }}</span>
+              <div v-if="query" class="text-[11px] tz-text-muted truncate">
+                Keyword: <span class="tz-text-primary">{{ query }}</span>
               </div>
             </div>
             <button
@@ -37,9 +37,9 @@
             <div v-if="viewMode === 'list'" class="h-full">
               <div
                 v-if="loading"
-                class="flex flex-col items-center justify-center h-full text-white/70 text-sm gap-3"
+                class="flex flex-col items-center justify-center h-full tz-text-secondary text-sm gap-3"
               >
-                <svg class="animate-spin h-6 w-6 text-white/60" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-6 w-6 tz-text-secondary" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                   <path
                     class="opacity-75"
@@ -60,7 +60,7 @@
               <div v-else class="h-full flex flex-col">
                 <div
                   v-if="!results || results.length === 0"
-                  class="flex-1 flex items-start justify-center text-white/60 text-sm text-center px-4 pt-4"
+                  class="flex-1 flex items-start justify-center tz-text-secondary text-sm text-center px-4 pt-4"
                 >
                   <span>
                     {{ query ? 'No products found' : '' }}
@@ -100,7 +100,7 @@
                           </button>
                           <button
                             type="button"
-                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-white/10 text-[11px] text-white/90 border border-white/30 hover:bg-white/20 transition-colors"
+                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-white/10 text-[11px] tz-text-primary border border-white/30 hover:bg-white/20 transition-colors"
                             @click="handleShareToChat(product)"
                           >
                             分享到聊天
@@ -127,13 +127,13 @@
               <div class="flex items-center justify-between">
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/30 text-[11px] text-white/80 hover:bg-white/10 transition-colors"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/30 text-[11px] tz-text-secondary hover:bg-white/10 transition-colors"
                   @click="backToList"
                 >
                   <span class="text-xs">←</span>
                   <span>返回商品列表</span>
                 </button>
-                <div class="text-sm font-semibold text-white/90 truncate">
+                <div class="text-sm font-semibold tz-text-primary truncate">
                   和客服确认配置
                 </div>
                 <div class="w-8" />
@@ -158,31 +158,31 @@
                       >
                         {{ selectedConfigProduct.price }}
                       </div>
-                      <div class="mt-2 text-[11px] text-white/60 line-clamp-2">
+                      <div class="mt-2 text-[11px] tz-text-secondary line-clamp-2">
                         待完善的配置详情占位文案，后续将展示戒托、主石、预算等具体字段。
                       </div>
                     </div>
                   </div>
 
                   <div
-                    class="border border-dashed border-white/20 rounded-xl bg-white/[0.02] p-3 md:p-4 text-[12px] text-white/70"
+                    class="border border-dashed border-white/20 rounded-xl bg-white/[0.02] p-3 md:p-4 text-[12px] tz-text-secondary"
                   >
                     配置选项区域占位：这里将展示可选参数（材质、主石大小、预算等），仅为视觉占位，不会影响当前聊天。
                   </div>
                 </div>
 
                 <div class="border border-white/10 rounded-xl bg-white/[0.04] p-3 md:p-4 flex flex-col gap-3">
-                  <div class="text-xs text-white/70">
+                  <div class="text-xs tz-text-secondary">
                     当前为占位体验，暂不发送真实配置到聊天。后续版本会生成一条结构化的配置卡片消息，方便客服快速了解你的需求。
                   </div>
                   <button
                     type="button"
-                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 text-xs font-medium text-white/70 cursor-not-allowed border border-white/30"
+                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 text-xs font-medium tz-text-disabled cursor-not-allowed border border-white/30"
                     disabled
                   >
                     发送配置给客服（即将上线）
                   </button>
-                  <div class="text-[11px] text-white/50">
+                  <div class="text-[11px] tz-text-muted">
                     你仍然可以在聊天中手动描述戒指款式和预算，我们的客服会协助推荐合适的产品。
                   </div>
                 </div>

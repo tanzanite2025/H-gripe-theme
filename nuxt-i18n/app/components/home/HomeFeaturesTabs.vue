@@ -10,7 +10,7 @@
             :key="tab.id"
             @click="currentTabId = tab.id"
             class="px-6 py-2 rounded-full text-sm font-medium transition-all duration-300"
-            :class="currentTabId === tab.id ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white'"
+            :class="currentTabId === tab.id ? 'bg-slate-800 tz-text-primary shadow-lg' : 'tz-text-secondary hover:text-white'"
           >
             {{ $t(tab.labelKey) }}
           </button>
@@ -42,7 +42,7 @@
                 
                 <span 
                   class="text-sm font-medium transition-colors duration-200"
-                  :class="activeIndex === index ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'"
+                  :class="activeIndex === index ? 'tz-text-primary' : 'tz-text-secondary group-hover:text-slate-200'"
                 >
                   {{ $t(item.titleKey) }}
                 </span>
@@ -62,7 +62,7 @@
                 
                 <!-- Card Content -->
                 <h3 class="text-xl font-bold text-white mb-3">{{ $t(item.titleKey) }}</h3>
-                <p class="text-white/70 text-sm leading-relaxed max-w-lg mx-auto mb-6">
+                <p class="tz-text-secondary text-sm leading-relaxed max-w-lg mx-auto mb-6">
                   {{ $t(item.descriptionKey) }}
                 </p>
 
@@ -96,7 +96,7 @@
                 <ul v-else class="space-y-2 text-sm text-left inline-block mx-auto">
                    <li v-for="bulletKey in item.bullets" :key="bulletKey" class="flex gap-3">
                       <span class="text-teal-400 mt-1">•</span>
-                      <span class="text-slate-300">{{ $t(bulletKey) }}</span>
+                      <span class="tz-text-secondary">{{ $t(bulletKey) }}</span>
                    </li>
                 </ul>
 

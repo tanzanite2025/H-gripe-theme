@@ -2,10 +2,10 @@
   <div class="space-y-6">
     <!-- Intro / Recommendation Card -->
     <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-sky-500">
-       <h3 class="text-lg font-bold text-slate-100 mb-3">
+       <h3 class="text-lg font-bold tz-text-primary mb-3">
          Why we recommend laser-engraved logos
        </h3>
-       <p class="text-sm text-slate-400 leading-relaxed max-w-2xl mx-auto mb-4">
+       <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto mb-4">
           For most standard orders, <strong>Laser Engraving</strong> is our top recommendation. 
           It's eco-friendly, permanent, and significantly faster to produce—shortening lead times by <strong>5–7 days</strong> compared to custom paint or water decals.
        </p>
@@ -25,24 +25,24 @@
        <!-- Option 1: Custom Decals (Violet) -->
        <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-violet-500/10">
-            <h3 class="text-base font-bold text-slate-200">Customized Decals</h3>
+             <h3 class="text-base font-bold tz-text-primary">Customized Decals</h3>
           </div>
           
-          <p class="text-sm text-slate-400 leading-relaxed mb-4">
+           <p class="text-sm tz-text-secondary leading-relaxed mb-4">
              Our graphics department can execute any vision using:
           </p>
           <ul class="space-y-2 mb-4">
-             <li class="flex items-center gap-2 text-xs text-slate-300">
+              <li class="flex items-center gap-2 text-xs tz-text-secondary">
                 <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Waterslide Decals (complex colors)
              </li>
-             <li class="flex items-center gap-2 text-xs text-slate-300">
+              <li class="flex items-center gap-2 text-xs tz-text-secondary">
                 <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Removable Vinyl Stickers
              </li>
-             <li class="flex items-center gap-2 text-xs text-slate-300">
+              <li class="flex items-center gap-2 text-xs tz-text-secondary">
                 <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Custom Fonts & Locations
              </li>
           </ul>
-          <p class="text-xs text-slate-500 italic">
+          <p class="text-xs tz-text-muted italic">
              Ideal for bold statements and specific team colors.
           </p>
        </div>
@@ -50,7 +50,7 @@
        <!-- Option 2: Laser Engraving (Teal) -->
        <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-teal-500/10">
-            <h3 class="text-base font-bold text-slate-200">Laser Engraving</h3>
+             <h3 class="text-base font-bold tz-text-primary">Laser Engraving</h3>
           </div>
           
           <div class="absolute top-5 right-5">
@@ -60,21 +60,21 @@
              </span>
           </div>
 
-          <p class="text-sm text-slate-400 leading-relaxed mb-4">
-             Our sustainability choice. Precision etching in a sleek <span class="text-slate-200">light gray</span> tone.
+           <p class="text-sm tz-text-secondary leading-relaxed mb-4">
+              Our sustainability choice. Precision etching in a sleek <span class="tz-text-primary">light gray</span> tone.
           </p>
           <ul class="space-y-2 mb-4">
-             <li class="flex items-center gap-2 text-xs text-slate-300">
+              <li class="flex items-center gap-2 text-xs tz-text-secondary">
                 <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span> Preserves structural integrity
              </li>
-             <li class="flex items-center gap-2 text-xs text-slate-300">
+              <li class="flex items-center gap-2 text-xs tz-text-secondary">
                 <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span> No plastic/vinyl waste
              </li>
-             <li class="flex items-center gap-2 text-xs text-slate-300">
+              <li class="flex items-center gap-2 text-xs tz-text-secondary">
                 <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span> Fastest production time
              </li>
           </ul>
-          <p class="text-xs text-slate-500 italic">
+          <p class="text-xs tz-text-muted italic">
              Subtle, premium, and permanent.
           </p>
        </div>
@@ -82,7 +82,7 @@
 
     <!-- Gallery 1: Laser Examples -->
     <div>
-        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 pl-1">Laser Engraving Gallery</h4>
+        <h4 class="text-xs font-bold tz-text-muted uppercase tracking-widest mb-3 pl-1">Laser Engraving Gallery</h4>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <GuideImage
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO.webp"
@@ -111,11 +111,11 @@
     <!-- Advanced Finishes Card -->
     <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 mt-6">
        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/50">
-          <h3 class="text-base font-bold text-slate-200">Pro Options: Weave & Finish</h3>
-          <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">For OEM / Teams</span>
+           <h3 class="text-base font-bold tz-text-primary">Pro Options: Weave & Finish</h3>
+           <span class="text-[10px] bg-slate-800 tz-text-muted px-2 py-1 rounded border border-slate-700">For OEM / Teams</span>
        </div>
        
-       <p class="text-sm text-slate-400 mb-6">
+        <p class="text-sm tz-text-secondary mb-6">
           Planning a long-term build or team fleet? Go beyond standard logos with custom carbon weaves and surface treatments.
        </p>
 

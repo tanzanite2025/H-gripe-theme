@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "快速购买步骤",
+  "fallbackNotice": "Quick Buy 设置预览：后台步骤还没有配置，所以当前弹窗先显示默认占位流程。",
+  "search": {
+    "categoryLabel": "分类",
+    "placeholder": "搜索产品...（按 Enter 或停止输入后搜索）"
+  },
+  "placeholder": {
+    "stepTitle": "第 {step} 步",
+    "stepName": "第 {step} 步"
+  },
+  "summary": {
+    "items": "件数",
+    "weight": "重量",
+    "price": "价格"
+  },
+  "actions": {
+    "toCart": "去购物车",
+    "payment": "付款"
+  },
+  "defaultSteps": {
+    "productSearch": "搜索产品",
+    "specifications": "选择规格",
+    "quantity": "确认数量",
+    "cartReview": "核对购物车",
+    "checkout": "结账"
+  },
+  "hints": {
+    "step1": "搜索或筛选产品",
+    "step2": "选择规格/数量",
+    "step3": "确认产品信息",
+    "step4": "完成订单",
+    "step5": "完成并核对",
+    "default": "完成当前步骤"
+  },
+  "footer": {
+    "step1": "在搜索框输入关键词来筛选产品",
+    "step2": "选择产品规格和数量后继续",
+    "step3": "请确认产品信息正确",
+    "step4": "完成这一步以提交/继续流程",
+    "step5": "所有步骤已完成",
+    "default": "完成当前步骤后继续"
+  }
+}

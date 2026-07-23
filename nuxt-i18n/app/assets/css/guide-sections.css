@@ -10,7 +10,7 @@
   font-size: var(--tz-type-section-title);
   line-height: 1.35;
   font-weight: 600;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   text-align: center;
 }
 
@@ -89,7 +89,7 @@
 .sizecharts-section__intro {
   margin: 0 0 0.5rem;
   font-size: 0.9rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 /* Generic lists used inside sections (text lists only) */
@@ -98,7 +98,7 @@
   padding-left: 0;
   list-style-type: none;
   font-size: 0.88rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   text-align: center;
 }
 
@@ -145,4 +145,21 @@
 /* Default: center all paragraph text inside guide sections */
 .sizecharts-section p {
   text-align: center;
+}
+
+/*
+  Guide content historically used low-contrast utility grays directly in
+  dozens of cards. Keep those legacy classes readable while pages migrate to
+  the semantic tokens above. These selectors are intentionally scoped to
+  guide sections so form controls and disabled states elsewhere are unchanged.
+*/
+.sizecharts-section .text-slate-400,
+.sizecharts-section .text-white\/60,
+.sizecharts-section .text-white\/70 {
+  color: var(--tz-text-secondary) !important;
+}
+
+.sizecharts-section .text-slate-500,
+.sizecharts-section .text-white\/40 {
+  color: var(--tz-text-muted) !important;
 }

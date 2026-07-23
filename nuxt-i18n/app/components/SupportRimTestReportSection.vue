@@ -26,7 +26,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -67,7 +67,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -104,7 +104,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -145,7 +145,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-        <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium text-slate-300 align-middle">
+          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -348,14 +348,14 @@ const cards = [
   font-size: var(--tz-type-section-title);
   line-height: 1.35;
   font-weight: 600;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
 }
 
 .support-section__body {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .rim-test-card {
@@ -394,7 +394,7 @@ const cards = [
     rgba(15, 23, 42, 0.85),
     rgba(15, 23, 42, 0.45)
   );
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
 }
 
 .support-video-thumbnail__icon {

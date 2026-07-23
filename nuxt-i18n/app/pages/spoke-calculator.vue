@@ -17,7 +17,7 @@
           <div class="mt-16 pt-10 border-t border-slate-800/50">
              <div class="text-center mb-8">
                <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Smart Search</h3>
-               <p class="text-sm text-slate-400 mt-2">Instantly find spoke lengths for verified official builds</p>
+                <p class="text-sm tz-text-secondary mt-2">Instantly find spoke lengths for verified official builds</p>
              </div>
              <SpokeSmartSearch />
           </div>
@@ -37,10 +37,10 @@
         v-show="activeTab === 'parameter'"
         class="spoke-parameter sizecharts-section rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
       >
-        <h3 class="spoke-parameter__title text-lg font-bold text-slate-200 mb-2">{{ $t('spokeCalculator.parameter.title', 'Parameter definitions') }}</h3>
+        <h3 class="spoke-parameter__title text-lg font-bold tz-text-primary mb-2">{{ $t('spokeCalculator.parameter.title', 'Parameter definitions') }}</h3>
         
         <div class="spoke-parameter__content text-left">
-          <p class="text-slate-400 text-sm mb-6 text-center max-w-2xl mx-auto">
+          <p class="tz-text-secondary text-sm mb-6 text-center max-w-2xl mx-auto">
             {{ $t('spokeCalculator.parameter.intro', "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.") }}
           </p>
 
@@ -50,7 +50,7 @@
               <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
                 {{ $t('spokeCalculator.parameter.items.erd.title', 'ERD (Effective Rim Diameter)') }}
               </h4>
-              <p class="text-sm text-slate-400 leading-relaxed">
+              <p class="text-sm tz-text-secondary leading-relaxed">
                 {{ $t('spokeCalculator.parameter.items.erd.desc', "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper.") }}
               </p>
             </div>
@@ -59,7 +59,7 @@
               <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
                 {{ $t('spokeCalculator.parameter.items.flangeDiameter.title', 'Flange diameter') }}
               </h4>
-              <p class="text-sm text-slate-400 leading-relaxed">
+              <p class="text-sm tz-text-secondary leading-relaxed">
                 {{ $t('spokeCalculator.parameter.items.flangeDiameter.desc', 'The circle diameter through the spoke hole centers on the hub flange (left and right can be different).') }}
               </p>
             </div>
@@ -68,7 +68,7 @@
               <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
                 {{ $t('spokeCalculator.parameter.items.centerToFlange.title', 'Center-to-flange') }}
               </h4>
-              <p class="text-sm text-slate-400 leading-relaxed">
+              <p class="text-sm tz-text-secondary leading-relaxed">
                 {{ $t('spokeCalculator.parameter.items.centerToFlange.desc', 'The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry.') }}
               </p>
             </div>
@@ -77,7 +77,7 @@
               <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
                 {{ $t('spokeCalculator.parameter.items.holeCount.title', 'Spoke hole count') }}
               </h4>
-              <p class="text-sm text-slate-400 leading-relaxed">
+              <p class="text-sm tz-text-secondary leading-relaxed">
                 {{ $t('spokeCalculator.parameter.items.holeCount.desc', 'Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear.') }}
               </p>
             </div>
@@ -86,14 +86,14 @@
               <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
                 {{ $t('spokeCalculator.parameter.items.crossPattern.title', 'Cross pattern') }}
               </h4>
-              <p class="text-sm text-slate-400 leading-relaxed">
+              <p class="text-sm tz-text-secondary leading-relaxed">
                 {{ $t('spokeCalculator.parameter.items.crossPattern.desc', 'How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length.') }}
               </p>
             </div>
           </div>
 
           <!-- Note Alert -->
-          <div class="bg-slate-800/40 rounded-lg p-4 mb-10 flex gap-3 text-sm text-slate-300 border border-slate-700/30">
+           <div class="bg-slate-800/40 rounded-lg p-4 mb-10 flex gap-3 text-sm tz-text-secondary border border-slate-700/30">
              <span class="text-lg">💡</span>
              <p>{{ $t('spokeCalculator.parameter.note', "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm).") }}</p>
           </div>
@@ -102,7 +102,7 @@
           <div class="border-t border-slate-800/50 pt-8">
             <h4 class="text-emerald-400 font-bold mb-6 text-center text-base uppercase tracking-wider">Spoke length workflow</h4>
 
-            <div class="mb-8 rounded-xl overflow-hidden shadow-lg border border-slate-800/50 bg-slate-950">
+             <div class="mb-8 rounded-xl overflow-hidden shadow-lg border border-slate-800/50 bg-slate-950">
               <GuideImage
                 src="/public/technical/spoke-length.webp"
                 alt="Overview illustration for calculating bicycle spoke length"
@@ -114,21 +114,21 @@
             <div class="space-y-8">
               <!-- Step 1: Measure ERD -->
               <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
-                <h5 class="text-slate-200 font-bold mb-3 flex items-center gap-2">
+                <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
                   <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">1</span>
                   Measure ERD (Effective Rim Diameter)
                 </h5>
                 
                 <div class="grid md:grid-cols-2 gap-6 items-start">
-                   <div class="text-sm text-slate-400 space-y-2 leading-relaxed">
+                    <div class="text-sm tz-text-secondary space-y-2 leading-relaxed">
                       <p>Compute <strong>ERD = spoke 1 length + spoke 2 length + measured distance</strong>.</p>
-                      <ul class="list-disc list-inside space-y-1 ml-1 text-slate-500">
+                       <ul class="list-disc list-inside space-y-1 ml-1 tz-text-muted">
                         <li>Prepare two old spokes of known length, two nipples, and a caliper.</li>
                         <li>Insert spokes through opposite holes in the rim.</li>
                         <li>Screw nipples until flush with the nipple groove bottom (ideal final position).</li>
                         <li>Measure distance between the J-bends.</li>
                       </ul>
-                      <p class="text-xs italic mt-2 text-slate-500">
+                       <p class="text-xs italic mt-2 tz-text-muted">
                         * This method compensates for rim manufacturing tolerances.
                       </p>
                    </div>
@@ -145,32 +145,32 @@
 
                <!-- Step 2: Measure Hub -->
               <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
-                <h5 class="text-slate-200 font-bold mb-3 flex items-center gap-2">
+                <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
                   <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">2</span>
                   Measure Hub Dimensions
                 </h5>
-                <div class="text-sm text-slate-400 space-y-3 leading-relaxed">
+                 <div class="text-sm tz-text-secondary space-y-3 leading-relaxed">
                   <div>
-                    <strong class="text-slate-300">Flange Diameter:</strong> Use calipers to measure the distance between opposing spoke hole centers on the same flange.
+                     <strong class="tz-text-primary">Flange Diameter:</strong> Use calipers to measure the distance between opposing spoke hole centers on the same flange.
                   </div>
                   <div>
-                    <strong class="text-slate-300">Center to Flange:</strong> Remove the hub axle if needed. Measure from the flange center to the hub centerline (or locknut face and subtract).
+                     <strong class="tz-text-primary">Center to Flange:</strong> Remove the hub axle if needed. Measure from the flange center to the hub centerline (or locknut face and subtract).
                   </div>
                 </div>
               </div>
 
                <!-- Step 3: Calculation -->
               <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
-                <h5 class="text-slate-200 font-bold mb-3 flex items-center gap-2">
+                <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
                   <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">3</span>
                   Calculate & Round
                 </h5>
-                <div class="text-sm text-slate-400 space-y-2 leading-relaxed">
+                 <div class="text-sm tz-text-secondary space-y-2 leading-relaxed">
                   <p>
                     Enter measurements into the calculator. If the result is between standard sizes (e.g. 288.4mm), you usually round to the nearest available 1mm increment.
                   </p>
                   <p>
-                    <strong class="text-slate-300">Tip:</strong> Being 1mm longer is generally safer than 1mm shorter to ensure full thread engagement.
+                     <strong class="tz-text-primary">Tip:</strong> Being 1mm longer is generally safer than 1mm shorter to ensure full thread engagement.
                   </p>
                 </div>
               </div>
@@ -279,13 +279,13 @@ useHead({
     font-size: var(--tz-type-section-title);
     line-height: 1.35;
     font-weight: 600;
-    color: #e5e7eb;
+     color: var(--tz-text-primary);
     text-align: center;
  }
 
  .spoke-parameter__content {
    font-size: 0.88rem;
-   color: rgba(148, 163, 184, 0.9);
+   color: var(--tz-text-secondary);
    text-align: center;
  }
 

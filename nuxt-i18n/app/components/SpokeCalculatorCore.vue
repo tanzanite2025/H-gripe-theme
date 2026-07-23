@@ -4,7 +4,7 @@
       <section
         class="rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
       >
-        <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-4">
+        <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-4">
           Wheel setup
         </h2>
 
@@ -75,7 +75,7 @@
                     placeholder="e.g. 12"
                     class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                   />
-                  <span class="text-[11px] text-slate-400">mm</span>
+                  <span class="text-[11px] tz-text-muted">mm</span>
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@
                   max="750"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -176,7 +176,7 @@
                   max="60"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -192,7 +192,7 @@
                   max="60"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -208,7 +208,7 @@
                   max="80"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -224,7 +224,7 @@
                   max="80"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
           </div>
@@ -294,7 +294,7 @@
                     placeholder="e.g. 12"
                     class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                   />
-                  <span class="text-[11px] text-slate-400">mm</span>
+                  <span class="text-[11px] tz-text-muted">mm</span>
                 </div>
               </div>
             </div>
@@ -379,7 +379,7 @@
                   max="750"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -395,7 +395,7 @@
                   max="60"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -411,7 +411,7 @@
                   max="60"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -427,7 +427,7 @@
                   max="80"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
 
@@ -443,7 +443,7 @@
                   max="80"
                   class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
                 />
-                <span class="text-[11px] text-slate-400">mm</span>
+                <span class="text-[11px] tz-text-muted">mm</span>
               </div>
             </div>
           </div>
@@ -451,7 +451,7 @@
 
         <!-- Action row -->
         <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t border-slate-800 pt-4">
-          <p class="text-[11px] text-slate-500 max-w-md">
+          <p class="text-[11px] tz-text-muted max-w-md">
             This is only a visual prototype. Replace the mock formula in the script section with your own calculation logic.
           </p>
           <div class="flex items-center gap-3">
@@ -472,11 +472,11 @@
         <section
           class="mt-6 rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
         >
-          <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-3">
+          <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-3">
             Estimated lengths
           </h2>
 
-          <p class="mb-4 text-xs text-slate-400">
+          <p class="mb-4 text-xs tz-text-secondary">
             These values are placeholders so that you can validate the layout and UX. Once the API is ready, you can return precise lengths from your backend or a Nuxt server route.
           </p>
 
@@ -486,17 +486,17 @@
               <div class="text-xs font-semibold text-sky-400 uppercase tracking-wide mb-2">Front Wheel</div>
               <div class="grid gap-3 grid-cols-2">
                 <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Left side</div>
+                  <div class="text-[11px] uppercase tracking-[0.16em] tz-text-muted mb-1">Left side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ frontLeftDisplay }}</span>
-                    <span class="text-xs text-slate-400">mm</span>
+                    <span class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
                 <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Right side</div>
+                  <div class="text-[11px] uppercase tracking-[0.16em] tz-text-muted mb-1">Right side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ frontRightDisplay }}</span>
-                    <span class="text-xs text-slate-400">mm</span>
+                    <span class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
               </div>
@@ -507,49 +507,49 @@
               <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-2">Rear Wheel</div>
               <div class="grid gap-3 grid-cols-2">
                 <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Left side</div>
+                  <div class="text-[11px] uppercase tracking-[0.16em] tz-text-muted mb-1">Left side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ rearLeftDisplay }}</span>
-                    <span class="text-xs text-slate-400">mm</span>
+                    <span class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
                 <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-1">Right side</div>
+                  <div class="text-[11px] uppercase tracking-[0.16em] tz-text-muted mb-1">Right side</div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-slate-50">{{ rearRightDisplay }}</span>
-                    <span class="text-xs text-slate-400">mm</span>
+                    <span class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="mt-6 text-[11px] text-slate-400 space-y-3 leading-relaxed">
+          <div class="mt-6 text-[11px] tz-text-secondary space-y-3 leading-relaxed">
             <div>
-              <strong class="block text-slate-300 mb-1">Disclaimer: Guide to Using Spoke Length Calculation Results</strong>
+              <strong class="block tz-text-primary mb-1">Disclaimer: Guide to Using Spoke Length Calculation Results</strong>
               <p>
                 The spoke length calculator provided on this page generates theoretical recommendations based on standard mathematical models and the data you input. We wish to remind you that the calculation results serve only as a starting point for your spoke procurement and wheel assembly, and are not an absolute standard.
               </p>
             </div>
 
             <div>
-              <strong class="block text-slate-300 mb-1">Reasons for Minor Adjustments:</strong>
+              <strong class="block tz-text-primary mb-1">Reasons for Minor Adjustments:</strong>
               <p class="mb-2">Bicycle wheel components are not perfectly uniform, and minor deviations may cause theoretical values to differ from ideal actual values:</p>
               <ul class="list-disc list-outside ml-4 space-y-1">
                 <li>
-                  <strong class="text-slate-300">Variation in Effective Rim Diameter (ERD):</strong> The ERD provided by the manufacturer may slightly differ from your actual measurement. We strongly recommend measuring the ERD yourself before proceeding.
+                  <strong class="tz-text-primary">Variation in Effective Rim Diameter (ERD):</strong> The ERD provided by the manufacturer may slightly differ from your actual measurement. We strongly recommend measuring the ERD yourself before proceeding.
                 </li>
                 <li>
-                  <strong class="text-slate-300">Hub Geometry Dimensions:</strong> Slight differences in left/right flange distances and flange diameters.
+                  <strong class="tz-text-primary">Hub Geometry Dimensions:</strong> Slight differences in left/right flange distances and flange diameters.
                 </li>
                 <li>
-                  <strong class="text-slate-300">Actual Operation Tolerances:</strong> When actually lacing the wheel, different tension controls and requirements for thread engagement depth may necessitate adjusting the length up or down by 0.5mm to 2mm.
+                  <strong class="tz-text-primary">Actual Operation Tolerances:</strong> When actually lacing the wheel, different tension controls and requirements for thread engagement depth may necessitate adjusting the length up or down by 0.5mm to 2mm.
                 </li>
               </ul>
             </div>
 
             <div>
-              <strong class="block text-slate-300 mb-1">Our Recommendation:</strong>
+              <strong class="block tz-text-primary mb-1">Our Recommendation:</strong>
               <p>
                 Please make minor adjustments based on your specific situation. Generally, lengths calculated within plus or minus 2mm are considered acceptable. If you are pursuing a perfect fit, please be sure to double-check measurements or consult with a professional. This tool is not responsible for any losses caused by data errors.
               </p>
@@ -802,3 +802,9 @@ const onCalculate = () => {
   }
 }
 </script>
+
+<style scoped>
+.spoke-calculator label {
+  color: var(--tz-text-primary);
+}
+</style>

@@ -1,0 +1,16 @@
+{
+  "title": "Wunschliste",
+  "subtitle": "Produkte, die Sie zur Wunschliste hinzufügen, erscheinen hier.",
+  "closeAriaLabel": "Wunschliste schließen",
+  "loading": "Wunschliste wird geladen...",
+  "productImageAlt": "Produktbild",
+  "productFallback": "Produkt",
+  "empty": {
+    "title": "Ihre Wunschliste ist leer",
+    "description": "Speichern Sie Produkte, die Ihnen gefallen, damit Sie sie später schnell finden und teilen können."
+  },
+  "actions": {
+    "shareToChat": "Im Chat teilen",
+    "remove": "Entfernen"
+  }
+}

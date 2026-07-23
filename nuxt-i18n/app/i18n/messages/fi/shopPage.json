@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Kaupan kategorianavigointi",
+  "products": {
+    "loading": "Ladataan tuotteita...",
+    "empty": {
+      "title": "Tuotteita ei ole vielä saatavilla.",
+      "description": "Kun tuotteet julkaistaan Tanzanite-lisäosan kautta, ne näkyvät täällä automaattisesti."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Lisää toivelistalle",
+    "view": "Näytä"
+  },
+  "feedback": {
+    "title": "Jaa palautteesi Tanzanite-kaupasta"
+  }
+}

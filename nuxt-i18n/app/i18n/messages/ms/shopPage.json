@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Navigasi kategori kedai",
+  "products": {
+    "loading": "Memuatkan produk...",
+    "empty": {
+      "title": "Belum ada produk tersedia.",
+      "description": "Apabila produk diterbitkan melalui plugin Tanzanite, produk akan muncul di sini secara automatik."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Tambah ke senarai hajat",
+    "view": "Lihat"
+  },
+  "feedback": {
+    "title": "Kongsi maklum balas anda tentang kedai Tanzanite"
+  }
+}

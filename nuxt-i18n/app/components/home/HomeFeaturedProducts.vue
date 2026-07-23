@@ -16,7 +16,7 @@
           
           <div class="h-1 w-20 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 shadow-[0_0_12px_rgba(59,130,246,0.5)]"></div>
           
-          <p class="text-base text-slate-400 leading-relaxed max-w-md">
+          <p class="text-base tz-text-secondary leading-relaxed max-w-md">
             {{ t('home.featuredProducts.subtitle') }}
           </p>
 
@@ -56,7 +56,7 @@
                  
                  <div class="absolute bottom-0 inset-x-0 p-5">
                     <h3 class="text-lg font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">{{ card.title }}</h3>
-                    <p class="text-white/70 text-sm line-clamp-2 mb-3">{{ card.description }}</p>
+                    <p class="tz-text-secondary text-sm line-clamp-2 mb-3">{{ card.description }}</p>
                     <div
                       v-if="card.price"
                       class="inline-block px-3 py-1 rounded-lg bg-white/10 backdrop-blur text-xs font-medium text-white/90 border border-white/10 group-hover:bg-blue-500/20 group-hover:border-blue-500/30 transition-colors"

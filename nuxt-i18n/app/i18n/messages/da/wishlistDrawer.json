@@ -1,0 +1,16 @@
+{
+  "title": "Ønskeliste",
+  "subtitle": "Produkter, du tilføjer til ønskelisten, vises her.",
+  "closeAriaLabel": "Luk ønskeliste",
+  "loading": "Indlæser ønskeliste...",
+  "productImageAlt": "Produktbillede",
+  "productFallback": "Produkt",
+  "empty": {
+    "title": "Din ønskeliste er tom",
+    "description": "Gem produkter, du kan lide, så du hurtigt kan finde og dele dem senere."
+  },
+  "actions": {
+    "shareToChat": "Del i chat",
+    "remove": "Fjern"
+  }
+}

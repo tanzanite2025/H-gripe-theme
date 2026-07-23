@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Maklumat produk",
+  "tabListLabel": "Bahagian maklumat produk",
+  "tabs": {
+    "details": "Butiran",
+    "afterSales": "Selepas jualan",
+    "packaging": "Pembungkusan",
+    "shipping": "Penghantaran"
+  },
+  "empty": {
+    "details": "Butiran produk belum ditambah.",
+    "afterSales": "Maklumat selepas jualan belum ditambah.",
+    "packaging": "Maklumat pembungkusan belum ditambah.",
+    "shipping": "Maklumat penghantaran belum ditambah."
+  }
+}

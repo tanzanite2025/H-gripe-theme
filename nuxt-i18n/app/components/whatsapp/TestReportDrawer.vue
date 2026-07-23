@@ -17,7 +17,7 @@
             <div class="flex flex-col gap-1 min-w-0">
               <div class="wa-drawer-title">
                 Test Report
-                <span v-if="agent" class="text-xs text-white/60 ml-1">({{ agent.name }})</span>
+                <span v-if="agent" class="tz-text-muted text-xs ml-1">({{ agent.name }})</span>
               </div>
             </div>
             <button

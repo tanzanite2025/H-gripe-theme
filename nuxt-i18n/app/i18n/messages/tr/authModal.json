@@ -1,0 +1,50 @@
+{
+  "privacyNotice": "We take your privacy seriously. All connections are encrypted and your data stays yours.",
+  "intro": {
+    "login": "Welcome back! Choose a method to sign in:",
+    "register": "Create an account in seconds:"
+  },
+  "divider": {
+    "email": "or with email"
+  },
+  "fields": {
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Remember me"
+  },
+  "actions": {
+    "close": "Close sign-in dialog",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signingIn": "Signing in...",
+    "signingUp": "Signing up...",
+    "continueWithGoogle": "Continue with Google"
+  },
+  "switch": {
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signUpHere": "Sign up here",
+    "signInHere": "Sign in here"
+  },
+  "completion": {
+    "loginTitle": "Signed in",
+    "loginMessage": "Your account data has been synced. Click below to continue.",
+    "googleLoginMessage": "Your Google account is signed in and your data has been synced.",
+    "loginCta": "OK, return",
+    "registerTitle": "Account created",
+    "registerMessage": "Your account has been created. Click below to sign in and return.",
+    "registerCta": "Sign in now"
+  },
+  "validation": {
+    "invalidEmail": "Please enter a valid email address.",
+    "passwordMin": "Password must be at least 8 characters.",
+    "passwordUppercase": "Password must include at least one uppercase letter."
+  },
+  "errors": {
+    "loginFailed": "Login failed. Please try again.",
+    "registrationFailed": "Registration failed. Please try again.",
+    "googleLoginFailed": "Google sign-in failed. Please try again.",
+    "googleInitFailed": "Google sign-in could not be started. Please try again."
+  }
+}
