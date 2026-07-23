@@ -2,7 +2,7 @@
   <div class="w-full">
     <h1 class="sr-only">Our Story</h1>
 
-    <section id="story" class="w-full max-w-none mt-4 md:mt-8">
+    <section id="story" class="w-full max-w-none">
       
       <!-- Premium Container -->
       <div class="relative bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-2xl md:rounded-3xl px-4 md:px-10 pb-5 pt-4 md:pb-8 md:pt-6 shadow-2xl overflow-hidden">
@@ -54,11 +54,6 @@
       </div>
     </section>
 
-    <!-- FAQ Section -->
-    <div class="w-full max-w-none mt-4 px-0">
-      <PageFaq pageId="company-ourstory" />
-    </div>
-
     <!-- Feedback Section -->
     <div class="w-full max-w-none px-0 mt-4 mb-6">
       <UserFeedbackThread
@@ -73,7 +68,6 @@
 import { computed } from 'vue'
 import { useHead, definePageMeta, useI18n, useLocalePath } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import PageFaq from '~/components/PageFaq.vue'
 
 const { t } = useI18n()
 const localePath = useLocalePath()

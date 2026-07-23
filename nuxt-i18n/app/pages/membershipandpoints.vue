@@ -3,19 +3,10 @@
     <h1 class="sr-only">{{ $t('member.pageTitle', 'Membership and Points') }}</h1>
 
     <MembershipAndPointsTabs />
-
-    <section class="company-section">
-      <PageFaq 
-        page-id="company-membership"
-        theme="dark"
-        :show-categories="true"
-      />
-    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import PageFaq from '~/components/PageFaq.vue'
 import MembershipAndPointsTabs from '~/components/MembershipAndPointsTabs.vue'
 
 definePageMeta({

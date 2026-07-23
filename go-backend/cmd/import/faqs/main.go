@@ -10,6 +10,7 @@ import (
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/database"
 	"tanzanite/internal/repository"
+	"tanzanite/internal/service"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type FAQImport struct {
 	ID        uint      `json:"id"`
 	Question  string    `json:"question"`
 	Answer    string    `json:"answer"`
+	PageID    string    `json:"page_id"`
 	Category  string    `json:"category"`
 	Locale    string    `json:"locale"`
 	ParentID  *uint     `json:"parent_id"`
@@ -84,6 +86,7 @@ func main() {
 
 	// 创建 repository
 	faqRepo := repository.NewFAQRepository(db)
+	faqService := service.NewFAQService(faqRepo, nil)
 
 	// 导入 FAQ
 	fmt.Println("开始导入...")
@@ -114,6 +117,7 @@ func main() {
 		f := &faq.FAQ{
 			Question:  importFAQ.Question,
 			Answer:    importFAQ.Answer,
+			PageID:    importFAQ.PageID,
 			Category:  importFAQ.Category,
 			Locale:    importFAQ.Locale,
 			ParentID:  importFAQ.ParentID,
@@ -124,7 +128,7 @@ func main() {
 
 		if err != nil {
 			// 不存在，创建新记录
-			if err := faqRepo.Create(f); err != nil {
+			if err := faqService.Create(f); err != nil {
 				log.Printf("❌ 创建 FAQ 失败 [%s]: %v", importFAQ.Question, err)
 				stats["skipped"]++
 			} else {
@@ -134,6 +138,7 @@ func main() {
 			// 已存在，更新
 			existing.Question = importFAQ.Question
 			existing.Answer = importFAQ.Answer
+			existing.PageID = importFAQ.PageID
 			existing.Category = importFAQ.Category
 			existing.Locale = importFAQ.Locale
 			existing.ParentID = importFAQ.ParentID
@@ -141,7 +146,7 @@ func main() {
 			existing.Status = importFAQ.Status
 			existing.ViewCount = importFAQ.ViewCount
 
-			if err := faqRepo.Update(existing); err != nil {
+			if err := faqService.Update(existing); err != nil {
 				log.Printf("❌ 更新 FAQ 失败 [%s]: %v", importFAQ.Question, err)
 				stats["skipped"]++
 			} else {

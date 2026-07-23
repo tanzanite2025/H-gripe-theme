@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full pt-4 md:pt-8 pb-6">
+  <div class="w-full pb-6">
     <h1 class="sr-only">{{ t('company.nav.globalPartners') }}</h1>
 
     <div class="w-full max-w-none">
@@ -149,11 +149,6 @@
       </section>
     </div>
 
-    <!-- FAQ Section -->
-    <div class="w-full max-w-none mt-4 px-0">
-      <PageFaq pageId="company-global-partners" />
-    </div>
-
     <!-- Feedback Section -->
     <div class="w-full max-w-none px-0 mt-4">
       <UserFeedbackThread
@@ -167,7 +162,6 @@
 <script setup lang="ts">
 import { definePageMeta, useHead, useI18n } from '#imports'
 import WorldMapXiamen from '~/components/WorldMapXiamen.vue'
-import PageFaq from '~/components/PageFaq.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 const { t } = useI18n()

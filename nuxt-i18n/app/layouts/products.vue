@@ -8,6 +8,7 @@
       <section class="products-content">
         <div class="products-content__inner page-content-shell">
           <slot />
+          <PageFaqSlot />
         </div>
       </section>
     </main>
@@ -20,6 +21,7 @@
 <script setup lang="ts">
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
+import PageFaqSlot from '~/components/PageFaqSlot.vue'
 import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 </script>
 
@@ -47,7 +49,7 @@ import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 }
 
 .products-content {
-  padding: 1rem 0 3rem;
+  padding: var(--tz-page-content-top-gap) 0 3rem;
 }
 
 .products-content__inner {

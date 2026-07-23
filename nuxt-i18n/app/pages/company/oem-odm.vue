@@ -1,14 +1,9 @@
 <template>
-  <div class="w-full pt-4 md:pt-8 pb-6">
+  <div class="w-full pb-6">
     <h1 class="sr-only">{{ t('company.nav.oemOdm') }}</h1>
     
     <div class="w-full max-w-none">
       <OemOdmServices />
-    </div>
-
-    <!-- FAQ Section -->
-    <div class="w-full max-w-none mt-4 px-0">
-      <PageFaq pageId="company-oem-odm" />
     </div>
 
     <!-- Feedback Section -->
@@ -25,7 +20,6 @@
 import { definePageMeta, useHead, useI18n } from '#imports'
 import OemOdmServices from '~/components/company/OemOdmServices.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import PageFaq from '~/components/PageFaq.vue'
 
 const { t } = useI18n()
 

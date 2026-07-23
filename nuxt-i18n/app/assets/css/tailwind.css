@@ -26,6 +26,11 @@
     --tz-type-faq-category: clamp(0.84rem, 0.16vw + 0.8rem, 0.95rem);
     --tz-type-faq-question: clamp(0.84rem, 0.1vw + 0.8rem, 0.92rem);
     --tz-type-faq-answer: clamp(0.82rem, 0.08vw + 0.79rem, 0.88rem);
+    /*
+      Shared top rhythm for storefront content below the fixed header/section
+      navigation. Page roots must not add their own arbitrary top offsets.
+    */
+    --tz-page-content-top-gap: clamp(1rem, 1vw, 1.25rem);
 
     /*
       Semantic text colors for the dark storefront.

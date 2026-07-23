@@ -92,7 +92,7 @@ useHead({
 }
 
 .policies-content {
-  margin-top: 0.5rem;
+  margin-top: 0;
 }
 
 @media (max-width: 767px) {

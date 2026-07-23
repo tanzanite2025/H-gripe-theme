@@ -54,6 +54,11 @@ var (
 		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp", ".gif"},
 		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp", "image/gif"},
 	}
+	FAQAnswerImageRule = FileRule{
+		MaxSize:             3 << 20,
+		AllowedExtensions:   []string{".webp"},
+		AllowedContentTypes: []string{"image/webp"},
+	}
 	WarrantyImageRule = FilesRule{
 		FileRule: FileRule{
 			MaxSize:             8 << 20,
@@ -97,6 +102,30 @@ func ValidateFile(file *multipart.FileHeader, rule FileRule) error {
 	}
 	if !contentTypeAllowed(contentType, rule.AllowedContentTypes) {
 		return validationError(CodeInvalidType, "invalid_type: %s content type %s is not allowed", file.Filename, contentType)
+	}
+	return nil
+}
+
+func ValidateWebPDimensions(file *multipart.FileHeader, expectedWidth, expectedHeight int) error {
+	if file == nil {
+		return validationError(CodeEmptyFile, "empty_file: uploaded file is empty")
+	}
+	src, err := file.Open()
+	if err != nil {
+		return fmt.Errorf("failed to inspect WebP dimensions: %w", err)
+	}
+	defer func() { _ = src.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(src, file.Size+1))
+	if err != nil {
+		return fmt.Errorf("failed to read WebP file: %w", err)
+	}
+	width, height, err := parseWebPDimensions(data)
+	if err != nil {
+		return validationError(CodeInvalidType, "invalid_type: unable to read WebP dimensions")
+	}
+	if width != expectedWidth || height != expectedHeight {
+		return validationError(CodeInvalidType, "invalid_type: FAQ image must be exactly %dx%d pixels (received %dx%d)", expectedWidth, expectedHeight, width, height)
 	}
 	return nil
 }
@@ -176,6 +205,43 @@ func sniffVideoContentType(header []byte) string {
 		}
 	}
 	return ""
+}
+
+func parseWebPDimensions(data []byte) (int, int, error) {
+	if len(data) < 16 || string(data[0:4]) != "RIFF" || string(data[8:12]) != "WEBP" {
+		return 0, 0, fmt.Errorf("invalid WebP container")
+	}
+
+	chunkType := string(data[12:16])
+	switch chunkType {
+	case "VP8X":
+		if len(data) < 30 {
+			return 0, 0, fmt.Errorf("truncated VP8X chunk")
+		}
+		width := 1 + (int(data[24]) | int(data[25])<<8 | int(data[26])<<16)
+		height := 1 + (int(data[27]) | int(data[28])<<8 | int(data[29])<<16)
+		return width, height, nil
+	case "VP8L":
+		if len(data) < 25 || data[20] != 0x2f {
+			return 0, 0, fmt.Errorf("invalid VP8L header")
+		}
+		bits := uint32(data[21]) | uint32(data[22])<<8 | uint32(data[23])<<16 | uint32(data[24])<<24
+		width := 1 + int(bits&0x3fff)
+		height := 1 + int((bits>>14)&0x3fff)
+		return width, height, nil
+	case "VP8 ":
+		if len(data) < 30 {
+			return 0, 0, fmt.Errorf("truncated VP8 chunk")
+		}
+		for index := 20; index+6 < len(data) && index < 64; index++ {
+			if data[index] == 0x9d && data[index+1] == 0x01 && data[index+2] == 0x2a {
+				width := int(data[index+3]) | int(data[index+4])<<8
+				height := int(data[index+5]) | int(data[index+6])<<8
+				return width & 0x3fff, height & 0x3fff, nil
+			}
+		}
+	}
+	return 0, 0, fmt.Errorf("unsupported WebP chunk")
 }
 
 func extensionAllowed(filename string, allowed []string) bool {

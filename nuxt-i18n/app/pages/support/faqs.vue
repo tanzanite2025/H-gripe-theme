@@ -97,12 +97,20 @@
                 enter-active-class="transition-all duration-200 ease-out"
                 leave-active-class="transition-all duration-150 ease-in"
                 enter-from-class="opacity-0 max-h-0"
-                enter-to-class="opacity-100 max-h-[500px]"
-                leave-from-class="opacity-100 max-h-[500px]"
+                enter-to-class="opacity-100 max-h-none"
+                leave-from-class="opacity-100 max-h-none"
                 leave-to-class="opacity-0 max-h-0"
               >
                 <div v-if="expandedItems.has(item.id)" class="overflow-hidden bg-slate-950/30">
-                  <div class="faqs-item__answer tz-faq-answer px-4 pb-4 pt-1 tz-text-secondary" v-html="item.answer" />
+                  <div class="faqs-item__answer tz-faq-answer px-4 pb-4 pt-1 tz-text-secondary">
+                    <FaqAnswerContent
+                      :answer="item.answer"
+                      :image-url="item.answerImageUrl"
+                      :image-alt="item.answerImageAlt"
+                      :image-width="item.answerImageWidth"
+                      :image-height="item.answerImageHeight"
+                    />
+                  </div>
                 </div>
               </Transition>
             </div>
@@ -199,6 +207,10 @@ interface FlatFaqItem {
   category: string
   question: string
   answer: string
+  answerImageUrl?: string
+  answerImageAlt?: string
+  answerImageWidth?: number
+  answerImageHeight?: number
   tags?: string[]
 }
 
@@ -214,6 +226,10 @@ const allItems = computed<FlatFaqItem[]>(() => {
           category: category.name,
           question: item.question,
           answer: item.answer,
+          answerImageUrl: item.answerImageUrl,
+          answerImageAlt: item.answerImageAlt,
+          answerImageWidth: item.answerImageWidth,
+          answerImageHeight: item.answerImageHeight,
           tags: item.tags,
         })
       }

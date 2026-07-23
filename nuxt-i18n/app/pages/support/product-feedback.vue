@@ -16,20 +16,12 @@
       <SuggestionForm />
     </section>
 
-    <section class="support-section">
-      <PageFaq 
-        page-id="support-product-feedback"
-        theme="dark"
-        :show-categories="true"
-      />
-    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from '#imports'
 import SuggestionForm from '~/components/feedback/SuggestionForm.vue'
-import PageFaq from '~/components/PageFaq.vue'
 
 const { t } = useI18n()
 
