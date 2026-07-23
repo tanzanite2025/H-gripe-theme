@@ -70,7 +70,7 @@ func (h *MarketingHandler) CreateMemberLevel(c *gin.Context) {
 		SortOrder:        req.SortOrder,
 	})
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		respondMarketingError(c, err, "member level")
 		return
 	}
 

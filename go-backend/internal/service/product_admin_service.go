@@ -112,6 +112,8 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 
+	s.invalidateStorefrontHTMLCache("admin product create")
+
 	return s.findProduct(newProduct.ID)
 }
 
@@ -190,6 +192,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 
 	s.clearProductCache(&previousProduct)
 	s.clearProductCache(existingProduct)
+	s.invalidateStorefrontHTMLCache("admin product update")
 
 	return s.findProduct(existingProduct.ID)
 }
@@ -279,6 +282,10 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 }
 
 func (s *ProductService) Delete(id uint) error {
+	return s.deleteProductByID(id, true)
+}
+
+func (s *ProductService) deleteProductByID(id uint, shouldInvalidateHTML bool) error {
 	existingProduct, err := s.findProduct(id)
 	if err != nil {
 		return err
@@ -289,11 +296,18 @@ func (s *ProductService) Delete(id uint) error {
 	}
 
 	s.clearProductCache(existingProduct)
+	if shouldInvalidateHTML {
+		s.invalidateStorefrontHTMLCache("admin product delete")
+	}
 
 	return nil
 }
 
 func (s *ProductService) UpdateStatus(id uint, status string) error {
+	return s.updateProductStatusByID(id, status, true)
+}
+
+func (s *ProductService) updateProductStatusByID(id uint, status string, shouldInvalidateHTML bool) error {
 	existingProduct, err := s.findProduct(id)
 	if err != nil {
 		return err
@@ -304,6 +318,9 @@ func (s *ProductService) UpdateStatus(id uint, status string) error {
 	}
 
 	s.clearProductCache(existingProduct)
+	if shouldInvalidateHTML {
+		s.invalidateStorefrontHTMLCache("admin product status update")
+	}
 
 	return nil
 }
@@ -311,13 +328,16 @@ func (s *ProductService) UpdateStatus(id uint, status string) error {
 func (s *ProductService) BatchUpdateStatus(ids []uint, status string) (int, error) {
 	updated := 0
 	for _, id := range ids {
-		if err := s.UpdateStatus(id, status); err != nil {
+		if err := s.updateProductStatusByID(id, status, false); err != nil {
 			if errors.Is(err, ErrProductNotFound) {
 				continue
 			}
 			return updated, err
 		}
 		updated++
+	}
+	if updated > 0 {
+		s.invalidateStorefrontHTMLCache("admin product batch status update")
 	}
 
 	return updated, nil
@@ -326,13 +346,16 @@ func (s *ProductService) BatchUpdateStatus(ids []uint, status string) (int, erro
 func (s *ProductService) BatchDelete(ids []uint) (int, error) {
 	deleted := 0
 	for _, id := range ids {
-		if err := s.Delete(id); err != nil {
+		if err := s.deleteProductByID(id, false); err != nil {
 			if errors.Is(err, ErrProductNotFound) {
 				continue
 			}
 			return deleted, err
 		}
 		deleted++
+	}
+	if deleted > 0 {
+		s.invalidateStorefrontHTMLCache("admin product batch delete")
 	}
 
 	return deleted, nil

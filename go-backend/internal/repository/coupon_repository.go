@@ -209,16 +209,17 @@ func (r *CouponRepository) UpdateGiftCard(g *coupon.GiftCard) error {
 
 // UpdateGiftCardBalance 更新礼品卡余额
 func (r *CouponRepository) UpdateGiftCardBalance(id uint, amount float64) error {
+	amountCents := coupon.AmountToCents(amount)
 	query := r.db.Model(&coupon.GiftCard{}).Where("id = ?", id)
-	if amount < 0 {
-		query = query.Where("balance >= ?", -amount)
+	if amountCents < 0 {
+		query = query.Where("balance_cents >= ?", -amountCents)
 	}
 
-	tx := query.UpdateColumn("balance", gorm.Expr("balance + ?", amount))
+	tx := query.UpdateColumn("balance_cents", gorm.Expr("balance_cents + ?", amountCents))
 	if tx.Error != nil {
 		return tx.Error
 	}
-	if amount < 0 && tx.RowsAffected == 0 {
+	if amountCents < 0 && tx.RowsAffected == 0 {
 		return ErrGiftCardInsufficientBalance
 	}
 	return nil

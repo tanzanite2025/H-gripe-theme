@@ -1,5 +1,10 @@
 <template>
   <div>
+    <NuxtLoadingIndicator
+      color="repeating-linear-gradient(90deg, #22d3ee 0%, #8b5cf6 50%, #22d3ee 100%)"
+      :height="3"
+      :throttle="80"
+    />
     <SiteHeader ref="siteHeaderRef" />
     <NuxtLayout>
       <SidePanel>

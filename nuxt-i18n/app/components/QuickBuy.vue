@@ -23,7 +23,7 @@
           <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" aria-label="quick-buy-steps">
             <ol class="flex items-center justify-center gap-3 max-md:gap-1.5 list-none m-0 p-0 max-md:flex-nowrap">
               <li
-                v-for="n in 5"
+                v-for="n in totalSteps"
                 :key="n"
                 class="inline-flex items-center gap-3 max-md:gap-1.5"
               >
@@ -35,7 +35,7 @@
                     'bg-[#2c2f35] text-white/90'
                   ]"
                 >{{ n }}</span>
-                <span v-if="n < 5" class="w-8 max-md:w-2.5 h-1 rounded-full bg-white/[0.18]" aria-hidden="true" />
+                <span v-if="n < totalSteps" class="w-8 max-md:w-2.5 h-1 rounded-full bg-white/[0.18]" aria-hidden="true" />
               </li>
             </ol>
           </nav>
@@ -49,6 +49,13 @@
 
         <!-- 主体内容 -->
         <section class="px-3.5 py-3 flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <div
+            v-if="isUsingFallbackConfig"
+            class="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs leading-relaxed text-amber-100"
+          >
+            Quick Buy setup preview: backend steps are not configured yet, so this modal is showing the default placeholder flow.
+          </div>
+
           <div class="w-full min-w-0 overflow-hidden">
             <div v-if="currentCategoryName" class="flex items-center gap-2 mb-1.5 text-white text-[13px] opacity-90">
               <span class="opacity-70">Category</span>
@@ -110,8 +117,8 @@
               :disabled="step <= 1" 
               @click="prev"
             >Prev</button>
-            <button 
-              v-if="step < 5" 
+            <button
+              v-if="step < totalSteps"
               class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
               type="button" 
               @click="next"
@@ -176,6 +183,31 @@ interface Selection {
 const props = defineProps<{ config: QuickBuyConfig | null }>()
 const emit = defineEmits<{ close: [] }>()
 
+const DEFAULT_QUICK_BUY_STEPS: QuickBuyStep[] = [
+  { id: 1, slug: 'product-search', name: 'Search products' },
+  { id: 2, slug: 'specifications', name: 'Choose specifications' },
+  { id: 3, slug: 'quantity', name: 'Confirm quantity' },
+  { id: 4, slug: 'cart-review', name: 'Review cart' },
+  { id: 5, slug: 'checkout', name: 'Checkout' },
+]
+
+const normalizeSteps = (value: unknown): QuickBuyStep[] => {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .map((item, index): QuickBuyStep | null => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const id = Number(record.id ?? index + 1)
+      const slug = String(record.slug || record.key || `step-${index + 1}`).trim()
+      const name = String(record.name || record.label || record.title || `Step ${index + 1}`).trim()
+
+      if (!Number.isFinite(id) || !slug || !name) return null
+      return { id, slug, name }
+    })
+    .filter((item): item is QuickBuyStep => Boolean(item))
+}
+
 const step = ref(1)
 const query = ref('')
 const products = ref<ShopProduct[]>([])
@@ -188,8 +220,14 @@ let searchTimer: Maybe<number> = null
 const { addToCart } = useCart()
 const { fetchShopProducts } = useShopProducts()
 
-const qbConfig = computed(() => { if (!props.config) throw new Error("[CRITICAL] config missing"); return props.config; })
-const steps = computed(() => { if (!qbConfig.value.steps) throw new Error("[CRITICAL] steps missing"); return qbConfig.value.steps; })
+const configuredSteps = computed(() => normalizeSteps(props.config?.steps))
+const isUsingFallbackConfig = computed(() => !props.config || configuredSteps.value.length === 0)
+const qbConfig = computed<QuickBuyConfig>(() => ({
+  ...(props.config || {}),
+  steps: configuredSteps.value.length ? configuredSteps.value : DEFAULT_QUICK_BUY_STEPS,
+}))
+const steps = computed(() => qbConfig.value.steps || DEFAULT_QUICK_BUY_STEPS)
+const totalSteps = computed(() => Math.max(steps.value.length, 1))
 const currentStepConf = computed(() => steps.value[step.value - 1] || { id: 0, slug: '', name: '' })
 const currentCategorySlug = computed(() => currentStepConf.value.slug || '')
 const currentCategoryName = computed(() => currentStepConf.value.name || '')
@@ -279,7 +317,7 @@ const triggerSearch = () => {
 }
 
 const next = () => {
-  if (step.value < 5) {
+  if (step.value < totalSteps.value) {
     step.value += 1
   }
 }

@@ -64,6 +64,9 @@ services:
       - REDIS_PORT=6379
       - JWT_SECRET=dev-secret-key-change-in-production
       - LOG_LEVEL=debug
+      - STOREFRONT_HTML_CACHE_PURGE_URL=http://frontend:3000/_internal/html-cache/purge
+      - STOREFRONT_HTML_CACHE_PURGE_TOKEN=dev-html-cache-purge-token
+      - STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,8 +93,18 @@ services:
     environment:
       - API_BASE_URL=http://backend:9000
       - NUXT_PUBLIC_API_BASE=http://localhost:9000
+      - NUXT_HTML_CACHE_DRIVER=redis
+      - NUXT_HTML_CACHE_PREFIX=tanzanite:storefront:html-cache:dev
+      - NUXT_HTML_CACHE_REDIS_HOST=redis
+      - NUXT_HTML_CACHE_REDIS_PORT=6379
+      - NUXT_HTML_CACHE_REDIS_DB=1
+      - NUXT_HTML_CACHE_REDIS_TTL_SECONDS=604800
+      - NUXT_HTML_CACHE_PURGE_TOKEN=dev-html-cache-purge-token
+      - NUXT_HTML_CACHE_REDIS_SCAN_COUNT=100
     depends_on:
       backend:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - tanzanite-network

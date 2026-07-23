@@ -118,6 +118,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
 
+	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
+
 	services := Services{
 		Auth:         service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
 		Post:         service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL),
@@ -147,6 +149,9 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Spoke:     service.NewSpokeService(repos.Spoke),
 		Chat:      service.NewChatService(repos.Chat),
 	}
+	services.Product.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
+	services.Post.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
+	services.FAQ.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.AdminSettings = service.NewAdminSettingsService(services.Setting)
 	services.AdminPublicChat = service.NewAdminPublicChatAgentService(repos.User)
 	services.Order = service.NewOrderService(

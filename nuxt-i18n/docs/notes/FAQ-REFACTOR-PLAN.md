@@ -293,45 +293,17 @@ export interface PageFaqDataI18n {
 
 ## 六、多语言支持方案
 
-> ⏸️ **暂缓处理**：多语言翻译待网站全部完成后统一处理，避免碎片化翻译和重复劳动。
+> 2026-07-23 更新：本节原策略已经过期。当前 Nuxt storefront i18n 不再采用“等网站全部完成后一次性处理”的方式，也不应该无脑批量翻译 34 个语言文件。
 
-### 当前阶段策略
+当前规则以 `I18N-CURRENT-STATUS.md` 为准：
 
-1. **FAQ 数据直接使用英文**，不使用 i18n 翻译键
-2. **功能优先**，先完成 FAQ 重构的核心功能
-3. **翻译文件暂不修改**，保持现有 34 个语言文件不变
+- 按页面/组件分块接入 i18n。
+- 先处理稳定、边界清楚的 UI 文案。
+- 商品名、SKU、规格、动态 FAQ 内容和后台录入内容不直接硬塞进静态语言包。
+- `app/i18n/messages/<locale>/*.json` 是可维护源文件。
+- `app/i18n/locales/*.json` 由 `npm run i18n:build` 生成。
 
-### 数据文件格式（简化版）
-
-```typescript
-// app/data/faq/support-payment.ts
-export const supportPaymentFaq = {
-  pageKey: 'support-payment',
-  pageTitle: 'Payment FAQ',           // 直接英文，不用翻译键
-  pagePath: '/support/payment',
-  items: [
-    { 
-      id: '1', 
-      question: 'What payment methods do you accept?',  // 直接英文
-      answer: 'We accept PayPal, Visa, Mastercard...'   // 直接英文
-    },
-  ]
-}
-```
-
-### 网站完成后的翻译计划
-
-1. **全局扫描**：统一扫描所有需要翻译的文本
-2. **提取翻译键**：批量提取并规范化命名
-3. **批量翻译**：一次性完成 34 个语言文件
-4. **质量保证**：统一术语，保持一致性
-
-### 好处
-
-- ✅ 避免碎片化翻译，减少遗漏
-- ✅ 避免重复劳动，提高效率
-- ✅ 避免数据混乱，保持一致性
-- ✅ 专注当前任务，功能优先
+参考：`./I18N-CURRENT-STATUS.md`
 
 
 ---

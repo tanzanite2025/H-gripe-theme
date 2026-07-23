@@ -79,7 +79,7 @@
   </div>
   
   <!-- Quick Buy Modal from Dock -->
-  <QuickBuyModal v-if="quickOpen" :config="props.config || null" @close="quickOpen = false" />
+  <QuickBuyModal v-if="quickOpen" :config="quickBuyConfig" @close="quickOpen = false" />
 
   <!-- Wishlist 抽屉弹窗 -->
   <WishlistDrawer v-model="wishlistDrawerVisible" />
@@ -92,6 +92,7 @@ import QuickBuyModal from '@/components/QuickBuy.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { useQuickBuySettings } from '~/composables/usePublicSettings'
 
 // floating submenu state
 const isOpen = ref(false)
@@ -140,6 +141,8 @@ interface CartResponse {
 
 // accept optional config; keep flexible to match QuickBuyModal expected shape
 const props = defineProps<{ config?: any }>()
+const { quickBuySettings } = useQuickBuySettings()
+const quickBuyConfig = computed(() => props.config || quickBuySettings.value || null)
 
 // i18n and runtime config
 const runtimeConfig = useRuntimeConfig()
@@ -212,14 +215,14 @@ const summary = ref<CartResponse | null>(null)
 const loading = ref(false)
 
 const apiBase = computed(() => {
-  const fromProp = props.config?.storeApiBase?.replace(/\/$/, '')
+  const fromProp = quickBuyConfig.value?.storeApiBase?.replace(/\/$/, '')
   if (fromProp) return fromProp
   const fallback = (runtimeConfig.public as { storeApiBase?: string }).storeApiBase
   return fallback ? String(fallback).replace(/\/$/, '') : ''
 })
 
 const cartUrl = computed(() => {
-  if (props.config?.cartUrl) return props.config.cartUrl
+  if (quickBuyConfig.value?.cartUrl) return quickBuyConfig.value.cartUrl
   const fallback = (runtimeConfig.public as { cartUrl?: string }).cartUrl
   return fallback && fallback.trim().length ? fallback : '/cart'
 })
@@ -326,4 +329,3 @@ watchEffect(() => {
   }
 })
 </script>
-

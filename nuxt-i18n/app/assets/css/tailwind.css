@@ -22,10 +22,10 @@
     --tz-type-page-title: clamp(1.35rem, 0.65vw + 1.1rem, 1.85rem);
     --tz-type-section-title: clamp(1rem, 0.24vw + 0.94rem, 1.16rem);
     --tz-type-card-title: clamp(0.94rem, 0.2vw + 0.88rem, 1.08rem);
-    --tz-type-faq-title: clamp(1.18rem, 0.5vw + 1rem, 1.5rem);
-    --tz-type-faq-category: clamp(0.92rem, 0.22vw + 0.84rem, 1.05rem);
-    --tz-type-faq-question: clamp(0.88rem, 0.12vw + 0.84rem, 0.95rem);
-    --tz-type-faq-answer: clamp(0.84rem, 0.1vw + 0.8rem, 0.9rem);
+    --tz-type-faq-title: clamp(1.06rem, 0.32vw + 0.92rem, 1.28rem);
+    --tz-type-faq-category: clamp(0.84rem, 0.16vw + 0.8rem, 0.95rem);
+    --tz-type-faq-question: clamp(0.84rem, 0.1vw + 0.8rem, 0.92rem);
+    --tz-type-faq-answer: clamp(0.82rem, 0.08vw + 0.79rem, 0.88rem);
   }
 
   html {
@@ -107,15 +107,15 @@
     margin: 0;
     font-size: var(--tz-type-faq-category);
     line-height: 1.35;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
   }
 
   .tz-faq-question {
     font-size: var(--tz-type-faq-question);
     line-height: 1.45;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .tz-faq-answer {
@@ -125,9 +125,9 @@
 
   .tz-faq-answer :where(h1, h2, h3, h4, h5, h6) {
     margin: 0.75rem 0 0.35rem;
-    font-size: var(--tz-type-faq-category);
+    font-size: clamp(0.9rem, 0.16vw + 0.84rem, 1rem);
     line-height: 1.35;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .tz-faq-answer :where(h1:first-child, h2:first-child, h3:first-child, h4:first-child, h5:first-child, h6:first-child) {
@@ -157,7 +157,7 @@
 
   .tz-faq-answer :where(strong) {
     color: inherit;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .tz-faq-answer :where(a) {

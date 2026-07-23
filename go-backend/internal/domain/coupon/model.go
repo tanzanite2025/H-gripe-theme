@@ -1,6 +1,7 @@
 package coupon
 
 import (
+	"math"
 	"time"
 
 	"gorm.io/gorm"
@@ -88,8 +89,10 @@ func (CouponUsage) TableName() string {
 type GiftCard struct {
 	ID             uint           `gorm:"primarykey" json:"id"`
 	Code           string         `gorm:"uniqueIndex;not null" json:"code"`
-	InitialValue   float64        `gorm:"not null" json:"initial_value"`
-	Balance        float64        `gorm:"not null;check:balance_non_negative,balance >= 0" json:"balance"`
+	InitialValue   float64        `gorm:"-" json:"initial_value"`
+	Balance        float64        `gorm:"-" json:"balance"`
+	InitialCents   int64          `gorm:"column:initial_value_cents;not null;check:initial_value_cents_non_negative,initial_value_cents >= 0" json:"-"`
+	BalanceCents   int64          `gorm:"column:balance_cents;not null;check:balance_cents_non_negative,balance_cents >= 0" json:"-"`
 	Currency       string         `gorm:"default:'USD'" json:"currency"`
 	Status         string         `gorm:"index" json:"status"` // active, used, expired, cancelled
 	RecipientEmail string         `json:"recipient_email"`
@@ -108,12 +111,33 @@ func (GiftCard) TableName() string {
 	return "gift_cards"
 }
 
+func (gc *GiftCard) BeforeSave(tx *gorm.DB) error {
+	if gc.InitialValue > 0 || gc.InitialCents == 0 {
+		gc.InitialCents = AmountToCents(gc.InitialValue)
+	}
+	if gc.Balance > 0 || gc.BalanceCents == 0 {
+		gc.BalanceCents = AmountToCents(gc.Balance)
+	}
+	gc.syncAmountsFromCents()
+	return nil
+}
+
+func (gc *GiftCard) AfterFind(tx *gorm.DB) error {
+	gc.syncAmountsFromCents()
+	return nil
+}
+
+func (gc *GiftCard) syncAmountsFromCents() {
+	gc.InitialValue = CentsToAmount(gc.InitialCents)
+	gc.Balance = CentsToAmount(gc.BalanceCents)
+}
+
 // IsValid 检查礼品卡是否有效
 func (gc *GiftCard) IsValid() bool {
 	if gc.Status != "active" {
 		return false
 	}
-	if gc.Balance <= 0 {
+	if gc.BalanceCents <= 0 {
 		return false
 	}
 	if gc.ExpiresAt != nil && time.Now().After(*gc.ExpiresAt) {
@@ -124,17 +148,48 @@ func (gc *GiftCard) IsValid() bool {
 
 // GiftCardTransaction 礼品卡交易记录
 type GiftCardTransaction struct {
-	ID         uint      `gorm:"primarykey" json:"id"`
-	GiftCardID uint      `gorm:"not null;index" json:"gift_card_id"`
-	OrderID    uint      `gorm:"index" json:"order_id"`
-	Type       string    `gorm:"not null" json:"type"` // issue, use, refund
-	Amount     float64   `gorm:"not null" json:"amount"`
-	Balance    float64   `gorm:"not null" json:"balance"` // 交易后余额
-	Note       string    `gorm:"type:text" json:"note"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID           uint      `gorm:"primarykey" json:"id"`
+	GiftCardID   uint      `gorm:"not null;index" json:"gift_card_id"`
+	OrderID      uint      `gorm:"index" json:"order_id"`
+	Type         string    `gorm:"not null" json:"type"` // issue, use, refund
+	Amount       float64   `gorm:"-" json:"amount"`
+	Balance      float64   `gorm:"-" json:"balance"` // 交易后余额
+	AmountCents  int64     `gorm:"column:amount_cents;not null" json:"-"`
+	BalanceCents int64     `gorm:"column:balance_cents;not null" json:"-"`
+	Note         string    `gorm:"type:text" json:"note"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // TableName 指定表名
 func (GiftCardTransaction) TableName() string {
 	return "gift_card_transactions"
+}
+
+func (t *GiftCardTransaction) BeforeSave(tx *gorm.DB) error {
+	if t.Amount != 0 || t.AmountCents == 0 {
+		t.AmountCents = AmountToCents(t.Amount)
+	}
+	if t.Balance != 0 || t.BalanceCents == 0 {
+		t.BalanceCents = AmountToCents(t.Balance)
+	}
+	t.syncAmountsFromCents()
+	return nil
+}
+
+func (t *GiftCardTransaction) AfterFind(tx *gorm.DB) error {
+	t.syncAmountsFromCents()
+	return nil
+}
+
+func (t *GiftCardTransaction) syncAmountsFromCents() {
+	t.Amount = CentsToAmount(t.AmountCents)
+	t.Balance = CentsToAmount(t.BalanceCents)
+}
+
+func AmountToCents(amount float64) int64 {
+	return int64(math.Round(amount * 100))
+}
+
+func CentsToAmount(cents int64) float64 {
+	return float64(cents) / 100
 }

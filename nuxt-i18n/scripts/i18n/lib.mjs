@@ -2,9 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 export const rootDir = process.cwd()
-export const manifestPath = path.resolve(rootDir, 'i18n/locales.manifest.js')
-export const aggregateLocalesDir = path.resolve(rootDir, 'i18n/locales')
-export const messagesDir = path.resolve(rootDir, 'i18n/messages')
+const i18nRoot = fs.existsSync(path.resolve(rootDir, 'app/i18n'))
+  ? path.resolve(rootDir, 'app/i18n')
+  : path.resolve(rootDir, 'i18n')
+
+export const manifestPath = path.resolve(i18nRoot, 'locales.manifest.js')
+export const aggregateLocalesDir = path.resolve(i18nRoot, 'locales')
+export const messagesDir = path.resolve(i18nRoot, 'messages')
 
 export function stripBom(text) {
   return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text

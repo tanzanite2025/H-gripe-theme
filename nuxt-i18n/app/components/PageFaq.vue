@@ -26,7 +26,7 @@
       </div>
 
       <!-- FAQ Content -->
-      <div v-if="faqData && displayCategories.length > 0" class="space-y-8">
+      <div v-if="faqData && displayCategories.length > 0" class="space-y-6 md:space-y-7">
         <!-- Category Loop (Each category is a Premium Card) -->
         <div 
           v-for="category in displayCategories" 
@@ -240,22 +240,22 @@ const hasMoreItems = computed(() => {
 }
 
 .page-faq__header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .page-faq__category-header {
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.55rem;
 }
 
 @media (min-width: 768px) {
   .page-faq__header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
 
   .page-faq__category-header {
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.9rem;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
   }
 }
 </style>

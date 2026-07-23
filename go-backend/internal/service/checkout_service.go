@@ -203,19 +203,12 @@ func (s *CheckoutService) calculateMemberDiscount(loyaltyRepo *repository.Loyalt
 		return 0
 	}
 
-	tierDiscount := 0.0
-	switch {
-	case userLoyalty.TotalPoints >= 10000:
-		tierDiscount = 0.20
-	case userLoyalty.TotalPoints >= 5000:
-		tierDiscount = 0.15
-	case userLoyalty.TotalPoints >= 2000:
-		tierDiscount = 0.10
-	case userLoyalty.TotalPoints >= 500:
-		tierDiscount = 0.05
+	level, err := loyaltyRepo.FindMemberLevelByPoints(userLoyalty.TotalPoints)
+	if err != nil || level == nil || level.DiscountRate <= 0 {
+		return 0
 	}
 
-	return subtotal * tierDiscount
+	return subtotal * (level.DiscountRate / 100)
 }
 
 func (s *CheckoutService) calculatePointsDiscount(loyaltyRepo *repository.LoyaltyRepository, userID uint, requestedPoints int, subtotal float64) (int, float64, error) {

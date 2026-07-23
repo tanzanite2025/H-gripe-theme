@@ -9,9 +9,10 @@ import (
 )
 
 type ProductService struct {
-	productRepo *repository.ProductRepository
-	cache       *cache.RedisCache
-	cacheTTL    time.Duration
+	productRepo                    *repository.ProductRepository
+	cache                          *cache.RedisCache
+	cacheTTL                       time.Duration
+	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
 }
 
 func NewProductService(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL int) *ProductService {
@@ -20,6 +21,10 @@ func NewProductService(productRepo *repository.ProductRepository, cache *cache.R
 		cache:       cache,
 		cacheTTL:    time.Duration(cacheTTL) * time.Second,
 	}
+}
+
+func (s *ProductService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
+	s.storefrontHTMLCacheInvalidator = invalidator
 }
 
 var (
@@ -128,7 +133,11 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 }
 
 func (s *ProductService) Create(p *product.Product) error {
-	return s.productRepo.Create(p)
+	if err := s.productRepo.Create(p); err != nil {
+		return err
+	}
+	s.invalidateStorefrontHTMLCache("product create")
+	return nil
 }
 
 func (s *ProductService) Update(p *product.Product) error {
@@ -143,6 +152,7 @@ func (s *ProductService) Update(p *product.Product) error {
 
 	s.clearProductCache(previousProduct)
 	s.clearProductCache(p)
+	s.invalidateStorefrontHTMLCache("product update")
 
 	return nil
 }

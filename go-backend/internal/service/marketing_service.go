@@ -17,6 +17,7 @@ var (
 	ErrMarketingNotFound  = errors.New("marketing resource not found")
 	ErrCouponCodeExists   = errors.New("coupon code already exists")
 	ErrGiftCardCodeExists = errors.New("gift card code already exists")
+	ErrInvalidMemberLevel = errors.New("invalid member level")
 )
 
 type MemberLevelCreateInput struct {
@@ -103,6 +104,10 @@ func (s *MarketingService) GetMemberLevel(id uint) (*loyalty.MemberLevel, error)
 }
 
 func (s *MarketingService) CreateMemberLevelAdmin(input MemberLevelCreateInput) (*loyalty.MemberLevel, error) {
+	if err := s.validateMemberLevelInput(0, input.MinPoints, input.MaxPoints, input.DiscountRate, input.PointsMultiplier); err != nil {
+		return nil, err
+	}
+
 	level := &loyalty.MemberLevel{
 		Name:             input.Name,
 		MinPoints:        input.MinPoints,
@@ -154,6 +159,10 @@ func (s *MarketingService) UpdateMemberLevelAdmin(id uint, input MemberLevelUpda
 		level.SortOrder = *input.SortOrder
 	}
 
+	if err := s.validateMemberLevelInput(level.ID, level.MinPoints, level.MaxPoints, level.DiscountRate, level.PointsMultiplier); err != nil {
+		return nil, err
+	}
+
 	if err := s.loyaltyRepo.UpdateMemberLevel(level); err != nil {
 		return nil, err
 	}
@@ -166,6 +175,26 @@ func (s *MarketingService) DeleteMemberLevelAdmin(id uint) error {
 		return err
 	}
 	return s.loyaltyRepo.DeleteMemberLevel(id)
+}
+
+func (s *MarketingService) validateMemberLevelInput(excludeID uint, minPoints, maxPoints int, discountRate, pointsMultiplier float64) error {
+	if minPoints < 0 || maxPoints < minPoints {
+		return ErrInvalidMemberLevel
+	}
+	if discountRate < 0 || discountRate > 100 {
+		return ErrInvalidMemberLevel
+	}
+	if pointsMultiplier <= 0 {
+		return ErrInvalidMemberLevel
+	}
+	overlaps, err := s.loyaltyRepo.CountOverlappingMemberLevels(excludeID, minPoints, maxPoints)
+	if err != nil {
+		return err
+	}
+	if overlaps > 0 {
+		return ErrInvalidMemberLevel
+	}
+	return nil
 }
 
 func (s *MarketingService) GetMarketingStats() (map[string]interface{}, error) {

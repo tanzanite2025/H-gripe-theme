@@ -327,6 +327,81 @@
     "redeem": "Redeem",
     "noCards": "No gift cards available"
   },
+  "guidesTireguides": {
+    "innerTube": {
+      "steps": {
+        "size": {
+          "title": "Choose Your Size",
+          "description": "All necessary size information (ETRTO or Inch) can be found on your tire sidewall."
+        },
+        "valve": {
+          "title": "Select Valve Type"
+        },
+        "model": {
+          "title": "Choose Model Type"
+        }
+      },
+      "actions": {
+        "findTube": "Find My Tube"
+      },
+      "valves": {
+        "av": {
+          "type": "Auto / Schrader",
+          "description": "Standard car valve. Length typical 40mm."
+        },
+        "dv": {
+          "type": "Dunlop / Woods",
+          "description": "Classic bicycle valve. Length 32/40mm."
+        },
+        "sv": {
+          "type": "Presta / French",
+          "description": "Sport valve. Available in 40/50/60/80mm."
+        }
+      },
+      "images": {
+        "valveOverviewAlt": "Schwalbe inner tube valve types and lengths overview"
+      },
+      "compatibility": {
+        "title": "Pump & Rim Compatibility",
+        "headers": {
+          "rimHeight": "Rim Height",
+          "recommendedValve": "Rec. Valve",
+          "notes": "Notes"
+        },
+        "valves": {
+          "extender": "Extender"
+        },
+        "notes": {
+          "standard": "Standard",
+          "deepRim": "Deep rim",
+          "aeroRim": "Aero rim",
+          "extenderNeeded": "Valve extender needed"
+        }
+      },
+      "models": {
+        "standard": {
+          "title": "Standard",
+          "description": "Reliable hold. Good purity rubber. Uniform wall thickness."
+        },
+        "airPlus": {
+          "title": "Air Plus",
+          "description": "Thicker walls. Holds air longer. Better puncture protection."
+        },
+        "extralight": {
+          "title": "Extralight / XXLight",
+          "description": "Reduced weight for racing. Available in select sizes."
+        },
+        "freeride": {
+          "title": "Freeride",
+          "description": "Large volume, low weight."
+        },
+        "downhill": {
+          "title": "Downhill",
+          "description": "Extremely robust. Reinforced base. Valve shear protection."
+        }
+      }
+    }
+  },
   "home": {
     "meta": {
       "title": "Factory-Direct Carbon Rims & Wheelsets",

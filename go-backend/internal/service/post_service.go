@@ -9,9 +9,10 @@ import (
 )
 
 type PostService struct {
-	postRepo *repository.PostRepository
-	cache    *cache.RedisCache
-	cacheTTL time.Duration
+	postRepo                       *repository.PostRepository
+	cache                          *cache.RedisCache
+	cacheTTL                       time.Duration
+	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
 }
 
 func NewPostService(postRepo *repository.PostRepository, cache *cache.RedisCache, cacheTTL int) *PostService {
@@ -20,6 +21,10 @@ func NewPostService(postRepo *repository.PostRepository, cache *cache.RedisCache
 		cache:    cache,
 		cacheTTL: time.Duration(cacheTTL) * time.Second,
 	}
+}
+
+func (s *PostService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
+	s.storefrontHTMLCacheInvalidator = invalidator
 }
 
 var (
@@ -77,7 +82,11 @@ func (s *PostService) List(locale, status string, page, pageSize int) ([]post.Po
 }
 
 func (s *PostService) Create(p *post.Post) error {
-	return s.postRepo.Create(p)
+	if err := s.postRepo.Create(p); err != nil {
+		return err
+	}
+	s.invalidateStorefrontHTMLCache("post create")
+	return nil
 }
 
 func (s *PostService) Update(p *post.Post) error {
@@ -92,6 +101,7 @@ func (s *PostService) Update(p *post.Post) error {
 
 	s.clearPostCache(previousPost)
 	s.clearPostCache(p)
+	s.invalidateStorefrontHTMLCache("post update")
 
 	return nil
 }

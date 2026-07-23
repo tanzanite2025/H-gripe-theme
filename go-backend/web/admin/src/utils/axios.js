@@ -14,6 +14,7 @@ const CSRF_HEADER_NAME = 'X-CSRF-Token'
 
 let refreshPromise = null
 let sessionExpiredHandled = false
+let pendingRequests = 0
 
 const isLoginEndpoint = (url = '') => url.includes('/api/admin/auth/login')
 const isRefreshEndpoint = (url = '') => url.includes('/api/admin/auth/refresh')
@@ -73,9 +74,25 @@ const refreshAdminToken = async () => {
 
 const silenceAuthFailure = () => new Promise(() => {})
 
+const emitLoading = () => {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('admin-api-loading', { detail: { loading: pendingRequests > 0 } }))
+}
+
+const beginRequest = () => {
+  pendingRequests += 1
+  emitLoading()
+}
+
+const endRequest = () => {
+  pendingRequests = Math.max(0, pendingRequests - 1)
+  emitLoading()
+}
+
 // 请求拦截器
 instance.interceptors.request.use(
   (config) => {
+    beginRequest()
     if (isUnsafeMethod(config.method)) {
       attachCsrfHeader(config.headers)
     }
@@ -89,12 +106,14 @@ instance.interceptors.request.use(
 // 响应拦截器
 instance.interceptors.response.use(
   (response) => {
+    endRequest()
     if (isLoginEndpoint(response.config?.url)) {
       sessionExpiredHandled = false
     }
     return response
   },
   async (error) => {
+    endRequest()
     if (error.response) {
       const { status, data } = error.response
 

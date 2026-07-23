@@ -435,6 +435,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&coupon.CouponUsage{},
 		&loyalty.UserLoyalty{},
 		&loyalty.LoyaltyTransaction{},
+		&loyalty.MemberLevel{},
 		&paymentdomain.TaxRate{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
@@ -524,6 +525,14 @@ func seedDefaultShippingTemplate(t *testing.T, db *gorm.DB) {
 
 func seedUserLoyalty(t *testing.T, db *gorm.DB, userID uint, points int) {
 	t.Helper()
+
+	require.NoError(t, db.FirstOrCreate(&loyalty.MemberLevel{}, loyalty.MemberLevel{
+		Name:             "Test Level",
+		MinPoints:        0,
+		MaxPoints:        999999,
+		DiscountRate:     5,
+		PointsMultiplier: 1,
+	}).Error)
 
 	require.NoError(t, db.Create(&loyalty.UserLoyalty{
 		UserID:          userID,

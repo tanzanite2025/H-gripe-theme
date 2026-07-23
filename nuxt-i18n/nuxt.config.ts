@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { defineNuxtConfig } from 'nuxt/config'
 import locales from './app/i18n/locales.manifest.js'
+import { buildStorefrontRouteRules } from './config/storefront/route-rules'
 
 const env = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) || {}
 const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
@@ -91,22 +92,13 @@ export default defineNuxtConfig({
   // 使用 app 作为源码目录，启用 app/pages 与 app/components
   srcDir: 'app',
 
-  // Long cache for local Twemoji flags
+  // Centralized route policy: API proxy, immutable assets, public HTML cache, and no-store pages.
   routeRules: {
-    '/api/**': {
-      proxy: `${internalApiOrigin}/api/**`
-    },
-    '/twemoji/svg/**': {
-      headers: {
-        'cache-control': 'public, max-age=31536000, immutable'
-      }
-    },
-    '/company/about': {
-      redirect: '/company/ourstory'
-    },
-    '/guides/technical': {
-      redirect: '/guides'
-    },
+    ...buildStorefrontRouteRules({
+      internalApiOrigin,
+      localeCodes: locales.map(locale => locale.code),
+      defaultLocale: 'en',
+    })
   },
 
   // @ts-expect-error: site config supported by Nuxt runtime, not in TS defs

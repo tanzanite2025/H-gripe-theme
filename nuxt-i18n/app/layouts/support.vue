@@ -25,6 +25,8 @@ import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 
 <style scoped>
 .layout--support {
+  --primary-section-tab-bar-height: 58px;
+  --page-tab-bar-flow-offset: -1.5rem;
   --page-tab-bar-sticky-top: calc(var(--site-header-offset, 120px) + var(--primary-section-tab-bar-height, 58px));
   min-height: 100vh;
   display: flex;
@@ -103,6 +105,12 @@ import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 @media (min-width: 768px) {
   .support-header-spacer {
     height: var(--site-header-offset, 112px);
+  }
+}
+
+@media (max-width: 900px) {
+  .layout--support {
+    --primary-section-tab-bar-height: 56px;
   }
 }
 </style>

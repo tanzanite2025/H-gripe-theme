@@ -55,12 +55,12 @@ func TestFindAllMemberLevelsUsesCanonicalOrder(t *testing.T) {
 	}
 }
 
-func TestFindMemberLevelByPointsUsesMinPoints(t *testing.T) {
+func TestFindMemberLevelByPointsUsesConfiguredRange(t *testing.T) {
 	repo, mock, cleanup := newMockLoyaltyRepository(t)
 	defer cleanup()
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "member_levels" WHERE min_points <= $1 AND "member_levels"."deleted_at" IS NULL ORDER BY min_points DESC,"member_levels"."id" LIMIT $2`)).
-		WithArgs(1500, 1).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "member_levels" WHERE (min_points <= $1 AND max_points >= $2) AND "member_levels"."deleted_at" IS NULL ORDER BY min_points DESC,"member_levels"."id" LIMIT $3`)).
+		WithArgs(1500, 1500, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "min_points", "max_points", "sort_order"}).
 			AddRow(2, "Silver", 1000, 4999, 20))
 
