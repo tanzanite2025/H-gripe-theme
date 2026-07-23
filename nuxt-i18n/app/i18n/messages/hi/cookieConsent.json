@@ -1,0 +1,38 @@
+{
+  "banner": {
+    "message": "We use cookies for a better experience.",
+    "learnMore": "Learn more",
+    "customize": "Customize",
+    "accept": "Accept"
+  },
+  "modal": {
+    "title": "Your Cookie Preferences",
+    "closeAriaLabel": "Close cookie preferences",
+    "descriptionBeforePolicy": "We use cookies to improve your experience on this website. You may choose which types of cookies to allow and change your preferences at any time. Disabling cookies may impact your experience on this website. You can learn more by viewing our ",
+    "policyLink": "Cookie Policy",
+    "descriptionAfterPolicy": "."
+  },
+  "options": {
+    "essential": {
+      "title": "Essential Cookies",
+      "description": "Cookies required to enable basic website functionality."
+    },
+    "performance": {
+      "title": "Performance Cookies",
+      "description": "Cookies used to understand how the website is being used."
+    },
+    "preference": {
+      "title": "Preference Cookies",
+      "description": "Cookies that are used to enhance the functionality of the website."
+    },
+    "advertising": {
+      "title": "Advertising Cookies",
+      "description": "Cookies used to deliver advertising that is more relevant to your interests."
+    }
+  },
+  "actions": {
+    "savePreferences": "Save Preferences",
+    "rejectAll": "Reject All Cookies",
+    "acceptAll": "Accept All Cookies"
+  }
+}

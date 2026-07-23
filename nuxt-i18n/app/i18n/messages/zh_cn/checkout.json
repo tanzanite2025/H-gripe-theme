@@ -1,0 +1,179 @@
+{
+  "modal": {
+    "title": "结账",
+    "closeAriaLabel": "关闭结账弹窗",
+    "sslAlt": "安全 SSL",
+    "sslNote": "页面使用受信任 SSL 的 HTTPS 连接；我们只保存订单结果，不保存你的银行卡详情。",
+    "pointsHint": "1 积分 = $0.01，最多抵扣订单 50%",
+    "actions": {
+      "viewCart": "查看购物车",
+      "livechat": "在线客服",
+      "email": "邮件"
+    },
+    "messages": {
+      "invalidQuote": "无效的结账报价响应",
+      "unableRefreshQuote": "无法刷新结账报价",
+      "cartSaved": "购物车已保存。等你的地区支持配送后，我们会通知你。",
+      "couponApplied": "优惠券已应用！",
+      "completeShipping": "请先填写完整配送地址和联系方式，我们需要确认该地区可配送后再继续。",
+      "selectPaypalCountry": "继续跳转 PayPal 前，请先选择一个可配送的国家/地区。",
+      "orderSuccess": "订单提交成功！",
+      "orderFailed": "订单提交失败，请重试"
+    }
+  },
+  "order": {
+    "itemFallback": "商品"
+  },
+  "payment": {
+    "card": {
+      "title": "信用卡 / 借记卡",
+      "subtitle": "安全银行卡页面",
+      "description": "银行卡信息会在支付服务商的安全页面输入；我们只保存你的订单结果。",
+      "stepperDescription": "请先填写完整配送信息和联系电话，然后我们会跳转到符合 PCI 标准的银行卡页面。我们不会保存你的卡号或 CVC。",
+      "cta": "继续前往安全支付",
+      "points": {
+        "shipping": "必填：完整配送信息 + 联系电话",
+        "immediate": "适合想用 Visa / Mastercard 立即付款的客户。"
+      }
+    },
+    "paypal": {
+      "title": "使用 PayPal 付款",
+      "optionTitle": "PayPal",
+      "subtitle": "快捷结账",
+      "description": "你将跳转到 PayPal。我们不会看到或保存你的 PayPal 登录信息或银行卡信息。",
+      "stepperDescription": "我们会尽量使用你 PayPal 账户里保存的配送地址；继续前请先选择一个支持配送的国家，以便确认履约。",
+      "cta": "继续前往 PayPal",
+      "points": {
+        "country": "必填：继续前请选择一个可配送国家。"
+      }
+    },
+    "alipay": {
+      "title": "支付宝 / 微信 / 银联",
+      "optionTitle": "支付宝 / 微信 / 银联",
+      "subtitle": "本地钱包",
+      "description": "你会在本地钱包中确认付款。我们仍会在这里收集配送信息，用于准备发货。",
+      "stepperDescription": "请在你常用的钱包中确认付款。我们仍会收集配送信息，用于准备发货并确认清关信息。",
+      "cta": "使用本地钱包付款",
+      "points": {
+        "recipient": "必填：收件人姓名 + 电话",
+        "wallets": "适合中国大陆钱包和银联用户。"
+      }
+    },
+    "stripe": {
+      "title": "使用 Stripe 付款",
+      "optionTitle": "Stripe",
+      "subtitle": "支持 3D Secure",
+      "description": "Stripe 会处理你的银行卡详情和额外验证。我们只保存支付状态。",
+      "stepperDescription": "Stripe 会处理银行卡输入和额外验证。这里保持表单尽量简洁，敏感字段交给 Stripe 管理。",
+      "cta": "继续前往 Stripe",
+      "points": {
+        "sca": "适合需要 SCA/3DS 验证的客户。"
+      }
+    },
+    "bank": {
+      "title": "银行转账",
+      "subtitle": "人工发票",
+      "description": "先提交订单，然后按下一步显示的转账信息付款，并使用我们提供的订单参考号。",
+      "stepperDescription": "先提交订单，然后根据下一步显示的银行信息转账。请记得把订单号写进付款备注。",
+      "cta": "提交银行转账订单",
+      "points": {
+        "reference": "请把订单号作为付款参考。"
+      }
+    },
+    "worldfirst": {
+      "title": "WorldFirst",
+      "optionTitle": "WorldFirst",
+      "subtitle": "跨境付款",
+      "description": "可用你的本币付款到 WorldFirst 本地账户。我们不会访问你的银行凭证。",
+      "stepperDescription": "适合国际订单或企业订单。你用本币支付到区域 WorldFirst 账户，由他们结算转换后的资金给我们。",
+      "cta": "继续使用 WorldFirst",
+      "points": {
+        "b2b": "推荐用于 B2B 跨境付款。"
+      }
+    }
+  },
+  "stepper": {
+    "common": {
+      "optional": "可选"
+    },
+    "steps": {
+      "payment": "选择支付方式",
+      "shipping": "配送信息",
+      "review": "核对并付款"
+    },
+    "payment": {
+      "pickProvider": "选择支付服务",
+      "stepCount": "第 {current} 步，共 {total} 步",
+      "tapCardHint": "点击卡片查看详情",
+      "iconAltSuffix": "图标",
+      "selected": "已选择",
+      "tapToView": "点击查看",
+      "continueWithMethod": "使用此方式继续"
+    },
+    "shipping": {
+      "changePaymentMethod": "更改支付方式",
+      "addressTitle": "配送地址",
+      "addressHelp": "如果你的地区暂时不可配送，并不一定代表我们无法送达。联系我们，我们会为你确认可用方案。",
+      "countryRegion": "国家 / 地区",
+      "searchCountryPlaceholder": "搜索国家或地区",
+      "selectCountry": "选择国家",
+      "availableForShipping": "可配送",
+      "otherCountries": "其它国家",
+      "recipient": "收件人",
+      "recipientPlaceholder": "输入收件人姓名",
+      "phone": "电话",
+      "phonePlaceholder": "输入电话号码",
+      "address": "地址",
+      "addressPlaceholder": "输入详细地址",
+      "unavailableFallback": "该国家暂不可配送。",
+      "optionsIntro": "别担心，我们还有其它方案：",
+      "contactSpecialShipping": "联系我们安排特殊配送",
+      "useFreightForwarder": "使用货运代理服务",
+      "saveCartLater": "保存购物车，稍后再查看",
+      "estimatedDelivery": "预计送达：{estimatedDelivery}",
+      "city": "城市",
+      "cityPlaceholder": "城市",
+      "zipCode": "邮编",
+      "zipPlaceholder": "邮编",
+      "continueToReview": "继续核对 →",
+      "completeShippingFirst": "请先完成配送信息",
+      "notRequiredForMethod": "此支付方式不需要先填写配送详情。",
+      "state": {
+        "selectCountry": "选择国家",
+        "unavailable": "不可用",
+        "calculating": "正在计算...",
+        "free": "免费"
+      }
+    },
+    "review": {
+      "backToShipping": "返回配送信息",
+      "coupon": "优惠券",
+      "couponPlaceholder": "输入代码",
+      "applyingCoupon": "正在应用…",
+      "applyCoupon": "应用",
+      "couponApplied": "已应用优惠券：{coupon}",
+      "usePointsDiscount": "使用积分抵扣",
+      "pointsAvailable": "可用：{points} 积分",
+      "noPoints": "暂无可用积分",
+      "usePoints": "使用积分",
+      "pointsUnavailable": "积分不可用",
+      "pointsToUse": "使用积分数",
+      "earnPointsHint": "下一笔订单可赚取积分，并在这里即时抵扣。",
+      "orderNotes": "订单备注",
+      "orderNotesPlaceholder": "添加配送说明或特殊要求…",
+      "orderSummary": "订单汇总",
+      "continueToCheckout": "继续结账"
+    },
+    "summary": {
+      "qty": "数量",
+      "empty": "购物车中有商品后，订单详情会显示在这里。",
+      "subtotal": "小计",
+      "shipping": "运费",
+      "tax": "税费",
+      "pointsDiscount": "积分抵扣",
+      "couponDiscount": "优惠券抵扣",
+      "giftCardDiscount": "礼品卡抵扣",
+      "total": "总计"
+    }
+  }
+}

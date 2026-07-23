@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Warenkorb",
+  "title": "Warenkorb",
+  "closeAriaLabel": "Warenkorb schließen",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Zur Wunschliste hinzufügen",
+    "remove": "Entfernen",
+    "continueShopping": "Weiter einkaufen",
+    "checkout": "Kasse"
+  },
+  "empty": {
+    "title": "Ihr Warenkorb ist leer",
+    "description": "Fügen Sie ein paar Produkte hinzu, um zu starten!"
+  },
+  "summary": {
+    "subtotal": "Zwischensumme",
+    "shipping": "Versand",
+    "calculatedAtCheckout": "Wird an der Kasse berechnet",
+    "tax": "Steuern",
+    "estimatedTotal": "Geschätzte Gesamtsumme",
+    "finalShippingNote": "Der endgültige Versand nutzt das Backend-Angebot, nachdem Sie ein Ziel ausgewählt haben."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Langkah tuku cepet",
+  "fallbackNotice": "Pratinjau setelan Quick Buy: langkah backend durung dikonfigurasi, mula modal iki nampilake alur bawaan.",
+  "search": {
+    "categoryLabel": "Kategori",
+    "placeholder": "Goleki produk... (Enter utawa mandheg sedhela kanggo nggoleki)"
+  },
+  "placeholder": {
+    "stepTitle": "Langkah {step}",
+    "stepName": "Langkah {step}"
+  },
+  "summary": {
+    "items": "Item",
+    "weight": "Bobot",
+    "price": "Rega"
+  },
+  "actions": {
+    "toCart": "Menyang kranjang",
+    "payment": "Pembayaran"
+  },
+  "defaultSteps": {
+    "productSearch": "Goleki produk",
+    "specifications": "Pilih spesifikasi",
+    "quantity": "Konfirmasi jumlah",
+    "cartReview": "Priksa kranjang",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Goleki utawa saring produk",
+    "step2": "Pilih spesifikasi/jumlah",
+    "step3": "Konfirmasi informasi produk",
+    "step4": "Rampungake pesenan",
+    "step5": "Rampung lan priksa",
+    "default": "Rampungake langkah iki"
+  },
+  "footer": {
+    "step1": "Lebokake tembung kunci ing kothak telusur kanggo nyaring produk",
+    "step2": "Pilih spesifikasi produk lan jumlah kanggo nerusake",
+    "step3": "Konfirmasi yen informasi produk wis bener",
+    "step4": "Rampungake langkah iki kanggo ngirim/nerusake proses",
+    "step5": "Kabeh langkah wis rampung",
+    "default": "Rampungake langkah iki kanggo nerusake"
+  }
+}

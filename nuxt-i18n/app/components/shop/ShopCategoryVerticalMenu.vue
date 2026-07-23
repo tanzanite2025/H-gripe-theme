@@ -1,7 +1,7 @@
 <template>
-  <nav class="shop-category-menu" aria-label="Shop categories">
+  <nav class="shop-category-menu" :aria-label="t('shopCategoryMenu.ariaLabel')">
     <div v-if="loading" class="shop-category-menu__state">
-      Loading categories...
+      {{ t('shopCategoryMenu.loading') }}
     </div>
 
     <div v-else-if="error" class="shop-category-menu__state shop-category-menu__state--error">
@@ -17,7 +17,7 @@
           @click="handleSelect(null)"
         >
           <span class="shop-category-menu__arrow" aria-hidden="true">→</span>
-          <span class="shop-category-menu__label">All</span>
+          <span class="shop-category-menu__label">{{ t('shopCategoryMenu.all') }}</span>
         </button>
       </li>
 
@@ -38,6 +38,8 @@
 
 <script setup lang="ts">
 import type { ShopCategory } from '~/composables/useShopCategories'
+
+const { t } = useI18n()
 
 defineProps<{
   categories: ShopCategory[]
@@ -81,7 +83,7 @@ const handleSelect = (category: ShopCategory | null) => {
   background: transparent;
   color: rgba(248, 250, 252, 0.94);
   cursor: pointer;
-  font-size: clamp(1.35rem, 2.45vw, 3rem);
+  font-size: clamp(1.15rem, 1.75vw, 2.25rem);
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.045em;

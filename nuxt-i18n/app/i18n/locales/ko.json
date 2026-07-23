@@ -29,6 +29,56 @@
     "registerSuccessMessage": "账户已创建，点击下方按钮一键登录并返回。",
     "registerSuccessCta": "一键登录"
   },
+  "authModal": {
+    "privacyNotice": "We take your privacy seriously. All connections are encrypted and your data stays yours.",
+    "intro": {
+      "login": "Welcome back! Choose a method to sign in:",
+      "register": "Create an account in seconds:"
+    },
+    "divider": {
+      "email": "or with email"
+    },
+    "fields": {
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Remember me"
+    },
+    "actions": {
+      "close": "Close sign-in dialog",
+      "signIn": "Sign in",
+      "signUp": "Sign up",
+      "signingIn": "Signing in...",
+      "signingUp": "Signing up...",
+      "continueWithGoogle": "Continue with Google"
+    },
+    "switch": {
+      "noAccount": "Don't have an account?",
+      "hasAccount": "Already have an account?",
+      "signUpHere": "Sign up here",
+      "signInHere": "Sign in here"
+    },
+    "completion": {
+      "loginTitle": "Signed in",
+      "loginMessage": "Your account data has been synced. Click below to continue.",
+      "googleLoginMessage": "Your Google account is signed in and your data has been synced.",
+      "loginCta": "OK, return",
+      "registerTitle": "Account created",
+      "registerMessage": "Your account has been created. Click below to sign in and return.",
+      "registerCta": "Sign in now"
+    },
+    "validation": {
+      "invalidEmail": "Please enter a valid email address.",
+      "passwordMin": "Password must be at least 8 characters.",
+      "passwordUppercase": "Password must include at least one uppercase letter."
+    },
+    "errors": {
+      "loginFailed": "Login failed. Please try again.",
+      "registrationFailed": "Registration failed. Please try again.",
+      "googleLoginFailed": "Google sign-in failed. Please try again.",
+      "googleInitFailed": "Google sign-in could not be started. Please try again."
+    }
+  },
   "blog": {
     "nav": {
       "all": "All",
@@ -76,7 +126,292 @@
       "openCart": "View cart summary"
     }
   },
+  "cartDrawer": {
+    "ariaLabel": "장바구니",
+    "title": "장바구니",
+    "closeAriaLabel": "장바구니 닫기",
+    "item": {
+      "sku": "SKU"
+    },
+    "actions": {
+      "addToWishlist": "위시리스트에 추가",
+      "remove": "삭제",
+      "continueShopping": "계속 쇼핑하기",
+      "checkout": "결제"
+    },
+    "empty": {
+      "title": "장바구니가 비어 있습니다",
+      "description": "시작하려면 상품을 추가해 보세요!"
+    },
+    "summary": {
+      "subtotal": "소계",
+      "shipping": "배송",
+      "calculatedAtCheckout": "결제 시 계산",
+      "tax": "세금",
+      "estimatedTotal": "예상 총액",
+      "finalShippingNote": "최종 배송비는 목적지를 선택한 뒤 백엔드 견적으로 계산됩니다."
+    }
+  },
   "category": "카테고리",
+  "chatModal": {
+    "actions": {
+      "close": "Close chat",
+      "closeHistory": "Close browsing history",
+      "backToWelcome": "Back to welcome",
+      "switchToChat": "Switch to chat",
+      "contactViaWhatsApp": "Contact via WhatsApp",
+      "whatsapp": "WhatsApp",
+      "email": "Email"
+    },
+    "fallback": {
+      "agent": "Agent",
+      "customer": "Customer",
+      "unknown": "Unknown"
+    },
+    "history": {
+      "title": "Browsing history"
+    },
+    "welcome": {
+      "logoAlt": "Tanzanite chat",
+      "title": "Hi there!",
+      "description": "Chat with our team, track your orders, or find answers in our FAQ.",
+      "onlineTeam": "Online support team",
+      "onlineSummary": "{count} {agentLabel} online · Our team typically replies in a few minutes.",
+      "agentSingular": "agent",
+      "agentPlural": "agents",
+      "startCta": "Start — Chat, Orders & FAQ",
+      "continueCta": "Continue — Chat, Orders & FAQ"
+    },
+    "agentSelector": {
+      "online": "Online",
+      "descriptions": {
+        "tech": "Compatibility, specs, setup, and troubleshooting",
+        "afterSales": "Order tracking, warranty, returns, and post-purchase help",
+        "sales": "Pre-sales questions, pricing, and quotes",
+        "default": "Chat with our team for help and guidance"
+      }
+    },
+    "agentPanel": {
+      "status": {
+        "online": "Online",
+        "busy": "Busy",
+        "away": "Away",
+        "offline": "Offline"
+      },
+      "conversations": "Conversations",
+      "emptyConversations": "No conversations yet",
+      "noMessages": "No messages",
+      "refreshConversations": "Refresh conversations",
+      "backToList": "Back to conversation list",
+      "messagePlaceholder": "Type a message...",
+      "justNow": "Just now"
+    },
+    "tabs": {
+      "products": "Products",
+      "orders": "Orders",
+      "test": "Test",
+      "tire": "Tire",
+      "faq": "FAQ",
+      "warranty": "Warranty",
+      "member": "Member",
+      "calculator": "Calculator"
+    },
+    "transfer": {
+      "title": "Transfer conversation",
+      "targetAgentLabel": "Target agent *",
+      "targetAgentPlaceholder": "Select an agent",
+      "noteLabel": "Transfer note (optional)",
+      "notePlaceholder": "For example: the customer needs technical support...",
+      "cancel": "Cancel",
+      "transferring": "Transferring...",
+      "confirm": "Confirm transfer",
+      "alertSelectAgent": "Select an agent to transfer this conversation to.",
+      "alertCurrentAgent": "You cannot transfer the conversation to the current agent.",
+      "alertSuccess": "Conversation transferred to {agent}.",
+      "alertFailed": "Transfer failed.",
+      "alertRetry": "Transfer failed. Please try again later.",
+      "requestFailed": "Transfer request failed"
+    }
+  },
+  "checkout": {
+    "modal": {
+      "title": "Checkout",
+      "closeAriaLabel": "Close checkout",
+      "sslAlt": "Secure SSL",
+      "sslNote": "Pages use HTTPS with trusted SSL; we only store the result, not your card details.",
+      "pointsHint": "1 point = $0.01, max 50% of order",
+      "actions": {
+        "viewCart": "View cart",
+        "livechat": "Livechat",
+        "email": "Email"
+      },
+      "messages": {
+        "invalidQuote": "Invalid checkout quote response",
+        "unableRefreshQuote": "Unable to refresh checkout quote",
+        "cartSaved": "Your cart has been saved. We'll notify you when shipping becomes available to your region.",
+        "couponApplied": "Coupon applied successfully!",
+        "completeShipping": "Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.",
+        "selectPaypalCountry": "Please select a country/region we can ship to before continuing to PayPal.",
+        "orderSuccess": "Order submitted successfully!",
+        "orderFailed": "Order submission failed, please try again"
+      }
+    },
+    "order": {
+      "itemFallback": "Item"
+    },
+    "payment": {
+      "card": {
+        "title": "Credit / Debit cards",
+        "subtitle": "Secure card page",
+        "description": "Card details are entered on a secure payment page from our provider; we only store your order result.",
+        "stepperDescription": "Enter full shipping info and contact number here, then we redirect you to the PCI-compliant card page. We never store your card number or CVC.",
+        "cta": "Continue to secure payment",
+        "points": {
+          "shipping": "Required: full shipping info + contact number",
+          "immediate": "Use when you want to pay immediately with Visa / Mastercard."
+        }
+      },
+      "paypal": {
+        "title": "Pay with PayPal",
+        "optionTitle": "PayPal",
+        "subtitle": "Express checkout",
+        "description": "You will be redirected to PayPal. We never see or store your PayPal login or card information.",
+        "stepperDescription": "We rely on the shipping address saved in your PayPal account whenever possible. Choose a supported country first so we can confirm fulfillment.",
+        "cta": "Continue to PayPal",
+        "points": {
+          "country": "Required: select a shippable country before continuing."
+        }
+      },
+      "alipay": {
+        "title": "Alipay / WeChat / UnionPay",
+        "optionTitle": "Alipay / WeChat / UnionPay",
+        "subtitle": "Local wallets",
+        "description": "You approve the payment in your local wallet. We still collect shipping info here to prepare dispatch.",
+        "stepperDescription": "Approve payment inside your usual wallet. We still gather shipping details in this tab to prepare dispatch and confirm customs information.",
+        "cta": "Pay with local wallet",
+        "points": {
+          "recipient": "Required: recipient name + phone number",
+          "wallets": "Great for China-mainland wallets and UnionPay."
+        }
+      },
+      "stripe": {
+        "title": "Pay with Stripe",
+        "optionTitle": "Stripe",
+        "subtitle": "3D Secure ready",
+        "description": "Stripe handles your card details and any extra verification. We only store the payment status.",
+        "stepperDescription": "Stripe handles card input and any extra verification. We keep the form minimal here and let Stripe manage the sensitive fields.",
+        "cta": "Continue to Stripe",
+        "points": {
+          "sca": "Great for customers that require SCA/3DS."
+        }
+      },
+      "bank": {
+        "title": "Bank transfer",
+        "subtitle": "Manual invoice",
+        "description": "Place the order first, then send a bank transfer using the reference we show you on the next step.",
+        "stepperDescription": "Place the order, then transfer the funds using the bank instructions shown on the next step. Remember to include your order number as reference.",
+        "cta": "Place order for bank transfer",
+        "points": {
+          "reference": "Include your order number as payment reference."
+        }
+      },
+      "worldfirst": {
+        "title": "WorldFirst",
+        "optionTitle": "WorldFirst",
+        "subtitle": "Cross-border",
+        "description": "Send funds to a local WorldFirst account in your currency. We never access your banking credentials.",
+        "stepperDescription": "Ideal for international or business orders. You pay into a regional WorldFirst account in your currency; they settle the converted funds to us.",
+        "cta": "Continue with WorldFirst",
+        "points": {
+          "b2b": "Recommended for B2B cross-border payments."
+        }
+      }
+    },
+    "stepper": {
+      "common": {
+        "optional": "Optional"
+      },
+      "steps": {
+        "payment": "Choose payment method",
+        "shipping": "Shipping info",
+        "review": "Review & pay"
+      },
+      "payment": {
+        "pickProvider": "Pick a provider",
+        "stepCount": "Step {current} of {total}",
+        "tapCardHint": "Tap a card to view details",
+        "iconAltSuffix": "icon",
+        "selected": "Selected",
+        "tapToView": "Tap to view",
+        "continueWithMethod": "Continue with this method"
+      },
+      "shipping": {
+        "changePaymentMethod": "Change payment method",
+        "addressTitle": "Shipping address",
+        "addressHelp": "If shipping to your area isn't available yet, it doesn't always mean we can't deliver. Contact us and we'll check options for you.",
+        "countryRegion": "Country / Region",
+        "searchCountryPlaceholder": "Search country or region",
+        "selectCountry": "Select a country",
+        "availableForShipping": "Available for shipping",
+        "otherCountries": "Other countries",
+        "recipient": "Recipient",
+        "recipientPlaceholder": "Enter recipient name",
+        "phone": "Phone",
+        "phonePlaceholder": "Enter phone number",
+        "address": "Address",
+        "addressPlaceholder": "Enter detailed address",
+        "unavailableFallback": "Shipping unavailable for this country.",
+        "optionsIntro": "Don’t worry, we have options for you:",
+        "contactSpecialShipping": "Contact us for special shipping arrangements",
+        "useFreightForwarder": "Use a freight forwarder service",
+        "saveCartLater": "Save cart and check back later",
+        "estimatedDelivery": "Estimated delivery: {estimatedDelivery}",
+        "city": "City",
+        "cityPlaceholder": "City",
+        "zipCode": "Zip code",
+        "zipPlaceholder": "Zip code",
+        "continueToReview": "Continue to review →",
+        "completeShippingFirst": "Complete shipping info first",
+        "notRequiredForMethod": "Shipping details are not required for this method.",
+        "state": {
+          "selectCountry": "Select country",
+          "unavailable": "Unavailable",
+          "calculating": "Calculating...",
+          "free": "Free"
+        }
+      },
+      "review": {
+        "backToShipping": "Back to shipping",
+        "coupon": "Coupon",
+        "couponPlaceholder": "Enter code",
+        "applyingCoupon": "Applying…",
+        "applyCoupon": "Apply",
+        "couponApplied": "Coupon applied: {coupon}",
+        "usePointsDiscount": "Use Points Discount",
+        "pointsAvailable": "Available: {points} pts",
+        "noPoints": "No points available yet",
+        "usePoints": "Use points",
+        "pointsUnavailable": "Points unavailable",
+        "pointsToUse": "Points to use",
+        "earnPointsHint": "Earn points on your next order and apply them here for instant discounts.",
+        "orderNotes": "Order notes",
+        "orderNotesPlaceholder": "Add any delivery instructions or special requests…",
+        "orderSummary": "Order summary",
+        "continueToCheckout": "Continue to checkout"
+      },
+      "summary": {
+        "qty": "Qty",
+        "empty": "Order details will appear here once items are in your cart.",
+        "subtotal": "Subtotal",
+        "shipping": "Shipping",
+        "tax": "Tax",
+        "pointsDiscount": "Points discount",
+        "couponDiscount": "Coupon discount",
+        "giftCardDiscount": "Gift card discount",
+        "total": "Total"
+      }
+    }
+  },
   "common": {
     "close": "Close",
     "previous": "Previous",
@@ -145,8 +480,57 @@
     "previewAlt": "Map preview",
     "iframeTitle": "Google map"
   },
+  "cookieConsent": {
+    "banner": {
+      "message": "We use cookies for a better experience.",
+      "learnMore": "Learn more",
+      "customize": "Customize",
+      "accept": "Accept"
+    },
+    "modal": {
+      "title": "Your Cookie Preferences",
+      "closeAriaLabel": "Close cookie preferences",
+      "descriptionBeforePolicy": "We use cookies to improve your experience on this website. You may choose which types of cookies to allow and change your preferences at any time. Disabling cookies may impact your experience on this website. You can learn more by viewing our ",
+      "policyLink": "Cookie Policy",
+      "descriptionAfterPolicy": "."
+    },
+    "options": {
+      "essential": {
+        "title": "Essential Cookies",
+        "description": "Cookies required to enable basic website functionality."
+      },
+      "performance": {
+        "title": "Performance Cookies",
+        "description": "Cookies used to understand how the website is being used."
+      },
+      "preference": {
+        "title": "Preference Cookies",
+        "description": "Cookies that are used to enhance the functionality of the website."
+      },
+      "advertising": {
+        "title": "Advertising Cookies",
+        "description": "Cookies used to deliver advertising that is more relevant to your interests."
+      }
+    },
+    "actions": {
+      "savePreferences": "Save Preferences",
+      "rejectAll": "Reject All Cookies",
+      "acceptAll": "Accept All Cookies"
+    }
+  },
   "cta": {
     "becomeMemb": "🎉회원이 되어 최대 30% 할인을 받으세요🎉"
+  },
+  "dockMenu": {
+    "openSidebar": "사이드바 열기",
+    "menu": "메뉴",
+    "chat": "채팅",
+    "quickBuy": "빠른 구매",
+    "quick": "빠른",
+    "openCart": "장바구니 열기",
+    "cart": "카트",
+    "openWishlist": "위시리스트 열기",
+    "saved": "저장"
   },
   "faq": {
     "title": "Frequently Asked Questions",
@@ -230,7 +614,8 @@
     "actions": {
       "removeAttachment": "Remove",
       "submit": "Send feedback",
-      "reset": "Start over"
+      "reset": "Start over",
+      "authCta": "Register / Login"
     },
     "messages": {
       "submitting": "Sending your feedback…",
@@ -821,6 +1206,22 @@
     "section9Title": "9. 본 정책의 변경",
     "section9Body": "당사는 필요에 따라 본 개인정보 처리 방침을 수정·갱신할 수 있습니다. 변경 사항은 본 페이지에 게시되며, 업데이트된 시행일이 함께 표시됩니다."
   },
+  "productInformationTabs": {
+    "sectionLabel": "제품 정보",
+    "tabListLabel": "제품 정보 섹션",
+    "tabs": {
+      "details": "상세 정보",
+      "afterSales": "사후 서비스",
+      "packaging": "포장",
+      "shipping": "배송"
+    },
+    "empty": {
+      "details": "제품 상세 정보가 아직 추가되지 않았습니다.",
+      "afterSales": "사후 서비스 정보가 아직 추가되지 않았습니다.",
+      "packaging": "포장 정보가 아직 추가되지 않았습니다.",
+      "shipping": "배송 정보가 아직 추가되지 않았습니다."
+    }
+  },
   "products": {
     "searchResults": "검색 결과",
     "searchFor": "검색",
@@ -855,9 +1256,75 @@
   "promo": {
     "memberCta": "회원 대상 최대 50% 할인"
   },
+  "quickBuy": {
+    "stepsAriaLabel": "빠른 구매 단계",
+    "fallbackNotice": "Quick Buy 설정 미리보기: 백엔드 단계가 아직 구성되지 않아 기본 자리 표시자 흐름을 표시합니다.",
+    "search": {
+      "categoryLabel": "카테고리",
+      "placeholder": "상품 검색... (Enter 또는 잠시 후 검색)"
+    },
+    "placeholder": {
+      "stepTitle": "{step}단계",
+      "stepName": "{step}단계"
+    },
+    "summary": {
+      "items": "상품",
+      "weight": "무게",
+      "price": "가격"
+    },
+    "actions": {
+      "toCart": "장바구니로",
+      "payment": "결제"
+    },
+    "defaultSteps": {
+      "productSearch": "상품 검색",
+      "specifications": "사양 선택",
+      "quantity": "수량 확인",
+      "cartReview": "장바구니 확인",
+      "checkout": "체크아웃"
+    },
+    "hints": {
+      "step1": "상품 검색 또는 필터링",
+      "step2": "사양/수량 선택",
+      "step3": "상품 정보 확인",
+      "step4": "주문 완료",
+      "step5": "완료 및 검토",
+      "default": "이 단계 완료"
+    },
+    "footer": {
+      "step1": "검색창에 키워드를 입력해 상품을 필터링하세요",
+      "step2": "계속하려면 상품 사양과 수량을 선택하세요",
+      "step3": "상품 정보가 올바른지 확인하세요",
+      "step4": "이 단계를 완료해 제출/계속 진행하세요",
+      "step5": "모든 단계가 완료되었습니다",
+      "default": "계속하려면 이 단계를 완료하세요"
+    }
+  },
   "search": {
     "placeholder": "검색...",
     "button": "검색"
+  },
+  "shopCategoryMenu": {
+    "ariaLabel": "쇼핑 카테고리",
+    "loading": "카테고리를 불러오는 중...",
+    "all": "전체"
+  },
+  "shopPage": {
+    "categoryRailLabel": "쇼핑 카테고리 내비게이션",
+    "products": {
+      "loading": "제품을 불러오는 중...",
+      "empty": {
+        "title": "아직 사용할 수 있는 제품이 없습니다.",
+        "description": "Tanzanite 플러그인을 통해 제품이 게시되면 여기에 자동으로 표시됩니다."
+      }
+    },
+    "actions": {
+      "addToWishlist": "위시리스트에 추가",
+      "view": "보기"
+    },
+    "feedback": {
+      "title": "Tanzanite 쇼핑몰에 대한 의견을 공유하세요"
+    }
   },
   "sidebar": {
     "page1": "Category",
@@ -977,5 +1444,21 @@
     "cardDesc": "Enter your product code to check warranty status and history.",
     "checkNow": "Check Now"
   },
-  "welcome": "환영합니다"
+  "welcome": "환영합니다",
+  "wishlistDrawer": {
+    "title": "위시리스트",
+    "subtitle": "위시리스트에 추가한 상품이 여기에 표시됩니다.",
+    "closeAriaLabel": "위시리스트 닫기",
+    "loading": "위시리스트 로딩 중...",
+    "productImageAlt": "상품 이미지",
+    "productFallback": "상품",
+    "empty": {
+      "title": "위시리스트가 비어 있습니다",
+      "description": "마음에 드는 상품을 저장해 나중에 빠르게 찾고 공유하세요."
+    },
+    "actions": {
+      "shareToChat": "채팅으로 공유",
+      "remove": "삭제"
+    }
+  }
 }

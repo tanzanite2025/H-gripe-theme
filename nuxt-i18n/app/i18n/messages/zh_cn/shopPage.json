@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "商品分类导航",
+  "products": {
+    "loading": "正在加载商品...",
+    "empty": {
+      "title": "暂时没有可用商品。",
+      "description": "商品通过 Tanzanite 插件发布后，会自动显示在这里。"
+    }
+  },
+  "actions": {
+    "addToWishlist": "添加到心愿单",
+    "view": "查看"
+  },
+  "feedback": {
+    "title": "分享你对 Tanzanite 商店的反馈"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Taarifa za bidhaa",
+  "tabListLabel": "Sehemu za taarifa za bidhaa",
+  "tabs": {
+    "details": "Maelezo",
+    "afterSales": "Huduma baada ya mauzo",
+    "packaging": "Ufungashaji",
+    "shipping": "Usafirishaji"
+  },
+  "empty": {
+    "details": "Maelezo ya bidhaa bado hayajaongezwa.",
+    "afterSales": "Taarifa za huduma baada ya mauzo bado hazijaongezwa.",
+    "packaging": "Taarifa za ufungashaji bado hazijaongezwa.",
+    "shipping": "Taarifa za usafirishaji bado hazijaongezwa."
+  }
+}

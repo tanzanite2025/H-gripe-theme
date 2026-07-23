@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "سبد خرید",
+  "title": "سبد خرید",
+  "closeAriaLabel": "بستن سبد خرید",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "افزودن به علاقه‌مندی‌ها",
+    "remove": "حذف",
+    "continueShopping": "ادامه خرید",
+    "checkout": "تسویه حساب"
+  },
+  "empty": {
+    "title": "سبد خرید شما خالی است",
+    "description": "برای شروع چند محصول اضافه کنید!"
+  },
+  "summary": {
+    "subtotal": "جمع جزء",
+    "shipping": "ارسال",
+    "calculatedAtCheckout": "در تسویه حساب محاسبه می‌شود",
+    "tax": "مالیات",
+    "estimatedTotal": "جمع تخمینی",
+    "finalShippingNote": "هزینه نهایی ارسال پس از انتخاب مقصد از قیمت backend استفاده می‌کند."
+  }
+}

@@ -57,7 +57,7 @@
           class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-4 mb-8"
         >
           <div class="faqs-group__header flex items-center justify-center border-b border-slate-800/50">
-            <h3 class="faqs-group__title tz-faq-category-title text-slate-200 text-center">
+            <h3 class="faqs-group__title tz-faq-category-title tz-text-primary text-center">
               {{ group.pageTitle }}
             </h3>
           </div>
@@ -75,11 +75,11 @@
                 :class="{ 'bg-white/5': expandedItems.has(item.id) }"
                 @click="toggleItem(item.id)"
               >
-                <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[10px] uppercase font-bold tracking-wider border border-slate-700">
+                <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-slate-800 tz-text-muted text-[10px] uppercase font-bold tracking-wider border border-slate-700">
                   {{ item.category }}
                 </span>
                 <span 
-                  class="faqs-item__question tz-faq-question flex-1 text-slate-200 group-hover:text-sky-400 transition-colors"
+                  class="faqs-item__question tz-faq-question flex-1 tz-text-primary group-hover:text-sky-400 transition-colors"
                    :class="{ 'text-sky-400': expandedItems.has(item.id) }"
                 >
                   {{ item.question }}
@@ -102,7 +102,7 @@
                 leave-to-class="opacity-0 max-h-0"
               >
                 <div v-if="expandedItems.has(item.id)" class="overflow-hidden bg-slate-950/30">
-                  <div class="faqs-item__answer tz-faq-answer px-4 pb-4 pt-1 text-slate-400" v-html="item.answer" />
+                  <div class="faqs-item__answer tz-faq-answer px-4 pb-4 pt-1 tz-text-secondary" v-html="item.answer" />
                 </div>
               </Transition>
             </div>
@@ -119,7 +119,7 @@
       >
         <button
           type="button"
-          class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-lg transition-all"
+          class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-slate-800 tz-text-secondary hover:bg-slate-700 hover:text-white hover:shadow-lg transition-all"
           @click="loadMoreGroups"
         >
           View More Content
@@ -291,7 +291,7 @@ const loadMoreGroups = () => {
 .faqs-page__intro {
   margin: 0 auto 1.5rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   max-width: 600px;
   text-align: center;
 }
@@ -310,13 +310,13 @@ const loadMoreGroups = () => {
   border-radius: 9999px;
   border: 1px solid rgba(148, 163, 184, 0.1);
   background: rgba(30, 41, 59, 0.5);
-  color: #e2e8f0;
+  color: var(--tz-text-primary);
   font-size: 0.95rem;
   transition: all 0.2s;
 }
 
 .faqs-search__input::placeholder {
-  color: rgba(148, 163, 184, 0.5);
+  color: var(--tz-text-muted);
 }
 
 .faqs-search__input:focus {
@@ -331,7 +331,7 @@ const loadMoreGroups = () => {
   right: 1.25rem;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(148, 163, 184, 0.6);
+  color: var(--tz-text-muted);
   cursor: pointer;
   font-size: 0.85rem;
 }
@@ -356,7 +356,7 @@ const loadMoreGroups = () => {
 .faqs-empty {
   text-align: center;
   padding: 4rem 1rem;
-  color: rgba(148, 163, 184, 0.6);
+  color: var(--tz-text-muted);
   font-size: 1rem;
   background: rgba(30, 41, 59, 0.3);
   border-radius: 1rem;

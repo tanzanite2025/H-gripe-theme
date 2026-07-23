@@ -82,7 +82,7 @@
              <div class="flex-shrink-0 pt-1">
                 <img src="/icons/payment/stripe.svg?v=4" alt="Stripe" class="h-5 w-auto opacity-80" />
              </div>
-             <p class="text-xs text-slate-400 leading-relaxed">
+             <p class="text-xs tz-text-secondary leading-relaxed">
                Payments are securely processed by <strong>Stripe</strong>. Your payment data is encrypted and secure. We do not store your card details.
              </p>
           </div>
@@ -265,13 +265,13 @@ const openQuickFromPayment = () => {
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .support-page__intro {
   margin: 0 0 1.5rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .support-intro-banner {
@@ -287,7 +287,7 @@ const openQuickFromPayment = () => {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
 }
 
 .support-section {
@@ -299,7 +299,7 @@ const openQuickFromPayment = () => {
   font-size: var(--tz-type-section-title);
   line-height: 1.35;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--tz-text-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   text-align: center;
@@ -375,7 +375,7 @@ const openQuickFromPayment = () => {
   margin: 0 0 0.5rem 0;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
 }
 
 .support-card__highlight {
@@ -413,7 +413,7 @@ const openQuickFromPayment = () => {
   margin: 0;
   padding-left: 1.25rem;
   font-size: 0.95rem;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
 }
 
 .support-list__item + .support-list__item {
@@ -424,7 +424,7 @@ const openQuickFromPayment = () => {
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
   text-align: center;
   max-width: 800px;
   margin: 0 auto;

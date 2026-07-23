@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Produktinformation",
+  "tabListLabel": "Sektioner med produktinformation",
+  "tabs": {
+    "details": "Detaljer",
+    "afterSales": "Eftersalg",
+    "packaging": "Emballage",
+    "shipping": "Forsendelse"
+  },
+  "empty": {
+    "details": "Produktdetaljer er endnu ikke tilføjet.",
+    "afterSales": "Eftersalgsinformation er endnu ikke tilføjet.",
+    "packaging": "Emballageinformation er endnu ikke tilføjet.",
+    "shipping": "Forsendelsesinformation er endnu ikke tilføjet."
+  }
+}

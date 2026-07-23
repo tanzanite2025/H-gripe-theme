@@ -40,7 +40,7 @@
             v-if="!props.embedded"
             class="absolute right-4 top-4 w-9 h-9 rounded-full border border-white/20 hover:bg-white/10 flex items-center justify-center z-20"
             type="button"
-            aria-label="Close"
+            :aria-label="t('authModal.actions.close')"
             @click="close"
           >
             x
@@ -50,7 +50,7 @@
             v-else
             class="absolute right-4 top-4 wa-drawer-close-btn z-20 bg-black/20 backdrop-blur-md"
             type="button"
-            aria-label="Close"
+            :aria-label="t('authModal.actions.close')"
             @click="close"
           >
             <span class="text-lg leading-none">x</span>
@@ -68,37 +68,37 @@
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'login'
                       ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_12px_26px_-14px_rgba(15,23,42,1)]'
-                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/80 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
+                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-secondary shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
                     @click="setMode('login')"
                   >
-                    {{ $t('auth.signIn', 'Sign in') }}
+                    {{ t('authModal.actions.signIn') }}
                   </button>
                   <button
                     type="button"
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'register'
                       ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_12px_26px_-14px_rgba(15,23,42,1)]'
-                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/80 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
+                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-secondary shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
                     @click="setMode('register')"
                   >
-                    {{ $t('auth.signUp', 'Sign up') }}
+                    {{ t('authModal.actions.signUp') }}
                   </button>
                 </div>
 
                 <!-- Privacy Notice -->
                 <div class="mt-3 px-4 py-3 rounded-xl bg-[rgba(15,23,42,0.6)] backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                  <p class="text-center text-xs text-slate-400 leading-relaxed">
+                  <p class="text-center text-xs tz-text-secondary leading-relaxed">
                     <span class="inline-block mr-1">🛡️</span>
-                    {{ $t('auth.privacyNotice', 'We take your privacy seriously. All connections are encrypted and your data stays yours.') }}
+                    {{ t('authModal.privacyNotice') }}
                   </p>
                 </div>
 
                 <div class="space-y-4">
                   <!-- 顶部说明文字 -->
-                  <div class="text-center text-sm text-white/70">
+                  <div class="text-center text-sm tz-text-secondary">
                     {{ mode === 'login'
-                      ? $t('auth.welcomeBack', 'Welcome back! Choose a method to sign in:')
-                      : $t('auth.joinToday', 'Create an account in seconds:') }}
+                      ? t('authModal.intro.login')
+                      : t('authModal.intro.register') }}
                   </div>
 
                   <!-- 社交登录按钮 -->
@@ -106,7 +106,7 @@
                     <button 
                       type="button" 
                       class="social-btn" 
-                      aria-label="Continue with Google"
+                      :aria-label="t('authModal.actions.continueWithGoogle')"
                       :disabled="googleAuthLoading"
                       @click="handleGoogleLogin"
                     >
@@ -121,16 +121,16 @@
                     <p v-if="googleAuthError" class="text-red-400 text-xs text-center mt-1">{{ googleAuthError }}</p>
                   </div>
 
-                  <div class="flex items-center gap-2 text-white/40 text-xs uppercase tracking-[0.2em] justify-center">
+                  <div class="flex items-center gap-2 tz-text-muted text-xs uppercase tracking-[0.2em] justify-center">
                     <span class="flex-1 h-px bg-white/10"></span>
-                    <span>{{ $t('auth.orWithEmail', 'or with email') }}</span>
+                    <span>{{ t('authModal.divider.email') }}</span>
                     <span class="flex-1 h-px bg-white/10"></span>
                   </div>
 
                   <!-- 登录表单 -->
                   <form v-if="mode === 'login'" @submit.prevent="handleLogin" class="space-y-3">
                     <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.email', 'Email') }}</label>
+                      <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.email') }}</label>
                       <input
                         type="text"
                         v-model="loginForm.username"
@@ -140,7 +140,7 @@
                       />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.password', 'Password') }}</label>
+                      <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.password') }}</label>
                       <input
                         type="password"
                         v-model="loginForm.password"
@@ -149,18 +149,18 @@
                         autocomplete="current-password"
                       />
                     </div>
-                    <label class="flex items-center gap-2 cursor-pointer text-sm text-white/70">
+                    <label class="flex items-center gap-2 cursor-pointer text-sm tz-text-secondary">
                       <input type="checkbox" v-model="loginForm.remember" class="w-4 h-4" />
-                      {{ $t('auth.rememberMe', 'Remember me') }}
+                      {{ t('authModal.fields.rememberMe') }}
                     </label>
                     <button type="submit" :disabled="loginForm.loading" class="primary-btn w-full">
-                      {{ loginForm.loading ? $t('auth.signingIn', 'Signing in...') : $t('auth.signIn', 'Sign in') }}
+                      {{ loginForm.loading ? t('authModal.actions.signingIn') : t('authModal.actions.signIn') }}
                     </button>
                     <p v-if="loginForm.error" class="text-red-400 text-sm text-center">{{ loginForm.error }}</p>
-                    <p class="text-center text-sm text-white/60">
-                      {{ $t('auth.dontHaveAccount', "Don't have an account?") }}
+                    <p class="text-center text-sm tz-text-secondary">
+                      {{ t('authModal.switch.noAccount') }}
                       <button type="button" class="underline-offset-4 underline" @click="setMode('register')">
-                        {{ $t('auth.signUpHere', 'Sign up here') }}
+                        {{ t('authModal.switch.signUpHere') }}
                       </button>
                     </p>
                   </form>
@@ -168,25 +168,25 @@
                   <!-- 注册表单 -->
                   <form v-else @submit.prevent="handleRegister" class="space-y-3">
                     <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.username', 'Username') }}</label>
+                      <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.username') }}</label>
                       <input type="text" v-model="registerForm.username" required class="form-input" autocomplete="username" />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.email', 'Email') }}</label>
+                      <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.email') }}</label>
                       <input type="email" v-model="registerForm.email" required class="form-input" autocomplete="email" />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-white/80 mb-1">{{ $t('auth.password', 'Password') }}</label>
+                      <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.password') }}</label>
                       <input type="password" v-model="registerForm.password" required class="form-input" autocomplete="new-password" />
                     </div>
                     <button type="submit" :disabled="registerForm.loading" class="primary-btn w-full">
-                      {{ registerForm.loading ? $t('auth.signingUp', 'Signing up...') : $t('auth.signUp', 'Sign up') }}
+                      {{ registerForm.loading ? t('authModal.actions.signingUp') : t('authModal.actions.signUp') }}
                     </button>
                     <p v-if="registerForm.error" class="text-red-400 text-sm text-center">{{ registerForm.error }}</p>
-                    <p class="text-center text-sm text-white/60">
-                      {{ $t('auth.alreadyHaveAccount', 'Already have an account?') }}
+                    <p class="text-center text-sm tz-text-secondary">
+                      {{ t('authModal.switch.hasAccount') }}
                       <button type="button" class="underline-offset-4 underline" @click="setMode('login')">
-                        {{ $t('auth.signInHere', 'Sign in here') }}
+                        {{ t('authModal.switch.signInHere') }}
                       </button>
                     </p>
                   </form>
@@ -200,7 +200,7 @@
                   </div>
                   <div class="space-y-2">
                     <h3 class="text-2xl font-semibold">{{ completionState?.title }}</h3>
-                    <p class="text-white/70">{{ completionState?.message }}</p>
+                    <p class="tz-text-secondary">{{ completionState?.message }}</p>
                   </div>
                   <button type="button" class="primary-btn w-full" @click="handleCompletionCta">
                     {{ completionState?.ctaLabel }}
@@ -223,9 +223,11 @@ import { useGoogleAuth } from '~/composables/useGoogleAuth'
 import { z } from 'zod'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
+const { t } = useI18n()
+
 const authSchema = z.object({
-  email: z.string().email('无效的电子邮件格式'),
-  password: z.string().min(8, '密码至少需要8个字符').regex(/[A-Z]/, '密码必须包含至少一个大写字母')
+  email: z.string().email(t('authModal.validation.invalidEmail')),
+  password: z.string().min(8, t('authModal.validation.passwordMin')).regex(/[A-Z]/, t('authModal.validation.passwordUppercase'))
 })
 
 const props = defineProps({
@@ -241,7 +243,6 @@ const emit = defineEmits<{
   (event: 'mode-change', value: 'login' | 'register'): void
 }>()
 
-const { t: $t } = useI18n()
 const auth = useAuth()
 
 const containerPlacementClass = computed(() => {
@@ -319,12 +320,12 @@ const handleGoogleCredentialResponse = async (response: { credential: string }) 
     // 登录成功
     completionState.value = {
       type: 'login',
-      title: $t('auth.loginSuccessTitle', '登录成功'),
-      message: $t('auth.googleLoginSuccess', 'Google 账户登录成功，数据已同步。'),
-      ctaLabel: $t('auth.loginSuccessCta', '好的，返回')
+      title: t('authModal.completion.loginTitle'),
+      message: t('authModal.completion.googleLoginMessage'),
+      ctaLabel: t('authModal.completion.loginCta')
     }
   } catch (err) {
-    googleAuthError.value = err instanceof Error ? err.message : 'Google 登录失败'
+    googleAuthError.value = err instanceof Error ? err.message : t('authModal.errors.googleLoginFailed')
     console.error('[AuthModal] Google login failed:', err)
   } finally {
     googleAuthLoading.value = false
@@ -341,10 +342,10 @@ const handleGoogleLogin = async () => {
     if (initialized) {
       googleAuth.prompt()
     } else {
-      googleAuthError.value = googleAuth.error.value || 'Google 登录初始化失败'
+      googleAuthError.value = googleAuth.error.value || t('authModal.errors.googleInitFailed')
     }
   } catch (err) {
-    googleAuthError.value = err instanceof Error ? err.message : 'Google 登录初始化失败'
+    googleAuthError.value = err instanceof Error ? err.message : t('authModal.errors.googleInitFailed')
   } finally {
     // 注意：loading 状态将在 handleGoogleCredentialResponse 中关闭
     // 如果用户关闭弹窗，需要手动关闭 loading
@@ -379,12 +380,12 @@ const handleLogin = async () => {
     await auth.ensureSession?.()
     completionState.value = {
       type: 'login',
-      title: $t('auth.loginSuccessTitle', '登录成功'),
-      message: $t('auth.loginSuccessMessage', 'Your account data has been synced, click below to continue.'),
-      ctaLabel: $t('auth.loginSuccessCta', '好的，返回')
+      title: t('authModal.completion.loginTitle'),
+      message: t('authModal.completion.loginMessage'),
+      ctaLabel: t('authModal.completion.loginCta')
     }
   } catch (error) {
-    loginForm.value.error = error instanceof Error ? error.message : 'Login failed'
+    loginForm.value.error = error instanceof Error ? error.message : t('authModal.errors.loginFailed')
   } finally {
     loginForm.value.loading = false
   }
@@ -413,12 +414,12 @@ const handleRegister = async () => {
     await auth.ensureSession?.()
     completionState.value = {
       type: 'register',
-      title: $t('auth.registerSuccessTitle', '注册成功'),
-      message: $t('auth.registerSuccessMessage', '账户已创建，点击下方按钮一键登录并返回。'),
-      ctaLabel: $t('auth.registerSuccessCta', '一键登录')
+      title: t('authModal.completion.registerTitle'),
+      message: t('authModal.completion.registerMessage'),
+      ctaLabel: t('authModal.completion.registerCta')
     }
   } catch (error) {
-    registerForm.value.error = error instanceof Error ? error.message : 'Registration failed'
+    registerForm.value.error = error instanceof Error ? error.message : t('authModal.errors.registrationFailed')
   } finally {
     registerForm.value.loading = false
   }

@@ -1,25 +1,25 @@
 <template>
   <div v-if="post">
     <header class="flex flex-col gap-2">
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
         {{ t('blog.nav.wheelsbuild') }}
       </p>
-      <h1 class="text-2xl font-semibold text-slate-50">
+      <h1 class="text-2xl font-semibold tz-text-primary">
         {{ post.title }}
       </h1>
-      <p class="text-sm text-slate-300">
+      <p class="text-sm tz-text-muted">
         {{ formatDate(post.date) }}
       </p>
     </header>
 
     <article
-      class="mt-6 rounded-2xl border border-slate-700/60 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] p-4 text-slate-200"
+      class="mt-6 rounded-2xl border border-slate-700/60 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] p-4 tz-text-secondary"
     >
       <div class="space-y-4" v-html="post.contentHtml"></div>
     </article>
   </div>
 
-  <div v-else class="text-sm text-slate-300">
+  <div v-else class="text-sm tz-text-secondary">
     {{ t('blog.notFound') }}
   </div>
 </template>

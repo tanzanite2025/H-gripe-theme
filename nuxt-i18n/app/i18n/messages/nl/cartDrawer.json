@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Winkelwagen",
+  "title": "Wagen",
+  "closeAriaLabel": "Winkelwagen sluiten",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Toevoegen aan verlanglijst",
+    "remove": "Verwijderen",
+    "continueShopping": "Verder winkelen",
+    "checkout": "Afrekenen"
+  },
+  "empty": {
+    "title": "Je winkelwagen is leeg",
+    "description": "Voeg producten toe om te beginnen!"
+  },
+  "summary": {
+    "subtotal": "Subtotaal",
+    "shipping": "Verzending",
+    "calculatedAtCheckout": "Berekend bij afrekenen",
+    "tax": "Belasting",
+    "estimatedTotal": "Geschat totaal",
+    "finalShippingNote": "De uiteindelijke verzending gebruikt de backend-offerte nadat je een bestemming kiest."
+  }
+}

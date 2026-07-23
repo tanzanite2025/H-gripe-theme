@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "د پېرود کارټ",
+  "title": "کارټ",
+  "closeAriaLabel": "کارټ بند کړئ",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "د خوښې لیست ته زیات کړئ",
+    "remove": "لرې کړئ",
+    "continueShopping": "پېرود ته دوام ورکړئ",
+    "checkout": "چیک‌اوت"
+  },
+  "empty": {
+    "title": "ستاسو کارټ تش دی",
+    "description": "د پیل لپاره څو محصولات اضافه کړئ!"
+  },
+  "summary": {
+    "subtotal": "فرعي ټول",
+    "shipping": "لېږد",
+    "calculatedAtCheckout": "په چیک‌اوت کې محاسبه کېږي",
+    "tax": "مالیه",
+    "estimatedTotal": "اټکلي ټول",
+    "finalShippingNote": "وروستی لېږد د منزل له ټاکلو وروسته د backend quote کاروي."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Varukorg",
+  "title": "Korg",
+  "closeAriaLabel": "Stäng varukorg",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Lägg till i önskelista",
+    "remove": "Ta bort",
+    "continueShopping": "Fortsätt handla",
+    "checkout": "Kassa"
+  },
+  "empty": {
+    "title": "Din varukorg är tom",
+    "description": "Lägg till några produkter för att komma igång!"
+  },
+  "summary": {
+    "subtotal": "Delsumma",
+    "shipping": "Frakt",
+    "calculatedAtCheckout": "Beräknas i kassan",
+    "tax": "Skatt",
+    "estimatedTotal": "Beräknad totalsumma",
+    "finalShippingNote": "Slutlig frakt använder backend-offerten efter att du valt destination."
+  }
+}

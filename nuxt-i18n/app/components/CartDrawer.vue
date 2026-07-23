@@ -24,7 +24,7 @@
           class="wa-drawer-shell"
           aria-modal="true"
           role="dialog"
-          aria-label="Shopping Cart"
+          :aria-label="t('cartDrawer.ariaLabel')"
         >
         <!-- 背景装饰 -->
         <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
@@ -32,12 +32,12 @@
         <!-- 头部 -->
         <div class="wa-drawer-header relative z-10">
           <h2 class="wa-drawer-title text-base sm:text-xl">
-            🛒 Cart ({{ cartCount }})
+            🛒 {{ t('cartDrawer.title') }} ({{ cartCount }})
           </h2>
           <button
             @click="closeCart"
             class="wa-drawer-close-btn"
-            aria-label="Close cart"
+            :aria-label="t('cartDrawer.closeAriaLabel')"
           >
             <span class="text-lg leading-none">x</span>
           </button>
@@ -59,7 +59,7 @@
                   :alt="item.title"
                   class="w-full h-full object-cover"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center text-white/50">
+              <div v-else class="w-full h-full flex items-center justify-center tz-text-muted">
                   <Icon name="lucide:image" class="w-8 h-8" />
                 </div>
               </div>
@@ -69,8 +69,8 @@
                 <h3 class="text-sm font-medium text-white truncate">
                   {{ item.title }}
                 </h3>
-                <p v-if="item.sku" class="text-xs text-white/50 mt-1">
-                  SKU: {{ item.sku }}
+              <p v-if="item.sku" class="text-xs tz-text-muted mt-1">
+                  {{ t('cartDrawer.item.sku') }}: {{ item.sku }}
                 </p>
                 <p class="text-sm font-semibold text-white mt-2">
                   {{ formatPrice(item.price) }}
@@ -106,7 +106,8 @@
                   <button
                     @click="handleAddToWishlist(item)"
                     class="w-7 h-7 flex items-center justify-center rounded border border-white/[0.18] hover:bg-white/10 transition-colors text-white"
-                    title="Add to wishlist"
+                    :title="t('cartDrawer.actions.addToWishlist')"
+                    :aria-label="t('cartDrawer.actions.addToWishlist')"
                   >
                     <Icon name="lucide:heart" class="w-4 h-4" />
                   </button>
@@ -115,7 +116,7 @@
                     @click="removeFromCart(item.id)"
                     class="ml-auto text-red-400 hover:text-red-300 text-sm font-medium"
                   >
-                    Remove
+                    {{ t('cartDrawer.actions.remove') }}
                   </button>
                 </div>
               </div>
@@ -131,14 +132,14 @@
         <!-- 空购物车 -->
         <div v-else class="wa-drawer-content relative z-10 flex flex-col">
           <div class="flex flex-col items-center justify-center py-12">
-            <Icon name="lucide:shopping-bag" class="w-24 h-24 text-white/30 mb-4" />
-            <p class="text-white/70 text-lg font-medium mb-2">Your cart is empty</p>
-            <p class="text-white/50 text-sm mb-6">Add some products to get started!</p>
+            <Icon name="lucide:shopping-bag" class="w-24 h-24 tz-text-muted mb-4" />
+            <p class="tz-text-primary text-lg font-medium mb-2">{{ t('cartDrawer.empty.title') }}</p>
+            <p class="tz-text-secondary text-sm mb-6">{{ t('cartDrawer.empty.description') }}</p>
             <button
               @click="closeCart"
               class="px-6 py-2 bg-[#6b73ff] text-white rounded-lg hover:bg-[#5d65e8] transition-colors"
             >
-              Continue Shopping
+              {{ t('cartDrawer.actions.continueShopping') }}
             </button>
           </div>
 
@@ -152,27 +153,27 @@
         <div v-if="cartItems.length > 0" class="border-t border-white/10 px-6 py-4 bg-white/[0.03] relative z-10">
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-sm">
-              <span class="text-white/70">Subtotal</span>
+              <span class="tz-text-secondary">{{ t('cartDrawer.summary.subtotal') }}</span>
               <span class="font-medium text-white">{{ formatPrice(subtotal) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-white/70">Shipping</span>
+              <span class="tz-text-secondary">{{ t('cartDrawer.summary.shipping') }}</span>
               <span class="font-medium text-white text-right">
-                Calculated at checkout
+                {{ t('cartDrawer.summary.calculatedAtCheckout') }}
               </span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-white/70">Tax</span>
+              <span class="tz-text-secondary">{{ t('cartDrawer.summary.tax') }}</span>
               <span class="font-medium text-white">{{ formatPrice(tax) }}</span>
             </div>
             <div class="flex justify-between text-base font-semibold pt-2 border-t border-white/10">
-              <span class="text-white">Estimated total</span>
+              <span class="text-white">{{ t('cartDrawer.summary.estimatedTotal') }}</span>
               <span class="text-white">{{ formatPrice(total) }}</span>
             </div>
           </div>
 
-          <p class="text-xs text-white/50 mb-3 text-center">
-            Final shipping uses the backend quote after you choose a destination.
+          <p class="text-xs tz-text-secondary mb-3 text-center">
+            {{ t('cartDrawer.summary.finalShippingNote') }}
           </p>
 
           <div class="flex gap-3">
@@ -180,13 +181,13 @@
               @click="closeCart"
               class="flex-1 px-4 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
             >
-              Continue Shopping
+              {{ t('cartDrawer.actions.continueShopping') }}
             </button>
             <button
               @click="openCheckout"
               class="flex-1 px-4 py-3 bg-gradient-to-r from-[#6b73ff] to-[#a78bfa] text-white rounded-lg hover:brightness-110 transition-all font-medium shadow-lg"
             >
-              Checkout →
+              {{ t('cartDrawer.actions.checkout') }} →
             </button>
           </div>
         </div>
@@ -221,6 +222,7 @@ const {
 } = useCart()
 
 const { addToWishlist } = useWishlist()
+const { t } = useI18n()
 
 const SIDEBAR_TOKEN_CART = 'cart-drawer'
 

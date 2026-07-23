@@ -1,65 +1,66 @@
 {
-  "pageEyebrow": "Product feedback",
-  "pageTitle": "Help Us Build Better Wheels",
-  "pageIntro": "Share your riding experience, product ideas, and issues. Every submission is reviewed by our product and service teams.",
-  "eyebrow": "Feedback & Suggestions",
-  "title": "Tell us about your experience",
-  "subtitle": "Detailed context helps us reproduce your setup faster.",
+  "pageEyebrow": "产品反馈",
+  "pageTitle": "帮助我们打造更好的轮组",
+  "pageIntro": "分享您的骑行体验、产品想法和遇到的问题。每条提交都会由我们的产品与服务团队审核。",
+  "eyebrow": "反馈与建议",
+  "title": "告诉我们您的体验",
+  "subtitle": "更详细的上下文有助于我们更快复现您的配置。",
   "stat": {
-    "responses": "Avg. monthly responses",
+    "responses": "每月平均回复",
     "responsesValue": "240+",
-    "reviewTime": "Review window",
-    "reviewTimeValue": "< 48 hrs"
+    "reviewTime": "审核时长",
+    "reviewTimeValue": "< 48 小时"
   },
   "fields": {
-    "fullName": "Full name",
-    "email": "Email",
-    "country": "Country / Region",
-    "orderNumber": "Order number",
-    "productCategory": "Product category",
-    "requestType": "Feedback type",
-    "message": "Describe your feedback",
-    "attachments": "Attach photos",
-    "membersOnly": "Members only",
-    "consent": "I agree to share this information so the Tanzanite team can follow up."
+    "fullName": "姓名",
+    "email": "邮箱",
+    "country": "国家 / 地区",
+    "orderNumber": "订单号",
+    "productCategory": "产品类别",
+    "requestType": "反馈类型",
+    "message": "描述您的反馈",
+    "attachments": "上传图片",
+    "membersOnly": "仅限会员",
+    "consent": "我同意共享这些信息，以便 Tanzanite 团队跟进。"
   },
   "placeholders": {
-    "fullName": "e.g. Alex Chen",
+    "fullName": "例如：张三",
     "email": "alex\\u0040example.com",
-    "country": "Select a country",
-    "orderNumber": "e.g. TZ-45821",
-    "productCategory": "Select a category",
-    "message": "Describe what happened, which product you used, and what you’d like to improve."
+    "country": "选择国家 / 地区",
+    "orderNumber": "例如：TZ-45821",
+    "productCategory": "选择类别",
+    "message": "描述发生了什么、您使用了哪个产品，以及您希望改进什么。"
   },
   "productCategories": {
-    "mtb": "MTB / Trail",
-    "road": "Road / All-road",
-    "gravel": "Gravel / CX",
-    "accessories": "Accessories",
-    "other": "Other / custom"
+    "mtb": "山地 / 越野",
+    "road": "公路 / 全路况",
+    "gravel": "碎石路 / CX",
+    "accessories": "配件",
+    "other": "其他 / 自定义"
   },
   "requestTypes": {
-    "product": "Product suggestions",
-    "service": "Customer service",
-    "logistics": "Logistics / shipping",
-    "warranty": "Warranty / quality",
-    "other": "Other"
+    "product": "产品建议",
+    "service": "客服支持",
+    "logistics": "物流 / 运输",
+    "warranty": "保修 / 品质",
+    "other": "其他"
   },
   "upload": {
-    "prompt": "Drop images or click to upload (WEBP/JPG/PNG)",
-    "limit": "Max 3 files, 800×800 recommended."
+    "prompt": "拖放图片，或点击上传（WEBP/JPG/PNG）",
+    "limit": "最多 3 个文件，建议尺寸 800×800。"
   },
   "actions": {
-    "removeAttachment": "Remove",
-    "submit": "Send feedback",
-    "reset": "Start over"
+    "removeAttachment": "移除",
+    "submit": "发送反馈",
+    "reset": "重新开始",
+    "authCta": "注册 / 登录"
   },
   "messages": {
-    "submitting": "Sending your feedback…",
-    "submitted": "Thanks! Your submission is queued for review.",
-    "loginRequired": "Log in to attach files.",
-    "membersOnly": "Attachments are available for eligible members.",
-    "submitError": "We could not submit your feedback. Please try again."
+    "submitting": "正在发送您的反馈……",
+    "submitted": "谢谢！您的提交已进入审核队列。",
+    "loginRequired": "请登录后再上传附件。",
+    "membersOnly": "符合条件的会员可上传附件。",
+    "submitError": "我们无法提交您的反馈，请重试。"
   },
-  "charactersLeft": "{count} characters left"
+  "charactersLeft": "还可输入 {count} 个字符"
 }

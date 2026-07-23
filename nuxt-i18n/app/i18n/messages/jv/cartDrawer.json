@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Kranjang blanja",
+  "title": "Kranjang",
+  "closeAriaLabel": "Tutup kranjang",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Tambah menyang wishlist",
+    "remove": "Busak",
+    "continueShopping": "Terus blanja",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Kranjangmu isih kosong",
+    "description": "Tambahna sawetara produk kanggo miwiti!"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "shipping": "Pangiriman",
+    "calculatedAtCheckout": "Dihitung nalika checkout",
+    "tax": "Pajak",
+    "estimatedTotal": "Total perkiraan",
+    "finalShippingNote": "Pangiriman final nganggo kutipan backend sawise sampeyan milih tujuan."
+  }
+}

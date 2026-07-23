@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Navigatie voor winkelcategorieën",
+  "products": {
+    "loading": "Producten laden...",
+    "empty": {
+      "title": "Er zijn nog geen producten beschikbaar.",
+      "description": "Zodra producten via de Tanzanite-plugin worden gepubliceerd, verschijnen ze hier automatisch."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Toevoegen aan verlanglijst",
+    "view": "Bekijken"
+  },
+  "feedback": {
+    "title": "Deel je feedback over de Tanzanite-winkel"
+  }
+}

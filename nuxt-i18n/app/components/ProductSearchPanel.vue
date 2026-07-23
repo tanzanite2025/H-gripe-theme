@@ -264,7 +264,7 @@ watch(freeTextQuery, () => {
 }
 
 .search-input-inner::placeholder {
-  color: rgba(148,163,184,0.7);
+  color: var(--tz-text-muted);
 }
 
 .btn-group {

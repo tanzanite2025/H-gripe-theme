@@ -4,14 +4,14 @@
       <h2 class="text-lg md:text-xl font-semibold text-slate-50">
         {{ titleText }}
       </h2>
-      <p v-if="subtitleText" class="mt-1 text-sm text-slate-400">
+      <p v-if="subtitleText" class="mt-1 text-sm tz-text-secondary">
         {{ subtitleText }}
       </p>
     </header>
 
     <!-- Search -->
     <div v-if="showSearchComputed" class="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
-      <label class="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <label class="text-xs font-medium uppercase tracking-wide tz-text-secondary">
         {{ $t('feedback.searchLabel', 'Search feedback') }}
       </label>
       <div class="flex flex-1 items-center gap-2">
@@ -26,10 +26,10 @@
 
     <!-- List -->
     <div class="space-y-3">
-      <p v-if="loadingList" class="text-sm text-slate-400">
+      <p v-if="loadingList" class="text-sm tz-text-secondary">
         {{ $t('feedback.loading', 'Loading feedback...') }}
       </p>
-      <p v-else-if="filteredItems.length === 0" class="text-sm text-slate-400">
+      <p v-else-if="filteredItems.length === 0" class="text-sm tz-text-secondary">
         {{ $t('feedback.empty', 'No feedback has been submitted for this page yet.') }}
       </p>
       <article
@@ -42,7 +42,7 @@
           <span class="text-sm font-medium text-slate-100">
             {{ item.name || $t('feedback.anonymous', 'Member') }}
           </span>
-          <span class="text-xs text-slate-500">
+          <span class="text-xs tz-text-muted">
             {{ formatDate(item.created_at) }}
           </span>
         </header>
@@ -56,7 +56,7 @@
     <div class="mt-6 border-t border-white/10 pt-4 md:pt-5">
       <!-- Eligibility message -->
       <div v-if="eligibilityState && !eligibilityState.can_post" class="space-y-3">
-        <p class="text-sm text-slate-300">
+        <p class="text-sm tz-text-secondary">
           {{ $t('feedback.loginRequired', 'Please sign in to leave feedback.') }}
         </p>
         <div class="flex flex-wrap gap-2">
@@ -79,12 +79,12 @@
 
       <!-- Form -->
       <form v-else @submit.prevent="handleSubmit" class="space-y-3">
-        <p class="text-sm text-slate-300">
+        <p class="text-sm tz-text-secondary">
           {{ $t('feedback.formIntro', 'Share your thoughts to help us improve this page.') }}
         </p>
 
         <div class="space-y-2">
-          <label class="block text-xs font-medium text-slate-400">
+          <label class="block text-xs font-medium tz-text-secondary">
             {{ $t('feedback.messageLabel', 'Your feedback') }}
           </label>
           <textarea
@@ -97,7 +97,7 @@
 
         <div class="grid gap-3 md:grid-cols-2">
           <div class="space-y-1.5">
-            <label class="block text-xs font-medium text-slate-400">
+            <label class="block text-xs font-medium tz-text-secondary">
               {{ $t('feedback.optionalName', 'Name (optional)') }}
             </label>
             <input
@@ -108,7 +108,7 @@
             />
           </div>
           <div class="space-y-1.5">
-            <label class="block text-xs font-medium text-slate-400">
+            <label class="block text-xs font-medium tz-text-secondary">
               {{ $t('feedback.optionalEmail', 'Email (optional, not public)') }}
             </label>
             <input

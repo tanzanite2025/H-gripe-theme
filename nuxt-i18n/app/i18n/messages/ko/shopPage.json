@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "쇼핑 카테고리 내비게이션",
+  "products": {
+    "loading": "제품을 불러오는 중...",
+    "empty": {
+      "title": "아직 사용할 수 있는 제품이 없습니다.",
+      "description": "Tanzanite 플러그인을 통해 제품이 게시되면 여기에 자동으로 표시됩니다."
+    }
+  },
+  "actions": {
+    "addToWishlist": "위시리스트에 추가",
+    "view": "보기"
+  },
+  "feedback": {
+    "title": "Tanzanite 쇼핑몰에 대한 의견을 공유하세요"
+  }
+}

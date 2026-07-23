@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Panier",
+  "title": "Panier",
+  "closeAriaLabel": "Fermer le panier",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Ajouter à la liste de souhaits",
+    "remove": "Retirer",
+    "continueShopping": "Continuer vos achats",
+    "checkout": "Paiement"
+  },
+  "empty": {
+    "title": "Votre panier est vide",
+    "description": "Ajoutez quelques produits pour commencer !"
+  },
+  "summary": {
+    "subtotal": "Sous-total",
+    "shipping": "Livraison",
+    "calculatedAtCheckout": "Calculée au paiement",
+    "tax": "Taxes",
+    "estimatedTotal": "Total estimé",
+    "finalShippingNote": "La livraison finale utilise le devis backend après le choix de la destination."
+  }
+}

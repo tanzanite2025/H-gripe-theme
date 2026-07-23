@@ -127,6 +127,6 @@ const close = () => {
   margin-top: 0.35rem;
   font-size: 0.8rem;
   line-height: 1.4;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 </style>

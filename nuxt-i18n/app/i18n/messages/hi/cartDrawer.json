@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "शॉपिंग कार्ट",
+  "title": "कार्ट",
+  "closeAriaLabel": "कार्ट बंद करें",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "विशलिस्ट में जोड़ें",
+    "remove": "हटाएं",
+    "continueShopping": "खरीदारी जारी रखें",
+    "checkout": "चेकआउट"
+  },
+  "empty": {
+    "title": "आपका कार्ट खाली है",
+    "description": "शुरू करने के लिए कुछ उत्पाद जोड़ें!"
+  },
+  "summary": {
+    "subtotal": "उप-योग",
+    "shipping": "शिपिंग",
+    "calculatedAtCheckout": "चेकआउट पर गणना होगी",
+    "tax": "कर",
+    "estimatedTotal": "अनुमानित कुल",
+    "finalShippingNote": "गंतव्य चुनने के बाद अंतिम शिपिंग backend quote से तय होगी।"
+  }
+}

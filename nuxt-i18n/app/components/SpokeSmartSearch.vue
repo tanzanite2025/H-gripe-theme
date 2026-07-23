@@ -3,7 +3,7 @@
     <!-- Search Header -->
     <div class="relative mb-6">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+        <svg class="h-5 w-5 tz-text-muted" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
         </svg>
       </div>
@@ -38,22 +38,22 @@
         <div class="relative p-5 grid gap-4 md:grid-cols-[1fr,auto]">
           <!-- Setup Info -->
           <div>
-            <h3 class="text-sm font-semibold text-slate-200 mb-1 group-hover:text-sky-300 transition-colors">
+        <h3 class="text-sm font-semibold tz-text-primary mb-1 group-hover:text-sky-300 transition-colors">
               {{ config.name }}
             </h3>
-            <p v-if="config.description" class="text-xs text-slate-400 mb-3 line-clamp-1">
+            <p v-if="config.description" class="text-xs tz-text-secondary mb-3 line-clamp-1">
               {{ config.description }}
             </p>
             
             <!-- Specs Tag Cloud -->
             <div class="flex flex-wrap gap-2">
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 tz-text-secondary border border-slate-700">
                 {{ config.spokeCount }}H
               </span>
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 tz-text-secondary border border-slate-700">
                 {{ config.crossing }}X
               </span>
-               <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+               <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 tz-text-secondary border border-slate-700">
                 {{ config.nippleType === 'hidden' ? 'Hidden Nipple' : 'Standard Nipple' }}
               </span>
             </div>
@@ -63,14 +63,14 @@
           <div class="flex items-center gap-6 border-t border-slate-800 pt-4 md:border-t-0 md:border-l md:pl-6 md:pt-0">
              <!-- Left -->
              <div class="text-center">
-                <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">Left</div>
+                <div class="text-[10px] uppercase tracking-wider tz-text-muted mb-0.5">Left</div>
                 <div class="text-lg font-mono font-bold text-sky-400">
                    {{ calculateResult(config).left }}<span class="text-xs text-sky-600/70 ml-0.5">mm</span>
                 </div>
              </div>
              <!-- Right -->
              <div class="text-center">
-                <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">Right</div>
+                <div class="text-[10px] uppercase tracking-wider tz-text-muted mb-0.5">Right</div>
                  <div class="text-lg font-mono font-bold text-emerald-400">
                    {{ calculateResult(config).right }}<span class="text-xs text-emerald-600/70 ml-0.5">mm</span>
                 </div>
@@ -82,10 +82,10 @@
       <!-- Empty State -->
       <div 
         v-if="query.length > 1 && matchingConfigs.length === 0"
-        class="text-center py-12 rounded-xl border border-dashed border-slate-800 text-slate-500"
+        class="text-center py-12 rounded-xl border border-dashed border-slate-800 tz-text-muted"
       >
         <p class="text-sm">No verified builds found for "{{ query }}".</p>
-        <p class="text-xs mt-1 text-slate-600">Try searching for generic terms like "350" or "Mavic".</p>
+        <p class="text-xs mt-1 tz-text-muted">Try searching for generic terms like "350" or "Mavic".</p>
       </div>
 
     </TransitionGroup>

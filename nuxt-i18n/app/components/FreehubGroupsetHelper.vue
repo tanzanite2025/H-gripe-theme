@@ -3,14 +3,14 @@
     <h3 class="mb-2 text-sm font-semibold text-slate-100">
       Freehub body quick finder
     </h3>
-    <p class="mb-3 text-xs text-slate-400">
+    <p class="mb-3 text-xs tz-text-secondary">
       Select your drivetrain brand and groupset to see which freehub body type is typically required. Always cross-check
       with the official compatibility charts from the drivetrain and hub manufacturers.
     </p>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div class="sm:w-40">
-        <label class="block text-xs font-medium text-slate-300" for="freehub-brand">
+        <label class="block text-xs font-medium tz-text-secondary" for="freehub-brand">
           Drivetrain brand
         </label>
         <select
@@ -32,7 +32,7 @@
       </div>
 
       <div class="sm:w-56">
-        <label class="block text-xs font-medium text-slate-300" for="freehub-groupset">
+        <label class="block text-xs font-medium tz-text-secondary" for="freehub-groupset">
           Groupset
         </label>
         <select
@@ -56,14 +56,14 @@
 
       <p
         v-if="!activeOption"
-        class="text-xs text-slate-500"
+        class="text-xs tz-text-muted"
       >
         Choose a brand and groupset to see a suggested freehub body type.
       </p>
 
       <div
         v-else
-        class="text-xs text-slate-200"
+        class="text-xs tz-text-secondary"
       >
         <p class="font-semibold text-sky-300">
           Recommended freehub body:
@@ -71,7 +71,7 @@
         </p>
         <p
           v-if="activeOption.notes"
-          class="mt-0.5 text-[11px] text-slate-400"
+          class="mt-0.5 text-[11px] tz-text-muted"
         >
           {{ activeOption.notes }}
         </p>

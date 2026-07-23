@@ -2,8 +2,8 @@
   <div class="company-page">
     <h1 class="sr-only">Terms of Service</h1>
 
-    <div class="policies-content mt-4 space-y-8 text-slate-300">
-      <p class="text-sm text-slate-400">
+    <div class="policies-content mt-4 space-y-8 tz-text-secondary">
+      <p class="text-sm tz-text-secondary">
         Please read these terms carefully before using our website or making a purchase.
       </p>
 
@@ -19,7 +19,7 @@
         <p class="text-sm leading-relaxed mb-3">
           Permission is granted to temporarily view the materials on this website for personal, non-commercial use. This license does not permit modification, copying, or reverse engineering.
         </p>
-        <ul class="list-disc list-inside text-sm space-y-2 text-slate-400">
+        <ul class="list-disc list-inside text-sm space-y-2 tz-text-secondary">
           <li>Using materials for commercial purposes</li>
           <li>Removing any copyright or proprietary notices</li>
           <li>Transferring materials to another person</li>
@@ -100,7 +100,7 @@
       </section>
 
       <div class="pt-6 border-t border-slate-800">
-        <p class="text-xs text-slate-500">Last updated: December 2024</p>
+        <p class="text-xs tz-text-muted">Last updated: December 2024</p>
       </div>
     </div>
   </div>

@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Troli beli-belah",
+  "title": "Troli",
+  "closeAriaLabel": "Tutup troli",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Tambah ke wishlist",
+    "remove": "Buang",
+    "continueShopping": "Terus membeli-belah",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Troli anda kosong",
+    "description": "Tambah beberapa produk untuk bermula!"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "shipping": "Penghantaran",
+    "calculatedAtCheckout": "Dikira semasa checkout",
+    "tax": "Cukai",
+    "estimatedTotal": "Jumlah anggaran",
+    "finalShippingNote": "Penghantaran akhir menggunakan sebut harga backend selepas anda memilih destinasi."
+  }
+}

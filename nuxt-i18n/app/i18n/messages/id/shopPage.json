@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Navigasi kategori toko",
+  "products": {
+    "loading": "Memuat produk...",
+    "empty": {
+      "title": "Belum ada produk yang tersedia.",
+      "description": "Setelah produk dipublikasikan melalui plugin Tanzanite, produk akan muncul otomatis di sini."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Tambahkan ke wishlist",
+    "view": "Lihat"
+  },
+  "feedback": {
+    "title": "Bagikan masukan Anda tentang toko Tanzanite"
+  }
+}

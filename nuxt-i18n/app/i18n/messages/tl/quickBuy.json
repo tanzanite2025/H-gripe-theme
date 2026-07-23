@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Mga hakbang sa mabilisang pagbili",
+  "fallbackNotice": "Preview ng Quick Buy setup: hindi pa nakaayos ang backend steps, kaya ipinapakita ng modal na ito ang default placeholder flow.",
+  "search": {
+    "categoryLabel": "Kategorya",
+    "placeholder": "Maghanap ng produkto... (Enter o huminto sandali para maghanap)"
+  },
+  "placeholder": {
+    "stepTitle": "Hakbang {step}",
+    "stepName": "Hakbang {step}"
+  },
+  "summary": {
+    "items": "Mga item",
+    "weight": "Timbang",
+    "price": "Presyo"
+  },
+  "actions": {
+    "toCart": "Sa cart",
+    "payment": "Bayad"
+  },
+  "defaultSteps": {
+    "productSearch": "Maghanap ng produkto",
+    "specifications": "Pumili ng detalye",
+    "quantity": "Kumpirmahin ang dami",
+    "cartReview": "Suriin ang cart",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Maghanap o mag-filter ng produkto",
+    "step2": "Piliin ang detalye/dami",
+    "step3": "Kumpirmahin ang impormasyon ng produkto",
+    "step4": "Kumpletuhin ang order",
+    "step5": "Tapusin at suriin",
+    "default": "Kumpletuhin ang hakbang na ito"
+  },
+  "footer": {
+    "step1": "Maglagay ng keywords sa search box para i-filter ang mga produkto",
+    "step2": "Piliin ang detalye at dami ng produkto para magpatuloy",
+    "step3": "Kumpirmahin na tama ang impormasyon ng produkto",
+    "step4": "Kumpletuhin ang hakbang na ito para isumite/ipagpatuloy ang proseso",
+    "step5": "Kumpleto na ang lahat ng hakbang",
+    "default": "Kumpletuhin ang hakbang na ito para magpatuloy"
+  }
+}

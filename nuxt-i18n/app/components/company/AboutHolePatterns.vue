@@ -2,7 +2,7 @@
   <section id="hole-patterns" class="company-section">
       <div class="company-section__header flex flex-col items-center justify-center text-center mb-10 w-full px-4">
         <h2 class="sr-only">Hole Patterns</h2>
-        <p class="text-[0.95rem] text-slate-400 max-w-4xl w-full text-center leading-relaxed">
+        <p class="text-[0.95rem] tz-text-secondary max-w-4xl w-full text-center leading-relaxed">
           TANZANITE offers a variety of rim drilling patterns to meet different hub geometries and lacing requirements.
         </p>
       </div>
@@ -32,7 +32,7 @@
          <!-- Card 1: Our Support -->
          <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Our Support</h3>
-            <ul class="space-y-3 text-sm text-slate-300">
+            <ul class="space-y-3 text-sm tz-text-secondary">
                <li class="flex items-start gap-3">
                   <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"></span>
                   <span><strong class="text-white">Symmetrical Drilling:</strong> Suitable for standard hubs, providing balanced spoke tension.</span>
@@ -55,8 +55,8 @@
          <!-- Card 2: Customization Services -->
          <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Customization Services</h3>
-            <p class="text-sm text-slate-400 mb-3">We support customers with tailored drilling solutions based on specific needs:</p>
-            <ul class="space-y-3 text-sm text-slate-300">
+            <p class="text-sm tz-text-secondary mb-3">We support customers with tailored drilling solutions based on specific needs:</p>
+            <ul class="space-y-3 text-sm tz-text-secondary">
                <li class="flex items-start gap-3">
                   <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
                   <span>Special hole counts</span>
@@ -75,8 +75,8 @@
          <!-- Card 3: Advantages -->
          <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Advantages of Automated Machinery</h3>
-            <p class="text-sm text-slate-400 mb-3">All drilling processes are carried out using our <strong class="text-white">self-developed automated machinery</strong>, ensuring:</p>
-            <ul class="space-y-3 text-sm text-slate-300">
+            <p class="text-sm tz-text-secondary mb-3">All drilling processes are carried out using our <strong class="text-white">self-developed automated machinery</strong>, ensuring:</p>
+            <ul class="space-y-3 text-sm tz-text-secondary">
                <li class="flex items-start gap-3">
                   <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
                   <span>High-precision hole placement</span>
@@ -95,7 +95,7 @@
          <!-- Card 4: Our Commitment -->
          <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Our Commitment</h3>
-             <p class="text-sm text-slate-300 leading-relaxed">
+             <p class="text-sm tz-text-secondary leading-relaxed">
                By combining automation with customization, TANZANITE provides the most suitable rim drilling solutions for different riders and brands, guaranteeing long-term stability and reliability.
              </p>
          </div>

@@ -1,4 +1,5 @@
 import { ref, watch, nextTick, computed } from 'vue'
+import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
@@ -16,6 +17,7 @@ import {
 import type { ChatRoomState, ChatTab } from '~/composables/chat/useChatStorage'
 
 export const useWhatsAppState = (emit: any) => {
+  const { t } = useI18n()
   const { user, isAgent, agentId, request: authRequest } = useAuth()
   const { addToCart, openCartFromChat } = useCart()
   const {
@@ -62,12 +64,12 @@ export const useWhatsAppState = (emit: any) => {
   }
   
   // 状态标签
-  const agentStatusLabels: Record<string, string> = {
-    online: 'Online',
-    busy: 'Busy',
-    away: 'Away',
-    offline: 'Offline'
-  }
+  const agentStatusLabels = computed<Record<string, string>>(() => ({
+    online: t('chatModal.agentPanel.status.online'),
+    busy: t('chatModal.agentPanel.status.busy'),
+    away: t('chatModal.agentPanel.status.away'),
+    offline: t('chatModal.agentPanel.status.offline')
+  }))
   
   // 欢迎页状态（客服模式下不显示欢迎页）
   const showWelcomeScreen = ref(true)
@@ -880,12 +882,12 @@ export const useWhatsAppState = (emit: any) => {
   // 转接会话
   async function handleTransfer() {
     if (!transferToAgent.value) {
-      alert('请选择要转接的客服')
+      alert(t('chatModal.transfer.alertSelectAgent'))
       return
     }
     
     if (transferToAgent.value === selectedAgent.value?.id) {
-      alert('不能转接给当前客服')
+      alert(t('chatModal.transfer.alertCurrentAgent'))
       return
     }
     
@@ -905,11 +907,11 @@ export const useWhatsAppState = (emit: any) => {
             note: transferNote.value,
           }),
         },
-        'Transfer failed'
+        t('chatModal.transfer.requestFailed')
       )
       
       if (data.success) {
-        alert(`转接成功！会话已转接给 ${data.data.to_agent}`)
+        alert(t('chatModal.transfer.alertSuccess', { agent: data.data.to_agent }))
         showTransferModal.value = false
         transferToAgent.value = ''
         transferNote.value = ''
@@ -917,11 +919,11 @@ export const useWhatsAppState = (emit: any) => {
         // 刷新消息列表以显示系统消息
         loadMessagesFromStorage()
       } else {
-        alert(data.message || '转接失败')
+        alert(data.message || t('chatModal.transfer.alertFailed'))
       }
     } catch (error) {
       console.error('转接失败:', error)
-      alert('转接失败，请稍后重试')
+      alert(t('chatModal.transfer.alertRetry'))
     } finally {
       isTransferring.value = false
     }

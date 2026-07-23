@@ -11,26 +11,26 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Order Number -->
           <div>
-            <label class="block text-slate-300 text-sm font-bold mb-1">Order Number</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">Order Number</label>
             <input 
               v-model="form.order_number" 
               type="text" 
               required
               :disabled="!isFormLocked"
-              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 transition-colors disabled:opacity-50"
+              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors disabled:opacity-50"
               placeholder="e.g. TANZ-12345"
             />
           </div>
 
           <!-- Email -->
           <div>
-            <label class="block text-slate-300 text-sm font-bold mb-1">Email Address</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">Email Address</label>
             <input 
               v-model="form.email" 
               type="email" 
               required
               :disabled="!isFormLocked"
-              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 transition-colors disabled:opacity-50"
+              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors disabled:opacity-50"
               placeholder="Your email address"
             />
           </div>
@@ -63,26 +63,26 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Tire Pressure -->
           <div>
-            <label class="block text-slate-300 text-sm font-bold mb-1">Tire Pressure (PSI)</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">Tire Pressure (PSI)</label>
             <input 
               v-model="form.tire_pressure" 
               type="text" 
-              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 transition-colors"
+              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors"
               placeholder="e.g. 80"
             />
           </div>
 
           <!-- Tubeless -->
           <div>
-            <label class="block text-slate-300 text-sm font-bold mb-1">Tubeless Setup?</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">Tubeless Setup?</label>
             <div class="flex items-center space-x-6 mt-2">
                <label class="flex items-center cursor-pointer">
                  <input type="radio" v-model="form.is_tubeless" value="yes" class="form-radio text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/50">
-                 <span class="ml-2 text-slate-300">Yes</span>
+                 <span class="ml-2 tz-text-secondary">Yes</span>
                </label>
                <label class="flex items-center cursor-pointer">
                  <input type="radio" v-model="form.is_tubeless" value="no" class="form-radio text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/50">
-                 <span class="ml-2 text-slate-300">No</span>
+                 <span class="ml-2 tz-text-secondary">No</span>
                </label>
             </div>
           </div>
@@ -90,19 +90,19 @@
 
         <!-- Description -->
         <div>
-          <label class="block text-slate-300 text-sm font-bold mb-1">Issue Description</label>
+          <label class="block tz-text-primary text-sm font-bold mb-1">Issue Description</label>
           <textarea 
             v-model="form.issue_description" 
             rows="4"
             required
-            class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 transition-colors"
+            class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors"
             placeholder="Please describe the issue in detail..."
           ></textarea>
         </div>
 
         <!-- Images -->
         <div>
-          <label class="block text-slate-300 text-sm font-bold mb-1">Upload Images</label>
+          <label class="block tz-text-primary text-sm font-bold mb-1">Upload Images</label>
           <div class="flex items-center gap-3">
             <button 
               type="button" 
@@ -111,7 +111,7 @@
             >
               Choose Files
             </button>
-            <span class="text-slate-400 text-sm">
+            <span class="tz-text-muted text-sm">
               {{ imageFiles.length > 0 ? `${imageFiles.length} file(s) selected` : 'No file chosen' }}
             </span>
           </div>
@@ -123,12 +123,12 @@
             @change="handleImages"
             class="hidden"
           />
-          <p class="mt-1 text-xs text-slate-500">Max 5MB per image.</p>
+          <p class="mt-1 text-xs tz-text-muted">Max 5MB per image.</p>
         </div>
 
         <!-- Video -->
         <div>
-          <label class="block text-slate-300 text-sm font-bold mb-1">Upload Video (Optional)</label>
+          <label class="block tz-text-primary text-sm font-bold mb-1">Upload Video (Optional)</label>
           <div class="flex items-center gap-3">
             <button 
               type="button" 
@@ -137,7 +137,7 @@
             >
               Choose File
             </button>
-            <span class="text-slate-400 text-sm">
+            <span class="tz-text-muted text-sm">
               {{ videoFile ? videoFile.name : 'No file chosen' }}
             </span>
           </div>
@@ -148,7 +148,7 @@
             @change="handleVideo"
             class="hidden"
           />
-          <p class="mt-1 text-xs text-slate-500">Max 20MB. For larger videos, please provide a link in the description.</p>
+          <p class="mt-1 text-xs tz-text-muted">Max 20MB. For larger videos, please provide a link in the description.</p>
         </div>
 
         <!-- Submit Button -->

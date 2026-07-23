@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Кошык пакупак",
+  "title": "Кошык",
+  "closeAriaLabel": "Закрыць кошык",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Дадаць у абранае",
+    "remove": "Выдаліць",
+    "continueShopping": "Працягнуць пакупкі",
+    "checkout": "Аформіць"
+  },
+  "empty": {
+    "title": "Ваш кошык пусты",
+    "description": "Дадайце некалькі тавараў, каб пачаць!"
+  },
+  "summary": {
+    "subtotal": "Прамежкавы вынік",
+    "shipping": "Дастаўка",
+    "calculatedAtCheckout": "Разлічваецца пры афармленні",
+    "tax": "Падатак",
+    "estimatedTotal": "Арыенціровачны вынік",
+    "finalShippingNote": "Канчатковая дастаўка выкарыстоўвае прапанову backend пасля выбару пункта прызначэння."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "빠른 구매 단계",
+  "fallbackNotice": "Quick Buy 설정 미리보기: 백엔드 단계가 아직 구성되지 않아 기본 자리 표시자 흐름을 표시합니다.",
+  "search": {
+    "categoryLabel": "카테고리",
+    "placeholder": "상품 검색... (Enter 또는 잠시 후 검색)"
+  },
+  "placeholder": {
+    "stepTitle": "{step}단계",
+    "stepName": "{step}단계"
+  },
+  "summary": {
+    "items": "상품",
+    "weight": "무게",
+    "price": "가격"
+  },
+  "actions": {
+    "toCart": "장바구니로",
+    "payment": "결제"
+  },
+  "defaultSteps": {
+    "productSearch": "상품 검색",
+    "specifications": "사양 선택",
+    "quantity": "수량 확인",
+    "cartReview": "장바구니 확인",
+    "checkout": "체크아웃"
+  },
+  "hints": {
+    "step1": "상품 검색 또는 필터링",
+    "step2": "사양/수량 선택",
+    "step3": "상품 정보 확인",
+    "step4": "주문 완료",
+    "step5": "완료 및 검토",
+    "default": "이 단계 완료"
+  },
+  "footer": {
+    "step1": "검색창에 키워드를 입력해 상품을 필터링하세요",
+    "step2": "계속하려면 상품 사양과 수량을 선택하세요",
+    "step3": "상품 정보가 올바른지 확인하세요",
+    "step4": "이 단계를 완료해 제출/계속 진행하세요",
+    "step5": "모든 단계가 완료되었습니다",
+    "default": "계속하려면 이 단계를 완료하세요"
+  }
+}

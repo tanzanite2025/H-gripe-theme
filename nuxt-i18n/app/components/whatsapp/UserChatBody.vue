@@ -14,7 +14,7 @@
               ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
               : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
           >
-            {{ tab.label }}
+            {{ t(tab.labelKey) }}
           </button>
         </div>
       </div>
@@ -97,6 +97,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from '#imports'
 import ChatTab from './ChatTab.vue'
 import ProductTab from './ProductTab.vue'
 import OrderTab from './OrderTab.vue'
@@ -105,6 +107,8 @@ import FaqTab from './FaqTab.vue'
 import WarrantyTab from './WarrantyTab.vue'
 import TireRimHelper from '~/components/TireRimHelper.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   activeTab: string
@@ -158,16 +162,16 @@ const emit = defineEmits<{
   'openTestReport': []
 }>()
 
-const tabs = [
-  { id: 'share', label: 'Products' },
-  { id: 'orders', label: 'Orders' },
-  { id: 'test', label: 'Test' },
-  { id: 'tire', label: 'Tire' },
-  { id: 'faq', label: 'FAQ' },
-  { id: 'warranty', label: 'Warranty' },
-  { id: 'member', label: 'Member' },
-  { id: 'calculator', label: 'Calculator' },
-]
+const tabs = computed(() => [
+  { id: 'share', labelKey: 'chatModal.tabs.products' },
+  { id: 'orders', labelKey: 'chatModal.tabs.orders' },
+  { id: 'test', labelKey: 'chatModal.tabs.test' },
+  { id: 'tire', labelKey: 'chatModal.tabs.tire' },
+  { id: 'faq', labelKey: 'chatModal.tabs.faq' },
+  { id: 'warranty', labelKey: 'chatModal.tabs.warranty' },
+  { id: 'member', labelKey: 'chatModal.tabs.member' },
+  { id: 'calculator', labelKey: 'chatModal.tabs.calculator' },
+])
 
 const handleTabClick = (id: string) => {
   emit('update:activeTab', id)

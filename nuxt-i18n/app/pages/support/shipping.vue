@@ -78,7 +78,7 @@ useHead({
 .support-page__intro {
   margin: 0 0 1.25rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .support-section {
@@ -97,6 +97,6 @@ useHead({
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 </style>

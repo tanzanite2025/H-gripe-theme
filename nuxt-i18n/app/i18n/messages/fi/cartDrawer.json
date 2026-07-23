@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Ostoskori",
+  "title": "Kori",
+  "closeAriaLabel": "Sulje kori",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Lisää suosikkeihin",
+    "remove": "Poista",
+    "continueShopping": "Jatka ostoksia",
+    "checkout": "Kassalle"
+  },
+  "empty": {
+    "title": "Korisi on tyhjä",
+    "description": "Lisää tuotteita aloittaaksesi!"
+  },
+  "summary": {
+    "subtotal": "Välisumma",
+    "shipping": "Toimitus",
+    "calculatedAtCheckout": "Lasketaan kassalla",
+    "tax": "Vero",
+    "estimatedTotal": "Arvioitu yhteensä",
+    "finalShippingNote": "Lopullinen toimitus käyttää backend-tarjousta, kun olet valinnut määränpään."
+  }
+}

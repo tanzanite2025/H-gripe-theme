@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "ショッピングカート",
+  "title": "カート",
+  "closeAriaLabel": "カートを閉じる",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "お気に入りに追加",
+    "remove": "削除",
+    "continueShopping": "買い物を続ける",
+    "checkout": "チェックアウト"
+  },
+  "empty": {
+    "title": "カートは空です",
+    "description": "まずは商品を追加しましょう！"
+  },
+  "summary": {
+    "subtotal": "小計",
+    "shipping": "配送",
+    "calculatedAtCheckout": "チェックアウト時に計算",
+    "tax": "税金",
+    "estimatedTotal": "見積合計",
+    "finalShippingNote": "配送先を選択した後、最終送料はバックエンドの見積もりで計算されます。"
+  }
+}

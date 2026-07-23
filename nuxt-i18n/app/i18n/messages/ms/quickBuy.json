@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Langkah beli pantas",
+  "fallbackNotice": "Pratonton tetapan Quick Buy: langkah backend belum dikonfigurasi, jadi modal ini memaparkan aliran lalai.",
+  "search": {
+    "categoryLabel": "Kategori",
+    "placeholder": "Cari produk... (Enter atau berhenti seketika untuk mencari)"
+  },
+  "placeholder": {
+    "stepTitle": "Langkah {step}",
+    "stepName": "Langkah {step}"
+  },
+  "summary": {
+    "items": "Item",
+    "weight": "Berat",
+    "price": "Harga"
+  },
+  "actions": {
+    "toCart": "Ke troli",
+    "payment": "Pembayaran"
+  },
+  "defaultSteps": {
+    "productSearch": "Cari produk",
+    "specifications": "Pilih spesifikasi",
+    "quantity": "Sahkan kuantiti",
+    "cartReview": "Semak troli",
+    "checkout": "Checkout"
+  },
+  "hints": {
+    "step1": "Cari atau tapis produk",
+    "step2": "Pilih spesifikasi/kuantiti",
+    "step3": "Sahkan maklumat produk",
+    "step4": "Lengkapkan pesanan anda",
+    "step5": "Selesai dan semak",
+    "default": "Lengkapkan langkah ini"
+  },
+  "footer": {
+    "step1": "Masukkan kata kunci dalam kotak carian untuk menapis produk",
+    "step2": "Pilih spesifikasi produk dan kuantiti untuk meneruskan",
+    "step3": "Sila sahkan maklumat produk adalah betul",
+    "step4": "Lengkapkan langkah ini untuk menghantar/meneruskan proses",
+    "step5": "Semua langkah selesai",
+    "default": "Lengkapkan langkah ini untuk meneruskan"
+  }
+}

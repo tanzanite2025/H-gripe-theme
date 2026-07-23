@@ -6,7 +6,7 @@
         <h1 class="mt-4 px-2 text-xl font-semibold leading-[1.05] tracking-tight sm:text-3xl lg:text-4xl">
           {{ t('home.hero.title') }}
         </h1>
-        <p class="mt-2 max-w-2xl px-2 text-sm leading-relaxed text-white/80 sm:text-lg">
+        <p class="mt-2 max-w-2xl px-2 text-sm leading-relaxed tz-text-secondary sm:text-lg">
           {{ t('home.hero.subtitle') }}
         </p>
 

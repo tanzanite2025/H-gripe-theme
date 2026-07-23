@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "شاپنگ کارٹ",
+  "title": "کارٹ",
+  "closeAriaLabel": "کارٹ بند کریں",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "خواہش فہرست میں شامل کریں",
+    "remove": "ہٹائیں",
+    "continueShopping": "خریداری جاری رکھیں",
+    "checkout": "چیک آؤٹ"
+  },
+  "empty": {
+    "title": "آپ کا کارٹ خالی ہے",
+    "description": "شروع کرنے کے لیے کچھ مصنوعات شامل کریں!"
+  },
+  "summary": {
+    "subtotal": "ذیلی کل",
+    "shipping": "شپنگ",
+    "calculatedAtCheckout": "چیک آؤٹ پر حساب ہوگا",
+    "tax": "ٹیکس",
+    "estimatedTotal": "تخمینی کل",
+    "finalShippingNote": "منزل منتخب کرنے کے بعد حتمی شپنگ backend quote سے حساب ہوگی۔"
+  }
+}

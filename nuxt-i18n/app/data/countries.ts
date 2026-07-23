@@ -116,7 +116,8 @@ export function getCountryName(code: string, locale: string = 'en'): string {
   const country = getCountryByCode(code)
   if (!country) return code
   
-  if (locale === 'zh' || locale === 'zh-CN' || locale === 'zh-TW') {
+  const normalizedLocale = locale.toLowerCase().replace('_', '-')
+  if (normalizedLocale === 'zh' || normalizedLocale.startsWith('zh-')) {
     return country.nameZh || country.name
   }
   return country.name

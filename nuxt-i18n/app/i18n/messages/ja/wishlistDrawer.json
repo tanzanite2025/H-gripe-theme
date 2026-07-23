@@ -1,0 +1,16 @@
+{
+  "title": "お気に入り",
+  "subtitle": "お気に入りに追加した商品がここに表示されます。",
+  "closeAriaLabel": "お気に入りを閉じる",
+  "loading": "お気に入りを読み込み中...",
+  "productImageAlt": "商品画像",
+  "productFallback": "商品",
+  "empty": {
+    "title": "お気に入りは空です",
+    "description": "気に入った商品を保存して、あとで素早く見つけたり共有したりできます。"
+  },
+  "actions": {
+    "shareToChat": "チャットで共有",
+    "remove": "削除"
+  }
+}

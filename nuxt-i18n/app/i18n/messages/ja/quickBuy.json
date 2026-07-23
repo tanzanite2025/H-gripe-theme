@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "クイック購入の手順",
+  "fallbackNotice": "Quick Buy 設定プレビュー: バックエンドの手順がまだ設定されていないため、このモーダルでは既定のプレースホルダーフローを表示しています。",
+  "search": {
+    "categoryLabel": "カテゴリー",
+    "placeholder": "商品を検索...（Enter または少し待つと検索）"
+  },
+  "placeholder": {
+    "stepTitle": "ステップ {step}",
+    "stepName": "ステップ {step}"
+  },
+  "summary": {
+    "items": "点数",
+    "weight": "重量",
+    "price": "価格"
+  },
+  "actions": {
+    "toCart": "カートへ",
+    "payment": "支払い"
+  },
+  "defaultSteps": {
+    "productSearch": "商品を検索",
+    "specifications": "仕様を選択",
+    "quantity": "数量を確認",
+    "cartReview": "カートを確認",
+    "checkout": "チェックアウト"
+  },
+  "hints": {
+    "step1": "商品を検索または絞り込み",
+    "step2": "仕様/数量を選択",
+    "step3": "商品情報を確認",
+    "step4": "注文を完了",
+    "step5": "完了して確認",
+    "default": "このステップを完了"
+  },
+  "footer": {
+    "step1": "検索ボックスにキーワードを入力して商品を絞り込みます",
+    "step2": "続行するには仕様と数量を選択してください",
+    "step3": "商品情報が正しいことを確認してください",
+    "step4": "このステップを完了して送信/続行します",
+    "step5": "すべてのステップが完了しました",
+    "default": "続行するにはこのステップを完了してください"
+  }
+}

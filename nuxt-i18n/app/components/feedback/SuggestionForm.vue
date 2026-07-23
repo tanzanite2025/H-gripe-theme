@@ -148,7 +148,7 @@
           class="feedback-upload__auth-cta"
           @click="openAuthModal('register')"
         >
-          Register / Login
+          {{ t('feedbackForm.actions.authCta') }}
         </button>
         <ul v-if="form.attachments.length" class="feedback-upload__list">
           <li v-for="(file, index) in form.attachments" :key="file.name">
@@ -196,6 +196,7 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useSuggestionFeedback } from '~/composables/useSuggestionFeedback'
+import { getCountryName } from '~/data/countries'
 
 const props = withDefaults(
   defineProps<{
@@ -208,7 +209,7 @@ const props = withDefaults(
   }
 )
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const threadKeyRef = computed(() => props.threadKey || 'product_service_suggestion')
 const {
   eligibility,
@@ -246,28 +247,28 @@ const form = reactive({
   attachments: [] as File[],
 })
 
-const countryOptions = [
-  { value: 'us', label: 'United States' },
-  { value: 'cn', label: '中国' },
-  { value: 'ca', label: 'Canada' },
-  { value: 'de', label: 'Deutschland' },
-]
+const countryOptions = computed(() => [
+  { value: 'us', label: getCountryName('US', locale.value) },
+  { value: 'cn', label: getCountryName('CN', locale.value) },
+  { value: 'ca', label: getCountryName('CA', locale.value) },
+  { value: 'de', label: getCountryName('DE', locale.value) },
+])
 
-const productCategories = [
+const productCategories = computed(() => [
   { value: 'mtb', label: t('feedbackForm.productCategories.mtb') },
   { value: 'road', label: t('feedbackForm.productCategories.road') },
   { value: 'gravel', label: t('feedbackForm.productCategories.gravel') },
   { value: 'accessories', label: t('feedbackForm.productCategories.accessories') },
   { value: 'other', label: t('feedbackForm.productCategories.other') },
-]
+])
 
-const requestTypes = [
+const requestTypes = computed(() => [
   { value: 'product', label: t('feedbackForm.requestTypes.product') },
   { value: 'service', label: t('feedbackForm.requestTypes.service') },
   { value: 'logistics', label: t('feedbackForm.requestTypes.logistics') },
   { value: 'warranty', label: t('feedbackForm.requestTypes.warranty') },
   { value: 'other', label: t('feedbackForm.requestTypes.other') },
-]
+])
 
 const allowAttachments = computed(() => {
   if (!props.showAttachments) return false
@@ -438,7 +439,7 @@ const resetForm = () => {
 }
 
 .feedback-card__subtitle {
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   margin: 0;
 }
 
@@ -454,7 +455,7 @@ const resetForm = () => {
 
 .feedback-card__stat-label {
   font-size: 0.85rem;
-  color: rgba(148, 163, 184, 0.8);
+  color: var(--tz-text-muted);
   margin: 0;
 }
 
@@ -523,7 +524,7 @@ const resetForm = () => {
 
 .feedback-form__char-counter {
   font-size: 0.8rem;
-  color: rgba(148, 163, 184, 0.8);
+  color: var(--tz-text-muted);
 }
 
 .feedback-form__pills {
@@ -570,7 +571,7 @@ const resetForm = () => {
   border-radius: 20px;
   padding: 1.25rem;
   background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.92));
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -601,7 +602,7 @@ const resetForm = () => {
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.85rem;
-  color: rgba(226, 232, 240, 0.85);
+  color: var(--tz-text-secondary);
 }
 
 .feedback-upload__list button {
@@ -640,7 +641,7 @@ const resetForm = () => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: rgba(203, 213, 225, 0.85);
+  color: var(--tz-text-secondary);
 }
 
 .feedback-form__consent input {
@@ -679,7 +680,7 @@ const resetForm = () => {
   border: none;
   border-radius: 9999px;
   padding: 0.3rem 1.2rem;
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--tz-text-secondary);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -688,7 +689,7 @@ const resetForm = () => {
 
 .feedback-form__info {
   font-size: 0.85rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .feedback-form__info--error {

@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "ตะกร้าสินค้า",
+  "title": "ตะกร้า",
+  "closeAriaLabel": "ปิดตะกร้า",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "เพิ่มในรายการโปรด",
+    "remove": "ลบ",
+    "continueShopping": "เลือกซื้อสินค้าต่อ",
+    "checkout": "ชำระเงิน"
+  },
+  "empty": {
+    "title": "ตะกร้าของคุณว่างอยู่",
+    "description": "เพิ่มสินค้าบางรายการเพื่อเริ่มต้น!"
+  },
+  "summary": {
+    "subtotal": "ยอดรวมย่อย",
+    "shipping": "ค่าจัดส่ง",
+    "calculatedAtCheckout": "คำนวณตอนชำระเงิน",
+    "tax": "ภาษี",
+    "estimatedTotal": "ยอดรวมโดยประมาณ",
+    "finalShippingNote": "ค่าจัดส่งสุดท้ายจะใช้ใบเสนอราคาจาก backend หลังจากคุณเลือกปลายทาง"
+  }
+}

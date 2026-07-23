@@ -5,13 +5,13 @@
         <div class="flex flex-col">
           <component
             :is="titleTag"
-            class="text-white/90 font-semibold"
+            class="tz-text-primary font-semibold"
             :class="variant === 'compact' ? 'text-base' : 'text-lg'"
           >
             {{ t('contactLocation.title') }}
           </component>
           <div class="mt-[6px] h-1 w-14 rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
-          <p class="mt-[3px] text-white/70 leading-relaxed break-words" :class="variant === 'compact' ? 'text-sm' : 'text-base'">
+          <p class="mt-[3px] tz-text-secondary leading-relaxed break-words" :class="variant === 'compact' ? 'text-sm' : 'text-base'">
             {{ contactLocation.addressText }}
           </p>
         </div>
@@ -29,7 +29,7 @@
             :href="contactLocation.openGoogleMapsUrl"
             target="_blank"
             rel="noopener"
-            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/90 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-primary shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
           >
             {{ t('contactLocation.openGoogle') }}
           </a>
@@ -38,7 +38,7 @@
             :href="contactLocation.openAppleMapsUrl"
             target="_blank"
             rel="noopener"
-            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white/90 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-primary shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
           >
             {{ t('contactLocation.openApple') }}
           </a>

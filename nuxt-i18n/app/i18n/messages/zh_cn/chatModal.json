@@ -1,0 +1,80 @@
+{
+  "actions": {
+    "close": "关闭聊天",
+    "closeHistory": "关闭浏览记录",
+    "backToWelcome": "返回欢迎页",
+    "switchToChat": "切换到聊天",
+    "contactViaWhatsApp": "通过 WhatsApp 联系",
+    "whatsapp": "WhatsApp",
+    "email": "邮箱"
+  },
+  "fallback": {
+    "agent": "客服",
+    "customer": "客户",
+    "unknown": "未知"
+  },
+  "history": {
+    "title": "浏览记录"
+  },
+  "welcome": {
+    "logoAlt": "Tanzanite 客服聊天",
+    "title": "你好！",
+    "description": "你可以与我们的团队聊天、查询订单，或在 FAQ 中查找答案。",
+    "onlineTeam": "在线客服团队",
+    "onlineSummary": "当前有 {count}{agentLabel}在线 · 我们通常会在几分钟内回复。",
+    "agentSingular": "位客服",
+    "agentPlural": "位客服",
+    "startCta": "开始 — 聊天、订单与 FAQ",
+    "continueCta": "继续 — 聊天、订单与 FAQ"
+  },
+  "agentSelector": {
+    "online": "在线",
+    "descriptions": {
+      "tech": "兼容性、规格、安装与故障排查",
+      "afterSales": "订单跟踪、保修、退货与售后支持",
+      "sales": "售前问题、价格与报价",
+      "default": "与我们的团队聊天，获取帮助与建议"
+    }
+  },
+  "agentPanel": {
+    "status": {
+      "online": "在线",
+      "busy": "忙碌",
+      "away": "暂离",
+      "offline": "离线"
+    },
+    "conversations": "会话",
+    "emptyConversations": "还没有会话",
+    "noMessages": "暂无消息",
+    "refreshConversations": "刷新会话",
+    "backToList": "返回会话列表",
+    "messagePlaceholder": "输入消息...",
+    "justNow": "刚刚"
+  },
+  "tabs": {
+    "products": "商品",
+    "orders": "订单",
+    "test": "测试报告",
+    "tire": "轮胎",
+    "faq": "FAQ",
+    "warranty": "保修",
+    "member": "会员",
+    "calculator": "计算器"
+  },
+  "transfer": {
+    "title": "转接会话",
+    "targetAgentLabel": "目标客服 *",
+    "targetAgentPlaceholder": "请选择客服",
+    "noteLabel": "转接备注（可选）",
+    "notePlaceholder": "例如：客户需要技术支持...",
+    "cancel": "取消",
+    "transferring": "转接中...",
+    "confirm": "确认转接",
+    "alertSelectAgent": "请选择要转接的客服。",
+    "alertCurrentAgent": "不能转接给当前客服。",
+    "alertSuccess": "会话已转接给 {agent}。",
+    "alertFailed": "转接失败。",
+    "alertRetry": "转接失败，请稍后重试。",
+    "requestFailed": "转接请求失败"
+  }
+}

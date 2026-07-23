@@ -31,15 +31,16 @@
           <div class="wa-drawer-header relative z-10">
             <div class="flex flex-col gap-1 min-w-0">
               <div class="wa-drawer-title">
-                Wishlist
+                {{ t('wishlistDrawer.title') }}
               </div>
-              <div class="text-[11px] text-white/50 truncate">
-                Products you add to your wishlist will appear here.
+              <div class="text-[11px] tz-text-muted truncate">
+                {{ t('wishlistDrawer.subtitle') }}
               </div>
             </div>
             <button
               type="button"
               class="wa-drawer-close-btn"
+              :aria-label="t('wishlistDrawer.closeAriaLabel')"
               @click="handleClose"
             >
               <span class="text-lg leading-none">x</span>
@@ -50,9 +51,9 @@
           <div class="wa-drawer-content relative z-10">
             <div
               v-if="loading"
-              class="flex flex-col items-center justify-center h-full text-white/70 text-sm gap-3"
+              class="flex flex-col items-center justify-center h-full tz-text-secondary text-sm gap-3"
             >
-              <svg class="animate-spin h-6 w-6 text-white/60" fill="none" viewBox="0 0 24 24">
+              <svg class="animate-spin h-6 w-6 tz-text-secondary" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                 <path
                   class="opacity-75"
@@ -60,7 +61,7 @@
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              <span>Loading wishlist...</span>
+              <span>{{ t('wishlistDrawer.loading') }}</span>
             </div>
 
             <div
@@ -72,14 +73,14 @@
 
             <div
               v-else-if="!items.length"
-              class="flex flex-col items-center justify-center h-full text-white/60 text-sm text-center px-4 gap-2"
+              class="flex flex-col items-center justify-center h-full tz-text-secondary text-sm text-center px-4 gap-2"
             >
-              <svg class="w-10 h-10 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-10 h-10 tz-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z" />
               </svg>
-              <p class="font-medium text-white/80">Your wishlist is empty</p>
-              <p class="text-xs text-white/60 max-w-md">
-                Save products you like to your wishlist so you can quickly find and share them later.
+              <p class="font-medium tz-text-primary">{{ t('wishlistDrawer.empty.title') }}</p>
+              <p class="text-xs tz-text-secondary max-w-md">
+                {{ t('wishlistDrawer.empty.description') }}
               </p>
             </div>
 
@@ -95,12 +96,12 @@
                 <img
                   v-if="item.product?.thumbnail"
                   :src="item.product.thumbnail"
-                  alt="Product image"
+                  :alt="item.product?.title || t('wishlistDrawer.productImageAlt')"
                   class="w-full h-32 object-cover"
                 />
                 <div class="px-3 pt-2 pb-3 flex-1 flex flex-col">
                   <div class="text-sm font-semibold text-white truncate">
-                    {{ item.product?.title || 'Product' }}
+                    {{ item.product?.title || t('wishlistDrawer.productFallback') }}
                   </div>
                   <div v-if="displayPrice(item)" class="text-xs text-[#40ffaa] mt-1">
                     {{ displayPrice(item) }}
@@ -111,14 +112,14 @@
                       class="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white hover:from-[#35e599] hover:to-[#5a62ee] transition-colors shadow-sm"
                       @click="handleShare(item)"
                     >
-                      Share to chat
+                      {{ t('wishlistDrawer.actions.shareToChat') }}
                     </button>
                     <button
                       type="button"
-                      class="text-xs px-2 py-1 rounded-full border border-white/30 text-white/80 hover:bg-white/10 transition-colors"
+                      class="text-xs px-2 py-1 rounded-full border border-white/30 tz-text-secondary hover:bg-white/10 transition-colors"
                       @click="handleRemove(item.id)"
                     >
-                      Remove
+                      {{ t('wishlistDrawer.actions.remove') }}
                     </button>
                   </div>
                 </div>
@@ -148,6 +149,7 @@ const emit = defineEmits<{
 }>()
 
 const { items, loading, error, loadWishlist, removeFromWishlist } = useWishlist()
+const { t } = useI18n()
 
 watch(
   () => modelValue.value,

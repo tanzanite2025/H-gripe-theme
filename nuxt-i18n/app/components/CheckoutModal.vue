@@ -19,34 +19,34 @@
             <!-- 头部：再次压缩高度，为下方内容留出更多空�?-->
             <div class="relative flex items-center justify-center px-2 md:px-6 py-3.5 border-b border-transparent bg-[rgba(4,7,20,0.92)] backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:border-transparent md:bg-transparent md:backdrop-blur-0 md:shadow-none">
               <div class="flex items-center gap-2 md:gap-3">
-                <h2 class="sr-only">Checkout</h2>
+                <h2 class="sr-only">{{ t('checkout.modal.title') }}</h2>
                 <div class="flex items-center gap-2 overflow-x-auto sm:overflow-visible">
                   <button
                     type="button"
                     @click="openCartFromCheckout"
                     class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold text-slate-900 bg-white shadow-[4px_6px_16px_rgba(0,0,0,0.45)] hover:bg-white/90 transition-all"
                   >
-                    View cart
+                    {{ t('checkout.modal.actions.viewCart') }}
                   </button>
                   <button
                     type="button"
                     class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold text-slate-900 bg-white shadow-[4px_6px_16px_rgba(0,0,0,0.45)] hover:bg-white/90 transition-all"
                     @click="handleOpenShippingChat"
                   >
-                    Livechat
+                    {{ t('checkout.modal.actions.livechat') }}
                   </button>
                   <button
                     type="button"
                     class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold text-slate-900 bg-white shadow-[4px_6px_16px_rgba(0,0,0,0.45)] hover:bg-white/90 transition-all"
                   >
-                    Email
+                    {{ t('checkout.modal.actions.email') }}
                   </button>
                 </div>
               </div>
               <button
                 @click="closeCheckout"
                 class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
-                aria-label="Close checkout"
+                :aria-label="t('checkout.modal.closeAriaLabel')"
               >
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -59,13 +59,13 @@
               <div class="checkout-modal-ssl-banner flex items-center justify-center gap-1.5 text-[11px] md:text-xs text-emerald-100 max-w-[420px] mx-auto text-center leading-tight">
                 <img
                   src="/checkout/secured_ssl-preview.png"
-                  alt="Secure SSL"
+                  :alt="t('checkout.modal.sslAlt')"
                   class="h-12 w-auto md:h-16 -my-2 md:-my-3"
                   loading="lazy"
                   decoding="async"
                 />
                 <p class="leading-tight">
-                  Pages use HTTPS with trusted SSL; we only store the result, not your card details.
+                  {{ t('checkout.modal.sslNote') }}
                 </p>
               </div>
             </div>
@@ -81,7 +81,8 @@
                 :is-using-points="calculation.usePointsDiscount.value"
                 :points-to-use="calculation.pointsToUse.value"
                 :max-points-to-use="calculation.userPoints.value?.available || 0"
-                :points-hint="'1 point = $0.01, max 50% of order'"
+                :points-hint="t('checkout.modal.pointsHint')"
+                :payment-options="stepperOptions"
                 :order-summary="stepperOrderSummary"
                 :currency="'USD'"
                 :show-shipping-form="activePaymentTab !== 'bank' && activePaymentTab !== 'worldfirst'"
@@ -99,6 +100,7 @@
                 :mobile-payment-description="mobilePaymentDescription"
                 :is-submitting="isSubmitting"
                 @update:step="handleStepperStepChange"
+                @update:method="handleStepperSelect"
                 @coupon-input="handleStepperCouponInput"
                 @apply-coupon="handleApplyCoupon"
                 @toggle-points="handleStepperTogglePoints"
@@ -119,7 +121,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, type ComputedRef } from 'vue'
-import { useCart } from '#imports'
+import { useCart, useI18n } from '#imports'
 import type { useCartCalculation } from '~/composables/useCartCalculation'
 import ChatStartButton from '~/components/ChatStartButton.vue'
 import { COUNTRIES } from '~/data/countries'
@@ -177,6 +179,7 @@ const {
 } = useCart()
 
 const auth = useAuth()
+const { t } = useI18n()
 const typedPriceBreakdown = priceBreakdown as ComputedRef<CartPriceBreakdown>
 const checkoutQuote = ref<CheckoutQuote | null>(null)
 const isFetchingCheckoutQuote = ref(false)
@@ -208,7 +211,7 @@ const stepperOrderSummary = computed(() => {
   if (!cartItems.value) throw new Error("[CRITICAL] cartItems missing")
   const items = cartItems.value.map((item: any) => ({
     id: item.id ?? item.sku ?? item.title ?? '',
-    title: item.title ?? 'Item',
+    title: item.title ?? t('checkout.order.itemFallback'),
     quantity: item.quantity ?? 1,
     price: item.price ?? 0,
     thumbnail: item.thumbnail ?? null,
@@ -266,58 +269,51 @@ const handleOpenShippingChat = () => {
   }
 }
 
-// 支付方式列表（暂未直接用�?Tabs，但保留给后续逻辑使用�?
-const paymentMethods = [
-  { id: 'credit_card', name: 'Credit Card', icon: '💳' },
-  { id: 'paypal', name: 'PayPal', icon: 'P' },
-  { id: 'alipay', name: 'Alipay', icon: '💙' },
-  { id: 'wechat', name: 'WeChat Pay', icon: '💚' },
-]
-
 type PaymentTab = 'card' | 'paypal' | 'alipay' | 'stripe' | 'bank' | 'worldfirst'
 type StepperStep = 1 | 2 | 3
 
 const activePaymentTab = ref<PaymentTab>('card')
 const currentStepperStep = ref<StepperStep>(1)
 
-const paymentCopy: Record<PaymentTab, { title: string; description: string; cta: string }> = {
+const paymentCopy = computed<Record<PaymentTab, { title: string; description: string; cta: string }>>(() => ({
   card: {
-    title: 'Credit / Debit cards',
-    description: 'Card details are entered on a secure payment page from our provider; we only store your order result.',
-    cta: 'Continue to secure payment',
+    title: t('checkout.payment.card.title'),
+    description: t('checkout.payment.card.description'),
+    cta: t('checkout.payment.card.cta'),
   },
   paypal: {
-    title: 'Pay with PayPal',
-    description: 'You will be redirected to PayPal. We never see or store your PayPal login or card information.',
-    cta: 'Continue to PayPal',
+    title: t('checkout.payment.paypal.title'),
+    description: t('checkout.payment.paypal.description'),
+    cta: t('checkout.payment.paypal.cta'),
   },
   alipay: {
-    title: 'Alipay / WeChat / UnionPay',
-    description: 'You approve the payment in your local wallet. We still collect shipping info here to prepare dispatch.',
-    cta: 'Pay with local wallet',
+    title: t('checkout.payment.alipay.title'),
+    description: t('checkout.payment.alipay.description'),
+    cta: t('checkout.payment.alipay.cta'),
   },
   stripe: {
-    title: 'Pay with Stripe',
-    description: 'Stripe handles your card details and any extra verification. We only store the payment status.',
-    cta: 'Continue to Stripe',
+    title: t('checkout.payment.stripe.title'),
+    description: t('checkout.payment.stripe.description'),
+    cta: t('checkout.payment.stripe.cta'),
   },
   bank: {
-    title: 'Bank transfer',
-    description: 'Place the order first, then send a bank transfer using the reference we show you on the next step.',
-    cta: 'Place order for bank transfer',
+    title: t('checkout.payment.bank.title'),
+    description: t('checkout.payment.bank.description'),
+    cta: t('checkout.payment.bank.cta'),
   },
   worldfirst: {
-    title: 'WorldFirst',
-    description: 'Send funds to a local WorldFirst account in your currency. We never access your banking credentials.',
-    cta: 'Continue with WorldFirst',
+    title: t('checkout.payment.worldfirst.title'),
+    description: t('checkout.payment.worldfirst.description'),
+    cta: t('checkout.payment.worldfirst.cta'),
   },
-}
+}))
 
 type StepperOption = {
   id: PaymentTab
   title: string
   subtitle: string
   description: string
+  points?: string[]
 }
 
 type ShippingField = 'country' | 'name' | 'phone' | 'address' | 'city' | 'zip' | 'paymentMethod' | 'notes'
@@ -327,45 +323,59 @@ const stepperOptions = computed<StepperOption[]>(() => {
   return [
     {
       id: 'card',
-      title: 'Credit / Debit cards',
-      subtitle: `${priceText} · Secure card page`,
-      description:
-        'Enter full shipping info and contact number here, then we redirect you to the PCI-compliant card page. We never store your card number or CVC.',
+      title: t('checkout.payment.card.title'),
+      subtitle: `${priceText} · ${t('checkout.payment.card.subtitle')}`,
+      description: t('checkout.payment.card.stepperDescription'),
+      points: [
+        t('checkout.payment.card.points.shipping'),
+        t('checkout.payment.card.points.immediate'),
+      ],
     },
     {
       id: 'alipay',
-      title: 'Alipay / WeChat / UnionPay',
-      subtitle: `${priceText} · Local wallets`,
-      description:
-        'Approve payment inside your usual wallet. We still gather shipping details in this tab to prepare dispatch and confirm customs information.',
+      title: t('checkout.payment.alipay.title'),
+      subtitle: `${priceText} · ${t('checkout.payment.alipay.subtitle')}`,
+      description: t('checkout.payment.alipay.stepperDescription'),
+      points: [
+        t('checkout.payment.alipay.points.recipient'),
+        t('checkout.payment.alipay.points.wallets'),
+      ],
     },
     {
       id: 'paypal',
-      title: 'PayPal',
-      subtitle: `${priceText} · Express checkout`,
-      description:
-        'We rely on the shipping address saved in your PayPal account whenever possible. Choose a supported country first so we can confirm fulfillment.',
+      title: t('checkout.payment.paypal.optionTitle'),
+      subtitle: `${priceText} · ${t('checkout.payment.paypal.subtitle')}`,
+      description: t('checkout.payment.paypal.stepperDescription'),
+      points: [
+        t('checkout.payment.paypal.points.country'),
+      ],
     },
     {
       id: 'stripe',
-      title: 'Stripe',
-      subtitle: `${priceText} · 3D Secure ready`,
-      description:
-        'Stripe handles card input and any extra verification. We keep the form minimal here and let Stripe manage the sensitive fields.',
+      title: t('checkout.payment.stripe.optionTitle'),
+      subtitle: `${priceText} · ${t('checkout.payment.stripe.subtitle')}`,
+      description: t('checkout.payment.stripe.stepperDescription'),
+      points: [
+        t('checkout.payment.stripe.points.sca'),
+      ],
     },
     {
       id: 'bank',
-      title: 'Bank transfer',
-      subtitle: `${priceText} · Manual invoice`,
-      description:
-        'Place the order, then transfer the funds using the bank instructions shown on the next step. Remember to include your order number as reference.',
+      title: t('checkout.payment.bank.title'),
+      subtitle: `${priceText} · ${t('checkout.payment.bank.subtitle')}`,
+      description: t('checkout.payment.bank.stepperDescription'),
+      points: [
+        t('checkout.payment.bank.points.reference'),
+      ],
     },
     {
       id: 'worldfirst',
-      title: 'WorldFirst',
-      subtitle: `${priceText} · Cross-border`,
-      description:
-        'Ideal for international or business orders. You pay into a regional WorldFirst account in your currency; they settle the converted funds to us.',
+      title: t('checkout.payment.worldfirst.optionTitle'),
+      subtitle: `${priceText} · ${t('checkout.payment.worldfirst.subtitle')}`,
+      description: t('checkout.payment.worldfirst.stepperDescription'),
+      points: [
+        t('checkout.payment.worldfirst.points.b2b'),
+      ],
     },
   ]
 })
@@ -374,8 +384,8 @@ const setActivePaymentTab = (tab: PaymentTab) => {
   activePaymentTab.value = tab
 }
 
-const handleStepperSelect = (tab: PaymentTab) => {
-  setActivePaymentTab(tab)
+const handleStepperSelect = (tab: string) => {
+  setActivePaymentTab(tab as PaymentTab)
   currentStepperStep.value = 1
 }
 
@@ -391,10 +401,10 @@ const handleStepperCountrySearch = (value: string) => {
   countrySearch.value = value
 }
 
-const mobilePaymentTitle = computed(() => paymentCopy[activePaymentTab.value].title)
-const mobilePaymentDescription = computed(() => paymentCopy[activePaymentTab.value].description)
-const paymentCtaLabel = computed(() => paymentCopy[activePaymentTab.value].cta)
-const desktopCtaDescription = computed(() => paymentCopy[activePaymentTab.value].description)
+const mobilePaymentTitle = computed(() => paymentCopy.value[activePaymentTab.value].title)
+const mobilePaymentDescription = computed(() => paymentCopy.value[activePaymentTab.value].description)
+const paymentCtaLabel = computed(() => paymentCopy.value[activePaymentTab.value].cta)
+const desktopCtaDescription = computed(() => paymentCopy.value[activePaymentTab.value].description)
 
 const handleStepperCouponInput = (value: string) => {
   couponCode.value = value
@@ -478,13 +488,13 @@ const fetchCheckoutQuote = async (showError = false) => {
     })
     const quote = unwrapApiData<CheckoutQuote>(response)
     if (!quote) {
-      throw new Error('Invalid checkout quote response')
+      throw new Error(t('checkout.modal.messages.invalidQuote'))
     }
     checkoutQuote.value = quote
     checkoutQuoteError.value = null
     return true
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to refresh checkout quote'
+    const message = error instanceof Error ? error.message : t('checkout.modal.messages.unableRefreshQuote')
     checkoutQuote.value = null
     checkoutQuoteError.value = message
     if (showError) {
@@ -576,7 +586,7 @@ const zipFormatHint = computed(() => {
 })
 
 const zipPlaceholder = computed(() => {
-  return zipFormatHint.value?.placeholder || 'Zip code'
+  return zipFormatHint.value?.placeholder || t('checkout.stepper.shipping.zipPlaceholder')
 })
 
 const zipHint = computed(() => {
@@ -596,7 +606,7 @@ const openFreightForwarder = () => {
 // 保存购物车稍后再�?
 const saveCartForLater = () => {
   // 可以保存�?localStorage 或用户账�?
-  alert('Your cart has been saved. We\'ll notify you when shipping becomes available to your region.')
+  alert(t('checkout.modal.messages.cartSaved'))
 }
 
 watch(isCheckoutOpen, value => {
@@ -655,7 +665,7 @@ const handleApplyCoupon = async () => {
   isApplyingCoupon.value = false
   
   if (success) {
-    alert('Coupon applied successfully!')
+    alert(t('checkout.modal.messages.couponApplied'))
   }
 }
 
@@ -682,13 +692,13 @@ const handleSubmit = async () => {
   if (tab === 'card' || tab === 'alipay' || tab === 'stripe') {
     // 在线卡支�?/ 本地钱包：需要完整可配送地址 + 联系方式
     if (!isFormValid.value) {
-      alert('Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.')
+      alert(t('checkout.modal.messages.completeShipping'))
       return
     }
   } else if (tab === 'paypal') {
     // PayPal：至少需要选择一个在可配送列表中的国家，用于判断能否发货
     if (!form.value.country || !shippableCountryCodes.value.includes(form.value.country)) {
-      alert('Please select a country/region we can ship to before continuing to PayPal.')
+      alert(t('checkout.modal.messages.selectPaypalCountry'))
       return
     }
   }
@@ -730,7 +740,7 @@ const handleSubmit = async () => {
     closeCheckout()
 
     // 显示成功消息
-    alert('Order submitted successfully!')
+    alert(t('checkout.modal.messages.orderSuccess'))
 
     // 重置表单
     form.value = {
@@ -745,7 +755,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('Order submission failed:', error)
-    alert('Order submission failed, please try again')
+    alert(t('checkout.modal.messages.orderFailed'))
   } finally {
     isSubmitting.value = false
   }

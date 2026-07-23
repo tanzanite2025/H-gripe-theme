@@ -52,20 +52,20 @@
            <!-- Mullet wheelsets (Amber) -->
            <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
                <div class="flex items-center gap-3 mb-4 pb-3 border-b border-amber-500/10">
-                  <h3 class="text-lg font-bold text-slate-200">Mullet Wheelsets (Mixed Size)</h3>
+          <h3 class="text-lg font-bold tz-text-primary">Mullet Wheelsets (Mixed Size)</h3>
                </div>
                
-               <p class="text-sm text-slate-400 leading-relaxed mb-4">
+          <p class="text-sm tz-text-secondary leading-relaxed mb-4">
                  The perfect setup for modern MTB riding: <strong>29" Front + 27.5" Rear</strong> (or 27.5" + 26"). 
                  This "Mullet" configuration offers the best of both worlds:
                </p>
                
                <div class="grid grid-cols-2 gap-4 mb-4">
-                  <div class="bg-amber-500/5 rounded-lg p-3 text-xs text-slate-400 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+          <div class="bg-amber-500/5 rounded-lg p-3 text-xs tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                      <strong class="block text-amber-500 uppercase tracking-wider mb-1">Front Wheel</strong>
                      Provides rollover capability, grip, and stability.
                   </div>
-                  <div class="bg-amber-500/5 rounded-lg p-3 text-xs text-slate-400 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+          <div class="bg-amber-500/5 rounded-lg p-3 text-xs tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                      <strong class="block text-amber-500 uppercase tracking-wider mb-1">Rear Wheel</strong>
                      Delivers agility, acceleration, and clearance.
                   </div>
@@ -83,10 +83,10 @@
            <!-- Custom Front & Rear Wheels (Sky) -->
            <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
                <div class="flex items-center gap-3 mb-4 pb-3 border-b border-sky-500/10">
-                  <h3 class="text-lg font-bold text-slate-200">Single Wheel Customization</h3>
+          <h3 class="text-lg font-bold tz-text-primary">Single Wheel Customization</h3>
                </div>
                
-               <p class="text-sm text-slate-400 leading-relaxed mb-4">
+          <p class="text-sm tz-text-secondary leading-relaxed mb-4">
                  Need just a front or rear replacement? We specialize in single-wheel builds tailored to your specific needs.
                  While our website showcases complete sets, we fully support individual custom orders.
                </p>
@@ -342,7 +342,7 @@ const goToAboutAppearance = async () => {
 .products-page__intro {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .wheelset-page {
@@ -385,7 +385,7 @@ const goToAboutAppearance = async () => {
 
 .wheelset-inline-note {
   margin-left: 0.25rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .wheelset-inline-button {

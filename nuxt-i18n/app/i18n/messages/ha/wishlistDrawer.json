@@ -1,0 +1,16 @@
+{
+  "title": "Wishlist",
+  "subtitle": "Kayayyakin da ka ƙara zuwa wishlist za su bayyana a nan.",
+  "closeAriaLabel": "Rufe wishlist",
+  "loading": "Ana loda wishlist...",
+  "productImageAlt": "Hoton kaya",
+  "productFallback": "Kaya",
+  "empty": {
+    "title": "Wishlist ɗinka babu komai",
+    "description": "Ajiye kayayyakin da kake so don ka same su ka raba su da sauri daga baya."
+  },
+  "actions": {
+    "shareToChat": "Raba zuwa chat",
+    "remove": "Cire"
+  }
+}

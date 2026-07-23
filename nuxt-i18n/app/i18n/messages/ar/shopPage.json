@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "تنقل فئات المتجر",
+  "products": {
+    "loading": "جارٍ تحميل المنتجات...",
+    "empty": {
+      "title": "لا توجد منتجات متاحة بعد.",
+      "description": "عند نشر المنتجات عبر إضافة Tanzanite، ستظهر هنا تلقائيًا."
+    }
+  },
+  "actions": {
+    "addToWishlist": "إضافة إلى قائمة الرغبات",
+    "view": "عرض"
+  },
+  "feedback": {
+    "title": "شارك ملاحظاتك حول متجر Tanzanite"
+  }
+}

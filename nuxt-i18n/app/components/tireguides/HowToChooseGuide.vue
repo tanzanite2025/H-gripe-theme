@@ -14,11 +14,11 @@
         <div class="mt-8 border-t border-slate-800 pt-8">
           <div class="flex items-center justify-center gap-2 mb-6">
              <span class="h-px w-8 bg-slate-700"></span>
-             <h3 class="text-lg font-bold text-slate-200 uppercase tracking-wider">Manufacturer Standards</h3>
+      <h3 class="text-lg font-bold tz-text-primary uppercase tracking-wider">Manufacturer Standards</h3>
              <span class="h-px w-8 bg-slate-700"></span>
           </div>
 
-          <p class="text-slate-400 text-sm max-w-3xl mx-auto mb-6">
+      <p class="tz-text-secondary text-sm max-w-3xl mx-auto mb-6">
             The following hookless (TSS) and hooked (TC) rim inner width charts from DT Swiss
             show recommended (dark) and possible (light) combinations. Always stay within the
             limits specified by your tire and rim manufacturers.
@@ -32,7 +32,7 @@
                 class="block h-auto w-full"
                 loading="lazy"
               />
-              <div class="bg-slate-900/50 py-2 text-xs text-slate-500 font-mono tracking-wider">HOOKLESS (TSS)</div>
+              <div class="bg-slate-900/50 py-2 text-xs tz-text-muted font-mono tracking-wider">HOOKLESS (TSS)</div>
             </div>
             <div class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50 hover:border-slate-700 transition-colors">
               <img
@@ -41,7 +41,7 @@
                 class="block h-auto w-full"
                 loading="lazy"
               />
-               <div class="bg-slate-900/50 py-2 text-xs text-slate-500 font-mono tracking-wider">HOOKED (TC)</div>
+               <div class="bg-slate-900/50 py-2 text-xs tz-text-muted font-mono tracking-wider">HOOKED (TC)</div>
             </div>
           </div>
         </div>

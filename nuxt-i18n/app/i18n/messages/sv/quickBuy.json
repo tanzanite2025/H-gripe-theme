@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Steg för snabbköp",
+  "fallbackNotice": "Förhandsvisning av Quick Buy: backend-stegen är inte konfigurerade ännu, så detta fönster visar standardflödet.",
+  "search": {
+    "categoryLabel": "Kategori",
+    "placeholder": "Sök produkter... (Enter eller paus för att söka)"
+  },
+  "placeholder": {
+    "stepTitle": "Steg {step}",
+    "stepName": "Steg {step}"
+  },
+  "summary": {
+    "items": "Artiklar",
+    "weight": "Vikt",
+    "price": "Pris"
+  },
+  "actions": {
+    "toCart": "Till varukorg",
+    "payment": "Betalning"
+  },
+  "defaultSteps": {
+    "productSearch": "Sök produkter",
+    "specifications": "Välj specifikationer",
+    "quantity": "Bekräfta antal",
+    "cartReview": "Granska varukorg",
+    "checkout": "Kassa"
+  },
+  "hints": {
+    "step1": "Sök eller filtrera produkter",
+    "step2": "Välj specifikationer/antal",
+    "step3": "Bekräfta produktinformation",
+    "step4": "Slutför din beställning",
+    "step5": "Slutför och granska",
+    "default": "Slutför detta steg"
+  },
+  "footer": {
+    "step1": "Ange sökord i sökrutan för att filtrera produkter",
+    "step2": "Välj produktspecifikationer och antal för att fortsätta",
+    "step3": "Bekräfta att produktinformationen är korrekt",
+    "step4": "Slutför detta steg för att skicka/fortsätta processen",
+    "step5": "Alla steg är klara",
+    "default": "Slutför detta steg för att fortsätta"
+  }
+}

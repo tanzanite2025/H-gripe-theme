@@ -1,49 +1,57 @@
 <template>
-  <nav
+  <div
     v-if="currentSection && currentSection.cards.length"
-    class="primary-section-tabs"
-    :class="{ 'primary-section-tabs--open': mobileOpen }"
-    :aria-label="`${sectionLabel} navigation`"
+    class="primary-section-tabs-shell"
   >
-    <button
-      type="button"
-      class="primary-section-tabs__mobile-trigger"
-      :aria-expanded="mobileOpen"
-      :aria-label="mobileOpen ? 'Collapse section navigation' : 'Expand section navigation'"
-      @click="mobileOpen = !mobileOpen"
+    <nav
+      class="primary-section-tabs"
+      :class="{
+        'primary-section-tabs--open': mobileOpen,
+        'primary-section-tabs--scrolling': isScrolling,
+      }"
+      :aria-label="`${sectionLabel} navigation`"
     >
-      <span class="primary-section-tabs__hamburger" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </span>
-      <span class="primary-section-tabs__mobile-text">
-        {{ sectionLabel }} / {{ activeLabel }}
-      </span>
-    </button>
-
-    <div class="primary-section-tabs__list" role="tablist">
-      <NuxtLink
-        v-for="card in currentSection.cards"
-        :key="card.id"
-        :to="localizedTo(card.to)"
-        class="primary-section-tabs__item"
-        :class="{ 'primary-section-tabs__item--active': isCardActive(card) }"
-        role="tab"
-        :aria-selected="isCardActive(card)"
-        :aria-current="isCardActive(card) ? 'page' : undefined"
-        @click="mobileOpen = false"
+      <button
+        type="button"
+        class="primary-section-tabs__mobile-trigger"
+        :aria-expanded="mobileOpen"
+        :aria-label="mobileOpen ? 'Collapse section navigation' : 'Expand section navigation'"
+        @click="mobileOpen = !mobileOpen"
       >
-        <Icon :name="card.icon" class="primary-section-tabs__icon" aria-hidden="true" />
-        <span>{{ cardTitle(card) }}</span>
-      </NuxtLink>
-    </div>
-  </nav>
+        <span class="primary-section-tabs__hamburger" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+        <span class="primary-section-tabs__mobile-text">
+          {{ sectionLabel }} / {{ activeLabel }}
+        </span>
+      </button>
+
+      <div class="primary-section-tabs__list" role="tablist">
+        <NuxtLink
+          v-for="card in currentSection.cards"
+          :key="card.id"
+          :to="localizedTo(card.to)"
+          class="primary-section-tabs__item"
+          :class="{ 'primary-section-tabs__item--active': isCardActive(card) }"
+          role="tab"
+          :aria-selected="isCardActive(card)"
+          :aria-current="isCardActive(card) ? 'page' : undefined"
+          @click="mobileOpen = false"
+        >
+          <Icon :name="card.icon" class="primary-section-tabs__icon" aria-hidden="true" />
+          <span>{{ cardTitle(card) }}</span>
+        </NuxtLink>
+      </div>
+    </nav>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, unref, watch } from 'vue'
 import { useI18n, useLocalePath, useRoute } from '#imports'
+import { useScrollIdleVisibility } from '~/composables/useScrollIdleVisibility'
 import {
   findPrimaryMegaNavSectionByPath,
   primaryMegaNavPathMatches,
@@ -55,6 +63,7 @@ const route = useRoute()
 const localePath = useLocalePath()
 const { locales, t } = useI18n()
 const mobileOpen = ref(false)
+const { isScrolling } = useScrollIdleVisibility()
 
 const localeCodes = computed(() =>
   (unref(locales) || [])
@@ -127,22 +136,36 @@ watch(
     mobileOpen.value = false
   }
 )
+
+watch(isScrolling, (scrolling) => {
+  if (scrolling) mobileOpen.value = false
+})
 </script>
 
 <style scoped>
+.primary-section-tabs-shell {
+  --primary-section-tab-bar-height: 58px;
+  --primary-section-tab-bar-gap: clamp(0.8rem, 0.95vw, 1.15rem);
+  height: calc(
+    var(--primary-section-tab-bar-height) +
+    var(--primary-section-tab-bar-gap)
+  );
+}
+
 .primary-section-tabs {
   --primary-section-tab-bar-height: 58px;
+  --primary-section-tab-bar-gap: clamp(0.8rem, 0.95vw, 1.15rem);
   box-sizing: border-box;
-  position: sticky;
-  top: var(--site-header-offset, 120px);
+  position: fixed;
+  inset-inline-start: 0;
+  top: calc(var(--site-header-offset, 120px) + var(--primary-section-tab-bar-gap));
   z-index: 88;
   width: 100vw;
   width: 100dvw;
   max-width: 100vw;
   max-width: 100dvw;
   min-height: var(--primary-section-tab-bar-height);
-  margin: 0 calc(50% - 50vw);
-  margin: 0 calc(50% - 50dvw);
+  margin: 0;
   padding: 0.55rem clamp(1rem, 3vw, 3.5rem);
   border: 1px solid rgba(45, 212, 191, 0.14);
   border-right: 0;
@@ -155,6 +178,21 @@ watch(
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 16px 34px rgba(0, 0, 0, 0.34);
+  transition:
+    transform 0.22s ease,
+    opacity 0.18s ease,
+    visibility 0s linear 0s;
+}
+
+.primary-section-tabs--scrolling {
+  transform: translateY(calc(-100% - var(--primary-section-tab-bar-gap)));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 0.22s ease,
+    opacity 0.18s ease,
+    visibility 0s linear 0.22s;
 }
 
 .primary-section-tabs__mobile-trigger {
@@ -223,8 +261,14 @@ watch(
 }
 
 @media (max-width: 900px) {
+  .primary-section-tabs-shell {
+    --primary-section-tab-bar-height: 68px;
+    --primary-section-tab-bar-gap: 0.7rem;
+  }
+
   .primary-section-tabs {
-    --primary-section-tab-bar-height: 56px;
+    --primary-section-tab-bar-height: 68px;
+    --primary-section-tab-bar-gap: 0.7rem;
     padding: 0.55rem clamp(0.9rem, 4vw, 1.25rem);
   }
 

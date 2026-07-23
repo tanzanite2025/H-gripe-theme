@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "షాపింగ్ కార్ట్",
+  "title": "కార్ట్",
+  "closeAriaLabel": "కార్ట్ మూసివేయండి",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "విష్‌లిస్ట్‌కు జోడించండి",
+    "remove": "తొలగించండి",
+    "continueShopping": "షాపింగ్ కొనసాగించండి",
+    "checkout": "చెక్‌అవుట్"
+  },
+  "empty": {
+    "title": "మీ కార్ట్ ఖాళీగా ఉంది",
+    "description": "ప్రారంభించడానికి కొన్ని ఉత్పత్తులు జోడించండి!"
+  },
+  "summary": {
+    "subtotal": "ఉపమొత్తం",
+    "shipping": "షిప్పింగ్",
+    "calculatedAtCheckout": "చెక్‌అవుట్‌లో లెక్కించబడుతుంది",
+    "tax": "పన్ను",
+    "estimatedTotal": "అంచనా మొత్తం",
+    "finalShippingNote": "మీరు గమ్యం ఎంచుకున్న తర్వాత తుది షిప్పింగ్ backend quote ఉపయోగిస్తుంది."
+  }
+}

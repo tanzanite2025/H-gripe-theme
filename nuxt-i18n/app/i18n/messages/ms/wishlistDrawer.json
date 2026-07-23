@@ -1,0 +1,16 @@
+{
+  "title": "Wishlist",
+  "subtitle": "Produk yang anda tambah ke wishlist akan muncul di sini.",
+  "closeAriaLabel": "Tutup wishlist",
+  "loading": "Memuatkan wishlist...",
+  "productImageAlt": "Imej produk",
+  "productFallback": "Produk",
+  "empty": {
+    "title": "Wishlist anda kosong",
+    "description": "Simpan produk yang anda suka supaya mudah dicari dan dikongsi kemudian."
+  },
+  "actions": {
+    "shareToChat": "Kongsi ke chat",
+    "remove": "Buang"
+  }
+}

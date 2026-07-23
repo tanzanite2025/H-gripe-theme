@@ -1,0 +1,16 @@
+{
+  "title": "Önskelista",
+  "subtitle": "Produkter du lägger till i önskelistan visas här.",
+  "closeAriaLabel": "Stäng önskelista",
+  "loading": "Laddar önskelista...",
+  "productImageAlt": "Produktbild",
+  "productFallback": "Produkt",
+  "empty": {
+    "title": "Din önskelista är tom",
+    "description": "Spara produkter du gillar så att du snabbt kan hitta och dela dem senare."
+  },
+  "actions": {
+    "shareToChat": "Dela i chatten",
+    "remove": "Ta bort"
+  }
+}

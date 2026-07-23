@@ -1,46 +1,55 @@
 <template>
-  <div class="page-tab-bar" :class="{ 'page-tab-bar--open': mobileOpen }">
-    <button
-      type="button"
-      class="page-tab-bar__mobile-trigger"
-      :aria-expanded="mobileOpen"
-      :aria-label="mobileOpen ? 'Collapse page sections' : 'Expand page sections'"
-      @click="mobileOpen = !mobileOpen"
-    >
-      <span class="page-tab-bar__hamburger" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </span>
-      <span class="page-tab-bar__mobile-text">
-        {{ activeLabel }}
-      </span>
-    </button>
-
+  <div class="page-tab-bar-shell">
     <div
-      class="page-tab-bar__list"
-      role="tablist"
-      :aria-label="ariaLabel"
+      class="page-tab-bar"
+      :class="{
+        'page-tab-bar--open': mobileOpen,
+        'page-tab-bar--scrolling': isScrolling,
+      }"
     >
       <button
-        v-for="tab in tabs"
-        :key="tab.id"
         type="button"
-        class="page-tab-bar__item"
-        :class="{ 'page-tab-bar__item--active': activeId === tab.id }"
-        role="tab"
-        :aria-selected="activeId === tab.id"
-        :tabindex="activeId === tab.id ? 0 : -1"
-        @click="selectTab(tab.id)"
+        class="page-tab-bar__mobile-trigger"
+        :aria-expanded="mobileOpen"
+        :aria-label="mobileOpen ? 'Collapse page sections' : 'Expand page sections'"
+        @click="mobileOpen = !mobileOpen"
       >
-        {{ getLabel(tab) }}
+        <span class="page-tab-bar__hamburger" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+        <span class="page-tab-bar__mobile-text">
+          {{ activeLabel }}
+        </span>
       </button>
+
+      <div
+        class="page-tab-bar__list"
+        role="tablist"
+        :aria-label="ariaLabel"
+      >
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          class="page-tab-bar__item"
+          :class="{ 'page-tab-bar__item--active': activeId === tab.id }"
+          role="tab"
+          :aria-selected="activeId === tab.id"
+          :tabindex="activeId === tab.id ? 0 : -1"
+          @click="selectTab(tab.id)"
+        >
+          {{ getLabel(tab) }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useScrollIdleVisibility } from '~/composables/useScrollIdleVisibility'
 
 type PageTabItem = {
   id: string
@@ -63,6 +72,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const mobileOpen = ref(false)
+const { isScrolling } = useScrollIdleVisibility()
 
 const getLabel = (tab: PageTabItem) => {
   if (tab.labelKey) return t(tab.labelKey, tab.fallback || tab.label || tab.id)
@@ -85,23 +95,55 @@ watch(
     mobileOpen.value = false
   }
 )
+
+watch(isScrolling, (scrolling) => {
+  if (scrolling) mobileOpen.value = false
+})
 </script>
 
 <style scoped>
+.page-tab-bar-shell {
+  --page-tab-bar-height: 3.25rem;
+  min-height: calc(
+    var(--page-tab-bar-flow-offset, 0px) +
+    var(--page-tab-bar-height) +
+    1.65rem
+  );
+}
+
 .page-tab-bar {
   box-sizing: border-box;
-  position: sticky;
-  top: var(--page-tab-bar-sticky-top, var(--site-header-offset, 120px));
+  position: fixed;
+  inset-inline-start: 0;
+  top: calc(
+    var(--page-tab-bar-sticky-top, var(--site-header-offset, 120px)) +
+    var(--page-tab-bar-flow-offset, 0px)
+  );
   z-index: 87;
   width: 100%;
   max-width: none;
-  margin: var(--page-tab-bar-flow-offset, 0px) auto 1.65rem;
+  margin: 0;
   padding: 0.15rem 0 0.25rem;
   border: 0;
   border-radius: 0;
   background: transparent;
   backdrop-filter: none;
   box-shadow: none;
+  transition:
+    transform 0.22s ease,
+    opacity 0.18s ease,
+    visibility 0s linear 0s;
+}
+
+.page-tab-bar--scrolling {
+  transform: translateY(calc(-100% - 0.75rem));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 0.22s ease,
+    opacity 0.18s ease,
+    visibility 0s linear 0.22s;
 }
 
 .page-tab-bar__mobile-trigger {

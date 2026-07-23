@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Urambazaji wa kategoria za duka",
+  "products": {
+    "loading": "Inapakia bidhaa...",
+    "empty": {
+      "title": "Hakuna bidhaa zinazopatikana bado.",
+      "description": "Bidhaa zikichapishwa kupitia programu-jalizi ya Tanzanite, zitaonekana hapa kiotomatiki."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Ongeza kwenye orodha ya matamanio",
+    "view": "Tazama"
+  },
+  "feedback": {
+    "title": "Shiriki maoni yako kuhusu duka la Tanzanite"
+  }
+}

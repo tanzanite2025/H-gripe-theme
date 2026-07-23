@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Indkøbskurv",
+  "title": "Kurv",
+  "closeAriaLabel": "Luk kurv",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Tilføj til ønskeliste",
+    "remove": "Fjern",
+    "continueShopping": "Fortsæt med at handle",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Din kurv er tom",
+    "description": "Tilføj nogle produkter for at komme i gang!"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "shipping": "Forsendelse",
+    "calculatedAtCheckout": "Beregnes ved checkout",
+    "tax": "Moms",
+    "estimatedTotal": "Estimeret total",
+    "finalShippingNote": "Den endelige forsendelse bruger backend-tilbuddet, efter du vælger en destination."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Navigation for butikskategorier",
+  "products": {
+    "loading": "Indlæser produkter...",
+    "empty": {
+      "title": "Der er endnu ingen produkter tilgængelige.",
+      "description": "Når produkter udgives via Tanzanite-pluginet, vises de automatisk her."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Føj til ønskeliste",
+    "view": "Vis"
+  },
+  "feedback": {
+    "title": "Del din feedback om Tanzanite-butikken"
+  }
+}

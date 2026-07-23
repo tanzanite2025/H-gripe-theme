@@ -1,0 +1,16 @@
+{
+  "title": "Preferiti",
+  "subtitle": "I prodotti aggiunti ai preferiti appariranno qui.",
+  "closeAriaLabel": "Chiudi preferiti",
+  "loading": "Caricamento preferiti...",
+  "productImageAlt": "Immagine prodotto",
+  "productFallback": "Prodotto",
+  "empty": {
+    "title": "La lista dei preferiti è vuota",
+    "description": "Salva i prodotti che ti piacciono per ritrovarli e condividerli rapidamente più tardi."
+  },
+  "actions": {
+    "shareToChat": "Condividi in chat",
+    "remove": "Rimuovi"
+  }
+}

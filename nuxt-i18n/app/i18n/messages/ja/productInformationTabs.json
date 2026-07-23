@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "商品情報",
+  "tabListLabel": "商品情報セクション",
+  "tabs": {
+    "details": "詳細",
+    "afterSales": "アフターサービス",
+    "packaging": "梱包",
+    "shipping": "配送"
+  },
+  "empty": {
+    "details": "商品詳細はまだ追加されていません。",
+    "afterSales": "アフターサービス情報はまだ追加されていません。",
+    "packaging": "梱包情報はまだ追加されていません。",
+    "shipping": "配送情報はまだ追加されていません。"
+  }
+}

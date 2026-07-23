@@ -45,7 +45,7 @@ useHead({
 .company-page__intro {
   margin: 0 0 1rem;
   font-size: 0.95rem;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
 }
 
 .company-tabs {

@@ -1,10 +1,10 @@
 <template>
   <!-- Tire width -> rim internal width helper -->
   <div class="mt-5 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)] text-center">
-    <h3 class="mb-2 text-sm font-semibold text-slate-100">
+    <h3 class="mb-2 text-sm font-semibold tz-text-primary">
       Tire width to rim internal width helper
     </h3>
-    <p class="mb-3 text-xs text-slate-400">
+    <p class="mb-3 text-xs tz-text-secondary">
       Enter your tire width in millimetres to see an approximate compatible rim internal width
       range based on common ETRTO-style guidelines. Use the rim type toggle to see how hookless vs
       hooked shifts the suggested range. Always cross-check with brand charts and the specific
@@ -12,7 +12,7 @@
     </p>
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end justify-center items-center">
       <div class="sm:w-40">
-        <label class="block text-xs font-medium text-slate-300" for="tire-width-mm">
+        <label class="block text-xs font-medium tz-text-secondary" for="tire-width-mm">
           Tire width (mm)
         </label>
         <input
@@ -23,12 +23,12 @@
           max="130"
           step="1"
           placeholder="e.g. 28 or 57"
-          class="mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0"
+          class="mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs tz-text-primary shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0"
         />
       </div>
 
       <div class="sm:w-52">
-        <span class="mb-1 block text-xs font-medium text-slate-300">
+          <span class="mb-1 block text-xs font-medium tz-text-secondary">
           Rim type
         </span>
         <div
@@ -39,7 +39,7 @@
             class="rounded-full px-3 py-1 text-[11px] transition-colors"
             :class="rimType === 'hookless'
               ? 'bg-sky-400 text-slate-900'
-              : 'text-slate-200 hover:text-slate-50'"
+              : 'tz-text-secondary hover:text-slate-50'"
             @click="rimType = 'hookless'"
           >
             Hookless (TSS)
@@ -49,7 +49,7 @@
             class="rounded-full px-3 py-1 text-[11px] transition-colors"
             :class="rimType === 'hooked'
               ? 'bg-sky-400 text-slate-900'
-              : 'text-slate-200 hover:text-slate-50'"
+              : 'tz-text-secondary hover:text-slate-50'"
             @click="rimType = 'hooked'"
           >
             Hooked (TC)
@@ -62,20 +62,20 @@
     <div class="mt-3">
       <p
         v-if="!tireRimSuggestion"
-        class="text-xs text-slate-500"
+        class="text-xs tz-text-muted"
       >
         Enter a tire width between about 18 and 80 mm to see a suggested rim internal width range.
       </p>
 
       <div
         v-else
-        class="text-xs text-slate-200"
+        class="text-xs tz-text-secondary"
       >
         <p class="font-semibold text-sky-300">
           Recommended rim internal width:
           {{ tireRimSuggestion.minRim }} - {{ tireRimSuggestion.maxRim }} mm
         </p>
-        <p class="mt-0.5 text-[11px] text-slate-400">
+        <p class="mt-0.5 text-[11px] tz-text-muted">
           Sweet spot around {{ tireRimSuggestion.ideal }} mm. For aggressive or technical riding,
           stay closer to the wider end of the range.
         </p>

@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Navigasyon ng kategorya ng shop",
+  "products": {
+    "loading": "Nilo-load ang mga produkto...",
+    "empty": {
+      "title": "Wala pang available na produkto.",
+      "description": "Kapag na-publish ang mga produkto sa pamamagitan ng Tanzanite plugin, awtomatiko silang lalabas dito."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Idagdag sa wishlist",
+    "view": "Tingnan"
+  },
+  "feedback": {
+    "title": "Ibahagi ang iyong feedback tungkol sa Tanzanite shop"
+  }
+}

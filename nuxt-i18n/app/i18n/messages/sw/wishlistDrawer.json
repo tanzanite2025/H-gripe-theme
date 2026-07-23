@@ -1,0 +1,16 @@
+{
+  "title": "Orodha pendwa",
+  "subtitle": "Bidhaa unazoongeza kwenye orodha pendwa zitaonekana hapa.",
+  "closeAriaLabel": "Funga orodha pendwa",
+  "loading": "Inapakia orodha pendwa...",
+  "productImageAlt": "Picha ya bidhaa",
+  "productFallback": "Bidhaa",
+  "empty": {
+    "title": "Orodha yako pendwa iko tupu",
+    "description": "Hifadhi bidhaa unazopenda ili uzipate na kuzishiriki haraka baadaye."
+  },
+  "actions": {
+    "shareToChat": "Shiriki kwenye gumzo",
+    "remove": "Ondoa"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Alışveriş sepeti",
+  "title": "Sepet",
+  "closeAriaLabel": "Sepeti kapat",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "İstek listesine ekle",
+    "remove": "Kaldır",
+    "continueShopping": "Alışverişe devam et",
+    "checkout": "Ödeme"
+  },
+  "empty": {
+    "title": "Sepetiniz boş",
+    "description": "Başlamak için birkaç ürün ekleyin!"
+  },
+  "summary": {
+    "subtotal": "Ara toplam",
+    "shipping": "Kargo",
+    "calculatedAtCheckout": "Ödemede hesaplanır",
+    "tax": "Vergi",
+    "estimatedTotal": "Tahmini toplam",
+    "finalShippingNote": "Son kargo ücreti, hedef seçildikten sonra backend teklifiyle hesaplanır."
+  }
+}

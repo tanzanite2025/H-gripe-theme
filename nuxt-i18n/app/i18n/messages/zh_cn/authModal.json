@@ -1,0 +1,50 @@
+{
+  "privacyNotice": "我们重视你的隐私。所有连接均经过加密，你的数据始终归你所有。",
+  "intro": {
+    "login": "欢迎回来！请选择一种方式登录：",
+    "register": "几秒钟即可创建账户："
+  },
+  "divider": {
+    "email": "或使用邮箱"
+  },
+  "fields": {
+    "username": "用户名",
+    "email": "邮箱",
+    "password": "密码",
+    "rememberMe": "记住我"
+  },
+  "actions": {
+    "close": "关闭登录弹窗",
+    "signIn": "登录",
+    "signUp": "注册",
+    "signingIn": "登录中...",
+    "signingUp": "注册中...",
+    "continueWithGoogle": "使用 Google 继续"
+  },
+  "switch": {
+    "noAccount": "还没有账户？",
+    "hasAccount": "已经有账户？",
+    "signUpHere": "在这里注册",
+    "signInHere": "在这里登录"
+  },
+  "completion": {
+    "loginTitle": "登录成功",
+    "loginMessage": "你的账户数据已同步，点击下方按钮继续。",
+    "googleLoginMessage": "Google 账户已登录，数据已同步。",
+    "loginCta": "好的，返回",
+    "registerTitle": "注册成功",
+    "registerMessage": "账户已创建，点击下方按钮登录并返回。",
+    "registerCta": "立即登录"
+  },
+  "validation": {
+    "invalidEmail": "请输入有效的邮箱地址。",
+    "passwordMin": "密码至少需要 8 个字符。",
+    "passwordUppercase": "密码必须包含至少一个大写字母。"
+  },
+  "errors": {
+    "loginFailed": "登录失败，请重试。",
+    "registrationFailed": "注册失败，请重试。",
+    "googleLoginFailed": "Google 登录失败，请重试。",
+    "googleInitFailed": "无法启动 Google 登录，请重试。"
+  }
+}

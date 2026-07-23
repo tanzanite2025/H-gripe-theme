@@ -6,7 +6,7 @@
       <h3 class="text-sm font-semibold text-slate-100">
         Global partnership network  Xiamen origin
       </h3>
-      <p class="text-xs text-slate-400">
+      <p class="text-xs tz-text-secondary">
         All routes start from Xiamen, Fujian, China and connect to current demo
         cities.
       </p>
@@ -65,7 +65,7 @@
       <g ref="pointsLayerRef"></g>
     </svg>
 
-    <p class="mt-2 text-[11px] text-slate-500">
+    <p class="mt-2 text-[11px] tz-text-muted">
       Visualization is illustrative only. Routes are stylized connections from
       Xiamen to selected partner cities.
     </p>

@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Bayanin samfur",
+  "tabListLabel": "Sassan bayanin samfur",
+  "tabs": {
+    "details": "Cikakkun bayanai",
+    "afterSales": "Bayan saye",
+    "packaging": "Marufi",
+    "shipping": "Sufuri"
+  },
+  "empty": {
+    "details": "Ba a ƙara cikakkun bayanan samfur ba tukuna.",
+    "afterSales": "Ba a ƙara bayanin bayan saye ba tukuna.",
+    "packaging": "Ba a ƙara bayanin marufi ba tukuna.",
+    "shipping": "Ba a ƙara bayanin sufuri ba tukuna."
+  }
+}

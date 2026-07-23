@@ -54,7 +54,7 @@ const toggle = (keyword: string) => {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--tz-text-secondary);
   text-align: left;
 }
 

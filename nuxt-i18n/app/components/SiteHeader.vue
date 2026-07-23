@@ -25,7 +25,7 @@
 							:key="section.id"
 							type="button"
 							class="relative inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[15px] font-medium transition-all duration-200"
-							:class="currentMegaNavId === section.id ? 'text-white' : 'text-white/60 hover:text-white'"
+							:class="currentMegaNavId === section.id ? 'tz-text-primary' : 'tz-text-secondary hover:text-white'"
 							:aria-controls="megaPanelId"
 							:aria-expanded="activeMegaNavId === section.id"
 							aria-haspopup="dialog"
@@ -67,7 +67,7 @@
 						<!-- Language -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="w-9 h-9 rounded-full bg-slate-900/70 flex items-center justify-center text-[11px] font-bold text-slate-200 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-sky-300 hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
+								class="w-9 h-9 rounded-full bg-slate-900/70 flex items-center justify-center text-[11px] font-bold tz-text-secondary shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-sky-300 hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -139,7 +139,7 @@
 					aria-label="Breadcrumb"
 					class="flex justify-center mt-1"
 				>
-					<ol class="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight transition-colors hover:text-slate-400">
+					<ol class="flex items-center gap-1.5 text-[11px] tz-text-muted leading-tight transition-colors hover:text-slate-300">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
@@ -148,14 +148,14 @@
 							<NuxtLink
 								v-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
-								class="hover:text-white transition-colors"
+								class="tz-text-secondary hover:text-white transition-colors"
 							>
 								{{ crumb.label }}
 							</NuxtLink>
-							<span v-else class="text-slate-300 font-medium">
+							<span v-else class="tz-text-secondary font-medium">
 								{{ crumb.label }}
 							</span>
-							<span v-if="index < breadcrumbs.length - 1" class="text-slate-700">/</span>
+							<span v-if="index < breadcrumbs.length - 1" class="tz-text-disabled">/</span>
 						</li>
 					</ol>
 				</nav>
@@ -194,7 +194,7 @@
 						<!-- Guides (Icon) -->
 						<NuxtLink
 							:to="localePath('/guides/tireguides')"
-							class="text-white/70 hover:text-white transition-colors p-1"
+							class="tz-text-secondary hover:text-white transition-colors p-1"
 							aria-label="Guides"
 						>
 							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -203,7 +203,7 @@
 						<!-- Language Switcher (Text + Icon) -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="text-white/70 hover:text-white transition-colors flex items-center gap-1 p-1"
+								class="tz-text-secondary hover:text-white transition-colors flex items-center gap-1 p-1"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -218,7 +218,7 @@
 
 						<!-- Share/Points (Icon) -->
 						<button
-							class="text-white/70 hover:text-[#40ffaa] transition-colors p-1"
+							class="tz-text-secondary hover:text-[#40ffaa] transition-colors p-1"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-label="Open membership panel"
@@ -233,7 +233,7 @@
 					<NuxtLink
 						:to="localePath('/shop')"
 						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="currentMegaNavId === 'products' ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+						:class="currentMegaNavId === 'products' ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
 					>
 						{{ $t('footer.menus.products', 'Products') }}
 					</NuxtLink>
@@ -241,7 +241,7 @@
 					<NuxtLink
 						:to="localePath('/support/faqs')"
 						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="currentMegaNavId === 'support' ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+						:class="currentMegaNavId === 'support' ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
 					>
 						{{ $t('footer.menus.support', 'Support') }}
 					</NuxtLink>
@@ -249,7 +249,7 @@
 					<NuxtLink
 						:to="localePath('/company/about')"
 						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="currentMegaNavId === 'company' ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-white/60 hover:text-white'"
+						:class="currentMegaNavId === 'company' ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
 					>
 						{{ $t('footer.menus.company', 'Company') }}
 					</NuxtLink>
@@ -261,7 +261,7 @@
 					aria-label="Breadcrumb"
 					class="px-2 pb-1 -mt-1"
 				>
-					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[10px] text-slate-400 leading-tight">
+					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[10px] tz-text-muted leading-tight">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
@@ -270,14 +270,14 @@
 							<NuxtLink
 								v-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
-								class="hover:text-white transition-colors truncate max-w-[100px]"
+								class="tz-text-secondary hover:text-white transition-colors truncate max-w-[100px]"
 							>
 								{{ crumb.label }}
 							</NuxtLink>
-							<span v-else class="text-slate-200 font-medium truncate max-w-[120px]">
+							<span v-else class="tz-text-secondary font-medium truncate max-w-[120px]">
 								{{ crumb.label }}
 							</span>
-							<span v-if="index < breadcrumbs.length - 1" class="text-slate-600">/</span>
+							<span v-if="index < breadcrumbs.length - 1" class="tz-text-disabled">/</span>
 						</li>
 					</ol>
 				</nav>

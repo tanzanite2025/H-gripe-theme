@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Shop category navigation",
+  "products": {
+    "loading": "Products dey load...",
+    "empty": {
+      "title": "No products dey available yet.",
+      "description": "Once products publish through Tanzanite plugin, dem go show here automatically."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Add to wishlist",
+    "view": "View"
+  },
+  "feedback": {
+    "title": "Share your feedback about the Tanzanite shop"
+  }
+}

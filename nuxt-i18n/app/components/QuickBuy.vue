@@ -20,7 +20,7 @@
         <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
         <!-- 头部 -->
         <header class="flex items-center justify-between px-3.5 max-md:px-2 py-2.5 max-md:py-2 border-b border-white/10 rounded-t-2xl overflow-hidden max-md:gap-1.5">
-          <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" aria-label="quick-buy-steps">
+          <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" :aria-label="t('quickBuy.stepsAriaLabel')">
             <ol class="flex items-center justify-center gap-3 max-md:gap-1.5 list-none m-0 p-0 max-md:flex-nowrap">
               <li
                 v-for="n in totalSteps"
@@ -42,7 +42,7 @@
           <button 
             class="flex-none ml-1.5 max-md:ml-0 appearance-none border-0 bg-transparent text-white text-[22px] cursor-pointer px-2 py-1 rounded-lg hover:bg-white/10 transition-colors" 
             type="button" 
-            aria-label="close" 
+            :aria-label="t('common.close', 'Close')"
             @click="handleClose"
           >×</button>
         </header>
@@ -53,18 +53,18 @@
             v-if="isUsingFallbackConfig"
             class="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs leading-relaxed text-amber-100"
           >
-            Quick Buy setup preview: backend steps are not configured yet, so this modal is showing the default placeholder flow.
+            {{ t('quickBuy.fallbackNotice') }}
           </div>
 
           <div class="w-full min-w-0 overflow-hidden">
-            <div v-if="currentCategoryName" class="flex items-center gap-2 mb-1.5 text-white text-[13px] opacity-90">
-              <span class="opacity-70">Category</span>
+            <div v-if="currentCategoryName" class="flex items-center gap-2 mb-1.5 tz-text-secondary text-[13px]">
+              <span class="tz-text-muted">{{ t('quickBuy.search.categoryLabel') }}</span>
               <span>{{ currentCategoryName }}</span>
             </div>
             <input
               v-model.trim="query"
               type="text"
-              placeholder="Search products... (Enter or pause to search)"
+              :placeholder="t('quickBuy.search.placeholder')"
               class="w-full px-3 py-2.5 rounded-lg bg-white/[0.06] text-white border border-white box-border max-w-full focus:outline-none focus:border-[#6b73ff] transition-colors"
               @keydown.enter.prevent="triggerSearch"
               @input="scheduleSearch"
@@ -72,8 +72,8 @@
           </div>
           
           <div class="flex-1 min-h-0">
-            <div v-if="loading" class="p-2.5 text-white opacity-85">Loading...</div>
-            <div v-else-if="error" class="p-2.5 text-white opacity-85">{{ error }}</div>
+            <div v-if="loading" class="p-2.5 tz-text-secondary">{{ t('common.loading', 'Loading...') }}</div>
+            <div v-else-if="error" class="p-2.5 tz-text-secondary">{{ error }}</div>
             <ul v-else-if="products.length" class="list-none grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5 m-0 p-0">
               <li 
                 v-for="product in products" 
@@ -94,21 +94,21 @@
               </li>
             </ul>
             <div v-else class="p-2.5">
-              <h2 class="my-2 text-lg text-white">Step {{ step }}</h2>
-              <p class="m-0 text-white/90">{{ stepHint }}</p>
+              <h2 class="my-2 text-lg text-white">{{ t('quickBuy.placeholder.stepTitle', { step }) }}</h2>
+              <p class="m-0 tz-text-secondary">{{ stepHint }}</p>
             </div>
           </div>
         </section>
 
         <!-- 底部 -->
         <footer class="relative flex flex-col items-center justify-center gap-1.5 max-md:gap-1 px-3.5 py-2.5 max-md:pt-4 border-t border-white/[0.08] rounded-b-2xl overflow-hidden">
-          <div class="text-white/80 text-[13px] text-center max-md:order-1 max-md:-mb-1">{{ footerText }}</div>
-          <div class="inline-flex items-center gap-2 text-white font-semibold max-md:order-3 max-md:text-[13px] max-md:-mt-1">
-            <span>Items: {{ totalQty }}</span>
+          <div class="tz-text-secondary text-[13px] text-center max-md:order-1 max-md:-mb-1">{{ footerText }}</div>
+          <div class="inline-flex items-center gap-2 tz-text-primary font-semibold max-md:order-3 max-md:text-[13px] max-md:-mt-1">
+            <span>{{ t('quickBuy.summary.items') }}: {{ totalQty }}</span>
             <span class="opacity-50">·</span>
-            <span>Weight: {{ totalWeightG }}g</span>
+            <span>{{ t('quickBuy.summary.weight') }}: {{ totalWeightG }}g</span>
             <span class="opacity-50">·</span>
-            <span>Price: ${{ formattedTotalPrice }}</span>
+            <span>{{ t('quickBuy.summary.price') }}: ${{ formattedTotalPrice }}</span>
           </div>
           <div class="inline-flex gap-2 justify-center flex-wrap max-md:order-4 max-md:mt-1">
             <button 
@@ -116,24 +116,24 @@
               type="button" 
               :disabled="step <= 1" 
               @click="prev"
-            >Prev</button>
+            >{{ t('common.previous', 'Previous') }}</button>
             <button
               v-if="step < totalSteps"
               class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
               type="button" 
               @click="next"
-            >Next</button>
+            >{{ t('common.next', 'Next') }}</button>
             <template v-else>
               <button 
                 class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
                 type="button" 
                 @click="goToCart"
-              >To cart</button>
+              >{{ t('quickBuy.actions.toCart') }}</button>
               <button 
                 class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
                 type="button" 
                 @click="goToCheckout"
-              >Payment</button>
+              >{{ t('quickBuy.actions.payment') }}</button>
             </template>
           </div>
         </footer>
@@ -182,14 +182,15 @@ interface Selection {
 
 const props = defineProps<{ config: QuickBuyConfig | null }>()
 const emit = defineEmits<{ close: [] }>()
+const { t } = useI18n()
 
-const DEFAULT_QUICK_BUY_STEPS: QuickBuyStep[] = [
-  { id: 1, slug: 'product-search', name: 'Search products' },
-  { id: 2, slug: 'specifications', name: 'Choose specifications' },
-  { id: 3, slug: 'quantity', name: 'Confirm quantity' },
-  { id: 4, slug: 'cart-review', name: 'Review cart' },
-  { id: 5, slug: 'checkout', name: 'Checkout' },
-]
+const defaultQuickBuySteps = computed<QuickBuyStep[]>(() => [
+  { id: 1, slug: 'product-search', name: t('quickBuy.defaultSteps.productSearch') },
+  { id: 2, slug: 'specifications', name: t('quickBuy.defaultSteps.specifications') },
+  { id: 3, slug: 'quantity', name: t('quickBuy.defaultSteps.quantity') },
+  { id: 4, slug: 'cart-review', name: t('quickBuy.defaultSteps.cartReview') },
+  { id: 5, slug: 'checkout', name: t('quickBuy.defaultSteps.checkout') },
+])
 
 const normalizeSteps = (value: unknown): QuickBuyStep[] => {
   if (!Array.isArray(value)) return []
@@ -200,7 +201,7 @@ const normalizeSteps = (value: unknown): QuickBuyStep[] => {
       const record = item as Record<string, unknown>
       const id = Number(record.id ?? index + 1)
       const slug = String(record.slug || record.key || `step-${index + 1}`).trim()
-      const name = String(record.name || record.label || record.title || `Step ${index + 1}`).trim()
+      const name = String(record.name || record.label || record.title || t('quickBuy.placeholder.stepName', { step: index + 1 })).trim()
 
       if (!Number.isFinite(id) || !slug || !name) return null
       return { id, slug, name }
@@ -224,36 +225,25 @@ const configuredSteps = computed(() => normalizeSteps(props.config?.steps))
 const isUsingFallbackConfig = computed(() => !props.config || configuredSteps.value.length === 0)
 const qbConfig = computed<QuickBuyConfig>(() => ({
   ...(props.config || {}),
-  steps: configuredSteps.value.length ? configuredSteps.value : DEFAULT_QUICK_BUY_STEPS,
+  steps: configuredSteps.value.length ? configuredSteps.value : defaultQuickBuySteps.value,
 }))
-const steps = computed(() => qbConfig.value.steps || DEFAULT_QUICK_BUY_STEPS)
+const steps = computed(() => qbConfig.value.steps || defaultQuickBuySteps.value)
 const totalSteps = computed(() => Math.max(steps.value.length, 1))
 const currentStepConf = computed(() => steps.value[step.value - 1] || { id: 0, slug: '', name: '' })
 const currentCategorySlug = computed(() => currentStepConf.value.slug || '')
 const currentCategoryName = computed(() => currentStepConf.value.name || '')
 
+const stepKey = computed(() => {
+  if (step.value >= 1 && step.value <= 5) return `step${step.value}`
+  return 'default'
+})
+
 const stepHint = computed(() => {
-  return (
-    {
-      1: 'Search or filter products',
-      2: 'Select specifications/quantity',
-      3: 'Confirm product information',
-      4: 'Complete your order',
-      5: 'Finish and review'
-    } as Record<number, string>
-  )[step.value]
+  return t(`quickBuy.hints.${stepKey.value}`)
 })
 
 const footerText = computed(() => {
-  return (
-    {
-      1: 'Enter keywords in the search box to filter products',
-      2: 'Select product specifications and quantity to continue',
-      3: 'Please confirm the product information is correct',
-      4: 'Complete this step to submit/continue your process',
-      5: 'All steps complete'
-    } as Record<number, string>
-  )[step.value]
+  return t(`quickBuy.footer.${stepKey.value}`)
 })
 
 const totalQty = computed(() => selections.value.reduce((sum, item) => sum + (Number(item.qty) || 0), 0))

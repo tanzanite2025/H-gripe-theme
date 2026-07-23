@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "商品信息",
+  "tabListLabel": "商品信息分类",
+  "tabs": {
+    "details": "商品详情",
+    "afterSales": "售后说明",
+    "packaging": "包装说明",
+    "shipping": "运输方式"
+  },
+  "empty": {
+    "details": "暂未添加商品详情。",
+    "afterSales": "暂未添加售后说明。",
+    "packaging": "暂未添加包装说明。",
+    "shipping": "暂未添加运输方式说明。"
+  }
+}

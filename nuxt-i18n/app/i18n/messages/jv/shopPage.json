@@ -1,0 +1,17 @@
+{
+  "categoryRailLabel": "Navigasi kategori toko",
+  "products": {
+    "loading": "Ngunggah produk...",
+    "empty": {
+      "title": "Durung ana produk sing kasedhiya.",
+      "description": "Sawisé produk diterbitaké liwat plugin Tanzanite, produk bakal katon otomatis ing kéné."
+    }
+  },
+  "actions": {
+    "addToWishlist": "Tambah menyang dhaptar karep",
+    "view": "Deleng"
+  },
+  "feedback": {
+    "title": "Tuduhaké tanggapanmu babagan toko Tanzanite"
+  }
+}

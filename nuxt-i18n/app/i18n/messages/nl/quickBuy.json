@@ -1,0 +1,44 @@
+{
+  "stepsAriaLabel": "Stappen voor snel kopen",
+  "fallbackNotice": "Voorbeeld van Quick Buy-instelling: de backend-stappen zijn nog niet geconfigureerd, dus dit venster toont de standaardflow.",
+  "search": {
+    "categoryLabel": "Categorie",
+    "placeholder": "Producten zoeken... (Enter of pauze om te zoeken)"
+  },
+  "placeholder": {
+    "stepTitle": "Stap {step}",
+    "stepName": "Stap {step}"
+  },
+  "summary": {
+    "items": "Items",
+    "weight": "Gewicht",
+    "price": "Prijs"
+  },
+  "actions": {
+    "toCart": "Naar winkelwagen",
+    "payment": "Betaling"
+  },
+  "defaultSteps": {
+    "productSearch": "Producten zoeken",
+    "specifications": "Specificaties kiezen",
+    "quantity": "Aantal bevestigen",
+    "cartReview": "Winkelwagen bekijken",
+    "checkout": "Afrekenen"
+  },
+  "hints": {
+    "step1": "Zoek of filter producten",
+    "step2": "Selecteer specificaties/aantal",
+    "step3": "Bevestig productinformatie",
+    "step4": "Rond je bestelling af",
+    "step5": "Voltooien en controleren",
+    "default": "Voltooi deze stap"
+  },
+  "footer": {
+    "step1": "Voer zoekwoorden in om producten te filteren",
+    "step2": "Selecteer productspecificaties en aantal om verder te gaan",
+    "step3": "Bevestig dat de productinformatie correct is",
+    "step4": "Voltooi deze stap om het proces te verzenden/voort te zetten",
+    "step5": "Alle stappen voltooid",
+    "default": "Voltooi deze stap om verder te gaan"
+  }
+}

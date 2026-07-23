@@ -1,0 +1,26 @@
+{
+  "ariaLabel": "Shopping cart",
+  "title": "Cart",
+  "closeAriaLabel": "Isara ang cart",
+  "item": {
+    "sku": "SKU"
+  },
+  "actions": {
+    "addToWishlist": "Idagdag sa wishlist",
+    "remove": "Alisin",
+    "continueShopping": "Magpatuloy mamili",
+    "checkout": "Checkout"
+  },
+  "empty": {
+    "title": "Walang laman ang cart mo",
+    "description": "Magdagdag ng ilang produkto para magsimula!"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "calculatedAtCheckout": "Kakalkulahin sa checkout",
+    "tax": "Buwis",
+    "estimatedTotal": "Tinatayang total",
+    "finalShippingNote": "Ginagamit ng final shipping ang backend quote pagkatapos mong pumili ng destinasyon."
+  }
+}

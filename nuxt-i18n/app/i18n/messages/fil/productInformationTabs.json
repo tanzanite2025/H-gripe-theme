@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Impormasyon ng produkto",
+  "tabListLabel": "Mga seksyon ng impormasyon ng produkto",
+  "tabs": {
+    "details": "Mga detalye",
+    "afterSales": "After-sales",
+    "packaging": "Packaging",
+    "shipping": "Pagpapadala"
+  },
+  "empty": {
+    "details": "Hindi pa naidaragdag ang mga detalye ng produkto.",
+    "afterSales": "Hindi pa naidaragdag ang impormasyon sa after-sales.",
+    "packaging": "Hindi pa naidaragdag ang impormasyon sa packaging.",
+    "shipping": "Hindi pa naidaragdag ang impormasyon sa pagpapadala."
+  }
+}

@@ -25,7 +25,7 @@
     <!-- Intro Card -->
     <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
        <h3 class="text-lg font-bold text-slate-100 mb-2">Bicycle Hub Key Specifications</h3>
-       <p class="text-sm text-slate-400 leading-relaxed max-w-2xl mx-auto">
+      <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto">
           Understanding the core specifications of your hubs is critical for wheel building and frame compatibility.
        </p>
     </div>
@@ -33,7 +33,7 @@
     <!-- 1. Spoke Interface Card -->
     <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
        <div class="flex items-center gap-3 mb-6 pb-3 border-b border-sky-500/10">
-          <h3 class="text-lg font-bold text-slate-200">1. Spoke Type: J-Bend vs. Straight-Pull</h3>
+        <h3 class="text-lg font-bold tz-text-primary">1. Spoke Type: J-Bend vs. Straight-Pull</h3>
        </div>
 
        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -42,7 +42,7 @@
               <h4 class="text-indigo-400 font-bold mb-3 flex items-center gap-2">
                  J-Bend (Classic)
               </h4>
-              <ul class="space-y-2 text-sm text-slate-300 mb-4">
+        <ul class="space-y-2 text-sm tz-text-secondary mb-4">
                  <li>• Spoke head is bent (elbow) to fit flange.</li>
                  <li>• <strong>Pros:</strong> Easy to service, replacement spokes widely available.</li>
                  <li>• <strong>Cons:</strong> Traditional look, stress concentration at elbow.</li>
@@ -70,7 +70,7 @@
               <h4 class="text-emerald-400 font-bold mb-3 flex items-center gap-2">
                  Straight-Pull (Modern)
               </h4>
-               <ul class="space-y-2 text-sm text-slate-300 mb-4">
+        <ul class="space-y-2 text-sm tz-text-secondary mb-4">
                  <li>• Spokes are straight, no elbow.</li>
                  <li>• <strong>Pros:</strong> Higher tension potential, sleek aesthetic.</li>
                  <li>• <strong>Cons:</strong> Harder to find specific replacements on the road.</li>
@@ -102,16 +102,16 @@
            <h3 class="text-lg font-bold text-amber-500 mb-4 flex items-center gap-2">
               Axle Standards
            </h3>
-           <div class="space-y-4 text-sm text-slate-300">
+        <div class="space-y-4 text-sm tz-text-secondary">
               <div class="bg-slate-800/50 p-3 rounded-lg">
-                 <strong class="block text-slate-200 mb-1">Front Hubs</strong>
+          <strong class="block tz-text-primary mb-1">Front Hubs</strong>
                  <p>QR (9x100), 12x100 (Road/Gravel), 15x100, <strong>15x110 (Boost)</strong></p>
               </div>
               <div class="bg-slate-800/50 p-3 rounded-lg">
-                 <strong class="block text-slate-200 mb-1">Rear Hubs</strong>
+          <strong class="block tz-text-primary mb-1">Rear Hubs</strong>
                  <p>QR (135mm), 12x142, <strong>12x148 (Boost)</strong></p>
               </div>
-              <p class="text-xs text-slate-500 mt-2 italic">
+              <p class="text-xs tz-text-muted mt-2 italic">
                  Note: Thru-axles (12mm/15mm) provide superior stiffness compared to Quick Release.
               </p>
            </div>
@@ -122,18 +122,18 @@
            <h3 class="text-lg font-bold text-rose-500 mb-4 flex items-center gap-2">
               Brake Interface
            </h3>
-           <ul class="space-y-3 text-sm text-slate-300">
+        <ul class="space-y-3 text-sm tz-text-secondary">
               <li class="flex items-start gap-3">
                  <span class="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
                  <div>
-                    <strong class="text-slate-200 block">6-Bolt (IS)</strong>
+          <strong class="tz-text-primary block">6-Bolt (IS)</strong>
                     Rotor attached via 6 Torx bolts. Universal and robust.
                  </div>
               </li>
               <li class="flex items-start gap-3">
                  <span class="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
                  <div>
-                    <strong class="text-slate-200 block">Center Lock (CL)</strong>
+          <strong class="tz-text-primary block">Center Lock (CL)</strong>
                     Splined interface with a lockring. Faster installation, lighter, favored by Shimano/Road.
                  </div>
               </li>
@@ -150,16 +150,16 @@
            </h3>
            <div class="space-y-4">
               <div class="flex items-center justify-between text-sm border-b border-white/5 pb-2">
-                  <span class="text-slate-400">Lightweight / Road</span>
-                  <span class="text-slate-200 font-bold">20H / 24H</span>
+            <span class="tz-text-muted">Lightweight / Road</span>
+            <span class="tz-text-primary font-bold">20H / 24H</span>
               </div>
               <div class="flex items-center justify-between text-sm border-b border-white/5 pb-2">
-                  <span class="text-slate-400">Standard MTB / Gravel</span>
-                  <span class="text-slate-200 font-bold">28H / 32H</span>
+                   <span class="tz-text-muted">Standard MTB / Gravel</span>
+                   <span class="tz-text-primary font-bold">28H / 32H</span>
               </div>
               <div class="flex items-center justify-between text-sm pb-2">
-                  <span class="text-slate-400">Heavy Duty / E-Bike</span>
-                  <span class="text-slate-200 font-bold">32H / 36H</span>
+                   <span class="tz-text-muted">Heavy Duty / E-Bike</span>
+                   <span class="tz-text-primary font-bold">32H / 36H</span>
               </div>
            </div>
        </div>
@@ -169,21 +169,21 @@
            <h3 class="text-lg font-bold text-cyan-500 mb-4 flex items-center gap-2">
               Ratchet Engagement
            </h3>
-           <p class="text-sm text-slate-300 mb-4">
+            <p class="text-sm tz-text-secondary mb-4">
               Higher tooth counts = faster engagement (less lag when you start pedaling).
            </p>
            <div class="grid grid-cols-3 gap-2 text-center">
               <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                  <div class="text-lg font-bold text-cyan-400">18T</div>
-                 <div class="text-[10px] text-slate-400">Standard</div>
+                  <div class="text-[10px] tz-text-muted">Standard</div>
               </div>
               <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                  <div class="text-lg font-bold text-cyan-400">36T</div>
-                 <div class="text-[10px] text-slate-400">Balanced</div>
+                  <div class="text-[10px] tz-text-muted">Balanced</div>
               </div>
               <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                  <div class="text-lg font-bold text-cyan-400">54T</div>
-                 <div class="text-[10px] text-slate-400">Instant</div>
+                  <div class="text-[10px] tz-text-muted">Instant</div>
               </div>
            </div>
        </div>
@@ -192,8 +192,8 @@
     <!-- 4. Freehub Summary Card (Link) -->
     <div class="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6 flex flex-col md:flex-row items-center justify-between gap-6">
        <div class="text-center md:text-left">
-          <h3 class="text-lg font-bold text-slate-100 mb-1">Freehub Body Compatibility</h3>
-          <p class="text-sm text-slate-400">HG vs MS vs XD vs XDR vs N3W? Check our detailed guide.</p>
+           <h3 class="text-lg font-bold tz-text-primary mb-1">Freehub Body Compatibility</h3>
+           <p class="text-sm tz-text-secondary">HG vs MS vs XD vs XDR vs N3W? Check our detailed guide.</p>
        </div>
        <button
         type="button"
@@ -209,8 +209,8 @@
     <div v-show="activeTab === 'choose-hubs'" class="space-y-8">
       <!-- Intro Card -->
       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-indigo-500">
-         <h3 class="text-xl font-bold text-slate-100 mb-2">Hub Selection Guide</h3>
-         <p class="text-sm text-slate-400 max-w-2xl mx-auto">
+          <h3 class="text-xl font-bold tz-text-primary mb-2">Hub Selection Guide</h3>
+          <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
             Choosing the right hub is a balance between serviceability, performance, and compatibility.
          </p>
       </div>
@@ -221,18 +221,18 @@
             <!-- J-bend -->
             <div class="bg-indigo-500/5 rounded-xl p-5 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-indigo-500/10">
                <strong class="block text-indigo-400 text-lg mb-3">1. J-bend Hub</strong>
-               <p class="text-sm text-slate-300 mb-2"><strong>Structure:</strong> Flange holes designed for spokes with a 90° bend (elbow).</p>
-               <p class="text-sm text-slate-300 mb-2"><strong>Advantages:</strong> Traditional design, easy to source replacements, convenient maintenance.</p>
-               <p class="text-sm text-slate-300 mb-4"><strong>Best for:</strong> Riders valuing universality and ease of future maintenance.</p>
+                <p class="text-sm tz-text-secondary mb-2"><strong>Structure:</strong> Flange holes designed for spokes with a 90° bend (elbow).</p>
+                <p class="text-sm tz-text-secondary mb-2"><strong>Advantages:</strong> Traditional design, easy to source replacements, convenient maintenance.</p>
+                <p class="text-sm tz-text-secondary mb-4"><strong>Best for:</strong> Riders valuing universality and ease of future maintenance.</p>
                <div class="bg-indigo-500/10 px-3 py-1.5 rounded text-xs text-indigo-300 inline-block font-medium">Compatible: J-bend spokes</div>
             </div>
 
             <!-- Straight-pull -->
             <div class="bg-emerald-500/5 rounded-xl p-5 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-emerald-500/10">
                <strong class="block text-emerald-400 text-lg mb-3">2. Straight-pull Hub</strong>
-               <p class="text-sm text-slate-300 mb-2"><strong>Structure:</strong> Flange holes designed for spokes that insert directly without bending.</p>
-               <p class="text-sm text-slate-300 mb-2"><strong>Advantages:</strong> Stiffer structure, more even tension, high-performance aesthetic.</p>
-               <p class="text-sm text-slate-300 mb-4"><strong>Best for:</strong> Racing or performance use seeking rigidity and weight savings.</p>
+                <p class="text-sm tz-text-secondary mb-2"><strong>Structure:</strong> Flange holes designed for spokes that insert directly without bending.</p>
+                <p class="text-sm tz-text-secondary mb-2"><strong>Advantages:</strong> Stiffer structure, more even tension, high-performance aesthetic.</p>
+                <p class="text-sm tz-text-secondary mb-4"><strong>Best for:</strong> Racing or performance use seeking rigidity and weight savings.</p>
                <div class="bg-emerald-500/10 px-3 py-1.5 rounded text-xs text-emerald-300 inline-block font-medium">Compatible: Straight-pull spokes</div>
             </div>
          </div>
@@ -256,14 +256,14 @@
          </h3>
          <div class="grid md:grid-cols-2 gap-6">
             <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
-               <strong class="block text-slate-200 mb-2">Lightweight (20H / 24H)</strong>
-               <p class="text-sm text-slate-400 leading-relaxed">
+               <strong class="block tz-text-primary mb-2">Lightweight (20H / 24H)</strong>
+               <p class="text-sm tz-text-secondary leading-relaxed">
                   Lighter weight, strictly for road bikes and climbing sets. Requires higher spoke tension and stiffer rims.
                </p>
             </div>
             <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
-               <strong class="block text-slate-200 mb-2">Durability (28H / 32H)</strong>
-               <p class="text-sm text-slate-400 leading-relaxed">
+               <strong class="block tz-text-primary mb-2">Durability (28H / 32H)</strong>
+               <p class="text-sm tz-text-secondary leading-relaxed">
                   More durable, suitable for MTB, heavy loads, or touring. Distributes stress across more spokes.
                </p>
             </div>

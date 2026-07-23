@@ -1,0 +1,16 @@
+{
+  "sectionLabel": "Informasi produk",
+  "tabListLabel": "Bagian informasi produk",
+  "tabs": {
+    "details": "Detail",
+    "afterSales": "Purnajual",
+    "packaging": "Kemasan",
+    "shipping": "Pengiriman"
+  },
+  "empty": {
+    "details": "Detail produk belum ditambahkan.",
+    "afterSales": "Informasi purnajual belum ditambahkan.",
+    "packaging": "Informasi kemasan belum ditambahkan.",
+    "shipping": "Informasi pengiriman belum ditambahkan."
+  }
+}

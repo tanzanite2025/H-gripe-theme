@@ -1,0 +1,16 @@
+{
+  "title": "Wishlist",
+  "subtitle": "Products you add to your wishlist will appear here.",
+  "closeAriaLabel": "Close wishlist",
+  "loading": "Loading wishlist...",
+  "productImageAlt": "Product image",
+  "productFallback": "Product",
+  "empty": {
+    "title": "Your wishlist is empty",
+    "description": "Save products you like to your wishlist so you can quickly find and share them later."
+  },
+  "actions": {
+    "shareToChat": "Share to chat",
+    "remove": "Remove"
+  }
+}
