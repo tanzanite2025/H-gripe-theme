@@ -54,11 +54,11 @@
 					<div class="flex items-center justify-end gap-4">
 						<!-- Search -->
 						<button
-							class="w-9 h-9 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-[#0b1020] hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
+							class="w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
 							@click="openSidebar"
 							aria-label="Search"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<circle cx="11" cy="11" r="8"></circle>
 								<path d="m21 21-4.3-4.3"></path>
 							</svg>
@@ -67,7 +67,7 @@
 						<!-- Language -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="w-9 h-9 rounded-full bg-slate-900/70 flex items-center justify-center text-[11px] font-bold tz-text-secondary shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:text-sky-300 hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,1)] transition-all"
+								class="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-[11px] font-bold tz-text-secondary hover:text-sky-300 transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -123,12 +123,12 @@
 
 						<!-- Share/Points -->
 						<button
-							class="w-10 h-10 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-[0_10px_26px_-6px_rgba(0,0,0,1)] hover:shadow-[0_14px_32px_-8px_rgba(0,0,0,1)] transition-all transform hover:scale-105"
+							class="w-10 h-10 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-label="Open membership panel"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
 						</button>
 					</div>
 				</div>
@@ -181,11 +181,11 @@
 					<div class="flex items-center gap-3 phone-390:gap-4">
 						<!-- Search (Icon) -->
 						<button
-							class="w-9 h-9 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] flex items-center justify-center text-[#0b1020] shadow-[0_4px_14px_rgba(0,0,0,0.9)]"
+							class="w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
 							@click="openSidebar"
 							aria-label="Search"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<circle cx="11" cy="11" r="8"></circle>
 								<path d="m21 21-4.3-4.3"></path>
 							</svg>
@@ -197,7 +197,7 @@
 							class="tz-text-secondary hover:text-white transition-colors p-1"
 							aria-label="Guides"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
 						</NuxtLink>
 
 						<!-- Language Switcher (Text + Icon) -->
@@ -212,7 +212,6 @@
 								:aria-label="'Switch language'"
 							>
 								<span class="text-xs font-bold uppercase">{{ currentLocale.iso?.split('-')[0] || currentLocale.code }}</span>
-								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{ 'rotate-180': isOpen }" class="transition-transform"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 							</button>
 						</div>
 
@@ -223,36 +222,31 @@
 							:aria-expanded="shareOpen"
 							aria-label="Open membership panel"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
 						</button>
 					</div>
 				</div>
 
-				<!-- 第二行：主要导航 (Segmented Control Style) -->
-				<nav class="bg-white/5 rounded-xl p-1 flex items-center justify-between relative" aria-label="Mobile primary navigation">
-					<NuxtLink
-						:to="localePath('/shop')"
-						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="currentMegaNavId === 'products' ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
+				<!-- 第二行：主要导航。移动端同样打开卡片菜单，避免三级 TAB 漏在页面横条里。 -->
+				<nav class="bg-white/5 rounded-xl p-1 grid grid-cols-4 gap-1 relative" aria-label="Mobile primary navigation">
+					<button
+						v-for="section in primaryMegaNavSections"
+						:key="section.id"
+						type="button"
+						class="min-w-0 py-2 rounded-lg text-[12px] phone-390:text-[13px] font-semibold text-center transition-all inline-flex items-center justify-center gap-0.5"
+						:class="currentMegaNavId === section.id ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
+						:aria-controls="megaPanelId"
+						:aria-expanded="activeMegaNavId === section.id"
+						aria-haspopup="dialog"
+						@click.stop="toggleMegaNav(section.id)"
 					>
-						{{ $t('footer.menus.products', 'Products') }}
-					</NuxtLink>
-					
-					<NuxtLink
-						:to="localePath('/support/faqs')"
-						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="currentMegaNavId === 'support' ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
-					>
-						{{ $t('footer.menus.support', 'Support') }}
-					</NuxtLink>
-					
-					<NuxtLink
-						:to="localePath('/company/about')"
-						class="flex-1 py-2 rounded-lg text-sm phone-390:text-[15px] font-semibold text-center transition-all"
-						:class="currentMegaNavId === 'company' ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
-					>
-						{{ $t('footer.menus.company', 'Company') }}
-					</NuxtLink>
+						<span class="truncate">{{ t(section.labelKey, section.labelFallback) }}</span>
+						<Icon
+							name="lucide:chevron-down"
+							class="h-3 w-3 shrink-0 transition-transform duration-200"
+							:class="{ 'rotate-180 text-[#40ffaa]': activeMegaNavId === section.id }"
+						/>
+					</button>
 				</nav>
 
 				<!-- 第三行：面包屑 (恢复移动端显示) -->

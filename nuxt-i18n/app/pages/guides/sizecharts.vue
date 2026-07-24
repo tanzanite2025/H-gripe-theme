@@ -6,13 +6,6 @@
     </p>
 
     <div class="sizecharts-page">
-      <PageTabBar
-        :tabs="tabs"
-        :active-id="activeTab"
-        aria-label="Tire guide sections"
-        @select="setActiveTab"
-      />
-
       <!-- Tire size (new top-level tab) -->
       <section
         v-show="activeTab === 'size'"
@@ -108,8 +101,11 @@ import TirePressureGuide from '~/components/tireguides/TirePressureGuide.vue'
 import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
-
-type SizeChartsTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
+import {
+  isPageSubNavigationTabId,
+  tireGuideTabs,
+  type TireGuideTabId,
+} from '~/utils/pageSubNavigation'
 
 definePageMeta({
   layout: 'products',
@@ -120,25 +116,16 @@ useHead({
   title: 'Tire Guides',
 })
 
-const tabs: { id: SizeChartsTabId; label: string }[] = [
-  { id: 'size', label: 'Tire size' },
-  { id: 'match', label: 'Match' },
-  { id: 'tubeless', label: 'Tubeless tires' },
-  { id: 'installation', label: 'Installation' },
-  { id: 'choose', label: 'How to choose' },
-  { id: 'rims', label: 'Tire pressure' },
-  { id: 'tube', label: 'Inner tube' },
-]
+const tabs = tireGuideTabs
 
-const activeTab = ref<SizeChartsTabId>('tubeless')
+const activeTab = ref<TireGuideTabId>('tubeless')
 
 const route = useRoute()
 const config = useRuntimeConfig()
 
-const getTabFromHash = (hash: string): SizeChartsTabId | null => {
+const getTabFromHash = (hash: string): TireGuideTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')
-  const allowed: SizeChartsTabId[] = ['size', 'match', 'tubeless', 'installation', 'choose', 'rims', 'tube']
-  return (allowed as string[]).includes(raw) ? (raw as SizeChartsTabId) : null
+  return isPageSubNavigationTabId(tabs, raw) ? raw : null
 }
 
 // Tire products drawer
@@ -211,9 +198,9 @@ watch(
   { immediate: true }
 )
 
-const setActiveTab = (id: SizeChartsTabId | string) => {
-  if (!tabs.some((tab) => tab.id === id)) return
-  const next = id as SizeChartsTabId
+const setActiveTab = (id: TireGuideTabId | string) => {
+  if (!isPageSubNavigationTabId(tabs, id)) return
+  const next = id
   activeTab.value = next
   if (typeof window !== 'undefined') {
     const url = new URL(window.location.href)
@@ -280,7 +267,7 @@ const setActiveTab = (id: SizeChartsTabId | string) => {
   max-width: none;
 }
 
-/* Page-level tabs are handled by PageTabBar. */
+/* Page-level tab entry points are rendered by the header/mobile mega menu. */
 
 
 .sizecharts-brand-button {

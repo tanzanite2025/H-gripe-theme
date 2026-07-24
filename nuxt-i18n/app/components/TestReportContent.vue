@@ -1,7 +1,7 @@
 <template>
   <div class="support-test-report-content">
-    <!-- Tabs header -->
     <PageTabBar
+      v-if="!props.syncWithUrl"
       :tabs="tabs"
       :active-id="activeTab"
       aria-label="Test report sections"
@@ -110,19 +110,17 @@ import SupportRimTestReportSection from '~/components/SupportRimTestReportSectio
 import SupportWheelsetTestReportSection from '~/components/SupportWheelsetTestReportSection.vue'
 import SupportWheelsetAssemblySection from '~/components/SupportWheelsetAssemblySection.vue'
 import TechnicalTensionSection from '~/components/TechnicalTensionSection.vue'
+import {
+  isPageSubNavigationTabId,
+  testReportTabs,
+  type TestReportTabId,
+} from '~/utils/pageSubNavigation'
 
 const props = defineProps<{
   syncWithUrl?: boolean
 }>()
 
-type TestReportTabId = 'rim-test-report' | 'wheelset-test-report' | 'tension' | 'wheelset-assembly'
-
-const tabs: { id: TestReportTabId; label: string }[] = [
-  { id: 'rim-test-report', label: 'Rim Test Report' },
-  { id: 'wheelset-test-report', label: 'Wheelset Test Report' },
-  { id: 'tension', label: 'Tension' },
-  { id: 'wheelset-assembly', label: 'Wheelset Assembly' },
-]
+const tabs = testReportTabs
 
 const activeTab = ref<TestReportTabId>('rim-test-report')
 const showSpokeHoleVideo = ref(false)
@@ -137,8 +135,8 @@ const openWheelsetVideo = () => {
 }
 
 const setActiveTab = (id: TestReportTabId | string) => {
-  if (!tabs.some((tab) => tab.id === id)) return
-  const next = id as TestReportTabId
+  if (!isPageSubNavigationTabId(tabs, id)) return
+  const next = id
   activeTab.value = next
   if (props.syncWithUrl && typeof window !== 'undefined') {
     const url = new URL(window.location.href)
@@ -152,8 +150,8 @@ const route = useRoute()
 const syncTabWithHash = (hash: string | null | undefined) => {
   if (!hash) return
   const clean = hash.startsWith('#') ? hash.slice(1) : hash
-  if (tabs.some((tab) => tab.id === clean)) {
-    activeTab.value = clean as TestReportTabId
+  if (isPageSubNavigationTabId(tabs, clean)) {
+    activeTab.value = clean
   }
 }
 

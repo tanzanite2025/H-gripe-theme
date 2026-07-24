@@ -42,6 +42,27 @@ function getFaqApiBase() {
   return (config.public as { apiBase?: string }).apiBase || '/api/v1'
 }
 
+function getFetchStatusCode(error: unknown): number | undefined {
+  const candidate = error as {
+    status?: number
+    statusCode?: number
+    response?: { status?: number; statusCode?: number }
+    data?: { status?: number; statusCode?: number }
+  } | null
+
+  return candidate?.statusCode
+    || candidate?.status
+    || candidate?.response?.statusCode
+    || candidate?.response?.status
+    || candidate?.data?.statusCode
+    || candidate?.data?.status
+}
+
+function logFaqFetchError(message: string, error: unknown) {
+  if (getFetchStatusCode(error) === 404) return
+  console.error(message, error)
+}
+
 function buildFallbackPageTitle(pageId: string) {
   return `${pageId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')} FAQs`
 }
@@ -120,8 +141,8 @@ function buildPagesFromLegacyItems(items: LegacyFaqItem[]): PageFaqData[] {
 /**
  * Fetch FAQ data for a specific page from Go backend.
  */
-export async function fetchFaqData(pageId: string): Promise<PageFaqData | undefined> {
-  const fallback = getFaqData(pageId)
+export async function fetchFaqData(pageId: string): Promise<PageFaqData | null> {
+  const fallback = getFaqData(pageId) ?? null
 
   try {
     const structured = await $fetch<{ page?: PageFaqData }>(`${getFaqApiBase()}/content/faq-pages/${pageId}`, {
@@ -129,7 +150,7 @@ export async function fetchFaqData(pageId: string): Promise<PageFaqData | undefi
     })
     if (hasFaqContent(structured.page)) return structured.page
   } catch (error) {
-    console.error('Failed to fetch structured FAQs from Go backend:', error)
+    logFaqFetchError('Failed to fetch structured FAQs from Go backend:', error)
   }
 
   try {
@@ -142,14 +163,14 @@ export async function fetchFaqData(pageId: string): Promise<PageFaqData | undefi
 
     return buildPageFromLegacyItems(pageId, res.data)
   } catch (error) {
-    console.error('Failed to fetch FAQs from Go backend:', error)
+    logFaqFetchError('Failed to fetch FAQs from Go backend:', error)
     return fallback
   }
 }
 
-export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFaqData | undefined> {
+export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFaqData | null> {
   const normalizedPath = normalizeFaqRoutePath(routePath)
-  const fallback = getFaqDataByRoutePath(normalizedPath)
+  const fallback = getFaqDataByRoutePath(normalizedPath) ?? null
 
   try {
     const structured = await $fetch<{ page?: PageFaqData }>(`${getFaqApiBase()}/content/faq-pages/by-route`, {
@@ -157,7 +178,7 @@ export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFa
     })
     if (hasFaqContent(structured.page)) return structured.page
   } catch (error) {
-    console.error('Failed to fetch structured FAQ by route from Go backend:', error)
+    logFaqFetchError('Failed to fetch structured FAQ by route from Go backend:', error)
   }
 
   return fallback
@@ -175,7 +196,7 @@ export async function fetchAllFaqData(): Promise<PageFaqData[]> {
     })
     if (hasAnyFaqContent(structured.pages)) return structured.pages
   } catch (error) {
-    console.error('Failed to fetch structured FAQ pages from Go backend:', error)
+    logFaqFetchError('Failed to fetch structured FAQ pages from Go backend:', error)
   }
 
   try {
@@ -188,7 +209,7 @@ export async function fetchAllFaqData(): Promise<PageFaqData[]> {
 
     return buildPagesFromLegacyItems(res.data)
   } catch (error) {
-    console.error('Failed to fetch all FAQs from Go backend:', error)
+    logFaqFetchError('Failed to fetch all FAQs from Go backend:', error)
     return fallback
   }
 }

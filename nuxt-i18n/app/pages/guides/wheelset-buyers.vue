@@ -3,13 +3,6 @@
     <h2 class="products-page__title products-page__title--sr-only">Wheelset Buyers Guide</h2>
 
     <div class="wheelset-page">
-      <PageTabBar
-        :tabs="tabs"
-        :active-id="activeTab"
-        aria-label="Wheelset buyer guide sections"
-        @select="setActiveTab"
-      />
-
       <!-- Safety instructions -->
       <section
         v-show="activeTab === 'safety-instructions'"
@@ -202,6 +195,11 @@ import TechnicalHubsSection from '~/components/TechnicalHubsSection.vue'
 import TechnicalRimsSection from '~/components/TechnicalRimsSection.vue'
 import TechnicalSpokesSection from '~/components/TechnicalSpokesSection.vue'
 import TechnicalNipplesSection from '~/components/TechnicalNipplesSection.vue'
+import {
+  isPageSubNavigationTabId,
+  wheelsetBuyerTabs,
+  type WheelsetBuyerTabId,
+} from '~/utils/pageSubNavigation'
 
 
 definePageMeta({
@@ -212,31 +210,14 @@ useHead({
   title: 'Wheelset Buyers Guide',
 })
 
-type WheelsetTabId =
-  | 'safety-instructions'
-  | 'sample-assembly'
-  | 'special-order'
-  | 'appearance-logo'
-  | 'choose-freehub'
-  | 'wheel-components'
-  | 'optional'
+const tabs = wheelsetBuyerTabs
 
-const tabs: { id: WheelsetTabId; label: string }[] = [
-  { id: 'safety-instructions', label: 'Safety instructions' },
-  { id: 'sample-assembly', label: 'Sample assembly' },
-  { id: 'special-order', label: 'Special order' },
-  { id: 'appearance-logo', label: 'Appearance Logo' },
-  { id: 'choose-freehub', label: 'Choose freehub' },
-  { id: 'wheel-components', label: 'Wheel Components' },
-  { id: 'optional', label: 'Optional' },
-]
-
-const activeTab = ref<WheelsetTabId>('safety-instructions')
+const activeTab = ref<WheelsetBuyerTabId>('safety-instructions')
 const quickOpen = ref(false)
 
-const setActiveTab = (id: WheelsetTabId | string) => {
-  if (!tabs.some((tab) => tab.id === id)) return
-  const next = id as WheelsetTabId
+const setActiveTab = (id: WheelsetBuyerTabId | string) => {
+  if (!isPageSubNavigationTabId(tabs, id)) return
+  const next = id
   activeTab.value = next
   if (typeof window !== 'undefined') {
     const url = new URL(window.location.href)
@@ -253,8 +234,8 @@ const localePath = useLocalePath()
 const syncTabWithHash = (hash: string | null | undefined) => {
   if (!hash) return
   const clean = hash.startsWith('#') ? hash.slice(1) : hash
-  if (tabs.some((tab) => tab.id === clean)) {
-    activeTab.value = clean as WheelsetTabId
+  if (isPageSubNavigationTabId(tabs, clean)) {
+    activeTab.value = clean
   }
 }
 
@@ -341,7 +322,7 @@ const goToAboutAppearance = async () => {
   max-width: none;
 }
 
-/* Page-level tabs are handled by PageTabBar. */
+/* Page-level tab entry points are rendered by the header/mobile mega menu. */
 .wheelset-section--sample > p {
   color: #f9fafb;
   text-align: center;

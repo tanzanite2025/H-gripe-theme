@@ -3,20 +3,6 @@
     <!-- SEO Title: Visually hidden but present for search engines and screen readers -->
     <h1 class="sr-only">Picture warehouse</h1>
 
-    <!-- Tabs -->
-    <div class="company-tabs" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        type="button"
-        class="company-tabs__item"
-        :class="{ 'company-tabs__item--active': activeTab === tab.id }"
-        @click="setActiveTab(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
-
     <!-- Riders Tab -->
     <section v-show="activeTab === 'riders'" class="mt-4 space-y-3">
       <div>
@@ -533,6 +519,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { definePageMeta, useHead, useRoute } from '#imports'
 
 import { useAuth } from '~/composables/useAuth'
+import {
+  isPageSubNavigationTabId,
+  pictureWarehouseTabs,
+  type PictureWarehouseTabId,
+} from '~/utils/pageSubNavigation'
 
 definePageMeta({
   layout: 'products',
@@ -803,12 +794,6 @@ const activeKind = ref<PhotoKind | null>(null)
 const activeIndex = ref<number | null>(null)
 const currentGalleryIndex = ref(0)
 
-type PictureWarehouseTabId = 'riders' | 'brand'
-
-const tabs: Array<{ id: PictureWarehouseTabId; label: string }> = [
-  { id: 'riders', label: 'Riders photos' },
-  { id: 'brand', label: 'Tanzanite photos' },
-]
 const activeTab = ref<PictureWarehouseTabId>('riders')
 
 const route = useRoute()
@@ -816,8 +801,7 @@ const route = useRoute()
 const getTabFromHash = (hash: string | null | undefined): PictureWarehouseTabId | null => {
   if (!hash) return null
   const raw = hash.startsWith('#') ? hash.slice(1) : hash
-  const allowed: PictureWarehouseTabId[] = ['riders', 'brand']
-  return (allowed as string[]).includes(raw) ? (raw as PictureWarehouseTabId) : null
+  return isPageSubNavigationTabId(pictureWarehouseTabs, raw) ? raw : null
 }
 
 watch(
@@ -828,15 +812,6 @@ watch(
   },
   { immediate: true }
 )
-
-const setActiveTab = (id: PictureWarehouseTabId) => {
-  activeTab.value = id
-  if (typeof window !== 'undefined') {
-    const url = new URL(window.location.href)
-    url.hash = `#${id}`
-    window.history.replaceState(null, '', url.toString())
-  }
-}
 
 const isLightboxOpen = computed(() => activeKind.value !== null && activeIndex.value !== null)
 
@@ -1083,69 +1058,4 @@ const copyShareLink = async () => {
   color: var(--tz-text-secondary);
 }
 
-/* Tabs 样式（对齐 ourstory） */
-.company-tabs {
-  display: flex;
-  overflow-x: auto;
-  gap: 12px;
-  padding: 4px 16px;
-  margin: 0 -16px 1rem;
-  max-width: calc(100% + 32px);
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  touch-action: pan-x;
-}
-
-.company-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.company-tabs__item {
-  flex-shrink: 0;
-  border: none;
-  border-radius: 9999px;
-  padding: 8px 18px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--tz-text-primary);
-  background: rgba(31, 41, 55, 0.9);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  backdrop-filter: blur(4px);
-  box-shadow: 6px 8px 18px -12px rgba(0, 0, 0, 0.85);
-}
-
-.company-tabs__item:active {
-  transform: scale(0.96);
-}
-
-.company-tabs__item:hover {
-  background: rgba(51, 65, 85, 0.95);
-  color: var(--tz-text-primary);
-}
-
-.company-tabs__item--active {
-  background: #ffffff;
-  color: #0f172a;
-  border: none;
-  font-weight: 600;
-  box-shadow: 8px 10px 22px -10px rgba(0, 0, 0, 0.9);
-}
-
-@media (min-width: 768px) {
-  .company-tabs {
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: 0 0 1rem;
-    padding: 4px 0;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .company-tabs {
-    justify-content: flex-start;
-  }
-}
 </style>

@@ -11,34 +11,56 @@
       <div class="header-mega__shell">
         <div class="header-mega__content">
           <div class="header-mega__grid">
-            <NuxtLink
-              v-for="card in section.cards"
+            <article
+              v-for="{ card, children } in cardsWithChildren"
               :key="card.id"
               class="header-mega-card"
               :class="[
                 `header-mega-card--${card.size}`,
                 `header-mega-card--${card.accent}`,
+                { 'header-mega-card--has-children': children.length > 0 },
               ]"
-              :to="localizedTo(card.to)"
-              @click="emit('navigate')"
             >
               <span class="header-mega-card__glow" aria-hidden="true"></span>
-              <span class="header-mega-card__icon" aria-hidden="true">
-                <Icon :name="card.icon" />
-              </span>
 
-              <span class="header-mega-card__body">
-                <span v-if="shouldShowCardLabel(card)" class="header-mega-card__label">
-                  {{ cardLabel(card) }}
+              <NuxtLink
+                class="header-mega-card__main"
+                :to="localizedTo(card.to)"
+                @click="emit('navigate')"
+              >
+                <span class="header-mega-card__icon" aria-hidden="true">
+                  <Icon :name="card.icon" />
                 </span>
-                <span class="header-mega-card__title">{{ cardTitle(card) }}</span>
-                <span class="header-mega-card__description">{{ card.description }}</span>
-              </span>
 
-              <span class="header-mega-card__arrow" aria-hidden="true">
-                <Icon name="lucide:arrow-up-right" />
-              </span>
-            </NuxtLink>
+                <span class="header-mega-card__body">
+                  <span v-if="shouldShowCardLabel(card)" class="header-mega-card__label">
+                    {{ cardLabel(card) }}
+                  </span>
+                  <span class="header-mega-card__title">{{ cardTitle(card) }}</span>
+                  <span class="header-mega-card__description">{{ card.description }}</span>
+                </span>
+
+                <span class="header-mega-card__arrow" aria-hidden="true">
+                  <Icon name="lucide:arrow-up-right" />
+                </span>
+              </NuxtLink>
+
+              <div
+                v-if="children.length"
+                class="header-mega-card__children"
+                :aria-label="`${cardTitle(card)} sections`"
+              >
+                <NuxtLink
+                  v-for="child in children"
+                  :key="child.id"
+                  class="header-mega-card__child"
+                  :to="localizedTo(child.to)"
+                  @click.stop="emit('navigate')"
+                >
+                  {{ childLabel(child) }}
+                </NuxtLink>
+              </div>
+            </article>
           </div>
         </div>
       </div>
@@ -47,9 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, unref } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import type { PrimaryMegaNavCard, PrimaryMegaNavSection } from '~/utils/primaryMegaNav'
+import {
+  getPrimaryMegaNavCardChildren,
+  type PageSubNavigationChild,
+} from '~/utils/pageSubNavigation'
 
 const props = defineProps<{
   section: PrimaryMegaNavSection | null
@@ -60,8 +86,14 @@ const emit = defineEmits<{
   navigate: []
 }>()
 
-const { t } = useI18n()
+const { t, locales } = useI18n() as any
 const localePath = useLocalePath()
+
+const localeCodes = computed(() => {
+  return (unref(locales) || [])
+    .map((item: any) => (typeof item === 'string' ? item : item?.code))
+    .filter(Boolean)
+})
 
 const sectionLabel = computed(() => {
   const section = props.section
@@ -83,6 +115,16 @@ const localizedTo = (to: string) => {
   return `${localePath(path || '/')}${query}${hash}`
 }
 
+const cardsWithChildren = computed(() => {
+  const section = props.section
+  if (!section) return []
+
+  return section.cards.map((card) => ({
+    card,
+    children: getPrimaryMegaNavCardChildren(section, card, localeCodes.value),
+  }))
+})
+
 const cardLabel = (card: PrimaryMegaNavCard) => {
   return t(card.labelKey, card.labelFallback) as string
 }
@@ -97,6 +139,11 @@ const normalizeLabel = (value: string) => {
 
 const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
   return normalizeLabel(cardLabel(card)) !== normalizeLabel(cardTitle(card))
+}
+
+const childLabel = (child: PageSubNavigationChild) => {
+  if (child.labelKey) return t(child.labelKey, child.fallback || child.label || child.id) as string
+  return child.label || child.fallback || child.id
 }
 </script>
 
@@ -175,13 +222,14 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
   --mega-accent: #40ffaa;
   --mega-accent-soft: rgba(64, 255, 170, 0.14);
   --mega-accent-shadow: rgba(64, 255, 170, 0.35);
+  --mega-card-padding: 16px;
+  --mega-card-child-offset: 74px;
 
   position: relative;
   display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 120px;
-  gap: 14px;
-  padding: 16px;
   overflow: hidden;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -189,7 +237,6 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
     linear-gradient(135deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.88)),
     radial-gradient(circle at top left, var(--mega-accent-soft), transparent 62%);
   color: inherit;
-  text-decoration: none;
   box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 1);
   transition:
     transform 0.22s ease,
@@ -224,6 +271,24 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
   opacity: 1;
 }
 
+.header-mega-card__main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: inherit;
+  gap: 14px;
+  padding: var(--mega-card-padding);
+  color: inherit;
+  text-decoration: none;
+}
+
+.header-mega-card--has-children .header-mega-card__main {
+  min-height: 0;
+  padding-bottom: 10px;
+}
+
 .header-mega-card__glow {
   position: absolute;
   right: -40px;
@@ -239,7 +304,6 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 
 .header-mega-card__icon {
   position: relative;
-  z-index: 1;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -267,7 +331,6 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 
 .header-mega-card__body {
   position: relative;
-  z-index: 1;
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
@@ -309,7 +372,6 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 
 .header-mega-card__arrow {
   position: relative;
-  z-index: 1;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -332,10 +394,50 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
   transform: translate(3px, -3px);
 }
 
+.header-mega-card__children {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding: 0 var(--mega-card-padding) var(--mega-card-padding) var(--mega-card-child-offset);
+}
+
+.header-mega-card__child {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--mega-accent) 34%, rgba(255, 255, 255, 0.1));
+  background: rgba(15, 23, 42, 0.58);
+  padding: 0.38rem 0.62rem;
+  color: rgba(241, 245, 249, 0.86);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.header-mega-card__child:hover {
+  border-color: var(--mega-accent);
+  background: color-mix(in srgb, var(--mega-accent) 16%, rgba(15, 23, 42, 0.76));
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 .header-mega-card--feature {
+  --mega-card-padding: 20px;
+  --mega-card-child-offset: 90px;
+
   grid-column: span 6;
   min-height: 174px;
-  padding: 20px;
 }
 
 .header-mega-card--feature .header-mega-card__icon {
@@ -369,8 +471,13 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 }
 
 .header-mega-card--compact {
+  --mega-card-child-offset: 68px;
+
   grid-column: span 3;
   min-height: 104px;
+}
+
+.header-mega-card--compact .header-mega-card__main {
   align-items: center;
 }
 
@@ -447,18 +554,81 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
   }
 }
 
-@media (max-width: 860px) {
-  .header-mega {
-    display: none;
-  }
-}
-
 @media (max-width: 640px) {
+  .header-mega {
+    top: calc(100% + 0.35rem);
+    width: calc(100vw - 1rem);
+  }
+
+  .header-mega__shell {
+    border-radius: 22px;
+  }
+
+  .header-mega__content {
+    max-height: min(72vh, calc(100vh - var(--site-header-offset, 150px) - 12px));
+    padding: 10px;
+  }
+
+  .header-mega__grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
   .header-mega-card--feature,
   .header-mega-card--wide,
   .header-mega-card--standard,
   .header-mega-card--compact {
     grid-column: 1 / -1;
+  }
+
+  .header-mega-card {
+    --mega-card-padding: 12px;
+    --mega-card-child-offset: 12px;
+    min-height: 0;
+    border-radius: 18px;
+  }
+
+  .header-mega-card__main {
+    gap: 10px;
+  }
+
+  .header-mega-card__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+  }
+
+  .header-mega-card__icon :deep(svg) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .header-mega-card--feature .header-mega-card__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 15px;
+  }
+
+  .header-mega-card--feature .header-mega-card__icon :deep(svg) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .header-mega-card--feature .header-mega-card__title {
+    font-size: 17px;
+  }
+
+  .header-mega-card__description {
+    -webkit-line-clamp: 2;
+  }
+
+  .header-mega-card__children {
+    padding-top: 0;
+  }
+
+  .header-mega-card__child {
+    min-height: 30px;
+    font-size: 11px;
   }
 }
 </style>
