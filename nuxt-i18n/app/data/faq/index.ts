@@ -18,5 +18,5 @@ export {
   fetchFaqData,
   fetchFaqDataByRoutePath
 } from './backend'
-export { normalizeFaqRoutePath } from './routing'
+export { normalizeFaqRoutePath, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from './routing'
 export * from './types'

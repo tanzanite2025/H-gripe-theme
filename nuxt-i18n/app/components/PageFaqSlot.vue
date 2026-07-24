@@ -1,5 +1,5 @@
 <template>
-  <section v-if="pending" class="page-faq-slot" aria-busy="true">
+  <section v-if="shouldLoadFaqSlot && pending" class="page-faq-slot" aria-busy="true">
     <div class="page-faq-slot__loader">
       <span class="page-faq-slot__loader-dot" aria-hidden="true" />
       <span class="page-faq-slot__loader-text">LOAD</span>
@@ -18,16 +18,17 @@
 import { computed } from 'vue'
 import { useAsyncData, useRoute } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
-import { fetchFaqDataByRoutePath, normalizeFaqRoutePath } from '~/data/faq'
+import { fetchFaqDataByRoutePath, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from '~/data/faq'
 
 const route = useRoute()
 
-const normalizedRoutePath = computed(() => normalizeFaqRoutePath(route.path))
+const shouldLoadFaqSlot = computed(() => shouldAutoInsertFaqForRoute(route.path))
+const faqLookupRoutePath = computed(() => resolveFaqRouteLookupPath(route.path))
 
 const { data: faqData, pending } = await useAsyncData(
-  () => `faq-slot-${normalizedRoutePath.value}`,
-  () => fetchFaqDataByRoutePath(normalizedRoutePath.value),
-  { watch: [normalizedRoutePath] }
+  () => `faq-slot-${shouldLoadFaqSlot.value ? faqLookupRoutePath.value : 'disabled'}`,
+  () => shouldLoadFaqSlot.value ? fetchFaqDataByRoutePath(faqLookupRoutePath.value) : Promise.resolve(null),
+  { watch: [shouldLoadFaqSlot, faqLookupRoutePath] }
 )
 
 const resolvedFaqData = computed(() => faqData.value)
