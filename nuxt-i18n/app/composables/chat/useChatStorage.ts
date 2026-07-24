@@ -1,4 +1,4 @@
-export type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member' | 'test' | 'tire'
+export type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member' | 'tire' | 'calculator'
 
 export interface ChatRoomState {
   messages: any[]
@@ -17,6 +17,12 @@ interface StoredChatRoomState extends Partial<ChatRoomState> {
 
 export const CHAT_STORAGE_EXPIRY_DAYS = 5
 export const LAST_AGENT_STORAGE_KEY = 'tz_last_selected_agent'
+
+const chatTabs: readonly ChatTab[] = ['chat', 'share', 'orders', 'faq', 'warranty', 'member', 'tire', 'calculator']
+
+const normalizeChatTab = (value: unknown): ChatTab => {
+  return chatTabs.includes(value as ChatTab) ? value as ChatTab : 'chat'
+}
 
 export const createEmptyChatRoom = (): ChatRoomState => ({
   messages: [],
@@ -68,7 +74,7 @@ export const loadChatRoomFromStorage = (storageKey: string, expiryDays = CHAT_ST
   return {
     room: {
       messages,
-      activeTab: data.activeTab || 'chat',
+      activeTab: normalizeChatTab(data.activeTab),
       newMessage: data.newMessage || '',
       searchQuery: data.searchQuery || '',
       searchResults: Array.isArray(data.searchResults) ? data.searchResults : [],
