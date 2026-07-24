@@ -153,7 +153,7 @@
 									:class="{ 'breadcrumb-subnav-trigger--open': breadcrumbSubNavOpen }"
 									:aria-expanded="breadcrumbSubNavOpen"
 									:aria-label="crumb.subNavigation.ariaLabel"
-									@click.stop="toggleBreadcrumbSubNav"
+									@click.stop="toggleBreadcrumbSubNav($event)"
 								>
 									<span>{{ crumb.label }}</span>
 									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
@@ -162,6 +162,7 @@
 								<div
 									v-if="breadcrumbSubNavOpen"
 									class="breadcrumb-subnav-menu"
+									:style="breadcrumbSubNavMenuStyle"
 									role="menu"
 									:aria-label="crumb.subNavigation.ariaLabel"
 									@click.stop
@@ -295,7 +296,7 @@
 									:class="{ 'breadcrumb-subnav-trigger--open': breadcrumbSubNavOpen }"
 									:aria-expanded="breadcrumbSubNavOpen"
 									:aria-label="crumb.subNavigation.ariaLabel"
-									@click.stop="toggleBreadcrumbSubNav"
+									@click.stop="toggleBreadcrumbSubNav($event)"
 								>
 									<span>{{ crumb.label }}</span>
 									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
@@ -304,6 +305,7 @@
 								<div
 									v-if="breadcrumbSubNavOpen"
 									class="breadcrumb-subnav-menu breadcrumb-subnav-menu--mobile"
+									:style="breadcrumbSubNavMenuStyle"
 									role="menu"
 									:aria-label="crumb.subNavigation.ariaLabel"
 									@click.stop
@@ -410,6 +412,10 @@ let headerResizeObserver: ResizeObserver | null = null
 const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
 const breadcrumbSubNavOpen = ref(false)
+const breadcrumbSubNavMobileTop = ref('8.5rem')
+const breadcrumbSubNavMenuStyle = computed(() => ({
+  '--breadcrumb-subnav-mobile-top': breadcrumbSubNavMobileTop.value,
+}))
 
 const closeMegaNav = () => {
   activeMegaNavId.value = null
@@ -760,8 +766,20 @@ const closeBreadcrumbSubNav = () => {
   breadcrumbSubNavOpen.value = false
 }
 
-const toggleBreadcrumbSubNav = () => {
-  breadcrumbSubNavOpen.value = !breadcrumbSubNavOpen.value
+const updateBreadcrumbSubNavPosition = (target: EventTarget | null | undefined) => {
+  if (typeof window === 'undefined' || !(target instanceof HTMLElement)) return
+  const rect = target.getBoundingClientRect()
+  const safeGap = 8
+  const nextTop = Math.max(safeGap, Math.min(window.innerHeight - safeGap, rect.bottom + safeGap))
+  breadcrumbSubNavMobileTop.value = `${Math.round(nextTop)}px`
+}
+
+const toggleBreadcrumbSubNav = (event?: MouseEvent) => {
+  const nextOpen = !breadcrumbSubNavOpen.value
+  if (nextOpen) {
+    updateBreadcrumbSubNavPosition(event?.currentTarget)
+  }
+  breadcrumbSubNavOpen.value = nextOpen
   if (breadcrumbSubNavOpen.value) {
     closeMegaNav()
     isOpen.value = false
@@ -1061,8 +1079,9 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 	left: 50%;
 	z-index: 180;
 	display: grid;
-	min-width: min(78vw, 260px);
-	max-width: min(88vw, 360px);
+	width: min(88vw, 22rem);
+	min-width: min(78vw, 16rem);
+	max-width: calc(100vw - 2rem);
 	max-height: min(58vh, 390px);
 	transform: translateX(-50%);
 	gap: 0.25rem;
@@ -1089,6 +1108,7 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 	font-weight: 700;
 	line-height: 1.15;
 	text-decoration: none;
+	overflow-wrap: anywhere;
 	transition:
 		background-color 0.18s ease,
 		color 0.18s ease,
@@ -1123,10 +1143,15 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 }
 
 .breadcrumb-subnav-menu--mobile {
-	left: auto;
-	right: 50%;
-	min-width: min(84vw, 280px);
-	transform: translateX(50%);
+	position: fixed;
+	top: var(--breadcrumb-subnav-mobile-top, 8.5rem);
+	right: max(0.75rem, env(safe-area-inset-right));
+	left: max(0.75rem, env(safe-area-inset-left));
+	width: auto;
+	min-width: 0;
+	max-width: none;
+	max-height: min(50vh, 360px);
+	transform: none;
 }
 
 @media (max-width: 767px) {
