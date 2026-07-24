@@ -69,6 +69,8 @@
           <CategoryChips
             :categories="categories"
             :selected="selectedCategory"
+            :loading="categoriesLoading"
+            :error="categoriesError"
             @select="onCategorySelect"
           />
         </div>
@@ -83,9 +85,9 @@
           </div>
 
           <div v-else-if="products.length === 0" class="py-10 text-center space-y-2">
-            <p class="tz-text-primary">{{ $t('shopPage.products.empty.title', 'No products are available yet.') }}</p>
+            <p class="tz-text-primary">{{ emptyProductsTitle }}</p>
             <p class="tz-text-secondary text-xs">
-              {{ $t('shopPage.products.empty.description', 'Once products are published via the Tanzanite plugin, they will appear here automatically.') }}
+              {{ emptyProductsDescription }}
             </p>
           </div>
 
@@ -175,6 +177,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const { t } = useI18n()
 const { fetchShopProducts } = useShopProducts()
 
 const quickSelectedKeywords = ref<string[]>([])
@@ -329,6 +332,20 @@ const products = computed<ShopProduct[]>(() => {
 
 const loading = computed(() => pending.value)
 const error = computed(() => asyncError.value?.message || null)
+const emptyProductsTitle = computed(() => {
+  if (selectedCategory.value) {
+    return t('shopPage.products.empty.categoryTitle', { category: selectedCategory.value.name })
+  }
+
+  return t('shopPage.products.empty.title')
+})
+const emptyProductsDescription = computed(() => {
+  if (selectedCategory.value) {
+    return t('shopPage.products.empty.categoryDescription')
+  }
+
+  return t('shopPage.products.empty.description')
+})
 
 const loadProducts = async (payload?: ProductSearchPayload) => {
   await refresh()

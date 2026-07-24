@@ -1,4 +1,6 @@
 {
   "placeholder": "Hae...",
-  "button": "Hae"
+  "button": "Hae",
+  "popularTitle": "Suositut haut",
+  "popularAriaLabel": "Suositut haut"
 }

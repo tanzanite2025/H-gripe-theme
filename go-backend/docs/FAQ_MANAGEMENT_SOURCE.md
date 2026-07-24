@@ -86,7 +86,7 @@ Loading rule:
 
 - 初始 SSR 能拿到内容时直接渲染 FAQ。
 - 客户端路由切换或接口等待时显示 `LOAD` 占位。
-- `LOAD` 的最终视觉样式以后按设计稿替换，组件入口保持不变。
+- `LOAD` 的最终视觉样式仍待设计稿确认；在视觉稿确认前，保留 `PageFaqSlot.vue` 的独立占位入口，不把 loading 规则散落到各页面。
 
 ## Answer content boundary
 
@@ -133,7 +133,7 @@ Forbidden in `answer`:
 - 已新增 backend FAQ 页面/分类事实源，后台可以看到 Nuxt 现有 FAQ 页面和分类，即使该页面暂时没有 FAQ 问答内容。
 - 已新增公开 route resolver，Nuxt 可以按当前路由查询 FAQ 页面结构，不再依赖页面内硬编码 `pageId`。
 - 已新增 Nuxt `PageFaqSlot`，作为固定插入容器。`products` 和 `support` layout 先接入该容器，覆盖当前已有 FAQ 页面所在的 storefront 区域。
-- 正在清理 Nuxt 页面内旧的手写 `<PageFaq />`，避免同一页面被 layout slot 和页面自身重复渲染 FAQ。
+- 已完成清理 Nuxt 页面内旧的手写 `<PageFaq />`：当前 storefront 页面只由 layout 内的 `PageFaqSlot` 负责插入，避免同一页面被重复渲染 FAQ。
 - 暂不把 `PageFaqSlot` 放到 `default` / `spokecalc` layout；这些 layout 目前没有稳定的 FAQ 插入需求，等页面域确认后再扩展。
 - 已新增 FAQ 轻量答案边界：后台答案编辑支持轻量 HTML，Go 后端保存和公开读取时统一清洗，图片从答案 HTML 中拆出为 FAQ 专用单图字段。
 - 已新增 FAQ 图片上传边界：后台和 Go 后端都校验 `image/webp`、`800 x 800`、最多一张；Nuxt 用固定答案内容组件渲染桌面两列/移动单列，并取消 FAQ 展开内容的固定 `max-height` 截断。

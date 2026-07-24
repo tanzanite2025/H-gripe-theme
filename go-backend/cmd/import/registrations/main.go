@@ -234,9 +234,10 @@ func importData(db *gorm.DB, data *RegistrationExportData) ImportStats {
 		err := db.Where("registration_id = ? AND created_at = ?", goRegistrationID, claim.CreatedAt).First(&existing).Error
 
 		if err == gorm.ErrRecordNotFound {
+			registrationID := goRegistrationID
 			// 创建新申请
 			newClaim := registration.WarrantyClaim{
-				RegistrationID: goRegistrationID,
+				RegistrationID: &registrationID,
 				UserID:         uint(claim.UserID),
 				IssueType:      claim.IssueType,
 				Description:    claim.Description,

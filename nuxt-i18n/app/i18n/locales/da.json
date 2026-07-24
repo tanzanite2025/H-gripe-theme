@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1302,12 +1303,15 @@
   },
   "search": {
     "placeholder": "Søg...",
-    "button": "Søg"
+    "button": "Søg",
+    "popularTitle": "Populære søgninger",
+    "popularAriaLabel": "Populære søgninger"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Butikskategorier",
     "loading": "Indlæser kategorier...",
-    "all": "Alle"
+    "all": "Alle",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Navigation for butikskategorier",
@@ -1315,7 +1319,9 @@
       "loading": "Indlæser produkter...",
       "empty": {
         "title": "Der er endnu ingen produkter tilgængelige.",
-        "description": "Når produkter udgives via Tanzanite-pluginet, vises de automatisk her."
+        "description": "Når produkter udgives via Tanzanite-pluginet, vises de automatisk her.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

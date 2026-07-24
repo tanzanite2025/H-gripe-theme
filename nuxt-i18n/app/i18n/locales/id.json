@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Cari...",
-    "button": "Cari"
+    "button": "Cari",
+    "popularTitle": "Pencarian populer",
+    "popularAriaLabel": "Pencarian populer"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Kategori toko",
     "loading": "Memuat kategori...",
-    "all": "Semua"
+    "all": "Semua",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Navigasi kategori toko",
@@ -1303,7 +1307,9 @@
       "loading": "Memuat produk...",
       "empty": {
         "title": "Belum ada produk yang tersedia.",
-        "description": "Setelah produk dipublikasikan melalui plugin Tanzanite, produk akan muncul otomatis di sini."
+        "description": "Setelah produk dipublikasikan melalui plugin Tanzanite, produk akan muncul otomatis di sini.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

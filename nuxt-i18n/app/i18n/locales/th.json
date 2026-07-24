@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1287,12 +1288,15 @@
   },
   "search": {
     "placeholder": "ค้นหา...",
-    "button": "ค้นหา"
+    "button": "ค้นหา",
+    "popularTitle": "การค้นหายอดนิยม",
+    "popularAriaLabel": "การค้นหายอดนิยม"
   },
   "shopCategoryMenu": {
     "ariaLabel": "หมวดหมู่ร้านค้า",
     "loading": "กำลังโหลดหมวดหมู่...",
-    "all": "ทั้งหมด"
+    "all": "ทั้งหมด",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "การนำทางหมวดหมู่ร้านค้า",
@@ -1300,7 +1304,9 @@
       "loading": "กำลังโหลดสินค้า...",
       "empty": {
         "title": "ยังไม่มีสินค้าพร้อมใช้งาน",
-        "description": "เมื่อสินค้าถูกเผยแพร่ผ่านปลั๊กอิน Tanzanite สินค้าจะแสดงที่นี่โดยอัตโนมัติ"
+        "description": "เมื่อสินค้าถูกเผยแพร่ผ่านปลั๊กอิน Tanzanite สินค้าจะแสดงที่นี่โดยอัตโนมัติ",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

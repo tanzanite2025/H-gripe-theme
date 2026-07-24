@@ -1,26 +1,38 @@
 <template>
   <nav class="shop-category-chips" :aria-label="t('shopCategoryMenu.ariaLabel')">
-    <div class="shop-category-chips__list">
-    <button
-      type="button"
-      class="shop-category-chips__item"
-      :class="{ 'shop-category-chips__item--active': !selected }"
-      :aria-pressed="!selected"
-      @click="handleSelect(null)"
-    >
-      {{ t('shopCategoryMenu.all') }}
-    </button>
-    <button
-      v-for="cat in categories"
-      :key="cat.id"
-      type="button"
-      class="shop-category-chips__item"
-      :class="{ 'shop-category-chips__item--active': selected?.id === cat.id }"
-      :aria-pressed="selected?.id === cat.id"
-      @click="handleSelect(cat)"
-    >
-      {{ cat.name }}
-    </button>
+    <div v-if="loading" class="shop-category-chips__state">
+      {{ t('shopCategoryMenu.loading') }}
+    </div>
+
+    <div v-else-if="error" class="shop-category-chips__state shop-category-chips__state--error">
+      {{ error }}
+    </div>
+
+    <div v-else-if="categories.length === 0" class="shop-category-chips__state">
+      {{ t('shopCategoryMenu.empty') }}
+    </div>
+
+    <div v-else class="shop-category-chips__list">
+      <button
+        type="button"
+        class="shop-category-chips__item"
+        :class="{ 'shop-category-chips__item--active': !selected }"
+        :aria-pressed="!selected"
+        @click="handleSelect(null)"
+      >
+        {{ t('shopCategoryMenu.all') }}
+      </button>
+      <button
+        v-for="cat in categories"
+        :key="cat.id"
+        type="button"
+        class="shop-category-chips__item"
+        :class="{ 'shop-category-chips__item--active': selected?.id === cat.id }"
+        :aria-pressed="selected?.id === cat.id"
+        @click="handleSelect(cat)"
+      >
+        {{ cat.name }}
+      </button>
     </div>
   </nav>
 </template>
@@ -30,9 +42,11 @@ import type { ShopCategory } from '~/composables/useShopCategories'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+defineProps<{
   categories: ShopCategory[]
   selected: ShopCategory | null
+  loading?: boolean
+  error?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -61,6 +75,18 @@ const handleSelect = (category: ShopCategory | null) => {
   align-items: center;
   gap: 0.55rem 0.65rem;
   width: 100%;
+}
+
+.shop-category-chips__state {
+  width: 100%;
+  color: rgba(226, 232, 240, 0.76);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.shop-category-chips__state--error {
+  color: #fca5a5;
 }
 
 .shop-category-chips__item {

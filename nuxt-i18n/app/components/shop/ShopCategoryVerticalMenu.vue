@@ -8,6 +8,10 @@
       {{ error }}
     </div>
 
+    <div v-else-if="categories.length === 0" class="shop-category-menu__state">
+      {{ t('shopCategoryMenu.empty') }}
+    </div>
+
     <ul v-else class="shop-category-menu__list">
       <li>
         <button

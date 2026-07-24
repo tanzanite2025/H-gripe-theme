@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Kategori toko",
   "loading": "Ngunggah kategori...",
-  "all": "Kabeh"
+  "all": "Kabeh",
+  "empty": "No shop categories are available yet."
 }

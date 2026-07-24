@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Shop-Kategorien",
   "loading": "Kategorien werden geladen...",
-  "all": "Alle"
+  "all": "Alle",
+  "empty": "No shop categories are available yet."
 }

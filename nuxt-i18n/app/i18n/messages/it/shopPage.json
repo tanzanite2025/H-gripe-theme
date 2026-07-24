@@ -4,7 +4,9 @@
     "loading": "Caricamento prodotti...",
     "empty": {
       "title": "Non sono ancora disponibili prodotti.",
-      "description": "Quando i prodotti saranno pubblicati tramite il plugin Tanzanite, appariranno automaticamente qui."
+      "description": "Quando i prodotti saranno pubblicati tramite il plugin Tanzanite, appariranno automaticamente qui.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

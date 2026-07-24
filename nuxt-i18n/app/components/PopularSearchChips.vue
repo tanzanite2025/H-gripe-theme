@@ -1,6 +1,6 @@
 <template>
-  <section class="popular-searches" aria-label="Popular searches">
-    <h3 class="popular-searches__title">Popular searches</h3>
+  <section class="popular-searches" :aria-label="t('search.popularAriaLabel')">
+    <h3 class="popular-searches__title">{{ t('search.popularTitle') }}</h3>
     <div class="popular-searches__chips">
       <button
         v-for="keyword in keywords"
@@ -17,6 +17,8 @@
 </template>
 
 <script setup lang="ts">
+const { t } = useI18n()
+
 const props = defineProps<{
   keywords: string[]
   modelValue?: string[]

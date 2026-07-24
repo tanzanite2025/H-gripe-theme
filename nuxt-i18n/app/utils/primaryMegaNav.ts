@@ -154,7 +154,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Common questions and quick answers for product, order, and service topics.',
         to: '/support/faqs',
         icon: 'lucide:circle-help',
-        size: 'feature',
+        size: 'wide',
         accent: 'mint',
       },
       {
@@ -164,7 +164,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Payment methods, checkout notes, processing, and purchase guidance.',
         to: '/support/payment',
         icon: 'lucide:credit-card',
-        size: 'wide',
+        size: 'standard',
         accent: 'violet',
       },
       {
@@ -174,7 +174,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Shipping policy, delivery expectations, tracking, and logistics notes.',
         to: '/support/shipping',
         icon: 'lucide:truck',
-        size: 'feature',
+        size: 'standard',
         accent: 'amber',
       },
       {
@@ -194,7 +194,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Check product serial number and warranty status.',
         to: '/support/warranty-check',
         icon: 'lucide:badge-check',
-        size: 'wide',
+        size: 'standard',
         accent: 'blue',
       },
       {

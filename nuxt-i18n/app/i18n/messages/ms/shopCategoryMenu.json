@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Kategori kedai",
   "loading": "Memuatkan kategori...",
-  "all": "Semua"
+  "all": "Semua",
+  "empty": "No shop categories are available yet."
 }

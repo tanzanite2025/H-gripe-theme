@@ -38,6 +38,12 @@ const routes = [
         meta: { title: '订单管理', permission: 'order:view' }
       },
       {
+        path: 'warranty',
+        name: 'Warranty',
+        component: () => import('@/views/Warranty.vue'),
+        meta: { title: '保修管理', permission: 'product:view' }
+      },
+      {
         path: 'shipping',
         name: 'Shipping',
         component: () => import('@/views/Shipping.vue'),

@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,11 +1291,14 @@
   },
   "search": {
     "placeholder": "搜索...",
-    "button": "搜索"
+    "button": "搜索",
+    "popularTitle": "热门搜索",
+    "popularAriaLabel": "热门搜索"
   },
   "shopCategoryMenu": {
     "ariaLabel": "商品分类",
     "loading": "正在加载分类...",
+    "empty": "暂时没有可用商品分类。",
     "all": "全部"
   },
   "shopPage": {
@@ -1303,7 +1307,9 @@
       "loading": "正在加载商品...",
       "empty": {
         "title": "暂时没有可用商品。",
-        "description": "商品通过 Tanzanite 插件发布后，会自动显示在这里。"
+        "description": "商品通过 Tanzanite 插件发布后，会自动显示在这里。",
+        "categoryTitle": "{category} 分类下暂时没有商品。",
+        "categoryDescription": "可以切换其它分类，或清除分类筛选查看全部商品。"
       }
     },
     "actions": {

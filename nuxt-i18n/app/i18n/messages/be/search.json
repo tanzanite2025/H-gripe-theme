@@ -1,4 +1,6 @@
 {
   "placeholder": "Пошук...",
-  "button": "Пошук"
+  "button": "Пошук",
+  "popularTitle": "Папулярныя пошукі",
+  "popularAriaLabel": "Папулярныя пошукі"
 }

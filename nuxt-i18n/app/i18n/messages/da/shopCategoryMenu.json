@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Butikskategorier",
   "loading": "Indlæser kategorier...",
-  "all": "Alle"
+  "all": "Alle",
+  "empty": "No shop categories are available yet."
 }

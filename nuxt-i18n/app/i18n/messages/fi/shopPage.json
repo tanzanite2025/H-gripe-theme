@@ -4,7 +4,9 @@
     "loading": "Ladataan tuotteita...",
     "empty": {
       "title": "Tuotteita ei ole vielä saatavilla.",
-      "description": "Kun tuotteet julkaistaan Tanzanite-lisäosan kautta, ne näkyvät täällä automaattisesti."
+      "description": "Kun tuotteet julkaistaan Tanzanite-lisäosan kautta, ne näkyvät täällä automaattisesti.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

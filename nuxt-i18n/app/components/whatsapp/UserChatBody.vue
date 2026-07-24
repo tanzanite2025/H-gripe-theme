@@ -40,8 +40,6 @@
           v-else-if="activeTab === 'share'"
           :search-query="searchQuery"
           :is-searching="isSearching"
-          :search-results="searchResults"
-          :product-drawer-visible="productDrawerVisible"
           :current-theme-color="currentThemeColor"
           @update:search-query="$emit('update:searchQuery', $event)"
           @search="$emit('search')"
@@ -121,8 +119,6 @@ const props = defineProps<{
   // Product Props
   searchQuery: string
   isSearching: boolean
-  searchResults: any[]
-  productDrawerVisible: boolean
   // Order Props
   ordersList: any[]
   isLoadingOrders: boolean

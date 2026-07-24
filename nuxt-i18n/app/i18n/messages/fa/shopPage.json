@@ -4,7 +4,9 @@
     "loading": "در حال بارگذاری محصولات...",
     "empty": {
       "title": "هنوز محصولی در دسترس نیست.",
-      "description": "پس از انتشار محصولات از طریق افزونه Tanzanite، آن‌ها به‌صورت خودکار اینجا نمایش داده می‌شوند."
+      "description": "پس از انتشار محصولات از طریق افزونه Tanzanite، آن‌ها به‌صورت خودکار اینجا نمایش داده می‌شوند.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

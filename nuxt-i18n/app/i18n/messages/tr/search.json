@@ -1,4 +1,6 @@
 {
   "placeholder": "Ara...",
-  "button": "Ara"
+  "button": "Ara",
+  "popularTitle": "Popüler aramalar",
+  "popularAriaLabel": "Popüler aramalar"
 }

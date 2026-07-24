@@ -1,5 +1,6 @@
 {
   "ariaLabel": "دکان کی اقسام",
   "loading": "اقسام لوڈ ہو رہی ہیں...",
-  "all": "سب"
+  "all": "سب",
+  "empty": "No shop categories are available yet."
 }

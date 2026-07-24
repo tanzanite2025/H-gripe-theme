@@ -143,10 +143,45 @@
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
-							class="flex items-center gap-1"
+							class="relative flex items-center gap-1"
+							:data-breadcrumb-subnav="crumb.subNavigation ? '' : undefined"
 						>
+							<template v-if="crumb.subNavigation">
+								<button
+									type="button"
+									class="breadcrumb-subnav-trigger"
+									:class="{ 'breadcrumb-subnav-trigger--open': breadcrumbSubNavOpen }"
+									:aria-expanded="breadcrumbSubNavOpen"
+									:aria-label="crumb.subNavigation.ariaLabel"
+									@click.stop="toggleBreadcrumbSubNav"
+								>
+									<span>{{ crumb.label }}</span>
+									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
+								</button>
+
+								<div
+									v-if="breadcrumbSubNavOpen"
+									class="breadcrumb-subnav-menu"
+									role="menu"
+									:aria-label="crumb.subNavigation.ariaLabel"
+									@click.stop
+								>
+									<NuxtLink
+										v-for="tab in crumb.subNavigation.tabs"
+										:key="tab.id"
+										class="breadcrumb-subnav-link"
+										:class="{ 'breadcrumb-subnav-link--active': tab.active }"
+										:to="tab.to"
+										role="menuitem"
+										:aria-current="tab.active ? 'page' : undefined"
+										@click="closeBreadcrumbSubNav"
+									>
+										{{ tab.label }}
+									</NuxtLink>
+								</div>
+							</template>
 							<NuxtLink
-								v-if="crumb.to && index < breadcrumbs.length - 1"
+								v-else-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
 								class="tz-text-secondary hover:text-white transition-colors"
 							>
@@ -190,15 +225,6 @@
 								<path d="m21 21-4.3-4.3"></path>
 							</svg>
 						</button>
-
-						<!-- Guides (Icon) -->
-						<NuxtLink
-							:to="localePath('/guides/tireguides')"
-							class="tz-text-secondary hover:text-white transition-colors p-1"
-							aria-label="Guides"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-						</NuxtLink>
 
 						<!-- Language Switcher (Text + Icon) -->
 						<div class="relative" data-lang-wrapper>
@@ -259,10 +285,45 @@
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
-							class="flex items-center gap-1"
+							class="relative flex items-center gap-1"
+							:data-breadcrumb-subnav="crumb.subNavigation ? '' : undefined"
 						>
+							<template v-if="crumb.subNavigation">
+								<button
+									type="button"
+									class="breadcrumb-subnav-trigger breadcrumb-subnav-trigger--mobile"
+									:class="{ 'breadcrumb-subnav-trigger--open': breadcrumbSubNavOpen }"
+									:aria-expanded="breadcrumbSubNavOpen"
+									:aria-label="crumb.subNavigation.ariaLabel"
+									@click.stop="toggleBreadcrumbSubNav"
+								>
+									<span>{{ crumb.label }}</span>
+									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
+								</button>
+
+								<div
+									v-if="breadcrumbSubNavOpen"
+									class="breadcrumb-subnav-menu breadcrumb-subnav-menu--mobile"
+									role="menu"
+									:aria-label="crumb.subNavigation.ariaLabel"
+									@click.stop
+								>
+									<NuxtLink
+										v-for="tab in crumb.subNavigation.tabs"
+										:key="tab.id"
+										class="breadcrumb-subnav-link"
+										:class="{ 'breadcrumb-subnav-link--active': tab.active }"
+										:to="tab.to"
+										role="menuitem"
+										:aria-current="tab.active ? 'page' : undefined"
+										@click="closeBreadcrumbSubNav"
+									>
+										{{ tab.label }}
+									</NuxtLink>
+								</div>
+							</template>
 							<NuxtLink
-								v-if="crumb.to && index < breadcrumbs.length - 1"
+								v-else-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
 								class="tz-text-secondary hover:text-white transition-colors truncate max-w-[100px]"
 							>
@@ -330,6 +391,10 @@ import {
   type PrimaryMegaNavId,
   type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
+import {
+  getPageSubNavigationForPath,
+  type PageSubNavigationTab,
+} from '~/utils/pageSubNavigation'
 
 // Site Title
 const props = defineProps<{ title?: string }>()
@@ -344,6 +409,7 @@ let headerResizeObserver: ResizeObserver | null = null
 
 const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
+const breadcrumbSubNavOpen = ref(false)
 
 const closeMegaNav = () => {
   activeMegaNavId.value = null
@@ -357,6 +423,7 @@ const activeMegaNavSection = computed<PrimaryMegaNavSection | null>(() => {
 const openMegaNav = (id: PrimaryMegaNavId) => {
   activeMegaNavId.value = id
   isOpen.value = false
+  breadcrumbSubNavOpen.value = false
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-mega-nav' } }))
@@ -390,6 +457,7 @@ const shareOpen = ref(false)
 const toggleShare = () => {
   closeMegaNav()
   isOpen.value = false
+  breadcrumbSubNavOpen.value = false
   shareOpen.value = !shareOpen.value
   if (shareOpen.value && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-share' } }))
@@ -400,6 +468,7 @@ const toggleShare = () => {
 const openSidebar = () => {
   closeMegaNav()
   isOpen.value = false
+  breadcrumbSubNavOpen.value = false
   openShopSearch()
 }
 
@@ -433,6 +502,19 @@ const alternateLinksOverride = useState<{ code: string; path: string }[] | null>
 interface BreadcrumbItem {
   label: string
   to?: string
+  subNavigation?: BreadcrumbSubNavigation
+}
+
+interface BreadcrumbSubNavigationItem {
+  id: string
+  label: string
+  to: string
+  active: boolean
+}
+
+interface BreadcrumbSubNavigation {
+  ariaLabel: string
+  tabs: BreadcrumbSubNavigationItem[]
 }
 
 const routePathFromTo = (to: string) => {
@@ -446,6 +528,61 @@ const isSameOrNestedPath = (currentPath: string, targetPath: string) => {
 const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
   return card.title || (t(card.labelKey, card.labelFallback) as string)
 }
+
+const localizedNavTarget = (to: string) => {
+  if (/^https?:\/\//i.test(to)) return to
+
+  const hashIndex = to.indexOf('#')
+  const withoutHash = hashIndex >= 0 ? to.slice(0, hashIndex) : to
+  const hash = hashIndex >= 0 ? to.slice(hashIndex) : ''
+
+  const queryIndex = withoutHash.indexOf('?')
+  const path = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash
+  const query = queryIndex >= 0 ? withoutHash.slice(queryIndex) : ''
+
+  return `${localePath(path || '/')}${query}${hash}`
+}
+
+const getSubNavigationLabel = (tab: PageSubNavigationTab) => {
+  if (tab.labelKey) return t(tab.labelKey, tab.fallback || tab.label || tab.id) as string
+  return tab.label || tab.fallback || tab.id
+}
+
+const currentPageSubNavigation = computed(() => {
+  return getPageSubNavigationForPath(route.path || '/', getLocaleCodes())
+})
+
+const normalizedRouteHash = computed(() => {
+  const raw = String(route.hash || '').replace(/^#/, '')
+  if (!raw) return ''
+
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
+})
+
+const activePageSubNavigationTab = computed<PageSubNavigationTab | null>(() => {
+  const entry = currentPageSubNavigation.value
+  if (!entry || !normalizedRouteHash.value) return null
+
+  return entry.tabs.find((tab) => tab.id === normalizedRouteHash.value) || null
+})
+
+const breadcrumbSubNavigationItems = computed<BreadcrumbSubNavigationItem[]>(() => {
+  const entry = currentPageSubNavigation.value
+  if (!entry) return []
+
+  const activeId = activePageSubNavigationTab.value?.id || ''
+
+  return entry.tabs.map((tab) => ({
+    id: tab.id,
+    label: getSubNavigationLabel(tab),
+    to: localizedNavTarget(tab.to || `${entry.path}#${tab.id}`),
+    active: tab.id === activeId,
+  }))
+})
 
 const findCurrentMegaCard = (): { section: PrimaryMegaNavSection; card: PrimaryMegaNavCard } | null => {
   const currentPath = normalizeNavPath(route.path || '/')
@@ -465,7 +602,7 @@ const findCurrentMegaCard = (): { section: PrimaryMegaNavSection; card: PrimaryM
   return null
 }
 
-const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+const baseBreadcrumbs = computed<BreadcrumbItem[]>(() => {
   const items: BreadcrumbItem[] = []
   const homeTo = localePath('/')
 
@@ -583,6 +720,57 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   return items
 })
 
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const items = baseBreadcrumbs.value.map((item) => ({ ...item }))
+  const entry = currentPageSubNavigation.value
+  const tabs = breadcrumbSubNavigationItems.value
+
+  if (!entry || !tabs.length || items.length < 2) return items
+
+  const lastIndex = items.length - 1
+  const pageCrumb = items[lastIndex] as BreadcrumbItem
+  const activeTab = activePageSubNavigationTab.value
+  const pageLabel = pageCrumb.label || (t('breadcrumbs.pageSections', 'Page sections') as string)
+  const subNavigation: BreadcrumbSubNavigation = {
+    ariaLabel: `${pageLabel} sections`,
+    tabs,
+  }
+
+  if (activeTab) {
+    items[lastIndex] = {
+      ...pageCrumb,
+      to: pageCrumb.to || localizedNavTarget(entry.path),
+    }
+    items.push({
+      label: getSubNavigationLabel(activeTab),
+      subNavigation,
+    })
+    return items
+  }
+
+  items[lastIndex] = {
+    ...pageCrumb,
+    subNavigation,
+  }
+
+  return items
+})
+
+const closeBreadcrumbSubNav = () => {
+  breadcrumbSubNavOpen.value = false
+}
+
+const toggleBreadcrumbSubNav = () => {
+  breadcrumbSubNavOpen.value = !breadcrumbSubNavOpen.value
+  if (breadcrumbSubNavOpen.value) {
+    closeMegaNav()
+    isOpen.value = false
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'breadcrumb-subnav' } }))
+    }
+  }
+}
+
 const switchLocalePath = (targetLocale: string) => {
 	const currentFullPath = router.currentRoute.value?.fullPath || '/'
 	// 宽松断言交给 vue-i18n 处理具体的 locale 类型，避免 TS 联合类型报错
@@ -642,6 +830,7 @@ const toggleDropdown = () => {
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     closeMegaNav()
+    breadcrumbSubNavOpen.value = false
   }
   if (isOpen.value && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'language' } }))
@@ -654,6 +843,7 @@ const onButtonKeydown = (e: KeyboardEvent) => {
     isOpen.value = !isOpen.value
     if (isOpen.value) {
       closeMegaNav()
+      breadcrumbSubNavOpen.value = false
     }
     if (isOpen.value) {
       nextTick(() => optionRefs.value[0]?.focus())
@@ -661,6 +851,7 @@ const onButtonKeydown = (e: KeyboardEvent) => {
   } else if (e.key === 'Escape') {
     isOpen.value = false
     closeMegaNav()
+    closeBreadcrumbSubNav()
   }
 }
 
@@ -679,6 +870,7 @@ const onListKeydown = (e: KeyboardEvent) => {
   } else if (e.key === 'Escape') {
     isOpen.value = false
     closeMegaNav()
+    closeBreadcrumbSubNav()
     document.getElementById(buttonId)?.focus()
   }
 }
@@ -705,6 +897,7 @@ const switchLanguage = async (code: string) => {
   } finally {
     isOpen.value = false
     closeMegaNav()
+    closeBreadcrumbSubNav()
   }
 }
 
@@ -713,6 +906,9 @@ const handleClickOutside = (event: MouseEvent) => {
   if (!(target instanceof Element)) return
   if (!target.closest('[data-lang-wrapper]') && !target.closest('#' + dropdownId)) {
     isOpen.value = false
+  }
+  if (!target.closest('[data-breadcrumb-subnav]')) {
+    closeBreadcrumbSubNav()
   }
   if (!target.closest('.site-header-root')) {
     closeMegaNav()
@@ -723,12 +919,14 @@ const handleHeaderKeydown = (event: KeyboardEvent) => {
   if (event.key !== 'Escape') return
   isOpen.value = false
   closeMegaNav()
+  closeBreadcrumbSubNav()
 }
 
 watch(
   () => route.fullPath,
   () => {
     closeMegaNav()
+    closeBreadcrumbSubNav()
     nextTick(updateHeaderOffset)
   },
 )
@@ -757,6 +955,9 @@ onMounted(() => {
       }
       if (id !== 'header-mega-nav') {
         closeMegaNav()
+      }
+      if (id !== 'breadcrumb-subnav') {
+        closeBreadcrumbSubNav()
       }
     } catch {}
   }
@@ -805,6 +1006,127 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 <style scoped>
 .header-mobile-nav-text {
   font-size: 12px !important;
+}
+
+.breadcrumb-subnav-trigger {
+	display: inline-flex;
+	max-width: min(46vw, 220px);
+	align-items: center;
+	gap: 0.2rem;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	padding: 0;
+	color: var(--tz-text-secondary);
+	font: inherit;
+	font-weight: 650;
+	line-height: inherit;
+	cursor: pointer;
+	transition: color 0.18s ease;
+}
+
+.breadcrumb-subnav-trigger:hover,
+.breadcrumb-subnav-trigger:focus-visible,
+.breadcrumb-subnav-trigger--open {
+	color: #ffffff;
+}
+
+.breadcrumb-subnav-trigger:focus-visible {
+	outline: 1px solid rgba(64, 255, 170, 0.72);
+	outline-offset: 0.18rem;
+}
+
+.breadcrumb-subnav-trigger span {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.breadcrumb-subnav-trigger__icon {
+	width: 0.72rem;
+	height: 0.72rem;
+	flex: 0 0 auto;
+	color: #40ffaa;
+	transition: transform 0.18s ease;
+}
+
+.breadcrumb-subnav-trigger--open .breadcrumb-subnav-trigger__icon {
+	transform: rotate(180deg);
+}
+
+.breadcrumb-subnav-menu {
+	position: absolute;
+	top: calc(100% + 0.45rem);
+	left: 50%;
+	z-index: 180;
+	display: grid;
+	min-width: min(78vw, 260px);
+	max-width: min(88vw, 360px);
+	max-height: min(58vh, 390px);
+	transform: translateX(-50%);
+	gap: 0.25rem;
+	overflow: auto;
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	border-radius: 0.95rem;
+	background:
+		radial-gradient(circle at top left, rgba(64, 255, 170, 0.12), transparent 42%),
+		linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+	padding: 0.42rem;
+	box-shadow:
+		0 24px 54px -22px rgba(0, 0, 0, 1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.breadcrumb-subnav-link {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	border-radius: 0.72rem;
+	padding: 0.58rem 0.72rem;
+	color: rgba(226, 232, 240, 0.86);
+	font-size: 0.78rem;
+	font-weight: 700;
+	line-height: 1.15;
+	text-decoration: none;
+	transition:
+		background-color 0.18s ease,
+		color 0.18s ease,
+		transform 0.18s ease;
+}
+
+.breadcrumb-subnav-link:hover,
+.breadcrumb-subnav-link:focus-visible {
+	background: rgba(255, 255, 255, 0.08);
+	color: #ffffff;
+	transform: translateY(-1px);
+}
+
+.breadcrumb-subnav-link:focus-visible {
+	outline: 1px solid rgba(64, 255, 170, 0.72);
+	outline-offset: 0.12rem;
+}
+
+.breadcrumb-subnav-link--active {
+	background: #ffffff;
+	color: #020617;
+}
+
+.breadcrumb-subnav-link--active:hover,
+.breadcrumb-subnav-link--active:focus-visible {
+	background: #ffffff;
+	color: #020617;
+}
+
+.breadcrumb-subnav-trigger--mobile {
+	max-width: 36vw;
+}
+
+.breadcrumb-subnav-menu--mobile {
+	left: auto;
+	right: 50%;
+	min-width: min(84vw, 280px);
+	transform: translateX(50%);
 }
 
 @media (max-width: 767px) {

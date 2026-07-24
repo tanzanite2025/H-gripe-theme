@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1302,12 +1303,15 @@
   },
   "search": {
     "placeholder": "Поиск...",
-    "button": "Поиск"
+    "button": "Поиск",
+    "popularTitle": "Популярные запросы",
+    "popularAriaLabel": "Популярные запросы"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Категории магазина",
     "loading": "Загрузка категорий...",
-    "all": "Все"
+    "all": "Все",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Навигация по категориям магазина",
@@ -1315,7 +1319,9 @@
       "loading": "Загрузка товаров...",
       "empty": {
         "title": "Товары пока недоступны.",
-        "description": "Когда товары будут опубликованы через плагин Tanzanite, они автоматически появятся здесь."
+        "description": "Когда товары будут опубликованы через плагин Tanzanite, они автоматически появятся здесь.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

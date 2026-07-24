@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "جستجو...",
-    "button": "جستجو"
+    "button": "جستجو",
+    "popularTitle": "جستجوهای محبوب",
+    "popularAriaLabel": "جستجوهای محبوب"
   },
   "shopCategoryMenu": {
     "ariaLabel": "دسته‌های فروشگاه",
     "loading": "در حال بارگذاری دسته‌ها...",
-    "all": "همه"
+    "all": "همه",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "ناوبری دسته‌های فروشگاه",
@@ -1303,7 +1307,9 @@
       "loading": "در حال بارگذاری محصولات...",
       "empty": {
         "title": "هنوز محصولی در دسترس نیست.",
-        "description": "پس از انتشار محصولات از طریق افزونه Tanzanite، آن‌ها به‌صورت خودکار اینجا نمایش داده می‌شوند."
+        "description": "پس از انتشار محصولات از طریق افزونه Tanzanite، آن‌ها به‌صورت خودکار اینجا نمایش داده می‌شوند.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

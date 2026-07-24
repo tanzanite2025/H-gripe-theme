@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Kategori toko",
   "loading": "Memuat kategori...",
-  "all": "Semua"
+  "all": "Semua",
+  "empty": "No shop categories are available yet."
 }

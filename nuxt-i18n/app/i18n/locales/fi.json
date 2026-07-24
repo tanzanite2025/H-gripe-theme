@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1302,12 +1303,15 @@
   },
   "search": {
     "placeholder": "Hae...",
-    "button": "Hae"
+    "button": "Hae",
+    "popularTitle": "Suositut haut",
+    "popularAriaLabel": "Suositut haut"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Kaupan kategoriat",
     "loading": "Ladataan kategorioita...",
-    "all": "Kaikki"
+    "all": "Kaikki",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Kaupan kategorianavigointi",
@@ -1315,7 +1319,9 @@
       "loading": "Ladataan tuotteita...",
       "empty": {
         "title": "Tuotteita ei ole vielä saatavilla.",
-        "description": "Kun tuotteet julkaistaan Tanzanite-lisäosan kautta, ne näkyvät täällä automaattisesti."
+        "description": "Kun tuotteet julkaistaan Tanzanite-lisäosan kautta, ne näkyvät täällä automaattisesti.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

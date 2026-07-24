@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Nema...",
-    "button": "Nema"
+    "button": "Nema",
+    "popularTitle": "Shahararrun bincike",
+    "popularAriaLabel": "Shahararrun bincike"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Rukunonin shago",
     "loading": "Ana loda rukuni...",
-    "all": "Duka"
+    "all": "Duka",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Kewayawa ta rukunonin shago",
@@ -1303,7 +1307,9 @@
       "loading": "Ana loda kayayyaki...",
       "empty": {
         "title": "Babu kayayyaki da ke samuwa tukuna.",
-        "description": "Da zarar an buga kayayyaki ta hanyar plugin na Tanzanite, za su bayyana a nan ta atomatik."
+        "description": "Da zarar an buga kayayyaki ta hanyar plugin na Tanzanite, za su bayyana a nan ta atomatik.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

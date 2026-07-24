@@ -119,11 +119,11 @@
             ref="imageInput"
             type="file" 
             multiple 
-            accept="image/*" 
+            accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" 
             @change="handleImages"
             class="hidden"
           />
-          <p class="mt-1 text-xs tz-text-muted">Max 5MB per image.</p>
+          <p class="mt-1 text-xs tz-text-muted">Up to 10 images. JPG, PNG, WebP or GIF. Max 8MB each / 80MB total.</p>
         </div>
 
         <!-- Video -->
@@ -144,11 +144,11 @@
           <input 
             ref="videoInput"
             type="file" 
-            accept="video/*" 
+            accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm" 
             @change="handleVideo"
             class="hidden"
           />
-          <p class="mt-1 text-xs tz-text-muted">Max 20MB. For larger videos, please provide a link in the description.</p>
+          <p class="mt-1 text-xs tz-text-muted">Optional. MP4, MOV or WebM. Max 50MB. For larger videos, provide a link in the description.</p>
         </div>
 
         <!-- Submit Button -->
@@ -195,6 +195,70 @@ const isFormLocked = ref(true)
 const submitMessage = ref('')
 const submitStatus = ref<'success' | 'error' | ''>('')
 
+const MAX_IMAGE_FILES = 10
+const MAX_IMAGE_SIZE = 8 * 1024 * 1024
+const MAX_IMAGE_TOTAL_SIZE = 80 * 1024 * 1024
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024
+const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
+const ALLOWED_VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm']
+
+const formatUploadSize = (bytes: number) => `${Math.round(bytes / 1024 / 1024)}MB`
+
+const fileExtension = (file: File) => {
+  const name = file.name || ''
+  const dotIndex = name.lastIndexOf('.')
+  return dotIndex >= 0 ? name.slice(dotIndex).toLowerCase() : ''
+}
+
+const hasAllowedExtension = (file: File, extensions: string[]) => extensions.includes(fileExtension(file))
+
+const setUploadError = (message: string) => {
+  submitStatus.value = 'error'
+  submitMessage.value = message
+}
+
+const clearUploadError = () => {
+  if (submitStatus.value === 'error') {
+    submitStatus.value = ''
+    submitMessage.value = ''
+  }
+}
+
+const validateImages = (files: File[]) => {
+  if (files.length > MAX_IMAGE_FILES) {
+    return `You can upload up to ${MAX_IMAGE_FILES} images.`
+  }
+
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+  if (totalSize > MAX_IMAGE_TOTAL_SIZE) {
+    return `Image uploads must be ${formatUploadSize(MAX_IMAGE_TOTAL_SIZE)} or less in total.`
+  }
+
+  for (const file of files) {
+    if (!hasAllowedExtension(file, ALLOWED_IMAGE_EXTENSIONS)) {
+      return `${file.name} is not supported. Use JPG, PNG, WebP or GIF.`
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      return `${file.name} exceeds the ${formatUploadSize(MAX_IMAGE_SIZE)} image limit.`
+    }
+  }
+
+  return ''
+}
+
+const validateVideo = (file: File | null) => {
+  if (!file) return ''
+  if (!hasAllowedExtension(file, ALLOWED_VIDEO_EXTENSIONS)) {
+    return `${file.name} is not supported. Use MP4, MOV or WebM.`
+  }
+  if (file.size > MAX_VIDEO_SIZE) {
+    return `${file.name} exceeds the ${formatUploadSize(MAX_VIDEO_SIZE)} video limit.`
+  }
+  return ''
+}
+
+const validateUploads = () => validateImages(imageFiles.value) || validateVideo(videoFile.value)
+
 const verifyOrder = async () => {
   isVerifying.value = true
   submitMessage.value = ''
@@ -239,14 +303,34 @@ const triggerVideoUpload = () => {
 const handleImages = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    imageFiles.value = Array.from(target.files)
+    const files = Array.from(target.files)
+    const error = validateImages(files)
+    if (error) {
+      imageFiles.value = []
+      target.value = ''
+      setUploadError(error)
+      return
+    }
+
+    imageFiles.value = files
+    clearUploadError()
   }
 }
 
 const handleVideo = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    videoFile.value = target.files[0]
+    const file = target.files[0]
+    const error = validateVideo(file)
+    if (error) {
+      videoFile.value = null
+      target.value = ''
+      setUploadError(error)
+      return
+    }
+
+    videoFile.value = file
+    clearUploadError()
   }
 }
 
@@ -256,6 +340,12 @@ const submitClaim = async () => {
   submitStatus.value = ''
 
   try {
+    const uploadError = validateUploads()
+    if (uploadError) {
+      setUploadError(uploadError)
+      return
+    }
+
     const formData = new FormData()
     formData.append('order_number', form.value.order_number)
     formData.append('email', form.value.email)

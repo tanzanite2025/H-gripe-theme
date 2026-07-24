@@ -109,7 +109,6 @@ import {
 
 definePageMeta({
   layout: 'products',
-  path: '/guides/tireguides',
 })
 
 useHead({

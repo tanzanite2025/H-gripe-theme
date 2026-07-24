@@ -283,3 +283,19 @@ npm run build
   - user-submitted feedback content, names, emails and uploaded file names
   - backend response messages and API error payloads when the server provides them
   - country codes and other submission payload values
+
+### 2026-07-24 — Popular search chips
+
+- Component: `app/components/PopularSearchChips.vue`
+- Source module: `app/i18n/messages/<locale>/search.json`
+- Aggregated into: `app/i18n/locales/*.json`
+- Coverage: all 34 configured locales
+- Scope cleanup:
+  - visible `Popular searches` title now uses `search.popularTitle`
+  - section accessibility label now uses `search.popularAriaLabel`
+  - keyword values remain in `app/utils/popularSearchKeywords.ts` because they control search behavior, not UI copy
+- Validation:
+  - `npm run i18n:fill-missing`
+  - `npm run i18n:build`
+  - `npm run i18n:check -- --limit=80`
+  - `npm run build`

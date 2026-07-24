@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Mga kategorya ng shop",
   "loading": "Nilo-load ang mga kategorya...",
-  "all": "Lahat"
+  "all": "Lahat",
+  "empty": "No shop categories are available yet."
 }

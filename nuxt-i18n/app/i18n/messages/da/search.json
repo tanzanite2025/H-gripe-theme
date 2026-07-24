@@ -1,4 +1,6 @@
 {
   "placeholder": "Søg...",
-  "button": "Søg"
+  "button": "Søg",
+  "popularTitle": "Populære søgninger",
+  "popularAriaLabel": "Populære søgninger"
 }

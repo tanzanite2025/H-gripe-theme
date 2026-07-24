@@ -1,4 +1,6 @@
 {
   "placeholder": "Buscar...",
-  "button": "Buscar"
+  "button": "Buscar",
+  "popularTitle": "Búsquedas populares",
+  "popularAriaLabel": "Búsquedas populares"
 }

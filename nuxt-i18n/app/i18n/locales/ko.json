@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1302,12 +1303,15 @@
   },
   "search": {
     "placeholder": "검색...",
-    "button": "검색"
+    "button": "검색",
+    "popularTitle": "인기 검색",
+    "popularAriaLabel": "인기 검색"
   },
   "shopCategoryMenu": {
     "ariaLabel": "쇼핑 카테고리",
     "loading": "카테고리를 불러오는 중...",
-    "all": "전체"
+    "all": "전체",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "쇼핑 카테고리 내비게이션",
@@ -1315,7 +1319,9 @@
       "loading": "제품을 불러오는 중...",
       "empty": {
         "title": "아직 사용할 수 있는 제품이 없습니다.",
-        "description": "Tanzanite 플러그인을 통해 제품이 게시되면 여기에 자동으로 표시됩니다."
+        "description": "Tanzanite 플러그인을 통해 제품이 게시되면 여기에 자동으로 표시됩니다.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

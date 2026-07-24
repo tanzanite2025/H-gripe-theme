@@ -4,7 +4,9 @@
     "loading": "กำลังโหลดสินค้า...",
     "empty": {
       "title": "ยังไม่มีสินค้าพร้อมใช้งาน",
-      "description": "เมื่อสินค้าถูกเผยแพร่ผ่านปลั๊กอิน Tanzanite สินค้าจะแสดงที่นี่โดยอัตโนมัติ"
+      "description": "เมื่อสินค้าถูกเผยแพร่ผ่านปลั๊กอิน Tanzanite สินค้าจะแสดงที่นี่โดยอัตโนมัติ",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

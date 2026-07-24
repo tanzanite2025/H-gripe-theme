@@ -4,7 +4,9 @@
     "loading": "Produkte werden geladen...",
     "empty": {
       "title": "Es sind noch keine Produkte verfügbar.",
-      "description": "Sobald Produkte über das Tanzanite-Plugin veröffentlicht werden, erscheinen sie hier automatisch."
+      "description": "Sobald Produkte über das Tanzanite-Plugin veröffentlicht werden, erscheinen sie hier automatisch.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

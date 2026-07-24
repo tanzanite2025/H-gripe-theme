@@ -4,7 +4,9 @@
     "loading": "Ana loda kayayyaki...",
     "empty": {
       "title": "Babu kayayyaki da ke samuwa tukuna.",
-      "description": "Da zarar an buga kayayyaki ta hanyar plugin na Tanzanite, za su bayyana a nan ta atomatik."
+      "description": "Da zarar an buga kayayyaki ta hanyar plugin na Tanzanite, za su bayyana a nan ta atomatik.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

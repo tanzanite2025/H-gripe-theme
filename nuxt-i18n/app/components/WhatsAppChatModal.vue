@@ -144,8 +144,6 @@
                 :isSending="isSending"
                 :isUploadingImage="isUploadingImage"
                 :isSearching="isSearching"
-                :searchResults="searchResults"
-                :productDrawerVisible="productDrawerVisible"
                 :ordersList="ordersList"
                 :isLoadingOrders="isLoadingOrders"
                 :isMemberLogged="isMemberLogged"

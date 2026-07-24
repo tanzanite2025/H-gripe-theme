@@ -1,4 +1,6 @@
 {
   "placeholder": "Sök...",
-  "button": "Sök"
+  "button": "Sök",
+  "popularTitle": "Populära sökningar",
+  "popularAriaLabel": "Populära sökningar"
 }

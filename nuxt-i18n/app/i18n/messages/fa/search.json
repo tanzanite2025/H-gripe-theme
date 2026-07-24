@@ -1,4 +1,6 @@
 {
   "placeholder": "جستجو...",
-  "button": "جستجو"
+  "button": "جستجو",
+  "popularTitle": "جستجوهای محبوب",
+  "popularAriaLabel": "جستجوهای محبوب"
 }

@@ -1,4 +1,6 @@
 {
   "placeholder": "शोधा...",
-  "button": "शोधा"
+  "button": "शोधा",
+  "popularTitle": "लोकप्रिय शोध",
+  "popularAriaLabel": "लोकप्रिय शोध"
 }

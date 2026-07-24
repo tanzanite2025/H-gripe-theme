@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Ara...",
-    "button": "Ara"
+    "button": "Ara",
+    "popularTitle": "Popüler aramalar",
+    "popularAriaLabel": "Popüler aramalar"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Mağaza kategorileri",
     "loading": "Kategoriler yükleniyor...",
-    "all": "Tümü"
+    "all": "Tümü",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Mağaza kategori gezintisi",
@@ -1303,7 +1307,9 @@
       "loading": "Ürünler yükleniyor...",
       "empty": {
         "title": "Henüz kullanılabilir ürün yok.",
-        "description": "Ürünler Tanzanite eklentisiyle yayınlandığında burada otomatik olarak görünecek."
+        "description": "Ürünler Tanzanite eklentisiyle yayınlandığında burada otomatik olarak görünecek.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

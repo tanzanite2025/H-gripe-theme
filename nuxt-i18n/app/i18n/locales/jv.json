@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Goleki...",
-    "button": "Goleki"
+    "button": "Goleki",
+    "popularTitle": "Panelusuran populer",
+    "popularAriaLabel": "Panelusuran populer"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Kategori toko",
     "loading": "Ngunggah kategori...",
-    "all": "Kabeh"
+    "all": "Kabeh",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Navigasi kategori toko",
@@ -1303,7 +1307,9 @@
       "loading": "Ngunggah produk...",
       "empty": {
         "title": "Durung ana produk sing kasedhiya.",
-        "description": "Sawisé produk diterbitaké liwat plugin Tanzanite, produk bakal katon otomatis ing kéné."
+        "description": "Sawisé produk diterbitaké liwat plugin Tanzanite, produk bakal katon otomatis ing kéné.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {
