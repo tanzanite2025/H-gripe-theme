@@ -64,7 +64,7 @@ Nuxt FAQ 用户端按“自动插入、通用 FAQ 容器、分类折叠 UI、答
 - `app/components/faq/FaqCategoryAccordion.vue`：单个 FAQ 分类卡片和问题折叠 UI。
 - `app/components/FaqAnswerContent.vue`：答案轻量 HTML 与单张 FAQ 图片渲染。
 - `app/data/faq/registry.ts`：静态 FAQ fallback 注册表、pageId 与 route path 映射、聚合静态条目。
-- `app/data/faq/routing.ts`：route path 归一化和 locale 前缀剥离。
+- `app/data/faq/routing.ts`：route path 归一化、locale 前缀剥离、动态商品详情页 FAQ lookup 映射，以及不应自动插入 FAQ 的聚合页判定。
 - `app/data/faq/backend.ts`：Go 后端 FAQ 请求、公开结构接口优先、旧内容接口兜底转换。
 - `app/data/faq/index.ts`：FAQ 数据层统一出口，不承载业务逻辑。
 
@@ -77,10 +77,12 @@ Nuxt 页面不再长期手写 `<PageFaq page-id="..." />`。页面只负责自�
 Flow:
 
 1. `PageFaqSlot` 读取当前 route path，并依据 Nuxt 的 locale manifest 移除 locale 前缀，例如 `/zh_cn/support/payment` -> `/support/payment`；新增语言不需要再手写一份 FAQ 路由正则。
-2. `PageFaqSlot` 请求 Go backend 的 route resolver，通过 `faq_pages.route_path` 找到对应 `page_id`。
-3. 如果后台返回可展示 FAQ 内容，slot 直接渲染 `PageFaq`。
-4. 如果后台结构存在但还没有 FAQ 内容，Nuxt 可回退本地静态 FAQ 文件；后台仍然能看到该页面和分类结构。
-5. 如果后台和静态 fallback 都没有内容，用户端不显示空 FAQ 区块。
+2. `PageFaqSlot` 会先把动态商品详情页映射到稳定 lookup route，例如 `/shop/g35-disc-brake` -> `/shop/:slug`；旧 `/products/<slug>` route 若被访问则映射到 `/products/:slug`。后台只维护通用的产品详情 FAQ 结构，不按每个商品 slug 复制页面。
+3. FAQ 聚合页 `/support/faqs` 和旧 `/faq` 页面本身不再自动插入另一个 FAQ 区块，避免页面内重复嵌套。
+4. `PageFaqSlot` 请求 Go backend 的 route resolver，通过 `faq_pages.route_path` 找到对应 `page_id`。
+5. 如果后台返回可展示 FAQ 内容，slot 直接渲染 `PageFaq`。
+6. 如果后台结构存在但还没有 FAQ 内容，Nuxt 可回退本地静态 FAQ 文件；后台仍然能看到该页面和分类结构。
+7. 如果后台和静态 fallback 都没有内容，用户端不显示空 FAQ 区块。
 
 Loading rule:
 
@@ -137,17 +139,22 @@ Forbidden in `answer`:
 - 暂不把 `PageFaqSlot` 放到 `default` / `spokecalc` layout；这些 layout 目前没有稳定的 FAQ 插入需求，等页面域确认后再扩展。
 - 已新增 FAQ 轻量答案边界：后台答案编辑支持轻量 HTML，Go 后端保存和公开读取时统一清洗，图片从答案 HTML 中拆出为 FAQ 专用单图字段。
 - 已新增 FAQ 图片上传边界：后台和 Go 后端都校验 `image/webp`、`800 x 800`、最多一张；Nuxt 用固定答案内容组件渲染桌面两列/移动单列，并取消 FAQ 展开内容的固定 `max-height` 截断。
+- 已新增 `031_faq_route_coverage.up.sql`，把当前使用 `products` / `support` layout 的 Nuxt 页面补进 `faq_pages` / `faq_categories`，包括 `/shop`、`/shop/:slug`、旧 `/products/:slug`、blog、policies、`/company/about`、`/picture-warehouse`、`/support/faqs` 和旧 `/faq`。这些页面即使暂时没有 FAQ 条目，也能在后台结构面板看到，不再让前台自动容器请求稳定页面时出现 404。
+- 已新增 Nuxt FAQ lookup 规则：真实商品详情 URL 统一查 `/shop/:slug`，旧产品详情 route 查 `/products/:slug`；`/support/faqs` 与 `/faq` 作为 FAQ 聚合页只展示自身内容，不再通过 layout 自动追加第二个 FAQ 区块。
 
 下一次涉及 FAQ 后台、FAQ 页面结构、Nuxt 页面 FAQ 自动插入、`LOAD` 样式时，必须同步更新本文件，记录完成范围和仍未完成的部分。
 
 ## Initial seed
 
-Migration `028_faq_page_category_source.up.sql` seeds the existing Nuxt FAQ page/category structure for `en` and `zh`, so a fresh admin panel is not empty even before FAQ items are added.
+Migration `028_faq_page_category_source.up.sql` seeds the first Nuxt FAQ page/category structure for `en` and `zh`, so a fresh admin panel is not empty even before FAQ items are added.
+
+Migration `031_faq_route_coverage.up.sql` extends that seed to every current Nuxt route covered by the automatic FAQ slot and adds a unique live `(route_path, locale)` index. When adding a new route to `products` or `support` layout, update this route coverage at the same time unless the route is explicitly excluded from `PageFaqSlot`.
 
 ## Update rule
 
-Whenever a new page uses `PageFaq pageId="..."` on the Nuxt storefront, update these places together:
+Whenever a new storefront page should participate in FAQ insertion, update these places together:
 
 1. Add or edit the matching `faq_pages` / `faq_categories` records through Admin, or add a migration seed if it must exist in every environment.
-2. Keep Nuxt static fallback data in `nuxt-i18n/app/data/faq/pages/*` only as fallback content.
-3. If the backend public response shape changes, update `nuxt-i18n/app/data/faq/index.ts` at the same time.
+2. If it is a dynamic route, add a stable lookup mapping in `nuxt-i18n/app/data/faq/routing.ts` instead of creating one FAQ page per concrete slug.
+3. Keep Nuxt static fallback data in `nuxt-i18n/app/data/faq/pages/*` only as fallback content.
+4. If the backend public response shape changes, update `nuxt-i18n/app/data/faq/index.ts` at the same time.
