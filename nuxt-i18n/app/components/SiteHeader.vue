@@ -139,7 +139,7 @@
 					aria-label="Breadcrumb"
 					class="flex justify-center mt-1"
 				>
-					<ol class="flex items-center gap-1.5 text-[11px] tz-text-muted leading-tight transition-colors hover:text-slate-300">
+					<ol class="flex items-center gap-1.5 text-[12px] tz-text-muted leading-tight transition-colors hover:text-slate-300">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
@@ -281,7 +281,7 @@
 					aria-label="Breadcrumb"
 					class="px-2 pb-1 -mt-1"
 				>
-					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[10px] tz-text-muted leading-tight">
+					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[11px] tz-text-muted leading-tight">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
