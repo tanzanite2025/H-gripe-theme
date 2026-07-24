@@ -9,7 +9,7 @@
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
-        <Icon name="lucide:menu" class="w-8 h-8 md:w-10 md:h-10 transition-all" />
+        <Icon name="lucide:menu" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
       </button>
 
       <!-- 2. Chat -->
@@ -21,7 +21,7 @@
         @click="toggleChatFromDock()" 
         :aria-label="$t('dockMenu.chat')"
       >
-        <span class="relative inline-flex h-8 w-8 md:h-10 md:w-10 items-center justify-center">
+        <span class="relative inline-flex h-7 w-7 md:h-9 md:w-9 items-center justify-center">
           <Icon name="lucide:message-circle" class="w-full h-full transition-all" />
           <!-- Unread Badge -->
           <span
@@ -47,7 +47,7 @@
         :aria-expanded="quickOpen" 
         :aria-label="$t('dockMenu.quickBuy')"
       >
-        <Icon name="lucide:zap" class="w-8 h-8 md:w-10 md:h-10 transition-all" />
+        <Icon name="lucide:zap" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
       </button>
 
       <!-- 5. Cart -->
@@ -56,7 +56,7 @@
         @click="openCartDrawer" 
         :aria-label="$t('dockMenu.openCart')"
       >
-        <Icon name="lucide:shopping-cart" class="w-8 h-8 md:w-10 md:h-10 transition-all" />
+        <Icon name="lucide:shopping-cart" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
       </button>
 
       <!-- 6. Saved (Wishlist) -->
@@ -65,7 +65,7 @@
         @click="openWishlist" 
         :aria-label="$t('dockMenu.openWishlist')"
       >
-        <span class="relative inline-flex h-8 w-8 md:h-10 md:w-10 items-center justify-center">
+        <span class="relative inline-flex h-7 w-7 md:h-9 md:w-9 items-center justify-center">
           <Icon name="lucide:heart" class="w-full h-full transition-all" />
           <span
             v-if="wishlistCount > 0"
