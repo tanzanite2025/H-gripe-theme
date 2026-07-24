@@ -65,12 +65,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useHead, definePageMeta, useI18n, useLocalePath } from '#imports'
+import { computed, watch } from 'vue'
+import { useHead, definePageMeta, navigateTo, useI18n, useLocalePath, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import {
+  companyAboutTabs,
+  isPageSubNavigationTabId,
+  type CompanyAboutTabId,
+} from '~/utils/pageSubNavigation'
 
 const { t } = useI18n()
 const localePath = useLocalePath()
+const route = useRoute()
 
 const storyParagraphs = computed(() => {
   const body = t('company.ourStory.story.body')
@@ -80,6 +86,22 @@ const storyParagraphs = computed(() => {
 const factoryTabTo = computed(() => {
   return `${localePath('/company/about')}#factory`
 })
+
+const getCompanyAboutTabFromHash = (hash: string): CompanyAboutTabId | null => {
+  const raw = String(hash || '').replace(/^#/, '')
+  return isPageSubNavigationTabId(companyAboutTabs, raw) ? raw : null
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const tab = getCompanyAboutTabFromHash(hash)
+    if (!tab) return
+
+    navigateTo(`${localePath('/company/about')}#${tab}`, { replace: true })
+  },
+  { immediate: true }
+)
 
 definePageMeta({
   layout: 'products',

@@ -67,6 +67,7 @@ Current cleanup status:
 
 - Tire Guides now lives at `app/pages/guides/tireguides.vue`.
 - It no longer relies on `definePageMeta({ path: '/guides/tireguides' })`; the filesystem route is the route responsibility.
+- Company factory / appearance / hole-pattern tabs are owned only by `/company/about`. `/company/ourstory` remains a standalone story page; if an old or incorrect link lands on `/company/ourstory#<company-about-tab>`, the page redirects to the canonical `/company/about#<tab>` target.
 
 ## Maintenance rule
 
