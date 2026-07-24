@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "వెతకండి...",
-    "button": "వెతకండి"
+    "button": "వెతకండి",
+    "popularTitle": "ప్రసిద్ధ శోధనలు",
+    "popularAriaLabel": "ప్రసిద్ధ శోధనలు"
   },
   "shopCategoryMenu": {
     "ariaLabel": "షాప్ వర్గాలు",
     "loading": "వర్గాలు లోడ్ అవుతున్నాయి...",
-    "all": "అన్నీ"
+    "all": "అన్నీ",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "షాప్ వర్గాల నావిగేషన్",
@@ -1303,7 +1307,9 @@
       "loading": "ఉత్పత్తులు లోడ్ అవుతున్నాయి...",
       "empty": {
         "title": "ఇంకా ఉత్పత్తులు అందుబాటులో లేవు.",
-        "description": "Tanzanite ప్లగిన్ ద్వారా ఉత్పత్తులు ప్రచురించబడిన తర్వాత అవి ఇక్కడ స్వయంచాలకంగా కనిపిస్తాయి."
+        "description": "Tanzanite ప్లగిన్ ద్వారా ఉత్పత్తులు ప్రచురించబడిన తర్వాత అవి ఇక్కడ స్వయంచాలకంగా కనిపిస్తాయి.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

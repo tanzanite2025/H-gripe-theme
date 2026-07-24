@@ -1,5 +1,6 @@
 {
   "ariaLabel": "หมวดหมู่ร้านค้า",
   "loading": "กำลังโหลดหมวดหมู่...",
-  "all": "ทั้งหมด"
+  "all": "ทั้งหมด",
+  "empty": "No shop categories are available yet."
 }

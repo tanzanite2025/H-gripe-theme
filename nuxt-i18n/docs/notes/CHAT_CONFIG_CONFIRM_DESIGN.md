@@ -17,19 +17,14 @@
 - Products Tab 下方区域将主要用于工具按钮 & 功能说明，而不是冗余的结果列表。
 
 
-## 2. 当前架构概览（2025-12 DEV 状态）
+## 2. 当前架构概览（2026-07-24 DEV 状态）
 
 ### 2.1 Products Tab（share）区域
 
-- 移动端：
+- 移动端和桌面端：
   - 搜索输入框 + `Search` 按钮。
   - 一行 `History / Cart / Wishlist` 按钮。
-  - `v-if="!productDrawerVisible"` 时，在 Tab 内部渲染一个按 `searchResults` 的列表（计划后续移除）。
-
-- 桌面端：
-  - 搜索输入框 + `Search` 按钮。
-  - 一行 `History / Cart / Wishlist` 按钮。
-  - `v-if="searchResults.length > 0 && !productDrawerVisible"` 时，渲染结果网格（同样计划后续移除）。
+  - Products Tab 不再渲染第二份结果列表；结果统一进入 `WhatsAppProductSearchResultDrawer`。
 
 ### 2.2 搜索结果弹窗：`WhatsAppProductSearchResultDrawer`
 
@@ -271,18 +266,16 @@ interface ProductConfigSelection {
   - 允许用户再次发送配置确认卡片给客服。
 
 
-## 5. Products Tab 自身的简化（后续小优化）
+## 5. Products Tab 自身的简化（已完成）
 
-> 这部分是对现有 UI 的整理，不属于 5 的核心功能，但与信息架构有关。
+> 这部分是对现有 UI 的整理，不属于配置确认核心功能，但与信息架构有关。
 
-- 去除 / 精简 Products Tab 内部 `!productDrawerVisible` 时展示的搜索结果列表：
-  - 移动端：`v-if="!productDrawerVisible"` 的列表块。
-  - 桌面端：`searchResults.length > 0 && !productDrawerVisible` 的网格块。
-- 这样可以让 Products Tab 下方区域专注于：
+- 已去除 Products Tab 内部的重复搜索结果列表，搜索结果唯一展示源为 `WhatsAppProductSearchResultDrawer`。
+- Products Tab 下方区域现在专注于：
   - 搜索输入 + 工具按钮（History / Cart / Wishlist / 未来的 Member 等）。
   - 产品相关说明 / 功能入口（例如：提示用户可以在结果弹窗中使用“和客服确认配置”）。
 
-该整理并非必须在 Phase 1 同步完成，但设计上默认后续会朝“只保留弹窗视图”的方向收敛。
+该整理已完成；后续新增商品搜索交互必须继续复用抽屉，不要在 Products Tab 内重新渲染结果卡片。
 
 
 ## 6. 待办清单（实现用 Checklist）
@@ -296,6 +289,7 @@ interface ProductConfigSelection {
   - [x] 主体：商品基础信息 + 占位说明文案。
   - [x] 底部：占位主按钮（目前禁用显示“即将上线”提示）。
 - [x] 关闭弹窗时重置 `viewMode` 和 `selectedConfigProduct`。
+- [x] 删除 Products Tab 内重复搜索结果视图，保留抽屉作为唯一结果展示源。
 
 ### Phase 2：内容 & 发送
 

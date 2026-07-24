@@ -282,12 +282,13 @@
 
 ### Step 5：Inner tube Tab 集成 CTA 按钮
 
-- 在 `sizecharts.vue` 的 Inner tube section 中：
+- 在 `tireguides.vue` 的 Inner tube section 中：
   - ✅ 已实现：在 `Inner tube` 标题下方添加了一个居中的 CTA 按钮；
   - ✅ 已实现：按钮点击时调用 `useShopSearchSheet().open({ presetCategorySlug: 'inner-tube', presetKeywords: ['Inner tube'] })` 打开现有的高级搜索 Bottom Sheet：
     - 在全局 state 中记录入口预设分类 slug；
     - 在高级搜索面板的热门搜索 TAB 区域中，自动勾选 `Inner tube` chip（与 `Carbon rim` / `Sapim` 等热门入口合并为同一组）；
-  - TODO（可选增强）：在 `/shop` 页面或搜索面板内消费 `presetCategorySlug`，将 `inner-tube` slug 映射为具体分类 ID，并自动应用到搜索过滤条件中；同时在 ProductSearchPanel 中根据不同 chip 的配置，将 `Inner tube` 等入口 chip 转换为更精确的分类 / tube_* 过滤条件。
+  - ✅ 已实现：`/shop` 页面会消费 `presetCategorySlug`，将 `inner-tube` 这类 slug 映射为当前 `useShopCategories()` 返回的商品类型，并自动应用到 `selectedCategory`。
+  - TODO（可选增强）：在 ProductSearchPanel 中根据不同 chip 的配置，将 `Inner tube` 等入口 chip 转换为更精确的 `tube_execution` / `tube_valve_*` 过滤条件。目前不是 blocker，当前已能先通过商品类型 slug 收窄到内胎分类。
 
 > 关于 slug / 分类稳定性的约定：
 >

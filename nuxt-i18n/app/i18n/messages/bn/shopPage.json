@@ -4,7 +4,9 @@
     "loading": "পণ্য লোড হচ্ছে...",
     "empty": {
       "title": "এখনও কোনো পণ্য উপলভ্য নেই।",
-      "description": "Tanzanite প্লাগইনের মাধ্যমে পণ্য প্রকাশিত হলে সেগুলো এখানে স্বয়ংক্রিয়ভাবে দেখা যাবে।"
+      "description": "Tanzanite প্লাগইনের মাধ্যমে পণ্য প্রকাশিত হলে সেগুলো এখানে স্বয়ংক্রিয়ভাবে দেখা যাবে।",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

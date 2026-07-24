@@ -4,7 +4,9 @@
     "loading": "Inapakia bidhaa...",
     "empty": {
       "title": "Hakuna bidhaa zinazopatikana bado.",
-      "description": "Bidhaa zikichapishwa kupitia programu-jalizi ya Tanzanite, zitaonekana hapa kiotomatiki."
+      "description": "Bidhaa zikichapishwa kupitia programu-jalizi ya Tanzanite, zitaonekana hapa kiotomatiki.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

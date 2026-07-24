@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Kaupan kategoriat",
   "loading": "Ladataan kategorioita...",
-  "all": "Kaikki"
+  "all": "Kaikki",
+  "empty": "No shop categories are available yet."
 }

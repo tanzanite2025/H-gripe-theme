@@ -1,5 +1,6 @@
 {
   "ariaLabel": "فئات المتجر",
   "loading": "جارٍ تحميل الفئات...",
-  "all": "الكل"
+  "all": "الكل",
+  "empty": "No shop categories are available yet."
 }

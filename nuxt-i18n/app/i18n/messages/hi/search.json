@@ -1,4 +1,6 @@
 {
   "placeholder": "खोजें...",
-  "button": "खोजें"
+  "button": "खोजें",
+  "popularTitle": "लोकप्रिय खोजें",
+  "popularAriaLabel": "लोकप्रिय खोजें"
 }

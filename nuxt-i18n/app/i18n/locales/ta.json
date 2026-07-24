@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "தேடுக...",
-    "button": "தேடுக"
+    "button": "தேடுக",
+    "popularTitle": "பிரபலமான தேடல்கள்",
+    "popularAriaLabel": "பிரபலமான தேடல்கள்"
   },
   "shopCategoryMenu": {
     "ariaLabel": "கடை வகைகள்",
     "loading": "வகைகள் ஏற்றப்படுகின்றன...",
-    "all": "அனைத்தும்"
+    "all": "அனைத்தும்",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "கடை வகை வழிசெலுத்தல்",
@@ -1303,7 +1307,9 @@
       "loading": "தயாரிப்புகள் ஏற்றப்படுகின்றன...",
       "empty": {
         "title": "இன்னும் தயாரிப்புகள் கிடைக்கவில்லை.",
-        "description": "Tanzanite செருகுநிரல் மூலம் தயாரிப்புகள் வெளியிடப்பட்டதும், அவை இங்கே தானாக தோன்றும்."
+        "description": "Tanzanite செருகுநிரல் மூலம் தயாரிப்புகள் வெளியிடப்பட்டதும், அவை இங்கே தானாக தோன்றும்.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "खोजें...",
-    "button": "खोजें"
+    "button": "खोजें",
+    "popularTitle": "लोकप्रिय खोजें",
+    "popularAriaLabel": "लोकप्रिय खोजें"
   },
   "shopCategoryMenu": {
     "ariaLabel": "दुकान श्रेणियाँ",
     "loading": "श्रेणियाँ लोड हो रही हैं...",
-    "all": "सभी"
+    "all": "सभी",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "दुकान श्रेणी नेविगेशन",
@@ -1303,7 +1307,9 @@
       "loading": "उत्पाद लोड हो रहे हैं...",
       "empty": {
         "title": "अभी कोई उत्पाद उपलब्ध नहीं है।",
-        "description": "Tanzanite प्लगइन से उत्पाद प्रकाशित होने पर वे यहाँ अपने आप दिखाई देंगे।"
+        "description": "Tanzanite प्लगइन से उत्पाद प्रकाशित होने पर वे यहाँ अपने आप दिखाई देंगे।",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

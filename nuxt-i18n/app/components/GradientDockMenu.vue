@@ -9,7 +9,7 @@
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
-        <Icon name="lucide:menu" class="w-10 h-10 md:w-12 md:h-12 transition-all" />
+        <Icon name="lucide:menu" class="w-8 h-8 md:w-10 md:h-10 transition-all" />
       </button>
 
       <!-- 2. Chat -->
@@ -21,7 +21,7 @@
         @click="toggleChatFromDock()" 
         :aria-label="$t('dockMenu.chat')"
       >
-        <span class="relative inline-flex h-10 w-10 md:h-12 md:w-12 items-center justify-center">
+        <span class="relative inline-flex h-8 w-8 md:h-10 md:w-10 items-center justify-center">
           <Icon name="lucide:message-circle" class="w-full h-full transition-all" />
           <!-- Unread Badge -->
           <span
@@ -33,7 +33,7 @@
 
       <!-- 3. Checkout (Main Action) -->
       <button 
-        class="h-10 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center border border-black shadow-[3px_3px_2px_rgba(0,0,0,0.95)] hover:shadow-[4px_4px_3px_rgba(0,0,0,1)] transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
+        class="h-10 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-white text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center border border-white/80 shadow-[3px_3px_2px_rgba(0,0,0,0.85)] hover:bg-white/95 hover:shadow-[4px_4px_3px_rgba(0,0,0,0.95)] transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
         @click="openCheckoutFromDock"
       >
         <span>{{ priceDisplay }}</span>
@@ -47,7 +47,7 @@
         :aria-expanded="quickOpen" 
         :aria-label="$t('dockMenu.quickBuy')"
       >
-        <Icon name="lucide:zap" class="w-10 h-10 md:w-12 md:h-12 transition-all" />
+        <Icon name="lucide:zap" class="w-8 h-8 md:w-10 md:h-10 transition-all" />
       </button>
 
       <!-- 5. Cart -->
@@ -56,7 +56,7 @@
         @click="openCartDrawer" 
         :aria-label="$t('dockMenu.openCart')"
       >
-        <Icon name="lucide:shopping-cart" class="w-10 h-10 md:w-12 md:h-12 transition-all" />
+        <Icon name="lucide:shopping-cart" class="w-8 h-8 md:w-10 md:h-10 transition-all" />
       </button>
 
       <!-- 6. Saved (Wishlist) -->
@@ -65,7 +65,7 @@
         @click="openWishlist" 
         :aria-label="$t('dockMenu.openWishlist')"
       >
-        <span class="relative inline-flex h-10 w-10 md:h-12 md:w-12 items-center justify-center">
+        <span class="relative inline-flex h-8 w-8 md:h-10 md:w-10 items-center justify-center">
           <Icon name="lucide:heart" class="w-full h-full transition-all" />
           <span
             v-if="wishlistCount > 0"

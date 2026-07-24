@@ -4,7 +4,9 @@
     "loading": "Ürünler yükleniyor...",
     "empty": {
       "title": "Henüz kullanılabilir ürün yok.",
-      "description": "Ürünler Tanzanite eklentisiyle yayınlandığında burada otomatik olarak görünecek."
+      "description": "Ürünler Tanzanite eklentisiyle yayınlandığında burada otomatik olarak görünecek.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

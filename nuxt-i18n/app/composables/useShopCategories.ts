@@ -9,6 +9,15 @@ export interface ShopCategory {
   isProductType?: boolean
 }
 
+export type ShopCategorySource = 'api' | 'empty' | 'error' | 'dev-fallback'
+
+const fallbackCategories: ShopCategory[] = [
+  { id: 1, slug: 'rims', name: 'Rims' },
+  { id: 2, slug: 'hubs', name: 'Hubs' },
+  { id: 3, slug: 'spokes', name: 'Spokes' },
+  { id: 4, slug: 'accessories', name: 'Accessories' },
+]
+
 const extractProductTypes = (payload: unknown): ShopCategory[] => {
   let current = payload
 
@@ -40,14 +49,19 @@ export const useShopCategories = () => {
   const categories = ref<ShopCategory[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const source = ref<ShopCategorySource>('empty')
 
-  // 开发环境兜底：当后端分类接口尚未就绪时，提供一组示例分类，保证 UI 能正常工作
-  const fallbackCategories: ShopCategory[] = [
-    { id: 1, slug: 'rims', name: 'Rims' },
-    { id: 2, slug: 'hubs', name: 'Hubs' },
-    { id: 3, slug: 'spokes', name: 'Spokes' },
-    { id: 4, slug: 'accessories', name: 'Accessories' },
-  ]
+  const applyDevFallback = (reason: string) => {
+    // 仅本地开发兜底：生产环境必须暴露真实空分类或接口错误，避免示例分类污染商品事实源。
+    if (!import.meta.dev) return false
+
+    // eslint-disable-next-line no-console
+    console.warn(`[shop categories] using development fallback: ${reason}`)
+    categories.value = fallbackCategories
+    source.value = 'dev-fallback'
+    error.value = null
+    return true
+  }
 
   const loadCategories = async () => {
     if (loading.value) return
@@ -58,12 +72,26 @@ export const useShopCategories = () => {
     try {
       const response = await $fetch<unknown>(`${baseURL}/products/types`)
       const productTypes = extractProductTypes(response)
-      categories.value = productTypes.length ? productTypes : fallbackCategories
+      if (productTypes.length) {
+        categories.value = productTypes
+        source.value = 'api'
+        return
+      }
+
+      if (applyDevFallback('API returned no enabled product types')) return
+
+      categories.value = []
+      source.value = 'empty'
     } catch (e: any) {
       // eslint-disable-next-line no-console
       console.error('Failed to load shop categories:', e)
-      error.value = e?.data?.message || e?.message || 'Failed to load categories.'
-      categories.value = fallbackCategories
+      const message = e?.data?.message || e?.message || 'Failed to load categories.'
+
+      if (applyDevFallback(message)) return
+
+      error.value = message
+      categories.value = []
+      source.value = 'error'
     } finally {
       loading.value = false
     }
@@ -73,6 +101,7 @@ export const useShopCategories = () => {
     categories,
     loading,
     error,
+    source,
     loadCategories,
   }
 }

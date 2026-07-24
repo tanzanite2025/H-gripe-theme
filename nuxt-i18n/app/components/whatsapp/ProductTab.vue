@@ -68,26 +68,8 @@
       </div>
     </div>
 
-    <!-- 结果列表 -->
-    <div v-if="!productDrawerVisible" class="flex-1 overflow-y-auto px-1 md:p-6 md:pt-0 pb-3">
-      <div v-if="searchResults.length > 0" class="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3">
-        <div
-          v-for="product in searchResults"
-          :key="product.id"
-          @click="$emit('shareProduct', product)"
-          class="border border-white/10 rounded-2xl md:rounded-lg p-3 bg-black/30 hover:bg-white/[0.05] cursor-pointer transition-colors"
-        >
-          <img
-            v-if="product.thumbnail"
-            :src="product.thumbnail"
-            alt="Product"
-            class="w-full h-28 md:h-32 object-cover rounded-xl md:rounded-lg mb-2"
-          />
-          <h4 class="text-white text-sm font-semibold md:font-medium truncate">{{ product.title }}</h4>
-          <p v-if="product.price" class="tz-text-secondary text-xs mt-1">{{ product.price }}</p>
-        </div>
-      </div>
-    </div>
+    <!-- 搜索结果统一由 WhatsAppProductSearchResultDrawer 展示，避免 Tab 内重复渲染 -->
+    <div class="flex-1" aria-hidden="true" />
   </div>
 </template>
 
@@ -95,8 +77,6 @@
 defineProps<{
   searchQuery: string
   isSearching: boolean
-  searchResults: any[]
-  productDrawerVisible: boolean
   currentThemeColor: string
 }>()
 

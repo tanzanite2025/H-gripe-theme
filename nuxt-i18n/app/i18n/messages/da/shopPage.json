@@ -4,7 +4,9 @@
     "loading": "Indlæser produkter...",
     "empty": {
       "title": "Der er endnu ingen produkter tilgængelige.",
-      "description": "Når produkter udgives via Tanzanite-pluginet, vises de automatisk her."
+      "description": "Når produkter udgives via Tanzanite-pluginet, vises de automatisk her.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

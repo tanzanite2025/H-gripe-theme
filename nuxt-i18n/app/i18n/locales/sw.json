@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Tafuta...",
-    "button": "Tafuta"
+    "button": "Tafuta",
+    "popularTitle": "Utafutaji maarufu",
+    "popularAriaLabel": "Utafutaji maarufu"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Kategoria za duka",
     "loading": "Inapakia kategoria...",
-    "all": "Zote"
+    "all": "Zote",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Urambazaji wa kategoria za duka",
@@ -1303,7 +1307,9 @@
       "loading": "Inapakia bidhaa...",
       "empty": {
         "title": "Hakuna bidhaa zinazopatikana bado.",
-        "description": "Bidhaa zikichapishwa kupitia programu-jalizi ya Tanzanite, zitaonekana hapa kiotomatiki."
+        "description": "Bidhaa zikichapishwa kupitia programu-jalizi ya Tanzanite, zitaonekana hapa kiotomatiki.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

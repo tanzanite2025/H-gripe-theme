@@ -1,4 +1,6 @@
 {
   "placeholder": "لټون...",
-  "button": "لټون"
+  "button": "لټون",
+  "popularTitle": "مشهورې پلټنې",
+  "popularAriaLabel": "مشهورې پلټنې"
 }

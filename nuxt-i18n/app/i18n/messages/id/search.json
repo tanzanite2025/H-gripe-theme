@@ -1,4 +1,6 @@
 {
   "placeholder": "Cari...",
-  "button": "Cari"
+  "button": "Cari",
+  "popularTitle": "Pencarian populer",
+  "popularAriaLabel": "Pencarian populer"
 }

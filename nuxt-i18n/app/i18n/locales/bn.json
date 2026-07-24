@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "অনুসন্ধান...",
-    "button": "অনুসন্ধান"
+    "button": "অনুসন্ধান",
+    "popularTitle": "জনপ্রিয় অনুসন্ধান",
+    "popularAriaLabel": "জনপ্রিয় অনুসন্ধান"
   },
   "shopCategoryMenu": {
     "ariaLabel": "দোকানের বিভাগ",
     "loading": "বিভাগ লোড হচ্ছে...",
-    "all": "সব"
+    "all": "সব",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "দোকানের বিভাগ নেভিগেশন",
@@ -1303,7 +1307,9 @@
       "loading": "পণ্য লোড হচ্ছে...",
       "empty": {
         "title": "এখনও কোনো পণ্য উপলভ্য নেই।",
-        "description": "Tanzanite প্লাগইনের মাধ্যমে পণ্য প্রকাশিত হলে সেগুলো এখানে স্বয়ংক্রিয়ভাবে দেখা যাবে।"
+        "description": "Tanzanite প্লাগইনের মাধ্যমে পণ্য প্রকাশিত হলে সেগুলো এখানে স্বয়ংক্রিয়ভাবে দেখা যাবে।",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

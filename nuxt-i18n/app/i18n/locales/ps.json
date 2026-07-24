@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "لټون...",
-    "button": "لټون"
+    "button": "لټون",
+    "popularTitle": "مشهورې پلټنې",
+    "popularAriaLabel": "مشهورې پلټنې"
   },
   "shopCategoryMenu": {
     "ariaLabel": "د پلورنځي کټګورۍ",
     "loading": "کټګورۍ پورته کېږي...",
-    "all": "ټول"
+    "all": "ټول",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "د پلورنځي د کټګوریو تګ راتګ",
@@ -1303,7 +1307,9 @@
       "loading": "محصولات پورته کېږي...",
       "empty": {
         "title": "تر اوسه محصولات شتون نه لري.",
-        "description": "کله چې محصولات د Tanzanite پلګین له لارې خپاره شي، دلته به په اوتومات ډول ښکاره شي."
+        "description": "کله چې محصولات د Tanzanite پلګین له لارې خپاره شي، دلته به په اوتومات ډول ښکاره شي.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

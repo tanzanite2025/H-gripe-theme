@@ -1,4 +1,6 @@
 {
   "placeholder": "검색...",
-  "button": "검색"
+  "button": "검색",
+  "popularTitle": "인기 검색",
+  "popularAriaLabel": "인기 검색"
 }

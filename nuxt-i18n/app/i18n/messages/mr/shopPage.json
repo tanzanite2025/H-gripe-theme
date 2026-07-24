@@ -4,7 +4,9 @@
     "loading": "उत्पादने लोड होत आहेत...",
     "empty": {
       "title": "अजून कोणतीही उत्पादने उपलब्ध नाहीत.",
-      "description": "Tanzanite प्लगइनद्वारे उत्पादने प्रकाशित झाल्यावर ती येथे आपोआप दिसतील."
+      "description": "Tanzanite प्लगइनद्वारे उत्पादने प्रकाशित झाल्यावर ती येथे आपोआप दिसतील.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

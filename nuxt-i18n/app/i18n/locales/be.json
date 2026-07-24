@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Пошук...",
-    "button": "Пошук"
+    "button": "Пошук",
+    "popularTitle": "Папулярныя пошукі",
+    "popularAriaLabel": "Папулярныя пошукі"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Катэгорыі крамы",
     "loading": "Загрузка катэгорый...",
-    "all": "Усе"
+    "all": "Усе",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Навігацыя па катэгорыях крамы",
@@ -1303,7 +1307,9 @@
       "loading": "Загрузка тавараў...",
       "empty": {
         "title": "Тавары пакуль недаступныя.",
-        "description": "Калі тавары будуць апублікаваны праз убудову Tanzanite, яны аўтаматычна з’явяцца тут."
+        "description": "Калі тавары будуць апублікаваны праз убудову Tanzanite, яны аўтаматычна з’явяцца тут.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

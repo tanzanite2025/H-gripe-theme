@@ -1,5 +1,6 @@
 {
   "ariaLabel": "ショップカテゴリ",
   "loading": "カテゴリを読み込み中...",
-  "all": "すべて"
+  "all": "すべて",
+  "empty": "No shop categories are available yet."
 }

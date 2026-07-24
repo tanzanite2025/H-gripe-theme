@@ -1,5 +1,6 @@
 {
   "ariaLabel": "दुकान श्रेणी",
   "loading": "श्रेणी लोड होत आहेत...",
-  "all": "सर्व"
+  "all": "सर्व",
+  "empty": "No shop categories are available yet."
 }

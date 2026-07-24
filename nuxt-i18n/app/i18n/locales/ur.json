@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "تلاش کریں...",
-    "button": "تلاش کریں"
+    "button": "تلاش کریں",
+    "popularTitle": "مقبول تلاشیں",
+    "popularAriaLabel": "مقبول تلاشیں"
   },
   "shopCategoryMenu": {
     "ariaLabel": "دکان کی اقسام",
     "loading": "اقسام لوڈ ہو رہی ہیں...",
-    "all": "سب"
+    "all": "سب",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "دکان کی اقسام کی نیویگیشن",
@@ -1303,7 +1307,9 @@
       "loading": "مصنوعات لوڈ ہو رہی ہیں...",
       "empty": {
         "title": "ابھی کوئی مصنوعات دستیاب نہیں ہیں۔",
-        "description": "جب مصنوعات Tanzanite پلگ ان کے ذریعے شائع ہوں گی تو وہ خود بخود یہاں ظاہر ہوں گی۔"
+        "description": "جب مصنوعات Tanzanite پلگ ان کے ذریعے شائع ہوں گی تو وہ خود بخود یہاں ظاہر ہوں گی۔",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

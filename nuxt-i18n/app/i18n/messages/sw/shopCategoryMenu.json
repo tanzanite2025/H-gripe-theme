@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Kategoria za duka",
   "loading": "Inapakia kategoria...",
-  "all": "Zote"
+  "all": "Zote",
+  "empty": "No shop categories are available yet."
 }

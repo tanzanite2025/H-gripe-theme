@@ -75,8 +75,12 @@ func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByO
 
 // CreateWarrantyClaim 创建保修申请
 func (s *RegistrationService) CreateWarrantyClaim(claim *registration.WarrantyClaim, userID uint) error {
+	if claim.RegistrationID == nil || *claim.RegistrationID == 0 {
+		return errors.New("registration is required")
+	}
+
 	// 验证注册记录
-	reg, err := s.registrationRepo.FindRegistrationByID(claim.RegistrationID)
+	reg, err := s.registrationRepo.FindRegistrationByID(*claim.RegistrationID)
 	if err != nil {
 		return errors.New("registration not found")
 	}

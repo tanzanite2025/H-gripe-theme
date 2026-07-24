@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Sök...",
-    "button": "Sök"
+    "button": "Sök",
+    "popularTitle": "Populära sökningar",
+    "popularAriaLabel": "Populära sökningar"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Butikskategorier",
     "loading": "Läser in kategorier...",
-    "all": "Alla"
+    "all": "Alla",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Navigering för butikskategorier",
@@ -1303,7 +1307,9 @@
       "loading": "Läser in produkter...",
       "empty": {
         "title": "Inga produkter finns tillgängliga ännu.",
-        "description": "När produkter publiceras via Tanzanite-pluginen visas de automatiskt här."
+        "description": "När produkter publiceras via Tanzanite-pluginen visas de automatiskt här.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

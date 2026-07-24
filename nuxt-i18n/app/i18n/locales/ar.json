@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1302,12 +1303,15 @@
   },
   "search": {
     "placeholder": "بحث...",
-    "button": "بحث"
+    "button": "بحث",
+    "popularTitle": "عمليات البحث الشائعة",
+    "popularAriaLabel": "عمليات البحث الشائعة"
   },
   "shopCategoryMenu": {
     "ariaLabel": "فئات المتجر",
     "loading": "جارٍ تحميل الفئات...",
-    "all": "الكل"
+    "all": "الكل",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "تنقل فئات المتجر",
@@ -1315,7 +1319,9 @@
       "loading": "جارٍ تحميل المنتجات...",
       "empty": {
         "title": "لا توجد منتجات متاحة بعد.",
-        "description": "عند نشر المنتجات عبر إضافة Tanzanite، ستظهر هنا تلقائيًا."
+        "description": "عند نشر المنتجات عبر إضافة Tanzanite، ستظهر هنا تلقائيًا.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

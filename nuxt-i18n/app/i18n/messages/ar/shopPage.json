@@ -4,7 +4,9 @@
     "loading": "جارٍ تحميل المنتجات...",
     "empty": {
       "title": "لا توجد منتجات متاحة بعد.",
-      "description": "عند نشر المنتجات عبر إضافة Tanzanite، ستظهر هنا تلقائيًا."
+      "description": "عند نشر المنتجات عبر إضافة Tanzanite، ستظهر هنا تلقائيًا.",
+      "categoryTitle": "No products are available in {category} yet.",
+      "categoryDescription": "Try another category or clear the category filter to view all products."
     }
   },
   "actions": {

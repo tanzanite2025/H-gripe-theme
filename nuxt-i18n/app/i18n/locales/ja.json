@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1308,12 +1309,15 @@
   },
   "search": {
     "placeholder": "検索...",
-    "button": "検索"
+    "button": "検索",
+    "popularTitle": "人気の検索",
+    "popularAriaLabel": "人気の検索"
   },
   "shopCategoryMenu": {
     "ariaLabel": "ショップカテゴリ",
     "loading": "カテゴリを読み込み中...",
-    "all": "すべて"
+    "all": "すべて",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "ショップカテゴリナビゲーション",
@@ -1321,7 +1325,9 @@
       "loading": "商品を読み込み中...",
       "empty": {
         "title": "利用可能な商品はまだありません。",
-        "description": "Tanzanite プラグインで商品が公開されると、ここに自動的に表示されます。"
+        "description": "Tanzanite プラグインで商品が公開されると、ここに自動的に表示されます。",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

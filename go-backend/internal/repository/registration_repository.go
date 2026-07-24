@@ -227,15 +227,10 @@ func (r *RegistrationRepository) UpdateWarrantyClaim(claim *registration.Warrant
 
 // UpdateWarrantyClaimStatus 更新保修申请状态
 func (r *RegistrationRepository) UpdateWarrantyClaimStatus(id uint, status string) error {
+	now := time.Now()
 	updates := map[string]interface{}{
-		"status": status,
-	}
-
-	switch status {
-	case "approved":
-		updates["approved_at"] = time.Now()
-	case "completed":
-		updates["completed_at"] = time.Now()
+		"status":       status,
+		"processed_at": &now,
 	}
 
 	return r.db.Model(&registration.WarrantyClaim{}).Where("id = ?", id).Updates(updates).Error

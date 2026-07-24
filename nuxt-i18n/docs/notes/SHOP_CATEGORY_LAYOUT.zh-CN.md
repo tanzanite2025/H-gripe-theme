@@ -1,229 +1,89 @@
-# /shop 商品分类布局设计
+# /shop 商品分类布局现状与维护边界
 
-## 一、目标
+Last updated: 2026-07-24
 
-希望在 `/shop` 页面上，以可维护、可复用的方式展示「商品分类」，满足：
+本文档是 `/shop` 页面分类导航的当前事实源。旧版 WordPress / Tanzanite Setting 插件方案已不再作为当前实现依据；如果需要追溯历史，请看 `nuxt-i18n/docs/archive/`。
 
-- **桌面端**：商品网格左侧有清晰的分类导航，方便快速按类别浏览（例如 Rims、Hubs、Spokes 等）。
-- **移动端**：提供轻量级的分类选择入口，不明显增加页面高度。
-- **桌面 & 移动端**：共用同一份分类数据和选中状态，避免两套逻辑各自维护、容易出错。
+## 1. 当前目标
 
-本文档作为实现与后续维护的设计说明，方便以后改 UI 时不误删、误改分类功能。
+`/shop` 页面现在采用“商品列表 + 左侧本地分类菜单”的结构：
 
----
+- 桌面端：分类菜单紧贴页面左侧视觉中心，用本地组件渲染，不引入外部依赖。
+- 移动端：使用同一份分类数据渲染 chips，居中换行，避免贴边和单行拥挤。
+- 桌面端与移动端共用 `selectedCategory`，保证状态唯一，不维护两套分类逻辑。
+- 分类只作为 `/shop` 页面自己的入口能力，不影响顶部 mega menu 的层级归属。
 
-## 二、数据模型（Data Model）
+## 2. 当前事实源
 
-- 数据来源：
-  - **核心来源是自建商城插件 Tanzanite Setting**：插件在工作区 `tanzanite-theme/wp-plugin/tanzanite-setting` 中，定义了自定义商品类型 `tanz_product`，并通过 REST 命名空间 `tanzanite/v1` 暴露所有自建商城的数据（例如 `GET /wp-json/tanzanite/v1/products`，已支持整型 `category` 参数按分类 ID 过滤）。
-  - 如果需要更细的商品类型分类（如 `Rims`、`Hubs`、`Spokes`），可以：
-    - 在插件里继续使用 / 扩展商品分类（taxonomy），并单独提供一个「商品分类列表」接口；
-    - 或者复用插件现有的 Attributes 体系（`tanzanite/v1/attributes`、`tanzanite/v1/attributes/filterable`），通过某个专用 Attribute Group 来表示「商品类型」。
+### 后端
 
-- 前端数据结构（示例 TypeScript 结构）：
+当前分类来源是 Go backend 的商品类型接口：
 
-  ```ts
-  interface ShopCategory {
-    id: number
-    slug: string
-    name: string
-    count?: number
-  }
-  ```
+- `GET /api/v1/products/types`
+- Go handler：`go-backend/internal/api/v1/product/handler.go` 的 `ListProductTypes`
+- 路由注册：`go-backend/internal/api/v1/router.go`
 
-- 在 `/shop` 页面维护的状态：
+商品列表过滤使用：
 
-  ```ts
-  const selectedCategory = ref<ShopCategory | null>(null) // null 表示“全部”
-  const categories = ref<ShopCategory[]>([])
-  ```
+- `GET /api/v1/products?...&product_type=<slug>`
 
-- 与现有搜索参数的集成：
-  - 在 `ProductSearchFiltersPayload` 或请求参数中，增加 `category`（或 `categories`）字段。
-  - 点击某个分类时，复用当前的 `handleSearch` / `loadProducts` 流程，只是在 payload 里带上选中的分类信息。
+也就是说，前端长期应该依赖稳定的 `slug`，而不是把分类 ID 当作跨系统事实源。
 
----
+### Nuxt 前端
 
-## 三、桌面端布局（Desktop Layout）
+主要文件：
 
-### 3.1 结构
+- `nuxt-i18n/app/composables/useShopCategories.ts`
+  - 拉取 `/products/types`
+  - 标准化为 `ShopCategory[]`
+  - fallback categories 只允许在 `import.meta.dev` 本地开发环境使用；生产环境必须展示真实空分类或接口错误
+- `nuxt-i18n/app/pages/shop/index.vue`
+  - 维护唯一的 `selectedCategory`
+  - 在 `buildProductQueryParams()` 中把 product type 分类写入 `product_type`
+  - 消费 `useShopSearchSheet()` 传来的 `presetCategorySlug`
+- `nuxt-i18n/app/components/shop/ShopCategoryVerticalMenu.vue`
+  - 桌面端纵向分类菜单
+- `nuxt-i18n/app/components/CategoryChips.vue`
+  - 移动端分类 chips
 
-在 `pages/shop.vue` 中，围绕当前商品列表区域外再包一层「两列布局」容器：
+## 3. 当前已收口
 
-- 左列：`CategorySidebar`，用于展示商品分类导航；
-- 右列：现有的商品网格区域。
+- 已有 `useShopCategories()` 统一分类数据加载。
+- 桌面端已改成本地纵向分类菜单，不依赖 `21st.dev` 外部组件。
+- 移动端已改成居中、可换行的 chips。
+- `/shop` 已有 `selectedCategory` 作为单一分类状态。
+- 商品请求已在 product type 分类选中时带上 `product_type=<slug>`。
+- Inner tube / search sheet 入口传来的 `presetCategorySlug` 已能映射到 `/shop` 分类。
+- 分类切换不会清空其它搜索关键词和筛选 payload。
+- `/shop` 分类 fallback 边界已收口：DEV 可用本地示例防止开发空白，生产不再把示例分类当事实源。
+- 桌面端分类菜单和移动端 chips 已有空分类/错误/加载状态；真实空分类不会只显示一个“All”。
+- 商品空状态已区分“全站暂无商品”和“当前分类暂无商品”。
 
-示意结构：
+## 4. 当前还没完全闭环
 
-```vue
-<section class="mt-6 flex gap-4">
-  <aside class="hidden md:block w-56">
-    <CategorySidebar
-      :categories="categories"
-      :selected="selectedCategory"
-      @select="onCategorySelect"
-    />
-  </aside>
+这些才是后续真正需要关注的点，不要再按旧 checklist 重做已经完成的组件。
 
-  <div class="flex-1">
-    <!-- 现有商品列表模块 -->
-  </div>
-</section>
-```
+1. 真实商品类型数据
+   - 需要确认生产/DEV 的 `/api/v1/products/types` 返回完整、启用、排序正确的数据。
+   - 如果后台商品模板或商品类型重置为单一事实源后字段名变化，需同步此接口和本文档。
 
-这里 `w-56` 只是一个参考宽度，实际可以根据 UI 效果在 220–260px 左右微调。
+2. 真实数据验收
+   - 当前代码已按真实接口空值处理，但还需要在 DEV / staging 上用真实 `/api/v1/products/types` 响应做一次截图或接口验收。
+   - 验收重点：只返回启用类型、按 `sort_order ASC, id ASC` 排序、slug 与商品列表过滤参数一致。
 
-### 3.2 CategorySidebar 行为
+3. 与高级筛选共存
+   - 分类、关键词、价格、属性筛选现在是合并查询。
+   - 后续如果新增更细的 tube / rim / frame 专项筛选，要继续保持 `selectedCategory + filters` 的组合方式，不要把分类逻辑复制进多个组件。
 
-- 展示一个**纵向分类列表**：
-  - 第一项：`All`（全部），表示 `selectedCategory = null`；
-  - 后续项：每个真实分类 `ShopCategory`。
-- 点击某一项时：
-  1. 更新 `selectedCategory`；
-  2. 基于当前 `currentSearch` 构造一个新的 `ProductSearchPayload`，附带分类过滤条件；
-  3. 调用 `handleSearch(payload)`，触发 `loadProducts` 重新加载商品。
-- 当前选中的分类需要有明显的视觉高亮，例如：
-  - 背景色加深；
-  - 左侧彩色边框；
-  - 加粗文字等。
-- 可选：展示数量，例如 `Rims (12)`，前提是后端返回了每个分类下商品数量。
-- 可选：给整个分类栏加 `position: sticky`，保证在长页面滚动时分类一直可见。
+4. i18n
+   - 分类名当前来自后端数据。
+   - 当前前端只翻译固定 UI 文案，不翻译动态分类名。
+   - 如果后端后续需要 34 语言分类名，应由 `/products/types` 按 locale 返回或返回明确的 localized map；不要在 Nuxt 静态语言包里手写商品类型事实源。
 
----
+## 5. 维护规则
 
-## 四、移动端布局（Mobile Layout）
-
-桌面端有独立的左侧分类栏，而在移动端不适合再增加一整列，因此采用更轻量的方案。
-
-### 4.1 推荐方式：横向滚动标签（chips）
-
-- 在商品网格上方增加一行**横向可滚动**的分类标签：
-
-```vue
-<div class="md:hidden mb-3 overflow-x-auto">
-  <CategoryChips
-    :categories="categories"
-    :selected="selectedCategory"
-    @select="onCategorySelect"
-  />
-</div>
-```
-
-- `CategoryChips` 渲染标签，例如：
-  - `[All] [Rims] [Hubs] [Spokes] [Accessories] ...`
-- 行为：
-  - 使用与桌面端相同的 `onCategorySelect` 处理函数，共享逻辑；
-  - 标签样式可以使用 Tailwind 工具类，例如：
-    - `whitespace-nowrap`、`space-x-2`、`px-3 py-1`、`rounded-full` 等。
-- 优点：
-  - 只占一行高度，横向滑动即可查看更多分类；
-  - 不会把移动端页面拉得过长，但仍然可以快速切换分类。
-
-### 4.2 备选方式（如分类非常多时）
-
-- 使用一个 `Categories` 按钮，点击后弹出一个小面板 / bottom sheet 展示全部分类列表；
-- 选择分类后自动关闭面板，同时触发同样的 `onCategorySelect` 逻辑。
-
-目前设计优先采用 **横向 chips** 方案，仅当分类数量非常多或文字过长时，再考虑切换到折叠面板形式。
-
----
-
-## 五、共用行为与逻辑（Shared Behavior & Logic）
-
-为避免重复实现逻辑，建议抽象一个 composable：`useShopCategories`。
-
-```ts
-export const useShopCategories = () => {
-  const categories = ref<ShopCategory[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-
-  const loadCategories = async () => {
-    // 从 Tanzanite Setting 插件提供的 REST 接口获取分类数据。
-    // 推荐由后端在 tanzanite/v1 命名空间下提供一个明确的「商品分类列表」接口，
-    // 便于前端一次性拉取所有可选分类用于 Sidebar / chips 展示。
-    // 当前已经有商品列表接口 /wp-json/tanzanite/v1/products 可接收 category 参数做分类筛选，
-    // 分类本身的列表可以通过：
-    // - 新增 categories Controller，或
-    // - 直接暴露自定义 taxonomy 对应的 REST 端点（如 tanz_product 的分类）。
-    // DEV 环境依然可以先用本地 mock 数据兜底。
-  }
-
-  return { categories, loading, error, loadCategories }
-}
-```
-
-在 `/shop` 页中：
-
-- 在 `onMounted` 中调用 `loadCategories()`；
-- 在页面级别维护唯一的 `selectedCategory`；
-- 将 `categories` 与 `selectedCategory` 同时传入：
-  - 桌面端的 `CategorySidebar`；
-  - 移动端的 `CategoryChips`。
-
-统一的分类选择处理函数示例：
-
-```ts
-const onCategorySelect = (category: ShopCategory | null) => {
-  selectedCategory.value = category
-
-  const base = currentSearch.value || { query: '', filters: { priceRange: [0, 5000], attributes: {} } }
-
-  const next: ProductSearchPayload = {
-    ...base,
-    filters: {
-      ...base.filters,
-      // 根据后端约定挂载分类过滤字段
-      // 例如: category: category?.slug ?? undefined
-    },
-  }
-
-  handleSearch(next)
-}
-```
-
----
-
-## 六、后端请求参数（Request Parameters）
-
-需要与后端确认分类在商品接口中的最终表现形式，目前已知与规划如下：
-
-- **方案 A：单独的分类字段（当前 Products 接口已经支持）**
-  - 在 `Tanzanite_REST_Products_Controller` 中，`GET /wp-json/tanzanite/v1/products` 已读取整型的 `category` 参数：
-    - `$category = (int) ( $request->get_param( 'category' ) ?: 0 );`
-  - 前端在构造查询参数时，可以直接传入选中分类的 ID，例如：
-    - `params.category = selectedCategory.id`
-  - 分类 ID 的含义由插件内部定义的商品分类 / taxonomy 决定。
-
-- **方案 B：通过 attributes 传递（可选扩展）**
-  - 如果后续选择用 Attribute Group 来表达「商品类型」，则可以将分类信息放入 `attributes` 字段；
-  - 示例：`params.attributes = { ...payload.filters.attributes, product_type: [selectedCategory.slug] }`；
-  - 这种方式在结构上更接近目前 Color / Diameter / Brake 等属性筛选的实现，利于后续统一维护。
-
-本文档只描述前端结构与组合方式，并**不强绑定**具体接口路径或字段名，在实际落地时可按后端最终约定来调整映射。
-
----
-
-## 七、体验与交互注意事项（UX Notes）
-
-- 分类选中状态在桌面与移动端之间必须**同步**：
-  - 在桌面点击 Sidebar 分类时，移动端 chips 中对应标签也要处于选中态；
-  - 在移动端切换分类时，Sidebar 中高亮项也要同步更新（因为两者共用 `selectedCategory`）。
-- 切换分类时，**不要自动重置其他筛选条件**（价格区间、颜色、Diameter、Brake 等），除非明确要这么设计：
-  - 用户通常希望先选一个大类，再继续通过高级筛选细化结果。
-- 对 `All`（全部）状态要有清晰的视觉区分：
-  - 例如 chips 中的 `All` 有特殊边框 / 背景，Sidebar 里第一项 `All` 高亮等；
-  - 方便用户理解“当前是在看所有商品”还是“只看某个分类”。
-
----
-
-## 八、实现检查清单（Implementation Checklist）
-
-- [ ] 新增 `useShopCategories` composable，并确认真实 API endpoint 或准备 DEV mock 数据。
-- [ ] 在 `/shop` 页面中增加 `selectedCategory` 状态，并在 `buildProductQueryParams` 中接入分类过滤逻辑。
-- [ ] 实现桌面端的 `CategorySidebar`（仅 `md+` 显示），并接好 `onCategorySelect` 事件。
-- [ ] 实现移动端的 `CategoryChips`（仅 `< md` 显示），支持横向滚动与选中高亮。
-- [ ] 确认分类切换时商品网格会重新加载，并与现有 `AdvancedFilter` 共存良好，不互相覆盖状态。
-- [ ] 手动测试：
-  - [ ] 桌面端：侧边分类 + 商品网格的布局与交互；
-  - [ ] 移动端：chips 选择分类 + 单列商品网格的交互表现。
+- 不要恢复旧的 `/shop` Categories 卡片。
+- 不要把商品图库、营销菜单或顶部 mega menu 的分类数据混入 `/shop` 商品类型。
+- 不要新增外部 UI 依赖来实现这个分类菜单；当前组件应保持本地可控。
+- 后续新增三级或更细分类时，优先让后端接口返回层级结构或稳定 slug，再由 Nuxt 组件自动渲染；不要在页面里手写某个分类的特殊按钮。
+- 任何涉及 `/shop` 分类来源、查询参数或 preset slug 行为的修改，都要同步更新本文档。

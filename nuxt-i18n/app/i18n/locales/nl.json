@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1290,12 +1291,15 @@
   },
   "search": {
     "placeholder": "Zoeken...",
-    "button": "Zoeken"
+    "button": "Zoeken",
+    "popularTitle": "Populaire zoekopdrachten",
+    "popularAriaLabel": "Populaire zoekopdrachten"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Winkelcategorieën",
     "loading": "Categorieën laden...",
-    "all": "Alles"
+    "all": "Alles",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Navigatie voor winkelcategorieën",
@@ -1303,7 +1307,9 @@
       "loading": "Producten laden...",
       "empty": {
         "title": "Er zijn nog geen producten beschikbaar.",
-        "description": "Zodra producten via de Tanzanite-plugin worden gepubliceerd, verschijnen ze hier automatisch."
+        "description": "Zodra producten via de Tanzanite-plugin worden gepubliceerd, verschijnen ze hier automatisch.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {

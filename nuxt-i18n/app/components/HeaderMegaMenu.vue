@@ -12,11 +12,11 @@
         <div class="header-mega__content">
           <div class="header-mega__grid">
             <article
-              v-for="{ card, children } in cardsWithChildren"
+              v-for="{ card, children, displaySize } in cardsWithChildren"
               :key="card.id"
               class="header-mega-card"
               :class="[
-                `header-mega-card--${card.size}`,
+                `header-mega-card--${displaySize}`,
                 `header-mega-card--${card.accent}`,
                 { 'header-mega-card--has-children': children.length > 0 },
               ]"
@@ -115,14 +115,27 @@ const localizedTo = (to: string) => {
   return `${localePath(path || '/')}${query}${hash}`
 }
 
+const displaySizeForCard = (card: PrimaryMegaNavCard, children: PageSubNavigationChild[]) => {
+  if (children.length > 0 && (card.size === 'compact' || card.size === 'standard')) {
+    return 'wide'
+  }
+
+  return card.size
+}
+
 const cardsWithChildren = computed(() => {
   const section = props.section
   if (!section) return []
 
-  return section.cards.map((card) => ({
-    card,
-    children: getPrimaryMegaNavCardChildren(section, card, localeCodes.value),
-  }))
+  return section.cards.map((card) => {
+    const children = getPrimaryMegaNavCardChildren(section, card, localeCodes.value)
+
+    return {
+      card,
+      children,
+      displaySize: displaySizeForCard(card, children),
+    }
+  })
 })
 
 const cardLabel = (card: PrimaryMegaNavCard) => {
@@ -214,7 +227,8 @@ const childLabel = (child: PageSubNavigationChild) => {
 .header-mega__grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-auto-flow: dense;
+  grid-auto-flow: row;
+  align-items: start;
   gap: 12px;
 }
 
@@ -228,6 +242,7 @@ const childLabel = (child: PageSubNavigationChild) => {
   position: relative;
   display: flex;
   flex-direction: column;
+  align-self: start;
   min-width: 0;
   min-height: 120px;
   overflow: hidden;
@@ -287,6 +302,10 @@ const childLabel = (child: PageSubNavigationChild) => {
 .header-mega-card--has-children .header-mega-card__main {
   min-height: 0;
   padding-bottom: 10px;
+}
+
+.header-mega-card--has-children .header-mega-card__description {
+  -webkit-line-clamp: 2;
 }
 
 .header-mega-card__glow {

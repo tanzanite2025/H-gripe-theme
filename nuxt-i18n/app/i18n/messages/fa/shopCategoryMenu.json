@@ -1,5 +1,6 @@
 {
   "ariaLabel": "دسته‌های فروشگاه",
   "loading": "در حال بارگذاری دسته‌ها...",
-  "all": "همه"
+  "all": "همه",
+  "empty": "No shop categories are available yet."
 }

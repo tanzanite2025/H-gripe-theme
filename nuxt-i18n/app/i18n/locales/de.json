@@ -117,7 +117,8 @@
   "breadcrumbs": {
     "home": "Home",
     "guides": "Guides",
-    "blog": "Blog"
+    "blog": "Blog",
+    "pageSections": "Page sections"
   },
   "cart": {
     "summary": {
@@ -1302,12 +1303,15 @@
   },
   "search": {
     "placeholder": "Suchen...",
-    "button": "Suchen"
+    "button": "Suchen",
+    "popularTitle": "Beliebte Suchanfragen",
+    "popularAriaLabel": "Beliebte Suchanfragen"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Shop-Kategorien",
     "loading": "Kategorien werden geladen...",
-    "all": "Alle"
+    "all": "Alle",
+    "empty": "No shop categories are available yet."
   },
   "shopPage": {
     "categoryRailLabel": "Navigation der Shop-Kategorien",
@@ -1315,7 +1319,9 @@
       "loading": "Produkte werden geladen...",
       "empty": {
         "title": "Es sind noch keine Produkte verfügbar.",
-        "description": "Sobald Produkte über das Tanzanite-Plugin veröffentlicht werden, erscheinen sie hier automatisch."
+        "description": "Sobald Produkte über das Tanzanite-Plugin veröffentlicht werden, erscheinen sie hier automatisch.",
+        "categoryTitle": "No products are available in {category} yet.",
+        "categoryDescription": "Try another category or clear the category filter to view all products."
       }
     },
     "actions": {
