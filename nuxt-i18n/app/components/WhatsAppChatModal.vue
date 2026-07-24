@@ -4,7 +4,7 @@
     <Transition name="fade">
       <div
         v-if="conversation"
-        class="fixed inset-0 z-[10000] flex items-center justify-center md:justify-end p-0 md:p-6 pointer-events-none"
+        class="fixed inset-0 z-[10000] flex items-center justify-center md:items-stretch md:justify-end p-0 pointer-events-none"
       >
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden pointer-events-auto"></div>
         <!-- 聊天窗口容器 - 右下角定位 -->
@@ -468,8 +468,10 @@ const {
 
 @media (min-width: 768px) {
   .chat-modal-shell {
-    height: 850px;
-    max-height: 92vh;
+    height: 100vh;
+    max-height: 100vh;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
   .chat-history-shell {
@@ -479,8 +481,8 @@ const {
 
   @supports (height: 100dvh) {
     .chat-modal-shell {
-      height: 850px;
-      max-height: 92dvh;
+      height: 100dvh;
+      max-height: 100dvh;
     }
 
     .chat-history-shell {
