@@ -3,7 +3,7 @@
     <div
       v-if="!selectedConversation"
       key="agent-list"
-      class="relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
+      class="chat-modal-shell relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col bg-gradient-to-b from-[#0d1117] to-black pointer-events-auto"
     >
       <div class="border-b border-white/10 bg-black/70 backdrop-blur-md px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -117,7 +117,7 @@
     <div
       v-else
       key="agent-chat"
-      class="relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col bg-black pointer-events-auto"
+      class="chat-modal-shell relative border-2 border-emerald-500 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] w-[420px] max-w-[calc(100vw-2rem)] h-[85vh] max-h-[800px] overflow-hidden flex flex-col bg-black pointer-events-auto"
     >
       <div class="border-b border-white/10 bg-black/70 backdrop-blur-md px-4 py-3 flex items-center gap-3">
         <button
