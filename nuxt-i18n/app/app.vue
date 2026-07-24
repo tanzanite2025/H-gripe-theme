@@ -9,7 +9,7 @@
     <NuxtLayout>
       <SidePanel>
         <template #left>
-          <SidebarContent />
+          <AccountSidebarPanel />
         </template>
       </SidePanel>
       <!-- Render the current page inside the active layout -->
@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import SidePanel from './components/SidePanel.vue'
-import SidebarContent from './components/SidebarContent.vue'
+import AccountSidebarPanel from '~/components/account/AccountSidebarPanel.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 
