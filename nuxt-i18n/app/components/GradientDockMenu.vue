@@ -59,44 +59,23 @@
         <Icon name="lucide:shopping-cart" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
       </button>
 
-      <!-- 6. Saved (Wishlist) -->
-      <button 
-        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
-        @click="openWishlist" 
-        :aria-label="$t('dockMenu.openWishlist')"
-      >
-        <span class="relative inline-flex h-7 w-7 md:h-9 md:w-9 items-center justify-center">
-          <Icon name="lucide:heart" class="w-full h-full transition-all" />
-          <span
-            v-if="wishlistCount > 0"
-            class="absolute top-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-[#40ffaa] rounded-full border border-[#0b1020]"
-          ></span>
-        </span>
-      </button>
-
     </div>
   </div>
   
   <!-- Quick Buy Modal from Dock -->
   <QuickBuyModal v-if="quickOpen" :config="quickBuyConfig" @close="quickOpen = false" />
-
-  <!-- Wishlist 抽屉弹窗 -->
-  <WishlistDrawer v-model="wishlistDrawerVisible" />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n, useRuntimeConfig } from '#imports'
 import QuickBuyModal from '@/components/QuickBuy.vue'
-import WishlistDrawer from '~/components/WishlistDrawer.vue'
-import { useWishlist } from '~/composables/useWishlist'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuySettings } from '~/composables/usePublicSettings'
 
 // floating submenu state
 const isOpen = ref(false)
 const quickOpen = ref(false)
-const wishlistDrawerVisible = ref(false)
 
 // 全局聊天窗口状态（在多个布局之间保持一致）
 const { currentConversation, isChatOpen, openChat, closeChat } = useChatWidget()
@@ -105,7 +84,6 @@ const { currentConversation, isChatOpen, openChat, closeChat } = useChatWidget()
 const closeAll = () => {
   isOpen.value = false
   quickOpen.value = false
-  wishlistDrawerVisible.value = false
 }
 
 
@@ -161,12 +139,6 @@ const toggleChatFromDock = () => {
       window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
     }
   }
-}
-
-// 打开心愿单抽屉
-const openWishlist = () => {
-  closeAll()
-  wishlistDrawerVisible.value = true
 }
 
 // 打开左侧 Sidebar（通过全局自定义事件通知 SidePanel）
@@ -235,21 +207,8 @@ const { cartCount, total, openCart, formatPrice } = useCart()
 
 const itemsCount = computed(() => cartCount.value)
 
-// 心愿单数量（使用全局 wishlist composable）
-const { items: wishlistItems, loadWishlist, loadedOnce } = useWishlist()
-const wishlistCount = computed(() => wishlistItems.value.length)
-
 const priceDisplay = computed(() => {
   return formatPrice(total.value)
-})
-
-// 初次挂载时，如果尚未加载过心愿单，则触发一次加载
-onMounted(() => {
-  try {
-    if (!loadedOnce.value) {
-      loadWishlist()
-    }
-  } catch {}
 })
 
 const fetchSummary = async () => {
