@@ -165,7 +165,6 @@
                 @shareOrder="shareOrderToChat"
                 @openAuth="openMemberAuth"
                 @loginRequest="handleWarrantyLoginRequest"
-                @openTestReport="handleOpenTestReport"
               />
             </div>
           </div>
@@ -202,11 +201,6 @@
       @close="handleProductDrawerClose"
       @select="shareProductToChat"
       @add-to-cart="handleAddProductToCart"
-    />
-
-    <TestReportDrawer
-      v-model="testReportDrawerVisible"
-      :agent="selectedAgent"
     />
 
     <WishlistDrawer
@@ -269,7 +263,6 @@ import AgentChatPanel from '~/components/whatsapp/AgentChatPanel.vue'
 import ChatTransferModal from '~/components/whatsapp/ChatTransferModal.vue'
 import ChatWelcomePanel from '~/components/whatsapp/ChatWelcomePanel.vue'
 import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
-import TestReportDrawer from '~/components/whatsapp/TestReportDrawer.vue'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -321,7 +314,6 @@ const {
   transferNote,
   isTransferring,
   isUploadingImage,
-  testReportDrawerVisible,
   showToast,
   toastMessage,
   isMemberLogged,
@@ -338,7 +330,6 @@ const {
   openMemberAuth,
   handleWarrantyLoginRequest,
   handleChatAuthSuccess,
-  handleOpenTestReport,
   handleClose,
   enterChat,
   selectAgentFromWelcome,

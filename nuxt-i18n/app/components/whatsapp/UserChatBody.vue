@@ -154,14 +154,11 @@ const emit = defineEmits<{
   'openAuth': [mode: 'login' | 'register']
   // Warranty Emits
   'loginRequest': []
-  // Test Report Emits
-  'openTestReport': []
 }>()
 
 const tabs = computed(() => [
   { id: 'share', labelKey: 'chatModal.tabs.products' },
   { id: 'orders', labelKey: 'chatModal.tabs.orders' },
-  { id: 'test', labelKey: 'chatModal.tabs.test' },
   { id: 'tire', labelKey: 'chatModal.tabs.tire' },
   { id: 'faq', labelKey: 'chatModal.tabs.faq' },
   { id: 'warranty', labelKey: 'chatModal.tabs.warranty' },
@@ -171,8 +168,5 @@ const tabs = computed(() => [
 
 const handleTabClick = (id: string) => {
   emit('update:activeTab', id)
-  if (id === 'test') {
-    emit('openTestReport')
-  }
 }
 </script>

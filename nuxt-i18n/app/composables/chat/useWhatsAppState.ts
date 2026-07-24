@@ -37,12 +37,6 @@ export const useWhatsAppState = (emit: any) => {
     return base.replace(/\/$/, '')
   })
   
-  // Test Report Drawer
-  const testReportDrawerVisible = ref(false)
-  const handleOpenTestReport = () => {
-    testReportDrawerVisible.value = true
-  }
-  
   // 客服模式状态
   const agentMode = computed(() => isAgent.value)
   
@@ -178,20 +172,6 @@ export const useWhatsAppState = (emit: any) => {
       if (currentChatRoom.value) {
         currentChatRoom.value.activeTab = val
       }
-    }
-  })
-  
-  // 监听弹窗关闭，自动切回聊天 Tab
-  watch(testReportDrawerVisible, (visible) => {
-    if (!visible && activeTab.value === 'test') {
-      activeTab.value = 'chat'
-    }
-  })
-  
-  // 监听 Tab 切换，如果切走则关闭弹窗
-  watch(activeTab, (newTab) => {
-    if (newTab !== 'test' && testReportDrawerVisible.value) {
-      testReportDrawerVisible.value = false
     }
   })
   
@@ -1196,7 +1176,6 @@ export const useWhatsAppState = (emit: any) => {
     transferNote,
     isTransferring,
     isUploadingImage,
-    testReportDrawerVisible,
     showToast,
     toastMessage,
     isMemberLogged,
@@ -1213,7 +1192,6 @@ export const useWhatsAppState = (emit: any) => {
     openMemberAuth,
     handleWarrantyLoginRequest,
     handleChatAuthSuccess,
-    handleOpenTestReport,
     handleClose,
     enterChat,
     selectAgentFromWelcome,
