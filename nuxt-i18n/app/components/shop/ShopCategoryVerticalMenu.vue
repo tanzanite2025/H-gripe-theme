@@ -67,7 +67,7 @@ const handleSelect = (category: ShopCategory | null) => {
 .shop-category-menu__list {
   display: flex;
   flex-direction: column;
-  gap: clamp(0.75rem, 1.15vw, 1.35rem);
+  gap: clamp(0.55rem, 0.85vw, 0.95rem);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -83,10 +83,10 @@ const handleSelect = (category: ShopCategory | null) => {
   background: transparent;
   color: rgba(248, 250, 252, 0.94);
   cursor: pointer;
-  font-size: clamp(1.15rem, 1.75vw, 2.25rem);
+  font-size: clamp(0.95rem, 1.05vw, 1.5rem);
   font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.045em;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
   text-align: left;
   transition:
     color 0.18s ease,

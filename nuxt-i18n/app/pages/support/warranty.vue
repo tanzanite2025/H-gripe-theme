@@ -3,14 +3,6 @@
     <!-- SEO-friendly hidden H1 -->
     <h1 class="support-page__title support-page__title--sr-only">Warranty</h1>
 
-    <!-- Tabs header -->
-    <PageTabBar
-      :tabs="tabs"
-      :active-id="activeTab"
-      aria-label="Warranty sections"
-      @select="setActiveTab"
-    />
-
     <!-- Tab Components -->
     <WarrantyChangeCancelTab 
       v-show="activeTab === 'change-cancel'" 
@@ -56,6 +48,11 @@ import WarrantyWarrantyPolicyTab from '~/components/warranty/WarrantyPolicyTab.v
 import WarrantyAccidentalDamageTab from '~/components/warranty/AccidentalDamageTab.vue'
 import WarrantyProtectionTab from '~/components/warranty/ProtectionTab.vue'
 import WarrantySubmitClaimTab from '~/components/warranty/SubmitClaimTab.vue'
+import {
+  isPageSubNavigationTabId,
+  warrantyTabs,
+  type WarrantyTabId,
+} from '~/utils/pageSubNavigation'
 
 definePageMeta({
   layout: 'support',
@@ -65,45 +62,26 @@ useHead({
   title: 'Warranty',
 })
 
-type WarrantyTabId = 
-  | 'change-cancel' 
-  | 'damaged-lost' 
-  | 'returns' 
-  | 'warranty' 
-  | 'accidental-damage' 
-  | 'protection' 
-  | 'submit-warranty'
-
-const tabs: { id: WarrantyTabId; label: string }[] = [
-  { id: 'change-cancel', label: 'Change / Cancel' },
-  { id: 'damaged-lost', label: 'Damaged or Lost Goods' },
-  { id: 'returns', label: 'Returns' },
-  { id: 'warranty', label: 'Warranty' },
-  { id: 'accidental-damage', label: 'Accidental Damage' },
-  { id: 'protection', label: 'Protection' },
-  { id: 'submit-warranty', label: 'Submit Warranty' },
-]
+const tabs = warrantyTabs
 
 const activeTab = ref<WarrantyTabId>('warranty')
 const route = useRoute()
 
 const setActiveTab = (id: WarrantyTabId | string) => {
-  // Ensure the id passed is a valid WarrantyTabId, otherwise ignore or cast
-  if (tabs.some(t => t.id === id)) {
-    activeTab.value = id as WarrantyTabId
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href)
-      url.hash = `#${id}`
-      window.history.replaceState(null, '', url.toString())
-    }
+  if (!isPageSubNavigationTabId(tabs, id)) return
+  activeTab.value = id
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    url.hash = `#${id}`
+    window.history.replaceState(null, '', url.toString())
   }
 }
 
 const syncTabWithHash = (hash: string | null | undefined) => {
   if (!hash) return
   const clean = hash.startsWith('#') ? hash.slice(1) : hash
-  if (tabs.some((tab) => tab.id === clean)) {
-    activeTab.value = clean as WarrantyTabId
+  if (isPageSubNavigationTabId(tabs, clean)) {
+    activeTab.value = clean
   }
 }
 

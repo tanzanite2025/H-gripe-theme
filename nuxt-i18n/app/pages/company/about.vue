@@ -3,13 +3,6 @@
 
     <h1 class="company-page__title company-page__title--sr-only">About us</h1>
 
-    <PageTabBar
-      :tabs="tabs"
-      :active-id="activeTab"
-      aria-label="Company sections"
-      @select="setActiveTab"
-    />
-
     <AboutFactory
       v-show="activeTab === 'factory'"
     />
@@ -103,25 +96,20 @@ import AboutAppearance from '~/components/company/AboutAppearance.vue'
 import AboutHolePatterns from '~/components/company/AboutHolePatterns.vue'
 import SmartAccordion from '~/components/ui/SmartAccordion.vue'
 import AccordionItem from '~/components/ui/AccordionItem.vue'
+import {
+  companyAboutTabs,
+  isPageSubNavigationTabId,
+  type CompanyAboutTabId,
+} from '~/utils/pageSubNavigation'
 
-type OurStoryTabId = 'factory' | 'appearance' | 'hole-patterns' | 'facility' | 'manufacture' | 'qualitycontrol'
+const tabs = companyAboutTabs
 
-const tabs: { id: OurStoryTabId; label: string }[] = [
-  { id: 'factory', label: 'Factory' },
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'hole-patterns', label: 'Hole Patterns' },
-  { id: 'facility', label: 'Facility' },
-  { id: 'manufacture', label: 'Manufacture' },
-  { id: 'qualitycontrol', label: 'Quality control' },
-]
-
-const activeTab = ref<OurStoryTabId>('factory')
+const activeTab = ref<CompanyAboutTabId>('factory')
 const route = useRoute()
 
-const getTabFromHash = (hash: string): OurStoryTabId | null => {
+const getTabFromHash = (hash: string): CompanyAboutTabId | null => {
   const raw = String(hash || '').replace(/^#/, '')
-  const allowed: OurStoryTabId[] = ['factory', 'appearance', 'hole-patterns', 'facility', 'manufacture', 'qualitycontrol']
-  return (allowed as string[]).includes(raw) ? (raw as OurStoryTabId) : null
+  return isPageSubNavigationTabId(tabs, raw) ? raw : null
 }
 
 watch(
@@ -132,19 +120,6 @@ watch(
   },
   { immediate: true }
 )
-
-const setActiveTab = (id: OurStoryTabId | string) => {
-  if (!tabs.some((tab) => tab.id === id)) return
-  const next = id as OurStoryTabId
-  activeTab.value = next
-  if (typeof window !== 'undefined') {
-    const url = new URL(window.location.href)
-    url.hash = `#${next}`
-    window.history.replaceState(null, '', url.toString())
-  }
-}
-
-
 
 definePageMeta({
   layout: 'products',
@@ -188,7 +163,7 @@ useHead({
   color: var(--tz-text-secondary);
 }
 
-/* Page-level tabs are handled by PageTabBar. */
+/* Page-level tab entry points are rendered by the header/mobile mega menu. */
 
 .company-section {
   margin-top: 0;
@@ -318,13 +293,6 @@ useHead({
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .company-tabs {
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: 0 0 1rem;
-    padding: 4px 0;
-    max-width: 100%;
-  }
 }
 
 

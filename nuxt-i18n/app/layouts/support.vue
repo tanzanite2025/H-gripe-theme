@@ -2,7 +2,6 @@
   <div class="layout layout--support">
     <main class="layout-main">
       <div class="support-header-spacer" aria-hidden="true"></div>
-      <PrimarySectionTabBar />
 
       <!-- Support page content -->
       <section class="support-content">
@@ -22,15 +21,10 @@
 import AppFooter from '~/components/AppFooter.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
 import PageFaqSlot from '~/components/PageFaqSlot.vue'
-import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
 </script>
 
 <style scoped>
 .layout--support {
-  --primary-section-tab-bar-height: 58px;
-  --primary-section-tab-bar-gap: clamp(0.8rem, 0.95vw, 1.15rem);
-  --page-tab-bar-flow-offset: 0.75rem;
-  --page-tab-bar-sticky-top: calc(var(--site-header-offset, 120px) + var(--primary-section-tab-bar-height, 58px) + var(--primary-section-tab-bar-gap, 1rem));
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -111,10 +105,4 @@ import PrimarySectionTabBar from '~/components/PrimarySectionTabBar.vue'
   }
 }
 
-@media (max-width: 900px) {
-  .layout--support {
-    --primary-section-tab-bar-height: 68px;
-    --primary-section-tab-bar-gap: 0.7rem;
-  }
-}
 </style>

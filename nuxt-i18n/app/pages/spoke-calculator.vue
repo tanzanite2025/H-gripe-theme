@@ -3,13 +3,6 @@
     <h1 class="sr-only">Spoke Calculator</h1>
 
     <div class="spoke-page">
-      <PageTabBar
-        :tabs="tabs"
-        :active-id="activeTab"
-        aria-label="Spoke calculator sections"
-        @select="setActiveTab"
-      />
-
       <section v-show="activeTab === 'calculator'">
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorCore />
@@ -192,13 +185,11 @@ import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import { ref, watch } from 'vue'
 import { useRoute } from '#imports'
-
-type SpokeCalculatorTabId = 'calculator' | 'parameter'
-
-const tabs: { id: SpokeCalculatorTabId; labelKey: string; fallback: string }[] = [
-  { id: 'calculator', labelKey: 'spokeCalculator.tabs.calculator', fallback: 'Calculator' },
-  { id: 'parameter', labelKey: 'spokeCalculator.tabs.parameter', fallback: 'Parameter' },
-]
+import {
+  isPageSubNavigationTabId,
+  spokeCalculatorTabs,
+  type SpokeCalculatorTabId,
+} from '~/utils/pageSubNavigation'
 
 const activeTab = ref<SpokeCalculatorTabId>('calculator')
 const route = useRoute()
@@ -206,8 +197,7 @@ const route = useRoute()
 const getTabFromHash = (hash: string | null | undefined): SpokeCalculatorTabId | null => {
   if (!hash) return null
   const raw = hash.startsWith('#') ? hash.slice(1) : hash
-  const allowed: SpokeCalculatorTabId[] = ['calculator', 'parameter']
-  return (allowed as string[]).includes(raw) ? (raw as SpokeCalculatorTabId) : null
+  return isPageSubNavigationTabId(spokeCalculatorTabs, raw) ? raw : null
 }
 
 watch(
@@ -218,17 +208,6 @@ watch(
   },
   { immediate: true }
 )
-
-const setActiveTab = (id: SpokeCalculatorTabId | string) => {
-  if (!tabs.some((tab) => tab.id === id)) return
-  const next = id as SpokeCalculatorTabId
-  activeTab.value = next
-  if (typeof window !== 'undefined') {
-    const url = new URL(window.location.href)
-    url.hash = `#${next}`
-    window.history.replaceState(null, '', url.toString())
-  }
-}
 
 definePageMeta({
   layout: 'products',
@@ -258,7 +237,7 @@ useHead({
    max-width: none;
  }
 
-/* Page-level tabs are handled by PageTabBar. */
+/* Page-level tab entry points are rendered by the header/mobile mega menu. */
 
  .spoke-parameter {
    margin-top: 0.75rem;

@@ -1,14 +1,6 @@
 <template>
   <div class="membership-tabs" :class="{ 'membership-tabs--modal': isModal, 'membership-tabs--sticky': isModal }">
-    <PageTabBar
-      v-if="!isModal"
-      :tabs="tabs"
-      :active-id="activeTab"
-      aria-label="Membership sections"
-      @select="setActiveTab"
-    />
-
-    <div v-else class="nav-pill-tabs" role="tablist">
+    <div v-if="isModal" class="nav-pill-tabs" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -17,7 +9,7 @@
         :class="{ 'nav-pill-item--active': activeTab === tab.id }"
         @click="setActiveTab(tab.id)"
       >
-        {{ $t(tab.labelKey, tab.fallback) }}
+        {{ $t(tab.labelKey || tab.id, tab.fallback || tab.label || tab.id) }}
       </button>
     </div>
 
@@ -269,28 +261,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useLocalePath } from '#imports'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useLocalePath, useRoute } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
+import {
+  isPageSubNavigationTabId,
+  membershipAndPointsTabs,
+  type MembershipTabId,
+} from '~/utils/pageSubNavigation'
 
 const props = defineProps<{ variant?: 'page' | 'modal' }>()
 
 const isModal = computed(() => props.variant === 'modal')
 
-type MembershipTabId = 'myinfo' | 'levers' | 'exchange'
-
-const tabs: { id: MembershipTabId; labelKey: string; fallback: string }[] = [
-  { id: 'myinfo', labelKey: 'member.tabs.myInfo', fallback: 'My info' },
-  { id: 'levers', labelKey: 'member.tabs.levers', fallback: 'Levers' },
-  { id: 'exchange', labelKey: 'member.tabs.exchange', fallback: 'Exchange' },
-]
+const tabs = membershipAndPointsTabs
 
 const activeTab = ref<MembershipTabId>('myinfo')
+const route = useRoute()
 
 const setActiveTab = (id: MembershipTabId | string) => {
-  if (!tabs.some((tab) => tab.id === id)) return
-  activeTab.value = id as MembershipTabId
+  if (!isPageSubNavigationTabId(tabs, id)) return
+  activeTab.value = id
+  if (!isModal.value && typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    url.hash = `#${id}`
+    window.history.replaceState(null, '', url.toString())
+  }
+}
+
+const syncTabWithHash = (hash: string | null | undefined) => {
+  if (isModal.value || !hash) return
+  const clean = hash.startsWith('#') ? hash.slice(1) : hash
+  if (isPageSubNavigationTabId(tabs, clean)) {
+    activeTab.value = clean
+  }
 }
 
 const localePath = useLocalePath()
@@ -337,8 +342,16 @@ const handleAuthSuccess = async () => {
 }
 
 onMounted(() => {
+  syncTabWithHash(route.hash)
   initMembership()
 })
+
+watch(
+  () => route.hash,
+  (hash) => {
+    syncTabWithHash(hash)
+  }
+)
 </script>
 
 <style scoped>
@@ -355,27 +368,6 @@ onMounted(() => {
    padding-left: 12px;
    padding-right: 12px;
  }
-
- .membership-tabs--sticky .company-tabs {
-   position: sticky;
-   top: 0;
-   z-index: 30;
-   background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.7));
-   backdrop-filter: blur(12px);
-   -webkit-backdrop-filter: blur(12px);
-   padding: 10px 56px 10px 16px;
-   margin: 0 0 1rem;
-   border: none;
-   border-radius: 14px;
-   box-shadow: 8px 8px 22px rgba(0, 0, 0, 0.92);
- }
-
- .membership-tabs--sticky .company-tabs {
-   padding: 10px 56px 10px 16px;
-   margin: 0 0 1rem;
-   max-width: 100%;
- }
- /* Style clean up: .company-tabs and .company-tabs__item definitions are now in global nav.css */
 
  /* 保修查询卡片 */
  .warranty-card {

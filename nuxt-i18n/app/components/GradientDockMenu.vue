@@ -5,30 +5,30 @@
       
       <!-- 1. Menu (Sidebar) -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 tz-text-secondary hover:text-white transition-colors py-1 min-w-[40px]"
+        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
-        <Icon name="lucide:menu" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
-        <span class="text-[9px] md:text-xs font-medium tracking-tight">{{ $t('dockMenu.menu') }}</span>
+        <Icon name="lucide:menu" class="w-10 h-10 md:w-12 md:h-12 transition-all" />
       </button>
 
       <!-- 2. Chat -->
       <button 
         :class="[
-          'flex-1 flex flex-col items-center gap-0.5 transition-colors py-1 min-w-[40px] relative',
+          'flex-1 h-10 md:h-12 flex items-center justify-center transition-colors min-w-[40px]',
           isChatOpen ? 'text-[#40ffaa]' : 'tz-text-secondary hover:text-white'
         ]"
         @click="toggleChatFromDock()" 
         :aria-label="$t('dockMenu.chat')"
       >
-        <Icon name="lucide:message-circle" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
-        <span class="text-[9px] md:text-xs font-medium tracking-tight">{{ $t('dockMenu.chat') }}</span>
-        <!-- Unread Badge -->
-        <span
-          v-if="totalUnreadCount > 0"
-          class="absolute top-0 right-1 md:right-4 w-2 h-2 md:w-2.5 md:h-2.5 bg-red-500 rounded-full border border-[#0b1020]"
-        ></span>
+        <span class="relative inline-flex h-10 w-10 md:h-12 md:w-12 items-center justify-center">
+          <Icon name="lucide:message-circle" class="w-full h-full transition-all" />
+          <!-- Unread Badge -->
+          <span
+            v-if="totalUnreadCount > 0"
+            class="absolute top-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-red-500 rounded-full border border-[#0b1020]"
+          ></span>
+        </span>
       </button>
 
       <!-- 3. Checkout (Main Action) -->
@@ -41,38 +41,37 @@
 
       <!-- 4. Quick Buy -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 tz-text-secondary hover:text-[#40ffaa] transition-colors py-1 min-w-[40px]"
+        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors min-w-[40px]"
         @click="openQuick()" 
         aria-haspopup="dialog" 
         :aria-expanded="quickOpen" 
         :aria-label="$t('dockMenu.quickBuy')"
       >
-        <Icon name="lucide:zap" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
-        <span class="text-[9px] md:text-xs font-medium tracking-tight">{{ $t('dockMenu.quick') }}</span>
+        <Icon name="lucide:zap" class="w-10 h-10 md:w-12 md:h-12 transition-all" />
       </button>
 
       <!-- 5. Cart -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 tz-text-secondary hover:text-white transition-colors py-1 min-w-[40px]"
+        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
         @click="openCartDrawer" 
         :aria-label="$t('dockMenu.openCart')"
       >
-        <Icon name="lucide:shopping-cart" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
-        <span class="text-[9px] md:text-xs font-medium tracking-tight">{{ $t('dockMenu.cart') }}</span>
+        <Icon name="lucide:shopping-cart" class="w-10 h-10 md:w-12 md:h-12 transition-all" />
       </button>
 
       <!-- 6. Saved (Wishlist) -->
       <button 
-        class="flex-1 flex flex-col items-center gap-0.5 tz-text-secondary hover:text-white transition-colors py-1 min-w-[40px] relative"
+        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
         @click="openWishlist" 
         :aria-label="$t('dockMenu.openWishlist')"
       >
-        <Icon name="lucide:heart" class="w-6 h-6 md:w-6 md:h-6 transition-all" />
-        <span class="text-[9px] md:text-xs font-medium tracking-tight">{{ $t('dockMenu.saved') }}</span>
-        <span
-          v-if="wishlistCount > 0"
-          class="absolute top-0 right-1 md:right-5 w-2 h-2 md:w-2.5 md:h-2.5 bg-[#40ffaa] rounded-full border border-[#0b1020]"
-        ></span>
+        <span class="relative inline-flex h-10 w-10 md:h-12 md:w-12 items-center justify-center">
+          <Icon name="lucide:heart" class="w-full h-full transition-all" />
+          <span
+            v-if="wishlistCount > 0"
+            class="absolute top-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-[#40ffaa] rounded-full border border-[#0b1020]"
+          ></span>
+        </span>
       </button>
 
     </div>

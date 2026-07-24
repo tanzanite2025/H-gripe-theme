@@ -59,7 +59,7 @@ type PageTabItem = {
 }
 
 const props = withDefaults(defineProps<{
-  tabs: PageTabItem[]
+  tabs: readonly PageTabItem[]
   activeId: string
   ariaLabel?: string
 }>(), {
