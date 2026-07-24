@@ -21,7 +21,7 @@
 
         <!-- 弹窗内容 -->
         <div
-          class="wa-drawer-shell"
+          class="wa-drawer-shell cart-drawer-shell"
           aria-modal="true"
           role="dialog"
           :aria-label="t('cartDrawer.ariaLabel')"
@@ -44,12 +44,13 @@
         </div>
 
         <!-- 购物车内容 -->
-        <div v-if="cartItems.length > 0" class="wa-drawer-content relative z-10">
-          <div class="space-y-4">
+        <div v-if="cartItems.length > 0" class="wa-drawer-content cart-drawer-content relative z-10">
+          <section class="cart-drawer-cart-section" :aria-label="t('cartDrawer.title')">
+          <div class="cart-drawer-items-scroll">
             <div
               v-for="item in cartItems"
               :key="item.id"
-              class="flex gap-4 p-4 bg-white/[0.06] border border-white rounded-2xl"
+              class="cart-drawer-item-card bg-white/[0.06] border border-white rounded-2xl"
             >
               <!-- 商品图片 -->
               <div class="w-20 h-20 flex-shrink-0 bg-white/[0.06] rounded-lg overflow-hidden border border-white">
@@ -122,16 +123,17 @@
               </div>
             </div>
           </div>
+          </section>
 
           <!-- 浏览历史组件 -->
-          <div class="mt-6">
-            <BrowsingHistoryDark />
+          <div class="cart-drawer-history-section">
+            <BrowsingHistoryDark density="cart" />
           </div>
         </div>
 
         <!-- 空购物车 -->
-        <div v-else class="wa-drawer-content relative z-10 flex flex-col">
-          <div class="flex flex-col items-center justify-center py-12">
+        <div v-else class="wa-drawer-content cart-drawer-content cart-drawer-content--empty relative z-10">
+          <div class="cart-drawer-empty-state">
             <Icon name="lucide:shopping-bag" class="w-24 h-24 tz-text-muted mb-4" />
             <p class="tz-text-primary text-lg font-medium mb-2">{{ t('cartDrawer.empty.title') }}</p>
             <p class="tz-text-secondary text-sm mb-6">{{ t('cartDrawer.empty.description') }}</p>
@@ -144,13 +146,13 @@
           </div>
 
           <!-- 浏览历史组件 -->
-          <div class="mt-6">
-            <BrowsingHistoryDark />
+          <div class="cart-drawer-history-section cart-drawer-history-section--empty">
+            <BrowsingHistoryDark density="cart" />
           </div>
         </div>
 
         <!-- 底部汇总 -->
-        <div v-if="cartItems.length > 0" class="border-t border-white/10 px-6 py-4 bg-white/[0.03] relative z-10">
+        <div v-if="cartItems.length > 0" class="cart-drawer-summary border-t border-white/10 px-6 py-4 bg-white/[0.03] relative z-10">
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-sm">
               <span class="tz-text-secondary">{{ t('cartDrawer.summary.subtotal') }}</span>
@@ -252,5 +254,138 @@ const onQuantityInput = (id: number, event: Event) => {
 </script>
 
 <style scoped>
-/* Inline styles removed in favor of global .wa-drawer classes */
+.cart-drawer-shell {
+  height: 92vh;
+  max-height: 92vh;
+}
+
+@supports (height: 100dvh) {
+  .cart-drawer-shell {
+    height: 92dvh;
+    max-height: 92dvh;
+  }
+}
+
+.cart-drawer-content {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.cart-drawer-cart-section {
+  flex: 1 1 58%;
+  min-height: 11rem;
+  max-height: 58%;
+  overflow: hidden;
+}
+
+.cart-drawer-items-scroll {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.125rem 0.125rem 0.65rem;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.72) transparent;
+}
+
+.cart-drawer-items-scroll::-webkit-scrollbar {
+  height: 0.42rem;
+}
+
+.cart-drawer-items-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.72);
+}
+
+.cart-drawer-item-card {
+  display: flex;
+  flex: 0 0 min(82vw, 22rem);
+  min-height: 0;
+  max-height: 100%;
+  gap: 1rem;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.cart-drawer-history-section {
+  flex: 0 1 38%;
+  min-height: 10rem;
+  max-height: 38%;
+  overflow: hidden;
+}
+
+.cart-drawer-content--empty {
+  justify-content: stretch;
+}
+
+.cart-drawer-empty-state {
+  display: flex;
+  flex: 0 0 42%;
+  min-height: 10rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-block: 1.5rem;
+  text-align: center;
+}
+
+.cart-drawer-history-section--empty {
+  flex: 1 1 auto;
+  max-height: none;
+}
+
+.cart-drawer-summary {
+  flex: 0 0 auto;
+}
+
+@media (min-width: 768px) {
+  .cart-drawer-shell {
+    width: min(96vw, 1400px);
+    height: min(92vh, 1040px);
+    max-height: 92vh;
+  }
+
+  @supports (height: 100dvh) {
+    .cart-drawer-shell {
+      height: min(92dvh, 1040px);
+      max-height: 92dvh;
+    }
+  }
+
+  .cart-drawer-content {
+    gap: 1.15rem;
+  }
+
+  .cart-drawer-item-card {
+    flex-basis: min(36vw, 24rem);
+  }
+}
+
+@media (max-width: 767px) {
+  .cart-drawer-content {
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+
+  .cart-drawer-cart-section {
+    min-height: 10rem;
+  }
+
+  .cart-drawer-history-section {
+    min-height: 9rem;
+  }
+
+  .cart-drawer-item-card {
+    flex-basis: min(86vw, 21rem);
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+}
 </style>

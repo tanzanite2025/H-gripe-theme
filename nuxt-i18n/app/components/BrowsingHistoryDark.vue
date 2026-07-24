@@ -1,11 +1,12 @@
 <template>
   <div
-    class="w-full rounded-2xl border border-[rgba(110,110,233,0.35)]
+    class="browsing-history-dark w-full rounded-2xl border border-[rgba(110,110,233,0.35)]
            bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
            backdrop-blur-md shadow-[0_3px_9px_rgba(0,0,0,0.9)] overflow-hidden"
+    :class="{ 'browsing-history-dark--cart': density === 'cart' }"
   >
     <!-- 标题栏 -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
+    <div class="browsing-history-dark__header flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
       <div class="flex items-center gap-2">
       <svg class="w-5 h-5 tz-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -23,9 +24,9 @@
     </div>
 
     <!-- 商品列表 - 横向滚动 -->
-    <div class="relative">
+    <div class="browsing-history-dark__body relative">
       <!-- 空状态 -->
-      <div v-if="!hasHistory" class="flex flex-col items-center justify-center py-8 px-4">
+      <div v-if="!hasHistory" class="browsing-history-dark__empty flex flex-col items-center justify-center py-8 px-4">
         <svg class="w-16 h-16 text-white/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -37,13 +38,13 @@
       <div
         v-else
         ref="scrollContainer"
-        class="flex gap-3 p-4 overflow-x-auto scrollbar-hide scroll-smooth"
+        class="browsing-history-dark__list flex gap-3 p-4 overflow-x-auto scrollbar-hide scroll-smooth"
         style="scrollbar-width: none; -ms-overflow-style: none;"
       >
         <div
           v-for="item in history"
           :key="item.id"
-          class="flex-shrink-0 w-40 group"
+          class="browsing-history-dark__item flex-shrink-0 w-40 group"
         >
           <!-- 商品卡片：暗色玻璃 + 纯黑阴影，无边框 -->
           <div
@@ -64,7 +65,7 @@
             </button>
 
             <!-- 商品图片 -->
-            <div class="relative w-full h-32 bg-black/20">
+            <div class="browsing-history-dark__image relative w-full h-32 bg-black/20">
               <img
                 v-if="item.thumbnail"
                 :src="item.thumbnail"
@@ -151,7 +152,7 @@
     </div>
 
     <!-- 移动端滑动提示 -->
-    <div v-if="hasHistory" class="md:hidden px-4 pb-3 text-center">
+    <div v-if="hasHistory" class="browsing-history-dark__mobile-hint md:hidden px-4 pb-3 text-center">
       <p class="text-xs tz-text-muted">← Swipe to see more →</p>
     </div>
   </div>
@@ -167,6 +168,12 @@ import { useWishlist } from '~/composables/useWishlist'
 const emit = defineEmits<{
   'share-to-chat': [product: any]
 }>()
+
+withDefaults(defineProps<{
+  density?: 'default' | 'cart'
+}>(), {
+  density: 'default',
+})
 
 const { history, historyCount, hasHistory, clearHistory, removeItem } = useBrowsingHistory()
 const { addToWishlist } = useWishlist()
@@ -254,5 +261,59 @@ onUnmounted(() => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.browsing-history-dark--cart {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__header {
+  flex: 0 0 auto;
+  padding-block: 0.55rem;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__list {
+  height: 100%;
+  min-height: 0;
+  padding-block: 0.65rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__item {
+  width: 8.5rem;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__image {
+  height: 5.75rem;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__empty {
+  height: 100%;
+  padding-block: 1rem;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__mobile-hint {
+  flex: 0 0 auto;
+  padding-bottom: 0.55rem;
+}
+
+@media (min-width: 768px) {
+  .browsing-history-dark--cart .browsing-history-dark__item {
+    width: 9rem;
+  }
+
+  .browsing-history-dark--cart .browsing-history-dark__image {
+    height: 6rem;
+  }
 }
 </style>
