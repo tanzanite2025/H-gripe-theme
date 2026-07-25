@@ -11,6 +11,7 @@ import (
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,7 +36,12 @@ func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
 
 	items := make([]gin.H, 0, len(tickets))
 	for _, item := range tickets {
-		items = append(items, adminCustomerServiceConversationResponse(item))
+		var summary *service.CustomerServiceConversationSummary
+		if h.customerServiceContext != nil {
+			itemSummary := h.customerServiceContext.ConversationListSummary(item)
+			summary = &itemSummary
+		}
+		items = append(items, adminCustomerServiceConversationResponse(item, summary))
 	}
 
 	totalPages := (int(total) + params.PageSize - 1) / params.PageSize
@@ -49,6 +55,33 @@ func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
 		},
 		"filters": adminCustomerServiceConversationFilterResponse(filters),
 	})
+}
+
+func (h *TicketHandler) GetCustomerServiceRegionAnalytics(c *gin.Context) {
+	if h.customerServiceContext == nil {
+		apierror.RespondInternalError(c, errors.New("customer service context service is not configured"))
+		return
+	}
+
+	timezoneOffsetMinutes, err := strconv.Atoi(c.DefaultQuery("tz_offset_minutes", "0"))
+	if err != nil {
+		apierror.RespondBadRequest(c, "Invalid timezone offset")
+		return
+	}
+
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	analytics, err := h.customerServiceContext.RegionAnalyticsForAgent(service.CustomerServiceRegionAnalyticsInput{
+		Date:                  strings.TrimSpace(c.Query("date")),
+		TimezoneOffsetMinutes: timezoneOffsetMinutes,
+		AgentUserID:           agentUserID,
+		CanViewAll:            canViewAll,
+	})
+	if err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"analytics": analytics})
 }
 
 // ListCustomerServiceAgents returns assignable public chat staff profiles for the admin inbox.
@@ -157,6 +190,7 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 		UserID:      agentUserID,
 		IsStaff:     true,
 		Content:     strings.TrimSpace(req.Message),
+		MessageType: "text",
 		Attachments: string(attachmentsJSON),
 		IsRead:      false,
 		IsInternal:  false,
@@ -177,6 +211,47 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 	)
 
 	response.Created(c, gin.H{"message": messagePayload})
+}
+
+func (h *TicketHandler) SendCustomerServiceConversationTyping(c *gin.Context) {
+	ticketID, ok := parseAdminCustomerServiceConversationID(c)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		IsTyping *bool `json:"is_typing"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	conversation, err := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
+	if err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	isTyping := true
+	if req.IsTyping != nil {
+		isTyping = *req.IsTyping
+	}
+
+	h.publishAdminCustomerServiceEvent(
+		service.CustomerServiceEventTyping,
+		conversation,
+		ticketID,
+		adminCustomerServiceRealtimeActor(agentUserID),
+		gin.H{
+			"is_typing":    isTyping,
+			"display_name": adminCustomerServiceAssigneeName(agentUserID),
+			"expires_at":   time.Now().UTC().Add(5 * time.Second),
+		},
+	)
+
+	response.Success(c, gin.H{"typing": isTyping})
 }
 
 // MarkCustomerServiceConversationMessagesRead marks customer messages as read in one conversation.
@@ -370,7 +445,7 @@ func respondAdminCustomerServiceError(c *gin.Context, err error) {
 	}
 }
 
-func adminCustomerServiceConversationResponse(item ticket.Ticket) gin.H {
+func adminCustomerServiceConversationResponse(item ticket.Ticket, summary *service.CustomerServiceConversationSummary) gin.H {
 	lastMessage := ""
 	lastMessageTime := item.UpdatedAt
 	unreadCount := 0
@@ -392,12 +467,22 @@ func adminCustomerServiceConversationResponse(item ticket.Ticket) gin.H {
 		conversationID = strings.TrimPrefix(item.Tags, "conversation_id:")
 	}
 
+	customerName := adminCustomerDisplayName(item)
+	customerSummary := adminCustomerServiceFallbackSummary(item, customerName)
+	if summary != nil {
+		customerSummary = *summary
+		if strings.TrimSpace(summary.DisplayName) != "" {
+			customerName = strings.TrimSpace(summary.DisplayName)
+		}
+	}
+
 	return gin.H{
 		"id":                item.ID,
 		"ticket_id":         item.ID,
 		"conversation_id":   conversationID,
 		"customer_user_id":  item.CustomerUserID,
-		"customer_name":     adminCustomerDisplayName(item),
+		"customer_name":     customerName,
+		"customer_summary":  customerSummary,
 		"assigned_to":       item.AssignedTo,
 		"status":            item.Status,
 		"display_status":    adminCustomerServiceDisplayStatus(item.Status),
@@ -409,6 +494,26 @@ func adminCustomerServiceConversationResponse(item ticket.Ticket) gin.H {
 		"ticket_number":     item.TicketNumber,
 		"visitor_anonymous": item.CustomerUserID == nil,
 	}
+}
+
+func adminCustomerServiceFallbackSummary(item ticket.Ticket, customerName string) service.CustomerServiceConversationSummary {
+	summary := service.CustomerServiceConversationSummary{
+		Type:          "visitor",
+		Identity:      "visitor",
+		IdentityLabel: "游客",
+		DisplayName:   strings.TrimSpace(customerName),
+		RegionLabel:   "未知区域",
+		RegionStatus:  "unknown",
+	}
+	if summary.DisplayName == "" {
+		summary.DisplayName = "匿名客户"
+	}
+	if item.CustomerUserID != nil && *item.CustomerUserID > 0 {
+		summary.Type = "member"
+		summary.Identity = "member"
+		summary.IdentityLabel = "会员"
+	}
+	return summary
 }
 
 func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
@@ -425,11 +530,35 @@ func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
 		"sender_name":     adminMessageSenderName(item),
 		"message":         item.Content,
 		"content":         item.Content,
+		"message_type":    normalizeAdminCustomerServiceMessageType(item.MessageType),
+		"metadata":        parseAdminCustomerServiceMessageMetadata(item.Metadata),
 		"attachment_url":  attachmentURL,
 		"created_at":      item.CreatedAt,
 		"is_read":         item.IsRead,
 		"is_agent":        item.IsStaff,
 	}
+}
+
+func normalizeAdminCustomerServiceMessageType(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "product", "order", "image", "config_confirm":
+		return value
+	default:
+		return "text"
+	}
+}
+
+func parseAdminCustomerServiceMessageMetadata(value string) interface{} {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	var payload interface{}
+	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+		return nil
+	}
+	return payload
 }
 
 func adminCustomerDisplayName(item ticket.Ticket) string {

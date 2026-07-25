@@ -6,6 +6,7 @@ import (
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
 	"tanzanite/internal/repository"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -56,6 +57,17 @@ func (s *TicketService) ListCustomerServiceConversationsForAgent(page, pageSize 
 	return s.ticketRepo.FindCustomerServiceConversations(page, pageSize, filters)
 }
 
+func (s *TicketService) ListCustomerServiceConversationsInWindowForAgent(start, end time.Time, agentUserID uint, canViewAll bool) ([]ticket.Ticket, error) {
+	filters := repository.CustomerServiceConversationFilters{}
+	if !canViewAll {
+		if agentUserID == 0 {
+			return nil, ErrCustomerServiceAgentAccessDenied
+		}
+		filters.AssignedTo = &agentUserID
+	}
+	return s.ticketRepo.FindCustomerServiceConversationsInWindow(start, end, filters)
+}
+
 func (s *TicketService) GetCustomerServiceMessagesForAgent(ticketID uint, agentUserID uint, canViewAll bool) ([]ticket.TicketMessage, error) {
 	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, agentUserID, canViewAll); err != nil {
 		return nil, err
@@ -78,6 +90,9 @@ func (s *TicketService) AddCustomerServiceAgentMessage(m *ticket.TicketMessage, 
 
 	m.UserID = agentUserID
 	m.IsStaff = true
+	if strings.TrimSpace(m.MessageType) == "" {
+		m.MessageType = "text"
+	}
 	if err := s.ticketRepo.CreateTicketMessage(m); err != nil {
 		return err
 	}
@@ -184,7 +199,7 @@ func (s *TicketService) GetOrCreatePublicCustomerServiceConversation(owner Custo
 	return t, nil
 }
 
-func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, owner CustomerServiceOwner, message string, agentID uint) (*ticket.Ticket, *ticket.TicketMessage, error) {
+func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, owner CustomerServiceOwner, message string, agentID uint, messageType string, metadata string, attachments string) (*ticket.Ticket, *ticket.TicketMessage, error) {
 	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
 		return nil, nil, err
@@ -196,12 +211,15 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, o
 	}
 
 	msg := &ticket.TicketMessage{
-		TicketID:   t.ID,
-		UserID:     persistedUserID,
-		IsStaff:    false,
-		Content:    message,
-		IsRead:     false,
-		IsInternal: false,
+		TicketID:    t.ID,
+		UserID:      persistedUserID,
+		IsStaff:     false,
+		Content:     message,
+		MessageType: normalizeCustomerServiceMessageType(messageType),
+		Metadata:    metadata,
+		Attachments: attachments,
+		IsRead:      false,
+		IsInternal:  false,
 	}
 	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
 		return nil, nil, err
@@ -404,4 +422,14 @@ func (s *TicketService) ListCustomerServiceAgentProfiles(limit int) ([]user.Agen
 
 func customerServiceConversationTag(conversationID string) string {
 	return "conversation_id:" + conversationID
+}
+
+func normalizeCustomerServiceMessageType(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "product", "order", "image", "config_confirm":
+		return value
+	default:
+		return "text"
+	}
 }

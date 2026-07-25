@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useHead, definePageMeta, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import AboutFactory from '~/components/company/AboutFactory.vue'
@@ -112,14 +112,18 @@ const getTabFromHash = (hash: string): CompanyAboutTabId | null => {
   return isPageSubNavigationTabId(tabs, raw) ? raw : null
 }
 
+const syncActiveTabFromHash = () => {
+  const next = getTabFromHash(route.hash)
+  if (next) activeTab.value = next
+}
+
 watch(
-  () => route.hash,
-  (hash) => {
-    const next = getTabFromHash(hash)
-    if (next) activeTab.value = next
-  },
-  { immediate: true }
+  () => route.fullPath,
+  syncActiveTabFromHash,
+  { immediate: true, flush: 'post' }
 )
+
+onMounted(syncActiveTabFromHash)
 
 definePageMeta({
   layout: 'products',

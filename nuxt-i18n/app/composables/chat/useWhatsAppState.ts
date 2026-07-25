@@ -3,8 +3,11 @@ import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
+import { normalizeShopProduct } from '~/composables/useShopProducts'
 import { loadChatAgentDirectory } from '~/composables/chat/useChatAgentDirectory'
 import { useCustomerServiceChatSync } from '~/composables/chat/useCustomerServiceChatSync'
+import { buildProductConfigConfirmMetadata } from '~/composables/chat/useProductConfigConfirmPayload'
+import { buildOrderChatMetadata } from '~/composables/chat/useOrderChatPayload'
 import {
   CHAT_STORAGE_EXPIRY_DAYS,
   createEmptyChatRoom,
@@ -420,12 +423,15 @@ export const useWhatsAppState = (emit: any) => {
     currentSenderEmail,
     loadMessagesFromAPI,
     sendMessageToAPI,
+    sendTypingIndicator,
     replaceLocalMessageWithServerMessage,
     markLocalMessageFailed,
     checkAutoReply,
     sendWelcomeMessage,
     connectCustomerServiceRealtime,
-    closeCustomerServiceRealtime
+    closeCustomerServiceRealtime,
+    agentTyping,
+    clearAgentTyping
   } = useCustomerServiceChatSync({
     publicApiBase,
     conversationId,
@@ -436,6 +442,46 @@ export const useWhatsAppState = (emit: any) => {
     authRequest,
     saveMessagesToStorage,
     scrollToBottom
+  })
+
+  const customerTypingSignalGapMs = 2500
+  let lastCustomerTypingSignalAt = 0
+  let customerTypingIdleTimer: number | null = null
+
+  const notifyCustomerTyping = (isTyping = true) => {
+    if (!import.meta.client || !selectedAgent.value) return
+
+    if (isTyping) {
+      const now = Date.now()
+      if (now - lastCustomerTypingSignalAt < customerTypingSignalGapMs) return
+      lastCustomerTypingSignalAt = now
+    } else {
+      lastCustomerTypingSignalAt = 0
+    }
+
+    sendTypingIndicator(isTyping)
+  }
+
+  watch(newMessage, (value) => {
+    if (!import.meta.client || activeTab.value !== 'chat') return
+
+    if (!String(value || '').trim()) {
+      if (customerTypingIdleTimer) {
+        window.clearTimeout(customerTypingIdleTimer)
+        customerTypingIdleTimer = null
+      }
+      notifyCustomerTyping(false)
+      return
+    }
+
+    notifyCustomerTyping(true)
+    if (customerTypingIdleTimer) {
+      window.clearTimeout(customerTypingIdleTimer)
+    }
+    customerTypingIdleTimer = window.setTimeout(() => {
+      customerTypingIdleTimer = null
+      notifyCustomerTyping(false)
+    }, 3500)
   })
 
   // 发送消息
@@ -514,21 +560,20 @@ export const useWhatsAppState = (emit: any) => {
       // 转换数据格式以适配前端显示
       if (!response || !Array.isArray(response.items)) { throw new Error('[CRITICAL] Invalid response format for products API'); }
       
-        searchResults.value = response.items.map((item: any) => ({
-          id: item.id,
-          defaultVariantId: item.default_variant_id || null,
-          title: item.title,
-          name: item.title,
-          slug: item.slug,
-          sku: item.sku,
-          url: item.preview_url || `/shop/${item.slug || item.id}`,
-          thumbnail: item.thumbnail,
-          priceValue: item.prices?.sale > 0 ? item.prices.sale : (item.prices?.regular || 0),
-          price: item.prices?.sale > 0 
-            ? `$${item.prices.sale}` 
-            : (item.prices?.regular > 0 ? `$${item.prices.regular}` : ''),
-          maxStock: item.stock?.quantity || 0
-        }))
+      searchResults.value = response.items.map((item: any) => {
+        const normalized = normalizeShopProduct({
+          ...item,
+          url: item.preview_url || item.url,
+        })
+        return {
+          ...normalized,
+          name: normalized.title,
+          url: item.preview_url || normalized.url,
+          priceValue: normalized.priceNumber,
+          price: normalized.priceLabel,
+          maxStock: normalized.stockQuantity || 0,
+        }
+      })
       
     } catch (error) {
       console.error('搜索失败:', error)
@@ -616,6 +661,46 @@ export const useWhatsAppState = (emit: any) => {
   const shareProductToChat = (product: any) => {
     return shareProductMessageToChat(product, '分享商品失败:')
   }
+
+  const shareProductConfigConfirmToChat = async (payload: any) => {
+    const product = payload?.product || payload
+    const variant = payload?.variant || payload?.selectedVariant || null
+    if (!selectedAgent.value || isSending.value || !product) return
+
+    isSending.value = true
+
+    const metadata = buildProductConfigConfirmMetadata(product, variant)
+    const productTitle = metadata.product.title || product.title || product.name || 'Product'
+    const messageData = {
+      id: Date.now(),
+      conversation_id: conversationId.value,
+      sender_id: user.value?.id || 0,
+      sender_name: user.value?.display_name || '访客',
+      sender_email: currentSenderEmail(),
+      message: `Configuration confirmation request: ${productTitle}`,
+      message_type: 'config_confirm',
+      metadata,
+      created_at: new Date().toISOString(),
+      is_agent: false,
+      sync_state: 'sending'
+    }
+
+    try {
+      messages.value.push(messageData)
+      saveMessagesToStorage()
+      const response = await sendMessageToAPI(messageData)
+      replaceLocalMessageWithServerMessage(messageData.id, response)
+      activeTab.value = 'chat'
+      handleProductDrawerClose()
+      displayToast('Configuration request sent', 1800)
+      scrollToBottom()
+    } catch (error) {
+      markLocalMessageFailed(messageData.id)
+      console.error('发送配置确认失败:', error)
+    } finally {
+      isSending.value = false
+    }
+  }
   
   // 从浏览历史分享商品到聊天
   const handleShareProductFromHistory = (product: any) => {
@@ -644,6 +729,8 @@ export const useWhatsAppState = (emit: any) => {
     if (!selectedAgent.value || isSending.value) return
     
     isSending.value = true
+
+    const metadata = buildOrderChatMetadata(order)
     
     const messageData = {
       id: Date.now(),
@@ -651,16 +738,9 @@ export const useWhatsAppState = (emit: any) => {
       sender_id: user.value?.id || 0,
       sender_name: user.value?.display_name || '访客',
       sender_email: currentSenderEmail(),
-      message: `订单 #${order.id}`,
+      message: `Order confirmation request: ${metadata.order_number || metadata.order_id}`,
       message_type: 'order',
-      metadata: {
-        order_id: order.id,
-        title: `订单 #${order.id}`,
-        total: order.total,
-        currency: order.currency,
-        url: order.url,
-        thumbnail: order.thumbnail
-      },
+      metadata,
       created_at: new Date().toISOString(),
       is_agent: false,
       sync_state: 'sending'
@@ -832,6 +912,12 @@ export const useWhatsAppState = (emit: any) => {
   })
 
   onBeforeUnmount(() => {
+    if (customerTypingIdleTimer) {
+      window.clearTimeout(customerTypingIdleTimer)
+      customerTypingIdleTimer = null
+    }
+    notifyCustomerTyping(false)
+    clearAgentTyping()
     closeCustomerServiceRealtime()
   })
   
@@ -861,6 +947,7 @@ export const useWhatsAppState = (emit: any) => {
     historyDrawerVisible,
     wishlistDrawerVisible,
     isUploadingImage,
+    agentTyping,
     showToast,
     toastMessage,
     isMemberLogged,
@@ -887,6 +974,7 @@ export const useWhatsAppState = (emit: any) => {
     handleProductDrawerClose,
     handleHistoryDrawerClose,
     shareProductToChat,
+    shareProductConfigConfirmToChat,
     handleShareProductFromHistory,
     shareOrderToChat,
     openCartFromChat,

@@ -60,8 +60,8 @@ go run ./cmd/server
 
 Default local address:
 
-- `http://localhost:9000`
-- health check: `http://localhost:9000/health`
+- `http://localhost:9200`
+- health check: `http://localhost:9200/health`
 
 ## Testing
 
@@ -94,4 +94,4 @@ go test ./...
 
 Old completion, security, quality, and refactoring reports live under `../docs/archive/`. They are useful context, but they are not the current source of truth.
 
-Last updated: 2026-07-02.
+Last updated: 2026-07-25.

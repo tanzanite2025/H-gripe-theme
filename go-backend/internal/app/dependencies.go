@@ -165,6 +165,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.Cart,
 		repos.Wishlist,
 		repos.Order,
+		repos.Loyalty,
 		services.VisitorProfile,
 	)
 	services.Order = service.NewOrderService(

@@ -175,7 +175,7 @@
 										:to="tab.to"
 										role="menuitem"
 										:aria-current="tab.active ? 'page' : undefined"
-										@click="closeBreadcrumbSubNav"
+										@click="scheduleBreadcrumbSubNavClose"
 									>
 										{{ tab.label }}
 									</NuxtLink>
@@ -318,7 +318,7 @@
 										:to="tab.to"
 										role="menuitem"
 										:aria-current="tab.active ? 'page' : undefined"
-										@click="closeBreadcrumbSubNav"
+										@click="scheduleBreadcrumbSubNavClose"
 									>
 										{{ tab.label }}
 									</NuxtLink>
@@ -764,6 +764,11 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 
 const closeBreadcrumbSubNav = () => {
   breadcrumbSubNavOpen.value = false
+}
+
+const scheduleBreadcrumbSubNavClose = () => {
+  if (typeof window === 'undefined') return
+  window.setTimeout(closeBreadcrumbSubNav, 0)
 }
 
 const updateBreadcrumbSubNavPosition = (target: EventTarget | null | undefined) => {

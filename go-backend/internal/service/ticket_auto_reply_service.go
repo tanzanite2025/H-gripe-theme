@@ -27,12 +27,13 @@ func (s *TicketService) GetWelcomeMessage(conversationID string, owner CustomerS
 	}
 
 	msg := &ticket.TicketMessage{
-		TicketID:   t.ID,
-		UserID:     0,
-		IsStaff:    true,
-		Content:    welcomeRule.ReplyMessage,
-		IsRead:     false,
-		IsInternal: false,
+		TicketID:    t.ID,
+		UserID:      0,
+		IsStaff:     true,
+		Content:     welcomeRule.ReplyMessage,
+		MessageType: "text",
+		IsRead:      false,
+		IsInternal:  false,
 	}
 	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
 		return "", false, nil, err
@@ -80,12 +81,13 @@ func (s *TicketService) MatchKeywordMessage(conversationID, message string, owne
 	}
 
 	msg := &ticket.TicketMessage{
-		TicketID:   t.ID,
-		UserID:     0,
-		IsStaff:    true,
-		Content:    matchedRule.ReplyMessage,
-		IsRead:     false,
-		IsInternal: false,
+		TicketID:    t.ID,
+		UserID:      0,
+		IsStaff:     true,
+		Content:     matchedRule.ReplyMessage,
+		MessageType: "text",
+		IsRead:      false,
+		IsInternal:  false,
 	}
 	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
 		return "", 0, nil, err

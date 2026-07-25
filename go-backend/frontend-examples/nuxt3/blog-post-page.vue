@@ -38,7 +38,7 @@
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const apiBase = config.public.apiBase || 'http://localhost:9000'
+const apiBase = config.public.apiBase || 'http://localhost:9200'
 
 const { locale, getPostTranslations, getLanguageName } = useI18n()
 

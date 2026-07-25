@@ -1,0 +1,9 @@
+{
+  "name": "tanzanite-theme-dev",
+  "private": true,
+  "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1",
+    "dev:stop": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1 -StopOnly",
+    "dev:ports": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1 -PortsOnly"
+  }
+}

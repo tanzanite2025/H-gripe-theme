@@ -122,7 +122,7 @@ func TestCustomerServiceDedicatedPathStillHandlesConversationMessages(t *testing
 	require.NotNil(t, conversation)
 	assert.Equal(t, customerServiceTicketCategory, conversation.Category)
 
-	_, customerMessage, err := ticketService.AddPublicCustomerServiceMessage(ticketConversationID(conversation), owner, "hello", agent.ID)
+	_, customerMessage, err := ticketService.AddPublicCustomerServiceMessage(ticketConversationID(conversation), owner, "hello", agent.ID, "text", "", "")
 	require.NoError(t, err)
 	require.NotNil(t, customerMessage)
 

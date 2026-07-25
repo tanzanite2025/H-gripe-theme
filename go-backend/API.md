@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-http://localhost:9000/api/v1
+http://localhost:9200/api/v1
 ```
 
 ## Version

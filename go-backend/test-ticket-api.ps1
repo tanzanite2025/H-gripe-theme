@@ -1,7 +1,7 @@
 # Ticket API 测试脚本
 # 测试所有客服工单相关的 API 端点
 
-$baseUrl = "http://localhost:9000"
+$baseUrl = "http://localhost:9200"
 $apiUrl = "$baseUrl/api/v1"
 
 Write-Host "=== Ticket API 测试 ===" -ForegroundColor Cyan

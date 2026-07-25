@@ -9,6 +9,7 @@ export interface ShopProduct {
   description?: string
   slug: string
   url: string
+  sku?: string
   thumbnail?: string
   priceNumber: number
   priceLabel: string
@@ -17,6 +18,38 @@ export interface ShopProduct {
     sale: number
   }
   stockQuantity: number | null
+  productType?: ShopProductType | null
+  variants: ShopProductVariant[]
+}
+
+export interface ShopProductType {
+  id: number
+  name: string
+  slug: string
+  specDefinitions: ShopProductSpecDefinition[]
+}
+
+export interface ShopProductSpecDefinition {
+  id: number
+  name: string
+  slug: string
+  group?: string
+  fieldType?: string
+  unit?: string
+  isVariantOption?: boolean
+  sortOrder?: number
+}
+
+export interface ShopProductVariant {
+  id: number
+  sku: string
+  title: string
+  optionValues: Record<string, string>
+  priceNumber: number
+  salePriceNumber: number | null
+  stockQuantity: number
+  weightGrams: number
+  isDefault: boolean
 }
 
 export interface ShopProductsResult {
@@ -59,10 +92,96 @@ const toOptionalPositiveNumber = (value: unknown) => {
 
 const formatPriceLabel = (amount: number) => (amount > 0 ? `$${amount}` : '')
 
+const parseOptionValues = (value: unknown): Record<string, string> => {
+  if (!value) return {}
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return Object.entries(value as Record<string, unknown>).reduce<Record<string, string>>((acc, [key, raw]) => {
+      const stringValue = String(raw ?? '').trim()
+      if (key && stringValue) {
+        acc[key] = stringValue
+      }
+      return acc
+    }, {})
+  }
+  if (typeof value !== 'string') return {}
+  try {
+    const parsed = JSON.parse(value)
+    return parseOptionValues(parsed)
+  } catch {
+    return {}
+  }
+}
+
+const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
+  const definitions = Array.isArray(item?.product_type?.spec_definitions)
+    ? item.product_type.spec_definitions
+    : []
+
+  return definitions
+    .map((definition: any): ShopProductSpecDefinition | null => {
+      const id = toFiniteNumber(definition?.id)
+      const slug = String(definition?.slug || '').trim()
+      const name = String(definition?.name || slug || '').trim()
+      if (!id || !slug || !name) return null
+
+      return {
+        id,
+        name,
+        slug,
+        group: definition?.group ? String(definition.group) : undefined,
+        fieldType: definition?.field_type ? String(definition.field_type) : undefined,
+        unit: definition?.unit ? String(definition.unit) : undefined,
+        isVariantOption: Boolean(definition?.is_variant_option),
+        sortOrder: toFiniteNumber(definition?.sort_order),
+      }
+    })
+    .filter((definition): definition is ShopProductSpecDefinition => Boolean(definition))
+}
+
+const normalizeProductType = (item: any): ShopProductType | null => {
+  if (!item?.product_type) return null
+  const id = toFiniteNumber(item.product_type.id)
+  const slug = String(item.product_type.slug || '').trim()
+  const name = String(item.product_type.name || slug || '').trim()
+  if (!id || !slug || !name) return null
+
+  return {
+    id,
+    name,
+    slug,
+    specDefinitions: normalizeSpecDefinitions(item),
+  }
+}
+
+const normalizeVariant = (variant: any): ShopProductVariant | null => {
+  const id = toFiniteNumber(variant?.id)
+  const sku = String(variant?.sku || '').trim()
+  if (!id || !sku) return null
+
+  const regular = toFiniteNumber(variant?.price)
+  const sale = toOptionalNumber(variant?.sale_price)
+  const salePriceNumber = sale && sale > 0 ? sale : null
+  const priceNumber = salePriceNumber ?? regular
+  const optionValues = parseOptionValues(variant?.option_values)
+  const title = String(variant?.title || Object.values(optionValues).join(' / ') || sku).trim()
+
+  return {
+    id,
+    sku,
+    title,
+    optionValues,
+    priceNumber,
+    salePriceNumber,
+    stockQuantity: toFiniteNumber(variant?.stock),
+    weightGrams: toFiniteNumber(variant?.weight_grams),
+    isDefault: Boolean(variant?.is_default),
+  }
+}
+
 export const normalizeShopProduct = (item: any): ShopProduct => {
   const id = toFiniteNumber(item?.id)
-  const variants = Array.isArray(item?.variants) ? item.variants : []
-  const defaultVariant = variants.find((variant: any) => variant?.is_default) || variants[0] || null
+  const variants = Array.isArray(item?.variants) ? item.variants.map(normalizeVariant).filter(Boolean) as ShopProductVariant[] : []
+  const defaultVariant = variants.find((variant) => variant.isDefault) || variants[0] || null
   const regular = toFiniteNumber(
     item?.prices?.regular,
     toFiniteNumber(defaultVariant?.price, toFiniteNumber(item?.price))
@@ -93,7 +212,8 @@ export const normalizeShopProduct = (item: any): ShopProduct => {
     title: String(item?.title || item?.name || ''),
     description: item?.excerpt || item?.short_description || item?.description || undefined,
     slug,
-    url: `/shop/${slug}`,
+    url: String(item?.preview_url || item?.url || `/shop/${slug}`),
+    sku: defaultVariant?.sku || item?.sku || undefined,
     thumbnail,
     priceNumber,
     priceLabel: formatPriceLabel(priceNumber),
@@ -102,6 +222,8 @@ export const normalizeShopProduct = (item: any): ShopProduct => {
       sale,
     },
     stockQuantity: stock,
+    productType: normalizeProductType(item),
+    variants,
   }
 }
 

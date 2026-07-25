@@ -96,6 +96,7 @@ func makePublicChatProduct(item productdomain.Product) gin.H {
 		"slug":               item.Slug,
 		"sku":                item.DisplaySKU(),
 		"thumbnail":          thumbnail,
+		"product_type":       makePublicProductType(item.ProductType),
 		"media":              makePublicProductMedia(item.Media),
 		"images":             makePublicProductMediaImages(item.Media),
 		"videos":             makePublicProductVideos(item.Media),
@@ -114,6 +115,36 @@ func makePublicChatProduct(item productdomain.Product) gin.H {
 		"preview_url": "/shop/" + item.Slug,
 		"updated_at":  item.UpdatedAt,
 		"created_at":  item.CreatedAt,
+	}
+}
+
+func makePublicProductType(productType *productdomain.ProductType) gin.H {
+	if productType == nil {
+		return nil
+	}
+
+	specDefinitions := make([]gin.H, 0, len(productType.SpecDefinitions))
+	for _, definition := range productType.SpecDefinitions {
+		if !definition.IsVisible {
+			continue
+		}
+		specDefinitions = append(specDefinitions, gin.H{
+			"id":                definition.ID,
+			"group":             definition.Group,
+			"name":              definition.Name,
+			"slug":              definition.Slug,
+			"field_type":        definition.FieldType,
+			"unit":              definition.Unit,
+			"is_variant_option": definition.IsVariantOption,
+			"sort_order":        definition.SortOrder,
+		})
+	}
+
+	return gin.H{
+		"id":               productType.ID,
+		"name":             productType.Name,
+		"slug":             productType.Slug,
+		"spec_definitions": specDefinitions,
 	}
 }
 
@@ -203,6 +234,7 @@ func makePublicVariants(variants []productdomain.ProductVariant) []gin.H {
 			"price":         variant.Price,
 			"sale_price":    salePrice,
 			"stock":         variant.Stock,
+			"weight_grams":  variant.Weight,
 			"is_default":    variant.IsDefault,
 		})
 	}

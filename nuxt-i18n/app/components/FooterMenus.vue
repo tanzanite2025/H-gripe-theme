@@ -295,7 +295,7 @@ const isOpen = (id: string) => {
   .footer-menus__title {
     margin: 0;
     padding: 1rem 0; /* Clickable area */
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     background: none; /* Remove gradient on mobile? Or keep? usually solid white is better for reading or keep theme. */
     -webkit-text-fill-color: unset; /* Reset text fill to allow color change */
     color: #f1f5f9;

@@ -20,9 +20,135 @@
         class="flex"
         :class="message.is_agent ? 'justify-end' : 'justify-start'"
       >
+        <!-- 配置确认消息 -->
+        <div
+          v-if="isConfigConfirmMessage(message)"
+          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#a5b4fc]/45 bg-[#111827]/90 p-3 text-white shadow-lg"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a5b4fc]">
+              Configuration request
+            </div>
+            <div class="text-[10px] opacity-50 whitespace-nowrap">
+              {{ formatMessageTime(message.created_at) }}
+            </div>
+          </div>
+          <div class="mt-2 flex gap-3">
+            <img
+              v-if="configProduct(message).thumbnail"
+              :src="configProduct(message).thumbnail"
+              alt="Product"
+              class="h-16 w-16 shrink-0 rounded-xl object-cover"
+            />
+            <div class="min-w-0 flex-1">
+              <a
+                v-if="configProduct(message).url"
+                :href="configProduct(message).url"
+                target="_blank"
+                rel="noopener"
+                class="block truncate text-sm font-semibold text-white hover:underline"
+              >
+                {{ configProduct(message).title || message.message }}
+              </a>
+              <div v-else class="truncate text-sm font-semibold text-white">
+                {{ configProduct(message).title || message.message }}
+              </div>
+              <div v-if="configProduct(message).price" class="mt-1 text-xs text-[#40ffaa]">
+                {{ configProduct(message).price }}
+              </div>
+              <div v-if="configProduct(message).sku" class="mt-1 text-[11px] text-white/55">
+                SKU: {{ configProduct(message).sku }}
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] leading-5 text-white/70">
+            <div v-if="configSelection(message).variant_title" class="font-semibold text-white/85">
+              Selected: {{ configSelection(message).variant_title }}
+            </div>
+            <div
+              v-if="configOptionRows(message).length"
+              class="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2"
+            >
+              <div
+                v-for="option in configOptionRows(message)"
+                :key="option.key"
+                class="rounded-lg bg-white/[0.05] px-2 py-1.5"
+              >
+                <span class="block text-[10px] uppercase tracking-[0.12em] text-white/45">
+                  {{ option.label }}
+                </span>
+                <span class="font-semibold text-white/80">
+                  {{ option.value }}<span v-if="option.unit"> {{ option.unit }}</span>
+                </span>
+              </div>
+            </div>
+            <div v-if="configSelection(message).weight_grams" class="mt-2 text-white/60">
+              Weight: {{ configSelection(message).weight_grams }}g
+            </div>
+            <div
+              v-if="!configOptionRows(message).length && !configSelection(message).variant_title && !configSelection(message).weight_grams"
+            >
+              Customer asked staff to confirm this product configuration.
+            </div>
+          </div>
+        </div>
+
+        <!-- 订单确认消息 -->
+        <div
+          v-else-if="isOrderMessage(message)"
+          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#40ffaa]/35 bg-[#07120b]/85 p-3 text-white shadow-lg"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#40ffaa]">
+              Order confirmation
+            </div>
+            <div class="text-[10px] opacity-50 whitespace-nowrap">
+              {{ formatMessageTime(message.created_at) }}
+            </div>
+          </div>
+          <div class="mt-2">
+            <a
+              v-if="orderPayload(message).url"
+              :href="orderPayload(message).url"
+              target="_blank"
+              rel="noopener"
+              class="block truncate text-sm font-semibold text-white hover:underline"
+            >
+              {{ orderPayload(message).title || message.message }}
+            </a>
+            <div v-else class="truncate text-sm font-semibold text-white">
+              {{ orderPayload(message).title || message.message }}
+            </div>
+            <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-white/55">
+              <span v-if="orderPayload(message).status">Status: {{ orderPayload(message).status }}</span>
+              <span v-if="orderPayload(message).payment_status">Payment: {{ orderPayload(message).payment_status }}</span>
+              <span v-if="orderPayload(message).shipping_status">Shipping: {{ orderPayload(message).shipping_status }}</span>
+            </div>
+            <div class="mt-2 text-xs font-semibold text-[#40ffaa]">
+              {{ formatOrderTotal(orderPayload(message)) }}
+            </div>
+          </div>
+          <div v-if="orderItems(message).length" class="mt-3 space-y-1.5">
+            <div
+              v-for="item in orderItems(message).slice(0, 3)"
+              :key="item.id || `${item.product_id}-${item.sku}`"
+              class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px]"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="truncate font-semibold text-white/85">{{ item.title || item.product_name || 'Product' }}</span>
+                <span class="shrink-0 text-white/60">x{{ item.quantity || 1 }}</span>
+              </div>
+              <div v-if="item.sku" class="mt-1 text-white/45">SKU: {{ item.sku }}</div>
+            </div>
+            <div v-if="orderItems(message).length > 3" class="text-[10px] text-white/45">
+              +{{ orderItems(message).length - 3 }} more item{{ orderItems(message).length - 3 > 1 ? 's' : '' }}
+            </div>
+          </div>
+        </div>
+
         <!-- 卡片类型消息 (Card) -->
         <a
-          v-if="message.type === 'card'"
+          v-else-if="message.type === 'card'"
           :href="message.url || '#'"
           target="_blank"
           rel="noopener"
@@ -75,6 +201,18 @@
           <div v-if="message.attachment_url" class="mt-2">
             <img :src="message.attachment_url" alt="附件" class="max-w-full rounded-xl" />
           </div>
+        </div>
+      </div>
+
+      <div v-if="agentTyping?.active" class="flex justify-end">
+        <div class="max-w-[75%] rounded-2xl border border-white/15 bg-black/35 px-3 py-2 text-xs text-white/70 shadow-lg">
+          <span class="font-semibold text-white/85">{{ agentTyping.displayName || 'Agent' }}</span>
+          <span class="ml-1">is typing</span>
+          <span class="ml-1 inline-flex gap-0.5 align-middle">
+            <span class="h-1 w-1 animate-pulse rounded-full bg-white/60"></span>
+            <span class="h-1 w-1 animate-pulse rounded-full bg-white/60 [animation-delay:120ms]"></span>
+            <span class="h-1 w-1 animate-pulse rounded-full bg-white/60 [animation-delay:240ms]"></span>
+          </span>
         </div>
       </div>
     </div>
@@ -164,6 +302,7 @@ const props = defineProps<{
   showVisitorEmailCapture: boolean
   isSending: boolean
   isUploadingImage: boolean
+  agentTyping?: { active: boolean; displayName?: string }
   currentThemeColor: string
 }>()
 
@@ -223,6 +362,57 @@ watch(() => props.messages, () => {
 const formatMessageTime = (time: string) => {
   const date = new Date(time)
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+}
+
+const messageMetadata = (message: any) => {
+  if (!message?.metadata) return {}
+  if (typeof message.metadata === 'string') {
+    try {
+      return JSON.parse(message.metadata)
+    } catch {
+      return {}
+    }
+  }
+  return message.metadata
+}
+
+const isConfigConfirmMessage = (message: any) => {
+  return message?.message_type === 'config_confirm'
+}
+
+const isOrderMessage = (message: any) => {
+  return message?.message_type === 'order'
+}
+
+const configProduct = (message: any) => {
+  const metadata = messageMetadata(message)
+  return metadata?.product || {}
+}
+
+const configSelection = (message: any) => {
+  const metadata = messageMetadata(message)
+  return metadata?.selections || {}
+}
+
+const configOptionRows = (message: any) => {
+  const options = configSelection(message)?.options
+  return Array.isArray(options) ? options : []
+}
+
+const orderPayload = (message: any) => {
+  return messageMetadata(message) || {}
+}
+
+const orderItems = (message: any) => {
+  const items = orderPayload(message)?.items
+  return Array.isArray(items) ? items : []
+}
+
+const formatOrderTotal = (order: any) => {
+  const total = Number(order?.total || 0)
+  const currency = order?.currency || 'USD'
+  if (!Number.isFinite(total) || total <= 0) return currency
+  return `${currency} ${total.toFixed(2)}`
 }
 
 // 长按逻辑

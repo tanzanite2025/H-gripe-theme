@@ -51,6 +51,7 @@ func (h *Handler) AddMessage(c *gin.Context) {
 	msg := &ticket.TicketMessage{
 		TicketID:    uint(ticketID),
 		Content:     req.Content,
+		MessageType: "text",
 		Attachments: string(attachments),
 	}
 
@@ -176,6 +177,12 @@ func ticketMessageResponse(item ticket.TicketMessage) gin.H {
 }
 
 func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversationID, senderName, messageType string, metadata interface{}) gin.H {
+	attachmentURL := ""
+	var attachments []string
+	if err := json.Unmarshal([]byte(item.Attachments), &attachments); err == nil && len(attachments) > 0 {
+		attachmentURL = attachments[0]
+	}
+
 	if strings.TrimSpace(senderName) == "" {
 		if item.IsStaff {
 			senderName = "Agent"
@@ -187,7 +194,11 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 		}
 	}
 	if strings.TrimSpace(messageType) == "" {
-		messageType = "text"
+		messageType = item.MessageType
+	}
+	messageType = normalizeTicketMessageType(messageType)
+	if metadata == nil {
+		metadata = parseTicketMessageMetadata(item.Metadata)
 	}
 
 	return gin.H{
@@ -199,9 +210,64 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 		"message":         item.Content,
 		"message_type":    messageType,
 		"metadata":        metadata,
+		"attachment_url":  attachmentURL,
 		"created_at":      item.CreatedAt,
 		"is_agent":        item.IsStaff,
 	}
+}
+
+func normalizeTicketMessageType(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "product", "order", "image", "config_confirm":
+		return value
+	default:
+		return "text"
+	}
+}
+
+func marshalTicketMessageMetadata(value interface{}) (string, error) {
+	if value == nil {
+		return "", nil
+	}
+	payload, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+	if string(payload) == "null" {
+		return "", nil
+	}
+	return string(payload), nil
+}
+
+func marshalTicketMessageAttachments(values ...string) string {
+	attachments := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			attachments = append(attachments, value)
+		}
+	}
+	if len(attachments) == 0 {
+		return ""
+	}
+	payload, err := json.Marshal(attachments)
+	if err != nil {
+		return ""
+	}
+	return string(payload)
+}
+
+func parseTicketMessageMetadata(value string) interface{} {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	var payload interface{}
+	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+		return nil
+	}
+	return payload
 }
 
 func displayName(firstName, lastName, username, email string) string {

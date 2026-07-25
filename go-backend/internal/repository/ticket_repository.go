@@ -106,6 +106,18 @@ func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int, 
 	return tickets, total, err
 }
 
+func (r *TicketRepository) FindCustomerServiceConversationsInWindow(start, end time.Time, filters CustomerServiceConversationFilters) ([]ticket.Ticket, error) {
+	var tickets []ticket.Ticket
+
+	query := r.db.Model(&ticket.Ticket{}).
+		Where("tickets.category = ?", "customer_service").
+		Where("tickets.created_at >= ? AND tickets.created_at < ?", start, end)
+	query = applyCustomerServiceConversationFilters(query, filters)
+
+	err := query.Order("tickets.created_at DESC").Find(&tickets).Error
+	return tickets, err
+}
+
 func applyCustomerServiceConversationFilters(query *gorm.DB, filters CustomerServiceConversationFilters) *gorm.DB {
 	if filters.AssignedTo != nil {
 		query = query.Where("tickets.assigned_to = ?", *filters.AssignedTo)

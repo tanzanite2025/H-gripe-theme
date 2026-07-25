@@ -27,6 +27,7 @@ These routes are consumed by Nuxt customer UI:
 | Create/reuse customer conversation | `POST /api/v1/customer-service/conversations` |
 | Check existing customer conversation | `GET /api/v1/customer-service/has-conversation` |
 | Send customer message | `POST /api/v1/customer-service/messages` |
+| Publish customer typing state | `POST /api/v1/customer-service/typing` |
 | Read customer-owned messages | `GET /api/v1/customer-service/messages/:conversation_id` |
 | Subscribe to customer-owned realtime events | `GET /api/v1/customer-service/events` |
 | Welcome auto-reply | `GET /api/v1/customer-service/auto-reply/welcome` |
@@ -47,6 +48,7 @@ These routes are consumed by the admin UI:
 | Read one conversation's customer context | `GET /api/admin/customer-service/conversations/:id/context` |
 | Read one conversation's messages | `GET /api/admin/customer-service/conversations/:id/messages` |
 | Send staff reply | `POST /api/admin/customer-service/conversations/:id/messages` |
+| Publish staff typing state | `POST /api/admin/customer-service/conversations/:id/typing` |
 | Mark messages read | `POST /api/admin/customer-service/conversations/:id/messages/mark-read` |
 | Transfer conversation | `PATCH /api/admin/customer-service/conversations/:id/transfer` |
 | List visitor profiles | `GET /api/admin/customer-service/visitor-profiles` |
@@ -95,6 +97,7 @@ Conversation listing filters are applied in the Go API/repository layer, not by 
   - Staff inbox for Public Chat conversations.
   - Reads/writes only through `/api/admin/customer-service/*`.
   - Displays the read-only customer context panel beside the staff conversation.
+  - The conversation list must expose display-safe customer context at a glance: visitor/member identity, coarse region, and member points-tier icon when the customer is a logged-in account.
 - `go-backend/web/admin/src/views/VisitorProfiles.vue`
   - Read-only operations page for `visitor_profiles`.
   - Supports search and capture-state filters for account/anonymous identity, email, cart session, Public Chat visitor binding, country, locale, and last-seen window.
@@ -140,6 +143,27 @@ The active Public Chat fact source is:
 - public chat staff profiles from `agent_profiles`
 - visitor context from `visitor_profiles`
 
+`ticket_messages` now stores structured chat payload facts directly:
+
+- `content`: human-readable fallback summary for every message.
+- `message_type`: `text`, `product`, `order`, `image`, or `config_confirm`.
+- `metadata`: JSON string payload for structured message cards.
+
+For `config_confirm`, Nuxt builds `metadata` from the product/SKU fact source only:
+
+- `metadata.product`: product id, selected variant id, title, slug, SKU, URL, thumbnail, price label, and numeric price.
+- `metadata.selections`: selected variant title, SKU, variant option rows from `variants.option_values`, stock, `weight_grams`, price label, and numeric price.
+- The shared frontend builder is `app/composables/chat/useProductConfigConfirmPayload.ts`.
+- Admin renders this payload read-only. It must not let staff edit or fork product configuration facts inside the chat workspace.
+
+For `order`, Nuxt builds `metadata` from the customer's order fact source:
+
+- `metadata`: order id/number, status, payment status, shipping status, total, currency, URL, item count, and order item summaries.
+- The shared frontend builder is `app/composables/chat/useOrderChatPayload.ts`.
+- Orders Tab uses an explicit confirm button. Do not make the whole order card a hidden send action.
+
+Do not persist product/order/config chat payloads only in frontend local storage or transient API response data. Nuxt storefront, Admin staff UI, HTTP history reads, and SSE refreshes must all render from the same persisted `ticket_messages` row.
+
 `customer_service` records are intentionally not part of the ordinary ticket inbox/list/stat/detail/message path. This is important because anonymous Public Chat conversations still need a persisted `tickets.user_id` for the legacy schema, while the real customer identity is `customer_user_id` or `visitor_session_hash`. Treating those records as ordinary tickets would leak or misclassify customer conversations.
 
 The older generic `/api/v1/chat/messages` path has been retired. The Go route, handler, service, repository, and domain models were removed, and migration `033_drop_legacy_chat_tables.up.sql` drops `chat_messages` / `chat_sessions` so they cannot become a second message source. Do not reintroduce a generic chat message table for Public Chat; use the dedicated customer-service ticket path.
@@ -147,6 +171,52 @@ The older generic `/api/v1/chat/messages` path has been retired. The Go route, h
 ## Customer context boundary
 
 The admin customer-service workspace now has a read-only customer context resolver. Its rule is simple: display existing facts, do not invent missing identity data.
+
+### Admin conversation list display contract
+
+The staff conversation list should help operations understand who is chatting without turning the inbox into an unsafe identity-profiling surface.
+
+Each row should show:
+
+- Identity state:
+  - `Visitor` / `Guest` when the conversation belongs only to the signed Public Chat visitor cookie.
+  - `Member` / `Logged-in customer` when the conversation is linked to a real customer account.
+- Member tier:
+  - For logged-in customers, show the customer's points / membership tier icon beside the identity label.
+  - For anonymous visitors, do not show a fake tier, guessed tier, or default member icon.
+- Coarse region:
+  - Show only a broad operational region such as `中国台湾`, `中国香港`, `中国大陆`, `United States`, `Japan`, or `Unknown`.
+  - The row can use region as customer-service context and operations analysis input, but must not expose raw IP, raw User-Agent, or hidden hashes.
+- Contact/capture hint:
+  - Show captured email only when the customer provided it or when it comes from an authenticated account.
+  - Do not infer email or identity from cart/session fingerprints.
+
+The list API should return these fields as display-ready values so the admin frontend does not duplicate identity, tier, or region mapping rules.
+
+### Coarse region analytics boundary
+
+The first GeoIP/region enhancement target is intentionally narrow: "today's chatting customers by broad region" for operations analysis.
+
+Allowed:
+
+- Count customer-service conversations/messages by coarse region.
+- Connect coarse region to product-interest signals already present in the chat context, cart, wishlist, or shared product/config cards.
+- Display aggregated analysis such as "customers from 中国台湾 asked more about wheelsets today."
+
+Not allowed in this phase:
+
+- Store or display raw IP addresses.
+- Store precise geolocation, latitude/longitude, street-level location, or postal code.
+- Build long-term hidden behavioral profiles from IP/User-Agent fingerprints.
+- Let region data drive discriminatory or irreversible customer decisions.
+
+Preferred source order:
+
+1. CDN/request region headers, for example country/region headers supplied by Cloudflare or the deployment edge.
+2. Existing `visitor_profiles` coarse fields when the visitor was already touched by cart/chat.
+3. `Unknown` when the request does not provide reliable region context.
+
+If a future phase adds a GeoIP provider, it must still output only coarse location into the customer-service/admin contract unless the privacy/legal boundary is explicitly changed.
 
 ### Currently resolved
 
@@ -170,7 +240,8 @@ The admin customer-service workspace now has a read-only customer context resolv
 
 ### Not resolved yet
 
-- GeoIP quality. The backend stores coarse country/region headers when present, but there is no dedicated GeoIP provider, consent/audit UI, or enrichment job yet.
+- GeoIP quality. The backend stores coarse country/region headers when present, but there is no dedicated GeoIP provider, consent/audit UI, or enrichment job yet. The next safe step is not precision; it is a clear admin display contract for broad region, source, and unknown-state handling.
+- Admin conversation-list identity/tier display. The customer context resolver can expose logged-in customer facts, but the list UI still needs a compact `Visitor`/`Member` badge and member points-tier icon for logged-in customers.
 
 The current `visitor_profiles` source binds signed Public Chat visitor cookie, cart session id, optional captured email, locale, coarse region, and request hashes without guessing. Any future expansion must keep raw IP out of the table unless a privacy/legal decision explicitly changes that boundary.
 
@@ -182,9 +253,10 @@ HTTP chat remains the durable source of truth. SSE is now the first realtime acc
 - admin inbox subscribes to `/api/admin/customer-service/events?scope=inbox`;
 - customer storefront can subscribe to `/api/v1/customer-service/events?conversation_id={conversation_id}`;
 - support users receive only events for conversations they are authorized to see;
-- clients keep HTTP read/write and use SSE only as a refresh/invalidation signal.
+- clients keep HTTP read/write and use SSE as the refresh/invalidation signal;
+- typing indicators use scoped HTTP `POST` endpoints to publish transient state, then SSE broadcasts `conversation.typing` to the opposite side.
 
-The older WebSocket route `GET /api/v1/customer-service/ws` is still only a guarded ping/pong foundation and should not be wired to frontend chat until a bidirectional use case exists.
+The older WebSocket route `GET /api/v1/customer-service/ws` is still only a guarded ping/pong foundation. It has no conversation scope, no admin namespace, and no persisted chat contract, so it must not be wired to frontend/admin chat as a message or typing source.
 
 ## Realtime event contract target
 
@@ -223,7 +295,7 @@ Every pushed event should use one envelope so Nuxt and admin do not drift:
 Planned event types:
 
 - `conversation.message.created`
-  - Payload: the same normalized message object returned by HTTP message endpoints.
+  - Payload: the same normalized message object returned by HTTP message endpoints, including `message_type` and parsed `metadata` for structured cards such as `config_confirm`.
 - `conversation.messages.read`
   - Payload: `reader_kind`, `read_by_user_id`, and `read_at`.
 - `conversation.assigned`
@@ -232,16 +304,20 @@ Planned event types:
   - Payload: `status` and `display_status`.
 - `conversation.context.updated`
   - Payload: minimal invalidation only, not a full customer context snapshot. Clients should refetch `/context`.
+- `conversation.typing`
+  - Payload: `is_typing`, `display_name`, and `expires_at`.
+  - This is transient UI state only. It is not stored in `ticket_messages` and must not trigger HTTP message refreshes.
 - `heartbeat`
   - Payload: server timestamp.
 
 ### Implementation rules
 
-- Persist first, broadcast second. A WebSocket event must only be emitted after the message/status/assignment is durable in Go.
+- Persist first, broadcast second. Durable message/status/assignment realtime events must only be emitted after the Go write succeeds.
+- Transient events such as `conversation.typing` are allowed to skip persistence, but must still be scoped by the same customer/admin authorization as HTTP message reads.
 - The event payload must be derived from the same response builders used by HTTP handlers.
 - Missing realtime must never block chat. Nuxt/admin clients keep HTTP send/read and use reconnect with polling fallback.
 - Do not broadcast raw visitor IP, raw user-agent, or hidden profile hashes. Only send display-safe ids and values already exposed by HTTP.
-- Do not let clients send arbitrary chat events before the server has a validation path. Client-to-server WebSocket messages should initially be limited to `subscribe`, `pong`, and future `typing` once scoped authorization exists.
+- Do not let clients send arbitrary chat events before the server has a validation path. If WebSocket is expanded later, client-to-server messages must start with scoped `subscribe`/`pong` style control frames only and reuse the same authorization boundaries defined here.
 
 ### Implementation order
 
@@ -254,10 +330,21 @@ Planned event types:
    - visitor email/customer context invalidation.
 3. Admin inbox frontend is wired to SSE and refetches HTTP facts on events.
 4. Nuxt customer chat is wired to SSE. It listens for customer-owned conversation events, then refetches `/api/v1/customer-service/messages/:conversation_id` and merges persisted messages into the local room cache.
-5. Keep WebSocket reserved for a future bidirectional use case such as scoped typing indicators.
+5. Structured message payload persistence is active for `message_type` + `metadata`; `config_confirm` cards render in both Nuxt customer chat and Admin staff chat after HTTP reload/SSE refresh.
+6. Scoped typing indicators are active:
+   - Nuxt publishes customer typing through `POST /api/v1/customer-service/typing`;
+   - Admin publishes staff typing through `POST /api/admin/customer-service/conversations/:id/typing`;
+   - both sides receive `conversation.typing` through the existing SSE event hub and clear the indicator by expiry.
+7. Keep WebSocket reserved for a future true bidirectional use case that cannot be handled cleanly by HTTP + SSE.
 
 ## Next implementation order
 
-1. Revisit product/SKU structured configuration messages after the product/SKU contract is final.
-2. Add scoped typing indicators only after deciding whether WebSocket is worth the extra bidirectional complexity.
-3. Add GeoIP/consent/audit enrichment only after privacy/legal boundaries are explicitly confirmed.
+1. Revisit real product/SKU configurable fields after the product/SKU contract is final, then populate `config_confirm.metadata.selections`.
+2. Add the admin conversation-list customer summary:
+   - `Visitor`/`Member` display label;
+   - member points-tier icon for logged-in customers;
+   - coarse region display with `Unknown` fallback;
+   - no raw IP/User-Agent/hash exposure.
+3. Add today's coarse-region operations stats for Public Chat, then connect the aggregate region signal to product-interest facts already present in chat/cart/wishlist/product cards.
+4. Add GeoIP provider, consent, audit, or enrichment jobs only after the broad-region contract proves useful and the privacy/legal boundary is explicitly confirmed.
+5. If a future feature genuinely requires WebSocket, design a scoped admin + storefront protocol first; do not reuse the legacy `/ws` ping/pong route as-is.

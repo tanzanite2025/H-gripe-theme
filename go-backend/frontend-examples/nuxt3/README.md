@@ -17,7 +17,7 @@ The main storefront now lives in `../../../nuxt-i18n/`. Treat these files as exa
 Set the backend URL in the consuming Nuxt app:
 
 ```env
-NUXT_PUBLIC_API_BASE=http://localhost:9000
+NUXT_PUBLIC_API_BASE=http://localhost:9200
 ```
 
 Relevant backend docs:

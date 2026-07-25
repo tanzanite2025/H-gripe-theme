@@ -170,13 +170,14 @@ const paymentIcons: PaymentIcon[] = [
 <style scoped>
 .app-footer {
   /* 增大底部 padding，预留空间给底部浮动 Dock (Desktop: 8rem, Mobile: 6rem) */
-    padding: 1rem 1.5rem 6.5rem;
+  padding: 1rem 1.5rem 6.5rem;
   background: linear-gradient(140deg, #0c0f17 0%, #141925 45%, #1b2230 100%);
   color: #f5f6fa;
 }
 
 .footer-content {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -249,15 +250,6 @@ const paymentIcons: PaymentIcon[] = [
   object-fit: contain;
   padding: 0; /* Remove internal padding */
 }
-
-/* ... existing media query ... */
-  .footer-main-row {
-    display: grid;
-    grid-template-columns: 480px 1fr; /* Increased to 480px */
-    align-items: start;
-    gap: 4rem;
-    margin-bottom: 0;
-  }
 
 .payment-icon-tile__img.payment-icon--alipay {
   transform: scale(1.2);
@@ -360,9 +352,9 @@ const paymentIcons: PaymentIcon[] = [
 
   .footer-main-row {
     display: grid;
-    grid-template-columns: 480px 1fr;
+    grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
     align-items: start;
-    gap: 4rem;
+    gap: clamp(2rem, 4vw, 5rem);
     margin-bottom: 0;
   }
 

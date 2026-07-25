@@ -88,7 +88,7 @@ X-CSRF-Token: <csrf_token_cookie_value>
 ## Local Curl Examples
 
 ```powershell
-$env:API_BASE_URL = "http://localhost:9000"
+$env:API_BASE_URL = "http://localhost:9200"
 
 curl.exe -X POST "$env:API_BASE_URL/api/v1/subscriptions" `
   -H "Content-Type: application/json" `

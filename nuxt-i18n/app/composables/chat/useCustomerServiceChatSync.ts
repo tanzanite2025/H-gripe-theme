@@ -20,7 +20,8 @@ const realtimeEventTypes = [
   'conversation.messages.read',
   'conversation.assigned',
   'conversation.status.changed',
-  'conversation.context.updated'
+  'conversation.context.updated',
+  'conversation.typing'
 ]
 
 export const useCustomerServiceChatSync = ({
@@ -36,8 +37,10 @@ export const useCustomerServiceChatSync = ({
 }: CustomerServiceChatSyncOptions) => {
   const realtimeSource = ref<EventSource | null>(null)
   const realtimeConversationId = ref('')
+  const agentTyping = ref<{ active: boolean; displayName: string }>({ active: false, displayName: '' })
   let realtimeReconnectTimer: number | null = null
   let realtimeSyncTimer: number | null = null
+  let remoteTypingTimer: number | null = null
 
   const rememberConversationId = (payload: any) => {
     const id = payload?.conversation_id || payload?.conversationId || payload?.data?.conversation_id || payload?.data?.conversationId
@@ -78,6 +81,20 @@ export const useCustomerServiceChatSync = ({
         title: normalized.metadata.title || normalized.message,
         url: normalized.metadata.url || '#',
         thumbnail: normalized.metadata.thumbnail || ''
+      }
+    }
+
+    if (normalized.message_type === 'config_confirm') {
+      return {
+        ...normalized,
+        type: 'config_confirm'
+      }
+    }
+
+    if (normalized.message_type === 'order') {
+      return {
+        ...normalized,
+        type: 'order'
       }
     }
 
@@ -208,7 +225,8 @@ export const useCustomerServiceChatSync = ({
             sender_email: currentSenderEmail(),
             agent_id: selectedAgent.value?.id || '',
             message_type: messageData.message_type || 'text',
-            metadata: messageData.metadata || null
+            metadata: messageData.metadata || null,
+            attachment_url: messageData.attachment_url || ''
           })
         },
         'Failed to send customer-service message'
@@ -270,6 +288,14 @@ export const useCustomerServiceChatSync = ({
     return `${publicApiBase.value}/customer-service/events?${query.toString()}`
   }
 
+  const clearAgentTyping = () => {
+    agentTyping.value = { active: false, displayName: '' }
+    if (import.meta.client && remoteTypingTimer) {
+      window.clearTimeout(remoteTypingTimer)
+      remoteTypingTimer = null
+    }
+  }
+
   const closeCustomerServiceRealtimeSource = () => {
     if (realtimeSource.value) {
       realtimeSource.value.close()
@@ -289,6 +315,7 @@ export const useCustomerServiceChatSync = ({
       window.clearTimeout(realtimeSyncTimer)
       realtimeSyncTimer = null
     }
+    clearAgentTyping()
   }
 
   const scheduleRealtimeMessageSync = () => {
@@ -307,9 +334,72 @@ export const useCustomerServiceChatSync = ({
     try {
       const payload = JSON.parse(event.data || '{}')
       if (payload?.conversation_id && payload.conversation_id !== conversationId.value) return
+      if (payload?.type === 'conversation.typing') {
+        handleCustomerServiceTypingEvent(payload)
+        return
+      }
       scheduleRealtimeMessageSync()
     } catch (error) {
       console.warn('解析客服实时事件失败:', error)
+    }
+  }
+
+  const handleCustomerServiceTypingEvent = (event: any) => {
+    if (event?.actor?.kind !== 'agent') return
+
+    const payload = event.payload || {}
+    if (payload.is_typing === false) {
+      clearAgentTyping()
+      return
+    }
+
+    agentTyping.value = {
+      active: true,
+      displayName: payload.display_name || selectedAgent.value?.name || 'Agent'
+    }
+
+    if (import.meta.client) {
+      if (remoteTypingTimer) {
+        window.clearTimeout(remoteTypingTimer)
+      }
+      const expiresAt = Date.parse(payload.expires_at || '')
+      const timeout = Number.isFinite(expiresAt)
+        ? Math.max(1200, Math.min(5000, expiresAt - Date.now()))
+        : 3500
+      remoteTypingTimer = window.setTimeout(() => {
+        clearAgentTyping()
+      }, timeout)
+    }
+  }
+
+  const sendTypingIndicator = async (isTyping = true) => {
+    if (!import.meta.client) return
+    try {
+      const currentConversationId = isTyping
+        ? await ensureCustomerServiceConversation()
+        : conversationId.value
+      if (!currentConversationId) return
+
+      await authRequest(
+        '/customer-service/typing',
+        {
+          method: 'POST',
+          headers: {
+            accept: 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            conversation_id: currentConversationId,
+            is_typing: isTyping,
+            display_name: user.value?.display_name || user.value?.username || 'Visitor'
+          })
+        },
+        'Failed to send customer-service typing signal'
+      )
+    } catch (error) {
+      // Typing is transient UI state. Message send/read must keep working even if
+      // this best-effort signal is unavailable.
+      console.warn('客服 typing 状态上报失败:', error)
     }
   }
 
@@ -353,11 +443,14 @@ export const useCustomerServiceChatSync = ({
     ensureCustomerServiceConversation,
     loadMessagesFromAPI,
     sendMessageToAPI,
+    sendTypingIndicator,
     replaceLocalMessageWithServerMessage,
     markLocalMessageFailed,
     checkAutoReply,
     sendWelcomeMessage,
     connectCustomerServiceRealtime,
-    closeCustomerServiceRealtime
+    closeCustomerServiceRealtime,
+    agentTyping,
+    clearAgentTyping
   }
 }

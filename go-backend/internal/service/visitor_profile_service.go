@@ -120,6 +120,13 @@ func (s *VisitorProfileService) FindByCustomerServiceVisitorHash(hash string) (*
 	return s.visitorRepo.FindByCustomerServiceVisitorHash(hash)
 }
 
+func (s *VisitorProfileService) FindByUserID(userID uint) (*visitor.Profile, error) {
+	if s == nil || s.visitorRepo == nil || userID == 0 {
+		return nil, repository.ErrRecordNotFound
+	}
+	return s.visitorRepo.FindByUserID(userID)
+}
+
 func (s *VisitorProfileService) ListProfiles(page, pageSize int, input VisitorProfileListInput) ([]VisitorProfileSnapshot, int64, error) {
 	if s == nil || s.visitorRepo == nil {
 		return nil, 0, nil
@@ -395,7 +402,7 @@ func maskVisitorProfileToken(value string) string {
 
 func visitorProfileRegionLabel(profile visitor.Profile) string {
 	parts := []string{}
-	for _, part := range []string{profile.CountryCode, profile.Region, profile.City} {
+	for _, part := range []string{countryCodeDisplayName(profile.CountryCode), profile.Region, profile.City} {
 		part = strings.TrimSpace(part)
 		if part != "" {
 			parts = append(parts, part)
