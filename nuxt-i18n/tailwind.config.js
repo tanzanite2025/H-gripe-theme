@@ -11,6 +11,17 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          'TanzaniteSystem',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'sans-serif',
+        ],
+      },
       screens: {
         // 更细粒度的移动端宽度段，用于精细调整布局
         // iPhone SE / 8 等 375 宽（同时涵盖 375x667、375x812 等）
