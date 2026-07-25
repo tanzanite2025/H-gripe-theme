@@ -101,7 +101,6 @@ export default defineNuxtConfig({
     })
   },
 
-  // @ts-expect-error: site config supported by Nuxt runtime, not in TS defs
   site: {
     url: 'https://tanzanite.site',
   },
@@ -114,11 +113,10 @@ export default defineNuxtConfig({
 
   i18n: {
     restructureDir: 'app',
-    locales,
+    locales: locales as any,
     lazy: true,
     langDir: 'i18n/locales',
     defaultLocale: 'en',
-    fallbackLocale: 'en',
     strategy: 'prefix_except_default',
     detectBrowserLanguage: {
       useCookie: true,
@@ -168,7 +166,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/',
     buildAssetsDir: '_nuxt/',
-    cdnURL: process.env.CDN_URL || undefined,
+    cdnURL: env.CDN_URL || undefined,
     head: {
       meta: [
         { charset: 'utf-8' },

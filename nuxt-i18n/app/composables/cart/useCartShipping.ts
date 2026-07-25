@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import type { Ref } from 'vue'
 import { isZipInRanges } from '../useShippingValidation'
 import type {
   CartShippingTemplate,
@@ -8,7 +8,7 @@ import type {
 } from './types/cart-calculation-types'
 
 export const useCartShipping = (
-  shippingTemplates: ReturnType<typeof ref<CartShippingTemplate[]>>
+  shippingTemplates: Ref<CartShippingTemplate[]>
 ) => {
   const selectedShippingTemplate = ref<number | null>(null)
 
@@ -69,7 +69,8 @@ export const useCartShipping = (
       return 0
     }
 
-    const template = shippingTemplates.value.find(
+    const templates = shippingTemplates.value || []
+    const template = templates.find(
       item => item.id === selectedShippingTemplate.value
     )
 
@@ -125,7 +126,8 @@ export const useCartShipping = (
     const totalWeight = items.reduce((sum, item) => sum + itemWeightKg(item) * item.quantity, 0)
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0)
 
-    for (const template of shippingTemplates.value) {
+    const templates = shippingTemplates.value || []
+    for (const template of templates) {
       if (!isTemplateActive(template)) continue
 
       if (!template.rules?.length) {

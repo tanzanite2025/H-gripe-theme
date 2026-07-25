@@ -182,7 +182,12 @@ func (r *RegistrationRepository) CreateWarrantyClaim(claim *registration.Warrant
 func (r *RegistrationRepository) FindWarrantyClaimByID(id uint) (*registration.WarrantyClaim, error) {
 	var claim registration.WarrantyClaim
 	err := r.db.Preload("Registration").Preload("Registration.User").
-		Preload("Registration.Product").First(&claim, id).Error
+		Preload("Registration.Product").
+		Preload("OrderItem").
+		Preload("ServiceRecords", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
+		First(&claim, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +219,9 @@ func (r *RegistrationRepository) FindAllWarrantyClaims(page, pageSize int, statu
 
 	offset := (page - 1) * pageSize
 	err := query.Preload("Registration").Preload("Registration.User").
-		Preload("Registration.Product").Order("created_at DESC").
+		Preload("Registration.Product").
+		Preload("OrderItem").
+		Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&claims).Error
 
 	return claims, total, err
@@ -234,6 +241,38 @@ func (r *RegistrationRepository) UpdateWarrantyClaimStatus(id uint, status strin
 	}
 
 	return r.db.Model(&registration.WarrantyClaim{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// UpdateWarrantyClaimResolution 更新保修申请处理备注
+func (r *RegistrationRepository) UpdateWarrantyClaimResolution(id uint, resolution string, processedBy uint) error {
+	now := time.Now()
+	updates := map[string]interface{}{
+		"resolution":   resolution,
+		"processed_by": processedBy,
+		"processed_at": &now,
+	}
+
+	return r.db.Model(&registration.WarrantyClaim{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// UpdateWarrantyClaimOrderItem 绑定或解绑保修申请订单行
+func (r *RegistrationRepository) UpdateWarrantyClaimOrderItem(id uint, orderItemID *uint) error {
+	return r.db.Model(&registration.WarrantyClaim{}).Where("id = ?", id).
+		Update("order_item_id", orderItemID).Error
+}
+
+// FindWarrantyServiceRecords 查找保修申请服务记录
+func (r *RegistrationRepository) FindWarrantyServiceRecords(claimID uint) ([]registration.WarrantyServiceRecord, error) {
+	var records []registration.WarrantyServiceRecord
+	err := r.db.Where("claim_id = ?", claimID).
+		Order("created_at DESC").
+		Find(&records).Error
+	return records, err
+}
+
+// CreateWarrantyServiceRecord 创建保修服务记录
+func (r *RegistrationRepository) CreateWarrantyServiceRecord(record *registration.WarrantyServiceRecord) error {
+	return r.db.Create(record).Error
 }
 
 // DeleteWarrantyClaim 删除保修申请

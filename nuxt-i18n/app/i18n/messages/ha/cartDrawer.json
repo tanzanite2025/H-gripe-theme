@@ -22,5 +22,6 @@
     "tax": "Haraji",
     "estimatedTotal": "Jimla ta kiyasta",
     "finalShippingNote": "Jigilar ƙarshe tana amfani da farashin backend bayan ka zaɓi inda za a aika."
-  }
+  },
+  "loading": "Loading cart..."
 }

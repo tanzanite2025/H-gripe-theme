@@ -22,5 +22,6 @@
     "tax": "Tasse",
     "estimatedTotal": "Totale stimato",
     "finalShippingNote": "La spedizione finale usa il preventivo backend dopo la scelta della destinazione."
-  }
+  },
+  "loading": "Loading cart..."
 }

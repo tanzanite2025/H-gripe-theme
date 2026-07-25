@@ -22,5 +22,6 @@
     "tax": "Buwis",
     "estimatedTotal": "Tinatayang total",
     "finalShippingNote": "Ginagamit ng final shipping ang backend quote pagkatapos mong pumili ng destinasyon."
-  }
+  },
+  "loading": "Loading cart..."
 }

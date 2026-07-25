@@ -9,7 +9,26 @@ import (
 	"time"
 )
 
-var ErrWarrantyEmailMismatch = errors.New("email does not match order record")
+var (
+	ErrWarrantyEmailMismatch        = errors.New("email does not match order record")
+	ErrWarrantyOrderItemMismatch    = errors.New("order item does not match warranty claim")
+	ErrWarrantyOrderItemUnavailable = errors.New("order item binding is unavailable")
+)
+
+var validWarrantyServiceTypes = map[string]struct{}{
+	"inspection":  {},
+	"repair":      {},
+	"replacement": {},
+	"refund":      {},
+	"shipping":    {},
+}
+
+var validWarrantyServiceStatuses = map[string]struct{}{
+	"open":       {},
+	"processing": {},
+	"resolved":   {},
+	"closed":     {},
+}
 
 type WarrantyClaimByOrderInput struct {
 	OrderNumber  string
@@ -19,6 +38,15 @@ type WarrantyClaimByOrderInput struct {
 	IsTubeless   bool
 	ImageURLs    []string
 	VideoURL     string
+}
+
+type WarrantyServiceRecordInput struct {
+	ServiceType string
+	Status      string
+	Summary     string
+	CostAmount  float64
+	Currency    string
+	PerformedAt *time.Time
 }
 
 func (s *RegistrationService) VerifyWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
@@ -187,6 +215,145 @@ func (s *RegistrationService) UpdateWarrantyClaimStatus(id uint, status string, 
 	claim.ProcessedAt = &now
 
 	return s.registrationRepo.UpdateWarrantyClaim(claim)
+}
+
+// UpdateWarrantyClaimResolution 更新保修申请处理备注
+func (s *RegistrationService) UpdateWarrantyClaimResolution(id uint, resolution string, processedBy uint) error {
+	if _, err := s.registrationRepo.FindWarrantyClaimByID(id); err != nil {
+		return err
+	}
+
+	return s.registrationRepo.UpdateWarrantyClaimResolution(id, strings.TrimSpace(resolution), processedBy)
+}
+
+// ListWarrantyClaimOrderItems 获取保修申请可绑定订单行
+func (s *RegistrationService) ListWarrantyClaimOrderItems(id uint) ([]orderdomain.OrderItem, error) {
+	if s.orderRepo == nil {
+		return nil, ErrWarrantyOrderItemUnavailable
+	}
+
+	claim, err := s.registrationRepo.FindWarrantyClaimByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	orderNumber := strings.TrimSpace(claim.OrderNumber)
+	if orderNumber == "" {
+		return []orderdomain.OrderItem{}, nil
+	}
+
+	order, err := s.orderRepo.FindByOrderNumber(orderNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return order.Items, nil
+}
+
+// BindWarrantyClaimOrderItem 绑定或解绑保修申请订单行
+func (s *RegistrationService) BindWarrantyClaimOrderItem(id uint, orderItemID *uint) error {
+	if orderItemID == nil || *orderItemID == 0 {
+		return s.registrationRepo.UpdateWarrantyClaimOrderItem(id, nil)
+	}
+
+	if s.orderRepo == nil {
+		return ErrWarrantyOrderItemUnavailable
+	}
+
+	claim, err := s.registrationRepo.FindWarrantyClaimByID(id)
+	if err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(claim.OrderNumber) == "" {
+		return ErrWarrantyOrderItemMismatch
+	}
+
+	item, err := s.orderRepo.FindOrderItemByID(*orderItemID)
+	if err != nil {
+		return err
+	}
+
+	order, err := s.orderRepo.FindByID(item.OrderID)
+	if err != nil {
+		return err
+	}
+
+	if order.OrderNumber != claim.OrderNumber {
+		return ErrWarrantyOrderItemMismatch
+	}
+	if order.UserID != 0 && claim.UserID != 0 && order.UserID != claim.UserID {
+		return ErrWarrantyOrderItemMismatch
+	}
+	if claim.Registration != nil && claim.Registration.ProductID != 0 && claim.Registration.ProductID != item.ProductID {
+		return ErrWarrantyOrderItemMismatch
+	}
+
+	return s.registrationRepo.UpdateWarrantyClaimOrderItem(id, orderItemID)
+}
+
+// ListWarrantyServiceRecords 获取保修申请服务记录
+func (s *RegistrationService) ListWarrantyServiceRecords(claimID uint) ([]registration.WarrantyServiceRecord, error) {
+	if _, err := s.registrationRepo.FindWarrantyClaimByID(claimID); err != nil {
+		return nil, err
+	}
+	return s.registrationRepo.FindWarrantyServiceRecords(claimID)
+}
+
+// CreateWarrantyServiceRecord 创建保修服务记录
+func (s *RegistrationService) CreateWarrantyServiceRecord(claimID uint, input WarrantyServiceRecordInput, createdBy uint) (*registration.WarrantyServiceRecord, error) {
+	claim, err := s.registrationRepo.FindWarrantyClaimByID(claimID)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := strings.TrimSpace(input.Summary)
+	if summary == "" {
+		return nil, errors.New("service summary is required")
+	}
+
+	serviceType := strings.ToLower(strings.TrimSpace(input.ServiceType))
+	if serviceType == "" {
+		serviceType = "inspection"
+	}
+	if _, ok := validWarrantyServiceTypes[serviceType]; !ok {
+		return nil, errors.New("invalid service record type")
+	}
+
+	status := strings.ToLower(strings.TrimSpace(input.Status))
+	if status == "" {
+		status = "open"
+	}
+	if _, ok := validWarrantyServiceStatuses[status]; !ok {
+		return nil, errors.New("invalid service record status")
+	}
+	if input.CostAmount < 0 {
+		return nil, errors.New("service cost amount cannot be negative")
+	}
+
+	currency := strings.ToUpper(strings.TrimSpace(input.Currency))
+	if currency == "" {
+		currency = "USD"
+	}
+
+	record := &registration.WarrantyServiceRecord{
+		ClaimID:        claim.ID,
+		RegistrationID: claim.RegistrationID,
+		ServiceType:    serviceType,
+		Status:         status,
+		Summary:        summary,
+		CostAmount:     input.CostAmount,
+		Currency:       currency,
+		PerformedBy:    createdBy,
+		CreatedBy:      createdBy,
+		PerformedAt:    input.PerformedAt,
+	}
+
+	if err := s.registrationRepo.CreateWarrantyServiceRecord(record); err != nil {
+		return nil, err
+	}
+
+	return record, nil
 }
 
 // DeleteWarrantyClaim 删除保修申请

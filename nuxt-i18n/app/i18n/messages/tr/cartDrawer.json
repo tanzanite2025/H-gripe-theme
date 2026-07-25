@@ -22,5 +22,6 @@
     "tax": "Vergi",
     "estimatedTotal": "Tahmini toplam",
     "finalShippingNote": "Son kargo ücreti, hedef seçildikten sonra backend teklifiyle hesaplanır."
-  }
+  },
+  "loading": "Loading cart..."
 }

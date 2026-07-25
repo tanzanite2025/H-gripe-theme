@@ -1,5 +1,5 @@
 <template>
-  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="页面统计">
+  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]" aria-label="页面统计">
     <div
       v-for="item in items"
       :key="item.key || item.label"

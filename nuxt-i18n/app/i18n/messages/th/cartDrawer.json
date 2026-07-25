@@ -22,5 +22,6 @@
     "tax": "ภาษี",
     "estimatedTotal": "ยอดรวมโดยประมาณ",
     "finalShippingNote": "ค่าจัดส่งสุดท้ายจะใช้ใบเสนอราคาจาก backend หลังจากคุณเลือกปลายทาง"
-  }
+  },
+  "loading": "Loading cart..."
 }

@@ -22,5 +22,6 @@
     "tax": "Steuern",
     "estimatedTotal": "Geschätzte Gesamtsumme",
     "finalShippingNote": "Der endgültige Versand nutzt das Backend-Angebot, nachdem Sie ein Ziel ausgewählt haben."
-  }
+  },
+  "loading": "Loading cart..."
 }

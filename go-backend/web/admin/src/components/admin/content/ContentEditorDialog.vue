@@ -1,0 +1,144 @@
+<template>
+  <Dialog :open="open" @update:open="emit('update:open', $event)">
+    <DialogContent size="xl" class="max-h-[92dvh] overflow-y-auto p-0" @open-auto-focus.prevent>
+      <form @submit.prevent="emit('submit')">
+        <DialogHeader class="border-b px-5 py-4 pr-12">
+          <DialogTitle>{{ mode === 'create' ? '添加文章' : '编辑文章' }}</DialogTitle>
+          <DialogDescription>正文支持 Markdown，发布状态和 SEO 信息可独立维护。</DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-7 px-5 py-5">
+          <section class="grid gap-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]">
+            <div>
+              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">正文内容</h3>
+              <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                文章标题、摘要与 Markdown 正文。
+              </p>
+            </div>
+            <div class="min-w-0">
+              <div class="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(150px,0.7fr)]">
+                <AdminFormField label="标题" required :error="errors.title">
+                  <Input v-model="form.title" placeholder="请输入文章标题" @input="emit('clear-error', 'title')" />
+                </AdminFormField>
+                <AdminFormField label="语言" required>
+                  <Select v-model="form.locale">
+                    <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="zh">中文</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </AdminFormField>
+                <AdminFormField label="Slug" required :error="errors.slug" class="md:col-span-2">
+                  <Input v-model="form.slug" placeholder="例如 crystal-care-guide" @input="emit('clear-error', 'slug')" />
+                </AdminFormField>
+                <AdminFormField label="摘要" class="md:col-span-2">
+                  <Textarea v-model="form.excerpt" class="min-h-24" placeholder="请输入文章摘要" />
+                </AdminFormField>
+                <AdminFormField label="内容（Markdown）" class="md:col-span-2">
+                  <Textarea
+                    v-model="form.content"
+                    class="min-h-80 resize-y font-mono text-[13px] leading-6"
+                    placeholder="请输入文章内容"
+                  />
+                </AdminFormField>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid gap-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]">
+            <div>
+              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">发布信息</h3>
+              <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                控制文章状态、封面图和内容标签。
+              </p>
+            </div>
+            <div class="min-w-0">
+              <div class="grid gap-4 md:grid-cols-2">
+                <AdminFormField label="状态" required>
+                  <Select v-model="form.status">
+                    <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">草稿</SelectItem>
+                      <SelectItem value="published">已发布</SelectItem>
+                      <SelectItem value="archived">已归档</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </AdminFormField>
+                <AdminFormField label="特色图片">
+                  <div class="relative">
+                    <ImageIcon class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input v-model="form.featured_image" class="pl-9" placeholder="图片 URL" />
+                  </div>
+                </AdminFormField>
+                <AdminFormField label="标签" class="md:col-span-2">
+                  <Input v-model="form.tags" placeholder="多个标签用逗号分隔" />
+                </AdminFormField>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid gap-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]">
+            <div>
+              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">SEO</h3>
+              <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                可选的搜索结果信息与规范链接。
+              </p>
+            </div>
+            <div class="min-w-0">
+              <div class="grid gap-4 md:grid-cols-2">
+                <AdminFormField label="SEO 标题">
+                  <Input v-model="form.meta_title" placeholder="SEO 标题" />
+                </AdminFormField>
+                <AdminFormField label="SEO 关键词">
+                  <Input v-model="form.meta_keywords" placeholder="多个关键词用逗号分隔" />
+                </AdminFormField>
+                <AdminFormField label="SEO 描述" class="md:col-span-2">
+                  <Textarea v-model="form.meta_description" class="min-h-20" placeholder="SEO 描述" />
+                </AdminFormField>
+                <AdminFormField label="规范 URL" class="md:col-span-2">
+                  <Input v-model="form.canonical_url" type="url" placeholder="https://example.com/article" />
+                </AdminFormField>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <DialogFooter class="sticky bottom-0 mx-0 mb-0 rounded-b-lg border-t bg-background px-5 py-4">
+          <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
+          <Button type="submit" :disabled="submitting">
+            <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
+            {{ submitting ? '保存中' : '保存文章' }}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
+</template>
+
+<script setup>
+import { Image as ImageIcon, LoaderCircle } from '@lucide/vue'
+import AdminFormField from '@/components/admin/AdminFormField.vue'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+
+defineProps({
+  open: { type: Boolean, default: false },
+  mode: { type: String, default: 'create' },
+  form: { type: Object, required: true },
+  errors: { type: Object, default: () => ({}) },
+  submitting: { type: Boolean, default: false }
+})
+
+const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+</script>

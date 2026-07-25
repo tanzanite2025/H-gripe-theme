@@ -175,5 +175,14 @@
       "giftCardDiscount": "礼品卡抵扣",
       "total": "总计"
     }
+  },
+  "fields": {
+    "name": "Name",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "state": "State",
+    "zip": "ZIP",
+    "country": "Country"
   }
 }

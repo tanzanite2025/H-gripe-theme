@@ -101,19 +101,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRuntimeConfig } from '#imports'
 import SocialIcons from '~/components/SocialIcons.vue'
 import FooterMenus from '~/components/FooterMenus.vue'
 import SubscriptionOptIn from '~/components/SubscriptionOptIn.vue'
 
-const config = useRuntimeConfig()
-
 const currentYear = computed(() => new Date().getFullYear())
-
-const siteTitle = computed(() => {
-  const title = (config.public as { siteTitle?: string }).siteTitle
-  return title && title.trim().length ? title : 'Tanzanite'
-})
 
 interface FooterSocialItem {
   url: string

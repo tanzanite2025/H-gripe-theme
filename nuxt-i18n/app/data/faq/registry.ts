@@ -53,6 +53,25 @@ export const faqRoutePathByPageId: Record<string, string> = {
   'company-ourstory': '/company/ourstory',
 }
 
+export type ResolvedPageFaqData = PageFaqData & {
+  pageId: string
+}
+
+export function getPageFaqId(page: PageFaqData): string {
+  return page.pageId || page.id || ''
+}
+
+export function resolvePageFaqData(page: PageFaqData): ResolvedPageFaqData | null {
+  const pageId = getPageFaqId(page)
+  return pageId ? { ...page, pageId } : null
+}
+
+export function resolvePageFaqDataList(pages: PageFaqData[]): ResolvedPageFaqData[] {
+  return pages
+    .map(resolvePageFaqData)
+    .filter((page): page is ResolvedPageFaqData => Boolean(page))
+}
+
 /**
  * Get FAQ data for a specific page (Static fallback)
  */
@@ -69,7 +88,10 @@ export function getAllFaqData(): PageFaqData[] {
 
 export function getFaqDataByRoutePath(routePath: string): PageFaqData | undefined {
   const normalizedPath = normalizeFaqRoutePath(routePath)
-  return getAllFaqData().find(page => normalizeFaqRoutePath(faqRoutePathByPageId[page.pageId] || '') === normalizedPath)
+  return getAllFaqData().find(page => {
+    const pageId = getPageFaqId(page)
+    return normalizeFaqRoutePath(faqRoutePathByPageId[pageId] || '') === normalizedPath
+  })
 }
 
 /**

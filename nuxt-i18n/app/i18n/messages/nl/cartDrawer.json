@@ -22,5 +22,6 @@
     "tax": "Belasting",
     "estimatedTotal": "Geschat totaal",
     "finalShippingNote": "De uiteindelijke verzending gebruikt de backend-offerte nadat je een bestemming kiest."
-  }
+  },
+  "loading": "Loading cart..."
 }

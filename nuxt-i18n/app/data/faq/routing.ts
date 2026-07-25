@@ -6,7 +6,9 @@ const FAQ_AUTO_INSERT_DISABLED_PATHS = new Set([
 ])
 
 export function normalizeFaqRoutePath(routePath: string) {
-  let normalized = String(routePath || '/').split('?')[0].split('#')[0].trim()
+  const [pathWithoutQuery = '/'] = String(routePath || '/').split('?')
+  const [pathWithoutHash = '/'] = pathWithoutQuery.split('#')
+  let normalized = pathWithoutHash.trim()
   const localeCodes = localeManifest
     .map((locale: { code: string }) => String(locale.code || '').trim())
     .filter(Boolean)

@@ -7,11 +7,7 @@
         class="footer-menus__column"
         :class="{ 'is-open': isOpen(section.id) }"
       >
-        <h3
-          v-if="section.id !== 'resources'"
-          class="footer-menus__title"
-          @click="toggleSection(section.id)"
-        >
+        <h3 class="footer-menus__title" @click="toggleSection(section.id)">
           <span class="footer-menus__title-text">
             <span v-if="section.id === 'support'">
               {{ $t('footer.menus.support', 'Support') }}
@@ -30,42 +26,26 @@
 
         <!-- Special brand/contact column for the 'resources' section -->
         <div v-if="section.id === 'resources'" class="footer-menus__brand-text mobile-accordion-content">
-          <p class="footer-menus__brand-paragraph">
-            {{
-              $t(
-                'footer.brand.line1',
-                'Tanzanite is a brand of Top Sports Co., Limited.'
-              )
-            }}
+          <p v-if="siteName" class="footer-menus__brand-name">
+            {{ siteName }}
           </p>
-          <p class="footer-menus__brand-paragraph">
-            {{
-              $t(
-                'footer.brand.line2',
-                'Flat 1602, 16/F, Lucky Centre,'
-              )
-            }}
-            <br />
-            {{
-              $t(
-                'footer.brand.line3',
-                'No.165-171 Wan Chai Road, Wan Chai'
-              )
-            }}
-            <br />
-            {{
-              $t(
-                'footer.brand.line4',
-                'Hong Kong.'
-              )
-            }}
+          <p v-if="siteDescription" class="footer-menus__brand-paragraph">
+            {{ siteDescription }}
           </p>
-          <p class="footer-menus__brand-paragraph">
+          <p v-if="contactEmail" class="footer-menus__brand-paragraph">
             <a
-              href="mailto:support@tanzanite.site"
+              :href="`mailto:${contactEmail}`"
               class="footer-menus__link"
             >
-              support@tanzanite.site
+              {{ contactEmail }}
+            </a>
+          </p>
+          <p v-if="contactPhone" class="footer-menus__brand-paragraph">
+            <a
+              :href="`tel:${contactPhone}`"
+              class="footer-menus__link"
+            >
+              {{ contactPhone }}
             </a>
           </p>
         </div>
@@ -142,12 +122,19 @@ import { computed, ref } from 'vue'
 import { useLocalePath } from '#imports'
 import type { FooterSection } from '~/utils/footerMenus'
 import { footerMenus } from '~/utils/footerMenus'
+import { useSiteSettings } from '~/composables/usePublicSettings'
 
 const props = defineProps<{
   menus?: FooterSection[]
 }>()
 
 const localePath = useLocalePath()
+const { siteSettings } = useSiteSettings()
+
+const siteName = computed(() => siteSettings.value.siteTitle?.trim() || '')
+const siteDescription = computed(() => siteSettings.value.siteDescription?.trim() || '')
+const contactEmail = computed(() => siteSettings.value.contactEmail?.trim() || '')
+const contactPhone = computed(() => siteSettings.value.contactPhone?.trim() || '')
 
 const sections = computed<FooterSection[]>(() => {
   if (props.menus && props.menus.length) {
@@ -156,24 +143,9 @@ const sections = computed<FooterSection[]>(() => {
   return footerMenus
 })
 
-// Mobile Accordion Logic
-// Resources column is open by default on mobile if openSections is empty? Or closed?
-// User asked for "Click Expand", so likely closed by default.
 const openSections = ref<Record<string, boolean>>({})
 
 const toggleSection = (id: string) => {
-  // Only toggle on mobile - logic handled visually via CSS for desktop override,
-  // but state change is harmless.
-  // Note: Resources doesn't have a title to click in the original code, but I need to handle that.
-  // Original Resources had `v-if="section.id !== 'resources'"`.
-  // If user wants ALL columns foldable, I should probably add a title for Resources or 
-  // assume Resources is the "Address" part which might be always visible or folded under "Contact"?
-  // Looking at code: Resources prints brand text directly.
-  // It has NO title. So it cannot be toggled.
-  // However, the user said "PRODUCTS, SUPPORT, COMPANY, and the LAST ONE (Address)".
-  // So I should probably Add a Title for Resources ("Contact Us") or make the partial header clickable.
-  // But the code `v-if="section.id !== 'resources'"` prevents title rendering.
-  // I will UNCOMMENT the title for resources but use a key for it like 'Contact'.
   openSections.value[id] = !openSections.value[id]
 }
 
@@ -236,6 +208,14 @@ const isOpen = (id: string) => {
   font-size: 0.85rem;
   line-height: 1.7;
   color: var(--tz-text-secondary);
+}
+
+.footer-menus__brand-name {
+  margin: 0 0 0.85rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #f8fafc;
 }
 
 .footer-menus__brand-paragraph {

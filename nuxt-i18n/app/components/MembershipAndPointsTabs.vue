@@ -269,19 +269,23 @@ import {
   isPageSubNavigationTabId,
   membershipAndPointsTabs,
   type MembershipTabId,
+  type PageSubNavigationTab,
 } from '~/utils/pageSubNavigation'
 
 const props = defineProps<{ variant?: 'page' | 'modal' }>()
 
 const isModal = computed(() => props.variant === 'modal')
 
-const tabs = membershipAndPointsTabs
+const tabs = membershipAndPointsTabs as readonly PageSubNavigationTab[]
+const isMembershipTabId = (id: string): id is MembershipTabId => {
+  return membershipAndPointsTabs.some(tab => tab.id === id)
+}
 
 const activeTab = ref<MembershipTabId>('myinfo')
 const route = useRoute()
 
 const setActiveTab = (id: MembershipTabId | string) => {
-  if (!isPageSubNavigationTabId(tabs, id)) return
+  if (!isMembershipTabId(id)) return
   activeTab.value = id
   if (!isModal.value && typeof window !== 'undefined') {
     const url = new URL(window.location.href)
@@ -293,7 +297,7 @@ const setActiveTab = (id: MembershipTabId | string) => {
 const syncTabWithHash = (hash: string | null | undefined) => {
   if (isModal.value || !hash) return
   const clean = hash.startsWith('#') ? hash.slice(1) : hash
-  if (isPageSubNavigationTabId(tabs, clean)) {
+  if (isMembershipTabId(clean)) {
     activeTab.value = clean
   }
 }

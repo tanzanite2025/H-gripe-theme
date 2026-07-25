@@ -284,6 +284,7 @@ const selectedConfigVariant = computed<ShopProductVariant | null>(() => {
   return configVariants.value.find(variant => Number(variant.id) === selectedId)
     || configVariants.value.find(variant => variant.isDefault)
     || configVariants.value[0]
+    || null
 })
 
 const specDefinitions = computed<ShopProductSpecDefinition[]>(() => {

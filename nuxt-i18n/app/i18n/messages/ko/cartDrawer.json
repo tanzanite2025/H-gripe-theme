@@ -22,5 +22,6 @@
     "tax": "세금",
     "estimatedTotal": "예상 총액",
     "finalShippingNote": "최종 배송비는 목적지를 선택한 뒤 백엔드 견적으로 계산됩니다."
-  }
+  },
+  "loading": "Loading cart..."
 }

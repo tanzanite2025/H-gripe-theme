@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
 import { useI18n, useLocalePath } from '#imports'
-import type { CartItem } from '~/types/cart'
+import type { CartItem } from '~~/types/cart'
 import { useCart } from '~/composables/useCart'
 
 const { t } = useI18n()

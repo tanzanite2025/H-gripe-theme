@@ -22,5 +22,6 @@
     "tax": "कर",
     "estimatedTotal": "अनुमानित कुल",
     "finalShippingNote": "गंतव्य चुनने के बाद अंतिम शिपिंग backend quote से तय होगी।"
-  }
+  },
+  "loading": "Loading cart..."
 }

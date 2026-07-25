@@ -22,5 +22,6 @@
     "tax": "税费",
     "estimatedTotal": "预估总计",
     "finalShippingNote": "最终运费会在你选择目的地后使用后台报价计算。"
-  }
+  },
+  "loading": "Loading cart..."
 }

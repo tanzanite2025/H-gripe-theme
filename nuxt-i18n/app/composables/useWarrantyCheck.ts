@@ -87,7 +87,7 @@ export const useWarrantyCheck = () => {
 
   const formatDate = (dateStr: string): string => {
     if (!dateStr) return '-'
-    const [year, month] = dateStr.split('-')
+    const [year = '', month = ''] = dateStr.split('-')
 
     if (String(locale.value).startsWith('zh')) {
       return `${year}年${month}月`

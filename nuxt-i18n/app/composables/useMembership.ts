@@ -26,36 +26,52 @@ interface RedeemGiftCardOption {
   cover_image?: string
 }
 
-const emptyTierInfo = () => ({ current: null, next: null, pct: 0 })
+type LoyaltyRecord = Record<string, unknown>
+type LoyaltyTierRecord = LoyaltyRecord & {
+  min?: number | string | null
+  max?: number | string | null
+}
+
+const toFiniteNumber = (value: unknown, fallback = 0) => {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : fallback
+}
+
+const emptyTierInfo = (): { current: LoyaltyTierRecord | null; next: LoyaltyTierRecord | null; pct: number } => ({ current: null, next: null, pct: 0 })
 
 export function useMembership() {
   const auth = useAuth()
 
   // ========== 用户数据 ==========
   const userData = computed(() => auth.user.value)
+  const loyalty = computed<LoyaltyRecord | null>(() => {
+    const value = userData.value?.loyalty
+    return value && typeof value === 'object' ? value as LoyaltyRecord : null
+  })
   const isLogged = computed(() => !!userData.value)
-  const levelName = computed(() => userData.value?.loyalty?.level || '—')
-  const topTierImage = computed(() => userData.value?.loyalty?.top_tier_image || '')
-  const points = computed(() => userData.value?.loyalty?.points ?? 0)
+  const levelName = computed<string>(() => String(loyalty.value?.level || '—'))
+  const topTierImage = computed<string>(() => String(loyalty.value?.top_tier_image || ''))
+  const points = computed<number>(() => toFiniteNumber(loyalty.value?.points))
   const profileInfo = computed(() => userData.value?.profile || null)
-  const tiers = computed(() => {
-    const tierList = userData.value?.loyalty?.tiers
-    return Array.isArray(tierList) ? tierList : []
+  const tiers = computed<LoyaltyTierRecord[]>(() => {
+    const tierList = loyalty.value?.tiers
+    return Array.isArray(tierList) ? tierList as LoyaltyTierRecord[] : []
   })
 
   // ========== 等级进度 ==========
   const tierInfo = computed(() => {
     const pts = points.value
-    const tierList = tiers.value as any[]
+    const tierList = tiers.value
     if (!tierList.length) return emptyTierInfo()
 
-    let current: any = null
-    let next: any = null
+    let current: LoyaltyTierRecord | null = null
+    let next: LoyaltyTierRecord | null = null
 
     for (let i = 0; i < tierList.length; i++) {
       const t = tierList[i]
-      const min = Number(t.min)
-      const max = Number(t.max)
+      if (!t) continue
+      const min = toFiniteNumber(t.min)
+      const max = toFiniteNumber(t.max, -1)
       const inRange = (max === -1) ? (pts >= min) : (pts >= min && pts <= max)
       if (inRange) {
         current = t
@@ -64,8 +80,9 @@ export function useMembership() {
       }
     }
 
-    if (!current && tierList.length) {
-      current = tierList[0]
+    const firstTier = tierList[0]
+    if (!current && firstTier) {
+      current = firstTier
       next = tierList[1] || null
     }
 

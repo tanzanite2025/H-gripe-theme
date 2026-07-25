@@ -2,11 +2,11 @@
  * 购物车税费计算
  * 支持多税率累加和自动税率选择
  */
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import type { TaxRate } from './types/cart-calculation-types'
 
 export const useCartTax = (
-  taxRates: ReturnType<typeof ref<TaxRate[]>>
+  taxRates: Ref<TaxRate[]>
 ) => {
   // 状态
   const selectedTaxRates = ref<number[]>([])
@@ -23,7 +23,7 @@ export const useCartTax = (
 
     // 累加所有选中的税率
     const totalTaxRate = selectedTaxRates.value.reduce((sum, taxId) => {
-      const tax = taxRates.value.find(t => t.id === taxId)
+      const tax = (taxRates.value || []).find(t => t.id === taxId)
       return sum + (tax?.rate || 0)
     }, 0)
 
@@ -39,7 +39,7 @@ export const useCartTax = (
     }
 
     const region = shippingAddress.value.region
-    const matchedTaxes = taxRates.value.filter(
+    const matchedTaxes = (taxRates.value || []).filter(
       t => t.region && t.region.toLowerCase() === region.toLowerCase()
     )
 

@@ -149,7 +149,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useCart } from '~/composables/useCart'
 import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
-import type { CartItem } from '~/types/cart'
+import type { CartItem } from '~~/types/cart'
 
 type Maybe<T> = T | null | undefined
 

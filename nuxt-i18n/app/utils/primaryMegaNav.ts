@@ -49,8 +49,9 @@ export const normalizePrimaryMegaNavPath = (path: string, localeCodes: string[] 
   const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
   const absolutePath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
   const segments = absolutePath.split('/').filter(Boolean)
+  const firstSegment = segments[0] || ''
   const withoutLocale =
-    segments.length >= 1 && localeCodes.includes(segments[0])
+    firstSegment && localeCodes.includes(firstSegment)
       ? `/${segments.slice(1).join('/')}`
       : absolutePath
 

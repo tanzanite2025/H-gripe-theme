@@ -22,5 +22,6 @@
     "tax": "কর",
     "estimatedTotal": "আনুমানিক মোট",
     "finalShippingNote": "গন্তব্য নির্বাচন করার পর চূড়ান্ত শিপিং backend quote দিয়ে হিসাব হবে।"
-  }
+  },
+  "loading": "Loading cart..."
 }

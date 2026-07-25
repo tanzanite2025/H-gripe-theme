@@ -46,8 +46,10 @@ export interface FaqCategory {
  * Page-specific FAQ data structure
  */
 export interface PageFaqData {
+  /** Optional legacy identifier used by older static FAQ files */
+  id?: string
   /** Page identifier (e.g., 'home', 'shop', 'product-detail') */
-  pageId: string
+  pageId?: string
   /** Page display title for the FAQ section */
   title?: string
   /** Optional subtitle or description */

@@ -1,14 +1,20 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 const apiBase =
   process.env.NUXT_PUBLIC_API_BASE ||
   process.env.GO_API_BASE ||
   process.env.API_BASE ||
-  'https://tanzanite.site/api/v1'
+  ''
 const localesUrl = process.env.GO_LOCALES_URL || process.env.LOCALES_URL
-const manifestPath = path.resolve('i18n/locales.manifest.js')
+const manifestPath = path.resolve('app/i18n/locales.manifest.js')
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+const defaultGoLanguagesPath = path.resolve(scriptDir, '..', '..', 'go-backend/internal/api/v1/i18n/handler.go')
+const goLanguagesPath = process.env.GO_I18N_LANGUAGES_FILE
+  ? path.resolve(process.env.GO_I18N_LANGUAGES_FILE)
+  : defaultGoLanguagesPath
 
 function loadManifestLocales() {
   if (!fs.existsSync(manifestPath)) {
@@ -42,6 +48,70 @@ async function fetchBackendLocales() {
   return data.languages
 }
 
+function unquoteGoString(value) {
+  const trimmed = String(value || '').trim()
+  if (trimmed.startsWith('`') && trimmed.endsWith('`')) {
+    return trimmed.slice(1, -1)
+  }
+
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return trimmed.replace(/^"|"$/g, '')
+  }
+}
+
+function readGoStringField(entry, fieldName) {
+  const quotedStringPattern = '"(?:\\\\.|[^"\\\\])*"|`[^`]*`'
+  const fieldPattern = new RegExp(`${fieldName}\\s*:\\s*(${quotedStringPattern})`)
+  const match = entry.match(fieldPattern)
+  return match ? unquoteGoString(match[1]) : ''
+}
+
+function parseGoSupportedLanguages(source) {
+  const blockMatch = source.match(/var\s+SupportedLanguages\s*=\s*\[\]Language\s*\{([\s\S]*?)\n\}/)
+  if (!blockMatch) {
+    throw new Error('SupportedLanguages declaration not found in Go i18n handler')
+  }
+
+  const languages = []
+  for (const match of blockMatch[1].matchAll(/\{([^{}]*)\}/g)) {
+    const entry = match[1]
+    const code = readGoStringField(entry, 'Code')
+    if (!code) continue
+
+    const enabledMatch = entry.match(/Enabled\s*:\s*(true|false)/)
+    languages.push({
+      code,
+      name: readGoStringField(entry, 'Name'),
+      native_name: readGoStringField(entry, 'NativeName'),
+      enabled: enabledMatch ? enabledMatch[1] === 'true' : false,
+    })
+  }
+
+  if (!languages.length) {
+    throw new Error('No languages parsed from Go i18n handler')
+  }
+
+  return languages
+}
+
+function loadLocalBackendLocales() {
+  if (!fs.existsSync(goLanguagesPath)) {
+    throw new Error(`Go i18n handler not found: ${goLanguagesPath}`)
+  }
+
+  return parseGoSupportedLanguages(fs.readFileSync(goLanguagesPath, 'utf8'))
+}
+
+async function loadBackendLocales() {
+  if (localesUrl || apiBase) {
+    return fetchBackendLocales()
+  }
+
+  return loadLocalBackendLocales()
+}
+
 function toMap(list) {
   const map = new Map()
   for (const item of list) {
@@ -65,8 +135,9 @@ function diffLocales(manifestList, backendList) {
     } else {
       const m = manifestMap.get(code)
       const b = backendMap.get(code)
-      if (m?.name && b?.name && m.name !== b.name) {
-        nameMismatch.push({ code, manifest: m.name, backend: b.name })
+      const backendDisplayName = b?.native_name || b?.name
+      if (m?.name && backendDisplayName && m.name !== backendDisplayName) {
+        nameMismatch.push({ code, manifest: m.name, backend: backendDisplayName })
       }
     }
   }
@@ -84,7 +155,7 @@ async function main() {
   try {
     const [manifestLocales, backendLocales] = await Promise.all([
       loadManifestLocales(),
-      fetchBackendLocales(),
+      loadBackendLocales(),
     ])
 
     const { missingInManifest, extraInManifest, nameMismatch } = diffLocales(manifestLocales, backendLocales)

@@ -3,6 +3,7 @@ package i18n
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -33,39 +34,39 @@ type Language struct {
 // SupportedLanguages 支持的语言列表（34种语言）
 var SupportedLanguages = []Language{
 	{Code: "en", Name: "English", NativeName: "English", Enabled: true},
-	{Code: "zh", Name: "Chinese (Simplified)", NativeName: "简体中文", Enabled: true},
-	{Code: "zh-TW", Name: "Chinese (Traditional)", NativeName: "繁體中文", Enabled: true},
-	{Code: "es", Name: "Spanish", NativeName: "Español", Enabled: true},
 	{Code: "fr", Name: "French", NativeName: "Français", Enabled: true},
 	{Code: "de", Name: "German", NativeName: "Deutsch", Enabled: true},
+	{Code: "es", Name: "Spanish", NativeName: "Español", Enabled: true},
 	{Code: "ja", Name: "Japanese", NativeName: "日本語", Enabled: true},
 	{Code: "ko", Name: "Korean", NativeName: "한국어", Enabled: true},
+	{Code: "it", Name: "Italian", NativeName: "Italiano", Enabled: true},
 	{Code: "pt", Name: "Portuguese", NativeName: "Português", Enabled: true},
 	{Code: "ru", Name: "Russian", NativeName: "Русский", Enabled: true},
 	{Code: "ar", Name: "Arabic", NativeName: "العربية", Enabled: true},
-	{Code: "it", Name: "Italian", NativeName: "Italiano", Enabled: true},
-	{Code: "nl", Name: "Dutch", NativeName: "Nederlands", Enabled: true},
-	{Code: "pl", Name: "Polish", NativeName: "Polski", Enabled: true},
-	{Code: "tr", Name: "Turkish", NativeName: "Türkçe", Enabled: true},
-	{Code: "vi", Name: "Vietnamese", NativeName: "Tiếng Việt", Enabled: true},
+	{Code: "fi", Name: "Finnish", NativeName: "Suomi", Enabled: true},
+	{Code: "da", Name: "Danish", NativeName: "Dansk", Enabled: true},
 	{Code: "th", Name: "Thai", NativeName: "ไทย", Enabled: true},
+	{Code: "sv", Name: "Swedish", NativeName: "Svenska", Enabled: true},
 	{Code: "id", Name: "Indonesian", NativeName: "Bahasa Indonesia", Enabled: true},
 	{Code: "ms", Name: "Malay", NativeName: "Bahasa Melayu", Enabled: true},
-	{Code: "hi", Name: "Hindi", NativeName: "हिन्दी", Enabled: true},
+	{Code: "be", Name: "Belarusian", NativeName: "Беларуская", Enabled: true},
+	{Code: "tr", Name: "Turkish", NativeName: "Türkçe", Enabled: true},
 	{Code: "bn", Name: "Bengali", NativeName: "বাংলা", Enabled: true},
-	{Code: "ta", Name: "Tamil", NativeName: "தமிழ்", Enabled: true},
-	{Code: "te", Name: "Telugu", NativeName: "తెలుగు", Enabled: true},
-	{Code: "mr", Name: "Marathi", NativeName: "मराठी", Enabled: true},
-	{Code: "ur", Name: "Urdu", NativeName: "اردو", Enabled: true},
 	{Code: "fa", Name: "Persian", NativeName: "فارسی", Enabled: true},
-	{Code: "he", Name: "Hebrew", NativeName: "עברית", Enabled: true},
-	{Code: "sv", Name: "Swedish", NativeName: "Svenska", Enabled: true},
-	{Code: "no", Name: "Norwegian", NativeName: "Norsk", Enabled: true},
-	{Code: "da", Name: "Danish", NativeName: "Dansk", Enabled: true},
-	{Code: "fi", Name: "Finnish", NativeName: "Suomi", Enabled: true},
-	{Code: "cs", Name: "Czech", NativeName: "Čeština", Enabled: true},
-	{Code: "hu", Name: "Hungarian", NativeName: "Magyar", Enabled: true},
-	{Code: "ro", Name: "Romanian", NativeName: "Română", Enabled: true},
+	{Code: "nl", Name: "Dutch", NativeName: "Nederlands", Enabled: true},
+	{Code: "hi", Name: "Hindi", NativeName: "हिन्दी", Enabled: true},
+	{Code: "ur", Name: "Urdu", NativeName: "اردو", Enabled: true},
+	{Code: "mr", Name: "Marathi", NativeName: "मराठी", Enabled: true},
+	{Code: "pcm", Name: "Nigerian Pidgin", NativeName: "Nigerian Pidgin", Enabled: true},
+	{Code: "fil", Name: "Filipino", NativeName: "Filipino", Enabled: true},
+	{Code: "te", Name: "Telugu", NativeName: "తెలుగు", Enabled: true},
+	{Code: "ha", Name: "Hausa", NativeName: "Hausa", Enabled: true},
+	{Code: "ps", Name: "Pashto", NativeName: "پښتو", Enabled: true},
+	{Code: "sw", Name: "Swahili", NativeName: "Kiswahili", Enabled: true},
+	{Code: "tl", Name: "Tagalog", NativeName: "Tagalog", Enabled: true},
+	{Code: "ta", Name: "Tamil", NativeName: "தமிழ்", Enabled: true},
+	{Code: "jv", Name: "Javanese", NativeName: "Basa Jawa", Enabled: true},
+	{Code: "zh_cn", Name: "Chinese (Simplified)", NativeName: "简体中文", Enabled: true},
 }
 
 // GetLanguages 获取支持的语言列表
@@ -209,9 +210,9 @@ func (h *Handler) GetSitemapIndex(c *gin.Context) {
 func (h *Handler) DetectLanguage(c *gin.Context) {
 	// 1. 优先从 Cookie 获取
 	if locale, err := c.Cookie("locale"); err == nil && locale != "" {
-		if isValidLocale(locale) {
+		if resolvedLocale := resolveSupportedLocale(locale); resolvedLocale != "" {
 			c.JSON(http.StatusOK, gin.H{
-				"detected_locale": locale,
+				"detected_locale": resolvedLocale,
 				"source":          "cookie",
 			})
 			return
@@ -259,17 +260,18 @@ func (h *Handler) SetLanguage(c *gin.Context) {
 	}
 
 	// 验证语言代码
-	if !isValidLocale(req.Locale) {
+	locale := resolveSupportedLocale(req.Locale)
+	if locale == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported locale"})
 		return
 	}
 
 	// 设置 Cookie (有效期 1 年)
-	c.SetCookie("locale", req.Locale, 365*24*60*60, "/", "", false, false)
+	c.SetCookie("locale", locale, 365*24*60*60, "/", "", false, false)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Language preference saved",
-		"locale":  req.Locale,
+		"locale":  locale,
 	})
 }
 
@@ -285,21 +287,46 @@ func buildPostURL(locale, slug string) string {
 
 // isValidLocale 验证语言代码是否有效
 func isValidLocale(locale string) bool {
-	for _, lang := range SupportedLanguages {
-		if lang.Code == locale && lang.Enabled {
-			return true
-		}
-	}
-	return false
+	return resolveSupportedLocale(locale) != ""
 }
 
 // parseAcceptLanguage 解析 Accept-Language 头
 func parseAcceptLanguage(acceptLang string) string {
-	// 简单实现：取第一个语言代码
-	// 完整实现应该解析 q 值并排序
-	if len(acceptLang) >= 2 {
-		locale := acceptLang[:2]
-		return locale
+	for _, part := range strings.Split(acceptLang, ",") {
+		locale := strings.TrimSpace(strings.Split(part, ";")[0])
+		if resolvedLocale := resolveSupportedLocale(locale); resolvedLocale != "" {
+			return resolvedLocale
+		}
 	}
 	return "en"
+}
+
+func resolveSupportedLocale(locale string) string {
+	value := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(locale), "_", "-"))
+	if value == "" {
+		return ""
+	}
+
+	for _, candidate := range localeCandidates(value) {
+		for _, lang := range SupportedLanguages {
+			if lang.Code == candidate && lang.Enabled {
+				return lang.Code
+			}
+		}
+	}
+
+	return ""
+}
+
+func localeCandidates(locale string) []string {
+	switch locale {
+	case "zh", "zh-cn", "zh-hans", "zh-sg":
+		return []string{"zh_cn"}
+	}
+
+	candidates := []string{locale}
+	if base, _, ok := strings.Cut(locale, "-"); ok && base != "" {
+		candidates = append(candidates, base)
+	}
+	return candidates
 }

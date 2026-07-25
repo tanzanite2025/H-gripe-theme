@@ -11,7 +11,11 @@ export {
   getAllFaqData,
   getAllFaqItems,
   getFaqData,
-  getFaqDataByRoutePath
+  getFaqDataByRoutePath,
+  getPageFaqId,
+  resolvePageFaqData,
+  resolvePageFaqDataList,
+  type ResolvedPageFaqData
 } from './registry'
 export {
   fetchAllFaqData,
