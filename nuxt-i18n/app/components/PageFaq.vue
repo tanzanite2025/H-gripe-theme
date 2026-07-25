@@ -73,7 +73,7 @@
 import { useLocalePath } from '#imports'
 import FaqCategoryAccordion from '~/components/faq/FaqCategoryAccordion.vue'
 import { usePageFaq } from '~/composables/usePageFaq'
-import type { PageFaqProps } from '~/data/faq/types'
+import type { PageFaqProps } from '../data/faq/types'
 
 const props = withDefaults(defineProps<PageFaqProps>(), {
   theme: 'dark',
