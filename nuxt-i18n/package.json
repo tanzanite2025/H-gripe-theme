@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build",
-    "dev": "nuxt dev",
+    "dev": "cross-env NUXT_PUBLIC_API_BASE=http://localhost:9200 API_INTERNAL_ORIGIN=http://localhost:9200 nuxt dev --host 127.0.0.1 --port 9100",
     "generate": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",

@@ -1,13 +1,18 @@
 package service
 
 import (
+	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/product"
+	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
+	"tanzanite/internal/domain/visitor"
 	"tanzanite/internal/domain/wishlist"
 	"tanzanite/internal/repository"
 )
@@ -18,6 +23,7 @@ type CustomerServiceContextService struct {
 	cartRepo              *repository.CartRepository
 	wishlistRepo          *repository.WishlistRepository
 	orderRepo             *repository.OrderRepository
+	loyaltyRepo           *repository.LoyaltyRepository
 	visitorProfileService *VisitorProfileService
 }
 
@@ -27,6 +33,7 @@ func NewCustomerServiceContextService(
 	cartRepo *repository.CartRepository,
 	wishlistRepo *repository.WishlistRepository,
 	orderRepo *repository.OrderRepository,
+	loyaltyRepo *repository.LoyaltyRepository,
 	visitorProfileService *VisitorProfileService,
 ) *CustomerServiceContextService {
 	return &CustomerServiceContextService{
@@ -35,6 +42,7 @@ func NewCustomerServiceContextService(
 		cartRepo:              cartRepo,
 		wishlistRepo:          wishlistRepo,
 		orderRepo:             orderRepo,
+		loyaltyRepo:           loyaltyRepo,
 		visitorProfileService: visitorProfileService,
 	}
 }
@@ -71,16 +79,63 @@ type CustomerServiceContextCustomer struct {
 }
 
 type CustomerServiceContextAccount struct {
-	ID          uint      `json:"id"`
-	Email       string    `json:"email"`
-	Username    string    `json:"username"`
-	DisplayName string    `json:"display_name"`
-	FirstName   string    `json:"first_name"`
-	LastName    string    `json:"last_name"`
-	Role        string    `json:"role"`
-	Locale      string    `json:"locale"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          uint                       `json:"id"`
+	Email       string                     `json:"email"`
+	Username    string                     `json:"username"`
+	DisplayName string                     `json:"display_name"`
+	FirstName   string                     `json:"first_name"`
+	LastName    string                     `json:"last_name"`
+	Role        string                     `json:"role"`
+	Locale      string                     `json:"locale"`
+	Status      string                     `json:"status"`
+	MemberTier  *CustomerServiceMemberTier `json:"member_tier,omitempty"`
+	CreatedAt   time.Time                  `json:"created_at"`
+}
+
+type CustomerServiceMemberTier struct {
+	ID              uint   `json:"id"`
+	Name            string `json:"name"`
+	Icon            string `json:"icon,omitempty"`
+	Color           string `json:"color,omitempty"`
+	TotalPoints     int    `json:"total_points"`
+	AvailablePoints int    `json:"available_points"`
+}
+
+type CustomerServiceConversationSummary struct {
+	Type          string                     `json:"type"`
+	Identity      string                     `json:"identity"`
+	IdentityLabel string                     `json:"identity_label"`
+	DisplayName   string                     `json:"display_name"`
+	RegionLabel   string                     `json:"region_label"`
+	RegionStatus  string                     `json:"region_status"`
+	MemberTier    *CustomerServiceMemberTier `json:"member_tier,omitempty"`
+}
+
+type CustomerServiceRegionAnalyticsInput struct {
+	Date                  string
+	TimezoneOffsetMinutes int
+	AgentUserID           uint
+	CanViewAll            bool
+}
+
+type CustomerServiceRegionAnalytics struct {
+	Date                  string                               `json:"date"`
+	TimezoneOffsetMinutes int                                  `json:"timezone_offset_minutes"`
+	WindowStart           time.Time                            `json:"window_start"`
+	WindowEnd             time.Time                            `json:"window_end"`
+	TotalConversations    int                                  `json:"total_conversations"`
+	KnownRegionCount      int                                  `json:"known_region_count"`
+	UnknownRegionCount    int                                  `json:"unknown_region_count"`
+	Regions               []CustomerServiceRegionAnalyticsItem `json:"regions"`
+}
+
+type CustomerServiceRegionAnalyticsItem struct {
+	RegionLabel  string  `json:"region_label"`
+	RegionStatus string  `json:"region_status"`
+	Count        int     `json:"count"`
+	MemberCount  int     `json:"member_count"`
+	VisitorCount int     `json:"visitor_count"`
+	Percent      float64 `json:"percent"`
 }
 
 type CustomerServiceContextAnonymous struct {
@@ -277,6 +332,7 @@ func (s *CustomerServiceContextService) GetConversationContextForAgent(ticketID,
 			Role:        account.Role,
 			Locale:      account.Locale,
 			Status:      account.Status,
+			MemberTier:  s.memberTierSummary(customerUserID),
 			CreatedAt:   account.CreatedAt,
 		},
 		IdentitySources: []CustomerServiceContextIdentityClaim{
@@ -299,6 +355,195 @@ func (s *CustomerServiceContextService) GetConversationContextForAgent(ticketID,
 	s.applyVisitorProfileSignals(context, t.VisitorSessionHash)
 
 	return context, nil
+}
+
+func (s *CustomerServiceContextService) ConversationListSummary(t ticket.Ticket) CustomerServiceConversationSummary {
+	summary := CustomerServiceConversationSummary{
+		Type:          "visitor",
+		Identity:      "visitor",
+		IdentityLabel: "游客",
+		DisplayName:   "匿名客户",
+		RegionLabel:   "未知区域",
+		RegionStatus:  "unknown",
+	}
+
+	if t.CustomerUserID != nil && *t.CustomerUserID > 0 {
+		summary.Type = "member"
+		summary.Identity = "member"
+		summary.IdentityLabel = "会员"
+		summary.DisplayName = "客户 " + strconv.FormatUint(uint64(*t.CustomerUserID), 10)
+		if s != nil && s.userRepo != nil {
+			if account, err := s.userRepo.FindByID(*t.CustomerUserID); err == nil && account != nil {
+				if displayName := serviceDisplayName(account); displayName != "" {
+					summary.DisplayName = displayName
+				}
+			}
+		}
+		summary.MemberTier = s.memberTierSummary(*t.CustomerUserID)
+	} else if strings.TrimSpace(t.VisitorSessionHash) != "" {
+		summary.DisplayName = "游客 " + hashPreview(t.VisitorSessionHash)
+	}
+
+	if label := s.conversationCoarseRegionLabel(t); label != "" {
+		summary.RegionLabel = label
+		summary.RegionStatus = "captured"
+	}
+
+	return summary
+}
+
+func (s *CustomerServiceContextService) RegionAnalyticsForAgent(input CustomerServiceRegionAnalyticsInput) (*CustomerServiceRegionAnalytics, error) {
+	start, end, date := customerServiceAnalyticsWindow(input.Date, input.TimezoneOffsetMinutes)
+	result := &CustomerServiceRegionAnalytics{
+		Date:                  date,
+		TimezoneOffsetMinutes: input.TimezoneOffsetMinutes,
+		WindowStart:           start,
+		WindowEnd:             end,
+		Regions:               []CustomerServiceRegionAnalyticsItem{},
+	}
+	if s == nil || s.ticketService == nil {
+		return result, nil
+	}
+
+	conversations, err := s.ticketService.ListCustomerServiceConversationsInWindowForAgent(
+		start,
+		end,
+		input.AgentUserID,
+		input.CanViewAll,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	regionMap := map[string]*CustomerServiceRegionAnalyticsItem{}
+	for _, conversation := range conversations {
+		summary := s.ConversationListSummary(conversation)
+		label := strings.TrimSpace(summary.RegionLabel)
+		status := strings.TrimSpace(summary.RegionStatus)
+		if label == "" {
+			label = "未知区域"
+		}
+		if status == "" {
+			status = "unknown"
+		}
+
+		item := regionMap[label]
+		if item == nil {
+			item = &CustomerServiceRegionAnalyticsItem{
+				RegionLabel:  label,
+				RegionStatus: status,
+			}
+			regionMap[label] = item
+		}
+		item.Count++
+		if summary.Identity == "member" || summary.Type == "member" {
+			item.MemberCount++
+		} else {
+			item.VisitorCount++
+		}
+	}
+
+	result.TotalConversations = len(conversations)
+	for _, item := range regionMap {
+		if item.RegionStatus == "captured" {
+			result.KnownRegionCount += item.Count
+		} else {
+			result.UnknownRegionCount += item.Count
+		}
+		if result.TotalConversations > 0 {
+			item.Percent = math.Round((float64(item.Count)/float64(result.TotalConversations))*1000) / 10
+		}
+		result.Regions = append(result.Regions, *item)
+	}
+
+	sort.SliceStable(result.Regions, func(i, j int) bool {
+		if result.Regions[i].Count == result.Regions[j].Count {
+			return result.Regions[i].RegionLabel < result.Regions[j].RegionLabel
+		}
+		return result.Regions[i].Count > result.Regions[j].Count
+	})
+
+	return result, nil
+}
+
+func customerServiceAnalyticsWindow(date string, timezoneOffsetMinutes int) (time.Time, time.Time, string) {
+	location := time.FixedZone("admin-local", timezoneOffsetMinutes*60)
+	date = strings.TrimSpace(date)
+	if date == "" {
+		date = time.Now().In(location).Format("2006-01-02")
+	}
+
+	startLocal, err := time.ParseInLocation("2006-01-02", date, location)
+	if err != nil {
+		startLocal = time.Now().In(location)
+		startLocal = time.Date(startLocal.Year(), startLocal.Month(), startLocal.Day(), 0, 0, 0, 0, location)
+		date = startLocal.Format("2006-01-02")
+	}
+
+	endLocal := startLocal.AddDate(0, 0, 1)
+	return startLocal.UTC(), endLocal.UTC(), date
+}
+
+func (s *CustomerServiceContextService) memberTierSummary(userID uint) *CustomerServiceMemberTier {
+	if s == nil || s.loyaltyRepo == nil || userID == 0 {
+		return nil
+	}
+
+	userLoyalty, err := s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
+	if err != nil || userLoyalty == nil {
+		return nil
+	}
+
+	level := s.memberLevelForLoyalty(userLoyalty)
+	if level == nil {
+		return nil
+	}
+
+	return &CustomerServiceMemberTier{
+		ID:              level.ID,
+		Name:            strings.TrimSpace(level.Name),
+		Icon:            strings.TrimSpace(level.Icon),
+		Color:           strings.TrimSpace(level.Color),
+		TotalPoints:     userLoyalty.TotalPoints,
+		AvailablePoints: userLoyalty.AvailablePoints,
+	}
+}
+
+func (s *CustomerServiceContextService) memberLevelForLoyalty(userLoyalty *loyalty.UserLoyalty) *loyalty.MemberLevel {
+	if s == nil || s.loyaltyRepo == nil || userLoyalty == nil {
+		return nil
+	}
+	if userLoyalty.MemberLevelID > 0 {
+		if level, err := s.loyaltyRepo.FindMemberLevelByID(userLoyalty.MemberLevelID); err == nil && level != nil {
+			return level
+		}
+	}
+	if level, err := s.loyaltyRepo.FindMemberLevelByPoints(userLoyalty.TotalPoints); err == nil && level != nil {
+		return level
+	}
+	return nil
+}
+
+func (s *CustomerServiceContextService) conversationCoarseRegionLabel(t ticket.Ticket) string {
+	if s == nil || s.visitorProfileService == nil {
+		return ""
+	}
+
+	if strings.TrimSpace(t.VisitorSessionHash) != "" {
+		if profile, err := s.visitorProfileService.FindByCustomerServiceVisitorHash(t.VisitorSessionHash); err == nil {
+			if label := visitorProfileCoarseRegionLabel(profile); label != "" {
+				return label
+			}
+		}
+	}
+
+	if t.CustomerUserID != nil && *t.CustomerUserID > 0 {
+		if profile, err := s.visitorProfileService.FindByUserID(*t.CustomerUserID); err == nil {
+			return visitorProfileCoarseRegionLabel(profile)
+		}
+	}
+
+	return ""
 }
 
 func (s *CustomerServiceContextService) applyAnonymousVisitorProfile(context *CustomerServiceContext, visitorSessionHash string) {
@@ -373,8 +618,8 @@ func (s *CustomerServiceContextService) applyVisitorProfileSignals(context *Cust
 
 func applyProfileLocationSignals(context *CustomerServiceContext, profileID uint, countryCode, region, city string) {
 	parts := make([]string, 0, 3)
-	if strings.TrimSpace(countryCode) != "" {
-		parts = append(parts, strings.TrimSpace(countryCode))
+	if countryLabel := countryCodeDisplayName(countryCode); countryLabel != "" {
+		parts = append(parts, countryLabel)
 	}
 	if strings.TrimSpace(region) != "" {
 		parts = append(parts, strings.TrimSpace(region))
@@ -394,6 +639,81 @@ func applyProfileLocationSignals(context *CustomerServiceContext, profileID uint
 		Value:  strconv.FormatUint(uint64(profileID), 10),
 		Reason: "已建立统一访客档案。",
 	}
+}
+
+func visitorProfileCoarseRegionLabel(profile *visitor.Profile) string {
+	if profile == nil {
+		return ""
+	}
+
+	country := countryCodeDisplayName(profile.CountryCode)
+	region := strings.TrimSpace(profile.Region)
+	if mapped := locationAliasDisplayName(region); mapped != "" {
+		region = mapped
+	}
+
+	if country != "" && region != "" && !sameLocationLabel(country, region) {
+		return country + " / " + region
+	}
+	if country != "" {
+		return country
+	}
+	return region
+}
+
+func countryCodeDisplayName(countryCode string) string {
+	code := strings.ToUpper(strings.TrimSpace(countryCode))
+	if code == "" {
+		return ""
+	}
+	if mapped := locationAliasDisplayName(code); mapped != "" {
+		return mapped
+	}
+	return code
+}
+
+func locationAliasDisplayName(value string) string {
+	key := strings.ToUpper(strings.TrimSpace(value))
+	key = strings.ReplaceAll(key, "_", " ")
+	key = strings.Join(strings.Fields(key), " ")
+	switch key {
+	case "CN", "CHN", "CHINA", "MAINLAND CHINA", "中国", "中国大陆":
+		return "中国大陆"
+	case "TW", "TWN", "TAIWAN", "TAIWAN, PROVINCE OF CHINA", "中国台湾", "台湾":
+		return "中国台湾"
+	case "HK", "HKG", "HONG KONG", "中国香港", "香港":
+		return "中国香港"
+	case "MO", "MAC", "MACAO", "MACAU", "中国澳门", "澳门":
+		return "中国澳门"
+	case "US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA":
+		return "United States"
+	case "JP", "JPN", "JAPAN":
+		return "Japan"
+	case "DE", "DEU", "GERMANY":
+		return "Germany"
+	case "GB", "GBR", "UK", "UNITED KINGDOM":
+		return "United Kingdom"
+	case "FR", "FRA", "FRANCE":
+		return "France"
+	case "CA", "CAN", "CANADA":
+		return "Canada"
+	case "AU", "AUS", "AUSTRALIA":
+		return "Australia"
+	default:
+		return ""
+	}
+}
+
+func sameLocationLabel(left, right string) bool {
+	normalize := func(value string) string {
+		value = strings.ToLower(strings.TrimSpace(value))
+		value = strings.ReplaceAll(value, " ", "")
+		value = strings.ReplaceAll(value, "-", "")
+		value = strings.ReplaceAll(value, "_", "")
+		value = strings.ReplaceAll(value, ",", "")
+		return value
+	}
+	return normalize(left) != "" && normalize(left) == normalize(right)
 }
 
 func (s *CustomerServiceContextService) customerCartContext(userID uint) CustomerServiceContextCart {

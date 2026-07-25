@@ -5,7 +5,7 @@ Use this guide for local smoke tests and focused backend API checks.
 ## Local Base URL
 
 ```powershell
-$env:API_BASE_URL = "http://localhost:9000"
+$env:API_BASE_URL = "http://localhost:9200"
 ```
 
 ## Health Checks

@@ -24,9 +24,9 @@ npm run dev
 
 Default local address:
 
-- Admin app: `http://localhost:3000`
+- Admin app: `http://localhost:9300`
 - Backend API base: `/api/admin`
-- Local backend: `http://localhost:9000`
+- Local backend: `http://localhost:9200`
 
 ## Build
 

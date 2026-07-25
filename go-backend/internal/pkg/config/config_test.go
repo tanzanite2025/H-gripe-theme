@@ -7,7 +7,7 @@ import (
 
 func TestCookieSecureAutoDisablesForLocalHTTP(t *testing.T) {
 	cookie := CookieConfig{Secure: "auto"}
-	server := ServerConfig{Mode: "debug", BaseURL: "http://localhost:9000"}
+	server := ServerConfig{Mode: "debug", BaseURL: "http://localhost:9200"}
 
 	if cookie.SecureEnabled(server) {
 		t.Fatal("local HTTP debug server should not force Secure cookies")
@@ -16,7 +16,7 @@ func TestCookieSecureAutoDisablesForLocalHTTP(t *testing.T) {
 
 func TestCookieSecureAutoEnablesForRelease(t *testing.T) {
 	cookie := CookieConfig{Secure: "auto"}
-	server := ServerConfig{Mode: "release", BaseURL: "http://127.0.0.1:9000"}
+	server := ServerConfig{Mode: "release", BaseURL: "http://127.0.0.1:9200"}
 
 	if !cookie.SecureEnabled(server) {
 		t.Fatal("release server must force Secure cookies")
@@ -109,7 +109,7 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 
 func validTestConfig() *Config {
 	return &Config{
-		Server: ServerConfig{Mode: "debug", BaseURL: "http://localhost:9000"},
+		Server: ServerConfig{Mode: "debug", BaseURL: "http://localhost:9200"},
 		Database: DatabaseConfig{
 			Host:     "localhost",
 			Database: "tanzanite",

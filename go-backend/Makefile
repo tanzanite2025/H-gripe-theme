@@ -125,7 +125,7 @@ docker-push: docker-build-prod ## 推送Docker镜像到registry
 docker-run: ## 运行Docker容器
 	@echo "Running Docker container..."
 	docker run --rm -it \
-		-p 9000:9000 \
+		-p 9200:9000 \
 		-e SERVER_MODE=debug \
 		-e DB_HOST=host.docker.internal \
 		-e REDIS_HOST=host.docker.internal \

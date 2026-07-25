@@ -2,9 +2,9 @@
 
 # 博客多语言功能 API 测试脚本
 # 使用方法: ./test-i18n-api.sh [base_url]
-# 示例: ./test-i18n-api.sh http://localhost:9000
+# 示例: ./test-i18n-api.sh http://localhost:9200
 
-BASE_URL="${1:-http://localhost:9000}"
+BASE_URL="${1:-http://localhost:9200}"
 
 echo "=========================================="
 echo "博客多语言功能 API 测试"

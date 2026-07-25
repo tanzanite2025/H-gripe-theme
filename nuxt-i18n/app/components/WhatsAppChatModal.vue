@@ -123,6 +123,7 @@
                 :showVisitorEmailCapture="showVisitorEmailCapture"
                 :isSending="isSending"
                 :isUploadingImage="isUploadingImage"
+                :agentTyping="agentTyping"
                 :isSearching="isSearching"
                 :ordersList="ordersList"
                 :isLoadingOrders="isLoadingOrders"
@@ -173,6 +174,7 @@
       @close="handleProductDrawerClose"
       @select="shareProductToChat"
       @add-to-cart="handleAddProductToCart"
+      @confirm-config="shareProductConfigConfirmToChat"
     />
 
     <WishlistDrawer
@@ -274,6 +276,7 @@ const {
   historyDrawerVisible,
   wishlistDrawerVisible,
   isUploadingImage,
+  agentTyping,
   showToast,
   toastMessage,
   isMemberLogged,

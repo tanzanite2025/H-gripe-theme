@@ -114,12 +114,12 @@ if [ ! -f ".env" ]; then
     cat > .env <<EOF
 # 应用配置
 APP_ENV=development
-APP_PORT=8080
+APP_PORT=9200
 APP_DEBUG=true
 
 # 数据库配置
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=9400
 DB_NAME=tanzanite_dev
 DB_USERNAME=tanzanite
 DB_PASSWORD=tanzanite_dev_password
@@ -127,7 +127,7 @@ DB_SSLMODE=disable
 
 # Redis配置
 REDIS_HOST=localhost
-REDIS_PORT=6379
+REDIS_PORT=9500
 REDIS_PASSWORD=
 REDIS_DB=0
 
@@ -156,7 +156,7 @@ WECHAT_MCH_ID=your_mch_id_here
 WECHAT_API_KEY=your_api_key_here
 
 # CORS配置
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+CORS_ALLOWED_ORIGINS=http://localhost:9100,http://localhost:9300,http://localhost:9200
 
 # 日志配置
 LOG_LEVEL=debug
@@ -310,10 +310,10 @@ echo "2. 启动生产模式："
 echo "   ${GREEN}make run${NC}"
 echo ""
 echo "3. 查看API文档："
-echo "   ${GREEN}http://localhost:8080/swagger/index.html${NC}"
+echo "   ${GREEN}http://localhost:9200/swagger/index.html${NC}"
 echo ""
 echo "4. 查看健康状态："
-echo "   ${GREEN}curl http://localhost:8080/health${NC}"
+echo "   ${GREEN}curl http://localhost:9200/health${NC}"
 echo ""
 echo "5. 运行测试："
 echo "   ${GREEN}make test${NC}"
@@ -322,13 +322,13 @@ echo "6. 查看可用命令："
 echo "   ${GREEN}make help${NC}"
 echo ""
 info "数据库连接信息："
-echo "  Host: localhost:5432"
+echo "  Host: localhost:9400"
 echo "  Database: tanzanite_dev"
 echo "  User: tanzanite"
 echo "  Password: tanzanite_dev_password"
 echo ""
 info "Redis连接信息："
-echo "  Host: localhost:6379"
+echo "  Host: localhost:9500"
 echo "  Database: 0"
 echo ""
 echo "=========================================="

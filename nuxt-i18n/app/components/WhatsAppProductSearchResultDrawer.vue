@@ -90,6 +90,9 @@
                         <div v-if="product.price" class="text-xs text-[#40ffaa] mt-1">
                           {{ product.price }}
                         </div>
+                        <div v-if="product.variants?.length" class="mt-1 text-[11px] tz-text-muted">
+                          {{ product.variants.length }} SKU option{{ product.variants.length > 1 ? 's' : '' }}
+                        </div>
                         <div class="mt-3 flex flex-wrap gap-2">
                           <button
                             type="button"
@@ -153,34 +156,83 @@
                         {{ selectedConfigProduct.title }}
                       </div>
                       <div
-                        v-if="selectedConfigProduct.price"
+                        v-if="selectedConfigPriceLabel"
                         class="text-xs text-[#40ffaa] mt-1"
                       >
-                        {{ selectedConfigProduct.price }}
+                        {{ selectedConfigPriceLabel }}
                       </div>
-                      <div class="mt-2 text-[11px] tz-text-secondary line-clamp-2">
-                        待完善的配置详情占位文案，后续将展示戒托、主石、预算等具体字段。
+                      <div v-if="selectedConfigVariant?.sku || selectedConfigProduct.sku" class="mt-2 text-[11px] tz-text-secondary">
+                        SKU: {{ selectedConfigVariant?.sku || selectedConfigProduct.sku }}
+                      </div>
+                      <div v-if="selectedConfigVariant?.weightGrams" class="mt-1 text-[11px] tz-text-secondary">
+                        Weight: {{ selectedConfigVariant.weightGrams }}g
+                      </div>
+                      <div v-if="selectedConfigVariant" class="mt-1 text-[11px] tz-text-secondary">
+                        Stock: {{ selectedConfigVariant.stockQuantity }}
                       </div>
                     </div>
                   </div>
 
                   <div
-                    class="border border-dashed border-white/20 rounded-xl bg-white/[0.02] p-3 md:p-4 text-[12px] tz-text-secondary"
+                    class="border border-dashed border-white/20 rounded-xl bg-white/[0.02] p-3 md:p-4"
                   >
-                    配置选项区域占位：这里将展示可选参数（材质、主石大小、预算等），仅为视觉占位，不会影响当前聊天。
+                    <label
+                      v-if="configVariants.length > 1"
+                      class="block text-[10px] font-semibold uppercase tracking-[0.16em] tz-text-muted"
+                      for="wa-config-variant"
+                    >
+                      Choose SKU
+                    </label>
+                    <select
+                      v-if="configVariants.length > 1"
+                      id="wa-config-variant"
+                      v-model.number="selectedConfigVariantId"
+                      class="mt-2 w-full rounded-xl border border-white/20 bg-slate-950/90 px-3 py-2 text-xs text-white focus:border-[#6b73ff] focus:outline-none"
+                    >
+                      <option
+                        v-for="variant in configVariants"
+                        :key="variant.id"
+                        :value="variant.id"
+                      >
+                        {{ variantLabel(variant) }}
+                      </option>
+                    </select>
+
+                    <div class="mt-3 text-[12px] tz-text-secondary">
+                      <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] tz-text-muted">
+                        Configuration facts
+                      </div>
+                      <dl v-if="selectedConfigOptionRows.length" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div
+                          v-for="option in selectedConfigOptionRows"
+                          :key="option.key"
+                          class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2"
+                        >
+                          <dt class="text-[10px] uppercase tracking-[0.12em] tz-text-muted">
+                            {{ option.label }}
+                          </dt>
+                          <dd class="mt-1 text-xs font-semibold text-white">
+                            {{ option.value }}<span v-if="option.unit"> {{ option.unit }}</span>
+                          </dd>
+                        </div>
+                      </dl>
+                      <p v-else class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] leading-5">
+                        This product currently has no variant option fields. The selected SKU will still be sent as the configuration fact.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <div class="border border-white/10 rounded-xl bg-white/[0.04] p-3 md:p-4 flex flex-col gap-3">
                   <div class="text-xs tz-text-secondary">
-                    当前为占位体验，暂不发送真实配置到聊天。后续版本会生成一条结构化的配置卡片消息，方便客服快速了解你的需求。
+                    The selected product and SKU facts will be sent as a structured card. Staff can read them in Admin without editing or duplicating product data.
                   </div>
                   <button
                     type="button"
-                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 text-xs font-medium tz-text-disabled cursor-not-allowed border border-white/30"
-                    disabled
+                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-[#6b73ff]/90 text-xs font-medium text-white border border-[#a5b4fc]/60 hover:bg-[#818cf8] transition-colors"
+                    @click="handleConfirmConfig"
                   >
-                    发送配置给客服（即将上线）
+                    发送配置给客服
                   </button>
                   <div class="text-[11px] tz-text-muted">
                     你仍然可以在聊天中手动描述戒指款式和预算，我们的客服会协助推荐合适的产品。
@@ -196,7 +248,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import type { ShopProductSpecDefinition, ShopProductVariant } from '~/composables/useShopProducts'
 
 const props = defineProps<{
   modelValue: boolean
@@ -212,10 +265,69 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'select', product: any): void
   (e: 'add-to-cart', product: any): void
+  (e: 'confirm-config', product: any): void
 }>()
 
 const viewMode = ref<'list' | 'configConfirm'>('list')
 const selectedConfigProduct = ref<any | null>(null)
+const selectedConfigVariantId = ref<number | null>(null)
+
+const configVariants = computed<ShopProductVariant[]>(() => {
+  return Array.isArray(selectedConfigProduct.value?.variants)
+    ? selectedConfigProduct.value.variants
+    : []
+})
+
+const selectedConfigVariant = computed<ShopProductVariant | null>(() => {
+  if (configVariants.value.length === 0) return null
+  const selectedId = Number(selectedConfigVariantId.value || 0)
+  return configVariants.value.find(variant => Number(variant.id) === selectedId)
+    || configVariants.value.find(variant => variant.isDefault)
+    || configVariants.value[0]
+})
+
+const specDefinitions = computed<ShopProductSpecDefinition[]>(() => {
+  return Array.isArray(selectedConfigProduct.value?.productType?.specDefinitions)
+    ? selectedConfigProduct.value.productType.specDefinitions
+    : []
+})
+
+const specLabel = (key: string) => {
+  const definition = specDefinitions.value.find(item => item.slug === key)
+  if (definition?.name) return definition.name
+  return key
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, char => char.toUpperCase())
+}
+
+const specUnit = (key: string) => {
+  return specDefinitions.value.find(item => item.slug === key)?.unit || ''
+}
+
+const selectedConfigOptionRows = computed(() => {
+  const options = selectedConfigVariant.value?.optionValues || {}
+  return Object.entries(options).map(([key, value]) => ({
+    key,
+    label: specLabel(key),
+    value,
+    unit: specUnit(key),
+  }))
+})
+
+const selectedConfigPriceLabel = computed(() => {
+  const price = selectedConfigVariant.value?.priceNumber
+  if (price && price > 0) return `$${price}`
+  return selectedConfigProduct.value?.price || selectedConfigProduct.value?.priceLabel || ''
+})
+
+const variantLabel = (variant: ShopProductVariant) => {
+  const optionValues = Object.values(variant.optionValues || {}).filter(Boolean)
+  const optionText = optionValues.length ? ` · ${optionValues.join(' / ')}` : ''
+  const weightText = variant.weightGrams ? ` · ${variant.weightGrams}g` : ''
+  return `${variant.title || variant.sku}${optionText}${weightText}`
+}
 
 const handleClose = () => {
   emit('update:modelValue', false)
@@ -232,12 +344,27 @@ const handleAddToCart = (product: any) => {
 
 const openConfigConfirm = (product: any) => {
   selectedConfigProduct.value = product
+  const variants = Array.isArray(product?.variants) ? product.variants : []
+  const defaultVariant = variants.find((variant: ShopProductVariant) => variant.isDefault)
+    || variants.find((variant: ShopProductVariant) => Number(variant.id) === Number(product.defaultVariantId || 0))
+    || variants[0]
+    || null
+  selectedConfigVariantId.value = defaultVariant?.id || product?.defaultVariantId || null
   viewMode.value = 'configConfirm'
+}
+
+const handleConfirmConfig = () => {
+  if (!selectedConfigProduct.value) return
+  emit('confirm-config', {
+    product: selectedConfigProduct.value,
+    variant: selectedConfigVariant.value,
+  })
 }
 
 const backToList = () => {
   viewMode.value = 'list'
   selectedConfigProduct.value = null
+  selectedConfigVariantId.value = null
 }
 
 watch(
@@ -246,6 +373,7 @@ watch(
     if (!value) {
       viewMode.value = 'list'
       selectedConfigProduct.value = null
+      selectedConfigVariantId.value = null
     }
   }
 )

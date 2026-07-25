@@ -13,6 +13,7 @@ const (
 	CustomerServiceEventAssigned       = "conversation.assigned"
 	CustomerServiceEventStatusChanged  = "conversation.status.changed"
 	CustomerServiceEventContextUpdated = "conversation.context.updated"
+	CustomerServiceEventTyping         = "conversation.typing"
 	CustomerServiceEventHeartbeat      = "heartbeat"
 )
 

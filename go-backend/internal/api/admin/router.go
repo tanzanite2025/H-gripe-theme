@@ -293,6 +293,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			customerServiceGroup.Use(middleware.RequirePermission(auth.PermTicketView))
 			{
 				customerServiceGroup.GET("/agents", ticketHandler.ListCustomerServiceAgents)
+				customerServiceGroup.GET("/analytics/regions", ticketHandler.GetCustomerServiceRegionAnalytics)
 				customerServiceGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
 				customerServiceGroup.GET("/events", ticketHandler.StreamCustomerServiceEvents)
 				customerServiceGroup.GET("/visitor-profiles", visitorProfileHandler.ListVisitorProfiles)
@@ -300,6 +301,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				customerServiceGroup.GET("/conversations/:id/context", ticketHandler.GetCustomerServiceConversationContext)
 				customerServiceGroup.GET("/conversations/:id/messages", ticketHandler.GetCustomerServiceConversationMessages)
 				customerServiceGroup.POST("/conversations/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateCustomerServiceConversationMessage)
+				customerServiceGroup.POST("/conversations/:id/typing", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.SendCustomerServiceConversationTyping)
 				customerServiceGroup.POST("/conversations/:id/messages/mark-read", ticketHandler.MarkCustomerServiceConversationMessagesRead)
 				customerServiceGroup.PATCH("/conversations/:id/transfer", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.TransferCustomerServiceConversation)
 			}

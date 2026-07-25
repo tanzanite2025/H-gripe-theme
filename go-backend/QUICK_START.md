@@ -18,8 +18,8 @@ docker compose up -d postgres redis
 
 This starts:
 
-- PostgreSQL: `localhost:5432`
-- Redis: `localhost:6379`
+- PostgreSQL: `localhost:9400`
+- Redis: `localhost:9500`
 
 ## Run Backend
 
@@ -32,14 +32,14 @@ go run ./cmd/server
 
 Default local address:
 
-- API: `http://localhost:9000`
-- Health: `http://localhost:9000/health`
-- Ready: `http://localhost:9000/ready`
+- API: `http://localhost:9200`
+- Health: `http://localhost:9200/health`
+- Ready: `http://localhost:9200/ready`
 
 ## Smoke Test
 
 ```powershell
-Invoke-RestMethod http://localhost:9000/health
+Invoke-RestMethod http://localhost:9200/health
 ```
 
 Expected shape:

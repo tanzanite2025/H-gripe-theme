@@ -51,19 +51,27 @@ export default defineNitroPlugin(async () => {
   let probe: Redis | undefined
 
   try {
+    const probeOptions = {
+      ...connectionOptions,
+      lazyConnect: true,
+    }
+
     probe = url
-      ? new Redis(url, connectionOptions)
+      ? new Redis(url, probeOptions)
       : new Redis({
-          ...connectionOptions,
+          ...probeOptions,
           host,
           port,
           db,
           password: process.env.NUXT_HTML_CACHE_REDIS_PASSWORD || process.env.REDIS_PASSWORD || undefined,
         })
 
+    await probe.connect()
     await probe.ping()
     probe.disconnect()
-    useStorage().mount('cache', redisDriver(storageOptions))
+    const storage = useStorage()
+    await storage.unmount('cache')
+    storage.mount('cache', redisDriver(storageOptions))
 
     if (process.env.NUXT_HTML_CACHE_LOG !== 'silent') {
       const target = url ? 'redis-url' : `${host}:${port}/${db}`

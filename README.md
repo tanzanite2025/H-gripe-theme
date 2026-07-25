@@ -52,13 +52,32 @@ The backend exposes:
 From the repository root:
 
 ```powershell
-docker compose up -d postgres redis
+npm run dev
 ```
 
-This starts:
+The root development command starts the local infrastructure and the three app servers:
 
-- PostgreSQL on `localhost:5432`
-- Redis on `localhost:6379`
+- Storefront Nuxt: `http://localhost:9100`
+- Go API: `http://localhost:9200`
+- Admin console: `http://localhost:9300`
+- PostgreSQL host port: `localhost:9400`
+- Redis host port: `localhost:9500`
+
+It also clears the app ports `9100`, `9200`, and `9300` before starting. Logs are written under `output/dev/`.
+
+Useful root commands:
+
+```powershell
+npm run dev
+npm run dev:stop
+npm run dev:ports
+```
+
+If you only need database infrastructure:
+
+```powershell
+docker compose up -d postgres redis
+```
 
 ### Start backend
 
@@ -71,23 +90,20 @@ go run ./cmd/server
 
 Default backend address:
 
-- `http://localhost:9000`
-- health check: `http://localhost:9000/health`
+- `http://localhost:9200`
+- health check: `http://localhost:9200/health`
 
 ### Start storefront
-
-Use a different port from the admin app if running both at the same time:
 
 ```powershell
 cd nuxt-i18n
 npm install
-$env:NUXT_PUBLIC_API_BASE = "http://localhost:9000"
-npm run dev -- --port 3001
+npm run dev
 ```
 
 Storefront address:
 
-- `http://localhost:3001`
+- `http://localhost:9100`
 
 ### Start admin console
 
@@ -99,7 +115,7 @@ npm run dev
 
 Admin address:
 
-- `http://localhost:3000`
+- `http://localhost:9300`
 - backend API base: `/api/admin`
 
 ## Docker Compose
@@ -112,13 +128,20 @@ docker compose up -d
 
 Notes:
 
-- The compose storefront maps to `http://localhost:3000`.
+- The compose storefront maps to `http://localhost:9100`.
+- The compose API maps to `http://localhost:9200`.
+- PostgreSQL maps to `localhost:9400`; Redis maps to `localhost:9500`.
 - The admin console is not a service in the root compose file; run it manually from `go-backend/web/admin/`.
 - Optional database/Redis tools are behind the `tools` profile:
 
 ```powershell
 docker compose --profile tools up -d adminer redis-commander
 ```
+
+Optional tools:
+
+- Adminer: `http://localhost:9600`
+- Redis Commander: `http://localhost:9700`
 
 The root Compose file is for local development only. It must not be deployed to Hostinger.
 
@@ -200,4 +223,4 @@ What should not be assumed without verification:
 - Full Kubernetes deployment readiness.
 - Any "microservice", "CQRS", "edge", or "AI search" claim unless proven in the current code path.
 
-Last updated: 2026-07-17.
+Last updated: 2026-07-25.

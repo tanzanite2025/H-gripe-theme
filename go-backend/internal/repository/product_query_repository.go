@@ -64,6 +64,8 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 
 	query := r.db.Model(&product.Product{}).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
+	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		return db.Order("sort_order ASC, id ASC")
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	}).Where(activeVariantExistsSQL("pv_public"))

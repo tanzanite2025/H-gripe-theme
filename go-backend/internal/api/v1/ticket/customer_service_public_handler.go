@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"tanzanite/internal/service"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -66,6 +67,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		AgentID        string      `json:"agent_id"`
 		MessageType    string      `json:"message_type"`
 		Metadata       interface{} `json:"metadata"`
+		AttachmentURL  string      `json:"attachment_url"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
@@ -81,6 +83,14 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	}
 
 	owner := h.publicCustomerOwner(c)
+	messageType := normalizeTicketMessageType(req.MessageType)
+	metadata, err := marshalTicketMessageMetadata(req.Metadata)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] invalid message metadata"})
+		return
+	}
+	attachments := marshalTicketMessageAttachments(req.AttachmentURL)
+
 	emailCaptured := false
 	if strings.TrimSpace(req.SenderEmail) != "" {
 		h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat")
@@ -92,6 +102,9 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		owner,
 		message,
 		parseCustomerServiceAgentID(req.AgentID),
+		messageType,
+		metadata,
+		attachments,
 	)
 	if err != nil {
 		writePublicCustomerServiceError(c, err)
@@ -103,7 +116,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	}
 
 	conversationID = publicConversationID(t)
-	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, req.MessageType, req.Metadata)
+	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, "", nil)
 	h.publishPublicCustomerServiceEvent(
 		service.CustomerServiceEventMessageCreated,
 		t,
@@ -123,6 +136,63 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		"message_id":      msg.ID,
 		"conversation_id": conversationID,
 		"data":            response,
+	})
+}
+
+func (h *Handler) SendPublicCustomerServiceTyping(c *gin.Context) {
+	var req struct {
+		ConversationID string `json:"conversation_id" binding:"required"`
+		IsTyping       *bool  `json:"is_typing"`
+		DisplayName    string `json:"display_name"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+		return
+	}
+
+	conversationID := strings.TrimSpace(req.ConversationID)
+	if conversationID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] conversation_id is required"})
+		return
+	}
+
+	owner := h.publicCustomerOwner(c)
+	t, err := h.ticketService.GetPublicCustomerServiceConversation(conversationID, owner)
+	if err != nil {
+		writePublicCustomerServiceError(c, err)
+		return
+	}
+
+	isTyping := true
+	if req.IsTyping != nil {
+		isTyping = *req.IsTyping
+	}
+	displayName := strings.TrimSpace(req.DisplayName)
+	if displayName == "" {
+		if owner.UserID != nil {
+			displayName = "Customer"
+		} else {
+			displayName = "Visitor"
+		}
+	}
+
+	h.publishPublicCustomerServiceEvent(
+		service.CustomerServiceEventTyping,
+		t,
+		publicCustomerServiceRealtimeActor(owner),
+		gin.H{
+			"is_typing":    isTyping,
+			"display_name": displayName,
+			"expires_at":   time.Now().UTC().Add(5 * time.Second),
+		},
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":         true,
+		"conversation_id": publicConversationID(t),
+		"data": gin.H{
+			"is_typing": isTyping,
+		},
 	})
 }
 

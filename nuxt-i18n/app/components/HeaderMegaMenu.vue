@@ -26,7 +26,7 @@
               <NuxtLink
                 class="header-mega-card__main"
                 :to="localizedTo(card.to)"
-                @click="emit('navigate')"
+                @click="scheduleNavigateClose"
               >
                 <span class="header-mega-card__icon" aria-hidden="true">
                   <Icon :name="card.icon" />
@@ -55,7 +55,7 @@
                   :key="child.id"
                   class="header-mega-card__child"
                   :to="localizedTo(child.to)"
-                  @click.stop="emit('navigate')"
+                  @click.stop="scheduleNavigateClose"
                 >
                   {{ childLabel(child) }}
                 </NuxtLink>
@@ -113,6 +113,13 @@ const localizedTo = (to: string) => {
   const query = queryIndex >= 0 ? withoutHash.slice(queryIndex) : ''
 
   return `${localePath(path || '/')}${query}${hash}`
+}
+
+const scheduleNavigateClose = () => {
+  if (typeof window === 'undefined') return
+  window.setTimeout(() => {
+    emit('navigate')
+  }, 0)
 }
 
 const displaySizeForCard = (card: PrimaryMegaNavCard, children: PageSubNavigationChild[]) => {

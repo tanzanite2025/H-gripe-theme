@@ -9,7 +9,7 @@ set -euo pipefail
 
 # 配置
 MIGRATIONS_DIR="${MIGRATIONS_DIR:-./migrations}"
-DB_URL="${DATABASE_URL:-postgresql://tanzanite:tanzanite_dev_password@localhost:5432/tanzanite_dev?sslmode=disable}"
+DB_URL="${DATABASE_URL:-postgresql://tanzanite:tanzanite_dev_password@localhost:9400/tanzanite_dev?sslmode=disable}"
 
 # 颜色输出
 GREEN='\033[0;32m'

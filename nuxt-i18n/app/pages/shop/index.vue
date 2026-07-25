@@ -449,12 +449,13 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 }
 
 .shop-catalog-layout {
+  --shop-catalog-left-gutter: clamp(0.5rem, 1.2vw, 1.5rem);
   width: 100vw;
   margin-inline: calc(50% - 50vw);
   display: grid;
   grid-template-columns: clamp(10rem, 16vw, 18rem) minmax(0, 1fr);
   gap: clamp(1rem, 2vw, 2.5rem);
-  padding-inline: clamp(0.5rem, 1.2vw, 1.5rem) clamp(1rem, 2.5vw, 3rem);
+  padding-inline: var(--shop-catalog-left-gutter) clamp(1rem, 2.5vw, 3rem);
   box-sizing: border-box;
 }
 
@@ -479,6 +480,31 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 
 .shop-mobile-categories {
   display: none;
+}
+
+@media (min-width: 769px) {
+  /*
+   * Desktop category rail:
+   * keep it centered in the viewport while the product list scrolls.
+   * The main grid explicitly stays in column 2 so the fixed rail keeps
+   * the same horizontal relationship to the catalog as the old rail.
+   */
+  .shop-category-rail {
+    position: fixed;
+    inset-inline-start: var(--shop-catalog-left-gutter);
+    inset-block-start: 50%;
+    z-index: 45;
+    width: clamp(10rem, 16vw, 18rem);
+    min-height: 0;
+    max-height: calc(100dvh - 2rem);
+    transform: translateY(-50%);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .shop-catalog-main {
+    grid-column: 2;
+  }
 }
 
 @media (max-width: 768px) {

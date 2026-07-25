@@ -42,6 +42,8 @@ type TicketMessage struct {
 	UserID      uint       `gorm:"not null" json:"user_id"`
 	IsStaff     bool       `gorm:"default:false" json:"is_staff"` // 是否客服回复
 	Content     string     `gorm:"type:text;not null" json:"content"`
+	MessageType string     `gorm:"type:varchar(40);default:'text';not null;index" json:"message_type"`
+	Metadata    string     `gorm:"type:text" json:"metadata"`
 	Attachments string     `gorm:"type:text" json:"attachments"`     // JSON数组
 	IsInternal  bool       `gorm:"default:false" json:"is_internal"` // 是否内部备注
 	IsRead      bool       `gorm:"default:false" json:"is_read"`

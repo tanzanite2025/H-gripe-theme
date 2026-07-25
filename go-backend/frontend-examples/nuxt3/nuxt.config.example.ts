@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       // API 基础 URL
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9000',
+    apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9200',
       
       // 站点 URL（用于生成完整 URL）
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://tanzanite.site',
@@ -70,12 +70,12 @@ export default defineNuxtConfig({
 
   // 环境变量
   env: {
-    API_BASE: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9000',
+      API_BASE: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9200',
   },
 
   // 开发服务器配置
   devServer: {
-    port: 3000,
+      port: 9100,
   },
 
   // 构建配置
@@ -105,15 +105,15 @@ export default defineNuxtConfig({
       proxy: {
         // 开发环境代理 API 请求
         '/api': {
-          target: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9000',
+          target: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9200',
           changeOrigin: true,
         },
         '/sitemap.xml': {
-          target: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9000',
+          target: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9200',
           changeOrigin: true,
         },
         '/sitemap-hreflang.xml': {
-          target: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9000',
+          target: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9200',
           changeOrigin: true,
         }
       }

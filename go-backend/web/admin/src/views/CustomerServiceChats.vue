@@ -14,6 +14,60 @@
 
     <AdminStatsGrid :items="statItems" />
 
+    <section class="rounded-3xl border bg-card p-4 shadow-sm">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="flex items-center gap-2 text-sm font-black uppercase tracking-tight">
+            <BarChart3 class="size-4 text-primary" />
+            今日聊天地区分布
+          </h2>
+          <p class="mt-1 text-xs text-muted-foreground">
+            只统计粗地区，用于运营盘点；不展示 IP 或精确定位
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
+          <span>{{ regionAnalytics?.date || todayLocalDate() }}</span>
+          <span>·</span>
+          <span>共 {{ regionAnalytics?.total_conversations || 0 }} 个会话</span>
+        </div>
+      </div>
+
+      <div v-if="regionAnalyticsLoading" class="flex h-20 items-center justify-center text-muted-foreground">
+        <LoaderCircle class="size-5 animate-spin" />
+      </div>
+      <div v-else-if="!regionRows.length" class="rounded-2xl border border-dashed p-4 text-xs text-muted-foreground">
+        今天暂无可统计的客服聊天地区数据。
+      </div>
+      <div v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article
+          v-for="region in regionRows"
+          :key="region.region_label"
+          class="rounded-2xl border bg-muted/25 p-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-black text-foreground">{{ region.region_label }}</p>
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                会员 {{ region.member_count || 0 }} · 游客 {{ region.visitor_count || 0 }}
+              </p>
+            </div>
+            <span class="rounded-full bg-primary/10 px-2 py-1 text-xs font-black text-primary">
+              {{ region.count }}
+            </span>
+          </div>
+          <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-background">
+            <div
+              class="h-full rounded-full bg-primary"
+              :style="{ width: `${Math.max(4, Number(region.percent || 0))}%` }"
+            />
+          </div>
+          <p class="mt-2 text-[11px] font-bold text-muted-foreground">
+            {{ Number(region.percent || 0).toFixed(1) }}%
+          </p>
+        </article>
+      </div>
+    </section>
+
     <AdminFilterPanel>
       <form class="grid gap-3 lg:grid-cols-[minmax(220px,1.2fr)_140px_140px_180px_130px_auto_auto]" @submit.prevent="applyFilters">
         <label class="space-y-1 block">
@@ -117,14 +171,34 @@
             >
               <div class="flex items-start gap-3">
                 <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-black text-primary">
-                  {{ initials(conversation.customer_name) }}
+                  {{ conversationInitials(conversation) }}
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center justify-between gap-2">
-                    <strong class="truncate text-xs font-black">{{ conversation.customer_name || '匿名客户' }}</strong>
+                    <strong class="truncate text-xs font-black">{{ conversationDisplayName(conversation) }}</strong>
                     <AdminStatusBadge :tone="statusTone(conversation.display_status)">
                       {{ statusLabel(conversation.display_status) }}
                     </AdminStatusBadge>
+                  </div>
+                  <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-black">
+                    <span :class="identityPillClass(conversation)">
+                      <UserCheck v-if="conversationIsMember(conversation)" class="size-3" />
+                      <UserRound v-else class="size-3" />
+                      {{ customerIdentityLabel(conversation) }}
+                    </span>
+                    <span
+                      v-if="memberTier(conversation)"
+                      class="inline-flex h-5 items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 text-amber-700"
+                      :style="memberTierStyle(conversation)"
+                      :title="`${memberTierName(conversation)} · ${Number(memberTier(conversation)?.total_points || 0)} 积分`"
+                    >
+                      <span v-if="memberTierIcon(conversation)" class="leading-none">{{ memberTierIcon(conversation) }}</span>
+                      <span class="max-w-20 truncate">{{ memberTierName(conversation) }}</span>
+                    </span>
+                    <span class="inline-flex h-5 max-w-full items-center gap-1 rounded-full border border-border bg-muted/55 px-2 text-muted-foreground">
+                      <MapPin class="size-3" />
+                      <span class="truncate">{{ customerRegionLabel(conversation) }}</span>
+                    </span>
                   </div>
                   <p class="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
                     {{ conversation.last_message || '暂无消息' }}
@@ -135,6 +209,9 @@
                     <span>{{ assigneeName(conversation.assigned_to) }}</span>
                     <span v-if="conversation.unread_count > 0" class="rounded-full bg-rose-500/10 px-2 py-0.5 text-rose-600">
                       {{ conversation.unread_count }} 未读
+                    </span>
+                    <span v-if="customerTypingFor(conversation.id)?.active" class="rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-600">
+                      正在输入
                     </span>
                   </div>
                 </div>
@@ -167,8 +244,18 @@
                 <AdminStatusBadge :tone="statusTone(selectedConversation.display_status)">
                   {{ statusLabel(selectedConversation.display_status) }}
                 </AdminStatusBadge>
-                <AdminStatusBadge v-if="selectedConversation.visitor_anonymous" tone="amber">匿名</AdminStatusBadge>
-                <AdminStatusBadge v-else tone="green">会员</AdminStatusBadge>
+                <AdminStatusBadge :tone="conversationIsMember(selectedConversation) ? 'green' : 'amber'">
+                  {{ customerIdentityLabel(selectedConversation) }}
+                </AdminStatusBadge>
+                <span
+                  v-if="memberTier(selectedConversation)"
+                  class="inline-flex h-5 items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 text-[10px] font-black text-amber-700"
+                  :style="memberTierStyle(selectedConversation)"
+                >
+                  <span v-if="memberTierIcon(selectedConversation)" class="leading-none">{{ memberTierIcon(selectedConversation) }}</span>
+                  {{ memberTierName(selectedConversation) }}
+                </span>
+                <AdminStatusBadge tone="gray">{{ customerRegionLabel(selectedConversation) }}</AdminStatusBadge>
               </div>
             </div>
           </CardHeader>
@@ -221,7 +308,123 @@
                     </div>
                     <time class="text-[11px] text-muted-foreground">{{ formatDate(message.created_at) }}</time>
                   </header>
-                  <p class="mt-2 whitespace-pre-wrap break-words leading-6">{{ message.content || message.message }}</p>
+                  <div
+                    v-if="isConfigConfirmMessage(message)"
+                    class="mt-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3"
+                  >
+                    <div class="mb-2 text-[11px] font-black uppercase tracking-widest text-indigo-600">
+                      配置确认请求
+                    </div>
+                    <div class="flex gap-3">
+                      <div class="size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
+                        <img
+                          v-if="configProduct(message).thumbnail"
+                          :src="configProduct(message).thumbnail"
+                          :alt="configProduct(message).title || 'Product'"
+                          class="size-full object-cover"
+                        />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <a
+                          v-if="configProduct(message).url"
+                          :href="configProduct(message).url"
+                          target="_blank"
+                          rel="noreferrer"
+                          class="block truncate text-sm font-black text-foreground underline-offset-4 hover:underline"
+                        >
+                          {{ configProduct(message).title || message.content || message.message }}
+                        </a>
+                        <p v-else class="truncate text-sm font-black text-foreground">
+                          {{ configProduct(message).title || message.content || message.message }}
+                        </p>
+                        <p v-if="configProduct(message).price" class="mt-1 text-xs font-bold text-emerald-600">
+                          {{ configProduct(message).price }}
+                        </p>
+                        <p v-if="configProduct(message).sku" class="mt-1 text-[11px] text-muted-foreground">
+                          SKU：{{ configProduct(message).sku }}
+                        </p>
+                      </div>
+                    </div>
+                    <div class="mt-3 rounded-xl bg-white/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                      <p v-if="configSelection(message).variant_title" class="font-bold text-foreground">
+                        已选：{{ configSelection(message).variant_title }}
+                      </p>
+                      <div v-if="configOptionRows(message).length" class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div
+                          v-for="option in configOptionRows(message)"
+                          :key="option.key"
+                          class="rounded-xl border border-indigo-100 bg-indigo-50/50 px-2.5 py-2"
+                        >
+                          <span class="block text-[10px] font-black uppercase tracking-wider text-indigo-500">
+                            {{ option.label }}
+                          </span>
+                          <span class="mt-0.5 block font-bold text-foreground">
+                            {{ option.value }}<span v-if="option.unit"> {{ option.unit }}</span>
+                          </span>
+                        </div>
+                      </div>
+                      <p v-if="configSelection(message).weight_grams" class="mt-2">
+                        重量：{{ configSelection(message).weight_grams }}g
+                      </p>
+                      <p
+                        v-if="!configOptionRows(message).length && !configSelection(message).variant_title && !configSelection(message).weight_grams"
+                      >
+                        客户请求客服确认该产品配置。
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    v-else-if="isOrderMessage(message)"
+                    class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3"
+                  >
+                    <div class="mb-2 text-[11px] font-black uppercase tracking-widest text-emerald-600">
+                      订单确认请求
+                    </div>
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0 flex-1">
+                        <a
+                          v-if="orderPayload(message).url"
+                          :href="orderPayload(message).url"
+                          target="_blank"
+                          rel="noreferrer"
+                          class="block truncate text-sm font-black text-foreground underline-offset-4 hover:underline"
+                        >
+                          {{ orderPayload(message).title || message.content || message.message }}
+                        </a>
+                        <p v-else class="truncate text-sm font-black text-foreground">
+                          {{ orderPayload(message).title || message.content || message.message }}
+                        </p>
+                        <p class="mt-1 text-xs font-bold text-emerald-700">
+                          {{ formatOrderTotal(orderPayload(message)) }}
+                        </p>
+                      </div>
+                      <AdminStatusBadge tone="green">
+                        {{ orderPayload(message).status || 'order' }}
+                      </AdminStatusBadge>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                      <span v-if="orderPayload(message).payment_status">支付：{{ orderPayload(message).payment_status }}</span>
+                      <span v-if="orderPayload(message).shipping_status">物流：{{ orderPayload(message).shipping_status }}</span>
+                      <span v-if="orderPayload(message).item_count">商品：{{ orderPayload(message).item_count }} 件</span>
+                    </div>
+                    <div v-if="orderItems(message).length" class="mt-3 space-y-2">
+                      <article
+                        v-for="item in orderItems(message).slice(0, 4)"
+                        :key="item.id || `${item.product_id}-${item.sku}`"
+                        class="rounded-xl border border-emerald-100 bg-white/70 px-3 py-2 text-xs"
+                      >
+                        <div class="flex items-center justify-between gap-2">
+                          <p class="truncate font-bold text-foreground">{{ item.title || item.product_name || 'Product' }}</p>
+                          <span class="shrink-0 font-mono text-muted-foreground">x{{ item.quantity || 1 }}</span>
+                        </div>
+                        <p v-if="item.sku" class="mt-1 text-[11px] text-muted-foreground">SKU：{{ item.sku }}</p>
+                      </article>
+                      <p v-if="orderItems(message).length > 4" class="text-[11px] text-muted-foreground">
+                        还有 {{ orderItems(message).length - 4 }} 个商品
+                      </p>
+                    </div>
+                  </div>
+                  <p v-else class="mt-2 whitespace-pre-wrap break-words leading-6">{{ message.content || message.message }}</p>
                   <a
                     v-if="message.attachment_url"
                     class="mt-2 inline-flex text-xs font-bold text-primary underline-offset-4 hover:underline"
@@ -233,10 +436,26 @@
                   </a>
                 </article>
               </div>
+              <div
+                v-if="selectedCustomerTyping?.active"
+                class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700"
+              >
+                <span>{{ selectedCustomerTyping.displayName || '客户' }} 正在输入</span>
+                <span class="flex gap-0.5">
+                  <span class="size-1 animate-pulse rounded-full bg-emerald-500"></span>
+                  <span class="size-1 animate-pulse rounded-full bg-emerald-500 [animation-delay:120ms]"></span>
+                  <span class="size-1 animate-pulse rounded-full bg-emerald-500 [animation-delay:240ms]"></span>
+                </span>
+              </div>
             </div>
 
             <form v-if="hasPermission('ticket:edit')" class="border-t p-4" @submit.prevent="sendReply">
-              <Textarea v-model="replyMessage" class="min-h-24 resize-none" placeholder="输入回复内容，发送后客户侧可在原会话中看到" />
+              <Textarea
+                v-model="replyMessage"
+                class="min-h-24 resize-none"
+                placeholder="输入回复内容，发送后客户侧可在原会话中看到"
+                @input="handleReplyTypingInput"
+              />
               <div class="mt-3 flex justify-end">
                 <Button type="submit" class="rounded-full" :disabled="replying || !replyMessage.trim()">
                   <LoaderCircle v-if="replying" class="size-4 animate-spin" />
@@ -294,7 +513,18 @@
 
               <div v-if="customerAccount" class="space-y-2 text-xs">
                 <div class="rounded-xl bg-muted/45 p-3">
-                  <p class="font-black text-foreground">{{ customerAccount.display_name || customerAccount.username || customerAccount.email }}</p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-black text-foreground">{{ customerAccount.display_name || customerAccount.username || customerAccount.email }}</p>
+                    <span
+                      v-if="customerAccount.member_tier"
+                      class="inline-flex h-5 items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 text-[10px] font-black text-amber-700"
+                      :style="tierStyle(customerAccount.member_tier)"
+                      :title="`${customerAccount.member_tier.name} · ${Number(customerAccount.member_tier.total_points || 0)} 积分`"
+                    >
+                      <span v-if="customerAccount.member_tier.icon" class="leading-none">{{ customerAccount.member_tier.icon }}</span>
+                      {{ customerAccount.member_tier.name }}
+                    </span>
+                  </div>
                   <p class="mt-1 break-all text-muted-foreground">{{ customerAccount.email || '未填写邮箱' }}</p>
                 </div>
                 <dl class="grid grid-cols-2 gap-2 text-[11px]">
@@ -498,6 +728,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
   ArrowRightLeft,
+  BarChart3,
   Clock3,
   Heart,
   Headset,
@@ -533,20 +764,26 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const messagesLoading = ref(false)
 const contextLoading = ref(false)
+const regionAnalyticsLoading = ref(false)
 const replying = ref(false)
 const transferring = ref(false)
 const conversations = ref([])
 const messages = ref([])
 const customerContext = ref(null)
+const regionAnalytics = ref(null)
 const selectedConversation = ref(null)
 const replyMessage = ref('')
 const transferTo = ref('')
 const assignableAgents = ref([])
+const customerTypingByConversation = ref({})
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const filters = reactive({ search: '', status: 'all', identity: 'all', assignedTo: 'all', unread: 'all' })
 const realtimeSource = ref(null)
 let realtimeReconnectTimer = null
 let realtimeRefreshTimer = null
+let agentTypingIdleTimer = null
+let lastAgentTypingSignalAt = 0
+const customerTypingTimers = new Map()
 
 const apiData = (response) => response.data?.data ?? response.data ?? {}
 const hasPermission = (permission) => authStore.hasPermission(permission)
@@ -554,6 +791,7 @@ const hasPermission = (permission) => authStore.hasPermission(permission)
 const totalPages = computed(() => Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize)))
 
 const filteredConversations = computed(() => conversations.value)
+const regionRows = computed(() => regionAnalytics.value?.regions || [])
 
 const statItems = computed(() => {
   const total = conversations.value.length
@@ -585,6 +823,40 @@ const signalItems = computed(() => {
     { key: 'visitor_profile', label: '访客档案', ...(signals.visitor_profile || {}) }
   ]
 })
+
+const selectedCustomerTyping = computed(() => {
+  if (!selectedConversation.value?.id) return null
+  return customerTypingFor(selectedConversation.value.id)
+})
+
+const todayLocalDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const adminTimezoneOffsetMinutes = () => -new Date().getTimezoneOffset()
+
+const fetchRegionAnalytics = async () => {
+  regionAnalyticsLoading.value = true
+  try {
+    const response = await axios.get('/api/admin/customer-service/analytics/regions', {
+      params: {
+        date: todayLocalDate(),
+        tz_offset_minutes: adminTimezoneOffsetMinutes()
+      }
+    })
+    const data = apiData(response)
+    regionAnalytics.value = data.analytics || null
+  } catch (error) {
+    console.error('Failed to fetch customer-service region analytics:', error)
+    regionAnalytics.value = null
+  } finally {
+    regionAnalyticsLoading.value = false
+  }
+}
 
 const fetchConversations = async () => {
   loading.value = true
@@ -652,7 +924,7 @@ const fetchAgents = async () => {
 }
 
 const refreshInbox = async () => {
-  await Promise.all([fetchConversations(), fetchAgents()])
+  await Promise.all([fetchConversations(), fetchAgents(), fetchRegionAnalytics()])
   if (selectedConversation.value) {
     await Promise.all([
       fetchMessages(selectedConversation.value.id),
@@ -680,7 +952,8 @@ const connectCustomerServiceRealtime = () => {
     'conversation.messages.read',
     'conversation.assigned',
     'conversation.status.changed',
-    'conversation.context.updated'
+    'conversation.context.updated',
+    'conversation.typing'
   ].forEach((eventType) => {
     source.addEventListener(eventType, handleCustomerServiceRealtimeEvent)
   })
@@ -716,14 +989,73 @@ const closeCustomerServiceRealtime = () => {
     window.clearTimeout(realtimeRefreshTimer)
     realtimeRefreshTimer = null
   }
+  if (agentTypingIdleTimer) {
+    window.clearTimeout(agentTypingIdleTimer)
+    agentTypingIdleTimer = null
+  }
+  customerTypingTimers.forEach((timer) => window.clearTimeout(timer))
+  customerTypingTimers.clear()
 }
 
 const handleCustomerServiceRealtimeEvent = (event) => {
   try {
-    scheduleCustomerServiceRealtimeRefresh(JSON.parse(event.data || '{}'))
+    const payload = JSON.parse(event.data || '{}')
+    if (payload.type === 'conversation.typing') {
+      handleCustomerTypingEvent(payload)
+      return
+    }
+    scheduleCustomerServiceRealtimeRefresh(payload)
   } catch (error) {
     console.warn('Invalid customer-service realtime event:', error)
   }
+}
+
+const customerTypingFor = (conversationID) => {
+  return customerTypingByConversation.value[String(conversationID)] || null
+}
+
+const clearCustomerTyping = (conversationID) => {
+  const key = String(conversationID)
+  const nextState = { ...customerTypingByConversation.value }
+  delete nextState[key]
+  customerTypingByConversation.value = nextState
+
+  const timer = customerTypingTimers.get(key)
+  if (timer) {
+    window.clearTimeout(timer)
+    customerTypingTimers.delete(key)
+  }
+}
+
+const handleCustomerTypingEvent = (event) => {
+  if (event?.actor?.kind !== 'customer' || !event.ticket_id) return
+
+  const key = String(event.ticket_id)
+  const payload = event.payload || {}
+  if (payload.is_typing === false) {
+    clearCustomerTyping(key)
+    return
+  }
+
+  customerTypingByConversation.value = {
+    ...customerTypingByConversation.value,
+    [key]: {
+      active: true,
+      displayName: payload.display_name || '客户'
+    }
+  }
+
+  const existingTimer = customerTypingTimers.get(key)
+  if (existingTimer) {
+    window.clearTimeout(existingTimer)
+  }
+  const expiresAt = Date.parse(payload.expires_at || '')
+  const timeout = Number.isFinite(expiresAt)
+    ? Math.max(1200, Math.min(5000, expiresAt - Date.now()))
+    : 3500
+  customerTypingTimers.set(key, window.setTimeout(() => {
+    clearCustomerTyping(key)
+  }, timeout))
 }
 
 const scheduleCustomerServiceRealtimeRefresh = (event) => {
@@ -733,7 +1065,7 @@ const scheduleCustomerServiceRealtimeRefresh = (event) => {
 
   realtimeRefreshTimer = window.setTimeout(async () => {
     realtimeRefreshTimer = null
-    await fetchConversations()
+    await Promise.all([fetchConversations(), fetchRegionAnalytics()])
 
     if (!selectedConversation.value || Number(event.ticket_id) !== Number(selectedConversation.value.id)) {
       return
@@ -767,6 +1099,7 @@ const fetchMessages = async (conversationID) => {
 const selectConversation = async (conversation) => {
   selectedConversation.value = conversation
   replyMessage.value = ''
+  lastAgentTypingSignalAt = 0
   transferTo.value = conversation.assigned_to ? String(conversation.assigned_to) : ''
   await Promise.all([
     fetchMessages(conversation.id),
@@ -775,11 +1108,52 @@ const selectConversation = async (conversation) => {
   await fetchConversations()
 }
 
+const notifyAgentTyping = async (isTyping = true) => {
+  if (!selectedConversation.value?.id || !hasPermission('ticket:edit')) return
+
+  if (isTyping) {
+    const now = Date.now()
+    if (now - lastAgentTypingSignalAt < 2500) return
+    lastAgentTypingSignalAt = now
+  } else {
+    lastAgentTypingSignalAt = 0
+  }
+
+  try {
+    await axios.post(`/api/admin/customer-service/conversations/${selectedConversation.value.id}/typing`, {
+      is_typing: isTyping
+    })
+  } catch (error) {
+    console.warn('Failed to send agent typing signal:', error)
+  }
+}
+
+const handleReplyTypingInput = () => {
+  if (!replyMessage.value.trim()) {
+    if (agentTypingIdleTimer) {
+      window.clearTimeout(agentTypingIdleTimer)
+      agentTypingIdleTimer = null
+    }
+    notifyAgentTyping(false)
+    return
+  }
+
+  notifyAgentTyping(true)
+  if (agentTypingIdleTimer) {
+    window.clearTimeout(agentTypingIdleTimer)
+  }
+  agentTypingIdleTimer = window.setTimeout(() => {
+    agentTypingIdleTimer = null
+    notifyAgentTyping(false)
+  }, 3500)
+}
+
 const sendReply = async () => {
   if (!selectedConversation.value || !replyMessage.value.trim()) return
   const message = replyMessage.value.trim()
   replying.value = true
   try {
+    await notifyAgentTyping(false)
     await axios.post(`/api/admin/customer-service/conversations/${selectedConversation.value.id}/messages`, { message })
     replyMessage.value = ''
     toast.success('回复已发送')
@@ -834,10 +1208,94 @@ const resetFilters = async () => {
   await fetchConversations()
 }
 
+const customerSummary = (conversation) => conversation?.customer_summary || {}
+const conversationIsMember = (conversation) => {
+  const summary = customerSummary(conversation)
+  return ['member', 'account', 'user'].includes(String(summary.identity || summary.type || '').toLowerCase()) || conversation?.visitor_anonymous === false
+}
+const conversationDisplayName = (conversation) => {
+  const summaryName = String(customerSummary(conversation).display_name || '').trim()
+  if (summaryName) return summaryName
+  return conversation?.customer_name || (conversationIsMember(conversation) ? '会员客户' : '匿名客户')
+}
+const customerIdentityLabel = (conversation) => {
+  const label = String(customerSummary(conversation).identity_label || '').trim()
+  if (label) return label
+  return conversationIsMember(conversation) ? '会员' : '游客'
+}
+const customerRegionLabel = (conversation) => {
+  const label = String(customerSummary(conversation).region_label || '').trim()
+  return label || '未知区域'
+}
+const memberTier = (conversation) => customerSummary(conversation).member_tier || null
+const memberTierIcon = (conversation) => String(memberTier(conversation)?.icon || '').trim()
+const memberTierName = (conversation) => String(memberTier(conversation)?.name || '').trim() || '会员等级'
+const tierStyle = (tier) => {
+  const color = String(tier?.color || '').trim()
+  if (!color) return {}
+  return {
+    color,
+    borderColor: `${color}33`,
+    backgroundColor: `${color}14`
+  }
+}
+const memberTierStyle = (conversation) => tierStyle(memberTier(conversation))
+const identityPillClass = (conversation) => [
+  'inline-flex h-5 items-center gap-1 rounded-full border px-2',
+  conversationIsMember(conversation)
+    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700'
+    : 'border-amber-500/20 bg-amber-500/10 text-amber-700'
+]
 const initials = (name) => String(name || '?').trim().slice(0, 2).toUpperCase()
+const conversationInitials = (conversation) => initials(conversationDisplayName(conversation))
 const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 const formatShortDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('zh-CN') : '-'
 const formatMoney = (value) => `$${Number(value || 0).toFixed(2)}`
+
+const messageMetadata = (message) => {
+  if (!message?.metadata) return {}
+  if (typeof message.metadata === 'string') {
+    try {
+      return JSON.parse(message.metadata)
+    } catch {
+      return {}
+    }
+  }
+  return message.metadata
+}
+
+const isConfigConfirmMessage = (message) => message?.message_type === 'config_confirm'
+
+const isOrderMessage = (message) => message?.message_type === 'order'
+
+const configProduct = (message) => {
+  const metadata = messageMetadata(message)
+  return metadata?.product || {}
+}
+
+const configSelection = (message) => {
+  const metadata = messageMetadata(message)
+  return metadata?.selections || {}
+}
+
+const configOptionRows = (message) => {
+  const options = configSelection(message)?.options
+  return Array.isArray(options) ? options : []
+}
+
+const orderPayload = (message) => messageMetadata(message) || {}
+
+const orderItems = (message) => {
+  const items = orderPayload(message)?.items
+  return Array.isArray(items) ? items : []
+}
+
+const formatOrderTotal = (order) => {
+  const total = Number(order?.total || 0)
+  const currency = order?.currency || 'USD'
+  if (!Number.isFinite(total) || total <= 0) return currency
+  return `${currency} ${total.toFixed(2)}`
+}
 
 const statusDisplayValue = (status) => {
   if (['resolved', 'closed'].includes(status)) return 'closed'
@@ -881,5 +1339,8 @@ onMounted(async () => {
   connectCustomerServiceRealtime()
 })
 
-onBeforeUnmount(closeCustomerServiceRealtime)
+onBeforeUnmount(() => {
+  notifyAgentTyping(false)
+  closeCustomerServiceRealtime()
+})
 </script>

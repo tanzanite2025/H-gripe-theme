@@ -8,7 +8,7 @@ const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
 const publicApiBase = trimTrailingSlash(
   env.NUXT_PUBLIC_API_BASE || env.GO_API_BASE || env.API_BASE || ''
 )
-const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9000')
+const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9200')
 
 type RollupBuildWarning = {
   code?: string

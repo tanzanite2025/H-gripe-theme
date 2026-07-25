@@ -181,14 +181,22 @@ Last updated: 2026-07-25
   - 头部包含返回按钮 + 标题。
   - 左侧展示已选商品缩略图 / 标题 / 价格，右侧提供占位区说明后续会放配置字段与禁用的 CTA（“发送配置给客服”）。
 - ✅ 交互流程已打通：搜索 → 查看结果 → 进入配置确认 → 返回列表 → 关闭抽屉，全程保持暗色玻璃风格一致，不再触发模板报错。
-- ⚠️ 待办：渲染真实配置字段、启用“发送配置给客服”并生成结构化消息；同时规划 Orders Tab 二次确认入口。
+- ✅ `发送配置给客服` 已接入现有 Public Chat HTTP + SSE 链路，生成并持久化 `message_type = config_confirm` 的结构化消息。
+- ✅ `ticket_messages` 增加 `message_type` 与 `metadata` 字段，Nuxt 用户端和 Admin 客服端都从同一条持久化消息渲染配置确认卡片。
+- ✅ 公共商品搜索响应已经暴露现有事实源里的 `product_type.spec_definitions`、`variants.option_values`、`variants.weight_grams`。
+- ✅ Nuxt 已通过 `app/composables/chat/useProductConfigConfirmPayload.ts` 统一生成配置确认 metadata：
+  - `metadata.product`：商品和选中 SKU 的展示信息；
+  - `metadata.selections`：选中 variant、SKU、option rows、库存、重量、价格；
+  - 用户端聊天卡片和 Admin 客服卡片都只读渲染这份持久化 metadata。
+- ✅ Orders Tab 已新增显式 `和客服确认订单` 入口，订单消息沿用 `message_type = order`，通过持久化 metadata 在 Nuxt 用户端和 Admin 客服端渲染订单确认卡片。
+- ⚠️ 待办：如果后续要做“基于历史订单再次购买 / 修改配置”，只能从订单 items 的 SKU/attributes 回填到独立配置确认流程；后续后台产品模板字段继续扩展时，只更新商品/SKU事实源与 payload 构造器，不在聊天模块新增第二套配置字段。
 
 
 ### Phase 2：接入真实配置字段 & 发送
 
 配置卡片
 
-> 注：本阶段在商品和配置数据准备好之后再实现，这里仅做设计占位。
+> 注：结构化消息发送与双端卡片渲染已经完成；当前可渲染 SKU variant 的真实 option / 重量 / 价格事实。下一步扩展只应继续读取产品模板与 variant 数据，不能在聊天侧重建一套配置模板。
 
 #### 4.5 配置字段（示例）
 
@@ -256,6 +264,14 @@ interface ProductConfigSelection {
 
 - 客服端也以相同卡片样式展示，方便快速核对。
 
+当前实现约定：
+
+- `message` 字段存可读摘要，例如 `Configuration confirmation request: {product title}`。
+- `message_type` 固定为 `config_confirm`。
+- `metadata.product` 存产品基础信息：`id`、`variant_id`、`title`、`slug`、`sku`、`url`、`thumbnail`、`price`、`price_value`。
+- `metadata.selections` 存选中 SKU 事实：`variant_id`、`variant_title`、`sku`、`options[]`、`stock`、`weight_grams`、`price`、`price_value`。
+- `metadata.note` 存客服可读说明。
+
 
 ### Phase 3（可选）：Orders Tab 集成
 
@@ -295,15 +311,18 @@ interface ProductConfigSelection {
 
 ### Phase 2：内容 & 发送
 
-- [ ] 明确商品可配置字段来源（SKU 数据结构 / 单独接口）。
-- [ ] 在配置确认视图中渲染真实配置表单：尺寸 / 金属 / 刻字等。
-- [ ] 点击「发送配置给客服」时构造 `config_confirm` 类型消息，并通过现有发送接口发出。
-- [ ] 在聊天前端实现 `config_confirm` 卡片消息样式；客服端也同步实现或复用同样逻辑。
+- [x] 明确当前商品可配置字段来源：产品模板定义 + SKU variant `option_values` / `weight_grams`。
+- [ ] 在配置确认视图中渲染未来非 SKU 扩展表单：备注 / 客制化文字 / 其他后台定义的可编辑字段。
+- [x] 点击「发送配置给客服」时构造 `config_confirm` 类型消息，并通过现有发送接口发出。
+- [x] 在聊天前端实现 `config_confirm` 卡片消息样式；客服端也同步实现同样逻辑。
+- [x] 将 `message_type` / `metadata` 持久化到 `ticket_messages`，避免刷新后退化为普通文本。
 
 ### Phase 3：Orders 集成（可选）
 
-- [ ] 在 Orders Tab 订单卡片中新增 `再次和客服确认配置` 按钮。
-- [ ] 打开配置确认视图时，预填订单中的历史配置。
+- [x] 在 Orders Tab 订单卡片中新增显式 `和客服确认订单` 按钮，避免整卡误触发送。
+- [x] 订单消息沿用 `message_type = order`，通过 `app/composables/chat/useOrderChatPayload.ts` 统一生成订单 metadata。
+- [x] Nuxt 用户端与 Admin 客服端都按结构化订单卡片渲染同一条持久化消息。
+- [ ] 后续如果要“基于历史订单再次购买 / 修改配置”，应从订单 items 的 SKU/attributes 回填到独立配置确认流程，不在订单卡片里直接编辑。
 
 
 ## 7. 备注

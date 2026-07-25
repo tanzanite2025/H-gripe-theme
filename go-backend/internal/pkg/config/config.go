@@ -152,16 +152,16 @@ func Load(configFiles ...string) (*Config, error) {
 }
 
 func setDefaults() {
-	viper.SetDefault("server.port", ":9000")
+	viper.SetDefault("server.port", ":9200")
 	viper.SetDefault("server.mode", "debug")
-	viper.SetDefault("server.base_url", "http://localhost:9000")
+	viper.SetDefault("server.base_url", "http://localhost:9200")
 	viper.SetDefault("server.read_timeout", 60)
 	viper.SetDefault("server.write_timeout", 60)
 	viper.SetDefault("server.trusted_proxies", []string{})
 
 	viper.SetDefault("database.driver", "postgres")
 	viper.SetDefault("database.host", "localhost")
-	viper.SetDefault("database.port", 5432)
+	viper.SetDefault("database.port", 9400)
 	viper.SetDefault("database.username", "tanzanite")
 	viper.SetDefault("database.password", "tanzanite_password")
 	viper.SetDefault("database.database", "tanzanite")
@@ -172,7 +172,7 @@ func setDefaults() {
 	viper.SetDefault("database.log_level", "silent")
 
 	viper.SetDefault("redis.host", "localhost")
-	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.port", 9500)
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.pool_size", 10)
@@ -185,7 +185,7 @@ func setDefaults() {
 	viper.SetDefault("i18n.default_locale", "en")
 	viper.SetDefault("i18n.supported_locales", []string{"en", "zh", "fr", "de", "es", "ja", "ko", "it", "pt", "ru", "ar", "fi", "da", "th"})
 
-	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:3000", "http://localhost:5173"})
+	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:9100", "http://localhost:9300"})
 	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("cors.allowed_headers", []string{"Origin", "Content-Type", "Accept-Language", "X-CSRF-Token"})
 	viper.SetDefault("cors.expose_headers", []string{"Content-Length"})

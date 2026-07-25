@@ -1,8 +1,8 @@
 # 博客多语言功能 API 测试脚本 (PowerShell)
-# 使用方法: .\test-i18n-api.ps1 [-BaseUrl "http://localhost:9000"]
+# 使用方法: .\test-i18n-api.ps1 [-BaseUrl "http://localhost:9200"]
 
 param(
-    [string]$BaseUrl = "http://localhost:9000"
+    [string]$BaseUrl = "http://localhost:9200"
 )
 
 Write-Host "==========================================" -ForegroundColor Cyan

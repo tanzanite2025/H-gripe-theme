@@ -15,7 +15,7 @@ Use local storage for development:
 ```env
 STORAGE_TYPE=local
 STORAGE_LOCAL_PATH=./uploads
-STORAGE_BASE_URL=http://localhost:9000
+STORAGE_BASE_URL=http://localhost:9200
 ```
 
 Use object storage for deployed environments:

@@ -30,6 +30,7 @@
           :show-visitor-email-capture="showVisitorEmailCapture"
           :is-sending="isSending"
           :is-uploading-image="isUploadingImage"
+          :agent-typing="agentTyping"
           :current-theme-color="currentThemeColor"
           @update:new-message="$emit('update:newMessage', $event)"
           @update:visitor-email="$emit('update:visitorEmail', $event)"
@@ -121,6 +122,7 @@ const props = defineProps<{
   showVisitorEmailCapture: boolean
   isSending: boolean
   isUploadingImage: boolean
+  agentTyping?: { active: boolean; displayName?: string }
   // Product Props
   searchQuery: string
   isSearching: boolean

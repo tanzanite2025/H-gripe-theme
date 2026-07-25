@@ -30,7 +30,7 @@ export interface TranslationsResponse {
 
 export const useI18n = () => {
   const config = useRuntimeConfig()
-  const apiBase = config.public.apiBase || 'http://localhost:9000'
+  const apiBase = config.public.apiBase || 'http://localhost:9200'
   
   // 从 Cookie 获取当前语言
   const locale = useCookie('locale', { 

@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: tanzanite-backend
     ports:
-      - "8080:8080"
+      - "9200:8080"
     environment:
       # 数据库配置
       - DB_HOST=postgres
@@ -33,7 +33,7 @@ services:
       # 存储配置
       - STORAGE_TYPE=local
       - STORAGE_LOCAL_PATH=/app/uploads
-      - STORAGE_BASE_URL=http://localhost:8080
+      - STORAGE_BASE_URL=http://localhost:9200
       # 日志配置
       - LOG_LEVEL=info
       - LOG_FORMAT=json
@@ -66,7 +66,7 @@ services:
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
       - PGDATA=/var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "9400:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -84,7 +84,7 @@ services:
     container_name: tanzanite-redis
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "9500:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -121,7 +121,7 @@ services:
     image: adminer:latest
     container_name: tanzanite-adminer
     ports:
-      - "8081:8080"
+      - "9600:8080"
     environment:
       - ADMINER_DEFAULT_SERVER=postgres
     networks:
@@ -135,7 +135,7 @@ services:
     image: rediscommander/redis-commander:latest
     container_name: tanzanite-redis-commander
     ports:
-      - "8082:8081"
+      - "9700:8081"
     environment:
       - REDIS_HOSTS=local:redis:6379
     depends_on:
