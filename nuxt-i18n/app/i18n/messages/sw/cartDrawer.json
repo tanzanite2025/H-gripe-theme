@@ -22,5 +22,6 @@
     "tax": "Kodi",
     "estimatedTotal": "Jumla iliyokadiriwa",
     "finalShippingNote": "Usafirishaji wa mwisho hutumia nukuu ya backend baada ya kuchagua mahali pa kwenda."
-  }
+  },
+  "loading": "Loading cart..."
 }

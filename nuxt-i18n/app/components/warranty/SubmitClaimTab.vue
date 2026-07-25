@@ -320,7 +320,8 @@ const handleImages = (event: Event) => {
 const handleVideo = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    const file = target.files[0]
+    const file = target.files.item(0)
+    if (!file) return
     const error = validateVideo(file)
     if (error) {
       videoFile.value = null

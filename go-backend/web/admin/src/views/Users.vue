@@ -9,313 +9,44 @@
       </template>
     </AdminPageHeader>
 
-    <AdminFilterPanel>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.4fr)_minmax(150px,0.7fr)_minmax(150px,0.7fr)_auto]" @submit.prevent="applyFilters">
-        <label class="space-y-1 block">
-          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
-          <div class="relative">
-            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
-            <Input v-model="filters.search" class="h-9 pl-9" placeholder="邮箱、用户名或姓名" />
-          </div>
-        </label>
+    <UserFilterPanel
+      :filters="filters"
+      @apply="applyFilters"
+      @reset="resetFilters"
+    />
 
-        <label class="space-y-1 block">
-          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">ROLE / 角色</span>
-          <Select v-model="filters.role">
-            <SelectTrigger class="h-9 w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部角色</SelectItem>
-              <SelectItem value="admin">超级管理员</SelectItem>
-              <SelectItem value="manager">经理</SelectItem>
-              <SelectItem value="editor">编辑</SelectItem>
-              <SelectItem value="support">客服</SelectItem>
-              <SelectItem value="viewer">查看者</SelectItem>
-            </SelectContent>
-          </Select>
-        </label>
+    <UsersTablePanel
+      :loading="loading"
+      :users="users"
+      :selected-users="selectedUsers"
+      :pagination="pagination"
+      :selection-state="selectionState"
+      :current-user-id="currentUser?.id"
+      :can-edit="hasPermission('user:edit')"
+      :can-delete="hasPermission('user:delete')"
+      :get-role-name="getRoleName"
+      :role-tone="roleTone"
+      :get-status-name="getStatusName"
+      :status-tone="statusTone"
+      :format-date="formatDate"
+      :format-full-name="formatFullName"
+      @batch-delete="requestBatchDelete"
+      @toggle-all-users="toggleAllUsers"
+      @toggle-user="toggleUser"
+      @edit="openEditDialog"
+      @toggle-status="requestToggleStatus"
+      @delete="requestDelete"
+      @update-page="updatePage"
+      @update-page-size="updatePageSize"
+    />
 
-        <label class="space-y-1 block">
-          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 状态</span>
-          <Select v-model="filters.status">
-            <SelectTrigger class="h-9 w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="active">活跃</SelectItem>
-              <SelectItem value="inactive">未激活</SelectItem>
-              <SelectItem value="suspended">已停用</SelectItem>
-            </SelectContent>
-          </Select>
-        </label>
-
-        <label class="space-y-1 block">
-          <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">ACTION / 操作</span>
-          <div class="flex items-center gap-2">
-            <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
-              <Search class="size-3.5" />
-              搜索
-            </Button>
-            <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
-              <RotateCcw class="size-3.5" />
-              重置
-            </Button>
-          </div>
-        </label>
-      </form>
-    </AdminFilterPanel>
-
-    <AdminTablePanel :loading="loading" :batch-visible="selectedUsers.length > 0">
-      <template #batch>
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="text-xs font-bold text-muted-foreground/80">已选择 {{ selectedUsers.length }} 个用户</span>
-          <Button
-            v-if="hasPermission('user:delete')"
-            variant="destructive"
-            size="sm"
-            @click="requestBatchDelete"
-          >
-            <Trash2 class="size-3.5" />
-            批量删除
-          </Button>
-        </div>
-      </template>
-
-      <Table class="min-w-[980px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-11">
-              <Checkbox
-                :model-value="selectionState"
-                aria-label="选择当前页用户"
-                @update:model-value="toggleAllUsers"
-              />
-            </TableHead>
-            <TableHead class="w-20">ID</TableHead>
-            <TableHead>用户名</TableHead>
-            <TableHead>邮箱</TableHead>
-            <TableHead>姓名</TableHead>
-            <TableHead class="w-28">角色</TableHead>
-            <TableHead class="w-24">状态</TableHead>
-            <TableHead class="w-44">创建时间</TableHead>
-            <TableHead class="w-16 text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableEmpty v-if="users.length === 0" :colspan="9">
-            <div class="flex flex-col items-center text-muted-foreground">
-              <UsersRound class="mb-2 size-7 opacity-55" />
-              <span class="text-xs">暂无用户</span>
-            </div>
-          </TableEmpty>
-
-          <TableRow v-for="user in users" :key="user.id">
-            <TableCell>
-              <Checkbox
-                :model-value="isSelected(user.id)"
-                :disabled="user.id === currentUser?.id"
-                :aria-label="`选择用户 ${user.username}`"
-                @update:model-value="toggleUser(user, $event)"
-              />
-            </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{ user.id }}</TableCell>
-            <TableCell class="font-bold text-xs">{{ user.username }}</TableCell>
-            <TableCell class="max-w-64 truncate text-muted-foreground">{{ user.email }}</TableCell>
-            <TableCell>{{ formatFullName(user) }}</TableCell>
-            <TableCell>
-              <AdminStatusBadge :tone="roleTone(user.role)">{{ getRoleName(user.role) }}</AdminStatusBadge>
-            </TableCell>
-            <TableCell>
-              <AdminStatusBadge :tone="statusTone(user.status)">{{ getStatusName(user.status) }}</AdminStatusBadge>
-            </TableCell>
-            <TableCell class="text-xs text-muted-foreground">{{ formatDate(user.created_at) }}</TableCell>
-            <TableCell class="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button variant="ghost" size="icon" :aria-label="`管理用户 ${user.username}`">
-                    <MoreHorizontal class="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="w-40">
-                  <DropdownMenuItem v-if="hasPermission('user:edit')" @select="openEditDialog(user)">
-                    <Pencil class="size-4" />
-                    编辑
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    v-if="hasPermission('user:edit') && user.id !== currentUser?.id"
-                    @select="requestToggleStatus(user)"
-                  >
-                    <UserRoundCheck v-if="user.status !== 'active'" class="size-4" />
-                    <UserRoundX v-else class="size-4" />
-                    {{ user.status === 'active' ? '停用' : '启用' }}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator v-if="hasPermission('user:delete') && user.id !== currentUser?.id" />
-                  <DropdownMenuItem
-                    v-if="hasPermission('user:delete') && user.id !== currentUser?.id"
-                    class="text-destructive focus:text-destructive"
-                    @select="requestDelete(user)"
-                  >
-                    <Trash2 class="size-4" />
-                    删除
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-
-      <template #footer>
-        <AdminPagination
-          :page="pagination.page"
-          :page-size="pagination.pageSize"
-          :total="pagination.total"
-          @update:page="updatePage"
-          @update:page-size="updatePageSize"
-        />
-      </template>
-    </AdminTablePanel>
-
-    <Dialog v-model:open="dialogVisible">
-      <DialogContent size="md" class="max-h-[90dvh] overflow-y-auto">
-        <form @submit="submitUserForm">
-          <DialogHeader>
-            <DialogTitle>{{ dialogMode === 'create' ? '添加用户' : '编辑用户' }}</DialogTitle>
-            <DialogDescription>
-              {{ dialogMode === 'create' ? '创建新的后台用户并分配角色。' : '更新账号资料、角色和状态。' }}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div class="grid grid-cols-1 gap-4 py-5 sm:grid-cols-2">
-            <FormField v-slot="{ componentField }" name="email">
-              <FormItem>
-                <FormLabel>邮箱</FormLabel>
-                <FormControl><Input v-bind="componentField" type="email" autocomplete="email" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <FormField v-slot="{ componentField }" name="username">
-              <FormItem>
-                <FormLabel>用户名</FormLabel>
-                <FormControl><Input v-bind="componentField" autocomplete="username" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <FormField v-slot="{ componentField }" name="password">
-              <FormItem class="sm:col-span-2">
-                <FormLabel>密码</FormLabel>
-                <FormControl>
-                  <div class="relative">
-                    <Input
-                      v-bind="componentField"
-                      :type="showPassword ? 'text' : 'password'"
-                      :placeholder="dialogMode === 'create' ? '至少 6 位' : '留空则不修改'"
-                      autocomplete="new-password"
-                      class="pr-9"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      class="absolute right-1 top-1/2 -translate-y-1/2"
-                      :aria-label="showPassword ? '隐藏密码' : '显示密码'"
-                      @click="showPassword = !showPassword"
-                    >
-                      <EyeOff v-if="showPassword" class="size-4" />
-                      <Eye v-else class="size-4" />
-                    </Button>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <FormField v-slot="{ componentField }" name="first_name">
-              <FormItem>
-                <FormLabel>名字</FormLabel>
-                <FormControl><Input v-bind="componentField" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <FormField v-slot="{ componentField }" name="last_name">
-              <FormItem>
-                <FormLabel>姓氏</FormLabel>
-                <FormControl><Input v-bind="componentField" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <FormField v-slot="{ componentField }" name="role">
-              <FormItem>
-                <FormLabel>角色</FormLabel>
-                <Select v-bind="componentField">
-                  <FormControl>
-                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择角色" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="admin">超级管理员</SelectItem>
-                    <SelectItem value="manager">经理</SelectItem>
-                    <SelectItem value="editor">编辑</SelectItem>
-                    <SelectItem value="support">客服</SelectItem>
-                    <SelectItem value="viewer">查看者</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <FormField v-slot="{ componentField }" name="locale">
-              <FormItem>
-                <FormLabel>语言</FormLabel>
-                <Select v-bind="componentField">
-                  <FormControl>
-                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择语言" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="zh">中文</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <FormField v-slot="{ componentField }" name="status">
-              <FormItem class="sm:col-span-2">
-                <FormLabel>状态</FormLabel>
-                <FormControl>
-                  <RadioGroup v-bind="componentField" class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <label class="flex h-9 items-center gap-2 rounded-lg border px-3 text-sm">
-                      <RadioGroupItem value="active" />活跃
-                    </label>
-                    <label class="flex h-9 items-center gap-2 rounded-lg border px-3 text-sm">
-                      <RadioGroupItem value="inactive" />未激活
-                    </label>
-                    <label class="flex h-9 items-center gap-2 rounded-lg border px-3 text-sm">
-                      <RadioGroupItem value="suspended" />已停用
-                    </label>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" @click="dialogVisible = false">取消</Button>
-            <Button type="submit" :disabled="submitting">
-              <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
-              {{ submitting ? '正在保存' : '保存' }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <UserEditorDialog
+      v-model:open="dialogVisible"
+      v-model:show-password="showPassword"
+      :mode="dialogMode"
+      :submitting="submitting"
+      @submit="submitUserForm"
+    />
 
     <AdminConfirmDialog
       v-model:open="confirmation.open"
@@ -334,56 +65,13 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { z } from 'zod'
 import { toast } from 'vue-sonner'
-import {
-  Eye,
-  EyeOff,
-  LoaderCircle,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Search,
-  Trash2,
-  UserRoundCheck,
-  UserRoundX,
-  UsersRound
-} from '@lucide/vue'
+import { Plus } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
-import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import AdminPagination from '@/components/admin/AdminPagination.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
-import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import UserEditorDialog from '@/components/admin/user/UserEditorDialog.vue'
+import UserFilterPanel from '@/components/admin/user/UserFilterPanel.vue'
+import UsersTablePanel from '@/components/admin/user/UsersTablePanel.vue'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableEmpty,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 

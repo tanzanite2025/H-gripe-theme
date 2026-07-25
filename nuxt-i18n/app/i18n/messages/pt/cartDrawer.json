@@ -22,5 +22,6 @@
     "tax": "Imposto",
     "estimatedTotal": "Total estimado",
     "finalShippingNote": "O envio final usa a cotação do backend depois que você escolhe um destino."
-  }
+  },
+  "loading": "Loading cart..."
 }

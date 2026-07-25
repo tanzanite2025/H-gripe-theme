@@ -22,5 +22,6 @@
     "tax": "Cukai",
     "estimatedTotal": "Jumlah anggaran",
     "finalShippingNote": "Penghantaran akhir menggunakan sebut harga backend selepas anda memilih destinasi."
-  }
+  },
+  "loading": "Loading cart..."
 }

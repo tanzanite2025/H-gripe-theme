@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const payload = await readBody<PurgeHtmlCachePayload>(event).catch(() => ({}))
+  const payload = await readBody<PurgeHtmlCachePayload>(event).catch((): PurgeHtmlCachePayload => ({}))
   const reason = String(payload?.reason || 'manual').slice(0, 160)
 
   const storage = useStorage()

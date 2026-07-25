@@ -113,12 +113,11 @@ const (
 
 // Supported locales
 var SupportedLocales = []string{
-	"en", "zh", "zh-CN", "zh-TW",
-	"fr", "de", "es", "it", "pt",
-	"ja", "ko", "ru", "ar",
-	"th", "vi", "id", "ms",
-	"tr", "pl", "nl", "sv",
-	"da", "fi", "no", "cs",
+	"en", "fr", "de", "es", "ja", "ko", "it", "pt",
+	"ru", "ar", "fi", "da", "th", "sv", "id", "ms",
+	"be", "tr", "bn", "fa", "nl", "hi", "ur", "mr",
+	"pcm", "fil", "te", "ha", "ps", "sw", "tl", "ta",
+	"jv", "zh_cn",
 }
 
 // Supported currencies

@@ -269,6 +269,7 @@ watch(product, (currentProduct) => {
     return
   }
   const defaultVariant = variants.find((variant) => variant.is_default) || variants[0]
+  if (!defaultVariant) return
   selectedVariantId.value = defaultVariant.id
 }, { immediate: true })
 

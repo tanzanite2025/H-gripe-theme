@@ -22,5 +22,6 @@
     "tax": "مالیات",
     "estimatedTotal": "جمع تخمینی",
     "finalShippingNote": "هزینه نهایی ارسال پس از انتخاب مقصد از قیمت backend استفاده می‌کند."
-  }
+  },
+  "loading": "Loading cart..."
 }

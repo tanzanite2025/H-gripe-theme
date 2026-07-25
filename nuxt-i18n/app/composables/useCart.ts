@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import type { CartItem } from '~/types/cart'
+import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
 
@@ -205,7 +205,7 @@ export const useCart = () => {
       if (!result.success && result.itemsCount && result.itemsCount > 0) {
         console.error('[Cart] Failed to sync cart:', result.error)
 
-        if (typeof window !== 'undefined' && window.alert) {
+        if (typeof window !== 'undefined') {
           const retry = window.confirm(
             `Cart sync failed for ${result.itemsCount} item(s). Local data is kept.\n\nRefresh and retry?`,
           )
@@ -291,6 +291,7 @@ export const useCart = () => {
     const index = cartItems.value.findIndex(item => item.id === id)
     if (index > -1) {
       const item = cartItems.value[index]
+      if (!item) return
       cartItems.value.splice(index, 1)
       syncAction('remove', item.product_id || item.id, undefined, item.variant_id || null)
     }

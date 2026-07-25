@@ -175,5 +175,14 @@
       "giftCardDiscount": "Gift card discount",
       "total": "Total"
     }
+  },
+  "fields": {
+    "name": "Name",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "state": "State",
+    "zip": "ZIP",
+    "country": "Country"
   }
 }

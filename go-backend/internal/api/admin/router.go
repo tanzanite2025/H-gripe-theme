@@ -254,7 +254,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				registrationsGroup.GET("/expiring", registrationHandler.GetExpiringWarranties)
 				registrationsGroup.GET("/stats", registrationHandler.GetRegistrationStats)
 				registrationsGroup.GET("/warranty-claims", registrationHandler.ListAllWarrantyClaims)
+				registrationsGroup.GET("/warranty-claims/:id", registrationHandler.GetWarrantyClaim)
+				registrationsGroup.GET("/warranty-claims/:id/order-items", registrationHandler.ListWarrantyClaimOrderItems)
+				registrationsGroup.PUT("/warranty-claims/:id/order-item", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.BindWarrantyClaimOrderItem)
+				registrationsGroup.GET("/warranty-claims/:id/service-records", registrationHandler.ListWarrantyServiceRecords)
+				registrationsGroup.POST("/warranty-claims/:id/service-records", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.CreateWarrantyServiceRecord)
 				registrationsGroup.PUT("/warranty-claims/:id/status", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.UpdateWarrantyClaimStatus)
+				registrationsGroup.PUT("/warranty-claims/:id/resolution", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.UpdateWarrantyClaimResolution)
 			}
 
 			// 订阅管理（需要订阅管理权限）

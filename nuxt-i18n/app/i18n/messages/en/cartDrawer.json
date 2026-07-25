@@ -22,5 +22,6 @@
     "tax": "Tax",
     "estimatedTotal": "Estimated total",
     "finalShippingNote": "Final shipping uses the backend quote after you choose a destination."
-  }
+  },
+  "loading": "Loading cart..."
 }

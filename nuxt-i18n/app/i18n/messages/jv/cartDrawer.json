@@ -22,5 +22,6 @@
     "tax": "Pajak",
     "estimatedTotal": "Total perkiraan",
     "finalShippingNote": "Pangiriman final nganggo kutipan backend sawise sampeyan milih tujuan."
-  }
+  },
+  "loading": "Loading cart..."
 }

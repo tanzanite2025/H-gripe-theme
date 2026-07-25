@@ -74,6 +74,16 @@ func (r *OrderRepository) FindByOrderNumberForVerification(orderNumber string) (
 	return &o, nil
 }
 
+// FindOrderItemByID 根据 ID 查找订单商品项
+func (r *OrderRepository) FindOrderItemByID(id uint) (*order.OrderItem, error) {
+	var item order.OrderItem
+	err := r.db.First(&item, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 // Update 更新订单
 func (r *OrderRepository) Update(o *order.Order) error {
 	return r.db.Save(o).Error

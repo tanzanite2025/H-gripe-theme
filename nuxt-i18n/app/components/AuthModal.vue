@@ -199,11 +199,11 @@
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <h3 class="text-2xl font-semibold">{{ completionState?.title }}</h3>
-                    <p class="tz-text-secondary">{{ completionState?.message }}</p>
+                    <h3 class="text-2xl font-semibold">{{ completionTitle }}</h3>
+                    <p class="tz-text-secondary">{{ completionMessage }}</p>
                   </div>
                   <button type="button" class="primary-btn w-full" @click="handleCompletionCta">
-                    {{ completionState?.ctaLabel }}
+                    {{ completionCtaLabel }}
                   </button>
                 </div>
               </div>
@@ -269,6 +269,9 @@ type CompletionState = {
   ctaLabel: string
 }
 const completionState = ref<CompletionState | null>(null)
+const completionTitle = computed(() => completionState.value?.title || '')
+const completionMessage = computed(() => completionState.value?.message || '')
+const completionCtaLabel = computed(() => completionState.value?.ctaLabel || '')
 
 watch(() => props.defaultMode, (val) => {
   mode.value = val
@@ -366,7 +369,7 @@ const handleLogin = async () => {
   })
   
   if (!validation.success) {
-    loginForm.value.error = validation.error.errors[0].message
+    loginForm.value.error = validation.error.issues[0]?.message || t('authModal.errors.loginFailed')
     return
   }
 
@@ -400,7 +403,7 @@ const handleRegister = async () => {
   })
   
   if (!validation.success) {
-    registerForm.value.error = validation.error.errors[0].message
+    registerForm.value.error = validation.error.issues[0]?.message || t('authModal.errors.registrationFailed')
     return
   }
 

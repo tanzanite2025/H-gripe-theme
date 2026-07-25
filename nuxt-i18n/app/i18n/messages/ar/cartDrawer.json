@@ -22,5 +22,6 @@
     "tax": "الضريبة",
     "estimatedTotal": "الإجمالي التقديري",
     "finalShippingNote": "تستخدم تكلفة الشحن النهائية عرض backend بعد اختيار الوجهة."
-  }
+  },
+  "loading": "Loading cart..."
 }

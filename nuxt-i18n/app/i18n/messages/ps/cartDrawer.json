@@ -22,5 +22,6 @@
     "tax": "مالیه",
     "estimatedTotal": "اټکلي ټول",
     "finalShippingNote": "وروستی لېږد د منزل له ټاکلو وروسته د backend quote کاروي."
-  }
+  },
+  "loading": "Loading cart..."
 }

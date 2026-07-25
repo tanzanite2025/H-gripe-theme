@@ -46,8 +46,40 @@ export const registrationApi = {
     return unwrapPaged(response)
   },
 
+  async getWarrantyClaim(id) {
+    const response = await axios.get(`/api/admin/registrations/warranty-claims/${id}`)
+    return unwrapPayload(response)
+  },
+
   async updateWarrantyClaimStatus(id, status) {
     const response = await axios.put(`/api/admin/registrations/warranty-claims/${id}/status`, { status })
+    return unwrapPayload(response)
+  },
+
+  async updateWarrantyClaimResolution(id, resolution) {
+    const response = await axios.put(`/api/admin/registrations/warranty-claims/${id}/resolution`, { resolution })
+    return unwrapPayload(response)
+  },
+
+  async listWarrantyClaimOrderItems(id) {
+    const response = await axios.get(`/api/admin/registrations/warranty-claims/${id}/order-items`)
+    return unwrapList(response, 'items')
+  },
+
+  async bindWarrantyClaimOrderItem(id, orderItemId) {
+    const response = await axios.put(`/api/admin/registrations/warranty-claims/${id}/order-item`, {
+      order_item_id: orderItemId || null
+    })
+    return unwrapPayload(response)
+  },
+
+  async listWarrantyServiceRecords(id) {
+    const response = await axios.get(`/api/admin/registrations/warranty-claims/${id}/service-records`)
+    return unwrapList(response, 'records')
+  },
+
+  async createWarrantyServiceRecord(id, payload) {
+    const response = await axios.post(`/api/admin/registrations/warranty-claims/${id}/service-records`, payload)
     return unwrapPayload(response)
   },
 }

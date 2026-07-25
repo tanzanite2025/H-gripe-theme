@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getAllFaqData } from '~/data/faq'
+import { getAllFaqData, resolvePageFaqDataList } from '~/data/faq'
 
 interface Props {
   maxItemsPerCategory?: number
@@ -94,7 +94,7 @@ const props = withDefaults(defineProps<Props>(), {
 const wide = computed(() => props.wide)
 
 // 获取所有 FAQ 数据
-const allPages = computed(() => getAllFaqData())
+const allPages = computed(() => resolvePageFaqDataList(getAllFaqData()))
 
 // 当前选中的分类
 const activePageId = ref<string>('')

@@ -94,7 +94,7 @@
         </header>
 
         <main class="min-h-0 flex-1 overflow-auto bg-muted/35 p-3 sm:p-4 lg:p-6">
-          <div class="mx-auto w-full max-w-[1600px]">
+          <div class="mx-auto w-full max-w-none sm:w-[95%]">
             <router-view />
           </div>
         </main>

@@ -28,8 +28,8 @@
   </section>
 
   <PageFaq
-    v-else-if="resolvedFaqData"
-    :page-id="resolvedFaqData.pageId"
+    v-else-if="resolvedFaqData && resolvedFaqPageId"
+    :page-id="resolvedFaqPageId"
     :data="resolvedFaqData"
     :show-categories="true"
   />
@@ -39,7 +39,7 @@
 import { computed } from 'vue'
 import { useAsyncData, useRoute } from '#imports'
 import PageFaq from '~/components/PageFaq.vue'
-import { fetchFaqDataByRoutePath, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from '~/data/faq'
+import { fetchFaqDataByRoutePath, getPageFaqId, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from '~/data/faq'
 
 const route = useRoute()
 
@@ -53,6 +53,7 @@ const { data: faqData, pending } = await useAsyncData(
 )
 
 const resolvedFaqData = computed(() => faqData.value)
+const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(resolvedFaqData.value) : '')
 </script>
 
 <style scoped>

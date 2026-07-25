@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { SpokeCalcInput, SpokeCalcResult } from '~/types/spoke'
+import type { SpokeCalcInput, SpokeCalcResult } from '~~/types/spoke'
 
 // Define the response shape from Go backend
 interface SpokeCalcApiResponse {

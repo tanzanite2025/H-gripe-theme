@@ -303,6 +303,7 @@ const {
   handleProductDrawerClose,
   handleHistoryDrawerClose,
   shareProductToChat,
+  shareProductConfigConfirmToChat,
   handleShareProductFromHistory,
   shareOrderToChat,
   openCartFromChat,

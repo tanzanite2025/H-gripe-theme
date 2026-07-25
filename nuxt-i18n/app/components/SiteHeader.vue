@@ -582,12 +582,16 @@ const breadcrumbSubNavigationItems = computed<BreadcrumbSubNavigationItem[]>(() 
 
   const activeId = activePageSubNavigationTab.value?.id || ''
 
-  return entry.tabs.map((tab) => ({
-    id: tab.id,
-    label: getSubNavigationLabel(tab),
-    to: localizedNavTarget(tab.to || `${entry.path}#${tab.id}`),
-    active: tab.id === activeId,
-  }))
+  return entry.tabs.map((tab: PageSubNavigationTab) => {
+    const target = typeof tab.to === 'string' && tab.to ? tab.to : `${entry.path}#${String(tab.id)}`
+
+    return {
+      id: String(tab.id),
+      label: getSubNavigationLabel(tab),
+      to: localizedNavTarget(target),
+      active: tab.id === activeId,
+    }
+  })
 })
 
 const findCurrentMegaCard = (): { section: PrimaryMegaNavSection; card: PrimaryMegaNavCard } | null => {

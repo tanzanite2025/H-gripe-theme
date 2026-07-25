@@ -4,7 +4,7 @@
  */
 
 import { ref } from 'vue'
-import type { CartItem } from '~/types/cart'
+import type { CartItem } from '~~/types/cart'
 
 /**
  * 包装规则接口

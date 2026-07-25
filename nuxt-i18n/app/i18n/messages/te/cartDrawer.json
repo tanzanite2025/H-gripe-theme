@@ -22,5 +22,6 @@
     "tax": "పన్ను",
     "estimatedTotal": "అంచనా మొత్తం",
     "finalShippingNote": "మీరు గమ్యం ఎంచుకున్న తర్వాత తుది షిప్పింగ్ backend quote ఉపయోగిస్తుంది."
-  }
+  },
+  "loading": "Loading cart..."
 }

@@ -11,153 +11,34 @@
 
     <AdminStatsGrid :items="statItems" />
 
-    <AdminFilterPanel>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_minmax(140px,0.7fr)_auto]" @submit.prevent="applyFilters">
-        <label class="space-y-1 block">
-          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
-          <div class="relative">
-            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
-            <Input v-model="filters.search" class="h-9 pl-9" placeholder="搜索 Email" />
-          </div>
-        </label>
+    <SubscriptionFilterPanel
+      :filters="filters"
+      @apply="applyFilters"
+      @reset="resetFilters"
+    />
 
-        <label class="space-y-1 block">
-          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 状态</span>
-          <Select v-model="filters.status">
-            <SelectTrigger class="h-9 w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="active">已订阅</SelectItem>
-            </SelectContent>
-          </Select>
-        </label>
-        <label class="space-y-1 block">
-          <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">ACTION / 操作</span>
-          <div class="flex items-center gap-2">
-            <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
-              <Search class="size-3.5" />
-              搜索
-            </Button>
-            <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
-              <RotateCcw class="size-3.5" />
-              重置
-            </Button>
-          </div>
-        </label>
-      </form>
-    </AdminFilterPanel>
-
-    <AdminTablePanel :loading="loading" :batch-visible="selectedSubscriptions.length > 0">
-      <template #batch>
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="text-xs font-medium">已选择 {{ selectedSubscriptions.length }} 个订阅</span>
-          <Button
-            v-if="hasPermission('subscription:delete')"
-            variant="destructive"
-            size="sm"
-            @click="requestBatchDelete"
-          >
-            <Trash2 class="size-3.5" />
-            批量删除
-          </Button>
-        </div>
-      </template>
-
-      <Table class="min-w-[1120px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-11">
-              <Checkbox
-                :model-value="selectionState"
-                aria-label="选择当前页订阅"
-                @update:model-value="toggleAllSubscriptions"
-              />
-            </TableHead>
-            <TableHead class="w-16">ID</TableHead>
-            <TableHead>邮箱</TableHead>
-            <TableHead class="w-24">状态</TableHead>
-            <TableHead class="w-24">语言</TableHead>
-            <TableHead class="w-28">来源</TableHead>
-            <TableHead class="w-44">标签</TableHead>
-            <TableHead class="w-44">订阅时间</TableHead>
-            <TableHead class="w-44">退订时间</TableHead>
-            <TableHead class="w-16 text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableEmpty v-if="subscriptions.length === 0" :colspan="10">
-            <div class="flex flex-col items-center text-muted-foreground">
-              <MailOpen class="mb-2 size-7 opacity-55" />
-              <span class="text-xs">暂无订阅</span>
-            </div>
-          </TableEmpty>
-
-          <TableRow v-for="subscription in subscriptions" :key="subscription.id || subscription.email">
-            <TableCell>
-              <Checkbox
-                :model-value="isSelected(subscription.email)"
-                :aria-label="`选择订阅 ${subscription.email}`"
-                @update:model-value="toggleSubscription(subscription, $event)"
-              />
-            </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{ subscription.id || '-' }}</TableCell>
-            <TableCell>
-              <a :href="`mailto:${subscription.email}`" class="font-medium hover:text-primary hover:underline">
-                {{ subscription.email }}
-              </a>
-            </TableCell>
-            <TableCell>
-              <AdminStatusBadge :tone="statusTone(subscription.status)">{{ statusName(subscription.status) }}</AdminStatusBadge>
-            </TableCell>
-            <TableCell>{{ localeName(subscription.locale) }}</TableCell>
-            <TableCell>{{ sourceName(subscription.source) }}</TableCell>
-            <TableCell class="max-w-44 truncate text-xs text-muted-foreground">{{ subscription.tags || '-' }}</TableCell>
-            <TableCell class="text-xs text-muted-foreground">{{ formatDate(subscription.subscribed_at) }}</TableCell>
-            <TableCell class="text-xs text-muted-foreground">{{ formatDate(subscription.unsubscribed_at) }}</TableCell>
-            <TableCell class="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button variant="ghost" size="icon" :aria-label="`管理订阅 ${subscription.email}`">
-                    <MoreHorizontal class="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="w-40">
-                  <DropdownMenuItem
-                    v-if="hasPermission('subscription:edit')"
-                    @select="requestToggleStatus(subscription)"
-                  >
-                    <MailCheck v-if="subscription.status !== 'active'" class="size-4" />
-                    <MailX v-else class="size-4" />
-                    {{ subscription.status === 'active' ? '标记为退订' : '恢复订阅' }}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator v-if="hasPermission('subscription:delete')" />
-                  <DropdownMenuItem
-                    v-if="hasPermission('subscription:delete')"
-                    class="text-destructive focus:text-destructive"
-                    @select="requestDelete(subscription)"
-                  >
-                    <Trash2 class="size-4" />
-                    删除
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-
-      <template #footer>
-        <AdminPagination
-          :page="pagination.page"
-          :page-size="pagination.pageSize"
-          :total="pagination.total"
-          @update:page="updatePage"
-          @update:page-size="updatePageSize"
-        />
-      </template>
-    </AdminTablePanel>
+    <SubscriptionTablePanel
+      :loading="loading"
+      :subscriptions="subscriptions"
+      :selected-subscriptions="selectedSubscriptions"
+      :selection-state="selectionState"
+      :pagination="pagination"
+      :can-edit="hasPermission('subscription:edit')"
+      :can-delete="hasPermission('subscription:delete')"
+      :is-selected="isSelected"
+      :status-name="statusName"
+      :status-tone="statusTone"
+      :locale-name="localeName"
+      :source-name="sourceName"
+      :format-date="formatDate"
+      @toggle-all="toggleAllSubscriptions"
+      @toggle-subscription="toggleSubscription"
+      @request-toggle-status="requestToggleStatus"
+      @request-delete="requestDelete"
+      @request-batch-delete="requestBatchDelete"
+      @update-page="updatePage"
+      @update-page-size="updatePageSize"
+    />
 
     <AdminConfirmDialog
       v-model:open="confirmation.open"
@@ -178,32 +59,14 @@ import {
   Download,
   Mail,
   MailCheck,
-  MailOpen,
-  MailX,
-  MoreHorizontal,
-  RefreshCw,
-  RotateCcw,
-  Trash2,
   UserMinus
 } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
-import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
-import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import SubscriptionFilterPanel from '@/components/admin/subscription/SubscriptionFilterPanel.vue'
+import SubscriptionTablePanel from '@/components/admin/subscription/SubscriptionTablePanel.vue'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 

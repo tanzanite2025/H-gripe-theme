@@ -15,6 +15,8 @@ export interface SiteSettingsResponse {
   siteTitle?: string
   siteDescription?: string
   siteLogo?: string
+  contactEmail?: string
+  contactPhone?: string
   socialLinks?: ApiSocialLink[]
 }
 
@@ -81,6 +83,8 @@ const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => ({
   siteTitle: asString(raw.siteTitle || raw.site_name),
   siteDescription: asString(raw.siteDescription || raw.site_description),
   siteLogo: asString(raw.siteLogo || raw.site_logo),
+  contactEmail: asString(raw.contactEmail || raw.contact_email),
+  contactPhone: asString(raw.contactPhone || raw.contact_phone),
   socialLinks: normalizeRuntimeSocialLinks(raw.socialLinks || raw.social_links)
 })
 

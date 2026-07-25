@@ -1,37 +1,10 @@
 {
   // https://nuxt.com/docs/guide/concepts/typescript
+  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "paths": {
-      "~/*": ["./app/*"],
-      "@/*": ["./app/*"],
-      "~/components/*": ["./app/components/*"],
-      "~/composables/*": ["./app/composables/*"],
-      "~/utils/*": ["./app/utils/*"],
-      "~/types/*": ["types/*"],
-      "@/types/*": ["types/*"],
-      "#imports": ["./.nuxt/imports.d.ts"]
-    },
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "typeRoots": [
-      "./.nuxt/types",
-      "./types",
-      "./node_modules/@types"
+    "ignoreDeprecations": "6.0",
+    "types": [
+      "node"
     ]
-  },
-  "include": [
-    "app/**/*.ts",
-    "app/**/*.vue",
-    "types/**/*.d.ts",
-    ".nuxt/**/*.d.ts"
-  ]
+  }
 }

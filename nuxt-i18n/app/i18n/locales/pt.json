@@ -1,4 +1,52 @@
 {
+  "accountSidebar": {
+    "addresses": {
+      "eyebrow": "Shipping details",
+      "title": "Address",
+      "boundary": "This edits the current checkout shipping address. A persistent account address book should connect to one backend source later.",
+      "saveToCheckout": "Use for checkout",
+      "saved": "Checkout shipping address updated"
+    },
+    "cart": {
+      "eyebrow": "Ready to pay",
+      "title": "Cart"
+    },
+    "actions": {
+      "goShop": "Go to shop",
+      "refresh": "Refresh"
+    },
+    "loginPrompt": {
+      "eyebrow": "Private account area",
+      "title": "Sign in before managing personal data",
+      "description": "Points, wishlist, cart checkout and shipping address tools live here after login."
+    },
+    "points": {
+      "currentLevel": "Current level",
+      "progress": "Progress",
+      "viewFull": "Full membership center"
+    },
+    "kicker": "Account Hub",
+    "guestTitle": "Sign in to continue",
+    "memberSubtitle": "Points, wishlist, cart and checkout details are grouped here.",
+    "guestSubtitle": "This Dock entry is now reserved for your personal account area.",
+    "summary": {
+      "saved": "Saved",
+      "cart": "Cart"
+    },
+    "tabs": {
+      "ariaLabel": "Account sections"
+    },
+    "memberTitle": "My account",
+    "wishlist": {
+      "eyebrow": "Saved products",
+      "title": "Wishlist",
+      "addAll": "Add all",
+      "addToCart": "Add to cart",
+      "missingProduct": "This saved product needs product data before adding to cart.",
+      "added": "Added to cart",
+      "addedAll": "Wishlist products added to cart"
+    }
+  },
   "auth": {
     "registerTitle": "Registrar",
     "loginTitle": "Entrar",
@@ -151,7 +199,8 @@
       "tax": "Imposto",
       "estimatedTotal": "Total estimado",
       "finalShippingNote": "O envio final usa a cotação do backend depois que você escolhe um destino."
-    }
+    },
+    "loading": "Loading cart..."
   },
   "category": "Categoria",
   "chatModal": {
@@ -411,6 +460,15 @@
         "giftCardDiscount": "Gift card discount",
         "total": "Total"
       }
+    },
+    "fields": {
+      "name": "Name",
+      "phone": "Phone",
+      "address": "Address",
+      "city": "City",
+      "state": "State",
+      "zip": "ZIP",
+      "country": "Country"
     }
   },
   "common": {

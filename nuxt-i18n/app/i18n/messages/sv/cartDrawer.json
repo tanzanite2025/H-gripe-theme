@@ -22,5 +22,6 @@
     "tax": "Skatt",
     "estimatedTotal": "Beräknad totalsumma",
     "finalShippingNote": "Slutlig frakt använder backend-offerten efter att du valt destination."
-  }
+  },
+  "loading": "Loading cart..."
 }

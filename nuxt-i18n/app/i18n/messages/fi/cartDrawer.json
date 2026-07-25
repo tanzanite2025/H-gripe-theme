@@ -22,5 +22,6 @@
     "tax": "Vero",
     "estimatedTotal": "Arvioitu yhteensä",
     "finalShippingNote": "Lopullinen toimitus käyttää backend-tarjousta, kun olet valinnut määränpään."
-  }
+  },
+  "loading": "Loading cart..."
 }

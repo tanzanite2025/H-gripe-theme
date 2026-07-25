@@ -227,7 +227,7 @@ export const useWhatsAppState = (emit: any) => {
   // Toast 提示
   const showToast = ref(false)
   const toastMessage = ref('')
-  let toastTimer: number | null = null
+  let toastTimer: ReturnType<typeof setTimeout> | null = null
   
   const messagePressTimer = ref<number | null>(null)
   const pressedMessage = ref<any | null>(null)
@@ -817,7 +817,7 @@ export const useWhatsAppState = (emit: any) => {
     loadMessagesFromStorage()
   }
   
-  const agentThemePalette = ['#6b73ff', '#40ffaa', '#C77DFF']
+  const agentThemePalette = ['#6b73ff', '#40ffaa', '#C77DFF'] as const
   const getAgentThemeColor = (agentId: number) => {
     return agentThemePalette[(agentId - 1) % agentThemePalette.length] || agentThemePalette[0]
   }
@@ -832,9 +832,9 @@ export const useWhatsAppState = (emit: any) => {
     if (!name) return '?'
     const parts = name.split(' ')
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase()
+      return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || '?'
     }
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    return name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2) || '?'
   }
   
   // ...

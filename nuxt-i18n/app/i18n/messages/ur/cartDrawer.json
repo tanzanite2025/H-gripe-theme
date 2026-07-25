@@ -22,5 +22,6 @@
     "tax": "ٹیکس",
     "estimatedTotal": "تخمینی کل",
     "finalShippingNote": "منزل منتخب کرنے کے بعد حتمی شپنگ backend quote سے حساب ہوگی۔"
-  }
+  },
+  "loading": "Loading cart..."
 }

@@ -4,452 +4,97 @@
 
     <AdminStatsGrid :items="statItems" />
 
-    <Tabs v-model="activeTab" class="gap-4">
-      <TabsList variant="line" class="h-10 w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
-        <TabsTrigger value="coupons" class="h-9 flex-none px-4">
-          <BadgePercent class="size-4" />
-          优惠券
-        </TabsTrigger>
-        <TabsTrigger value="giftcards" class="h-9 flex-none px-4">
-          <Gift class="size-4" />
-          礼品卡
-        </TabsTrigger>
-        <TabsTrigger value="loyalty" class="h-9 flex-none px-4">
-          <Coins class="size-4" />
-          积分
-        </TabsTrigger>
-        <TabsTrigger value="levels" class="h-9 flex-none px-4">
-          <Crown class="size-4" />
-          会员等级
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="coupons" class="space-y-3">
-        <div class="flex flex-wrap items-end justify-between gap-3">
-          <label class="w-48 space-y-1 block">
-            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 状态</span>
-            <Select v-model="couponFilters.status" @update:model-value="applyCouponFilter">
-              <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="active">生效中</SelectItem>
-                <SelectItem value="expired">已过期</SelectItem>
-                <SelectItem value="disabled">已停用</SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-          <Button v-if="hasPermission('marketing:create')" size="sm" @click="showCreateCouponDialog">
-            <Plus class="size-3.5" />
-            创建优惠券
-          </Button>
-        </div>
-
-        <AdminTablePanel :loading="couponsLoading">
-          <Table class="min-w-[1080px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead class="w-36">优惠码</TableHead>
-                <TableHead class="w-24">类型</TableHead>
-                <TableHead class="w-28 text-right">折扣值</TableHead>
-                <TableHead>描述</TableHead>
-                <TableHead class="w-32 text-right">最低消费</TableHead>
-                <TableHead class="w-28">使用情况</TableHead>
-                <TableHead class="w-60">有效期</TableHead>
-                <TableHead class="w-24">状态</TableHead>
-                <TableHead class="w-16 text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableEmpty v-if="coupons.length === 0" :colspan="9">
-                <div class="flex flex-col items-center text-muted-foreground">
-                  <BadgePercent class="mb-2 size-7 opacity-55" />
-                  <span class="text-xs">暂无优惠券</span>
-                </div>
-              </TableEmpty>
-              <TableRow v-for="coupon in coupons" :key="coupon.id">
-                <TableCell class="font-mono text-xs font-bold">{{ coupon.code }}</TableCell>
-                <TableCell>{{ coupon.type === 'fixed' ? '固定金额' : '百分比' }}</TableCell>
-                <TableCell class="text-right font-medium tabular-nums">{{ couponValue(coupon) }}</TableCell>
-                <TableCell class="max-w-64 truncate text-muted-foreground">{{ coupon.description || '-' }}</TableCell>
-                <TableCell class="text-right tabular-nums">¥{{ formatMoney(coupon.min_amount) }}</TableCell>
-                <TableCell class="tabular-nums">{{ coupon.used_count || 0 }} / {{ coupon.usage_limit || '不限' }}</TableCell>
-                <TableCell class="text-xs text-muted-foreground">
-                  {{ formatDate(coupon.start_date) }}<br />{{ formatDate(coupon.end_date) }}
-                </TableCell>
-                <TableCell>
-                  <AdminStatusBadge :tone="couponStatus(coupon).tone">{{ couponStatus(coupon).label }}</AdminStatusBadge>
-                </TableCell>
-                <TableCell class="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                      <Button variant="ghost" size="icon" :aria-label="`管理优惠券 ${coupon.code}`">
-                        <MoreHorizontal class="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-36">
-                      <DropdownMenuItem v-if="hasPermission('marketing:edit')" @select="showEditCouponDialog(coupon)">
-                        <Pencil class="size-4" />
-                        编辑
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator v-if="hasPermission('marketing:delete')" />
-                      <DropdownMenuItem
-                        v-if="hasPermission('marketing:delete')"
-                        class="text-destructive focus:text-destructive"
-                        @select="requestDeleteCoupon(coupon)"
-                      >
-                        <Trash2 class="size-4" />
-                        删除
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-          <template #footer>
-            <AdminPagination
-              :page="couponPagination.page"
-              :page-size="couponPagination.pageSize"
-              :total="couponPagination.total"
-              @update:page="updateCouponPage"
-              @update:page-size="updateCouponPageSize"
-            />
-          </template>
-        </AdminTablePanel>
-      </TabsContent>
-
-      <TabsContent value="giftcards" class="space-y-3">
-        <div class="flex flex-wrap items-end justify-between gap-3">
-          <label class="w-48 space-y-1.5">
-            <span class="text-xs font-medium text-muted-foreground">状态</span>
-            <Select v-model="giftCardFilters.status" @update:model-value="applyGiftCardFilter">
-              <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="active">活跃</SelectItem>
-                <SelectItem value="used">已使用</SelectItem>
-                <SelectItem value="expired">已过期</SelectItem>
-                <SelectItem value="cancelled">已取消</SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-          <Button v-if="hasPermission('marketing:create')" size="sm" @click="showCreateGiftCardDialog">
-            <Plus class="size-3.5" />
-            创建礼品卡
-          </Button>
-        </div>
-
-        <AdminTablePanel :loading="giftCardsLoading">
-          <Table class="min-w-[980px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead class="w-44">卡号</TableHead>
-                <TableHead class="w-32 text-right">初始金额</TableHead>
-                <TableHead class="w-32 text-right">余额</TableHead>
-                <TableHead>收件人</TableHead>
-                <TableHead class="w-24">状态</TableHead>
-                <TableHead class="w-44">到期时间</TableHead>
-                <TableHead class="w-44">创建时间</TableHead>
-                <TableHead class="w-16 text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableEmpty v-if="giftCards.length === 0" :colspan="8">
-                <div class="flex flex-col items-center text-muted-foreground">
-                  <Gift class="mb-2 size-7 opacity-55" />
-                  <span class="text-xs">暂无礼品卡</span>
-                </div>
-              </TableEmpty>
-              <TableRow v-for="giftCard in giftCards" :key="giftCard.id">
-                <TableCell class="font-mono text-xs font-bold">{{ giftCard.code }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ formatCurrency(giftCard.initial_value, giftCard.currency) }}</TableCell>
-                <TableCell class="text-right font-bold tabular-nums">{{ formatCurrency(giftCard.balance, giftCard.currency) }}</TableCell>
-                <TableCell>
-                  <span class="block font-bold text-xs">{{ giftCard.recipient_name || '-' }}</span>
-                  <span class="block text-xs text-muted-foreground">{{ giftCard.recipient_email || '-' }}</span>
-                </TableCell>
-                <TableCell>
-                  <AdminStatusBadge :tone="giftCardStatusTone(giftCard.status)">{{ giftCardStatusName(giftCard.status) }}</AdminStatusBadge>
-                </TableCell>
-                <TableCell class="text-xs text-muted-foreground">{{ formatDate(giftCard.expires_at) }}</TableCell>
-                <TableCell class="text-xs text-muted-foreground">{{ formatDate(giftCard.created_at) }}</TableCell>
-                <TableCell class="text-right">
-                  <Button variant="ghost" size="icon" :aria-label="`查看礼品卡 ${giftCard.code}`" @click="viewGiftCard(giftCard)">
-                    <Eye class="size-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-          <template #footer>
-            <AdminPagination
-              :page="giftCardPagination.page"
-              :page-size="giftCardPagination.pageSize"
-              :total="giftCardPagination.total"
-              @update:page="updateGiftCardPage"
-              @update:page-size="updateGiftCardPageSize"
-            />
-          </template>
-        </AdminTablePanel>
-      </TabsContent>
-
-      <TabsContent value="loyalty" class="space-y-3">
-        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <section class="space-y-3">
-            <div class="flex flex-wrap items-end justify-between gap-3">
-              <AdminFormField label="用户 ID" class="w-48">
-                <Input v-model.number="loyaltyFilters.user_id" type="number" min="1" step="1" placeholder="输入用户 ID 查询" @keyup.enter="applyLoyaltyFilter" />
-              </AdminFormField>
-              <Button size="sm" @click="applyLoyaltyFilter">
-                <Search class="size-3.5" />
-                查询流水
-              </Button>
-            </div>
-            <AdminTablePanel :loading="loyaltyLoading">
-              <Table class="min-w-[760px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead class="w-28">类型</TableHead>
-                    <TableHead class="w-28 text-right">积分</TableHead>
-                    <TableHead class="w-28 text-right">余额</TableHead>
-                    <TableHead class="w-32">来源</TableHead>
-                    <TableHead>说明</TableHead>
-                    <TableHead class="w-44">时间</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableEmpty v-if="loyaltyTransactions.length === 0" :colspan="6">
-                    <div class="flex flex-col items-center text-muted-foreground">
-                      <Coins class="mb-2 size-7 opacity-55" />
-                      <span class="text-xs">{{ loyaltyFilters.user_id ? '暂无积分流水' : '请输入用户 ID 查询积分流水' }}</span>
-                    </div>
-                  </TableEmpty>
-                  <TableRow v-for="transaction in loyaltyTransactions" :key="transaction.id">
-                    <TableCell>{{ loyaltyTypeName(transaction.type) }}</TableCell>
-                    <TableCell class="text-right font-bold tabular-nums" :class="Number(transaction.points) >= 0 ? 'text-emerald-600' : 'text-destructive'">
-                      {{ Number(transaction.points) > 0 ? '+' : '' }}{{ transaction.points }}
-                    </TableCell>
-                    <TableCell class="text-right tabular-nums">{{ transaction.balance }}</TableCell>
-                    <TableCell class="font-mono text-xs">{{ transaction.source || '-' }} #{{ transaction.source_id || 0 }}</TableCell>
-                    <TableCell class="max-w-80 truncate text-muted-foreground">{{ transaction.description || '-' }}</TableCell>
-                    <TableCell class="text-xs text-muted-foreground">{{ formatDate(transaction.created_at) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-              <template #footer>
-                <AdminPagination
-                  :page="loyaltyPagination.page"
-                  :page-size="loyaltyPagination.pageSize"
-                  :total="loyaltyPagination.total"
-                  @update:page="updateLoyaltyPage"
-                  @update:page-size="updateLoyaltyPageSize"
-                />
-              </template>
-            </AdminTablePanel>
-          </section>
-
-          <section v-if="hasPermission('marketing:create')" class="rounded-xl border bg-card p-4 shadow-sm">
-            <div class="mb-4 space-y-1">
-              <h3 class="text-sm font-black tracking-tighter italic uppercase">手动调整积分</h3>
-              <p class="text-xs text-muted-foreground">所有调整都会写入积分流水，负数表示扣减。</p>
-            </div>
-            <form class="space-y-4" @submit.prevent="submitLoyaltyAdjustment">
-              <AdminFormField label="用户 ID" required :error="loyaltyErrors.user_id">
-                <Input v-model.number="loyaltyForm.user_id" type="number" min="1" step="1" @input="clearLoyaltyError('user_id')" />
-              </AdminFormField>
-              <AdminFormField label="调整积分" required :error="loyaltyErrors.points">
-                <Input v-model.number="loyaltyForm.points" type="number" step="1" placeholder="例如 100 或 -50" @input="clearLoyaltyError('points')" />
-              </AdminFormField>
-              <AdminFormField label="调整原因" required :error="loyaltyErrors.description">
-                <Textarea v-model="loyaltyForm.description" class="min-h-24" placeholder="必须写清楚原因，方便后续审计" @input="clearLoyaltyError('description')" />
-              </AdminFormField>
-              <Button class="w-full" type="submit" :disabled="loyaltySubmitting">
-                <LoaderCircle v-if="loyaltySubmitting" class="size-4 animate-spin" />
-                {{ loyaltySubmitting ? '提交中' : '提交调整' }}
-              </Button>
-            </form>
-          </section>
-        </div>
-      </TabsContent>
-
-      <TabsContent value="levels" class="space-y-3">
-        <div class="flex justify-end">
-          <Button v-if="hasPermission('marketing:create')" size="sm" @click="showCreateLevelDialog">
-            <Plus class="size-3.5" />
-            创建等级
-          </Button>
-        </div>
-
-        <AdminTablePanel :loading="levelsLoading">
-          <Table class="min-w-[900px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>等级名称</TableHead>
-                <TableHead class="w-52">积分范围</TableHead>
-                <TableHead class="w-28 text-right">折扣率</TableHead>
-                <TableHead class="w-28 text-right">积分倍数</TableHead>
-                <TableHead>权益说明</TableHead>
-                <TableHead class="w-20 text-right">排序</TableHead>
-                <TableHead class="w-16 text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableEmpty v-if="levels.length === 0" :colspan="7">
-                <div class="flex flex-col items-center text-muted-foreground">
-                  <Crown class="mb-2 size-7 opacity-55" />
-                  <span class="text-xs">暂无会员等级</span>
-                </div>
-              </TableEmpty>
-              <TableRow v-for="level in levels" :key="level.id">
-                <TableCell>
-                  <div class="flex items-center gap-2">
-                    <span class="size-3 rounded-full border" :style="{ backgroundColor: level.color || '#94a3b8' }" />
-                    <span class="font-bold text-xs">{{ level.name }}</span>
-                  </div>
-                </TableCell>
-                <TableCell class="tabular-nums">{{ level.min_points }} - {{ level.max_points }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ formatRate(level.discount_rate) }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ Number(level.points_multiplier || 1).toFixed(2) }}x</TableCell>
-                <TableCell class="max-w-72 truncate text-muted-foreground">{{ level.benefits || '-' }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ level.sort_order || 0 }}</TableCell>
-                <TableCell class="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                      <Button variant="ghost" size="icon" :aria-label="`管理会员等级 ${level.name}`">
-                        <MoreHorizontal class="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-36">
-                      <DropdownMenuItem v-if="hasPermission('marketing:edit')" @select="showEditLevelDialog(level)">
-                        <Pencil class="size-4" />
-                        编辑
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator v-if="hasPermission('marketing:delete')" />
-                      <DropdownMenuItem
-                        v-if="hasPermission('marketing:delete')"
-                        class="text-destructive focus:text-destructive"
-                        @select="requestDeleteLevel(level)"
-                      >
-                        <Trash2 class="size-4" />
-                        删除
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </AdminTablePanel>
-      </TabsContent>
-    </Tabs>
-
-    <CouponEditorDialog
-      v-model:open="couponDialogVisible"
-      :mode="couponDialogMode"
-      :form="couponForm"
-      :errors="couponErrors"
-      :submitting="couponSubmitting"
-      @submit="submitCouponForm"
-      @clear-error="clearCouponError"
-    />
-    <GiftCardEditorDialog
-      v-model:open="giftCardDialogVisible"
-      :form="giftCardForm"
-      :errors="giftCardErrors"
-      :submitting="giftCardSubmitting"
-      @submit="submitGiftCardForm"
-      @clear-error="clearGiftCardError"
-    />
-    <MemberLevelEditorDialog
-      v-model:open="levelDialogVisible"
-      :mode="levelDialogMode"
-      :form="levelForm"
-      :errors="levelErrors"
-      :submitting="levelSubmitting"
-      @submit="submitLevelForm"
-      @clear-error="clearLevelError"
+    <MarketingTabsPanel
+      v-model:active-tab="activeTab"
+      :can-create="hasPermission('marketing:create')"
+      :can-edit="hasPermission('marketing:edit')"
+      :can-delete="hasPermission('marketing:delete')"
+      :coupons-loading="couponsLoading"
+      :coupons="coupons"
+      :coupon-filters="couponFilters"
+      :coupon-pagination="couponPagination"
+      :coupon-value="couponValue"
+      :coupon-status="couponStatus"
+      :format-money="formatMoney"
+      :format-date="formatDate"
+      :gift-cards-loading="giftCardsLoading"
+      :gift-cards="giftCards"
+      :gift-card-filters="giftCardFilters"
+      :gift-card-pagination="giftCardPagination"
+      :format-currency="formatCurrency"
+      :gift-card-status-name="giftCardStatusName"
+      :gift-card-status-tone="giftCardStatusTone"
+      :loyalty-loading="loyaltyLoading"
+      :loyalty-transactions="loyaltyTransactions"
+      :loyalty-filters="loyaltyFilters"
+      :loyalty-pagination="loyaltyPagination"
+      :loyalty-form="loyaltyForm"
+      :loyalty-errors="loyaltyErrors"
+      :loyalty-submitting="loyaltySubmitting"
+      :loyalty-type-name="loyaltyTypeName"
+      :levels-loading="levelsLoading"
+      :levels="levels"
+      :format-rate="formatRate"
+      @coupon-filter-change="applyCouponFilter"
+      @create-coupon="showCreateCouponDialog"
+      @edit-coupon="showEditCouponDialog"
+      @delete-coupon="requestDeleteCoupon"
+      @update-coupon-page="updateCouponPage"
+      @update-coupon-page-size="updateCouponPageSize"
+      @gift-card-filter-change="applyGiftCardFilter"
+      @create-gift-card="showCreateGiftCardDialog"
+      @view-gift-card="viewGiftCard"
+      @update-gift-card-page="updateGiftCardPage"
+      @update-gift-card-page-size="updateGiftCardPageSize"
+      @loyalty-filter-change="applyLoyaltyFilter"
+      @update-loyalty-page="updateLoyaltyPage"
+      @update-loyalty-page-size="updateLoyaltyPageSize"
+      @submit-loyalty-adjustment="submitLoyaltyAdjustment"
+      @clear-loyalty-error="clearLoyaltyError"
+      @create-level="showCreateLevelDialog"
+      @edit-level="showEditLevelDialog"
+      @delete-level="requestDeleteLevel"
     />
 
-    <Dialog v-model:open="giftCardDetailVisible">
-      <DialogContent size="lg" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
-        <DialogHeader>
-          <DialogTitle>礼品卡详情</DialogTitle>
-          <DialogDescription v-if="currentGiftCard" class="font-mono">{{ currentGiftCard.code }}</DialogDescription>
-        </DialogHeader>
+    <MarketingEditorDialogs
+      v-model:coupon-open="couponDialogVisible"
+      v-model:gift-card-open="giftCardDialogVisible"
+      v-model:level-open="levelDialogVisible"
+      :coupon-mode="couponDialogMode"
+      :coupon-form="couponForm"
+      :coupon-errors="couponErrors"
+      :coupon-submitting="couponSubmitting"
+      :gift-card-form="giftCardForm"
+      :gift-card-errors="giftCardErrors"
+      :gift-card-submitting="giftCardSubmitting"
+      :level-mode="levelDialogMode"
+      :level-form="levelForm"
+      :level-errors="levelErrors"
+      :level-submitting="levelSubmitting"
+      @submit-coupon="submitCouponForm"
+      @submit-gift-card="submitGiftCardForm"
+      @submit-level="submitLevelForm"
+      @clear-coupon-error="clearCouponError"
+      @clear-gift-card-error="clearGiftCardError"
+      @clear-level-error="clearLevelError"
+    />
 
-        <div v-if="giftCardDetailLoading" class="flex h-52 items-center justify-center">
-          <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载礼品卡详情" />
-        </div>
-        <div v-else-if="currentGiftCard" class="space-y-6">
-          <dl class="grid overflow-hidden rounded-lg border sm:grid-cols-3">
-            <DetailItem label="状态">
-              <AdminStatusBadge :tone="giftCardStatusTone(currentGiftCard.status)">{{ giftCardStatusName(currentGiftCard.status) }}</AdminStatusBadge>
-            </DetailItem>
-            <DetailItem label="初始金额">{{ formatCurrency(currentGiftCard.initial_value, currentGiftCard.currency) }}</DetailItem>
-            <DetailItem label="当前余额"><strong>{{ formatCurrency(currentGiftCard.balance, currentGiftCard.currency) }}</strong></DetailItem>
-            <DetailItem label="收件人">{{ currentGiftCard.recipient_name || '-' }}</DetailItem>
-            <DetailItem label="收件邮箱">{{ currentGiftCard.recipient_email || '-' }}</DetailItem>
-            <DetailItem label="发送人">{{ currentGiftCard.sender_name || '-' }}</DetailItem>
-            <DetailItem label="到期时间">{{ formatDate(currentGiftCard.expires_at) }}</DetailItem>
-            <DetailItem label="创建时间">{{ formatDate(currentGiftCard.created_at) }}</DetailItem>
-            <DetailItem label="更新时间">{{ formatDate(currentGiftCard.updated_at) }}</DetailItem>
-          </dl>
-
-          <div v-if="currentGiftCard.message" class="space-y-1.5">
-            <h3 class="text-sm font-black tracking-tighter italic uppercase">祝福语</h3>
-            <p class="whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-sm leading-6">{{ currentGiftCard.message }}</p>
-          </div>
-
-          <div v-if="hasPermission('marketing:edit')" class="flex flex-col gap-2 border-t pt-5 sm:flex-row sm:items-end">
-            <label class="w-full space-y-1.5 sm:w-52">
-              <span class="text-xs font-medium">更新状态</span>
-              <Select v-model="giftCardStatusUpdate">
-                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="option in giftCardStatusOptions(currentGiftCard)" :key="option.value" :value="option.value">
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </label>
-            <Button :disabled="giftCardStatusSubmitting || giftCardStatusUpdate === currentGiftCard.status" @click="updateGiftCardStatus">
-              <LoaderCircle v-if="giftCardStatusSubmitting" class="size-4 animate-spin" />
-              更新状态
-            </Button>
-          </div>
-
-          <section class="space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 class="text-sm font-black tracking-tighter italic uppercase">交易记录</h3>
-              <span class="text-xs text-muted-foreground">{{ giftCardTransactions.length }} 条</span>
-            </div>
-            <div class="overflow-x-auto rounded-lg border">
-              <Table class="min-w-[620px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead class="w-24">类型</TableHead>
-                    <TableHead class="w-32 text-right">金额</TableHead>
-                    <TableHead class="w-32 text-right">交易后余额</TableHead>
-                    <TableHead>备注</TableHead>
-                    <TableHead class="w-44">时间</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableEmpty v-if="giftCardTransactions.length === 0" :colspan="5">暂无交易记录</TableEmpty>
-                  <TableRow v-for="transaction in giftCardTransactions" :key="transaction.id">
-                    <TableCell>{{ transactionTypeName(transaction.type) }}</TableCell>
-                    <TableCell class="text-right tabular-nums">{{ formatCurrency(transaction.amount, currentGiftCard.currency) }}</TableCell>
-                    <TableCell class="text-right tabular-nums">{{ formatCurrency(transaction.balance, currentGiftCard.currency) }}</TableCell>
-                    <TableCell class="text-muted-foreground">{{ transaction.note || '-' }}</TableCell>
-                    <TableCell class="text-xs text-muted-foreground">{{ formatDate(transaction.created_at) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </section>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <GiftCardDetailDialog
+      v-model:open="giftCardDetailVisible"
+      v-model:status-update="giftCardStatusUpdate"
+      :current-gift-card="currentGiftCard"
+      :loading="giftCardDetailLoading"
+      :transactions="giftCardTransactions"
+      :status-submitting="giftCardStatusSubmitting"
+      :can-edit="hasPermission('marketing:edit')"
+      :format-currency="formatCurrency"
+      :format-date="formatDate"
+      :gift-card-status-name="giftCardStatusName"
+      :gift-card-status-tone="giftCardStatusTone"
+      :gift-card-status-options="giftCardStatusOptions"
+      :transaction-type-name="transactionTypeName"
+      @update-status="updateGiftCardStatus"
+    />
 
     <AdminConfirmDialog
       v-model:open="confirmation.open"
@@ -463,39 +108,32 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { BadgePercent, Coins, Crown, Eye, Gift, LoaderCircle, MoreHorizontal, Pencil, Plus, Search, TicketCheck, Trash2, UsersRound } from '@lucide/vue'
+import { BadgePercent, Gift, TicketCheck, UsersRound } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
-import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
-import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
-import CouponEditorDialog from '@/components/admin/marketing/CouponEditorDialog.vue'
-import GiftCardEditorDialog from '@/components/admin/marketing/GiftCardEditorDialog.vue'
-import MemberLevelEditorDialog from '@/components/admin/marketing/MemberLevelEditorDialog.vue'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
+import GiftCardDetailDialog from '@/components/admin/marketing/GiftCardDetailDialog.vue'
+import MarketingEditorDialogs from '@/components/admin/marketing/MarketingEditorDialogs.vue'
+import MarketingTabsPanel from '@/components/admin/marketing/MarketingTabsPanel.vue'
+import {
+  couponStatus,
+  couponValue,
+  formatCurrency,
+  formatDate,
+  formatMoney,
+  formatRate,
+  giftCardStatusName,
+  giftCardStatusOptions,
+  giftCardStatusTone,
+  loyaltyTypeName,
+  toDateTimeLocal,
+  toISO,
+  transactionTypeName
+} from '@/lib/marketingPresentation'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
-
-const DetailItem = defineComponent({
-  props: { label: { type: String, required: true } },
-  setup(props, { slots }) {
-    return () => h('div', { class: 'border-b p-3 last:border-b-0 sm:border-b sm:border-r sm:nth-[3n]:border-r-0' }, [
-      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
-      h('dd', { class: 'mt-1 break-words text-xs font-bold' }, slots.default?.())
-    ])
-  }
-})
 
 const authStore = useAuthStore()
 const activeTab = ref('coupons')
@@ -566,45 +204,6 @@ const statItems = computed(() => [
 
 const apiData = (response) => response.data?.data ?? response.data ?? {}
 const hasPermission = (permission) => authStore.hasPermission(permission)
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
-const formatMoney = (amount) => Number(amount || 0).toFixed(2)
-const formatCurrency = (amount, currency = 'USD') => {
-  try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: currency || 'USD' }).format(Number(amount || 0))
-  } catch {
-    return `${currency || ''} ${formatMoney(amount)}`.trim()
-  }
-}
-const formatRate = (rate) => `${Number(rate || 0).toFixed(2)}%`
-const couponValue = (coupon) => coupon.type === 'percentage' ? `${formatMoney(coupon.value)}%` : `¥${formatMoney(coupon.value)}`
-const couponStatus = (coupon) => {
-  const now = Date.now()
-  if (!coupon.enabled) return { label: '已停用', tone: 'gray' }
-  if (coupon.end_date && now > new Date(coupon.end_date).getTime()) return { label: '已过期', tone: 'amber' }
-  if (coupon.start_date && now < new Date(coupon.start_date).getTime()) return { label: '未开始', tone: 'blue' }
-  return { label: '生效中', tone: 'green' }
-}
-const giftCardStatusName = (status) => ({ active: '活跃', used: '已使用', expired: '已过期', cancelled: '已取消' })[status] || status || '-'
-const giftCardStatusTone = (status) => ({ active: 'green', used: 'blue', expired: 'amber', cancelled: 'coral' })[status] || 'gray'
-const transactionTypeName = (type) => ({ issue: '发行', use: '消费', refund: '退款' })[type] || type || '-'
-const loyaltyTypeName = (type) => ({ earn: '获得', spend: '消费', expire: '过期', adjust: '调整', refund: '退回' })[type] || type || '-'
-const giftCardStatusOptions = (card) => {
-  const current = card?.status || 'active'
-  const options = [{ value: current, label: giftCardStatusName(current) }]
-  if (current === 'active') {
-    if (Number(card?.balance || 0) <= 0) options.push({ value: 'used', label: '已使用' })
-    options.push({ value: 'expired', label: '已过期' }, { value: 'cancelled', label: '已取消' })
-  }
-  return options
-}
-const toDateTimeLocal = (value) => {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-  return local.toISOString().slice(0, 16)
-}
-const toISO = (value) => value ? new Date(value).toISOString() : null
 const clearErrors = (errors) => Object.keys(errors).forEach((key) => delete errors[key])
 const clearCouponError = (field) => { delete couponErrors[field] }
 const clearGiftCardError = (field) => { delete giftCardErrors[field] }

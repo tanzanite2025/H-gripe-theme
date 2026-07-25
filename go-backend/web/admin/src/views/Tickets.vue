@@ -4,249 +4,70 @@
 
     <AdminStatsGrid :items="statItems" />
 
-    <AdminFilterPanel>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_repeat(2,minmax(140px,0.7fr))_auto]" @submit.prevent="applyFilters">
-        <label class="space-y-1 block">
-          <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
-          <div class="relative">
-            <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
-            <Input v-model="filters.search" class="h-9 pl-9" placeholder="主题、单号或回复" />
-          </div>
-        </label>
+    <TicketFilterPanel
+      :filters="filters"
+      :status-filter-options="statusFilterOptions"
+      :priority-filter-options="priorityFilterOptions"
+      @apply="applyFilters"
+      @reset="resetFilters"
+    />
 
-        <FilterSelect v-model="filters.status" label="状态" :options="statusFilterOptions" />
-        <FilterSelect v-model="filters.priority" label="优先级" :options="priorityFilterOptions" />
+    <TicketTablePanel
+      :loading="loading"
+      :tickets="tickets"
+      :pagination="pagination"
+      :can-edit="hasPermission('ticket:edit')"
+      :can-delete="hasPermission('ticket:delete')"
+      :category-name="categoryName"
+      :status-name="statusName"
+      :status-tone="statusTone"
+      :priority-name="priorityName"
+      :priority-tone="priorityTone"
+      :customer-name="customerName"
+      :assignee-name="assigneeName"
+      :format-date="formatDate"
+      @view="viewTicket"
+      @assign="showAssignDialog"
+      @delete="requestDelete"
+      @update-page="updatePage"
+      @update-page-size="updatePageSize"
+    />
 
-        <label class="space-y-1 block">
-          <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">ACTION / 操作</span>
-          <div class="flex items-center gap-2">
-            <Button type="submit" class="h-9 rounded-full px-4 font-black text-xs uppercase tracking-wider">
-              <Search class="size-3.5" />
-              搜索
-            </Button>
-            <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="resetFilters">
-              <RotateCcw class="size-3.5" />
-              重置
-            </Button>
-          </div>
-        </label>
-      </form>
-    </AdminFilterPanel>
+    <TicketDetailDialog
+      v-model:open="detailDialogVisible"
+      v-model:reply-message="replyMessage"
+      v-model:status-update="statusUpdate"
+      :current-ticket="currentTicket"
+      :detail-loading="detailLoading"
+      :messages="messages"
+      :messages-loading="messagesLoading"
+      :replying="replying"
+      :status-updating="statusUpdating"
+      :editable-status-options="editableStatusOptions"
+      :can-edit="hasPermission('ticket:edit')"
+      :category-name="categoryName"
+      :status-name="statusName"
+      :status-tone="statusTone"
+      :priority-name="priorityName"
+      :priority-tone="priorityTone"
+      :customer-name="customerName"
+      :assignee-name="assigneeName"
+      :message-sender="messageSender"
+      :format-date="formatDate"
+      @update-status="updateStatus"
+      @show-assign="showAssignDialog"
+      @send-reply="sendReply"
+    />
 
-    <AdminTablePanel :loading="loading">
-      <Table class="min-w-[1080px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-44">工单号</TableHead>
-            <TableHead>标题</TableHead>
-            <TableHead class="w-28">分类</TableHead>
-            <TableHead class="w-24">状态</TableHead>
-            <TableHead class="w-24">优先级</TableHead>
-            <TableHead class="w-40">用户</TableHead>
-            <TableHead class="w-32">负责人</TableHead>
-            <TableHead class="w-44">创建时间</TableHead>
-            <TableHead class="w-16 text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableEmpty v-if="tickets.length === 0" :colspan="9">
-            <div class="flex flex-col items-center text-muted-foreground">
-              <MessagesSquare class="mb-2 size-7 opacity-55" />
-              <span class="text-xs">暂无工单</span>
-            </div>
-          </TableEmpty>
-
-          <TableRow v-for="ticket in tickets" :key="ticket.id">
-            <TableCell class="font-mono text-xs font-bold">{{ ticket.ticket_number }}</TableCell>
-            <TableCell class="max-w-80 truncate font-bold text-xs">{{ ticket.subject }}</TableCell>
-            <TableCell>{{ categoryName(ticket.category) }}</TableCell>
-            <TableCell>
-              <AdminStatusBadge :tone="statusTone(ticket.status)">{{ statusName(ticket.status) }}</AdminStatusBadge>
-            </TableCell>
-            <TableCell>
-              <AdminStatusBadge :tone="priorityTone(ticket.priority)">{{ priorityName(ticket.priority) }}</AdminStatusBadge>
-            </TableCell>
-            <TableCell class="max-w-40 truncate">{{ customerName(ticket) }}</TableCell>
-            <TableCell>{{ assigneeName(ticket.assigned_to) }}</TableCell>
-            <TableCell class="text-xs text-muted-foreground">{{ formatDate(ticket.created_at) }}</TableCell>
-            <TableCell class="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button variant="ghost" size="icon" :aria-label="`管理工单 ${ticket.ticket_number}`">
-                    <MoreHorizontal class="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="w-40">
-                  <DropdownMenuItem @select="viewTicket(ticket)">
-                    <Eye class="size-4" />
-                    查看详情
-                  </DropdownMenuItem>
-                  <DropdownMenuItem v-if="hasPermission('ticket:edit')" @select="showAssignDialog(ticket)">
-                    <UserRoundCog class="size-4" />
-                    分配工单
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator v-if="hasPermission('ticket:delete')" />
-                  <DropdownMenuItem
-                    v-if="hasPermission('ticket:delete')"
-                    class="text-destructive focus:text-destructive"
-                    @select="requestDelete(ticket)"
-                  >
-                    <Trash2 class="size-4" />
-                    删除
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-
-      <template #footer>
-        <AdminPagination
-          :page="pagination.page"
-          :page-size="pagination.pageSize"
-          :total="pagination.total"
-          @update:page="updatePage"
-          @update:page-size="updatePageSize"
-        />
-      </template>
-    </AdminTablePanel>
-
-    <Dialog v-model:open="detailDialogVisible">
-      <DialogContent size="xl" class="max-h-[92dvh] overflow-y-auto p-0" @open-auto-focus.prevent>
-        <DialogHeader class="border-b px-5 py-4 pr-12">
-          <DialogTitle>{{ currentTicket?.ticket_number || '工单详情' }}</DialogTitle>
-          <DialogDescription>{{ currentTicket?.subject || '查看工单信息和消息记录' }}</DialogDescription>
-        </DialogHeader>
-
-        <div class="relative min-h-80">
-          <div v-if="detailLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
-            <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载工单详情" />
-          </div>
-
-          <div v-if="currentTicket" class="grid lg:grid-cols-[320px_minmax(0,1fr)]">
-            <aside class="space-y-6 border-b p-5 lg:border-b-0 lg:border-r">
-              <section class="space-y-3">
-                <h3 class="text-sm font-black tracking-tighter italic uppercase">工单信息</h3>
-                <dl class="divide-y rounded-lg border">
-                  <DetailItem label="状态">
-                    <AdminStatusBadge :tone="statusTone(currentTicket.status)">{{ statusName(currentTicket.status) }}</AdminStatusBadge>
-                  </DetailItem>
-                  <DetailItem label="优先级">
-                    <AdminStatusBadge :tone="priorityTone(currentTicket.priority)">{{ priorityName(currentTicket.priority) }}</AdminStatusBadge>
-                  </DetailItem>
-                  <DetailItem label="分类">{{ categoryName(currentTicket.category) }}</DetailItem>
-                  <DetailItem label="客户">{{ customerName(currentTicket) }}</DetailItem>
-                  <DetailItem label="负责人">{{ assigneeName(currentTicket.assigned_to) }}</DetailItem>
-                  <DetailItem label="创建时间">{{ formatDate(currentTicket.created_at) }}</DetailItem>
-                  <DetailItem label="更新时间">{{ formatDate(currentTicket.updated_at) }}</DetailItem>
-                  <DetailItem v-if="currentTicket.tags" label="标签">{{ currentTicket.tags }}</DetailItem>
-                </dl>
-              </section>
-
-              <section v-if="hasPermission('ticket:edit')" class="space-y-3 border-t pt-5">
-                <h3 class="text-sm font-black tracking-tighter italic uppercase">处理操作</h3>
-                <label class="block space-y-1.5">
-                  <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">状态</span>
-                  <Select v-model="statusUpdate">
-                    <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="option in editableStatusOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </label>
-                <Button class="w-full" :disabled="statusUpdating || statusUpdate === currentTicket.status" @click="updateStatus">
-                  <LoaderCircle v-if="statusUpdating" class="size-4 animate-spin" />
-                  更新状态
-                </Button>
-                <Button variant="outline" class="w-full" @click="showAssignDialog(currentTicket)">
-                  <UserRoundCog class="size-4" />
-                  {{ currentTicket.assigned_to ? '更换负责人' : '分配负责人' }}
-                </Button>
-              </section>
-            </aside>
-
-            <section class="flex min-h-[620px] min-w-0 flex-col">
-              <div class="flex items-center justify-between border-b px-5 py-3">
-                <h3 class="text-sm font-black tracking-tighter italic uppercase">消息记录</h3>
-                <span class="text-xs text-muted-foreground">{{ messages.length }} 条</span>
-              </div>
-
-              <div class="relative min-h-64 flex-1 overflow-y-auto px-5 py-4">
-                <div v-if="messagesLoading" class="absolute inset-0 flex items-center justify-center bg-background/75">
-                  <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载消息" />
-                </div>
-                <div v-else-if="messages.length === 0" class="flex h-52 flex-col items-center justify-center text-muted-foreground">
-                  <MessageCircleOff class="mb-2 size-7 opacity-55" />
-                  <span class="text-xs">暂无消息记录</span>
-                </div>
-                <div v-else class="space-y-3">
-                  <article
-                    v-for="message in messages"
-                    :key="message.id"
-                    class="max-w-[88%] rounded-lg border px-3.5 py-3"
-                    :class="message.is_staff ? 'ml-auto border-blue-200 bg-blue-50/70' : 'mr-auto bg-muted/40'"
-                  >
-                    <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold">{{ messageSender(message) }}</span>
-                        <AdminStatusBadge :tone="message.is_staff ? 'blue' : 'gray'">
-                          {{ message.is_staff ? '客服' : '客户' }}
-                        </AdminStatusBadge>
-                      </div>
-                      <time class="text-[11px] text-muted-foreground">{{ formatDate(message.created_at) }}</time>
-                    </header>
-                    <p class="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{{ message.content || message.message }}</p>
-                  </article>
-                </div>
-              </div>
-
-              <form v-if="hasPermission('ticket:edit')" class="border-t p-4" @submit.prevent="sendReply">
-                <Textarea v-model="replyMessage" class="min-h-24 resize-y" placeholder="输入回复内容" />
-                <div class="mt-3 flex justify-end">
-                  <Button type="submit" :disabled="replying || !replyMessage.trim()">
-                    <LoaderCircle v-if="replying" class="size-4 animate-spin" />
-                    <Send v-else class="size-4" />
-                    发送回复
-                  </Button>
-                </div>
-              </form>
-            </section>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-
-    <Dialog v-model:open="assignDialogVisible">
-      <DialogContent size="sm" @open-auto-focus.prevent>
-        <form class="space-y-5" @submit.prevent="assignTicket">
-          <DialogHeader>
-            <DialogTitle>分配工单</DialogTitle>
-            <DialogDescription>{{ currentTicket?.ticket_number }} · {{ currentTicket?.subject }}</DialogDescription>
-          </DialogHeader>
-          <label class="block space-y-1.5">
-            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">负责人</span>
-            <Select v-model="assignTo">
-              <SelectTrigger class="w-full"><SelectValue placeholder="请选择负责人" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="user in supportUsers" :key="user.id" :value="String(user.id)">
-                  {{ supportUserName(user) }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-          <DialogFooter>
-            <Button type="button" variant="outline" @click="assignDialogVisible = false">取消</Button>
-            <Button type="submit" :disabled="assigning || !assignTo">
-              <LoaderCircle v-if="assigning" class="size-4 animate-spin" />
-              确认分配
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <TicketAssignDialog
+      v-model:open="assignDialogVisible"
+      v-model:assign-to="assignTo"
+      :current-ticket="currentTicket"
+      :assigning="assigning"
+      :support-users="supportUsers"
+      :support-user-name="supportUserName"
+      @submit="assignTicket"
+    />
 
     <AdminConfirmDialog
       v-model:open="confirmation.open"
@@ -260,93 +81,23 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
   CircleCheck,
   CircleDot,
   CirclePause,
-  CircleX,
-  Eye,
-  LoaderCircle,
-  MessageCircleOff,
   MessagesSquare,
-  MoreHorizontal,
-  RefreshCw,
-  RotateCcw,
-  Send,
-  Trash2,
-  UserRoundCog
 } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
-import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
-import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
+import TicketAssignDialog from '@/components/admin/ticket/TicketAssignDialog.vue'
+import TicketDetailDialog from '@/components/admin/ticket/TicketDetailDialog.vue'
+import TicketFilterPanel from '@/components/admin/ticket/TicketFilterPanel.vue'
+import TicketTablePanel from '@/components/admin/ticket/TicketTablePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
-
-const FilterSelect = defineComponent({
-  props: {
-    modelValue: { type: String, required: true },
-    label: { type: String, required: true },
-    options: { type: Array, required: true }
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    return () => h('label', { class: 'space-y-1 block' }, [
-      h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
-      h(Select, {
-        modelValue: props.modelValue,
-        'onUpdate:modelValue': (value) => {
-          emit('update:modelValue', value)
-          applyFilters()
-        }
-      }, {
-        default: () => [
-          h(SelectTrigger, { class: 'h-9 w-full' }, { default: () => h(SelectValue) }),
-          h(SelectContent, {}, {
-            default: () => props.options.map((option) => h(SelectItem, { value: option.value }, { default: () => option.label }))
-          })
-        ]
-      })
-    ])
-  }
-})
-
-const DetailItem = defineComponent({
-  props: {
-    label: { type: String, required: true },
-    value: { type: [String, Number], default: '' }
-  },
-  setup(props, { slots }) {
-    return () => h('div', { class: 'space-y-1' }, [
-      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
-      h('dd', { class: 'text-xs font-bold' }, slots.default ? slots.default() : (props.value || '-'))
-    ])
-  }
-})
 
 const authStore = useAuthStore()
 const loading = ref(false)

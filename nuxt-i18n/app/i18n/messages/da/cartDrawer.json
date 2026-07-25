@@ -22,5 +22,6 @@
     "tax": "Moms",
     "estimatedTotal": "Estimeret total",
     "finalShippingNote": "Den endelige forsendelse bruger backend-tilbuddet, efter du vælger en destination."
-  }
+  },
+  "loading": "Loading cart..."
 }

@@ -22,5 +22,6 @@
     "tax": "税金",
     "estimatedTotal": "見積合計",
     "finalShippingNote": "配送先を選択した後、最終送料はバックエンドの見積もりで計算されます。"
-  }
+  },
+  "loading": "Loading cart..."
 }

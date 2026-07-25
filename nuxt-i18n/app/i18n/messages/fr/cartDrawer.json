@@ -22,5 +22,6 @@
     "tax": "Taxes",
     "estimatedTotal": "Total estimé",
     "finalShippingNote": "La livraison finale utilise le devis backend après le choix de la destination."
-  }
+  },
+  "loading": "Loading cart..."
 }

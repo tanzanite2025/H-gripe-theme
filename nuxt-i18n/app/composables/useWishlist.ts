@@ -5,7 +5,17 @@ export interface WishlistItem {
   id: number
   product_id: number
   created_at: string
-  product?: unknown
+  product?: {
+    id?: number
+    title?: string
+    slug?: string
+    preview_url?: string
+    thumbnail?: string
+    prices?: {
+      regular?: number
+      sale?: number
+    }
+  }
 }
 
 const items = ref<WishlistItem[]>([])

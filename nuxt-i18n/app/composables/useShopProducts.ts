@@ -1,5 +1,5 @@
 import { useRuntimeConfig } from '#imports'
-import type { CartItem } from '~/types/cart'
+import type { CartItem } from '~~/types/cart'
 
 export interface ShopProduct {
   id: number
@@ -46,8 +46,11 @@ export interface ShopProductVariant {
   title: string
   optionValues: Record<string, string>
   priceNumber: number
+  price?: number
   salePriceNumber: number | null
+  sale_price?: number | null
   stockQuantity: number
+  stock?: number
   weightGrams: number
   isDefault: boolean
 }
@@ -113,7 +116,7 @@ const parseOptionValues = (value: unknown): Record<string, string> => {
 }
 
 const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
-  const definitions = Array.isArray(item?.product_type?.spec_definitions)
+  const definitions: any[] = Array.isArray(item?.product_type?.spec_definitions)
     ? item.product_type.spec_definitions
     : []
 
@@ -171,8 +174,11 @@ const normalizeVariant = (variant: any): ShopProductVariant | null => {
     title,
     optionValues,
     priceNumber,
+    price: regular,
     salePriceNumber,
+    sale_price: salePriceNumber,
     stockQuantity: toFiniteNumber(variant?.stock),
+    stock: toFiniteNumber(variant?.stock),
     weightGrams: toFiniteNumber(variant?.weight_grams),
     isDefault: Boolean(variant?.is_default),
   }

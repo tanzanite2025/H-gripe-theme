@@ -137,7 +137,7 @@ export const findProductConfigVariant = (
     if (matchedDefaultId) return matchedDefaultId
   }
 
-  return variants.find(variant => Boolean(variant?.isDefault ?? variant?.is_default)) || variants[0]
+  return variants.find(variant => Boolean(variant?.isDefault ?? variant?.is_default)) || variants[0] || null
 }
 
 export const buildProductConfigConfirmMetadata = (

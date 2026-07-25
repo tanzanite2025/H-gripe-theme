@@ -105,7 +105,7 @@ func (s *RegistrationService) UpdateRegistration(reg *registration.ProductRegist
 // UpdateRegistrationStatus 更新注册状态
 func (s *RegistrationService) UpdateRegistrationStatus(id uint, status string) error {
 	// 验证状态
-	validStatuses := []string{"active", "expired", "cancelled"}
+	validStatuses := []string{"active", "expired", "claimed", "cancelled"}
 	isValid := false
 	for _, s := range validStatuses {
 		if s == status {

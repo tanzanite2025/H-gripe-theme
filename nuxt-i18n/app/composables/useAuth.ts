@@ -101,7 +101,7 @@ export function useAuth() {
     }
   }
 
-  const login = async (payload: LoginPayload) => {
+  const login = async (credentials: LoginPayload) => {
     loading.value = true
     error.value = null
 
@@ -111,13 +111,13 @@ export function useAuth() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(credentials)
         },
         'Login failed'
       )
       
-      const payload = unwrapData<{ token?: string, user?: AuthUser }>(response)
-      const data = payload?.user || null
+      const responsePayload = unwrapData<{ token?: string, user?: AuthUser }>(response)
+      const data = responsePayload?.user || null
       user.value = data
       return data
     } catch (err) {
@@ -129,7 +129,7 @@ export function useAuth() {
     }
   }
 
-  const register = async (payload: RegisterPayload) => {
+  const register = async (registration: RegisterPayload) => {
     loading.value = true
     error.value = null
 
@@ -139,13 +139,13 @@ export function useAuth() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(registration)
         },
         'Registration failed'
       )
       // 注册接口目前未返回token，需要在注册后让用户去登录，或后端改进返回token
-      const payload = unwrapData<{ message?: string, user?: AuthUser }>(response)
-      const data = payload?.user || null
+      const responsePayload = unwrapData<{ message?: string, user?: AuthUser }>(response)
+      const data = responsePayload?.user || null
       user.value = data
       return data
     } catch (err) {
