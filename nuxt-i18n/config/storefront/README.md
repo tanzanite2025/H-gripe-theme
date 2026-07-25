@@ -30,7 +30,7 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、�
 - `../../server/plugins/html-cache-storage.server.ts`
   - 运行时读取 `NUXT_HTML_CACHE_*` 和兼容的 `REDIS_*` 环境变量。
   - 当 `NUXT_HTML_CACHE_DRIVER=redis` 时，把 Nitro `cache` storage 挂载到 Redis。
-  - 启动时先 ping Redis，成功才挂载；失败则 warning 并回退 Nitro 默认内存缓存。
+  - 启动时先连接并 ping 实际要挂载的 Redis cache client，成功才挂载；失败则 warning 并回退 Nitro 默认内存缓存。
 
 - `../../server/routes/_internal/html-cache/purge.post.ts`
   - 内部 HTML cache purge 端点。
@@ -240,6 +240,7 @@ npm run smoke:html-cache
 - `/shop/**` 和各语言前缀商品详情页仍然使用 `/cache/html`。
 - purge 端点产物仍然按 `/cache/html` 列 key、删 key，并返回 `purgedKeys`。
 - `smoke:html-cache` 是否能启动本地 preview，并实际缓存一个页面后通过 purge 删除至少 1 个 HTML key。
+- Redis cache driver 是否先连接并 ping 同一个 client，然后才挂载到 Nitro `cache` storage。
 - Redis 不可用时 Nuxt 仍能启动并 warning 回退内存缓存。
 
 部署前还应在接近生产的环境里请求同一个热门商品详情页两次，确认第二次命中共享缓存，且 Redis 中出现对应 `NUXT_HTML_CACHE_PREFIX` key。

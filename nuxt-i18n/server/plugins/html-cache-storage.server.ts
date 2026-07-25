@@ -1,6 +1,11 @@
 import { defineNitroPlugin, useStorage } from 'nitropack/runtime'
-import Redis from 'ioredis'
-import redisDriver from 'unstorage/drivers/redis'
+import redisDriver, { type RedisOptions as StorageRedisOptions } from 'unstorage/drivers/redis'
+
+interface ReadyRedisClient {
+  connect: () => Promise<unknown>
+  ping: () => Promise<unknown>
+  disconnect: () => void
+}
 
 const toInteger = (value: string | undefined, fallback: number) => {
   const parsed = Number.parseInt(String(value || ''), 10)
@@ -29,10 +34,11 @@ export default defineNitroPlugin(async () => {
     connectTimeout,
     maxRetriesPerRequest,
     enableOfflineQueue: false,
+    lazyConnect: true,
     retryStrategy: () => null,
   }
 
-  const storageOptions: Record<string, any> = {
+  const storageOptions: StorageRedisOptions = {
     ...connectionOptions,
     base,
     ttl,
@@ -48,37 +54,27 @@ export default defineNitroPlugin(async () => {
     storageOptions.password = process.env.NUXT_HTML_CACHE_REDIS_PASSWORD || process.env.REDIS_PASSWORD || undefined
   }
 
-  let probe: Redis | undefined
+  let redisClient: ReadyRedisClient | undefined
 
   try {
-    const probeOptions = {
-      ...connectionOptions,
-      lazyConnect: true,
-    }
+    const cacheDriver = redisDriver(storageOptions)
+    redisClient = cacheDriver.getInstance?.() as ReadyRedisClient | undefined
+    if (!redisClient) throw new Error('Redis cache driver did not expose a client instance')
 
-    probe = url
-      ? new Redis(url, probeOptions)
-      : new Redis({
-          ...probeOptions,
-          host,
-          port,
-          db,
-          password: process.env.NUXT_HTML_CACHE_REDIS_PASSWORD || process.env.REDIS_PASSWORD || undefined,
-        })
+    // Warm up the same Redis client Nitro will use before exposing the cache mount to first SSR requests.
+    await redisClient.connect()
+    await redisClient.ping()
 
-    await probe.connect()
-    await probe.ping()
-    probe.disconnect()
     const storage = useStorage()
     await storage.unmount('cache')
-    storage.mount('cache', redisDriver(storageOptions))
+    storage.mount('cache', cacheDriver)
 
     if (process.env.NUXT_HTML_CACHE_LOG !== 'silent') {
       const target = url ? 'redis-url' : `${host}:${port}/${db}`
       console.info(`[html-cache] Nitro HTML route cache mounted on Redis (${target}, base=${base}, ttl=${ttl}s)`)
     }
   } catch (error) {
-    probe?.disconnect()
+    redisClient?.disconnect()
     console.warn('[html-cache] Redis cache mount failed; Nitro will use the default in-memory cache.', error)
   }
 })

@@ -10,6 +10,8 @@ const serverEntry = resolve(projectRoot, '.output/server/index.mjs')
 const port = Number.parseInt(process.env.HTML_CACHE_SMOKE_PORT || '4020', 10)
 const token = process.env.NUXT_HTML_CACHE_PURGE_TOKEN || 'codex-html-cache-smoke-token'
 const targetPath = process.env.HTML_CACHE_SMOKE_PATH || '/support/shipping'
+const driver = String(process.env.HTML_CACHE_SMOKE_DRIVER || process.env.NUXT_HTML_CACHE_DRIVER || 'memory').toLowerCase()
+const redisPrefix = process.env.HTML_CACHE_SMOKE_REDIS_PREFIX || process.env.NUXT_HTML_CACHE_PREFIX || 'tanzanite:storefront:html-cache:smoke'
 const origin = `http://127.0.0.1:${port}`
 
 const timeout = (ms) => new Promise(resolveTimeout => setTimeout(resolveTimeout, ms))
@@ -77,6 +79,32 @@ const purge = async () => {
   return payload
 }
 
+const getRedisSmokeEnv = () => {
+  if (driver !== 'redis') return {}
+
+  return {
+    NUXT_HTML_CACHE_PREFIX: redisPrefix,
+    NUXT_HTML_CACHE_REDIS_HOST: process.env.HTML_CACHE_SMOKE_REDIS_HOST || process.env.NUXT_HTML_CACHE_REDIS_HOST || '127.0.0.1',
+    NUXT_HTML_CACHE_REDIS_PORT: process.env.HTML_CACHE_SMOKE_REDIS_PORT || process.env.NUXT_HTML_CACHE_REDIS_PORT || '6379',
+    NUXT_HTML_CACHE_REDIS_DB: process.env.HTML_CACHE_SMOKE_REDIS_DB || process.env.NUXT_HTML_CACHE_REDIS_DB || '1',
+    NUXT_HTML_CACHE_REDIS_TTL_SECONDS: process.env.HTML_CACHE_SMOKE_REDIS_TTL_SECONDS || process.env.NUXT_HTML_CACHE_REDIS_TTL_SECONDS || '604800',
+    NUXT_HTML_CACHE_REDIS_SCAN_COUNT: process.env.HTML_CACHE_SMOKE_REDIS_SCAN_COUNT || process.env.NUXT_HTML_CACHE_REDIS_SCAN_COUNT || '100',
+  }
+}
+
+const assertRuntimeLogs = (logs) => {
+  const output = logs.join('')
+
+  if (driver === 'redis' && !output.includes('Nitro HTML route cache mounted on Redis')) {
+    throw new Error('Redis smoke did not mount Nitro HTML route cache on Redis')
+  }
+
+  const cacheReadErrorPattern = /Cache read error|Stream isn't writeable|Redis cache mount failed/
+  if (cacheReadErrorPattern.test(output)) {
+    throw new Error('Preview logged an HTML cache startup/read error')
+  }
+}
+
 if (!existsSync(serverEntry)) {
   fail(`Missing ${serverEntry}. Run npm run build first.`)
 } else {
@@ -88,8 +116,9 @@ if (!existsSync(serverEntry)) {
       HOST: '127.0.0.1',
       PORT: String(port),
       NITRO_PORT: String(port),
-      NUXT_HTML_CACHE_DRIVER: 'memory',
+      NUXT_HTML_CACHE_DRIVER: driver,
       NUXT_HTML_CACHE_PURGE_TOKEN: token,
+      ...getRedisSmokeEnv(),
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
@@ -107,7 +136,8 @@ if (!existsSync(serverEntry)) {
     await waitForReady()
     const cacheControl = await requestCachedPage()
     const payload = await purge()
-    console.log(`[html-cache-smoke] OK: ${targetPath} cache-control="${cacheControl}", purgedKeys=${payload.purgedKeys}`)
+    assertRuntimeLogs(logs)
+    console.log(`[html-cache-smoke] OK: driver=${driver}, ${targetPath} cache-control="${cacheControl}", purgedKeys=${payload.purgedKeys}`)
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error))
     if (logs.length > 0) {

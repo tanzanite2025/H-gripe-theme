@@ -134,6 +134,13 @@ if (purgeRouteSource) {
   assert(purgeRouteSource.includes('cache-control'), 'purge route must set cache-control no-store')
 }
 
+if (nitroSource) {
+  assert(nitroSource.includes('lazyConnect: true'), 'Redis cache driver must lazy-connect before the readiness probe')
+  assert(nitroSource.includes('await redisClient.connect()'), 'Redis cache driver client must connect before mounting cache storage')
+  assert(nitroSource.includes('await redisClient.ping()'), 'Redis cache driver client must be pinged before mounting cache storage')
+  assert(nitroSource.includes('storage.mount("cache", cacheDriver)'), 'Nitro cache storage must mount the pre-warmed Redis driver')
+}
+
 if (failures.length > 0) {
   console.error('[html-cache-check] FAILED')
   for (const message of failures) {
