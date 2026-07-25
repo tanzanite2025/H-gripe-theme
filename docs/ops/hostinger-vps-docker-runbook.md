@@ -6,6 +6,15 @@ This runbook applies only to the `tanzanite-theme` storefront, admin, and Go API
 
 The Hostinger VPS has one shared public gateway project named `tanzanite-edge`. Tanzanite Theme joins that gateway network as a separate Compose project named `tanzanite-theme`.
 
+Current Hostinger VPS target:
+
+- Virtual Machine ID: `1834903`
+- Hostname: `srv1834903.hstgr.cloud`
+- IPv4: `2.25.85.201`
+- OS: Ubuntu 24.04 LTS
+
+Do not guess the machine target during deployment. If the MCP tools do not already have a VM ID, first call `VPS_getVirtualMachinesV1`, confirm the expected single production VPS, then call project-level tools with that ID.
+
 ```text
 Cloudflare
   -> Hostinger firewall: 80/443
@@ -71,6 +80,8 @@ Production images are published with both a mutable `master` tag and an immutabl
 Publishing on every `master` commit is intentional: both deployment paths require the branch head to have a matching four-image release. The GHCR packages must be public or the VPS must have read-only registry credentials.
 
 `.github/workflows/go-backend-ci.yml` and `.github/workflows/ci.yml` are validation only. They must not publish production images or deploy Kubernetes. `.github/workflows/publish-images.yml` is the only production image publisher.
+
+As of 2026-07-25, `publish-images.yml` triggers on every `master` push, including documentation-only changes. That behavior is safe but noisy. If release frequency becomes confusing, add explicit path filters so production images are published only when runtime, deployment, or workflow files change, then update this runbook at the same time.
 
 ## Create The Hostinger Project
 
@@ -173,10 +184,14 @@ Normal release:
 
 1. Push the tested commit to `master`.
 2. Wait for the publish-images workflow to finish.
-3. Run Hostinger/MCP Project Update, or run `./deploy.sh` on the VPS for an immutable SHA release.
+3. For MCP deployment, call `VPS_getVirtualMachinesV1`, confirm VM `1834903`, call `VPS_getProjectListV1`, confirm the existing `tanzanite-theme` project, then call `VPS_updateProjectV1` for that project. For SSH deployment, run `./deploy.sh` on the VPS for an immutable SHA release.
 4. Verify all containers and smoke tests.
 
 For a Hostinger Docker Manager release, keep `IMAGE_TAG=master` and run Project Update.
+
+Do not use `VPS_createNewProjectV1` for routine releases. It is only for initial project creation or deliberate project replacement. A normal release must update the existing `tanzanite-theme` Compose project so PostgreSQL, Redis, uploads, networks, and environment stay attached to the same production boundary.
+
+If a local helper command is unavailable, for example Windows blocks the bundled `rg.exe`, use an equivalent read-only PowerShell command such as `Get-ChildItem ... | Select-String ...`. Treat local tooling failures as local diagnostics, not as proof that the production deployment target is wrong.
 
 Rollback:
 
