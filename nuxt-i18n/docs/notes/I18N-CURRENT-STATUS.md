@@ -231,8 +231,6 @@ npm run build
   - `app/components/WhatsAppChatModal.vue`
   - `app/components/ChatWelcomeAgentSelector.vue`
   - `app/components/whatsapp/ChatWelcomePanel.vue`
-  - `app/components/whatsapp/ChatTransferModal.vue`
-  - `app/components/whatsapp/AgentChatPanel.vue`
   - `app/components/whatsapp/UserChatBody.vue`
   - `app/composables/chat/useWhatsAppState.ts`
 - Source module: `app/i18n/messages/<locale>/chatModal.json`
@@ -246,9 +244,12 @@ npm run build
   - `npm run i18n:check -- --limit=80`
   - `npm run build`
 - Scope cleanup:
-  - fixed shell labels, tab labels, button titles, accessibility labels, agent status labels and transfer alerts are centralized
+  - fixed shell labels, tab labels, button titles and accessibility labels are centralized
   - agent names, emails, avatars, conversation messages, product/order context and backend-provided error messages remain dynamic
   - chat date formatting now follows the active locale instead of forcing `en-US`
+- 2026-07-25 scope correction:
+  - Nuxt storefront no longer contains the staff conversation list, staff status controls or transfer dialog
+  - staff/customer-service inbox copy now belongs to the admin frontend, not the storefront i18n bundle
 - Intentionally not translated:
   - product names, order data, message bodies and customer/agent directory data
   - backend response error payloads

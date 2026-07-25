@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -79,9 +80,16 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		return
 	}
 
+	owner := h.publicCustomerOwner(c)
+	emailCaptured := false
+	if strings.TrimSpace(req.SenderEmail) != "" {
+		h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat")
+		emailCaptured = true
+	}
+
 	t, msg, err := h.ticketService.AddPublicCustomerServiceMessage(
 		conversationID,
-		h.publicCustomerOwner(c),
+		owner,
 		message,
 		parseCustomerServiceAgentID(req.AgentID),
 	)
@@ -96,6 +104,20 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 
 	conversationID = publicConversationID(t)
 	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, req.MessageType, req.Metadata)
+	h.publishPublicCustomerServiceEvent(
+		service.CustomerServiceEventMessageCreated,
+		t,
+		publicCustomerServiceRealtimeActor(owner),
+		response,
+	)
+	if emailCaptured {
+		h.publishPublicCustomerServiceEvent(
+			service.CustomerServiceEventContextUpdated,
+			t,
+			publicCustomerServiceRealtimeActor(owner),
+			gin.H{"source": "public_chat_email"},
+		)
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success":         true,
 		"message_id":      msg.ID,
@@ -118,10 +140,21 @@ func (h *Handler) GetWelcomeMessage(c *gin.Context) {
 		conversationID = publicConversationID(t)
 	}
 
-	reply, alreadySent, err := h.ticketService.GetWelcomeMessage(conversationID, owner, agentID)
+	reply, alreadySent, msg, err := h.ticketService.GetWelcomeMessage(conversationID, owner, agentID)
 	if err != nil {
 		writePublicCustomerServiceError(c, err)
 		return
+	}
+	if msg != nil {
+		if conversation, err := h.ticketService.GetPublicCustomerServiceConversation(conversationID, owner); err == nil {
+			payload := publicCustomerServiceMessageResponse(*msg, conversationID, "System", "text", nil)
+			h.publishPublicCustomerServiceEvent(
+				service.CustomerServiceEventMessageCreated,
+				conversation,
+				service.CustomerServiceRealtimeActor{Kind: "system"},
+				payload,
+			)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -150,15 +183,27 @@ func (h *Handler) MatchKeywordMessage(c *gin.Context) {
 		return
 	}
 
-	reply, ruleID, err := h.ticketService.MatchKeywordMessage(
+	owner := h.publicCustomerOwner(c)
+	reply, ruleID, msg, err := h.ticketService.MatchKeywordMessage(
 		req.ConversationID,
 		req.Message,
-		h.publicCustomerOwner(c),
+		owner,
 		parseCustomerServiceAgentID(req.AgentID),
 	)
 	if err != nil {
 		writePublicCustomerServiceError(c, err)
 		return
+	}
+	if msg != nil {
+		if conversation, err := h.ticketService.GetPublicCustomerServiceConversation(req.ConversationID, owner); err == nil {
+			payload := publicCustomerServiceMessageResponse(*msg, req.ConversationID, "Auto Reply", "text", gin.H{"rule_id": ruleID})
+			h.publishPublicCustomerServiceEvent(
+				service.CustomerServiceEventMessageCreated,
+				conversation,
+				service.CustomerServiceRealtimeActor{Kind: "system"},
+				payload,
+			)
+		}
 	}
 
 	if reply == "" {

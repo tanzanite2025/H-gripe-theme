@@ -6,7 +6,7 @@ import (
 )
 
 func (s *TicketService) AddMessage(m *ticket.TicketMessage, userID uint, isStaff bool) error {
-	t, err := s.ticketRepo.FindTicketByID(m.TicketID)
+	t, err := s.getRegularTicket(m.TicketID)
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (s *TicketService) AddMessage(m *ticket.TicketMessage, userID uint, isStaff
 	}
 
 	if t.Status == "closed" {
-		if err := s.ticketRepo.UpdateTicketStatus(t.ID, "open"); err != nil {
+		if err := s.updateTicketStatus(t.ID, "open"); err != nil {
 			return err
 		}
 	}
@@ -32,7 +32,7 @@ func (s *TicketService) AddMessage(m *ticket.TicketMessage, userID uint, isStaff
 }
 
 func (s *TicketService) GetMessages(ticketID uint, userID uint, isStaff bool) ([]ticket.TicketMessage, error) {
-	t, err := s.ticketRepo.FindTicketByID(ticketID)
+	t, err := s.getRegularTicket(ticketID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,4 +63,11 @@ func (s *TicketService) CountUnreadMessages(ticketID uint, isStaff bool) (int64,
 
 func (s *TicketService) MarkMessagesAsRead(ticketID uint, isStaff bool) error {
 	return s.ticketRepo.MarkMessagesAsRead(ticketID, isStaff)
+}
+
+func (s *TicketService) MarkRegularMessagesAsRead(ticketID uint, isStaff bool) error {
+	if _, err := s.getRegularTicket(ticketID); err != nil {
+		return err
+	}
+	return s.MarkMessagesAsRead(ticketID, isStaff)
 }

@@ -43,7 +43,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	faqHandler := NewFAQHandler(services.FAQ)
 	galleryHandler := NewGalleryHandler(services.Gallery)
 	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
-	ticketHandler := NewTicketHandler(services.Ticket)
+	ticketHandler := NewTicketHandler(services.Ticket, services.CustomerServiceContext, services.CustomerServiceEvents)
+	visitorProfileHandler := NewVisitorProfileHandler(services.VisitorProfile)
 	marketingHandler := NewMarketingHandler(marketingService)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
 	publicChatAgentHandler := NewPublicChatAgentHandler(services.AdminPublicChat)
@@ -285,6 +286,22 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				ticketsGroup.GET("/:id/messages", ticketHandler.GetMessages)
 				ticketsGroup.POST("/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateMessage)
 				ticketsGroup.POST("/:id/messages/mark-read", ticketHandler.MarkMessagesAsRead)
+			}
+
+			// 在线客服对话（独立于普通工单列表；底层仍使用 customer_service 工单作为唯一事实源）
+			customerServiceGroup := authenticated.Group("/customer-service")
+			customerServiceGroup.Use(middleware.RequirePermission(auth.PermTicketView))
+			{
+				customerServiceGroup.GET("/agents", ticketHandler.ListCustomerServiceAgents)
+				customerServiceGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
+				customerServiceGroup.GET("/events", ticketHandler.StreamCustomerServiceEvents)
+				customerServiceGroup.GET("/visitor-profiles", visitorProfileHandler.ListVisitorProfiles)
+				customerServiceGroup.GET("/visitor-profiles/stats", visitorProfileHandler.GetVisitorProfileStats)
+				customerServiceGroup.GET("/conversations/:id/context", ticketHandler.GetCustomerServiceConversationContext)
+				customerServiceGroup.GET("/conversations/:id/messages", ticketHandler.GetCustomerServiceConversationMessages)
+				customerServiceGroup.POST("/conversations/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateCustomerServiceConversationMessage)
+				customerServiceGroup.POST("/conversations/:id/messages/mark-read", ticketHandler.MarkCustomerServiceConversationMessagesRead)
+				customerServiceGroup.PATCH("/conversations/:id/transfer", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.TransferCustomerServiceConversation)
 			}
 
 			// 营销管理（需要营销管理权限）

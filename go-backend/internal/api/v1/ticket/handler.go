@@ -3,14 +3,18 @@ package ticket
 import "tanzanite/internal/service"
 
 type Handler struct {
-	ticketService  *service.TicketService
-	allowedOrigins []string
-	visitorSecret  []byte
+	ticketService         *service.TicketService
+	visitorProfileService *service.VisitorProfileService
+	customerServiceEvents *service.CustomerServiceEventHub
+	allowedOrigins        []string
+	visitorSecret         []byte
 }
 
 type Options struct {
-	AllowedOrigins []string
-	VisitorSecret  string
+	AllowedOrigins        []string
+	VisitorSecret         string
+	VisitorProfileService *service.VisitorProfileService
+	CustomerServiceEvents *service.CustomerServiceEventHub
 }
 
 func NewHandler(ticketService *service.TicketService, opts ...Options) *Handler {
@@ -19,8 +23,10 @@ func NewHandler(ticketService *service.TicketService, opts ...Options) *Handler 
 		options = opts[0]
 	}
 	return &Handler{
-		ticketService:  ticketService,
-		allowedOrigins: append([]string(nil), options.AllowedOrigins...),
-		visitorSecret:  []byte(options.VisitorSecret),
+		ticketService:         ticketService,
+		visitorProfileService: options.VisitorProfileService,
+		customerServiceEvents: options.CustomerServiceEvents,
+		allowedOrigins:        append([]string(nil), options.AllowedOrigins...),
+		visitorSecret:         []byte(options.VisitorSecret),
 	}
 }

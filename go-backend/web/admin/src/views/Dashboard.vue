@@ -194,6 +194,7 @@ import {
   CalendarDays,
   ChartNoAxesCombined,
   FileText,
+  Headset,
   Inbox,
   MessagesSquare,
   PackagePlus,
@@ -300,6 +301,7 @@ const quickActions = [
   { label: '添加商品', path: '/products', permission: 'product:create', icon: PackagePlus, tone: 'blue' },
   { label: '查看订单', path: '/orders', permission: 'order:view', icon: ShoppingCart, tone: 'green' },
   { label: '用户管理', path: '/users', permission: 'user:view', icon: Users, tone: 'amber' },
+  { label: '客服对话', path: '/customer-service', permission: 'ticket:view', icon: Headset, tone: 'blue' },
   { label: '工单管理', path: '/tickets', permission: 'ticket:view', icon: MessagesSquare, tone: 'coral' },
   { label: '内容管理', path: '/content', permission: 'content:view', icon: FileText, tone: 'gray' },
   { label: '系统设置', path: '/settings', permission: 'settings:view', icon: Settings, tone: 'gray' }

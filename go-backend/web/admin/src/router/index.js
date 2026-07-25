@@ -80,6 +80,18 @@ const routes = [
         meta: { title: '订阅管理', permission: 'subscription:view' }
       },
       {
+        path: 'customer-service',
+        name: 'CustomerServiceChats',
+        component: () => import('@/views/CustomerServiceChats.vue'),
+        meta: { title: '客服对话', permission: 'ticket:view' }
+      },
+      {
+        path: 'visitor-profiles',
+        name: 'VisitorProfiles',
+        component: () => import('@/views/VisitorProfiles.vue'),
+        meta: { title: '访客画像', permission: 'ticket:view' }
+      },
+      {
         path: 'tickets',
         name: 'Tickets',
         component: () => import('@/views/Tickets.vue'),

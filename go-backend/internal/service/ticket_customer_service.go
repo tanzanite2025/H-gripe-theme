@@ -13,6 +13,7 @@ import (
 var (
 	ErrCustomerServiceConversationAccessDenied = errors.New("conversation access denied")
 	ErrCustomerServiceOwnerRequired            = errors.New("conversation owner is required")
+	ErrCustomerServiceAgentAccessDenied        = errors.New("agent conversation access denied")
 )
 
 type CustomerServiceOwner struct {
@@ -20,8 +21,114 @@ type CustomerServiceOwner struct {
 	VisitorSessionHash string
 }
 
+type CustomerServiceConversationListInput struct {
+	AssignedTo *uint
+	Status     string
+	UnreadOnly bool
+	Identity   string
+	Search     string
+}
+
 func (s *TicketService) GetCustomerServiceConversations(page, pageSize int) ([]ticket.Ticket, int64, error) {
-	return s.ticketRepo.FindCustomerServiceConversations(page, pageSize)
+	return s.ListCustomerServiceConversationsForAgent(page, pageSize, 0, true, CustomerServiceConversationListInput{})
+}
+
+func (s *TicketService) GetCustomerServiceConversationsForAgent(page, pageSize int, agentUserID uint, canViewAll bool) ([]ticket.Ticket, int64, error) {
+	return s.ListCustomerServiceConversationsForAgent(page, pageSize, agentUserID, canViewAll, CustomerServiceConversationListInput{})
+}
+
+func (s *TicketService) ListCustomerServiceConversationsForAgent(page, pageSize int, agentUserID uint, canViewAll bool, input CustomerServiceConversationListInput) ([]ticket.Ticket, int64, error) {
+	filters := repository.CustomerServiceConversationFilters{
+		AssignedTo: input.AssignedTo,
+		Status:     input.Status,
+		UnreadOnly: input.UnreadOnly,
+		Identity:   input.Identity,
+		Search:     input.Search,
+	}
+
+	if !canViewAll {
+		if agentUserID == 0 {
+			return nil, 0, ErrCustomerServiceAgentAccessDenied
+		}
+		filters.AssignedTo = &agentUserID
+	}
+
+	return s.ticketRepo.FindCustomerServiceConversations(page, pageSize, filters)
+}
+
+func (s *TicketService) GetCustomerServiceMessagesForAgent(ticketID uint, agentUserID uint, canViewAll bool) ([]ticket.TicketMessage, error) {
+	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, agentUserID, canViewAll); err != nil {
+		return nil, err
+	}
+	return s.ticketRepo.FindMessagesByTicketID(ticketID)
+}
+
+func (s *TicketService) GetCustomerServiceConversationForAgent(ticketID uint, agentUserID uint, canViewAll bool) (*ticket.Ticket, error) {
+	return s.getAgentAccessibleCustomerServiceConversation(ticketID, agentUserID, canViewAll)
+}
+
+func (s *TicketService) AddCustomerServiceAgentMessage(m *ticket.TicketMessage, agentUserID uint, canViewAll bool) error {
+	if m == nil {
+		return errors.New("message is required")
+	}
+	t, err := s.getAgentAccessibleCustomerServiceConversation(m.TicketID, agentUserID, canViewAll)
+	if err != nil {
+		return err
+	}
+
+	m.UserID = agentUserID
+	m.IsStaff = true
+	if err := s.ticketRepo.CreateTicketMessage(m); err != nil {
+		return err
+	}
+	if t.Status == "closed" {
+		return s.updateTicketStatus(t.ID, "in_progress")
+	}
+	if t.Status == "open" || t.Status == "" {
+		return s.updateTicketStatus(t.ID, "in_progress")
+	}
+	return nil
+}
+
+func (s *TicketService) MarkCustomerServiceMessagesReadForAgent(ticketID uint, agentUserID uint, canViewAll bool) error {
+	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, agentUserID, canViewAll); err != nil {
+		return err
+	}
+	return s.MarkMessagesAsRead(ticketID, true)
+}
+
+func (s *TicketService) TransferCustomerServiceConversationForAgent(ticketID uint, fromAgentUserID uint, canViewAll bool, toAgentUserID uint) error {
+	if toAgentUserID == 0 {
+		return ErrCustomerServiceAgentAccessDenied
+	}
+	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, fromAgentUserID, canViewAll); err != nil {
+		return err
+	}
+	if err := s.assignTicket(ticketID, toAgentUserID); err != nil {
+		return err
+	}
+	return s.updateTicketStatus(ticketID, "in_progress")
+}
+
+func (s *TicketService) getAgentAccessibleCustomerServiceConversation(ticketID uint, agentUserID uint, canViewAll bool) (*ticket.Ticket, error) {
+	if ticketID == 0 {
+		return nil, ErrCustomerServiceAgentAccessDenied
+	}
+
+	t, err := s.ticketRepo.FindTicketByID(ticketID)
+	if err != nil {
+		return nil, err
+	}
+	if t.Category != customerServiceTicketCategory {
+		return nil, ErrCustomerServiceAgentAccessDenied
+	}
+	if canViewAll {
+		return t, nil
+	}
+	if agentUserID > 0 && t.AssignedTo == agentUserID {
+		return t, nil
+	}
+	return nil, ErrCustomerServiceAgentAccessDenied
 }
 
 func (s *TicketService) HasPublicCustomerServiceConversation(owner CustomerServiceOwner) (bool, string, uint, error) {
@@ -64,13 +171,13 @@ func (s *TicketService) GetOrCreatePublicCustomerServiceConversation(owner Custo
 		ConversationID:     &conversationID,
 		VisitorSessionHash: owner.VisitorSessionHash,
 		Subject:            "Customer service chat",
-		Category:           "customer_service",
+		Category:           customerServiceTicketCategory,
 		Priority:           "medium",
 		Status:             "open",
 		AssignedTo:         agentID,
 		Tags:               customerServiceConversationTag(conversationID),
 	}
-	if err := s.CreateTicket(t); err != nil {
+	if err := s.createTicket(t); err != nil {
 		return nil, err
 	}
 
@@ -126,6 +233,10 @@ func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, 
 		end = len(messages)
 	}
 	return messages[offset:end], nil
+}
+
+func (s *TicketService) GetPublicCustomerServiceConversation(conversationID string, owner CustomerServiceOwner) (*ticket.Ticket, error) {
+	return s.getAccessibleCustomerServiceConversation(conversationID, owner)
 }
 
 func (s *TicketService) CanAccessCustomerServiceConversation(conversationID string, owner CustomerServiceOwner) (bool, error) {

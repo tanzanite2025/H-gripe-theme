@@ -4,7 +4,6 @@ import (
 	"tanzanite/internal/api/middleware"
 	"tanzanite/internal/api/v1/auth"
 	"tanzanite/internal/api/v1/cart"
-	"tanzanite/internal/api/v1/chat"
 	"tanzanite/internal/api/v1/checkout"
 	"tanzanite/internal/api/v1/content"
 	"tanzanite/internal/api/v1/faq"
@@ -60,7 +59,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	wishlistService := services.Wishlist
 	feedbackService := services.Feedback
 	suggestionFeedbackService := services.SuggestionFeedback
-	chatService := services.Chat
 
 	// 初始化handlers
 	cookieOptions := securecookie.Options{
@@ -73,15 +71,20 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	contentHandler := content.NewHandler(postService, faqService)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
-	cartHandler := cart.NewHandler(cartService)
+	cartHandler := cart.NewHandler(cartService, cart.Options{
+		VisitorProfileService: services.VisitorProfile,
+		VisitorSecret:         cfg.JWT.Secret,
+	})
 	settingsHandler := settings.NewHandler(settingService)
 	orderHandler := order.NewHandler(orderService, cartService)
 	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
-		AllowedOrigins: cfg.CORS.AllowedOrigins,
-		VisitorSecret:  cfg.JWT.Secret,
+		AllowedOrigins:        cfg.CORS.AllowedOrigins,
+		VisitorSecret:         cfg.JWT.Secret,
+		VisitorProfileService: services.VisitorProfile,
+		CustomerServiceEvents: services.CustomerServiceEvents,
 	})
 	paymentHandler := payment.NewHandler(paymentService, orderService)
 	shippingHandler := shipping.NewHandler(services.Shipping)
@@ -94,7 +97,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
 	spokeHandler := spoke.NewHandler(services.Spoke)
-	chatHandler := chat.NewChatHandler(chatService)
 
 	// 公网 Webhook 回调入口不挂 CSRF。
 	// 第三方平台（支付网关、17TRACK 等）不会携带浏览器 CSRF token，安全边界由各自 handler 内的签名验签负责。
@@ -282,27 +284,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
 			customerServiceGroup.GET("/auto-reply/welcome", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetWelcomeMessage)
 			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), ticketHandler.MatchKeywordMessage)
+			customerServiceGroup.GET("/events", middleware.OptionalAuthMiddleware(authService), ticketHandler.StreamPublicCustomerServiceEvents)
 			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), ticketHandler.ServeWS)
-
-			agentGroup := customerServiceGroup.Group("/agent")
-			agentGroup.Use(middleware.AuthMiddleware(authService), middleware.RequireRole("admin", "manager", "support"))
-			{
-				agentGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
-				agentGroup.GET("/conversations/:id/messages", ticketHandler.GetCustomerServiceMessages)
-				agentGroup.POST("/conversations/:id/transfer", ticketHandler.TransferCustomerServiceConversation)
-				agentGroup.POST("/messages", ticketHandler.SendCustomerServiceMessage)
-				agentGroup.POST("/messages/read", ticketHandler.MarkCustomerServiceMessagesRead)
-				agentGroup.GET("/status", ticketHandler.GetCustomerServiceAgentStatus)
-				agentGroup.POST("/status", ticketHandler.UpdateCustomerServiceAgentStatus)
-			}
-		}
-
-		// 聊天消息持久化路由（新增）
-		chatGroup := v1.Group("/chat")
-		chatGroup.Use(middleware.AuthMiddleware(authService))
-		{
-			chatGroup.POST("/messages", chatHandler.SaveMessage)
-			chatGroup.GET("/messages", chatHandler.GetMessages)
 		}
 
 		// 用户浏览历史路由（需要认证）

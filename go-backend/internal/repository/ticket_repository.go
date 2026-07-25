@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"tanzanite/internal/domain/ticket"
 	"time"
 
@@ -9,6 +10,14 @@ import (
 
 type TicketRepository struct {
 	db *gorm.DB
+}
+
+type CustomerServiceConversationFilters struct {
+	AssignedTo *uint
+	Status     string
+	UnreadOnly bool
+	Identity   string
+	Search     string
 }
 
 func NewTicketRepository(db *gorm.DB) *TicketRepository {
@@ -37,7 +46,8 @@ func (r *TicketRepository) FindTicketsByUserID(userID uint, page, pageSize int) 
 	var tickets []ticket.Ticket
 	var total int64
 
-	query := r.db.Model(&ticket.Ticket{}).Where("user_id = ?", userID)
+	query := r.db.Model(&ticket.Ticket{}).
+		Where("user_id = ? AND (category IS NULL OR category <> ?)", userID, "customer_service")
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -54,7 +64,8 @@ func (r *TicketRepository) FindAllTickets(page, pageSize int, status, priority s
 	var tickets []ticket.Ticket
 	var total int64
 
-	query := r.db.Model(&ticket.Ticket{})
+	query := r.db.Model(&ticket.Ticket{}).
+		Where("category IS NULL OR category <> ?", "customer_service")
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -75,21 +86,106 @@ func (r *TicketRepository) FindAllTickets(page, pageSize int, status, priority s
 	return tickets, total, err
 }
 
-func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int) ([]ticket.Ticket, int64, error) {
+func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int, filters CustomerServiceConversationFilters) ([]ticket.Ticket, int64, error) {
 	var tickets []ticket.Ticket
 	var total int64
 
-	query := r.db.Model(&ticket.Ticket{}).Where("category = ?", "customer_service")
-	if err := query.Count(&total).Error; err != nil {
+	query := r.db.Model(&ticket.Ticket{}).Where("tickets.category = ?", "customer_service")
+	query = applyCustomerServiceConversationFilters(query, filters)
+
+	countQuery := query.Session(&gorm.Session{})
+	if err := countQuery.Distinct("tickets.id").Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * pageSize
 	err := query.Preload("User").Preload("Messages", func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at ASC")
-	}).Order("updated_at DESC").Offset(offset).Limit(pageSize).Find(&tickets).Error
+	}).Order("tickets.updated_at DESC").Offset(offset).Limit(pageSize).Find(&tickets).Error
 
 	return tickets, total, err
+}
+
+func applyCustomerServiceConversationFilters(query *gorm.DB, filters CustomerServiceConversationFilters) *gorm.DB {
+	if filters.AssignedTo != nil {
+		query = query.Where("tickets.assigned_to = ?", *filters.AssignedTo)
+	}
+
+	switch strings.ToLower(strings.TrimSpace(filters.Status)) {
+	case "pending", "open":
+		query = query.Where("(tickets.status = ? OR tickets.status = '')", "open")
+	case "active", "in_progress":
+		query = query.Where("tickets.status = ?", "in_progress")
+	case "closed":
+		query = query.Where("tickets.status IN ?", []string{"resolved", "closed"})
+	case "resolved":
+		query = query.Where("tickets.status = ?", "resolved")
+	}
+
+	if filters.UnreadOnly {
+		query = query.Where(
+			"EXISTS (SELECT 1 FROM ticket_messages customer_unread_messages WHERE customer_unread_messages.ticket_id = tickets.id AND customer_unread_messages.is_staff = ? AND customer_unread_messages.is_read = ?)",
+			false,
+			false,
+		)
+	}
+
+	switch strings.ToLower(strings.TrimSpace(filters.Identity)) {
+	case "account", "member", "user":
+		query = query.Where("tickets.customer_user_id IS NOT NULL")
+	case "anonymous", "visitor", "guest":
+		query = query.Where("tickets.customer_user_id IS NULL")
+	}
+
+	search := customerServiceConversationSearchPattern(filters.Search)
+	if search != "" {
+		query = query.
+			Joins("LEFT JOIN users AS customer_users ON customer_users.id = tickets.customer_user_id AND customer_users.deleted_at IS NULL").
+			Joins("LEFT JOIN visitor_profiles AS conversation_visitors ON conversation_visitors.customer_service_visitor_hash = tickets.visitor_session_hash AND conversation_visitors.deleted_at IS NULL").
+			Where(
+				`LOWER(COALESCE(tickets.ticket_number, '')) LIKE ?
+				OR LOWER(COALESCE(tickets.conversation_id, '')) LIKE ?
+				OR LOWER(COALESCE(tickets.subject, '')) LIKE ?
+				OR LOWER(COALESCE(tickets.visitor_session_hash, '')) LIKE ?
+				OR LOWER(COALESCE(customer_users.email, '')) LIKE ?
+				OR LOWER(COALESCE(customer_users.username, '')) LIKE ?
+				OR LOWER(COALESCE(customer_users.first_name, '')) LIKE ?
+				OR LOWER(COALESCE(customer_users.last_name, '')) LIKE ?
+				OR LOWER(COALESCE(conversation_visitors.email, '')) LIKE ?
+				OR LOWER(COALESCE(conversation_visitors.cart_session_id, '')) LIKE ?
+				OR EXISTS (
+					SELECT 1
+					FROM ticket_messages searched_customer_service_messages
+					WHERE searched_customer_service_messages.ticket_id = tickets.id
+					AND LOWER(COALESCE(searched_customer_service_messages.content, '')) LIKE ?
+				)`,
+				search,
+				search,
+				search,
+				search,
+				search,
+				search,
+				search,
+				search,
+				search,
+				search,
+				search,
+			)
+	}
+
+	return query
+}
+
+func customerServiceConversationSearchPattern(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return ""
+	}
+	runes := []rune(value)
+	if len(runes) > 120 {
+		value = string(runes[:120])
+	}
+	return "%" + value + "%"
 }
 
 func (r *TicketRepository) FindCustomerServiceConversationByConversationID(conversationID string) (*ticket.Ticket, error) {
@@ -127,7 +223,8 @@ func (r *TicketRepository) FindTicketsByAssignedTo(assignedTo uint, page, pageSi
 	var tickets []ticket.Ticket
 	var total int64
 
-	query := r.db.Model(&ticket.Ticket{}).Where("assigned_to = ?", assignedTo)
+	query := r.db.Model(&ticket.Ticket{}).
+		Where("assigned_to = ? AND (category IS NULL OR category <> ?)", assignedTo, "customer_service")
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -181,6 +278,7 @@ func (r *TicketRepository) GetTicketStats(userID uint) (map[string]int64, error)
 	if userID > 0 {
 		query = query.Where("user_id = ?", userID)
 	}
+	query = query.Where("category IS NULL OR category <> ?", "customer_service")
 
 	// 统计各状态工单数量
 	statuses := []string{"open", "in_progress", "resolved", "closed"}
@@ -262,7 +360,9 @@ func (r *TicketRepository) GetStats() (map[string]interface{}, error) {
 
 	// 总工单数
 	var total int64
-	if err := r.db.Model(&ticket.Ticket{}).Count(&total).Error; err != nil {
+	query := r.db.Model(&ticket.Ticket{}).
+		Where("category IS NULL OR category <> ?", "customer_service")
+	if err := query.Count(&total).Error; err != nil {
 		return nil, err
 	}
 	stats["total"] = total
@@ -272,7 +372,7 @@ func (r *TicketRepository) GetStats() (map[string]interface{}, error) {
 		Status string
 		Count  int64
 	}
-	if err := r.db.Model(&ticket.Ticket{}).Select("status, COUNT(*) as count").Group("status").Scan(&statusStats).Error; err != nil {
+	if err := query.Session(&gorm.Session{}).Select("status, COUNT(*) as count").Group("status").Scan(&statusStats).Error; err != nil {
 		return nil, err
 	}
 
@@ -285,7 +385,7 @@ func (r *TicketRepository) GetStats() (map[string]interface{}, error) {
 		Priority string
 		Count    int64
 	}
-	if err := r.db.Model(&ticket.Ticket{}).Select("priority, COUNT(*) as count").Group("priority").Scan(&priorityStats).Error; err != nil {
+	if err := query.Session(&gorm.Session{}).Select("priority, COUNT(*) as count").Group("priority").Scan(&priorityStats).Error; err != nil {
 		return nil, err
 	}
 

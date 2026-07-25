@@ -25,7 +25,7 @@ func (s *TicketService) UpdateAdminTicket(id uint, input TicketAdminUpdateInput)
 		return nil, ErrInvalidTicketStatus
 	}
 
-	existingTicket, err := s.ticketRepo.FindTicketByID(id)
+	existingTicket, err := s.getRegularTicket(id)
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +51,12 @@ func (s *TicketService) UpdateAdminTicket(id uint, input TicketAdminUpdateInput)
 
 	switch {
 	case input.Status != "":
-		if err := s.ticketRepo.UpdateTicketStatus(id, input.Status); err != nil {
+		if err := s.updateTicketStatus(id, input.Status); err != nil {
 			return nil, err
 		}
 		existingTicket.Status = input.Status
 	case assignedChanged:
-		if err := s.ticketRepo.UpdateTicketStatus(id, "in_progress"); err != nil {
+		if err := s.updateTicketStatus(id, "in_progress"); err != nil {
 			return nil, err
 		}
 		existingTicket.Status = "in_progress"

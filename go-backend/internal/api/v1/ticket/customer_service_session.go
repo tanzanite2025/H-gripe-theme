@@ -1,25 +1,20 @@
 package ticket
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"tanzanite/internal/domain/ticket"
+	"tanzanite/internal/pkg/visitorcookie"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 const (
-	customerServiceVisitorCookie = "tz_customer_service_visitor"
-	customerServiceVisitorMaxAge = 86400 * 365
+	customerServiceVisitorCookie = visitorcookie.CustomerServiceVisitorCookie
+	customerServiceVisitorMaxAge = visitorcookie.CustomerServiceVisitorMaxAge
 )
 
 func publicCustomerUserID(c *gin.Context) *uint {
@@ -35,81 +30,90 @@ func publicCustomerUserID(c *gin.Context) *uint {
 }
 
 func (h *Handler) publicCustomerOwner(c *gin.Context) service.CustomerServiceOwner {
-	return service.CustomerServiceOwner{
+	owner := service.CustomerServiceOwner{
 		UserID:             publicCustomerUserID(c),
 		VisitorSessionHash: h.ensureVisitorSessionHash(c),
 	}
+	h.touchCustomerServiceVisitorProfile(c, owner, "", "")
+	return owner
 }
 
 func (h *Handler) ensureVisitorSessionHash(c *gin.Context) string {
-	hash, _ := h.visitorSessionHash(c, true)
+	hash, _ := visitorcookie.EnsureCustomerServiceVisitorHash(c, h.visitorSecret)
 	return hash
 }
 
 func (h *Handler) existingVisitorSessionHash(c *gin.Context) (string, bool) {
-	return h.visitorSessionHash(c, false)
-}
-
-func (h *Handler) visitorSessionHash(c *gin.Context, create bool) (string, bool) {
-	sessionID, ok := h.readVisitorSessionID(c)
-	if !ok {
-		if !create {
-			return "", false
-		}
-		sessionID = uuid.NewString()
-	}
-	h.setVisitorSessionCookie(c, sessionID)
-	sum := sha256.Sum256([]byte(sessionID))
-	return hex.EncodeToString(sum[:]), true
+	return visitorcookie.ExistingCustomerServiceVisitorHash(c, h.visitorSecret)
 }
 
 func (h *Handler) readVisitorSessionID(c *gin.Context) (string, bool) {
-	rawCookie, err := c.Cookie(customerServiceVisitorCookie)
-	if err != nil {
-		return "", false
-	}
-	rawCookie = strings.TrimSpace(rawCookie)
-	if rawCookie == "" {
-		return "", false
-	}
-
-	sessionID, signature, signed := strings.Cut(rawCookie, ".")
-	sessionID = strings.TrimSpace(sessionID)
-	if _, err := uuid.Parse(sessionID); err != nil {
-		return "", false
-	}
-	if !signed || strings.TrimSpace(signature) == "" {
-		return "", false
-	}
-	if h.validVisitorSignature(sessionID, signature) {
-		return sessionID, true
-	}
-	return "", false
-}
-
-func (h *Handler) setVisitorSessionCookie(c *gin.Context, sessionID string) {
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(customerServiceVisitorCookie, h.signVisitorSessionID(sessionID), customerServiceVisitorMaxAge, "/", "", visitorCookieSecure(c), true)
+	return visitorcookie.ReadCustomerServiceVisitorSessionID(c, h.visitorSecret)
 }
 
 func (h *Handler) signVisitorSessionID(sessionID string) string {
-	mac := hmac.New(sha256.New, h.visitorSecret)
-	_, _ = mac.Write([]byte(sessionID))
-	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	return sessionID + "." + signature
+	return visitorcookie.SignCustomerServiceVisitorSessionID(sessionID, h.visitorSecret)
 }
 
 func (h *Handler) validVisitorSignature(sessionID string, signature string) bool {
-	expected := h.signVisitorSessionID(sessionID)
-	_, expectedSignature, _ := strings.Cut(expected, ".")
-	if len(signature) != len(expectedSignature) {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(signature), []byte(expectedSignature)) == 1
+	return visitorcookie.ValidCustomerServiceVisitorSignature(sessionID, signature, h.visitorSecret)
 }
 
-func visitorCookieSecure(c *gin.Context) bool {
-	return c.Request != nil && (c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https"))
+func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner service.CustomerServiceOwner, email string, emailSource string) {
+	if h.visitorProfileService == nil {
+		return
+	}
+
+	input := service.VisitorProfileTouchInput{
+		UserID:                     owner.UserID,
+		CustomerServiceVisitorHash: owner.VisitorSessionHash,
+		CartSessionID:              existingCartSessionID(c),
+		Email:                      email,
+		EmailSource:                emailSource,
+		Locale:                     requestLocale(c),
+		LocaleSource:               "accept_language",
+		CountryCode:                requestCountryCode(c),
+		Region:                     firstNonEmptyHeader(c, "CF-Region", "X-Region"),
+		City:                       firstNonEmptyHeader(c, "CF-IPCity", "X-City"),
+		Timezone:                   firstNonEmptyHeader(c, "CF-Timezone", "X-Timezone"),
+		IPAddress:                  requestIP(c),
+		UserAgent:                  c.GetHeader("User-Agent"),
+	}
+	if _, err := h.visitorProfileService.Touch(input); err != nil {
+		return
+	}
+}
+
+func existingCartSessionID(c *gin.Context) string {
+	sessionID, err := c.Cookie("session_id")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(sessionID)
+}
+
+func requestLocale(c *gin.Context) string {
+	return firstNonEmptyHeader(c, "X-Locale", "Accept-Language")
+}
+
+func requestCountryCode(c *gin.Context) string {
+	return firstNonEmptyHeader(c, "CF-IPCountry", "CloudFront-Viewer-Country", "X-Vercel-IP-Country", "X-Country-Code")
+}
+
+func requestIP(c *gin.Context) string {
+	if c.Request == nil {
+		return ""
+	}
+	return firstNonEmptyHeader(c, "CF-Connecting-IP", "X-Real-IP", "X-Forwarded-For")
+}
+
+func firstNonEmptyHeader(c *gin.Context, keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(c.GetHeader(key)); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func parseCustomerServiceAgentID(value string) uint {
