@@ -81,6 +81,18 @@
 
     <!-- 底部输入栏 -->
     <div class="px-3 pb-4 md:p-4 border-t border-white/15 md:border-white/[0.08] md:bg-white/[0.02]">
+      <div v-if="showVisitorEmailCapture" class="mb-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+        <label class="block text-[10px] uppercase tracking-[0.18em] text-white/55">Email for follow-up · optional</label>
+        <input
+          :value="visitorEmail"
+          @input="$emit('update:visitorEmail', ($event.target as HTMLInputElement).value)"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          class="mt-1 h-8 w-full bg-transparent text-xs text-white placeholder:text-white/35 focus:outline-none"
+        />
+      </div>
       <form @submit.prevent="handleSendMessage" class="flex items-center gap-2">
         <input
           :value="newMessage"
@@ -148,6 +160,8 @@ import { useThrottleFn } from '@vueuse/core'
 const props = defineProps<{
   messages: any[]
   newMessage: string
+  visitorEmail: string
+  showVisitorEmailCapture: boolean
   isSending: boolean
   isUploadingImage: boolean
   currentThemeColor: string
@@ -155,6 +169,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:newMessage': [value: string]
+  'update:visitorEmail': [value: string]
   'sendMessage': []
   'uploadImage': [event: Event]
   'deleteMessage': [message: any]

@@ -1,5 +1,7 @@
 # Chat "Config Confirm" Feature Design
 
+Last updated: 2026-07-25
+
 > 一键「和客服确认配置」—— WhatsAppChatModal / Products Tab 内嵌，不打断聊天
 
 ## 1. 背景 & 目标
@@ -7,9 +9,9 @@
 - 用户在 **聊天窗口** 内浏览 / 搜索商品，希望：
   - 选好款式、尺寸、金属、刻字等配置后，**一键把当前配置发给客服确认**。
   - 不需要跳转新页面或离开聊天上下文。
-- 现状：
+- 背景：
   - Products（`share`） Tab 已支持搜索，并通过 `WhatsAppProductSearchResultDrawer` 弹窗展示结果。
-  - 关闭弹窗后，Products Tab 下方仍会渲染一份结果列表（被认为是多余设计）。
+  - 旧版曾在关闭弹窗后继续于 Products Tab 下方渲染一份结果列表；该重复视图已清理，结果唯一展示源为抽屉。
 
 本设计文档约定：
 
@@ -17,7 +19,7 @@
 - Products Tab 下方区域将主要用于工具按钮 & 功能说明，而不是冗余的结果列表。
 
 
-## 2. 当前架构概览（2026-07-24 DEV 状态）
+## 2. 当前架构概览（2026-07-25 audited state）
 
 ### 2.1 Products Tab（share）区域
 
@@ -171,7 +173,7 @@
 > - 点击返回 → 回到列表视图；
 > - 关闭抽屉 → 所有状态重置。
 
-#### 4.5 进度快照（2025-12-11）
+#### 4.5 进度快照（2026-07-25）
 
 - ✅ `WhatsAppProductSearchResultDrawer` 内已经加入 `viewMode` / `selectedConfigProduct` 状态，并在关闭时统一重置。
 - ✅ 商品卡片新增「分享至聊天」与「和客服确认配置」双按钮，后者会记录所选商品并切换到配置确认视图。

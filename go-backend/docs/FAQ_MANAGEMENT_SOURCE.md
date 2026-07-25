@@ -10,7 +10,7 @@ FAQ 页面结构与分类现在由 Go 后端数据库管理，Nuxt 前端的 `ap
 - `cmd/import/faqs`：批量导入也必须提供 `page_id`，并走同一套页面/分类校验，不能绕过结构事实源。
 - Admin `/faqs`：负责编辑页面结构、分类结构和 FAQ 内容。
 - Nuxt `PageFaq`：优先读取 `/api/v1/content/faq-pages/:page_id`；当后端没有可展示 FAQ 内容时回退静态文件。
-- Nuxt `PageFaqSlot`：页面/layout 固定 FAQ 容器。它根据当前路由匹配 `faq_pages.route_path`，自动把对应 FAQ 插入页面底部；等待接口时显示 `LOAD` 状态。
+- Nuxt `PageFaqSlot`：页面/layout 固定 FAQ 容器。它根据当前路由匹配 `faq_pages.route_path`，自动把对应 FAQ 插入页面底部；等待接口时显示统一 FAQ skeleton loading，不再裸露 `LOAD` 文本。
 - Locale：后台 FAQ 结构目前以 `en` / `zh` 管理；公开接口会把 `zh_cn`、`zh-CN` 等中文 locale 归一到 `zh`。
 
 ## Admin code responsibilities
@@ -58,7 +58,7 @@ Go 后端 FAQ service 同样按职责拆分；这些文件都在 `internal/servi
 
 Nuxt FAQ 用户端按“自动插入、通用 FAQ 容器、分类折叠 UI、答案渲染、数据来源”分层：
 
-- `app/components/PageFaqSlot.vue`：layout 内的自动插入容器，只负责根据当前 route 查找 FAQ 页面和显示 `LOAD`。
+- `app/components/PageFaqSlot.vue`：layout 内的自动插入容器，只负责根据当前 route 查找 FAQ 页面和显示统一 FAQ skeleton loading。
 - `app/components/PageFaq.vue`：通用 FAQ 区块容器，只负责标题、空状态、查看全部入口和分类列表装配。
 - `app/composables/usePageFaq.ts`：PageFaq 的取数、静态 fallback、展开状态、`maxItems` 截断和 `hasMoreItems` 计算。
 - `app/components/faq/FaqCategoryAccordion.vue`：单个 FAQ 分类卡片和问题折叠 UI。
@@ -87,8 +87,8 @@ Flow:
 Loading rule:
 
 - 初始 SSR 能拿到内容时直接渲染 FAQ。
-- 客户端路由切换或接口等待时显示 `LOAD` 占位。
-- `LOAD` 的最终视觉样式仍待设计稿确认；在视觉稿确认前，保留 `PageFaqSlot.vue` 的独立占位入口，不把 loading 规则散落到各页面。
+- 客户端路由切换或接口等待时显示统一 FAQ skeleton loading，占位结构只存在于 `PageFaqSlot.vue`。
+- 不再在页面上裸露 `LOAD` 文本；后续如果调整 loading 视觉，只修改 `PageFaqSlot.vue` 的独立占位入口，不把 loading 规则散落到各页面。
 
 ## Answer content boundary
 
@@ -141,8 +141,9 @@ Forbidden in `answer`:
 - 已新增 FAQ 图片上传边界：后台和 Go 后端都校验 `image/webp`、`800 x 800`、最多一张；Nuxt 用固定答案内容组件渲染桌面两列/移动单列，并取消 FAQ 展开内容的固定 `max-height` 截断。
 - 已新增 `031_faq_route_coverage.up.sql`，把当前使用 `products` / `support` layout 的 Nuxt 页面补进 `faq_pages` / `faq_categories`，包括 `/shop`、`/shop/:slug`、旧 `/products/:slug`、blog、policies、`/company/about`、`/picture-warehouse`、`/support/faqs` 和旧 `/faq`。这些页面即使暂时没有 FAQ 条目，也能在后台结构面板看到，不再让前台自动容器请求稳定页面时出现 404。
 - 已新增 Nuxt FAQ lookup 规则：真实商品详情 URL 统一查 `/shop/:slug`，旧产品详情 route 查 `/products/:slug`；`/support/faqs` 与 `/faq` 作为 FAQ 聚合页只展示自身内容，不再通过 layout 自动追加第二个 FAQ 区块。
+- 已完成 `PageFaqSlot` 统一 FAQ skeleton loading：接口等待或客户端路由切换时显示 FAQ 标题、加载提示和三条骨架问题/答案行，不再显示裸 `LOAD` 文本。
 
-下一次涉及 FAQ 后台、FAQ 页面结构、Nuxt 页面 FAQ 自动插入、`LOAD` 样式时，必须同步更新本文件，记录完成范围和仍未完成的部分。
+下一次涉及 FAQ 后台、FAQ 页面结构、Nuxt 页面 FAQ 自动插入、FAQ loading 样式时，必须同步更新本文件，记录完成范围和仍未完成的部分。
 
 ## Initial seed
 

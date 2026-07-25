@@ -9,33 +9,11 @@
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden pointer-events-auto"></div>
         <!-- 聊天窗口容器 - 右下角定位 -->
         
-        <!-- 客服模式 / 访客模式 切换 -->
+        <!-- 客户侧聊天：前台只负责访客/会员与客服 Profile 建立会话 -->
         <Transition name="fade-scale" mode="out-in">
-          <AgentChatPanel
-            v-if="agentMode"
-            key="agent-mode"
-            v-model:show-status-dropdown="showStatusDropdown"
-            v-model:new-message="newMessage"
-            :user="user"
-            :selected-conversation="selectedConversation"
-            :is-loading-conversations="isLoadingConversations"
-            :agent-conversations="agentConversations"
-            :current-agent-status="currentAgentStatus"
-            :agent-status-colors="agentStatusColors"
-            :agent-status-labels="agentStatusLabels"
-            :messages="messages"
-            :is-sending="isSending"
-            @close="handleClose"
-            @change-status="changeAgentStatus"
-            @select-conversation="selectConversation"
-            @refresh-conversations="fetchAgentConversations"
-            @back-to-conversation-list="backToConversationList"
-            @send-message="sendMessage"
-          />
-
           <!-- 访客模式：欢迎页 -->
           <ChatWelcomePanel
-            v-else-if="showWelcomeScreen && !agentMode"
+            v-if="showWelcomeScreen"
             key="welcome"
             :welcome-agents="welcomeAgents"
             :selected-agent="selectedAgent"
@@ -141,6 +119,8 @@
                 v-model:searchQuery="searchQuery"
                 :currentThemeColor="currentThemeColor"
                 :messages="messages"
+                :visitorEmail="visitorEmail"
+                :showVisitorEmailCapture="showVisitorEmailCapture"
                 :isSending="isSending"
                 :isUploadingImage="isUploadingImage"
                 :isSearching="isSearching"
@@ -155,6 +135,7 @@
                 :userPointCards="userPointCards"
                 :isLoggedInForWarranty="isLoggedInForWarranty"
                 @sendMessage="handleSendMessage"
+                @update:visitorEmail="visitorEmail = $event"
                 @uploadImage="handleImageUpload"
                 @deleteMessage="handleMessageContextMenu"
                 @search="searchProducts"
@@ -172,15 +153,6 @@
       </div>
     </Transition>
     
-    <ChatTransferModal
-      v-model="showTransferModal"
-      v-model:transfer-to-agent="transferToAgent"
-      v-model:transfer-note="transferNote"
-      :agents="agents"
-      :selected-agent="selectedAgent"
-      :is-transferring="isTransferring"
-      @submit="handleTransfer"
-    />
     <!-- Toast 提示 -->
     <Transition name="fade">
       <div
@@ -259,8 +231,6 @@ import { useI18n } from '#imports'
 import { useWhatsAppState } from '~/composables/chat/useWhatsAppState'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
-import AgentChatPanel from '~/components/whatsapp/AgentChatPanel.vue'
-import ChatTransferModal from '~/components/whatsapp/ChatTransferModal.vue'
 import ChatWelcomePanel from '~/components/whatsapp/ChatWelcomePanel.vue'
 import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
 
@@ -280,14 +250,6 @@ const { t } = useI18n()
 
 const {
   user,
-  agentMode,
-  agentConversations,
-  isLoadingConversations,
-  selectedConversation,
-  currentAgentStatus,
-  showStatusDropdown,
-  agentStatusColors,
-  agentStatusLabels,
   showWelcomeScreen,
   hasHistoryChat,
   agents,
@@ -295,6 +257,8 @@ const {
   welcomeAgents,
   onlineAgentsCount,
   emailSettings,
+  visitorEmail,
+  showVisitorEmailCapture,
   isSending,
   messages,
   activeTab,
@@ -309,10 +273,6 @@ const {
   productDrawerQuery,
   historyDrawerVisible,
   wishlistDrawerVisible,
-  showTransferModal,
-  transferToAgent,
-  transferNote,
-  isTransferring,
   isUploadingImage,
   showToast,
   toastMessage,
@@ -344,13 +304,7 @@ const {
   shareOrderToChat,
   openCartFromChat,
   getInitials,
-  handleImageUpload,
-  handleTransfer,
-  fetchAgentConversations,
-  selectConversation,
-  backToConversationList,
-  sendMessage,
-  changeAgentStatus
+  handleImageUpload
 } = useWhatsAppState(emit)
 </script>
 

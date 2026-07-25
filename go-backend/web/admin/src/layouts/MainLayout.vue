@@ -126,7 +126,9 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   ChevronDown,
   CircleHelp,
+  Fingerprint,
   FileText,
+  Headset,
   Images,
   LayoutDashboard,
   LogOut,
@@ -192,6 +194,8 @@ const navigationItems = [
   { path: '/faqs', routeName: 'FAQs', label: 'FAQ 管理', icon: CircleHelp, permission: 'faq:view' },
   { path: '/galleries', routeName: 'Galleries', label: '图库管理', icon: Images, permission: 'gallery:view' },
   { path: '/subscriptions', routeName: 'Subscriptions', label: '订阅管理', icon: Mail, permission: 'subscription:view' },
+  { path: '/customer-service', routeName: 'CustomerServiceChats', label: '客服对话', icon: Headset, permission: 'ticket:view' },
+  { path: '/visitor-profiles', routeName: 'VisitorProfiles', label: '访客画像', icon: Fingerprint, permission: 'ticket:view' },
   { path: '/tickets', routeName: 'Tickets', label: '工单管理', icon: MessagesSquare, permission: 'ticket:view' },
   { path: '/marketing', routeName: 'Marketing', label: '营销管理', icon: Megaphone, permission: 'marketing:view' },
   { path: '/settings', routeName: 'Settings', label: '系统设置', icon: Settings, permission: 'settings:view' },

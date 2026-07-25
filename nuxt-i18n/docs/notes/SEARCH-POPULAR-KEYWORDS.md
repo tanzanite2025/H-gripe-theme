@@ -1,6 +1,6 @@
 # Site search popular keywords current source
 
-Last updated: 2026-07-24
+Last updated: 2026-07-25
 
 This note describes the current “Popular searches” chips used by the Nuxt storefront search flow.
 
@@ -25,6 +25,7 @@ The one rule is:
   - renders chips
   - supports `v-model` via `modelValue` / `update:modelValue`
   - does not call router or fetch APIs
+  - uses `search.popularTitle` and `search.popularAriaLabel` i18n keys for the visible title and accessibility label
 - `nuxt-i18n/app/components/ProductSearchPanel.vue`
   - uses popular chips in the header/search sheet flow
 - `nuxt-i18n/app/pages/shop/index.vue`
@@ -36,18 +37,15 @@ The one rule is:
 - Selected chips are merged with free-text input into one final search string.
 - `/shop` and the search sheet keep their own local selected keyword state, but share the keyword list and chip component.
 - `Inner tube` also participates in the broader preset-category flow through `presetCategorySlug` where applicable.
+- The fixed `Popular searches` title/ARIA copy is translated through the storefront i18n locale files.
 
 ## Still not fully closed
 
-1. i18n title
-   - `PopularSearchChips.vue` still hardcodes `aria-label="Popular searches"` and the visible title `Popular searches`.
-   - This should move to i18n keys such as `search.popularTitle` / `search.popularAriaLabel`.
-
-2. Keyword ownership
+1. Keyword ownership
    - Current keywords are static frontend config.
    - If marketing wants to change them from admin later, define a backend endpoint and keep this utility as fallback only.
 
-3. Chip-to-filter mapping
+2. Chip-to-filter mapping
    - Keywords currently behave like search text.
    - If chips become structured filters, keep the mapping in a single config object and do not add per-component special cases.
 

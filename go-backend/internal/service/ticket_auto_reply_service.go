@@ -6,24 +6,24 @@ import (
 	"time"
 )
 
-func (s *TicketService) GetWelcomeMessage(conversationID string, owner CustomerServiceOwner, agentID uint) (string, bool, error) {
+func (s *TicketService) GetWelcomeMessage(conversationID string, owner CustomerServiceOwner, agentID uint) (string, bool, *ticket.TicketMessage, error) {
 	rules, err := s.ticketRepo.GetActiveAutoReplyRules("welcome")
 	if err != nil {
-		return "", false, err
+		return "", false, nil, err
 	}
 	if len(rules) == 0 {
-		return "", false, nil
+		return "", false, nil, nil
 	}
 	welcomeRule := rules[0]
 
 	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
-		return "", false, err
+		return "", false, nil, err
 	}
 
 	lastSent, err := s.ticketRepo.GetLastWelcomeMessageTime(t.ID, welcomeRule.ReplyMessage)
 	if err == nil && !lastSent.IsZero() && time.Since(lastSent) < 24*time.Hour {
-		return welcomeRule.ReplyMessage, true, nil
+		return welcomeRule.ReplyMessage, true, nil, nil
 	}
 
 	msg := &ticket.TicketMessage{
@@ -35,19 +35,19 @@ func (s *TicketService) GetWelcomeMessage(conversationID string, owner CustomerS
 		IsInternal: false,
 	}
 	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
-		return "", false, err
+		return "", false, nil, err
 	}
 
-	return welcomeRule.ReplyMessage, false, nil
+	return welcomeRule.ReplyMessage, false, msg, nil
 }
 
-func (s *TicketService) MatchKeywordMessage(conversationID, message string, owner CustomerServiceOwner, agentID uint) (string, uint, error) {
+func (s *TicketService) MatchKeywordMessage(conversationID, message string, owner CustomerServiceOwner, agentID uint) (string, uint, *ticket.TicketMessage, error) {
 	rules, err := s.ticketRepo.GetActiveAutoReplyRules("keyword")
 	if err != nil {
-		return "", 0, err
+		return "", 0, nil, err
 	}
 	if len(rules) == 0 {
-		return "", 0, nil
+		return "", 0, nil, nil
 	}
 
 	var matchedRule *ticket.AutoReplyRule
@@ -71,12 +71,12 @@ func (s *TicketService) MatchKeywordMessage(conversationID, message string, owne
 	}
 
 	if matchedRule == nil {
-		return "", 0, nil
+		return "", 0, nil, nil
 	}
 
 	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
-		return "", 0, err
+		return "", 0, nil, err
 	}
 
 	msg := &ticket.TicketMessage{
@@ -88,8 +88,8 @@ func (s *TicketService) MatchKeywordMessage(conversationID, message string, owne
 		IsInternal: false,
 	}
 	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
-		return "", 0, err
+		return "", 0, nil, err
 	}
 
-	return matchedRule.ReplyMessage, matchedRule.ID, nil
+	return matchedRule.ReplyMessage, matchedRule.ID, msg, nil
 }

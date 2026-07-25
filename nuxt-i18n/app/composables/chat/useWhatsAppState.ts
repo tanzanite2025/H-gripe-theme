@@ -1,9 +1,10 @@
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
 import { loadChatAgentDirectory } from '~/composables/chat/useChatAgentDirectory'
+import { useCustomerServiceChatSync } from '~/composables/chat/useCustomerServiceChatSync'
 import {
   CHAT_STORAGE_EXPIRY_DAYS,
   createEmptyChatRoom,
@@ -18,7 +19,7 @@ import type { ChatRoomState, ChatTab } from '~/composables/chat/useChatStorage'
 
 export const useWhatsAppState = (emit: any) => {
   const { t } = useI18n()
-  const { user, isAgent, agentId, request: authRequest } = useAuth()
+  const { user, request: authRequest } = useAuth()
   const { addToCart, openCartFromChat } = useCart()
   const {
     isLogged: isMemberLogged,
@@ -37,35 +38,7 @@ export const useWhatsAppState = (emit: any) => {
     return base.replace(/\/$/, '')
   })
   
-  // 客服模式状态
-  const agentMode = computed(() => isAgent.value)
-  
-  // 客服会话列表
-  const agentConversations = ref<any[]>([])
-  const isLoadingConversations = ref(false)
-  const selectedConversation = ref<any>(null)
-  
-  // 客服状态管理
-  const currentAgentStatus = ref<string>('offline')
-  const showStatusDropdown = ref(false)
-  
-  // 状态颜色配置
-  const agentStatusColors: Record<string, { dot: string; text: string }> = {
-    online: { dot: 'bg-emerald-500', text: 'text-emerald-400' },
-    busy: { dot: 'bg-amber-500', text: 'text-amber-400' },
-    away: { dot: 'bg-orange-500', text: 'text-orange-400' },
-    offline: { dot: 'bg-gray-500', text: 'text-gray-400' }
-  }
-  
-  // 状态标签
-  const agentStatusLabels = computed<Record<string, string>>(() => ({
-    online: t('chatModal.agentPanel.status.online'),
-    busy: t('chatModal.agentPanel.status.busy'),
-    away: t('chatModal.agentPanel.status.away'),
-    offline: t('chatModal.agentPanel.status.offline')
-  }))
-  
-  // 欢迎页状态（客服模式下不显示欢迎页）
+  // 欢迎页状态。Nuxt 前台只承接客户侧聊天，不承接客服工作台。
   const showWelcomeScreen = ref(true)
   
   // 是否有历史对话（用于显示 "Continue" 或 "Start"）
@@ -138,6 +111,22 @@ export const useWhatsAppState = (emit: any) => {
   const emailSettings = ref({
     preSalesEmail: '',
     afterSalesEmail: ''
+  })
+  const visitorEmail = ref('')
+  const showVisitorEmailCapture = computed(() => !user.value)
+
+  if (import.meta.client) {
+    visitorEmail.value = localStorage.getItem('tanzanite_chat_visitor_email') || ''
+  }
+
+  watch(visitorEmail, (value) => {
+    if (!import.meta.client) return
+    const normalized = value.trim().toLowerCase()
+    if (normalized) {
+      localStorage.setItem('tanzanite_chat_visitor_email', normalized)
+    } else {
+      localStorage.removeItem('tanzanite_chat_visitor_email')
+    }
   })
   
   const chatRooms = ref<Record<number, ChatRoomState>>({})
@@ -223,12 +212,6 @@ export const useWhatsAppState = (emit: any) => {
   const historyDrawerVisible = ref(false)
   const wishlistDrawerVisible = ref(false)
   
-  // 转接功能
-  const showTransferModal = ref(false)
-  const transferToAgent = ref('')
-  const transferNote = ref('')
-  const isTransferring = ref(false)
-  
   // 图片上传
   const isUploadingImage = ref(false)
   
@@ -238,30 +221,6 @@ export const useWhatsAppState = (emit: any) => {
     return getChatStorageKey(conversationId.value, selectedAgent.value?.id)
   })
   const STORAGE_EXPIRY_DAYS = CHAT_STORAGE_EXPIRY_DAYS
-
-  const rememberConversationId = (payload: any) => {
-    const id = payload?.conversation_id || payload?.conversationId || payload?.data?.conversation_id || payload?.data?.conversationId
-    if (typeof id === 'string' && id.length > 0) {
-      conversationId.value = id
-    }
-    return conversationId.value
-  }
-
-  const ensureCustomerServiceConversation = async () => {
-    if (conversationId.value) return conversationId.value
-    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/conversations`, {
-      method: 'POST',
-      credentials: 'include',
-      body: {
-        agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
-      }
-    })
-    const id = rememberConversationId(response)
-    if (!id) {
-      throw new Error('[CRITICAL] conversation_id missing in customer-service conversation response')
-    }
-    return id
-  }
   // Toast 提示
   const showToast = ref(false)
   const toastMessage = ref('')
@@ -398,7 +357,23 @@ export const useWhatsAppState = (emit: any) => {
     if (newId && newId !== oldId) {
       saveLastSelectedAgentId(newId)
       loadMessagesFromStorage()
+      if (conversationId.value) {
+        loadMessagesFromAPI()
+        connectCustomerServiceRealtime()
+      }
       scrollToBottom()
+    }
+  })
+
+  watch(conversationId, (newId, oldId) => {
+    if (!import.meta.client) return
+    if (newId && newId !== oldId) {
+      loadMessagesFromAPI()
+      connectCustomerServiceRealtime()
+      return
+    }
+    if (!newId) {
+      closeCustomerServiceRealtime()
     }
   })
   
@@ -440,40 +415,29 @@ export const useWhatsAppState = (emit: any) => {
       console.error('保存消息失败:', error)
     }
   }
-  
-  // 发送消息到后端 API
-  const sendMessageToAPI = async (messageData: any) => {
-    try {
-      const currentConversationId = await ensureCustomerServiceConversation()
-      const response = await authRequest<any>(
-        '/customer-service/messages',
-        {
-          method: 'POST',
-          headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            conversation_id: currentConversationId,
-            message: messageData.message,
-            sender_type: user.value ? 'user' : 'visitor',
-            sender_name: user.value?.display_name || '访客',
-            sender_email: user.value?.email || '',
-            agent_id: selectedAgent.value?.id || '',
-            message_type: messageData.message_type || 'text',
-            metadata: messageData.metadata || null
-          })
-        },
-        'Failed to send customer-service message'
-      )
-      rememberConversationId(response)
-      return response
-    } catch (error) {
-      console.error('发送消息到API失败:', error)
-      throw error
-    }
-  }
-  
+
+  const {
+    currentSenderEmail,
+    loadMessagesFromAPI,
+    sendMessageToAPI,
+    replaceLocalMessageWithServerMessage,
+    markLocalMessageFailed,
+    checkAutoReply,
+    sendWelcomeMessage,
+    connectCustomerServiceRealtime,
+    closeCustomerServiceRealtime
+  } = useCustomerServiceChatSync({
+    publicApiBase,
+    conversationId,
+    selectedAgent,
+    messages,
+    user,
+    visitorEmail,
+    authRequest,
+    saveMessagesToStorage,
+    scrollToBottom
+  })
+
   // 发送消息
   const handleSendMessage = async () => {
     if (!newMessage.value.trim() || !selectedAgent.value || isSending.value) {
@@ -489,11 +453,12 @@ export const useWhatsAppState = (emit: any) => {
       conversation_id: conversationId.value,
       sender_id: user.value?.id || 0,
       sender_name: user.value?.display_name || '访客',
-      sender_email: user.value?.email || '',
+      sender_email: currentSenderEmail(),
       message: messageText,
       message_type: 'text',
       created_at: new Date().toISOString(),
-      is_agent: false
+      is_agent: false,
+      sync_state: 'sending'
     }
   
     try {
@@ -505,55 +470,17 @@ export const useWhatsAppState = (emit: any) => {
       saveMessagesToStorage()
       
       // 3. 发送到后端 API（实时存储）
-      await sendMessageToAPI(messageData)
+      const response = await sendMessageToAPI(messageData)
+      replaceLocalMessageWithServerMessage(messageData.id, response)
       
       // 4. 检查关键词自动回复
       await checkAutoReply(messageText)
     } catch (error) {
-      // 如果 API 失败，消息仍然保存在 localStorage 中
+      markLocalMessageFailed(messageData.id)
       console.error('发送失败', error)
       // 可以添加重试逻辑或提示用户
     } finally {
       isSending.value = false
-    }
-  }
-  
-  // 检查关键词自动回复
-  const checkAutoReply = async (userMessage: string) => {
-    try {
-      const currentConversationId = await ensureCustomerServiceConversation()
-      const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/match`, {
-        method: 'POST',
-        credentials: 'include',
-        body: {
-          message: userMessage,
-          conversation_id: currentConversationId,
-          agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
-        }
-      })
-      rememberConversationId(response)
-      
-      if (response.success && response.data.reply) {
-        // 延迟 500ms 模拟真实回复
-        setTimeout(() => {
-          messages.value.push({
-            id: Date.now(),
-            conversation_id: currentConversationId,
-            sender_id: 0,
-            sender_name: 'Auto Reply',
-            sender_email: '',
-            message: response.data.reply,
-            message_type: 'text',
-            created_at: new Date().toISOString(),
-            is_agent: true
-          })
-          
-          saveMessagesToStorage()
-          scrollToBottom()
-        }, 500)
-      }
-    } catch (error) {
-      console.error('自动回复检查失败', error)
     }
   }
   
@@ -656,7 +583,7 @@ export const useWhatsAppState = (emit: any) => {
       conversation_id: conversationId.value,
       sender_id: user.value?.id || 0,
       sender_name: user.value?.display_name || '访客',
-      sender_email: user.value?.email || '',
+      sender_email: currentSenderEmail(),
       message: product.title || '商品',
       message_type: 'product',
       metadata: {
@@ -666,16 +593,19 @@ export const useWhatsAppState = (emit: any) => {
         price: product.price
       },
       created_at: new Date().toISOString(),
-      is_agent: false
+      is_agent: false,
+      sync_state: 'sending'
     }
     
     try {
       messages.value.push(messageData)
       saveMessagesToStorage()
-      await sendMessageToAPI(messageData)
+      const response = await sendMessageToAPI(messageData)
+      replaceLocalMessageWithServerMessage(messageData.id, response)
       activeTab.value = 'chat'
       scrollToBottom()
     } catch (error) {
+      markLocalMessageFailed(messageData.id)
       console.error(errorLabel, error)
     } finally {
       isSending.value = false
@@ -720,7 +650,7 @@ export const useWhatsAppState = (emit: any) => {
       conversation_id: conversationId.value,
       sender_id: user.value?.id || 0,
       sender_name: user.value?.display_name || '访客',
-      sender_email: user.value?.email || '',
+      sender_email: currentSenderEmail(),
       message: `订单 #${order.id}`,
       message_type: 'order',
       metadata: {
@@ -732,16 +662,19 @@ export const useWhatsAppState = (emit: any) => {
         thumbnail: order.thumbnail
       },
       created_at: new Date().toISOString(),
-      is_agent: false
+      is_agent: false,
+      sync_state: 'sending'
     }
     
     try {
       messages.value.push(messageData)
       saveMessagesToStorage()
-      await sendMessageToAPI(messageData)
+      const response = await sendMessageToAPI(messageData)
+      replaceLocalMessageWithServerMessage(messageData.id, response)
       activeTab.value = 'chat'
       scrollToBottom()
     } catch (error) {
+      markLocalMessageFailed(messageData.id)
       console.error('分享订单失败:', error)
     } finally {
       isSending.value = false
@@ -796,41 +729,6 @@ export const useWhatsAppState = (emit: any) => {
     }
   }
   
-  // 发送欢迎语
-  const sendWelcomeMessage = async () => {
-    try {
-      const currentConversationId = await ensureCustomerServiceConversation()
-      const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/welcome`, {
-        credentials: 'include',
-        params: {
-          conversation_id: currentConversationId,
-          agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
-        }
-      })
-      rememberConversationId(response)
-      
-      if (response.success && response.data.message && !response.data.already_sent) {
-        // 添加欢迎消息到消息列表
-        messages.value.push({
-          id: Date.now(),
-          conversation_id: currentConversationId,
-          sender_id: 0,
-          sender_name: 'System',
-          sender_email: '',
-          message: response.data.message,
-          message_type: 'text',
-          created_at: new Date().toISOString(),
-          is_agent: true
-        })
-        
-        saveMessagesToStorage()
-        scrollToBottom()
-      }
-    } catch (error) {
-      console.error('发送欢迎语失败:', error)
-    }
-  }
-  
   // 选择客服
   const selectAgent = (agent: any) => {
     if (selectedAgent.value?.id === agent.id) return
@@ -857,56 +755,6 @@ export const useWhatsAppState = (emit: any) => {
       return (parts[0][0] + parts[1][0]).toUpperCase()
     }
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
-  
-  // 转接会话
-  async function handleTransfer() {
-    if (!transferToAgent.value) {
-      alert(t('chatModal.transfer.alertSelectAgent'))
-      return
-    }
-    
-    if (transferToAgent.value === selectedAgent.value?.id) {
-      alert(t('chatModal.transfer.alertCurrentAgent'))
-      return
-    }
-    
-    isTransferring.value = true
-    
-    try {
-      const data = await authRequest<any>(
-        `/customer-service/agent/conversations/${selectedConversation.value.id}/transfer`,
-        {
-          method: 'POST',
-          headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            to_agent_id: String(transferToAgent.value),
-            note: transferNote.value,
-          }),
-        },
-        t('chatModal.transfer.requestFailed')
-      )
-      
-      if (data.success) {
-        alert(t('chatModal.transfer.alertSuccess', { agent: data.data.to_agent }))
-        showTransferModal.value = false
-        transferToAgent.value = ''
-        transferNote.value = ''
-        
-        // 刷新消息列表以显示系统消息
-        loadMessagesFromStorage()
-      } else {
-        alert(data.message || t('chatModal.transfer.alertFailed'))
-      }
-    } catch (error) {
-      console.error('转接失败:', error)
-      alert(t('chatModal.transfer.alertRetry'))
-    } finally {
-      isTransferring.value = false
-    }
   }
   
   // ...
@@ -938,12 +786,13 @@ export const useWhatsAppState = (emit: any) => {
           conversation_id: conversationId.value,
           sender_id: user.value?.id || 0,
           sender_name: user.value?.display_name || '访客',
-          sender_email: user.value?.email || '',
+          sender_email: currentSenderEmail(),
           message: '[图片]',
           message_type: 'image',
           attachment_url: imageUrl,
           created_at: new Date().toISOString(),
-          is_agent: false
+          is_agent: false,
+          sync_state: 'sending'
         }
         
         // 添加到消息列表
@@ -953,8 +802,10 @@ export const useWhatsAppState = (emit: any) => {
         
         // 发送到后端
         try {
-          await sendMessageToAPI(messageData)
+          const response = await sendMessageToAPI(messageData)
+          replaceLocalMessageWithServerMessage(messageData.id, response)
         } catch (error) {
+          markLocalMessageFailed(messageData.id)
           console.error('发送图片失败', error)
         }
       }
@@ -972,184 +823,20 @@ export const useWhatsAppState = (emit: any) => {
     }
   }
   
-  // 获取客服会话列表（客服模式）
-  const fetchAgentConversations = async () => {
-    if (!agentMode.value) return
-    
-    isLoadingConversations.value = true
-    try {
-      const response = await authRequest<any>(
-        '/customer-service/agent/conversations',
-        { headers: { accept: 'application/json' } },
-        'Failed to load agent conversations'
-      )
-      
-      if (response?.ok && response?.data) {
-        if (!response.data.items) throw new Error('[CRITICAL] Items array missing in agent conversations response');
-        agentConversations.value = response.data.items
-      }
-    } catch (error) {
-      console.error('获取客服会话列表失败:', error)
-    } finally {
-      isLoadingConversations.value = false
-    }
-  }
-  
-  // 选择会话（客服模式）
-  const selectConversation = (conversation: any) => {
-    selectedConversation.value = conversation
-    // 加载该会话的消息
-    loadConversationMessages(conversation.id)
-  }
-  
-  // 加载会话消息
-  const loadConversationMessages = async (conversationId: string) => {
-    try {
-      const response = await authRequest<any>(
-        `/customer-service/agent/conversations/${conversationId}/messages`,
-        { headers: { accept: 'application/json' } },
-        'Failed to load conversation messages'
-      )
-      
-      if (response?.ok && response?.data) {
-        if (!response.data.items) throw new Error('[CRITICAL] Items array missing in conversation messages response');
-        messages.value = response.data.items
-        scrollToBottom()
-      }
-    } catch (error) {
-      console.error('加载会话消息失败:', error)
-    }
-  }
-  
-  // 返回会话列表（客服模式）
-  const backToConversationList = () => {
-    selectedConversation.value = null
-  }
-  
-  // 发送消息（客服模式）
-  const sendMessage = async () => {
-    if (!newMessage.value.trim() || !selectedConversation.value) return
-    
-    isSending.value = true
-    const messageText = newMessage.value.trim()
-    newMessage.value = ''
-    
-    try {
-      const response = await authRequest<any>(
-        '/customer-service/agent/messages',
-        {
-          method: 'POST',
-          headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            conversation_id: selectedConversation.value.id,
-            message: messageText
-          })
-        },
-        'Failed to send agent message'
-      )
-      
-      if (response?.ok) {
-        // 添加消息到列表
-        messages.value.push({
-          id: Date.now(),
-          message: messageText,
-          sender_type: 'agent',
-          created_at: new Date().toISOString()
-        })
-        scrollToBottom()
-      }
-    } catch (error) {
-      console.error('发送消息失败:', error)
-      // 恢复消息
-      newMessage.value = messageText
-    } finally {
-      isSending.value = false
-    }
-  }
-  
-  // 获取客服状态
-  const fetchAgentStatus = async () => {
-    if (!agentMode.value) return
-    
-    try {
-      const response = await authRequest<any>(
-        '/customer-service/agent/status',
-        { headers: { accept: 'application/json' } },
-        'Failed to load agent status'
-      )
-      
-      if (response?.ok && response?.data?.status) {
-        currentAgentStatus.value = response.data.status
-      }
-    } catch (error) {
-      console.error('获取客服状态失败:', error)
-    }
-  }
-  
-  // 更新客服状态
-  const changeAgentStatus = async (status: string) => {
-    showStatusDropdown.value = false
-    
-    const previousStatus = currentAgentStatus.value
-    currentAgentStatus.value = status // 乐观更新
-    
-    try {
-      const response = await authRequest<any>(
-        '/customer-service/agent/status',
-        {
-          method: 'POST',
-          headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ status })
-        },
-        'Failed to update agent status'
-      )
-      
-      if (!response?.ok) {
-        // 回滚
-        currentAgentStatus.value = previousStatus
-      }
-    } catch (error) {
-      console.error('更新客服状态失败:', error)
-      // 回滚
-      currentAgentStatus.value = previousStatus
-    }
-  }
-  
   // 组件挂载时获取客服列表、会员数据和检查历史对话
   onMounted(async () => {
     await initMembership()
-  
-    if (agentMode.value) {
-      // 客服模式：获取会话列表和状态，跳过欢迎页
-      showWelcomeScreen.value = false
-      await Promise.all([
-        fetchAgentConversations(),
-        fetchAgentStatus()
-      ])
-    } else {
-      // 访客模式：获取客服列表
-      await fetchAgents()
-      initHistoryChatCheck()
-    }
+    await fetchAgents()
+    initHistoryChatCheck()
     scrollToBottom()
+  })
+
+  onBeforeUnmount(() => {
+    closeCustomerServiceRealtime()
   })
   
   return {
     user,
-    agentMode,
-    agentConversations,
-    isLoadingConversations,
-    selectedConversation,
-    currentAgentStatus,
-    showStatusDropdown,
-    agentStatusColors,
-    agentStatusLabels,
     showWelcomeScreen,
     hasHistoryChat,
     agents,
@@ -1157,6 +844,8 @@ export const useWhatsAppState = (emit: any) => {
     welcomeAgents,
     onlineAgentsCount,
     emailSettings,
+    visitorEmail,
+    showVisitorEmailCapture,
     isSending,
     messages,
     activeTab,
@@ -1171,10 +860,6 @@ export const useWhatsAppState = (emit: any) => {
     productDrawerQuery,
     historyDrawerVisible,
     wishlistDrawerVisible,
-    showTransferModal,
-    transferToAgent,
-    transferNote,
-    isTransferring,
     isUploadingImage,
     showToast,
     toastMessage,
@@ -1206,12 +891,6 @@ export const useWhatsAppState = (emit: any) => {
     shareOrderToChat,
     openCartFromChat,
     getInitials,
-    handleImageUpload,
-    handleTransfer,
-    fetchAgentConversations,
-    selectConversation,
-    backToConversationList,
-    sendMessage,
-    changeAgentStatus
+    handleImageUpload
   }
 }

@@ -192,7 +192,6 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		"transactions",
 		"product_attributes",
 		"product_variants",
-		"chat_messages",
 	}
 	for _, table := range requiredTables {
 		var exists bool
@@ -207,6 +206,26 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		}
 		if !exists {
 			t.Fatalf("required table %s does not exist", table)
+		}
+	}
+
+	retiredTables := []string{
+		"chat_messages",
+		"chat_sessions",
+	}
+	for _, table := range retiredTables {
+		var exists bool
+		if err := testDB.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.tables
+				WHERE table_schema = 'public' AND table_name = $1
+			)
+		`, table).Scan(&exists); err != nil {
+			t.Fatalf("check retired table %s: %v", table, err)
+		}
+		if exists {
+			t.Fatalf("retired table %s should not exist", table)
 		}
 	}
 

@@ -13,12 +13,16 @@ import (
 )
 
 type TicketHandler struct {
-	ticketService *service.TicketService
+	ticketService          *service.TicketService
+	customerServiceContext *service.CustomerServiceContextService
+	customerServiceEvents  *service.CustomerServiceEventHub
 }
 
-func NewTicketHandler(ticketService *service.TicketService) *TicketHandler {
+func NewTicketHandler(ticketService *service.TicketService, customerServiceContext *service.CustomerServiceContextService, customerServiceEvents *service.CustomerServiceEventHub) *TicketHandler {
 	return &TicketHandler{
-		ticketService: ticketService,
+		ticketService:          ticketService,
+		customerServiceContext: customerServiceContext,
+		customerServiceEvents:  customerServiceEvents,
 	}
 }
 
@@ -91,6 +95,10 @@ func (h *TicketHandler) UpdateTicketStatus(c *gin.Context) {
 			apierror.RespondBadRequest(c, err.Error())
 			return
 		}
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrTicketRouteMismatch) {
+			apierror.RespondNotFound(c, "Ticket")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -117,6 +125,10 @@ func (h *TicketHandler) AssignTicket(c *gin.Context) {
 	}
 
 	if err := h.ticketService.AssignTicket(uint(id), req.AssignedTo); err != nil {
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrTicketRouteMismatch) {
+			apierror.RespondNotFound(c, "Ticket")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -156,7 +168,7 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 			apierror.RespondBadRequest(c, err.Error())
 			return
 		}
-		if service.IsRecordNotFound(err) {
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrTicketRouteMismatch) {
 			apierror.RespondNotFound(c, "Ticket")
 			return
 		}
@@ -235,6 +247,10 @@ func (h *TicketHandler) CreateMessage(c *gin.Context) {
 	}
 
 	if err := h.ticketService.AddMessage(newMessage, userID.(uint), true); err != nil {
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrTicketRouteMismatch) {
+			apierror.RespondNotFound(c, "Ticket")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -256,6 +272,10 @@ func (h *TicketHandler) GetMessages(c *gin.Context) {
 
 	messages, err := h.ticketService.GetMessages(uint(ticketID), 0, true)
 	if err != nil {
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrTicketRouteMismatch) {
+			apierror.RespondNotFound(c, "Ticket")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -274,7 +294,11 @@ func (h *TicketHandler) MarkMessagesAsRead(c *gin.Context) {
 		return
 	}
 
-	if err := h.ticketService.MarkMessagesAsRead(uint(ticketID), true); err != nil {
+	if err := h.ticketService.MarkRegularMessagesAsRead(uint(ticketID), true); err != nil {
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrTicketRouteMismatch) {
+			apierror.RespondNotFound(c, "Ticket")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}

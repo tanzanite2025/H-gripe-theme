@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
+	"tanzanite/internal/pkg/visitorcookie"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -11,18 +12,31 @@ import (
 )
 
 type Handler struct {
-	cartService *service.CartService
+	cartService           *service.CartService
+	visitorProfileService *service.VisitorProfileService
+	visitorSecret         []byte
 }
 
-func NewHandler(cartService *service.CartService) *Handler {
+type Options struct {
+	VisitorProfileService *service.VisitorProfileService
+	VisitorSecret         string
+}
+
+func NewHandler(cartService *service.CartService, opts ...Options) *Handler {
+	options := Options{}
+	if len(opts) > 0 {
+		options = opts[0]
+	}
 	return &Handler{
-		cartService: cartService,
+		cartService:           cartService,
+		visitorProfileService: options.VisitorProfileService,
+		visitorSecret:         []byte(options.VisitorSecret),
 	}
 }
 
 // getUserIDAndSession 从context获取用户ID和session ID
 // 统一的辅助方法，减少重复代码
-func getUserIDAndSession(c *gin.Context) (*uint, string) {
+func (h *Handler) getUserIDAndSession(c *gin.Context) (*uint, string) {
 	var userID *uint
 	if uid, exists := c.Get("user_id"); exists {
 		id := uid.(uint)
@@ -35,7 +49,39 @@ func getUserIDAndSession(c *gin.Context) (*uint, string) {
 		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true)
 	}
 
+	h.touchVisitorProfile(c, userID, sessionID)
 	return userID, sessionID
+}
+
+func (h *Handler) touchVisitorProfile(c *gin.Context, userID *uint, sessionID string) {
+	if h.visitorProfileService == nil {
+		return
+	}
+	visitorHash, _ := visitorcookie.ExistingCustomerServiceVisitorHash(c, h.visitorSecret)
+	if _, err := h.visitorProfileService.Touch(service.VisitorProfileTouchInput{
+		UserID:                     userID,
+		CustomerServiceVisitorHash: visitorHash,
+		CartSessionID:              sessionID,
+		Locale:                     firstNonEmptyHeader(c, "X-Locale", "Accept-Language"),
+		LocaleSource:               "accept_language",
+		CountryCode:                firstNonEmptyHeader(c, "CF-IPCountry", "CloudFront-Viewer-Country", "X-Vercel-IP-Country", "X-Country-Code"),
+		Region:                     firstNonEmptyHeader(c, "CF-Region", "X-Region"),
+		City:                       firstNonEmptyHeader(c, "CF-IPCity", "X-City"),
+		Timezone:                   firstNonEmptyHeader(c, "CF-Timezone", "X-Timezone"),
+		IPAddress:                  firstNonEmptyHeader(c, "CF-Connecting-IP", "X-Real-IP", "X-Forwarded-For"),
+		UserAgent:                  c.GetHeader("User-Agent"),
+	}); err != nil {
+		return
+	}
+}
+
+func firstNonEmptyHeader(c *gin.Context, keys ...string) string {
+	for _, key := range keys {
+		if value := c.GetHeader(key); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 // AddToCartRequest 添加到购物车请求
@@ -66,7 +112,7 @@ type UpdateCartItemRequest struct {
 
 // GetCartSummary 获取购物车摘要
 func (h *Handler) GetCartSummary(c *gin.Context) {
-	userID, sessionID := getUserIDAndSession(c)
+	userID, sessionID := h.getUserIDAndSession(c)
 
 	summary, err := h.cartService.GetCartSummary(userID, sessionID)
 	if err != nil {
@@ -85,7 +131,7 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	userID, sessionID := getUserIDAndSession(c)
+	userID, sessionID := h.getUserIDAndSession(c)
 
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
@@ -109,7 +155,7 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 		return
 	}
 
-	userID, sessionID := getUserIDAndSession(c)
+	userID, sessionID := h.getUserIDAndSession(c)
 
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
@@ -135,7 +181,7 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 
 // RemoveFromCart 从购物车移除商品
 func (h *Handler) RemoveFromCart(c *gin.Context) {
-	userID, sessionID := getUserIDAndSession(c)
+	userID, sessionID := h.getUserIDAndSession(c)
 
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
@@ -168,7 +214,7 @@ func (h *Handler) SyncCart(c *gin.Context) {
 		return
 	}
 
-	userID, sessionID := getUserIDAndSession(c)
+	userID, sessionID := h.getUserIDAndSession(c)
 
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {
@@ -193,7 +239,7 @@ func (h *Handler) SyncCart(c *gin.Context) {
 
 // ClearCart 清空购物车
 func (h *Handler) ClearCart(c *gin.Context) {
-	userID, sessionID := getUserIDAndSession(c)
+	userID, sessionID := h.getUserIDAndSession(c)
 
 	cart, err := h.cartService.GetOrCreateCart(userID, sessionID)
 	if err != nil {

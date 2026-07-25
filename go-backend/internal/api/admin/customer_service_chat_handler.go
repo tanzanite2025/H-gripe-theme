@@ -1,0 +1,487 @@
+package admin
+
+import (
+	"encoding/json"
+	"errors"
+	"strconv"
+	"strings"
+	"tanzanite/internal/domain/auth"
+	"tanzanite/internal/domain/ticket"
+	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/pagination"
+	"tanzanite/internal/pkg/response"
+	"tanzanite/internal/service"
+
+	"github.com/gin-gonic/gin"
+)
+
+// ListCustomerServiceConversations returns the admin chat inbox conversation list.
+// Admin/manager users can see every public chat conversation; support users only
+// see conversations assigned to their own backend user id.
+func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
+	params := pagination.ParsePagination(c)
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+
+	filters, ok := parseAdminCustomerServiceConversationFilters(c)
+	if !ok {
+		return
+	}
+
+	tickets, total, err := h.ticketService.ListCustomerServiceConversationsForAgent(params.Page, params.PageSize, agentUserID, canViewAll, filters)
+	if err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	items := make([]gin.H, 0, len(tickets))
+	for _, item := range tickets {
+		items = append(items, adminCustomerServiceConversationResponse(item))
+	}
+
+	totalPages := (int(total) + params.PageSize - 1) / params.PageSize
+	response.Success(c, gin.H{
+		"conversations": items,
+		"pagination": gin.H{
+			"page":        params.Page,
+			"page_size":   params.PageSize,
+			"total":       total,
+			"total_pages": totalPages,
+		},
+		"filters": adminCustomerServiceConversationFilterResponse(filters),
+	})
+}
+
+// ListCustomerServiceAgents returns assignable public chat staff profiles for the admin inbox.
+func (h *TicketHandler) ListCustomerServiceAgents(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
+	if limit < 1 || limit > 500 {
+		limit = 100
+	}
+
+	agents, err := h.ticketService.ListCustomerServiceAgentProfiles(limit)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+
+	items := make([]gin.H, 0, len(agents))
+	for _, agent := range agents {
+		if agent.UserID == nil {
+			continue
+		}
+		items = append(items, gin.H{
+			"id":            agent.ID,
+			"user_id":       *agent.UserID,
+			"agent_id":      agent.AgentID,
+			"name":          agent.DisplayName(),
+			"email":         agent.PublicEmail(),
+			"avatar":        agent.Avatar,
+			"whatsapp":      agent.WhatsApp,
+			"online_status": agent.OnlineStatus,
+			"status":        agent.Status,
+		})
+	}
+
+	response.Success(c, gin.H{"agents": items})
+}
+
+// GetCustomerServiceConversationContext returns the customer snapshot beside one chat.
+func (h *TicketHandler) GetCustomerServiceConversationContext(c *gin.Context) {
+	if h.customerServiceContext == nil {
+		apierror.RespondInternalError(c, errors.New("customer service context service is not configured"))
+		return
+	}
+
+	ticketID, ok := parseAdminCustomerServiceConversationID(c)
+	if !ok {
+		return
+	}
+
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	context, err := h.customerServiceContext.GetConversationContextForAgent(ticketID, agentUserID, canViewAll)
+	if err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"context": context})
+}
+
+// GetCustomerServiceConversationMessages returns messages for one conversation.
+func (h *TicketHandler) GetCustomerServiceConversationMessages(c *gin.Context) {
+	ticketID, ok := parseAdminCustomerServiceConversationID(c)
+	if !ok {
+		return
+	}
+
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	messages, err := h.ticketService.GetCustomerServiceMessagesForAgent(ticketID, agentUserID, canViewAll)
+	if err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	items := make([]gin.H, 0, len(messages))
+	for _, item := range messages {
+		items = append(items, adminCustomerServiceMessageResponse(item))
+	}
+
+	response.Success(c, gin.H{"messages": items})
+}
+
+// CreateCustomerServiceConversationMessage sends a staff reply from the admin chat inbox.
+func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context) {
+	ticketID, ok := parseAdminCustomerServiceConversationID(c)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		Message       string `json:"message" binding:"required"`
+		AttachmentURL string `json:"attachment_url"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	attachments := []string{}
+	if strings.TrimSpace(req.AttachmentURL) != "" {
+		attachments = append(attachments, strings.TrimSpace(req.AttachmentURL))
+	}
+	attachmentsJSON, _ := json.Marshal(attachments)
+
+	msg := &ticket.TicketMessage{
+		TicketID:    ticketID,
+		UserID:      agentUserID,
+		IsStaff:     true,
+		Content:     strings.TrimSpace(req.Message),
+		Attachments: string(attachmentsJSON),
+		IsRead:      false,
+		IsInternal:  false,
+	}
+	if err := h.ticketService.AddCustomerServiceAgentMessage(msg, agentUserID, canViewAll); err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	messagePayload := adminCustomerServiceMessageResponse(*msg)
+	conversation, _ := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
+	h.publishAdminCustomerServiceEvent(
+		service.CustomerServiceEventMessageCreated,
+		conversation,
+		ticketID,
+		adminCustomerServiceRealtimeActor(agentUserID),
+		messagePayload,
+	)
+
+	response.Created(c, gin.H{"message": messagePayload})
+}
+
+// MarkCustomerServiceConversationMessagesRead marks customer messages as read in one conversation.
+func (h *TicketHandler) MarkCustomerServiceConversationMessagesRead(c *gin.Context) {
+	ticketID, ok := parseAdminCustomerServiceConversationID(c)
+	if !ok {
+		return
+	}
+
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	if err := h.ticketService.MarkCustomerServiceMessagesReadForAgent(ticketID, agentUserID, canViewAll); err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	conversation, _ := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
+	h.publishAdminCustomerServiceEvent(
+		service.CustomerServiceEventMessagesRead,
+		conversation,
+		ticketID,
+		adminCustomerServiceRealtimeActor(agentUserID),
+		gin.H{
+			"reader_kind":     "agent",
+			"read_by_user_id": agentUserID,
+		},
+	)
+
+	response.SuccessWithMessage(c, "Messages marked as read", nil)
+}
+
+// TransferCustomerServiceConversation reassigns one public chat conversation.
+func (h *TicketHandler) TransferCustomerServiceConversation(c *gin.Context) {
+	ticketID, ok := parseAdminCustomerServiceConversationID(c)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		AssignedTo uint `json:"assigned_to" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	if err := h.ticketService.TransferCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll, req.AssignedTo); err != nil {
+		respondAdminCustomerServiceError(c, err)
+		return
+	}
+
+	conversation, _ := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
+	h.publishAdminCustomerServiceEvent(
+		service.CustomerServiceEventAssigned,
+		conversation,
+		ticketID,
+		adminCustomerServiceRealtimeActor(agentUserID),
+		gin.H{
+			"assigned_to":         req.AssignedTo,
+			"assigned_to_name":    adminCustomerServiceAssigneeName(req.AssignedTo),
+			"assigned_by_user_id": agentUserID,
+			"status":              "in_progress",
+			"display_status":      adminCustomerServiceDisplayStatus("in_progress"),
+		},
+	)
+
+	response.SuccessWithMessage(c, "Conversation transferred successfully", nil)
+}
+
+func parseAdminCustomerServiceConversationID(c *gin.Context) (uint, bool) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "Invalid conversation ID")
+		return 0, false
+	}
+	return uint(id), true
+}
+
+func parseAdminCustomerServiceConversationFilters(c *gin.Context) (service.CustomerServiceConversationListInput, bool) {
+	input := service.CustomerServiceConversationListInput{
+		Status:     normalizeAdminCustomerServiceFilterValue(c.Query("status")),
+		Identity:   normalizeAdminCustomerServiceFilterValue(c.Query("identity")),
+		Search:     strings.TrimSpace(c.Query("search")),
+		UnreadOnly: parseAdminCustomerServiceBoolQuery(c.Query("unread")),
+	}
+
+	if !validAdminCustomerServiceStatusFilter(input.Status) {
+		apierror.RespondBadRequest(c, "Invalid customer-service conversation status filter")
+		return input, false
+	}
+	if !validAdminCustomerServiceIdentityFilter(input.Identity) {
+		apierror.RespondBadRequest(c, "Invalid customer-service customer identity filter")
+		return input, false
+	}
+
+	assignedToRaw := normalizeAdminCustomerServiceFilterValue(c.Query("assigned_to"))
+	if assignedToRaw != "" {
+		assignedTo, err := strconv.ParseUint(assignedToRaw, 10, 32)
+		if err != nil {
+			apierror.RespondBadRequest(c, "Invalid assigned customer-service agent filter")
+			return input, false
+		}
+		if assignedTo > 0 {
+			assignedToValue := uint(assignedTo)
+			input.AssignedTo = &assignedToValue
+		}
+	}
+
+	return input, true
+}
+
+func normalizeAdminCustomerServiceFilterValue(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "all" {
+		return ""
+	}
+	return value
+}
+
+func parseAdminCustomerServiceBoolQuery(value string) bool {
+	switch normalizeAdminCustomerServiceFilterValue(value) {
+	case "1", "true", "yes", "y", "unread":
+		return true
+	default:
+		return false
+	}
+}
+
+func validAdminCustomerServiceStatusFilter(status string) bool {
+	switch status {
+	case "", "pending", "open", "active", "in_progress", "closed", "resolved":
+		return true
+	default:
+		return false
+	}
+}
+
+func validAdminCustomerServiceIdentityFilter(identity string) bool {
+	switch identity {
+	case "", "account", "member", "user", "anonymous", "visitor", "guest":
+		return true
+	default:
+		return false
+	}
+}
+
+func adminCustomerServiceConversationFilterResponse(input service.CustomerServiceConversationListInput) gin.H {
+	assignedTo := "all"
+	if input.AssignedTo != nil && *input.AssignedTo > 0 {
+		assignedTo = strconv.FormatUint(uint64(*input.AssignedTo), 10)
+	}
+	status := input.Status
+	if status == "" {
+		status = "all"
+	}
+	identity := input.Identity
+	if identity == "" {
+		identity = "all"
+	}
+
+	return gin.H{
+		"search":      input.Search,
+		"status":      status,
+		"identity":    identity,
+		"assigned_to": assignedTo,
+		"unread":      input.UnreadOnly,
+	}
+}
+
+func adminCustomerServiceScope(c *gin.Context) (uint, bool) {
+	value, _ := c.Get("user_id")
+	userID, _ := value.(uint)
+
+	roleValue, _ := c.Get("role")
+	role := auth.RoleUser
+	if rawRole, ok := roleValue.(string); ok {
+		role = auth.NormalizeRole(rawRole)
+	}
+
+	return userID, role == auth.RoleAdmin || role == auth.RoleManager
+}
+
+func respondAdminCustomerServiceError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrCustomerServiceAgentAccessDenied):
+		apierror.RespondForbidden(c)
+	case service.IsRecordNotFound(err):
+		apierror.RespondNotFound(c, "Conversation")
+	default:
+		apierror.RespondInternalError(c, err)
+	}
+}
+
+func adminCustomerServiceConversationResponse(item ticket.Ticket) gin.H {
+	lastMessage := ""
+	lastMessageTime := item.UpdatedAt
+	unreadCount := 0
+	for _, message := range item.Messages {
+		if message.Content != "" {
+			lastMessage = message.Content
+			lastMessageTime = message.CreatedAt
+		}
+		if !message.IsStaff && !message.IsRead {
+			unreadCount++
+		}
+	}
+
+	conversationID := ""
+	if item.ConversationID != nil {
+		conversationID = strings.TrimSpace(*item.ConversationID)
+	}
+	if conversationID == "" && strings.HasPrefix(item.Tags, "conversation_id:") {
+		conversationID = strings.TrimPrefix(item.Tags, "conversation_id:")
+	}
+
+	return gin.H{
+		"id":                item.ID,
+		"ticket_id":         item.ID,
+		"conversation_id":   conversationID,
+		"customer_user_id":  item.CustomerUserID,
+		"customer_name":     adminCustomerDisplayName(item),
+		"assigned_to":       item.AssignedTo,
+		"status":            item.Status,
+		"display_status":    adminCustomerServiceDisplayStatus(item.Status),
+		"unread_count":      unreadCount,
+		"last_message":      lastMessage,
+		"last_message_time": lastMessageTime,
+		"created_at":        item.CreatedAt,
+		"updated_at":        item.UpdatedAt,
+		"ticket_number":     item.TicketNumber,
+		"visitor_anonymous": item.CustomerUserID == nil,
+	}
+}
+
+func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
+	attachmentURL := ""
+	var attachments []string
+	if err := json.Unmarshal([]byte(item.Attachments), &attachments); err == nil && len(attachments) > 0 {
+		attachmentURL = attachments[0]
+	}
+
+	return gin.H{
+		"id":              item.ID,
+		"conversation_id": item.TicketID,
+		"sender_id":       item.UserID,
+		"sender_name":     adminMessageSenderName(item),
+		"message":         item.Content,
+		"content":         item.Content,
+		"attachment_url":  attachmentURL,
+		"created_at":      item.CreatedAt,
+		"is_read":         item.IsRead,
+		"is_agent":        item.IsStaff,
+	}
+}
+
+func adminCustomerDisplayName(item ticket.Ticket) string {
+	if item.CustomerUserID == nil {
+		return "匿名客户"
+	}
+	if item.User != nil {
+		return adminDisplayName(item.User.FirstName, item.User.LastName, item.User.Username, item.User.Email)
+	}
+	return "客户 " + strconv.FormatUint(uint64(*item.CustomerUserID), 10)
+}
+
+func adminCustomerServiceAssigneeName(userID uint) string {
+	if userID == 0 {
+		return "未分配"
+	}
+	return "用户 " + strconv.FormatUint(uint64(userID), 10)
+}
+
+func adminMessageSenderName(item ticket.TicketMessage) string {
+	if item.User != nil {
+		return adminDisplayName(item.User.FirstName, item.User.LastName, item.User.Username, item.User.Email)
+	}
+	if item.IsStaff {
+		return "客服"
+	}
+	return "客户"
+}
+
+func adminDisplayName(firstName, lastName, username, email string) string {
+	fullName := strings.TrimSpace(strings.TrimSpace(firstName) + " " + strings.TrimSpace(lastName))
+	if fullName != "" {
+		return fullName
+	}
+	if strings.TrimSpace(username) != "" {
+		return strings.TrimSpace(username)
+	}
+	if strings.TrimSpace(email) != "" {
+		return strings.TrimSpace(email)
+	}
+	return "客户"
+}
+
+func adminCustomerServiceDisplayStatus(status string) string {
+	switch status {
+	case "in_progress":
+		return "active"
+	case "open":
+		return "pending"
+	case "resolved", "closed":
+		return "closed"
+	default:
+		return "pending"
+	}
+}

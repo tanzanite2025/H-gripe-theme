@@ -26,10 +26,13 @@
           v-if="activeTab === 'chat'"
           :messages="messages"
           :new-message="newMessage"
+          :visitor-email="visitorEmail"
+          :show-visitor-email-capture="showVisitorEmailCapture"
           :is-sending="isSending"
           :is-uploading-image="isUploadingImage"
           :current-theme-color="currentThemeColor"
           @update:new-message="$emit('update:newMessage', $event)"
+          @update:visitor-email="$emit('update:visitorEmail', $event)"
           @send-message="$emit('sendMessage')"
           @upload-image="$emit('uploadImage', $event)"
           @delete-message="$emit('deleteMessage', $event)"
@@ -114,6 +117,8 @@ const props = defineProps<{
   // Chat Props
   messages: any[]
   newMessage: string
+  visitorEmail: string
+  showVisitorEmailCapture: boolean
   isSending: boolean
   isUploadingImage: boolean
   // Product Props
@@ -138,6 +143,7 @@ const emit = defineEmits<{
   'update:activeTab': [value: string]
   // Chat Emits
   'update:newMessage': [value: string]
+  'update:visitorEmail': [value: string]
   'sendMessage': []
   'uploadImage': [event: Event]
   'deleteMessage': [message: any]

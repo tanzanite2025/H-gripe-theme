@@ -1,7 +1,8 @@
 # Spoke Calculator System / 辐条计算器系统手册
 
-> **最后更新**: 2025-12-31
-> **状态**: Active
+Last updated: 2026-07-25
+
+Status: Active reference, not an open backlog by itself. Re-audit this note when the spoke data sync workflow, Go `/spoke/export` contract, or frontend calculator data model changes.
 
 ## 1. 系统架构 (Architecture)
 

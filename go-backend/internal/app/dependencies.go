@@ -42,40 +42,42 @@ type Repositories struct {
 	Feedback           *repository.FeedbackRepository
 	SuggestionFeedback *repository.SuggestionFeedbackRepository
 	Spoke              *repository.SpokeRepository
-	Chat               *repository.ChatRepository
 	Subscription       *repository.SubscriptionRepository
+	VisitorProfile     *repository.VisitorProfileRepository
 }
 
 type Services struct {
-	Auth               *service.AuthService
-	Post               *service.PostService
-	Product            *service.ProductService
-	Cart               *service.CartService
-	Setting            *service.SettingService
-	AdminSettings      *service.AdminSettingsService
-	AdminPublicChat    *service.AdminPublicChatAgentService
-	FAQ                *service.FAQService
-	Gallery            *service.GalleryService
-	Media              *service.MediaService
-	Registration       *service.RegistrationService
-	Checkout           *service.CheckoutService
-	Order              *service.OrderService
-	Payment            *service.PaymentService
-	Marketing          *service.MarketingService
-	Review             *service.ReviewService
-	Ticket             *service.TicketService
-	Subscription       *service.SubscriptionService
-	Sitemap            *service.SitemapService
-	Showcase           *service.ShowcaseService
-	Wishlist           *service.WishlistService
-	Feedback           *service.FeedbackService
-	SuggestionFeedback *service.SuggestionFeedbackService
-	User               *service.UserService
-	Dashboard          *service.DashboardService
-	Audit              *service.AuditService
-	Shipping           *service.ShippingService
-	Spoke              *service.SpokeService
-	Chat               *service.ChatService
+	Auth                   *service.AuthService
+	Post                   *service.PostService
+	Product                *service.ProductService
+	Cart                   *service.CartService
+	Setting                *service.SettingService
+	AdminSettings          *service.AdminSettingsService
+	AdminPublicChat        *service.AdminPublicChatAgentService
+	FAQ                    *service.FAQService
+	Gallery                *service.GalleryService
+	Media                  *service.MediaService
+	Registration           *service.RegistrationService
+	Checkout               *service.CheckoutService
+	Order                  *service.OrderService
+	Payment                *service.PaymentService
+	Marketing              *service.MarketingService
+	Review                 *service.ReviewService
+	Ticket                 *service.TicketService
+	CustomerServiceContext *service.CustomerServiceContextService
+	CustomerServiceEvents  *service.CustomerServiceEventHub
+	Subscription           *service.SubscriptionService
+	Sitemap                *service.SitemapService
+	Showcase               *service.ShowcaseService
+	Wishlist               *service.WishlistService
+	Feedback               *service.FeedbackService
+	SuggestionFeedback     *service.SuggestionFeedbackService
+	User                   *service.UserService
+	Dashboard              *service.DashboardService
+	Audit                  *service.AuditService
+	Shipping               *service.ShippingService
+	Spoke                  *service.SpokeService
+	VisitorProfile         *service.VisitorProfileService
 }
 
 func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) (*Dependencies, error) {
@@ -102,8 +104,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Feedback:           repository.NewFeedbackRepository(db),
 		SuggestionFeedback: repository.NewSuggestionFeedbackRepository(db),
 		Spoke:              repository.NewSpokeRepository(db),
-		Chat:               repository.NewChatRepository(db),
 		Subscription:       repository.NewSubscriptionRepository(db),
+		VisitorProfile:     repository.NewVisitorProfileRepository(db),
 	}
 
 	storageConfig := storage.LoadConfigFromEnv()
@@ -121,24 +123,25 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
 
 	services := Services{
-		Auth:         service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
-		Post:         service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL),
-		Product:      service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL),
-		Cart:         service.NewCartService(repos.Cart, repos.Product),
-		Setting:      service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL),
-		FAQ:          service.NewFAQService(repos.FAQ, storageSvc),
-		Gallery:      service.NewGalleryService(repos.Gallery),
-		Media:        service.NewMediaService(repos.Media, storageSvc),
-		Registration: service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
-		Checkout:     service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
-		Marketing:    service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty),
-		Review:       service.NewReviewService(repos.Review),
-		Ticket:       service.NewTicketService(repos.Ticket, repos.User),
-		Subscription: service.NewSubscriptionService(repos.Subscription),
-		Sitemap:      service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
-		Showcase:     service.NewShowcaseService(repos.Showcase, storageSvc),
-		Wishlist:     service.NewWishlistService(repos.Wishlist, repos.Product),
-		Feedback:     service.NewFeedbackService(repos.Feedback),
+		Auth:                  service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
+		Post:                  service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL),
+		Product:               service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL),
+		Cart:                  service.NewCartService(repos.Cart, repos.Product),
+		Setting:               service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL),
+		FAQ:                   service.NewFAQService(repos.FAQ, storageSvc),
+		Gallery:               service.NewGalleryService(repos.Gallery),
+		Media:                 service.NewMediaService(repos.Media, storageSvc),
+		Registration:          service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
+		Checkout:              service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
+		Marketing:             service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty),
+		Review:                service.NewReviewService(repos.Review),
+		Ticket:                service.NewTicketService(repos.Ticket, repos.User),
+		CustomerServiceEvents: service.NewCustomerServiceEventHub(),
+		Subscription:          service.NewSubscriptionService(repos.Subscription),
+		Sitemap:               service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
+		Showcase:              service.NewShowcaseService(repos.Showcase, storageSvc),
+		Wishlist:              service.NewWishlistService(repos.Wishlist, repos.Product),
+		Feedback:              service.NewFeedbackService(repos.Feedback),
 		SuggestionFeedback: service.NewSuggestionFeedbackService(
 			repos.SuggestionFeedback,
 		),
@@ -147,13 +150,23 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Audit:     service.NewAuditService(repos.Audit),
 		Shipping:  shippingService,
 		Spoke:     service.NewSpokeService(repos.Spoke),
-		Chat:      service.NewChatService(repos.Chat),
+		VisitorProfile: service.NewVisitorProfileService(
+			repos.VisitorProfile,
+		),
 	}
 	services.Product.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.Post.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.AdminSettings = service.NewAdminSettingsService(services.Setting)
 	services.AdminPublicChat = service.NewAdminPublicChatAgentService(repos.User)
+	services.CustomerServiceContext = service.NewCustomerServiceContextService(
+		services.Ticket,
+		repos.User,
+		repos.Cart,
+		repos.Wishlist,
+		repos.Order,
+		services.VisitorProfile,
+	)
 	services.Order = service.NewOrderService(
 		txManager,
 		repos.Order,
