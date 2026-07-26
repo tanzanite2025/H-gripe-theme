@@ -26,8 +26,10 @@
                 @click="emit('navigate')"
               >
                 <span class="admin-sidebar__glow" aria-hidden="true" />
-                <component :is="item.icon" class="admin-sidebar__icon" aria-hidden="true" />
-                <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
+                <span class="admin-sidebar__link-content">
+                  <component :is="item.icon" class="admin-sidebar__icon" aria-hidden="true" />
+                  <span v-if="!collapsed" class="admin-sidebar__label">{{ item.label }}</span>
+                </span>
               </RouterLink>
             </TooltipTrigger>
             <TooltipContent v-if="collapsed" side="right" class="font-bold text-xs">
@@ -97,11 +99,10 @@ const isActive = (path) => {
 .admin-sidebar__link {
   position: relative;
   isolation: isolate;
-  display: flex;
+  display: grid;
   height: 2.25rem;
   margin-bottom: 0.25rem;
-  align-items: center;
-  gap: 0.625rem;
+  place-items: center;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -122,14 +123,21 @@ const isActive = (path) => {
 
 .admin-sidebar__link--expanded {
   width: 100%;
-  justify-content: center;
   padding-inline: 0.75rem;
 }
 
 .admin-sidebar__link--collapsed {
   width: 2.25rem;
-  justify-content: center;
   padding-inline: 0;
+}
+
+.admin-sidebar__link-content {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
 }
 
 .admin-sidebar__glow {
@@ -153,6 +161,14 @@ const isActive = (path) => {
   height: 1rem;
   flex-shrink: 0;
   transition: color 160ms ease, transform 160ms ease;
+}
+
+.admin-sidebar__label {
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-sidebar__link:hover,
