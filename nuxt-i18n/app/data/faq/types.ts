@@ -3,7 +3,7 @@
  * 
  * This file defines the data structures for the page-embedded FAQ system.
  * The Go backend is the editable source for page/category metadata and FAQ
- * content. Static frontend files are kept as a storefront fallback.
+ * content. Static frontend files are retained only as legacy source data.
  */
 
 /**

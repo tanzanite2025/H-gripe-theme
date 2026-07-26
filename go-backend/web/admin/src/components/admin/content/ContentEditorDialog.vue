@@ -20,12 +20,13 @@
                 <AdminFormField label="标题" required :error="errors.title">
                   <Input v-model="form.title" placeholder="请输入文章标题" @input="emit('clear-error', 'title')" />
                 </AdminFormField>
-                <AdminFormField label="语言" required>
+                <AdminFormField label="语言" required :error="errors.locale">
                   <Select v-model="form.locale">
                     <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="zh">中文</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                        {{ language.label }}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </AdminFormField>
@@ -137,7 +138,8 @@ defineProps({
   mode: { type: String, default: 'create' },
   form: { type: Object, required: true },
   errors: { type: Object, default: () => ({}) },
-  submitting: { type: Boolean, default: false }
+  submitting: { type: Boolean, default: false },
+  languageOptions: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['update:open', 'submit', 'clear-error'])

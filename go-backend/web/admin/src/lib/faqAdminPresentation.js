@@ -4,18 +4,29 @@ export const FAQ_STATUS_FILTER_OPTIONS = [
   { label: '草稿', value: 'draft' }
 ]
 
-export const FAQ_LOCALE_FILTER_OPTIONS = [
+const languageLabel = (language) => {
+  const primary = language.native_name || language.name || language.code
+  return primary ? `${primary} · ${language.code}` : language.code
+}
+
+export const buildLocaleFilterOptions = (languages) => [
   { label: '全部语言', value: 'all' },
-  { label: '中文', value: 'zh' },
-  { label: 'English', value: 'en' }
+  ...(languages || [])
+    .filter((language) => language.enabled !== false && language.code)
+    .map((language) => ({ label: languageLabel(language), value: language.code }))
 ]
 
-export const FAQ_STRUCTURE_LOCALES = [
-  { label: '中文', value: 'zh' },
-  { label: 'English', value: 'en' }
-]
+export const buildStructureLocaleOptions = (languages) => (
+  (languages || [])
+    .filter((language) => language.enabled !== false && language.code)
+    .map((language) => ({ label: languageLabel(language), value: language.code }))
+)
 
-export const localeName = (locale) => ({ zh: '中文', en: 'English' })[locale] || locale || '-'
+export const localeName = (locale, languages = []) => {
+  const normalizedLocale = String(locale || '').trim().toLowerCase().replace(/-/g, '_')
+  const language = (languages || []).find((item) => item.code === normalizedLocale)
+  return language ? languageLabel(language) : (locale || '-')
+}
 export const statusName = (status) => ({ published: '已发布', draft: '草稿', active: '启用', hidden: '隐藏' })[status] || status || '-'
 export const statusTone = (status) => ({ published: 'green', draft: 'gray', active: 'green', hidden: 'gray' })[status] || 'gray'
 export const visibilityName = (status) => statusName(status)

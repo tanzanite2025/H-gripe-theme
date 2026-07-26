@@ -43,12 +43,13 @@
               <AdminFormField label="Slug" required :error="errors.slug">
                 <Input v-model="form.slug" placeholder="例如 crystal-bracelet" @input="emit('clear-error', 'slug')" />
               </AdminFormField>
-              <AdminFormField label="语言" required>
+              <AdminFormField label="语言" required :error="errors.locale">
                 <Select v-model="form.locale">
                   <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="zh">中文</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                      {{ language.label }}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </AdminFormField>
@@ -325,6 +326,7 @@ defineProps({
   formatSpecOption: { type: Function, required: true },
   getSpecLabel: { type: Function, required: true },
   specSelectValue: { type: Function, required: true },
+  languageOptions: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits([

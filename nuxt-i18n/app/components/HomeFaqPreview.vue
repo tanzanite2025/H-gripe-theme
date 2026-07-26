@@ -74,8 +74,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { getAllFaqData, resolvePageFaqDataList } from '~/data/faq'
+import { ref, computed, watch } from 'vue'
+import { useAsyncData } from '#imports'
+import { fetchAllFaqData, resolvePageFaqDataList } from '~/data/faq'
 
 interface Props {
   maxItemsPerCategory?: number
@@ -94,7 +95,13 @@ const props = withDefaults(defineProps<Props>(), {
 const wide = computed(() => props.wide)
 
 // 获取所有 FAQ 数据
-const allPages = computed(() => resolvePageFaqDataList(getAllFaqData()))
+const { locale } = useI18n()
+const { data: asyncAllPages } = await useAsyncData(
+  () => `home-faq-preview-${locale.value}`,
+  () => fetchAllFaqData(),
+  { watch: [locale] }
+)
+const allPages = computed(() => resolvePageFaqDataList(asyncAllPages.value || []))
 
 // 当前选中的分类
 const activePageId = ref<string>('')
@@ -103,16 +110,16 @@ const activePageId = ref<string>('')
 const expandedItems = ref<Set<string>>(new Set())
 
 // 初始化默认分类
-onMounted(() => {
+watch(allPages, (pages) => {
   if (props.defaultCategory) {
     activePageId.value = props.defaultCategory
-  } else if (allPages.value.length > 0) {
-    const firstPage = allPages.value[0]
+  } else if (!pages.some((page) => page.pageId === activePageId.value)) {
+    const firstPage = pages[0]
     if (firstPage) {
       activePageId.value = firstPage.pageId
     }
   }
-})
+}, { immediate: true })
 
 // 切换展开状态
 const toggleItem = (itemId: string) => {

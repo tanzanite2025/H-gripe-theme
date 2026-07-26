@@ -26,12 +26,13 @@
         </AdminFormField>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormField label="语言" required>
+          <AdminFormField label="语言" required :error="formErrors.locale">
             <Select v-model="faqForm.locale">
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="zh">中文</SelectItem>
-                <SelectItem value="en">English</SelectItem>
+                <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                  {{ language.label }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </AdminFormField>
@@ -110,7 +111,8 @@ const props = defineProps({
   formErrors: { type: Object, required: true },
   submitting: { type: Boolean, default: false },
   faqPageOptions: { type: Array, required: true },
-  availableFaqCategories: { type: Array, required: true }
+  availableFaqCategories: { type: Array, required: true },
+  languageOptions: { type: Array, required: true }
 })
 
 const emit = defineEmits(['update:open', 'submit', 'clear-error', 'update-answer'])

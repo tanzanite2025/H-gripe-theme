@@ -157,6 +157,7 @@ const props = defineProps({
   selectionState: { type: [Boolean, String], default: false },
   canEdit: { type: Boolean, default: false },
   canDelete: { type: Boolean, default: false },
+  localeName: { type: Function, required: true },
 })
 
 const emit = defineEmits([
@@ -174,7 +175,6 @@ const emit = defineEmits([
 const isProductSelected = (productId) => props.selectedProducts.some((product) => product.id === productId)
 const getStatusName = (status) => ({ active: '在售', inactive: '下架', out_of_stock: '缺货' })[status] || status
 const statusTone = (status) => ({ active: 'green', inactive: 'gray', out_of_stock: 'coral' })[status] || 'gray'
-const localeName = (locale) => ({ zh: '中文', en: 'English' })[locale] || locale || '-'
 const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 const formatMoney = (amount) => Number(amount || 0).toFixed(2)
 </script>

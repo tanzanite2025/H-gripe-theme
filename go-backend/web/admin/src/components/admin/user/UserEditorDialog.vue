@@ -98,8 +98,9 @@
                   <SelectTrigger class="w-full"><SelectValue placeholder="请选择语言" /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="zh">中文</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                    {{ language.label }}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -159,7 +160,8 @@ defineProps({
   open: { type: Boolean, default: false },
   mode: { type: String, default: 'create' },
   submitting: { type: Boolean, default: false },
-  showPassword: { type: Boolean, default: false }
+  showPassword: { type: Boolean, default: false },
+  languageOptions: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['update:open', 'update:showPassword', 'submit'])

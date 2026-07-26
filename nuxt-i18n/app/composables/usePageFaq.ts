@@ -1,14 +1,16 @@
 import { computed, ref } from 'vue'
 import { useAsyncData } from '#imports'
-import { fetchFaqData, getFaqData } from '~/data/faq'
+import { fetchFaqData } from '~/data/faq'
 import type { FaqCategory, PageFaqProps } from '~/data/faq/types'
 
 export async function usePageFaq(props: PageFaqProps) {
+  const { locale } = useI18n()
   const { data: asyncFaqData } = await useAsyncData(
-    `faq-${props.pageId}`,
+    () => `faq-${props.pageId}-${locale.value}`,
     () => props.data ? Promise.resolve(props.data) : fetchFaqData(props.pageId),
+    { watch: [locale] }
   )
-  const faqData = computed(() => props.data || asyncFaqData.value || getFaqData(props.pageId))
+  const faqData = computed(() => props.data || asyncFaqData.value || null)
   const displayTitle = computed(() => props.title || faqData.value?.title || 'Frequently Asked Questions')
   const expandedItems = ref<Set<string>>(new Set())
 

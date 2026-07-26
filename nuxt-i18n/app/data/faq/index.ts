@@ -2,7 +2,8 @@
  * FAQ Data Registry
  *
  * The Go backend owns editable page/category metadata and FAQ content for
- * production rendering. Static files remain the storefront fallback.
+ * storefront rendering. Static FAQ files are retained only as legacy source
+ * data and are not used as a storefront fallback.
  */
 
 export {

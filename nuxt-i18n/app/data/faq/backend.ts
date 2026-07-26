@@ -1,5 +1,4 @@
 import type { FaqCategory, PageFaqData } from './types'
-import { getAllFaqData, getFaqData, getFaqDataByRoutePath } from './registry'
 import { normalizeFaqRoutePath } from './routing'
 
 type LegacyFaqItem = {
@@ -29,8 +28,8 @@ function hasAnyFaqContent(pages?: PageFaqData[]): pages is PageFaqData[] {
 function getBackendFaqLocale() {
   try {
     const { locale } = useI18n()
-    const currentLocale = String(locale.value || 'en').toLowerCase().replace('_', '-')
-    if (currentLocale.startsWith('zh-')) return 'zh'
+    const currentLocale = String(locale.value || 'en').trim().toLowerCase().replace(/-/g, '_')
+    if (['zh', 'zh_cn', 'zh_hans', 'zh_sg'].includes(currentLocale)) return 'zh_cn'
     return currentLocale || 'en'
   } catch {
     return 'en'
@@ -142,8 +141,6 @@ function buildPagesFromLegacyItems(items: LegacyFaqItem[]): PageFaqData[] {
  * Fetch FAQ data for a specific page from Go backend.
  */
 export async function fetchFaqData(pageId: string): Promise<PageFaqData | null> {
-  const fallback = getFaqData(pageId) ?? null
-
   try {
     const structured = await $fetch<{ page?: PageFaqData }>(`${getFaqApiBase()}/content/faq-pages/${pageId}`, {
       query: { locale: getBackendFaqLocale() }
@@ -159,18 +156,17 @@ export async function fetchFaqData(pageId: string): Promise<PageFaqData | null> 
     })
 
     if (!res.data) throw new Error('[CRITICAL] FAQ data missing')
-    if (res.data.length === 0) return fallback
+    if (res.data.length === 0) return null
 
     return buildPageFromLegacyItems(pageId, res.data)
   } catch (error) {
     logFaqFetchError('Failed to fetch FAQs from Go backend:', error)
-    return fallback
+    return null
   }
 }
 
 export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFaqData | null> {
   const normalizedPath = normalizeFaqRoutePath(routePath)
-  const fallback = getFaqDataByRoutePath(normalizedPath) ?? null
 
   try {
     const structured = await $fetch<{ page?: PageFaqData }>(`${getFaqApiBase()}/content/faq-pages/by-route`, {
@@ -181,15 +177,13 @@ export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFa
     logFaqFetchError('Failed to fetch structured FAQ by route from Go backend:', error)
   }
 
-  return fallback
+  return null
 }
 
 /**
  * Fetch all FAQ data from Go backend.
  */
 export async function fetchAllFaqData(): Promise<PageFaqData[]> {
-  const fallback = getAllFaqData()
-
   try {
     const structured = await $fetch<{ pages?: PageFaqData[] }>(`${getFaqApiBase()}/content/faq-pages`, {
       query: { locale: getBackendFaqLocale() }
@@ -205,11 +199,11 @@ export async function fetchAllFaqData(): Promise<PageFaqData[]> {
     })
 
     if (!res.data) throw new Error('[CRITICAL] FAQ data missing')
-    if (res.data.length === 0) return fallback
+    if (res.data.length === 0) return []
 
     return buildPagesFromLegacyItems(res.data)
   } catch (error) {
     logFaqFetchError('Failed to fetch all FAQs from Go backend:', error)
-    return fallback
+    return []
   }
 }

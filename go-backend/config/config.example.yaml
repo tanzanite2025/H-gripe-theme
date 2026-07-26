@@ -39,7 +39,6 @@ i18n:
   default_locale: "en"
   supported_locales:
     - en
-    - zh
     - fr
     - de
     - es
@@ -55,23 +54,24 @@ i18n:
     - sv
     - id
     - ms
-    - nl
+    - be
     - tr
-    - fil
-    - tl
-    - jv
+    - bn
+    - fa
+    - nl
     - hi
     - ur
     - mr
-    - ta
-    - te
-    - bn
-    - fa
-    - ps
-    - ha
-    - sw
     - pcm
-    - be
+    - fil
+    - te
+    - ha
+    - ps
+    - sw
+    - tl
+    - ta
+    - jv
+    - zh_cn
 
 cors:
   allowed_origins:

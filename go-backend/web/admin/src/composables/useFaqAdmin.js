@@ -1,14 +1,15 @@
-import { onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 import { toast } from 'vue-sonner'
 import { faqAdminApi } from '@/api/faq'
 import { useFaqEditor } from '@/composables/faq/useFaqEditor'
 import { useFaqList } from '@/composables/faq/useFaqList'
 import { useFaqStructure } from '@/composables/faq/useFaqStructure'
+import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import {
+  buildLocaleFilterOptions,
+  buildStructureLocaleOptions,
   domainName,
-  FAQ_LOCALE_FILTER_OPTIONS,
   FAQ_STATUS_FILTER_OPTIONS,
-  FAQ_STRUCTURE_LOCALES,
   formatDate,
   localeName,
   plainTextFromHTML,
@@ -33,13 +34,24 @@ export function useFaqAdmin() {
 
   let refreshFAQs = async () => {}
 
-  const structure = useFaqStructure({ onChanged: () => refreshFAQs() })
+  const supportedLanguages = useSupportedLanguages()
+  const localeFilterOptions = computed(() => buildLocaleFilterOptions(supportedLanguages.enabledLanguages.value))
+  const structureLocales = computed(() => buildStructureLocaleOptions(supportedLanguages.enabledLanguages.value))
+  const displayLocaleName = (locale) => localeName(locale, supportedLanguages.enabledLanguages.value)
+
+  const structure = useFaqStructure({
+    languages: supportedLanguages.enabledLanguages,
+    defaultLocale: supportedLanguages.defaultLocale,
+    onChanged: () => refreshFAQs()
+  })
   const list = useFaqList({
     faqStructures: structure.faqStructures,
     allStructurePages: structure.allStructurePages
   })
   const editor = useFaqEditor({
     faqStructures: structure.faqStructures,
+    activeStructureLocale: structure.activeStructureLocale,
+    defaultLocale: supportedLanguages.defaultLocale,
     onChanged: () => refreshFAQs()
   })
 
@@ -98,7 +110,10 @@ export function useFaqAdmin() {
     }
   }
 
-  onMounted(refreshFAQs)
+  onMounted(async () => {
+    await supportedLanguages.fetchLanguages()
+    await refreshFAQs()
+  })
 
   return {
     loading: list.loading,
@@ -122,8 +137,9 @@ export function useFaqAdmin() {
     categoryForm: structure.categoryForm,
     confirmation,
     statusFilterOptions: FAQ_STATUS_FILTER_OPTIONS,
-    localeFilterOptions: FAQ_LOCALE_FILTER_OPTIONS,
-    structureLocales: FAQ_STRUCTURE_LOCALES,
+    localeFilterOptions,
+    structureLocales,
+    languageOptions: supportedLanguages.languageOptions,
     faqStructure: structure.faqStructure,
     structurePageOptions: structure.structurePageOptions,
     faqPageOptions: editor.faqPageOptions,
@@ -132,7 +148,7 @@ export function useFaqAdmin() {
     categoryFilterOptions: list.categoryFilterOptions,
     selectionState: list.selectionState,
     hasPermission,
-    localeName,
+    localeName: displayLocaleName,
     statusName,
     statusTone,
     visibilityName,

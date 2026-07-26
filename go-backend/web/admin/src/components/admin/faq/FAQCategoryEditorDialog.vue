@@ -22,8 +22,9 @@
             <Select v-model="categoryForm.locale">
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="zh">中文</SelectItem>
-                <SelectItem value="en">English</SelectItem>
+                <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
+                  {{ language.label }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </AdminFormField>
@@ -83,7 +84,8 @@ const props = defineProps({
   mode: { type: String, required: true },
   categoryForm: { type: Object, required: true },
   submitting: { type: Boolean, default: false },
-  structurePageOptions: { type: Array, required: true }
+  structurePageOptions: { type: Array, required: true },
+  languageOptions: { type: Array, required: true }
 })
 
 const emit = defineEmits(['update:open', 'submit'])

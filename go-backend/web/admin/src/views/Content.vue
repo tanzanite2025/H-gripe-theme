@@ -49,6 +49,7 @@
       :form="postForm"
       :errors="formErrors"
       :submitting="submitting"
+      :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
     />
@@ -87,6 +88,7 @@ import ContentTranslationsDialog from '@/components/admin/content/ContentTransla
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import { Button } from '@/components/ui/button'
+import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
@@ -103,6 +105,9 @@ const currentPost = ref(null)
 const translations = ref([])
 const stats = ref({})
 const formErrors = reactive({})
+const supportedLanguages = useSupportedLanguages()
+const languageOptions = supportedLanguages.languageOptions
+const resolveDefaultLocale = () => supportedLanguages.defaultLocale.value || ''
 
 const filters = reactive({ search: '', status: 'all', locale: 'all' })
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
@@ -113,7 +118,7 @@ const postForm = reactive({
   content: '',
   excerpt: '',
   status: 'draft',
-  locale: 'zh',
+  locale: resolveDefaultLocale(),
   featured_image: '',
   tags: '',
   meta_title: '',
@@ -139,11 +144,7 @@ const statusFilterOptions = [
   { label: '已发布', value: 'published' },
   { label: '已归档', value: 'archived' }
 ]
-const localeFilterOptions = [
-  { label: '全部语言', value: 'all' },
-  { label: '中文', value: 'zh' },
-  { label: 'English', value: 'en' }
-]
+const localeFilterOptions = supportedLanguages.localeFilterOptions
 
 const statItems = computed(() => [
   { key: 'total', label: '总文章数', value: stats.value.total || 0, icon: FileText, tone: 'gray' },
@@ -159,7 +160,7 @@ const selectionState = computed(() => {
 const hasPermission = (permission) => authStore.hasPermission(permission)
 const getStatusName = (status) => ({ draft: '草稿', published: '已发布', archived: '已归档' })[status] || status
 const statusTone = (status) => ({ draft: 'gray', published: 'green', archived: 'amber' })[status] || 'gray'
-const localeName = (locale) => ({ zh: '中文', en: 'English' })[locale] || locale || '-'
+const localeName = supportedLanguages.localeName
 const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 
 const clearFormErrors = () => Object.keys(formErrors).forEach((key) => delete formErrors[key])
@@ -183,6 +184,7 @@ const validateForm = (payload) => {
   clearFormErrors()
   if (!payload.title) formErrors.title = '请输入文章标题'
   if (!payload.slug) formErrors.slug = '请输入 URL slug'
+  if (!payload.locale) formErrors.locale = '请选择语言'
   if (Object.keys(formErrors).length > 0) {
     toast.error('请检查文章表单中的必填项')
     return false
@@ -197,7 +199,7 @@ const resetForm = () => {
     content: '',
     excerpt: '',
     status: 'draft',
-    locale: 'zh',
+    locale: resolveDefaultLocale(),
     featured_image: '',
     tags: '',
     meta_title: '',
@@ -261,7 +263,7 @@ const showEditDialog = (post) => {
     content: post.content || '',
     excerpt: post.excerpt || '',
     status: post.status || 'draft',
-    locale: post.locale || 'zh',
+    locale: post.locale || resolveDefaultLocale(),
     featured_image: post.featured_image || '',
     tags: post.tags || '',
     meta_title: post.meta_title || '',
@@ -376,5 +378,5 @@ const executeConfirmedAction = async () => {
   }
 }
 
-onMounted(() => Promise.all([fetchStats(), fetchPosts()]))
+onMounted(() => Promise.all([supportedLanguages.fetchLanguages(), fetchStats(), fetchPosts()]))
 </script>

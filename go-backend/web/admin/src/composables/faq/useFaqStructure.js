@@ -1,12 +1,16 @@
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { faqAdminApi } from '@/api/faq'
 import { buildStructurePageOptions } from '@/lib/faqAdminPresentation'
 
-export function useFaqStructure({ onChanged }) {
+export function useFaqStructure({ languages, defaultLocale, onChanged }) {
   const structureLoading = ref(false)
-  const faqStructures = reactive({ zh: [], en: [] })
-  const activeStructureLocale = ref('zh')
+  const faqStructures = reactive({})
+  const localeCodes = computed(() => (languages?.value || [])
+    .filter((language) => language.enabled !== false && language.code)
+    .map((language) => language.code))
+  const resolveDefaultLocale = () => defaultLocale?.value || localeCodes.value[0] || ''
+  const activeStructureLocale = ref(resolveDefaultLocale())
   const pageDialogVisible = ref(false)
   const pageSubmitting = ref(false)
   const categoryDialogVisible = ref(false)
@@ -17,7 +21,7 @@ export function useFaqStructure({ onChanged }) {
     page_id: '',
     route_path: '',
     domain: '',
-    locale: 'zh',
+    locale: '',
     title: '',
     subtitle: '',
     status: 'active',
@@ -29,7 +33,7 @@ export function useFaqStructure({ onChanged }) {
     category_key: '',
     name: '',
     icon: '',
-    locale: 'zh',
+    locale: '',
     status: 'active',
     sort_order: 0
   })
@@ -40,21 +44,47 @@ export function useFaqStructure({ onChanged }) {
     buildStructurePageOptions(faqStructure.value, allStructurePages.value)
   ))
 
-  const fetchFAQStructure = async (locale = activeStructureLocale.value) => {
-    if (locale === activeStructureLocale.value) structureLoading.value = true
+  const syncStructureLocales = (codes) => {
+    for (const locale of Object.keys(faqStructures)) {
+      if (!codes.includes(locale)) delete faqStructures[locale]
+    }
+    for (const locale of codes) {
+      if (!Object.prototype.hasOwnProperty.call(faqStructures, locale)) {
+        faqStructures[locale] = []
+      }
+    }
+    if (!codes.includes(activeStructureLocale.value)) {
+      activeStructureLocale.value = resolveDefaultLocale()
+    }
+  }
+
+  const fetchFAQStructure = async (locale = activeStructureLocale.value, { setLoading = true } = {}) => {
+    if (!locale) return
+    if (setLoading) structureLoading.value = true
     try {
       const payload = await faqAdminApi.listStructure(locale)
       faqStructures[locale] = payload.pages || []
     } catch (error) {
       console.error('Failed to fetch FAQ structure:', error)
     } finally {
-      if (locale === activeStructureLocale.value) structureLoading.value = false
+      if (setLoading) structureLoading.value = false
     }
   }
 
-  const refreshFAQStructure = () => Promise.all([fetchFAQStructure('zh'), fetchFAQStructure('en')])
+  const refreshFAQStructure = async () => {
+    const codes = localeCodes.value
+    if (codes.length === 0) return []
+
+    structureLoading.value = true
+    try {
+      return await Promise.all(codes.map((locale) => fetchFAQStructure(locale, { setLoading: false })))
+    } finally {
+      structureLoading.value = false
+    }
+  }
 
   const switchStructureLocale = async (locale) => {
+    if (!locale || !localeCodes.value.includes(locale)) return
     activeStructureLocale.value = locale
     await fetchFAQStructure(locale)
   }
@@ -74,8 +104,8 @@ export function useFaqStructure({ onChanged }) {
   }
 
   const submitPageForm = async () => {
-    if (!pageForm.page_id || !pageForm.title.trim()) {
-      toast.error('页面标识和页面标题不能为空')
+    if (!pageForm.page_id || !pageForm.locale || !pageForm.title.trim()) {
+      toast.error('页面标识、语言和页面标题不能为空')
       return
     }
 
@@ -151,6 +181,10 @@ export function useFaqStructure({ onChanged }) {
       toast.error('页面、分类标识和分类名称不能为空')
       return
     }
+    if (!payload.locale) {
+      toast.error('分类语言不能为空')
+      return
+    }
 
     categorySubmitting.value = true
     try {
@@ -169,6 +203,10 @@ export function useFaqStructure({ onChanged }) {
       categorySubmitting.value = false
     }
   }
+
+  watch(localeCodes, (codes) => {
+    syncStructureLocales(codes)
+  }, { immediate: true })
 
   return {
     structureLoading,

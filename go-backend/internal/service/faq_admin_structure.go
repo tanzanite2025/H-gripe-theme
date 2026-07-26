@@ -7,6 +7,9 @@ import (
 )
 
 func (s *FAQService) ListAdminStructure(locale string) ([]FAQPageAdminView, error) {
+	if locale != "" {
+		locale = normalizeLocale(locale)
+	}
 	pages, err := s.faqRepo.ListPages(locale, true)
 	if err != nil {
 		return nil, err

@@ -67,6 +67,7 @@
       :submitting="submitting"
       :faq-page-options="faqPageOptions"
       :available-faq-categories="availableFAQCategories"
+      :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
       @update-answer="updateFAQAnswer"
@@ -86,6 +87,7 @@
       :category-form="categoryForm"
       :submitting="categorySubmitting"
       :structure-page-options="structurePageOptions"
+      :language-options="languageOptions"
       @submit="submitCategoryForm"
     />
 
@@ -137,6 +139,7 @@ const {
   statusFilterOptions,
   localeFilterOptions,
   structureLocales,
+  languageOptions,
   faqStructure,
   structurePageOptions,
   faqPageOptions,
