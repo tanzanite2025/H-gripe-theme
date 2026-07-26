@@ -232,7 +232,6 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 
 	emptyBusinessTables := []string{
 		"users",
-		"faqs",
 		"galleries",
 		"gallery_images",
 		"product_registrations",
@@ -250,6 +249,14 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		if count != 0 {
 			t.Fatalf("business table %s contains %d seeded rows", table, count)
 		}
+	}
+
+	var faqCount int
+	if err := testDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM faqs").Scan(&faqCount); err != nil {
+		t.Fatalf("count seeded FAQs: %v", err)
+	}
+	if faqCount == 0 {
+		t.Fatalf("expected seeded FAQs")
 	}
 
 	assertProductTemplateSourceReset(ctx, t, testDB)

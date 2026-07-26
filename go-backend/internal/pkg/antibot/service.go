@@ -111,7 +111,9 @@ func (s *Service) verifyTurnstile(ctx context.Context, token, remoteIP string) e
 	if err != nil {
 		return ErrServiceUnavailable
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	if response.StatusCode != http.StatusOK {
 		return ErrServiceUnavailable
 	}

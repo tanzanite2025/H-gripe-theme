@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +19,7 @@ func TestRateLimitByUserUsesUserIDContextKey(t *testing.T) {
 		c.Status(http.StatusOK)
 	})
 
-	firstUserRequest := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	firstUserRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/limited", nil)
 	firstUserRequest.Header.Set("X-Test-User", "1")
 	firstUserRecorder := httptest.NewRecorder()
 	router.ServeHTTP(firstUserRecorder, firstUserRequest)
@@ -26,7 +27,7 @@ func TestRateLimitByUserUsesUserIDContextKey(t *testing.T) {
 		t.Fatalf("first user first request status = %d, want %d", firstUserRecorder.Code, http.StatusOK)
 	}
 
-	secondUserRequest := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	secondUserRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/limited", nil)
 	secondUserRequest.Header.Set("X-Test-User", "1")
 	secondUserRecorder := httptest.NewRecorder()
 	router.ServeHTTP(secondUserRecorder, secondUserRequest)
@@ -34,7 +35,7 @@ func TestRateLimitByUserUsesUserIDContextKey(t *testing.T) {
 		t.Fatalf("same user burst request status = %d, want %d", secondUserRecorder.Code, http.StatusOK)
 	}
 
-	thirdUserRequest := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	thirdUserRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/limited", nil)
 	thirdUserRequest.Header.Set("X-Test-User", "1")
 	thirdUserRecorder := httptest.NewRecorder()
 	router.ServeHTTP(thirdUserRecorder, thirdUserRequest)
@@ -42,7 +43,7 @@ func TestRateLimitByUserUsesUserIDContextKey(t *testing.T) {
 		t.Fatalf("same user over burst request status = %d, want %d", thirdUserRecorder.Code, http.StatusTooManyRequests)
 	}
 
-	otherUserRequest := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	otherUserRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/limited", nil)
 	otherUserRequest.Header.Set("X-Test-User", "2")
 	otherUserRecorder := httptest.NewRecorder()
 	router.ServeHTTP(otherUserRecorder, otherUserRequest)

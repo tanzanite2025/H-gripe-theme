@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +19,7 @@ func TestSecurityHeadersIncludesLaunchHardeningHeaders(t *testing.T) {
 	})
 
 	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health", nil))
+	router.ServeHTTP(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil))
 
 	headers := recorder.Result().Header
 	if headers.Get("Content-Security-Policy") == "" {
