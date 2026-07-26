@@ -1,0 +1,20 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Historical documentation examples only; keep all other findings blocking."
+condition = "AND"
+regexTarget = "match"
+paths = [
+  '''(^|/)API_TESTING_GUIDE\.md$''',
+  '''(^|/)API\.md$''',
+  '''(^|/)SUBSCRIPTION_QUICK_REFERENCE\.md$''',
+  '''(^|/)QUICK_START\.md$''',
+  '''(^|/)PROJECT_COMPLETE\.md$''',
+  '''(^|/)BUGFIX_P1_BROWSING_HISTORY\.md$''',
+]
+regexes = [
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.''',
+  '''abc123def456\.\.\.''',
+  '''Authorization:\s*Bearer\s+YOUR_(?:TOKEN(?:_HERE)?|JWT_TOKEN)''',
+]
