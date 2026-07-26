@@ -212,6 +212,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	retiredTables := []string{
 		"chat_messages",
 		"chat_sessions",
+		"shipping_template_bindings",
 	}
 	for _, table := range retiredTables {
 		var exists bool
@@ -286,7 +287,7 @@ func latestUpMigrationVersion(t *testing.T, migrationDir string) int {
 func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql.DB) {
 	t.Helper()
 
-	for _, table := range []string{"products", "product_variants", "product_media", "product_spec_values", "shipping_template_bindings", "shipping_packaging_rule_applies"} {
+	for _, table := range []string{"products", "product_variants", "product_media", "product_spec_values", "shipping_packaging_rule_applies"} {
 		var count int
 		if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+pq.QuoteIdentifier(table)).Scan(&count); err != nil {
 			t.Fatalf("count rows in %s: %v", table, err)

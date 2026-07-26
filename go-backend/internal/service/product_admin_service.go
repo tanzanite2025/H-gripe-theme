@@ -25,42 +25,45 @@ type ProductMediaInput struct {
 }
 
 type ProductCreateInput struct {
-	ProductTypeID *uint
-	Name          string
-	Slug          string
-	Description   string
-	ShortDesc     string
-	Status        string
-	Locale        string
-	ParentID      *uint
-	Featured      bool
-	MetaTitle     string
-	MetaDesc      string
-	SpecValues    map[string]string
-	Variants      []ProductVariantInput
-	Media         []ProductMediaInput
+	ProductTypeID      *uint
+	ShippingTemplateID *uint
+	Name               string
+	Slug               string
+	Description        string
+	ShortDesc          string
+	Status             string
+	Locale             string
+	ParentID           *uint
+	Featured           bool
+	MetaTitle          string
+	MetaDesc           string
+	SpecValues         map[string]string
+	Variants           []ProductVariantInput
+	Media              []ProductMediaInput
 }
 
 type ProductUpdateInput struct {
-	ProductTypeID       *uint
-	UpdateProductTypeID bool
-	Name                *string
-	Slug                *string
-	Description         *string
-	ShortDesc           *string
-	Status              *string
-	Locale              *string
-	ParentID            *uint
-	UpdateParentID      bool
-	Featured            *bool
-	MetaTitle           *string
-	MetaDesc            *string
-	SpecValues          map[string]string
-	UpdateSpecValues    bool
-	Variants            []ProductVariantInput
-	UpdateVariants      bool
-	Media               []ProductMediaInput
-	UpdateMedia         bool
+	ProductTypeID            *uint
+	UpdateProductTypeID      bool
+	ShippingTemplateID       *uint
+	UpdateShippingTemplateID bool
+	Name                     *string
+	Slug                     *string
+	Description              *string
+	ShortDesc                *string
+	Status                   *string
+	Locale                   *string
+	ParentID                 *uint
+	UpdateParentID           bool
+	Featured                 *bool
+	MetaTitle                *string
+	MetaDesc                 *string
+	SpecValues               map[string]string
+	UpdateSpecValues         bool
+	Variants                 []ProductVariantInput
+	UpdateVariants           bool
+	Media                    []ProductMediaInput
+	UpdateMedia              bool
 }
 
 func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured string) ([]product.Product, int64, error) {
@@ -94,18 +97,19 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	}
 
 	newProduct := &product.Product{
-		ProductTypeID: input.ProductTypeID,
-		SKU:           defaultVariantSKU(variants),
-		Name:          input.Name,
-		Slug:          input.Slug,
-		Description:   input.Description,
-		ShortDesc:     input.ShortDesc,
-		Status:        input.Status,
-		Locale:        input.Locale,
-		ParentID:      input.ParentID,
-		Featured:      input.Featured,
-		MetaTitle:     input.MetaTitle,
-		MetaDesc:      input.MetaDesc,
+		ProductTypeID:      input.ProductTypeID,
+		ShippingTemplateID: input.ShippingTemplateID,
+		SKU:                defaultVariantSKU(variants),
+		Name:               input.Name,
+		Slug:               input.Slug,
+		Description:        input.Description,
+		ShortDesc:          input.ShortDesc,
+		Status:             input.Status,
+		Locale:             input.Locale,
+		ParentID:           input.ParentID,
+		Featured:           input.Featured,
+		MetaTitle:          input.MetaTitle,
+		MetaDesc:           input.MetaDesc,
 	}
 
 	if err := s.productRepo.CreateWithSpecValuesVariantsAndMedia(newProduct, specValues, variants, mediaItems); err != nil {
@@ -127,6 +131,9 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 
 	if input.UpdateProductTypeID {
 		existingProduct.ProductTypeID = input.ProductTypeID
+	}
+	if input.UpdateShippingTemplateID {
+		existingProduct.ShippingTemplateID = input.ShippingTemplateID
 	}
 	if input.Name != nil {
 		existingProduct.Name = *input.Name

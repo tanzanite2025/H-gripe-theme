@@ -5,7 +5,6 @@ import shippingApi from '@/api/shipping'
 const titleByType: Record<string, string> = {
   template: '删除运费模板？',
   zone: '删除配送区域？',
-  binding: '删除模板绑定？',
   carrier: '删除承运商？',
   carrierService: '删除线路服务？',
   trackingProvider: '删除追踪配置？',
@@ -54,10 +53,6 @@ export const useShippingDeleteManager = (refreshers: Record<string, any>) => {
         await shippingApi.deleteZone(deleteTarget.value.id)
         toast.success('配送区域已删除')
         await refreshers.fetchZones?.()
-      } else if (deleteType.value === 'binding') {
-        await shippingApi.deleteTemplateBinding(deleteTarget.value.id)
-        toast.success('模板绑定已删除')
-        await refreshers.fetchTemplateBindings?.()
       } else if (deleteType.value === 'carrier') {
         await shippingApi.deleteCarrier(deleteTarget.value.id)
         toast.success('承运商已删除')

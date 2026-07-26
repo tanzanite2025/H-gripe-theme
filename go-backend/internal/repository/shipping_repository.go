@@ -51,6 +51,25 @@ func (r *ShippingRepository) FindTemplateByID(id uint) (*shipping.ShippingTempla
 	return &t, nil
 }
 
+func (r *ShippingRepository) FindTemplatesByIDs(ids []uint) (map[uint]*shipping.ShippingTemplate, error) {
+	templatesByID := make(map[uint]*shipping.ShippingTemplate, len(ids))
+	if len(ids) == 0 {
+		return templatesByID, nil
+	}
+
+	var templates []shipping.ShippingTemplate
+	if err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
+		return db.Order("min_value ASC, id ASC")
+	}).Where("id IN ?", ids).Find(&templates).Error; err != nil {
+		return nil, err
+	}
+
+	for i := range templates {
+		templatesByID[templates[i].ID] = &templates[i]
+	}
+	return templatesByID, nil
+}
+
 // FindAllTemplates 閺屻儲澹橀幍鈧張澶嬆侀弶?
 func (r *ShippingRepository) FindAllTemplates() ([]shipping.ShippingTemplate, error) {
 	var templates []shipping.ShippingTemplate
@@ -119,61 +138,8 @@ func (r *ShippingRepository) DeleteTemplate(id uint) error {
 		if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingRule{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingTemplateBinding{}).Error; err != nil {
-			return err
-		}
 		return tx.Delete(&shipping.ShippingTemplate{}, id).Error
 	})
-}
-
-func (r *ShippingRepository) FindAllTemplateBindings() ([]shipping.ShippingTemplateBinding, error) {
-	var bindings []shipping.ShippingTemplateBinding
-	err := r.db.Preload("Template").Order("priority DESC").Order("id DESC").Find(&bindings).Error
-	return bindings, err
-}
-
-func (r *ShippingRepository) FindEnabledTemplateBindingsWithTemplates() ([]shipping.ShippingTemplateBinding, error) {
-	var bindings []shipping.ShippingTemplateBinding
-	err := r.db.
-		Preload("Template.Rules", func(db *gorm.DB) *gorm.DB {
-			return db.Order("min_value ASC, id ASC")
-		}).
-		Preload("Template").
-		Where("enabled = ?", true).
-		Order("priority DESC").
-		Order("id DESC").
-		Find(&bindings).Error
-	return bindings, err
-}
-
-func (r *ShippingRepository) FindTemplateBindingByID(id uint) (*shipping.ShippingTemplateBinding, error) {
-	var binding shipping.ShippingTemplateBinding
-	err := r.db.Preload("Template").First(&binding, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &binding, nil
-}
-
-func (r *ShippingRepository) CreateTemplateBinding(binding *shipping.ShippingTemplateBinding) error {
-	return r.db.Create(binding).Error
-}
-
-func (r *ShippingRepository) UpdateTemplateBinding(binding *shipping.ShippingTemplateBinding) error {
-	updates := map[string]interface{}{
-		"template_id":     binding.TemplateID,
-		"scope":           binding.Scope,
-		"product_type_id": binding.ProductTypeID,
-		"product_id":      binding.ProductID,
-		"variant_id":      binding.VariantID,
-		"priority":        binding.Priority,
-		"enabled":         binding.Enabled,
-	}
-	return r.db.Model(&shipping.ShippingTemplateBinding{}).Where("id = ?", binding.ID).Updates(updates).Error
-}
-
-func (r *ShippingRepository) DeleteTemplateBinding(id uint) error {
-	return r.db.Delete(&shipping.ShippingTemplateBinding{}, id).Error
 }
 
 // ShippingRule 閻╃鍙ч弬瑙勭《

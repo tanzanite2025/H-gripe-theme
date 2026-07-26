@@ -79,18 +79,6 @@
       @show-applies="emit('show-packaging-applies', $event)"
     />
 
-    <ShippingTemplateBindingsPanel
-      :template-bindings="templateBindings"
-      :templates="templates"
-      :loading="loading.bindings"
-      :can-create="canCreate"
-      :can-edit="canEdit"
-      :can-delete="canDelete"
-      @create="emit('create-binding')"
-      @edit="emit('edit-binding', $event)"
-      @delete="emit('delete', 'binding', $event)"
-    />
-
     <TrackingProvidersPanel
       :tracking-providers="trackingProviders"
       :loading="loading.tracking"
@@ -121,7 +109,6 @@ import { ref } from 'vue'
 import {
   Calculator,
   ClipboardList,
-  Link2,
   MapPin,
   Package,
   Radar,
@@ -134,7 +121,6 @@ import ShippingCarriersPanel from '@/components/admin/shipping/ShippingCarriersP
 import ShippingOverviewPanel from '@/components/admin/shipping/ShippingOverviewPanel.vue'
 import ShippingPackagingPanel from '@/components/admin/shipping/ShippingPackagingPanel.vue'
 import ShippingQuoteCalculator from '@/components/admin/shipping/ShippingQuoteCalculator.vue'
-import ShippingTemplateBindingsPanel from '@/components/admin/shipping/ShippingTemplateBindingsPanel.vue'
 import ShippingTemplatesPanel from '@/components/admin/shipping/ShippingTemplatesPanel.vue'
 import ShippingZonesPanel from '@/components/admin/shipping/ShippingZonesPanel.vue'
 import TrackingProvidersPanel from '@/components/admin/shipping/TrackingProvidersPanel.vue'
@@ -145,7 +131,6 @@ defineProps({
   activeTab: { type: String, default: 'overview' },
   templates: { type: Array, default: () => [] },
   zones: { type: Array, default: () => [] },
-  templateBindings: { type: Array, default: () => [] },
   carriers: { type: Array, default: () => [] },
   carrierServices: { type: Array, default: () => [] },
   trackingProviders: { type: Array, default: () => [] },
@@ -172,8 +157,6 @@ const emit = defineEmits([
   'create-packaging',
   'edit-packaging',
   'show-packaging-applies',
-  'create-binding',
-  'edit-binding',
   'create-tracking-provider',
   'edit-tracking-provider',
   'copy-webhook',
@@ -192,7 +175,6 @@ const tabItems = [
   { value: 'services', label: '线路服务', icon: Route },
   { value: 'quote', label: '试算器', icon: Calculator },
   { value: 'packaging', label: '包装规则', icon: Package },
-  { value: 'bindings', label: '产品/SKU 绑定', icon: Link2 },
   { value: 'tracking', label: '追踪配置', icon: Radar },
   { value: 'trackingShipments', label: '追踪任务', icon: RefreshCw },
 ]

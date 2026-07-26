@@ -92,17 +92,6 @@ export const defaultShippingZoneForm = () => ({
   enabled: true,
 })
 
-export const defaultShippingTemplateBindingForm = () => ({
-  id: null,
-  template_id: '',
-  scope: 'default',
-  product_type_id: '',
-  product_id: '',
-  variant_id: '',
-  priority: 0,
-  enabled: true,
-})
-
 export const defaultShippingPackagingForm = () => ({
   id: null,
   rule_name: '',

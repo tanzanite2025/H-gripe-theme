@@ -16,8 +16,8 @@ import (
 
 func TestQuoteCartUsesSkuWeightWhenNoPackagingRule(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
-	record, variant := seedQuoteProduct(t, db, 50, 900)
-	seedWeightQuoteTemplate(t, db)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
 		Country:  "US",
@@ -38,8 +38,8 @@ func TestQuoteCartUsesSkuWeightWhenNoPackagingRule(t *testing.T) {
 
 func TestQuoteCartAddsPackagingWeightToChargeWeight(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
-	record, variant := seedQuoteProduct(t, db, 50, 900)
-	seedWeightQuoteTemplate(t, db)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 
 	packagingRule := shippingdomain.PackagingRule{
 		RuleName:  "Bike frame carton",
@@ -75,8 +75,8 @@ func TestQuoteCartAddsPackagingWeightToChargeWeight(t *testing.T) {
 
 func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
-	record, variant := seedQuoteProduct(t, db, 50, 900)
 	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
 
 	expensiveService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
@@ -127,8 +127,8 @@ func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
 
 func TestQuoteCartUsesPackagingDimensionsForVolumetricCarrierService(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
-	record, variant := seedQuoteProduct(t, db, 50, 900)
 	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "YunExpress", "YUN")
 
 	packagingRule := shippingdomain.PackagingRule{
@@ -196,6 +196,44 @@ func TestCreatePackagingRuleApplyRejectsSecondRuleForProduct(t *testing.T) {
 	assert.Contains(t, err.Error(), "product already has a packaging rule")
 }
 
+func TestQuoteCartUsesVariantShippingTemplateOverride(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	productTemplate := seedWeightQuoteTemplate(t, db)
+	variantTemplate := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, productTemplate.ID)
+	require.NoError(t, db.Model(&productdomain.ProductVariant{}).
+		Where("id = ?", variant.ID).
+		Update("shipping_template_id", variantTemplate.ID).Error)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, quote.Items, 1)
+	assert.Equal(t, variantTemplate.ID, quote.Items[0].TemplateID)
+}
+
+func TestQuoteCartRejectsMissingShippingTemplate(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	record, variant := seedQuoteProduct(t, db, 50, 900)
+
+	_, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1},
+		},
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "shipping template is missing")
+}
+
 func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 	t.Helper()
 
@@ -220,7 +258,6 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 		&productdomain.ProductVariant{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.ShippingRule{},
-		&shippingdomain.ShippingTemplateBinding{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
 		&shippingdomain.PackagingRule{},
@@ -232,16 +269,21 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 	return db, NewShippingService(shippingRepo, productRepo)
 }
 
-func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int) (productdomain.Product, productdomain.ProductVariant) {
+func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int, shippingTemplateIDs ...uint) (productdomain.Product, productdomain.ProductVariant) {
 	t.Helper()
 
+	var shippingTemplateID *uint
+	if len(shippingTemplateIDs) > 0 {
+		shippingTemplateID = &shippingTemplateIDs[0]
+	}
 	record := productdomain.Product{
-		SKU:    "SKU-QUOTE",
-		Name:   "Quote Product",
-		Slug:   "quote-product",
-		Price:  price,
-		Stock:  10,
-		Status: "active",
+		ShippingTemplateID: shippingTemplateID,
+		SKU:                "SKU-QUOTE",
+		Name:               "Quote Product",
+		Slug:               "quote-product",
+		Price:              price,
+		Stock:              10,
+		Status:             "active",
 	}
 	require.NoError(t, db.Create(&record).Error)
 
@@ -275,11 +317,6 @@ func seedWeightQuoteTemplate(t *testing.T, db *gorm.DB) shippingdomain.ShippingT
 		},
 	}
 	require.NoError(t, db.Create(&template).Error)
-	require.NoError(t, db.Create(&shippingdomain.ShippingTemplateBinding{
-		TemplateID: template.ID,
-		Scope:      "default",
-		Enabled:    true,
-	}).Error)
 	return template
 }
 

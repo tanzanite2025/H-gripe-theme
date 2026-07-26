@@ -201,6 +201,7 @@
                 :variants="form.variants"
                 :spec-definitions="variantSpecDefinitions"
                 :default-index="defaultVariantIndex"
+                :shipping-templates="shippingTemplates"
                 class="min-w-0 p-3"
                 @add="emit('add-variant')"
                 @remove="emit('remove-variant', $event)"
@@ -234,6 +235,17 @@
                     <SelectItem value="active">在售</SelectItem>
                     <SelectItem value="inactive">下架</SelectItem>
                     <SelectItem value="out_of_stock">缺货</SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <AdminFormField label="运费模板">
+                <Select :model-value="shippingTemplateSelectValue" @update:model-value="emit('product-shipping-template-select', $event)">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">未设置</SelectItem>
+                    <SelectItem v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
+                      {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </AdminFormField>
@@ -305,6 +317,8 @@ defineProps({
   variantSpecDefinitions: { type: Array, default: () => [] },
   defaultVariantIndex: { type: Number, default: 0 },
   productTypeSelectValue: { type: String, default: '__none__' },
+  shippingTemplateSelectValue: { type: String, default: '__none__' },
+  shippingTemplates: { type: Array, default: () => [] },
   templateScopedValuesTouched: { type: Boolean, default: false },
   uploadingMedia: { type: Boolean, default: false },
   parseSpecOptions: { type: Function, required: true },
@@ -318,6 +332,7 @@ const emit = defineEmits([
   'submit',
   'clear-error',
   'product-type-select',
+  'product-shipping-template-select',
   'set-spec-select-value',
   'add-variant',
   'remove-variant',

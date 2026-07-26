@@ -70,28 +70,31 @@
           <TableCell class="text-right tabular-nums">{{ faq.order ?? faq.sort_order ?? 0 }}</TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(faq.created_at) }}</TableCell>
           <TableCell class="text-right">
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
-                <Button variant="ghost" size="icon" :aria-label="`管理 FAQ ${faq.question}`">
-                  <MoreHorizontal class="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="w-36">
-                <DropdownMenuItem v-if="hasPermission('faq:edit')" @select="$emit('edit', faq)">
-                  <Pencil class="size-4" />
-                  编辑
-                </DropdownMenuItem>
-                <DropdownMenuSeparator v-if="hasPermission('faq:delete')" />
-                <DropdownMenuItem
-                  v-if="hasPermission('faq:delete')"
-                  class="text-destructive focus:text-destructive"
-                  @select="$emit('delete', faq)"
-                >
-                  <Trash2 class="size-4" />
-                  删除
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div class="flex items-center justify-end gap-1.5">
+              <Button
+                v-if="hasPermission('faq:edit')"
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 px-2.5 text-xs"
+                :aria-label="`编辑 FAQ ${faq.question}`"
+                @click="$emit('edit', faq)"
+              >
+                <Pencil class="size-3.5" />
+                编辑
+              </Button>
+              <Button
+                v-if="hasPermission('faq:delete')"
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="size-8 text-destructive hover:text-destructive"
+                :aria-label="`删除 FAQ ${faq.question}`"
+                @click="$emit('delete', faq)"
+              >
+                <Trash2 class="size-4" />
+              </Button>
+            </div>
           </TableCell>
         </TableRow>
       </TableBody>
@@ -110,19 +113,12 @@
 </template>
 
 <script setup>
-import { CircleHelp, MoreHorizontal, Pencil, Trash2 } from '@lucide/vue'
+import { CircleHelp, Pencil, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 defineProps({

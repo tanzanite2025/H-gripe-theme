@@ -16,7 +16,6 @@
       v-model:active-tab="activeTab"
       :templates="templates"
       :zones="zones"
-      :template-bindings="templateBindings"
       :carriers="carriers"
       :carrier-services="carrierServices"
       :tracking-providers="trackingProviders"
@@ -39,8 +38,6 @@
       @create-packaging="showCreatePackagingDialog"
       @edit-packaging="showEditPackagingDialog"
       @show-packaging-applies="showPackagingAppliesDialog"
-      @create-binding="showCreateBindingDialog"
-      @edit-binding="showEditBindingDialog"
       @create-tracking-provider="showCreateTrackingProviderDialog"
       @edit-tracking-provider="showEditTrackingProviderDialog"
       @copy-webhook="copyTrackingWebhookUrl"
@@ -51,7 +48,6 @@
     <ShippingDialogsPanel
       v-model:template-open="templateDialogOpen"
       v-model:zone-open="zoneDialogOpen"
-      v-model:binding-open="bindingDialogOpen"
       v-model:carrier-open="carrierDialogOpen"
       v-model:carrier-service-open="carrierServiceDialogOpen"
       v-model:tracking-provider-open="trackingProviderDialogOpen"
@@ -71,10 +67,6 @@
       :zone-form="zoneForm"
       :zone-errors="zoneErrors"
       :zone-submitting="zoneSubmitting"
-      :binding-mode="bindingDialogMode"
-      :binding-form="bindingForm"
-      :binding-errors="bindingErrors"
-      :binding-submitting="bindingSubmitting"
       :carrier-mode="carrierDialogMode"
       :carrier-form="carrierForm"
       :carrier-errors="carrierErrors"
@@ -101,7 +93,6 @@
       :delete-description="deleteDialogDescription"
       @save-template="saveTemplate"
       @save-zone="saveZone"
-      @save-binding="saveBinding"
       @save-carrier="saveCarrier"
       @save-carrier-service="saveCarrierService"
       @save-tracking-provider="saveTrackingProvider"
@@ -109,7 +100,6 @@
       @save-packaging-rule="savePackagingRule"
       @clear-template-error="clearTemplateError"
       @clear-zone-error="clearZoneError"
-      @clear-binding-error="clearBindingError"
       @clear-carrier-error="clearCarrierError"
       @clear-carrier-service-error="clearCarrierServiceError"
       @clear-tracking-provider-error="clearTrackingProviderError"
@@ -153,7 +143,6 @@ const trackingShipmentsPanelRef = ref(null)
 const {
   templates,
   zones,
-  templateBindings,
   carriers,
   carrierServices,
   trackingProviders,
@@ -165,7 +154,6 @@ const {
   handleTrackingShipmentsCountChange,
   fetchTemplates,
   fetchZones,
-  fetchTemplateBindings,
   fetchCarriers,
   fetchCarrierServices,
   fetchTrackingProviders,
@@ -184,7 +172,6 @@ const {
 } = useShippingDeleteManager({
   fetchTemplates,
   fetchZones,
-  fetchTemplateBindings,
   fetchCarriers,
   fetchCarrierServices,
   fetchTrackingProviders,
@@ -203,28 +190,17 @@ const {
   zoneSubmitting,
   zoneErrors,
   zoneForm,
-  bindingDialogOpen,
-  bindingDialogMode,
-  bindingSubmitting,
-  bindingErrors,
-  bindingForm,
   clearTemplateError,
   clearZoneError,
-  clearBindingError,
   showCreateTemplateDialog,
   showEditTemplateDialog,
   saveTemplate,
   showCreateZoneDialog,
   showEditZoneDialog,
   saveZone,
-  showCreateBindingDialog,
-  showEditBindingDialog,
-  saveBinding,
 } = useShippingTemplateManager({
-  templates,
   fetchTemplates,
   fetchZones,
-  fetchTemplateBindings,
 })
 
 const {

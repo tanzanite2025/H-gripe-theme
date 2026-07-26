@@ -57,6 +57,8 @@
       :variant-spec-definitions="variantSpecDefinitions"
       :default-variant-index="defaultVariantIndex"
       :product-type-select-value="productTypeSelectValue"
+      :shipping-template-select-value="shippingTemplateSelectValue"
+      :shipping-templates="shippingTemplates"
       :template-scoped-values-touched="templateScopedValuesTouched"
       :uploading-media="uploadingMedia"
       :parse-spec-options="parseSpecOptions"
@@ -66,6 +68,7 @@
       @submit="submitForm"
       @clear-error="clearFieldError"
       @product-type-select="handleProductTypeSelect"
+      @product-shipping-template-select="setProductShippingTemplate"
       @set-spec-select-value="setSpecSelectValue"
       @add-variant="addVariant"
       @remove-variant="removeVariant"
@@ -89,7 +92,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
@@ -107,12 +110,14 @@ import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
 import productApi from '@/api/products'
+import shippingApi from '@/api/shipping'
 import { useProductCatalog } from '@/composables/product/useProductCatalog'
 import { useProductEditor } from '@/composables/product/useProductEditor'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const shippingTemplates = ref([])
 const {
   loading,
   products,
@@ -145,12 +150,14 @@ const {
   variantSpecDefinitions,
   defaultVariantIndex,
   productTypeSelectValue,
+  shippingTemplateSelectValue,
   templateScopedValuesTouched,
   parseSpecOptions,
   formatSpecOption,
   getSpecLabel,
   specSelectValue,
   setSpecSelectValue,
+  setProductShippingTemplate,
   clearFieldError,
   addMediaUrl,
   handleMediaUpload,
@@ -166,6 +173,14 @@ const {
   showEditDialog,
   submitForm
 } = useProductEditor({ refreshProducts })
+
+const fetchShippingTemplates = async () => {
+  try {
+    shippingTemplates.value = await shippingApi.listTemplates()
+  } catch (error) {
+    console.error('Failed to fetch shipping templates:', error)
+  }
+}
 
 const confirmation = reactive({
   open: false,
@@ -259,5 +274,5 @@ const executeConfirmedAction = async () => {
   }
 }
 
-onMounted(() => Promise.all([fetchProductTypes(), fetchStats(), fetchProducts()]))
+onMounted(() => Promise.all([fetchProductTypes(), fetchShippingTemplates(), fetchStats(), fetchProducts()]))
 </script>

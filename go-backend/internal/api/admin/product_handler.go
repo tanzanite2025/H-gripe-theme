@@ -87,20 +87,21 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	}
 
 	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
-		ProductTypeID: req.ProductTypeID,
-		Name:          req.Name,
-		Slug:          req.Slug,
-		Description:   req.Description,
-		ShortDesc:     req.ShortDesc,
-		Status:        req.Status,
-		Locale:        req.Locale,
-		ParentID:      req.ParentID,
-		Featured:      req.Featured,
-		MetaTitle:     req.MetaTitle,
-		MetaDesc:      req.MetaDesc,
-		SpecValues:    normalizeRequestSpecs(req.Specs),
-		Variants:      normalizeVariantRequests(req.Variants),
-		Media:         normalizeMediaRequests(req.Media),
+		ProductTypeID:      req.ProductTypeID,
+		ShippingTemplateID: req.ShippingTemplateID,
+		Name:               req.Name,
+		Slug:               req.Slug,
+		Description:        req.Description,
+		ShortDesc:          req.ShortDesc,
+		Status:             req.Status,
+		Locale:             req.Locale,
+		ParentID:           req.ParentID,
+		Featured:           req.Featured,
+		MetaTitle:          req.MetaTitle,
+		MetaDesc:           req.MetaDesc,
+		SpecValues:         normalizeRequestSpecs(req.Specs),
+		Variants:           normalizeVariantRequests(req.Variants),
+		Media:              normalizeMediaRequests(req.Media),
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to create product")
@@ -136,6 +137,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 
 	_, updateParentID := raw["parent_id"]
 	_, updateProductTypeID := raw["product_type_id"]
+	_, updateShippingTemplateID := raw["shipping_template_id"]
 	_, updateSpecs := raw["specs"]
 	_, updateVariants := raw["variants"]
 	_, updateMedia := raw["media"]
@@ -147,25 +149,27 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
-		ProductTypeID:       req.ProductTypeID,
-		UpdateProductTypeID: updateProductTypeID,
-		Name:                req.Name,
-		Slug:                req.Slug,
-		Description:         req.Description,
-		ShortDesc:           req.ShortDesc,
-		Status:              req.Status,
-		Locale:              req.Locale,
-		ParentID:            req.ParentID,
-		UpdateParentID:      updateParentID,
-		Featured:            req.Featured,
-		MetaTitle:           req.MetaTitle,
-		MetaDesc:            req.MetaDesc,
-		SpecValues:          normalizeRequestSpecs(req.Specs),
-		UpdateSpecValues:    updateSpecs,
-		Variants:            normalizeVariantRequests(req.Variants),
-		UpdateVariants:      updateVariants,
-		Media:               normalizeMediaRequests(req.Media),
-		UpdateMedia:         updateMedia,
+		ProductTypeID:            req.ProductTypeID,
+		UpdateProductTypeID:      updateProductTypeID,
+		ShippingTemplateID:       req.ShippingTemplateID,
+		UpdateShippingTemplateID: updateShippingTemplateID,
+		Name:                     req.Name,
+		Slug:                     req.Slug,
+		Description:              req.Description,
+		ShortDesc:                req.ShortDesc,
+		Status:                   req.Status,
+		Locale:                   req.Locale,
+		ParentID:                 req.ParentID,
+		UpdateParentID:           updateParentID,
+		Featured:                 req.Featured,
+		MetaTitle:                req.MetaTitle,
+		MetaDesc:                 req.MetaDesc,
+		SpecValues:               normalizeRequestSpecs(req.Specs),
+		UpdateSpecValues:         updateSpecs,
+		Variants:                 normalizeVariantRequests(req.Variants),
+		UpdateVariants:           updateVariants,
+		Media:                    normalizeMediaRequests(req.Media),
+		UpdateMedia:              updateMedia,
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to update product")

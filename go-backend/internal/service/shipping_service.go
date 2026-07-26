@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"tanzanite/internal/domain/product"
 	"tanzanite/internal/domain/shipping"
 	"tanzanite/internal/pkg/tracking"
 	"tanzanite/internal/repository"
@@ -32,12 +33,13 @@ type ShippingCalculationInput struct {
 }
 
 type ShippingQuoteItemInput struct {
-	ProductID     uint    `json:"product_id"`
-	VariantID     *uint   `json:"variant_id,omitempty"`
-	ProductTypeID *uint   `json:"product_type_id,omitempty"`
-	Quantity      int     `json:"quantity"`
-	UnitPrice     float64 `json:"unit_price"`
-	WeightGrams   int     `json:"weight_grams"`
+	ProductID          uint    `json:"product_id"`
+	VariantID          *uint   `json:"variant_id,omitempty"`
+	ProductTypeID      *uint   `json:"product_type_id,omitempty"`
+	ShippingTemplateID *uint   `json:"shipping_template_id,omitempty"`
+	Quantity           int     `json:"quantity"`
+	UnitPrice          float64 `json:"unit_price"`
+	WeightGrams        int     `json:"weight_grams"`
 }
 
 type ShippingQuoteInput struct {
@@ -397,26 +399,6 @@ func (s *ShippingService) DeleteTemplate(id uint) error {
 	return s.shippingRepo.DeleteTemplate(id)
 }
 
-func (s *ShippingService) ListTemplateBindings() ([]shipping.ShippingTemplateBinding, error) {
-	return s.shippingRepo.FindAllTemplateBindings()
-}
-
-func (s *ShippingService) GetTemplateBinding(id uint) (*shipping.ShippingTemplateBinding, error) {
-	return s.shippingRepo.FindTemplateBindingByID(id)
-}
-
-func (s *ShippingService) CreateTemplateBinding(binding *shipping.ShippingTemplateBinding) error {
-	return s.shippingRepo.CreateTemplateBinding(binding)
-}
-
-func (s *ShippingService) UpdateTemplateBinding(binding *shipping.ShippingTemplateBinding) error {
-	return s.shippingRepo.UpdateTemplateBinding(binding)
-}
-
-func (s *ShippingService) DeleteTemplateBinding(id uint) error {
-	return s.shippingRepo.DeleteTemplateBinding(id)
-}
-
 func (s *ShippingService) CreateTemplateRule(templateID uint, rule *shipping.ShippingRule) error {
 	rule.TemplateID = templateID
 	return s.shippingRepo.CreateRule(rule)
@@ -486,16 +468,22 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 			return nil, fmt.Errorf("shipping weight is missing for SKU %s", variant.SKU)
 		}
 
+		templateID, err := resolveProductShippingTemplateID(product, variant)
+		if err != nil {
+			return nil, err
+		}
+
 		resolvedVariantID := variant.ID
 		unitPrice := variant.EffectivePrice()
 		amount += unitPrice * float64(item.Quantity)
 		items = append(items, ShippingQuoteItemInput{
-			ProductID:     product.ID,
-			VariantID:     &resolvedVariantID,
-			ProductTypeID: product.ProductTypeID,
-			Quantity:      item.Quantity,
-			UnitPrice:     unitPrice,
-			WeightGrams:   variant.Weight,
+			ProductID:          product.ID,
+			VariantID:          &resolvedVariantID,
+			ProductTypeID:      product.ProductTypeID,
+			ShippingTemplateID: uintPtr(templateID),
+			Quantity:           item.Quantity,
+			UnitPrice:          unitPrice,
+			WeightGrams:        variant.Weight,
 		})
 	}
 
@@ -513,16 +501,16 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 		return nil, errors.New("shipping quote requires at least one item")
 	}
 
-	bindings, err := s.shippingRepo.FindEnabledTemplateBindingsWithTemplates()
+	productIDs := uniqueShippingQuoteProductIDs(input.Items)
+	packagingRulesByProduct, err := s.shippingRepo.FindActivePackagingRulesByProductIDs(productIDs)
 	if err != nil {
 		return nil, err
 	}
-	if len(bindings) == 0 {
-		return nil, errors.New("no enabled shipping template binding is configured")
+	templateIDs, err := uniqueShippingQuoteTemplateIDs(input.Items)
+	if err != nil {
+		return nil, err
 	}
-
-	productIDs := uniqueShippingQuoteProductIDs(input.Items)
-	packagingRulesByProduct, err := s.shippingRepo.FindActivePackagingRulesByProductIDs(productIDs)
+	templatesByID, err := s.shippingRepo.FindTemplatesByIDs(templateIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -543,9 +531,12 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			return nil, fmt.Errorf("shipping weight is missing for product ID %d", item.ProductID)
 		}
 
-		template := selectShippingTemplateForItem(bindings, item)
+		template := templatesByID[*item.ShippingTemplateID]
 		if template == nil {
-			return nil, fmt.Errorf("no enabled shipping template binding matches product ID %d", item.ProductID)
+			return nil, fmt.Errorf("shipping template ID %d is not configured", *item.ShippingTemplateID)
+		}
+		if !template.Enabled {
+			return nil, fmt.Errorf("shipping template ID %d is disabled", template.ID)
 		}
 
 		amount := item.UnitPrice * float64(item.Quantity)
@@ -1479,61 +1470,48 @@ func uniqueShippingQuoteProductIDs(items []ShippingQuoteItemInput) []uint {
 	return productIDs
 }
 
+func uniqueShippingQuoteTemplateIDs(items []ShippingQuoteItemInput) ([]uint, error) {
+	seen := make(map[uint]struct{})
+	templateIDs := make([]uint, 0, len(items))
+	for _, item := range items {
+		if item.ShippingTemplateID == nil || *item.ShippingTemplateID == 0 {
+			if item.VariantID != nil {
+				return nil, fmt.Errorf("shipping template is missing for variant ID %d", *item.VariantID)
+			}
+			return nil, fmt.Errorf("shipping template is missing for product ID %d", item.ProductID)
+		}
+
+		templateID := *item.ShippingTemplateID
+		if _, ok := seen[templateID]; ok {
+			continue
+		}
+		seen[templateID] = struct{}{}
+		templateIDs = append(templateIDs, templateID)
+	}
+	return templateIDs, nil
+}
+
+func resolveProductShippingTemplateID(p *product.Product, variant *product.ProductVariant) (uint, error) {
+	if variant != nil && variant.ShippingTemplateID != nil && *variant.ShippingTemplateID != 0 {
+		return *variant.ShippingTemplateID, nil
+	}
+	if p != nil && p.ShippingTemplateID != nil && *p.ShippingTemplateID != 0 {
+		return *p.ShippingTemplateID, nil
+	}
+	if variant != nil {
+		return 0, fmt.Errorf("shipping template is missing for SKU %s", variant.SKU)
+	}
+	if p != nil {
+		return 0, fmt.Errorf("shipping template is missing for product ID %d", p.ID)
+	}
+	return 0, errors.New("shipping template is missing")
+}
+
 func packagingRuleWeightGrams(rule *shipping.PackagingRule) int {
 	if rule == nil || rule.BoxWeight <= 0 {
 		return 0
 	}
 	return int(math.Round(rule.BoxWeight * 1000))
-}
-
-func selectShippingTemplateForItem(bindings []shipping.ShippingTemplateBinding, item ShippingQuoteItemInput) *shipping.ShippingTemplate {
-	var selected *shipping.ShippingTemplateBinding
-	selectedScore := 0
-
-	for i := range bindings {
-		binding := &bindings[i]
-		if !binding.Enabled || binding.Template == nil || !binding.Template.Enabled {
-			continue
-		}
-
-		score := shippingBindingMatchScore(binding, item)
-		if score == 0 {
-			continue
-		}
-
-		if selected == nil ||
-			score > selectedScore ||
-			(score == selectedScore && binding.Priority > selected.Priority) ||
-			(score == selectedScore && binding.Priority == selected.Priority && binding.ID > selected.ID) {
-			selected = binding
-			selectedScore = score
-		}
-	}
-
-	if selected == nil {
-		return nil
-	}
-	return selected.Template
-}
-
-func shippingBindingMatchScore(binding *shipping.ShippingTemplateBinding, item ShippingQuoteItemInput) int {
-	switch binding.Scope {
-	case "variant":
-		if item.VariantID != nil && binding.VariantID != nil && *item.VariantID == *binding.VariantID {
-			return 4
-		}
-	case "product":
-		if binding.ProductID != nil && item.ProductID == *binding.ProductID {
-			return 3
-		}
-	case "product_type":
-		if item.ProductTypeID != nil && binding.ProductTypeID != nil && *item.ProductTypeID == *binding.ProductTypeID {
-			return 2
-		}
-	case "default":
-		return 1
-	}
-	return 0
 }
 
 func calculateTemplateShippingFee(

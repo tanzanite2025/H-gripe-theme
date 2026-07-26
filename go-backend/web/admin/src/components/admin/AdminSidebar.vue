@@ -1,11 +1,11 @@
 <template>
-  <div class="relative flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
+  <div class="relative flex h-full min-h-0 w-full flex-col bg-sidebar text-sidebar-foreground">
     <span v-if="!collapsed" class="pointer-events-none absolute inset-x-0 top-0 z-10 mx-auto w-full max-w-48 px-2 pb-2 pt-4 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
       WORKSPACE / 工作台
     </span>
 
     <nav
-      class="min-h-0 flex-1 overflow-y-auto px-0 py-3"
+      class="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-0 py-3"
       aria-label="后台导航"
     >
       <TooltipProvider :delay-duration="0">
@@ -82,13 +82,14 @@ const isActive = (path) => {
 }
 
 .admin-sidebar__menu--expanded {
-  width: 100%;
+  width: calc(100% - 1rem);
   max-width: 12rem;
   padding-inline: 0.5rem;
 }
 
 .admin-sidebar__menu--collapsed {
-  width: 100%;
+  width: calc(100% - 0.5rem);
+  max-width: 3rem;
   align-items: center;
   padding-inline: 0.5rem;
 }
