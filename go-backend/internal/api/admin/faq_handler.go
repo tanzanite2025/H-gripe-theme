@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"strings"
 	"tanzanite/internal/service"
 )
@@ -17,7 +18,8 @@ func NewFAQHandler(faqService *service.FAQService) *FAQHandler {
 
 func isFAQValidationError(err error) bool {
 	message := err.Error()
-	return strings.Contains(message, "required") ||
+	return errors.Is(err, service.ErrUnsupportedLocale) ||
+		strings.Contains(message, "required") ||
 		strings.Contains(message, "does not exist") ||
 		strings.Contains(message, "hidden") ||
 		strings.Contains(message, "answer image")

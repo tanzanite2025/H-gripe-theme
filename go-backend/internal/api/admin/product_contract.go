@@ -92,6 +92,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductMediaInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrUnsupportedLocale):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fallbackMessage})
 	}

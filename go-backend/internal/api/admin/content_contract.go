@@ -46,6 +46,8 @@ func respondPostServiceError(c *gin.Context, err error, fallbackMessage string) 
 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 	case errors.Is(err, service.ErrPostSlugExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "Slug already exists for this locale"})
+	case errors.Is(err, service.ErrUnsupportedLocale):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fallbackMessage})
 	}

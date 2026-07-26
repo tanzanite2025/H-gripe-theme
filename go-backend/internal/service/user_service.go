@@ -65,6 +65,10 @@ func (s *UserService) CreateUser(input UserCreateInput, actorRole string) (*user
 	if err := ensureActorCanAssignRole(actorRole, role); err != nil {
 		return nil, err
 	}
+	locale, err := requireSupportedLocale(input.Locale)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := s.ensureEmailAvailable(input.Email, 0); err != nil {
 		return nil, err
@@ -79,7 +83,7 @@ func (s *UserService) CreateUser(input UserCreateInput, actorRole string) (*user
 		FirstName: input.FirstName,
 		LastName:  input.LastName,
 		Role:      string(role),
-		Locale:    input.Locale,
+		Locale:    locale,
 		Status:    input.Status,
 	}
 
@@ -149,7 +153,11 @@ func (s *UserService) UpdateUser(id, actorID uint, actorRole string, input UserU
 		existingUser.LastName = input.LastName
 	}
 	if input.Locale != "" {
-		existingUser.Locale = input.Locale
+		locale, err := requireSupportedLocale(input.Locale)
+		if err != nil {
+			return nil, err
+		}
+		existingUser.Locale = locale
 	}
 
 	if err := s.userRepo.Update(existingUser); err != nil {

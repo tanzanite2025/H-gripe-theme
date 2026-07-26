@@ -11,7 +11,7 @@ const apiBase =
 const localesUrl = process.env.GO_LOCALES_URL || process.env.LOCALES_URL
 const manifestPath = path.resolve('app/i18n/locales.manifest.js')
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
-const defaultGoLanguagesPath = path.resolve(scriptDir, '..', '..', 'go-backend/internal/api/v1/i18n/handler.go')
+const defaultGoLanguagesPath = path.resolve(scriptDir, '..', '..', 'go-backend/internal/pkg/locales/locales.go')
 const goLanguagesPath = process.env.GO_I18N_LANGUAGES_FILE
   ? path.resolve(process.env.GO_I18N_LANGUAGES_FILE)
   : defaultGoLanguagesPath
@@ -71,7 +71,7 @@ function readGoStringField(entry, fieldName) {
 function parseGoSupportedLanguages(source) {
   const blockMatch = source.match(/var\s+SupportedLanguages\s*=\s*\[\]Language\s*\{([\s\S]*?)\n\}/)
   if (!blockMatch) {
-    throw new Error('SupportedLanguages declaration not found in Go i18n handler')
+    throw new Error('SupportedLanguages declaration not found in Go locales source')
   }
 
   const languages = []
@@ -90,7 +90,7 @@ function parseGoSupportedLanguages(source) {
   }
 
   if (!languages.length) {
-    throw new Error('No languages parsed from Go i18n handler')
+    throw new Error('No languages parsed from Go locales source')
   }
 
   return languages
@@ -98,7 +98,7 @@ function parseGoSupportedLanguages(source) {
 
 function loadLocalBackendLocales() {
   if (!fs.existsSync(goLanguagesPath)) {
-    throw new Error(`Go i18n handler not found: ${goLanguagesPath}`)
+    throw new Error(`Go locales source not found: ${goLanguagesPath}`)
   }
 
   return parseGoSupportedLanguages(fs.readFileSync(goLanguagesPath, 'utf8'))

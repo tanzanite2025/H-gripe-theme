@@ -3,6 +3,7 @@ package i18n
 import (
 	"strings"
 	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/locales"
 )
 
 var supportedLocales map[string]bool
@@ -11,50 +12,27 @@ var supportedLocales map[string]bool
 func Init(cfg config.I18nConfig) {
 	supportedLocales = make(map[string]bool)
 	for _, locale := range cfg.SupportedLocales {
-		supportedLocales[NormalizeLocale(locale)] = true
+		if normalized := locales.ResolveSupported(locale); normalized != "" {
+			supportedLocales[normalized] = true
+		}
 	}
 }
 
 // IsValidLocale 检查语言代码是否有效
 func IsValidLocale(locale string) bool {
-	return supportedLocales[NormalizeLocale(locale)]
+	if supportedLocales == nil {
+		return locales.IsSupported(locale)
+	}
+	normalized := locales.ResolveSupported(locale)
+	if normalized == "" {
+		return false
+	}
+	return supportedLocales[normalized]
 }
 
 // NormalizeLocale 规范化语言代码
 func NormalizeLocale(locale string) string {
-	locale = strings.TrimSpace(locale)
-	if first, _, ok := strings.Cut(locale, ","); ok {
-		locale = first
-	}
-	if first, _, ok := strings.Cut(locale, ";"); ok {
-		locale = first
-	}
-	locale = strings.ToLower(strings.TrimSpace(locale))
-	locale = strings.ReplaceAll(locale, "_", "-")
-
-	// 移除非字母字符，保留地区分隔符。
-	var result strings.Builder
-	for _, r := range locale {
-		if (r >= 'a' && r <= 'z') || r == '-' {
-			result.WriteRune(r)
-		}
-	}
-
-	normalized := result.String()
-	if normalized == "" {
-		return "en"
-	}
-
-	switch normalized {
-	case "zh", "zh-cn", "zh-hans", "zh-sg":
-		return "zh_cn"
-	}
-
-	if base, _, ok := strings.Cut(normalized, "-"); ok && base != "" && base != "zh" {
-		return base
-	}
-
-	return normalized
+	return locales.Normalize(locale)
 }
 
 // GetLocaleFromPath 从URL路径提取语言代码

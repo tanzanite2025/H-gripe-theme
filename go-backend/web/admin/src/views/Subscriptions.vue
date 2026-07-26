@@ -67,10 +67,12 @@ import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import SubscriptionFilterPanel from '@/components/admin/subscription/SubscriptionFilterPanel.vue'
 import SubscriptionTablePanel from '@/components/admin/subscription/SubscriptionTablePanel.vue'
 import { Button } from '@/components/ui/button'
+import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
+const supportedLanguages = useSupportedLanguages()
 const loading = ref(false)
 const subscriptions = ref([])
 const selectedSubscriptions = ref([])
@@ -126,7 +128,7 @@ const selectionState = computed(() => {
 const hasPermission = (permission) => authStore.hasPermission(permission)
 const statusName = (status) => ({ active: '活跃', unsubscribed: '已退订', cancelled: '已退订' })[status] || status || '-'
 const statusTone = (status) => status === 'active' ? 'green' : 'gray'
-const localeName = (locale) => ({ zh: '中文', en: 'English' })[locale] || locale || '-'
+const localeName = supportedLanguages.localeName
 const sourceName = (source) => ({ website: '网站', popup: '弹窗', footer: '页脚', checkout: '结账页' })[source] || source || '-'
 const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 
@@ -251,5 +253,10 @@ const exportEmails = async () => {
   }
 }
 
-onMounted(refreshSubscriptions)
+onMounted(() => {
+  Promise.all([
+    supportedLanguages.fetchLanguages(),
+    refreshSubscriptions()
+  ])
+})
 </script>

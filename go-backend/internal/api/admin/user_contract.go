@@ -77,6 +77,8 @@ func respondUserServiceError(c *gin.Context, err error, fallback string) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot modify your own role"})
 	case errors.Is(err, service.ErrRoleForbidden):
 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient privileges for requested role change"})
+	case errors.Is(err, service.ErrUnsupportedLocale):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fallback})
 	}

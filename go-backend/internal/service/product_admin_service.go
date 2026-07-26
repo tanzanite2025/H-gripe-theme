@@ -79,6 +79,11 @@ func (s *ProductService) GetStats() (map[string]interface{}, error) {
 }
 
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
+	locale, err := requireSupportedLocale(input.Locale)
+	if err != nil {
+		return nil, err
+	}
+
 	specValues, err := s.buildSpecValues(input.ProductTypeID, input.SpecValues)
 	if err != nil {
 		return nil, err
@@ -105,7 +110,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		Description:        input.Description,
 		ShortDesc:          input.ShortDesc,
 		Status:             input.Status,
-		Locale:             input.Locale,
+		Locale:             locale,
 		ParentID:           input.ParentID,
 		Featured:           input.Featured,
 		MetaTitle:          input.MetaTitle,
@@ -151,7 +156,11 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		existingProduct.Status = *input.Status
 	}
 	if input.Locale != nil {
-		existingProduct.Locale = *input.Locale
+		locale, err := requireSupportedLocale(*input.Locale)
+		if err != nil {
+			return nil, err
+		}
+		existingProduct.Locale = locale
 	}
 	if input.UpdateParentID {
 		existingProduct.ParentID = input.ParentID

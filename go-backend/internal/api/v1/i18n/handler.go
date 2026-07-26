@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"tanzanite/internal/pkg/locales"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -23,52 +24,6 @@ func NewHandler(postService *service.PostService, sitemapService *service.Sitema
 	}
 }
 
-// Language 语言信息
-type Language struct {
-	Code       string `json:"code"`
-	Name       string `json:"name"`
-	NativeName string `json:"native_name"`
-	Enabled    bool   `json:"enabled"`
-}
-
-// SupportedLanguages 支持的语言列表（34种语言）
-var SupportedLanguages = []Language{
-	{Code: "en", Name: "English", NativeName: "English", Enabled: true},
-	{Code: "fr", Name: "French", NativeName: "Français", Enabled: true},
-	{Code: "de", Name: "German", NativeName: "Deutsch", Enabled: true},
-	{Code: "es", Name: "Spanish", NativeName: "Español", Enabled: true},
-	{Code: "ja", Name: "Japanese", NativeName: "日本語", Enabled: true},
-	{Code: "ko", Name: "Korean", NativeName: "한국어", Enabled: true},
-	{Code: "it", Name: "Italian", NativeName: "Italiano", Enabled: true},
-	{Code: "pt", Name: "Portuguese", NativeName: "Português", Enabled: true},
-	{Code: "ru", Name: "Russian", NativeName: "Русский", Enabled: true},
-	{Code: "ar", Name: "Arabic", NativeName: "العربية", Enabled: true},
-	{Code: "fi", Name: "Finnish", NativeName: "Suomi", Enabled: true},
-	{Code: "da", Name: "Danish", NativeName: "Dansk", Enabled: true},
-	{Code: "th", Name: "Thai", NativeName: "ไทย", Enabled: true},
-	{Code: "sv", Name: "Swedish", NativeName: "Svenska", Enabled: true},
-	{Code: "id", Name: "Indonesian", NativeName: "Bahasa Indonesia", Enabled: true},
-	{Code: "ms", Name: "Malay", NativeName: "Bahasa Melayu", Enabled: true},
-	{Code: "be", Name: "Belarusian", NativeName: "Беларуская", Enabled: true},
-	{Code: "tr", Name: "Turkish", NativeName: "Türkçe", Enabled: true},
-	{Code: "bn", Name: "Bengali", NativeName: "বাংলা", Enabled: true},
-	{Code: "fa", Name: "Persian", NativeName: "فارسی", Enabled: true},
-	{Code: "nl", Name: "Dutch", NativeName: "Nederlands", Enabled: true},
-	{Code: "hi", Name: "Hindi", NativeName: "हिन्दी", Enabled: true},
-	{Code: "ur", Name: "Urdu", NativeName: "اردو", Enabled: true},
-	{Code: "mr", Name: "Marathi", NativeName: "मराठी", Enabled: true},
-	{Code: "pcm", Name: "Nigerian Pidgin", NativeName: "Nigerian Pidgin", Enabled: true},
-	{Code: "fil", Name: "Filipino", NativeName: "Filipino", Enabled: true},
-	{Code: "te", Name: "Telugu", NativeName: "తెలుగు", Enabled: true},
-	{Code: "ha", Name: "Hausa", NativeName: "Hausa", Enabled: true},
-	{Code: "ps", Name: "Pashto", NativeName: "پښتو", Enabled: true},
-	{Code: "sw", Name: "Swahili", NativeName: "Kiswahili", Enabled: true},
-	{Code: "tl", Name: "Tagalog", NativeName: "Tagalog", Enabled: true},
-	{Code: "ta", Name: "Tamil", NativeName: "தமிழ்", Enabled: true},
-	{Code: "jv", Name: "Javanese", NativeName: "Basa Jawa", Enabled: true},
-	{Code: "zh_cn", Name: "Chinese (Simplified)", NativeName: "简体中文", Enabled: true},
-}
-
 // GetLanguages 获取支持的语言列表
 // @Summary 获取支持的语言列表
 // @Description 返回系统支持的所有语言
@@ -79,8 +34,8 @@ var SupportedLanguages = []Language{
 // @Router /api/v1/i18n/languages [get]
 func (h *Handler) GetLanguages(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"languages": SupportedLanguages,
-		"total":     len(SupportedLanguages),
+		"languages": locales.SupportedLanguages,
+		"total":     len(locales.SupportedLanguages),
 	})
 }
 
@@ -182,14 +137,7 @@ func (h *Handler) GetLocaleSitemap(c *gin.Context) {
 // @Router /sitemap.xml [get]
 func (h *Handler) GetSitemapIndex(c *gin.Context) {
 	// 获取启用的语言列表
-	enabledLocales := make([]string, 0)
-	for _, lang := range SupportedLanguages {
-		if lang.Enabled {
-			enabledLocales = append(enabledLocales, lang.Code)
-		}
-	}
-
-	sitemap, err := h.sitemapService.GenerateSitemapIndex(enabledLocales)
+	sitemap, err := h.sitemapService.GenerateSitemapIndex(locales.EnabledLocaleCodes())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate sitemap index"})
 		return
@@ -302,31 +250,5 @@ func parseAcceptLanguage(acceptLang string) string {
 }
 
 func resolveSupportedLocale(locale string) string {
-	value := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(locale), "_", "-"))
-	if value == "" {
-		return ""
-	}
-
-	for _, candidate := range localeCandidates(value) {
-		for _, lang := range SupportedLanguages {
-			if lang.Code == candidate && lang.Enabled {
-				return lang.Code
-			}
-		}
-	}
-
-	return ""
-}
-
-func localeCandidates(locale string) []string {
-	switch locale {
-	case "zh", "zh-cn", "zh-hans", "zh-sg":
-		return []string{"zh_cn"}
-	}
-
-	candidates := []string{locale}
-	if base, _, ok := strings.Cut(locale, "-"); ok && base != "" {
-		candidates = append(candidates, base)
-	}
-	return candidates
+	return locales.ResolveSupported(locale)
 }
