@@ -9,17 +9,23 @@
       <TabsTrigger value="public_chat" class="h-9 flex-none px-3"><Headset class="size-4" />Public Chat</TabsTrigger>
     </TabsList>
 
-    <TabsContent value="site">
+    <TabsContent value="site" class="space-y-6">
       <SettingsSection title="站点资料" description="前台使用的品牌和联系信息。">
         <div class="grid gap-4 md:grid-cols-2">
           <AdminFormField label="站点名称">
             <Input v-model="siteSettings.site_name" />
+          </AdminFormField>
+          <AdminFormField label="顶部品牌标题" description="控制 Nuxt 顶部特殊字体渐变字样；留空则前台不显示标题。">
+            <Input v-model="siteSettings.brand_title" />
           </AdminFormField>
           <AdminFormField label="联系邮箱">
             <Input v-model="siteSettings.contact_email" type="email" />
           </AdminFormField>
           <AdminFormField label="联系电话">
             <Input v-model="siteSettings.contact_phone" type="tel" />
+          </AdminFormField>
+          <AdminFormField label="站点 URL">
+            <Input v-model="siteSettings.site_url" type="url" placeholder="https://example.com" />
           </AdminFormField>
           <AdminFormField label="站点 Logo">
             <Input v-model="siteSettings.site_logo" placeholder="Logo URL" />
@@ -30,6 +36,29 @@
           <div v-if="siteSettings.site_logo" class="flex h-28 items-center justify-center overflow-hidden rounded-lg border bg-muted md:col-span-2">
             <img :src="siteSettings.site_logo" alt="站点 Logo 预览" class="max-h-20 max-w-[80%] object-contain" />
           </div>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="后台品牌" description="登录页、后台面板与浏览器标题使用的白标文案。">
+        <div class="grid gap-4 md:grid-cols-2">
+          <AdminFormField label="后台品牌名称" description="登录页左上角展示；留空则不显示品牌名。">
+            <Input v-model="siteSettings.admin_brand_name" />
+          </AdminFormField>
+          <AdminFormField label="后台品牌缩写" description="圆形标识内的字母或短文本；留空则不显示缩写。">
+            <Input v-model="siteSettings.admin_brand_initial" maxlength="4" />
+          </AdminFormField>
+          <AdminFormField label="面板标签" description="登录页右上角和后台顶部的小标签。">
+            <Input v-model="siteSettings.admin_panel_label" />
+          </AdminFormField>
+          <AdminFormField label="登录标题">
+            <Input v-model="siteSettings.admin_login_title" />
+          </AdminFormField>
+          <AdminFormField label="浏览器标题">
+            <Input v-model="siteSettings.admin_html_title" />
+          </AdminFormField>
+          <AdminFormField label="登录页脚" description="留空则隐藏登录页底部文案。">
+            <Input v-model="siteSettings.admin_footer_text" />
+          </AdminFormField>
         </div>
       </SettingsSection>
     </TabsContent>

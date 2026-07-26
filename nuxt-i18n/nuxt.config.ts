@@ -102,7 +102,7 @@ export default defineNuxtConfig({
   },
 
   site: {
-    url: 'https://tanzanite.site',
+    url: env.NUXT_SITE_URL || '',
   },
 
   modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon', '@nuxt/fonts'],
@@ -128,7 +128,7 @@ export default defineNuxtConfig({
     bundle: {
       optimizeTranslationDirective: false
     },
-    baseUrl: 'https://tanzanite.site',
+    baseUrl: env.NUXT_SITE_URL || '',
   },
 
   css: [
@@ -196,8 +196,8 @@ export default defineNuxtConfig({
     public: {
       apiBase: publicApiBase,
       blogApiMode: env.NUXT_PUBLIC_BLOG_API_MODE || env.BLOG_API_MODE || 'auto',
-      siteTitle: env.NUXT_SITE_TITLE || 'Tanzanite',
-      siteUrl: env.NUXT_SITE_URL || 'https://tanzanite.site',
+      siteTitle: env.NUXT_SITE_TITLE || '',
+      siteUrl: env.NUXT_SITE_URL || '',
       googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '',
       socialLinks: env.NUXT_SOCIAL_LINKS
         ? JSON.parse(env.NUXT_SOCIAL_LINKS)

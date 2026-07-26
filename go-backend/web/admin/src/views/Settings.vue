@@ -71,7 +71,21 @@ const showSmtpPassword = ref(false)
 const showPaymentSecrets = ref(false)
 const loadedGroups = new Set()
 
-const siteSettings = reactive({ site_name: '', site_description: '', site_logo: '', contact_email: '', contact_phone: '' })
+const siteSettings = reactive({
+  site_name: '',
+  brand_title: '',
+  site_description: '',
+  site_url: '',
+  site_logo: '',
+  contact_email: '',
+  contact_phone: '',
+  admin_brand_name: '',
+  admin_brand_initial: '',
+  admin_panel_label: '',
+  admin_login_title: '',
+  admin_footer_text: '',
+  admin_html_title: ''
+})
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
 const seoSettings = reactive({ meta_title: '', meta_description: '', meta_keywords: '', google_analytics: '', google_tag_manager: '' })
 const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
@@ -113,10 +127,18 @@ const groupDefinitions = {
     target: siteSettings,
     fields: {
       site_name: { type: 'string', public: true, description: 'Site name' },
+      brand_title: { type: 'string', public: true, description: 'Top gradient brand title' },
       site_description: { type: 'string', public: true, description: 'Site description' },
+      site_url: { type: 'string', public: true, description: 'Public site URL' },
       site_logo: { type: 'string', public: true, description: 'Site logo URL' },
       contact_email: { type: 'string', public: true, description: 'Contact email' },
-      contact_phone: { type: 'string', public: true, description: 'Contact phone' }
+      contact_phone: { type: 'string', public: true, description: 'Contact phone' },
+      admin_brand_name: { type: 'string', public: true, description: 'Admin brand name' },
+      admin_brand_initial: { type: 'string', public: true, description: 'Admin brand initial' },
+      admin_panel_label: { type: 'string', public: true, description: 'Admin panel label' },
+      admin_login_title: { type: 'string', public: true, description: 'Admin login title' },
+      admin_footer_text: { type: 'string', public: true, description: 'Admin login footer text' },
+      admin_html_title: { type: 'string', public: true, description: 'Admin browser title' }
     }
   },
   email: {
@@ -164,7 +186,10 @@ const coerceSettingValue = (value, type) => {
   if (type === 'boolean') return value === true || value === 'true' || value === '1'
   return value ?? ''
 }
-const settingKey = (setting, group) => setting.key.startsWith(`${group}_`) ? setting.key.slice(group.length + 1) : setting.key
+const settingKey = (setting, group, fields) => {
+  if (setting.key in fields) return setting.key
+  return setting.key.startsWith(`${group}_`) ? setting.key.slice(group.length + 1) : setting.key
+}
 
 const fetchSettings = async (group, force = false) => {
   const definition = groupDefinitions[group]
@@ -176,7 +201,7 @@ const fetchSettings = async (group, force = false) => {
     const prefixed = settings.filter((setting) => setting.key.startsWith(`${group}_`))
     const canonical = settings.filter((setting) => !setting.key.startsWith(`${group}_`))
     ;[...prefixed, ...canonical].forEach((setting) => {
-      const key = settingKey(setting, group)
+      const key = settingKey(setting, group, definition.fields)
       if (key in definition.target) {
         definition.target[key] = coerceSettingValue(setting.value, definition.fields[key]?.type || setting.type)
       }

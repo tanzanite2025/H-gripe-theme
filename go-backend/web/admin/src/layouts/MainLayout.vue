@@ -59,7 +59,7 @@
             </Tooltip>
 
             <div class="min-w-0">
-              <span class="hidden text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 sm:block">SYSTEM CONTROL / 运营后台</span>
+              <span v-if="panelLabel" class="hidden text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 sm:block">{{ panelLabel }}</span>
               <strong class="block truncate text-sm font-black tracking-tighter italic uppercase">{{ routeTitle }}</strong>
             </div>
           </div>
@@ -121,7 +121,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ChevronDown,
@@ -170,6 +170,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useAdminBranding } from '@/composables/useAdminBranding'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -181,6 +182,7 @@ const mobileSidebarOpen = ref(false)
 const logoutDialogOpen = ref(false)
 const logoutLoading = ref(false)
 const user = computed(() => authStore.user)
+const { panelLabel, loadAdminBranding, setAdminDocumentTitle } = useAdminBranding()
 
 const navigationItems = [
   { path: '/', routeName: 'Dashboard', label: '仪表板', icon: LayoutDashboard },
@@ -235,6 +237,14 @@ const confirmLogout = async () => {
     logoutDialogOpen.value = false
   }
 }
+
+onMounted(() => {
+  loadAdminBranding()
+})
+
+watchEffect(() => {
+  setAdminDocumentTitle(routeTitle.value)
+})
 
 watch(
   () => route.fullPath,

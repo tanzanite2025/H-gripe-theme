@@ -2,12 +2,20 @@ package setting
 
 // SiteSettings 站点设置响应
 type SiteSettings struct {
-	SiteName        string `json:"site_name"`
-	SiteDescription string `json:"site_description"`
-	SiteLogo        string `json:"site_logo"`
-	ContactEmail    string `json:"contact_email"`
-	ContactPhone    string `json:"contact_phone"`
-	SocialLinks     string `json:"social_links"` // JSON格式
+	SiteName          string `json:"site_name"`
+	BrandTitle        string `json:"brand_title"`
+	SiteDescription   string `json:"site_description"`
+	SiteURL           string `json:"site_url"`
+	SiteLogo          string `json:"site_logo"`
+	ContactEmail      string `json:"contact_email"`
+	ContactPhone      string `json:"contact_phone"`
+	SocialLinks       string `json:"social_links"` // JSON格式
+	AdminBrandName    string `json:"admin_brand_name"`
+	AdminBrandInitial string `json:"admin_brand_initial"`
+	AdminPanelLabel   string `json:"admin_panel_label"`
+	AdminLoginTitle   string `json:"admin_login_title"`
+	AdminFooterText   string `json:"admin_footer_text"`
+	AdminHTMLTitle    string `json:"admin_html_title"`
 }
 
 // QuickBuySettings 快速购买设置

@@ -28,8 +28,12 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 		switch st.Key {
 		case "site_name":
 			siteSettings.SiteName = st.Value
+		case "brand_title":
+			siteSettings.BrandTitle = st.Value
 		case "site_description":
 			siteSettings.SiteDescription = st.Value
+		case "site_url":
+			siteSettings.SiteURL = st.Value
 		case "site_logo":
 			siteSettings.SiteLogo = st.Value
 		case "contact_email":
@@ -38,6 +42,18 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 			siteSettings.ContactPhone = st.Value
 		case "social_links":
 			siteSettings.SocialLinks = st.Value
+		case "admin_brand_name":
+			siteSettings.AdminBrandName = st.Value
+		case "admin_brand_initial":
+			siteSettings.AdminBrandInitial = st.Value
+		case "admin_panel_label":
+			siteSettings.AdminPanelLabel = st.Value
+		case "admin_login_title":
+			siteSettings.AdminLoginTitle = st.Value
+		case "admin_footer_text":
+			siteSettings.AdminFooterText = st.Value
+		case "admin_html_title":
+			siteSettings.AdminHTMLTitle = st.Value
 		}
 	}
 

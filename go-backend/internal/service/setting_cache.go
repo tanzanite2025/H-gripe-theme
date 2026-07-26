@@ -2,28 +2,30 @@ package service
 
 import "fmt"
 
+const settingCacheVersion = "v2"
+
 func settingValueCacheKey(key, locale string) string {
-	return fmt.Sprintf("setting:%s:%s", key, locale)
+	return fmt.Sprintf("setting:%s:%s:%s", settingCacheVersion, key, locale)
 }
 
 func settingsAllCacheKey(locale string) string {
-	return fmt.Sprintf("settings:all:%s", locale)
+	return fmt.Sprintf("settings:%s:all:%s", settingCacheVersion, locale)
 }
 
 func settingsPublicCacheKey(locale string) string {
-	return fmt.Sprintf("settings:public:%s", locale)
+	return fmt.Sprintf("settings:%s:public:%s", settingCacheVersion, locale)
 }
 
 func settingsGroupCacheKey(group, locale string) string {
-	return fmt.Sprintf("settings:group:%s:%s", group, locale)
+	return fmt.Sprintf("settings:%s:group:%s:%s", settingCacheVersion, group, locale)
 }
 
 func settingsStructuredCacheKey(group, locale string) string {
-	return fmt.Sprintf("settings:%s:%s", group, locale)
+	return fmt.Sprintf("settings:%s:structured:%s:%s", settingCacheVersion, group, locale)
 }
 
 func settingsGroupsCacheKey() string {
-	return "settings:groups"
+	return fmt.Sprintf("settings:%s:groups", settingCacheVersion)
 }
 
 func (s *SettingService) invalidateSettingCaches(key, group, locale string) {
