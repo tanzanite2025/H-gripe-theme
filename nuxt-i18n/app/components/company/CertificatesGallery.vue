@@ -48,7 +48,7 @@
                         <span class="text-2xl font-black tracking-widest tz-text-muted">UCI</span>
                     </div>
                    <div class="w-48 h-48 mx-auto rounded-full border-4 border-slate-700/50 bg-slate-900 shadow-2xl relative group-hover:scale-105 transition-transform duration-700 flex items-center justify-center">
-                        <div class="tz-text-muted text-[10px] uppercase tracking-widest">
+                        <div class="tz-text-muted tz-micro-label uppercase tracking-widest">
                            UCI Approved<br>Sticker
                         </div>
                    </div>
@@ -95,19 +95,19 @@
                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                      <div class="p-3 rounded-xl bg-black/20 border border-white/5">
                          <div class="text-2xl font-bold text-white mb-1">100+</div>
-                         <div class="text-[10px] tz-text-secondary uppercase tracking-wider">Test Cycles</div>
+                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">Test Cycles</div>
                      </div>
                      <div class="p-3 rounded-xl bg-black/20 border border-white/5">
                          <div class="text-2xl font-bold text-white mb-1">100%</div>
-                         <div class="text-[10px] tz-text-secondary uppercase tracking-wider">QC Inspection</div>
+                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">QC Inspection</div>
                      </div>
                       <div class="p-3 rounded-xl bg-black/20 border border-white/5">
                          <div class="text-2xl font-bold text-white mb-1">3 Year</div>
-                         <div class="text-[10px] tz-text-muted uppercase tracking-wider">Warranty</div>
+                         <div class="tz-micro-label tz-text-muted uppercase tracking-wider">Warranty</div>
                      </div>
                       <div class="p-3 rounded-xl bg-black/20 border border-white/5">
                          <div class="text-2xl font-bold text-white mb-1">24/7</div>
-                         <div class="text-[10px] tz-text-secondary uppercase tracking-wider">Support</div>
+                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">Support</div>
                      </div>
                  </div>
              </div>

@@ -63,11 +63,11 @@
           <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Climbing</strong>
-                <span class="text-[10px] bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Lightweight</span>
+                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Lightweight</span>
              </div>
              <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-text-muted text-[10px] uppercase">Front</span> 30-40mm</div>
-                <div><span class="block tz-text-muted text-[10px] uppercase">Rear</span> 40-50mm</div>
+                <div><span class="block tz-compact-label tz-text-muted">Front</span> 30-40mm</div>
+                <div><span class="block tz-compact-label tz-text-muted">Rear</span> 40-50mm</div>
              </div>
              <p class="text-xs tz-text-muted italic">Front for handling/weight, Rear for stiffness.</p>
           </div>
@@ -76,11 +76,11 @@
           <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Aerodynamics</strong>
-                <span class="text-[10px] bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Speed</span>
+                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Speed</span>
              </div>
              <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-text-muted text-[10px] uppercase">Front</span> 50-60mm</div>
-                <div><span class="block tz-text-muted text-[10px] uppercase">Rear</span> 60-80mm</div>
+                <div><span class="block tz-compact-label tz-text-muted">Front</span> 50-60mm</div>
+                <div><span class="block tz-compact-label tz-text-muted">Rear</span> 60-80mm</div>
              </div>
              <p class="text-xs tz-text-muted italic">Front balances crosswinds, Rear maxes speed.</p>
           </div>
@@ -89,11 +89,11 @@
            <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Training / Durability</strong>
-                <span class="text-[10px] bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Stable</span>
+                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Stable</span>
              </div>
              <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-text-muted text-[10px] uppercase">Front</span> Mid Alloy/Carbon</div>
-                <div><span class="block tz-text-muted text-[10px] uppercase">Rear</span> High/Wide Profile</div>
+                <div><span class="block tz-compact-label tz-text-muted">Front</span> Mid Alloy/Carbon</div>
+                <div><span class="block tz-compact-label tz-text-muted">Rear</span> High/Wide Profile</div>
              </div>
              <p class="text-xs tz-text-muted italic">Rear bears load, Front ensures comfort.</p>
           </div>
@@ -102,11 +102,11 @@
            <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Mixed / Versatile</strong>
-                <span class="text-[10px] bg-slate-800 tz-text-muted px-2 py-0.5 rounded">All-around</span>
+                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">All-around</span>
              </div>
              <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-text-muted text-[10px] uppercase">Front</span> 40-50mm</div>
-                <div><span class="block tz-text-muted text-[10px] uppercase">Rear</span> 55-65mm</div>
+                <div><span class="block tz-compact-label tz-text-muted">Front</span> 40-50mm</div>
+                <div><span class="block tz-compact-label tz-text-muted">Rear</span> 55-65mm</div>
              </div>
              <p class="text-xs tz-text-muted italic">A great balance for racing and training.</p>
           </div>

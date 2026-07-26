@@ -28,6 +28,8 @@
         :seo-settings="seoSettings"
         :social-settings="socialSettings"
         :payment-settings="paymentSettings"
+        :payment-runtime="paymentRuntime"
+        :loading-payment-runtime="loadingPaymentRuntime"
         :social-fields="socialFields"
         :loading-public-chat-agents="loadingPublicChatAgents"
         :loading-public-chat-agent-candidates="loadingPublicChatAgentCandidates"
@@ -37,6 +39,7 @@
         :can-edit="hasPermission('settings:edit')"
         @open-agent-dialog="openPublicChatAgentDialog"
         @refresh-public-chat="fetchPublicChatAgents"
+        @refresh-payment-runtime="fetchPaymentRuntime"
       />
     </div>
 
@@ -89,7 +92,9 @@ const siteSettings = reactive({
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
 const seoSettings = reactive({ meta_title: '', meta_description: '', meta_keywords: '', google_analytics: '', google_tag_manager: '' })
 const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
-const paymentSettings = reactive({ gateway: '', api_key: '', api_secret: '', test_mode: true })
+const paymentSettings = reactive({ gateway: '', test_mode: true })
+const paymentRuntime = ref(null)
+const loadingPaymentRuntime = ref(false)
 
 const loadingPublicChatAgents = ref(false)
 const publicChatAgentsOverview = ref(null)
@@ -170,8 +175,6 @@ const groupDefinitions = {
     target: paymentSettings,
     fields: {
       gateway: { type: 'string', public: false, description: 'Payment gateway' },
-      api_key: { type: 'string', public: false, description: 'Payment API key' },
-      api_secret: { type: 'string', public: false, description: 'Payment API secret' },
       test_mode: { type: 'boolean', public: false, description: 'Payment test mode' }
     }
   }
@@ -224,6 +227,27 @@ const fetchPublicChatAgents = async () => {
   } finally {
     loadingPublicChatAgents.value = false
   }
+}
+
+const fetchPaymentRuntime = async () => {
+  loadingPaymentRuntime.value = true
+  try {
+    const response = await axios.get('/api/admin/settings/payment-runtime')
+    paymentRuntime.value = response.data?.data || response.data || null
+  } catch (error) {
+    console.error('Failed to fetch payment runtime:', error)
+    paymentRuntime.value = null
+  } finally {
+    loadingPaymentRuntime.value = false
+  }
+}
+
+const deleteLegacyPaymentSecrets = async () => {
+  await Promise.allSettled(
+    ['api_key', 'api_secret'].map((key) =>
+      axios.delete(`/api/admin/settings/${key}`, { params: { locale: 'en' } })
+    )
+  )
 }
 
 const fetchPublicChatAgentCandidates = async () => {
@@ -311,7 +335,9 @@ const saveSettings = async () => {
     const response = await axios.post('/api/admin/settings/batch', { settings })
     toast.success(`已保存 ${response.data.count ?? settings.length} 项设置`)
     loadedGroups.delete(group)
+    if (group === 'payment') await deleteLegacyPaymentSecrets()
     await fetchSettings(group, true)
+    if (group === 'payment') await fetchPaymentRuntime()
   } catch (error) {
     console.error('Failed to save settings:', error)
   } finally {
@@ -326,7 +352,10 @@ watch(() => publicChatAgentForm.user_id, (userID) => {
 
 watch(activeTab, (tab) => {
   if (tab === 'public_chat') fetchPublicChatAgents()
-  else fetchSettings(tab)
+  else {
+    fetchSettings(tab)
+    if (tab === 'payment') fetchPaymentRuntime()
+  }
 })
 
 onMounted(() => fetchSettings('site'))

@@ -8,6 +8,7 @@
       </div>
 
       <form @submit.prevent="submitClaim" class="space-y-4">
+        <TurnstileChallenge ref="turnstileChallenge" action="warranty" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Order Number -->
           <div>
@@ -172,7 +173,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 
 const auth = useAuth()
@@ -180,6 +182,7 @@ const auth = useAuth()
 const form = ref({
   order_number: '',
   email: '',
+  verification_token: '',
   tire_pressure: '',
   is_tubeless: 'no',
   issue_description: '',
@@ -194,6 +197,8 @@ const isVerifying = ref(false)
 const isFormLocked = ref(true)
 const submitMessage = ref('')
 const submitStatus = ref<'success' | 'error' | ''>('')
+const route = useRoute()
+const turnstileChallenge = ref<{ execute: () => Promise<string> } | null>(null)
 
 const MAX_IMAGE_FILES = 10
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024
@@ -259,12 +264,46 @@ const validateVideo = (file: File | null) => {
 
 const validateUploads = () => validateImages(imageFiles.value) || validateVideo(videoFile.value)
 
+const verifyEmailToken = async (token: string) => {
+  const normalizedToken = token.trim()
+  if (!normalizedToken) return
+
+  isVerifying.value = true
+  submitMessage.value = ''
+  submitStatus.value = ''
+
+  try {
+    await auth.request<{ verified: boolean }>(
+      `/registrations/warranty/verify/${encodeURIComponent(normalizedToken)}`,
+      {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+        },
+      },
+      'Warranty email verification failed'
+    )
+
+    form.value.verification_token = normalizedToken
+    isFormLocked.value = false
+    submitStatus.value = 'success'
+    submitMessage.value = 'Email verified. Please complete and submit your warranty claim.'
+  } catch (err: unknown) {
+    console.error(err)
+    submitStatus.value = 'error'
+    submitMessage.value = err instanceof Error ? err.message : 'The verification link is invalid or expired.'
+  } finally {
+    isVerifying.value = false
+  }
+}
+
 const verifyOrder = async () => {
   isVerifying.value = true
   submitMessage.value = ''
   submitStatus.value = ''
 
   try {
+    const captchaToken = await turnstileChallenge.value?.execute()
     await auth.request<{ success: boolean; message?: string }>(
       '/registrations/warranty/verify-order',
       {
@@ -276,12 +315,14 @@ const verifyOrder = async () => {
         body: JSON.stringify({
           order_number: form.value.order_number,
           email: form.value.email,
+          captcha_token: captchaToken || '',
         }),
       },
       'Order verification failed'
     )
 
-    isFormLocked.value = false
+    submitStatus.value = 'success'
+    submitMessage.value = 'Please check your email and open the verification link before completing the claim.'
 
   } catch (err: unknown) {
     console.error(err)
@@ -317,6 +358,14 @@ const handleImages = (event: Event) => {
   }
 }
 
+const readVerificationToken = () => {
+  const rawToken = route.query.verification_token
+  const token = Array.isArray(rawToken) ? rawToken[0] : rawToken
+  if (typeof token === 'string' && token.trim()) {
+    void verifyEmailToken(token)
+  }
+}
+
 const handleVideo = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
@@ -341,6 +390,7 @@ const submitClaim = async () => {
   submitStatus.value = ''
 
   try {
+    const captchaToken = await turnstileChallenge.value?.execute()
     const uploadError = validateUploads()
     if (uploadError) {
       setUploadError(uploadError)
@@ -350,6 +400,8 @@ const submitClaim = async () => {
     const formData = new FormData()
     formData.append('order_number', form.value.order_number)
     formData.append('email', form.value.email)
+    formData.append('verification_token', form.value.verification_token)
+    formData.append('captcha_token', captchaToken || '')
     formData.append('tire_pressure', form.value.tire_pressure)
     formData.append('is_tubeless', form.value.is_tubeless === 'yes' ? 'yes' : 'no')
     formData.append('issue_description', form.value.issue_description)
@@ -377,6 +429,7 @@ const submitClaim = async () => {
     form.value = {
       order_number: '',
       email: '',
+      verification_token: '',
       tire_pressure: '',
       is_tubeless: 'no',
       issue_description: '',
@@ -395,4 +448,11 @@ const submitClaim = async () => {
     isSubmitting.value = false
   }
 }
+
+onMounted(readVerificationToken)
+
+watch(
+  () => route.query.verification_token,
+  () => readVerificationToken()
+)
 </script>

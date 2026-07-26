@@ -298,6 +298,28 @@ const isOpen = (id: string) => {
   .footer-menus__column.is-open .mobile-accordion-content {
     display: block;
   }
+
+  .footer-menus__column.is-open .footer-menus__list.mobile-accordion-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .footer-menus__item {
+    margin: 0;
+  }
+
+  .footer-menus__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    padding-block: 0.2rem;
+    line-height: 1.45;
+  }
+
+  .footer-menus__brand-paragraph .footer-menus__link {
+    min-height: 2.25rem;
+  }
   
   @keyframes slideDown {
     from { opacity: 0; transform: translateY(-10px); }

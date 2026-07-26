@@ -10,6 +10,8 @@ type ReviewService struct {
 	reviewRepo *repository.ReviewRepository
 }
 
+var ErrReviewNotPublic = errors.New("review is not public")
+
 func NewReviewService(reviewRepo *repository.ReviewRepository) *ReviewService {
 	return &ReviewService{
 		reviewRepo: reviewRepo,
@@ -35,6 +37,17 @@ func (s *ReviewService) CreateReview(r *review.Review) error {
 
 func (s *ReviewService) GetReview(id uint) (*review.Review, error) {
 	return s.reviewRepo.FindReviewByID(id)
+}
+
+func (s *ReviewService) GetPublicReview(id uint) (*review.Review, error) {
+	r, err := s.reviewRepo.FindReviewByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if r.Status != "approved" {
+		return nil, ErrReviewNotPublic
+	}
+	return r, nil
 }
 
 func (s *ReviewService) GetProductReviews(productID uint, page, pageSize int, status string) ([]review.Review, int64, error) {
@@ -69,6 +82,10 @@ func (s *ReviewService) DeleteReview(id uint, userID uint) error {
 }
 
 func (s *ReviewService) MarkHelpful(reviewID, userID uint, isHelpful bool) error {
+	if _, err := s.GetPublicReview(reviewID); err != nil {
+		return err
+	}
+
 	existing, _ := s.reviewRepo.FindReviewHelpful(reviewID, userID)
 	if existing != nil {
 		if existing.Helpful == isHelpful {

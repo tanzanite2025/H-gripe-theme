@@ -9,15 +9,13 @@ import (
 )
 
 func (h *Handler) ListPaymentMethods(c *gin.Context) {
-	enabledOnly := c.Query("enabled") == "true"
-
-	methods, err := h.paymentService.ListPaymentMethods(enabledOnly)
+	methods, err := h.paymentService.ListPaymentMethods(true)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	response.Success(c, gin.H{"data": methods})
+	response.Success(c, gin.H{"data": paymentMethodsToResponse(methods)})
 }
 
 func (h *Handler) GetPaymentMethod(c *gin.Context) {
@@ -32,6 +30,10 @@ func (h *Handler) GetPaymentMethod(c *gin.Context) {
 		apierror.RespondNotFound(c, "Payment method")
 		return
 	}
+	if !method.Enabled {
+		apierror.RespondNotFound(c, "Payment method")
+		return
+	}
 
-	response.Success(c, method)
+	response.Success(c, paymentMethodToResponse(*method))
 }

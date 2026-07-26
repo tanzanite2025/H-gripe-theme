@@ -15,7 +15,7 @@ import (
 // @Success 200 {array} shipping.ShippingZone
 // @Router /api/v1/shipping/zones [get]
 func (h *Handler) ListZones(c *gin.Context) {
-	zones, err := h.shippingService.ListZones()
+	zones, err := h.shippingService.ListPublicZones()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -36,7 +36,7 @@ func (h *Handler) GetZone(c *gin.Context) {
 		return
 	}
 
-	zone, err := h.shippingService.GetZone(uint(id))
+	zone, err := h.shippingService.GetPublicZone(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Zone")
 		return

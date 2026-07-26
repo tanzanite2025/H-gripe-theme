@@ -81,9 +81,16 @@ func (r *ShippingRepository) FindAllTemplates() ([]shipping.ShippingTemplate, er
 
 func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		enabled := template.Enabled
 		template.Rules = nil
 		if err := tx.Create(template).Error; err != nil {
 			return err
+		}
+		if !enabled {
+			if err := tx.Model(template).Update("enabled", false).Error; err != nil {
+				return err
+			}
+			template.Enabled = false
 		}
 
 		if len(rules) > 0 {
@@ -188,7 +195,17 @@ func (r *ShippingRepository) DeleteRuleForTemplate(templateID uint, ruleID uint)
 
 // CreateCarrier 閸掓稑缂撻悧鈺傜ウ閸忣剙寰?
 func (r *ShippingRepository) CreateCarrier(c *shipping.Carrier) error {
-	return r.db.Create(c).Error
+	enabled := c.Enabled
+	if err := r.db.Create(c).Error; err != nil {
+		return err
+	}
+	if !enabled {
+		if err := r.db.Model(c).Update("enabled", false).Error; err != nil {
+			return err
+		}
+		c.Enabled = false
+	}
+	return nil
 }
 
 // FindCarrierByID 閺嶈宓両D閺屻儲澹橀悧鈺傜ウ閸忣剙寰?
@@ -437,6 +454,34 @@ func (r *ShippingRepository) FindTrackingShipmentByProviderTrackingNumber(provid
 	}
 	if len(shipments) > 1 {
 		return nil, fmt.Errorf("multiple tracking shipments match provider ID %d and tracking number %s", providerID, strings.TrimSpace(trackingNumber))
+	}
+	return &shipments[0], nil
+}
+
+func (r *ShippingRepository) FindTrackingShipmentByTrackingNumber(trackingNumber string) (*shipping.TrackingShipment, error) {
+	trackingNumber = strings.TrimSpace(trackingNumber)
+	if trackingNumber == "" {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	var shipments []shipping.TrackingShipment
+	err := r.db.
+		Preload("Provider").
+		Preload("Carrier").
+		Preload("CarrierService").
+		Preload("Mapping").
+		Where("tracking_number = ?", trackingNumber).
+		Order("id ASC").
+		Limit(2).
+		Find(&shipments).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(shipments) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	if len(shipments) > 1 {
+		return nil, fmt.Errorf("multiple tracking shipments match tracking number %s", trackingNumber)
 	}
 	return &shipments[0], nil
 }
@@ -694,7 +739,17 @@ func (r *ShippingRepository) FindCarrierServiceByID(id uint) (*shipping.CarrierS
 }
 
 func (r *ShippingRepository) CreateCarrierService(service *shipping.CarrierService) error {
-	return r.db.Create(service).Error
+	enabled := service.Enabled
+	if err := r.db.Create(service).Error; err != nil {
+		return err
+	}
+	if !enabled {
+		if err := r.db.Model(service).Update("enabled", false).Error; err != nil {
+			return err
+		}
+		service.Enabled = false
+	}
+	return nil
 }
 
 func (r *ShippingRepository) UpdateCarrierService(service *shipping.CarrierService) error {
@@ -774,7 +829,17 @@ func (r *ShippingRepository) FindAllZones() ([]shipping.ShippingZone, error) {
 }
 
 func (r *ShippingRepository) CreateZone(zone *shipping.ShippingZone) error {
-	return r.db.Create(zone).Error
+	enabled := zone.Enabled
+	if err := r.db.Create(zone).Error; err != nil {
+		return err
+	}
+	if !enabled {
+		if err := r.db.Model(zone).Update("enabled", false).Error; err != nil {
+			return err
+		}
+		zone.Enabled = false
+	}
+	return nil
 }
 
 func (r *ShippingRepository) UpdateZone(zone *shipping.ShippingZone) error {
@@ -853,7 +918,17 @@ func (r *ShippingRepository) FindAllPackagingRules() ([]shipping.PackagingRule, 
 
 // CreatePackagingRule 閸掓稑缂撻崠鍛邦棅鐟欏嫭鐗哥憴鍕灟
 func (r *ShippingRepository) CreatePackagingRule(rule *shipping.PackagingRule) error {
-	return r.db.Create(rule).Error
+	isActive := rule.IsActive
+	if err := r.db.Create(rule).Error; err != nil {
+		return err
+	}
+	if !isActive {
+		if err := r.db.Model(rule).Update("is_active", false).Error; err != nil {
+			return err
+		}
+		rule.IsActive = false
+	}
+	return nil
 }
 
 // UpdatePackagingRule 閺囧瓨鏌婇崠鍛邦棅鐟欏嫭鐗哥憴鍕灟

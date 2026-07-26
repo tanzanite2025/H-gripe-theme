@@ -24,7 +24,7 @@ func (h *GalleryHandler) GetGalleries(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
-	galleries, total, err := h.galleryService.GetAllGalleries(page, pageSize)
+	galleries, total, err := h.galleryService.GetPublicGalleries(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -48,7 +48,7 @@ func (h *GalleryHandler) GetGalleryByID(c *gin.Context) {
 		return
 	}
 
-	gallery, err := h.galleryService.GetGalleryByID(uint(id))
+	gallery, err := h.galleryService.GetPublicGalleryByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
 		return
@@ -64,9 +64,9 @@ func (h *GalleryHandler) GetGalleryImages(c *gin.Context) {
 		return
 	}
 
-	images, err := h.galleryService.GetImagesByGalleryID(uint(id))
+	images, err := h.galleryService.GetPublicImagesByGalleryID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *GalleryHandler) SearchImages(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	images, total, err := h.galleryService.SearchImages(keyword, page, pageSize)
+	images, total, err := h.galleryService.SearchPublicImages(keyword, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -111,11 +111,21 @@ func (h *GalleryHandler) GetImagesByTags(c *gin.Context) {
 		return
 	}
 
-	tags := strings.Split(tagsStr, ",")
+	tags := make([]string, 0)
+	for _, tag := range strings.Split(tagsStr, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag != "" {
+			tags = append(tags, tag)
+		}
+	}
+	if len(tags) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tags parameter is required"})
+		return
+	}
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	images, total, err := h.galleryService.GetImagesByTags(tags, page, pageSize)
+	images, total, err := h.galleryService.GetPublicImagesByTags(tags, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

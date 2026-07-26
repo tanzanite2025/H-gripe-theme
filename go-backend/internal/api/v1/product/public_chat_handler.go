@@ -13,7 +13,6 @@ import (
 
 func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
-	status := normalizePublicChatProductStatus(c.DefaultQuery("status", "active"))
 	keyword := strings.TrimSpace(c.Query("keyword"))
 	typeSlug := strings.TrimSpace(c.Query("product_type"))
 	priceMin := parseOptionalFloatQuery(c, "price_min")
@@ -31,7 +30,6 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 
 	products, total, err := h.productService.SearchPublic(service.ProductSearchInput{
 		Locale:      locale,
-		Status:      status,
 		Keyword:     keyword,
 		TypeSlug:    typeSlug,
 		PriceMin:    priceMin,
@@ -58,21 +56,10 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 			"per_page":    pageSize,
 			"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
 			"total":       total,
-			"filters":     []string{"keyword", "status", "product_type", "price_min", "price_max", "attributes"},
+			"filters":     []string{"keyword", "product_type", "price_min", "price_max", "attributes"},
 			"sorting":     []string{"updated_at"},
 		},
 	})
-}
-
-func normalizePublicChatProductStatus(status string) string {
-	switch strings.ToLower(strings.TrimSpace(status)) {
-	case "", "publish", "published", "active":
-		return "active"
-	case "any":
-		return ""
-	default:
-		return strings.ToLower(strings.TrimSpace(status))
-	}
 }
 
 func makePublicChatProduct(item productdomain.Product) gin.H {

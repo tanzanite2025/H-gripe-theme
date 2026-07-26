@@ -65,7 +65,7 @@
       <g ref="pointsLayerRef"></g>
     </svg>
 
-    <p class="mt-2 text-[11px] tz-text-muted">
+    <p class="mt-2 tz-caption tz-text-muted">
       Visualization is illustrative only. Routes are stylized connections from
       Xiamen to selected partner cities.
     </p>
@@ -233,7 +233,7 @@ onMounted(() => {
 
 <style>
 .map-label {
-  font-size: 10px;
+  font-size: var(--tz-type-caption);
   fill: #e5e7eb;
   paint-order: stroke;
   stroke: #020617;
@@ -331,3 +331,4 @@ onMounted(() => {
   }
 }
 </style>
+

@@ -78,7 +78,7 @@
 
 .sizecharts-section__card-meta {
   margin: 0 0 0.5rem;
-  font-size: 0.7rem;
+  font-size: var(--tz-type-micro-label);
   line-height: 1.25;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -112,7 +112,7 @@
   position: absolute;
   left: 0;
   top: 0.45rem;
-  font-size: 0.7rem;
+  font-size: var(--tz-type-micro-label);
   color: #38bdf8;
 }
 
@@ -163,3 +163,4 @@
 .sizecharts-section .text-white\/40 {
   color: var(--tz-text-muted) !important;
 }
+

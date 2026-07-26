@@ -234,6 +234,5 @@ func (g *alipayGatewayImpl) VerifyWebhook(payload []byte, signature string) (boo
 	// 需要将HTTP POST参数转换为map[string]string
 	// ok, err := g.client.VerifySign(values)
 
-	// 这里提供简化的验证逻辑
-	return true, nil
+	return false, fmt.Errorf("alipay webhook verification requires full notification params and SDK signature verification")
 }

@@ -111,7 +111,7 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
 .points-hero p {
   margin: 0;
   color: rgba(203, 213, 225, 0.78);
-  font-size: 0.74rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -142,7 +142,7 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
 .points-hero__score span {
   margin-top: 0.25rem;
   color: rgba(226, 232, 240, 0.75);
-  font-size: 0.72rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 700;
 }
 
@@ -198,7 +198,7 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
 
 .points-card span {
   color: rgba(203, 213, 225, 0.82);
-  font-size: 0.72rem;
+  font-size: var(--tz-type-micro-label);
   line-height: 1.35;
 }
 
@@ -257,3 +257,4 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
   }
 }
 </style>
+

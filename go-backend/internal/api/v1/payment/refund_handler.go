@@ -24,7 +24,7 @@ func (h *Handler) GetRefund(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, refund)
+	response.Success(c, refundToResponse(*refund))
 }
 
 func (h *Handler) GetOrderRefunds(c *gin.Context) {
@@ -43,5 +43,5 @@ func (h *Handler) GetOrderRefunds(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"data": refunds})
+	response.Success(c, gin.H{"data": refundsToResponse(refunds)})
 }

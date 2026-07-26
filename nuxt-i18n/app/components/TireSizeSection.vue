@@ -82,7 +82,7 @@
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">37-622</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">
                 28 x 1.40<br />
-                <span class="text-[10px] tz-text-muted">or 28 x 1 5/8 x 1 3/8</span>
+                <span class="tz-caption tz-text-muted">or 28 x 1 5/8 x 1 3/8</span>
               </td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">700 x 35C</td>
             </tr>
@@ -103,7 +103,7 @@
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">~ 37 mm</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">
                 ~ 1 3/8 Inch<br />
-                <span class="text-[10px] tz-text-muted">(1.40 Inch)</span>
+                <span class="tz-caption tz-text-muted">(1.40 Inch)</span>
               </td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">~ 35 mm</td>
             </tr>

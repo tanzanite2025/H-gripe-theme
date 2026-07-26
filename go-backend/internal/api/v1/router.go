@@ -76,7 +76,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		VisitorSecret:         cfg.JWT.Secret,
 	})
 	settingsHandler := settings.NewHandler(settingService)
-	orderHandler := order.NewHandler(orderService, cartService)
+	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
 	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService)
 	reviewHandler := review.NewHandler(reviewService)
@@ -86,11 +86,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		VisitorProfileService: services.VisitorProfile,
 		CustomerServiceEvents: services.CustomerServiceEvents,
 	})
-	paymentHandler := payment.NewHandler(paymentService, orderService)
-	shippingHandler := shipping.NewHandler(services.Shipping)
+	paymentHandler := payment.NewHandler(paymentService, orderService, services.AdminSettings)
+	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
-	registrationHandler := registration.NewHandler(registrationService, storageSvc)
-	subscriptionHandler := subscription.NewHandler(subscriptionService)
+	registrationHandler := registration.NewHandler(registrationService, storageSvc, deps.AntiBot)
+	subscriptionHandler := subscription.NewHandler(subscriptionService, deps.AntiBot)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	wishlistHandler := wishlist.NewHandler(wishlistService)
@@ -178,21 +178,22 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			feedbackGroup.GET("", feedbackHandler.List)
 			feedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), feedbackHandler.Eligibility)
-			feedbackGroup.POST("", middleware.AuthMiddleware(authService), feedbackHandler.Create)
+			feedbackGroup.POST("", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), feedbackHandler.Create)
 		}
 
 		suggestionFeedbackGroup := v1.Group("/suggestion-feedback")
 		{
 			suggestionFeedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), suggestionFeedbackHandler.Eligibility)
-			suggestionFeedbackGroup.POST("/upload", middleware.AuthMiddleware(authService), suggestionFeedbackHandler.Upload)
-			suggestionFeedbackGroup.POST("", middleware.AuthMiddleware(authService), suggestionFeedbackHandler.Create)
+			suggestionFeedbackGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), suggestionFeedbackHandler.Upload)
+			suggestionFeedbackGroup.POST("", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), suggestionFeedbackHandler.Create)
 		}
 
 		spokeGroup := v1.Group("/spoke")
+		spokeGroup.Use(middleware.RateLimit(5))
 		{
 			spokeGroup.POST("/calc", spokeHandler.Calculate)
 			spokeGroup.GET("/export", spokeHandler.GetExport)
-			spokeGroup.GET("/history", spokeHandler.ListHistory)
+			spokeGroup.GET("/history", middleware.AuthMiddleware(authService), spokeHandler.ListHistory)
 		}
 
 		checkoutGroup := v1.Group("/checkout")
@@ -205,7 +206,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		orderGroup := v1.Group("/orders")
 		orderGroup.Use(middleware.AuthMiddleware(authService))
 		{
-			orderGroup.POST("", orderHandler.CreateOrder)
+			orderGroup.POST("", middleware.RateLimitByUser(2), orderHandler.CreateOrder)
 			orderGroup.GET("", orderHandler.ListOrders)
 			orderGroup.GET("/stats", orderHandler.GetOrderStats)
 			orderGroup.GET("/:id", orderHandler.GetOrder)
@@ -227,15 +228,15 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			authMarketing.Use(middleware.AuthMiddleware(authService))
 			{
 				// 优惠券
-				authMarketing.POST("/coupons/validate", marketingHandler.ValidateCoupon)
+				authMarketing.POST("/coupons/validate", middleware.RateLimitByUser(3), marketingHandler.ValidateCoupon)
 
 				// 积分和会员
 				authMarketing.GET("/loyalty/assets", marketingHandler.GetUserAssets)
 				authMarketing.GET("/loyalty/points", marketingHandler.GetPoints)
 				authMarketing.GET("/loyalty/info", marketingHandler.GetLoyaltyInfo)
-				authMarketing.POST("/loyalty/checkin", marketingHandler.CheckIn)
-				authMarketing.POST("/loyalty/referral", marketingHandler.CreateReferral)
-				authMarketing.POST("/loyalty/redeem", marketingHandler.RedeemPointsToGiftCard)
+				authMarketing.POST("/loyalty/checkin", middleware.RateLimitByUser(1), marketingHandler.CheckIn)
+				authMarketing.POST("/loyalty/referral", middleware.RateLimitByUser(2), marketingHandler.CreateReferral)
+				authMarketing.POST("/loyalty/redeem", middleware.RateLimitByUser(1), marketingHandler.RedeemPointsToGiftCard)
 			}
 		}
 
@@ -252,10 +253,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			authReview := reviewGroup.Group("")
 			authReview.Use(middleware.AuthMiddleware(authService))
 			{
-				authReview.POST("", reviewHandler.CreateReview)
+				authReview.POST("", middleware.RateLimitByUser(2), reviewHandler.CreateReview)
 				authReview.GET("/my", reviewHandler.ListUserReviews)
 				authReview.DELETE("/:id", reviewHandler.DeleteReview)
-				authReview.POST("/:id/helpful", reviewHandler.MarkHelpful)
+				authReview.POST("/:id/helpful", middleware.RateLimitByUser(3), reviewHandler.MarkHelpful)
 			}
 		}
 
@@ -278,13 +279,13 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			customerServiceGroup.GET("/agents", ticketHandler.ListPublicCustomerServiceAgents)
 			customerServiceGroup.GET("/products", productHandler.ListPublicChatProducts)
 			customerServiceGroup.GET("/orders", middleware.AuthMiddleware(authService), orderHandler.ListPublicChatOrders)
-			customerServiceGroup.POST("/conversations", middleware.OptionalAuthMiddleware(authService), ticketHandler.EnsurePublicCustomerServiceConversation)
+			customerServiceGroup.POST("/conversations", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(3), ticketHandler.EnsurePublicCustomerServiceConversation)
 			customerServiceGroup.GET("/has-conversation", middleware.OptionalAuthMiddleware(authService), ticketHandler.HasPublicCustomerServiceConversation)
-			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), ticketHandler.SendPublicCustomerServiceMessage)
-			customerServiceGroup.POST("/typing", middleware.OptionalAuthMiddleware(authService), ticketHandler.SendPublicCustomerServiceTyping)
+			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.SendPublicCustomerServiceMessage)
+			customerServiceGroup.POST("/typing", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.SendPublicCustomerServiceTyping)
 			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
 			customerServiceGroup.GET("/auto-reply/welcome", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetWelcomeMessage)
-			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), ticketHandler.MatchKeywordMessage)
+			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.MatchKeywordMessage)
 			customerServiceGroup.GET("/events", middleware.OptionalAuthMiddleware(authService), ticketHandler.StreamPublicCustomerServiceEvents)
 			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), ticketHandler.ServeWS)
 		}
@@ -304,8 +305,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			showcaseGroup.GET("/gallery", showcaseHandler.List)
 			showcaseGroup.GET("/comments", showcaseHandler.ListComments)
-			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), showcaseHandler.Upload)
-			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), showcaseHandler.AddComment)
+			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), showcaseHandler.Upload)
+			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), showcaseHandler.AddComment)
 		}
 
 		// 设置路由
@@ -335,11 +336,14 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		subscriptionGroup := v1.Group("/subscriptions")
 		{
 			// 公开端点
-			subscriptionGroup.POST("", subscriptionHandler.Subscribe)
-			subscriptionGroup.GET("/unsubscribe/:token", subscriptionHandler.Unsubscribe)
-			subscriptionGroup.POST("/unsubscribe", subscriptionHandler.UnsubscribeByEmail)
-			subscriptionGroup.POST("/resubscribe", subscriptionHandler.Resubscribe)
-			subscriptionGroup.GET("/status/:email", subscriptionHandler.GetSubscription)
+			subscriptionGroup.POST("", middleware.RateLimit(2), subscriptionHandler.Subscribe)
+			subscriptionGroup.GET("/confirm/:token", middleware.RateLimit(5), subscriptionHandler.ConfirmSubscription)
+			subscriptionGroup.GET("/unsubscribe/:token", middleware.RateLimit(5), subscriptionHandler.Unsubscribe)
+			subscriptionGroup.POST("/unsubscribe", middleware.RateLimit(2), subscriptionHandler.UnsubscribeByEmail)
+			subscriptionGroup.POST("/resubscribe", middleware.RateLimit(2), subscriptionHandler.Resubscribe)
+			subscriptionGroup.GET("/resubscribe/:token", middleware.RateLimit(5), subscriptionHandler.ResubscribeByToken)
+			subscriptionGroup.GET("/status/:email", middleware.RateLimit(2), subscriptionHandler.GetSubscription)
+			subscriptionGroup.GET("/status-token/:token", middleware.RateLimit(5), subscriptionHandler.GetSubscriptionByToken)
 		}
 
 		// 支付路由
@@ -350,7 +354,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			paymentGroup.GET("/methods/:id", paymentHandler.GetPaymentMethod)
 			paymentGroup.GET("/tax-rates", paymentHandler.ListTaxRates)
 			paymentGroup.GET("/tax-rates/:id", paymentHandler.GetTaxRate)
-			paymentGroup.POST("/calculate-tax", paymentHandler.CalculateTax)
+			paymentGroup.POST("/calculate-tax", middleware.RateLimit(5), paymentHandler.CalculateTax)
 
 			// 需要认证的端点
 			authPayment := paymentGroup.Group("")
@@ -369,16 +373,16 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			// 公开端点
 			shippingGroup.GET("/templates", shippingHandler.ListTemplates)
 			shippingGroup.GET("/templates/:id", shippingHandler.GetTemplate)
-			shippingGroup.POST("/calculate", shippingHandler.CalculateShipping)
-			shippingGroup.POST("/quote", shippingHandler.QuoteShipping)
+			shippingGroup.POST("/calculate", middleware.RateLimit(5), shippingHandler.CalculateShipping)
+			shippingGroup.POST("/quote", middleware.RateLimit(5), shippingHandler.QuoteShipping)
 			shippingGroup.GET("/carriers", shippingHandler.ListCarriers)
 			shippingGroup.GET("/carriers/:id", shippingHandler.GetCarrier)
 			shippingGroup.GET("/carrier-services", shippingHandler.ListCarrierServices)
 			shippingGroup.GET("/carrier-services/:id", shippingHandler.GetCarrierService)
 			shippingGroup.GET("/zones", shippingHandler.ListZones)
 			shippingGroup.GET("/zones/:id", shippingHandler.GetZone)
-			shippingGroup.GET("/track/:tracking_number", shippingHandler.TrackShipment)
-			shippingGroup.GET("/orders/:order_id/tracking", shippingHandler.GetOrderTracking)
+			shippingGroup.GET("/track/:tracking_number", middleware.AuthMiddleware(authService), middleware.RateLimit(5), shippingHandler.TrackShipment)
+			shippingGroup.GET("/orders/:order_id/tracking", middleware.AuthMiddleware(authService), shippingHandler.GetOrderTracking)
 			shippingGroup.GET("/packaging-rules", shippingHandler.ListPackagingRules)
 			shippingGroup.GET("/packaging-rules/:id", shippingHandler.GetPackagingRule)
 			shippingGroup.GET("/products/:id/packaging-rules", shippingHandler.GetProductPackagingRules)
@@ -399,9 +403,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		registrationGroup := v1.Group("/registrations")
 		{
 			// 公开端点
-			registrationGroup.POST("/verify", registrationHandler.VerifySerialNumber)
-			registrationGroup.POST("/warranty/verify-order", registrationHandler.VerifyWarrantyOrder)
-			registrationGroup.POST("/warranty/claim", registrationHandler.SubmitWarrantyClaim)
+			registrationGroup.POST("/verify", middleware.RateLimit(2), registrationHandler.VerifySerialNumber)
+			registrationGroup.POST("/warranty/verify-order", middleware.RateLimit(2), registrationHandler.VerifyWarrantyOrder)
+			registrationGroup.GET("/warranty/verify/:token", middleware.RateLimit(5), registrationHandler.VerifyWarrantyOrderToken)
+			registrationGroup.POST("/warranty/claim", middleware.RateLimit(1), registrationHandler.SubmitWarrantyClaim)
 
 			// 需要认证的端点
 			authRegistration := registrationGroup.Group("")

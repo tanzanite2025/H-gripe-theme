@@ -63,35 +63,35 @@
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
                 <strong class="block text-sky-400 text-sm mb-1">DT Swiss (Switzerland)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Renowned for stable craftsmanship and a comprehensive product matrix (straight, butted, aero), with complete engineering support.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 text-[10px] font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 tz-caption font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
                   View DT Swiss Spoke
                 </button>
              </div>
               <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
                 <strong class="block text-sky-400 text-sm mb-1">Sapim (Belgium)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Leading in high-end aero spokes (e.g. CX-Ray). Known for lightweight performance and excellent fatigue life.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 text-[10px] font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 tz-caption font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
                   View Sapim Spoke
                 </button>
              </div>
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
                 <strong class="block text-amber-400 text-sm mb-1">Pillar (Taiwan)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Strong cost-performance with a wide range including reinforced (PSR) designs. Suitable for custom and mass production.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-amber-500/30 tz-caption font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/10 transition-colors">
                   View Pillar Spoke
                 </button>
              </div>
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
           <strong class="block tz-text-primary text-sm mb-1">Mac / CNSpoke</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response. Covers all types balancing cost and performance for diverse applications.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 text-[10px] font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 tz-caption font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
                   View Mac / CNSpoke Spoke
                 </button>
              </div>
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
           <strong class="block tz-text-primary text-sm mb-1">YT Spokes (China)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response, suitable for cost and performance balance.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 text-[10px] font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 tz-caption font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
                   View YT Spokes Spoke
                 </button>
              </div>
@@ -99,7 +99,7 @@
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center ring-1 ring-indigo-500/20">
                 <strong class="block text-indigo-400 text-sm mb-1">TANZANITE CARBON SPOKE</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">The pinnacle of lightweight performance. Designed for ultimate responsiveness and rigidity, drastically reducing rotational weight.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-indigo-500/30 text-[10px] font-bold uppercase tracking-wider text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-indigo-500/30 tz-caption font-bold uppercase tracking-wider text-indigo-400 hover:bg-indigo-500/10 transition-colors">
                   View Tanzanite Carbon Spoke
                 </button>
              </div>
@@ -259,7 +259,7 @@
            <div class="flex items-center justify-center gap-3 mb-4">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 text-lg font-bold">2</span>
             <strong class="text-xl text-slate-100">Carbon Fiber</strong>
-            <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-500 text-white px-2 py-1 rounded-full">Elite</span>
+                    <span class="tz-micro-label font-bold uppercase tracking-wider bg-indigo-500 text-white px-2 py-1 rounded-full">Elite</span>
           </div>
 
            <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
@@ -310,7 +310,7 @@
            <div class="flex items-center justify-center gap-3 mb-4">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">3</span>
             <strong class="text-xl tz-text-primary">Titanium Alloy</strong>
-            <span class="text-[10px] border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
+                <span class="tz-micro-label border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
           </div>
 
            <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
@@ -359,7 +359,7 @@
            <div class="flex items-center justify-center gap-3 mb-4">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">4</span>
             <strong class="text-xl tz-text-primary">Aluminum Alloy</strong>
-             <span class="text-[10px] border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
+                <span class="tz-micro-label border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
           </div>
 
            <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
@@ -499,7 +499,7 @@
                      <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             <strong class="block tz-text-primary text-base">SAPIM CX-Ray</strong>
-                            <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold">TOP</span>
+                <span class="tz-micro-label bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold">TOP</span>
                         </div>
                      </td>
                      <td class="px-6 py-4 text-center">

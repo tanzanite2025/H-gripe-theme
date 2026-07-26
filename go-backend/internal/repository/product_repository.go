@@ -61,11 +61,22 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsAndMedia(p *product.Prod
 		}
 
 		if len(variants) > 0 {
+			requestedActive := make([]bool, len(variants))
 			for i := range variants {
 				variants[i].ProductID = p.ID
+				requestedActive[i] = variants[i].IsActive
 			}
 			if err := tx.Create(&variants).Error; err != nil {
 				return err
+			}
+			for i := range variants {
+				if requestedActive[i] {
+					continue
+				}
+				if err := tx.Model(&variants[i]).Update("is_active", false).Error; err != nil {
+					return err
+				}
+				variants[i].IsActive = false
 			}
 		}
 

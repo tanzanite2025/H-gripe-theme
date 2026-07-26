@@ -19,7 +19,7 @@
                 Search results
                 <span v-if="agent" class="text-xs tz-text-secondary ml-1">({{ agent.name }})</span>
               </div>
-              <div v-if="query" class="text-[11px] tz-text-muted truncate">
+              <div v-if="query" class="tz-caption tz-text-muted truncate">
                 Keyword: <span class="tz-text-primary">{{ query }}</span>
               </div>
             </div>
@@ -90,27 +90,27 @@
                         <div v-if="product.price" class="text-xs text-[#40ffaa] mt-1">
                           {{ product.price }}
                         </div>
-                        <div v-if="product.variants?.length" class="mt-1 text-[11px] tz-text-muted">
+                        <div v-if="product.variants?.length" class="mt-1 tz-caption tz-text-muted">
                           {{ product.variants.length }} SKU option{{ product.variants.length > 1 ? 's' : '' }}
                         </div>
                         <div class="mt-3 flex flex-wrap gap-2">
                           <button
                             type="button"
-                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-[#40ffaa]/90 text-[11px] text-[#07120b] border border-[#86efac]/70 hover:bg-[#86efac] transition-colors"
+                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-[#40ffaa]/90 tz-caption text-[#07120b] border border-[#86efac]/70 hover:bg-[#86efac] transition-colors"
                             @click="handleAddToCart(product)"
                           >
                             加入购物车
                           </button>
                           <button
                             type="button"
-                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-white/10 text-[11px] tz-text-primary border border-white/30 hover:bg-white/20 transition-colors"
+                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-white/10 tz-caption tz-text-primary border border-white/30 hover:bg-white/20 transition-colors"
                             @click="handleShareToChat(product)"
                           >
                             分享到聊天
                           </button>
                           <button
                             type="button"
-                            class="flex-1 min-w-[140px] px-3 py-1.5 rounded-full bg-[#6b73ff]/90 text-[11px] text-white border border-[#a5b4fc]/60 hover:bg-[#818cf8] transition-colors"
+                            class="flex-1 min-w-[140px] px-3 py-1.5 rounded-full bg-[#6b73ff]/90 tz-caption text-white border border-[#a5b4fc]/60 hover:bg-[#818cf8] transition-colors"
                             @click="openConfigConfirm(product)"
                           >
                             和客服确认配置
@@ -130,7 +130,7 @@
               <div class="flex items-center justify-between">
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/30 text-[11px] tz-text-secondary hover:bg-white/10 transition-colors"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/30 tz-caption tz-text-secondary hover:bg-white/10 transition-colors"
                   @click="backToList"
                 >
                   <span class="text-xs">←</span>
@@ -161,13 +161,13 @@
                       >
                         {{ selectedConfigPriceLabel }}
                       </div>
-                      <div v-if="selectedConfigVariant?.sku || selectedConfigProduct.sku" class="mt-2 text-[11px] tz-text-secondary">
+                      <div v-if="selectedConfigVariant?.sku || selectedConfigProduct.sku" class="mt-2 tz-caption tz-text-secondary">
                         SKU: {{ selectedConfigVariant?.sku || selectedConfigProduct.sku }}
                       </div>
-                      <div v-if="selectedConfigVariant?.weightGrams" class="mt-1 text-[11px] tz-text-secondary">
+                      <div v-if="selectedConfigVariant?.weightGrams" class="mt-1 tz-caption tz-text-secondary">
                         Weight: {{ selectedConfigVariant.weightGrams }}g
                       </div>
-                      <div v-if="selectedConfigVariant" class="mt-1 text-[11px] tz-text-secondary">
+                      <div v-if="selectedConfigVariant" class="mt-1 tz-caption tz-text-secondary">
                         Stock: {{ selectedConfigVariant.stockQuantity }}
                       </div>
                     </div>
@@ -178,7 +178,7 @@
                   >
                     <label
                       v-if="configVariants.length > 1"
-                      class="block text-[10px] font-semibold uppercase tracking-[0.16em] tz-text-muted"
+                      class="block tz-compact-label font-semibold tz-text-muted"
                       for="wa-config-variant"
                     >
                       Choose SKU
@@ -198,8 +198,8 @@
                       </option>
                     </select>
 
-                    <div class="mt-3 text-[12px] tz-text-secondary">
-                      <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] tz-text-muted">
+                    <div class="mt-3 tz-caption tz-text-secondary">
+                      <div class="mb-2 tz-compact-label font-semibold tz-text-muted">
                         Configuration facts
                       </div>
                       <dl v-if="selectedConfigOptionRows.length" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -208,7 +208,7 @@
                           :key="option.key"
                           class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2"
                         >
-                          <dt class="text-[10px] uppercase tracking-[0.12em] tz-text-muted">
+                          <dt class="tz-compact-label tz-text-muted">
                             {{ option.label }}
                           </dt>
                           <dd class="mt-1 text-xs font-semibold text-white">
@@ -216,7 +216,7 @@
                           </dd>
                         </div>
                       </dl>
-                      <p v-else class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] leading-5">
+                      <p v-else class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 tz-caption">
                         This product currently has no variant option fields. The selected SKU will still be sent as the configuration fact.
                       </p>
                     </div>
@@ -224,7 +224,7 @@
                 </div>
 
                 <div class="border border-white/10 rounded-xl bg-white/[0.04] p-3 md:p-4 flex flex-col gap-3">
-                  <div class="text-xs tz-text-secondary">
+                  <div class="tz-caption tz-text-secondary">
                     The selected product and SKU facts will be sent as a structured card. Staff can read them in Admin without editing or duplicating product data.
                   </div>
                   <button
@@ -234,7 +234,7 @@
                   >
                     发送配置给客服
                   </button>
-                  <div class="text-[11px] tz-text-muted">
+                  <div class="tz-caption tz-text-muted">
                     你仍然可以在聊天中手动描述戒指款式和预算，我们的客服会协助推荐合适的产品。
                   </div>
                 </div>
@@ -379,3 +379,4 @@ watch(
   }
 )
 </script>
+

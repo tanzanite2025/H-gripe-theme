@@ -14,6 +14,80 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+func TestShippingServicePublicCatalogFiltersDisabledResources(t *testing.T) {
+	_, shippingService := newTestShippingQuoteService(t)
+
+	enabledTemplate := shippingdomain.ShippingTemplate{Name: "Enabled", Type: "weight", DefaultFee: 10, Enabled: true}
+	disabledTemplate := shippingdomain.ShippingTemplate{Name: "Disabled", Type: "weight", DefaultFee: 20, Enabled: false}
+	require.NoError(t, shippingService.CreateTemplate(&enabledTemplate))
+	require.NoError(t, shippingService.CreateTemplate(&disabledTemplate))
+
+	templates, err := shippingService.ListPublicTemplates()
+	require.NoError(t, err)
+	require.Len(t, templates, 1)
+	assert.Equal(t, enabledTemplate.ID, templates[0].ID)
+
+	_, err = shippingService.GetPublicTemplate(disabledTemplate.ID)
+	require.ErrorIs(t, err, ErrShippingNotFound)
+
+	_, err = shippingService.CalculateShipping(ShippingCalculationInput{
+		TemplateID: disabledTemplate.ID,
+		Weight:     1,
+		Country:    "US",
+	})
+	require.ErrorIs(t, err, ErrShippingNotFound)
+}
+
+func TestShippingServicePublicCarrierServicesRequireVisibleAssociations(t *testing.T) {
+	_, shippingService := newTestShippingQuoteService(t)
+
+	enabledTemplate := shippingdomain.ShippingTemplate{Name: "Enabled", Type: "weight", DefaultFee: 10, Enabled: true}
+	disabledTemplate := shippingdomain.ShippingTemplate{Name: "Disabled", Type: "weight", DefaultFee: 20, Enabled: false}
+	require.NoError(t, shippingService.CreateTemplate(&enabledTemplate))
+	require.NoError(t, shippingService.CreateTemplate(&disabledTemplate))
+
+	enabledCarrier := shippingdomain.Carrier{Name: "Enabled Carrier", Code: "enabled", Enabled: true}
+	disabledCarrier := shippingdomain.Carrier{Name: "Disabled Carrier", Code: "disabled", Enabled: false}
+	require.NoError(t, shippingService.CreateCarrier(&enabledCarrier))
+	require.NoError(t, shippingService.CreateCarrier(&disabledCarrier))
+
+	visibleService := shippingdomain.CarrierService{
+		CarrierID:   enabledCarrier.ID,
+		TemplateID:  &enabledTemplate.ID,
+		ServiceCode: "visible",
+		ServiceName: "Visible",
+		Enabled:     true,
+	}
+	hiddenByCarrier := shippingdomain.CarrierService{
+		CarrierID:   disabledCarrier.ID,
+		TemplateID:  &enabledTemplate.ID,
+		ServiceCode: "hidden-carrier",
+		ServiceName: "Hidden Carrier",
+		Enabled:     true,
+	}
+	hiddenByTemplate := shippingdomain.CarrierService{
+		CarrierID:   enabledCarrier.ID,
+		TemplateID:  &disabledTemplate.ID,
+		ServiceCode: "hidden-template",
+		ServiceName: "Hidden Template",
+		Enabled:     true,
+	}
+	require.NoError(t, shippingService.CreateCarrierService(&visibleService))
+	require.NoError(t, shippingService.CreateCarrierService(&hiddenByCarrier))
+	require.NoError(t, shippingService.CreateCarrierService(&hiddenByTemplate))
+
+	services, err := shippingService.ListPublicCarrierServices()
+	require.NoError(t, err)
+	require.Len(t, services, 1)
+	assert.Equal(t, visibleService.ID, services[0].ID)
+
+	_, err = shippingService.GetPublicCarrierService(hiddenByCarrier.ID)
+	require.ErrorIs(t, err, ErrShippingNotFound)
+
+	_, err = shippingService.GetPublicCarrierService(hiddenByTemplate.ID)
+	require.ErrorIs(t, err, ErrShippingNotFound)
+}
+
 func TestQuoteCartUsesSkuWeightWhenNoPackagingRule(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := seedWeightQuoteTemplate(t, db)

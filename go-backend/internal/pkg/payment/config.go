@@ -18,6 +18,9 @@ func LoadConfigFromEnv(gatewayType GatewayType) *Config {
 
 	switch gatewayType {
 	case GatewayStripe:
+		if config.APIKey == "" {
+			config.APIKey = config.SecretKey
+		}
 		if config.SecretKey == "" {
 			config.SecretKey = config.APIKey
 		}

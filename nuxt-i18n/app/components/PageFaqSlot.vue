@@ -103,7 +103,7 @@ const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(re
 
 .page-faq-slot__eyebrow {
   margin: 0;
-  font-size: 0.62rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 900;
   letter-spacing: 0.22em;
   color: var(--tz-text-muted);
@@ -111,7 +111,7 @@ const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(re
 
 .page-faq-slot__loader-text {
   margin: 0.12rem 0 0;
-  font-size: 0.72rem;
+  font-size: var(--tz-type-caption);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;

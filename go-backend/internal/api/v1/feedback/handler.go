@@ -32,7 +32,7 @@ func (h *Handler) List(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", c.DefaultQuery("page_size", "20")))
 	page, pageSize = normalizePagination(page, pageSize)
 
-	items, total, err := h.feedbackService.List(threadKey, c.Query("status"), c.Query("search"), page, pageSize)
+	items, total, err := h.feedbackService.ListPublic(threadKey, c.Query("search"), page, pageSize)
 	if err != nil {
 		respondFeedbackError(c, err)
 		return

@@ -35,7 +35,7 @@ func (s *SettingService) GetAll(locale string) ([]setting.Setting, error) {
 	cacheKey := settingsAllCacheKey(locale)
 
 	var settings []setting.Setting
-	if err := s.cache.Get(cacheKey, &settings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &settings) == nil {
 		return settings, nil
 	}
 
@@ -44,7 +44,9 @@ func (s *SettingService) GetAll(locale string) ([]setting.Setting, error) {
 		return nil, err
 	}
 
-	_ = s.cache.Set(cacheKey, settings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, settings, s.cacheTTL)
+	}
 
 	return settings, nil
 }
@@ -53,7 +55,7 @@ func (s *SettingService) GetAllPublic(locale string) ([]setting.Setting, error) 
 	cacheKey := settingsPublicCacheKey(locale)
 
 	var settings []setting.Setting
-	if err := s.cache.Get(cacheKey, &settings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &settings) == nil {
 		return settings, nil
 	}
 
@@ -62,7 +64,9 @@ func (s *SettingService) GetAllPublic(locale string) ([]setting.Setting, error) 
 		return nil, err
 	}
 
-	_ = s.cache.Set(cacheKey, settings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, settings, s.cacheTTL)
+	}
 
 	return settings, nil
 }
@@ -71,7 +75,7 @@ func (s *SettingService) GetByGroup(group, locale string) ([]setting.Setting, er
 	cacheKey := settingsGroupCacheKey(group, locale)
 
 	var settings []setting.Setting
-	if err := s.cache.Get(cacheKey, &settings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &settings) == nil {
 		return settings, nil
 	}
 
@@ -80,7 +84,9 @@ func (s *SettingService) GetByGroup(group, locale string) ([]setting.Setting, er
 		return nil, err
 	}
 
-	_ = s.cache.Set(cacheKey, settings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, settings, s.cacheTTL)
+	}
 
 	return settings, nil
 }
@@ -117,7 +123,7 @@ func (s *SettingService) GetGroups() ([]string, error) {
 	cacheKey := settingsGroupsCacheKey()
 
 	var groups []string
-	if err := s.cache.Get(cacheKey, &groups); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &groups) == nil {
 		return groups, nil
 	}
 
@@ -126,7 +132,9 @@ func (s *SettingService) GetGroups() ([]string, error) {
 		return nil, err
 	}
 
-	_ = s.cache.Set(cacheKey, groups, s.cacheTTL*10)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, groups, s.cacheTTL*10)
+	}
 
 	return groups, nil
 }

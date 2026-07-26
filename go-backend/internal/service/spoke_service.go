@@ -50,6 +50,10 @@ func (s *SpokeService) ListHistory(search string, page, pageSize int) ([]domains
 	return s.spokeRepo.ListHistory(search, page, pageSize)
 }
 
+func (s *SpokeService) ListUserHistory(userID uint, search string, page, pageSize int) ([]domainspoke.History, int64, error) {
+	return s.spokeRepo.ListHistoryByUserID(userID, search, page, pageSize)
+}
+
 func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculationResult, error) {
 	if input.SpokeCount <= 0 {
 		return nil, ErrInvalidSpokeCalculation

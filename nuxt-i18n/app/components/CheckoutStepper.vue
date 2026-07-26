@@ -1,7 +1,7 @@
 <template>
   <section class="flex flex-col gap-3 h-full px-1.5 md:px-6 py-2 md:py-3 max-w-none md:max-w-[720px] mx-auto w-full">
     <!-- Stepper header -->
-    <div class="flex items-center gap-2 text-[10px] md:text-xs uppercase tracking-[0.2em] tz-text-secondary">
+    <div class="flex items-center gap-2 tz-micro-label md:text-xs uppercase tracking-[0.2em] tz-text-secondary">
       <StepperDot :active="currentStep === 1">1</StepperDot>
       <div class="hidden md:block" :class="currentStep === 1 ? 'tz-text-primary' : 'tz-text-secondary'">{{ t('checkout.stepper.steps.payment') }}</div>
       <div class="flex-1 h-px bg-white/10"></div>
@@ -17,9 +17,9 @@
       <header class="flex items-center justify-between">
         <div class="text-xs font-semibold tz-text-primary flex items-center gap-2">
           {{ t('checkout.stepper.payment.pickProvider') }}
-          <span class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.2em] bg-white/10 tz-text-secondary">{{ t('checkout.stepper.payment.stepCount', { current: 1, total: 3 }) }}</span>
+          <span class="px-2 py-0.5 rounded-full tz-micro-label uppercase tracking-[0.2em] bg-white/10 tz-text-secondary">{{ t('checkout.stepper.payment.stepCount', { current: 1, total: 3 }) }}</span>
         </div>
-        <span class="text-[11px] tz-text-secondary">{{ t('checkout.stepper.payment.tapCardHint') }}</span>
+        <span class="tz-caption tz-text-secondary">{{ t('checkout.stepper.payment.tapCardHint') }}</span>
       </header>
 
       <div class="space-y-2 flex-1 overflow-y-auto pr-1 md:pr-2 max-w-[620px] mx-auto w-full">
@@ -49,10 +49,10 @@
                   />
                 </div>
               </div>
-              <span class="text-[11px] tz-text-secondary">{{ option.subtitle }}</span>
+              <span class="tz-caption tz-text-secondary">{{ option.subtitle }}</span>
             </div>
             <div
-              class="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] shadow-[3px_3px_12px_rgba(0,0,0,0.35)]"
+              class="inline-flex items-center justify-center rounded-full px-2 py-0.5 tz-micro-label font-semibold uppercase tracking-[0.2em] shadow-[3px_3px_12px_rgba(0,0,0,0.35)]"
               :class="activeMethod === option.id ? 'bg-white text-slate-900' : 'bg-white/10 tz-text-secondary'"
             >
               {{ activeMethod === option.id ? t('checkout.stepper.payment.selected') : t('checkout.stepper.payment.tapToView') }}
@@ -61,13 +61,13 @@
 
           <div
             v-if="activeMethod === option.id"
-            class="px-4 pb-4 space-y-3 border-t border-white/5 text-[12px] tz-text-secondary"
+            class="tz-caption px-4 pb-4 space-y-3 border-t border-white/5 tz-text-secondary"
           >
             <p class="leading-relaxed">
               {{ option.description }}
             </p>
             <ul v-if="option.points?.length" class="space-y-1 tz-text-secondary">
-              <li v-for="point in option.points" :key="point" class="flex items-start gap-2 text-[11px]">
+              <li v-for="point in option.points" :key="point" class="flex items-start gap-2">
                 <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300 translate-y-1"></span>
                 <span>{{ point }}</span>
               </li>
@@ -88,7 +88,7 @@
     <div v-else-if="currentStep === 2" class="flex flex-col gap-3 flex-1">
       <button
         type="button"
-        class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] tz-text-secondary hover:text-white transition"
+        class="inline-flex items-center gap-2 tz-compact-label font-semibold tz-text-secondary hover:text-white transition"
         @click="handleBackToMethods"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +287,7 @@
     <div v-else-if="currentStep === 3" class="flex flex-col gap-3 flex-1">
       <button
         type="button"
-        class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] tz-text-secondary hover:text-white transition"
+        class="inline-flex items-center gap-2 tz-compact-label font-semibold tz-text-secondary hover:text-white transition"
         @click="handleBackToShipping"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +301,7 @@
           <section class="rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] px-4 py-4 shadow-[6px_10px_30px_rgba(0,0,0,0.55)] space-y-3">
             <header class="text-sm font-semibold text-white flex items-center gap-2">
               {{ t('checkout.stepper.review.coupon') }}
-              <span class="text-[11px] tz-text-muted">{{ t('checkout.stepper.common.optional') }}</span>
+              <span class="tz-caption tz-text-muted">{{ t('checkout.stepper.common.optional') }}</span>
             </header>
             <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2">
               <input
@@ -333,7 +333,7 @@
           >
             <header class="text-sm font-semibold text-white flex items-center gap-2">
               {{ t('checkout.stepper.review.usePointsDiscount') }}
-              <span class="text-[11px] tz-text-muted">
+              <span class="tz-caption tz-text-muted">
                 {{ pointsAvailable > 0 ? t('checkout.stepper.review.pointsAvailable', { points: pointsAvailable }) : t('checkout.stepper.review.noPoints') }}
               </span>
             </header>
@@ -368,7 +368,7 @@
               <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 16c0 3.866-4.03 7-9 7s-9-3.134-9-7V8a4 4 0 014-4h10a4 4 0 014 4v8z" />
               </svg>
-            {{ t('checkout.stepper.review.orderNotes') }} <span class="text-[11px] tz-text-muted">({{ t('checkout.stepper.common.optional') }})</span>
+            {{ t('checkout.stepper.review.orderNotes') }} <span class="tz-caption tz-text-muted">({{ t('checkout.stepper.common.optional') }})</span>
             </header>
             <textarea
               :value="shippingForm?.notes || ''"
@@ -462,7 +462,7 @@
             :disabled="isSubmitting"
             @click="handleSubmitMock"
           />
-          <p v-if="ctaDescription" class="text-[11px] tz-text-secondary text-center">
+          <p v-if="ctaDescription" class="tz-description tz-text-secondary text-center">
             {{ ctaDescription }}
           </p>
         </div>
@@ -471,7 +471,7 @@
       <div class="rounded-2xl bg-[radial-gradient(circle_at_bottom,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] px-4 py-4 space-y-2 md:hidden shadow-[6px_10px_30px_rgba(0,0,0,0.55)]">
         <div class="text-center">
           <p class="text-xs font-semibold text-white">{{ mobilePaymentTitle }}</p>
-          <p v-if="mobilePaymentDescription" class="text-[11px] tz-text-secondary mt-1">
+          <p v-if="mobilePaymentDescription" class="tz-description tz-text-secondary mt-1">
             {{ mobilePaymentDescription }}
           </p>
         </div>
@@ -842,3 +842,4 @@ const handleSubmitMock = () => {
   emit('submit')
 }
 </script>
+

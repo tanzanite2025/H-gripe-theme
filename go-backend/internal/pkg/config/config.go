@@ -12,17 +12,20 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Redis    RedisConfig    `mapstructure:"redis"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	OAuth    OAuthConfig    `mapstructure:"oauth"`
-	I18n     I18nConfig     `mapstructure:"i18n"`
-	CORS     CORSConfig     `mapstructure:"cors"`
-	Cookie   CookieConfig   `mapstructure:"cookie"`
-	Cache    CacheConfig    `mapstructure:"cache"`
-	Log      LogConfig      `mapstructure:"log"`
-	Worker   WorkerConfig   `mapstructure:"worker"`
+	Server         ServerConfig         `mapstructure:"server"`
+	Database       DatabaseConfig       `mapstructure:"database"`
+	Redis          RedisConfig          `mapstructure:"redis"`
+	JWT            JWTConfig            `mapstructure:"jwt"`
+	OAuth          OAuthConfig          `mapstructure:"oauth"`
+	I18n           I18nConfig           `mapstructure:"i18n"`
+	CORS           CORSConfig           `mapstructure:"cors"`
+	Cookie         CookieConfig         `mapstructure:"cookie"`
+	Cache          CacheConfig          `mapstructure:"cache"`
+	Log            LogConfig            `mapstructure:"log"`
+	Worker         WorkerConfig         `mapstructure:"worker"`
+	AntiAbuse      AntiAbuseConfig      `mapstructure:"anti_abuse"`
+	PaymentRisk    PaymentRiskConfig    `mapstructure:"payment_risk"`
+	RequestSigning RequestSigningConfig `mapstructure:"request_signing"`
 }
 
 type ServerConfig struct {
@@ -106,6 +109,31 @@ type WorkerConfig struct {
 	TrackingPollingBatchLimit      int  `mapstructure:"tracking_polling_batch_limit"`
 }
 
+type AntiAbuseConfig struct {
+	TurnstileRequired                    bool   `mapstructure:"turnstile_required"`
+	TurnstileSecretKey                   string `mapstructure:"turnstile_secret_key"`
+	VerificationIPWindowSeconds          int    `mapstructure:"verification_ip_window_seconds"`
+	VerificationDestinationWindowSeconds int    `mapstructure:"verification_destination_window_seconds"`
+	VerificationDailyLimit               int    `mapstructure:"verification_daily_limit"`
+	VerificationGlobalWindowSeconds      int    `mapstructure:"verification_global_window_seconds"`
+	VerificationGlobalLimit              int    `mapstructure:"verification_global_limit"`
+	VerificationCircuitSeconds           int    `mapstructure:"verification_circuit_seconds"`
+}
+
+type PaymentRiskConfig struct {
+	FailureWindowSeconds int `mapstructure:"failure_window_seconds"`
+	FailureThreshold     int `mapstructure:"failure_threshold"`
+	DelaySeconds         int `mapstructure:"delay_seconds"`
+	HighRiskScore        int `mapstructure:"high_risk_score"`
+}
+
+type RequestSigningConfig struct {
+	Enabled        bool     `mapstructure:"enabled"`
+	Key            string   `mapstructure:"key"`
+	MaxSkewSeconds int      `mapstructure:"max_skew_seconds"`
+	RequiredPaths  []string `mapstructure:"required_paths"`
+}
+
 // Load 加载配置文件
 func Load(configFiles ...string) (*Config, error) {
 	viper.Reset()
@@ -137,6 +165,9 @@ func Load(configFiles ...string) (*Config, error) {
 	}
 	if proxies, configured := os.LookupEnv("TRUSTED_PROXIES"); configured {
 		viper.Set("server.trusted_proxies", splitEnvList(proxies))
+	}
+	if paths, configured := os.LookupEnv("REQUEST_SIGNING_REQUIRED_PATHS"); configured {
+		viper.Set("request_signing.required_paths", splitEnvList(paths))
 	}
 
 	var cfg Config
@@ -188,7 +219,15 @@ func setDefaults() {
 
 	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:9100", "http://localhost:9300"})
 	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
-	viper.SetDefault("cors.allowed_headers", []string{"Origin", "Content-Type", "Accept-Language", "X-CSRF-Token"})
+	viper.SetDefault("cors.allowed_headers", []string{
+		"Origin",
+		"Content-Type",
+		"Accept-Language",
+		"X-CSRF-Token",
+		"X-Request-Timestamp",
+		"X-Request-Nonce",
+		"X-Request-Signature",
+	})
 	viper.SetDefault("cors.expose_headers", []string{"Content-Length"})
 	viper.SetDefault("cors.allow_credentials", true)
 	viper.SetDefault("cors.max_age", 43200)
@@ -210,6 +249,25 @@ func setDefaults() {
 	viper.SetDefault("worker.tracking_polling_enabled", false)
 	viper.SetDefault("worker.tracking_polling_interval_seconds", 300)
 	viper.SetDefault("worker.tracking_polling_batch_limit", 20)
+
+	viper.SetDefault("anti_abuse.turnstile_required", false)
+	viper.SetDefault("anti_abuse.turnstile_secret_key", "")
+	viper.SetDefault("anti_abuse.verification_ip_window_seconds", 60)
+	viper.SetDefault("anti_abuse.verification_destination_window_seconds", 60)
+	viper.SetDefault("anti_abuse.verification_daily_limit", 8)
+	viper.SetDefault("anti_abuse.verification_global_window_seconds", 60)
+	viper.SetDefault("anti_abuse.verification_global_limit", 100)
+	viper.SetDefault("anti_abuse.verification_circuit_seconds", 300)
+
+	viper.SetDefault("payment_risk.failure_window_seconds", 600)
+	viper.SetDefault("payment_risk.failure_threshold", 2)
+	viper.SetDefault("payment_risk.delay_seconds", 2)
+	viper.SetDefault("payment_risk.high_risk_score", 60)
+
+	viper.SetDefault("request_signing.enabled", false)
+	viper.SetDefault("request_signing.key", "")
+	viper.SetDefault("request_signing.max_skew_seconds", 30)
+	viper.SetDefault("request_signing.required_paths", []string{})
 }
 
 func bindEnvironment() {
@@ -251,6 +309,25 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.tracking_polling_enabled", "WORKER_TRACKING_POLLING_ENABLED", "TRACKING_POLLING_ENABLED")
 	_ = viper.BindEnv("worker.tracking_polling_interval_seconds", "WORKER_TRACKING_POLLING_INTERVAL_SECONDS", "TRACKING_POLLING_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.tracking_polling_batch_limit", "WORKER_TRACKING_POLLING_BATCH_LIMIT", "TRACKING_POLLING_BATCH_LIMIT")
+
+	_ = viper.BindEnv("anti_abuse.turnstile_required", "TURNSTILE_REQUIRED")
+	_ = viper.BindEnv("anti_abuse.turnstile_secret_key", "TURNSTILE_SECRET_KEY")
+	_ = viper.BindEnv("anti_abuse.verification_ip_window_seconds", "VERIFICATION_IP_WINDOW_SECONDS")
+	_ = viper.BindEnv("anti_abuse.verification_destination_window_seconds", "VERIFICATION_DESTINATION_WINDOW_SECONDS")
+	_ = viper.BindEnv("anti_abuse.verification_daily_limit", "VERIFICATION_DAILY_LIMIT")
+	_ = viper.BindEnv("anti_abuse.verification_global_window_seconds", "VERIFICATION_GLOBAL_WINDOW_SECONDS")
+	_ = viper.BindEnv("anti_abuse.verification_global_limit", "VERIFICATION_GLOBAL_LIMIT")
+	_ = viper.BindEnv("anti_abuse.verification_circuit_seconds", "VERIFICATION_CIRCUIT_SECONDS")
+
+	_ = viper.BindEnv("payment_risk.failure_window_seconds", "PAYMENT_RISK_FAILURE_WINDOW_SECONDS")
+	_ = viper.BindEnv("payment_risk.failure_threshold", "PAYMENT_RISK_FAILURE_THRESHOLD")
+	_ = viper.BindEnv("payment_risk.delay_seconds", "PAYMENT_RISK_DELAY_SECONDS")
+	_ = viper.BindEnv("payment_risk.high_risk_score", "PAYMENT_RISK_HIGH_RISK_SCORE")
+
+	_ = viper.BindEnv("request_signing.enabled", "REQUEST_SIGNING_ENABLED")
+	_ = viper.BindEnv("request_signing.key", "REQUEST_SIGNING_KEY")
+	_ = viper.BindEnv("request_signing.max_skew_seconds", "REQUEST_SIGNING_MAX_SKEW_SECONDS")
+	_ = viper.BindEnv("request_signing.required_paths", "REQUEST_SIGNING_REQUIRED_PATHS")
 }
 
 func splitEnvList(value string) []string {
@@ -324,6 +401,41 @@ func (c *JWTConfig) GetRefreshExpireDuration() time.Duration {
 func validateConfig(cfg *Config) error {
 	if cfg.JWT.Secret == "" {
 		return fmt.Errorf("JWT secret is required. Please set JWT_SECRET environment variable or jwt.secret in config file")
+	}
+
+	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.JWT.Secret) < 32 {
+		return fmt.Errorf("JWT secret must be at least 32 characters in release mode")
+	}
+
+	if cfg.AntiAbuse.TurnstileRequired {
+		if strings.TrimSpace(cfg.AntiAbuse.TurnstileSecretKey) == "" {
+			return fmt.Errorf("TURNSTILE_SECRET_KEY is required when Turnstile protection is enabled")
+		}
+		if cfg.AntiAbuse.VerificationDailyLimit <= 0 ||
+			cfg.AntiAbuse.VerificationGlobalLimit <= 0 ||
+			cfg.AntiAbuse.VerificationIPWindowSeconds <= 0 ||
+			cfg.AntiAbuse.VerificationDestinationWindowSeconds <= 0 ||
+			cfg.AntiAbuse.VerificationGlobalWindowSeconds <= 0 ||
+			cfg.AntiAbuse.VerificationCircuitSeconds <= 0 {
+			return fmt.Errorf("anti-abuse verification limits must be positive")
+		}
+	}
+	if cfg.PaymentRisk.FailureThreshold != 0 ||
+		cfg.PaymentRisk.FailureWindowSeconds != 0 ||
+		cfg.PaymentRisk.DelaySeconds != 0 ||
+		cfg.PaymentRisk.HighRiskScore != 0 {
+		if cfg.PaymentRisk.FailureThreshold <= 0 ||
+			cfg.PaymentRisk.FailureWindowSeconds <= 0 ||
+			cfg.PaymentRisk.DelaySeconds < 0 ||
+			cfg.PaymentRisk.HighRiskScore <= 0 {
+			return fmt.Errorf("payment risk configuration is invalid")
+		}
+	}
+	if cfg.RequestSigning.Enabled && len(strings.TrimSpace(cfg.RequestSigning.Key)) < 32 {
+		return fmt.Errorf("REQUEST_SIGNING_KEY must be at least 32 characters when request signing is enabled")
+	}
+	if cfg.RequestSigning.Enabled && cfg.RequestSigning.MaxSkewSeconds <= 0 {
+		return fmt.Errorf("request signing max skew must be positive")
 	}
 
 	if cfg.Database.Host == "" {

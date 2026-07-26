@@ -48,7 +48,7 @@
             @select="emit('selectAgent', $event)"
           />
 
-          <p class="text-[10px] tz-text-muted leading-relaxed text-center px-2">
+          <p class="tz-caption tz-text-muted text-center px-2">
             {{ t('chatModal.welcome.onlineSummary', { count: onlineAgentsCount, agentLabel: onlineAgentsLabel }) }}
           </p>
         </div>

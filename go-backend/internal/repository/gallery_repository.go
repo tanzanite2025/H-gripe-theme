@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"tanzanite/internal/domain/gallery"
 
 	"gorm.io/gorm"
@@ -34,6 +35,18 @@ func (r *GalleryRepository) FindGalleryByID(id uint) (*gallery.Gallery, error) {
 	return &g, nil
 }
 
+// FindGalleryByIDAndStatus 根据ID和状态查找图片库
+func (r *GalleryRepository) FindGalleryByIDAndStatus(id uint, status string) (*gallery.Gallery, error) {
+	var g gallery.Gallery
+	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
+		return db.Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}})
+	}).Where("status = ?", status).First(&g, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
 // FindAllGalleries 查找所有图片库
 func (r *GalleryRepository) FindAllGalleries(page, pageSize int) ([]gallery.Gallery, int64, error) {
 	var galleries []gallery.Gallery
@@ -46,6 +59,24 @@ func (r *GalleryRepository) FindAllGalleries(page, pageSize int) ([]gallery.Gall
 	offset := (page - 1) * pageSize
 	err := r.db.Preload("Images", func(db *gorm.DB) *gorm.DB {
 		return db.Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).Limit(1) // 只加载封面图
+	}).Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&galleries).Error
+
+	return galleries, total, err
+}
+
+// FindAllGalleriesByStatus 查找指定状态的图片库
+func (r *GalleryRepository) FindAllGalleriesByStatus(status string, page, pageSize int) ([]gallery.Gallery, int64, error) {
+	var galleries []gallery.Gallery
+	var total int64
+
+	query := r.db.Model(&gallery.Gallery{}).Where("status = ?", status)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := query.Preload("Images", func(db *gorm.DB) *gorm.DB {
+		return db.Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).Limit(1)
 	}).Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&galleries).Error
 
 	return galleries, total, err
@@ -92,6 +123,17 @@ func (r *GalleryRepository) FindImagesByGalleryID(galleryID uint) ([]gallery.Gal
 	return images, err
 }
 
+// FindImagesByPublishedGalleryID 查找已发布图片库的图片
+func (r *GalleryRepository) FindImagesByPublishedGalleryID(galleryID uint) ([]gallery.GalleryImage, error) {
+	var images []gallery.GalleryImage
+	err := r.db.Joins("JOIN galleries ON galleries.id = gallery_images.gallery_id").
+		Where("gallery_images.gallery_id = ? AND galleries.status = ?", galleryID, "published").
+		Order(clause.OrderByColumn{Column: clause.Column{Table: "gallery_images", Name: "order"}}).
+		Order("gallery_images.created_at ASC").
+		Find(&images).Error
+	return images, err
+}
+
 // FindImagesByTags 根据标签查找图片
 func (r *GalleryRepository) FindImagesByTags(tags []string, page, pageSize int) ([]gallery.GalleryImage, int64, error) {
 	var images []gallery.GalleryImage
@@ -114,6 +156,35 @@ func (r *GalleryRepository) FindImagesByTags(tags []string, page, pageSize int) 
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&images).Error
+
+	return images, total, err
+}
+
+// FindImagesByTagsInPublishedGalleries 根据标签查找已发布图片库中的图片
+func (r *GalleryRepository) FindImagesByTagsInPublishedGalleries(tags []string, page, pageSize int) ([]gallery.GalleryImage, int64, error) {
+	var images []gallery.GalleryImage
+	var total int64
+
+	query := r.db.Model(&gallery.GalleryImage{}).
+		Joins("JOIN galleries ON galleries.id = gallery_images.gallery_id").
+		Where("galleries.status = ?", "published")
+
+	tagConditions := make([]string, 0, len(tags))
+	tagArgs := make([]interface{}, 0, len(tags))
+	for _, tag := range tags {
+		tagConditions = append(tagConditions, "gallery_images.tags LIKE ?")
+		tagArgs = append(tagArgs, "%"+tag+"%")
+	}
+	if len(tagConditions) > 0 {
+		query = query.Where("("+strings.Join(tagConditions, " OR ")+")", tagArgs...)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := query.Order("gallery_images.created_at DESC").Offset(offset).Limit(pageSize).Find(&images).Error
 
 	return images, total, err
 }
@@ -165,6 +236,26 @@ func (r *GalleryRepository) SearchImages(keyword string, page, pageSize int) ([]
 
 	offset := (page - 1) * pageSize
 	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&images).Error
+
+	return images, total, err
+}
+
+// SearchImagesInPublishedGalleries 搜索已发布图片库中的图片
+func (r *GalleryRepository) SearchImagesInPublishedGalleries(keyword string, page, pageSize int) ([]gallery.GalleryImage, int64, error) {
+	var images []gallery.GalleryImage
+	var total int64
+
+	query := r.db.Model(&gallery.GalleryImage{}).
+		Joins("JOIN galleries ON galleries.id = gallery_images.gallery_id").
+		Where("galleries.status = ?", "published").
+		Where("gallery_images.title ILIKE ? OR gallery_images.description ILIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := query.Order("gallery_images.created_at DESC").Offset(offset).Limit(pageSize).Find(&images).Error
 
 	return images, total, err
 }

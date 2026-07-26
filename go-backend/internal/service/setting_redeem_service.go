@@ -14,12 +14,12 @@ func (s *SettingService) GetRedeemSettings(locale string) (*setting.RedeemSettin
 
 	// 尝试从缓存获取
 	var redeemSettings setting.RedeemSettings
-	if err := s.cache.Get(cacheKey, &redeemSettings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &redeemSettings) == nil {
 		return &redeemSettings, nil
 	}
 
 	// 从数据库获取
-	settings, err := s.settingRepo.GetByGroup("redeem", locale)
+	settings, err := s.GetPublicByGroup("redeem", locale)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,9 @@ func (s *SettingService) GetRedeemSettings(locale string) (*setting.RedeemSettin
 	redeemSettings.PresetValues = presets
 
 	// 写入缓存
-	_ = s.cache.Set(cacheKey, &redeemSettings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, &redeemSettings, s.cacheTTL)
+	}
 
 	return &redeemSettings, nil
 }

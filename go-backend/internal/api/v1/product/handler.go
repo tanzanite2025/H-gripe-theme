@@ -23,7 +23,6 @@ func NewHandler(productService *service.ProductService) *Handler {
 
 func (h *Handler) ListProducts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
-	status := c.DefaultQuery("status", "active")
 	featured := c.Query("featured") == "true"
 	params := pagination.ParsePagination(c)
 
@@ -31,7 +30,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		params.PageSize = 12
 	}
 
-	products, total, err := h.productService.List(locale, status, featured, params.Page, params.PageSize)
+	products, total, err := h.productService.ListPublic(locale, featured, params.Page, params.PageSize)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -45,7 +44,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 
 	if id, err := strconv.ParseUint(idOrSlug, 10, 32); err == nil {
-		product, err := h.productService.GetByID(uint(id))
+		product, err := h.productService.GetPublicByID(uint(id))
 		if err != nil {
 			apierror.RespondNotFound(c, "Product")
 			return
@@ -54,7 +53,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		return
 	}
 
-	product, err := h.productService.GetBySlug(idOrSlug, locale)
+	product, err := h.productService.GetPublicBySlug(idOrSlug, locale)
 	if err != nil {
 		apierror.RespondNotFound(c, "Product")
 		return

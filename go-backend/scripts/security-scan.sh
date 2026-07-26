@@ -1,13 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #############################################
-# 安全扫描脚本
-# 用于检测代码和依赖中的安全漏洞
+# Tanzanite security scan
+#
+# The release image must be supplied explicitly:
+#   REQUIRE_IMAGE_SCAN=true IMAGE_REF=ghcr.io/example/tanzanite-theme-api:sha-... ./scripts/security-scan.sh
+#
+# Critical/high image findings and confirmed historical secrets fail the scan.
 #############################################
 
 set -euo pipefail
 
-# 颜色输出
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPORT_DIR="${REPORT_DIR:-${ROOT_DIR}/security-reports}"
+IMAGE_REF="${IMAGE_REF:-}"
+REQUIRE_IMAGE_SCAN="${REQUIRE_IMAGE_SCAN:-false}"
+GITLEAKS_LOG_OPTS="${GITLEAKS_LOG_OPTS:---all --tags}"
+SCAN_RESULTS=0
+
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -30,18 +40,11 @@ info() {
     echo -e "${BLUE}[INFO]${NC} $*"
 }
 
-echo ""
-echo "=========================================="
-echo "  安全扫描工具"
-echo "=========================================="
-echo ""
-
-# 检查工具是否安装
 check_tool() {
-    local tool=$1
-    local install_info=$2
-    
-    if ! command -v "${tool}" &> /dev/null; then
+    local tool="$1"
+    local install_info="$2"
+
+    if ! command -v "${tool}" >/dev/null 2>&1; then
         warn "${tool} 未安装"
         info "  ${install_info}"
         return 1
@@ -49,197 +52,166 @@ check_tool() {
     return 0
 }
 
-SCAN_RESULTS=0
+record_failure() {
+    SCAN_RESULTS=$((SCAN_RESULTS + 1))
+}
+
+mkdir -p "${REPORT_DIR}"
+
+echo ""
+echo "=========================================="
+echo "  Tanzanite 安全扫描"
+echo "=========================================="
+echo ""
 
 #############################################
-# 1. gosec - Go代码安全检查
+# 1. Go source and dependency checks
 #############################################
-log "1. 运行 gosec 安全检查..."
+cd "${ROOT_DIR}"
 
+log "1. 运行 gosec..."
 if check_tool "gosec" "go install github.com/securego/gosec/v2/cmd/gosec@latest"; then
-    if gosec -fmt=json -out=gosec-report.json ./...; then
+    if gosec -fmt=json -out="${REPORT_DIR}/gosec-report.json" ./...; then
         log "✓ gosec 检查通过"
     else
         error "✗ gosec 发现安全问题"
-        SCAN_RESULTS=$((SCAN_RESULTS + 1))
-    fi
-    
-    # 显示简要结果
-    if [ -f "gosec-report.json" ]; then
-        log "详细报告: gosec-report.json"
+        record_failure
     fi
 else
-    warn "跳过 gosec 检查"
+    warn "跳过 gosec"
 fi
 
-echo ""
-
-#############################################
-# 2. govulncheck - Go依赖漏洞检查
-#############################################
-log "2. 运行 govulncheck 依赖漏洞检查..."
-
+log "运行 govulncheck..."
 if check_tool "govulncheck" "go install golang.org/x/vuln/cmd/govulncheck@latest"; then
-    if govulncheck ./...; then
-        log "✓ govulncheck 未发现已知漏洞"
+    if govulncheck ./... 2>&1 | tee "${REPORT_DIR}/govulncheck.txt"; then
+        log "✓ govulncheck 检查通过"
     else
         error "✗ govulncheck 发现已知漏洞"
-        SCAN_RESULTS=$((SCAN_RESULTS + 1))
+        record_failure
     fi
 else
-    warn "跳过 govulncheck 检查"
+    warn "跳过 govulncheck"
 fi
 
-echo ""
-
-#############################################
-# 3. nancy - 依赖安全审计
-#############################################
-log "3. 运行 nancy 依赖安全审计..."
-
+log "运行 nancy..."
 if check_tool "nancy" "go install github.com/sonatype-nexus-community/nancy@latest"; then
-    if go list -json -m all | nancy sleuth; then
-        log "✓ nancy 未发现问题"
+    if go list -json -m all | nancy sleuth 2>&1 | tee "${REPORT_DIR}/nancy.txt"; then
+        log "✓ nancy 检查通过"
     else
-        error "✗ nancy 发现安全问题"
-        SCAN_RESULTS=$((SCAN_RESULTS + 1))
+        error "✗ nancy 发现依赖问题"
+        record_failure
     fi
 else
-    warn "跳过 nancy 检查"
+    warn "跳过 nancy"
 fi
 
-echo ""
-
 #############################################
-# 4. Trivy - 容器镜像扫描
+# 2. Final image scanning
 #############################################
-log "4. 运行 Trivy 容器镜像扫描..."
+log "2. 扫描最终运行镜像..."
+if [[ -z "${IMAGE_REF}" ]]; then
+    warn "未设置 IMAGE_REF，跳过 Trivy/Grype 镜像扫描"
+    info "发布前必须使用精确 tag 或 digest 设置 IMAGE_REF"
+    if [[ "${REQUIRE_IMAGE_SCAN}" == "true" ]]; then
+        error "REQUIRE_IMAGE_SCAN=true 但未提供 IMAGE_REF"
+        record_failure
+    fi
+else
+    info "镜像: ${IMAGE_REF}"
 
-if check_tool "trivy" "https://aquasecurity.github.io/trivy/latest/getting-started/installation/"; then
-    # 扫描Docker镜像
-    if [ -f "Dockerfile" ]; then
-        log "扫描 Dockerfile..."
-        if trivy config Dockerfile; then
-            log "✓ Dockerfile 检查通过"
+    if check_tool "trivy" "https://aquasecurity.github.io/trivy/latest/getting-started/installation/"; then
+        if trivy image \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --format json \
+            --output "${REPORT_DIR}/trivy-image.json" \
+            "${IMAGE_REF}"; then
+            log "✓ Trivy 镜像扫描通过"
         else
-            warn "Dockerfile 存在配置问题"
+            error "✗ Trivy 发现 High/Critical 镜像漏洞"
+            record_failure
         fi
-    fi
-    
-    # 扫描文件系统
-    log "扫描项目目录..."
-    if trivy fs --security-checks vuln,config .; then
-        log "✓ Trivy 扫描通过"
     else
-        error "✗ Trivy 发现问题"
-        SCAN_RESULTS=$((SCAN_RESULTS + 1))
+        warn "跳过 Trivy 镜像扫描"
+        record_failure
     fi
-else
-    warn "跳过 Trivy 扫描"
-fi
 
-echo ""
-
-#############################################
-# 5. 检查敏感信息泄露
-#############################################
-log "5. 检查敏感信息泄露..."
-
-# 检查.env文件是否被跟踪
-if git ls-files --error-unmatch .env 2>/dev/null; then
-    error "✗ .env 文件被Git跟踪，可能泄露敏感信息"
-    SCAN_RESULTS=$((SCAN_RESULTS + 1))
-else
-    log "✓ .env 文件未被跟踪"
-fi
-
-# 检查常见的敏感信息模式
-log "搜索可能的API密钥和密码..."
-if grep -r -i -E "(password|secret|api_key|token)\s*=\s*['\"][^'\"]+['\"]" --exclude-dir=vendor --exclude-dir=.git --exclude="*.md" .; then
-    warn "发现可能的硬编码密钥"
-    info "  请检查上述文件，确保不包含真实密钥"
-fi
-
-echo ""
-
-#############################################
-# 6. 依赖许可证检查
-#############################################
-log "6. 检查依赖许可证..."
-
-if check_tool "go-licenses" "go install github.com/google/go-licenses@latest"; then
-    log "生成依赖许可证报告..."
-    if go-licenses report ./... > licenses-report.txt 2>/dev/null; then
-        log "✓ 许可证报告已生成: licenses-report.txt"
+    if check_tool "grype" "https://github.com/anchore/grype#installation"; then
+        if grype "${IMAGE_REF}" \
+            --fail-on high \
+            --output json > "${REPORT_DIR}/grype-image.json"; then
+            log "✓ Grype 镜像扫描通过"
+        else
+            error "✗ Grype 发现 High/Critical 镜像漏洞"
+            record_failure
+        fi
     else
-        warn "许可证报告生成失败"
+        warn "跳过 Grype 镜像扫描"
+        record_failure
+    fi
+fi
+
+#############################################
+# 3. Full Git history secrets scan
+#############################################
+log "3. 运行 gitleaks 全历史 secrets 扫描..."
+if check_tool "gitleaks" "https://github.com/gitleaks/gitleaks#installation"; then
+    if gitleaks git \
+        --source "${ROOT_DIR}" \
+        --log-opts="${GITLEAKS_LOG_OPTS}" \
+        --redact \
+        --report-format sarif \
+        --report-path "${REPORT_DIR}/gitleaks-history.sarif"; then
+        log "✓ gitleaks 历史扫描通过"
+    else
+        error "✗ gitleaks 发现历史 secrets"
+        record_failure
     fi
 else
-    warn "跳过许可证检查"
+    warn "跳过 gitleaks 历史扫描"
+    record_failure
 fi
 
-echo ""
-
 #############################################
-# 7. 生成安全报告
+# 4. Repository hygiene
 #############################################
-log "7. 生成安全扫描报告..."
-
-cat > security-report.md <<EOF
-# 安全扫描报告
-
-**生成时间**: $(date)
-
-## 扫描结果摘要
-
-- **gosec**: 代码安全检查
-- **govulncheck**: 依赖漏洞检查
-- **nancy**: 依赖安全审计
-- **Trivy**: 容器镜像扫描
-- **敏感信息**: 泄露检查
-- **许可证**: 依赖许可证检查
-
-## 详细报告文件
-
-- gosec结果: \`gosec-report.json\`
-- 许可证报告: \`licenses-report.txt\`
-
-## 建议
-
-EOF
-
-if [ ${SCAN_RESULTS} -eq 0 ]; then
-    cat >> security-report.md <<EOF
-✅ **所有安全检查通过！**
-
-建议继续保持：
-1. 定期更新依赖包
-2. 定期运行安全扫描
-3. 审查代码变更
-4. 使用环境变量管理敏感信息
-EOF
+log "4. 检查未跟踪的环境文件..."
+if git -C "${ROOT_DIR}" ls-files --error-unmatch .env >/dev/null 2>&1; then
+    error "✗ .env 文件被 Git 跟踪"
+    record_failure
 else
-    cat >> security-report.md <<EOF
-⚠️ **发现 ${SCAN_RESULTS} 个安全问题**
-
-请采取以下行动：
-1. 查看详细报告文件
-2. 修复发现的安全问题
-3. 更新存在漏洞的依赖
-4. 重新运行安全扫描验证
-EOF
+    log "✓ .env 文件未被 Git 跟踪"
 fi
 
-log "安全报告已生成: security-report.md"
+cat > "${REPORT_DIR}/security-report.md" <<EOF
+# Tanzanite Security Scan
+
+Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+Image: \`${IMAGE_REF:-not supplied}\`
+
+Scans:
+
+- gosec
+- govulncheck
+- nancy
+- Trivy final image scan
+- Grype final image scan
+- gitleaks full Git history scan
+
+High/Critical image findings and confirmed historical secrets are release blockers.
+EOF
 
 echo ""
 echo "=========================================="
-if [ ${SCAN_RESULTS} -eq 0 ]; then
-    log "✓ 安全扫描完成，未发现严重问题"
+if [[ ${SCAN_RESULTS} -eq 0 ]]; then
+    log "✓ 安全扫描完成"
 else
-    error "✗ 安全扫描完成，发现 ${SCAN_RESULTS} 个问题"
+    error "✗ 安全扫描完成，发现 ${SCAN_RESULTS} 个阻断项"
 fi
+echo "报告目录: ${REPORT_DIR}"
 echo "=========================================="
 echo ""
 
-exit ${SCAN_RESULTS}
+exit "${SCAN_RESULTS}"

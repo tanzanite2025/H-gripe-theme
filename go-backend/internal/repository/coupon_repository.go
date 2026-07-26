@@ -31,7 +31,17 @@ func (r *CouponRepository) WithTx(tx *gorm.DB) *CouponRepository {
 
 // CreateCoupon 创建优惠券
 func (r *CouponRepository) CreateCoupon(c *coupon.Coupon) error {
-	return r.db.Create(c).Error
+	enabled := c.Enabled
+	if err := r.db.Create(c).Error; err != nil {
+		return err
+	}
+	if !enabled {
+		if err := r.db.Model(c).Update("enabled", false).Error; err != nil {
+			return err
+		}
+		c.Enabled = false
+	}
+	return nil
 }
 
 // FindCouponByID 根据ID查找优惠券

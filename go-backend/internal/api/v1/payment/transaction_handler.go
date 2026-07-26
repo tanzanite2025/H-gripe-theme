@@ -33,7 +33,7 @@ func (h *Handler) GetTransaction(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, transaction)
+	response.Success(c, transactionToResponse(*transaction))
 }
 
 // GetOrderTransactions 获取订单的交易记录
@@ -59,5 +59,5 @@ func (h *Handler) GetOrderTransactions(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"data": transactions})
+	response.Success(c, gin.H{"data": transactionsToResponse(transactions)})
 }

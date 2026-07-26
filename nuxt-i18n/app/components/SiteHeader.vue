@@ -1,5 +1,5 @@
 <template>
-	<div ref="headerRootRef" class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[110] site-header-root">
+	<div ref="headerRootRef" class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[900] site-header-root">
 		<div
 			class="relative w-full rounded-none md:rounded-[30px] bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:py-2"
 		>
@@ -10,7 +10,7 @@
 					
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
-						<div class="m-0 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none italic cursor-default">
+						<div class="m-0 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffffff] via-[#e5e7eb] to-[#94a3b8] tracking-wide drop-shadow-[0_2px_8px_rgba(226,232,240,0.22)] leading-none cursor-default">
 							{{ titleText }}
 						</div>
 					</div>
@@ -24,8 +24,8 @@
 							v-for="section in primaryMegaNavSections"
 							:key="section.id"
 							type="button"
-							class="relative inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[15px] font-medium transition-all duration-200"
-							:class="currentMegaNavId === section.id ? 'tz-text-primary' : 'tz-text-secondary hover:text-white'"
+							class="relative inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[16px] font-medium text-white transition-all duration-200"
+							:class="currentMegaNavId === section.id ? 'font-semibold' : 'font-medium'"
 							:aria-controls="megaPanelId"
 							:aria-expanded="activeMegaNavId === section.id"
 							aria-haspopup="dialog"
@@ -67,7 +67,7 @@
 						<!-- Language -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-[11px] font-bold tz-text-secondary hover:text-sky-300 transition-colors"
+								class="h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-2 tz-text-secondary hover:text-white transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -75,7 +75,11 @@
 								:aria-expanded="isOpen"
 								:aria-label="'Switch language'"
 							>
-								<span class="text-xs font-bold uppercase">{{ currentLocale.iso?.split('-')[0] || 'EN' }}</span>
+								<span v-if="currentLocaleFlagSrc" class="inline-flex h-5 w-5 items-center justify-center" aria-hidden="true">
+									<img :src="currentLocaleFlagSrc" alt="" class="block h-5 w-5" />
+								</span>
+								<Icon v-else name="lucide:languages" class="h-5 w-5" aria-hidden="true" />
+								<span class="text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
 							</button>
 							
 							<!-- Dropdown Teleport Logic (Reused) -->
@@ -88,11 +92,11 @@
 								>
 									<div
 										v-if="isOpen"
-										class="fixed inset-0 z-[1200] flex items-start justify-center pt-[80px]"
+										class="fixed inset-0 z-[1200] flex items-start justify-center pt-[calc(var(--site-header-offset,80px)+18px)]"
 									>
 										<div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden"></div>
 										<div
-											class="relative w-full md:w-[90vw] md:max-w-[1600px] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl overflow-auto max-h-[70vh] shadow-[0_0_30px_rgba(107,115,255,0.6)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
+											class="relative w-full md:w-[88vw] md:max-w-[1500px] bg-slate-950/90 backdrop-blur-xl border border-white/15 rounded-2xl overflow-auto max-h-[70vh] py-3 md:py-3.5 shadow-[0_18px_56px_rgba(255,255,255,0.10),0_28px_80px_rgba(0,0,0,0.55)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
 											role="listbox"
 											:id="dropdownId"
 											:aria-labelledby="buttonId"
@@ -102,8 +106,8 @@
 											<button
 												v-for="(locale, index) in availableLocales"
 												:key="locale.code"
-												class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-[#2aa3ff40]"
-												:class="{ 'bg-[#2aa3ff40] font-medium': locale.code === currentLocale.code }"
+												class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-white/10"
+												:class="{ 'bg-white/10 font-medium': locale.code === currentLocale.code }"
 												role="option"
 												:aria-selected="locale.code === currentLocale.code"
 												:tabindex="-1"
@@ -139,7 +143,7 @@
 					aria-label="Breadcrumb"
 					class="flex justify-center mt-1"
 				>
-					<ol class="flex items-center gap-1.5 text-[12px] tz-text-muted leading-tight transition-colors hover:text-slate-300">
+					<ol class="flex items-center gap-1.5 text-[13px] tz-text-muted leading-tight transition-colors hover:text-slate-300">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
@@ -197,11 +201,13 @@
 				</nav>
 			</div>
 
-			<HeaderMegaMenu
-				:section="activeMegaNavSection"
-				:panel-id="megaPanelId"
-				@navigate="closeMegaNav"
-			/>
+			<teleport to="body" :disabled="!isMobileViewport">
+				<HeaderMegaMenu
+					:section="activeMegaNavSection"
+					:panel-id="megaPanelId"
+					@navigate="closeMegaNav"
+				/>
+			</teleport>
 
 			<!-- 移动端：新版极简双行布局 -->
 			<div class="md:hidden flex flex-col gap-3">
@@ -209,7 +215,7 @@
 				<!-- 第一行：Logo (左) + 工具图标 (右) -->
 				<div class="flex items-center justify-between px-1">
 					<!-- Logo -->
-					<div class="m-0 text-2xl phone-390:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] [font-family:'AerialFaster',sans-serif] tracking-wide drop-shadow-[0_2px_8px_rgba(64,255,170,0.3)] leading-none">
+					<div class="m-0 text-2xl phone-390:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffffff] via-[#e5e7eb] to-[#94a3b8] tracking-wide drop-shadow-[0_2px_8px_rgba(226,232,240,0.22)] leading-none">
 						{{ titleText }}
 					</div>
 
@@ -230,7 +236,7 @@
 						<!-- Language Switcher (Text + Icon) -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="tz-text-secondary hover:text-white transition-colors flex items-center gap-1 p-1"
+								class="h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-1.5 tz-text-secondary hover:text-white transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -238,7 +244,11 @@
 								:aria-expanded="isOpen"
 								:aria-label="'Switch language'"
 							>
-								<span class="text-xs font-bold uppercase">{{ currentLocale.iso?.split('-')[0] || currentLocale.code }}</span>
+								<span v-if="currentLocaleFlagSrc" class="inline-flex h-5 w-5 items-center justify-center" aria-hidden="true">
+									<img :src="currentLocaleFlagSrc" alt="" class="block h-5 w-5" />
+								</span>
+								<Icon v-else name="lucide:languages" class="h-5 w-5" aria-hidden="true" />
+								<span class="text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
 							</button>
 						</div>
 
@@ -255,13 +265,13 @@
 				</div>
 
 				<!-- 第二行：主要导航。移动端同样打开卡片菜单，避免三级 TAB 漏在页面横条里。 -->
-				<nav class="bg-white/5 rounded-xl p-1 grid grid-cols-4 gap-1 relative" aria-label="Mobile primary navigation">
+				<nav ref="mobilePrimaryNavRef" class="bg-white/5 rounded-xl p-1 grid grid-cols-4 gap-1 relative" aria-label="Mobile primary navigation">
 					<button
 						v-for="section in primaryMegaNavSections"
 						:key="section.id"
 						type="button"
-						class="min-w-0 py-2 rounded-lg text-[12px] phone-390:text-[13px] font-semibold text-center transition-all inline-flex items-center justify-center gap-0.5"
-						:class="currentMegaNavId === section.id ? 'bg-white/10 tz-text-primary shadow-sm border border-white/10' : 'tz-text-secondary hover:text-white'"
+						class="min-w-0 py-2 rounded-lg text-[13px] phone-390:text-[14px] font-semibold text-center text-white transition-all inline-flex items-center justify-center gap-0.5"
+						:class="currentMegaNavId === section.id ? 'bg-white/10 shadow-sm border border-white/10' : 'bg-white/[0.04] border border-white/5'"
 						:aria-controls="megaPanelId"
 						:aria-expanded="activeMegaNavId === section.id"
 						aria-haspopup="dialog"
@@ -282,7 +292,7 @@
 					aria-label="Breadcrumb"
 					class="px-2 pb-1 -mt-1"
 				>
-					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[11px] tz-text-muted leading-tight">
+					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[13px] tz-text-muted leading-tight">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
@@ -403,6 +413,8 @@ const { brandTitle } = useSiteTitle()
 const titleText = computed(() => brandTitle.value)
 
 const headerRootRef = ref<HTMLElement | null>(null)
+const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
+const isMobileViewport = ref(false)
 let headerResizeObserver: ResizeObserver | null = null
 
 const megaPanelId = 'header-primary-mega-menu'
@@ -423,9 +435,11 @@ const activeMegaNavSection = computed<PrimaryMegaNavSection | null>(() => {
 })
 
 const openMegaNav = (id: PrimaryMegaNavId) => {
+  updateHeaderOffset()
   activeMegaNavId.value = id
   isOpen.value = false
   breadcrumbSubNavOpen.value = false
+  nextTick(updateHeaderOffset)
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-mega-nav' } }))
@@ -443,12 +457,18 @@ const toggleMegaNav = (id: PrimaryMegaNavId) => {
 
 const updateHeaderOffset = () => {
   if (typeof window === 'undefined') return
+  isMobileViewport.value = window.innerWidth < 768
+
   const el = headerRootRef.value
   if (!el) return
 
   const rect = el.getBoundingClientRect()
   const offset = Math.max(0, Math.ceil(rect.bottom))
   document.documentElement.style.setProperty('--site-header-offset', `${offset}px`)
+
+  const mobileNavRect = mobilePrimaryNavRef.value?.getBoundingClientRect()
+  const mobileMegaTop = Math.max(0, Math.ceil((mobileNavRect?.bottom ?? rect.bottom) + 2))
+  document.documentElement.style.setProperty('--header-mega-mobile-top', `${mobileMegaTop}px`)
 }
 
 const throttledUpdateHeaderOffset = useThrottleFn(updateHeaderOffset, 150)
@@ -829,6 +849,12 @@ const currentLocale = computed<LocaleOption>(() => {
   )
 })
 
+const currentLocaleLabel = computed(() => {
+  const entry = currentLocale.value
+  const raw = entry.iso?.split('-')[0] || entry.code || ''
+  return raw.replace('_', '-').split('-')[0].slice(0, 2).toUpperCase()
+})
+
 const availableLocales = computed<LocaleOption[]>(() => {
   return normalizedLocales.value.filter((l: LocaleOption) => l.code !== locale.value)
 })
@@ -1024,6 +1050,8 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
   if (!file) return ''
   return `/twemoji/svg/${file}`
 }
+
+const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 </script>
 
 <style scoped>
@@ -1234,3 +1262,4 @@ const flagSrc = (entry: LocaleOption | null | undefined) => {
 	}
 }
 </style>
+

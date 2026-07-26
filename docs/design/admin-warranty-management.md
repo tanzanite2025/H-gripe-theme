@@ -60,3 +60,4 @@ Still separate future work:
 - Rich text and media in processing notes need a constrained editor contract before HTML or images are accepted. Plain text is the current safe fact source.
 - Product registration still needs a clearer automatic link to order item/product variant/serial-number source if the storefront later collects serial numbers during checkout or delivery.
 - Service record attachments are not implemented yet. If added, store them as their own constrained media facts, not inside `warranty_claims.resolution`.
+- Public order-number/email warranty claim flows now require a matching signed, expiring, single-use email challenge before claim creation. Production still needs `SMTP_*`, `STOREFRONT_BASE_URL`, and the storefront token flow; the release gate is tracked in `go-backend/docs/SECURITY_FOLLOW_UPS.md`.

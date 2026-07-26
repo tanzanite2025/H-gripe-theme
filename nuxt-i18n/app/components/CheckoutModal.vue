@@ -56,7 +56,7 @@
 
             <!-- 顶部提示：保留说明文字但移除标题 -->
             <div class="px-2 md:px-6 pt-0.5 pb-0 md:pb-1">
-              <div class="checkout-modal-ssl-banner flex items-center justify-center gap-1.5 text-[11px] md:text-xs text-emerald-100 max-w-[420px] mx-auto text-center leading-tight">
+              <div class="checkout-modal-ssl-banner flex items-center justify-center gap-1.5 tz-caption md:text-xs text-emerald-100 max-w-[420px] mx-auto text-center leading-tight">
                 <img
                   src="/checkout/secured_ssl-preview.png"
                   :alt="t('checkout.modal.sslAlt')"
@@ -840,3 +840,4 @@ const handleSubmit = async () => {
   background: rgba(255, 255, 255, 0.5);
 }
 </style>
+

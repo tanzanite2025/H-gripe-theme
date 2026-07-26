@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -56,6 +58,39 @@ jobs:
         env:
           IMAGE_TAG: sha-${{ github.sha }}
         run: docker compose --env-file deployment/production.env.example -f compose.prod.yml config --quiet
+
+      - name: Scan full Git history for secrets
+        id: gitleaks
+        continue-on-error: true
+        run: |
+          mkdir -p security-reports
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/repo" \
+            -w /repo \
+            zricethezav/gitleaks:v8.24.2 \
+            git \
+            --source=/repo \
+            --log-opts="--all --tags" \
+            --redact \
+            --report-format sarif \
+            --report-path /repo/security-reports/gitleaks-history.sarif
+
+      - name: Upload gitleaks release report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-history-release-report
+          path: security-reports/gitleaks-history.sarif
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Block release on historical secrets
+        if: always()
+        run: |
+          if [ "${{ steps.gitleaks.outcome }}" != "success" ]; then
+            echo "gitleaks found historical secrets or failed to scan the repository"
+            exit 1
+          fi
 
   publish:
     needs: validate
@@ -100,16 +135,72 @@ jobs:
             type=raw,value=master
             type=raw,value=sha-${{ github.sha }}
 
-      - name: Build and push image
+      - name: Build image for security scanning
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          load: true
+          tags: local/${{ matrix.image }}:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
-          provenance: true
-          sbom: true
+
+      - name: Scan exact local image with Trivy
+        id: trivy
+        continue-on-error: true
+        run: |
+          mkdir -p security-reports
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${GITHUB_WORKSPACE}/security-reports:/reports" \
+            aquasec/trivy:0.58.2 \
+            image \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --format json \
+            --output /reports/trivy-${{ matrix.image }}.json \
+            local/${{ matrix.image }}:${{ github.sha }}
+
+      - name: Scan exact local image with Grype
+        id: grype
+        continue-on-error: true
+        run: |
+          mkdir -p security-reports
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${GITHUB_WORKSPACE}/security-reports:/reports" \
+            anchore/grype:v0.86.2 \
+            docker:local/${{ matrix.image }}:${{ github.sha }} \
+            --fail-on high \
+            --output json > "security-reports/grype-${{ matrix.image }}.json"
+
+      - name: Upload image scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-scan-${{ matrix.image }}
+          path: security-reports/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Block release on high or critical findings
+        if: always()
+        run: |
+          if [ "${{ steps.trivy.outcome }}" != "success" ] || [ "${{ steps.grype.outcome }}" != "success" ]; then
+            echo "Trivy or Grype found high/critical vulnerabilities in the exact image to be released"
+            exit 1
+          fi
+
+      - name: Push scanned image tags
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            docker tag "local/${{ matrix.image }}:${{ github.sha }}" "$tag"
+            docker push "$tag"
+          done <<< "$IMAGE_TAGS"

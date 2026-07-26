@@ -11,22 +11,67 @@
     </template>
 
     <div class="border-b border-border/70 px-4 pt-3">
-      <Tabs
-        :model-value="activeStructureLocale"
-        class="min-w-0 gap-0"
-        @update:model-value="$emit('switch-locale', $event)"
-      >
-        <TabsList variant="line" class="h-10 w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
-          <TabsTrigger
-            v-for="locale in structureLocales"
-            :key="locale.value"
-            :value="locale.value"
-            class="h-9 flex-none px-3 text-[11px] font-bold normal-case tracking-normal"
+      <div class="flex min-w-0 items-center gap-1.5">
+        <div
+          ref="localeScrollArea"
+          class="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <Tabs
+            :model-value="activeStructureLocale"
+            class="w-max min-w-full gap-0"
+            @update:model-value="selectLocale"
           >
-            {{ locale.label }}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+            <TabsList
+              variant="default"
+              class="h-9 w-max min-w-full max-w-none flex-nowrap justify-start gap-1.5 rounded-2xl bg-muted/50 p-1.5"
+            >
+              <TabsTrigger
+                v-for="(locale, index) in structureLocales"
+                :key="locale.value"
+                :ref="(element) => setLocaleTriggerRef(locale.value, element)"
+                :value="locale.value"
+                class="h-6 flex-none gap-1 px-3 text-[11px] font-bold normal-case tracking-normal data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm"
+              >
+                <span class="font-mono text-[10px] opacity-60">{{ localeNumber(index) }}</span>
+                <span>{{ locale.label }}</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <DropdownMenu v-if="hasLocaleOverflow">
+          <DropdownMenuTrigger as-child>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              class="size-8 shrink-0 rounded-full"
+              aria-label="选择更多语言"
+              title="更多语言"
+            >
+              <Ellipsis class="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="max-h-80 w-64">
+            <DropdownMenuLabel>全部语言</DropdownMenuLabel>
+            <DropdownMenuItem
+              v-for="(locale, index) in structureLocales"
+              :key="locale.value"
+              class="gap-2"
+              @select="selectLocale(locale.value)"
+            >
+              <span class="w-5 shrink-0 text-center font-mono text-[10px] text-muted-foreground">
+                {{ localeNumber(index) }}
+              </span>
+              <span class="min-w-0 flex-1 truncate">{{ locale.label }}</span>
+              <Check
+                v-if="locale.value === activeStructureLocale"
+                class="size-3.5 shrink-0 text-primary"
+              />
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
 
     <div v-if="!loading && !structureLoading && faqGroups.length === 0" class="p-10 text-center text-sm text-muted-foreground">
@@ -254,12 +299,19 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { ChevronDown, FolderPlus, Pencil, Plus, Trash2 } from '@lucide/vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { Check, ChevronDown, Ellipsis, FolderPlus, Pencil, Plus, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -282,8 +334,44 @@ const props = defineProps({
 })
 
 const expandedPages = ref(new Set())
+const localeScrollArea = ref(null)
+const localeTriggerRefs = new Map()
+const hasLocaleOverflow = ref(false)
+let localeResizeObserver = null
 
 const pageKey = (page) => `${page.page_id || ''}\u0000${page.locale || ''}`
+const localeNumber = (index) => String(index + 1).padStart(2, '0')
+const setLocaleTriggerRef = (locale, element) => {
+  const target = element?.$el || element
+  if (target) localeTriggerRefs.set(locale, target)
+  else localeTriggerRefs.delete(locale)
+}
+const updateLocaleOverflow = () => {
+  const area = localeScrollArea.value
+  hasLocaleOverflow.value = Boolean(area && area.scrollWidth > area.clientWidth + 1)
+}
+const centerActiveLocale = async (locale = props.activeStructureLocale, behavior = 'smooth') => {
+  await nextTick()
+  const area = localeScrollArea.value
+  const target = localeTriggerRefs.get(locale)
+  if (!area || !target) return
+
+  const areaRect = area.getBoundingClientRect()
+  const targetRect = target.getBoundingClientRect()
+  const desiredLeft = area.scrollLeft
+    + targetRect.left
+    - areaRect.left
+    - (area.clientWidth - targetRect.width) / 2
+  const maxLeft = Math.max(0, area.scrollWidth - area.clientWidth)
+
+  area.scrollTo({
+    left: Math.max(0, Math.min(desiredLeft, maxLeft)),
+    behavior
+  })
+}
+const selectLocale = (locale) => {
+  emit('switch-locale', locale)
+}
 const isPageExpanded = (key) => expandedPages.value.has(key)
 const togglePage = (key) => {
   const next = new Set(expandedPages.value)
@@ -303,7 +391,7 @@ watch(() => props.faqGroups, (groups) => {
   expandedPages.value = next
 }, { immediate: true })
 
-defineEmits([
+const emit = defineEmits([
   'switch-locale',
   'toggle-faq',
   'edit',
@@ -315,4 +403,29 @@ defineEmits([
   'delete-category',
   'create-faq'
 ])
+
+watch(
+  () => [props.structureLocales, props.activeStructureLocale],
+  async () => {
+    await nextTick()
+    updateLocaleOverflow()
+    centerActiveLocale(props.activeStructureLocale)
+  },
+  { deep: true, immediate: true }
+)
+
+onMounted(() => {
+  localeResizeObserver = new ResizeObserver(() => {
+    updateLocaleOverflow()
+    centerActiveLocale(props.activeStructureLocale, 'auto')
+  })
+  if (localeScrollArea.value) localeResizeObserver.observe(localeScrollArea.value)
+  updateLocaleOverflow()
+  centerActiveLocale(props.activeStructureLocale, 'auto')
+})
+
+onBeforeUnmount(() => {
+  localeResizeObserver?.disconnect()
+  localeTriggerRefs.clear()
+})
 </script>

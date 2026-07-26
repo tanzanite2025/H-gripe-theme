@@ -58,6 +58,26 @@ func TestValidateConfigRejectsInvalidCookieSecureMode(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsShortJWTSecretInRelease(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Server.Mode = "release"
+	cfg.JWT.Secret = "short-secret"
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject short JWT secrets in release mode")
+	}
+}
+
+func TestValidateConfigAllowsShortJWTSecretInDebug(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Server.Mode = "debug"
+	cfg.JWT.Secret = "short-secret"
+
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow short JWT secrets outside release mode: %v", err)
+	}
+}
+
 func TestSplitEnvListTrimsAndDropsEmptyValues(t *testing.T) {
 	got := splitEnvList("https://tanzanite.site, https://admin.tanzanite.site, ,")
 	want := []string{"https://tanzanite.site", "https://admin.tanzanite.site"}
@@ -83,7 +103,7 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("REDIS_HOST", "redis")
 	t.Setenv("REDIS_PORT", "6379")
 	t.Setenv("REDIS_PASSWORD", "test-redis-password")
-	t.Setenv("JWT_SECRET", "test-production-secret")
+	t.Setenv("JWT_SECRET", "test-production-secret-at-least-32-chars")
 	t.Setenv("GOOGLE_CLIENT_ID", "test-google-client")
 	t.Setenv("CORS_ORIGINS", "https://tanzanite.site,https://admin.tanzanite.site")
 	t.Setenv("TRUSTED_PROXIES", "10.0.0.0/8, 172.16.0.0/12")

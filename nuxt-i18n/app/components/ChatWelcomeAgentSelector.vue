@@ -39,7 +39,7 @@
               >
                 {{ agent.name }}
               </span>
-              <span class="text-[11px] text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
+              <span class="tz-caption text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
             </span>
             <span
               class="mt-0.5 block text-xs truncate"
@@ -81,7 +81,7 @@
           <span class="min-w-0 flex-1">
             <span class="flex items-center gap-2">
               <span class="text-sm font-semibold tz-text-primary truncate">{{ agent.name }}</span>
-              <span class="text-[11px] text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
+              <span class="tz-caption text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
             </span>
             <span class="mt-0.5 block text-xs tz-text-secondary truncate">{{ getAgentDescription(agent.name) }}</span>
           </span>
@@ -191,3 +191,4 @@ const getAgentDescription = (name: string) => {
   return t('chatModal.agentSelector.descriptions.default')
 }
 </script>
+

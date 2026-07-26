@@ -82,8 +82,15 @@ func replaceProductVariants(tx *gorm.DB, productID uint, variants []product.Prod
 			continue
 		}
 
+		isActive := variants[i].IsActive
 		if err := tx.Create(&variants[i]).Error; err != nil {
 			return err
+		}
+		if !isActive {
+			if err := tx.Model(&variants[i]).Update("is_active", false).Error; err != nil {
+				return err
+			}
+			variants[i].IsActive = false
 		}
 		keepIDs = append(keepIDs, variants[i].ID)
 	}
@@ -99,6 +106,9 @@ func (r *ProductRepository) FindPurchasableVariant(productID uint, variantID *ui
 	p, err := r.FindByID(productID)
 	if err != nil {
 		return nil, nil, err
+	}
+	if p.Status != "active" {
+		return nil, nil, gorm.ErrRecordNotFound
 	}
 
 	activeVariants := p.ActiveVariants()

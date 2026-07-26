@@ -40,9 +40,24 @@ func (s *GalleryService) GetGalleryByID(id uint) (*gallery.Gallery, error) {
 	return s.repo.FindGalleryByID(id)
 }
 
+func (s *GalleryService) GetPublicGalleryByID(id uint) (*gallery.Gallery, error) {
+	galleryItem, err := s.repo.FindGalleryByIDAndStatus(id, "published")
+	if err != nil {
+		if IsRecordNotFound(err) {
+			return nil, ErrGalleryNotFound
+		}
+		return nil, err
+	}
+	return galleryItem, nil
+}
+
 // GetAllGalleries 获取所有图片库
 func (s *GalleryService) GetAllGalleries(page, pageSize int) ([]gallery.Gallery, int64, error) {
 	return s.repo.FindAllGalleries(page, pageSize)
+}
+
+func (s *GalleryService) GetPublicGalleries(page, pageSize int) ([]gallery.Gallery, int64, error) {
+	return s.repo.FindAllGalleriesByStatus("published", page, pageSize)
 }
 
 // UpdateGallery 更新图片库
@@ -95,9 +110,20 @@ func (s *GalleryService) GetImagesByGalleryID(galleryID uint) ([]gallery.Gallery
 	return s.repo.FindImagesByGalleryID(galleryID)
 }
 
+func (s *GalleryService) GetPublicImagesByGalleryID(galleryID uint) ([]gallery.GalleryImage, error) {
+	if _, err := s.GetPublicGalleryByID(galleryID); err != nil {
+		return nil, err
+	}
+	return s.repo.FindImagesByPublishedGalleryID(galleryID)
+}
+
 // GetImagesByTags 根据标签获取图片
 func (s *GalleryService) GetImagesByTags(tags []string, page, pageSize int) ([]gallery.GalleryImage, int64, error) {
 	return s.repo.FindImagesByTags(tags, page, pageSize)
+}
+
+func (s *GalleryService) GetPublicImagesByTags(tags []string, page, pageSize int) ([]gallery.GalleryImage, int64, error) {
+	return s.repo.FindImagesByTagsInPublishedGalleries(tags, page, pageSize)
 }
 
 // UpdateGalleryImage 更新图片
@@ -163,6 +189,10 @@ func (s *GalleryService) GetImageCount(galleryID uint) (int64, error) {
 // SearchImages 搜索图片
 func (s *GalleryService) SearchImages(keyword string, page, pageSize int) ([]gallery.GalleryImage, int64, error) {
 	return s.repo.SearchImages(keyword, page, pageSize)
+}
+
+func (s *GalleryService) SearchPublicImages(keyword string, page, pageSize int) ([]gallery.GalleryImage, int64, error) {
+	return s.repo.SearchImagesInPublishedGalleries(keyword, page, pageSize)
 }
 
 // BatchUpdateOrder 批量更新图片排序

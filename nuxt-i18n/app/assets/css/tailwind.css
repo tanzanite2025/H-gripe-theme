@@ -11,16 +11,6 @@
   font-display: swap;
 }
 
-/* 自定义字体 - 站点标题 */
-@font-face {
-  font-family: 'AerialFaster';
-  src: url('../fonts/AerialFasterRegular.woff2') format('woff2'),
-    url('../fonts/AerialFasterRegular.woff') format('woff');
-  font-weight: normal;
-  font-style: normal;
-  font-display: block;
-}
-
 @layer base {
   :root {
     --tz-font-system: 'StorefrontSystem', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -36,6 +26,9 @@
     --tz-type-faq-category: clamp(0.84rem, 0.16vw + 0.8rem, 0.95rem);
     --tz-type-faq-question: clamp(0.84rem, 0.1vw + 0.8rem, 0.92rem);
     --tz-type-faq-answer: clamp(0.82rem, 0.08vw + 0.79rem, 0.88rem);
+    --tz-type-description: clamp(0.8125rem, 0.12vw + 0.78rem, 0.9rem);
+    --tz-type-caption: clamp(0.75rem, 0.08vw + 0.73rem, 0.8125rem);
+    --tz-type-micro-label: clamp(0.6875rem, 0.06vw + 0.67rem, 0.75rem);
     /*
       Shared top rhythm for storefront content below the fixed header/section
       navigation. Page roots must not add their own arbitrary top offsets.
@@ -101,6 +94,28 @@
     font-size: var(--tz-type-card-title);
     line-height: 1.35;
     font-weight: 700;
+  }
+
+  .tz-description {
+    font-size: var(--tz-type-description);
+    line-height: 1.58;
+  }
+
+  .tz-caption {
+    font-size: var(--tz-type-caption);
+    line-height: 1.5;
+  }
+
+  .tz-micro-label {
+    font-size: var(--tz-type-micro-label);
+    line-height: 1.22;
+  }
+
+  .tz-compact-label {
+    font-size: var(--tz-type-micro-label);
+    line-height: 1.2;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 
   .support-page__title,

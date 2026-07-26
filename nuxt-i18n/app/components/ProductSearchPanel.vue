@@ -240,7 +240,7 @@ watch(freeTextQuery, () => {
   gap: 4px;
   border-radius: 999px;
   padding: 2px 8px;
-  font-size: 11px;
+  font-size: var(--tz-type-micro-label);
   font-weight: 500;
   border: none;
   background: #ffffff;
@@ -249,7 +249,7 @@ watch(freeTextQuery, () => {
 }
 
 .search-chip-in-input__close {
-  font-size: 11px;
+  font-size: var(--tz-type-micro-label);
   opacity: 0.75;
 }
 

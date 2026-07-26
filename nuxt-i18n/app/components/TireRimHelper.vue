@@ -36,7 +36,7 @@
         >
           <button
             type="button"
-            class="rounded-full px-3 py-1 text-[11px] transition-colors"
+            class="rounded-full px-3 py-1 tz-caption transition-colors"
             :class="rimType === 'hookless'
               ? 'bg-sky-400 text-slate-900'
               : 'tz-text-secondary hover:text-slate-50'"
@@ -46,7 +46,7 @@
           </button>
           <button
             type="button"
-            class="rounded-full px-3 py-1 text-[11px] transition-colors"
+            class="rounded-full px-3 py-1 tz-caption transition-colors"
             :class="rimType === 'hooked'
               ? 'bg-sky-400 text-slate-900'
               : 'tz-text-secondary hover:text-slate-50'"
@@ -75,7 +75,7 @@
           Recommended rim internal width:
           {{ tireRimSuggestion.minRim }} - {{ tireRimSuggestion.maxRim }} mm
         </p>
-        <p class="mt-0.5 text-[11px] tz-text-muted">
+        <p class="mt-0.5 tz-caption tz-text-muted">
           Sweet spot around {{ tireRimSuggestion.ideal }} mm. For aggressive or technical riding,
           stay closer to the wider end of the range.
         </p>
@@ -208,3 +208,4 @@ const tireRimSuggestion = computed<TireRimSuggestion | null>(() => {
   }
 })
 </script>
+

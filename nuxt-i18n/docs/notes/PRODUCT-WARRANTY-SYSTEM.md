@@ -81,6 +81,10 @@ Current admin backend entry points are Go admin routes, not WordPress:
    - Need end-to-end tests for valid serial, expired serial, missing serial, unauthorized access, and upload validation.
    - Need admin e2e coverage for registration status updates, claim status updates, and nullable order-based claim rows.
 
+5. Public order/email verification hardening
+   - The backend now requires a signed, expiring, single-use email challenge before an order-number/email warranty claim can be created.
+   - The storefront now carries the verification token into the multipart claim submission. Production still needs `SMTP_*`, `STOREFRONT_BASE_URL`, and an end-to-end test. Track the release gate in `go-backend/docs/SECURITY_FOLLOW_UPS.md`.
+
 ## Maintenance rule
 
 Any warranty change must keep a single fact source:

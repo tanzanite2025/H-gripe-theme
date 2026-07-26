@@ -233,7 +233,7 @@ watch(
 .account-sidebar__kicker {
   margin: 0 0 0.35rem;
   color: #67e8f9;
-  font-size: 0.68rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -266,7 +266,7 @@ watch(
   background: rgba(255, 255, 255, 0.08);
   color: rgba(226, 232, 240, 0.88);
   padding: 0 0.7rem;
-  font-size: 0.72rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
 }
 
@@ -296,7 +296,7 @@ watch(
 
 .account-sidebar__stats span {
   color: rgba(203, 213, 225, 0.8);
-  font-size: 0.7rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 750;
 }
 
@@ -326,7 +326,7 @@ watch(
   gap: 0.35rem;
   border-radius: 0.95rem;
   color: rgba(226, 232, 240, 0.78);
-  font-size: 0.72rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 850;
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
@@ -385,3 +385,4 @@ watch(
   }
 }
 </style>
+

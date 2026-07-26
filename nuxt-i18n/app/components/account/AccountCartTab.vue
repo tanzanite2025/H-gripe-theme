@@ -129,7 +129,7 @@ const checkoutNow = () => {
 
 .tab-head p {
   color: rgba(103, 232, 249, 0.9);
-  font-size: 0.68rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -259,7 +259,7 @@ const checkoutNow = () => {
   gap: 0.45rem;
   margin-top: 0.25rem;
   color: rgba(226, 232, 240, 0.72);
-  font-size: 0.72rem;
+  font-size: var(--tz-type-micro-label);
 }
 
 .account-cart-item__meta span:first-child {
@@ -283,7 +283,7 @@ const checkoutNow = () => {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
-  font-size: 0.7rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
 }
 
@@ -353,3 +353,4 @@ const checkoutNow = () => {
   }
 }
 </style>
+

@@ -10,12 +10,57 @@ func (s *PaymentService) GetPaymentMethod(id uint) (*payment.PaymentMethod, erro
 	return s.paymentRepo.FindPaymentMethodByID(id)
 }
 
+func (s *PaymentService) CreatePaymentMethod(method *payment.PaymentMethod) error {
+	return s.paymentRepo.CreatePaymentMethod(method)
+}
+
+func (s *PaymentService) UpdatePaymentMethod(method *payment.PaymentMethod) error {
+	existing, err := s.paymentRepo.FindPaymentMethodByID(method.ID)
+	if err != nil {
+		return err
+	}
+
+	existing.Name = method.Name
+	existing.Code = method.Code
+	existing.Icon = method.Icon
+	existing.Description = method.Description
+	existing.FeeType = method.FeeType
+	existing.FeeValue = method.FeeValue
+	existing.MinAmount = method.MinAmount
+	existing.MaxAmount = method.MaxAmount
+	existing.SupportedCurrencies = method.SupportedCurrencies
+	existing.Enabled = method.Enabled
+	existing.SortOrder = method.SortOrder
+	existing.Settings = method.Settings
+
+	return s.paymentRepo.UpdatePaymentMethod(existing)
+}
+
+func (s *PaymentService) DeletePaymentMethod(id uint) error {
+	return s.paymentRepo.DeletePaymentMethod(id)
+}
+
 func (s *PaymentService) ListTaxRates() ([]payment.TaxRate, error) {
-	return s.paymentRepo.FindAllTaxRates()
+	return s.paymentRepo.FindAllTaxRates(false)
 }
 
 func (s *PaymentService) GetTaxRate(id uint) (*payment.TaxRate, error) {
 	return s.paymentRepo.FindTaxRateByID(id)
+}
+
+func (s *PaymentService) ListPublicTaxRates() ([]payment.TaxRate, error) {
+	return s.paymentRepo.FindAllTaxRates(true)
+}
+
+func (s *PaymentService) GetPublicTaxRate(id uint) (*payment.TaxRate, error) {
+	rate, err := s.paymentRepo.FindTaxRateByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if !rate.Enabled {
+		return nil, ErrPaymentNotFound
+	}
+	return rate, nil
 }
 
 func (s *PaymentService) CalculateTax(amount float64, country, state string) (float64, float64, error) {

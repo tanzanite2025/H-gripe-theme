@@ -11,7 +11,6 @@ import (
 // ListPosts 获取文章列表
 func (h *Handler) ListPosts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
-	status := c.DefaultQuery("status", "published")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
@@ -22,7 +21,7 @@ func (h *Handler) ListPosts(c *gin.Context) {
 		pageSize = 10
 	}
 
-	posts, total, err := h.postService.List(locale, status, page, pageSize)
+	posts, total, err := h.postService.ListPublic(locale, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -43,7 +42,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 
 	if id, err := strconv.ParseUint(idOrSlug, 10, 32); err == nil {
-		post, err := h.postService.GetByID(uint(id))
+		post, err := h.postService.GetPublicByID(uint(id))
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 			return
@@ -52,7 +51,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 		return
 	}
 
-	post, err := h.postService.GetBySlug(idOrSlug, locale)
+	post, err := h.postService.GetPublicBySlug(idOrSlug, locale)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 		return

@@ -25,12 +25,12 @@
               {{ post.excerpt }}
             </p>
           </div>
-          <span class="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium tz-text-secondary">
+          <span class="shrink-0 rounded-full bg-white/10 px-3 py-1 tz-caption font-medium tz-text-secondary">
             {{ formatDate(post.date) }}
           </span>
         </div>
 
-        <div class="mt-4 inline-flex items-center text-[11px] font-medium text-sky-300 group-hover:text-sky-200">
+        <div class="mt-4 inline-flex items-center tz-caption font-medium text-sky-300 group-hover:text-sky-200">
           {{ t('blog.actions.openArticle') }}
         </div>
       </NuxtLink>
@@ -129,3 +129,4 @@ useHead({
   title: t('blog.pages.all.metaTitle'),
 })
 </script>
+

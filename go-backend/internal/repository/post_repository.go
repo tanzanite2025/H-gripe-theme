@@ -91,6 +91,13 @@ func (r *PostRepository) FindByTranslationGroup(groupID uint) ([]post.Post, erro
 	return posts, err
 }
 
+// FindPublishedByTranslationGroup 根据翻译组ID查找已发布翻译版本
+func (r *PostRepository) FindPublishedByTranslationGroup(groupID uint) ([]post.Post, error) {
+	var posts []post.Post
+	err := r.db.Where("translation_group_id = ? AND status = ?", groupID, "published").Order("locale ASC").Find(&posts).Error
+	return posts, err
+}
+
 // FindPublished 查找所有已发布的文章
 func (r *PostRepository) FindPublished() ([]post.Post, error) {
 	var posts []post.Post

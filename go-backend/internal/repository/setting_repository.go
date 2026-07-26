@@ -24,12 +24,33 @@ func (r *SettingRepository) Get(key, locale string) (*setting.Setting, error) {
 	return &s, nil
 }
 
+// GetPublic 获取公开设置
+func (r *SettingRepository) GetPublic(key, locale string) (*setting.Setting, error) {
+	var s setting.Setting
+	err := r.db.Where("key = ? AND locale = ? AND is_public = ?", key, locale, true).First(&s).Error
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
 // GetByGroup 获取分组设置
 func (r *SettingRepository) GetByGroup(group, locale string) ([]setting.Setting, error) {
 	var settings []setting.Setting
 	err := r.db.Where(map[string]interface{}{
 		"group":  group,
 		"locale": locale,
+	}).Find(&settings).Error
+	return settings, err
+}
+
+// GetPublicByGroup 获取公开分组设置
+func (r *SettingRepository) GetPublicByGroup(group, locale string) ([]setting.Setting, error) {
+	var settings []setting.Setting
+	err := r.db.Where(map[string]interface{}{
+		"group":     group,
+		"locale":    locale,
+		"is_public": true,
 	}).Find(&settings).Error
 	return settings, err
 }
@@ -83,8 +104,15 @@ func (r *SettingRepository) BatchSet(settings []setting.Setting) error {
 			err := tx.Where("key = ? AND locale = ?", s.Key, s.Locale).First(&existing).Error
 
 			if err == gorm.ErrRecordNotFound {
+				isPublic := s.IsPublic
 				if err := tx.Create(&s).Error; err != nil {
 					return err
+				}
+				if !isPublic {
+					if err := tx.Model(&s).Update("is_public", false).Error; err != nil {
+						return err
+					}
+					s.IsPublic = false
 				}
 			} else {
 				existing.Value = s.Value
@@ -105,5 +133,12 @@ func (r *SettingRepository) BatchSet(settings []setting.Setting) error {
 func (r *SettingRepository) GetGroups() ([]string, error) {
 	var groups []string
 	err := r.db.Model(&setting.Setting{}).Distinct().Pluck("group", &groups).Error
+	return groups, err
+}
+
+// GetPublicGroups 获取包含公开设置的分组
+func (r *SettingRepository) GetPublicGroups() ([]string, error) {
+	var groups []string
+	err := r.db.Model(&setting.Setting{}).Where("is_public = ?", true).Distinct().Pluck("group", &groups).Error
 	return groups, err
 }

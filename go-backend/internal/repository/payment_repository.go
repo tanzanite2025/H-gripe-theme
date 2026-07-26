@@ -63,6 +63,31 @@ func (r *PaymentRepository) FindAllPaymentMethods(enabledOnly bool) ([]payment.P
 	return methods, err
 }
 
+// CreatePaymentMethod 创建支付方式
+func (r *PaymentRepository) CreatePaymentMethod(pm *payment.PaymentMethod) error {
+	enabled := pm.Enabled
+	if err := r.db.Create(pm).Error; err != nil {
+		return err
+	}
+	if !enabled {
+		if err := r.db.Model(pm).Update("enabled", false).Error; err != nil {
+			return err
+		}
+		pm.Enabled = false
+	}
+	return nil
+}
+
+// UpdatePaymentMethod 更新支付方式
+func (r *PaymentRepository) UpdatePaymentMethod(pm *payment.PaymentMethod) error {
+	return r.db.Save(pm).Error
+}
+
+// DeletePaymentMethod 删除支付方式
+func (r *PaymentRepository) DeletePaymentMethod(id uint) error {
+	return r.db.Delete(&payment.PaymentMethod{}, id).Error
+}
+
 // TaxRate 相关方法
 
 // FindTaxRateByID 根据ID查找税率
@@ -87,9 +112,13 @@ func (r *PaymentRepository) FindTaxRateByLocation(country, state string) (*payme
 }
 
 // FindAllTaxRates 查找所有税率
-func (r *PaymentRepository) FindAllTaxRates() ([]payment.TaxRate, error) {
+func (r *PaymentRepository) FindAllTaxRates(enabledOnly bool) ([]payment.TaxRate, error) {
 	var rates []payment.TaxRate
-	err := r.db.Order("country ASC, state ASC").Find(&rates).Error
+	query := r.db.Order("country ASC, state ASC")
+	if enabledOnly {
+		query = query.Where("enabled = ?", true)
+	}
+	err := query.Find(&rates).Error
 	return rates, err
 }
 

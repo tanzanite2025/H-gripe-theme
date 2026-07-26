@@ -10,7 +10,7 @@ import (
 )
 
 func (h *Handler) ListTemplates(c *gin.Context) {
-	templates, err := h.shippingService.ListTemplates()
+	templates, err := h.shippingService.ListPublicTemplates()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -26,7 +26,7 @@ func (h *Handler) GetTemplate(c *gin.Context) {
 		return
 	}
 
-	template, err := h.shippingService.GetTemplate(uint(id))
+	template, err := h.shippingService.GetPublicTemplate(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Template")
 		return

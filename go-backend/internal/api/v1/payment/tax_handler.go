@@ -9,7 +9,7 @@ import (
 )
 
 func (h *Handler) ListTaxRates(c *gin.Context) {
-	rates, err := h.paymentService.ListTaxRates()
+	rates, err := h.paymentService.ListPublicTaxRates()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -25,7 +25,7 @@ func (h *Handler) GetTaxRate(c *gin.Context) {
 		return
 	}
 
-	rate, err := h.paymentService.GetTaxRate(uint(id))
+	rate, err := h.paymentService.GetPublicTaxRate(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Tax rate")
 		return

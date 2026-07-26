@@ -25,10 +25,9 @@ func (h *Handler) VerifySerialNumber(c *gin.Context) {
 		return
 	}
 
-	reg.User = nil
 	response.Success(c, gin.H{
 		"valid":            true,
-		"registration":     reg,
+		"registration":     publicRegistrationVerificationResponse(reg),
 		"warranty_expires": reg.WarrantyExpires,
 	})
 }
@@ -93,4 +92,32 @@ func warrantyStatusResponse(reg *domainregistration.ProductRegistration) gin.H {
 		"remaining":       remaining,
 		"records":         []gin.H{},
 	}
+}
+
+func publicRegistrationVerificationResponse(reg *domainregistration.ProductRegistration) gin.H {
+	product := gin.H{}
+	if reg.Product != nil {
+		product = gin.H{
+			"name": reg.Product.Name,
+			"sku":  reg.Product.SKU,
+		}
+	}
+
+	return gin.H{
+		"serial_number":    reg.SerialNumber,
+		"status":           publicWarrantyStatus(reg),
+		"warranty_period":  reg.WarrantyPeriod,
+		"warranty_expires": reg.WarrantyExpires,
+		"product":          product,
+	}
+}
+
+func publicWarrantyStatus(reg *domainregistration.ProductRegistration) string {
+	if reg == nil {
+		return "unknown"
+	}
+	if reg.Status == "expired" || time.Now().After(reg.WarrantyExpires) {
+		return "expired"
+	}
+	return "valid"
 }

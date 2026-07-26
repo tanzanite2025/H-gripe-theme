@@ -52,7 +52,7 @@
             <div class="bg-sky-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                <strong class="block text-sky-400 text-xs uppercase tracking-wider mb-1">Tire Installation</strong>
                <p class="mb-2">Use provided plastic tire levers only. Metal levers will permanently damage the rim.</p>
-               <button type="button" class="text-[10px] font-bold uppercase tracking-wider text-sky-400 border border-sky-500/30 px-2 py-1 rounded hover:bg-sky-500/10 transition-colors" @click="goToTubelessInstallation">
+               <button type="button" class="tz-micro-label font-bold uppercase tracking-wider text-sky-400 border border-sky-500/30 px-2 py-1 rounded hover:bg-sky-500/10 transition-colors" @click="goToTubelessInstallation">
                   View Tubeless Guide
                </button>
             </div>
@@ -119,7 +119,7 @@
                        <strong class="block text-amber-400 text-xs uppercase tracking-wider mb-1">Spoke Tension</strong>
                        <p class="mb-2">Regularly check for even tension distribution.</p>
                    </div>
-                   <button type="button" class="text-[10px] font-bold uppercase tracking-wider text-amber-400 border border-amber-500/30 px-2 py-1 rounded hover:bg-amber-500/10 transition-colors whitespace-nowrap" @click="goToTechnicalTension">
+                   <button type="button" class="tz-micro-label font-bold uppercase tracking-wider text-amber-400 border border-amber-500/30 px-2 py-1 rounded hover:bg-amber-500/10 transition-colors whitespace-nowrap" @click="goToTechnicalTension">
                       View Settings
                    </button>
                </div>
@@ -144,7 +144,7 @@
          <div class="space-y-4">
              <!-- Prohibited -->
             <div class="bg-indigo-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-               <strong class="block text-indigo-400 text-xs uppercase tracking-wider mb-2">Strictly Prohibited</strong>
+               <strong class="block text-indigo-400 tz-micro-label uppercase tracking-wider mb-2">Strictly Prohibited</strong>
                <ul class="space-y-2 list-none pl-0">
                   <li class="flex gap-2 items-center"><span class="text-rose-500 font-bold text-lg leading-none">×</span> <span>No non-original parts modification.</span></li>
                   <li class="flex gap-2 items-center"><span class="text-rose-500 font-bold text-lg leading-none">×</span> <span>No sanding/grinding with metal tools.</span></li>
@@ -156,13 +156,13 @@
              <div class="bg-indigo-500/5 rounded-lg p-3 text-sm tz-text-secondary border-none shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                <strong class="block text-indigo-400 text-xs uppercase tracking-wider mb-1">Emergency Protocol</strong>
                <p class="mb-2">If cracks/abnormal noises occur: <strong>STOP RIDING IMMEDIATELY</strong>.</p>
-               <p class="text-xs tz-text-muted">After any crash, perform thorough inspection even if no visible damage.</p>
+             <p class="tz-caption tz-text-muted">After any crash, perform thorough inspection even if no visible damage.</p>
             </div>
 
              <div class="pt-2 text-center">
                  <button
                     type="button"
-                    class="w-full py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-bold uppercase tracking-wider transition-colors"
+        class="w-full py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 tz-caption font-bold uppercase tracking-wider transition-colors"
                     @click="goToWarranty"
                   >
                     View Warranty Policy

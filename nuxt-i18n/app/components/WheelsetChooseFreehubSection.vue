@@ -168,7 +168,7 @@
        </h3>
        <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[#11151e]">
             <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
-              <thead class="bg-slate-800/50 font-bold tz-text-primary uppercase tracking-wider text-[10px] sm:text-xs">
+              <thead class="bg-slate-800/50 font-bold tz-text-primary uppercase tracking-wider tz-micro-label sm:text-xs">
               <tr>
                 <th class="px-4 py-3">Type</th>
                 <th class="px-4 py-3">Example Groupsets</th>
@@ -220,7 +220,7 @@
        </h3>
        <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[#11151e]">
             <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
-              <thead class="bg-slate-800/50 font-bold tz-text-primary uppercase tracking-wider text-[10px] sm:text-xs">
+              <thead class="bg-slate-800/50 font-bold tz-text-primary uppercase tracking-wider tz-micro-label sm:text-xs">
               <tr>
                 <th class="px-4 py-3">Brand</th>
                 <th class="px-4 py-3">Freehub Body</th>

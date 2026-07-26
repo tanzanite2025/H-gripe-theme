@@ -168,6 +168,52 @@ func TestProductServiceSearchPublicFiltersByTemplateSpec(t *testing.T) {
 	assert.Equal(t, discRim.ID, results[0].ID)
 }
 
+func TestProductServicePublicAccessOnlyReturnsActiveProducts(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+
+	activeProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-PUBLIC-ACTIVE", "public-active", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+	inactiveProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-PUBLIC-INACTIVE", "public-inactive", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", inactiveProduct.ID).Update("status", "inactive").Error)
+
+	_, err := productService.GetPublicByID(inactiveProduct.ID)
+	require.ErrorIs(t, err, ErrProductNotFound)
+
+	products, total, err := productService.ListPublic("en", false, 1, 20)
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, products, 1)
+	assert.Equal(t, activeProduct.ID, products[0].ID)
+
+	results, total, err := productService.SearchPublic(ProductSearchInput{
+		Locale:   "en",
+		Status:   "inactive",
+		Page:     1,
+		PageSize: 20,
+	})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, results, 1)
+	assert.Equal(t, activeProduct.ID, results[0].ID)
+}
+
+func TestProductRepositoryPurchasableVariantRejectsInactiveProduct(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+
+	inactiveProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-NOT-BUYABLE", "not-buyable", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", inactiveProduct.ID).Update("status", "inactive").Error)
+
+	_, _, err := repository.NewProductRepository(db).FindPurchasableVariant(inactiveProduct.ID, nil)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
 func TestProductServicePublicListsFallBackToEnglish(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productType := seedCarbonRimType(t, db)

@@ -25,6 +25,7 @@ import (
 	"tanzanite/internal/domain/suggestionfeedback"
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/domain/user"
+	"tanzanite/internal/domain/verification"
 	"tanzanite/internal/domain/visitor"
 	"tanzanite/internal/domain/wishlist"
 	"tanzanite/internal/pkg/config"
@@ -99,6 +100,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&ticket.AutoReplyRule{},
 		&visitor.Profile{},
 		&subscription.Subscription{},
+		&verification.EmailChallenge{},
 		&showcase.Showcase{},
 		&showcase.Comment{},
 		&media.Media{},

@@ -83,7 +83,7 @@ func RateLimitByUser(rps int) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		// 尝试从context获取用户ID
-		userID, exists := c.Get("userID")
+		userID, exists := c.Get("user_id")
 		if !exists {
 			// 如果没有用户ID，使用IP地址
 			userID = c.ClientIP()

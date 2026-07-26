@@ -9,7 +9,7 @@
             v-for="tab in tabs"
             :key="tab.id"
             @click="handleTabClick(tab.id)"
-            class="h-9 md:h-8 px-0 md:px-4 rounded-full text-[10px] sm:text-[11px] md:text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center"
+        class="h-9 md:h-8 px-0 md:px-4 rounded-full tz-caption md:text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center"
             :class="activeTab === tab.id
               ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
               : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
