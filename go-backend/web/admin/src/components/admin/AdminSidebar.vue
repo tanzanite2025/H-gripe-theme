@@ -1,6 +1,6 @@
 <template>
   <div class="relative flex h-full min-h-0 w-full flex-col bg-sidebar text-sidebar-foreground">
-    <span v-if="!collapsed" class="pointer-events-none absolute inset-x-0 top-0 z-10 mx-auto w-full max-w-48 px-2 pb-2 pt-4 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+    <span v-if="!collapsed" class="pointer-events-none absolute inset-x-0 top-0 z-10 mx-auto w-full max-w-48 px-2 pb-2 pt-4 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
       WORKSPACE / 工作台
     </span>
 
@@ -122,6 +122,7 @@ const isActive = (path) => {
 
 .admin-sidebar__link--expanded {
   width: 100%;
+  justify-content: center;
   padding-inline: 0.75rem;
 }
 
