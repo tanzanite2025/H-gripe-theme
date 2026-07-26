@@ -69,7 +69,7 @@ jobs:
             -w /repo \
             zricethezav/gitleaks:v8.24.2 \
             git \
-            --source=/repo \
+            /repo \
             --log-opts="--all --tags" \
             --redact \
             --report-format sarif \

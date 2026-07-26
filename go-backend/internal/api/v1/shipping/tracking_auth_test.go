@@ -1,6 +1,7 @@
 package shipping
 
 import (
+	stdcontext "context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -114,6 +115,6 @@ func orderTrackingAuthContext() (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(recorder)
-	context.Request = httptest.NewRequest(http.MethodGet, "/api/v1/shipping/orders/1/tracking", nil)
+	context.Request = httptest.NewRequestWithContext(stdcontext.Background(), http.MethodGet, "/api/v1/shipping/orders/1/tracking", nil)
 	return context, recorder
 }

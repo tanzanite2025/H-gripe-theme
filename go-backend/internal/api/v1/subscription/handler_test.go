@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -37,7 +38,7 @@ func TestUnsubscribeByEmailDoesNotMutateDirectly(t *testing.T) {
 	router.POST("/subscriptions/unsubscribe", handler.UnsubscribeByEmail)
 
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/subscriptions/unsubscribe", strings.NewReader(`{"email":"victim@example.test"}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/subscriptions/unsubscribe", strings.NewReader(`{"email":"victim@example.test"}`))
 	request.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(recorder, request)
 

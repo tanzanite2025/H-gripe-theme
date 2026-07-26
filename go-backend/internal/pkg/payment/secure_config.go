@@ -80,7 +80,9 @@ func EncryptSecureGatewayConfig(config SecureGatewayConfig, masterKey string) (s
 	}
 
 	ciphertext := gcm.Seal(nil, nonce, plaintext, []byte(config.Provider))
-	payload := append(nonce, ciphertext...)
+	payload := make([]byte, 0, len(nonce)+len(ciphertext))
+	payload = append(payload, nonce...)
+	payload = append(payload, ciphertext...)
 	return secureConfigPrefix + base64.StdEncoding.EncodeToString(payload), nil
 }
 

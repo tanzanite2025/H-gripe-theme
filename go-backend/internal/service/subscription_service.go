@@ -303,10 +303,11 @@ func (s *SubscriptionService) setStatus(email, status string) error {
 	}
 
 	sub.Status = status
-	if status == "active" {
+	switch status {
+	case "active":
 		sub.SubscribedAt = time.Now()
 		sub.UnsubscribedAt = nil
-	} else if status == "unsubscribed" {
+	case "unsubscribed":
 		now := time.Now()
 		sub.UnsubscribedAt = &now
 	}
