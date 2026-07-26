@@ -6,19 +6,16 @@
         <h2 class="mt-1 text-lg font-black tracking-tight">前端 FAQ 页面分类</h2>
         <p class="mt-1 text-xs text-muted-foreground">这里对应 Nuxt 单页 FAQ 的 pageId 和分类。分类标识用于 FAQ 归属，分类名称用于前端展示。</p>
       </div>
-      <div class="flex items-center gap-2 rounded-full border bg-muted/30 p-1">
-        <Button
-          v-for="locale in structureLocales"
-          :key="locale.value"
-          type="button"
-          size="sm"
-          :variant="activeStructureLocale === locale.value ? 'default' : 'ghost'"
-          class="h-8 rounded-full px-3 text-xs font-black"
-          @click="$emit('switch-locale', locale.value)"
-        >
-          {{ locale.label }}
-        </Button>
-      </div>
+      <Select :model-value="activeStructureLocale" @update:model-value="$emit('switch-locale', $event)">
+        <SelectTrigger class="h-9 w-full rounded-full text-xs font-black sm:w-64">
+          <SelectValue placeholder="选择语言" />
+        </SelectTrigger>
+        <SelectContent class="max-h-80">
+          <SelectItem v-for="locale in structureLocales" :key="locale.value" :value="locale.value">
+            {{ locale.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <div v-if="loading" class="flex min-h-36 items-center justify-center text-sm text-muted-foreground">
@@ -121,6 +118,7 @@
 import { LoaderCircle, Pencil, Plus, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 defineProps({
   structureLocales: { type: Array, required: true },

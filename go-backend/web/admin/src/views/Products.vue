@@ -34,6 +34,7 @@
       :selection-state="selectionState"
       :can-edit="hasPermission('product:edit')"
       :can-delete="hasPermission('product:delete')"
+      :locale-name="supportedLanguages.localeName"
       @batch-status="requestBatchStatus"
       @batch-delete="requestBatchDelete"
       @toggle-all-products="toggleAllProducts"
@@ -65,6 +66,7 @@
       :format-spec-option="formatSpecOption"
       :get-spec-label="getSpecLabel"
       :spec-select-value="specSelectValue"
+      :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
       @product-type-select="handleProductTypeSelect"
@@ -113,11 +115,14 @@ import productApi from '@/api/products'
 import shippingApi from '@/api/shipping'
 import { useProductCatalog } from '@/composables/product/useProductCatalog'
 import { useProductEditor } from '@/composables/product/useProductEditor'
+import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const shippingTemplates = ref([])
+const supportedLanguages = useSupportedLanguages()
+const languageOptions = supportedLanguages.languageOptions
 const {
   loading,
   products,
@@ -172,7 +177,7 @@ const {
   showCreateDialog,
   showEditDialog,
   submitForm
-} = useProductEditor({ refreshProducts })
+} = useProductEditor({ refreshProducts, defaultLocale: supportedLanguages.defaultLocale })
 
 const fetchShippingTemplates = async () => {
   try {
@@ -199,11 +204,7 @@ const statusFilterOptions = [
   { label: '下架', value: 'inactive' },
   { label: '缺货', value: 'out_of_stock' }
 ]
-const localeFilterOptions = [
-  { label: '全部语言', value: 'all' },
-  { label: '中文', value: 'zh' },
-  { label: 'English', value: 'en' }
-]
+const localeFilterOptions = supportedLanguages.localeFilterOptions
 const featuredFilterOptions = [
   { label: '全部商品', value: 'all' },
   { label: '仅精选', value: 'true' },
@@ -274,5 +275,11 @@ const executeConfirmedAction = async () => {
   }
 }
 
-onMounted(() => Promise.all([fetchProductTypes(), fetchShippingTemplates(), fetchStats(), fetchProducts()]))
+onMounted(() => Promise.all([
+  supportedLanguages.fetchLanguages(),
+  fetchProductTypes(),
+  fetchShippingTemplates(),
+  fetchStats(),
+  fetchProducts()
+]))
 </script>

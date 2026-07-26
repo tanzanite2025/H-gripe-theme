@@ -1,6 +1,6 @@
 # FAQ management source of truth
 
-FAQ 页面结构与分类现在由 Go 后端数据库管理，Nuxt 前端的 `app/data/faq/pages/*` 只作为接口不可用或后台尚未录入问答内容时的静态兜底。
+FAQ 页面结构、分类与问答内容现在由 Go 后端数据库管理。Nuxt 前端的 `app/data/faq/pages/*` 仅保留为历史源数据，不再作为 storefront 静态兜底。
 
 ## Current ownership
 
@@ -9,9 +9,9 @@ FAQ 页面结构与分类现在由 Go 后端数据库管理，Nuxt 前端的 `ap
 - `faqs`：FAQ 问答内容。`page_id` 指向页面，`category` 存储 `faq_categories.category_key`。
 - `cmd/import/faqs`：批量导入也必须提供 `page_id`，并走同一套页面/分类校验，不能绕过结构事实源。
 - Admin `/faqs`：负责编辑页面结构、分类结构和 FAQ 内容。
-- Nuxt `PageFaq`：优先读取 `/api/v1/content/faq-pages/:page_id`；当后端没有可展示 FAQ 内容时回退静态文件。
+- Nuxt `PageFaq`：读取 `/api/v1/content/faq-pages/:page_id`；当后端没有可展示 FAQ 内容时不渲染 FAQ 区块。
 - Nuxt `PageFaqSlot`：页面/layout 固定 FAQ 容器。它根据当前路由匹配 `faq_pages.route_path`，自动把对应 FAQ 插入页面底部；等待接口时显示统一 FAQ skeleton loading，不再裸露 `LOAD` 文本。
-- Locale：后台 FAQ 结构目前以 `en` / `zh` 管理；公开接口会把 `zh_cn`、`zh-CN` 等中文 locale 归一到 `zh`。
+- Locale：后台 FAQ 结构对齐系统 34 个 Nuxt locale，当前语言列表来自 `/api/v1/i18n/languages`。中文使用 `zh_cn`，不再使用旧 `zh`。
 
 ## Admin code responsibilities
 
@@ -60,10 +60,10 @@ Nuxt FAQ 用户端按“自动插入、通用 FAQ 容器、分类折叠 UI、答
 
 - `app/components/PageFaqSlot.vue`：layout 内的自动插入容器，只负责根据当前 route 查找 FAQ 页面和显示统一 FAQ skeleton loading。
 - `app/components/PageFaq.vue`：通用 FAQ 区块容器，只负责标题、空状态、查看全部入口和分类列表装配。
-- `app/composables/usePageFaq.ts`：PageFaq 的取数、静态 fallback、展开状态、`maxItems` 截断和 `hasMoreItems` 计算。
+- `app/composables/usePageFaq.ts`：PageFaq 的取数、展开状态、`maxItems` 截断和 `hasMoreItems` 计算。
 - `app/components/faq/FaqCategoryAccordion.vue`：单个 FAQ 分类卡片和问题折叠 UI。
 - `app/components/FaqAnswerContent.vue`：答案轻量 HTML 与单张 FAQ 图片渲染。
-- `app/data/faq/registry.ts`：静态 FAQ fallback 注册表、pageId 与 route path 映射、聚合静态条目。
+- `app/data/faq/registry.ts`：历史 FAQ 数据注册表、pageId 与 route path 映射、聚合历史条目。
 - `app/data/faq/routing.ts`：route path 归一化、locale 前缀剥离、动态商品详情页 FAQ lookup 映射，以及不应自动插入 FAQ 的聚合页判定。
 - `app/data/faq/backend.ts`：Go 后端 FAQ 请求、公开结构接口优先、旧内容接口兜底转换。
 - `app/data/faq/index.ts`：FAQ 数据层统一出口，不承载业务逻辑。
@@ -81,8 +81,8 @@ Flow:
 3. FAQ 聚合页 `/support/faqs` 和旧 `/faq` 页面本身不再自动插入另一个 FAQ 区块，避免页面内重复嵌套。
 4. `PageFaqSlot` 请求 Go backend 的 route resolver，通过 `faq_pages.route_path` 找到对应 `page_id`。
 5. 如果后台返回可展示 FAQ 内容，slot 直接渲染 `PageFaq`。
-6. 如果后台结构存在但还没有 FAQ 内容，Nuxt 可回退本地静态 FAQ 文件；后台仍然能看到该页面和分类结构。
-7. 如果后台和静态 fallback 都没有内容，用户端不显示空 FAQ 区块。
+6. 如果后台结构存在但还没有 FAQ 内容，用户端不显示空 FAQ 区块。
+7. 如果后台没有录入当前 locale 的 FAQ 内容，用户端保持为空，不从代码文件补默认文案。
 
 Loading rule:
 
@@ -140,6 +140,7 @@ Forbidden in `answer`:
 - 已新增 FAQ 轻量答案边界：后台答案编辑支持轻量 HTML，Go 后端保存和公开读取时统一清洗，图片从答案 HTML 中拆出为 FAQ 专用单图字段。
 - 已新增 FAQ 图片上传边界：后台和 Go 后端都校验 `image/webp`、`800 x 800`、最多一张；Nuxt 用固定答案内容组件渲染桌面两列/移动单列，并取消 FAQ 展开内容的固定 `max-height` 截断。
 - 已新增 `031_faq_route_coverage.up.sql`，把当前使用 `products` / `support` layout 的 Nuxt 页面补进 `faq_pages` / `faq_categories`，包括 `/shop`、`/shop/:slug`、旧 `/products/:slug`、blog、policies、`/company/about`、`/picture-warehouse`、`/support/faqs` 和旧 `/faq`。这些页面即使暂时没有 FAQ 条目，也能在后台结构面板看到，不再让前台自动容器请求稳定页面时出现 404。
+- 已新增 `041_faq_structure_supported_locales.up.sql`，把旧 `zh` 数据迁到 `zh_cn`，并为系统 34 个 locale 补齐 FAQ 页面/分类结构壳。FAQ 问答内容不会复制到未录入的语言。
 - 已新增 Nuxt FAQ lookup 规则：真实商品详情 URL 统一查 `/shop/:slug`，旧产品详情 route 查 `/products/:slug`；`/support/faqs` 与 `/faq` 作为 FAQ 聚合页只展示自身内容，不再通过 layout 自动追加第二个 FAQ 区块。
 - 已完成 `PageFaqSlot` 统一 FAQ skeleton loading：接口等待或客户端路由切换时显示 FAQ 标题、加载提示和三条骨架问题/答案行，不再显示裸 `LOAD` 文本。
 
@@ -147,7 +148,7 @@ Forbidden in `answer`:
 
 ## Initial seed
 
-Migration `028_faq_page_category_source.up.sql` seeds the first Nuxt FAQ page/category structure for `en` and `zh`, so a fresh admin panel is not empty even before FAQ items are added.
+Migration `028_faq_page_category_source.up.sql` seeds the first Nuxt FAQ page/category structure for legacy `en` and `zh`; `041_faq_structure_supported_locales.up.sql` migrates legacy Chinese to `zh_cn` and expands structure coverage to the supported 34 locales.
 
 Migration `031_faq_route_coverage.up.sql` extends that seed to every current Nuxt route covered by the automatic FAQ slot and adds a unique live `(route_path, locale)` index. When adding a new route to `products` or `support` layout, update this route coverage at the same time unless the route is explicitly excluded from `PageFaqSlot`.
 
@@ -157,5 +158,5 @@ Whenever a new storefront page should participate in FAQ insertion, update these
 
 1. Add or edit the matching `faq_pages` / `faq_categories` records through Admin, or add a migration seed if it must exist in every environment.
 2. If it is a dynamic route, add a stable lookup mapping in `nuxt-i18n/app/data/faq/routing.ts` instead of creating one FAQ page per concrete slug.
-3. Keep Nuxt static fallback data in `nuxt-i18n/app/data/faq/pages/*` only as fallback content.
+3. Do not add translated FAQ content to Nuxt code files; create or import localized FAQ content through Admin/backend data.
 4. If the backend public response shape changes, update `nuxt-i18n/app/data/faq/index.ts` at the same time.

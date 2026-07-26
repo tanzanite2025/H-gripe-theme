@@ -7,6 +7,7 @@ import { buildProductMediaFormValues } from '@/lib/productMedia'
 
 export const useProductEditor = (options: Record<string, any> = {}) => {
   const refreshProducts = options.refreshProducts || (() => Promise.resolve())
+  const resolveDefaultLocale = () => options.defaultLocale?.value || options.defaultLocale || ''
 
   const productTypes = ref<any[]>([])
   const dialogVisible = ref(false)
@@ -23,7 +24,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     description: '',
     short_description: '',
     status: 'active',
-    locale: 'zh',
+    locale: resolveDefaultLocale(),
     featured: false,
     meta_title: '',
     meta_description: '',
@@ -221,6 +222,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     clearFormErrors()
     if (!payload.name) formErrors.name = '请输入商品名称'
     if (!payload.slug) formErrors.slug = '请输入 URL slug'
+    if (!payload.locale) formErrors.locale = '请选择语言'
     selectedSpecDefinitions.value.forEach((spec: any) => {
       const value = payload.specs[spec.slug]
       if (spec.is_required && (value === undefined || value === null || value === '')) {
@@ -269,7 +271,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       description: '',
       short_description: '',
       status: 'active',
-      locale: 'zh',
+      locale: resolveDefaultLocale(),
       featured: false,
       meta_title: '',
       meta_description: '',
@@ -316,7 +318,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       description: detail.description || '',
       short_description: detail.short_description || detail.short_desc || '',
       status: detail.status || 'active',
-      locale: detail.locale || 'zh',
+      locale: detail.locale || resolveDefaultLocale(),
       featured: Boolean(detail.featured),
       meta_title: detail.meta_title || '',
       meta_description: detail.meta_description || detail.meta_desc || '',

@@ -11,20 +11,28 @@ var supportedLocales map[string]bool
 func Init(cfg config.I18nConfig) {
 	supportedLocales = make(map[string]bool)
 	for _, locale := range cfg.SupportedLocales {
-		supportedLocales[locale] = true
+		supportedLocales[NormalizeLocale(locale)] = true
 	}
 }
 
 // IsValidLocale 检查语言代码是否有效
 func IsValidLocale(locale string) bool {
-	return supportedLocales[locale]
+	return supportedLocales[NormalizeLocale(locale)]
 }
 
 // NormalizeLocale 规范化语言代码
 func NormalizeLocale(locale string) string {
+	locale = strings.TrimSpace(locale)
+	if first, _, ok := strings.Cut(locale, ","); ok {
+		locale = first
+	}
+	if first, _, ok := strings.Cut(locale, ";"); ok {
+		locale = first
+	}
 	locale = strings.ToLower(strings.TrimSpace(locale))
+	locale = strings.ReplaceAll(locale, "_", "-")
 
-	// 移除非字母字符
+	// 移除非字母字符，保留地区分隔符。
 	var result strings.Builder
 	for _, r := range locale {
 		if (r >= 'a' && r <= 'z') || r == '-' {
@@ -35,6 +43,15 @@ func NormalizeLocale(locale string) string {
 	normalized := result.String()
 	if normalized == "" {
 		return "en"
+	}
+
+	switch normalized {
+	case "zh", "zh-cn", "zh-hans", "zh-sg":
+		return "zh_cn"
+	}
+
+	if base, _, ok := strings.Cut(normalized, "-"); ok && base != "" && base != "zh" {
+		return base
 	}
 
 	return normalized

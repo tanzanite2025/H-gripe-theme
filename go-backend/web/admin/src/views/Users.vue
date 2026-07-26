@@ -45,6 +45,7 @@
       v-model:show-password="showPassword"
       :mode="dialogMode"
       :submitting="submitting"
+      :language-options="languageOptions"
       @submit="submitUserForm"
     />
 
@@ -72,6 +73,7 @@ import UserEditorDialog from '@/components/admin/user/UserEditorDialog.vue'
 import UserFilterPanel from '@/components/admin/user/UserFilterPanel.vue'
 import UsersTablePanel from '@/components/admin/user/UsersTablePanel.vue'
 import { Button } from '@/components/ui/button'
+import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
@@ -86,6 +88,9 @@ const dialogMode = ref('create')
 const editingUserId = ref(null)
 const submitting = ref(false)
 const showPassword = ref(false)
+const supportedLanguages = useSupportedLanguages()
+const languageOptions = supportedLanguages.languageOptions
+const resolveDefaultLocale = () => supportedLanguages.defaultLocale.value || ''
 
 const filters = reactive({
   search: '',
@@ -117,7 +122,7 @@ const userSchema = toTypedSchema(
     first_name: z.string().max(100, '名字过长'),
     last_name: z.string().max(100, '姓氏过长'),
     role: z.enum(['admin', 'manager', 'editor', 'support', 'viewer']),
-    locale: z.enum(['zh', 'en']),
+    locale: z.string().min(1, '请选择语言'),
     status: z.enum(['active', 'inactive', 'suspended'])
   })
 )
@@ -147,7 +152,7 @@ function defaultUserValues() {
     first_name: '',
     last_name: '',
     role: 'viewer',
-    locale: 'zh',
+    locale: resolveDefaultLocale(),
     status: 'active'
   }
 }
@@ -256,7 +261,7 @@ const openEditDialog = (user) => {
     first_name: user.first_name || '',
     last_name: user.last_name || '',
     role: user.role || 'viewer',
-    locale: user.locale || 'zh',
+    locale: user.locale || resolveDefaultLocale(),
     status: user.status || 'active'
   })
   dialogVisible.value = true
@@ -364,5 +369,5 @@ const executeConfirmedAction = async () => {
   }
 }
 
-onMounted(fetchUsers)
+onMounted(() => Promise.all([supportedLanguages.fetchLanguages(), fetchUsers()]))
 </script>

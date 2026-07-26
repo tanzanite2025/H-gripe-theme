@@ -49,17 +49,26 @@ func (s *FAQService) GetByID(id uint) (*faq.FAQ, error) {
 // List 获取FAQ列表
 func (s *FAQService) List(locale, pageID, category, status string, page, pageSize int) ([]faq.FAQ, int64, error) {
 	offset := (page - 1) * pageSize
+	if locale != "" {
+		locale = normalizeLocale(locale)
+	}
 	items, total, err := s.faqRepo.List(locale, pageID, category, status, offset, pageSize)
 	return sanitizeFAQSliceForPublic(items), total, err
 }
 
 func (s *FAQService) ListAdmin(locale, pageID, category, status, search string, page, pageSize int) ([]faq.FAQ, int64, error) {
 	offset := (page - 1) * pageSize
+	if locale != "" {
+		locale = normalizeLocale(locale)
+	}
 	return s.faqRepo.ListAdmin(locale, pageID, category, status, search, offset, pageSize)
 }
 
 // GetCategories 获取所有分类
 func (s *FAQService) GetCategories(locale string) ([]string, error) {
+	if locale != "" {
+		locale = normalizeLocale(locale)
+	}
 	return s.faqRepo.GetCategories(locale)
 }
 
@@ -68,6 +77,7 @@ func (s *FAQService) Create(f *faq.FAQ) error {
 	if err := s.normalizeFAQContent(f); err != nil {
 		return err
 	}
+	f.Locale = normalizeLocale(f.Locale)
 	if err := s.validateFAQPlacement(f.PageID, f.Category, f.Locale); err != nil {
 		return err
 	}
@@ -83,6 +93,7 @@ func (s *FAQService) Update(f *faq.FAQ) error {
 	if err := s.normalizeFAQContent(f); err != nil {
 		return err
 	}
+	f.Locale = normalizeLocale(f.Locale)
 	if err := s.validateFAQPlacement(f.PageID, f.Category, f.Locale); err != nil {
 		return err
 	}
@@ -163,6 +174,9 @@ func (s *FAQService) BatchDelete(ids []uint) (int, error) {
 // Search 搜索FAQ
 func (s *FAQService) Search(keyword, locale string, page, pageSize int) ([]faq.FAQ, int64, error) {
 	offset := (page - 1) * pageSize
+	if locale != "" {
+		locale = normalizeLocale(locale)
+	}
 	items, total, err := s.faqRepo.Search(keyword, locale, offset, pageSize)
 	return sanitizeFAQSliceForPublic(items), total, err
 }
@@ -194,6 +208,9 @@ func (s *FAQService) IncrementViewCount(id uint) error {
 
 // GetByCategory 获取分类下的FAQ
 func (s *FAQService) GetByCategory(category, locale string) ([]faq.FAQ, error) {
+	if locale != "" {
+		locale = normalizeLocale(locale)
+	}
 	items, err := s.faqRepo.GetByCategory(category, locale)
 	return sanitizeFAQSliceForPublic(items), err
 }
@@ -202,6 +219,9 @@ func (s *FAQService) GetByCategory(category, locale string) ([]faq.FAQ, error) {
 func (s *FAQService) GetPopular(locale string, limit int) ([]faq.FAQ, error) {
 	if limit <= 0 {
 		limit = 10
+	}
+	if locale != "" {
+		locale = normalizeLocale(locale)
 	}
 	items, err := s.faqRepo.GetPopular(locale, limit)
 	return sanitizeFAQSliceForPublic(items), err

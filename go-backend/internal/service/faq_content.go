@@ -43,13 +43,20 @@ func (s *FAQService) normalizeFAQContent(item *faq.FAQ) error {
 
 func normalizeLocale(locale string) string {
 	locale = strings.ToLower(strings.TrimSpace(locale))
-	locale = strings.ReplaceAll(locale, "_", "-")
+	locale = strings.ReplaceAll(locale, "-", "_")
 	if locale == "" {
 		return "en"
 	}
-	if strings.HasPrefix(locale, "zh-") {
-		return "zh"
+
+	switch locale {
+	case "zh", "zh_cn", "zh_hans", "zh_sg":
+		return "zh_cn"
 	}
+
+	if base, _, ok := strings.Cut(locale, "_"); ok && base != "" && base != "zh" {
+		return base
+	}
+
 	return locale
 }
 

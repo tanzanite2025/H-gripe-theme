@@ -27,7 +27,13 @@ func (h *FAQHandler) GetCategories(c *gin.Context) {
 // ListStructure 获取 FAQ 页面与分类结构
 // GET /api/admin/faqs/structure
 func (h *FAQHandler) ListStructure(c *gin.Context) {
-	locale := c.DefaultQuery("locale", "zh")
+	locale := c.Query("locale")
+	if locale == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"pages": []service.FAQPageAdminView{},
+		})
+		return
+	}
 
 	pages, err := h.faqService.ListAdminStructure(locale)
 	if err != nil {

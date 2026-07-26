@@ -3,11 +3,12 @@ import { toast } from 'vue-sonner'
 import { faqAdminApi } from '@/api/faq'
 import { buildFAQPageOptions, findAvailableFAQCategories } from '@/lib/faqAdminPresentation'
 
-export function useFaqEditor({ faqStructures, onChanged }) {
+export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLocale, onChanged }) {
   const dialogVisible = ref(false)
   const dialogMode = ref('create')
   const submitting = ref(false)
   const formErrors = reactive({})
+  const resolveDefaultLocale = () => activeStructureLocale?.value || defaultLocale?.value || ''
   const faqForm = reactive({
     id: null,
     question: '',
@@ -18,7 +19,7 @@ export function useFaqEditor({ faqStructures, onChanged }) {
     answer_image_height: 0,
     category: '',
     page_id: '',
-    locale: 'zh',
+    locale: resolveDefaultLocale(),
     status: 'published',
     order: 0
   })
@@ -54,6 +55,7 @@ export function useFaqEditor({ faqStructures, onChanged }) {
     if (!payload.question) formErrors.question = '请输入问题'
     if (!payload.answer) formErrors.answer = '请输入答案'
     if (payload.answer_image_url && !payload.answer_image_alt) formErrors.answer = 'FAQ 图片需要填写替代文本'
+    if (!payload.locale) formErrors.locale = '请选择语言'
     if (!payload.page_id) formErrors.page_id = '请选择页面'
     if (!payload.category) formErrors.category = '请输入分类'
     if (Object.keys(formErrors).length > 0) {
@@ -74,7 +76,7 @@ export function useFaqEditor({ faqStructures, onChanged }) {
       answer_image_height: 0,
       category: '',
       page_id: '',
-      locale: 'zh',
+      locale: resolveDefaultLocale(),
       status: 'published',
       order: 0
     })
@@ -129,7 +131,7 @@ export function useFaqEditor({ faqStructures, onChanged }) {
         answer_image_height: detail.answer_image_height || 0,
         category: detail.category || '',
         page_id: detail.page_id || '',
-        locale: detail.locale || 'zh',
+        locale: detail.locale || resolveDefaultLocale(),
         status: detail.status || 'published',
         order: detail.order ?? detail.sort_order ?? 0
       })
@@ -170,6 +172,13 @@ export function useFaqEditor({ faqStructures, onChanged }) {
 
   watch(() => faqForm.page_id, () => {
     ensureFAQCategorySelection()
+  })
+
+  watch(resolveDefaultLocale, (locale) => {
+    if (!faqForm.locale && locale) {
+      faqForm.locale = locale
+      ensureFAQSelection()
+    }
   })
 
   return {

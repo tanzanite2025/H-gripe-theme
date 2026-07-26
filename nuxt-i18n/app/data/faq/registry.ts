@@ -73,14 +73,14 @@ export function resolvePageFaqDataList(pages: PageFaqData[]): ResolvedPageFaqDat
 }
 
 /**
- * Get FAQ data for a specific page (Static fallback)
+ * Get FAQ data for a specific page from legacy static source data.
  */
 export function getFaqData(pageId: string): PageFaqData | undefined {
   return faqRegistry[pageId]
 }
 
 /**
- * Get all registered FAQ data (Static fallback)
+ * Get all registered FAQ data from legacy static source data.
  */
 export function getAllFaqData(): PageFaqData[] {
   return Object.values(faqRegistry)

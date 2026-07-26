@@ -42,14 +42,15 @@ import PageFaq from '~/components/PageFaq.vue'
 import { fetchFaqDataByRoutePath, getPageFaqId, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from '~/data/faq'
 
 const route = useRoute()
+const { locale } = useI18n()
 
 const shouldLoadFaqSlot = computed(() => shouldAutoInsertFaqForRoute(route.path))
 const faqLookupRoutePath = computed(() => resolveFaqRouteLookupPath(route.path))
 
 const { data: faqData, pending } = await useAsyncData(
-  () => `faq-slot-${shouldLoadFaqSlot.value ? faqLookupRoutePath.value : 'disabled'}`,
+  () => `faq-slot-${locale.value}-${shouldLoadFaqSlot.value ? faqLookupRoutePath.value : 'disabled'}`,
   () => shouldLoadFaqSlot.value ? fetchFaqDataByRoutePath(faqLookupRoutePath.value) : Promise.resolve(null),
-  { watch: [shouldLoadFaqSlot, faqLookupRoutePath] }
+  { watch: [locale, shouldLoadFaqSlot, faqLookupRoutePath] }
 )
 
 const resolvedFaqData = computed(() => faqData.value)
