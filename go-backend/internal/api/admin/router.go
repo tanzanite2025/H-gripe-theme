@@ -61,7 +61,9 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		authGroup := admin.Group("/auth")
 		authGroup.Use(middleware.RateLimit(10)) // 10 RPS for auth endpoints
 		{
+			authGroup.GET("/config", authHandler.GetAuthConfig)
 			authGroup.POST("/login", authHandler.AdminLogin)
+			authGroup.POST("/google-login", authHandler.AdminGoogleLogin)
 			authGroup.POST("/refresh", authHandler.RefreshToken)
 		}
 
@@ -203,6 +205,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			faqsGroup.Use(middleware.RequirePermission(auth.PermFAQView))
 			{
 				faqsGroup.GET("", faqHandler.ListFAQs)
+				faqsGroup.GET("/grouped", faqHandler.ListFAQGroups)
 				faqsGroup.GET("/structure", faqHandler.ListStructure)
 				faqsGroup.GET("/categories", faqHandler.GetCategories)
 				faqsGroup.POST("/categories", middleware.RequirePermission(auth.PermFAQCreate), faqHandler.CreateCategory)

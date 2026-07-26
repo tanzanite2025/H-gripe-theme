@@ -7,6 +7,8 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
   const dialogVisible = ref(false)
   const dialogMode = ref('create')
   const submitting = ref(false)
+  const lockedEditLocale = ref('')
+  const placementLocked = ref(false)
   const formErrors = reactive({})
   const resolveDefaultLocale = () => activeStructureLocale?.value || defaultLocale?.value || ''
   const faqForm = reactive({
@@ -45,7 +47,7 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     answer_image_height: faqForm.answer_image_url ? 800 : 0,
     category: faqForm.category.trim(),
     page_id: faqForm.page_id.trim(),
-    locale: faqForm.locale,
+    locale: dialogMode.value === 'edit' ? lockedEditLocale.value : faqForm.locale,
     status: faqForm.status,
     order: Math.max(0, Number(faqForm.order || 0))
   })
@@ -80,6 +82,8 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
       status: 'published',
       order: 0
     })
+    lockedEditLocale.value = ''
+    placementLocked.value = false
     clearFormErrors()
   }
 
@@ -109,18 +113,30 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     ensureFAQCategorySelection()
   }
 
-  const showCreateDialog = () => {
+  const showCreateDialog = (placement = null) => {
     dialogMode.value = 'create'
     resetForm()
-    ensureFAQSelection()
+    if (placement?.page && placement?.category) {
+      faqForm.locale = placement.category.locale || placement.page.locale || resolveDefaultLocale()
+      faqForm.page_id = placement.category.page_id || placement.page.page_id || ''
+      faqForm.category = placement.category.category_key || ''
+      faqForm.order = ((placement.category.faqs || []).length + 1) * 10
+      placementLocked.value = true
+    } else {
+      ensureFAQSelection()
+    }
     dialogVisible.value = true
   }
 
   const showEditDialog = async (faq) => {
     dialogMode.value = 'edit'
+    lockedEditLocale.value = ''
+    placementLocked.value = false
     try {
       const payload = await faqAdminApi.getFAQ(faq.id)
       const detail = payload.faq || faq
+      const locale = detail.locale || resolveDefaultLocale()
+      lockedEditLocale.value = locale
       Object.assign(faqForm, {
         id: detail.id,
         question: detail.question || '',
@@ -131,7 +147,7 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
         answer_image_height: detail.answer_image_height || 0,
         category: detail.category || '',
         page_id: detail.page_id || '',
-        locale: detail.locale || resolveDefaultLocale(),
+        locale,
         status: detail.status || 'published',
         order: detail.order ?? detail.sort_order ?? 0
       })
@@ -166,11 +182,13 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
   }
 
   watch(() => faqForm.locale, () => {
+    if (dialogMode.value !== 'create' || placementLocked.value) return
     ensureFAQPageSelection()
     ensureFAQCategorySelection()
   })
 
   watch(() => faqForm.page_id, () => {
+    if (placementLocked.value) return
     ensureFAQCategorySelection()
   })
 
@@ -185,6 +203,7 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     dialogVisible,
     dialogMode,
     submitting,
+    placementLocked,
     formErrors,
     faqForm,
     faqPageOptions,

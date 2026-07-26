@@ -1,6 +1,6 @@
 <template>
   <AdminFilterPanel>
-    <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_repeat(4,minmax(140px,0.7fr))_auto]" @submit.prevent="$emit('apply')">
+    <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_repeat(3,minmax(140px,0.7fr))_auto]" @submit.prevent="$emit('apply')">
       <label class="space-y-1 block">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
         <div class="relative">
@@ -50,8 +50,7 @@ const props = defineProps({
   filters: { type: Object, required: true },
   pageFilterOptions: { type: Array, required: true },
   categoryFilterOptions: { type: Array, required: true },
-  statusFilterOptions: { type: Array, required: true },
-  localeFilterOptions: { type: Array, required: true }
+  statusFilterOptions: { type: Array, required: true }
 })
 
 defineEmits(['apply', 'reset'])
@@ -59,7 +58,6 @@ defineEmits(['apply', 'reset'])
 const selectFilters = computed(() => [
   { key: 'page_id', label: '页面', options: props.pageFilterOptions },
   { key: 'category', label: '分类', options: props.categoryFilterOptions },
-  { key: 'status', label: '状态', options: props.statusFilterOptions },
-  { key: 'locale', label: '语言', options: props.localeFilterOptions }
+  { key: 'status', label: '状态', options: props.statusFilterOptions }
 ])
 </script>

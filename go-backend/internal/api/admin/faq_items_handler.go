@@ -46,6 +46,35 @@ func (h *FAQHandler) ListFAQs(c *gin.Context) {
 	})
 }
 
+// ListFAQGroups 获取按页面/分类分组的 FAQ 管理列表
+// GET /api/admin/faqs/grouped
+func (h *FAQHandler) ListFAQGroups(c *gin.Context) {
+	locale := c.Query("locale")
+	category := c.Query("category")
+	pageID := c.Query("page_id")
+	status := c.Query("status")
+	search := c.Query("search")
+
+	if locale == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"pages": []service.FAQPageAdminView{},
+			"total": 0,
+		})
+		return
+	}
+
+	pages, total, err := h.faqService.ListAdminGrouped(locale, pageID, category, status, search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch FAQ groups"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"pages": pages,
+		"total": total,
+	})
+}
+
 // GetFAQ 获取FAQ详情
 // GET /api/admin/faqs/:id
 func (h *FAQHandler) GetFAQ(c *gin.Context) {

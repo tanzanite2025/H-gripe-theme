@@ -6,7 +6,6 @@ import { useFaqList } from '@/composables/faq/useFaqList'
 import { useFaqStructure } from '@/composables/faq/useFaqStructure'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import {
-  buildLocaleFilterOptions,
   buildStructureLocaleOptions,
   domainName,
   FAQ_STATUS_FILTER_OPTIONS,
@@ -35,7 +34,6 @@ export function useFaqAdmin() {
   let refreshFAQs = async () => {}
 
   const supportedLanguages = useSupportedLanguages()
-  const localeFilterOptions = computed(() => buildLocaleFilterOptions(supportedLanguages.enabledLanguages.value))
   const structureLocales = computed(() => buildStructureLocaleOptions(supportedLanguages.enabledLanguages.value))
   const displayLocaleName = (locale) => localeName(locale, supportedLanguages.enabledLanguages.value)
 
@@ -46,7 +44,7 @@ export function useFaqAdmin() {
   })
   const list = useFaqList({
     faqStructures: structure.faqStructures,
-    allStructurePages: structure.allStructurePages
+    activeStructureLocale: structure.activeStructureLocale
   })
   const editor = useFaqEditor({
     faqStructures: structure.faqStructures,
@@ -59,6 +57,11 @@ export function useFaqAdmin() {
     list.fetchFAQs(),
     structure.refreshFAQStructure()
   ])
+
+  const switchStructureLocale = async (locale) => {
+    await structure.switchStructureLocale(locale)
+    await list.setLocale(locale)
+  }
 
   const requestDelete = (faq) => Object.assign(confirmation, {
     open: true,
@@ -112,18 +115,20 @@ export function useFaqAdmin() {
 
   onMounted(async () => {
     await supportedLanguages.fetchLanguages()
+    list.setLocale(structure.activeStructureLocale.value, { fetch: false })
     await refreshFAQs()
   })
 
   return {
     loading: list.loading,
+    faqGroups: list.faqGroups,
     structureLoading: structure.structureLoading,
-    faqs: list.faqs,
     activeStructureLocale: structure.activeStructureLocale,
     selectedFAQs: list.selectedFAQs,
     dialogVisible: editor.dialogVisible,
     dialogMode: editor.dialogMode,
     submitting: editor.submitting,
+    placementLocked: editor.placementLocked,
     pageDialogVisible: structure.pageDialogVisible,
     pageSubmitting: structure.pageSubmitting,
     categoryDialogVisible: structure.categoryDialogVisible,
@@ -137,16 +142,13 @@ export function useFaqAdmin() {
     categoryForm: structure.categoryForm,
     confirmation,
     statusFilterOptions: FAQ_STATUS_FILTER_OPTIONS,
-    localeFilterOptions,
     structureLocales,
     languageOptions: supportedLanguages.languageOptions,
-    faqStructure: structure.faqStructure,
     structurePageOptions: structure.structurePageOptions,
     faqPageOptions: editor.faqPageOptions,
     availableFAQCategories: editor.availableFAQCategories,
     pageFilterOptions: list.pageFilterOptions,
     categoryFilterOptions: list.categoryFilterOptions,
-    selectionState: list.selectionState,
     hasPermission,
     localeName: displayLocaleName,
     statusName,
@@ -156,15 +158,11 @@ export function useFaqAdmin() {
     domainName,
     formatDate,
     plainTextFromHTML,
-    pageTitleForFAQ: list.pageTitle,
-    categoryLabelForFAQ: list.categoryLabel,
     clearFieldError: editor.clearFieldError,
     updateFAQAnswer: editor.updateFAQAnswer,
-    switchStructureLocale: structure.switchStructureLocale,
+    switchStructureLocale,
     applyFilters: list.applyFilters,
     resetFilters: list.resetFilters,
-    updatePage: list.updatePage,
-    updatePageSize: list.updatePageSize,
     showCreateDialog: editor.showCreateDialog,
     showEditDialog: editor.showEditDialog,
     submitForm: editor.submitForm,
@@ -173,7 +171,6 @@ export function useFaqAdmin() {
     showCategoryDialog: structure.showCategoryDialog,
     submitCategoryForm: structure.submitCategoryForm,
     isSelected: list.isSelected,
-    toggleAllFAQs: list.toggleAllFAQs,
     toggleFAQ: list.toggleFAQ,
     requestDelete,
     requestBatchDelete,

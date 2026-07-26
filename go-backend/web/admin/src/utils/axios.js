@@ -16,7 +16,9 @@ let refreshPromise = null
 let sessionExpiredHandled = false
 let pendingRequests = 0
 
-const isLoginEndpoint = (url = '') => url.includes('/api/admin/auth/login')
+const isLoginEndpoint = (url = '') => (
+  url.includes('/api/admin/auth/login') || url.includes('/api/admin/auth/google-login')
+)
 const isRefreshEndpoint = (url = '') => url.includes('/api/admin/auth/refresh')
 const isUnsafeMethod = (method = 'get') => !['get', 'head', 'options', 'trace'].includes(method.toLowerCase())
 
@@ -117,12 +119,12 @@ instance.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
 
+      if (isLoginEndpoint(error.config?.url)) {
+        return Promise.reject(error)
+      }
+
       switch (status) {
         case 401:
-          if (isLoginEndpoint(error.config?.url)) {
-            return Promise.reject(error)
-          }
-
           if (!isRefreshEndpoint(error.config?.url) && !error.config?._retry) {
             try {
               await refreshAdminToken()

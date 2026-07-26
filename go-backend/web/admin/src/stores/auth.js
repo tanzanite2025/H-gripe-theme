@@ -60,6 +60,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const loginWithGoogle = async (idToken) => {
+    try {
+      const response = await axios.post('/api/admin/auth/google-login', {
+        id_token: idToken,
+      })
+
+      persistSession(response.data?.user)
+      initialized.value = true
+      return true
+    } catch (error) {
+      console.error('Google login failed:', error)
+      throw error
+    }
+  }
+
   const logout = async () => {
     try {
       await axios.post('/api/admin/auth/logout')
@@ -139,6 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasPermission,
     hasRole,
     login,
+    loginWithGoogle,
     logout,
     refreshToken,
     verifyPermissions,

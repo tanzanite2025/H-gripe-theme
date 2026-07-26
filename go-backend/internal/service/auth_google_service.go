@@ -28,16 +28,14 @@ type googleTokenInfo struct {
 	FamilyName    string `json:"family_name"`
 }
 
-func (s *AuthService) LoginWithGoogle(ctx context.Context, idToken string) (string, *user.User, error) {
-	idToken = strings.TrimSpace(idToken)
-	if idToken == "" {
-		return "", nil, errors.New("google id token is required")
-	}
-	if strings.TrimSpace(s.oauthCfg.GoogleClientID) == "" {
-		return "", nil, errors.New("google login is not configured")
-	}
+var ErrGoogleBackofficeAccessDenied = errors.New("google account is not allowed to access admin panel")
 
-	tokenInfo, err := s.verifyGoogleIDToken(ctx, idToken)
+func (s *AuthService) GoogleClientID() string {
+	return strings.TrimSpace(s.oauthCfg.GoogleClientID)
+}
+
+func (s *AuthService) LoginWithGoogle(ctx context.Context, idToken string) (string, *user.User, error) {
+	tokenInfo, err := s.verifyGoogleLoginToken(ctx, idToken)
 	if err != nil {
 		return "", nil, err
 	}
@@ -65,6 +63,46 @@ func (s *AuthService) LoginWithGoogle(ctx context.Context, idToken string) (stri
 	return token, createdUser, nil
 }
 
+func (s *AuthService) LoginBackofficeWithGoogle(ctx context.Context, idToken string) (string, *user.User, error) {
+	tokenInfo, err := s.verifyGoogleLoginToken(ctx, idToken)
+	if err != nil {
+		return "", nil, err
+	}
+
+	existingUser, err := s.userRepo.FindByEmail(tokenInfo.Email)
+	if err != nil {
+		return "", nil, ErrGoogleBackofficeAccessDenied
+	}
+	if existingUser.Status != "active" {
+		return "", nil, errors.New("user account is not active")
+	}
+	if !auth.IsBackofficeRole(existingUser.Role) {
+		return "", nil, ErrGoogleBackofficeAccessDenied
+	}
+
+	token, err := s.GenerateToken(existingUser)
+	if err != nil {
+		return "", nil, err
+	}
+	return token, existingUser, nil
+}
+
+func (s *AuthService) verifyGoogleLoginToken(ctx context.Context, idToken string) (*googleTokenInfo, error) {
+	idToken = strings.TrimSpace(idToken)
+	if idToken == "" {
+		return nil, errors.New("google id token is required")
+	}
+	if s.GoogleClientID() == "" {
+		return nil, errors.New("google login is not configured")
+	}
+
+	tokenInfo, err := s.verifyGoogleIDToken(ctx, idToken)
+	if err != nil {
+		return nil, err
+	}
+	return tokenInfo, nil
+}
+
 func (s *AuthService) verifyGoogleIDToken(ctx context.Context, idToken string) (*googleTokenInfo, error) {
 	endpoint := "https://oauth2.googleapis.com/tokeninfo?id_token=" + url.QueryEscape(idToken)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -90,7 +128,7 @@ func (s *AuthService) verifyGoogleIDToken(ctx context.Context, idToken string) (
 
 	tokenInfo.Email = strings.ToLower(strings.TrimSpace(tokenInfo.Email))
 	tokenInfo.Subject = strings.TrimSpace(tokenInfo.Subject)
-	if tokenInfo.Audience != strings.TrimSpace(s.oauthCfg.GoogleClientID) {
+	if tokenInfo.Audience != s.GoogleClientID() {
 		return nil, errors.New("google token audience mismatch")
 	}
 	if tokenInfo.Issuer != "accounts.google.com" && tokenInfo.Issuer != "https://accounts.google.com" {
