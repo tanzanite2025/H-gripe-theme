@@ -414,7 +414,7 @@ func (s *ShippingService) DeleteTemplateRule(templateID uint, ruleID uint) error
 }
 
 func (s *ShippingService) CalculateShipping(input ShippingCalculationInput) (*ShippingQuote, error) {
-	template, err := s.GetTemplate(input.TemplateID)
+	template, err := s.GetPublicTemplate(input.TemplateID)
 	if err != nil {
 		return nil, err
 	}
@@ -1147,6 +1147,10 @@ func (s *ShippingService) DeleteZone(id uint) error {
 
 func (s *ShippingService) GetTrackingEventsByTrackingNumber(trackingNumber string) ([]shipping.TrackingEvent, error) {
 	return s.shippingRepo.FindTrackingEventsByTrackingNumber(trackingNumber)
+}
+
+func (s *ShippingService) GetTrackingShipmentByTrackingNumber(trackingNumber string) (*shipping.TrackingShipment, error) {
+	return s.shippingRepo.FindTrackingShipmentByTrackingNumber(trackingNumber)
 }
 
 func (s *ShippingService) GetTrackingEventsByOrderID(orderID uint) ([]shipping.TrackingEvent, error) {

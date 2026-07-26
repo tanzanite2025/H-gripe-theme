@@ -89,6 +89,9 @@ cors:
     - Accept-Language
     - X-CSRF-Token
     - X-Request-ID
+    - X-Request-Timestamp
+    - X-Request-Nonce
+    - X-Request-Signature
   expose_headers:
     - Content-Length
     - X-Request-ID
@@ -116,3 +119,25 @@ log:
   level: info
   format: json
   output: stdout
+
+anti_abuse:
+  turnstile_required: false
+  turnstile_secret_key: ""
+  verification_ip_window_seconds: 60
+  verification_destination_window_seconds: 60
+  verification_daily_limit: 8
+  verification_global_window_seconds: 60
+  verification_global_limit: 100
+  verification_circuit_seconds: 300
+
+payment_risk:
+  failure_window_seconds: 600
+  failure_threshold: 2
+  delay_seconds: 2
+  high_risk_score: 60
+
+request_signing:
+  enabled: false
+  key: ""
+  max_skew_seconds: 30
+  required_paths: []

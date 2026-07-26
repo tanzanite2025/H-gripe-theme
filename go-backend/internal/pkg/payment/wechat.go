@@ -226,5 +226,5 @@ func (g *wechatGatewayImpl) VerifyWebhook(payload []byte, signature string) (boo
 	// 这里提供基础验证框架
 	// 实际使用时需要传入完整的HTTP头信息
 
-	return true, fmt.Errorf("wechat webhook verification requires SDK upgrade - feature temporarily disabled")
+	return false, fmt.Errorf("wechat webhook verification requires SDK upgrade - feature temporarily disabled")
 }

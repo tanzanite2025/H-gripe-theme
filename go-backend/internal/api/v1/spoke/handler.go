@@ -22,6 +22,12 @@ func (h *Handler) GetExport(c *gin.Context) {
 }
 
 func (h *Handler) ListHistory(c *gin.Context) {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", "5"))
 	if page < 1 {
@@ -31,10 +37,13 @@ func (h *Handler) ListHistory(c *gin.Context) {
 		pageSize = 5
 	}
 
-	items, total, err := h.spokeService.ListHistory(c.Query("search"), page, pageSize)
+	items, total, err := h.spokeService.ListUserHistory(userIDValue.(uint), c.Query("search"), page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "spoke_history_error", "message": err.Error()})
 		return
+	}
+	for index := range items {
+		items[index].UserID = nil
 	}
 
 	c.JSON(http.StatusOK, gin.H{

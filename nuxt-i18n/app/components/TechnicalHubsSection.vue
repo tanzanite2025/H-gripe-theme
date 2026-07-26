@@ -175,15 +175,15 @@
            <div class="grid grid-cols-3 gap-2 text-center">
               <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                  <div class="text-lg font-bold text-cyan-400">18T</div>
-                  <div class="text-[10px] tz-text-muted">Standard</div>
+                  <div class="tz-caption tz-text-muted">Standard</div>
               </div>
               <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                  <div class="text-lg font-bold text-cyan-400">36T</div>
-                  <div class="text-[10px] tz-text-muted">Balanced</div>
+                  <div class="tz-caption tz-text-muted">Balanced</div>
               </div>
               <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
                  <div class="text-lg font-bold text-cyan-400">54T</div>
-                  <div class="text-[10px] tz-text-muted">Instant</div>
+                  <div class="tz-caption tz-text-muted">Instant</div>
               </div>
            </div>
        </div>

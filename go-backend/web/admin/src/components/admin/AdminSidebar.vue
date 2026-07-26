@@ -25,6 +25,10 @@
                 :aria-current="isActive(item.path) ? 'page' : undefined"
                 @click="emit('navigate')"
               >
+                <span class="admin-sidebar__indicator" aria-hidden="true">
+                  <ArrowRight v-if="!collapsed" class="admin-sidebar__indicator-arrow" />
+                  <span v-else class="admin-sidebar__indicator-dot" />
+                </span>
                 <span class="admin-sidebar__glow" aria-hidden="true" />
                 <span class="admin-sidebar__link-content">
                   <component :is="item.icon" class="admin-sidebar__icon" aria-hidden="true" />
@@ -43,6 +47,7 @@
 </template>
 
 <script setup>
+import { ArrowRight } from '@lucide/vue'
 import {
   Tooltip,
   TooltipContent,
@@ -78,15 +83,17 @@ const isActive = (path) => {
   display: flex;
   min-height: 100%;
   margin-inline: auto;
-  padding-block: 1rem;
+  padding-block: 1.25rem;
   flex-direction: column;
+  gap: 0.35rem;
   justify-content: center;
 }
 
 .admin-sidebar__menu--expanded {
   width: calc(100% - 1rem);
   max-width: 12rem;
-  padding-inline: 0.5rem;
+  align-items: stretch;
+  padding-inline: 0.75rem;
 }
 
 .admin-sidebar__menu--collapsed {
@@ -99,36 +106,69 @@ const isActive = (path) => {
 .admin-sidebar__link {
   position: relative;
   isolation: isolate;
-  display: grid;
-  height: 2.25rem;
-  margin-bottom: 0.25rem;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  line-height: 1rem;
+  display: flex;
+  height: 2.65rem;
+  align-items: center;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: color-mix(in oklch, var(--sidebar-foreground) 92%, transparent);
+  font-size: 0.98rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1.2;
   text-decoration: none;
-  text-transform: uppercase;
   transition:
     color 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease,
     transform 160ms ease;
+}
+
+.admin-sidebar__indicator {
+  position: absolute;
+  top: 50%;
+  left: 0.2rem;
+  z-index: 1;
+  display: inline-flex;
+  width: 1.15rem;
+  height: 1.15rem;
+  align-items: center;
+  justify-content: center;
+  color: #ff5a00;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-0.45rem, -50%);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-sidebar__indicator-arrow {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 2.7;
+}
+
+.admin-sidebar__indicator-dot {
+  width: 0.25rem;
+  height: 1.125rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 12px rgb(255 90 0 / 0.34);
 }
 
 .admin-sidebar__link--expanded {
   width: 100%;
-  padding-inline: 0.75rem;
+  padding-left: 2rem;
+  padding-right: 0.35rem;
+  justify-content: flex-start;
 }
 
 .admin-sidebar__link--collapsed {
-  width: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   padding-inline: 0;
+  justify-content: center;
 }
 
 .admin-sidebar__link-content {
@@ -136,24 +176,12 @@ const isActive = (path) => {
   min-width: 0;
   max-width: 100%;
   align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
+  justify-content: flex-start;
+  gap: 0.55rem;
 }
 
 .admin-sidebar__glow {
-  position: absolute;
-  inset: 1px;
-  z-index: -1;
-  border-radius: inherit;
-  background:
-    linear-gradient(135deg, color-mix(in oklch, var(--primary) 16%, transparent), transparent 48%),
-    linear-gradient(
-      180deg,
-      color-mix(in oklch, var(--sidebar-accent) 92%, transparent),
-      color-mix(in oklch, var(--sidebar-accent) 60%, transparent)
-    );
-  opacity: 0;
-  transition: opacity 160ms ease;
+  display: none;
 }
 
 .admin-sidebar__icon {
@@ -163,54 +191,56 @@ const isActive = (path) => {
   transition: color 160ms ease, transform 160ms ease;
 }
 
+.admin-sidebar__link--expanded .admin-sidebar__icon {
+  display: none;
+}
+
+.admin-sidebar__link--collapsed .admin-sidebar__link-content {
+  justify-content: center;
+}
+
 .admin-sidebar__label {
   min-width: 0;
   overflow: hidden;
-  text-align: center;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .admin-sidebar__link:hover,
 .admin-sidebar__link:focus-visible {
-  transform: translateY(-1px);
-  border-color: color-mix(in oklch, var(--sidebar-border) 85%, transparent);
-  color: var(--sidebar-accent-foreground);
-  box-shadow:
-    0 8px 18px color-mix(in oklch, var(--sidebar-ring) 10%, transparent),
-    inset 0 1px 0 hsl(0 0% 100% / 0.12);
+  transform: translateX(2px);
+  color: #ffffff;
 }
 
-.admin-sidebar__link:hover .admin-sidebar__glow,
-.admin-sidebar__link:focus-visible .admin-sidebar__glow,
-.admin-sidebar__link--active .admin-sidebar__glow {
+.admin-sidebar__link:hover .admin-sidebar__indicator,
+.admin-sidebar__link:focus-visible .admin-sidebar__indicator,
+.admin-sidebar__link--active .admin-sidebar__indicator {
   opacity: 1;
+  transform: translate(0, -50%);
 }
 
 .admin-sidebar__link:hover .admin-sidebar__icon,
 .admin-sidebar__link:focus-visible .admin-sidebar__icon {
-  color: var(--sidebar-ring);
+  color: #ff5a00;
   transform: scale(1.05);
 }
 
 .admin-sidebar__link:focus-visible {
-  outline: 2px solid color-mix(in oklch, var(--sidebar-ring) 34%, transparent);
+  outline: 2px solid rgb(255 90 0 / 0.35);
   outline-offset: 2px;
 }
 
 .admin-sidebar__link:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateX(1px) scale(0.98);
 }
 
 .admin-sidebar__link--active {
-  border-color: color-mix(in oklch, var(--sidebar-ring) 28%, transparent);
-  color: var(--sidebar-accent-foreground);
-  box-shadow:
-    0 8px 20px color-mix(in oklch, var(--sidebar-ring) 12%, transparent),
-    inset 0 1px 0 hsl(0 0% 100% / 0.14);
+  color: #ff5a00;
+  text-shadow: 0 0 18px rgb(255 90 0 / 0.16);
 }
 
 .admin-sidebar__link--active .admin-sidebar__icon {
-  color: var(--sidebar-ring);
+  color: #ff5a00;
 }
 </style>

@@ -54,7 +54,7 @@
           </div>
           
           <div class="absolute top-5 right-5">
-             <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-teal-500/10 text-teal-400 border border-teal-500/20">
+             <span class="inline-flex items-center gap-1 px-2 py-1 rounded tz-micro-label font-bold uppercase tracking-wider bg-teal-500/10 text-teal-400 border border-teal-500/20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
                 Eco-Friendly
              </span>
@@ -112,7 +112,7 @@
     <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 mt-6">
        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/50">
            <h3 class="text-base font-bold tz-text-primary">Pro Options: Weave & Finish</h3>
-           <span class="text-[10px] bg-slate-800 tz-text-muted px-2 py-1 rounded border border-slate-700">For OEM / Teams</span>
+           <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-1 rounded border border-slate-700">For OEM / Teams</span>
        </div>
        
         <p class="text-sm tz-text-secondary mb-6">

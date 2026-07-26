@@ -37,6 +37,29 @@ x-api-environment: &api-environment
   STOREFRONT_HTML_CACHE_PURGE_URL: http://storefront:3000/_internal/html-cache/purge
   STOREFRONT_HTML_CACHE_PURGE_TOKEN: ${NUXT_HTML_CACHE_PURGE_TOKEN:?NUXT_HTML_CACHE_PURGE_TOKEN is required}
   STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS: ${STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS:-500}
+  STOREFRONT_BASE_URL: ${STOREFRONT_BASE_URL:?STOREFRONT_BASE_URL is required}
+  SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USERNAME: ${SMTP_USERNAME:?SMTP_USERNAME is required}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD is required}
+  SMTP_FROM: ${SMTP_FROM:?SMTP_FROM is required}
+  SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Tanzanite}
+  TURNSTILE_REQUIRED: ${TURNSTILE_REQUIRED:-true}
+  TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:?TURNSTILE_SECRET_KEY is required}
+  VERIFICATION_IP_WINDOW_SECONDS: ${VERIFICATION_IP_WINDOW_SECONDS:-60}
+  VERIFICATION_DESTINATION_WINDOW_SECONDS: ${VERIFICATION_DESTINATION_WINDOW_SECONDS:-60}
+  VERIFICATION_DAILY_LIMIT: ${VERIFICATION_DAILY_LIMIT:-8}
+  VERIFICATION_GLOBAL_WINDOW_SECONDS: ${VERIFICATION_GLOBAL_WINDOW_SECONDS:-60}
+  VERIFICATION_GLOBAL_LIMIT: ${VERIFICATION_GLOBAL_LIMIT:-100}
+  VERIFICATION_CIRCUIT_SECONDS: ${VERIFICATION_CIRCUIT_SECONDS:-300}
+  PAYMENT_RISK_FAILURE_WINDOW_SECONDS: ${PAYMENT_RISK_FAILURE_WINDOW_SECONDS:-600}
+  PAYMENT_RISK_FAILURE_THRESHOLD: ${PAYMENT_RISK_FAILURE_THRESHOLD:-2}
+  PAYMENT_RISK_DELAY_SECONDS: ${PAYMENT_RISK_DELAY_SECONDS:-2}
+  PAYMENT_RISK_HIGH_RISK_SCORE: ${PAYMENT_RISK_HIGH_RISK_SCORE:-60}
+  REQUEST_SIGNING_ENABLED: ${REQUEST_SIGNING_ENABLED:-true}
+  REQUEST_SIGNING_KEY: ${REQUEST_SIGNING_KEY:?REQUEST_SIGNING_KEY is required}
+  REQUEST_SIGNING_MAX_SKEW_SECONDS: ${REQUEST_SIGNING_MAX_SKEW_SECONDS:-30}
+  REQUEST_SIGNING_REQUIRED_PATHS: ${REQUEST_SIGNING_REQUIRED_PATHS:-/api/v1/checkout/quote,/api/v1/orders}
 
 services:
   db:
@@ -49,7 +72,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - data
+      - db
     shm_size: 256m
     mem_limit: 1536m
     cpus: 1.00
@@ -74,7 +97,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - data
+      - cache
     healthcheck:
       test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG"]
       interval: 10s
@@ -96,7 +119,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - data
+      - db
     read_only: true
     tmpfs:
       - /tmp
@@ -124,7 +147,8 @@ services:
     volumes:
       - uploads:/app/uploads
     networks:
-      - data
+      - db
+      - cache
       - app
     read_only: true
     tmpfs:
@@ -154,6 +178,8 @@ services:
       PORT: "3000"
       NUXT_PUBLIC_API_BASE: /api/v1
       NUXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      NUXT_PUBLIC_REQUEST_SIGNING_KEY: ${REQUEST_SIGNING_KEY:?REQUEST_SIGNING_KEY is required}
+      NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY is required}
       NUXT_HTML_CACHE_DRIVER: ${NUXT_HTML_CACHE_DRIVER:-redis}
       NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-tanzanite:storefront:html-cache}
       NUXT_HTML_CACHE_REDIS_HOST: redis
@@ -170,7 +196,7 @@ services:
         condition: service_healthy
     networks:
       - app
-      - data
+      - cache
     read_only: true
     tmpfs:
       - /tmp
@@ -248,7 +274,9 @@ services:
     logging: *default-logging
 
 networks:
-  data:
+  db:
+    internal: true
+  cache:
     internal: true
   app: {}
   edge:

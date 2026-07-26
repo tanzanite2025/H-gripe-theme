@@ -47,7 +47,7 @@
       <!-- Note Box -->
       <div class="relative pl-5 py-3 border-l-2 border-slate-600 bg-slate-800/20 rounded-r-lg">
           <p class="tz-text-muted text-xs italic leading-relaxed">
-            <strong class="tz-text-secondary not-italic uppercase tracking-wider text-[10px] mr-1">Note:</strong>
+              <strong class="tz-text-secondary not-italic uppercase tracking-wider tz-micro-label mr-1">Note:</strong>
             Please carefully review product specifications and quantities before placing an order to avoid unnecessary fees and procedures.
           </p>
       </div>

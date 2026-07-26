@@ -4,6 +4,7 @@ import (
 	"errors"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/pkg/cache"
+	"tanzanite/internal/pkg/safehtml"
 	"tanzanite/internal/repository"
 	"time"
 )
@@ -55,13 +56,14 @@ func (s *ProductService) GetByID(id uint) (*product.Product, error) {
 
 	var cachedProduct product.Product
 	if s.cache != nil && s.cache.Get(cacheKey, &cachedProduct) == nil {
-		return &cachedProduct, nil
+		return sanitizeProductHTML(&cachedProduct), nil
 	}
 
 	result, err := s.productRepo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
+	result = sanitizeProductHTML(result)
 
 	_ = s.productRepo.IncrementViewCount(id)
 
@@ -77,13 +79,14 @@ func (s *ProductService) GetBySlug(slug, locale string) (*product.Product, error
 
 	var cachedProduct product.Product
 	if s.cache != nil && s.cache.Get(cacheKey, &cachedProduct) == nil {
-		return &cachedProduct, nil
+		return sanitizeProductHTML(&cachedProduct), nil
 	}
 
 	result, err := s.productRepo.FindBySlug(slug, locale)
 	if err != nil {
 		return nil, err
 	}
+	result = sanitizeProductHTML(result)
 
 	_ = s.productRepo.IncrementViewCount(result.ID)
 
@@ -94,13 +97,43 @@ func (s *ProductService) GetBySlug(slug, locale string) (*product.Product, error
 	return result, nil
 }
 
+func (s *ProductService) GetPublicByID(id uint) (*product.Product, error) {
+	result, err := s.productRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if result.Status != "active" {
+		return nil, ErrProductNotFound
+	}
+	result = sanitizeProductHTML(result)
+	_ = s.productRepo.IncrementViewCount(id)
+	return result, nil
+}
+
+func (s *ProductService) GetPublicBySlug(slug, locale string) (*product.Product, error) {
+	result, err := s.productRepo.FindBySlug(slug, locale)
+	if err != nil {
+		return nil, err
+	}
+	if result.Status != "active" {
+		return nil, ErrProductNotFound
+	}
+	result = sanitizeProductHTML(result)
+	_ = s.productRepo.IncrementViewCount(result.ID)
+	return result, nil
+}
+
 func (s *ProductService) List(locale, status string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
 	offset := (page - 1) * pageSize
 	products, total, err := s.productRepo.List(locale, status, featured, offset, pageSize)
 	if err == nil && total == 0 && locale != "" && locale != "en" {
-		return s.productRepo.List("en", status, featured, offset, pageSize)
+		products, total, err = s.productRepo.List("en", status, featured, offset, pageSize)
 	}
-	return products, total, err
+	return sanitizeProductSliceHTML(products), total, err
+}
+
+func (s *ProductService) ListPublic(locale string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
+	return s.List(locale, "active", featured, page, pageSize)
 }
 
 func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Product, int64, error) {
@@ -115,7 +148,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 	offset := (page - 1) * pageSize
 	query := repository.ProductSearchQuery{
 		Locale:      input.Locale,
-		Status:      input.Status,
+		Status:      "active",
 		Keyword:     input.Keyword,
 		TypeSlug:    input.TypeSlug,
 		PriceMin:    input.PriceMin,
@@ -127,9 +160,9 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 	products, total, err := s.productRepo.SearchPublic(query)
 	if err == nil && total == 0 && input.Locale != "" && input.Locale != "en" {
 		query.Locale = "en"
-		return s.productRepo.SearchPublic(query)
+		products, total, err = s.productRepo.SearchPublic(query)
 	}
-	return products, total, err
+	return sanitizeProductSliceHTML(products), total, err
 }
 
 func (s *ProductService) Create(p *product.Product) error {
@@ -167,4 +200,29 @@ func (s *ProductService) findProduct(id uint) (*product.Product, error) {
 	}
 
 	return result, nil
+}
+
+func sanitizeProductHTML(p *product.Product) *product.Product {
+	if p == nil {
+		return nil
+	}
+	if sanitized, err := safehtml.Sanitize(p.Description); err == nil {
+		p.Description = sanitized
+	}
+	if sanitized, err := safehtml.Sanitize(p.ShortDesc); err == nil {
+		p.ShortDesc = sanitized
+	}
+	return p
+}
+
+func sanitizeProductSliceHTML(products []product.Product) []product.Product {
+	for index := range products {
+		if sanitized, err := safehtml.Sanitize(products[index].Description); err == nil {
+			products[index].Description = sanitized
+		}
+		if sanitized, err := safehtml.Sanitize(products[index].ShortDesc); err == nil {
+			products[index].ShortDesc = sanitized
+		}
+	}
+	return products
 }

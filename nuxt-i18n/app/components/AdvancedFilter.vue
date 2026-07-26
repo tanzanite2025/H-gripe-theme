@@ -707,7 +707,7 @@ watch(() => props.initialFilters, (newFilters) => {
 
 .attribute-toggle-icon {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: var(--tz-type-micro-label);
   color: #ffffff;
   transition: transform 0.15s ease;
 }
@@ -884,3 +884,4 @@ watch(() => props.initialFilters, (newFilters) => {
 	}
 }
 </style>
+

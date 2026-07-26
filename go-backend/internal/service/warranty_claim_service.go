@@ -3,6 +3,8 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/url"
 	"strings"
 	orderdomain "tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/registration"
@@ -11,6 +13,7 @@ import (
 
 var (
 	ErrWarrantyEmailMismatch        = errors.New("email does not match order record")
+	ErrWarrantyVerificationRequired = errors.New("warranty email verification is required")
 	ErrWarrantyOrderItemMismatch    = errors.New("order item does not match warranty claim")
 	ErrWarrantyOrderItemUnavailable = errors.New("order item binding is unavailable")
 )
@@ -31,14 +34,17 @@ var validWarrantyServiceStatuses = map[string]struct{}{
 }
 
 type WarrantyClaimByOrderInput struct {
-	OrderNumber  string
-	Email        string
-	Description  string
-	TirePressure string
-	IsTubeless   bool
-	ImageURLs    []string
-	VideoURL     string
+	OrderNumber       string
+	Email             string
+	VerificationToken string
+	Description       string
+	TirePressure      string
+	IsTubeless        bool
+	ImageURLs         []string
+	VideoURL          string
 }
+
+const warrantyOrderChallengePurpose = "warranty:order"
 
 type WarrantyServiceRecordInput struct {
 	ServiceType string
@@ -70,8 +76,60 @@ func (s *RegistrationService) VerifyWarrantyOrder(orderNumber, email string) (*o
 	return order, nil
 }
 
+func (s *RegistrationService) RequestWarrantyOrderVerification(orderNumber, email string) error {
+	orderNumber = strings.TrimSpace(orderNumber)
+	email = normalizeWarrantyEmail(email)
+	if _, err := s.VerifyWarrantyOrder(orderNumber, email); err != nil {
+		if errors.Is(err, ErrWarrantyEmailMismatch) || IsRecordNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	token, err := issueEmailChallenge(
+		s.challengeRepo,
+		s.challengeSecret,
+		warrantyOrderChallengePurpose,
+		email,
+		warrantyOrderChallengeSubject(orderNumber, email),
+		24*time.Hour,
+	)
+	if err != nil {
+		return err
+	}
+	if s.emailSender == nil {
+		return ErrEmailChallengeUnavailable
+	}
+
+	link := fmt.Sprintf("%s/support/warranty?verification_token=%s#submit-warranty", s.baseURL, url.QueryEscape(token))
+	body := fmt.Sprintf(
+		"Use this link to verify your warranty request:\n\n%s\n\nThe verification token expires in 24 hours and can only be used once when submitting the claim.",
+		link,
+	)
+	return s.emailSender.SendEmail([]string{email}, "Verify your Tanzanite warranty request", body)
+}
+
+func (s *RegistrationService) ValidateWarrantyOrderToken(token string) error {
+	if _, err := validateEmailChallenge(s.challengeRepo, s.challengeSecret, token, warrantyOrderChallengePurpose); err != nil {
+		return ErrWarrantyVerificationRequired
+	}
+	return nil
+}
+
 func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrderInput) (*registration.WarrantyClaim, error) {
-	order, err := s.VerifyWarrantyOrder(input.OrderNumber, input.Email)
+	orderNumber := strings.TrimSpace(input.OrderNumber)
+	email := normalizeWarrantyEmail(input.Email)
+	claims, err := consumeEmailChallenge(
+		s.challengeRepo,
+		s.challengeSecret,
+		input.VerificationToken,
+		warrantyOrderChallengePurpose,
+	)
+	if err != nil || claims.Email != email || claims.Subject != warrantyOrderChallengeSubject(orderNumber, email) {
+		return nil, ErrWarrantyVerificationRequired
+	}
+
+	order, err := s.VerifyWarrantyOrder(orderNumber, email)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +144,8 @@ func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByO
 		IssueType:    "warranty",
 		Description:  strings.TrimSpace(input.Description),
 		Images:       string(imagesJSON),
-		OrderNumber:  strings.TrimSpace(input.OrderNumber),
-		Email:        strings.TrimSpace(input.Email),
+		OrderNumber:  orderNumber,
+		Email:        email,
 		TirePressure: strings.TrimSpace(input.TirePressure),
 		IsTubeless:   input.IsTubeless,
 		VideoURL:     input.VideoURL,
@@ -99,6 +157,14 @@ func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByO
 	}
 
 	return claim, nil
+}
+
+func warrantyOrderChallengeSubject(orderNumber, email string) string {
+	return strings.TrimSpace(orderNumber) + "|" + normalizeWarrantyEmail(email)
+}
+
+func normalizeWarrantyEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
 }
 
 // CreateWarrantyClaim 创建保修申请

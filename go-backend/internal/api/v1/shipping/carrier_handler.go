@@ -9,9 +9,7 @@ import (
 )
 
 func (h *Handler) ListCarriers(c *gin.Context) {
-	enabledOnly := c.Query("enabled") == "true"
-
-	carriers, err := h.shippingService.ListCarriers(enabledOnly)
+	carriers, err := h.shippingService.ListPublicCarriers()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -27,7 +25,7 @@ func (h *Handler) GetCarrier(c *gin.Context) {
 		return
 	}
 
-	carrier, err := h.shippingService.GetCarrier(uint(id))
+	carrier, err := h.shippingService.GetPublicCarrier(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Carrier")
 		return

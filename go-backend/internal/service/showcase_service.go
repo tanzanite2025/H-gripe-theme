@@ -69,6 +69,10 @@ func (s *ShowcaseService) List(kind string, status string, page int, perPage int
 	return s.repo.List(kind, status, perPage, offset)
 }
 
+func (s *ShowcaseService) ListPublic(kind string, page int, perPage int) ([]showcase.Showcase, error) {
+	return s.List(kind, showcase.StatusApproved, page, perPage)
+}
+
 func (s *ShowcaseService) Approve(id uint) error {
 	return s.repo.UpdateStatus(id, showcase.StatusApproved, "")
 }

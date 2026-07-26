@@ -20,6 +20,50 @@ const readCookie = (name: string) => {
   return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : ''
 }
 
+const toBase64Url = (bytes: ArrayBuffer) => {
+  const value = String.fromCharCode(...new Uint8Array(bytes))
+  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+const toHex = (bytes: ArrayBuffer) =>
+  Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
+
+const requestTarget = (baseURL: string, path: string) => {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+  const url = new URL(path, new URL(baseURL || '/', origin))
+  return `${url.pathname}${url.search}`
+}
+
+const signRequest = async (headers: Headers, method: string, baseURL: string, path: string, body: BodyInit | null | undefined, key: string) => {
+  if (!import.meta.client || !key || !globalThis.crypto?.subtle) {
+    return
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000).toString()
+  const nonce = globalThis.crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const bodyText = typeof body === 'string' ? body : body instanceof URLSearchParams ? body.toString() : ''
+  const encoder = new TextEncoder()
+  const bodyDigest = await globalThis.crypto.subtle.digest('SHA-256', encoder.encode(bodyText))
+  const canonical = [
+    method.toUpperCase(),
+    requestTarget(baseURL, path),
+    timestamp,
+    nonce,
+    toHex(bodyDigest),
+  ].join('\n')
+  const cryptoKey = await globalThis.crypto.subtle.importKey(
+    'raw',
+    encoder.encode(key),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signature = await globalThis.crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(canonical))
+  headers.set('X-Request-Timestamp', timestamp)
+  headers.set('X-Request-Nonce', nonce)
+  headers.set('X-Request-Signature', toBase64Url(signature))
+}
+
 const readResponse = async (response: Response): Promise<MaybeJson> => {
   const text = await response.text()
   if (!text) {
@@ -46,6 +90,7 @@ const extractMessage = (payload: MaybeJson, fallback: string) => {
 export function useApiRequest() {
   const config = useRuntimeConfig()
   const baseURL = config.public?.apiBase || '/api/v1'
+  const requestSigningKey = config.public?.requestSigningKey || ''
 
   const request = async <T = MaybeJson>(path: string, init: RequestInit = {}, fallbackMessage = 'Request failed'): Promise<T> => {
     if (!baseURL) {
@@ -59,6 +104,7 @@ export function useApiRequest() {
         headers.set(csrfHeaderName, csrfToken)
       }
     }
+    await signRequest(headers, (init.method || 'GET').toUpperCase(), baseURL, path, init.body, requestSigningKey)
 
     const finalInit: RequestInit = {
       credentials: defaultCredentials,
@@ -81,4 +127,3 @@ export function useApiRequest() {
     request,
   }
 }
-

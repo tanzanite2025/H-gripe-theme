@@ -2,10 +2,14 @@ package service
 
 import "fmt"
 
-const settingCacheVersion = "v2"
+const settingCacheVersion = "v3"
 
 func settingValueCacheKey(key, locale string) string {
 	return fmt.Sprintf("setting:%s:%s:%s", settingCacheVersion, key, locale)
+}
+
+func settingPublicValueCacheKey(key, locale string) string {
+	return fmt.Sprintf("setting:%s:public-value:%s:%s", settingCacheVersion, key, locale)
 }
 
 func settingsAllCacheKey(locale string) string {
@@ -20,6 +24,10 @@ func settingsGroupCacheKey(group, locale string) string {
 	return fmt.Sprintf("settings:%s:group:%s:%s", settingCacheVersion, group, locale)
 }
 
+func settingsPublicGroupCacheKey(group, locale string) string {
+	return fmt.Sprintf("settings:%s:public-group:%s:%s", settingCacheVersion, group, locale)
+}
+
 func settingsStructuredCacheKey(group, locale string) string {
 	return fmt.Sprintf("settings:%s:structured:%s:%s", settingCacheVersion, group, locale)
 }
@@ -28,21 +36,31 @@ func settingsGroupsCacheKey() string {
 	return fmt.Sprintf("settings:%s:groups", settingCacheVersion)
 }
 
+func settingsPublicGroupsCacheKey() string {
+	return fmt.Sprintf("settings:%s:public-groups", settingCacheVersion)
+}
+
 func (s *SettingService) invalidateSettingCaches(key, group, locale string) {
 	cacheKeys := []string{
 		settingValueCacheKey(key, locale),
+		settingPublicValueCacheKey(key, locale),
 		settingsAllCacheKey(locale),
 		settingsPublicCacheKey(locale),
+		settingsGroupsCacheKey(),
+		settingsPublicGroupsCacheKey(),
 	}
 
 	if group != "" {
 		cacheKeys = append(cacheKeys,
 			settingsGroupCacheKey(group, locale),
+			settingsPublicGroupCacheKey(group, locale),
 			settingsStructuredCacheKey(group, locale),
 		)
 	}
 
 	for _, cacheKey := range cacheKeys {
-		_ = s.cache.Delete(cacheKey)
+		if s.cache != nil {
+			_ = s.cache.Delete(cacheKey)
+		}
 	}
 }

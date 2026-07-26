@@ -9,14 +9,16 @@ import (
 )
 
 type Handler struct {
-	paymentService *service.PaymentService
-	orderService   *service.OrderService
+	paymentService  *service.PaymentService
+	orderService    *service.OrderService
+	settingsService *service.AdminSettingsService
 }
 
-func NewHandler(paymentService *service.PaymentService, orderService *service.OrderService) *Handler {
+func NewHandler(paymentService *service.PaymentService, orderService *service.OrderService, settingsService *service.AdminSettingsService) *Handler {
 	return &Handler{
-		paymentService: paymentService,
-		orderService:   orderService,
+		paymentService:  paymentService,
+		orderService:    orderService,
+		settingsService: settingsService,
 	}
 }
 

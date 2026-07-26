@@ -177,6 +177,8 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, 
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORS(cfg.CORS))
 	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.PrometheusMetrics())
+	router.Use(middleware.RequestSignature(cfg.RequestSigning, redisCache.Client()))
 	router.Use(middleware.GlobalRateLimit(1000))
 
 	if cfg.Server.Mode != gin.ReleaseMode {

@@ -16,10 +16,21 @@ func NewSpokeRepository(db *gorm.DB) *SpokeRepository {
 }
 
 func (r *SpokeRepository) ListHistory(search string, page, pageSize int) ([]spoke.History, int64, error) {
+	return r.listHistory(search, page, pageSize, nil)
+}
+
+func (r *SpokeRepository) ListHistoryByUserID(userID uint, search string, page, pageSize int) ([]spoke.History, int64, error) {
+	return r.listHistory(search, page, pageSize, &userID)
+}
+
+func (r *SpokeRepository) listHistory(search string, page, pageSize int, userID *uint) ([]spoke.History, int64, error) {
 	var items []spoke.History
 	var total int64
 
 	query := r.db.Model(&spoke.History{})
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	}
 	search = strings.ToLower(strings.TrimSpace(search))
 	if search != "" {
 		like := "%" + search + "%"

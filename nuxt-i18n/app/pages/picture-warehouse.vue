@@ -47,10 +47,10 @@
                     class="aspect-square w-full bg-slate-800/90 group-hover:bg-slate-700/90 transition-colors"
                   ></div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
-                    <p class="text-[11px] font-medium tz-text-primary truncate">
+                    <p class="tz-caption font-medium tz-text-primary truncate">
                       {{ photo.title }}
                     </p>
-                    <p class="text-[10px] tz-text-muted truncate">
+                    <p class="tz-micro-label tz-text-muted truncate">
                       {{ photo.region }}<span v-if="photo.nickname"> · {{ photo.nickname }}</span>
                     </p>
                   </div>
@@ -60,7 +60,7 @@
               <div v-if="hasMoreUserPhotos" class="pt-1">
                 <button
                   type="button"
-                  class="text-[10px] text-sky-300 hover:text-sky-200 underline underline-offset-2"
+                  class="tz-micro-label text-sky-300 hover:text-sky-200 underline underline-offset-2"
                   @click="toggleUserPhotos"
                 >
                   {{ showAllUserPhotos ? 'Show fewer photos' : 'Show more photos' }}
@@ -116,10 +116,10 @@
                     class="aspect-square w-full bg-slate-900/90 group-hover:bg-slate-800/90 transition-colors"
                   ></div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
-                    <p class="text-[11px] font-medium tz-text-primary truncate">
+                    <p class="tz-caption font-medium tz-text-primary truncate">
                       {{ photo.title }}
                     </p>
-                    <p class="text-[10px] tz-text-muted truncate">
+                    <p class="tz-micro-label tz-text-muted truncate">
                       {{ photo.region }}<span v-if="photo.nickname"> · {{ photo.nickname }}</span>
                     </p>
                   </div>
@@ -129,7 +129,7 @@
               <div v-if="hasMoreBrandPhotos" class="pt-1">
                 <button
                   type="button"
-                  class="text-[10px] text-sky-300 hover:text-sky-200 underline underline-offset-2"
+                  class="tz-micro-label text-sky-300 hover:text-sky-200 underline underline-offset-2"
                   @click="toggleBrandPhotos"
                 >
                   {{ showAllBrandPhotos ? 'Show fewer photos' : 'Show more photos' }}
@@ -148,7 +148,7 @@
           <h4 class="text-sm font-semibold tz-text-primary">
             Share your build (login required)
           </h4>
-          <p class="text-xs tz-text-secondary">
+          <p class="tz-caption tz-text-secondary">
             Join the gallery! WEBP only, longest side up to 800px. Uploaded photos will appear after review.
           </p>
         </div>
@@ -156,7 +156,7 @@
         <form class="space-y-3" @submit.prevent="submitUpload">
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] tz-text-secondary">
+              <label class="tz-caption tz-text-secondary">
                 Region <span class="text-red-400">*</span>
               </label>
               <input
@@ -168,7 +168,7 @@
               />
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] tz-text-secondary">Location</label>
+              <label class="tz-caption tz-text-secondary">Location</label>
               <input
                 v-model="uploadLocation"
                 type="text"
@@ -180,7 +180,7 @@
 
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] tz-text-secondary">Nickname</label>
+              <label class="tz-caption tz-text-secondary">Nickname</label>
               <input
                 v-model="uploadNickname"
                 type="text"
@@ -189,7 +189,7 @@
               />
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] tz-text-secondary">Bike / wheelset</label>
+              <label class="tz-caption tz-text-secondary">Bike / wheelset</label>
               <input
                 v-model="uploadBikeModel"
                 type="text"
@@ -200,7 +200,7 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[11px] tz-text-secondary">Notes</label>
+            <label class="tz-caption tz-text-secondary">Notes</label>
             <textarea
               v-model="uploadNotes"
               rows="2"
@@ -210,22 +210,22 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[11px] tz-text-secondary">Photos (WEBP, Max 10)</label>
+            <label class="tz-caption tz-text-secondary">Photos (WEBP, Max 10)</label>
             <input
               type="file"
               accept="image/webp"
               multiple
               @change="onUploadFileChange"
-              class="block w-full text-xs tz-text-secondary file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-slate-100 hover:file:bg-white/20 transition-colors"
+              class="block w-full tz-caption tz-text-secondary file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-slate-100 hover:file:bg-white/20 transition-colors"
             />
           </div>
 
           <div class="flex items-center justify-between gap-2 pt-2 border-t border-white/10 mt-2">
             <div class="flex-1">
-               <p v-if="uploadSuccess" class="text-[11px] text-emerald-400">
+               <p v-if="uploadSuccess" class="tz-caption text-emerald-400">
                 {{ uploadSuccess }}
               </p>
-              <p v-else-if="uploadError" class="text-[11px] text-red-400">
+              <p v-else-if="uploadError" class="tz-caption text-red-400">
                 {{ uploadError }}
               </p>
             </div>
@@ -332,7 +332,7 @@
             >
               <!-- 左：操作按钮栏 + 评论占位 -->
               <div class="px-4 py-3">
-                <div class="mb-2 flex flex-wrap gap-2 text-[11px]">
+                <div class="mb-2 flex flex-wrap gap-2 tz-caption">
                   <button
                     type="button"
                     class="px-3 py-1 rounded-full bg-[#1877F2] text-slate-50 border border-transparent opacity-80 cursor-default"
@@ -364,23 +364,23 @@
                     <span v-else>Copy link</span>
                   </button>
                 </div>
-                <p v-if="shareMessage" class="mb-2 text-[10px] tz-text-muted">
+                <p v-if="shareMessage" class="tz-caption mb-2 tz-text-muted">
                   {{ shareMessage }}
                 </p>
-                <div class="rounded-lg border border-white/15 px-3 py-3 text-[11px] tz-text-secondary">
+                <div class="tz-caption rounded-lg border border-white/15 px-3 py-3 tz-text-secondary">
                   <!-- 评论列表 -->
                   <div class="mb-2 flex items-center justify-between">
                     <h4 class="font-semibold tz-text-primary">Comments</h4>
-                    <span v-if="commentsLoading" class="text-[10px] tz-text-muted">
+                    <span v-if="commentsLoading" class="tz-caption tz-text-muted">
                       Loading...
                     </span>
                   </div>
 
-                  <div v-if="commentsError" class="mb-2 text-[10px] text-red-400">
+                  <div v-if="commentsError" class="tz-caption mb-2 text-red-400">
                     Unable to load comments. Please try again later.
                   </div>
 
-                  <div v-else-if="!commentsLoading && !comments.length" class="mb-2 text-[10px] tz-text-muted">
+                  <div v-else-if="!commentsLoading && !comments.length" class="tz-caption mb-2 tz-text-muted">
                     No comments yet.
                   </div>
 
@@ -391,17 +391,17 @@
                       class="rounded-lg px-2.5 py-1.5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
                     >
                       <div class="mb-0.5 flex items-center justify-between gap-2">
-                        <span class="font-semibold text-[10px] tz-text-primary">
+                        <span class="tz-caption font-semibold tz-text-primary">
                           {{ comment.author }}
                         </span>
-                        <span class="text-[9px] tz-text-muted">
+                        <span class="tz-caption tz-text-muted">
                           {{ comment.dateGmtFormatted }}
                         </span>
                       </div>
-                      <p class="text-[10px] tz-text-secondary">
+                      <p class="tz-description tz-text-secondary">
                         {{ comment.content }}
                       </p>
-                      <p v-if="comment.location" class="mt-0.5 text-[9px] tz-text-muted">
+                      <p v-if="comment.location" class="tz-caption mt-0.5 tz-text-muted">
                         {{ comment.location }}
                       </p>
                     </li>
@@ -412,20 +412,20 @@
                     <textarea
                       v-model="commentContent"
                       rows="2"
-                      class="w-full rounded-lg px-2 py-1 text-[11px] text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
+                      class="w-full rounded-lg px-2 py-1 text-sm text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                       placeholder="Write a comment (login required)"
                     ></textarea>
                     <div class="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1.1fr)] gap-1.5 items-center">
                       <input
                         v-model="commentLocation"
                         type="text"
-                        class="h-7 rounded-lg px-2 text-[10px] text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
+                        class="h-8 rounded-lg px-2 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
                         placeholder="Location (optional)"
                       />
                       <div class="flex items-center justify-end gap-2">
                         <button
                           type="submit"
-                          class="inline-flex items-center justify-center rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold text-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          class="inline-flex items-center justify-center rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                           :disabled="commentSubmitting || !activePhoto"
                         >
                           <span v-if="commentSubmitting">Sending...</span>
@@ -433,10 +433,10 @@
                         </button>
                       </div>
                     </div>
-                    <p v-if="commentSuccess" class="text-[10px] text-emerald-400">
+                    <p v-if="commentSuccess" class="tz-caption text-emerald-400">
                       {{ commentSuccess }}
                     </p>
-                    <p v-else-if="commentError" class="text-[10px] text-red-400">
+                    <p v-else-if="commentError" class="tz-caption text-red-400">
                       {{ commentError }}
                     </p>
                   </form>
@@ -445,7 +445,7 @@
 
               <!-- 右：推荐模块 -->
               <div
-                class="px-4 py-3 border-t md:border-t-0 md:border-l border-white/10 text-[11px] tz-text-secondary"
+                class="px-4 py-3 border-t md:border-t-0 md:border-l border-white/10 tz-caption tz-text-secondary"
               >
                 <div class="mb-2 font-semibold tz-text-primary">Like This? Get The Same Build.</div>
                 <div class="space-y-2">
@@ -1059,3 +1059,4 @@ const copyShareLink = async () => {
 }
 
 </style>
+

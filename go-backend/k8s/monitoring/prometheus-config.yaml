@@ -234,6 +234,52 @@ data:
           summary: "Redis connection failed"
           description: "Cannot connect to Redis for more than 1 minute."
 
+      # 支付失败率升高：需要结合支付网关后台确认是否为测卡、拒付或供应商故障。
+      - alert: PaymentFailureRateHigh
+        expr: |
+          (
+            sum(rate(tanzanite_payment_attempts_total{result="failed"}[5m]))
+            /
+            clamp_min(sum(rate(tanzanite_payment_attempts_total{result=~"success|failed"}[5m])), 0.001)
+          ) > 0.20
+          and
+          sum(rate(tanzanite_payment_attempts_total{result="failed"}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Payment failure rate is high"
+          description: "Payment failures exceed 20% for 5 minutes with sustained traffic. Check carding signals, gateway status, and provider decline rates."
+
+      # 延迟响应不是支付授权边界，只是提高自动化测卡成本。
+      - alert: PaymentRiskDelaySpike
+        expr: rate(tanzanite_payment_risk_delayed_total[5m]) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Payment risk delays are elevated"
+          description: "Risk-based checkout delays are being applied frequently. Review carding activity and checkout false positives."
+
+      # 验证码/邮件发送量异常时，先确认全局预算和供应商账单状态。
+      - alert: VerificationDeliveryVolumeHigh
+        expr: sum(increase(tanzanite_verification_send_attempts_total{result="accepted"}[5m])) > 300
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Verification delivery volume is high"
+          description: "More than 300 verification deliveries were accepted in 5 minutes. Check abuse traffic and provider spend."
+
+      - alert: VerificationGlobalBudgetRejected
+        expr: increase(tanzanite_verification_budget_rejections_total{reason="global"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Verification global budget was exhausted"
+          description: "The global verification budget or circuit breaker has rejected delivery attempts. Keep delivery paused until traffic and provider health are reviewed."
+
 ---
 apiVersion: apps/v1
 kind: Deployment

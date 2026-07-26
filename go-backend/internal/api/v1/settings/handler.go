@@ -59,9 +59,9 @@ func (h *Handler) GetAllPublicSettings(c *gin.Context) {
 
 func (h *Handler) GetSettingsByGroup(c *gin.Context) {
 	group := c.Param("group")
-	locale := c.DefaultQuery("locale", "en")
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
-	settings, err := h.settingService.GetByGroup(group, locale)
+	settings, err := h.settingService.GetPublicByGroup(group, locale)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -76,9 +76,9 @@ func (h *Handler) GetSettingsByGroup(c *gin.Context) {
 
 func (h *Handler) GetSetting(c *gin.Context) {
 	key := c.Param("key")
-	locale := c.DefaultQuery("locale", "en")
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
-	setting, err := h.settingService.Get(key, locale)
+	setting, err := h.settingService.GetPublic(key, locale)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Setting not found"})
 		return
@@ -88,7 +88,7 @@ func (h *Handler) GetSetting(c *gin.Context) {
 }
 
 func (h *Handler) GetGroups(c *gin.Context) {
-	groups, err := h.settingService.GetGroups()
+	groups, err := h.settingService.GetPublicGroups()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

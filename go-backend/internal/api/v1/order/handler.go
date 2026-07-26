@@ -1,9 +1,15 @@
 package order
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
+	"time"
+
 	"tanzanite/internal/domain/order"
+	"tanzanite/internal/pkg/antifraud"
 	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/metrics"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
@@ -14,12 +20,18 @@ import (
 type Handler struct {
 	orderService *service.OrderService
 	cartService  *service.CartService
+	riskService  *antifraud.Service
 }
 
-func NewHandler(orderService *service.OrderService, cartService *service.CartService) *Handler {
+func NewHandler(orderService *service.OrderService, cartService *service.CartService, riskServices ...*antifraud.Service) *Handler {
+	var riskService *antifraud.Service
+	if len(riskServices) > 0 {
+		riskService = riskServices[0]
+	}
 	return &Handler{
 		orderService: orderService,
 		cartService:  cartService,
+		riskService:  riskService,
 	}
 }
 
@@ -45,6 +57,37 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
 		return
+	}
+
+	riskKey := fmt.Sprintf("user:%d", userID.(uint))
+	if sessionID, err := c.Cookie("session_id"); err == nil && strings.TrimSpace(sessionID) != "" {
+		riskKey += ":session:" + strings.TrimSpace(sessionID)
+	}
+	if isCardLikePaymentMethod(req.PaymentMethod) && h.riskService != nil {
+		signals := antifraud.Signals{
+			IPCountry:      c.GetHeader("CF-IPCountry"),
+			BillingCountry: req.ShippingAddress.Country,
+			UserAgent:      c.Request.UserAgent(),
+		}
+		if req.ClientRisk != nil {
+			if req.ClientRisk.IPCountry != "" {
+				signals.IPCountry = req.ClientRisk.IPCountry
+			}
+			if req.ClientRisk.BillingCountry != "" {
+				signals.BillingCountry = req.ClientRisk.BillingCountry
+			}
+			signals.VPNDetected = req.ClientRisk.VPNDetected
+			signals.Timezone = req.ClientRisk.Timezone
+		}
+		decision, err := h.riskService.Evaluate(c.Request.Context(), riskKey, signals)
+		if err != nil {
+			apierror.RespondError(c, 503, "payment_risk_unavailable", "Payment risk service is temporarily unavailable")
+			return
+		}
+		if decision.Delay > 0 {
+			metrics.PaymentRiskDelayed.Inc()
+			time.Sleep(decision.Delay)
+		}
 	}
 
 	// 安全闭环：强制从后端 Cart 拉取，忽略前端的 req.Items
@@ -93,14 +136,30 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		req.PointsToUse,
 	)
 	if err != nil {
+		if isCardLikePaymentMethod(req.PaymentMethod) && h.riskService != nil {
+			_ = h.riskService.RecordFailure(c.Request.Context(), riskKey)
+		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
+	}
+	if isCardLikePaymentMethod(req.PaymentMethod) && h.riskService != nil {
+		_ = h.riskService.RecordSuccess(c.Request.Context(), riskKey)
 	}
 
 	// 清空购物车
 	_ = h.cartService.ClearCart(cart.ID)
 
 	response.Created(c, o)
+}
+
+func isCardLikePaymentMethod(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "card", "credit_card", "debit_card", "stripe", "alipay", "paypal":
+		return true
+	default:
+		return false
+	}
 }
 
 // GetOrder 获取订单详情

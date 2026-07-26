@@ -180,6 +180,36 @@ func TestRecordVerifiedGatewayRefundRejectsOverRefund(t *testing.T) {
 	assert.Equal(t, int64(0), refundCount)
 }
 
+func TestPaymentServicePublicTaxRatesOnlyReturnEnabledRates(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+
+	enabledRate := paymentdomain.TaxRate{
+		Name:    "Enabled",
+		Country: "US",
+		State:   "CA",
+		Rate:    7.5,
+		Enabled: true,
+	}
+	disabledRate := paymentdomain.TaxRate{
+		Name:    "Disabled",
+		Country: "US",
+		State:   "NY",
+		Rate:    8.5,
+		Enabled: false,
+	}
+	require.NoError(t, db.Create(&enabledRate).Error)
+	require.NoError(t, db.Create(&disabledRate).Error)
+	require.NoError(t, db.Model(&paymentdomain.TaxRate{}).Where("id = ?", disabledRate.ID).Update("enabled", false).Error)
+
+	rates, err := paymentService.ListPublicTaxRates()
+	require.NoError(t, err)
+	require.Len(t, rates, 1)
+	assert.Equal(t, enabledRate.ID, rates[0].ID)
+
+	_, err = paymentService.GetPublicTaxRate(disabledRate.ID)
+	require.ErrorIs(t, err, ErrPaymentNotFound)
+}
+
 func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 	t.Helper()
 
@@ -199,6 +229,7 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 		&order.Order{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
+		&paymentdomain.TaxRate{},
 	))
 
 	orderRepo := repository.NewOrderRepository(db)

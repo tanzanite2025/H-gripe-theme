@@ -75,7 +75,7 @@
                 :class="{ 'bg-white/5': expandedItems.has(item.id) }"
                 @click="toggleItem(item.id)"
               >
-                <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-slate-800 tz-text-muted text-[10px] uppercase font-bold tracking-wider border border-slate-700">
+                <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-slate-800 tz-text-muted tz-micro-label uppercase font-bold tracking-wider border border-slate-700">
                   {{ item.category }}
                 </span>
                 <span 

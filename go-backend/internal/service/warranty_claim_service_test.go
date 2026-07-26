@@ -1,6 +1,8 @@
 package service
 
 import (
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -11,6 +13,7 @@ import (
 
 	orderdomain "tanzanite/internal/domain/order"
 	"tanzanite/internal/domain/registration"
+	"tanzanite/internal/domain/verification"
 	"tanzanite/internal/repository"
 )
 
@@ -89,6 +92,59 @@ func TestBindWarrantyClaimOrderItemRequiresMatchingOrderAndUser(t *testing.T) {
 	assert.Equal(t, matchingItem.ID, *refreshed.OrderItemID)
 }
 
+func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
+	db, registrationService := newTestWarrantyRegistrationService(t)
+	emailSender := &recordingEmailSender{}
+	registrationService.ConfigureEmailChallenges(
+		repository.NewEmailChallengeRepository(db),
+		"test-email-secret",
+		emailSender,
+	)
+	registrationService.ConfigureEmailBaseURL("https://api.example.test")
+
+	order := orderdomain.Order{
+		OrderNumber:   "TZ-WARRANTY-VERIFIED",
+		UserID:        7,
+		Status:        "paid",
+		PaymentStatus: "paid",
+		TotalAmount:   199,
+	}
+	order.ShippingAddress.Email = "rider@example.test"
+	require.NoError(t, db.Create(&order).Error)
+
+	_, err := registrationService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
+		OrderNumber: "TZ-WARRANTY-VERIFIED",
+		Email:       "rider@example.test",
+	})
+	require.ErrorIs(t, err, ErrWarrantyVerificationRequired)
+
+	require.NoError(t, registrationService.RequestWarrantyOrderVerification(order.OrderNumber, order.ShippingAddress.Email))
+	require.Len(t, emailSender.bodies, 1)
+	verificationURL := strings.TrimSpace(strings.Split(emailSender.bodies[0], "\n\n")[1])
+	parsedVerificationURL, err := url.Parse(verificationURL)
+	require.NoError(t, err)
+	verificationToken := parsedVerificationURL.Query().Get("verification_token")
+	require.NotEmpty(t, verificationToken)
+
+	require.NoError(t, registrationService.ValidateWarrantyOrderToken(verificationToken))
+	claim, err := registrationService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
+		OrderNumber:       order.OrderNumber,
+		Email:             order.ShippingAddress.Email,
+		VerificationToken: verificationToken,
+		Description:       "rim issue",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, order.OrderNumber, claim.OrderNumber)
+
+	_, err = registrationService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
+		OrderNumber:       order.OrderNumber,
+		Email:             order.ShippingAddress.Email,
+		VerificationToken: verificationToken,
+		Description:       "replay",
+	})
+	require.ErrorIs(t, err, ErrWarrantyVerificationRequired)
+}
+
 func newTestWarrantyRegistrationService(t *testing.T) (*gorm.DB, *RegistrationService) {
 	t.Helper()
 
@@ -110,6 +166,7 @@ func newTestWarrantyRegistrationService(t *testing.T) (*gorm.DB, *RegistrationSe
 		&registration.ProductRegistration{},
 		&registration.WarrantyClaim{},
 		&registration.WarrantyServiceRecord{},
+		&verification.EmailChallenge{},
 	))
 
 	return db, NewRegistrationService(

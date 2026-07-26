@@ -90,6 +90,23 @@ func (s *TicketService) UpdateTicketStatus(id uint, status string) error {
 	return s.updateTicketStatus(t.ID, status)
 }
 
+func (s *TicketService) UpdateTicketStatusForUser(id uint, userID uint, isStaff bool, status string) error {
+	if !validTicketStatus(status) {
+		return ErrInvalidTicketStatus
+	}
+
+	t, err := s.getRegularTicket(id)
+	if err != nil {
+		return err
+	}
+
+	if !isStaff && t.UserID != userID {
+		return errors.New("unauthorized")
+	}
+
+	return s.updateTicketStatus(t.ID, status)
+}
+
 func (s *TicketService) AssignTicket(id, assignedTo uint) error {
 	t, err := s.getRegularTicket(id)
 	if err != nil {

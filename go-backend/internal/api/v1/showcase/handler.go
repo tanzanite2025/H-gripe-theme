@@ -77,12 +77,10 @@ func (h *ShowcaseHandler) List(c *gin.Context) {
 	if kind == "" {
 		kind = "user"
 	}
-	status := c.Query("status")
-
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
 
-	items, err := h.service.List(kind, status, page, perPage)
+	items, err := h.service.ListPublic(kind, page, perPage)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

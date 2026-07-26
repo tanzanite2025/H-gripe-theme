@@ -9,7 +9,7 @@ import (
 )
 
 func (h *Handler) ListPackagingRules(c *gin.Context) {
-	rules, err := h.shippingService.ListPackagingRules()
+	rules, err := h.shippingService.ListPublicPackagingRules()
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -24,7 +24,7 @@ func (h *Handler) GetPackagingRule(c *gin.Context) {
 		return
 	}
 
-	rule, err := h.shippingService.GetPackagingRule(uint(id))
+	rule, err := h.shippingService.GetPublicPackagingRule(uint(id))
 	if err != nil {
 		apierror.RespondNotFound(c, "Packaging rule")
 		return
@@ -40,9 +40,9 @@ func (h *Handler) GetProductPackagingRules(c *gin.Context) {
 		return
 	}
 
-	rules, err := h.shippingService.GetProductPackagingRules(uint(productID))
+	rules, err := h.shippingService.GetPublicProductPackagingRules(uint(productID))
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		apierror.RespondNotFound(c, "Product")
 		return
 	}
 

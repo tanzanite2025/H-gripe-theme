@@ -26,10 +26,10 @@
           class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#a5b4fc]/45 bg-[#111827]/90 p-3 text-white shadow-lg"
         >
           <div class="flex items-center justify-between gap-3">
-            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a5b4fc]">
+            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#a5b4fc]">
               Configuration request
             </div>
-            <div class="text-[10px] opacity-50 whitespace-nowrap">
+            <div class="tz-micro-label opacity-50 whitespace-nowrap">
               {{ formatMessageTime(message.created_at) }}
             </div>
           </div>
@@ -56,12 +56,12 @@
               <div v-if="configProduct(message).price" class="mt-1 text-xs text-[#40ffaa]">
                 {{ configProduct(message).price }}
               </div>
-              <div v-if="configProduct(message).sku" class="mt-1 text-[11px] text-white/55">
+              <div v-if="configProduct(message).sku" class="mt-1 tz-caption text-white/55">
                 SKU: {{ configProduct(message).sku }}
               </div>
             </div>
           </div>
-          <div class="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] leading-5 text-white/70">
+          <div class="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 tz-caption leading-5 text-white/70">
             <div v-if="configSelection(message).variant_title" class="font-semibold text-white/85">
               Selected: {{ configSelection(message).variant_title }}
             </div>
@@ -74,7 +74,7 @@
                 :key="option.key"
                 class="rounded-lg bg-white/[0.05] px-2 py-1.5"
               >
-                <span class="block text-[10px] uppercase tracking-[0.12em] text-white/45">
+                <span class="block tz-compact-label text-white/45">
                   {{ option.label }}
                 </span>
                 <span class="font-semibold text-white/80">
@@ -82,7 +82,7 @@
                 </span>
               </div>
             </div>
-            <div v-if="configSelection(message).weight_grams" class="mt-2 text-white/60">
+            <div v-if="configSelection(message).weight_grams" class="mt-2 tz-caption text-white/60">
               Weight: {{ configSelection(message).weight_grams }}g
             </div>
             <div
@@ -99,10 +99,10 @@
           class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#40ffaa]/35 bg-[#07120b]/85 p-3 text-white shadow-lg"
         >
           <div class="flex items-center justify-between gap-3">
-            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#40ffaa]">
+            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#40ffaa]">
               Order confirmation
             </div>
-            <div class="text-[10px] opacity-50 whitespace-nowrap">
+            <div class="tz-micro-label opacity-50 whitespace-nowrap">
               {{ formatMessageTime(message.created_at) }}
             </div>
           </div>
@@ -119,7 +119,7 @@
             <div v-else class="truncate text-sm font-semibold text-white">
               {{ orderPayload(message).title || message.message }}
             </div>
-            <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-white/55">
+            <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 tz-caption text-white/55">
               <span v-if="orderPayload(message).status">Status: {{ orderPayload(message).status }}</span>
               <span v-if="orderPayload(message).payment_status">Payment: {{ orderPayload(message).payment_status }}</span>
               <span v-if="orderPayload(message).shipping_status">Shipping: {{ orderPayload(message).shipping_status }}</span>
@@ -132,7 +132,7 @@
             <div
               v-for="item in orderItems(message).slice(0, 3)"
               :key="item.id || `${item.product_id}-${item.sku}`"
-              class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px]"
+              class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 tz-caption"
             >
               <div class="flex items-center justify-between gap-2">
                 <span class="truncate font-semibold text-white/85">{{ item.title || item.product_name || 'Product' }}</span>
@@ -140,7 +140,7 @@
               </div>
               <div v-if="item.sku" class="mt-1 text-white/45">SKU: {{ item.sku }}</div>
             </div>
-            <div v-if="orderItems(message).length > 3" class="text-[10px] text-white/45">
+            <div v-if="orderItems(message).length > 3" class="tz-micro-label text-white/45">
               +{{ orderItems(message).length - 3 }} more item{{ orderItems(message).length - 3 > 1 ? 's' : '' }}
             </div>
           </div>
@@ -185,7 +185,7 @@
           <!-- 桌面端 Agent 样式覆盖 (如果需要精确对齐原版) -->
           <!-- 注意: :style 优先级高于 class。原版 PC 端 visitor 是蓝色背景。 -->
           
-          <div class="text-[11px] md:text-xs mb-1 opacity-70">
+          <div class="tz-caption md:text-xs mb-1 opacity-70">
             {{ message.is_agent ? 'Agent' : message.sender_name }}
           </div>
           
@@ -193,7 +193,7 @@
             <div class="text-sm whitespace-pre-wrap break-words flex-1">
               {{ message.message }}
             </div>
-            <div class="text-[10px] opacity-50 md:opacity-60 whitespace-nowrap self-end md:self-auto">
+            <div class="tz-micro-label opacity-50 md:opacity-60 whitespace-nowrap self-end md:self-auto">
               {{ formatMessageTime(message.created_at) }}
             </div>
           </div>
@@ -205,7 +205,7 @@
       </div>
 
       <div v-if="agentTyping?.active" class="flex justify-end">
-        <div class="max-w-[75%] rounded-2xl border border-white/15 bg-black/35 px-3 py-2 text-xs text-white/70 shadow-lg">
+        <div class="max-w-[75%] rounded-2xl border border-white/15 bg-black/35 px-3 py-2 tz-caption text-white/70 shadow-lg">
           <span class="font-semibold text-white/85">{{ agentTyping.displayName || 'Agent' }}</span>
           <span class="ml-1">is typing</span>
           <span class="ml-1 inline-flex gap-0.5 align-middle">
@@ -220,7 +220,7 @@
     <!-- 底部输入栏 -->
     <div class="px-3 pb-4 md:p-4 border-t border-white/15 md:border-white/[0.08] md:bg-white/[0.02]">
       <div v-if="showVisitorEmailCapture" class="mb-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-        <label class="block text-[10px] uppercase tracking-[0.18em] text-white/55">Email for follow-up · optional</label>
+        <label class="block tz-compact-label text-white/55">Email for follow-up · optional</label>
         <input
           :value="visitorEmail"
           @input="$emit('update:visitorEmail', ($event.target as HTMLInputElement).value)"
@@ -228,7 +228,7 @@
           inputmode="email"
           autocomplete="email"
           placeholder="you@example.com"
-          class="mt-1 h-8 w-full bg-transparent text-xs text-white placeholder:text-white/35 focus:outline-none"
+          class="mt-1 h-8 w-full bg-transparent tz-caption text-white placeholder:text-white/35 focus:outline-none"
         />
       </div>
       <form @submit.prevent="handleSendMessage" class="flex items-center gap-2">
@@ -237,7 +237,7 @@
           @input="$emit('update:newMessage', ($event.target as HTMLInputElement).value)"
           type="text"
           placeholder="Type a message..."
-          class="flex-1 h-11 px-4 rounded-full text-sm md:text-base text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)] transition-colors"
+          class="flex-1 h-11 px-4 rounded-full tz-caption md:text-base text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)] transition-colors"
           :style="{ borderColor: currentThemeColor }"
           :disabled="isSending"
         />

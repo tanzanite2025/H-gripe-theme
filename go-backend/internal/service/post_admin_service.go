@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"tanzanite/internal/domain/post"
+	"tanzanite/internal/pkg/safehtml"
 	"time"
 )
 
@@ -55,10 +56,10 @@ func (s *PostService) GetAdminPost(id uint) (*post.Post, error) {
 		if err != nil {
 			return nil, err
 		}
-		foundPost.Translations = translations
+		foundPost.Translations = sanitizePostSliceHTML(translations)
 	}
 
-	return foundPost, nil
+	return sanitizePostHTML(foundPost), nil
 }
 
 func (s *PostService) GetStats() (map[string]interface{}, error) {
@@ -70,6 +71,10 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 	if err != nil {
 		return nil, err
 	}
+	content, err := safehtml.Sanitize(input.Content)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := s.ensureSlugAvailable(input.Slug, locale, 0); err != nil {
 		return nil, err
@@ -78,7 +83,7 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 	newPost := &post.Post{
 		Title:              input.Title,
 		Slug:               input.Slug,
-		Content:            input.Content,
+		Content:            content,
 		Excerpt:            input.Excerpt,
 		Status:             input.Status,
 		AuthorID:           input.AuthorID,
@@ -137,7 +142,11 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 		existingPost.Slug = *input.Slug
 	}
 	if input.Content != nil {
-		existingPost.Content = *input.Content
+		content, err := safehtml.Sanitize(*input.Content)
+		if err != nil {
+			return nil, err
+		}
+		existingPost.Content = content
 	}
 	if input.Excerpt != nil {
 		existingPost.Excerpt = *input.Excerpt

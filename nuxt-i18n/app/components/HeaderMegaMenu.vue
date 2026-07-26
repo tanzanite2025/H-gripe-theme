@@ -171,7 +171,7 @@ const childLabel = (child: PageSubNavigationChild) => {
 .header-mega {
   position: absolute;
   left: 50%;
-  top: calc(100% + 0.55rem);
+  top: calc(100% - 0.4rem);
   width: min(95vw, 1180px);
   transform: translateX(-50%);
   z-index: 116;
@@ -365,7 +365,7 @@ const childLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__label {
   color: var(--mega-accent);
-  font-size: 10px;
+  font-size: var(--tz-type-micro-label);
   font-weight: 850;
   letter-spacing: 0.14em;
   line-height: 1.2;
@@ -390,7 +390,7 @@ const childLabel = (child: PageSubNavigationChild) => {
   margin-top: 8px;
   overflow: hidden;
   color: rgba(203, 213, 225, 0.72);
-  font-size: 12px;
+  font-size: var(--tz-type-caption);
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -440,7 +440,7 @@ const childLabel = (child: PageSubNavigationChild) => {
   background: rgba(15, 23, 42, 0.58);
   padding: 0.38rem 0.62rem;
   color: rgba(241, 245, 249, 0.86);
-  font-size: 11px;
+  font-size: var(--tz-type-micro-label);
   font-weight: 750;
   line-height: 1;
   text-decoration: none;
@@ -580,19 +580,25 @@ const childLabel = (child: PageSubNavigationChild) => {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .header-mega {
-    top: calc(100% + 0.35rem);
-    width: calc(100vw - 1rem);
+    position: fixed;
+    inset: var(--header-mega-mobile-top, var(--site-header-offset, 7rem)) 0 0 0;
+    width: 100vw;
+    transform: none;
+    z-index: 1300;
   }
 
   .header-mega__shell {
-    border-radius: 22px;
+    height: 100%;
+    border-radius: 22px 22px 0 0;
+    box-sizing: border-box;
   }
 
   .header-mega__content {
-    max-height: min(72vh, calc(100vh - var(--site-header-offset, 150px) - 12px));
-    padding: 10px;
+    height: 100%;
+    max-height: none;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
   }
 
   .header-mega__grid {
@@ -654,7 +660,7 @@ const childLabel = (child: PageSubNavigationChild) => {
 
   .header-mega-card__child {
     min-height: 30px;
-    font-size: 11px;
+    font-size: var(--tz-type-micro-label);
   }
 }
 </style>

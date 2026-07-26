@@ -27,7 +27,7 @@ func (s *SettingService) Get(key, locale string) (*setting.Setting, error) {
 
 	// 尝试从缓存获取
 	var st setting.Setting
-	if err := s.cache.Get(cacheKey, &st); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &st) == nil {
 		return &st, nil
 	}
 
@@ -38,7 +38,69 @@ func (s *SettingService) Get(key, locale string) (*setting.Setting, error) {
 	}
 
 	// 写入缓存
-	_ = s.cache.Set(cacheKey, result, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, result, s.cacheTTL)
+	}
 
 	return result, nil
+}
+
+func (s *SettingService) GetPublic(key, locale string) (*setting.Setting, error) {
+	cacheKey := settingPublicValueCacheKey(key, locale)
+
+	var st setting.Setting
+	if s.cache != nil && s.cache.Get(cacheKey, &st) == nil {
+		return &st, nil
+	}
+
+	result, err := s.settingRepo.GetPublic(key, locale)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, result, s.cacheTTL)
+	}
+
+	return result, nil
+}
+
+func (s *SettingService) GetPublicByGroup(group, locale string) ([]setting.Setting, error) {
+	cacheKey := settingsPublicGroupCacheKey(group, locale)
+
+	var settings []setting.Setting
+	if s.cache != nil && s.cache.Get(cacheKey, &settings) == nil {
+		return settings, nil
+	}
+
+	settings, err := s.settingRepo.GetPublicByGroup(group, locale)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, settings, s.cacheTTL)
+	}
+
+	return settings, nil
+}
+
+func (s *SettingService) GetPublicGroups() ([]string, error) {
+	cacheKey := settingsPublicGroupsCacheKey()
+
+	var groups []string
+	if s.cache != nil && s.cache.Get(cacheKey, &groups) == nil {
+		return groups, nil
+	}
+
+	groups, err := s.settingRepo.GetPublicGroups()
+	if err != nil {
+		return nil, err
+	}
+
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, groups, s.cacheTTL*10)
+	}
+
+	return groups, nil
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"tanzanite/internal/domain/registration"
 	"tanzanite/internal/repository"
 	"time"
@@ -11,6 +12,10 @@ type RegistrationService struct {
 	registrationRepo *repository.RegistrationRepository
 	productRepo      *repository.ProductRepository
 	orderRepo        *repository.OrderRepository
+	challengeRepo    *repository.EmailChallengeRepository
+	challengeSecret  string
+	emailSender      EmailChallengeSender
+	baseURL          string
 }
 
 func NewRegistrationService(
@@ -23,6 +28,22 @@ func NewRegistrationService(
 		productRepo:      productRepo,
 		orderRepo:        orderRepo,
 	}
+}
+
+func (s *RegistrationService) ConfigureEmailChallenges(
+	challengeRepo *repository.EmailChallengeRepository,
+	secret string,
+	senders ...EmailChallengeSender,
+) {
+	s.challengeRepo = challengeRepo
+	s.challengeSecret = secret
+	if len(senders) > 0 {
+		s.emailSender = senders[0]
+	}
+}
+
+func (s *RegistrationService) ConfigureEmailBaseURL(baseURL string) {
+	s.baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
 }
 
 // ProductRegistration 相关方法

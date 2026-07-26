@@ -12,12 +12,12 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 
 	// 尝试从缓存获取
 	var siteSettings setting.SiteSettings
-	if err := s.cache.Get(cacheKey, &siteSettings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &siteSettings) == nil {
 		return &siteSettings, nil
 	}
 
 	// 从数据库获取
-	settings, err := s.settingRepo.GetByGroup("site", locale)
+	settings, err := s.GetPublicByGroup("site", locale)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,9 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 	}
 
 	// 写入缓存
-	_ = s.cache.Set(cacheKey, &siteSettings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, &siteSettings, s.cacheTTL)
+	}
 
 	return &siteSettings, nil
 }
@@ -69,12 +71,12 @@ func (s *SettingService) GetQuickBuySettings(locale string) (*setting.QuickBuySe
 
 	// 尝试从缓存获取
 	var quickBuySettings setting.QuickBuySettings
-	if err := s.cache.Get(cacheKey, &quickBuySettings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &quickBuySettings) == nil {
 		return &quickBuySettings, nil
 	}
 
 	// 从数据库获取
-	settings, err := s.settingRepo.GetByGroup("quick-buy", locale)
+	settings, err := s.GetPublicByGroup("quick-buy", locale)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +97,9 @@ func (s *SettingService) GetQuickBuySettings(locale string) (*setting.QuickBuySe
 	}
 
 	// 写入缓存
-	_ = s.cache.Set(cacheKey, &quickBuySettings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, &quickBuySettings, s.cacheTTL)
+	}
 
 	return &quickBuySettings, nil
 }
@@ -106,7 +110,7 @@ func (s *SettingService) GetEmailSettings(locale string) (*setting.EmailSettings
 
 	// 尝试从缓存获取
 	var emailSettings setting.EmailSettings
-	if err := s.cache.Get(cacheKey, &emailSettings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &emailSettings) == nil {
 		return &emailSettings, nil
 	}
 
@@ -140,7 +144,9 @@ func (s *SettingService) GetEmailSettings(locale string) (*setting.EmailSettings
 	}
 
 	// 写入缓存
-	_ = s.cache.Set(cacheKey, &emailSettings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, &emailSettings, s.cacheTTL)
+	}
 
 	return &emailSettings, nil
 }
@@ -151,12 +157,12 @@ func (s *SettingService) GetSEOSettings(locale string) (*setting.SEOSettings, er
 
 	// 尝试从缓存获取
 	var seoSettings setting.SEOSettings
-	if err := s.cache.Get(cacheKey, &seoSettings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &seoSettings) == nil {
 		return &seoSettings, nil
 	}
 
 	// 从数据库获取
-	settings, err := s.settingRepo.GetByGroup("seo", locale)
+	settings, err := s.GetPublicByGroup("seo", locale)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +185,9 @@ func (s *SettingService) GetSEOSettings(locale string) (*setting.SEOSettings, er
 	}
 
 	// 写入缓存
-	_ = s.cache.Set(cacheKey, &seoSettings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, &seoSettings, s.cacheTTL)
+	}
 
 	return &seoSettings, nil
 }
@@ -190,12 +198,12 @@ func (s *SettingService) GetSocialSettings(locale string) (*setting.SocialSettin
 
 	// 尝试从缓存获取
 	var socialSettings setting.SocialSettings
-	if err := s.cache.Get(cacheKey, &socialSettings); err == nil {
+	if s.cache != nil && s.cache.Get(cacheKey, &socialSettings) == nil {
 		return &socialSettings, nil
 	}
 
 	// 从数据库获取
-	settings, err := s.settingRepo.GetByGroup("social", locale)
+	settings, err := s.GetPublicByGroup("social", locale)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +228,9 @@ func (s *SettingService) GetSocialSettings(locale string) (*setting.SocialSettin
 	}
 
 	// 写入缓存
-	_ = s.cache.Set(cacheKey, &socialSettings, s.cacheTTL)
+	if s.cache != nil {
+		_ = s.cache.Set(cacheKey, &socialSettings, s.cacheTTL)
+	}
 
 	return &socialSettings, nil
 }

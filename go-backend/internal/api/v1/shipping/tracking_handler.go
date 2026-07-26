@@ -22,6 +22,10 @@ func (h *Handler) TrackShipment(c *gin.Context) {
 		return
 	}
 
+	if !h.authorizeTrackingNumberRead(c, trackingNumber) {
+		return
+	}
+
 	events, err := h.shippingService.GetTrackingEventsByTrackingNumber(trackingNumber)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
@@ -42,6 +46,10 @@ func (h *Handler) GetOrderTracking(c *gin.Context) {
 	orderID, err := strconv.ParseUint(c.Param("order_id"), 10, 32)
 	if err != nil {
 		apierror.RespondBadRequest(c, "invalid order id")
+		return
+	}
+
+	if !h.authorizeOrderTrackingRead(c, uint(orderID)) {
 		return
 	}
 

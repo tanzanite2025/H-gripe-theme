@@ -106,6 +106,30 @@ func TestRegularTicketServiceRejectsCustomerServiceConversationIDs(t *testing.T)
 	assert.True(t, errors.Is(err, ErrTicketRouteMismatch))
 }
 
+func TestUpdateTicketStatusForUserRejectsDifferentOwner(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	owner := createTicketBoundaryUser(t, db, "owner@example.test", "owner", "user")
+	otherUser := createTicketBoundaryUser(t, db, "other@example.test", "other", "user")
+
+	regularTicket := ticket.Ticket{
+		TicketNumber: "TK-OWNER-STATUS",
+		UserID:       owner.ID,
+		Subject:      "Order question",
+		Category:     "order",
+	}
+	require.NoError(t, ticketService.CreateTicket(&regularTicket))
+
+	err := ticketService.UpdateTicketStatusForUser(regularTicket.ID, otherUser.ID, false, "in_progress")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unauthorized")
+
+	var reloaded ticket.Ticket
+	require.NoError(t, db.First(&reloaded, regularTicket.ID).Error)
+	assert.Equal(t, "open", reloaded.Status)
+
+	require.NoError(t, ticketService.UpdateTicketStatusForUser(regularTicket.ID, owner.ID, false, "in_progress"))
+}
+
 func TestCustomerServiceDedicatedPathStillHandlesConversationMessages(t *testing.T) {
 	db, ticketService := newTestTicketBoundaryService(t)
 	agent := createTicketBoundaryUser(t, db, "agent@example.test", "agent", "support")

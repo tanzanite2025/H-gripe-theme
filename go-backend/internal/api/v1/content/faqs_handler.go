@@ -1,6 +1,7 @@
 package content
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"tanzanite/internal/api/middleware"
@@ -14,7 +15,6 @@ func (h *Handler) ListFAQs(c *gin.Context) {
 	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 	pageID := c.Query("page_id")
 	category := c.Query("category")
-	status := c.DefaultQuery("status", "published")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
@@ -25,7 +25,7 @@ func (h *Handler) ListFAQs(c *gin.Context) {
 		pageSize = 20
 	}
 
-	faqs, total, err := h.faqService.List(locale, pageID, category, status, page, pageSize)
+	faqs, total, err := h.faqService.List(locale, pageID, category, "published", page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -90,7 +90,7 @@ func (h *Handler) GetFAQPage(c *gin.Context) {
 
 	page, err := h.faqService.GetPublicPageData(pageID, locale)
 	if err != nil {
-		if service.IsRecordNotFound(err) {
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrFAQNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "faq page not found"})
 			return
 		}
@@ -112,7 +112,7 @@ func (h *Handler) GetFAQPageByRoute(c *gin.Context) {
 
 	page, err := h.faqService.GetPublicPageDataByRoutePath(routePath, locale)
 	if err != nil {
-		if service.IsRecordNotFound(err) {
+		if service.IsRecordNotFound(err) || errors.Is(err, service.ErrFAQNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "faq page not found"})
 			return
 		}

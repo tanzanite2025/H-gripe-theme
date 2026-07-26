@@ -47,7 +47,7 @@ func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPayme
 		input.Currency = "USD"
 	}
 
-	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		if _, err := repos.Payment.FindTransactionByTransactionID(input.TransactionID); err == nil {
 			return nil
 		} else if !repository.IsRecordNotFound(err) {
@@ -90,4 +90,8 @@ func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPayme
 		}
 		return nil
 	})
+	if err == nil && s.risk != nil {
+		s.risk.RecordProviderSuccess(input.Provider)
+	}
+	return err
 }

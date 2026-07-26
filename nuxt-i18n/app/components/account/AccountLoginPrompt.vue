@@ -126,7 +126,7 @@ const features = [
 .account-login-prompt__eyebrow {
   margin: 0 0 0.3rem;
   color: #67e8f9;
-  font-size: 0.68rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -218,3 +218,4 @@ const features = [
   line-height: 1.4;
 }
 </style>
+

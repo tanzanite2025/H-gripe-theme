@@ -117,6 +117,17 @@ func (h *Handler) ListTickets(c *gin.Context) {
 }
 
 func (h *Handler) UpdateTicketStatus(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	isStaff := false
+	if role, exists := c.Get("role"); exists && role == "admin" {
+		isStaff = true
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ticket id"})
@@ -131,7 +142,7 @@ func (h *Handler) UpdateTicketStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.ticketService.UpdateTicketStatus(uint(id), req.Status); err != nil {
+	if err := h.ticketService.UpdateTicketStatusForUser(uint(id), userID.(uint), isStaff, req.Status); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

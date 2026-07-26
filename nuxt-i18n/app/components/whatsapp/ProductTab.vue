@@ -32,7 +32,7 @@
         <button
           type="button"
           @click="$emit('openHistory')"
-          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full md:rounded-full text-[11px] md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full md:rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
           :style="{ borderColor: currentThemeColor }"
         >
           <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,7 @@
         <button
           type="button"
           @click="$emit('openCart')"
-          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full text-[11px] md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
           :style="{ borderColor: currentThemeColor }"
         >
           <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@
         <button
           type="button"
           @click="$emit('openWishlist')"
-          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full text-[11px] md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
           :style="{ borderColor: currentThemeColor }"
         >
           <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,3 +89,4 @@ defineEmits<{
   'openWishlist': []
 }>()
 </script>
+

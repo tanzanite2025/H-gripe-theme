@@ -60,7 +60,7 @@ func (h *Handler) GetPostTranslations(c *gin.Context) {
 	}
 
 	// 获取翻译版本
-	translations, err := h.postService.GetTranslations(uint(postID))
+	translations, err := h.postService.GetPublicTranslations(uint(postID))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 		return

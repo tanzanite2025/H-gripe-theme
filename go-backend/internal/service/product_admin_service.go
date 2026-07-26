@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"tanzanite/internal/domain/product"
+	"tanzanite/internal/pkg/safehtml"
 )
 
 type ProductMediaInput struct {
@@ -71,7 +72,11 @@ func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, f
 }
 
 func (s *ProductService) GetAdminProduct(id uint) (*product.Product, error) {
-	return s.findProduct(id)
+	foundProduct, err := s.findProduct(id)
+	if err != nil {
+		return nil, err
+	}
+	return sanitizeProductHTML(foundProduct), nil
 }
 
 func (s *ProductService) GetStats() (map[string]interface{}, error) {
@@ -80,6 +85,14 @@ func (s *ProductService) GetStats() (map[string]interface{}, error) {
 
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
 	locale, err := requireSupportedLocale(input.Locale)
+	if err != nil {
+		return nil, err
+	}
+	description, err := safehtml.Sanitize(input.Description)
+	if err != nil {
+		return nil, err
+	}
+	shortDesc, err := safehtml.Sanitize(input.ShortDesc)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +120,8 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		SKU:                defaultVariantSKU(variants),
 		Name:               input.Name,
 		Slug:               input.Slug,
-		Description:        input.Description,
-		ShortDesc:          input.ShortDesc,
+		Description:        description,
+		ShortDesc:          shortDesc,
 		Status:             input.Status,
 		Locale:             locale,
 		ParentID:           input.ParentID,
@@ -147,10 +160,18 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		existingProduct.Slug = *input.Slug
 	}
 	if input.Description != nil {
-		existingProduct.Description = *input.Description
+		description, err := safehtml.Sanitize(*input.Description)
+		if err != nil {
+			return nil, err
+		}
+		existingProduct.Description = description
 	}
 	if input.ShortDesc != nil {
-		existingProduct.ShortDesc = *input.ShortDesc
+		shortDesc, err := safehtml.Sanitize(*input.ShortDesc)
+		if err != nil {
+			return nil, err
+		}
+		existingProduct.ShortDesc = shortDesc
 	}
 	if input.Status != nil {
 		existingProduct.Status = *input.Status

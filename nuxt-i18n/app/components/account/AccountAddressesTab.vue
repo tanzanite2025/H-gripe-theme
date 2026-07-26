@@ -139,7 +139,7 @@ watch(
 
 .tab-head p {
   color: rgba(103, 232, 249, 0.9);
-  font-size: 0.68rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -171,7 +171,7 @@ watch(
 .address-boundary p {
   margin: 0;
   color: rgba(226, 232, 240, 0.8);
-  font-size: 0.74rem;
+  font-size: var(--tz-type-micro-label);
   line-height: 1.45;
 }
 
@@ -189,7 +189,7 @@ watch(
   display: block;
   margin-bottom: 0.32rem;
   color: rgba(226, 232, 240, 0.78);
-  font-size: 0.72rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 750;
 }
 
@@ -258,3 +258,4 @@ watch(
   }
 }
 </style>
+

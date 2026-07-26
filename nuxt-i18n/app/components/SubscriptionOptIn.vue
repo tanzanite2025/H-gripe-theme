@@ -1,21 +1,22 @@
 <template>
-  <form class="space-y-2" @submit.prevent="handleSubmit">
+  <form class="subscription-opt-in space-y-2" @submit.prevent="handleSubmit">
+    <TurnstileChallenge ref="turnstileChallenge" action="newsletter" />
     <label v-if="label" class="block text-xs font-medium tz-text-secondary mb-2 tracking-wide uppercase text-center">
       {{ label }}
     </label>
-    <div class="flex gap-2">
+    <div class="subscription-opt-in__control">
       <input
         type="email"
         v-model="email"
         :placeholder="placeholder"
-        class="flex-1 h-9 px-4 rounded-full bg-[#0b1020]/60 border-none text-white placeholder:text-slate-500 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.6)] focus:shadow-[0_0_0_2px_rgba(0,0,0,0.9)] focus:outline-none transition-all"
+        class="subscription-opt-in__input rounded-full bg-[#0b1020]/60 border-none text-white placeholder:text-slate-500 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.6)] focus:shadow-[0_0_0_2px_rgba(0,0,0,0.9)] focus:outline-none transition-all"
         :disabled="loading"
         required
         autocomplete="email"
       />
       <button
         type="submit"
-        class="h-9 px-5 rounded-full bg-white text-[#0b1020] font-semibold text-sm shadow-[0_4px_14px_rgba(0,0,0,0.45)] hover:shadow-[0_5px_16px_rgba(0,0,0,0.5)] active:scale-[0.98] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
+        class="subscription-opt-in__button flex shrink-0 items-center justify-center rounded-full bg-white text-sm font-semibold text-[#0b1020] shadow-[0_4px_14px_rgba(0,0,0,0.45)] transition-all hover:shadow-[0_5px_16px_rgba(0,0,0,0.5)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         :disabled="loading"
       >
         <span v-if="loading" class="flex items-center gap-1.5">
@@ -81,6 +82,7 @@ const email = ref('')
 const loading = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const turnstileChallenge = ref<{ execute: () => Promise<string> } | null>(null)
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -97,6 +99,7 @@ async function handleSubmit() {
   loading.value = true
 
   try {
+    const captchaToken = await turnstileChallenge.value?.execute()
     const data = await request<SubscriptionSubmitResponse>(props.endpointPath, {
       method: 'POST',
       headers: {
@@ -107,6 +110,7 @@ async function handleSubmit() {
         email: value,
         source: 'website',
         locale: locale.value,
+        captcha_token: captchaToken || '',
       }),
     }, 'Subscription failed, please try again later')
 
@@ -126,3 +130,48 @@ async function handleSubmit() {
   }
 }
 </script>
+
+<style scoped>
+.subscription-opt-in {
+  min-width: 0;
+}
+
+.subscription-opt-in__control {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.subscription-opt-in__input,
+.subscription-opt-in__button {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 2.25rem;
+}
+
+.subscription-opt-in__input {
+  display: block;
+  padding: 0 1rem;
+}
+
+.subscription-opt-in__button {
+  padding: 0 1.25rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .subscription-opt-in__control {
+    flex-direction: row;
+  }
+
+  .subscription-opt-in__input {
+    flex: 1 1 auto;
+  }
+
+  .subscription-opt-in__button {
+    width: auto;
+  }
+}
+</style>

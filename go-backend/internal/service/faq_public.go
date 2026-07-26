@@ -11,10 +11,20 @@ func (s *FAQService) GetPublicByID(id uint) (*faq.FAQ, error) {
 	if err != nil {
 		return nil, err
 	}
+	if item.Status != "published" {
+		return nil, ErrFAQNotFound
+	}
 	if sanitized, sanitizeErr := faqcontent.SanitizeAnswer(item.Answer); sanitizeErr == nil {
 		item.Answer = sanitized
 	}
 	return item, nil
+}
+
+func (s *FAQService) IncrementPublicViewCount(id uint) error {
+	if _, err := s.GetPublicByID(id); err != nil {
+		return err
+	}
+	return s.faqRepo.IncrementViewCount(id)
 }
 
 func (s *FAQService) GetPublicPageData(pageID, locale string) (*FAQPublicPageData, error) {
@@ -23,7 +33,7 @@ func (s *FAQService) GetPublicPageData(pageID, locale string) (*FAQPublicPageDat
 		return nil, err
 	}
 	if page.Status != "active" {
-		return &FAQPublicPageData{PageID: page.PageID, Title: page.Title, Subtitle: page.Subtitle, Categories: []FAQPublicCategory{}}, nil
+		return nil, ErrFAQNotFound
 	}
 
 	categories, err := s.faqRepo.ListCategories(page.Locale, page.PageID, false)

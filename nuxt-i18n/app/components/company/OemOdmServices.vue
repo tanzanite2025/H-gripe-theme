@@ -101,7 +101,7 @@
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div v-for="(step, index) in steps" :key="index" class="relative group">
            <div class="aspect-square rounded-xl bg-slate-800/50 border border-slate-700 flex flex-col items-center justify-center p-3 text-center group-hover:bg-slate-800 transition-colors pointer-cursor">
-              <span class="text-[10px] text-amber-500 font-mono mb-1">0{{ index + 1}}</span>
+              <span class="tz-micro-label text-amber-500 font-mono mb-1">0{{ index + 1}}</span>
               <span class="text-xs font-semibold text-white">{{ step }}</span>
            </div>
            <!-- Arrow for desktop -->

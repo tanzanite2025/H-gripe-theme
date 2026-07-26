@@ -56,12 +56,20 @@ The production project must keep these boundaries:
 1. Project name: `tanzanite-theme`.
 2. Images: `ghcr.io/tanzanite2025/tanzanite-theme-*`.
 3. Volumes: `tanzanite-theme-postgres-data`, `tanzanite-theme-redis-data`, and `tanzanite-theme-uploads`.
-4. Internal networks: project-owned `data` and `app` networks.
-5. Shared network: external `tanzanite-edge`, joined only by `web`.
-6. Edge alias: `theme-web`.
-7. No `container_name` and no host `ports` in the business stack.
-8. No ERP environment variables, volumes, image tags, or database credentials.
-9. `TRUSTED_PROXIES` contains only private Docker CIDRs. The shared Caddy gateway remains responsible for strict Cloudflare proxy trust.
+4. Data networks: project-owned internal `db` and `cache` networks.
+5. Application network: project-owned `app` network for service-to-service traffic and required outbound integrations.
+6. Shared network: external `tanzanite-edge`, joined only by `web`.
+7. Edge alias: `theme-web`.
+8. No `container_name` and no host `ports` in the business stack.
+9. No ERP environment variables, volumes, image tags, or database credentials.
+10. `TRUSTED_PROXIES` contains only private Docker CIDRs. The shared Caddy gateway remains responsible for strict Cloudflare proxy trust.
+
+Database and cache reachability is intentional:
+
+- `db` is internal and contains only `db`, `api`, and the one-shot `migrate` service. `storefront`, `admin`, and `web` cannot resolve or connect to PostgreSQL through Docker networking.
+- `cache` is internal and contains `redis`, `api`, and `storefront` because the SSR HTML cache is Redis-backed. Redis has a password and is never published to the host.
+- `app` is not marked `internal` because the API and storefront need outbound SMTP, Turnstile, payment, and registry-related traffic. No service in the business stack publishes a host port.
+- `edge` is the only public gateway path. Only `web` joins it; the API, database, Redis, storefront, and admin are not directly reachable from Cloudflare or the VPS interface.
 
 ## Publish Images
 
@@ -153,7 +161,7 @@ Cloudflare changes for the root site must not modify the ERP A record or ERP hos
 
 Do not add payment provider secrets to the production environment yet. The current generic payment webhook endpoint is not a complete provider-native adapter: Stripe payload mapping is incomplete, and the PayPal and Alipay verification paths are not production-ready. With no provider secrets in the API container, these callbacks fail closed and cannot update payment state.
 
-Outbound SMTP is also not wired into the application dependency graph, so SMTP variables are intentionally absent from the production template. Add either integration only together with its service wiring, provider-specific contract tests, and deployment variables.
+Outbound SMTP is wired for newsletter and warranty email challenges and is present in the production template. Keep it configured with a dedicated sender, provider-side rate limits, and credentials that are rotated independently from JWT, Redis, and database secrets.
 
 ## Verification
 
@@ -177,6 +185,28 @@ Also verify:
 - Disabled payment provider callbacks fail closed and do not change order state.
 - Upload persistence after recreating the API and Web containers.
 - PostgreSQL and Redis are not reachable on the VPS public address.
+- From a temporary diagnostic container on `app`, confirm PostgreSQL connections fail because it is not on `db`; from `api`, confirm PostgreSQL and Redis connections succeed.
+- Confirm `/metrics` is not routed by the public Nginx/Caddy gateway. Scrape it only from a private monitoring container or private tunnel.
+
+## Abuse Controls And Monitoring
+
+This VPS topology is appropriate for the current application size and security model when deployed with the production Compose file. It includes:
+
+- Turnstile before newsletter/warranty verification delivery.
+- Redis IP, destination, daily, and global sliding-window delivery budgets with a short circuit breaker.
+- Redis payment-failure windows, risk scoring, and a two-failure delay response for card-like checkout attempts.
+- Prometheus metrics for request volume, verification delivery/rejections, payment outcomes, and risk delays.
+
+Carding protection is not a complete provider-native fraud program. Before meaningful payment volume, configure Stripe Radar or the equivalent provider controls, 3DS/SCA where applicable, webhook signature verification, provider decline-rate monitoring, and a manual review path. The two-second delay is deliberately an abuse-cost control, not authorization.
+
+The repository includes Prometheus alert rules for:
+
+- payment failure rate above 20% for five minutes with sustained traffic;
+- unusual verification delivery volume;
+- global verification budget exhaustion;
+- elevated risk-based payment delays.
+
+The VPS Compose stack does not expose Prometheus or Alertmanager publicly. Run them on a private monitoring network or use a private tunnel, then route critical alerts to the chosen Telegram, DingTalk, Slack, or email receiver. Never publish `/metrics` to the internet.
 
 ## Release And Rollback
 

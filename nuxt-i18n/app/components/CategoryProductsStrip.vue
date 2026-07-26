@@ -283,7 +283,7 @@ watch(
   justify-content: center;
   padding: 0.25rem 0.4rem;
   border-radius: 9999px;
-  font-size: 0.72rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 500;
   border-width: 1px;
   border-style: solid;

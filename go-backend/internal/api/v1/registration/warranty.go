@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	domainregistration "tanzanite/internal/domain/registration"
+	"tanzanite/internal/pkg/antibot"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/pkg/upload"
@@ -23,20 +24,47 @@ var (
 
 func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 	var req struct {
-		OrderNumber string `json:"order_number" binding:"required"`
-		Email       string `json:"email" binding:"required,email"`
+		OrderNumber  string `json:"order_number" binding:"required"`
+		Email        string `json:"email" binding:"required,email"`
+		CaptchaToken string `json:"captcha_token"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
 		return
 	}
-
-	if _, err := h.registrationSvc.VerifyWarrantyOrder(req.OrderNumber, req.Email); err != nil {
-		apierror.RespondNotFound(c, "Order")
+	if !h.allowDelivery(c, req.Email, req.CaptchaToken) {
 		return
 	}
 
-	response.SuccessWithMessage(c, "Order verified successfully", nil)
+	if err := h.registrationSvc.RequestWarrantyOrderVerification(req.OrderNumber, req.Email); err != nil {
+		if h.antiBot != nil {
+			h.antiBot.RecordDeliveryResult("email", false)
+		}
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	if h.antiBot != nil {
+		h.antiBot.RecordDeliveryResult("email", true)
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message": "If the order can be verified, a confirmation email has been sent.",
+	})
+}
+
+func (h *Handler) VerifyWarrantyOrderToken(c *gin.Context) {
+	token := strings.TrimSpace(c.Param("token"))
+	if token == "" {
+		apierror.RespondBadRequest(c, "verification token is required")
+		return
+	}
+
+	if err := h.registrationSvc.ValidateWarrantyOrderToken(token); err != nil {
+		apierror.RespondBadRequest(c, "invalid or expired verification token")
+		return
+	}
+
+	response.SuccessWithMessage(c, "Warranty verification is ready", gin.H{"verified": true})
 }
 
 func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
@@ -54,8 +82,17 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 
 	orderNumber := strings.TrimSpace(c.PostForm("order_number"))
 	email := strings.TrimSpace(c.PostForm("email"))
+	verificationToken := strings.TrimSpace(c.PostForm("verification_token"))
+	captchaToken := strings.TrimSpace(c.PostForm("captcha_token"))
 	if orderNumber == "" || email == "" {
 		apierror.RespondBadRequest(c, "Order Number and Email are required")
+		return
+	}
+	if verificationToken == "" {
+		apierror.RespondUnauthorized(c)
+		return
+	}
+	if !h.allowChallenge(c, captchaToken) {
 		return
 	}
 
@@ -72,17 +109,22 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 	}
 
 	claim, err := h.registrationSvc.CreateWarrantyClaimForOrder(service.WarrantyClaimByOrderInput{
-		OrderNumber:  orderNumber,
-		Email:        email,
-		Description:  c.PostForm("issue_description"),
-		TirePressure: c.PostForm("tire_pressure"),
-		IsTubeless:   c.PostForm("is_tubeless") == "yes",
-		ImageURLs:    imageURLs,
-		VideoURL:     videoURL,
+		OrderNumber:       orderNumber,
+		Email:             email,
+		VerificationToken: verificationToken,
+		Description:       c.PostForm("issue_description"),
+		TirePressure:      c.PostForm("tire_pressure"),
+		IsTubeless:        c.PostForm("is_tubeless") == "yes",
+		ImageURLs:         imageURLs,
+		VideoURL:          videoURL,
 	})
 	if err != nil {
 		if errors.Is(err, service.ErrWarrantyEmailMismatch) || service.IsRecordNotFound(err) {
 			apierror.RespondNotFound(c, "Order")
+			return
+		}
+		if errors.Is(err, service.ErrWarrantyVerificationRequired) {
+			apierror.RespondUnauthorized(c)
 			return
 		}
 		apierror.RespondBadRequest(c, err.Error())
@@ -94,6 +136,44 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		"message": "Claim submitted successfully",
 		"id":      claim.ID,
 	})
+}
+
+func (h *Handler) allowDelivery(c *gin.Context, destination, challengeToken string) bool {
+	if h.antiBot == nil {
+		return true
+	}
+	err := h.antiBot.Guard(c.Request.Context(), "email", destination, c.ClientIP(), challengeToken)
+	switch {
+	case err == nil:
+		return true
+	case errors.Is(err, antibot.ErrChallengeRequired), errors.Is(err, antibot.ErrChallengeInvalid):
+		apierror.RespondError(c, http.StatusForbidden, "verification_required", "Verification challenge required")
+	case errors.Is(err, antibot.ErrRateLimited):
+		c.Header("Retry-After", "60")
+		apierror.RespondError(c, http.StatusTooManyRequests, "verification_rate_limited", "Too many verification requests")
+	case errors.Is(err, antibot.ErrBudgetExceeded), errors.Is(err, antibot.ErrCircuitOpen):
+		c.Header("Retry-After", "300")
+		apierror.RespondError(c, http.StatusServiceUnavailable, "verification_paused", "Verification delivery is temporarily paused")
+	default:
+		apierror.RespondError(c, http.StatusServiceUnavailable, "verification_unavailable", "Verification service is temporarily unavailable")
+	}
+	return false
+}
+
+func (h *Handler) allowChallenge(c *gin.Context, challengeToken string) bool {
+	if h.antiBot == nil {
+		return true
+	}
+	err := h.antiBot.VerifyChallenge(c.Request.Context(), challengeToken, c.ClientIP())
+	switch {
+	case err == nil:
+		return true
+	case errors.Is(err, antibot.ErrChallengeRequired), errors.Is(err, antibot.ErrChallengeInvalid):
+		apierror.RespondError(c, http.StatusForbidden, "verification_required", "Verification challenge required")
+	default:
+		apierror.RespondError(c, http.StatusServiceUnavailable, "verification_unavailable", "Verification service is temporarily unavailable")
+	}
+	return false
 }
 
 func (h *Handler) CreateWarrantyClaim(c *gin.Context) {

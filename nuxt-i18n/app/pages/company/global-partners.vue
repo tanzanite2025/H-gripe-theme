@@ -21,7 +21,7 @@
             <span>or email</span>
             <a
               href="mailto:support@tanzanite.site"
-              class="inline-flex items-center justify-center rounded-full bg-slate-800/90 px-3 py-1.5 text-[11px] font-medium text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] transition hover:bg-slate-700/95 hover:text-slate-50"
+              class="inline-flex items-center justify-center rounded-full bg-slate-800/90 px-3 py-1.5 tz-caption font-medium text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] transition hover:bg-slate-700/95 hover:text-slate-50"
             >
               support@tanzanite.site
             </a>
@@ -174,3 +174,4 @@ useHead({
   title: t('company.nav.globalPartners'),
 })
 </script>
+

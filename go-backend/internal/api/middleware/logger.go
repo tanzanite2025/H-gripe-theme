@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"net/url"
+	"strings"
 	"time"
 
 	"tanzanite/internal/pkg/logger"
@@ -14,7 +16,7 @@ func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
+		query := sanitizeRawQuery(c.Request.URL.RawQuery)
 
 		c.Next()
 
@@ -32,4 +34,58 @@ func Logger() gin.HandlerFunc {
 			zap.String("error", c.Errors.ByType(gin.ErrorTypePrivate).String()),
 		)
 	}
+}
+
+func sanitizeRawQuery(rawQuery string) string {
+	if rawQuery == "" {
+		return ""
+	}
+
+	values, err := url.ParseQuery(rawQuery)
+	if err != nil {
+		return "[invalid_query]"
+	}
+
+	for key := range values {
+		if isSensitiveQueryKey(key) {
+			values[key] = []string{"[REDACTED]"}
+		}
+	}
+
+	return values.Encode()
+}
+
+func isSensitiveQueryKey(key string) bool {
+	key = strings.ToLower(strings.TrimSpace(key))
+	if key == "" {
+		return false
+	}
+
+	switch key {
+	case "code", "sig", "signature", "authorization":
+		return true
+	}
+
+	sensitiveParts := []string{
+		"token",
+		"secret",
+		"password",
+		"passwd",
+		"pwd",
+		"signature",
+		"session",
+		"cookie",
+		"jwt",
+		"api_key",
+		"apikey",
+		"access_key",
+		"private_key",
+	}
+	for _, part := range sensitiveParts {
+		if strings.Contains(key, part) {
+			return true
+		}
+	}
+
+	return false
 }

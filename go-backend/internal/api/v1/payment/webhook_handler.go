@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
+	"net/http"
 	"tanzanite/internal/pkg/apierror"
 	pgateway "tanzanite/internal/pkg/payment" // alias for gateway
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stripe/stripe-go/v76"
 )
 
 // ============ Webhook 相关接口 ============
@@ -25,131 +26,165 @@ import (
 // @Router /api/v1/payment/webhook/{provider} [post]
 func (h *Handler) HandleWebhook(c *gin.Context) {
 	provider := c.Param("provider")
-	var gatewayType pgateway.GatewayType
 
-	// 1. 读取原始 Payload
 	payload, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		apierror.RespondBadRequest(c, "Failed to read request body")
 		return
 	}
 
-	// 2. 提取网关签名 Header (例如 Stripe-Signature)
-	var signature string
 	switch provider {
 	case "stripe":
-		gatewayType = pgateway.GatewayStripe
-		signature = c.GetHeader("Stripe-Signature")
+		h.handleStripeWebhook(c, payload)
 	case "paypal":
-		gatewayType = pgateway.GatewayPayPal
-		signature = c.GetHeader("Paypal-Transmission-Sig")
+		apierror.RespondError(c, http.StatusNotImplemented, "payment_webhook_not_ready", "PayPal webhook is disabled until official signature verification is implemented")
 	case "alipay":
-		gatewayType = pgateway.GatewayAlipay
-		signature = c.GetHeader("Alipay-Signature")
+		apierror.RespondError(c, http.StatusNotImplemented, "payment_webhook_not_ready", "Alipay webhook is disabled until official signature verification is implemented")
+	case "wechat":
+		apierror.RespondError(c, http.StatusNotImplemented, "payment_webhook_not_ready", "WeChat Pay webhook is disabled until API v3 signature verification and resource decryption are implemented")
 	default:
 		apierror.RespondBadRequest(c, "Unsupported payment provider")
-		return
 	}
+}
 
+func (h *Handler) handleStripeWebhook(c *gin.Context, payload []byte) {
+	signature := c.GetHeader("Stripe-Signature")
 	if signature == "" {
 		apierror.RespondUnauthorized(c)
 		return
 	}
 
-	config := pgateway.LoadConfigFromEnv(gatewayType)
+	config, err := h.loadGatewayConfig(pgateway.GatewayStripe)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 	if config.WebhookSecret == "" {
 		apierror.RespondInternalError(c, fmt.Errorf("payment webhook is not configured"))
 		return
 	}
 
-	gateway, err := pgateway.NewPaymentGateway(config)
+	event, err := pgateway.ParseStripeWebhookEvent(payload, signature, config.WebhookSecret)
 	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
-	isValid, err := gateway.VerifyWebhook(payload, signature)
-	if !isValid || err != nil {
 		apierror.RespondUnauthorized(c)
 		return
 	}
 
-	// 4. 解析 Payload 获取订单号与网关交易信息
-	var event struct {
-		OrderNumber   string  `json:"order_number"`
-		Status        string  `json:"status"` // paid, completed, succeeded, failed
-		TransactionID string  `json:"transaction_id"`
-		RefundID      string  `json:"refund_id"`
-		Amount        float64 `json:"amount"`
-		Currency      string  `json:"currency"`
-		PaymentMethod string  `json:"payment_method"`
+	switch string(event.Type) {
+	case "payment_intent.succeeded":
+		h.handleStripePaymentIntentSucceeded(c, event, payload)
+	case "payment_intent.payment_failed":
+		h.handleStripePaymentIntentFailed(c, event)
+	default:
+		response.SuccessWithMessage(c, "Ignored unsupported Stripe event", gin.H{
+			"event_id":   event.ID,
+			"event_type": string(event.Type),
+		})
 	}
-	if err := json.Unmarshal(payload, &event); err != nil {
+}
+
+func (h *Handler) handleStripePaymentIntentFailed(c *gin.Context, event stripe.Event) {
+	var intent stripe.PaymentIntent
+	if err := json.Unmarshal(event.Data.Raw, &intent); err != nil {
 		apierror.RespondBadRequest(c, "Invalid JSON payload")
 		return
 	}
 
-	switch {
-	case isPaidWebhookStatus(event.Status):
-		if event.OrderNumber == "" {
-			response.SuccessWithMessage(c, "Ignored paid event without order_number", nil)
-			return
-		}
-		if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
-			Provider:        string(gatewayType),
-			OrderNumber:     event.OrderNumber,
-			TransactionID:   event.TransactionID,
-			PaymentMethod:   event.PaymentMethod,
-			Amount:          event.Amount,
-			Currency:        event.Currency,
-			GatewayResponse: string(payload),
-		}); err != nil {
-			if errors.Is(err, service.ErrOrderNotFound) {
-				apierror.RespondNotFound(c, "Order")
-				return
-			}
-			apierror.RespondBadRequest(c, err.Error())
-			return
-		}
-	case isRefundWebhookStatus(event.Status):
-		if err := h.paymentService.RecordVerifiedGatewayRefund(service.VerifiedGatewayRefundInput{
-			Provider:        string(gatewayType),
-			OrderNumber:     event.OrderNumber,
-			TransactionID:   event.TransactionID,
-			RefundID:        event.RefundID,
-			Amount:          event.Amount,
-			Currency:        event.Currency,
-			GatewayResponse: string(payload),
-		}); err != nil {
-			if errors.Is(err, service.ErrOrderNotFound) {
-				apierror.RespondNotFound(c, "Order")
-				return
-			}
-			apierror.RespondBadRequest(c, err.Error())
-			return
-		}
-	default:
-		response.SuccessWithMessage(c, "Ignored unsupported payment event", nil)
+	orderNumber := stripeOrderNumber(intent.Metadata)
+	if orderNumber != "" {
+		_ = h.paymentService.RecordGatewayPaymentFailure(
+			c.Request.Context(),
+			string(pgateway.GatewayStripe),
+			orderNumber,
+		)
+	}
+
+	response.SuccessWithMessage(c, "Stripe payment failure recorded", gin.H{
+		"event_id":          event.ID,
+		"event_type":        string(event.Type),
+		"payment_intent_id": intent.ID,
+		"order_number":      orderNumber,
+	})
+}
+
+func (h *Handler) handleStripePaymentIntentSucceeded(c *gin.Context, event stripe.Event, payload []byte) {
+	var intent stripe.PaymentIntent
+	if err := json.Unmarshal(event.Data.Raw, &intent); err != nil {
+		apierror.RespondBadRequest(c, "Invalid JSON payload")
 		return
 	}
 
-	response.SuccessWithMessage(c, "Webhook processed successfully", nil)
+	orderNumber := stripeOrderNumber(intent.Metadata)
+	if orderNumber == "" {
+		response.SuccessWithMessage(c, "Ignored Stripe payment_intent.succeeded without order metadata", gin.H{
+			"event_id":          event.ID,
+			"payment_intent_id": intent.ID,
+		})
+		return
+	}
+
+	amount := intent.AmountReceived
+	if amount <= 0 {
+		amount = intent.Amount
+	}
+	if amount <= 0 {
+		response.SuccessWithMessage(c, "Ignored Stripe payment_intent.succeeded without amount", gin.H{
+			"event_id":          event.ID,
+			"payment_intent_id": intent.ID,
+		})
+		return
+	}
+
+	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
+		Provider:        string(pgateway.GatewayStripe),
+		OrderNumber:     orderNumber,
+		TransactionID:   intent.ID,
+		PaymentMethod:   "stripe",
+		Amount:          float64(amount) / 100,
+		Currency:        string(intent.Currency),
+		GatewayResponse: string(payload),
+	}); err != nil {
+		if errors.Is(err, service.ErrOrderNotFound) {
+			apierror.RespondNotFound(c, "Order")
+			return
+		}
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "Stripe webhook processed successfully", gin.H{
+		"event_id":          event.ID,
+		"event_type":        string(event.Type),
+		"payment_intent_id": intent.ID,
+		"order_number":      orderNumber,
+	})
 }
 
-func isPaidWebhookStatus(status string) bool {
-	switch strings.ToLower(status) {
-	case "paid", "completed", "succeeded":
-		return true
-	default:
-		return false
+func stripeOrderNumber(metadata map[string]string) string {
+	for _, key := range []string{"order_number", "order_id", "order"} {
+		if value := metadata[key]; value != "" {
+			return value
+		}
 	}
+	return ""
 }
 
-func isRefundWebhookStatus(status string) bool {
-	switch strings.ToLower(status) {
-	case "refunded", "refund_completed", "refund_succeeded", "refund.succeeded":
-		return true
-	default:
-		return false
+func (h *Handler) loadGatewayConfig(gatewayType pgateway.GatewayType) (*pgateway.Config, error) {
+	if h.settingsService != nil {
+		st, err := h.settingsService.GetSetting(pgateway.SecureGatewaySettingKey(gatewayType), "global")
+		if err == nil {
+			if !pgateway.PaymentConfigMasterKeyConfigured() {
+				return nil, fmt.Errorf("%s is required to read encrypted payment config", pgateway.PaymentConfigMasterKeyEnv)
+			}
+			secureConfig, err := pgateway.DecryptSecureGatewayConfig(st.Value, pgateway.PaymentConfigMasterKey())
+			if err != nil {
+				return nil, err
+			}
+			if secureConfig.Provider != gatewayType {
+				return nil, fmt.Errorf("payment config provider mismatch")
+			}
+			return pgateway.GatewayConfigFromSecureConfig(secureConfig), nil
+		}
 	}
+	return pgateway.LoadConfigFromEnv(gatewayType), nil
 }

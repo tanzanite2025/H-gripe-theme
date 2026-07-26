@@ -30,7 +30,7 @@
           @click="handleSelect(cat)"
         >
           <span class="truncate">{{ cat.name }}</span>
-          <span v-if="typeof cat.count === 'number'" class="text-[10px] tz-text-muted">
+          <span v-if="typeof cat.count === 'number'" class="tz-micro-label tz-text-muted">
             {{ cat.count }}
           </span>
         </button>

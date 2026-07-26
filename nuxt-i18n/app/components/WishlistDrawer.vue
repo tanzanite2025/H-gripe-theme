@@ -33,7 +33,7 @@
               <div class="wa-drawer-title">
                 {{ t('wishlistDrawer.title') }}
               </div>
-              <div class="text-[11px] tz-text-muted truncate">
+              <div class="tz-caption tz-text-muted truncate">
                 {{ t('wishlistDrawer.subtitle') }}
               </div>
             </div>
@@ -195,3 +195,4 @@ const handleRemove = async (id: number) => {
 <style scoped>
 /* Scoped styles removed in favor of global .wa-drawer classes */
 </style>
+

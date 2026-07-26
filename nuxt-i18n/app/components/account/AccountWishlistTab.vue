@@ -232,7 +232,7 @@ watch(
 
 .tab-head p {
   color: rgba(103, 232, 249, 0.9);
-  font-size: 0.68rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -252,7 +252,7 @@ watch(
   background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
   padding: 0 0.85rem;
-  font-size: 0.74rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
 }
 
@@ -394,7 +394,7 @@ watch(
   background: rgba(64, 255, 170, 0.16);
   color: #ffffff;
   padding: 0 0.72rem;
-  font-size: 0.7rem;
+  font-size: var(--tz-type-micro-label);
   font-weight: 800;
 }
 
@@ -420,3 +420,4 @@ watch(
   }
 }
 </style>
+

@@ -3,9 +3,13 @@ package app
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	"tanzanite/internal/pkg/antibot"
+	"tanzanite/internal/pkg/antifraud"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/config"
+	"tanzanite/internal/pkg/email"
 	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
 	"tanzanite/internal/service"
@@ -17,6 +21,8 @@ type Dependencies struct {
 	Repositories Repositories
 	Services     Services
 	Storage      storage.StorageService
+	AntiBot      *antibot.Service
+	AntiFraud    *antifraud.Service
 }
 
 type Repositories struct {
@@ -43,6 +49,7 @@ type Repositories struct {
 	SuggestionFeedback *repository.SuggestionFeedbackRepository
 	Spoke              *repository.SpokeRepository
 	Subscription       *repository.SubscriptionRepository
+	EmailChallenge     *repository.EmailChallengeRepository
 	VisitorProfile     *repository.VisitorProfileRepository
 }
 
@@ -105,6 +112,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		SuggestionFeedback: repository.NewSuggestionFeedbackRepository(db),
 		Spoke:              repository.NewSpokeRepository(db),
 		Subscription:       repository.NewSubscriptionRepository(db),
+		EmailChallenge:     repository.NewEmailChallengeRepository(db),
 		VisitorProfile:     repository.NewVisitorProfileRepository(db),
 	}
 
@@ -116,9 +124,15 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if err != nil {
 		return nil, fmt.Errorf("initialize storage: %w", err)
 	}
+	emailSvc, err := email.NewEmailService(email.LoadConfigFromEnv())
+	if err != nil {
+		return nil, fmt.Errorf("initialize email service: %w", err)
+	}
 	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment, repos.Shipping)
 
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
+	antiBotService := antibot.New(redisCache.Client(), cfg.AntiAbuse)
+	antiFraudService := antifraud.New(redisCache.Client(), cfg.PaymentRisk)
 
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
 
@@ -154,6 +168,14 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 			repos.VisitorProfile,
 		),
 	}
+	storefrontBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL")), "/")
+	if storefrontBaseURL == "" {
+		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")
+	}
+	services.Registration.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
+	services.Registration.ConfigureEmailBaseURL(storefrontBaseURL)
+	services.Subscription.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
+	services.Subscription.ConfigureEmailBaseURL(storefrontBaseURL)
 	services.Product.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.Post.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
@@ -175,10 +197,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		shippingService,
 	)
 	services.Payment = service.NewPaymentService(txManager, repos.Payment)
+	services.Payment.ConfigureRisk(repos.Order, antiFraudService)
 
 	return &Dependencies{
 		Repositories: repos,
 		Services:     services,
 		Storage:      storageSvc,
+		AntiBot:      antiBotService,
+		AntiFraud:    antiFraudService,
 	}, nil
 }

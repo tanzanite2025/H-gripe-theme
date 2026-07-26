@@ -25,8 +25,8 @@ func (h *Handler) IncrementFAQView(c *gin.Context) {
 		return
 	}
 
-	if err := h.faqService.IncrementViewCount(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.faqService.IncrementPublicViewCount(uint(id)); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "faq not found"})
 		return
 	}
 

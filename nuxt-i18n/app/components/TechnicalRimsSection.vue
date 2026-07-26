@@ -35,15 +35,15 @@
         <div class="grid grid-cols-3 gap-2 md:gap-4 max-w-lg mx-auto mb-4">
           <div class="bg-indigo-500/10 rounded-lg p-3">
              <span class="block text-xl font-bold text-indigo-400">Toray</span>
-             <span class="text-[10px] uppercase tracking-wider tz-text-muted">Carbon Fiber</span>
+             <span class="tz-micro-label uppercase tracking-wider tz-text-muted">Carbon Fiber</span>
           </div>
           <div class="bg-indigo-500/10 rounded-lg p-3">
              <span class="block text-xl font-bold text-indigo-400">UCI</span>
-             <span class="text-[10px] uppercase tracking-wider tz-text-muted">Approved</span>
+             <span class="tz-micro-label uppercase tracking-wider tz-text-muted">Approved</span>
           </div>
           <div class="bg-indigo-500/10 rounded-lg p-3">
              <span class="block text-xl font-bold text-indigo-400">3-Year</span>
-             <span class="text-[10px] uppercase tracking-wider tz-text-muted">Warranty</span>
+             <span class="tz-micro-label uppercase tracking-wider tz-text-muted">Warranty</span>
           </div>
         </div>
       </div>
@@ -135,7 +135,7 @@
             <p class="text-xs tz-text-secondary leading-relaxed mb-4 min-h-[3rem]">
               Traditional design with bead hooks. Compatible with almost all clincher and tubeless tires. High pressure tolerance.
             </p>
-            <span class="inline-block px-3 py-1 bg-slate-800 tz-text-secondary text-[10px] uppercase font-bold rounded-full">Universal Compatibility</span>
+            <span class="inline-block px-3 py-1 bg-slate-800 tz-text-secondary tz-micro-label uppercase font-bold rounded-full">Universal Compatibility</span>
          </div>
 
          <!-- Hookless -->
@@ -145,7 +145,7 @@
               Modern straight-wall design. Lighter, stronger rim wall, and more aero transition to tire.
               <br/><span class="text-rose-400/80 mt-1 block">*Requires Tubeless-Ready Tires & Max 73psi (5 bar).</span>
             </p>
-            <span class="inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] uppercase font-bold rounded-full">Performance Choice</span>
+            <span class="inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 tz-micro-label uppercase font-bold rounded-full">Performance Choice</span>
          </div>
       </div>
     </div>
@@ -275,7 +275,7 @@
                 <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 border-l-4 border-emerald-500">
                    <div class="flex justify-between items-start mb-3">
                    <h5 class="text-lg font-bold tz-text-primary">Presta Valve</h5>
-                      <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded uppercase font-bold">Default</span>
+                  <span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded tz-micro-label uppercase font-bold">Default</span>
                    </div>
                    <ul class="space-y-2 text-sm tz-text-secondary mb-4">
                       <li>• Hole Diameter: ~6.5mm</li>
@@ -291,7 +291,7 @@
                 <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 opacity-75 grayscale hover:grayscale-0 transition-all duration-300 border-l-4 border-slate-600">
                    <div class="flex justify-between items-start mb-3">
                       <h5 class="text-lg font-bold tz-text-primary">Schrader Valve</h5>
-                      <span class="text-[10px] bg-slate-700 tz-text-muted px-2 py-1 rounded uppercase font-bold">Rare</span>
+                      <span class="bg-slate-700 tz-text-muted px-2 py-1 rounded tz-micro-label uppercase font-bold">Rare</span>
                    </div>
                    <ul class="space-y-2 text-sm tz-text-secondary">
                       <li>• Hole Diameter: ~8.5mm</li>

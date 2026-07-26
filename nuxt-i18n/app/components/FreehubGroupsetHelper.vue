@@ -71,7 +71,7 @@
         </p>
         <p
           v-if="activeOption.notes"
-          class="mt-0.5 text-[11px] tz-text-muted"
+          class="mt-0.5 tz-caption tz-text-muted"
         >
           {{ activeOption.notes }}
         </p>
@@ -210,3 +210,4 @@ const activeOption = computed(() => {
   return FREEHUB_OPTIONS.find((option) => option.id === selectedGroupsetId.value) ?? null
 })
 </script>
+

@@ -11,6 +11,14 @@ type CreateOrderRequest struct {
 	ShippingMethod  string             `json:"shipping_method" binding:"required"`
 	CouponCode      string             `json:"coupon_code"`
 	PointsToUse     int                `json:"points_to_use"`
+	ClientRisk      *ClientRiskRequest `json:"client_risk,omitempty"`
+}
+
+type ClientRiskRequest struct {
+	IPCountry      string `json:"ip_country,omitempty"`
+	BillingCountry string `json:"billing_country,omitempty"`
+	VPNDetected    bool   `json:"vpn_detected,omitempty"`
+	Timezone       string `json:"timezone,omitempty"`
 }
 
 type OrderItemRequest struct {

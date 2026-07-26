@@ -65,6 +65,12 @@ Status:
 GET /api/v1/subscriptions/status/:email
 ```
 
+## Security Status
+
+The public subscription flows now use pending state plus signed, expiring, single-use email challenges. Direct email-only unsubscribe, resubscribe, and status requests do not mutate or disclose subscription state.
+
+Production still requires `SMTP_*` configuration, `STOREFRONT_BASE_URL`, and an end-to-end test proving confirmation/action links are delivered and consumed by the intended client flow. The release gate is tracked in `SECURITY_FOLLOW_UPS.md`.
+
 ## Admin Endpoints
 
 Admin endpoints require an authenticated admin session under `/api/admin`.

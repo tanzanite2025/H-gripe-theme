@@ -199,6 +199,8 @@ export default defineNuxtConfig({
       siteTitle: env.NUXT_SITE_TITLE || '',
       siteUrl: env.NUXT_SITE_URL || '',
       googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '',
+      requestSigningKey: env.NUXT_PUBLIC_REQUEST_SIGNING_KEY || '',
+      turnstileSiteKey: env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '',
       socialLinks: env.NUXT_SOCIAL_LINKS
         ? JSON.parse(env.NUXT_SOCIAL_LINKS)
         : []

@@ -81,7 +81,7 @@ func (h *Handler) GetReview(c *gin.Context) {
 		return
 	}
 
-	r, err := h.reviewService.GetReview(uint(id))
+	r, err := h.reviewService.GetPublicReview(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

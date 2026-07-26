@@ -38,6 +38,10 @@ func (s *FeedbackService) List(threadKey, status, search string, page, pageSize 
 	return s.feedbackRepo.List(threadKey, status, strings.TrimSpace(search), page, pageSize)
 }
 
+func (s *FeedbackService) ListPublic(threadKey, search string, page, pageSize int) ([]feedback.Feedback, int64, error) {
+	return s.List(threadKey, "approved", search, page, pageSize)
+}
+
 func (s *FeedbackService) Create(item *feedback.Feedback) error {
 	item.ThreadKey = strings.TrimSpace(item.ThreadKey)
 	item.Content = strings.TrimSpace(item.Content)
