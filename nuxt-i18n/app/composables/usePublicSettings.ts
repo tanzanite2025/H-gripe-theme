@@ -13,7 +13,9 @@ export interface ApiSocialLink extends RuntimeSocialLink {
 
 export interface SiteSettingsResponse {
   siteTitle?: string
+  brandTitle?: string
   siteDescription?: string
+  siteUrl?: string
   siteLogo?: string
   contactEmail?: string
   contactPhone?: string
@@ -80,12 +82,14 @@ export const normalizeRuntimeSocialLinks = (value: unknown): ApiSocialLink[] => 
 }
 
 const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => ({
-  siteTitle: asString(raw.siteTitle || raw.site_name),
-  siteDescription: asString(raw.siteDescription || raw.site_description),
-  siteLogo: asString(raw.siteLogo || raw.site_logo),
-  contactEmail: asString(raw.contactEmail || raw.contact_email),
-  contactPhone: asString(raw.contactPhone || raw.contact_phone),
-  socialLinks: normalizeRuntimeSocialLinks(raw.socialLinks || raw.social_links)
+  siteTitle: asString(raw.siteTitle ?? raw.site_name),
+  brandTitle: asString(raw.brandTitle ?? raw.brand_title),
+  siteDescription: asString(raw.siteDescription ?? raw.site_description),
+  siteUrl: asString(raw.siteUrl ?? raw.site_url),
+  siteLogo: asString(raw.siteLogo ?? raw.site_logo),
+  contactEmail: asString(raw.contactEmail ?? raw.contact_email),
+  contactPhone: asString(raw.contactPhone ?? raw.contact_phone),
+  socialLinks: normalizeRuntimeSocialLinks(raw.socialLinks ?? raw.social_links)
 })
 
 const normalizeQuickBuySettings = (raw: RawSettings): QuickBuyConfigProp => ({

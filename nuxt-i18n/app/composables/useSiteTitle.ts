@@ -1,10 +1,7 @@
 import { ref, computed, onMounted } from 'vue'
-import { useRuntimeConfig } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 
 export function useSiteTitle() {
-  const config = useRuntimeConfig()
-
   const previewSiteTitle = ref('')
 
   if (import.meta.client) {
@@ -29,10 +26,12 @@ export function useSiteTitle() {
     const fromPreview = previewSiteTitle.value.trim()
     if (fromPreview) return fromPreview
     const fromApi = (siteSettings.value.siteTitle || '').toString().trim()
-    if (fromApi) return fromApi
-    const fromEnv = ((config.public as { siteTitle?: string }).siteTitle || '').trim()
-    return fromEnv || 'Tanzanite'
+    return fromApi
   })
 
-  return { siteTitle }
+  const brandTitle = computed(() => {
+    return (siteSettings.value.brandTitle ?? '').toString().trim()
+  })
+
+  return { siteTitle, brandTitle }
 }

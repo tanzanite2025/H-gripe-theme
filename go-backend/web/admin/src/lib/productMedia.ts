@@ -9,7 +9,11 @@ export const getPublicSiteOrigin = () => {
     }
   }
 
-  return 'https://tanzanite.site'
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin.replace(/\/+$/, '')
+  }
+
+  return ''
 }
 
 export const resolveProductMediaUrl = (url: unknown) => {
@@ -19,7 +23,7 @@ export const resolveProductMediaUrl = (url: unknown) => {
 
   const origin = getPublicSiteOrigin()
   const path = value.startsWith('/') ? value : `/${value}`
-  return `${origin}${path}`
+  return origin ? `${origin}${path}` : path
 }
 
 export const getProductThumbnail = (product: any) => {

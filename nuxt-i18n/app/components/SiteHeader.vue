@@ -398,13 +398,9 @@ import {
   type PageSubNavigationTab,
 } from '~/utils/pageSubNavigation'
 
-// Site Title
-const props = defineProps<{ title?: string }>()
-const { siteTitle } = useSiteTitle()
-const titleText = computed(() => {
-  const fromProp = (props.title ?? '').toString().trim()
-  return fromProp.length ? fromProp : siteTitle.value
-})
+// Header brand title is controlled only by the public site settings API.
+const { brandTitle } = useSiteTitle()
+const titleText = computed(() => brandTitle.value)
 
 const headerRootRef = ref<HTMLElement | null>(null)
 let headerResizeObserver: ResizeObserver | null = null

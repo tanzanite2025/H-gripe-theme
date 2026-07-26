@@ -1,20 +1,20 @@
 <template>
   <div class="grid min-h-screen min-h-dvh grid-rows-[auto_1fr_auto] bg-muted/45">
-    <header class="flex h-16 items-center justify-between border-b border-dashed border-border/70 bg-card px-4 sm:px-8">
-      <div class="flex items-center gap-2.5">
-        <span class="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-black text-primary-foreground shadow-xs">
-          T
+    <header v-if="brandName || brandInitial || panelLabel" class="flex h-16 items-center justify-between border-b border-dashed border-border/70 bg-card px-4 sm:px-8">
+      <div v-if="brandName || brandInitial" class="flex items-center gap-2.5">
+        <span v-if="brandInitial" class="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-black text-primary-foreground shadow-xs">
+          {{ brandInitial }}
         </span>
-        <strong class="text-sm font-black italic tracking-tighter uppercase">Tanzanite</strong>
+        <strong v-if="brandName" class="text-sm font-black italic tracking-tighter uppercase">{{ brandName }}</strong>
       </div>
-      <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">CONTROL PANEL</span>
+      <span v-if="panelLabel" class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ panelLabel }}</span>
     </header>
 
     <main class="flex items-start justify-center px-3 py-9 sm:items-center sm:px-5 sm:py-12">
       <Card class="w-full max-w-[420px] rounded-[32px] border-dashed border-border/80 shadow-xl">
         <CardHeader class="space-y-1 text-center">
           <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">AUTHENTICATION / 账户认证</span>
-          <CardTitle class="text-lg font-black tracking-tighter italic uppercase text-foreground">登录 Tanzanite</CardTitle>
+          <CardTitle v-if="loginTitle" class="text-lg font-black tracking-tighter italic uppercase text-foreground">{{ loginTitle }}</CardTitle>
           <CardDescription class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">请输入管理员账号和密码进入控制面板</CardDescription>
         </CardHeader>
 
@@ -79,12 +79,12 @@
       </Card>
     </main>
 
-    <footer class="pb-5 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Tanzanite Operations System</footer>
+    <footer v-if="footerText" class="pb-5 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">{{ footerText }}</footer>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
@@ -95,6 +95,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { useAdminBranding } from '@/composables/useAdminBranding'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -103,6 +104,23 @@ const authStore = useAuthStore()
 
 const loading = ref(false)
 const showPassword = ref(false)
+const {
+  brandName,
+  brandInitial,
+  panelLabel,
+  loginTitle,
+  footerText,
+  loadAdminBranding,
+  setAdminDocumentTitle
+} = useAdminBranding()
+
+onMounted(() => {
+  loadAdminBranding()
+})
+
+watchEffect(() => {
+  setAdminDocumentTitle(loginTitle.value)
+})
 
 const formSchema = toTypedSchema(
   z.object({

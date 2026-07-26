@@ -13,7 +13,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: [
-          'TanzaniteSystem',
+          'StorefrontSystem',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',

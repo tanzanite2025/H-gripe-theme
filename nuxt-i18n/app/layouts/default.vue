@@ -36,15 +36,14 @@ const authUser = computed<Record<string, unknown> | null>(() => (auth.user.value
 
 const { siteSettings: resolvedSettings } = useSiteSettings()
 
-// Use a single source of truth for site title (Customizer preview -> API -> runtime config)
+// Use a single source of truth for site title (Customizer preview -> API)
 const { siteTitle } = useSiteTitle()
 
 const siteUrl = computed(() => {
+  const fromSettings = (resolvedSettings.value.siteUrl || '').toString().trim()
+  if (fromSettings.length) return fromSettings.replace(/\/$/, '')
   const value = (config.public as { siteUrl?: string }).siteUrl
-  if (value && value.trim().length) {
-    return value.replace(/\/$/, '')
-  }
-  return 'https://example.com'
+  return value && value.trim().length ? value.replace(/\/$/, '') : ''
 })
 
 const defaultDescription = computed(() => {
@@ -53,9 +52,7 @@ const defaultDescription = computed(() => {
     return fromSettings
   }
   const value = (config.public as { siteDescription?: string }).siteDescription
-  return value && value.trim().length
-    ? value.trim()
-    : 'Discover Tanzanite products, stories, and personalized services powered by our Nuxt frontend.'
+  return value && value.trim().length ? value.trim() : ''
 })
 
 const siteLogo = computed(() => {
@@ -216,6 +213,7 @@ const resolvedLocales = computed<LocaleEntry[]>(() =>
 )
 
 const makeAbsoluteUrl = (path: string) => {
+  if (!siteUrl.value) return path
   try {
     return new URL(path, siteUrl.value + '/').toString()
   } catch (error) {
@@ -272,7 +270,11 @@ const xDefaultLink = computed(() => {
 })
 
 useHead(() => ({
-  titleTemplate: (chunk?: string) => (chunk ? `${chunk} · ${siteTitle.value}` : siteTitle.value),
+  titleTemplate: (chunk?: string) => {
+    const title = siteTitle.value
+    if (chunk && title) return `${chunk} · ${title}`
+    return chunk || title
+  },
   link: [
     { rel: 'canonical', href: canonicalUrl.value },
     ...alternateLinks.value.map((link) => ({

@@ -19,7 +19,7 @@ func NewHandler(settingService *service.SettingService) *Handler {
 }
 
 func (h *Handler) GetSiteSettings(c *gin.Context) {
-	locale := middleware.GetLocale(c)
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
 	settings, err := h.settingService.GetSiteSettings(locale)
 	if err != nil {
@@ -31,7 +31,7 @@ func (h *Handler) GetSiteSettings(c *gin.Context) {
 }
 
 func (h *Handler) GetQuickBuySettings(c *gin.Context) {
-	locale := middleware.GetLocale(c)
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
 	settings, err := h.settingService.GetQuickBuySettings(locale)
 	if err != nil {
@@ -101,7 +101,7 @@ func (h *Handler) GetGroups(c *gin.Context) {
 }
 
 func (h *Handler) GetSEOSettings(c *gin.Context) {
-	locale := middleware.GetLocale(c)
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
 	settings, err := h.settingService.GetSEOSettings(locale)
 	if err != nil {
@@ -113,7 +113,7 @@ func (h *Handler) GetSEOSettings(c *gin.Context) {
 }
 
 func (h *Handler) GetSocialSettings(c *gin.Context) {
-	locale := middleware.GetLocale(c)
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
 	settings, err := h.settingService.GetSocialSettings(locale)
 	if err != nil {
