@@ -146,6 +146,7 @@ jobs:
             zricethezav/gitleaks:v8.24.2 \
             git \
             /repo \
+            --config=/repo/.gitleaks.toml \
             --log-opts="--all --tags" \
             --redact \
             --report-format sarif \
