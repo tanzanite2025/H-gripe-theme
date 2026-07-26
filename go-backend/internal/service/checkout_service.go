@@ -81,7 +81,7 @@ func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error
 func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos repository.TxRepositories) (*CheckoutQuote, error) {
 	shippingService := s.shippingService
 	if repos.Shipping != nil {
-		shippingService = NewShippingService(repos.Shipping)
+		shippingService = NewShippingService(repos.Shipping, repos.Product)
 	}
 	return s.quote(input, checkoutRepositories{
 		productRepo:     repos.Product,
@@ -136,13 +136,18 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if variant.Weight <= 0 {
 			return nil, fmt.Errorf("shipping weight is missing for SKU %s", variant.SKU)
 		}
+		shippingTemplateID, err := resolveProductShippingTemplateID(product, variant)
+		if err != nil {
+			return nil, err
+		}
 		shippingItems = append(shippingItems, ShippingQuoteItemInput{
-			ProductID:     product.ID,
-			VariantID:     variantID,
-			ProductTypeID: product.ProductTypeID,
-			Quantity:      item.Quantity,
-			UnitPrice:     price,
-			WeightGrams:   variant.Weight,
+			ProductID:          product.ID,
+			VariantID:          variantID,
+			ProductTypeID:      product.ProductTypeID,
+			ShippingTemplateID: uintPtr(shippingTemplateID),
+			Quantity:           item.Quantity,
+			UnitPrice:          price,
+			WeightGrams:        variant.Weight,
 		})
 	}
 

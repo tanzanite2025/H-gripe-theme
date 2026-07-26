@@ -11,17 +11,18 @@ import (
 )
 
 type ProductVariantInput struct {
-	ID           *uint
-	SKU          string
-	Title        string
-	OptionValues map[string]string
-	Price        float64
-	SalePrice    *float64
-	Stock        int
-	Weight       int
-	IsDefault    bool
-	IsActive     *bool
-	SortOrder    int
+	ID                 *uint
+	ShippingTemplateID *uint
+	SKU                string
+	Title              string
+	OptionValues       map[string]string
+	Price              float64
+	SalePrice          *float64
+	Stock              int
+	Weight             int
+	IsDefault          bool
+	IsActive           *bool
+	SortOrder          int
 }
 
 func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]string) ([]product.ProductSpecValue, error) {
@@ -140,16 +141,17 @@ func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVari
 		}
 
 		variant := product.ProductVariant{
-			SKU:          input.SKU,
-			Title:        strings.TrimSpace(input.Title),
-			OptionValues: optionJSON,
-			Price:        input.Price,
-			SalePrice:    input.SalePrice,
-			Stock:        input.Stock,
-			Weight:       input.Weight,
-			IsDefault:    input.IsDefault,
-			IsActive:     isActive,
-			SortOrder:    input.SortOrder,
+			ShippingTemplateID: input.ShippingTemplateID,
+			SKU:                input.SKU,
+			Title:              strings.TrimSpace(input.Title),
+			OptionValues:       optionJSON,
+			Price:              input.Price,
+			SalePrice:          input.SalePrice,
+			Stock:              input.Stock,
+			Weight:             input.Weight,
+			IsDefault:          input.IsDefault,
+			IsActive:           isActive,
+			SortOrder:          input.SortOrder,
 		}
 		if input.ID != nil {
 			variant.ID = *input.ID

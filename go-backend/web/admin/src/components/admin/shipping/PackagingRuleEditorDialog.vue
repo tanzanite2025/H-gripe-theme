@@ -5,7 +5,7 @@
         <DialogHeader>
           <DialogTitle>{{ mode === 'create' ? '新增包装规则' : '编辑包装规则' }}</DialogTitle>
           <DialogDescription>
-            设置包装箱重量、尺寸和最大承重。产品/SKU 绑定会在后续独立面板里做，避免这个弹窗变得臃肿。
+            设置包装箱重量、尺寸和最大承重，供下单和报价时匹配包装方案。
           </DialogDescription>
         </DialogHeader>
 

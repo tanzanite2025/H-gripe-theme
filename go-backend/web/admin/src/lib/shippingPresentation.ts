@@ -1,27 +1,3 @@
-export const bindingScopeLabel = (scope: string) => {
-  const labels: Record<string, string> = {
-    default: '默认',
-    product_type: '产品类型',
-    product: '产品',
-    variant: 'SKU / 变体',
-  }
-  return labels[scope] || scope || '-'
-}
-
-export const bindingTargetLabel = (binding: any) => {
-  if (binding.scope === 'default') return '全局默认'
-  if (binding.scope === 'product_type') return `product_type_id=${binding.product_type_id || '-'}`
-  if (binding.scope === 'product') return `product_id=${binding.product_id || '-'}`
-  if (binding.scope === 'variant') return `variant_id=${binding.variant_id || '-'}`
-  return '-'
-}
-
-export const bindingTemplateName = (binding: any, templates: any[] = []) => {
-  if (binding.template?.name) return binding.template.name
-  const template = templates.find((item) => Number(item.id) === Number(binding.template_id))
-  return template?.name || '未知模板'
-}
-
 export const templateTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
     weight: '按重量',

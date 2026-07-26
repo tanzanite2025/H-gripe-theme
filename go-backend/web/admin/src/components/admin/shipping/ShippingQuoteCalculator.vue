@@ -90,7 +90,7 @@
         <div>
           <h2 class="text-sm font-black tracking-tighter italic uppercase">报价结果</h2>
           <p class="mt-1 text-xs text-muted-foreground">
-            明细会显示命中的模板、线路候选、SKU 实重、包装重量、计费重量和分摊运费，方便排查绑定和规则矩阵。
+            明细会显示商品/SKU 设置的模板、线路候选、SKU 实重、包装重量、计费重量和分摊运费，方便排查规则矩阵。
           </p>
         </div>
         <Badge v-if="quote" variant="outline" :class="quote.free_shipping ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'">
@@ -128,14 +128,14 @@
             <div>
               <h3 class="text-xs font-black uppercase tracking-wider">可选线路</h3>
               <p class="mt-1 text-[10px] text-muted-foreground">
-                只展示已启用、国家/币种匹配、且绑定当前模板的线路；体积重线路必须有包装尺寸才会进入候选。
+                只展示已启用、国家/币种匹配、且使用当前模板的线路；体积重线路必须有包装尺寸才会进入候选。
               </p>
             </div>
             <Badge variant="outline" class="w-fit">{{ quote.options?.length || 0 }} OPTIONS</Badge>
           </div>
 
           <div v-if="!quote.options?.length" class="mt-3 rounded-lg border border-dashed p-4 text-xs text-muted-foreground">
-            当前没有可用线路服务，系统仍返回模板基础报价。请检查：线路是否启用、是否绑定同一个运费模板、国家/币种是否匹配、体积重线路是否已配置包装尺寸。
+            当前没有可用线路服务，系统仍返回模板基础报价。请检查：线路是否启用、是否使用商品/SKU 设置的运费模板、国家/币种是否匹配、体积重线路是否已配置包装尺寸。
           </div>
 
           <AdminTablePanel v-else :loading="false" class="mt-3">

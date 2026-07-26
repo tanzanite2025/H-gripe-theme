@@ -43,31 +43,6 @@ export const shippingApi = {
     return unwrapPayload(response)
   },
 
-  async listTemplateBindings() {
-    const response = await axios.get('/api/admin/shipping/template-bindings')
-    return unwrapList(response, 'template_bindings')
-  },
-
-  async getTemplateBinding(id) {
-    const response = await axios.get(`/api/admin/shipping/template-bindings/${id}`)
-    return unwrapPayload(response)
-  },
-
-  async createTemplateBinding(payload) {
-    const response = await axios.post('/api/admin/shipping/template-bindings', payload)
-    return unwrapPayload(response)
-  },
-
-  async updateTemplateBinding(id, payload) {
-    const response = await axios.put(`/api/admin/shipping/template-bindings/${id}`, payload)
-    return unwrapPayload(response)
-  },
-
-  async deleteTemplateBinding(id) {
-    const response = await axios.delete(`/api/admin/shipping/template-bindings/${id}`)
-    return unwrapPayload(response)
-  },
-
   async listZones() {
     const response = await axios.get('/api/admin/shipping/zones')
     return unwrapList(response, 'zones')

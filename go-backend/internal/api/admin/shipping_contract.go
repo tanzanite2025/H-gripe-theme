@@ -34,16 +34,6 @@ type shippingZoneRequest struct {
 	Enabled     *bool  `json:"enabled"`
 }
 
-type shippingTemplateBindingRequest struct {
-	TemplateID    uint   `json:"template_id" binding:"required"`
-	Scope         string `json:"scope" binding:"required"`
-	ProductTypeID *uint  `json:"product_type_id"`
-	ProductID     *uint  `json:"product_id"`
-	VariantID     *uint  `json:"variant_id"`
-	Priority      int    `json:"priority"`
-	Enabled       *bool  `json:"enabled"`
-}
-
 type shippingCarrierServiceRequest struct {
 	CarrierID             uint    `json:"carrier_id" binding:"required"`
 	TemplateID            *uint   `json:"template_id"`
@@ -283,22 +273,5 @@ func (r shippingZoneRequest) toDomain() shippingdomain.ShippingZone {
 		States:      strings.TrimSpace(r.States),
 		PostalCodes: strings.TrimSpace(r.PostalCodes),
 		Enabled:     enabled,
-	}
-}
-
-func (r shippingTemplateBindingRequest) toDomain() shippingdomain.ShippingTemplateBinding {
-	enabled := true
-	if r.Enabled != nil {
-		enabled = *r.Enabled
-	}
-
-	return shippingdomain.ShippingTemplateBinding{
-		TemplateID:    r.TemplateID,
-		Scope:         strings.ToLower(strings.TrimSpace(r.Scope)),
-		ProductTypeID: r.ProductTypeID,
-		ProductID:     r.ProductID,
-		VariantID:     r.VariantID,
-		Priority:      r.Priority,
-		Enabled:       enabled,
 	}
 }

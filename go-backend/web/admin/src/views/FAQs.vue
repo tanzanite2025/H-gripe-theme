@@ -9,22 +9,6 @@
       </template>
     </AdminPageHeader>
 
-    <FAQStructurePanel
-      :structure-locales="structureLocales"
-      :active-structure-locale="activeStructureLocale"
-      :loading="structureLoading"
-      :faq-structure="faqStructure"
-      :has-permission="hasPermission"
-      :domain-name="domainName"
-      :visibility-name="visibilityName"
-      :visibility-tone="visibilityTone"
-      @switch-locale="switchStructureLocale"
-      @edit-page="showPageDialog"
-      @create-category="openCreateCategoryDialog"
-      @edit-category="openEditCategoryDialog"
-      @delete-category="requestDeleteCategory"
-    />
-
     <FAQFilterPanel
       :filters="filters"
       :page-filter-options="pageFilterOptions"
@@ -57,6 +41,22 @@
       @batch-delete="requestBatchDelete"
       @update-page="updatePage"
       @update-page-size="updatePageSize"
+    />
+
+    <FAQStructurePanel
+      :structure-locales="structureLocales"
+      :active-structure-locale="activeStructureLocale"
+      :loading="structureLoading"
+      :faq-structure="faqStructure"
+      :has-permission="hasPermission"
+      :domain-name="domainName"
+      :visibility-name="visibilityName"
+      :visibility-tone="visibilityTone"
+      @switch-locale="switchStructureLocale"
+      @edit-page="showPageDialog"
+      @create-category="openCreateCategoryDialog"
+      @edit-category="openEditCategoryDialog"
+      @delete-category="requestDeleteCategory"
     />
 
     <FAQEditorDialog

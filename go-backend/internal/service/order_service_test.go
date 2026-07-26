@@ -447,7 +447,6 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&shippingdomain.ShippingRule{},
 		&shippingdomain.PackagingRule{},
 		&shippingdomain.PackagingRuleApply{},
-		&shippingdomain.ShippingTemplateBinding{},
 	))
 
 	orderRepo := repository.NewOrderRepository(db)
@@ -485,15 +484,25 @@ func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Pr
 func seedProductShell(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {
 	t.Helper()
 
+	shippingTemplateID := seedOrderTestShippingTemplateID(t, db)
 	record := product.Product{
-		SKU:   "SKU-TEST",
-		Name:  "Test Product",
-		Slug:  "test-product",
-		Price: price,
-		Stock: stock,
+		ShippingTemplateID: shippingTemplateID,
+		SKU:                "SKU-TEST",
+		Name:               "Test Product",
+		Slug:               "test-product",
+		Price:              price,
+		Stock:              stock,
 	}
 	require.NoError(t, db.Create(&record).Error)
 	return record
+}
+
+func seedOrderTestShippingTemplateID(t *testing.T, db *gorm.DB) *uint {
+	t.Helper()
+
+	var template shippingdomain.ShippingTemplate
+	require.NoError(t, db.First(&template).Error)
+	return &template.ID
 }
 
 func seedDefaultShippingTemplate(t *testing.T, db *gorm.DB) {
@@ -516,11 +525,6 @@ func seedDefaultShippingTemplate(t *testing.T, db *gorm.DB) {
 		},
 	}
 	require.NoError(t, db.Create(&template).Error)
-	require.NoError(t, db.Create(&shippingdomain.ShippingTemplateBinding{
-		TemplateID: template.ID,
-		Scope:      "default",
-		Enabled:    true,
-	}).Error)
 }
 
 func seedUserLoyalty(t *testing.T, db *gorm.DB, userID uint, points int) {

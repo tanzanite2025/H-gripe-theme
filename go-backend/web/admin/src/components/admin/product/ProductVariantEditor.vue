@@ -4,7 +4,7 @@
       <Info class="size-4" />
       <AlertTitle>价格与库存按 SKU 维护</AlertTitle>
       <AlertDescription>
-        每个 SKU 都可以单独维护重量、价格和库存，前台会按当前选中的 SKU 显示对应重量。
+        每个 SKU 都可以单独维护重量、价格、运费模板和库存，前台会按当前选中的 SKU 显示对应重量。
       </AlertDescription>
     </Alert>
 
@@ -14,14 +14,14 @@
     >
       <div class="mb-3 rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
         <span v-if="specDefinitions.length">
-          SKU 选项列来自已绑定产品模板；每一行仍单独维护价格、重量和库存。
+          SKU 选项列来自已绑定产品模板；每一行仍单独维护价格、重量、运费模板和库存。
         </span>
         <span v-else>
-          当前没有模板 SKU 选项字段；先维护默认 SKU、价格、重量和库存即可。
+          当前没有模板 SKU 选项字段；先维护默认 SKU、价格、重量、运费模板和库存即可。
         </span>
       </div>
 
-      <Table class="min-w-[980px]">
+      <Table class="min-w-[1160px]">
         <TableHeader>
           <TableRow>
             <TableHead class="w-16 text-center">默认</TableHead>
@@ -32,6 +32,7 @@
             <TableHead class="w-32">价格</TableHead>
             <TableHead class="w-32">促销价</TableHead>
             <TableHead class="w-28">重量（克）</TableHead>
+            <TableHead class="w-44">运费模板</TableHead>
             <TableHead class="w-24">库存</TableHead>
             <TableHead class="w-20 text-center">启用</TableHead>
             <TableHead class="w-16 text-right">操作</TableHead>
@@ -80,6 +81,22 @@
             </TableCell>
             <TableCell>
               <Input v-model.number="variant.weight_grams" type="number" min="0" step="1" placeholder="克" />
+            </TableCell>
+            <TableCell>
+              <Select
+                :model-value="shippingTemplateSelectValue(variant.shipping_template_id)"
+                @update:model-value="setShippingTemplateValue(variant, $event)"
+              >
+                <SelectTrigger class="w-full">
+                  <SelectValue placeholder="继承商品" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__inherit__">继承商品</SelectItem>
+                  <SelectItem v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
+                    {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </TableCell>
             <TableCell>
               <Input v-model.number="variant.stock" type="number" min="0" step="1" />
@@ -140,6 +157,10 @@ defineProps({
   defaultIndex: {
     type: Number,
     default: 0
+  },
+  shippingTemplates: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -158,8 +179,13 @@ const specOptions = (spec) => {
 const specLabel = (spec) => spec.unit ? `${spec.name} (${spec.unit})` : spec.name
 const formatOption = (option) => String(option).replace(/_/g, ' ')
 const selectValue = (value) => value === undefined || value === null || value === '' ? '__empty__' : String(value)
+const shippingTemplateSelectValue = (value) => value === undefined || value === null || value === '' ? '__inherit__' : String(value)
 
 const setSelectValue = (variant, slug, value) => {
   variant.option_values[slug] = value === '__empty__' ? '' : value
+}
+
+const setShippingTemplateValue = (variant, value) => {
+  variant.shipping_template_id = value === '__inherit__' ? null : Number(value)
 }
 </script>

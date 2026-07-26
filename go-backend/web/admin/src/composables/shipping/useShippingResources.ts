@@ -4,7 +4,6 @@ import shippingApi from '@/api/shipping'
 export const useShippingResources = () => {
   const templates = ref<any[]>([])
   const zones = ref<any[]>([])
-  const templateBindings = ref<any[]>([])
   const carriers = ref<any[]>([])
   const carrierServices = ref<any[]>([])
   const trackingProviders = ref<any[]>([])
@@ -15,7 +14,6 @@ export const useShippingResources = () => {
   const loading = reactive({
     templates: false,
     zones: false,
-    bindings: false,
     carriers: false,
     services: false,
     tracking: false,
@@ -46,17 +44,6 @@ export const useShippingResources = () => {
       console.error('Failed to fetch shipping zones:', error)
     } finally {
       loading.zones = false
-    }
-  }
-
-  const fetchTemplateBindings = async () => {
-    loading.bindings = true
-    try {
-      templateBindings.value = await shippingApi.listTemplateBindings()
-    } catch (error) {
-      console.error('Failed to fetch shipping template bindings:', error)
-    } finally {
-      loading.bindings = false
     }
   }
 
@@ -122,8 +109,6 @@ export const useShippingResources = () => {
         await fetchTemplates()
       } else if (activeTab === 'zones') {
         await fetchZones()
-      } else if (activeTab === 'bindings') {
-        await Promise.all([fetchTemplateBindings(), fetchTemplates()])
       } else if (activeTab === 'carriers') {
         await fetchCarriers()
       } else if (activeTab === 'services') {
@@ -143,7 +128,6 @@ export const useShippingResources = () => {
         await Promise.all([
           fetchTemplates(),
           fetchZones(),
-          fetchTemplateBindings(),
           fetchCarriers(),
           fetchCarrierServices(),
           fetchTrackingProviders(),
@@ -159,7 +143,6 @@ export const useShippingResources = () => {
   const fetchAllShippingResources = () => Promise.all([
     fetchTemplates(),
     fetchZones(),
-    fetchTemplateBindings(),
     fetchCarriers(),
     fetchCarrierServices(),
     fetchTrackingProviders(),
@@ -170,7 +153,6 @@ export const useShippingResources = () => {
   return {
     templates,
     zones,
-    templateBindings,
     carriers,
     carrierServices,
     trackingProviders,
@@ -182,7 +164,6 @@ export const useShippingResources = () => {
     handleTrackingShipmentsCountChange,
     fetchTemplates,
     fetchZones,
-    fetchTemplateBindings,
     fetchCarriers,
     fetchCarrierServices,
     fetchTrackingProviders,

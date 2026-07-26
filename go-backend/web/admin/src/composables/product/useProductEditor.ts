@@ -17,6 +17,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const productForm = reactive<Record<string, any>>({
     id: null,
     product_type_id: null,
+    shipping_template_id: null,
     name: '',
     slug: '',
     description: '',
@@ -54,6 +55,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     return index >= 0 ? index : 0
   })
   const productTypeSelectValue = computed(() => productForm.product_type_id == null ? '__none__' : String(productForm.product_type_id))
+  const shippingTemplateSelectValue = computed(() => productForm.shipping_template_id == null ? '__none__' : String(productForm.shipping_template_id))
   const hasMeaningfulTemplateValue = (value: any) => {
     if (value === undefined || value === null || value === '') return false
     if (value === false) return false
@@ -81,6 +83,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const setSpecSelectValue = (slug: string, value: string) => {
     productForm.specs[slug] = value === '__empty__' ? '' : value
     clearFieldError(`spec:${slug}`)
+  }
+  const setProductShippingTemplate = (value: string) => {
+    productForm.shipping_template_id = value === '__none__' ? null : Number(value)
+    clearFieldError('shipping_template_id')
   }
 
   const coerceSpecValueForForm = (definition: any, value: any) => {
@@ -114,6 +120,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const createEmptyVariant = (overrides: Record<string, any> = {}) => ({
     id: null,
+    shipping_template_id: null,
     sku: '',
     title: '',
     option_values: {},
@@ -130,6 +137,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const buildVariantFormValues = (product: any) => {
     const variants = (product.variants || []).map((variant: any, index: number) => createEmptyVariant({
       id: variant.id || null,
+      shipping_template_id: variant.shipping_template_id ?? null,
       sku: variant.sku || '',
       title: variant.title || '',
       option_values: parseVariantOptions(variant),
@@ -176,6 +184,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       })
       return {
         id: variant.id || undefined,
+        shipping_template_id: variant.shipping_template_id == null || variant.shipping_template_id === '' ? null : Number(variant.shipping_template_id),
         sku: String(variant.sku || '').trim(),
         title: String(variant.title || '').trim(),
         option_values: optionValues,
@@ -193,6 +202,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const buildProductPayload = () => ({
     id: productForm.id,
     product_type_id: productForm.product_type_id,
+    shipping_template_id: productForm.shipping_template_id,
     name: productForm.name.trim(),
     slug: productForm.slug.trim(),
     description: productForm.description,
@@ -253,6 +263,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     Object.assign(productForm, {
       id: null,
       product_type_id: null,
+      shipping_template_id: null,
       name: '',
       slug: '',
       description: '',
@@ -299,6 +310,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     Object.assign(productForm, {
       id: detail.id,
       product_type_id: detail.product_type_id || detail.product_type?.id || null,
+      shipping_template_id: detail.shipping_template_id ?? null,
       name: detail.name || '',
       slug: detail.slug || '',
       description: detail.description || '',
@@ -351,12 +363,14 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     variantSpecDefinitions,
     defaultVariantIndex,
     productTypeSelectValue,
+    shippingTemplateSelectValue,
     templateScopedValuesTouched,
     parseSpecOptions,
     formatSpecOption,
     getSpecLabel,
     specSelectValue,
     setSpecSelectValue,
+    setProductShippingTemplate,
     clearFieldError,
     addMediaUrl,
     mediaTypeLabel,

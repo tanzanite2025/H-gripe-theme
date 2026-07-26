@@ -21,18 +21,6 @@
     @clear-error="emit('clear-zone-error', $event)"
   />
 
-  <ShippingTemplateBindingEditorDialog
-    :open="bindingOpen"
-    :mode="bindingMode"
-    :form="bindingForm"
-    :errors="bindingErrors"
-    :templates="templates"
-    :submitting="bindingSubmitting"
-    @update:open="emit('update:bindingOpen', $event)"
-    @submit="emit('save-binding')"
-    @clear-error="emit('clear-binding-error', $event)"
-  />
-
   <CarrierEditorDialog
     :open="carrierOpen"
     :mode="carrierMode"
@@ -118,7 +106,6 @@ import CarrierEditorDialog from '@/components/admin/shipping/CarrierEditorDialog
 import CarrierServiceEditorDialog from '@/components/admin/shipping/CarrierServiceEditorDialog.vue'
 import PackagingRuleAppliesDialog from '@/components/admin/shipping/PackagingRuleAppliesDialog.vue'
 import PackagingRuleEditorDialog from '@/components/admin/shipping/PackagingRuleEditorDialog.vue'
-import ShippingTemplateBindingEditorDialog from '@/components/admin/shipping/ShippingTemplateBindingEditorDialog.vue'
 import ShippingTemplateEditorDialog from '@/components/admin/shipping/ShippingTemplateEditorDialog.vue'
 import ShippingZoneEditorDialog from '@/components/admin/shipping/ShippingZoneEditorDialog.vue'
 import TrackingCarrierMappingEditorDialog from '@/components/admin/shipping/TrackingCarrierMappingEditorDialog.vue'
@@ -141,12 +128,6 @@ defineProps({
   zoneSubmitting: { type: Boolean, default: false },
   zoneErrors: { type: Object, required: true },
   zoneForm: { type: Object, required: true },
-
-  bindingOpen: { type: Boolean, default: false },
-  bindingMode: { type: String, default: 'create' },
-  bindingSubmitting: { type: Boolean, default: false },
-  bindingErrors: { type: Object, required: true },
-  bindingForm: { type: Object, required: true },
 
   carrierOpen: { type: Boolean, default: false },
   carrierMode: { type: String, default: 'create' },
@@ -190,7 +171,6 @@ defineProps({
 const emit = defineEmits([
   'update:templateOpen',
   'update:zoneOpen',
-  'update:bindingOpen',
   'update:carrierOpen',
   'update:carrierServiceOpen',
   'update:trackingProviderOpen',
@@ -200,7 +180,6 @@ const emit = defineEmits([
   'update:deleteOpen',
   'save-template',
   'save-zone',
-  'save-binding',
   'save-carrier',
   'save-carrier-service',
   'save-tracking-provider',
@@ -208,7 +187,6 @@ const emit = defineEmits([
   'save-packaging-rule',
   'clear-template-error',
   'clear-zone-error',
-  'clear-binding-error',
   'clear-carrier-error',
   'clear-carrier-service-error',
   'clear-tracking-provider-error',

@@ -396,11 +396,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				shippingGroup.POST("/templates/:id/rules", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.CreateTemplateRule)
 				shippingGroup.PUT("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTemplateRule)
 				shippingGroup.DELETE("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.DeleteTemplateRule)
-				shippingGroup.GET("/template-bindings", shippingHandler.ListTemplateBindings)
-				shippingGroup.GET("/template-bindings/:id", shippingHandler.GetTemplateBinding)
-				shippingGroup.POST("/template-bindings", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateTemplateBinding)
-				shippingGroup.PUT("/template-bindings/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTemplateBinding)
-				shippingGroup.DELETE("/template-bindings/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteTemplateBinding)
 
 				shippingGroup.GET("/zones", shippingHandler.ListZones)
 				shippingGroup.GET("/zones/:id", shippingHandler.GetZone)
