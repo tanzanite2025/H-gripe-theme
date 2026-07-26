@@ -2,36 +2,31 @@ import { computed, reactive, ref, watch } from 'vue'
 import { faqAdminApi } from '@/api/faq'
 import {
   buildCategoryFilterOptions,
-  buildFAQLabelMaps,
-  buildPageFilterOptions,
-  categoryLabelForFAQ,
-  pageTitleForFAQ
+  buildPageFilterOptions
 } from '@/lib/faqAdminPresentation'
 
-export function useFaqList({ faqStructures, allStructurePages }) {
+export function useFaqList({ faqStructures, activeStructureLocale }) {
   const loading = ref(false)
   const faqs = ref([])
+  const faqGroups = ref([])
   const selectedFAQs = ref([])
-  const filters = reactive({ search: '', page_id: 'all', category: 'all', status: 'all', locale: 'all' })
-  const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+  const filters = reactive({
+    search: '',
+    page_id: 'all',
+    category: 'all',
+    status: 'all',
+    locale: activeStructureLocale?.value || 'all'
+  })
+  const pagination = reactive({ total: 0 })
 
   const pageFilterOptions = computed(() => buildPageFilterOptions(faqStructures, filters.locale))
   const categoryFilterOptions = computed(() => (
     buildCategoryFilterOptions(faqStructures, filters.locale, filters.page_id)
   ))
-  const selectionState = computed(() => {
-    if (faqs.value.length === 0 || selectedFAQs.value.length === 0) return false
-    return selectedFAQs.value.length === faqs.value.length ? true : 'indeterminate'
-  })
-  const faqLabelMaps = computed(() => buildFAQLabelMaps(allStructurePages.value))
-
   const categoryOptionsForFilter = () => (
     buildCategoryFilterOptions(faqStructures, filters.locale, filters.page_id)
       .filter((option) => option.value !== 'all')
   )
-
-  const pageTitle = (faq) => pageTitleForFAQ(faqLabelMaps.value.pageTitles, faq)
-  const categoryLabel = (faq) => categoryLabelForFAQ(faqLabelMaps.value.categoryLabels, faq)
 
   const buildFilterParams = () => ({
     ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
@@ -44,13 +39,12 @@ export function useFaqList({ faqStructures, allStructurePages }) {
   const fetchFAQs = async () => {
     loading.value = true
     try {
-      const payload = await faqAdminApi.listFAQs({
-        page: pagination.page,
-        page_size: pagination.pageSize,
-        ...buildFilterParams()
-      })
-      faqs.value = payload.faqs || []
-      pagination.total = payload.pagination?.total ?? payload.total ?? 0
+      const payload = await faqAdminApi.listFAQGroups(buildFilterParams())
+      faqGroups.value = payload.pages || []
+      faqs.value = faqGroups.value.flatMap((page) => (
+        (page.categories || []).flatMap((category) => category.faqs || [])
+      ))
+      pagination.total = payload.total ?? faqs.value.length
       selectedFAQs.value = []
     } catch (error) {
       console.error('Failed to fetch FAQs:', error)
@@ -60,32 +54,31 @@ export function useFaqList({ faqStructures, allStructurePages }) {
   }
 
   const applyFilters = () => {
-    pagination.page = 1
     fetchFAQs()
   }
 
   const resetFilters = () => {
-    Object.assign(filters, { search: '', page_id: 'all', category: 'all', status: 'all', locale: 'all' })
-    pagination.page = 1
+    Object.assign(filters, {
+      search: '',
+      page_id: 'all',
+      category: 'all',
+      status: 'all',
+      locale: filters.locale
+    })
     fetchFAQs()
   }
 
-  const updatePage = (page) => {
-    pagination.page = page
-    fetchFAQs()
-  }
-
-  const updatePageSize = (pageSize) => {
-    pagination.pageSize = pageSize
-    pagination.page = 1
-    fetchFAQs()
+  const setLocale = (locale, { fetch = true } = {}) => {
+    if (!locale || filters.locale === locale) {
+      return fetch ? fetchFAQs() : Promise.resolve()
+    }
+    filters.locale = locale
+    filters.page_id = 'all'
+    filters.category = 'all'
+    return fetch ? fetchFAQs() : Promise.resolve()
   }
 
   const isSelected = (faqID) => selectedFAQs.value.some((faq) => faq.id === faqID)
-
-  const toggleAllFAQs = (checked) => {
-    selectedFAQs.value = checked === true ? [...faqs.value] : []
-  }
 
   const toggleFAQ = (faq, checked) => {
     if (checked === true && !isSelected(faq.id)) {
@@ -102,24 +95,26 @@ export function useFaqList({ faqStructures, allStructurePages }) {
     }
   })
 
+  watch(activeStructureLocale, (locale) => {
+    if (locale && filters.locale === 'all') {
+      filters.locale = locale
+    }
+  })
+
   return {
     loading,
     faqs,
+    faqGroups,
     selectedFAQs,
     filters,
     pagination,
     pageFilterOptions,
     categoryFilterOptions,
-    selectionState,
-    pageTitle,
-    categoryLabel,
     fetchFAQs,
+    setLocale,
     applyFilters,
     resetFilters,
-    updatePage,
-    updatePageSize,
     isSelected,
-    toggleAllFAQs,
     toggleFAQ
   }
 }

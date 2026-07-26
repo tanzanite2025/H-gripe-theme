@@ -39,7 +39,8 @@ type FAQCategoryAdminInput struct {
 
 type FAQCategoryAdminView struct {
 	faq.FAQCategory
-	FAQCount int64 `json:"faq_count"`
+	FAQCount int64     `json:"faq_count"`
+	FAQs     []faq.FAQ `json:"faqs"`
 }
 
 type FAQPageAdminView struct {

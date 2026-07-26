@@ -8,8 +8,8 @@
         </DialogHeader>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <AdminFormField label="页面" required>
-            <Select v-model="categoryForm.page_id">
+          <AdminFormField label="页面" required description="从当前路由页面添加">
+            <Select v-model="categoryForm.page_id" disabled>
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="page in structurePageOptions" :key="page.value" :value="page.value">
@@ -18,8 +18,8 @@
               </SelectContent>
             </Select>
           </AdminFormField>
-          <AdminFormField label="语言" required>
-            <Select v-model="categoryForm.locale">
+          <AdminFormField label="语言" required description="跟随当前路由页面">
+            <Select v-model="categoryForm.locale" disabled>
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
@@ -31,8 +31,8 @@
           <AdminFormField label="分类名称" required>
             <Input v-model="categoryForm.name" placeholder="Payment Methods" />
           </AdminFormField>
-          <AdminFormField label="分类标识" required>
-            <Input v-model="categoryForm.category_key" class="font-mono" placeholder="payment-methods" />
+          <AdminFormField label="分类标识" required :description="mode === 'edit' ? '编辑时标识已锁定' : ''">
+            <Input v-model="categoryForm.category_key" :disabled="mode === 'edit'" class="font-mono" placeholder="payment-methods" />
           </AdminFormField>
           <AdminFormField label="图标">
             <Input v-model="categoryForm.icon" placeholder="例如 💳，可为空" />

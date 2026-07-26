@@ -1,10 +1,9 @@
 package repository
 
 import (
-	"fmt"
 	"tanzanite/internal/domain/faq"
 
-	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // GetCategories 获取所有分类
@@ -84,6 +83,36 @@ func (r *FAQRepository) ListCategories(locale, pageID string, includeHidden bool
 	return categories, err
 }
 
+func (r *FAQRepository) ListAdminForStructure(locale, pageID, category, status, search string) ([]faq.FAQ, error) {
+	var faqs []faq.FAQ
+	query := r.db.Model(&faq.FAQ{})
+
+	if locale != "" {
+		query = query.Where("locale = ?", locale)
+	}
+	if pageID != "" {
+		query = query.Where("page_id = ?", pageID)
+	}
+	if category != "" {
+		query = query.Where("category = ?", category)
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		query = query.Where("question LIKE ? OR answer LIKE ?", searchPattern, searchPattern)
+	}
+
+	err := query.
+		Order("page_id ASC").
+		Order("category ASC").
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).
+		Order("created_at DESC").
+		Find(&faqs).Error
+	return faqs, err
+}
+
 func (r *FAQRepository) FindCategoryByID(id uint) (*faq.FAQCategory, error) {
 	var category faq.FAQCategory
 	err := r.db.First(&category, id).Error
@@ -108,26 +137,8 @@ func (r *FAQRepository) CreateCategory(category *faq.FAQCategory) error {
 	return r.db.Create(category).Error
 }
 
-func (r *FAQRepository) UpdateCategory(category *faq.FAQCategory, oldPageID, oldCategoryKey, oldLocale string) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Save(category).Error; err != nil {
-			return err
-		}
-
-		if oldPageID != category.PageID || oldCategoryKey != category.CategoryKey || oldLocale != category.Locale {
-			if err := tx.Model(&faq.FAQ{}).
-				Where("page_id = ? AND category = ? AND locale = ?", oldPageID, oldCategoryKey, oldLocale).
-				Updates(map[string]any{
-					"page_id":  category.PageID,
-					"category": category.CategoryKey,
-					"locale":   category.Locale,
-				}).Error; err != nil {
-				return fmt.Errorf("sync faqs after category update: %w", err)
-			}
-		}
-
-		return nil
-	})
+func (r *FAQRepository) UpdateCategory(category *faq.FAQCategory) error {
+	return r.db.Save(category).Error
 }
 
 func (r *FAQRepository) DeleteCategory(id uint) error {

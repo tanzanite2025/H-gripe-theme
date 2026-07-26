@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/pkg/securecookie"
@@ -29,7 +30,7 @@ func resolveCookieOptions(cookieOptions []securecookie.Options) securecookie.Opt
 }
 
 func isBackofficeRole(role auth.Role) bool {
-	return role == auth.RoleAdmin || role == auth.RoleManager || role == auth.RoleEditor || role == auth.RoleSupport
+	return auth.IsBackofficeRole(role.String())
 }
 
 func (h *AuthHandler) setAdminAuthCookies(c *gin.Context, token string, refreshToken string) error {
@@ -37,6 +38,14 @@ func (h *AuthHandler) setAdminAuthCookies(c *gin.Context, token string, refreshT
 	securecookie.SetRefreshToken(c, refreshToken, h.authService.RefreshTokenMaxAgeSeconds(), h.cookieOptions)
 	_, err := securecookie.SetCSRFToken(c, h.authService.RefreshTokenMaxAgeSeconds(), h.cookieOptions)
 	return err
+}
+
+// GetAuthConfig 返回后台登录页公开认证配置
+// GET /api/admin/auth/config
+func (h *AuthHandler) GetAuthConfig(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"google_client_id": h.authService.GoogleClientID(),
+	})
 }
 
 // AdminLogin 管理员登录
@@ -81,6 +90,60 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 	}
 
 	// 返回用户信息和权限
+	c.JSON(http.StatusOK, gin.H{
+		"user": gin.H{
+			"id":          user.ID,
+			"email":       user.Email,
+			"username":    user.Username,
+			"first_name":  user.FirstName,
+			"last_name":   user.LastName,
+			"role":        user.Role,
+			"permissions": role.GetPermissions(),
+		},
+	})
+}
+
+// AdminGoogleLogin 管理员 Google 登录
+// POST /api/admin/auth/google-login
+func (h *AuthHandler) AdminGoogleLogin(c *gin.Context) {
+	var req struct {
+		IDToken string `json:"id_token" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, user, err := h.authService.LoginBackofficeWithGoogle(c.Request.Context(), req.IDToken)
+	if err != nil {
+		if errors.Is(err, service.ErrGoogleBackofficeAccessDenied) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "Access denied",
+				"message": "This Google account does not have permission to access the admin panel",
+			})
+			return
+		}
+		if err.Error() == "user account is not active" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "User account is not active"})
+			return
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	role := auth.NormalizeRole(user.Role)
+	refreshToken, err := h.authService.GenerateRefreshToken(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
+		return
+	}
+
+	if err := h.setAdminAuthCookies(c, token, refreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate CSRF token"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
 			"id":          user.ID,

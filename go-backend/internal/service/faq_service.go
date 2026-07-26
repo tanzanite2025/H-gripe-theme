@@ -137,7 +137,11 @@ func (s *FAQService) UpdateAdminFAQ(id uint, input FAQAdminUpdateInput) (*faq.FA
 		existingFAQ.Category = input.Category
 	}
 	if input.Locale != "" {
-		existingFAQ.Locale = input.Locale
+		locale, err := validateFAQLocaleUpdate(existingFAQ.Locale, input.Locale)
+		if err != nil {
+			return nil, err
+		}
+		existingFAQ.Locale = locale
 	}
 	if input.Status != "" {
 		existingFAQ.Status = input.Status
@@ -149,6 +153,24 @@ func (s *FAQService) UpdateAdminFAQ(id uint, input FAQAdminUpdateInput) (*faq.FA
 	}
 
 	return existingFAQ, nil
+}
+
+func validateFAQLocaleUpdate(existingLocale, requestedLocale string) (string, error) {
+	currentLocale, err := requireSupportedLocale(existingLocale)
+	if err != nil {
+		return "", err
+	}
+
+	nextLocale, err := requireSupportedLocale(requestedLocale)
+	if err != nil {
+		return "", err
+	}
+
+	if nextLocale != currentLocale {
+		return "", fmt.Errorf("%w: %s -> %s", ErrFAQLocaleImmutable, currentLocale, nextLocale)
+	}
+
+	return currentLocale, nil
 }
 
 // Delete 删除FAQ

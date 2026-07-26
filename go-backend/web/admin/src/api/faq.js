@@ -7,6 +7,10 @@ export const faqAdminApi = {
     return unwrapPayload(await axios.get('/api/admin/faqs', { params }))
   },
 
+  async listFAQGroups(params = {}) {
+    return unwrapPayload(await axios.get('/api/admin/faqs/grouped', { params }))
+  },
+
   async getFAQ(id) {
     return unwrapPayload(await axios.get(`/api/admin/faqs/${id}`))
   },

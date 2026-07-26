@@ -36,6 +36,11 @@ func IsCustomerServiceAgentRole(raw string) bool {
 	return role == RoleAdmin || role == RoleManager || role == RoleSupport
 }
 
+func IsBackofficeRole(raw string) bool {
+	role := NormalizeRole(raw)
+	return role == RoleAdmin || role == RoleManager || role == RoleEditor || role == RoleSupport
+}
+
 // Permission is a backend/admin permission code.
 type Permission string
 

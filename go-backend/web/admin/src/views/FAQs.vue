@@ -14,49 +14,36 @@
       :page-filter-options="pageFilterOptions"
       :category-filter-options="categoryFilterOptions"
       :status-filter-options="statusFilterOptions"
-      :locale-filter-options="localeFilterOptions"
       @apply="applyFilters"
       @reset="resetFilters"
     />
 
-    <FAQTable
+    <FAQAccordionList
       :loading="loading"
-      :faqs="faqs"
+      :structure-loading="structureLoading"
+      :faq-groups="faqGroups"
       :selected-faqs="selectedFAQs"
-      :selection-state="selectionState"
       :pagination="pagination"
+      :structure-locales="structureLocales"
+      :active-structure-locale="activeStructureLocale"
       :has-permission="hasPermission"
       :is-selected="isSelected"
       :plain-text="plainTextFromHTML"
-      :page-title="pageTitleForFAQ"
-      :category-label="categoryLabelForFAQ"
       :status-tone="statusTone"
       :status-name="statusName"
-      :locale-name="localeName"
-      :format-date="formatDate"
-      @toggle-all="toggleAllFAQs"
+      :visibility-name="visibilityName"
+      :visibility-tone="visibilityTone"
+      :domain-name="domainName"
+      @switch-locale="switchStructureLocale"
       @toggle-faq="toggleFAQ"
       @edit="showEditDialog"
       @delete="requestDelete"
       @batch-delete="requestBatchDelete"
-      @update-page="updatePage"
-      @update-page-size="updatePageSize"
-    />
-
-    <FAQStructurePanel
-      :structure-locales="structureLocales"
-      :active-structure-locale="activeStructureLocale"
-      :loading="structureLoading"
-      :faq-structure="faqStructure"
-      :has-permission="hasPermission"
-      :domain-name="domainName"
-      :visibility-name="visibilityName"
-      :visibility-tone="visibilityTone"
-      @switch-locale="switchStructureLocale"
       @edit-page="showPageDialog"
       @create-category="openCreateCategoryDialog"
       @edit-category="openEditCategoryDialog"
       @delete-category="requestDeleteCategory"
+      @create-faq="openCreateFAQDialog"
     />
 
     <FAQEditorDialog
@@ -68,6 +55,7 @@
       :faq-page-options="faqPageOptions"
       :available-faq-categories="availableFAQCategories"
       :language-options="languageOptions"
+      :placement-locked="placementLocked"
       @submit="submitForm"
       @clear-error="clearFieldError"
       @update-answer="updateFAQAnswer"
@@ -106,24 +94,24 @@
 import { Plus } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import FAQAccordionList from '@/components/admin/faq/FAQAccordionList.vue'
 import FAQCategoryEditorDialog from '@/components/admin/faq/FAQCategoryEditorDialog.vue'
 import FAQEditorDialog from '@/components/admin/faq/FAQEditorDialog.vue'
 import FAQFilterPanel from '@/components/admin/faq/FAQFilterPanel.vue'
 import FAQPageEditorDialog from '@/components/admin/faq/FAQPageEditorDialog.vue'
-import FAQStructurePanel from '@/components/admin/faq/FAQStructurePanel.vue'
-import FAQTable from '@/components/admin/faq/FAQTable.vue'
 import { Button } from '@/components/ui/button'
 import { useFaqAdmin } from '@/composables/useFaqAdmin'
 
 const {
   loading,
   structureLoading,
-  faqs,
+  faqGroups,
   activeStructureLocale,
   selectedFAQs,
   dialogVisible,
   dialogMode,
   submitting,
+  placementLocked,
   pageDialogVisible,
   pageSubmitting,
   categoryDialogVisible,
@@ -137,16 +125,13 @@ const {
   categoryForm,
   confirmation,
   statusFilterOptions,
-  localeFilterOptions,
   structureLocales,
   languageOptions,
-  faqStructure,
   structurePageOptions,
   faqPageOptions,
   availableFAQCategories,
   pageFilterOptions,
   categoryFilterOptions,
-  selectionState,
   hasPermission,
   localeName,
   statusName,
@@ -154,17 +139,12 @@ const {
   visibilityName,
   visibilityTone,
   domainName,
-  formatDate,
   plainTextFromHTML,
-  pageTitleForFAQ,
-  categoryLabelForFAQ,
   clearFieldError,
   updateFAQAnswer,
   switchStructureLocale,
   applyFilters,
   resetFilters,
-  updatePage,
-  updatePageSize,
   showCreateDialog,
   showEditDialog,
   submitForm,
@@ -173,7 +153,6 @@ const {
   showCategoryDialog,
   submitCategoryForm,
   isSelected,
-  toggleAllFAQs,
   toggleFAQ,
   requestDelete,
   requestBatchDelete,
@@ -187,5 +166,9 @@ const openCreateCategoryDialog = (page) => {
 
 const openEditCategoryDialog = (page, category) => {
   showCategoryDialog('edit', page, category)
+}
+
+const openCreateFAQDialog = (page, category) => {
+  showCreateDialog({ page, category })
 }
 </script>

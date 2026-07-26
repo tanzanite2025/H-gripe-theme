@@ -51,6 +51,75 @@ func (s *FAQService) ListAdminStructure(locale string) ([]FAQPageAdminView, erro
 	return pageViews, nil
 }
 
+func (s *FAQService) ListAdminGrouped(locale, pageID, categoryKey, status, search string) ([]FAQPageAdminView, int64, error) {
+	if locale != "" {
+		locale = normalizeLocale(locale)
+	}
+
+	pages, err := s.faqRepo.ListPages(locale, true)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	categories, err := s.faqRepo.ListCategories(locale, pageID, true)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	items, err := s.faqRepo.ListAdminForStructure(locale, pageID, categoryKey, status, search)
+	if err != nil {
+		return nil, 0, err
+	}
+	counts, err := s.faqRepo.ListFAQCounts(locale)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	itemsByCategory := make(map[string][]faq.FAQ)
+	for _, item := range items {
+		itemsByCategory[faqCountKey(item.PageID, item.Category, item.Locale)] = append(
+			itemsByCategory[faqCountKey(item.PageID, item.Category, item.Locale)],
+			item,
+		)
+	}
+
+	pageViews := make([]FAQPageAdminView, 0, len(pages))
+	pageIndex := make(map[string]int, len(pages))
+	for _, page := range pages {
+		if pageID != "" && page.PageID != pageID {
+			continue
+		}
+		pageViews = append(pageViews, FAQPageAdminView{
+			FAQPage:    page,
+			Categories: []FAQCategoryAdminView{},
+		})
+		pageIndex[page.PageID] = len(pageViews) - 1
+	}
+
+	var total int64
+	for _, category := range categories {
+		if categoryKey != "" && category.CategoryKey != categoryKey {
+			continue
+		}
+		idx, ok := pageIndex[category.PageID]
+		if !ok {
+			continue
+		}
+		categoryItems := itemsByCategory[faqCountKey(category.PageID, category.CategoryKey, category.Locale)]
+		displayedCount := int64(len(categoryItems))
+		total += displayedCount
+		count := counts[faqCountKey(category.PageID, category.CategoryKey, category.Locale)]
+		pageViews[idx].FAQCount += count
+		pageViews[idx].Categories = append(pageViews[idx].Categories, FAQCategoryAdminView{
+			FAQCategory: category,
+			FAQCount:    count,
+			FAQs:        categoryItems,
+		})
+	}
+
+	return pageViews, total, nil
+}
+
 func (s *FAQService) UpsertAdminPage(pageID string, input FAQPageAdminInput) (*faq.FAQPage, error) {
 	pageID = strings.TrimSpace(pageID)
 	locale, err := requireSupportedLocale(input.Locale)
@@ -99,6 +168,12 @@ func (s *FAQService) CreateAdminCategory(input FAQCategoryAdminInput) (*faq.FAQC
 	if err != nil {
 		return nil, err
 	}
+	if _, err := s.faqRepo.FindPageByPageIDLocale(category.PageID, category.Locale); err != nil {
+		if IsRecordNotFound(err) {
+			return nil, fmt.Errorf("faq page %q does not exist for locale %q", category.PageID, category.Locale)
+		}
+		return nil, err
+	}
 	if err := s.faqRepo.CreateCategory(category); err != nil {
 		return nil, err
 	}
@@ -112,29 +187,42 @@ func (s *FAQService) UpdateAdminCategory(id uint, input FAQCategoryAdminInput) (
 		return nil, err
 	}
 
-	oldPageID := existingCategory.PageID
-	oldCategoryKey := existingCategory.CategoryKey
-	oldLocale := existingCategory.Locale
-
 	nextCategory, err := s.buildFAQCategory(input)
 	if err != nil {
 		return nil, err
 	}
+	if err := validateFAQCategoryIdentity(existingCategory, nextCategory); err != nil {
+		return nil, err
+	}
 
-	existingCategory.PageID = nextCategory.PageID
-	existingCategory.CategoryKey = nextCategory.CategoryKey
 	existingCategory.Name = nextCategory.Name
 	existingCategory.Icon = nextCategory.Icon
-	existingCategory.Locale = nextCategory.Locale
 	existingCategory.SortOrder = nextCategory.SortOrder
 	existingCategory.Status = nextCategory.Status
 
-	if err := s.faqRepo.UpdateCategory(existingCategory, oldPageID, oldCategoryKey, oldLocale); err != nil {
+	if err := s.faqRepo.UpdateCategory(existingCategory); err != nil {
 		return nil, err
 	}
 
 	s.invalidateStorefrontHTMLCache("admin faq category update")
 	return existingCategory, nil
+}
+
+func validateFAQCategoryIdentity(existing, next *faq.FAQCategory) error {
+	existingLocale, err := requireSupportedLocale(existing.Locale)
+	if err != nil {
+		return err
+	}
+	nextLocale, err := requireSupportedLocale(next.Locale)
+	if err != nil {
+		return err
+	}
+	if existing.PageID != next.PageID ||
+		existing.CategoryKey != next.CategoryKey ||
+		existingLocale != nextLocale {
+		return ErrFAQCategoryIdentityImmutable
+	}
+	return nil
 }
 
 func (s *FAQService) DeleteAdminCategory(id uint) error {
