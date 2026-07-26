@@ -66,7 +66,12 @@ func (s *PostService) GetStats() (map[string]interface{}, error) {
 }
 
 func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error) {
-	if err := s.ensureSlugAvailable(input.Slug, input.Locale, 0); err != nil {
+	locale, err := requireSupportedLocale(input.Locale)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.ensureSlugAvailable(input.Slug, locale, 0); err != nil {
 		return nil, err
 	}
 
@@ -77,7 +82,7 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 		Excerpt:            input.Excerpt,
 		Status:             input.Status,
 		AuthorID:           input.AuthorID,
-		Locale:             input.Locale,
+		Locale:             locale,
 		FeaturedImg:        input.FeaturedImg,
 		Tags:               input.Tags,
 		MetaTitle:          input.MetaTitle,
@@ -113,7 +118,11 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 		nextSlug = *input.Slug
 	}
 	if input.Locale != nil {
-		nextLocale = *input.Locale
+		locale, err := requireSupportedLocale(*input.Locale)
+		if err != nil {
+			return nil, err
+		}
+		nextLocale = locale
 	}
 	if nextSlug != existingPost.Slug || nextLocale != existingPost.Locale {
 		if err := s.ensureSlugAvailable(nextSlug, nextLocale, existingPost.ID); err != nil {
@@ -141,7 +150,7 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 		existingPost.Status = *input.Status
 	}
 	if input.Locale != nil {
-		existingPost.Locale = *input.Locale
+		existingPost.Locale = nextLocale
 	}
 	if input.FeaturedImg != nil {
 		existingPost.FeaturedImg = *input.FeaturedImg

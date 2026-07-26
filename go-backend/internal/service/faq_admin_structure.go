@@ -53,7 +53,10 @@ func (s *FAQService) ListAdminStructure(locale string) ([]FAQPageAdminView, erro
 
 func (s *FAQService) UpsertAdminPage(pageID string, input FAQPageAdminInput) (*faq.FAQPage, error) {
 	pageID = strings.TrimSpace(pageID)
-	locale := normalizeLocale(input.Locale)
+	locale, err := requireSupportedLocale(input.Locale)
+	if err != nil {
+		return nil, err
+	}
 	if pageID == "" {
 		return nil, fmt.Errorf("page_id is required")
 	}
@@ -156,6 +159,10 @@ func (s *FAQService) DeleteAdminCategory(id uint) error {
 func (s *FAQService) buildFAQCategory(input FAQCategoryAdminInput) (*faq.FAQCategory, error) {
 	pageID := strings.TrimSpace(input.PageID)
 	name := strings.TrimSpace(input.Name)
+	locale, err := requireSupportedLocale(input.Locale)
+	if err != nil {
+		return nil, err
+	}
 	if pageID == "" {
 		return nil, fmt.Errorf("page_id is required")
 	}
@@ -176,7 +183,7 @@ func (s *FAQService) buildFAQCategory(input FAQCategoryAdminInput) (*faq.FAQCate
 		CategoryKey: categoryKey,
 		Name:        name,
 		Icon:        strings.TrimSpace(input.Icon),
-		Locale:      normalizeLocale(input.Locale),
+		Locale:      locale,
 		SortOrder:   input.SortOrder,
 		Status:      normalizeFAQStatus(input.Status, "active"),
 	}, nil
@@ -185,7 +192,10 @@ func (s *FAQService) buildFAQCategory(input FAQCategoryAdminInput) (*faq.FAQCate
 func (s *FAQService) validateFAQPlacement(pageID, categoryKey, locale string) error {
 	pageID = strings.TrimSpace(pageID)
 	categoryKey = strings.TrimSpace(categoryKey)
-	locale = normalizeLocale(locale)
+	locale, err := requireSupportedLocale(locale)
+	if err != nil {
+		return err
+	}
 	if pageID == "" {
 		return fmt.Errorf("page_id is required")
 	}

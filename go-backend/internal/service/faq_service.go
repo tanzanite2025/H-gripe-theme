@@ -77,7 +77,11 @@ func (s *FAQService) Create(f *faq.FAQ) error {
 	if err := s.normalizeFAQContent(f); err != nil {
 		return err
 	}
-	f.Locale = normalizeLocale(f.Locale)
+	locale, err := requireSupportedLocale(f.Locale)
+	if err != nil {
+		return err
+	}
+	f.Locale = locale
 	if err := s.validateFAQPlacement(f.PageID, f.Category, f.Locale); err != nil {
 		return err
 	}
@@ -93,7 +97,11 @@ func (s *FAQService) Update(f *faq.FAQ) error {
 	if err := s.normalizeFAQContent(f); err != nil {
 		return err
 	}
-	f.Locale = normalizeLocale(f.Locale)
+	locale, err := requireSupportedLocale(f.Locale)
+	if err != nil {
+		return err
+	}
+	f.Locale = locale
 	if err := s.validateFAQPlacement(f.PageID, f.Category, f.Locale); err != nil {
 		return err
 	}

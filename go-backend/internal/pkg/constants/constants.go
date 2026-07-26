@@ -111,15 +111,6 @@ const (
 	HeaderXForwardedFor  = "X-Forwarded-For"
 )
 
-// Supported locales
-var SupportedLocales = []string{
-	"en", "fr", "de", "es", "ja", "ko", "it", "pt",
-	"ru", "ar", "fi", "da", "th", "sv", "id", "ms",
-	"be", "tr", "bn", "fa", "nl", "hi", "ur", "mr",
-	"pcm", "fil", "te", "ha", "ps", "sw", "tl", "ta",
-	"jv", "zh_cn",
-}
-
 // Supported currencies
 var SupportedCurrencies = []string{
 	"USD", "EUR", "GBP", "JPY",

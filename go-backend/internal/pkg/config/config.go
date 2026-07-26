@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"tanzanite/internal/pkg/constants"
+	"tanzanite/internal/pkg/locales"
 	"time"
 
 	"github.com/spf13/viper"
@@ -184,7 +184,7 @@ func setDefaults() {
 	viper.SetDefault("oauth.google_client_id", "")
 
 	viper.SetDefault("i18n.default_locale", "en")
-	viper.SetDefault("i18n.supported_locales", append([]string(nil), constants.SupportedLocales...))
+	viper.SetDefault("i18n.supported_locales", locales.SupportedLocaleCodes())
 
 	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:9100", "http://localhost:9300"})
 	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})

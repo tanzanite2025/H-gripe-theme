@@ -67,6 +67,10 @@ func (h *FAQHandler) UpdatePage(c *gin.Context) {
 		SortOrder: req.SortOrder,
 	})
 	if err != nil {
+		if isFAQValidationError(err) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update FAQ page"})
 		return
 	}
@@ -97,6 +101,10 @@ func (h *FAQHandler) CreateCategory(c *gin.Context) {
 		SortOrder:   req.SortOrder,
 	})
 	if err != nil {
+		if isFAQValidationError(err) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create FAQ category"})
 		return
 	}
@@ -134,6 +142,10 @@ func (h *FAQHandler) UpdateCategory(c *gin.Context) {
 	if err != nil {
 		if service.IsRecordNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "FAQ category not found"})
+			return
+		}
+		if isFAQValidationError(err) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update FAQ category"})
