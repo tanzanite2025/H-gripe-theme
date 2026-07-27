@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/service"
@@ -19,6 +20,10 @@ func NewSettingsHandler(settingsService *service.AdminSettingsService) *Settings
 func (h *SettingsHandler) GetAllSettings(c *gin.Context) {
 	locale := c.DefaultQuery("locale", "en")
 	group := c.Query("group")
+	if isDomainManagedAdminSettingGroup(group) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.ErrSettingManagedByDomainService.Error()})
+		return
+	}
 
 	settings, err := h.settingsService.ListSettings(locale, group)
 	if err != nil {
@@ -51,6 +56,10 @@ func (h *SettingsHandler) UpdateSetting(c *gin.Context) {
 
 	s, err := h.settingsService.UpdateSetting(req)
 	if err != nil {
+		if errors.Is(err, service.ErrSettingManagedByDomainService) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update setting"})
 		return
 	}
@@ -67,6 +76,10 @@ func (h *SettingsHandler) BatchUpdateSettings(c *gin.Context) {
 
 	count, err := h.settingsService.BatchUpdateSettings(req)
 	if err != nil {
+		if errors.Is(err, service.ErrSettingManagedByDomainService) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update settings"})
 		return
 	}
@@ -116,6 +129,14 @@ func (h *SettingsHandler) GetPaymentSettings(c *gin.Context) {
 	h.writeSettingsGroup(c, "payment", "failed to fetch payment settings")
 }
 
+func (h *SettingsHandler) GetLoyaltySettings(c *gin.Context) {
+	h.writeDomainManagedSettingsGroupError(c)
+}
+
+func (h *SettingsHandler) GetRedeemSettings(c *gin.Context) {
+	h.writeDomainManagedSettingsGroupError(c)
+}
+
 func (h *SettingsHandler) writeSettingsGroup(c *gin.Context, group, errorMessage string) {
 	locale := c.DefaultQuery("locale", "en")
 	settings, err := h.settingsService.GetByGroup(group, locale)
@@ -125,4 +146,12 @@ func (h *SettingsHandler) writeSettingsGroup(c *gin.Context, group, errorMessage
 	}
 
 	c.JSON(http.StatusOK, gin.H{"settings": settings})
+}
+
+func isDomainManagedAdminSettingGroup(group string) bool {
+	return group == "loyalty" || group == "redeem"
+}
+
+func (h *SettingsHandler) writeDomainManagedSettingsGroupError(c *gin.Context) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": service.ErrSettingManagedByDomainService.Error()})
 }

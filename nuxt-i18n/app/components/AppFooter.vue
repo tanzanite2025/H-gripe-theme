@@ -1,5 +1,5 @@
 <template>
-  <footer class="app-footer">
+  <footer class="app-footer app-footer-background-surface">
     <div class="footer-content">
       
       <!-- Desktop: Side-by-Side Layout Wrapper -->
@@ -163,9 +163,12 @@ const paymentIcons: PaymentIcon[] = [
 .app-footer {
   /* 增大底部 padding，预留空间给底部浮动 Dock (Desktop: 8rem, Mobile: 6rem) */
   padding: 1rem 1.5rem 6.5rem;
-  background: linear-gradient(140deg, #0c0f17 0%, #141925 45%, #1b2230 100%);
   color: #f5f6fa;
 }
+
+ .app-footer-background-surface {
+  background: linear-gradient(140deg, #0c0f17 0%, #141925 45%, #1b2230 100%);
+ }
 
 .footer-content {
   width: 100%;
@@ -191,7 +194,7 @@ const paymentIcons: PaymentIcon[] = [
   width: 100%;
   max-width: 100%; /* Fill the grid column */
   padding: 1.5rem;
-  background: #11151e; /* Global Premium Card BG */
+  background: #11151e;
   /* Remove border as requested */
   border-radius: 16px;
   /* Global Deep Shadow */
@@ -399,6 +402,10 @@ const paymentIcons: PaymentIcon[] = [
     /* 移动端 Dock 通常更高，底部多留一些空间 */
     padding: 1rem 1.25rem 4.5rem;
   }
+
+  .app-footer-background-surface {
+    background: linear-gradient(180deg, #252b36 0%, #1a202c 46%, #0f131c 100%);
+  }
   
   .footer-main-row {
     display: flex;
@@ -409,10 +416,11 @@ const paymentIcons: PaymentIcon[] = [
   }
   
   .footer-subscription {
-    max-width: 100% !important; /* Force full width on mobile */
-    width: 100%;
+    max-width: 100vw !important;
+    width: 100vw;
     box-sizing: border-box;
-    margin-right: 0;
+    margin-right: calc(50% - 50vw);
+    margin-left: calc(50% - 50vw);
   }
 
   .footer-content {

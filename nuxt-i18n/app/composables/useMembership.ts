@@ -21,9 +21,52 @@ interface RedeemGiftCardOption {
   id: number
   label: string
   giftcard_value: number
+  giftcard_value_cents: number
   points_required: number
   status: string
   cover_image?: string
+}
+
+interface UserGiftCard {
+  id: number
+  code: string
+  initial_value: number
+  balance: number
+  initial_value_cents: number
+  balance_cents: number
+  currency: string
+  status: string
+  expires_at?: string | null
+  created_at: string
+}
+
+interface LoyaltyRules {
+  version: number
+  referral_referrer_points: number
+  referral_referee_points: number
+  checkin_base_points: number
+  checkin_streak_interval_days: number
+  checkin_streak_bonus_points: number
+  checkin_max_points: number
+  redemption_exchange_rate: number
+}
+
+interface LoyaltyProgramConfig {
+  id: number
+  version: number
+  enabled: boolean
+  currency: string
+  exchange_rate_points: number
+  min_redeem_points: number
+  max_value_per_day_cents: number
+  card_expiry_days: number
+  referral_referrer_points: number
+  referral_referee_points: number
+  checkin_base_points: number
+  checkin_streak_interval_days: number
+  checkin_streak_bonus_points: number
+  checkin_max_points: number
+  redeem_options: RedeemGiftCardOption[]
 }
 
 type LoyaltyRecord = Record<string, unknown>
@@ -38,6 +81,24 @@ const toFiniteNumber = (value: unknown, fallback = 0) => {
 }
 
 const emptyTierInfo = (): { current: LoyaltyTierRecord | null; next: LoyaltyTierRecord | null; pct: number } => ({ current: null, next: null, pct: 0 })
+
+const normalizeTierConfigFromBackend = (tier: any): TierConfig => {
+  const name = String(tier?.name ?? tier?.label ?? tier?.key ?? '')
+  const keySource = String(tier?.key ?? (name || tier?.id || ''))
+  const maxPoints = tier?.max_points ?? tier?.max
+
+  return {
+    key: keySource.toLowerCase().replace(/\s+/g, '-'),
+    name: name || keySource.toUpperCase(),
+    min: toFiniteNumber(tier?.min_points ?? tier?.min),
+    max: maxPoints === -1 || maxPoints === null || typeof maxPoints === 'undefined'
+      ? null
+      : toFiniteNumber(maxPoints),
+    discount: toFiniteNumber(tier?.discount_rate ?? tier?.discount),
+    pointsDiscount: toFiniteNumber(tier?.points_discount ?? tier?.redeem?.percent_of_total),
+    stackable: tier?.redeem?.stack_with_percent ?? tier?.points_discount_stackable ?? true,
+  }
+}
 
 export function useMembership() {
   const auth = useAuth()
@@ -116,17 +177,7 @@ export function useMembership() {
       const tiers = Array.isArray(response) ? response : response?.tiers
 
       if (Array.isArray(tiers)) {
-        tierConfigs.value = tiers.map((tier: any) => ({
-          key: tier.key,
-          name: tier.name ?? tier.label ?? String(tier.key || '').toUpperCase(),
-          min: Number(tier.min ?? 0),
-          max: typeof tier.max === 'number' ? (tier.max === -1 ? null : tier.max) : null,
-          discount: Number(tier.discount ?? 0),
-          // 这里将积分折扣近似映射为可用积分抵扣的最大订单百分比
-          pointsDiscount: Number(tier.redeem?.percent_of_total ?? 0),
-          // 是否允许与百分比折扣叠加
-          stackable: tier.redeem?.stack_with_percent ?? true,
-        }))
+        tierConfigs.value = tiers.map(normalizeTierConfigFromBackend)
       }
     } catch (error) {
       console.error('Failed to load tier configs:', error)
@@ -180,25 +231,76 @@ export function useMembership() {
 
   // ========== 礼品卡 ==========
   const availableGiftcards = ref<RedeemGiftCardOption[]>([])
+  const loyaltyProgramConfig = ref<LoyaltyProgramConfig | null>(null)
+  const loyaltyRules = ref<LoyaltyRules | null>(null)
+  const userGiftCards = ref<UserGiftCard[]>([])
   const giftcardsLoading = ref(false)
   const giftcardsError = ref('')
   const redeemingCardId = ref<number | null>(null)
   const redeemMessage = ref('')
   const redeemSuccess = ref(false)
 
-  const fetchAvailableGiftcards = async () => {
+  const fetchLoyaltyProgramConfig = async () => {
     giftcardsLoading.value = true
     giftcardsError.value = ''
 
     try {
-      const data = await auth.request<any>('/marketing/loyalty/redeem-options')
-      const allCards = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : [])
-      availableGiftcards.value = allCards.filter((card: any) => card.status === 'active')
+      const data = await auth.request<any>('/marketing/loyalty/config')
+      const rawConfig = (data?.data || data) as any
+      const normalizedOptions: RedeemGiftCardOption[] = Array.isArray(rawConfig?.redeem_options)
+        ? rawConfig.redeem_options.map((option: any) => ({
+            id: Number(option.id),
+            label: String(option.label || ''),
+            giftcard_value: Number(option.value ?? option.giftcard_value ?? 0),
+            giftcard_value_cents: Number(option.value_cents ?? option.giftcard_value_cents ?? 0),
+            points_required: Number(option.points_required || 0),
+            status: String(option.status || 'active')
+          }))
+        : []
+      const config = rawConfig
+        ? { ...rawConfig, redeem_options: normalizedOptions } as LoyaltyProgramConfig
+        : null
+      loyaltyProgramConfig.value = config
+      availableGiftcards.value = normalizedOptions
+        ? normalizedOptions.filter((card) => card.status === 'active')
+        : []
+      loyaltyRules.value = config
+        ? {
+            version: Number(config.version || 0),
+            referral_referrer_points: Number(config.referral_referrer_points || 0),
+            referral_referee_points: Number(config.referral_referee_points || 0),
+            checkin_base_points: Number(config.checkin_base_points || 0),
+            checkin_streak_interval_days: Number(config.checkin_streak_interval_days || 0),
+            checkin_streak_bonus_points: Number(config.checkin_streak_bonus_points || 0),
+            checkin_max_points: Number(config.checkin_max_points || 0),
+            redemption_exchange_rate: Number(config.exchange_rate_points || 0)
+          }
+        : null
     } catch (error) {
-      console.error('Failed to fetch gift cards:', error)
+      console.error('Failed to fetch loyalty program config:', error)
       giftcardsError.value = 'Network error'
     } finally {
       giftcardsLoading.value = false
+    }
+  }
+
+  const fetchAvailableGiftcards = fetchLoyaltyProgramConfig
+
+  const fetchLoyaltyRules = async () => {
+    await fetchLoyaltyProgramConfig()
+  }
+
+  const fetchUserGiftCards = async () => {
+    if (!isLogged.value) {
+      userGiftCards.value = []
+      return
+    }
+    try {
+      const data = await auth.request<any>('/marketing/loyalty/gift-cards')
+      userGiftCards.value = Array.isArray(data?.gift_cards) ? data.gift_cards : []
+    } catch (error) {
+      console.error('Failed to fetch user gift cards:', error)
+      userGiftCards.value = []
     }
   }
 
@@ -217,11 +319,18 @@ export function useMembership() {
     redeemSuccess.value = false
 
     try {
+      const idempotencyKey = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
       const data = await auth.request<any>('/marketing/loyalty/redeem', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey
+        },
         body: JSON.stringify({
-          giftcard_value: Number(card.giftcard_value)
+          option_id: Number(card.id),
+          idempotency_key: idempotencyKey
         })
       })
 
@@ -230,8 +339,9 @@ export function useMembership() {
         redeemMessage.value = `Redeemed successfully! Card code: ${data.card_code}`
 
         await auth.ensureSession()
-        await fetchAvailableGiftcards()
+        await fetchLoyaltyProgramConfig()
         await fetchUserAssets()
+        await fetchUserGiftCards()
 
         setTimeout(() => { redeemMessage.value = '' }, 3000)
       } else {
@@ -244,35 +354,6 @@ export function useMembership() {
       redeemMessage.value = 'Network error, please try again later'
     } finally {
       redeemingCardId.value = null
-    }
-  }
-
-  // ========== 邀请链接 ==========
-  const inviteLoading = ref(false)
-  const inviteMsg = ref('')
-
-  const handleCopyInviteLink = async () => {
-    try {
-      inviteLoading.value = true
-      inviteMsg.value = ''
-      const data = await auth.request<any>('/marketing/loyalty/referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      if (!data || data.error) throw new Error((data && data.message) || 'Failed to generate referral link')
-      const url = String(data && data.url)
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        try { await navigator.share({ url }) } catch { }
-      }
-      if (typeof navigator !== 'undefined') {
-        await navigator.clipboard.writeText(url)
-      }
-      inviteMsg.value = 'Invitation link copied'
-    } catch (e) {
-      inviteMsg.value = String(e instanceof Error ? e.message : 'Failed to generate referral link')
-    } finally {
-      inviteLoading.value = false
-      setTimeout(() => { inviteMsg.value = '' }, 15000)
     }
   }
 
@@ -294,7 +375,8 @@ export function useMembership() {
     await Promise.allSettled([
       loadTierConfigs(),
       fetchUserAssets(),
-      fetchAvailableGiftcards()
+      fetchLoyaltyProgramConfig(),
+      fetchUserGiftCards()
     ])
   }
 
@@ -308,7 +390,8 @@ export function useMembership() {
 
     await Promise.allSettled([
       fetchUserAssets(),
-      fetchAvailableGiftcards()
+      fetchLoyaltyProgramConfig(),
+      fetchUserGiftCards()
     ])
   }
 
@@ -337,18 +420,19 @@ export function useMembership() {
 
     // 礼品卡
     availableGiftcards,
+    loyaltyProgramConfig,
+    loyaltyRules,
+    userGiftCards,
     giftcardsLoading,
     giftcardsError,
     redeemingCardId,
     redeemMessage,
     redeemSuccess,
     fetchAvailableGiftcards,
+    fetchLoyaltyProgramConfig,
+    fetchLoyaltyRules,
+    fetchUserGiftCards,
     handleRedeemGiftcard,
-
-    // 邀请
-    inviteLoading,
-    inviteMsg,
-    handleCopyInviteLink,
 
     // 操作
     doLogout,

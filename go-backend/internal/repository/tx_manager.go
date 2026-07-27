@@ -3,22 +3,24 @@ package repository
 import "gorm.io/gorm"
 
 type TxManager struct {
-	db           *gorm.DB
-	orderRepo    *OrderRepository
-	productRepo  *ProductRepository
-	couponRepo   *CouponRepository
-	loyaltyRepo  *LoyaltyRepository
-	paymentRepo  *PaymentRepository
-	shippingRepo *ShippingRepository
+	db             *gorm.DB
+	orderRepo      *OrderRepository
+	productRepo    *ProductRepository
+	couponRepo     *CouponRepository
+	loyaltyRepo    *LoyaltyRepository
+	redemptionRepo *GiftCardRedemptionRepository
+	paymentRepo    *PaymentRepository
+	shippingRepo   *ShippingRepository
 }
 
 type TxRepositories struct {
-	Order    *OrderRepository
-	Product  *ProductRepository
-	Coupon   *CouponRepository
-	Loyalty  *LoyaltyRepository
-	Payment  *PaymentRepository
-	Shipping *ShippingRepository
+	Order      *OrderRepository
+	Product    *ProductRepository
+	Coupon     *CouponRepository
+	Loyalty    *LoyaltyRepository
+	Redemption *GiftCardRedemptionRepository
+	Payment    *PaymentRepository
+	Shipping   *ShippingRepository
 }
 
 func NewTxManager(
@@ -44,19 +46,28 @@ func NewTxManager(
 	return manager
 }
 
+func (m *TxManager) ConfigureGiftCardRedemptionRepository(repo *GiftCardRedemptionRepository) {
+	m.redemptionRepo = repo
+}
+
 func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		var shippingRepo *ShippingRepository
 		if m.shippingRepo != nil {
 			shippingRepo = m.shippingRepo.WithTx(tx)
 		}
+		var redemptionRepo *GiftCardRedemptionRepository
+		if m.redemptionRepo != nil {
+			redemptionRepo = m.redemptionRepo.WithTx(tx)
+		}
 		return fn(TxRepositories{
-			Order:    m.orderRepo.WithTx(tx),
-			Product:  m.productRepo.WithTx(tx),
-			Coupon:   m.couponRepo.WithTx(tx),
-			Loyalty:  m.loyaltyRepo.WithTx(tx),
-			Payment:  m.paymentRepo.WithTx(tx),
-			Shipping: shippingRepo,
+			Order:      m.orderRepo.WithTx(tx),
+			Product:    m.productRepo.WithTx(tx),
+			Coupon:     m.couponRepo.WithTx(tx),
+			Loyalty:    m.loyaltyRepo.WithTx(tx),
+			Redemption: redemptionRepo,
+			Payment:    m.paymentRepo.WithTx(tx),
+			Shipping:   shippingRepo,
 		})
 	})
 }

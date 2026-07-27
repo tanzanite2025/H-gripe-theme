@@ -104,10 +104,22 @@ func (r *LoyaltyRepository) CountTransactionsByUserAndSource(userID uint, transa
 
 // AdjustUserPoints atomically updates a user's points summary and creates the matching ledger entry.
 func (r *LoyaltyRepository) AdjustUserPoints(userID uint, points int, transactionType, source string, sourceID uint, description string) (*loyalty.LoyaltyTransaction, error) {
+	return r.AdjustUserPointsWithConfig(userID, points, transactionType, source, sourceID, description, nil)
+}
+
+func (r *LoyaltyRepository) AdjustUserPointsWithConfig(
+	userID uint,
+	points int,
+	transactionType,
+	source string,
+	sourceID uint,
+	description string,
+	programConfigID *uint,
+) (*loyalty.LoyaltyTransaction, error) {
 	var transaction *loyalty.LoyaltyTransaction
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var err error
-		transaction, err = r.WithTx(tx).AdjustUserPointsInCurrentTx(userID, points, transactionType, source, sourceID, description)
+		transaction, err = r.WithTx(tx).AdjustUserPointsInCurrentTxWithConfig(userID, points, transactionType, source, sourceID, description, programConfigID)
 		return err
 	})
 	if err != nil {
@@ -117,6 +129,18 @@ func (r *LoyaltyRepository) AdjustUserPoints(userID uint, points int, transactio
 }
 
 func (r *LoyaltyRepository) AdjustUserPointsInCurrentTx(userID uint, points int, transactionType, source string, sourceID uint, description string) (*loyalty.LoyaltyTransaction, error) {
+	return r.AdjustUserPointsInCurrentTxWithConfig(userID, points, transactionType, source, sourceID, description, nil)
+}
+
+func (r *LoyaltyRepository) AdjustUserPointsInCurrentTxWithConfig(
+	userID uint,
+	points int,
+	transactionType,
+	source string,
+	sourceID uint,
+	description string,
+	programConfigID *uint,
+) (*loyalty.LoyaltyTransaction, error) {
 	if userID == 0 {
 		return nil, ErrInvalidUserID
 	}
@@ -148,13 +172,14 @@ func (r *LoyaltyRepository) AdjustUserPointsInCurrentTx(userID uint, points int,
 	}
 
 	transaction := &loyalty.LoyaltyTransaction{
-		UserID:      userID,
-		Type:        transactionType,
-		Points:      points,
-		Balance:     userLoyalty.AvailablePoints,
-		Source:      source,
-		SourceID:    sourceID,
-		Description: description,
+		UserID:          userID,
+		Type:            transactionType,
+		Points:          points,
+		Balance:         userLoyalty.AvailablePoints,
+		Source:          source,
+		SourceID:        sourceID,
+		ProgramConfigID: programConfigID,
+		Description:     description,
 	}
 
 	if err := r.db.Create(transaction).Error; err != nil {

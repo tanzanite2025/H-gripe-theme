@@ -67,6 +67,30 @@
 
 @layer components {
 
+  /*
+   * Dedicated surface color for the global "Share Your Feedback" card.
+   * Keep this class scoped to UserFeedbackThread.vue.
+   */
+  .share-your-feedback-card {
+    background-color: #11151e;
+  }
+
+  /*
+   * Dedicated surface color for the shop page's product collection display card.
+   * Keep this separate from the Share Your Feedback card class.
+   */
+  .shop-page-product-collection-display-card {
+    background-color: #11151e;
+  }
+
+  /*
+   * Dedicated surface color for the top-header Membership and Points modal card.
+   * Keep this separate from the feedback and shop product collection cards.
+   */
+  .membership-and-points-modal-card {
+    background-color: #11151e;
+  }
+
   .page-content-shell {
     width: min(95%, calc(100% - 2rem));
     max-width: none;
@@ -220,9 +244,6 @@
     color: #22d3ee;
   }
 
-  /* 全局统一的高级卡片样式 */
-  /* 背景色参考 FAQ 组件: #11151e */
-  /* 阴影参考全局柔和阴影标准 */
   .premium-card {
     @apply border-none bg-[#11151e];
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);

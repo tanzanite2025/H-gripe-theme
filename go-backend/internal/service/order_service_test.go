@@ -82,6 +82,54 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	assert.InDelta(t, 10, usage.Discount, 0.001)
 }
 
+func TestOrderServiceCreateOrderUsesVersionedLoyaltyExchangeRate(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	programService := NewLoyaltyProgramService(repository.NewLoyaltyProgramRepository(db))
+	config, err := programService.Update(LoyaltyProgramConfigInput{
+		Enabled:                   true,
+		Currency:                  "USD",
+		ExchangeRatePoints:        80,
+		MinRedeemPoints:           0,
+		MaxValuePerDayCents:       50000,
+		CardExpiryDays:            365,
+		ReferralReferrerPoints:    100,
+		ReferralRefereePoints:     50,
+		CheckInBasePoints:         10,
+		CheckInStreakIntervalDays: 7,
+		CheckInStreakBonusPoints:  5,
+		CheckInMaxPoints:          50,
+		RedeemValuesCents:         []int64{1000},
+	})
+	require.NoError(t, err)
+	orderService.checkout.ConfigureLoyaltyProgram(programService)
+
+	userID := uint(43)
+	productRecord := seedProduct(t, db, 100, 5)
+	seedUserLoyalty(t, db, userID, 1000)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		800,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.Equal(t, 800, createdOrder.PointsUsed)
+	assert.InDelta(t, 10, createdOrder.PointsValue, 0.001)
+
+	var pointTransaction loyalty.LoyaltyTransaction
+	require.NoError(t, db.Where("user_id = ? AND source = ? AND source_id = ?", userID, "order", createdOrder.ID).First(&pointTransaction).Error)
+	require.NotNil(t, pointTransaction.ProgramConfigID)
+	assert.Equal(t, config.ID, *pointTransaction.ProgramConfigID)
+}
+
 func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	userID := uint(42)
@@ -435,6 +483,8 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&coupon.CouponUsage{},
 		&loyalty.UserLoyalty{},
 		&loyalty.LoyaltyTransaction{},
+		&loyalty.ProgramConfig{},
+		&loyalty.ProgramRedeemOption{},
 		&loyalty.MemberLevel{},
 		&paymentdomain.TaxRate{},
 		&shippingdomain.Carrier{},

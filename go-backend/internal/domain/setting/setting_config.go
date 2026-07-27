@@ -36,6 +36,28 @@ type RedeemSettings struct {
 	PresetValues   []float64 `json:"preset_values"`
 }
 
+// LoyaltySettings 积分获取规则配置。
+type LoyaltySettings struct {
+	ReferralReferrerPoints    int `json:"referral_referrer_points"`
+	ReferralRefereePoints     int `json:"referral_referee_points"`
+	CheckInBasePoints         int `json:"checkin_base_points"`
+	CheckInStreakIntervalDays int `json:"checkin_streak_interval_days"`
+	CheckInStreakBonusPoints  int `json:"checkin_streak_bonus_points"`
+	CheckInMaxPoints          int `json:"checkin_max_points"`
+}
+
+// DefaultLoyaltySettings 返回与默认种子数据一致的积分规则。
+func DefaultLoyaltySettings() LoyaltySettings {
+	return LoyaltySettings{
+		ReferralReferrerPoints:    100,
+		ReferralRefereePoints:     50,
+		CheckInBasePoints:         10,
+		CheckInStreakIntervalDays: 7,
+		CheckInStreakBonusPoints:  5,
+		CheckInMaxPoints:          50,
+	}
+}
+
 // EmailSettings 邮件设置
 type EmailSettings struct {
 	SMTPHost     string `json:"smtp_host"`

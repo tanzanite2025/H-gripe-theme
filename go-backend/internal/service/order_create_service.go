@@ -41,6 +41,13 @@ func (s *OrderService) CreateOrder(
 		CouponCode:      couponCode,
 		PointsToUse:     pointsToUse,
 	}
+	if pointsToUse > 0 {
+		config, err := s.checkout.currentLoyaltyProgramConfig()
+		if err != nil {
+			return nil, err
+		}
+		quoteInput.LoyaltyProgramConfig = config
+	}
 
 	var createdOrder *order.Order
 	txErr := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
@@ -108,13 +115,14 @@ func (s *OrderService) CreateOrder(
 		createdOrder = o
 
 		if quote.PointsToUse > 0 {
-			if _, err := repos.Loyalty.AdjustUserPointsInCurrentTx(
+			if _, err := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
 				userID,
 				-quote.PointsToUse,
 				"spend",
 				"order",
 				o.ID,
 				fmt.Sprintf("Spent %d points on order #%s", quote.PointsToUse, o.OrderNumber),
+				quote.ProgramConfigID,
 			); err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to deduct points for order ID %d: %w", o.ID, err)
 			}

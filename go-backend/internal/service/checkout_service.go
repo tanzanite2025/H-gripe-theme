@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"math"
 	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/repository"
 	"time"
@@ -15,30 +17,33 @@ type CheckoutService struct {
 	paymentRepo     *repository.PaymentRepository
 	loyaltyRepo     *repository.LoyaltyRepository
 	shippingService *ShippingService
+	loyaltyProgram  *LoyaltyProgramService
 }
 
 type CheckoutQuoteInput struct {
-	UserID          uint
-	Items           []order.OrderItem
-	ShippingAddress order.Address
-	CouponCode      string
-	PointsToUse     int
+	UserID               uint
+	Items                []order.OrderItem
+	ShippingAddress      order.Address
+	CouponCode           string
+	PointsToUse          int
+	LoyaltyProgramConfig *loyalty.ProgramConfig
 }
 
 type CheckoutQuote struct {
-	Items          []order.OrderItem `json:"items"`
-	SubtotalAmount float64           `json:"subtotal_amount"`
-	ShippingFee    float64           `json:"shipping_fee"`
-	ShippingQuote  *ShippingQuote    `json:"shipping_quote,omitempty"`
-	TaxAmount      float64           `json:"tax_amount"`
-	MemberDiscount float64           `json:"member_discount"`
-	PointsDiscount float64           `json:"points_discount"`
-	CouponDiscount float64           `json:"coupon_discount"`
-	DiscountAmount float64           `json:"discount_amount"`
-	TotalAmount    float64           `json:"total_amount"`
-	CouponCode     string            `json:"coupon_code"`
-	PointsToUse    int               `json:"points_to_use"`
-	Coupon         *coupon.Coupon    `json:"coupon,omitempty"`
+	Items           []order.OrderItem `json:"items"`
+	SubtotalAmount  float64           `json:"subtotal_amount"`
+	ShippingFee     float64           `json:"shipping_fee"`
+	ShippingQuote   *ShippingQuote    `json:"shipping_quote,omitempty"`
+	TaxAmount       float64           `json:"tax_amount"`
+	MemberDiscount  float64           `json:"member_discount"`
+	PointsDiscount  float64           `json:"points_discount"`
+	CouponDiscount  float64           `json:"coupon_discount"`
+	DiscountAmount  float64           `json:"discount_amount"`
+	TotalAmount     float64           `json:"total_amount"`
+	CouponCode      string            `json:"coupon_code"`
+	PointsToUse     int               `json:"points_to_use"`
+	ProgramConfigID *uint             `json:"loyalty_program_config_id,omitempty"`
+	Coupon          *coupon.Coupon    `json:"coupon,omitempty"`
 }
 
 type checkoutRepositories struct {
@@ -66,6 +71,10 @@ func NewCheckoutService(
 		checkoutService.shippingService = shippingServices[0]
 	}
 	return checkoutService
+}
+
+func (s *CheckoutService) ConfigureLoyaltyProgram(program *LoyaltyProgramService) {
+	s.loyaltyProgram = program
 }
 
 func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error) {
@@ -165,7 +174,13 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	shippingFee := shippingQuote.ShippingFee
 	taxAmount := s.calculateTax(repos.paymentRepo, subtotal, input.ShippingAddress.Country, input.ShippingAddress.State)
 	memberDiscount := s.calculateMemberDiscount(repos.loyaltyRepo, input.UserID, subtotal)
-	pointsToUse, pointsDiscount, err := s.calculatePointsDiscount(repos.loyaltyRepo, input.UserID, input.PointsToUse, subtotal)
+	pointsToUse, pointsDiscount, programConfigID, err := s.calculatePointsDiscount(
+		repos.loyaltyRepo,
+		input.UserID,
+		input.PointsToUse,
+		subtotal,
+		input.LoyaltyProgramConfig,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -186,19 +201,20 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	}
 
 	return &CheckoutQuote{
-		Items:          items,
-		SubtotalAmount: subtotal,
-		ShippingFee:    shippingFee,
-		ShippingQuote:  shippingQuote,
-		TaxAmount:      taxAmount,
-		MemberDiscount: memberDiscount,
-		PointsDiscount: pointsDiscount,
-		CouponDiscount: couponDiscount,
-		DiscountAmount: discountAmount,
-		TotalAmount:    totalAmount,
-		CouponCode:     input.CouponCode,
-		PointsToUse:    pointsToUse,
-		Coupon:         targetCoupon,
+		Items:           items,
+		SubtotalAmount:  subtotal,
+		ShippingFee:     shippingFee,
+		ShippingQuote:   shippingQuote,
+		TaxAmount:       taxAmount,
+		MemberDiscount:  memberDiscount,
+		PointsDiscount:  pointsDiscount,
+		CouponDiscount:  couponDiscount,
+		DiscountAmount:  discountAmount,
+		TotalAmount:     totalAmount,
+		CouponCode:      input.CouponCode,
+		PointsToUse:     pointsToUse,
+		ProgramConfigID: programConfigID,
+		Coupon:          targetCoupon,
 	}, nil
 }
 
@@ -216,27 +232,52 @@ func (s *CheckoutService) calculateMemberDiscount(loyaltyRepo *repository.Loyalt
 	return subtotal * (level.DiscountRate / 100)
 }
 
-func (s *CheckoutService) calculatePointsDiscount(loyaltyRepo *repository.LoyaltyRepository, userID uint, requestedPoints int, subtotal float64) (int, float64, error) {
+func (s *CheckoutService) calculatePointsDiscount(
+	loyaltyRepo *repository.LoyaltyRepository,
+	userID uint,
+	requestedPoints int,
+	subtotal float64,
+	config *loyalty.ProgramConfig,
+) (int, float64, *uint, error) {
 	if requestedPoints <= 0 {
-		return 0, 0, nil
+		return 0, 0, nil, nil
+	}
+
+	if config == nil {
+		var err error
+		config, err = s.currentLoyaltyProgramConfig()
+		if err != nil {
+			return 0, 0, nil, err
+		}
+	}
+	if !config.Enabled {
+		return 0, 0, nil, errors.New("point redemption is disabled")
 	}
 
 	userLoyalty, err := loyaltyRepo.FindUserLoyaltyByUserID(userID)
 	if err != nil || userLoyalty == nil {
-		return 0, 0, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 0, requestedPoints)
+		return 0, 0, nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 0, requestedPoints)
 	}
 	if userLoyalty.AvailablePoints < requestedPoints {
-		return 0, 0, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", userLoyalty.AvailablePoints, requestedPoints)
+		return 0, 0, nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", userLoyalty.AvailablePoints, requestedPoints)
 	}
 
-	pointsDiscount := float64(requestedPoints) * 0.01
+	pointsDiscount := float64(requestedPoints) / float64(config.ExchangeRatePoints)
 	pointsToUse := requestedPoints
 	if maxPointsDiscount := subtotal * 0.5; pointsDiscount > maxPointsDiscount {
-		pointsDiscount = maxPointsDiscount
-		pointsToUse = int(maxPointsDiscount * 100)
+		pointsToUse = int(math.Floor(maxPointsDiscount * float64(config.ExchangeRatePoints)))
+		pointsDiscount = float64(pointsToUse) / float64(config.ExchangeRatePoints)
 	}
 
-	return pointsToUse, pointsDiscount, nil
+	return pointsToUse, pointsDiscount, programConfigID(config), nil
+}
+
+func (s *CheckoutService) currentLoyaltyProgramConfig() (*loyalty.ProgramConfig, error) {
+	if s.loyaltyProgram != nil {
+		return s.loyaltyProgram.GetActive()
+	}
+	defaults := loyalty.DefaultProgramConfig()
+	return &defaults, nil
 }
 
 func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository, code string, amount float64) (*coupon.Coupon, float64, error) {

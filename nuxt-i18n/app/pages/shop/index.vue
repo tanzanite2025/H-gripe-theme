@@ -125,7 +125,7 @@
 
       <!-- 右侧商品列表区域 -->
       <div class="shop-catalog-main">
-        <section class="shop-products-panel rounded-xl bg-white/5 p-6 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
+        <section class="shop-page-product-collection-display-card shop-products-panel rounded-xl p-6 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
           <div v-if="loading" class="shop-products-state py-12">
             <p class="tz-text-secondary text-sm">{{ $t('shopPage.products.loading', 'Loading products...') }}</p>
           </div>

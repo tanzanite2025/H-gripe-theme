@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="系统设置" description="管理站点、邮件、搜索、社交与支付配置">
+    <AdminPageHeader title="系统设置" description="管理站点、邮件、搜索、社交、会员积分与支付配置">
       <template #actions>
         <Button
           v-if="hasPermission('settings:edit') && activeTab !== 'public_chat'"
@@ -27,6 +27,8 @@
         :email-settings="emailSettings"
         :seo-settings="seoSettings"
         :social-settings="socialSettings"
+        :loyalty-settings="loyaltySettings"
+        :redeem-settings="redeemSettings"
         :payment-settings="paymentSettings"
         :payment-runtime="paymentRuntime"
         :loading-payment-runtime="loadingPaymentRuntime"
@@ -92,6 +94,24 @@ const siteSettings = reactive({
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
 const seoSettings = reactive({ meta_title: '', meta_description: '', meta_keywords: '', google_analytics: '', google_tag_manager: '' })
 const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
+const loyaltySettings = reactive({
+  tz_loyalty_referral_referrer_points: 100,
+  tz_loyalty_referral_referee_points: 50,
+  tz_loyalty_checkin_base_points: 10,
+  tz_loyalty_checkin_streak_interval_days: 7,
+  tz_loyalty_checkin_streak_bonus_points: 5,
+  tz_loyalty_checkin_max_points: 50
+})
+const redeemSettings = reactive({
+  tz_redeem_enabled: true,
+  tz_redeem_currency: 'USD',
+  tz_redeem_exchange_rate: 100,
+  tz_redeem_min_points: 1000,
+  tz_redeem_max_value_per_day: 500,
+  tz_redeem_card_expiry_days: 365,
+  tz_redeem_preset_values: '10,50,100,200,500'
+})
+const loyaltyProgramConfigVersion = ref(0)
 const paymentSettings = reactive({ gateway: '', test_mode: true })
 const paymentRuntime = ref(null)
 const loadingPaymentRuntime = ref(false)
@@ -171,6 +191,29 @@ const groupDefinitions = {
     target: socialSettings,
     fields: Object.fromEntries(socialFields.map((field) => [field.key, { type: 'string', public: true, description: field.label }]))
   },
+  loyalty: {
+    target: loyaltySettings,
+    fields: {
+      tz_loyalty_referral_referrer_points: { type: 'number', public: true, description: 'Points awarded to the referrer after the first purchase' },
+      tz_loyalty_referral_referee_points: { type: 'number', public: true, description: 'Points awarded to the referred user after the first purchase' },
+      tz_loyalty_checkin_base_points: { type: 'number', public: true, description: 'Base points awarded for a daily check-in' },
+      tz_loyalty_checkin_streak_interval_days: { type: 'number', public: true, description: 'Consecutive check-in days required for a bonus' },
+      tz_loyalty_checkin_streak_bonus_points: { type: 'number', public: true, description: 'Additional points for each completed check-in streak interval' },
+      tz_loyalty_checkin_max_points: { type: 'number', public: true, description: 'Maximum points awarded for one daily check-in' }
+    }
+  },
+  redeem: {
+    target: redeemSettings,
+    fields: {
+      tz_redeem_enabled: { type: 'boolean', public: true, description: 'Whether point redemption is enabled' },
+      tz_redeem_currency: { type: 'string', public: true, description: 'Gift card currency code' },
+      tz_redeem_exchange_rate: { type: 'number', public: true, description: 'Points required for one unit of gift card value' },
+      tz_redeem_min_points: { type: 'number', public: true, description: 'Minimum points required to redeem' },
+      tz_redeem_max_value_per_day: { type: 'number', public: true, description: 'Maximum gift card value redeemable per day' },
+      tz_redeem_card_expiry_days: { type: 'number', public: true, description: 'Redeemed gift card expiry days' },
+      tz_redeem_preset_values: { type: 'string', public: true, description: 'Comma-separated preset gift card values' }
+    }
+  },
   payment: {
     target: paymentSettings,
     fields: {
@@ -199,6 +242,35 @@ const fetchSettings = async (group, force = false) => {
   if (!definition || (!force && loadedGroups.has(group))) return
   loadingSettings.value = true
   try {
+    if (group === 'loyalty' || group === 'redeem') {
+      const response = await axios.get('/api/admin/marketing/loyalty/program-config')
+      const config = response.data?.config
+      if (config) {
+        loyaltyProgramConfigVersion.value = Number(config.version || 0)
+        Object.assign(loyaltySettings, {
+          tz_loyalty_referral_referrer_points: Number(config.referral_referrer_points || 0),
+          tz_loyalty_referral_referee_points: Number(config.referral_referee_points || 0),
+          tz_loyalty_checkin_base_points: Number(config.checkin_base_points || 0),
+          tz_loyalty_checkin_streak_interval_days: Number(config.checkin_streak_interval_days || 1),
+          tz_loyalty_checkin_streak_bonus_points: Number(config.checkin_streak_bonus_points || 0),
+          tz_loyalty_checkin_max_points: Number(config.checkin_max_points || 0)
+        })
+        Object.assign(redeemSettings, {
+          tz_redeem_enabled: Boolean(config.enabled),
+          tz_redeem_currency: String(config.currency || 'USD'),
+          tz_redeem_exchange_rate: Number(config.exchange_rate_points || 0),
+          tz_redeem_min_points: Number(config.min_redeem_points || 0),
+          tz_redeem_max_value_per_day: Number(config.max_value_per_day ?? 0),
+          tz_redeem_card_expiry_days: Number(config.card_expiry_days || 0),
+          tz_redeem_preset_values: Array.isArray(config.redeem_options)
+            ? config.redeem_options.map((option) => Number(option.value ?? 0)).filter((value) => value > 0).join(',')
+            : ''
+        })
+      }
+      loadedGroups.add('loyalty')
+      loadedGroups.add('redeem')
+      return
+    }
     const response = await axios.get(`/api/admin/settings/${group}`, { params: { locale: 'en' } })
     const settings = Array.isArray(response.data.settings) ? response.data.settings : []
     const prefixed = settings.filter((setting) => setting.key.startsWith(`${group}_`))
@@ -321,6 +393,40 @@ const saveSettings = async () => {
   const group = activeTab.value
   const definition = groupDefinitions[group]
   if (!definition) return
+  if (group === 'loyalty' || group === 'redeem') {
+    const redeemValuesCents = String(redeemSettings.tz_redeem_preset_values)
+      .split(',')
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .map((value) => Math.round(value * 100))
+    saving.value = true
+    try {
+      await axios.put('/api/admin/marketing/loyalty/program-config', {
+        enabled: Boolean(redeemSettings.tz_redeem_enabled),
+        currency: String(redeemSettings.tz_redeem_currency || 'USD').toUpperCase(),
+        exchange_rate_points: Number(redeemSettings.tz_redeem_exchange_rate),
+        min_redeem_points: Number(redeemSettings.tz_redeem_min_points),
+        max_value_per_day_cents: Math.round(Number(redeemSettings.tz_redeem_max_value_per_day) * 100),
+        card_expiry_days: Number(redeemSettings.tz_redeem_card_expiry_days),
+        referral_referrer_points: Number(loyaltySettings.tz_loyalty_referral_referrer_points),
+        referral_referee_points: Number(loyaltySettings.tz_loyalty_referral_referee_points),
+        checkin_base_points: Number(loyaltySettings.tz_loyalty_checkin_base_points),
+        checkin_streak_interval_days: Number(loyaltySettings.tz_loyalty_checkin_streak_interval_days),
+        checkin_streak_bonus_points: Number(loyaltySettings.tz_loyalty_checkin_streak_bonus_points),
+        checkin_max_points: Number(loyaltySettings.tz_loyalty_checkin_max_points),
+        redeem_values_cents: redeemValuesCents
+      })
+      loadedGroups.delete('loyalty')
+      loadedGroups.delete('redeem')
+      await fetchSettings(group, true)
+      toast.success('积分与兑换规则已生成新版本')
+    } catch (error) {
+      console.error('Failed to save loyalty program config:', error)
+    } finally {
+      saving.value = false
+    }
+    return
+  }
   const settings = Object.entries(definition.fields).map(([key, metadata]) => ({
     key,
     value: String(definition.target[key] ?? ''),

@@ -13,10 +13,12 @@ type GiftCard struct {
 	Code           string         `gorm:"uniqueIndex;not null" json:"code"`
 	InitialValue   float64        `gorm:"-" json:"initial_value"`
 	Balance        float64        `gorm:"-" json:"balance"`
-	InitialCents   int64          `gorm:"column:initial_value_cents;not null;check:initial_value_cents_non_negative,initial_value_cents >= 0" json:"-"`
-	BalanceCents   int64          `gorm:"column:balance_cents;not null;check:balance_cents_non_negative,balance_cents >= 0" json:"-"`
+	InitialCents   int64          `gorm:"column:initial_value_cents;not null;check:initial_value_cents_non_negative,initial_value_cents >= 0" json:"initial_value_cents"`
+	BalanceCents   int64          `gorm:"column:balance_cents;not null;check:balance_cents_non_negative,balance_cents >= 0" json:"balance_cents"`
 	Currency       string         `gorm:"default:'USD'" json:"currency"`
 	Status         string         `gorm:"index" json:"status"` // active, used, expired, cancelled
+	OwnerUserID    *uint          `gorm:"index" json:"owner_user_id,omitempty"`
+	Origin         string         `gorm:"index;not null;default:'admin'" json:"origin"` // admin, loyalty_redemption
 	RecipientEmail string         `json:"recipient_email"`
 	RecipientName  string         `json:"recipient_name"`
 	SenderName     string         `json:"sender_name"`
@@ -72,6 +74,7 @@ func (gc *GiftCard) IsValid() bool {
 type GiftCardTransaction struct {
 	ID           uint      `gorm:"primarykey" json:"id"`
 	GiftCardID   uint      `gorm:"not null;index" json:"gift_card_id"`
+	RedemptionID *uint     `gorm:"index" json:"redemption_id,omitempty"`
 	OrderID      uint      `gorm:"index" json:"order_id"`
 	Type         string    `gorm:"not null" json:"type"` // issue, use, refund
 	Amount       float64   `gorm:"-" json:"amount"`

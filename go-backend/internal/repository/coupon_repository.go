@@ -212,6 +212,26 @@ func (r *CouponRepository) FindAllGiftCards(page, pageSize int, status string) (
 	return cards, total, err
 }
 
+func (r *CouponRepository) FindGiftCardsByOwnerID(userID uint, page, pageSize int) ([]coupon.GiftCard, int64, error) {
+	var cards []coupon.GiftCard
+	var total int64
+
+	query := r.db.Model(&coupon.GiftCard{}).Where("owner_user_id = ?", userID)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&cards).Error
+	return cards, total, err
+}
+
+func (r *CouponRepository) CountGiftCardsByOwnerID(userID uint) (int64, error) {
+	var total int64
+	err := r.db.Model(&coupon.GiftCard{}).Where("owner_user_id = ?", userID).Count(&total).Error
+	return total, err
+}
+
 // UpdateGiftCard 更新礼品卡
 func (r *CouponRepository) UpdateGiftCard(g *coupon.GiftCard) error {
 	return r.db.Save(g).Error

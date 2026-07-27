@@ -1,11 +1,11 @@
 <template>
   <!-- Dock 菜单容器 (统一胶囊风格) -->
   <div class="fixed left-0 md:left-1/2 md:-translate-x-1/2 bottom-0 md:bottom-6 w-full md:w-[96%] md:max-w-[500px] z-[101] pointer-events-auto transition-all duration-300">
-    <div class="w-full bg-[radial-gradient(circle_at_top,rgba(31,41,55,0.98),rgba(15,23,42,0.98),rgba(15,23,42,1))] backdrop-blur-md rounded-none md:rounded-full shadow-[0_24px_56px_-16px_rgba(0,0,0,1)] px-1 py-2 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
+    <div class="dock-surface w-full bg-[radial-gradient(circle_at_top,rgba(31,41,55,0.98),rgba(15,23,42,0.98),rgba(15,23,42,1))] backdrop-blur-md rounded-none md:rounded-full shadow-[0_24px_56px_-16px_rgba(0,0,0,1)] px-1 py-2.5 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
       
       <!-- 1. Menu (Sidebar) -->
       <button 
-        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
+        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
@@ -15,7 +15,7 @@
       <!-- 2. Chat -->
       <button 
         :class="[
-          'flex-1 h-10 md:h-12 flex items-center justify-center transition-colors min-w-[40px]',
+          'flex-1 h-11 md:h-12 flex items-center justify-center transition-colors min-w-[40px]',
           isChatOpen ? 'text-[#40ffaa]' : 'tz-text-secondary hover:text-white'
         ]"
         @click="toggleChatFromDock()" 
@@ -33,7 +33,7 @@
 
       <!-- 3. Checkout (Main Action) -->
       <button 
-        class="h-10 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-white text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center border border-white/80 shadow-[3px_3px_2px_rgba(0,0,0,0.85)] hover:bg-white/95 hover:shadow-[4px_4px_3px_rgba(0,0,0,0.95)] transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
+        class="h-11 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-white text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center border border-white/80 shadow-[3px_3px_2px_rgba(0,0,0,0.85)] hover:bg-white/95 hover:shadow-[4px_4px_3px_rgba(0,0,0,0.95)] transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
         @click="openCheckoutFromDock"
       >
         <span>{{ priceDisplay }}</span>
@@ -41,7 +41,7 @@
 
       <!-- 4. Quick Buy -->
       <button 
-        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors min-w-[40px]"
+        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors min-w-[40px]"
         @click="openQuick()" 
         aria-haspopup="dialog" 
         :aria-expanded="quickOpen" 
@@ -52,7 +52,7 @@
 
       <!-- 5. Cart -->
       <button 
-        class="flex-1 h-10 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
+        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
         @click="openCartDrawer" 
         :aria-label="$t('dockMenu.openCart')"
       >
@@ -287,3 +287,11 @@ watchEffect(() => {
   }
 })
 </script>
+
+<style scoped>
+@media (max-width: 767px) {
+  .dock-surface {
+    background: linear-gradient(180deg, #17191c 0%, #101216 52%, #0d111b 100%) !important;
+  }
+}
+</style>

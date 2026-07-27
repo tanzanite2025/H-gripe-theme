@@ -104,7 +104,7 @@
                 <div class="asset-item">
                   <span class="asset-icon">💳</span>
                   <div class="asset-content">
-                    <span class="asset-label">{{ $t('member.pointCards', 'Point Cards') }}</span>
+                    <span class="asset-label">{{ $t('member.giftCards', 'Gift Cards') }}</span>
                     <span class="asset-value">{{ isLogged ? `× ${userPointCards}` : '?' }}</span>
                   </div>
                 </div>
@@ -187,21 +187,15 @@
           <div class="rule-list">
             <div class="rule-item">
               <div class="rule-title">{{ $t('member.points.invite', 'Invite new users') }}</div>
-              <div class="rule-desc">{{ $t('member.points.inviteDesc', '50 Points (invitee gets 30 Points)') }}</div>
-            </div>
-            <div class="rule-item invite-action">
-              <button class="btn-gradient" @click="handleCopyInviteLink" :disabled="inviteLoading">
-                {{ inviteLoading ? '...' : $t('member.copyLink', 'Copy Invite Link') }}
-              </button>
-              <span class="invite-msg" v-if="inviteMsg">{{ inviteMsg }}</span>
+              <div class="rule-desc">{{ $t('member.points.referralRule', referralRuleDescription) }}</div>
             </div>
             <div class="rule-item">
-              <div class="rule-title">{{ $t('member.points.consume', 'Consumption') }}</div>
-              <div class="rule-desc">{{ $t('member.points.consumeDesc', '1 Dollar = 1 Point') }}</div>
+              <div class="rule-title">{{ $t('member.points.redeem', 'Redemption rate') }}</div>
+              <div class="rule-desc">{{ $t('member.points.redemptionRule', redemptionRuleDescription) }}</div>
             </div>
             <div class="rule-item">
-              <div class="rule-title">{{ $t('member.points.daily', 'Daily login') }}</div>
-              <div class="rule-desc">{{ $t('member.points.dailyDesc', '1 Point (30 days validity)') }}</div>
+              <div class="rule-title">{{ $t('member.points.checkin', 'Daily check-in') }}</div>
+              <div class="rule-desc">{{ $t('member.points.checkinRule', checkInRuleDescription) }}</div>
             </div>
           </div>
         </div>
@@ -248,6 +242,17 @@
 
           <div v-else class="empty-state">
             {{ $t('giftcards.noCards', 'No gift cards available') }}
+          </div>
+
+          <div v-if="isLogged && userGiftCards.length > 0" class="owned-giftcard-list">
+            <h5>{{ $t('giftcards.myCards', 'My Gift Cards') }}</h5>
+            <div v-for="card in userGiftCards" :key="card.id" class="owned-giftcard-item">
+              <div>
+                <strong>{{ card.code }}</strong>
+                <span>{{ card.currency }} {{ Number(card.balance ?? 0).toFixed(2) }}</span>
+              </div>
+              <small>{{ card.status }}</small>
+            </div>
           </div>
 
           <div v-if="redeemMessage" class="redeem-message" :class="{ success: redeemSuccess, error: !redeemSuccess }">
@@ -316,21 +321,39 @@ const {
   userCoupons,
   userPointCards,
   availableGiftcards,
+  userGiftCards,
+  loyaltyRules,
   giftcardsLoading,
   giftcardsError,
   redeemingCardId,
   redeemMessage,
   redeemSuccess,
-  inviteLoading,
-  inviteMsg,
   handleRedeemGiftcard,
-  handleCopyInviteLink,
   doLogout,
   initMembership,
   refreshData
 } = useMembership()
 
 const pointsNumber = computed(() => Number(points.value ?? 0))
+
+const referralRuleDescription = computed(() => {
+  const rules = loyaltyRules.value
+  return `${rules?.referral_referrer_points ?? 100} Points (invitee gets ${rules?.referral_referee_points ?? 50} Points)`
+})
+
+const redemptionRuleDescription = computed(() => {
+  const exchangeRate = loyaltyRules.value?.redemption_exchange_rate ?? 100
+  return `${exchangeRate} Points = $1`
+})
+
+const checkInRuleDescription = computed(() => {
+  const rules = loyaltyRules.value
+  const base = rules?.checkin_base_points ?? 10
+  const max = rules?.checkin_max_points ?? 50
+  const interval = rules?.checkin_streak_interval_days ?? 7
+  const bonus = rules?.checkin_streak_bonus_points ?? 5
+  return `${base} Points (up to ${max}; +${bonus} every ${interval} consecutive days)`
+})
 
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'register'>('login')
@@ -983,17 +1006,6 @@ watch(
    color: rgba(255, 255, 255, 0.7);
  }
 
- .invite-action {
-   display: flex;
-   align-items: center;
-   gap: 0.75rem;
- }
-
- .invite-msg {
-   font-size: 12px;
-   color: #cfd6ff;
- }
-
  /* 礼品卡 */
  .giftcard-section {
    background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
@@ -1066,13 +1078,50 @@ watch(
    background-clip: text;
  }
 
- .giftcard-footer {
-   display: flex;
-   align-items: center;
-   justify-content: space-between;
-   padding-top: 0.75rem;
-   border-top: 1px solid rgba(255, 255, 255, 0.1);
- }
+.giftcard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.owned-giftcard-list {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.owned-giftcard-list h5 {
+  margin: 0 0 0.65rem;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.owned-giftcard-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  color: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.owned-giftcard-item > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.owned-giftcard-item strong {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+}
+
+.owned-giftcard-item span,
+.owned-giftcard-item small {
+  font-size: 11px;
+}
 
  .giftcard-points {
    font-size: 12px;
