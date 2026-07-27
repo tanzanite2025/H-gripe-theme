@@ -117,7 +117,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_check_ins_user_date_canonical
 
 DO $$
 DECLARE
-    config_id BIGINT;
+    new_config_id BIGINT;
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM loyalty_program_configs) THEN
         INSERT INTO loyalty_program_configs (
@@ -207,11 +207,11 @@ BEGIN
                 LIMIT 1
             ), 50)
         )
-        RETURNING id INTO config_id;
+        RETURNING id INTO new_config_id;
 
         INSERT INTO loyalty_program_redeem_options (config_id, value_cents, sort_order)
         SELECT
-            config_id,
+            new_config_id,
             ROUND(TRIM(value)::NUMERIC * 100)::BIGINT,
             ordinal::INTEGER - 1
         FROM regexp_split_to_table(
