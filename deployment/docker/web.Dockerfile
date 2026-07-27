@@ -1,7 +1,7 @@
 FROM nginx:1.30.4-alpine3.24
 
 RUN apk upgrade --no-cache \
-    && for pkg in curl libcurl tiff; do if apk info -e "$pkg" >/dev/null 2>&1; then apk del --no-cache "$pkg"; fi; done \
+    && for pkg in nginx-module-image-filter gd libgd tiff curl libcurl; do if apk info -e "$pkg" >/dev/null 2>&1; then apk del --no-network "$pkg"; fi; done \
     && rm -f /etc/nginx/conf.d/default.conf \
     && mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp \
     && chown -R nginx:nginx /var/cache/nginx /tmp
