@@ -16,6 +16,7 @@ RUN npm run build
 FROM node:24-alpine
 WORKDIR /app
 COPY --from=build /app/.output ./.output
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
