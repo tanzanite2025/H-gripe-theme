@@ -173,7 +173,7 @@ jobs:
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "${GITHUB_WORKSPACE}/security-reports:/reports" \
-            anchore/grype:v0.86.2 \
+            anchore/grype:v0.116.0 \
             docker:local/${{ matrix.image }}:${{ github.sha }} \
             --fail-on high \
             --output json > "security-reports/grype-${{ matrix.image }}.json"

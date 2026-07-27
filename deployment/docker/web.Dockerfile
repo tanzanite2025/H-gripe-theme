@@ -1,6 +1,7 @@
 FROM nginx:1.28-alpine
 
-RUN rm -f /etc/nginx/conf.d/default.conf \
+RUN apk upgrade --no-cache \
+    && rm -f /etc/nginx/conf.d/default.conf \
     && mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp \
     && chown -R nginx:nginx /var/cache/nginx /tmp
 
