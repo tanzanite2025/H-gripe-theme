@@ -158,10 +158,7 @@ func SeedDefaultLoyaltyProgramConfig(db *gorm.DB) error {
 		{ValueCents: 20000, SortOrder: 3},
 		{ValueCents: 50000, SortOrder: 4},
 	}
-	if err := db.Create(&config).Error; err != nil {
-		return err
-	}
-	return nil
+	return db.Create(&config).Error
 }
 
 func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig, serverMode string) error {
