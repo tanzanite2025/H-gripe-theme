@@ -91,8 +91,29 @@ ALTER TABLE referrals
     ADD COLUMN IF NOT EXISTS referred_points INTEGER NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS completed_order_id BIGINT;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_check_ins_user_date
-    ON check_ins(user_id, check_in_date);
+ALTER TABLE check_ins
+    ADD COLUMN IF NOT EXISTS is_canonical BOOLEAN NOT NULL DEFAULT TRUE;
+
+WITH ranked_check_ins AS (
+    SELECT
+        id,
+        ROW_NUMBER() OVER (
+            PARTITION BY user_id, check_in_date
+            ORDER BY created_at ASC, id ASC
+        ) AS row_number
+    FROM check_ins
+)
+UPDATE check_ins
+SET is_canonical = FALSE
+FROM ranked_check_ins ranked
+WHERE check_ins.id = ranked.id
+  AND ranked.row_number > 1;
+
+DROP INDEX IF EXISTS idx_check_ins_user_date;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_check_ins_user_date_canonical
+    ON check_ins(user_id, check_in_date)
+    WHERE is_canonical = TRUE;
 
 DO $$
 DECLARE

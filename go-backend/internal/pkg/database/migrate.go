@@ -226,10 +226,36 @@ func RunSQLMigrations(sqlDB *sql.DB, cfg *config.DatabaseConfig) error {
 		return fmt.Errorf("could not instantiate migrate: %w", err)
 	}
 
+	if err := repairKnownDirtySQLMigration(m); err != nil {
+		return err
+	}
+
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrate up: %w", err)
 	}
 
 	logger.Info("SQL migrations completed successfully")
+	return nil
+}
+
+func repairKnownDirtySQLMigration(m *migrate.Migrate) error {
+	version, dirty, err := m.Version()
+	if err == migrate.ErrNilVersion {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect SQL migration version: %w", err)
+	}
+	if !dirty {
+		return nil
+	}
+	if version != 44 {
+		return fmt.Errorf("SQL migration version %d is dirty; manual repair is required", version)
+	}
+
+	logger.Warn("Repairing dirty SQL migration 44 before replaying idempotent loyalty migration")
+	if err := m.Force(43); err != nil {
+		return fmt.Errorf("force dirty SQL migration 44 back to version 43: %w", err)
+	}
 	return nil
 }

@@ -15,11 +15,10 @@ func (r *LoyaltyRepository) CreateCheckIn(c *loyalty.CheckIn) error {
 // FindCheckInByUserAndDate 查找用户某天的签到记录
 func (r *LoyaltyRepository) FindCheckInByUserAndDate(userID uint, date time.Time) (*loyalty.CheckIn, error) {
 	var checkIn loyalty.CheckIn
-	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
-	endOfDay := startOfDay.Add(24 * time.Hour)
+	checkInDate := date.Format("2006-01-02")
 
-	err := r.db.Where("user_id = ? AND check_in_date >= ? AND check_in_date < ?",
-		userID, startOfDay, endOfDay).First(&checkIn).Error
+	err := r.db.Where("user_id = ? AND check_in_date = ? AND is_canonical = ?",
+		userID, checkInDate, true).First(&checkIn).Error
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +28,9 @@ func (r *LoyaltyRepository) FindCheckInByUserAndDate(userID uint, date time.Time
 // GetUserCheckInStreak 获取用户连续签到天数
 func (r *LoyaltyRepository) GetUserCheckInStreak(userID uint) (int, error) {
 	var checkIn loyalty.CheckIn
-	err := r.db.Where("user_id = ?", userID).Order("check_in_date DESC").First(&checkIn).Error
+	err := r.db.Where("user_id = ? AND is_canonical = ?", userID, true).
+		Order("check_in_date DESC").
+		First(&checkIn).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return 0, nil
@@ -44,7 +45,7 @@ func (r *LoyaltyRepository) FindCheckInsByUserID(userID uint, page, pageSize int
 	var checkIns []loyalty.CheckIn
 	var total int64
 
-	query := r.db.Model(&loyalty.CheckIn{}).Where("user_id = ?", userID)
+	query := r.db.Model(&loyalty.CheckIn{}).Where("user_id = ? AND is_canonical = ?", userID, true)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err

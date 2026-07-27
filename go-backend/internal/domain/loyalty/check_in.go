@@ -9,6 +9,7 @@ type CheckIn struct {
 	CheckInDate     string    `gorm:"not null;index" json:"check_in_date"` // YYYY-MM-DD
 	PointsEarned    int       `gorm:"not null" json:"points_earned"`
 	ConsecutiveDays int       `gorm:"default:1" json:"consecutive_days"`
+	IsCanonical     bool      `gorm:"not null;default:true" json:"is_canonical"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 
