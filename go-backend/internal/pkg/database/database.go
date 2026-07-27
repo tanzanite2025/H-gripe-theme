@@ -28,7 +28,8 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	db, err := gorm.Open(dialector, &gorm.Config{
-		Logger: newGormLogger(cfg.LogLevel),
+		Logger:         newGormLogger(cfg.LogLevel),
+		TranslateError: true,
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},

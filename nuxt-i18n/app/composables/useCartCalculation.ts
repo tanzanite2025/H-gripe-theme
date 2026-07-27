@@ -51,6 +51,7 @@ export const useCartCalculation = () => {
     appliedCoupon,
     usePointsDiscount,
     pointsToUse,
+    loyaltyPointRedemptionEnabled,
     getUserTier,
     calculateMemberDiscount,
     calculatePointsDiscount,
@@ -58,6 +59,7 @@ export const useCartCalculation = () => {
     applyCoupon,
     removeCoupon,
     setPointsUsage,
+    loadLoyaltyProgramConfig,
   } = discount
 
   // 3. 运费计算模块
@@ -139,7 +141,10 @@ export const useCartCalculation = () => {
    * 初始化（加载所有配置）
    */
   const initialize = async () => {
-    await dataLoader.initialize()
+    await Promise.allSettled([
+      dataLoader.initialize(),
+      loadLoyaltyProgramConfig(),
+    ])
   }
 
   return {
@@ -150,6 +155,7 @@ export const useCartCalculation = () => {
     appliedCoupon,
     usePointsDiscount,
     pointsToUse,
+    loyaltyPointRedemptionEnabled,
     selectedShippingTemplate,
     selectedTaxRates,
     shippingAddress,
@@ -173,6 +179,7 @@ export const useCartCalculation = () => {
     applyCoupon,
     removeCoupon,
     setPointsUsage,
+    loadLoyaltyProgramConfig,
     initialize,
   }
 }

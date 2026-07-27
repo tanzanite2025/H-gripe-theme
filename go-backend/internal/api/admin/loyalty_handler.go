@@ -32,6 +32,22 @@ func (h *MarketingHandler) ListLoyaltyTransactions(c *gin.Context) {
 	response.Paged(c, gin.H{"transactions": transactions}, params.Page, params.PageSize, total)
 }
 
+func (h *MarketingHandler) ListGiftCardRedemptions(c *gin.Context) {
+	params := pagination.ParsePagination(c)
+	userID, _ := strconv.ParseUint(c.Query("user_id"), 10, 32)
+	if userID == 0 {
+		apierror.RespondBadRequest(c, "please provide user_id")
+		return
+	}
+
+	redemptions, total, err := h.marketingService.ListGiftCardRedemptionsAdmin(uint(userID), params.Page, params.PageSize)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	response.Paged(c, gin.H{"redemptions": redemptions}, params.Page, params.PageSize, total)
+}
+
 func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {
 	var req struct {
 		UserID      uint   `json:"user_id" binding:"required"`

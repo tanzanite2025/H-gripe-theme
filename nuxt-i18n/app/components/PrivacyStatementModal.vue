@@ -1,6 +1,6 @@
 <template>
   <div
-    class="wa-drawer-shell"
+    class="privacy-statement-modal-shell wa-drawer-shell"
   >
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-3 md:py-4 border-b border-white/10">
@@ -35,4 +35,28 @@ import PrivacyStatementContent from '~/components/PrivacyStatementContent.vue'
 const emit = defineEmits<{ (e: 'close'): void }>()
 </script>
 
+<style scoped>
+@media (max-width: 767px) {
+  .privacy-statement-modal-shell {
+    height: min(92vh, calc(100vh - 16px));
+    max-height: min(92vh, calc(100vh - 16px));
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.92) !important;
+  }
+
+  @supports (height: 100svh) {
+    .privacy-statement-modal-shell {
+      height: min(92svh, calc(100svh - 16px));
+      max-height: min(92svh, calc(100svh - 16px));
+    }
+  }
+
+  @supports (height: 100dvh) {
+    .privacy-statement-modal-shell {
+      height: min(92dvh, calc(100dvh - 16px));
+      max-height: min(92dvh, calc(100dvh - 16px));
+    }
+  }
+}
+</style>
 

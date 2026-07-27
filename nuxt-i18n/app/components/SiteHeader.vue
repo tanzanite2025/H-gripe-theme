@@ -1,7 +1,7 @@
 <template>
 	<div ref="headerRootRef" class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[900] site-header-root">
 		<div
-			class="relative w-full rounded-none md:rounded-[30px] bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:py-2"
+			class="site-header-surface relative w-full rounded-none md:rounded-[30px] bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:py-2"
 		>
 			<!-- 桌面端：宽版极简胶囊布局 (Option B Wide) -->
 			<div class="hidden md:flex flex-col items-center gap-1">
@@ -54,7 +54,7 @@
 					<div class="flex items-center justify-end gap-4">
 						<!-- Search -->
 						<button
-							class="w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
+							class="site-header-top-icon-button--plain w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
 							@click="openSidebar"
 							aria-label="Search"
 						>
@@ -67,7 +67,7 @@
 						<!-- Language -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-2 tz-text-secondary hover:text-white transition-colors"
+								class="site-header-top-icon-button--plain h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-2 tz-text-secondary hover:text-white transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -92,11 +92,11 @@
 								>
 									<div
 										v-if="isOpen"
-										class="fixed inset-0 z-[1200] flex items-start justify-center pt-[calc(var(--site-header-offset,80px)+18px)]"
+										class="fixed inset-0 z-[1200] flex items-center justify-center md:items-start md:pt-[calc(var(--site-header-offset,80px)+18px)]"
 									>
 										<div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden"></div>
 										<div
-											class="relative w-full md:w-[88vw] md:max-w-[1500px] bg-slate-950/90 backdrop-blur-xl border border-white/15 rounded-2xl overflow-auto max-h-[70vh] py-3 md:py-3.5 shadow-[0_18px_56px_rgba(255,255,255,0.10),0_28px_80px_rgba(0,0,0,0.55)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
+											class="language-dropdown-surface relative w-full md:w-[88vw] md:max-w-[1500px] backdrop-blur-xl border border-white/15 rounded-2xl overflow-auto h-[90vh] max-h-[90vh] md:h-auto md:max-h-[70vh] py-3 md:py-3.5 shadow-[0_18px_56px_rgba(255,255,255,0.10),0_28px_80px_rgba(0,0,0,0.55)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
 											role="listbox"
 											:id="dropdownId"
 											:aria-labelledby="buttonId"
@@ -127,7 +127,7 @@
 
 						<!-- Share/Points -->
 						<button
-							class="w-10 h-10 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors"
+							class="site-header-top-icon-button--plain w-10 h-10 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-label="Open membership panel"
@@ -223,7 +223,7 @@
 					<div class="flex items-center gap-3 phone-390:gap-4">
 						<!-- Search (Icon) -->
 						<button
-							class="w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
+							class="site-header-top-icon-button--plain w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
 							@click="openSidebar"
 							aria-label="Search"
 						>
@@ -236,7 +236,7 @@
 						<!-- Language Switcher (Text + Icon) -->
 						<div class="relative" data-lang-wrapper>
 							<button
-								class="h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-1.5 tz-text-secondary hover:text-white transition-colors"
+								class="site-header-top-icon-button--plain h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-1.5 tz-text-secondary hover:text-white transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -254,7 +254,7 @@
 
 						<!-- Share/Points (Icon) -->
 						<button
-							class="tz-text-secondary hover:text-[#40ffaa] transition-colors p-1"
+							class="site-header-top-icon-button--plain tz-text-secondary hover:text-[#40ffaa] transition-colors p-1"
 							@click.stop="toggleShare()"
 							:aria-expanded="shareOpen"
 							aria-label="Open membership panel"
@@ -265,13 +265,13 @@
 				</div>
 
 				<!-- 第二行：主要导航。移动端同样打开卡片菜单，避免三级 TAB 漏在页面横条里。 -->
-				<nav ref="mobilePrimaryNavRef" class="bg-white/5 rounded-xl p-1 grid grid-cols-4 gap-1 relative" aria-label="Mobile primary navigation">
+				<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav rounded-xl p-1 grid grid-cols-4 gap-1 relative shadow-[0_8px_18px_-14px_rgba(0,0,0,0.9)]" aria-label="Mobile primary navigation">
 					<button
 						v-for="section in primaryMegaNavSections"
 						:key="section.id"
 						type="button"
 						class="min-w-0 py-2 rounded-lg text-[13px] phone-390:text-[14px] font-semibold text-center text-white transition-all inline-flex items-center justify-center gap-0.5"
-						:class="currentMegaNavId === section.id ? 'bg-white/10 shadow-sm border border-white/10' : 'bg-white/[0.04] border border-white/5'"
+						:class="currentMegaNavId === section.id ? 'bg-[#2d3238] shadow-sm' : 'bg-[#101318]'"
 						:aria-controls="megaPanelId"
 						:aria-expanded="activeMegaNavId === section.id"
 						aria-haspopup="dialog"
@@ -1059,6 +1059,30 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
   font-size: 12px !important;
 }
 
+.site-header-root .site-header-top-icon-button--plain {
+	border: 0 !important;
+	background: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+}
+
+.site-header-root .site-header-top-icon-button--plain:hover,
+.site-header-root .site-header-top-icon-button--plain:focus-visible,
+.site-header-root .site-header-top-icon-button--plain[aria-expanded='true'] {
+	background: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+}
+
+.language-dropdown-surface {
+	background: linear-gradient(
+		135deg,
+		rgba(148, 163, 184, 0.12) 0%,
+		rgba(15, 17, 21, 0.96) 38%,
+		rgba(0, 0, 0, 0.98) 100%
+	) !important;
+}
+
 .breadcrumb-subnav-trigger {
 	display: inline-flex;
 	max-width: min(46vw, 220px);
@@ -1190,6 +1214,15 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 @media (max-width: 767px) {
 	.site-header-root {
 		max-height: 150px;
+	}
+
+	.site-header-surface {
+		background: linear-gradient(180deg, #17191c 0%, #101216 52%, #0d111b 100%) !important;
+		border-bottom: 0;
+	}
+
+	.site-header-mobile-nav {
+		background: linear-gradient(180deg, #171a1f 0%, #101318 100%) !important;
 	}
 }
 

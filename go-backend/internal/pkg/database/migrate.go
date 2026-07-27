@@ -80,7 +80,10 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&coupon.CouponUsage{},
 		&coupon.GiftCard{},
 		&coupon.GiftCardTransaction{},
+		&coupon.GiftCardRedemption{},
 		&loyalty.LoyaltyTransaction{},
+		&loyalty.ProgramConfig{},
+		&loyalty.ProgramRedeemOption{},
 		&loyalty.CheckIn{},
 		&loyalty.Referral{},
 		&loyalty.MemberLevel{},
@@ -114,25 +117,15 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 	if err != nil {
 		return err
 	}
-	return SeedDefaultSettings(db)
+	if err := SeedDefaultSettings(db); err != nil {
+		return err
+	}
+	return SeedDefaultLoyaltyProgramConfig(db)
 }
 
 // SeedDefaultSettings 种子数据初始化
 func SeedDefaultSettings(db *gorm.DB) error {
-	defaultSettings := []setting.Setting{
-		{Key: "tz_redeem_enabled", Value: "1", Type: "boolean", Group: "redeem", Locale: "en", IsPublic: true, Description: "Whether point redemption is enabled"},
-		{Key: "tz_redeem_enabled", Value: "1", Type: "boolean", Group: "redeem", Locale: "zh", IsPublic: true, Description: "是否启用积分兑换"},
-		{Key: "tz_redeem_exchange_rate", Value: "100", Type: "number", Group: "redeem", Locale: "en", IsPublic: true, Description: "Redemption exchange rate (e.g. 100 points = 1 unit)"},
-		{Key: "tz_redeem_exchange_rate", Value: "100", Type: "number", Group: "redeem", Locale: "zh", IsPublic: true, Description: "积分兑换比例（如100积分=1元）"},
-		{Key: "tz_redeem_min_points", Value: "1000", Type: "number", Group: "redeem", Locale: "en", IsPublic: true, Description: "Minimum points required to redeem"},
-		{Key: "tz_redeem_min_points", Value: "1000", Type: "number", Group: "redeem", Locale: "zh", IsPublic: true, Description: "兑换所需最小积分"},
-		{Key: "tz_redeem_max_value_per_day", Value: "500", Type: "number", Group: "redeem", Locale: "en", IsPublic: true, Description: "Maximum value redeemable per day"},
-		{Key: "tz_redeem_max_value_per_day", Value: "500", Type: "number", Group: "redeem", Locale: "zh", IsPublic: true, Description: "每日最大可兑换价值"},
-		{Key: "tz_redeem_card_expiry_days", Value: "365", Type: "number", Group: "redeem", Locale: "en", IsPublic: true, Description: "Redeemed gift card expiry days"},
-		{Key: "tz_redeem_card_expiry_days", Value: "365", Type: "number", Group: "redeem", Locale: "zh", IsPublic: true, Description: "兑换出的礼品卡有效期天数"},
-		{Key: "tz_redeem_preset_values", Value: "10,50,100,200,500", Type: "string", Group: "redeem", Locale: "en", IsPublic: true, Description: "Preset gift card values for redemption"},
-		{Key: "tz_redeem_preset_values", Value: "10,50,100,200,500", Type: "string", Group: "redeem", Locale: "zh", IsPublic: true, Description: "预设的可兑换礼品卡面额"},
-	}
+	defaultSettings := []setting.Setting{}
 
 	for _, s := range defaultSettings {
 		var count int64
@@ -144,6 +137,29 @@ func SeedDefaultSettings(db *gorm.DB) error {
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+func SeedDefaultLoyaltyProgramConfig(db *gorm.DB) error {
+	var count int64
+	if err := db.Model(&loyalty.ProgramConfig{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	config := loyalty.DefaultProgramConfig()
+	config.RedeemOptions = []loyalty.ProgramRedeemOption{
+		{ValueCents: 1000, SortOrder: 0},
+		{ValueCents: 5000, SortOrder: 1},
+		{ValueCents: 10000, SortOrder: 2},
+		{ValueCents: 20000, SortOrder: 3},
+		{ValueCents: 50000, SortOrder: 4},
+	}
+	if err := db.Create(&config).Error; err != nil {
+		return err
 	}
 	return nil
 }

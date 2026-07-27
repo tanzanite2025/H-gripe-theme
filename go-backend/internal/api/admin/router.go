@@ -45,7 +45,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
 	ticketHandler := NewTicketHandler(services.Ticket, services.CustomerServiceContext, services.CustomerServiceEvents)
 	visitorProfileHandler := NewVisitorProfileHandler(services.VisitorProfile)
-	marketingHandler := NewMarketingHandler(marketingService)
+	marketingHandler := NewMarketingHandler(marketingService, services.LoyaltyProgram)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
 	publicChatAgentHandler := NewPublicChatAgentHandler(services.AdminPublicChat)
 	auditHandler := NewAuditHandler(services.Audit)
@@ -346,10 +346,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				loyaltyGroup := marketingGroup.Group("/loyalty")
 				{
 					loyaltyGroup.GET("/transactions", marketingHandler.ListLoyaltyTransactions)
+					loyaltyGroup.GET("/redemptions", marketingHandler.ListGiftCardRedemptions)
 					loyaltyGroup.POST("/transactions", middleware.RequirePermission(auth.PermMarketingCreate), marketingHandler.CreateLoyaltyTransaction)
 					loyaltyGroup.GET("/check-ins", marketingHandler.ListCheckIns)
 					loyaltyGroup.GET("/referrals", marketingHandler.ListReferrals)
 					loyaltyGroup.PATCH("/referrals/:id/status", middleware.RequirePermission(auth.PermMarketingEdit), marketingHandler.UpdateReferralStatus)
+					loyaltyGroup.GET("/program-config", marketingHandler.GetLoyaltyProgramConfig)
+					loyaltyGroup.PUT("/program-config", middleware.RequirePermission(auth.PermMarketingEdit), marketingHandler.UpdateLoyaltyProgramConfig)
 				}
 
 				// 会员等级管理
@@ -390,6 +393,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				settingsGroup.GET("/seo", settingsHandler.GetSEOSettings)
 				settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 				settingsGroup.GET("/payment", settingsHandler.GetPaymentSettings)
+				settingsGroup.GET("/loyalty", settingsHandler.GetLoyaltySettings)
+				settingsGroup.GET("/redeem", settingsHandler.GetRedeemSettings)
 				settingsGroup.GET("/:key", settingsHandler.GetSetting)
 			}
 

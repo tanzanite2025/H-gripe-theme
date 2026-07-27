@@ -5,6 +5,8 @@
       <TabsTrigger value="email" class="h-9 flex-none px-3"><Mail class="size-4" />邮件</TabsTrigger>
       <TabsTrigger value="seo" class="h-9 flex-none px-3"><SearchCheck class="size-4" />SEO</TabsTrigger>
       <TabsTrigger value="social" class="h-9 flex-none px-3"><Share2 class="size-4" />社交媒体</TabsTrigger>
+      <TabsTrigger value="loyalty" class="h-9 flex-none px-3"><Coins class="size-4" />积分规则</TabsTrigger>
+      <TabsTrigger value="redeem" class="h-9 flex-none px-3"><Gift class="size-4" />积分兑换</TabsTrigger>
       <TabsTrigger value="payment" class="h-9 flex-none px-3"><CreditCard class="size-4" />支付</TabsTrigger>
       <TabsTrigger value="public_chat" class="h-9 flex-none px-3"><Headset class="size-4" />Public Chat</TabsTrigger>
     </TabsList>
@@ -133,6 +135,59 @@
         <div class="grid gap-4 md:grid-cols-2">
           <AdminFormField v-for="field in socialFields" :key="field.key" :label="field.label">
             <Input v-model="socialSettings[field.key]" type="url" :placeholder="field.placeholder" />
+          </AdminFormField>
+        </div>
+      </SettingsSection>
+    </TabsContent>
+
+    <TabsContent value="loyalty">
+      <SettingsSection title="积分规则" description="前台积分说明与后端推荐、签到奖励共用这些配置。">
+        <div class="grid gap-4 md:grid-cols-2">
+          <AdminFormField label="推荐人奖励积分" description="被推荐用户完成首次购买后，推荐人获得的积分。">
+            <Input v-model.number="loyaltySettings.tz_loyalty_referral_referrer_points" type="number" min="0" />
+          </AdminFormField>
+          <AdminFormField label="被推荐人奖励积分" description="被推荐用户完成首次购买后，被推荐人获得的积分。">
+            <Input v-model.number="loyaltySettings.tz_loyalty_referral_referee_points" type="number" min="0" />
+          </AdminFormField>
+          <AdminFormField label="每日签到基础积分">
+            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_base_points" type="number" min="0" />
+          </AdminFormField>
+          <AdminFormField label="连续签到奖励周期（天）">
+            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_streak_interval_days" type="number" min="1" />
+          </AdminFormField>
+          <AdminFormField label="连续签到额外积分">
+            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_streak_bonus_points" type="number" min="0" />
+          </AdminFormField>
+          <AdminFormField label="单次签到最高积分">
+            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_max_points" type="number" min="0" />
+          </AdminFormField>
+        </div>
+      </SettingsSection>
+    </TabsContent>
+
+    <TabsContent value="redeem">
+      <SettingsSection title="积分兑换" description="控制前台显示的礼品卡兑换面值；这里不是已发行礼品卡库存。">
+        <div class="grid gap-4 md:grid-cols-2">
+          <AdminFormField label="启用积分兑换">
+            <Switch v-model="redeemSettings.tz_redeem_enabled" aria-label="启用积分兑换" />
+          </AdminFormField>
+          <AdminFormField label="礼品卡币种" description="使用 ISO 4217 三位币种代码，例如 USD。">
+            <Input v-model="redeemSettings.tz_redeem_currency" maxlength="3" />
+          </AdminFormField>
+          <AdminFormField label="兑换比例" description="例如 100 表示 100 积分兑换 1 美元礼品卡。">
+            <Input v-model.number="redeemSettings.tz_redeem_exchange_rate" type="number" min="1" />
+          </AdminFormField>
+          <AdminFormField label="最低兑换积分">
+            <Input v-model.number="redeemSettings.tz_redeem_min_points" type="number" min="0" />
+          </AdminFormField>
+          <AdminFormField label="每日最高兑换金额">
+            <Input v-model.number="redeemSettings.tz_redeem_max_value_per_day" type="number" min="0" step="0.01" />
+          </AdminFormField>
+          <AdminFormField label="兑换礼品卡有效期（天）">
+            <Input v-model.number="redeemSettings.tz_redeem_card_expiry_days" type="number" min="0" />
+          </AdminFormField>
+          <AdminFormField label="预设礼品卡面值" description="用英文逗号分隔，例如 10,50,100,200,500。">
+            <Input v-model="redeemSettings.tz_redeem_preset_values" />
           </AdminFormField>
         </div>
       </SettingsSection>
@@ -417,6 +472,8 @@ import {
   Eye,
   EyeOff,
   Globe2,
+  Coins,
+  Gift,
   Headset,
   Mail,
   RefreshCw,
@@ -441,6 +498,8 @@ defineProps({
   emailSettings: { type: Object, required: true },
   seoSettings: { type: Object, required: true },
   socialSettings: { type: Object, required: true },
+  loyaltySettings: { type: Object, required: true },
+  redeemSettings: { type: Object, required: true },
   paymentSettings: { type: Object, required: true },
   paymentRuntime: { type: Object, default: null },
   loadingPaymentRuntime: { type: Boolean, default: false },

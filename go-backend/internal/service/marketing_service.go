@@ -2,15 +2,19 @@ package service
 
 import (
 	"errors"
+	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/repository"
 	"time"
 )
 
 type MarketingService struct {
-	txManager   *repository.TxManager
-	couponRepo  *repository.CouponRepository
-	loyaltyRepo *repository.LoyaltyRepository
+	txManager      *repository.TxManager
+	couponRepo     *repository.CouponRepository
+	loyaltyRepo    *repository.LoyaltyRepository
+	redemptionRepo *repository.GiftCardRedemptionRepository
+	setting        *SettingService
+	program        *LoyaltyProgramService
 }
 
 var (
@@ -48,13 +52,25 @@ func NewMarketingService(
 	txManager *repository.TxManager,
 	couponRepo *repository.CouponRepository,
 	loyaltyRepo *repository.LoyaltyRepository,
+	settingServices ...*SettingService,
 ) *MarketingService {
 	s := &MarketingService{
 		txManager:   txManager,
 		couponRepo:  couponRepo,
 		loyaltyRepo: loyaltyRepo,
 	}
+	if len(settingServices) > 0 {
+		s.setting = settingServices[0]
+	}
 	return s
+}
+
+func (s *MarketingService) ConfigureLoyaltyProgram(program *LoyaltyProgramService) {
+	s.program = program
+}
+
+func (s *MarketingService) ConfigureGiftCardRedemptions(repo *repository.GiftCardRedemptionRepository) {
+	s.redemptionRepo = repo
 }
 
 func (s *MarketingService) ListLoyaltyTransactions(userID uint, page, pageSize int) ([]loyalty.LoyaltyTransaction, int64, error) {
@@ -227,39 +243,60 @@ func (s *MarketingService) EarnPoints(userID uint, points int, source string, so
 
 // CheckIn 签到
 func (s *MarketingService) CheckIn(userID uint) (int, error) {
-	// 检查今天是否已签到
-	today := time.Now()
-	existing, _ := s.loyaltyRepo.FindCheckInByUserAndDate(userID, today)
-	if existing != nil {
-		return 0, errors.New("already checked in today")
-	}
-
-	// 获取连续签到天数
-	streak, _ := s.loyaltyRepo.GetUserCheckInStreak(userID)
-
-	// 计算奖励积分（连续签到奖励更多）
-	points := 10 + (streak / 7 * 5) // 每连续7天多奖励5积分
-	if points > 50 {
-		points = 50 // 最多50积分
-	}
-
-	// 创建签到记录
-	checkIn := &loyalty.CheckIn{
-		UserID:          userID,
-		CheckInDate:     today.Format("2006-01-02"),
-		PointsEarned:    points,
-		ConsecutiveDays: streak + 1,
-	}
-
-	if err := s.loyaltyRepo.CreateCheckIn(checkIn); err != nil {
+	config, err := s.getCurrentProgramConfig()
+	if err != nil {
 		return 0, err
 	}
 
-	// 奖励积分
-	if err := s.EarnPoints(userID, points, "checkin", checkIn.ID, "Daily check-in reward"); err != nil {
+	var points int
+	err = s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		today := time.Now()
+		if _, err := repos.Loyalty.FindOrCreateUserLoyaltyForUpdate(userID); err != nil {
+			return err
+		}
+		existing, findErr := repos.Loyalty.FindCheckInByUserAndDate(userID, today)
+		if findErr == nil && existing != nil {
+			return errors.New("already checked in today")
+		}
+		if findErr != nil && !repository.IsRecordNotFound(findErr) {
+			return findErr
+		}
+
+		streak, err := repos.Loyalty.GetUserCheckInStreak(userID)
+		if err != nil {
+			return err
+		}
+
+		points = config.CheckInBasePoints +
+			(streak / config.CheckInStreakIntervalDays * config.CheckInStreakBonusPoints)
+		if points > config.CheckInMaxPoints {
+			points = config.CheckInMaxPoints
+		}
+
+		checkIn := &loyalty.CheckIn{
+			UserID:          userID,
+			CheckInDate:     today.Format("2006-01-02"),
+			PointsEarned:    points,
+			ConsecutiveDays: streak + 1,
+		}
+		if err := repos.Loyalty.CreateCheckIn(checkIn); err != nil {
+			return err
+		}
+
+		_, err = repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
+			userID,
+			points,
+			"earn",
+			"checkin",
+			checkIn.ID,
+			"Daily check-in reward",
+			programConfigID(config),
+		)
+		return err
+	})
+	if err != nil {
 		return 0, err
 	}
-
 	return points, nil
 }
 
@@ -282,33 +319,76 @@ func (s *MarketingService) CreateReferral(referrerID, refereeID uint) error {
 
 // CompleteReferral 完成推荐（被推荐人首次购买后）
 func (s *MarketingService) CompleteReferral(refereeID uint, orderID uint) error {
-	referral, err := s.loyaltyRepo.FindReferralByRefereeID(refereeID)
+	config, err := s.getCurrentProgramConfig()
 	if err != nil {
 		return err
 	}
 
-	if referral.Status != "pending" {
-		return errors.New("referral already completed")
-	}
+	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		referral, err := repos.Loyalty.FindReferralByRefereeIDForUpdate(refereeID)
+		if err != nil {
+			return err
+		}
+		if referral.Status != "pending" {
+			return errors.New("referral already completed")
+		}
 
-	// 更新推荐状态
-	referral.Status = "completed"
-	referral.CompletedAt = &time.Time{}
-	*referral.CompletedAt = time.Now()
+		now := time.Now()
+		referral.Status = "completed"
+		referral.CompletedAt = &now
+		referral.CompletedOrderID = orderID
+		referral.ReferrerPoints = config.ReferralReferrerPoints
+		referral.ReferredPoints = config.ReferralRefereePoints
+		referral.PointsEarned = config.ReferralReferrerPoints + config.ReferralRefereePoints
 
-	if err := s.loyaltyRepo.UpdateReferral(referral); err != nil {
+		if err := repos.Loyalty.UpdateReferral(referral); err != nil {
+			return err
+		}
+		if _, err := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
+			referral.ReferrerID,
+			config.ReferralReferrerPoints,
+			"earn",
+			"referral",
+			referral.ID,
+			"Referral reward",
+			programConfigID(config),
+		); err != nil {
+			return err
+		}
+		_, err = repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
+			refereeID,
+			config.ReferralRefereePoints,
+			"earn",
+			"referral",
+			referral.ID,
+			"New user referral bonus",
+			programConfigID(config),
+		)
 		return err
+	})
+}
+
+func (s *MarketingService) getCurrentProgramConfig() (*loyalty.ProgramConfig, error) {
+	if s.program != nil {
+		return s.program.GetActive()
 	}
 
-	// 奖励推荐人积分
-	referrerPoints := 100
-	if err := s.EarnPoints(referral.ReferrerID, referrerPoints, "referral", referral.ID, "Referral reward"); err != nil {
-		return err
+	defaults := loyalty.DefaultProgramConfig()
+	defaults.RedeemOptions = []loyalty.ProgramRedeemOption{
+		{ValueCents: 1000, SortOrder: 0},
+		{ValueCents: 5000, SortOrder: 1},
+		{ValueCents: 10000, SortOrder: 2},
+		{ValueCents: 20000, SortOrder: 3},
+		{ValueCents: 50000, SortOrder: 4},
 	}
+	return &defaults, nil
+}
 
-	// 奖励被推荐人积分
-	refereePoints := 50
-	return s.EarnPoints(refereeID, refereePoints, "referral", referral.ID, "New user referral bonus")
+func programConfigID(config *loyalty.ProgramConfig) *uint {
+	if config == nil || config.ID == 0 {
+		return nil
+	}
+	return &config.ID
 }
 
 // GetUserLoyalty 获取用户会员信息
@@ -317,7 +397,18 @@ func (s *MarketingService) GetUserLoyalty(userID uint) (*loyalty.UserLoyalty, er
 }
 
 func (s *MarketingService) CountRedeemedGiftCards(userID uint) (int64, error) {
-	return s.loyaltyRepo.CountTransactionsByUserAndSource(userID, "spend", "giftcard")
+	return s.couponRepo.CountGiftCardsByOwnerID(userID)
+}
+
+func (s *MarketingService) ListUserGiftCards(userID uint, page, pageSize int) ([]coupon.GiftCard, int64, error) {
+	return s.couponRepo.FindGiftCardsByOwnerID(userID, page, pageSize)
+}
+
+func (s *MarketingService) ListGiftCardRedemptionsAdmin(userID uint, page, pageSize int) ([]coupon.GiftCardRedemption, int64, error) {
+	if s.redemptionRepo == nil {
+		return nil, 0, errors.New("gift card redemption repository is unavailable")
+	}
+	return s.redemptionRepo.FindByUserID(userID, page, pageSize)
 }
 
 // 辅助方法

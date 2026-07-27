@@ -37,6 +37,8 @@ type Repositories struct {
 	Shipping           *repository.ShippingRepository
 	Coupon             *repository.CouponRepository
 	Loyalty            *repository.LoyaltyRepository
+	LoyaltyProgram     *repository.LoyaltyProgramRepository
+	GiftCardRedemption *repository.GiftCardRedemptionRepository
 	Review             *repository.ReviewRepository
 	Ticket             *repository.TicketRepository
 	Gallery            *repository.GalleryRepository
@@ -69,6 +71,7 @@ type Services struct {
 	Order                  *service.OrderService
 	Payment                *service.PaymentService
 	Marketing              *service.MarketingService
+	LoyaltyProgram         *service.LoyaltyProgramService
 	Review                 *service.ReviewService
 	Ticket                 *service.TicketService
 	CustomerServiceContext *service.CustomerServiceContextService
@@ -100,6 +103,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Shipping:           repository.NewShippingRepository(db),
 		Coupon:             repository.NewCouponRepository(db),
 		Loyalty:            repository.NewLoyaltyRepository(db),
+		LoyaltyProgram:     repository.NewLoyaltyProgramRepository(db),
+		GiftCardRedemption: repository.NewGiftCardRedemptionRepository(db),
 		Review:             repository.NewReviewRepository(db),
 		Ticket:             repository.NewTicketRepository(db),
 		Gallery:            repository.NewGalleryRepository(db),
@@ -129,25 +134,29 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		return nil, fmt.Errorf("initialize email service: %w", err)
 	}
 	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment, repos.Shipping)
+	txManager.ConfigureGiftCardRedemptionRepository(repos.GiftCardRedemption)
 
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
 	antiBotService := antibot.New(redisCache.Client(), cfg.AntiAbuse)
 	antiFraudService := antifraud.New(redisCache.Client(), cfg.PaymentRisk)
 
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
+	settingService := service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL)
+	loyaltyProgramService := service.NewLoyaltyProgramService(repos.LoyaltyProgram)
 
 	services := Services{
 		Auth:                  service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
 		Post:                  service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL),
 		Product:               service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL),
 		Cart:                  service.NewCartService(repos.Cart, repos.Product),
-		Setting:               service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL),
+		Setting:               settingService,
 		FAQ:                   service.NewFAQService(repos.FAQ, storageSvc),
 		Gallery:               service.NewGalleryService(repos.Gallery),
 		Media:                 service.NewMediaService(repos.Media, storageSvc),
 		Registration:          service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
 		Checkout:              service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
-		Marketing:             service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty),
+		Marketing:             service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
+		LoyaltyProgram:        loyaltyProgramService,
 		Review:                service.NewReviewService(repos.Review),
 		Ticket:                service.NewTicketService(repos.Ticket, repos.User),
 		CustomerServiceEvents: service.NewCustomerServiceEventHub(),
@@ -168,6 +177,9 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 			repos.VisitorProfile,
 		),
 	}
+	services.Marketing.ConfigureLoyaltyProgram(loyaltyProgramService)
+	services.Marketing.ConfigureGiftCardRedemptions(repos.GiftCardRedemption)
+	services.Checkout.ConfigureLoyaltyProgram(loyaltyProgramService)
 	storefrontBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL")), "/")
 	if storefrontBaseURL == "" {
 		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")

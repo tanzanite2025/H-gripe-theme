@@ -650,8 +650,9 @@ const childLabel = (child: PageSubNavigationChild) => {
     font-size: 17px;
   }
 
+  /* Mobile keeps the category title and actions; descriptions are desktop-only. */
   .header-mega-card__description {
-    -webkit-line-clamp: 2;
+    display: none;
   }
 
   .header-mega-card__children {

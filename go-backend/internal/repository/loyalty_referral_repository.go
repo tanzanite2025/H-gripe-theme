@@ -1,6 +1,10 @@
 package repository
 
-import "tanzanite/internal/domain/loyalty"
+import (
+	"tanzanite/internal/domain/loyalty"
+
+	"gorm.io/gorm/clause"
+)
 
 // CreateReferral 创建推荐记录
 func (r *LoyaltyRepository) CreateReferral(ref *loyalty.Referral) error {
@@ -27,7 +31,18 @@ func (r *LoyaltyRepository) FindReferralsByReferrerID(referrerID uint) ([]loyalt
 // FindReferralByRefereeID 根据被推荐人ID查找记录
 func (r *LoyaltyRepository) FindReferralByRefereeID(refereeID uint) (*loyalty.Referral, error) {
 	var ref loyalty.Referral
-	err := r.db.Where("referee_id = ?", refereeID).First(&ref).Error
+	err := r.db.Where("referred_id = ?", refereeID).First(&ref).Error
+	if err != nil {
+		return nil, err
+	}
+	return &ref, nil
+}
+
+func (r *LoyaltyRepository) FindReferralByRefereeIDForUpdate(refereeID uint) (*loyalty.Referral, error) {
+	var ref loyalty.Referral
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("referred_id = ?", refereeID).
+		First(&ref).Error
 	if err != nil {
 		return nil, err
 	}

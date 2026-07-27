@@ -14,6 +14,8 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
   const appliedCoupon = ref<Coupon | null>(null)
   const usePointsDiscount = ref(false)
   const pointsToUse = ref(0)
+  const loyaltyExchangeRatePoints = ref(100)
+  const loyaltyPointRedemptionEnabled = ref(true)
 
   /**
    * 根据用户积分获取会员等级
@@ -37,17 +39,18 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
   }
 
   /**
-   * 计算积分抵扣
-   * 规则：1 积分 = 0.01 元，最多抵扣订单金额的 50%
+   * 计算积分抵扣。
+   * 兑换比例来自后端 loyalty program config，最多抵扣订单金额的 50%。
    */
   const calculatePointsDiscount = (subtotal: number): number => {
-    if (!usePointsDiscount.value || !userPoints.value) {
+    if (!usePointsDiscount.value || !userPoints.value || !loyaltyPointRedemptionEnabled.value) {
       return 0
     }
 
     const maxDiscount = subtotal * 0.5 // 最多抵扣 50%
-    const pointsValue = pointsToUse.value * 0.01 // 1 积分 = 0.01 元
-    const availablePoints = userPoints.value.available * 0.01
+    const exchangeRate = Math.max(1, loyaltyExchangeRatePoints.value)
+    const pointsValue = pointsToUse.value / exchangeRate
+    const availablePoints = userPoints.value.available / exchangeRate
 
     return Math.min(pointsValue, availablePoints, maxDiscount)
   }
@@ -129,11 +132,27 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
     pointsToUse.value = Math.min(points, userPoints.value.available)
   }
 
+  const loadLoyaltyProgramConfig = async () => {
+    try {
+      const response = await request<any>('/marketing/loyalty/config')
+      const config = response?.data || response
+      const exchangeRatePoints = Number(config?.exchange_rate_points)
+      loyaltyPointRedemptionEnabled.value = config?.enabled !== false
+      if (Number.isFinite(exchangeRatePoints) && exchangeRatePoints > 0) {
+        loyaltyExchangeRatePoints.value = exchangeRatePoints
+      }
+    } catch (error) {
+      console.error('Failed to load loyalty program config for cart discount:', error)
+    }
+  }
+
   return {
     // 状态
     appliedCoupon,
     usePointsDiscount,
     pointsToUse,
+    loyaltyExchangeRatePoints,
+    loyaltyPointRedemptionEnabled,
 
     // 计算属性
     getUserTier,
@@ -145,5 +164,6 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
     applyCoupon,
     removeCoupon,
     setPointsUsage,
+    loadLoyaltyProgramConfig,
   }
 }

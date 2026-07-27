@@ -78,7 +78,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	settingsHandler := settings.NewHandler(settingService)
 	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
 	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
-	marketingHandler := marketing.NewHandler(marketingService, settingService)
+	marketingHandler := marketing.NewHandler(marketingService, settingService, services.LoyaltyProgram)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
 		AllowedOrigins:        cfg.CORS.AllowedOrigins,
@@ -221,7 +221,9 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 
 			// 等级配置（公开）
 			marketingGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
+			marketingGroup.GET("/loyalty/config", marketingHandler.GetLoyaltyProgramConfig)
 			marketingGroup.GET("/loyalty/redeem-options", marketingHandler.ListRedeemGiftCardOptions)
+			marketingGroup.GET("/loyalty/rules", marketingHandler.GetLoyaltyRules)
 
 			// 需要认证的营销功能
 			authMarketing := marketingGroup.Group("")
@@ -232,6 +234,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 
 				// 积分和会员
 				authMarketing.GET("/loyalty/assets", marketingHandler.GetUserAssets)
+				authMarketing.GET("/loyalty/gift-cards", marketingHandler.ListUserGiftCards)
 				authMarketing.GET("/loyalty/points", marketingHandler.GetPoints)
 				authMarketing.GET("/loyalty/info", marketingHandler.GetLoyaltyInfo)
 				authMarketing.POST("/loyalty/checkin", middleware.RateLimitByUser(1), marketingHandler.CheckIn)

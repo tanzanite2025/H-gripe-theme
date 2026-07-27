@@ -1,5 +1,5 @@
 <template>
-  <section class="mt-10 rounded-2xl bg-slate-900/80 backdrop-blur-xl p-4 md:p-6 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.98)]">
+  <section class="share-your-feedback-card mt-10 rounded-2xl backdrop-blur-xl p-4 md:p-6 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.98)]">
     <header class="mb-4 md:mb-6">
       <h2 class="text-lg md:text-xl font-semibold text-slate-50">
         {{ titleText }}
