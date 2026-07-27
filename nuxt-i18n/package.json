@@ -18,6 +18,9 @@
     "check-locales": "node scripts/check-locales.mjs",
     "clean": "node -e \"require('fs').rmSync('.nuxt', { recursive: true, force: true }); require('fs').rmSync('node_modules/.cache', { recursive: true, force: true });\""
   },
+  "overrides": {
+    "sharp": "0.35.0"
+  },
   "dependencies": {
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/icon": "^2.2.4",
