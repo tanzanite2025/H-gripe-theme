@@ -35,7 +35,7 @@ func (r *LoyaltyProgramRepository) FindActive() (*loyalty.ProgramConfig, error) 
 
 func (r *LoyaltyProgramRepository) CreateVersion(config *loyalty.ProgramConfig) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if tx.Dialector.Name() == "postgres" {
+		if tx.Name() == "postgres" {
 			if err := tx.Exec("LOCK TABLE loyalty_program_configs, loyalty_program_redeem_options IN EXCLUSIVE MODE").Error; err != nil {
 				return err
 			}
