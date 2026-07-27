@@ -10,9 +10,10 @@ ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
-FROM nginx:1.28-alpine
+FROM nginx:1.30.4-alpine3.24
 
 RUN apk upgrade --no-cache \
+    && for pkg in curl libcurl tiff; do if apk info -e "$pkg" >/dev/null 2>&1; then apk del --no-cache "$pkg"; fi; done \
     && rm -f /etc/nginx/conf.d/default.conf \
     && mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp \
     && chown -R nginx:nginx /var/cache/nginx /tmp
