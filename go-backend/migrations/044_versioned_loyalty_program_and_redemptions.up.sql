@@ -221,23 +221,50 @@ BEGIN
         )
         RETURNING id INTO new_config_id;
 
-        INSERT INTO loyalty_program_redeem_options (config_id, value_cents, sort_order)
-        SELECT
-            new_config_id,
-            ROUND(TRIM(value)::NUMERIC * 100)::BIGINT,
-            ordinal::INTEGER - 1
-        FROM regexp_split_to_table(
-            COALESCE((
-                SELECT value
-                FROM settings
-                WHERE key = 'tz_redeem_preset_values' AND locale = 'en'
-                LIMIT 1
-            ), '10,50,100,200,500'),
-            ','
-        ) WITH ORDINALITY AS values(value, ordinal)
-        WHERE TRIM(value) <> ''
-          AND TRIM(value)::NUMERIC > 0
-        ON CONFLICT (config_id, value_cents) DO NOTHING;
+        IF EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'loyalty_program_redeem_options'
+              AND column_name = 'currency'
+        ) THEN
+            INSERT INTO loyalty_program_redeem_options (config_id, value_cents, currency, sort_order)
+            SELECT
+                new_config_id,
+                ROUND(TRIM(value)::NUMERIC * 100)::BIGINT,
+                (SELECT currency FROM loyalty_program_configs WHERE id = new_config_id),
+                ordinal::INTEGER - 1
+            FROM regexp_split_to_table(
+                COALESCE((
+                    SELECT value
+                    FROM settings
+                    WHERE key = 'tz_redeem_preset_values' AND locale = 'en'
+                    LIMIT 1
+                ), '10,50,100,200,500'),
+                ','
+            ) WITH ORDINALITY AS values(value, ordinal)
+            WHERE TRIM(value) <> ''
+              AND TRIM(value)::NUMERIC > 0
+            ON CONFLICT (config_id, value_cents) DO NOTHING;
+        ELSE
+            INSERT INTO loyalty_program_redeem_options (config_id, value_cents, sort_order)
+            SELECT
+                new_config_id,
+                ROUND(TRIM(value)::NUMERIC * 100)::BIGINT,
+                ordinal::INTEGER - 1
+            FROM regexp_split_to_table(
+                COALESCE((
+                    SELECT value
+                    FROM settings
+                    WHERE key = 'tz_redeem_preset_values' AND locale = 'en'
+                    LIMIT 1
+                ), '10,50,100,200,500'),
+                ','
+            ) WITH ORDINALITY AS values(value, ordinal)
+            WHERE TRIM(value) <> ''
+              AND TRIM(value)::NUMERIC > 0
+            ON CONFLICT (config_id, value_cents) DO NOTHING;
+        END IF;
     END IF;
 END $$;
 

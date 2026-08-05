@@ -32,3 +32,17 @@ id = "generic-api-key"
   regexes = [
     '''IdempotencyKey:\s*"test-redemption-42"''',
   ]
+
+  [[rules.allowlists]]
+  description = "False positive WeChat Pay API v3 test key material."
+  condition = "AND"
+  regexTarget = "line"
+  paths = [
+    '''(^|/)go-backend/internal/api/v1/payment/wallet_order_handler_test\.go$''',
+    '''(^|/)go-backend/internal/pkg/payment/runtime_readiness_test\.go$''',
+    '''(^|/)go-backend/internal/pkg/payment/provider_webhook_verifier_test\.go$''',
+  ]
+  regexes = [
+    '''t\.Setenv\("WECHAT_API_V3_KEY",\s*"[0-9a-f]{32}"\)''',
+    '''WechatAPIv3Key:\s*"[0-9a-f]{32}"''',
+  ]
