@@ -11,6 +11,7 @@ output/
 .cache/
 vendor/
 .playwright-cli/
+.codex-gh-artifacts-*/
 
 # IDE & OS
 .vscode/
