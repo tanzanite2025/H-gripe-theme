@@ -4,7 +4,12 @@ server:
   base_url: "https://tanzanite.site"
   read_timeout: 120
   write_timeout: 120
-  trusted_proxies: []
+  # Keep this aligned with the private network(s) that can reach the API.
+  # The deployment environment may override it with TRUSTED_PROXIES.
+  trusted_proxies:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
 
 database:
   driver: postgres
@@ -34,10 +39,21 @@ jwt:
 oauth:
   google_client_id: ${GOOGLE_CLIENT_ID}
 
+google_merchant:
+  # Set the OAuth credentials with GOOGLE_MERCHANT_* environment variables.
+  # Keep these values empty in source control.
+  client_id: ""
+  client_secret: ""
+  redirect_url: ""
+  post_connect_url: "https://tanzanite.site/google-merchant"
+  token_encryption_key: ""
+  state_ttl_seconds: 600
+
 i18n:
   default_locale: en
   supported_locales:
     - en
+    - zh_cn
     - fr
     - de
     - es
@@ -47,30 +63,15 @@ i18n:
     - pt
     - ru
     - ar
-    - fi
-    - da
+    - nl
+    - tr
+    - id
     - th
     - sv
-    - id
-    - ms
-    - be
-    - tr
-    - bn
-    - fa
-    - nl
+    - da
+    - fi
     - hi
-    - ur
-    - mr
-    - pcm
-    - fil
-    - te
-    - ha
-    - ps
-    - sw
-    - tl
-    - ta
-    - jv
-    - zh_cn
+    - ms
 
 cors:
   allowed_origins:
@@ -114,6 +115,16 @@ worker:
   tracking_polling_enabled: false
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
+  outbox_dispatch_enabled: false
+  outbox_dispatch_interval_seconds: 10
+  outbox_dispatch_batch_limit: 100
+  outbox_dispatch_lock_timeout_seconds: 300
+  payment_expiration_enabled: true
+  payment_expiration_interval_seconds: 900
+  payment_pending_ttl_seconds: 1800
+  payment_expiration_batch_limit: 100
+  payment_risk_monitoring_enabled: true
+  payment_risk_monitoring_interval_seconds: 3600
 
 log:
   level: info
@@ -130,14 +141,56 @@ anti_abuse:
   verification_global_limit: 100
   verification_circuit_seconds: 300
 
+order_abuse:
+  enabled: true
+  order_create_window_seconds: 600
+  max_order_creations_per_user: 3
+  max_order_creations_per_session: 3
+  max_order_creations_per_ip: 12
+
+order_number:
+  secret: ""
+  previous_secret: ""
+  node_id: 0
+
 payment_risk:
   failure_window_seconds: 600
   failure_threshold: 2
   delay_seconds: 2
   high_risk_score: 60
 
+payment_risk_monitoring:
+  enabled: true
+  alert_enabled: false
+  window_days: 30
+  minimum_successful_payments: 20
+  warning_dispute_activity_rate: 0.005
+  critical_dispute_activity_rate: 0.008
+  warning_early_fraud_rate: 0.005
+  critical_early_fraud_rate: 0.009
+  warning_refund_rate: 0.08
+  critical_refund_rate: 0.15
+  auto_step_up_enabled: true
+
+payment_protection:
+  enabled: true
+  max_control_duration_hours: 168
+  max_pause_payment_duration_hours: 24
+  max_global_pause_payment_duration_hours: 2
+
+payment_3ds:
+  adaptive_enabled: true
+  low_risk_max_amount: 100.0
+  trusted_paid_orders: 1
+  visitor_risk_lookback_days: 30
+  step_up_risk_score: 20
+  challenge_risk_score: 60
+
 request_signing:
   enabled: false
   key: ""
   max_skew_seconds: 30
   required_paths: []
+
+media_upload:
+  account_storage_quota_bytes: 21474836480

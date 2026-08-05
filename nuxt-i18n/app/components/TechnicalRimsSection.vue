@@ -23,7 +23,7 @@
     <!-- Tab: Technology (Existing Content) -->
     <div v-show="activeTab === 'technology'">
       <!-- Intro Card -->
-      <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center mb-8 border-t-4 border-indigo-500">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center mb-8 border-t-4 border-indigo-500">
         <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
           Rim Technology
         </h3>
@@ -58,7 +58,7 @@
 
          <div class="grid md:grid-cols-2 gap-6">
             <!-- Climbing / Shallow -->
-            <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 transition-transform hover:-translate-y-1">
+            <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 transition-transform hover:-translate-y-1">
                <div class="flex justify-between items-start mb-4">
                   <span class="text-sm font-bold text-slate-100">Shallow Depth</span>
           <span class="text-xs bg-slate-800 tz-text-muted px-2 py-1 rounded">30mm - 40mm</span>
@@ -71,7 +71,7 @@
                </div>
             </div>
             <!-- Aero / Deep -->
-            <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 transition-transform hover:-translate-y-1">
+            <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 transition-transform hover:-translate-y-1">
                <div class="flex justify-between items-start mb-4">
                   <span class="text-sm font-bold text-slate-100">Aero Depth</span>
           <span class="text-xs bg-slate-800 tz-text-muted px-2 py-1 rounded">45mm - 65mm+</span>
@@ -130,7 +130,7 @@
       <!-- 3. Hooked vs Hookless -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
          <!-- Hooked -->
-         <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-b-2 border-slate-700">
+         <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-b-2 border-slate-700">
         <h5 class="tz-text-primary font-bold mb-3">Hooked (Crotchet)</h5>
             <p class="text-xs tz-text-secondary leading-relaxed mb-4 min-h-[3rem]">
               Traditional design with bead hooks. Compatible with almost all clincher and tubeless tires. High pressure tolerance.
@@ -139,7 +139,7 @@
          </div>
 
          <!-- Hookless -->
-         <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-b-2 border-indigo-500">
+         <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-b-2 border-indigo-500">
             <h5 class="text-indigo-400 font-bold mb-3">Hookless (TSS)</h5>
             <p class="text-xs tz-text-secondary leading-relaxed mb-4 min-h-[3rem]">
               Modern straight-wall design. Lighter, stronger rim wall, and more aero transition to tire.
@@ -172,27 +172,27 @@
                       </tr>
                    </thead>
                    <tbody class="divide-y divide-slate-800">
-                      <tr class="bg-[#11151e] hover:bg-slate-800/30">
+                      <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30">
                          <td class="px-6 py-4 font-medium tz-text-primary">Structure</td>
                          <td class="px-6 py-4">No spoke access holes in rim bed.</td>
                          <td class="px-6 py-4">Has spoke access holes.</td>
                       </tr>
-                      <tr class="bg-[#11151e] hover:bg-slate-800/30">
+                      <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30">
                          <td class="px-6 py-4 font-medium tz-text-primary">Airtightness</td>
                          <td class="px-6 py-4">Better (Inherently airtight).</td>
                          <td class="px-6 py-4"><span class="text-amber-500">Requires tubeless tape.</span></td>
                       </tr>
-                      <tr class="bg-[#11151e] hover:bg-slate-800/30">
+                      <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30">
                          <td class="px-6 py-4 font-medium tz-text-primary">Weight</td>
                          <td class="px-6 py-4">Adds ~1-3g (Negligible).</td>
                          <td class="px-6 py-4">Standard weight + Tape weight.</td>
                       </tr>
-                       <tr class="bg-[#11151e] hover:bg-slate-800/30">
+                       <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30">
                          <td class="px-6 py-4 font-medium tz-text-primary">Assembly Difficulty</td>
                          <td class="px-6 py-4 text-amber-500">More difficult (Nipple guidance required).</td>
                          <td class="px-6 py-4 text-emerald-500">Easier assembly.</td>
                       </tr>
-                      <tr class="bg-[#11151e] hover:bg-slate-800/30">
+                      <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30">
                          <td class="px-6 py-4 font-medium tz-text-primary">Compabitility</td>
                          <td class="px-6 py-4">
                             <div class="space-y-1">
@@ -207,7 +207,7 @@
                             </div>
                          </td>
                       </tr>
-                      <tr class="bg-[#11151e] hover:bg-slate-800/30">
+                      <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30">
                          <td class="px-6 py-4 font-medium text-rose-400">Caution</td>
                          <td class="px-6 py-4 text-xs italic" colspan="2">
                             Strongly <strong>not recommended</strong> to use low-end wire bead tires (potential rim damage). High-end wire bead tires may differ, but caution is advised.
@@ -220,7 +220,7 @@
 
           <!-- 2. Symmetry & Drilling Pattern -->
           <div class="grid md:grid-cols-2 gap-6">
-             <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5">
+             <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5">
                 <h5 class="flex items-center gap-2 tz-text-primary font-bold mb-3">
                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> 2. Symmetrical Comparison
                 </h5>
@@ -239,7 +239,7 @@
              </div>
 
              <!-- 4. Drain Holes -->
-             <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5">
+             <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5">
                 <h5 class="flex items-center gap-2 tz-text-primary font-bold mb-3">
                    <span class="w-2 h-2 rounded-full bg-sky-500"></span> 4. Drain Holes
                 </h5>
@@ -272,7 +272,7 @@
              
              <div class="grid md:grid-cols-2 gap-6">
                 <!-- Presta -->
-                <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 border-l-4 border-emerald-500">
+                <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 border-l-4 border-emerald-500">
                    <div class="flex justify-between items-start mb-3">
                    <h5 class="text-lg font-bold tz-text-primary">Presta Valve</h5>
                   <span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded tz-micro-label uppercase font-bold">Default</span>
@@ -288,7 +288,7 @@
                 </div>
 
                 <!-- Schrader -->
-                <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 opacity-75 grayscale hover:grayscale-0 transition-all duration-300 border-l-4 border-slate-600">
+                <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 opacity-75 grayscale hover:grayscale-0 transition-all duration-300 border-l-4 border-slate-600">
                    <div class="flex justify-between items-start mb-3">
                       <h5 class="text-lg font-bold tz-text-primary">Schrader Valve</h5>
                       <span class="bg-slate-700 tz-text-muted px-2 py-1 rounded tz-micro-label uppercase font-bold">Rare</span>

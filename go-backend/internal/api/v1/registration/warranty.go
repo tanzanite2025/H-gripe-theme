@@ -16,11 +16,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
-
-	warrantyClaimMaxRequestBytes int64 = 135 << 20
+const (
+	warrantyClaimMaxRequestBytes        int64 = 82 << 20
+	warrantyClaimMaxTotalAttachmentSize int64 = 80 << 20
 )
+
+var errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
 
 func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 	var req struct {
@@ -78,6 +79,9 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		}
 		apierror.RespondError(c, status, code, err.Error())
 		return
+	}
+	if c.Request.MultipartForm != nil {
+		defer func() { _ = c.Request.MultipartForm.RemoveAll() }()
 	}
 
 	orderNumber := strings.TrimSpace(c.PostForm("order_number"))
@@ -265,6 +269,12 @@ func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, er
 		if err := upload.ValidateFile(videoFiles[0], upload.WarrantyVideoRule); err != nil {
 			return nil, "", err
 		}
+	}
+	allFiles := make([]*multipart.FileHeader, 0, len(imageFiles)+len(videoFiles))
+	allFiles = append(allFiles, imageFiles...)
+	allFiles = append(allFiles, videoFiles...)
+	if err := upload.ValidateTotalSize(allFiles, warrantyClaimMaxTotalAttachmentSize); err != nil {
+		return nil, "", err
 	}
 
 	imageURLs := make([]string, 0, len(imageFiles))

@@ -2,9 +2,12 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/repository"
 )
+
+var ErrCartNotFound = errors.New("cart not found")
 
 type CartService struct {
 	cartRepo    *repository.CartRepository
@@ -18,7 +21,35 @@ func NewCartService(cartRepo *repository.CartRepository, productRepo *repository
 	}
 }
 
+func (s *CartService) FindCart(userID *uint, sessionID string) (*product.Cart, error) {
+	sessionID = strings.TrimSpace(sessionID)
+	if userID == nil && sessionID == "" {
+		return nil, ErrCartNotFound
+	}
+
+	var cart *product.Cart
+	var err error
+	if userID != nil {
+		cart, err = s.cartRepo.FindByUserID(*userID)
+	} else {
+		cart, err = s.cartRepo.FindBySessionID(sessionID)
+	}
+
+	if repository.IsRecordNotFound(err) {
+		return nil, ErrCartNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return cart, nil
+}
+
 func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.Cart, error) {
+	sessionID = strings.TrimSpace(sessionID)
+	if userID == nil && sessionID == "" {
+		return nil, ErrCartNotFound
+	}
+
 	var cart *product.Cart
 	var err error
 
@@ -43,19 +74,24 @@ func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.
 	return cart, nil
 }
 
+func (s *CartService) ValidateAddToCart(productID uint, variantID *uint, quantity int) error {
+	_, _, _, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
+	return err
+}
+
+func (s *CartService) HasPurchasableSyncItems(items []SyncCartItemReq) bool {
+	for _, item := range items {
+		if _, _, _, err := s.resolvePurchasableCartItem(item.ProductID, item.VariantID, item.Quantity); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *CartService) AddToCart(cartID, productID uint, variantID *uint, quantity int) error {
-	if quantity <= 0 {
-		return errors.New("quantity must be greater than 0")
-	}
-
-	_, variant, err := s.productRepo.FindPurchasableVariant(productID, variantID)
-	if err != nil || variant == nil {
-		return errors.New("product not found")
-	}
-
-	price, availableStock, resolvedVariantID := purchasablePriceStock(variant)
-	if availableStock < quantity {
-		return errors.New("insufficient stock")
+	price, availableStock, resolvedVariantID, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
+	if err != nil {
+		return err
 	}
 
 	existingItem, err := s.cartRepo.FindItem(cartID, productID, resolvedVariantID)
@@ -126,17 +162,8 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 
 	var cartItems []product.CartItem
 	for _, req := range items {
-		if req.Quantity <= 0 {
-			continue
-		}
-
-		_, variant, err := s.productRepo.FindPurchasableVariant(req.ProductID, req.VariantID)
-		if err != nil || variant == nil {
-			continue
-		}
-
-		price, availableStock, resolvedVariantID := purchasablePriceStock(variant)
-		if availableStock < req.Quantity {
+		price, _, resolvedVariantID, err := s.resolvePurchasableCartItem(req.ProductID, req.VariantID, req.Quantity)
+		if err != nil {
 			continue
 		}
 
@@ -153,7 +180,10 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 }
 
 func (s *CartService) GetCartSummary(userID *uint, sessionID string) (*product.CartSummary, error) {
-	cart, err := s.GetOrCreateCart(userID, sessionID)
+	cart, err := s.FindCart(userID, sessionID)
+	if errors.Is(err, ErrCartNotFound) {
+		return emptyCartSummary(), nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +191,33 @@ func (s *CartService) GetCartSummary(userID *uint, sessionID string) (*product.C
 	return s.cartRepo.GetSummary(cart.ID)
 }
 
+func emptyCartSummary() *product.CartSummary {
+	return &product.CartSummary{
+		ItemCount: 0,
+		Total:     0,
+		Items:     []product.CartItem{},
+	}
+}
+
 func (s *CartService) ClearCart(cartID uint) error {
 	return s.cartRepo.ClearCart(cartID)
+}
+
+func (s *CartService) resolvePurchasableCartItem(productID uint, variantID *uint, quantity int) (float64, int, *uint, error) {
+	if quantity <= 0 {
+		return 0, 0, nil, errors.New("quantity must be greater than 0")
+	}
+
+	_, variant, err := s.productRepo.FindPurchasableVariant(productID, variantID)
+	if err != nil || variant == nil {
+		return 0, 0, nil, errors.New("product not found")
+	}
+
+	price, availableStock, resolvedVariantID := purchasablePriceStock(variant)
+	if availableStock < quantity {
+		return 0, 0, nil, errors.New("insufficient stock")
+	}
+	return price, availableStock, resolvedVariantID, nil
 }
 
 func purchasablePriceStock(variant *product.ProductVariant) (float64, int, *uint) {

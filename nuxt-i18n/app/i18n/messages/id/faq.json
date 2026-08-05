@@ -1,4 +1,20 @@
 {
-  "title": "Frequently Asked Questions",
-  "subtitle": "Find answers to common questions about our products and services"
+  "title": "Pertanyaan yang Sering Diajukan",
+  "subtitle": "Temukan jawaban atas pertanyaan umum tentang produk dan layanan kami",
+  "ui": {
+    "categorizedSupport": "Dukungan berdasarkan kategori",
+    "quickAnswers": "Jawaban cepat untuk pertanyaan umum",
+    "categoriesAriaLabel": "Kategori FAQ",
+    "categoriesLabel": "Kategori FAQ",
+    "all": "Semua",
+    "viewAll": "Lihat semua FAQ",
+    "emptySection": "Tidak ada FAQ untuk bagian ini.",
+    "pageIntro": "Telusuri pertanyaan umum dan jawaban cepat tentang pesanan, produk, dan layanan.",
+    "searchPlaceholder": "Cari FAQ...",
+    "viewMoreContent": "Lihat konten lainnya",
+    "noResults": "Tidak ada FAQ yang cocok dengan \"{query}\"",
+    "allFaqsMetaTitle": "Semua FAQ",
+    "loadingAnswers": "Memuat jawaban",
+    "illustrationAlt": "Ilustrasi FAQ"
+  }
 }

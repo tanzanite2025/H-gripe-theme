@@ -2,5 +2,8 @@
   "placeholder": "Sök...",
   "button": "Sök",
   "popularTitle": "Populära sökningar",
-  "popularAriaLabel": "Populära sökningar"
+  "popularAriaLabel": "Populära sökningar",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

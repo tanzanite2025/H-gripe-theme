@@ -2,5 +2,8 @@
   "placeholder": "بحث...",
   "button": "بحث",
   "popularTitle": "عمليات البحث الشائعة",
-  "popularAriaLabel": "عمليات البحث الشائعة"
+  "popularAriaLabel": "عمليات البحث الشائعة",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

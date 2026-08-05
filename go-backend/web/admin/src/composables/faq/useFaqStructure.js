@@ -13,6 +13,7 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }) {
   const activeStructureLocale = ref(resolveDefaultLocale())
   const pageDialogVisible = ref(false)
   const pageSubmitting = ref(false)
+  const lockedPageRoutePath = ref('')
   const categoryDialogVisible = ref(false)
   const categoryDialogMode = ref('create')
   const categorySubmitting = ref(false)
@@ -90,9 +91,10 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }) {
   }
 
   const showPageDialog = (page) => {
+    lockedPageRoutePath.value = page.route_path || ''
     Object.assign(pageForm, {
       page_id: page.page_id,
-      route_path: page.route_path || '',
+      route_path: lockedPageRoutePath.value,
       domain: page.domain || '',
       locale: page.locale || activeStructureLocale.value,
       title: page.title || '',
@@ -112,7 +114,7 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }) {
     pageSubmitting.value = true
     try {
       await faqAdminApi.updatePage(pageForm.page_id, {
-        route_path: pageForm.route_path.trim(),
+        route_path: lockedPageRoutePath.value,
         domain: pageForm.domain.trim(),
         locale: pageForm.locale,
         title: pageForm.title.trim(),

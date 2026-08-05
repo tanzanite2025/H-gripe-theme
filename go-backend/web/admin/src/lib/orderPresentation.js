@@ -5,6 +5,7 @@ export const orderStatusOptions = [
   { label: '处理中', value: 'processing' },
   { label: '已发货', value: 'shipped' },
   { label: '已完成', value: 'completed' },
+  { label: '支付超时', value: 'payment_expired' },
   { label: '已取消', value: 'cancelled' },
   { label: '已退款', value: 'refunded' }
 ]
@@ -13,6 +14,7 @@ export const paymentStatusOptions = [
   { label: '全部状态', value: 'all' },
   { label: '未支付', value: 'unpaid' },
   { label: '已支付', value: 'paid' },
+  { label: '已超时', value: 'expired' },
   { label: '已退款', value: 'refunded' }
 ]
 
@@ -24,7 +26,7 @@ export const shippingStatusOptions = [
   { label: '已送达', value: 'delivered' }
 ]
 
-export const editableOrderStatusOptions = orderStatusOptions.filter((option) => !['all', 'paid', 'refunded'].includes(option.value))
+export const editableOrderStatusOptions = orderStatusOptions.filter((option) => !['all', 'paid', 'payment_expired', 'refunded'].includes(option.value))
 export const editableShippingStatusOptions = shippingStatusOptions.filter((option) => option.value !== 'all')
 
 export const getOrderStatusName = (status) => orderStatusOptions.find((option) => option.value === status)?.label || status
@@ -34,12 +36,13 @@ export const orderStatusTone = (status) => ({
   processing: 'amber',
   shipped: 'blue',
   completed: 'green',
+  payment_expired: 'amber',
   cancelled: 'coral',
   refunded: 'amber'
 })[status] || 'gray'
 
 export const getPaymentStatusName = (status) => paymentStatusOptions.find((option) => option.value === status)?.label || status
-export const paymentStatusTone = (status) => ({ unpaid: 'gray', paid: 'green', refunded: 'amber' })[status] || 'gray'
+export const paymentStatusTone = (status) => ({ unpaid: 'gray', paid: 'green', expired: 'amber', refunded: 'amber' })[status] || 'gray'
 export const getShippingStatusName = (status) => shippingStatusOptions.find((option) => option.value === status)?.label || status
 export const shippingStatusTone = (status) => ({ pending: 'gray', processing: 'amber', shipped: 'blue', delivered: 'green' })[status] || 'gray'
 

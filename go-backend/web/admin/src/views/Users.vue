@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="用户管理" description="管理后台账号、角色和账户状态">
+    <AdminPageHeader title="后台账号" description="管理后台账号、角色和账户状态">
       <template #actions>
         <Button v-if="hasPermission('user:create')" @click="openCreateDialog">
           <Plus class="size-4" />

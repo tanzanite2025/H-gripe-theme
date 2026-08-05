@@ -1,12 +1,14 @@
 <template>
   <div class="membership-tabs" :class="{ 'membership-tabs--modal': isModal, 'membership-tabs--sticky': isModal }">
-    <div v-if="isModal" class="nav-pill-tabs" role="tablist">
+    <div v-if="isModal" class="nav-pill-tabs" role="tablist" :aria-label="$t('member.tabs.ariaLabel', 'Membership sections')">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
         class="nav-pill-item"
         :class="{ 'nav-pill-item--active': activeTab === tab.id }"
+        role="tab"
+        :aria-selected="activeTab === tab.id"
         @click="setActiveTab(tab.id)"
       >
         {{ $t(tab.labelKey || tab.id, tab.fallback || tab.label || tab.id) }}
@@ -16,7 +18,7 @@
     <div class="membership-tabs__content" :class="{ 'membership-tabs__content--scroll': isModal }">
       <div v-show="activeTab === 'myinfo'">
       <div class="warranty-card">
-        <div class="warranty-card__icon">🛡️</div>
+        <Icon name="lucide:shield-check" class="warranty-card__icon" aria-hidden="true" />
         <div class="warranty-card__content">
           <h3 class="warranty-card__title">{{ $t('warranty.title', 'Warranty Check') }}</h3>
           <p class="warranty-card__desc">{{ $t('warranty.cardDesc', 'Enter your product code to check warranty status and history.') }}</p>
@@ -38,7 +40,7 @@
                 {{ profileInfo.fullName }}
               </div>
               <div class="member-level" v-if="isLogged">
-                <span class="level-badge">{{ levelName }}</span>
+                <span class="level-badge">{{ displayLevelName }}</span>
                 <span class="level-points">{{ points }} {{ $t('member.points.unit', 'pts') }}</span>
               </div>
               <div class="member-actions">
@@ -60,49 +62,41 @@
           </div>
 
           <div class="membership-col">
-            <div class="member-card">
+            <div class="member-card member-benefits-card">
               <h4 class="card-title">{{ $t('member.myBenefits', 'My Benefits') }}</h4>
               <div class="member-stats">
                 <div class="stat-item">
-                  <span class="stat-icon">🏷️</span>
+                  <Icon name="lucide:tag" class="stat-icon" aria-hidden="true" />
                   <div class="stat-content">
-                    <span class="stat-label">{{ $t('member.brief.level', 'Level') }}</span>
-                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? levelName : '?' }}</span>
+                    <span class="stat-copy">
+                      <span class="stat-label">{{ $t('member.brief.level', 'Level') }}</span>
+                      <span class="stat-desc">{{ $t('member.brief.levelDesc', 'Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.') }}</span>
+                    </span>
+                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? displayLevelName : '?' }}</span>
                   </div>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-icon">🛍️</span>
+                  <Icon name="lucide:badge-percent" class="stat-icon" aria-hidden="true" />
                   <div class="stat-content">
-                    <span class="stat-label">{{ $t('member.brief.productDiscount', 'Product Discount') }}</span>
-                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? (levelDiscounts.product + '%') : '?' }}</span>
-                  </div>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-icon">💎</span>
-                  <div class="stat-content">
-                    <span class="stat-label">{{ $t('member.brief.pointsDiscount', 'Points') }}</span>
-                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? (levelDiscounts.points + '%') : '?' }}</span>
-                  </div>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-icon">📊</span>
-                  <div class="stat-content">
-                    <span class="stat-label">{{ $t('member.brief.stackable', 'Stackable') }}</span>
-                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? (levelDiscounts.stackable ? '✓' : '✗') : '?' }}</span>
+                    <span class="stat-copy">
+                      <span class="stat-label">{{ $t('member.brief.discountRate', 'Discount Rate') }}</span>
+                      <span class="stat-desc">{{ $t('member.brief.discountRateDesc', 'The member-level price discount configured in the backend.') }}</span>
+                    </span>
+                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? formatDiscountRate(levelDiscounts.discountRate) : '?' }}</span>
                   </div>
                 </div>
               </div>
 
               <div class="member-assets">
                 <div class="asset-item">
-                  <span class="asset-icon">🎟️</span>
+                  <Icon name="lucide:ticket-percent" class="asset-icon" aria-hidden="true" />
                   <div class="asset-content">
                     <span class="asset-label">{{ $t('member.coupons', 'Coupons') }}</span>
                     <span class="asset-value">{{ isLogged ? `× ${userCoupons}` : '?' }}</span>
                   </div>
                 </div>
                 <div class="asset-item">
-                  <span class="asset-icon">💳</span>
+                  <Icon name="lucide:credit-card" class="asset-icon" aria-hidden="true" />
                   <div class="asset-content">
                     <span class="asset-label">{{ $t('member.giftCards', 'Gift Cards') }}</span>
                     <span class="asset-value">{{ isLogged ? `× ${userPointCards}` : '?' }}</span>
@@ -166,16 +160,14 @@
                 <tr>
                   <th>{{ $t('member.levels.header.level', 'Level') }}</th>
                   <th>{{ $t('member.levels.header.pointsRequired', 'Points Required') }}</th>
-                  <th>{{ $t('member.levels.header.productDiscount', 'Product Discount') }}</th>
-                  <th>{{ $t('member.levels.header.pointsDiscount', 'Points Discount') }}</th>
+                  <th>{{ $t('member.levels.header.discountRate', 'Discount Rate') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="tier in tierConfigs" :key="tier.key">
-                  <td>{{ tier.name }}</td>
+                  <td>{{ displayTierName(tier) }}</td>
                   <td>{{ tier.min }}{{ tier.max !== null ? '–' + tier.max : '+' }}</td>
-                  <td>{{ tier.discount }}%</td>
-                  <td>{{ tier.pointsDiscount }}%</td>
+                  <td>{{ formatDiscountRate(tier.discount) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -183,19 +175,11 @@
         </div>
 
         <div class="points-rules">
-          <h4>{{ $t('member.points.title', 'How to Earn Points?') }}</h4>
+          <h4>{{ $t('member.points.title', 'Points Rules') }}</h4>
           <div class="rule-list">
-            <div class="rule-item">
-              <div class="rule-title">{{ $t('member.points.invite', 'Invite new users') }}</div>
-              <div class="rule-desc">{{ $t('member.points.referralRule', referralRuleDescription) }}</div>
-            </div>
-            <div class="rule-item">
-              <div class="rule-title">{{ $t('member.points.redeem', 'Redemption rate') }}</div>
-              <div class="rule-desc">{{ $t('member.points.redemptionRule', redemptionRuleDescription) }}</div>
-            </div>
-            <div class="rule-item">
-              <div class="rule-title">{{ $t('member.points.checkin', 'Daily check-in') }}</div>
-              <div class="rule-desc">{{ $t('member.points.checkinRule', checkInRuleDescription) }}</div>
+            <div v-for="rule in pointRuleItems" :key="rule.key" class="rule-item">
+              <div class="rule-title">{{ rule.title }}</div>
+              <div class="rule-desc">{{ rule.description }}</div>
             </div>
           </div>
         </div>
@@ -218,16 +202,17 @@
           <div v-else-if="availableGiftcards.length > 0" class="giftcard-grid">
             <div v-for="card in availableGiftcards" :key="card.id" class="giftcard-item">
               <div class="giftcard-header">
-                <span class="giftcard-icon">💳</span>
+                <Icon name="lucide:credit-card" class="giftcard-icon" aria-hidden="true" />
                 <div class="giftcard-info">
                   <div class="giftcard-code">{{ card.label }}</div>
                   <div class="giftcard-label">{{ $t('giftcards.balance', 'Balance') }}</div>
                 </div>
-                <div class="giftcard-value">${{ card.giftcard_value }}</div>
+                <div class="giftcard-value">{{ card.currency }} {{ card.giftcard_value }}</div>
               </div>
               <div class="giftcard-footer">
                 <span class="giftcard-points">
                   {{ $t('giftcards.pointsRequired', 'Points required') }}: {{ card.points_required || 0 }}
+                  <span class="giftcard-stock">· {{ $t('giftcards.remaining', 'Remaining') }}: {{ card.remaining_quantity }}</span>
                 </span>
                 <button
                   class="btn-redeem"
@@ -267,7 +252,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { useLocalePath, useRoute } from '#imports'
+import { useI18n, useLocalePath, useRoute } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
 import {
@@ -308,6 +293,7 @@ const syncTabWithHash = (hash: string | null | undefined) => {
 }
 
 const localePath = useLocalePath()
+const { t, te } = useI18n()
 
 const {
   isLogged,
@@ -336,24 +322,149 @@ const {
 
 const pointsNumber = computed(() => Number(points.value ?? 0))
 
+const normalizeLevelKey = (value: string) =>
+  value.toLowerCase().trim().replace(/\s+/g, '-')
+
+const displayTierName = (tier: { key: string; name: string }) =>
+  t(`member.levels.rows.${tier.key}`, tier.name)
+
+const displayLevelName = computed(() => {
+  const rawLevel = String(levelName.value || '')
+  if (!rawLevel || rawLevel === '—') return rawLevel
+  return t(`member.levels.rows.${normalizeLevelKey(rawLevel)}`, rawLevel)
+})
+
+const formatBenefitNumber = (value: number) => {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return '0'
+  return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(2).replace(/\.?0+$/, '')
+}
+
+const formatDiscountRate = (value: number) => `${formatBenefitNumber(value)}%`
+
+const hasRuleNumber = (value: number | null | undefined): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
+const formatRuleNumber = (value: number) =>
+  Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '')
+
+const translateWithFallback = (key: string, params: Record<string, string | number>, fallback: string) =>
+  te(key) ? t(key, params) : fallback
+
+const formatPoints = (value: number) => {
+  const points = formatRuleNumber(value)
+  if (value === 1) {
+    return translateWithFallback('member.points.pointValueSingular', { points }, `${points} Point`)
+  }
+  return translateWithFallback('member.points.pointsValue', { points }, `${points} Points`)
+}
+
+const notConfiguredText = computed(() =>
+  t('member.points.notConfigured', 'Not configured')
+)
+
+const pointsBaseCurrency = computed(() =>
+  String(loyaltyRules.value?.points_base_currency || 'USD').trim().toUpperCase() || 'USD'
+)
+
+const purchaseEarnRuleDescription = computed(() => {
+  const rules = loyaltyRules.value
+  const pointsPerUnit = rules?.purchase_earn_points_per_currency_unit
+
+  if (!hasRuleNumber(pointsPerUnit)) return notConfiguredText.value
+  if (pointsPerUnit <= 0) return t('member.points.purchaseEarnDisabled', 'Purchase earning is not enabled')
+
+  const points = formatPoints(pointsPerUnit)
+  const currency = pointsBaseCurrency.value
+  return translateWithFallback(
+    'member.points.purchaseEarnRule',
+    { points, currency },
+    `${points} per 1 ${currency} of product amount after discounts, awarded after order completion`
+  )
+})
+
 const referralRuleDescription = computed(() => {
   const rules = loyaltyRules.value
-  return `${rules?.referral_referrer_points ?? 100} Points (invitee gets ${rules?.referral_referee_points ?? 50} Points)`
+  const referrer = rules?.referral_referrer_points
+  const referee = rules?.referral_referee_points
+
+  if (!hasRuleNumber(referrer) || !hasRuleNumber(referee)) return notConfiguredText.value
+  if (referrer <= 0 && referee <= 0) return t('member.points.referralDisabled', 'Referral points are not enabled')
+
+  const referrerText = formatPoints(referrer)
+  const refereeText = formatPoints(referee)
+  return translateWithFallback(
+    'member.points.referralDisplayRule',
+    { referrer: referrerText, referee: refereeText },
+    `Inviter gets ${referrerText}; invitee gets ${refereeText}`
+  )
 })
 
 const redemptionRuleDescription = computed(() => {
-  const exchangeRate = loyaltyRules.value?.redemption_exchange_rate ?? 100
-  return `${exchangeRate} Points = $1`
+  const rules = loyaltyRules.value
+  const exchangeRate = rules?.redemption_exchange_rate
+
+  if (!hasRuleNumber(exchangeRate)) return notConfiguredText.value
+  if (exchangeRate <= 0) return t('member.points.redemptionDisabled', 'Points redemption is not enabled')
+
+  const pointsText = formatPoints(exchangeRate)
+  const currency = pointsBaseCurrency.value
+  return translateWithFallback(
+    'member.points.redemptionDisplayRule',
+    { points: pointsText, amount: 1, currency },
+    `${pointsText} = ${currency} 1`
+  )
 })
 
 const checkInRuleDescription = computed(() => {
   const rules = loyaltyRules.value
-  const base = rules?.checkin_base_points ?? 10
-  const max = rules?.checkin_max_points ?? 50
-  const interval = rules?.checkin_streak_interval_days ?? 7
-  const bonus = rules?.checkin_streak_bonus_points ?? 5
-  return `${base} Points (up to ${max}; +${bonus} every ${interval} consecutive days)`
+  const base = rules?.checkin_base_points
+
+  if (!hasRuleNumber(base)) return notConfiguredText.value
+  if (base <= 0) return t('member.points.checkinDisabled', 'Daily check-in points are not enabled')
+
+  const parts = [translateWithFallback('member.points.checkinBaseRule', { base: formatPoints(base) }, `${formatPoints(base)} per check-in`)]
+  const max = rules?.checkin_max_points
+  const bonus = rules?.checkin_streak_bonus_points
+  const interval = rules?.checkin_streak_interval_days
+
+  if (hasRuleNumber(max) && max > base) {
+    parts.push(translateWithFallback('member.points.checkinMaxRule', { max: formatPoints(max) }, `up to ${formatPoints(max)}`))
+  }
+
+  if (hasRuleNumber(bonus) && hasRuleNumber(interval) && bonus > 0 && interval > 0) {
+    parts.push(translateWithFallback(
+      'member.points.checkinStreakRule',
+      { bonus: formatPoints(bonus), interval: formatRuleNumber(interval) },
+      `+${formatPoints(bonus)} every ${formatRuleNumber(interval)} consecutive days`
+    ))
+  }
+
+  return parts.join('; ')
 })
+
+const pointRuleItems = computed(() => [
+  {
+    key: 'purchase',
+    title: t('member.points.purchaseEarn', 'Order completion'),
+    description: purchaseEarnRuleDescription.value,
+  },
+  {
+    key: 'redemption',
+    title: t('member.points.redeem', 'Redemption rate'),
+    description: redemptionRuleDescription.value,
+  },
+  {
+    key: 'referral',
+    title: t('member.points.invite', 'Invite new users'),
+    description: referralRuleDescription.value,
+  },
+  {
+    key: 'checkin',
+    title: t('member.points.checkin', 'Daily check-in'),
+    description: checkInRuleDescription.value,
+  },
+])
 
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'register'>('login')
@@ -382,6 +493,14 @@ watch(
 </script>
 
 <style scoped>
+ .membership-tabs {
+   --membership-card-surface: var(--tz-card-surface, #111116);
+   --membership-card-subtle: rgba(255, 255, 255, 0.035);
+   --membership-card-border: rgba(181, 255, 109, 0.14);
+   --membership-card-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+   --membership-accent: var(--tz-brand-primary, #b5ff6d);
+ }
+
  .membership-tabs--modal {
    height: 100%;
    display: flex;
@@ -403,7 +522,7 @@ watch(
    gap: 1rem;
    padding: 1rem 1.25rem;
    margin-bottom: 1.5rem;
-   background: linear-gradient(135deg, rgba(64, 255, 170, 0.1), rgba(107, 115, 255, 0.1));
+   background: rgba(255, 255, 255, 0.035);
    border: none;
    border-radius: 12px;
    box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
@@ -445,7 +564,7 @@ watch(
    align-items: center;
    gap: 0.5rem;
    padding: 0.5rem 1rem;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
+   background: var(--tz-brand-primary);
    border-radius: 999px;
    font-size: 13px;
    font-weight: 600;
@@ -565,7 +684,7 @@ watch(
 
  .level-badge {
    padding: 4px 12px;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
+   background: var(--tz-brand-primary);
    border-radius: 999px;
    font-size: 12px;
    font-weight: 700;
@@ -590,7 +709,7 @@ watch(
    height: 40px;
    padding: 0 20px;
    border-radius: 999px;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
+   background: var(--tz-brand-primary);
    color: #000;
    font-size: 14px;
    font-weight: 600;
@@ -647,7 +766,7 @@ watch(
    height: 40px;
    padding: 0 18px;
    border-radius: 999px;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
+   background: var(--tz-brand-primary);
    color: #fff;
    font-size: 14px;
    font-weight: 700;
@@ -675,6 +794,10 @@ watch(
    -webkit-backdrop-filter: blur(14px);
  }
 
+ .member-benefits-card {
+   color: #fff;
+ }
+
  .card-title {
    margin: 0 0 0.75rem;
    font-size: 14px;
@@ -682,6 +805,11 @@ watch(
    color: rgba(255, 255, 255, 0.9);
    padding-bottom: 0.75rem;
    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+ }
+
+ .member-benefits-card .card-title {
+   font-size: 16px;
+   color: #fff;
  }
 
  .member-stats {
@@ -725,14 +853,49 @@ watch(
    color: rgba(255, 255, 255, 0.7);
  }
 
+ .member-benefits-card .stat-label {
+   font-size: 15px;
+   color: #fff;
+ }
+
+ .stat-copy {
+   min-width: 0;
+   display: flex;
+   flex-direction: column;
+   gap: 0.2rem;
+ }
+
+ .stat-desc {
+   max-width: 36rem;
+   font-size: 11px;
+   line-height: 1.38;
+   color: rgba(255, 255, 255, 0.52);
+ }
+
+ .member-benefits-card .stat-desc {
+   font-size: 13px;
+   line-height: 1.48;
+   color: #fff;
+ }
+
  .stat-value {
    font-size: 14px;
    font-weight: 600;
    color: rgba(255, 255, 255, 0.9);
+   flex: none;
+ }
+
+ .member-benefits-card .stat-value {
+   font-size: 16px;
+   color: #fff;
  }
 
  .stat-value.highlight {
-   color: #40ffaa;
+   color: #B5FF6D;
+ }
+
+ .member-benefits-card .stat-value.highlight {
+   color: #fff;
  }
 
  /* 资产 */
@@ -787,13 +950,21 @@ watch(
    color: rgba(255, 255, 255, 0.7);
  }
 
+ .member-benefits-card .asset-label {
+   font-size: 15px;
+   color: #fff;
+ }
+
  .asset-value {
    font-size: 14px;
    font-weight: 700;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
-   -webkit-background-clip: text;
-   -webkit-text-fill-color: transparent;
-   background-clip: text;
+   color: var(--tz-brand-primary);
+   background: none;
+ }
+
+ .member-benefits-card .asset-value {
+   font-size: 16px;
+   color: #fff;
  }
 
  /* 进度条 */
@@ -810,7 +981,7 @@ watch(
 
  .progress-fill {
    height: 100%;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
+   background: var(--tz-brand-primary);
    transition: width 0.3s;
  }
 
@@ -825,6 +996,15 @@ watch(
  .progress-pct {
    font-weight: 600;
    color: rgba(255, 255, 255, 0.9);
+ }
+
+ .member-benefits-card .progress-labels {
+   font-size: 14px;
+   color: #fff;
+ }
+
+ .member-benefits-card .progress-pct {
+   color: #fff;
  }
 
  /* 个人资料 */
@@ -934,7 +1114,7 @@ watch(
  .tier-table th {
    color: rgba(255, 255, 255, 0.7);
    font-weight: 600;
-   background: rgba(110, 110, 233, 0.1);
+   background: rgba(181, 255, 109, 0.08);
  }
 
  .tier-table td {
@@ -1072,10 +1252,8 @@ watch(
  .giftcard-value {
    font-size: 18px;
    font-weight: 700;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
-   -webkit-background-clip: text;
-   -webkit-text-fill-color: transparent;
-   background-clip: text;
+   color: var(--tz-brand-primary);
+   background: none;
  }
 
 .giftcard-footer {
@@ -1133,7 +1311,7 @@ watch(
    font-size: 12px;
    font-weight: 600;
    border-radius: 8px;
-   background: linear-gradient(to right, #40ffaa, #6b73ff);
+   background: var(--tz-brand-primary);
    color: #fff;
    border: none;
    cursor: pointer;
@@ -1172,13 +1350,74 @@ watch(
  }
 
  .redeem-message.success {
-   background: rgba(16, 185, 129, 0.2);
+   background: rgba(181, 255, 109, 0.2);
    color: #6ee7b7;
  }
 
  .redeem-message.error {
    background: rgba(239, 68, 68, 0.2);
    color: #fca5a5;
+ }
+
+ .warranty-card,
+ .member-header,
+ .member-card,
+ .stat-item,
+ .asset-item,
+ .profile-info,
+ .tier-table,
+ .tier-table thead tr,
+ .tier-table tbody tr,
+ .points-rules,
+ .rule-item,
+ .giftcard-section,
+ .giftcard-item {
+   background: var(--membership-card-surface);
+   border: none;
+   box-shadow: var(--membership-card-shadow);
+ }
+
+ .stat-item,
+ .asset-item,
+ .rule-item,
+ .profile-item,
+ .giftcard-item {
+   background: var(--membership-card-subtle);
+ }
+
+ .warranty-card__btn,
+ .btn-primary,
+ .btn-redeem {
+   background: var(--membership-accent);
+   color: #050505;
+ }
+
+ .level-badge {
+   background: #f8fafc;
+   color: #050505;
+   border: 1px solid rgba(255, 255, 255, 0.72);
+ }
+
+ .btn-secondary {
+   background: var(--membership-card-subtle);
+   border-color: var(--membership-card-border);
+ }
+
+ .tier-table th {
+   background: rgba(181, 255, 109, 0.08);
+   color: var(--tz-text-secondary);
+ }
+
+ .progress-fill {
+   background: var(--membership-accent);
+ }
+
+ .stat-icon,
+ .asset-icon,
+ .giftcard-icon,
+ .warranty-card__icon {
+   color: var(--tz-text-secondary);
+   stroke-width: 1.8;
  }
 
  .company-section {

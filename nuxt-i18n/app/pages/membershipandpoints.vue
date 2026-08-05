@@ -46,7 +46,7 @@ useHead({
   gap: 1rem;
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, rgba(64, 255, 170, 0.1), rgba(107, 115, 255, 0.1));
+  background: linear-gradient(135deg, rgba(181, 255, 109, 0.1), rgba(107, 115, 255, 0.1));
   border: none;
   border-radius: 12px;
   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
@@ -88,7 +88,7 @@ useHead({
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
@@ -187,7 +187,7 @@ useHead({
 
 .level-badge {
   padding: 4px 12px;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
@@ -212,7 +212,7 @@ useHead({
   height: 40px;
   padding: 0 20px;
   border-radius: 999px;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   color: #000;
   font-size: 14px;
   font-weight: 600;
@@ -269,7 +269,7 @@ useHead({
   height: 40px;
   padding: 0 18px;
   border-radius: 999px;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -349,7 +349,7 @@ useHead({
 }
 
 .stat-value.highlight {
-  color: #40ffaa;
+  color: #B5FF6D;
 }
 
 /* 资产 */
@@ -394,7 +394,7 @@ useHead({
 .asset-value {
   font-size: 14px;
   font-weight: 700;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -414,7 +414,7 @@ useHead({
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   transition: width 0.3s;
 }
 
@@ -660,7 +660,7 @@ useHead({
 .giftcard-value {
   font-size: 18px;
   font-weight: 700;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -684,7 +684,7 @@ useHead({
   font-size: 12px;
   font-weight: 600;
   border-radius: 8px;
-  background: linear-gradient(to right, #40ffaa, #6b73ff);
+  background: linear-gradient(to right, #B5FF6D, #6b73ff);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -723,7 +723,7 @@ useHead({
 }
 
 .redeem-message.success {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(181, 255, 109, 0.2);
   color: #6ee7b7;
 }
 

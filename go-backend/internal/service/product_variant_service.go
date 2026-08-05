@@ -116,7 +116,6 @@ func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVari
 		if input.SalePrice != nil && *input.SalePrice < 0 {
 			return nil, fmt.Errorf("%w: sale_price cannot be negative for %s", ErrProductVariantInvalid, input.SKU)
 		}
-
 		skuKey := strings.ToLower(input.SKU)
 		if _, exists := seenSKU[skuKey]; exists {
 			return nil, fmt.Errorf("%w: duplicate sku %s", ErrProductVariantInvalid, input.SKU)
@@ -162,8 +161,18 @@ func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVari
 		variants = append(variants, variant)
 	}
 
-	if defaultIndex == -1 {
-		defaultIndex = 0
+	activeIndex := -1
+	for i := range variants {
+		if variants[i].IsActive {
+			activeIndex = i
+			break
+		}
+	}
+	if activeIndex == -1 {
+		return nil, fmt.Errorf("%w: at least one sku variant must be enabled", ErrProductVariantInvalid)
+	}
+	if defaultIndex == -1 || !variants[defaultIndex].IsActive {
+		defaultIndex = activeIndex
 	}
 	for i := range variants {
 		variants[i].IsDefault = i == defaultIndex

@@ -1,7 +1,7 @@
 <template>
-  <Card class="min-h-[520px] overflow-hidden py-0">
+  <Card class="h-full min-h-0 overflow-hidden py-0">
     <template v-if="selectedConversation">
-      <CardHeader class="border-b bg-muted/30 px-4 py-3">
+      <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div class="min-w-0">
             <CardTitle class="truncate">{{ selectedConversation.customer_name || '匿名客户' }}</CardTitle>
@@ -197,10 +197,30 @@
               </div>
 
               <p v-else class="mt-2 whitespace-pre-wrap break-words leading-6">{{ message.content || message.message }}</p>
+              <div v-if="message.message_type === 'image' && messageAttachments(message).length" class="mt-2 grid gap-2">
+                <img
+                  v-for="attachmentUrl in messageAttachments(message)"
+                  :key="attachmentUrl"
+                  :src="attachmentUrl"
+                  alt="客服图片附件"
+                  class="max-h-64 max-w-full rounded-xl object-contain"
+                />
+              </div>
               <a
-                v-if="message.attachment_url"
+                v-if="message.message_type === 'link' && message.metadata?.url"
+                :href="message.metadata.url"
+                target="_blank"
+                rel="noreferrer"
+                class="mt-2 block rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-700 underline-offset-4 hover:underline"
+              >
+                <span class="block font-black">{{ message.metadata.title || message.content || message.message }}</span>
+                <span class="mt-1 block truncate text-emerald-700/70">{{ message.metadata.url }}</span>
+              </a>
+              <a
+                v-for="attachmentUrl in messageAttachments(message)"
+                :key="`link-${attachmentUrl}`"
                 class="mt-2 inline-flex text-xs font-bold text-primary underline-offset-4 hover:underline"
-                :href="message.attachment_url"
+                :href="attachmentUrl"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -239,7 +259,7 @@
       </CardContent>
     </template>
 
-    <div v-else class="flex h-full min-h-[520px] flex-col items-center justify-center p-8 text-center text-muted-foreground">
+    <div v-else class="flex h-full min-h-0 flex-col items-center justify-center p-8 text-center text-muted-foreground">
       <Headset class="mb-3 size-10 opacity-50" />
       <h2 class="text-sm font-black text-foreground">选择一个客户会话</h2>
       <p class="mt-2 max-w-sm text-xs leading-6">
@@ -309,4 +329,16 @@ const replyModel = computed({
   get: () => props.replyMessage,
   set: (value) => emit('update:replyMessage', value),
 })
+
+const messageAttachments = (message) => {
+  const attachments = Array.isArray(message?.attachments)
+    ? message.attachments
+    : (message?.attachment_url ? [message.attachment_url] : [])
+  const unique = new Set()
+  attachments.forEach((value) => {
+    const attachment = String(value || '').trim()
+    if (attachment) unique.add(attachment)
+  })
+  return Array.from(unique)
+}
 </script>

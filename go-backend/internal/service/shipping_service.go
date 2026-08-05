@@ -622,7 +622,7 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 
 	currency := strings.TrimSpace(input.Currency)
 	if currency == "" {
-		currency = "USD"
+		return nil, errors.New("shipping quote currency is required")
 	}
 	currency = strings.ToUpper(currency)
 

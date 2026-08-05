@@ -1,4 +1,18 @@
 /** @type {import('tailwindcss').Config} */
+const tanzaniteGreen = {
+  50: '#F5FFE8',
+  100: '#E9FFD1',
+  200: '#D9FFB2',
+  300: '#C8FF8F',
+  400: '#B5FF6D',
+  500: '#B5FF6D',
+  600: '#A6F05F',
+  700: '#86C948',
+  800: '#5F9138',
+  900: '#365621',
+  950: '#1B2E10',
+}
+
 module.exports = {
   content: [
     './app/components/**/*.{vue,js,ts}',
@@ -21,6 +35,12 @@ module.exports = {
           'Segoe UI',
           'sans-serif',
         ],
+      },
+      colors: {
+        green: tanzaniteGreen,
+        emerald: tanzaniteGreen,
+        lime: tanzaniteGreen,
+        teal: tanzaniteGreen,
       },
       screens: {
         // 更细粒度的移动端宽度段，用于精细调整布局

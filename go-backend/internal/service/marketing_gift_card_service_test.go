@@ -58,19 +58,17 @@ func TestMarketingServiceAllowsTerminalGiftCardTransitionFromActive(t *testing.T
 func TestMarketingServiceRejectsOverlappingMemberLevels(t *testing.T) {
 	db, marketingService := newTestMarketingService(t)
 	require.NoError(t, db.Create(&loyalty.MemberLevel{
-		Name:             "Silver",
-		MinPoints:        1000,
-		MaxPoints:        4999,
-		DiscountRate:     5,
-		PointsMultiplier: 1,
+		Name:         "Silver",
+		MinPoints:    1000,
+		MaxPoints:    4999,
+		DiscountRate: 5,
 	}).Error)
 
 	_, err := marketingService.CreateMemberLevelAdmin(MemberLevelCreateInput{
-		Name:             "Overlap",
-		MinPoints:        4000,
-		MaxPoints:        8000,
-		DiscountRate:     10,
-		PointsMultiplier: 1,
+		Name:         "Overlap",
+		MinPoints:    4000,
+		MaxPoints:    8000,
+		DiscountRate: 10,
 	})
 
 	require.Error(t, err)

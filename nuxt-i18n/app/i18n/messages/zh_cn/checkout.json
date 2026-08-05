@@ -17,6 +17,10 @@
       "couponApplied": "优惠券已应用！",
       "completeShipping": "请先填写完整配送地址和联系方式，我们需要确认该地区可配送后再继续。",
       "selectPaypalCountry": "继续跳转 PayPal 前，请先选择一个可配送的国家/地区。",
+      "loginRequired": "请先登录再结账。",
+      "emptyCart": "购物车为空。",
+      "paymentUnavailable": "此支付方式暂时不可用。",
+      "paymentPending": "支付暂未完成，请稍后查看订单状态。",
       "orderSuccess": "订单提交成功！",
       "orderFailed": "订单提交失败，请重试"
     }
@@ -48,15 +52,27 @@
       }
     },
     "alipay": {
-      "title": "支付宝 / 微信 / 银联",
-      "optionTitle": "支付宝 / 微信 / 银联",
-      "subtitle": "本地钱包",
-      "description": "你会在本地钱包中确认付款。我们仍会在这里收集配送信息，用于准备发货。",
-      "stepperDescription": "请在你常用的钱包中确认付款。我们仍会收集配送信息，用于准备发货并确认清关信息。",
-      "cta": "使用本地钱包付款",
+      "title": "使用支付宝付款",
+      "optionTitle": "支付宝",
+      "subtitle": "支付宝钱包",
+      "description": "你将跳转到支付宝确认付款。我们只保存服务端核验后的订单结果。",
+      "stepperDescription": "请先在这里确认配送信息，然后跳转到支付宝付款。系统会在服务端查验交易结果后再标记订单已支付。",
+      "cta": "继续前往支付宝",
       "points": {
         "recipient": "必填：收件人姓名 + 电话",
-        "wallets": "适合中国大陆钱包和银联用户。"
+        "wallets": "适合习惯使用支付宝钱包结账的客户。"
+      }
+    },
+    "wechat": {
+      "title": "使用微信支付",
+      "optionTitle": "微信支付",
+      "subtitle": "扫码付款",
+      "description": "你将扫描微信支付二维码付款。系统确认支付成功后才会清空购物车。",
+      "stepperDescription": "订单创建后会显示微信支付二维码，并持续向后端确认已核验的支付状态。",
+      "cta": "继续前往微信支付",
+      "points": {
+        "recipient": "必填：收件人姓名 + 电话",
+        "scan": "请用手机微信扫描二维码完成付款。"
       }
     },
     "stripe": {
@@ -66,6 +82,8 @@
       "description": "Stripe 会处理你的银行卡详情和额外验证。我们只保存支付状态。",
       "stepperDescription": "Stripe 会处理银行卡输入和额外验证。这里保持表单尽量简洁，敏感字段交给 Stripe 管理。",
       "cta": "继续前往 Stripe",
+      "confirm": "确认支付",
+      "confirming": "正在确认...",
       "points": {
         "sca": "适合需要 SCA/3DS 验证的客户。"
       }
@@ -184,5 +202,67 @@
     "state": "State",
     "zip": "ZIP",
     "country": "Country"
+  },
+  "paypalReturn": {
+    "title": {
+      "loading": "正在确认 PayPal 支付",
+      "success": "支付已确认",
+      "error": "支付无法确认"
+    },
+    "messages": {
+      "capturing": "请稍等，我们正在向 PayPal 确认支付结果。",
+      "loginRequired": "请使用下单账号登录后再确认支付。",
+      "missingData": "PayPal 返回缺少必要订单数据。",
+      "incomplete": "PayPal 支付尚未完成。",
+      "success": "支付已确认，我们会开始准备订单。",
+      "failed": "无法确认这笔 PayPal 支付。"
+    },
+    "actions": {
+      "continueShopping": "继续购物"
+    }
+  },
+  "paypalCancel": {
+    "title": "PayPal 支付已取消",
+    "message": "订单仍处于未支付状态。你可以重新尝试支付，或联系客服处理。",
+    "actions": {
+      "tryAgain": "重新支付"
+    }
+  },
+  "alipayReturn": {
+    "title": {
+      "loading": "正在确认支付宝支付",
+      "success": "支付已确认",
+      "error": "支付无法确认"
+    },
+    "messages": {
+      "confirming": "请稍等，我们正在向支付宝确认支付结果。",
+      "loginRequired": "请使用下单账号登录后再确认支付。",
+      "missingData": "支付宝返回缺少必要订单数据。",
+      "incomplete": "支付宝支付尚未完成。",
+      "success": "支付已确认，我们会开始准备订单。",
+      "failed": "无法确认这笔支付宝支付。"
+    }
+  },
+  "wechatPay": {
+    "title": {
+      "loading": "正在准备微信支付",
+      "waiting": "请使用微信扫码付款",
+      "success": "支付已确认",
+      "error": "支付无法确认"
+    },
+    "messages": {
+      "loading": "请稍等，我们正在生成微信支付二维码。",
+      "scan": "请用微信扫描此二维码完成付款。",
+      "pending": "正在等待支付确认。",
+      "loginRequired": "请使用下单账号登录后再确认支付。",
+      "missingData": "微信支付页面缺少必要订单数据。",
+      "success": "支付已确认，我们会开始准备订单。",
+      "failed": "无法确认这笔微信支付。"
+    },
+    "actions": {
+      "checkNow": "检查支付状态",
+      "checking": "正在检查..."
+    },
+    "qrAlt": "微信支付二维码"
   }
 }

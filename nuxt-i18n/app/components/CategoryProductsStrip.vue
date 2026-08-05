@@ -268,7 +268,7 @@ watch(
   margin: 0 0 0.35rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #40ffaa;
+  color: #B5FF6D;
 }
 
 .category-strip__actions {

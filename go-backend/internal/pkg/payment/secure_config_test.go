@@ -40,6 +40,23 @@ func TestSecureGatewayConfigRequiresMasterKey(t *testing.T) {
 	}
 }
 
+func TestDecodeStoredSecureGatewayConfigRequiresMatchingProvider(t *testing.T) {
+	masterKey := "test-master-key-with-enough-length-456"
+	t.Setenv(PaymentConfigMasterKeyEnv, masterKey)
+	encrypted, err := EncryptSecureGatewayConfig(SecureGatewayConfig{
+		Provider:    GatewayStripe,
+		Environment: "production",
+		Credentials: map[string]string{"api_key": "sk_live_123"},
+	}, masterKey)
+	if err != nil {
+		t.Fatalf("EncryptSecureGatewayConfig() error = %v", err)
+	}
+
+	if _, err := DecodeStoredSecureGatewayConfig(encrypted, GatewayPayPal); err == nil {
+		t.Fatalf("expected DecodeStoredSecureGatewayConfig to reject provider mismatch")
+	}
+}
+
 func TestApplySecureGatewayStatusesOverridesStripeRuntimeSource(t *testing.T) {
 	readiness := BuildRuntimeReadiness("https://shop.example.com")
 	ApplySecureGatewayStatuses(&readiness, []SecureGatewayConfigStatus{
@@ -58,5 +75,11 @@ func TestApplySecureGatewayStatusesOverridesStripeRuntimeSource(t *testing.T) {
 	}
 	if status.RuntimeSource != "admin-encrypted" || !status.ProductionReady {
 		t.Fatalf("expected Stripe to use admin encrypted runtime and be ready: %#v", status)
+	}
+}
+
+func TestNormalizeThreeDSecureModeSupportsChallenge(t *testing.T) {
+	if got := NormalizeThreeDSecureMode("challenge"); got != "challenge" {
+		t.Fatalf("NormalizeThreeDSecureMode(challenge) = %q, want challenge", got)
 	}
 }

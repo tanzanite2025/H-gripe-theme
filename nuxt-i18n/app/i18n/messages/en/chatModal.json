@@ -8,6 +8,32 @@
     "whatsapp": "WhatsApp",
     "email": "Email"
   },
+  "attachments": {
+    "title": "Add to chat",
+    "open": "Add attachment or reference",
+    "photoLibrary": "Send phone image",
+    "camera": "Take photo",
+    "order": "Send order",
+    "product": "Send product"
+  },
+  "productPicker": {
+    "title": "Select a product",
+    "description": "Search for a product and add it to the message composer.",
+    "placeholder": "Search products...",
+    "search": "Search",
+    "searching": "Searching...",
+    "clear": "Clear search",
+    "collapse": "Close product picker",
+    "empty": "Enter a product name, SKU, or keyword to search.",
+    "noResults": "No products found.",
+    "error": "Product search failed. Please try again.",
+    "send": "Send product",
+    "select": "Select product"
+  },
+  "productDraft": {
+    "selected": "Selected product",
+    "remove": "Remove selected product"
+  },
   "fallback": {
     "agent": "Agent",
     "customer": "Customer",

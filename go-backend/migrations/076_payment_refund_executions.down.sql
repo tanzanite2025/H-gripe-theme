@@ -1,0 +1,5 @@
+DROP INDEX IF EXISTS idx_payment_refund_executions_provider_refund;
+DROP INDEX IF EXISTS idx_payment_refund_executions_provider_payment;
+DROP INDEX IF EXISTS idx_payment_refund_executions_status_created;
+
+DROP TABLE IF EXISTS payment_refund_executions;

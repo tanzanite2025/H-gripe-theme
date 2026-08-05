@@ -18,7 +18,11 @@
       "completeShipping": "Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.",
       "selectPaypalCountry": "Please select a country/region we can ship to before continuing to PayPal.",
       "orderSuccess": "Order submitted successfully!",
-      "orderFailed": "Order submission failed, please try again"
+      "orderFailed": "Order submission failed, please try again",
+      "loginRequired": "Please sign in before checkout.",
+      "emptyCart": "Your cart is empty.",
+      "paymentUnavailable": "This payment method is temporarily unavailable.",
+      "paymentPending": "Payment is not complete yet. Please check your order status later."
     }
   },
   "order": {
@@ -68,7 +72,9 @@
       "cta": "Continue to Stripe",
       "points": {
         "sca": "Great for customers that require SCA/3DS."
-      }
+      },
+      "confirm": "Confirm payment",
+      "confirming": "Confirming..."
     },
     "bank": {
       "title": "Bank transfer",
@@ -89,6 +95,18 @@
       "cta": "Continue with WorldFirst",
       "points": {
         "b2b": "Recommended for B2B cross-border payments."
+      }
+    },
+    "wechat": {
+      "title": "Pay with WeChat Pay",
+      "optionTitle": "WeChat Pay",
+      "subtitle": "Scan to pay",
+      "description": "You scan a WeChat Pay QR code and we confirm the payment server-side before clearing your cart.",
+      "stepperDescription": "After the order is created, we show a WeChat Pay QR code and keep checking the verified payment status.",
+      "cta": "Continue to WeChat Pay",
+      "points": {
+        "recipient": "Required: recipient name + phone number",
+        "scan": "Use the QR code with WeChat Pay on your phone."
       }
     }
   },
@@ -184,5 +202,67 @@
     "state": "State",
     "zip": "ZIP",
     "country": "Country"
+  },
+  "paypalReturn": {
+    "title": {
+      "loading": "Confirming PayPal payment",
+      "success": "Payment confirmed",
+      "error": "Payment could not be confirmed"
+    },
+    "messages": {
+      "capturing": "Please wait while we confirm the payment with PayPal.",
+      "loginRequired": "Please sign in with the account that placed this order.",
+      "missingData": "PayPal returned without the required order data.",
+      "incomplete": "PayPal payment is not complete yet.",
+      "success": "Your payment has been confirmed. We are preparing your order.",
+      "failed": "Unable to confirm this PayPal payment."
+    },
+    "actions": {
+      "continueShopping": "Continue shopping"
+    }
+  },
+  "paypalCancel": {
+    "title": "PayPal payment cancelled",
+    "message": "The order is still unpaid. You can try payment again or contact support.",
+    "actions": {
+      "tryAgain": "Try again"
+    }
+  },
+  "alipayReturn": {
+    "title": {
+      "loading": "Confirming Alipay payment",
+      "success": "Payment confirmed",
+      "error": "Payment could not be confirmed"
+    },
+    "messages": {
+      "confirming": "Please wait while we confirm the payment with Alipay.",
+      "loginRequired": "Please sign in with the account that placed this order.",
+      "missingData": "Alipay returned without the required order data.",
+      "incomplete": "Alipay payment is not complete yet.",
+      "success": "Your payment has been confirmed. We are preparing your order.",
+      "failed": "Unable to confirm this Alipay payment."
+    }
+  },
+  "wechatPay": {
+    "title": {
+      "loading": "Preparing WeChat Pay",
+      "waiting": "Scan with WeChat Pay",
+      "success": "Payment confirmed",
+      "error": "Payment could not be confirmed"
+    },
+    "messages": {
+      "loading": "Please wait while we prepare your WeChat Pay QR code.",
+      "scan": "Scan this QR code in WeChat to complete payment.",
+      "pending": "Waiting for payment confirmation.",
+      "loginRequired": "Please sign in with the account that placed this order.",
+      "missingData": "WeChat Pay opened without the required order data.",
+      "success": "Your payment has been confirmed. We are preparing your order.",
+      "failed": "Unable to confirm this WeChat Pay payment."
+    },
+    "actions": {
+      "checkNow": "Check payment",
+      "checking": "Checking..."
+    },
+    "qrAlt": "WeChat Pay QR code"
   }
 }

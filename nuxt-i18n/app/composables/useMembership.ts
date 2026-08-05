@@ -12,8 +12,6 @@ interface TierConfig {
   min: number
   max: number | null
   discount: number
-  pointsDiscount: number
-  stackable: boolean
 }
 
 // 礼品卡类型
@@ -22,7 +20,9 @@ interface RedeemGiftCardOption {
   label: string
   giftcard_value: number
   giftcard_value_cents: number
+  currency: string
   points_required: number
+  remaining_quantity: number
   status: string
   cover_image?: string
 }
@@ -42,13 +42,18 @@ interface UserGiftCard {
 
 interface LoyaltyRules {
   version: number
-  referral_referrer_points: number
-  referral_referee_points: number
-  checkin_base_points: number
-  checkin_streak_interval_days: number
-  checkin_streak_bonus_points: number
-  checkin_max_points: number
-  redemption_exchange_rate: number
+  currency: string
+  points_base_currency: string
+  purchase_earn_points_per_currency_unit: number | null
+  purchase_earn_trigger: string
+  purchase_earn_amount_basis: string
+  referral_referrer_points: number | null
+  referral_referee_points: number | null
+  checkin_base_points: number | null
+  checkin_streak_interval_days: number | null
+  checkin_streak_bonus_points: number | null
+  checkin_max_points: number | null
+  redemption_exchange_rate: number | null
 }
 
 interface LoyaltyProgramConfig {
@@ -56,6 +61,8 @@ interface LoyaltyProgramConfig {
   version: number
   enabled: boolean
   currency: string
+  points_base_currency?: string
+  purchase_earn_points_per_currency_unit?: number
   exchange_rate_points: number
   min_redeem_points: number
   max_value_per_day_cents: number
@@ -80,6 +87,33 @@ const toFiniteNumber = (value: unknown, fallback = 0) => {
   return Number.isFinite(numberValue) ? numberValue : fallback
 }
 
+const toNullableNumber = (value: unknown) => {
+  if (value === null || typeof value === 'undefined' || value === '') return null
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : null
+}
+
+const normalizeLoyaltyRules = (raw: any): LoyaltyRules | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const pointsBaseCurrency = String(raw.points_base_currency || raw.base_currency || 'USD').trim().toUpperCase() || 'USD'
+
+  return {
+    version: toFiniteNumber(raw.version),
+    currency: pointsBaseCurrency,
+    points_base_currency: pointsBaseCurrency,
+    purchase_earn_points_per_currency_unit: toNullableNumber(raw.purchase_earn_points_per_currency_unit),
+    purchase_earn_trigger: String(raw.purchase_earn_trigger || 'order_completed'),
+    purchase_earn_amount_basis: String(raw.purchase_earn_amount_basis || 'order_subtotal_minus_discounts'),
+    referral_referrer_points: toNullableNumber(raw.referral_referrer_points),
+    referral_referee_points: toNullableNumber(raw.referral_referee_points),
+    checkin_base_points: toNullableNumber(raw.checkin_base_points),
+    checkin_streak_interval_days: toNullableNumber(raw.checkin_streak_interval_days),
+    checkin_streak_bonus_points: toNullableNumber(raw.checkin_streak_bonus_points),
+    checkin_max_points: toNullableNumber(raw.checkin_max_points),
+    redemption_exchange_rate: toNullableNumber(raw.redemption_exchange_rate ?? raw.exchange_rate_points)
+  }
+}
+
 const emptyTierInfo = (): { current: LoyaltyTierRecord | null; next: LoyaltyTierRecord | null; pct: number } => ({ current: null, next: null, pct: 0 })
 
 const normalizeTierConfigFromBackend = (tier: any): TierConfig => {
@@ -95,10 +129,20 @@ const normalizeTierConfigFromBackend = (tier: any): TierConfig => {
       ? null
       : toFiniteNumber(maxPoints),
     discount: toFiniteNumber(tier?.discount_rate ?? tier?.discount),
-    pointsDiscount: toFiniteNumber(tier?.points_discount ?? tier?.redeem?.percent_of_total),
-    stackable: tier?.redeem?.stack_with_percent ?? tier?.points_discount_stackable ?? true,
   }
 }
+
+const DEFAULT_TIER_CONFIGS: TierConfig[] = [
+  { key: 'ordinary', name: 'Ordinary', min: 0, max: 499, discount: 0 },
+  { key: 'bronze', name: 'Bronze', min: 500, max: 1999, discount: 0 },
+  { key: 'silver', name: 'Silver', min: 2000, max: 4999, discount: 0 },
+  { key: 'gold', name: 'Gold', min: 5000, max: 9999, discount: 0 },
+  { key: 'platinum', name: 'Platinum', min: 10000, max: 19999, discount: 0 },
+  { key: 'diamond', name: 'Diamond', min: 20000, max: null, discount: 0 },
+]
+
+const defaultTierConfigs = () =>
+  DEFAULT_TIER_CONFIGS.map(tier => ({ ...tier }))
 
 export function useMembership() {
   const auth = useAuth()
@@ -166,7 +210,7 @@ export function useMembership() {
   })
 
   // ========== 等级配置 ==========
-  const tierConfigs = ref<TierConfig[]>([])
+  const tierConfigs = ref<TierConfig[]>(defaultTierConfigs())
   const tierConfigsLoading = ref(false)
 
   const loadTierConfigs = async () => {
@@ -176,31 +220,32 @@ export function useMembership() {
       const response = await auth.request<any>('/marketing/loyalty/levels')
       const tiers = Array.isArray(response) ? response : response?.tiers
 
-      if (Array.isArray(tiers)) {
+      if (Array.isArray(tiers) && tiers.length > 0) {
         tierConfigs.value = tiers.map(normalizeTierConfigFromBackend)
+      } else {
+        tierConfigs.value = defaultTierConfigs()
       }
     } catch (error) {
       console.error('Failed to load tier configs:', error)
+      tierConfigs.value = defaultTierConfigs()
     } finally {
       tierConfigsLoading.value = false
     }
   }
 
-  // ========== 等级折扣 ==========
+  // ========== 等级权益 ==========
   const levelDiscounts = computed(() => {
     const lvl = (levelName.value || '').toString().toLowerCase()
-    if (!lvl || lvl === '—') return { product: 0, points: 0, stackable: false }
+    if (!lvl || lvl === '—') return { discountRate: 0 }
 
     const config = tierConfigs.value.find(t => t.key === lvl)
     if (config) {
       return {
-        product: config.discount,
-        points: config.pointsDiscount,
-        stackable: config.stackable
+        discountRate: config.discount,
       }
     }
 
-    return { product: 0, points: 0, stackable: false }
+    return { discountRate: 0 }
   })
 
   // ========== 用户资产（优惠券、积分卡） ==========
@@ -253,7 +298,9 @@ export function useMembership() {
             label: String(option.label || ''),
             giftcard_value: Number(option.value ?? option.giftcard_value ?? 0),
             giftcard_value_cents: Number(option.value_cents ?? option.giftcard_value_cents ?? 0),
+            currency: String(option.currency || rawConfig?.currency || ''),
             points_required: Number(option.points_required || 0),
+            remaining_quantity: Number(option.remaining_quantity ?? 0),
             status: String(option.status || 'active')
           }))
         : []
@@ -262,20 +309,13 @@ export function useMembership() {
         : null
       loyaltyProgramConfig.value = config
       availableGiftcards.value = normalizedOptions
-        ? normalizedOptions.filter((card) => card.status === 'active')
+        ? normalizedOptions.filter((card) => card.status === 'active' && card.remaining_quantity > 0)
         : []
-      loyaltyRules.value = config
-        ? {
-            version: Number(config.version || 0),
-            referral_referrer_points: Number(config.referral_referrer_points || 0),
-            referral_referee_points: Number(config.referral_referee_points || 0),
-            checkin_base_points: Number(config.checkin_base_points || 0),
-            checkin_streak_interval_days: Number(config.checkin_streak_interval_days || 0),
-            checkin_streak_bonus_points: Number(config.checkin_streak_bonus_points || 0),
-            checkin_max_points: Number(config.checkin_max_points || 0),
-            redemption_exchange_rate: Number(config.exchange_rate_points || 0)
-          }
-        : null
+      if (!loyaltyRules.value) {
+        loyaltyRules.value = config
+          ? normalizeLoyaltyRules(config)
+          : null
+      }
     } catch (error) {
       console.error('Failed to fetch loyalty program config:', error)
       giftcardsError.value = 'Network error'
@@ -287,7 +327,16 @@ export function useMembership() {
   const fetchAvailableGiftcards = fetchLoyaltyProgramConfig
 
   const fetchLoyaltyRules = async () => {
-    await fetchLoyaltyProgramConfig()
+    try {
+      const data = await auth.request<any>('/marketing/loyalty/rules')
+      const rawRules = (data?.data || data) as any
+      loyaltyRules.value = normalizeLoyaltyRules(rawRules)
+    } catch (error) {
+      console.error('Failed to fetch loyalty rules:', error)
+      if (!loyaltyRules.value) {
+        loyaltyRules.value = null
+      }
+    }
   }
 
   const fetchUserGiftCards = async () => {
@@ -376,6 +425,7 @@ export function useMembership() {
       loadTierConfigs(),
       fetchUserAssets(),
       fetchLoyaltyProgramConfig(),
+      fetchLoyaltyRules(),
       fetchUserGiftCards()
     ])
   }
@@ -391,6 +441,7 @@ export function useMembership() {
     await Promise.allSettled([
       fetchUserAssets(),
       fetchLoyaltyProgramConfig(),
+      fetchLoyaltyRules(),
       fetchUserGiftCards()
     ])
   }

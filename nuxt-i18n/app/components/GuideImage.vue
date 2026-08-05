@@ -24,7 +24,7 @@
 
   <Teleport to="body" v-if="props.zoomOnClick && isOpen">
     <div class="guide-image__overlay" @click.self="close">
-      <button type="button" class="guide-image__close" @click="close">
+      <button type="button" class="tz-global-close-btn guide-image__close" @click="close">
         ×
       </button>
       <img
@@ -101,12 +101,17 @@ const close = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding:
+    var(--tz-safe-area-top, 0px)
+    var(--tz-safe-area-right, 0px)
+    var(--tz-safe-area-bottom, 0px)
+    var(--tz-safe-area-left, 0px);
   z-index: 2000;
 }
 
 .guide-image__overlay-img {
   max-width: 90vw;
-  max-height: 90vh;
+  max-height: min(90vh, var(--tz-mobile-safe-viewport-height, 90vh));
   object-fit: contain;
   border-radius: 0.75rem;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 1);
@@ -114,13 +119,8 @@ const close = () => {
 
 .guide-image__close {
   position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  background: transparent;
-  border: none;
-  color: #e5e7eb;
-  font-size: 1.4rem;
-  cursor: pointer;
+  top: max(1rem, calc(1rem + var(--tz-safe-area-top, 0px)));
+  right: max(1rem, calc(1rem + var(--tz-safe-area-right, 0px)));
 }
 
 .guide-image__caption {

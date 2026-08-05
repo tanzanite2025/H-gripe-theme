@@ -30,7 +30,7 @@
            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">3</div>
            <h3 class="text-slate-100 font-bold text-lg mb-2 pt-0.5">Authorization Requirement</h3>
            <p class="tz-text-secondary text-sm leading-relaxed">
-             Any order amendment or cancellation must be confirmed and authorized by TANZANITE.
+             Any order amendment or cancellation must be confirmed and authorized by our team.
            </p>
          </div>
 

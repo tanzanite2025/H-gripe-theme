@@ -1,9 +1,10 @@
-export type ChatTab = 'chat' | 'share' | 'orders' | 'faq' | 'warranty' | 'member' | 'tire' | 'calculator'
+export type ChatTab = 'chat' | 'orders' | 'faq' | 'warranty' | 'member' | 'tire' | 'calculator'
 
 export interface ChatRoomState {
   messages: any[]
   activeTab: ChatTab
   newMessage: string
+  pendingProductReference: any | null
   searchQuery: string
   searchResults: any[]
   ordersList: any[]
@@ -18,9 +19,10 @@ interface StoredChatRoomState extends Partial<ChatRoomState> {
 export const CHAT_STORAGE_EXPIRY_DAYS = 5
 export const LAST_AGENT_STORAGE_KEY = 'tz_last_selected_agent'
 
-const chatTabs: readonly ChatTab[] = ['chat', 'share', 'orders', 'faq', 'warranty', 'member', 'tire', 'calculator']
+const chatTabs: readonly ChatTab[] = ['chat', 'orders', 'faq', 'warranty', 'member', 'tire', 'calculator']
 
 const normalizeChatTab = (value: unknown): ChatTab => {
+  if (value === 'share') return 'chat'
   return chatTabs.includes(value as ChatTab) ? value as ChatTab : 'chat'
 }
 
@@ -28,6 +30,7 @@ export const createEmptyChatRoom = (): ChatRoomState => ({
   messages: [],
   activeTab: 'chat',
   newMessage: '',
+  pendingProductReference: null,
   searchQuery: '',
   searchResults: [],
   ordersList: [],
@@ -76,6 +79,7 @@ export const loadChatRoomFromStorage = (storageKey: string, expiryDays = CHAT_ST
       messages,
       activeTab: normalizeChatTab(data.activeTab),
       newMessage: data.newMessage || '',
+      pendingProductReference: data.pendingProductReference || null,
       searchQuery: data.searchQuery || '',
       searchResults: Array.isArray(data.searchResults) ? data.searchResults : [],
       ordersList: Array.isArray(data.ordersList) ? data.ordersList : [],
@@ -93,6 +97,7 @@ export const saveChatRoomToStorage = (storageKey: string, room: ChatRoomState) =
     messages: room.messages,
     activeTab: room.activeTab,
     newMessage: room.newMessage,
+    pendingProductReference: room.pendingProductReference || null,
     searchQuery: room.searchQuery,
     searchResults: room.searchResults,
     ordersList: room.ordersList,

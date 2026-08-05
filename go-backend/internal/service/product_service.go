@@ -111,7 +111,7 @@ func (s *ProductService) GetPublicByID(id uint) (*product.Product, error) {
 }
 
 func (s *ProductService) GetPublicBySlug(slug, locale string) (*product.Product, error) {
-	result, err := s.productRepo.FindBySlug(slug, locale)
+	result, err := s.productRepo.FindBySlug(slug, "")
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,20 @@ func (s *ProductService) List(locale, status string, featured bool, page, pageSi
 }
 
 func (s *ProductService) ListPublic(locale string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
-	return s.List(locale, "active", featured, page, pageSize)
+	return s.List("", "active", featured, page, pageSize)
+}
+
+func (s *ProductService) ListPublicAvailable(locale string, page, pageSize int) ([]product.Product, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+	products, total, err := s.productRepo.ListPublicAvailable("", offset, pageSize)
+	return sanitizeProductSliceHTML(products), total, err
 }
 
 func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Product, int64, error) {
@@ -147,7 +160,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 	}
 	offset := (page - 1) * pageSize
 	query := repository.ProductSearchQuery{
-		Locale:      input.Locale,
+		Locale:      "",
 		Status:      "active",
 		Keyword:     input.Keyword,
 		TypeSlug:    input.TypeSlug,
@@ -158,10 +171,6 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 		Limit:       pageSize,
 	}
 	products, total, err := s.productRepo.SearchPublic(query)
-	if err == nil && total == 0 && input.Locale != "" && input.Locale != "en" {
-		query.Locale = "en"
-		products, total, err = s.productRepo.SearchPublic(query)
-	}
 	return sanitizeProductSliceHTML(products), total, err
 }
 

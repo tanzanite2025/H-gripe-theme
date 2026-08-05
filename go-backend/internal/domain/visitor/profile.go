@@ -6,6 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	ProfileStatusCandidate  = "candidate"
+	ProfileStatusActive     = "active"
+	ProfileStatusArchived   = "archived"
+	ProfileStatusSuppressed = "suppressed"
+)
+
 type Profile struct {
 	ID                         uint           `gorm:"primarykey" json:"id"`
 	UserID                     *uint          `gorm:"index" json:"user_id,omitempty"`
@@ -22,6 +29,12 @@ type Profile struct {
 	IPHash                     string         `gorm:"type:varchar(64);index" json:"-"`
 	UserAgentHash              string         `gorm:"type:varchar(64)" json:"-"`
 	LastSeenAt                 time.Time      `gorm:"index" json:"last_seen_at"`
+	ProfileQualityScore        int            `gorm:"not null;default:0;index" json:"profile_quality_score"`
+	ProfileStatus              string         `gorm:"type:varchar(24);not null;default:'active';index" json:"profile_status"`
+	LastMeaningfulAction       string         `gorm:"type:varchar(64)" json:"last_meaningful_action,omitempty"`
+	FirstMeaningfulSeenAt      *time.Time     `gorm:"index" json:"first_meaningful_seen_at,omitempty"`
+	LastMeaningfulSeenAt       *time.Time     `gorm:"index" json:"last_meaningful_seen_at,omitempty"`
+	RetentionUntil             *time.Time     `gorm:"index" json:"retention_until,omitempty"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
 	DeletedAt                  gorm.DeletedAt `gorm:"index" json:"-"`

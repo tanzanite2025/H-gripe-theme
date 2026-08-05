@@ -2,6 +2,7 @@ package upload
 
 import (
 	"bytes"
+	"encoding/binary"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -42,6 +43,46 @@ func TestValidateFileRejectsUnsupportedExtension(t *testing.T) {
 	if ErrorCode(err) != CodeInvalidType {
 		t.Fatalf("expected %q, got %q", CodeInvalidType, ErrorCode(err))
 	}
+}
+
+func TestValidateFileRejectsWebPWithExcessivePixelCount(t *testing.T) {
+	file := testFileHeader(t, "oversized.webp", testWebPVP8X(8000, 8000))
+
+	err := ValidateFile(file, ProductImageRule)
+	if err == nil {
+		t.Fatal("expected oversized WebP dimensions to be rejected")
+	}
+	if ErrorCode(err) != CodeInvalidDimensions {
+		t.Fatalf("expected %q, got %q", CodeInvalidDimensions, ErrorCode(err))
+	}
+	if HTTPStatus(err) != http.StatusUnprocessableEntity {
+		t.Fatalf("unexpected HTTP status %d", HTTPStatus(err))
+	}
+}
+
+func TestValidateFileAcceptsWebPWithinProductLimits(t *testing.T) {
+	file := testFileHeader(t, "wheel.webp", testWebPVP8X(2400, 1600))
+
+	if err := ValidateFile(file, ProductImageRule); err != nil {
+		t.Fatalf("expected valid WebP dimensions to be accepted, got %v", err)
+	}
+}
+
+func testWebPVP8X(width, height int) []byte {
+	data := make([]byte, 30)
+	copy(data[0:4], []byte("RIFF"))
+	binary.LittleEndian.PutUint32(data[4:8], uint32(len(data)-8))
+	copy(data[8:12], []byte("WEBP"))
+	copy(data[12:16], []byte("VP8X"))
+	width--
+	height--
+	data[24] = byte(width)
+	data[25] = byte(width >> 8)
+	data[26] = byte(width >> 16)
+	data[27] = byte(height)
+	data[28] = byte(height >> 8)
+	data[29] = byte(height >> 16)
+	return data
 }
 
 func testFileHeader(t *testing.T, filename string, contents []byte) *multipart.FileHeader {

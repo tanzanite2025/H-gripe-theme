@@ -19,7 +19,7 @@
           v-model="searchQuery"
           type="text"
           :placeholder="$t('feedback.searchPlaceholder', 'Type to filter comments on this page...')"
-          class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+          class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
         />
       </div>
     </div>
@@ -55,7 +55,12 @@
     <!-- Divider -->
     <div class="mt-6 border-t border-white/10 pt-4 md:pt-5">
       <!-- Eligibility message -->
-      <div v-if="eligibilityState && !eligibilityState.can_post" class="space-y-3">
+      <div v-if="eligibilityPending" class="space-y-3">
+        <p class="text-sm tz-text-secondary">
+          {{ $t('feedback.checkingEligibility', 'Checking sign-in status...') }}
+        </p>
+      </div>
+      <div v-else-if="!canPostFeedback" class="space-y-3">
         <p class="text-sm tz-text-secondary">
           {{ $t('feedback.loginRequired', 'Please sign in to leave feedback.') }}
         </p>
@@ -90,7 +95,7 @@
           <textarea
             v-model="message"
             rows="3"
-            class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+            class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
             :placeholder="$t('feedback.messagePlaceholder', 'Tell us what worked well and what could be improved...')"
           />
         </div>
@@ -103,7 +108,7 @@
             <input
               v-model="name"
               type="text"
-              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
               :placeholder="$t('feedback.namePlaceholder', 'How should we address you?')"
             />
           </div>
@@ -114,7 +119,7 @@
             <input
               v-model="email"
               type="email"
-              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#40ffaa]"
+              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
               :placeholder="$t('feedback.emailPlaceholder', 'For follow-up only, never shared publicly.')"
             />
           </div>
@@ -123,7 +128,7 @@
         <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <button
             type="submit"
-            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-5 py-2.5 text-sm font-semibold text-black shadow-md hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            class="inline-flex items-center justify-center rounded-full bg-[#B5FF6D] px-5 py-2.5 text-sm font-semibold text-black shadow-md transition-all hover:bg-[#c8ff91] disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="loadingSubmit || !message.trim()"
           >
             <span v-if="loadingSubmit">
@@ -214,6 +219,8 @@ const subtitleText = computed(
 const showSearchComputed = computed(() => props.showSearch !== false)
 
 const eligibilityState = computed(() => eligibility.value)
+const eligibilityPending = computed(() => eligibilityState.value === null)
+const canPostFeedback = computed(() => eligibilityState.value?.can_post === true)
 
 const formatDate = (iso: string) => {
   const d = new Date(iso)
@@ -232,6 +239,13 @@ const handleSubmit = async () => {
   const content = message.value.trim()
   if (!content) {
     submitError.value = $t('feedback.required', 'Please enter your feedback before submitting.')
+    return
+  }
+
+  if (!canPostFeedback.value) {
+    submitError.value = $t('feedback.loginRequired', 'Please sign in to leave feedback.')
+    showAuth.value = true
+    await loadEligibility()
     return
   }
 

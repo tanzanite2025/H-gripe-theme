@@ -39,8 +39,8 @@
 
         <!-- soft radial highlight behind Asia region as a hint -->
         <radialGradient id="asiaHighlight" cx="65%" cy="50" r="0.35">
-          <stop offset="0%" stop-color="#22c55e" stop-opacity="0.25" />
-          <stop offset="100%" stop-color="#22c55e" stop-opacity="0" />
+          <stop offset="0%" stop-color="#B5FF6D" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="#B5FF6D" stop-opacity="0" />
         </radialGradient>
       </defs>
 

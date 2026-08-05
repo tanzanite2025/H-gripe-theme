@@ -1,10 +1,9 @@
 package admin
 
 import (
-	"mime/multipart"
+	"errors"
 	"net/http"
-	"strings"
-	"tanzanite/internal/pkg/upload"
+	"strconv"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -18,55 +17,51 @@ func NewMediaHandler(mediaService *service.MediaService) *MediaHandler {
 	return &MediaHandler{mediaService: mediaService}
 }
 
-func (h *MediaHandler) UploadAsset(c *gin.Context) {
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
-		return
+func parseMediaAssetID(c *gin.Context) (uint, bool) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil || id == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid media asset id"})
+		return 0, false
 	}
-
-	mediaType, err := validateProductMediaUpload(file, c.PostForm("media_type"))
-	if err != nil {
-		c.JSON(upload.HTTPStatus(err), gin.H{
-			"error": err.Error(),
-			"code":  upload.ErrorCode(err),
-		})
-		return
-	}
-
-	asset, err := h.mediaService.UploadAsset(c.Request.Context(), service.MediaUploadInput{
-		File:       file,
-		MediaType:  mediaType,
-		Alt:        strings.TrimSpace(c.PostForm("alt")),
-		Caption:    strings.TrimSpace(c.PostForm("caption")),
-		UploaderID: currentUserID(c),
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload media asset"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Media asset uploaded successfully",
-		"asset":   asset,
-	})
+	return uint(id), true
 }
 
-func validateProductMediaUpload(file *multipart.FileHeader, requestedType string) (string, error) {
-	switch strings.ToLower(strings.TrimSpace(requestedType)) {
-	case "image":
-		return "image", upload.ValidateFile(file, upload.ProductImageRule)
-	case "video":
-		return "video", upload.ValidateFile(file, upload.ProductVideoRule)
+func respondMediaError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrMediaAssetNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrUnsupportedMediaType), errors.Is(err, service.ErrUnsupportedMediaStatus), errors.Is(err, service.ErrUnsupportedVisibility):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrMediaStorageUnavailable):
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrMediaAssetURLUnavailable):
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrMediaAssetForbidden):
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrMediaUploadIdentityRequired):
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error(), "code": "upload_identity_required"})
+	case errors.Is(err, service.ErrMediaAccountStorageQuotaExceeded):
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": err.Error(), "code": "account_storage_quota_exceeded"})
+	case errors.Is(err, service.ErrMediaDeleteConfirmationRequired):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "code": "delete_confirmation_required"})
+	case errors.Is(err, service.ErrMediaAssetInUse):
+		var inUse *service.MediaAssetInUseError
+		if errors.As(err, &inUse) {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":      err.Error(),
+				"code":       "media_asset_in_use",
+				"references": inUse.References,
+				"total":      len(inUse.References),
+			})
+			return
+		}
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error(), "code": "media_asset_in_use"})
+	case errors.Is(err, service.ErrMediaEvidenceUnavailable):
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrMediaEvidenceIntegrityMismatch):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	default:
-		if err := upload.ValidateFile(file, upload.ProductImageRule); err == nil {
-			return "image", nil
-		}
-		if err := upload.ValidateFile(file, upload.ProductVideoRule); err == nil {
-			return "video", nil
-		} else {
-			return "", err
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "media operation failed"})
 	}
 }
 

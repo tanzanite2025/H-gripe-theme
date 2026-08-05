@@ -15,7 +15,13 @@ func (h *Handler) ListPaymentMethods(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"data": paymentMethodsToResponse(methods)})
+	items, err := h.paymentMethodsToAvailabilityResponse(c, methods)
+	if err != nil {
+		apierror.RespondError(c, 503, "payment_methods_unavailable", "Payment methods are temporarily unavailable")
+		return
+	}
+
+	response.Success(c, gin.H{"data": items})
 }
 
 func (h *Handler) GetPaymentMethod(c *gin.Context) {
@@ -35,5 +41,11 @@ func (h *Handler) GetPaymentMethod(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, paymentMethodToResponse(*method))
+	item, err := h.paymentMethodToAvailabilityResponse(c, *method)
+	if err != nil {
+		apierror.RespondError(c, 503, "payment_methods_unavailable", "Payment methods are temporarily unavailable")
+		return
+	}
+
+	response.Success(c, item)
 }

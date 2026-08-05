@@ -1,6 +1,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import registrationApi from '@/api/registrations'
+import { useRouteTab } from '@/composables/useRouteTab'
 import { useAuthStore } from '@/stores/auth'
 import {
   CLAIM_STATUS_OPTIONS,
@@ -16,7 +17,16 @@ import {
 
 export function useWarrantyAdmin() {
   const authStore = useAuthStore()
-  const activeTab = ref('registrations')
+  const activeTab = useRouteTab({
+    defaultValue: 'registrations',
+    values: ['registrations', 'claims', 'expiring', 'boundary'],
+    routes: {
+      registrations: 'WarrantyRegistrations',
+      claims: 'WarrantyClaims',
+      expiring: 'WarrantyExpiring',
+      boundary: 'WarrantyBoundary',
+    },
+  })
   const refreshing = ref(false)
   const stats = ref({})
   const registrations = ref([])
@@ -32,7 +42,7 @@ export function useWarrantyAdmin() {
     status: 'open',
     summary: '',
     costAmount: '',
-    currency: 'USD',
+    currency: '',
     performedAt: ''
   })
 
@@ -324,7 +334,7 @@ export function useWarrantyAdmin() {
       status: 'open',
       summary: '',
       costAmount: '',
-      currency: 'USD',
+      currency: '',
       performedAt: ''
     })
   }
@@ -342,7 +352,7 @@ export function useWarrantyAdmin() {
         status: serviceRecordForm.status,
         summary: serviceRecordForm.summary.trim(),
         cost_amount: Number(serviceRecordForm.costAmount || 0),
-        currency: serviceRecordForm.currency,
+        currency: serviceRecordForm.currency.trim().toUpperCase(),
         performed_at: serviceRecordForm.performedAt || undefined
       })
       serviceRecords.value = [record, ...serviceRecords.value]

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"tanzanite/internal/domain/wishlist"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +37,7 @@ func (h *Handler) ListItems(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"items": wishlistResponses(items),
+		"items": publicWishlistResponses(items),
 		"meta":  gin.H{"total": len(items)},
 	})
 }
@@ -66,7 +65,7 @@ func (h *Handler) CreateItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"item": item.ToResponse()})
+	c.JSON(http.StatusCreated, gin.H{"item": publicWishlistResponse(*item)})
 }
 
 func (h *Handler) DeleteItem(c *gin.Context) {
@@ -107,14 +106,6 @@ func currentUserID(c *gin.Context) (uint, bool) {
 	}
 	userID, ok := uid.(uint)
 	return userID, ok && userID > 0
-}
-
-func wishlistResponses(items []wishlist.Item) []*wishlist.ItemResponse {
-	responses := make([]*wishlist.ItemResponse, 0, len(items))
-	for i := range items {
-		responses = append(responses, items[i].ToResponse())
-	}
-	return responses
 }
 
 func respondWishlistError(c *gin.Context, status int, code, message string) {

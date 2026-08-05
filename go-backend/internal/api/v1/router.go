@@ -3,9 +3,11 @@ package v1
 import (
 	"tanzanite/internal/api/middleware"
 	"tanzanite/internal/api/v1/auth"
+	"tanzanite/internal/api/v1/behavior"
 	"tanzanite/internal/api/v1/cart"
 	"tanzanite/internal/api/v1/checkout"
 	"tanzanite/internal/api/v1/content"
+	currencyapi "tanzanite/internal/api/v1/currency"
 	"tanzanite/internal/api/v1/faq"
 	"tanzanite/internal/api/v1/feedback"
 	"tanzanite/internal/api/v1/gallery"
@@ -14,6 +16,7 @@ import (
 	"tanzanite/internal/api/v1/order"
 	"tanzanite/internal/api/v1/payment"
 	"tanzanite/internal/api/v1/product"
+	"tanzanite/internal/api/v1/recommendation"
 	"tanzanite/internal/api/v1/registration"
 	"tanzanite/internal/api/v1/review"
 	"tanzanite/internal/api/v1/settings"
@@ -25,6 +28,7 @@ import (
 	"tanzanite/internal/api/v1/ticket"
 	"tanzanite/internal/api/v1/wishlist"
 	"tanzanite/internal/app"
+	attributionpkg "tanzanite/internal/pkg/attribution"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/securecookie"
 
@@ -76,17 +80,33 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		VisitorSecret:         cfg.JWT.Secret,
 	})
 	settingsHandler := settings.NewHandler(settingService)
+	currencyHandler := currencyapi.NewHandler(services.CurrencyPolicy)
 	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
-	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
+	orderHandler.ConfigureOrderAbuse(deps.OrderAbuse)
+	orderHandler.ConfigurePaymentProtection(services.PaymentProtection)
+	checkoutHandler := checkout.NewHandler(checkoutService, cartService, services.CurrencyPolicy)
 	marketingHandler := marketing.NewHandler(marketingService, settingService, services.LoyaltyProgram)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
+		MediaService:          services.Media,
 		AllowedOrigins:        cfg.CORS.AllowedOrigins,
 		VisitorSecret:         cfg.JWT.Secret,
 		VisitorProfileService: services.VisitorProfile,
 		CustomerServiceEvents: services.CustomerServiceEvents,
 	})
-	paymentHandler := payment.NewHandler(paymentService, orderService, services.AdminSettings)
+	paymentHandler := payment.NewHandler(
+		paymentService,
+		orderService,
+		services.AdminSettings,
+		services.CurrencyPolicy,
+		services.PaymentThreeDS,
+		services.PaymentRiskMonitoring,
+		services.PaymentProtection,
+		services.PaymentRefundReview,
+		deps.AntiBot,
+		deps.AntiFraud,
+	)
+	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
 	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc, deps.AntiBot)
@@ -97,6 +117,13 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
 	spokeHandler := spoke.NewHandler(services.Spoke)
+	behaviorEventHandler := behavior.NewHandler(services.BehaviorEvents)
+	recommendationHandler := recommendation.NewHandler(services.Recommendations)
+	attributionSigner, attributionErr := attributionpkg.NewSigner(cfg.JWT.Secret)
+	if attributionErr == nil {
+		behaviorEventHandler.ConfigureAttribution(attributionSigner, cookieOptions)
+		orderHandler.ConfigureAttribution(attributionSigner)
+	}
 
 	// 公网 Webhook 回调入口不挂 CSRF。
 	// 第三方平台（支付网关、17TRACK 等）不会携带浏览器 CSRF token，安全边界由各自 handler 内的签名验签负责。
@@ -116,6 +143,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
 	v1.Use(middleware.CSRFProtection(cfg.CORS.AllowedOrigins))
+	v1.Use(middleware.I18n())
+	v1.Use(middleware.VisitorRiskTelemetry(services.VisitorRisk))
 	{
 		// 认证路由（公开）
 		authGroup := v1.Group("/auth")
@@ -145,8 +174,30 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			contentGroup.POST("/faqs/:id/view", faqHandler.IncrementFAQView)
 		}
 
+		// 推荐行为事件路由（公开，可选认证）
+		behaviorEventsGroup := v1.Group("/behavior-events")
+		behaviorEventsGroup.Use(
+			middleware.OptionalAuthMiddleware(authService),
+			middleware.RateLimit(20),
+		)
+		{
+			behaviorEventsGroup.POST("/batch", behaviorEventHandler.IngestBatch)
+		}
+
+		// 推荐读取路由（公开，可选认证）
+		recommendationsGroup := v1.Group("/recommendations")
+		recommendationsGroup.Use(
+			middleware.OptionalAuthMiddleware(authService),
+			middleware.RateLimit(30),
+		)
+		{
+			recommendationsGroup.POST("", recommendationHandler.GetRecommendations)
+		}
+
 		// 产品路由（公开）
+		commercialInventoryProbeGuard := middleware.CommercialInventoryProbeGuard(deps.RedisClient)
 		productGroup := v1.Group("/products")
+		productGroup.Use(commercialInventoryProbeGuard)
 		{
 			productGroup.GET("", productHandler.ListProducts)
 			productGroup.GET("/types", productHandler.ListProductTypes)
@@ -156,7 +207,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 
 		// 购物车路由（可选认证）
 		cartGroup := v1.Group("/cart")
-		cartGroup.Use(middleware.OptionalAuthMiddleware(authService))
+		cartGroup.Use(
+			middleware.OptionalAuthMiddleware(authService),
+			middleware.CommercialCartProbeGuard(deps.RedisClient),
+		)
 		{
 			cartGroup.GET("/summary", cartHandler.GetCartSummary)
 			cartGroup.POST("/add", cartHandler.AddToCart)
@@ -184,7 +238,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		suggestionFeedbackGroup := v1.Group("/suggestion-feedback")
 		{
 			suggestionFeedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), suggestionFeedbackHandler.Eligibility)
-			suggestionFeedbackGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), suggestionFeedbackHandler.Upload)
+			suggestionFeedbackGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUserPerMinute(6, 2), suggestionFeedbackHandler.Upload)
 			suggestionFeedbackGroup.POST("", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), suggestionFeedbackHandler.Create)
 		}
 
@@ -204,13 +258,16 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 
 		// 订单路由（需要认证）
 		orderGroup := v1.Group("/orders")
-		orderGroup.Use(middleware.AuthMiddleware(authService))
+		orderGroup.Use(
+			middleware.AuthMiddleware(authService),
+			middleware.CommercialOrderEnumerationGuard(deps.RedisClient),
+		)
 		{
 			orderGroup.POST("", middleware.RateLimitByUser(2), orderHandler.CreateOrder)
 			orderGroup.GET("", orderHandler.ListOrders)
 			orderGroup.GET("/stats", orderHandler.GetOrderStats)
-			orderGroup.GET("/:id", orderHandler.GetOrder)
-			orderGroup.POST("/:id/cancel", orderHandler.CancelOrder)
+			orderGroup.GET("/:order_number", orderHandler.GetOrder)
+			orderGroup.POST("/:order_number/cancel", orderHandler.CancelOrder)
 		}
 
 		// 营销路由
@@ -280,10 +337,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		customerServiceGroup := v1.Group("/customer-service")
 		{
 			customerServiceGroup.GET("/agents", ticketHandler.ListPublicCustomerServiceAgents)
-			customerServiceGroup.GET("/products", productHandler.ListPublicChatProducts)
+			customerServiceGroup.GET("/products", commercialInventoryProbeGuard, productHandler.ListPublicChatProducts)
 			customerServiceGroup.GET("/orders", middleware.AuthMiddleware(authService), orderHandler.ListPublicChatOrders)
 			customerServiceGroup.POST("/conversations", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(3), ticketHandler.EnsurePublicCustomerServiceConversation)
 			customerServiceGroup.GET("/has-conversation", middleware.OptionalAuthMiddleware(authService), ticketHandler.HasPublicCustomerServiceConversation)
+			customerServiceGroup.POST("/attachments", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUserPerMinute(6, 2), ticketHandler.UploadPublicCustomerServiceAttachment)
 			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.SendPublicCustomerServiceMessage)
 			customerServiceGroup.POST("/typing", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.SendPublicCustomerServiceTyping)
 			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
@@ -308,13 +366,14 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			showcaseGroup.GET("/gallery", showcaseHandler.List)
 			showcaseGroup.GET("/comments", showcaseHandler.ListComments)
-			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), showcaseHandler.Upload)
+			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUserPerMinute(3, 1), showcaseHandler.Upload)
 			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), showcaseHandler.AddComment)
 		}
 
 		// 设置路由
 		settingsGroup := v1.Group("/settings")
 		{
+			settingsGroup.GET("/currency-policy", currencyHandler.GetPolicy)
 			// 公开设置
 			settingsGroup.GET("/site", settingsHandler.GetSiteSettings)
 			settingsGroup.GET("/quick-buy", settingsHandler.GetQuickBuySettings)
@@ -367,6 +426,13 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				authPayment.GET("/orders/:order_id/transactions", paymentHandler.GetOrderTransactions)
 				authPayment.GET("/refunds/:id", paymentHandler.GetRefund)
 				authPayment.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
+				authPayment.POST("/stripe/payment-intents", middleware.RateLimitByUser(3), paymentHandler.CreateStripePaymentIntent)
+				authPayment.POST("/paypal/orders", middleware.RateLimitByUser(3), paymentHandler.CreatePayPalOrder)
+				authPayment.POST("/paypal/orders/:paypal_order_id/capture", middleware.RateLimitByUser(5), paymentHandler.CapturePayPalOrder)
+				authPayment.POST("/alipay/orders", middleware.RateLimitByUser(3), paymentHandler.CreateAlipayOrder)
+				authPayment.POST("/alipay/orders/:order_number/confirm", middleware.RateLimitByUser(5), paymentHandler.ConfirmAlipayOrder)
+				authPayment.POST("/wechat/orders", middleware.RateLimitByUser(3), paymentHandler.CreateWechatOrder)
+				authPayment.POST("/wechat/orders/:order_number/confirm", middleware.RateLimitByUser(5), paymentHandler.ConfirmWechatOrder)
 			}
 		}
 

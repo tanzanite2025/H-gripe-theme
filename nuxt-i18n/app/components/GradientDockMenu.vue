@@ -1,7 +1,7 @@
 <template>
   <!-- Dock 菜单容器 (统一胶囊风格) -->
-  <div class="fixed left-0 md:left-1/2 md:-translate-x-1/2 bottom-0 md:bottom-6 w-full md:w-[96%] md:max-w-[500px] z-[101] pointer-events-auto transition-all duration-300">
-    <div class="dock-surface w-full bg-[radial-gradient(circle_at_top,rgba(31,41,55,0.98),rgba(15,23,42,0.98),rgba(15,23,42,1))] backdrop-blur-md rounded-none md:rounded-full shadow-[0_24px_56px_-16px_rgba(0,0,0,1)] px-1 py-2.5 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
+  <div class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300">
+    <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
       
       <!-- 1. Menu (Sidebar) -->
       <button 
@@ -16,7 +16,7 @@
       <button 
         :class="[
           'flex-1 h-11 md:h-12 flex items-center justify-center transition-colors min-w-[40px]',
-          isChatOpen ? 'text-[#40ffaa]' : 'tz-text-secondary hover:text-white'
+          isChatOpen ? 'text-[#B5FF6D]' : 'tz-text-secondary hover:text-white'
         ]"
         @click="toggleChatFromDock()" 
         :aria-label="$t('dockMenu.chat')"
@@ -34,14 +34,17 @@
       <!-- 3. Checkout (Main Action) -->
       <button 
         class="h-11 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-white text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center border border-white/80 shadow-[3px_3px_2px_rgba(0,0,0,0.85)] hover:bg-white/95 hover:shadow-[4px_4px_3px_rgba(0,0,0,0.95)] transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
-        @click="openCheckoutFromDock"
+        type="button"
+        :disabled="cartCount <= 0"
+        :class="{ 'opacity-50 cursor-not-allowed hover:translate-y-0': cartCount <= 0 }"
+        @click="openCheckout"
       >
         <span>{{ priceDisplay }}</span>
       </button>
 
       <!-- 4. Quick Buy -->
       <button 
-        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors min-w-[40px]"
+        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#B5FF6D] transition-colors min-w-[40px]"
         @click="openQuick()" 
         aria-haspopup="dialog" 
         :aria-expanded="quickOpen" 
@@ -203,7 +206,7 @@ const priceLabel = computed(() => $t('cart.summary.price', 'Price'))
 const ctaLabel = computed(() => $t('cart.summary.openCart', 'View cart summary'))
 
 // 集成购物车系统
-const { cartCount, total, openCart, formatPrice } = useCart()
+const { cartCount, total, openCart, openCheckout, formatPrice } = useCart()
 
 const itemsCount = computed(() => cartCount.value)
 
@@ -228,14 +231,6 @@ const openCartDrawer = () => {
   openCart()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'cart-drawer' } }))
-  }
-}
-
-// 从 Dock 直接打开结账弹窗
-const openCheckoutFromDock = () => {
-  closeAll()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('open-checkout-modal'))
   }
 }
 
@@ -289,9 +284,25 @@ watchEffect(() => {
 </script>
 
 <style scoped>
+.dock-bar {
+  background: rgba(17, 17, 22, 0.78);
+  background: color-mix(in srgb, var(--tz-card-surface) 78%, transparent);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  backdrop-filter: blur(18px) saturate(120%);
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.18);
+}
+
+.dock-surface {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 @media (max-width: 767px) {
   .dock-surface {
-    background: linear-gradient(180deg, #17191c 0%, #101216 52%, #0d111b 100%) !important;
+    background: transparent !important;
+    padding-bottom: max(0.625rem, calc(0.625rem + var(--tz-safe-area-bottom, 0px)));
   }
 }
 </style>

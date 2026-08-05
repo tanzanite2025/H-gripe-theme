@@ -51,3 +51,41 @@ func TestRateLimitByUserUsesUserIDContextKey(t *testing.T) {
 		t.Fatalf("different user request status = %d, want %d", otherUserRecorder.Code, http.StatusOK)
 	}
 }
+
+func TestRateLimitByUserPerMinuteLimitsBurstPerUser(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	router.GET("/limited", func(c *gin.Context) {
+		c.Set("user_id", c.GetHeader("X-Test-User"))
+	}, RateLimitByUserPerMinute(3, 1), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	firstRequest := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	firstRequest.Header.Set("X-Test-User", "1")
+	firstRecorder := httptest.NewRecorder()
+	router.ServeHTTP(firstRecorder, firstRequest)
+	if firstRecorder.Code != http.StatusOK {
+		t.Fatalf("first request status = %d, want %d", firstRecorder.Code, http.StatusOK)
+	}
+
+	secondRequest := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	secondRequest.Header.Set("X-Test-User", "1")
+	secondRecorder := httptest.NewRecorder()
+	router.ServeHTTP(secondRecorder, secondRequest)
+	if secondRecorder.Code != http.StatusTooManyRequests {
+		t.Fatalf("second request status = %d, want %d", secondRecorder.Code, http.StatusTooManyRequests)
+	}
+	if retryAfter := secondRecorder.Header().Get("Retry-After"); retryAfter == "" {
+		t.Fatal("expected Retry-After header")
+	}
+
+	otherUserRequest := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	otherUserRequest.Header.Set("X-Test-User", "2")
+	otherUserRecorder := httptest.NewRecorder()
+	router.ServeHTTP(otherUserRecorder, otherUserRequest)
+	if otherUserRecorder.Code != http.StatusOK {
+		t.Fatalf("other user request status = %d, want %d", otherUserRecorder.Code, http.StatusOK)
+	}
+}

@@ -48,12 +48,12 @@ const redirectToLoginOnce = () => {
   if (sessionExpiredHandled) return
   sessionExpiredHandled = true
 
-  toast.error('登录已过期，请重新登录', { id: 'admin-session-expired' })
   clearAdminAuth()
 
-  if (window.location.pathname !== LOGIN_PATH) {
-    window.location.assign(LOGIN_PATH)
-  }
+  if (window.location.pathname === LOGIN_PATH) return
+
+  toast.error('登录已过期，请重新登录', { id: 'admin-session-expired' })
+  window.location.assign(LOGIN_PATH)
 }
 
 const refreshAdminToken = async () => {

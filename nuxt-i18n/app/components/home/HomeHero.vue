@@ -3,8 +3,22 @@
     <div class="page-content-shell px-0 md:px-4 pb-6 pt-2 lg:pb-8 lg:pt-3">
       <div class="flex flex-col items-center text-center">
         <!-- Mobile: Media above CTAs -->
-        <h1 class="mt-4 px-2 text-xl font-semibold leading-[1.05] tracking-tight sm:text-3xl lg:text-4xl">
-          {{ t('home.hero.title') }}
+        <div class="mt-3 flex items-center justify-center gap-2.5 text-base font-medium leading-tight text-white sm:gap-3 sm:text-lg">
+          <span class="welcome-hand-wave inline-flex shrink-0" aria-hidden="true">
+            <Icon
+              name="lucide:hand"
+              class="h-7 w-7 text-[#B5FF6D] sm:h-8 sm:w-8"
+            />
+          </span>
+          <span>{{ welcomeText }}</span>
+        </div>
+        <h1 class="mt-6 px-2 text-xl font-semibold leading-[1.05] tracking-tight sm:mt-7 sm:text-3xl lg:text-4xl">
+          <template v-if="heroTitle.accent">
+            {{ heroTitle.before }}<span class="text-[#B5FF6D]">{{ heroTitle.accent }}</span>{{ heroTitle.after }}
+          </template>
+          <template v-else>
+            {{ heroTitle.full }}
+          </template>
         </h1>
         <p class="mt-2 max-w-2xl px-2 text-sm leading-relaxed tz-text-secondary sm:text-lg">
           {{ t('home.hero.subtitle') }}
@@ -78,40 +92,37 @@
           </div>
         </div>
 
-        <div class="mt-2 w-full">
-          <div class="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-row sm:items-center sm:justify-center">
-            <NuxtLink
-              :to="localePath('/shop')"
-              class="premium-button premium-button--active w-full sm:w-auto justify-center"
-            >
-              {{ t('home.hero.cta.shop') }}
-            </NuxtLink>
-
-            <NuxtLink
-              :to="localePath('/company/about')"
-              class="premium-button w-full sm:w-auto justify-center"
-            >
-              {{ t('home.hero.cta.about') }}
-            </NuxtLink>
-
-            <NuxtLink
-              :to="localePath('/picture-warehouse')"
-              class="premium-button w-full sm:w-auto justify-center"
-            >
-              {{ t('home.hero.cta.pictureWarehouse') }}
-            </NuxtLink>
-          </div>
-        </div>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useI18n, useLocalePath } from '#imports'
+import { computed, ref, useI18n } from '#imports'
 
 const { t } = useI18n()
-const localePath = useLocalePath()
+
+const welcomeText = computed(() => {
+  const translated = t('home.hero.welcome')
+  return translated === 'home.hero.welcome' ? 'WELCOME!' : translated
+})
+
+const heroTitle = computed(() => {
+  const full = t('home.hero.title')
+  const accent = 'Factory-Direct'
+  const accentIndex = full.indexOf(accent)
+
+  if (accentIndex === -1) {
+    return { full, before: '', accent: '', after: '' }
+  }
+
+  return {
+    full,
+    before: full.slice(0, accentIndex),
+    accent,
+    after: full.slice(accentIndex + accent.length),
+  }
+})
 
 const cards = computed(() => [
   {
@@ -160,3 +171,44 @@ const cardClass = (index: number) => {
   return 'z-10 opacity-100 -translate-y-[20%] scale-[0.88] brightness-[0.7] rounded-3xl overflow-hidden border-2 border-white/20 bg-slate-900/50 shadow-[0_15px_30px_rgba(0,0,0,0.4)]'
 }
 </script>
+
+<style scoped>
+@keyframes welcome-hand-wave {
+  0%,
+  72%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  76% {
+    transform: rotate(12deg);
+  }
+
+  80% {
+    transform: rotate(-8deg);
+  }
+
+  84% {
+    transform: rotate(10deg);
+  }
+
+  88% {
+    transform: rotate(-4deg);
+  }
+
+  92% {
+    transform: rotate(0deg);
+  }
+}
+
+.welcome-hand-wave {
+  transform-origin: 70% 90%;
+  animation: welcome-hand-wave 4.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-hand-wave {
+    animation: none;
+  }
+}
+</style>

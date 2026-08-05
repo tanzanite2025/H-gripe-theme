@@ -54,6 +54,15 @@ func (r *CouponRepository) FindCouponByID(id uint) (*coupon.Coupon, error) {
 	return &c, nil
 }
 
+func (r *CouponRepository) FindCouponByIDIncludingDeleted(id uint) (*coupon.Coupon, error) {
+	var c coupon.Coupon
+	err := r.db.Unscoped().First(&c, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
 // FindCouponByCode 根据代码查找优惠券
 func (r *CouponRepository) FindCouponByCode(code string) (*coupon.Coupon, error) {
 	var c coupon.Coupon

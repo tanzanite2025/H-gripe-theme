@@ -6,6 +6,7 @@
 
     <AppFooter />
     <GradientDockMenu :config="quickBuyConfig" />
+    <BehaviorAttributionBootstrap />
   </div>
 </template>
 
@@ -20,6 +21,7 @@ import {
   useState
 } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
+import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useSiteTitle } from '~/composables/useSiteTitle'
@@ -310,7 +312,7 @@ useHead(() => ({
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at top, #020617 0, #020617 24%, #000000 100%);
+  background: #000000;
 }
 
 .layout-main {

@@ -19,6 +19,22 @@ func NewVisitorProfileService(visitorRepo *repository.VisitorProfileRepository) 
 	return &VisitorProfileService{visitorRepo: visitorRepo}
 }
 
+const (
+	VisitorProfileActionCart            = "cart_action"
+	VisitorProfileActionCustomerService = "customer_service"
+	VisitorProfileActionEmailCapture    = "email_capture"
+	VisitorProfileActionAccount         = "account"
+	VisitorProfileActionIdentityBind    = "identity_bind"
+	VisitorProfileActionMeaningful      = "meaningful_action"
+
+	VisitorProfileQualityCartAction      = 8
+	VisitorProfileQualityCustomerService = 12
+	VisitorProfileQualityEmailCapture    = 12
+	VisitorProfileQualityAccount         = 20
+)
+
+const activeAnonymousProfileRetention = 180 * 24 * time.Hour
+
 type VisitorProfileTouchInput struct {
 	UserID                     *uint
 	CustomerServiceVisitorHash string
@@ -34,6 +50,8 @@ type VisitorProfileTouchInput struct {
 	IPAddress                  string
 	UserAgent                  string
 	SeenAt                     time.Time
+	MeaningfulAction           string
+	QualityScoreDelta          int
 }
 
 type VisitorProfileListInput struct {
@@ -45,31 +63,39 @@ type VisitorProfileListInput struct {
 	CartSession            string
 	CustomerServiceVisitor string
 	LastSeen               string
+	LastMeaningful         string
+	Status                 string
 }
 
 type VisitorProfileSnapshot struct {
-	ID                                uint      `json:"id"`
-	UserID                            *uint     `json:"user_id,omitempty"`
-	Identity                          string    `json:"identity"`
-	CustomerServiceVisitorHashPreview string    `json:"customer_service_visitor_hash_preview,omitempty"`
-	HasCustomerServiceVisitor         bool      `json:"has_customer_service_visitor"`
-	CartSessionID                     string    `json:"cart_session_id,omitempty"`
-	HasCartSession                    bool      `json:"has_cart_session"`
-	Email                             string    `json:"email,omitempty"`
-	EmailSource                       string    `json:"email_source,omitempty"`
-	HasEmail                          bool      `json:"has_email"`
-	Locale                            string    `json:"locale,omitempty"`
-	LocaleSource                      string    `json:"locale_source,omitempty"`
-	CountryCode                       string    `json:"country_code,omitempty"`
-	Region                            string    `json:"region,omitempty"`
-	City                              string    `json:"city,omitempty"`
-	Timezone                          string    `json:"timezone,omitempty"`
-	RegionLabel                       string    `json:"region_label,omitempty"`
-	HasIPFingerprint                  bool      `json:"has_ip_fingerprint"`
-	HasUserAgentFingerprint           bool      `json:"has_user_agent_fingerprint"`
-	LastSeenAt                        time.Time `json:"last_seen_at"`
-	CreatedAt                         time.Time `json:"created_at"`
-	UpdatedAt                         time.Time `json:"updated_at"`
+	ID                                uint       `json:"id"`
+	UserID                            *uint      `json:"user_id,omitempty"`
+	Identity                          string     `json:"identity"`
+	CustomerServiceVisitorHashPreview string     `json:"customer_service_visitor_hash_preview,omitempty"`
+	HasCustomerServiceVisitor         bool       `json:"has_customer_service_visitor"`
+	CartSessionID                     string     `json:"cart_session_id,omitempty"`
+	HasCartSession                    bool       `json:"has_cart_session"`
+	Email                             string     `json:"email,omitempty"`
+	EmailSource                       string     `json:"email_source,omitempty"`
+	HasEmail                          bool       `json:"has_email"`
+	Locale                            string     `json:"locale,omitempty"`
+	LocaleSource                      string     `json:"locale_source,omitempty"`
+	CountryCode                       string     `json:"country_code,omitempty"`
+	Region                            string     `json:"region,omitempty"`
+	City                              string     `json:"city,omitempty"`
+	Timezone                          string     `json:"timezone,omitempty"`
+	RegionLabel                       string     `json:"region_label,omitempty"`
+	HasIPFingerprint                  bool       `json:"has_ip_fingerprint"`
+	HasUserAgentFingerprint           bool       `json:"has_user_agent_fingerprint"`
+	ProfileQualityScore               int        `json:"profile_quality_score"`
+	ProfileStatus                     string     `json:"profile_status"`
+	LastMeaningfulAction              string     `json:"last_meaningful_action,omitempty"`
+	FirstMeaningfulSeenAt             *time.Time `json:"first_meaningful_seen_at,omitempty"`
+	LastMeaningfulSeenAt              *time.Time `json:"last_meaningful_seen_at,omitempty"`
+	RetentionUntil                    *time.Time `json:"retention_until,omitempty"`
+	LastSeenAt                        time.Time  `json:"last_seen_at"`
+	CreatedAt                         time.Time  `json:"created_at"`
+	UpdatedAt                         time.Time  `json:"updated_at"`
 }
 
 type VisitorProfileStats struct {
@@ -81,9 +107,39 @@ type VisitorProfileStats struct {
 	CustomerServiceCount int64 `json:"customer_service_count"`
 	RegionCount          int64 `json:"region_count"`
 	Recent24hCount       int64 `json:"recent_24h_count"`
+	ActiveCount          int64 `json:"active_count"`
+	CandidateCount       int64 `json:"candidate_count"`
+	ArchivedCount        int64 `json:"archived_count"`
+	SuppressedCount      int64 `json:"suppressed_count"`
+}
+
+type VisitorProfileRetentionCleanupResult struct {
+	DeletedCandidates         int64     `json:"deleted_candidates"`
+	ArchivedAnonymous         int64     `json:"archived_anonymous"`
+	TotalChanged              int64     `json:"total_changed"`
+	CleanupReferenceTimestamp time.Time `json:"cleanup_reference_timestamp"`
 }
 
 func (s *VisitorProfileService) Touch(input VisitorProfileTouchInput) (*visitor.Profile, error) {
+	return s.TouchMeaningfulAction(input)
+}
+
+func (s *VisitorProfileService) TouchMeaningfulAction(input VisitorProfileTouchInput) (*visitor.Profile, error) {
+	return s.touch(input, true, true)
+}
+
+func (s *VisitorProfileService) BindIdentityFact(input VisitorProfileTouchInput) (*visitor.Profile, error) {
+	if input.MeaningfulAction == "" {
+		input.MeaningfulAction = VisitorProfileActionIdentityBind
+	}
+	return s.touch(input, true, true)
+}
+
+func (s *VisitorProfileService) TouchPassiveSeen(input VisitorProfileTouchInput) (*visitor.Profile, error) {
+	return s.touch(input, false, false)
+}
+
+func (s *VisitorProfileService) touch(input VisitorProfileTouchInput, meaningful bool, createIfMissing bool) (*visitor.Profile, error) {
 	if s == nil || s.visitorRepo == nil {
 		return nil, nil
 	}
@@ -98,8 +154,16 @@ func (s *VisitorProfileService) Touch(input VisitorProfileTouchInput) (*visitor.
 		return nil, err
 	}
 	if profile == nil {
+		if !createIfMissing {
+			return nil, nil
+		}
 		profile = &visitor.Profile{}
 		applyVisitorProfileTouch(profile, input)
+		if meaningful {
+			applyMeaningfulVisitorProfileTouch(profile, input)
+		} else {
+			applyCandidateVisitorProfileTouch(profile, input)
+		}
 		if err := s.visitorRepo.Create(profile); err != nil {
 			return nil, err
 		}
@@ -107,6 +171,9 @@ func (s *VisitorProfileService) Touch(input VisitorProfileTouchInput) (*visitor.
 	}
 
 	applyVisitorProfileTouch(profile, input)
+	if meaningful {
+		applyMeaningfulVisitorProfileTouch(profile, input)
+	}
 	if err := s.visitorRepo.Update(profile); err != nil {
 		return nil, err
 	}
@@ -148,6 +215,8 @@ func (s *VisitorProfileService) ListProfiles(page, pageSize int, input VisitorPr
 		HasCartSession:            parseVisitorProfileTriState(input.CartSession),
 		HasCustomerServiceVisitor: parseVisitorProfileTriState(input.CustomerServiceVisitor),
 		LastSeenAfter:             visitorProfileLastSeenBoundary(input.LastSeen),
+		LastMeaningfulAfter:       visitorProfileLastSeenBoundary(input.LastMeaningful),
+		Status:                    normalizeVisitorProfileStatusFilter(input.Status),
 	}
 
 	profiles, total, err := s.visitorRepo.List(page, pageSize, filters)
@@ -181,6 +250,38 @@ func (s *VisitorProfileService) GetStats() (VisitorProfileStats, error) {
 		CustomerServiceCount: rawStats["customer_service_count"],
 		RegionCount:          rawStats["region_count"],
 		Recent24hCount:       rawStats["recent_24h_count"],
+		ActiveCount:          rawStats["active_count"],
+		CandidateCount:       rawStats["candidate_count"],
+		ArchivedCount:        rawStats["archived_count"],
+		SuppressedCount:      rawStats["suppressed_count"],
+	}, nil
+}
+
+func (s *VisitorProfileService) CleanupExpiredProfiles(now time.Time) (VisitorProfileRetentionCleanupResult, error) {
+	if s == nil || s.visitorRepo == nil {
+		return VisitorProfileRetentionCleanupResult{}, nil
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+
+	deletedCandidates, err := s.visitorRepo.DeleteExpiredCandidates(now)
+	if err != nil {
+		return VisitorProfileRetentionCleanupResult{}, err
+	}
+
+	archivedAnonymous, err := s.visitorRepo.ArchiveExpiredAnonymousProfiles(now)
+	if err != nil {
+		return VisitorProfileRetentionCleanupResult{}, err
+	}
+
+	return VisitorProfileRetentionCleanupResult{
+		DeletedCandidates:         deletedCandidates,
+		ArchivedAnonymous:         archivedAnonymous,
+		TotalChanged:              deletedCandidates + archivedAnonymous,
+		CleanupReferenceTimestamp: now,
 	}, nil
 }
 
@@ -231,6 +332,10 @@ func normalizeVisitorProfileTouch(input VisitorProfileTouchInput) VisitorProfile
 	input.Timezone = strings.TrimSpace(input.Timezone)
 	input.IPAddress = normalizeVisitorIP(input.IPAddress)
 	input.UserAgent = strings.TrimSpace(input.UserAgent)
+	input.MeaningfulAction = normalizeVisitorProfileAction(input.MeaningfulAction)
+	if input.QualityScoreDelta < 0 {
+		input.QualityScoreDelta = 0
+	}
 	if input.SeenAt.IsZero() {
 		input.SeenAt = time.Now().UTC()
 	}
@@ -289,6 +394,112 @@ func applyVisitorProfileTouch(profile *visitor.Profile, input VisitorProfileTouc
 	profile.LastSeenAt = input.SeenAt
 }
 
+func applyCandidateVisitorProfileTouch(profile *visitor.Profile, input VisitorProfileTouchInput) {
+	if strings.TrimSpace(profile.ProfileStatus) == "" {
+		profile.ProfileStatus = visitor.ProfileStatusCandidate
+	}
+	if profile.RetentionUntil == nil {
+		retentionUntil := input.SeenAt.Add(14 * 24 * time.Hour)
+		profile.RetentionUntil = &retentionUntil
+	}
+}
+
+func applyMeaningfulVisitorProfileTouch(profile *visitor.Profile, input VisitorProfileTouchInput) {
+	action := input.MeaningfulAction
+	if action == "" {
+		action = inferredVisitorProfileAction(input)
+	}
+
+	scoreDelta := input.QualityScoreDelta
+	if scoreDelta <= 0 {
+		scoreDelta = visitorProfileQualityDelta(action, input)
+	}
+	profile.ProfileQualityScore += scoreDelta
+	if profile.ProfileQualityScore < scoreDelta {
+		profile.ProfileQualityScore = scoreDelta
+	}
+
+	if profile.ProfileStatus == "" ||
+		profile.ProfileStatus == visitor.ProfileStatusCandidate ||
+		profile.ProfileStatus == visitor.ProfileStatusArchived {
+		profile.ProfileStatus = visitor.ProfileStatusActive
+	}
+
+	if action != "" {
+		profile.LastMeaningfulAction = action
+	}
+
+	seenAt := input.SeenAt
+	if profile.FirstMeaningfulSeenAt == nil || profile.FirstMeaningfulSeenAt.IsZero() {
+		firstSeen := seenAt
+		profile.FirstMeaningfulSeenAt = &firstSeen
+	}
+	lastSeen := seenAt
+	profile.LastMeaningfulSeenAt = &lastSeen
+
+	if profile.UserID != nil && *profile.UserID > 0 {
+		profile.RetentionUntil = nil
+		return
+	}
+	retentionUntil := seenAt.Add(activeAnonymousProfileRetention)
+	profile.RetentionUntil = &retentionUntil
+}
+
+func normalizeVisitorProfileAction(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.ReplaceAll(value, " ", "_")
+	value = strings.ReplaceAll(value, "-", "_")
+	return value
+}
+
+func inferredVisitorProfileAction(input VisitorProfileTouchInput) string {
+	if input.UserID != nil && *input.UserID > 0 {
+		return VisitorProfileActionAccount
+	}
+	if input.Email != "" {
+		return VisitorProfileActionEmailCapture
+	}
+	if input.CustomerServiceVisitorHash != "" {
+		return VisitorProfileActionCustomerService
+	}
+	if input.CartSessionID != "" {
+		return VisitorProfileActionCart
+	}
+	return VisitorProfileActionMeaningful
+}
+
+func visitorProfileQualityDelta(action string, input VisitorProfileTouchInput) int {
+	switch action {
+	case VisitorProfileActionAccount:
+		return VisitorProfileQualityAccount
+	case VisitorProfileActionEmailCapture:
+		return VisitorProfileQualityEmailCapture
+	case VisitorProfileActionCustomerService:
+		return VisitorProfileQualityCustomerService
+	case VisitorProfileActionCart:
+		return VisitorProfileQualityCartAction
+	case VisitorProfileActionIdentityBind:
+		if input.UserID != nil && *input.UserID > 0 {
+			return VisitorProfileQualityAccount
+		}
+		if input.Email != "" {
+			return VisitorProfileQualityEmailCapture
+		}
+		return VisitorProfileQualityCustomerService
+	default:
+		if input.UserID != nil && *input.UserID > 0 {
+			return VisitorProfileQualityAccount
+		}
+		if input.Email != "" {
+			return VisitorProfileQualityEmailCapture
+		}
+		if input.CustomerServiceVisitorHash != "" {
+			return VisitorProfileQualityCustomerService
+		}
+		return VisitorProfileQualityCartAction
+	}
+}
+
 func normalizeVisitorLocale(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -326,6 +537,20 @@ func normalizeVisitorProfileAdminFilter(value string) string {
 		return ""
 	}
 	return value
+}
+
+func normalizeVisitorProfileStatusFilter(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "", visitor.ProfileStatusActive:
+		return visitor.ProfileStatusActive
+	case "all":
+		return "all"
+	case visitor.ProfileStatusCandidate, visitor.ProfileStatusArchived, visitor.ProfileStatusSuppressed:
+		return value
+	default:
+		return visitor.ProfileStatusActive
+	}
 }
 
 func parseVisitorProfileTriState(value string) *bool {
@@ -383,10 +608,24 @@ func visitorProfileSnapshot(profile visitor.Profile) VisitorProfileSnapshot {
 		RegionLabel:                       visitorProfileRegionLabel(profile),
 		HasIPFingerprint:                  strings.TrimSpace(profile.IPHash) != "",
 		HasUserAgentFingerprint:           strings.TrimSpace(profile.UserAgentHash) != "",
+		ProfileQualityScore:               profile.ProfileQualityScore,
+		ProfileStatus:                     visitorProfileStatusOrActive(profile.ProfileStatus),
+		LastMeaningfulAction:              strings.TrimSpace(profile.LastMeaningfulAction),
+		FirstMeaningfulSeenAt:             profile.FirstMeaningfulSeenAt,
+		LastMeaningfulSeenAt:              profile.LastMeaningfulSeenAt,
+		RetentionUntil:                    profile.RetentionUntil,
 		LastSeenAt:                        profile.LastSeenAt,
 		CreatedAt:                         profile.CreatedAt,
 		UpdatedAt:                         profile.UpdatedAt,
 	}
+}
+
+func visitorProfileStatusOrActive(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return visitor.ProfileStatusActive
+	}
+	return value
 }
 
 func maskVisitorProfileToken(value string) string {

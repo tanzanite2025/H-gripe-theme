@@ -2,6 +2,7 @@ import { useLocalePath, useRoute, useRouter, useState } from '#imports'
 
 export type ShopSearchFiltersPayload = Record<string, any> & {
   priceRange?: [number, number]
+  currency?: string
   attributes?: Record<string, string[]>
 }
 

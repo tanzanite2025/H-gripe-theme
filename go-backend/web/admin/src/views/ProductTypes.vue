@@ -3,7 +3,7 @@
     <AdminPageHeader title="产品模板" description="按车圈、车架等模板维护字段结构，具体商品参数在商品/SKU 中填写">
       <template #actions>
         <Button variant="outline" as-child>
-          <RouterLink to="/products">
+          <RouterLink to="/catalog/products">
             <Package class="size-4" />
             商品管理
           </RouterLink>

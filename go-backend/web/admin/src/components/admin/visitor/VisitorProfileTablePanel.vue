@@ -1,10 +1,11 @@
 <template>
-  <AdminTablePanel :loading="loading">
-    <Table class="min-w-[1280px]">
+  <AdminTablePanel class="h-full min-h-0" :loading="loading" scroll-body>
+    <Table class="min-w-[1440px]">
       <TableHeader>
         <TableRow>
           <TableHead class="w-20">ID</TableHead>
           <TableHead class="w-24">身份</TableHead>
+          <TableHead class="w-40">质量/状态</TableHead>
           <TableHead>联系信息</TableHead>
           <TableHead class="w-56">地区/语言</TableHead>
           <TableHead class="w-72">绑定事实</TableHead>
@@ -14,7 +15,7 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableEmpty v-if="profiles.length === 0" :colspan="8">
+        <TableEmpty v-if="profiles.length === 0" :colspan="9">
           <div class="flex flex-col items-center text-muted-foreground">
             <Fingerprint class="mb-2 size-7 opacity-55" />
             <span class="text-xs">暂无访客画像</span>
@@ -25,7 +26,7 @@
           v-for="profile in profiles"
           :key="profile.id"
           class="cursor-pointer"
-          :class="selectedProfile?.id === profile.id ? 'bg-primary/5' : ''"
+          :class="selectedProfile?.id === profile.id ? 'bg-admin-selected-soft' : ''"
           @click="emit('select-profile', profile)"
         >
           <TableCell class="font-mono text-xs text-muted-foreground">#{{ profile.id }}</TableCell>
@@ -34,6 +35,17 @@
               {{ profile.identity === 'account' ? '会员' : '匿名' }}
             </AdminStatusBadge>
             <span v-if="profile.user_id" class="mt-1 block font-mono text-[11px] text-muted-foreground">UID {{ profile.user_id }}</span>
+          </TableCell>
+          <TableCell>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <AdminStatusBadge :tone="statusTone(profile.profile_status)">
+                {{ statusLabel(profile.profile_status) }}
+              </AdminStatusBadge>
+              <span class="font-mono text-[11px] font-black text-foreground">Q{{ profile.profile_quality_score || 0 }}</span>
+            </div>
+            <p class="mt-1 truncate font-mono text-[11px] text-muted-foreground">
+              {{ actionLabel(profile.last_meaningful_action) }}
+            </p>
           </TableCell>
           <TableCell>
             <div class="min-w-0">
@@ -95,4 +107,26 @@ defineProps({
 })
 
 const emit = defineEmits(['select-profile', 'update-page', 'update-page-size'])
+
+const statusLabel = (status) => ({
+  active: '有效',
+  candidate: '候选',
+  archived: '归档',
+  suppressed: '抑制',
+})[status] || '有效'
+
+const statusTone = (status) => ({
+  active: 'green',
+  candidate: 'amber',
+  archived: 'gray',
+  suppressed: 'coral',
+})[status] || 'green'
+
+const actionLabel = (action) => ({
+  cart_action: '购物车动作',
+  customer_service: '客服会话',
+  email_capture: '邮箱捕获',
+  account: '账号绑定',
+  identity_bind: '身份绑定',
+})[action] || '无有效动作'
 </script>

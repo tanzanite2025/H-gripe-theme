@@ -14,8 +14,6 @@
             {{ t('home.features.title') }}
           </h2>
           
-          <div class="h-1 w-20 rounded-full bg-gradient-to-r from-teal-400 to-blue-500 shadow-[0_0_12px_rgba(45,212,191,0.5)]"></div>
-          
           <p class="text-lg tz-text-secondary leading-relaxed max-w-md">
             {{ t('home.features.subtitle') }}
           </p>

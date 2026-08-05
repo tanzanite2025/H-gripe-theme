@@ -13,7 +13,7 @@
         <button
           type="button"
           class="w-full text-left px-2 py-1.5 rounded-md transition-colors"
-          :class="!selected ? 'bg-white/15 text-[#40ffaa]' : 'hover:bg-white/10'"
+          :class="!selected ? 'bg-white/15 text-[#B5FF6D]' : 'hover:bg-white/10'"
           @click="handleSelect(null)"
         >
           All
@@ -26,7 +26,7 @@
         <button
           type="button"
           class="w-full text-left px-2 py-1.5 rounded-md transition-colors flex items-center justify-between gap-2"
-          :class="selected && selected.id === cat.id ? 'bg-white/15 text-[#40ffaa]' : 'hover:bg-white/10'"
+          :class="selected && selected.id === cat.id ? 'bg-white/15 text-[#B5FF6D]' : 'hover:bg-white/10'"
           @click="handleSelect(cat)"
         >
           <span class="truncate">{{ cat.name }}</span>

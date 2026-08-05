@@ -44,3 +44,8 @@ jobs:
       - name: Build
         working-directory: ${{ matrix.path }}
         run: npm run build
+
+      - name: Verify storefront production artifacts
+        if: matrix.name == 'storefront'
+        working-directory: nuxt-i18n
+        run: npm run check:production-artifacts

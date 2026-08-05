@@ -20,7 +20,7 @@
   font-size: var(--tz-type-card-title);
   line-height: 1.35;
   font-weight: 600;
-  color: #38bdf8;
+  color: var(--tz-text-accent);
   text-align: center;
 }
 
@@ -51,8 +51,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.5rem;
-  background: rgba(14, 165, 233, 0.1);
-  color: #38bdf8;
+  background: rgba(181, 255, 109, 0.1);
+  color: var(--tz-text-accent);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1;
@@ -113,7 +113,30 @@
   left: 0;
   top: 0.45rem;
   font-size: var(--tz-type-micro-label);
-  color: #38bdf8;
+  color: var(--tz-text-accent);
+}
+
+.sizecharts-section :is(.bg-slate-900\/70, .bg-slate-900\/60, .bg-slate-900\/50, .bg-slate-950\/80, .bg-slate-800\/80) {
+  background-color: var(--tz-form-panel-surface) !important;
+  background-image: none !important;
+}
+
+.sizecharts-section :is(.text-sky-300, .text-sky-400, .text-sky-500, .text-indigo-300, .text-indigo-400, .text-blue-300, .text-blue-400) {
+  color: var(--tz-text-accent) !important;
+}
+
+.sizecharts-section :is(.border-sky-500\/30, .border-sky-500\/20, .border-indigo-500\/20, .border-blue-500\/10, .border-blue-500\/20) {
+  border-color: rgba(181, 255, 109, 0.24) !important;
+}
+
+.sizecharts-section :is(.bg-sky-500\/5, .bg-sky-500\/10, .bg-indigo-500\/5, .bg-indigo-500\/10, .bg-blue-500\/5, .bg-blue-500\/10) {
+  background-color: rgba(181, 255, 109, 0.06) !important;
+  background-image: none !important;
+}
+
+.sizecharts-section .tire-chart-table thead th {
+  background-color: #181818 !important;
+  background-image: none !important;
 }
 
 .sizecharts-section__list li + li {

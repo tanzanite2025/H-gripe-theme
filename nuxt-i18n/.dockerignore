@@ -1,2 +1,11 @@
 node_modules
 .git
+.nuxt
+.output
+dist
+output
+.cache
+*.log
+playwright-report
+test-results
+.playwright-cli

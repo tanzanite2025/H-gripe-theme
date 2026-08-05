@@ -6,12 +6,12 @@
     <div v-else-if="ordersList.length > 0" class="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-3">
       <div
         v-for="order in ordersList"
-        :key="order.id"
+        :key="order.order_number"
         class="border border-white/15 md:border-white/10 rounded-2xl md:rounded-lg p-3 bg-black/35 transition-colors"
       >
         <div class="flex items-center justify-between mb-1 md:mb-2">
           <span class="text-white text-sm font-semibold md:font-medium">
-            {{ order.order_number ? `Order #${order.order_number}` : `Order #${order.id}` }}
+            {{ order.order_number ? `Order #${order.order_number}` : 'Order' }}
           </span>
           <span class="tz-micro-label md:text-xs px-2 py-0.5 rounded-full bg-white/15 md:bg-white/10 tz-text-secondary">
             {{ order.status || 'Processing' }}
@@ -37,7 +37,7 @@
         <p class="tz-text-muted tz-caption md:text-xs mt-1">{{ order.date }}</p>
         <button
           type="button"
-          class="mt-3 w-full rounded-full border border-[#a5b4fc]/50 bg-[#6b73ff]/80 px-3 py-2 tz-caption font-semibold text-white transition-colors hover:bg-[#818cf8]"
+          class="mt-3 w-full rounded-full border border-white/40 bg-white px-3 py-2 tz-caption font-semibold text-slate-950 transition-colors hover:bg-white/90"
           @click="$emit('shareOrder', order)"
         >
           和客服确认订单

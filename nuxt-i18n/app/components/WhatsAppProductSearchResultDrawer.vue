@@ -28,7 +28,7 @@
               class="wa-drawer-close-btn"
               @click="handleClose"
             >
-              <span class="text-lg leading-none">x</span>
+              <Icon name="lucide:x" class="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -87,7 +87,7 @@
                         <div class="text-sm font-semibold text-white truncate">
                           {{ product.title }}
                         </div>
-                        <div v-if="product.price" class="text-xs text-[#40ffaa] mt-1">
+                        <div v-if="product.price" class="text-xs text-[#B5FF6D] mt-1">
                           {{ product.price }}
                         </div>
                         <div v-if="product.variants?.length" class="mt-1 tz-caption tz-text-muted">
@@ -96,7 +96,7 @@
                         <div class="mt-3 flex flex-wrap gap-2">
                           <button
                             type="button"
-                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-[#40ffaa]/90 tz-caption text-[#07120b] border border-[#86efac]/70 hover:bg-[#86efac] transition-colors"
+                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-[#B5FF6D]/90 tz-caption text-[#07120b] border border-[#D3FFA8]/70 hover:bg-[#D3FFA8] transition-colors"
                             @click="handleAddToCart(product)"
                           >
                             加入购物车
@@ -110,7 +110,7 @@
                           </button>
                           <button
                             type="button"
-                            class="flex-1 min-w-[140px] px-3 py-1.5 rounded-full bg-[#6b73ff]/90 tz-caption text-white border border-[#a5b4fc]/60 hover:bg-[#818cf8] transition-colors"
+                            class="flex-1 min-w-[140px] px-3 py-1.5 rounded-full bg-white tz-caption text-slate-950 border border-white/70 hover:bg-white/90 transition-colors"
                             @click="openConfigConfirm(product)"
                           >
                             和客服确认配置
@@ -157,7 +157,7 @@
                       </div>
                       <div
                         v-if="selectedConfigPriceLabel"
-                        class="text-xs text-[#40ffaa] mt-1"
+                        class="text-xs text-[#B5FF6D] mt-1"
                       >
                         {{ selectedConfigPriceLabel }}
                       </div>
@@ -168,7 +168,7 @@
                         Weight: {{ selectedConfigVariant.weightGrams }}g
                       </div>
                       <div v-if="selectedConfigVariant" class="mt-1 tz-caption tz-text-secondary">
-                        Stock: {{ selectedConfigVariant.stockQuantity }}
+                        {{ selectedConfigVariant.availability === 'in_stock' ? 'Available' : 'Out of stock' }}
                       </div>
                     </div>
                   </div>
@@ -229,7 +229,7 @@
                   </div>
                   <button
                     type="button"
-                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-[#6b73ff]/90 text-xs font-medium text-white border border-[#a5b4fc]/60 hover:bg-[#818cf8] transition-colors"
+                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white text-xs font-medium text-slate-950 border border-white/70 hover:bg-white/90 transition-colors"
                     @click="handleConfirmConfig"
                   >
                     发送配置给客服

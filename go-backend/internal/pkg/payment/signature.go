@@ -17,10 +17,14 @@ func verifyHMACSHA256(payload []byte, signature, secret string) bool {
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
 
-func parsePaymentAmount(label, value string) (float64, error) {
+func ParsePaymentAmount(label, value string) (float64, error) {
 	amount, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return 0, fmt.Errorf("invalid %s %q: %w", label, value, err)
 	}
 	return amount, nil
+}
+
+func parsePaymentAmount(label, value string) (float64, error) {
+	return ParsePaymentAmount(label, value)
 }

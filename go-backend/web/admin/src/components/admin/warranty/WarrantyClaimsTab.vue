@@ -44,7 +44,7 @@
               v-for="claim in claims"
               :key="claim.id"
               class="cursor-pointer"
-              :class="selectedClaim?.id === claim.id ? 'bg-primary/5' : ''"
+              :class="selectedClaim?.id === claim.id ? 'bg-admin-selected-soft' : ''"
               @click="$emit('select-claim', claim)"
             >
               <TableCell>

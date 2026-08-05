@@ -268,7 +268,7 @@ const openQuickFromPayment = () => {
   margin: 0 0 1.25rem;
   padding: 1.5rem;
   border-radius: 1rem;
-  background: #11151e;
+  background: var(--tz-card-surface);
   border: none;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
@@ -308,7 +308,7 @@ const openQuickFromPayment = () => {
 /* Premium Card Styling */
 .support-card {
   border-radius: 1rem;
-  background: #11151e;
+  background: var(--tz-card-surface);
   border: none;
   padding: 1.5rem;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
@@ -369,7 +369,7 @@ const openQuickFromPayment = () => {
 }
 
 .support-card__highlight {
-  color: #2dd4bf; /* Teal for highlights instead of amber */
+  color: #B5FF6D; /* Teal for highlights instead of amber */
   font-weight: 600;
 }
 
@@ -388,14 +388,14 @@ const openQuickFromPayment = () => {
 }
 
 .support-card__button--primary {
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #B5FF6D 0%, #3b82f6 100%);
   color: #fff;
   border: none;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
 }
 
 .support-card__button--primary:hover {
-  box-shadow: 0 6px 16px rgba(45, 212, 191, 0.5);
+  box-shadow: 0 6px 16px rgba(181, 255, 109, 0.5);
   transform: translateY(-1px);
 }
 

@@ -58,6 +58,48 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	return products, total, err
 }
 
+// ListPublicAvailable returns active products with at least one active variant
+// that can currently be purchased.
+func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int) ([]product.Product, int64, error) {
+	var products []product.Product
+	var total int64
+
+	query := r.db.Model(&product.Product{}).
+		Preload("Media", func(db *gorm.DB) *gorm.DB {
+			return orderProductMedia(db)
+		}).
+		Preload("Variants", func(db *gorm.DB) *gorm.DB {
+			return orderProductVariants(db)
+		}).
+		Where("products.status = ?", "active").
+		Where(activeVariantExistsSQL("pv_recommendation")).
+		Where(`EXISTS (
+			SELECT 1
+			FROM product_variants pv_recommendation_stock
+			WHERE pv_recommendation_stock.product_id = products.id
+			  AND pv_recommendation_stock.deleted_at IS NULL
+			  AND pv_recommendation_stock.is_active = TRUE
+			  AND pv_recommendation_stock.stock > 0
+		)`)
+
+	if locale != "" {
+		query = query.Where("products.locale = ?", locale)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.
+		Order("products.featured DESC").
+		Order("products.view_count DESC").
+		Order("products.created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&products).Error
+	return products, total, err
+}
+
 func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Product, int64, error) {
 	var products []product.Product
 	var total int64

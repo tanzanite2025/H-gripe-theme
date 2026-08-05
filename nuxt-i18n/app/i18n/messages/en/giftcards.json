@@ -4,5 +4,7 @@
   "pointsRequired": "Points required",
   "redeeming": "Redeeming...",
   "redeem": "Redeem",
-  "noCards": "No gift cards available"
+  "remaining": "Remaining",
+  "noCards": "No gift cards available",
+  "myCards": "My Gift Cards"
 }

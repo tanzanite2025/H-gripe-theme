@@ -8,41 +8,44 @@
       </AlertDescription>
     </Alert>
 
-    <RadioGroup
-      :model-value="String(defaultIndex)"
-      @update:model-value="emit('set-default', Number($event))"
-    >
-      <div class="mb-3 rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
-        <span v-if="specDefinitions.length">
-          SKU 选项列来自已绑定产品模板；每一行仍单独维护价格、重量、运费模板和库存。
-        </span>
-        <span v-else>
-          当前没有模板 SKU 选项字段；先维护默认 SKU、价格、重量、运费模板和库存即可。
-        </span>
-      </div>
+    <div class="mb-3 rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
+      <span v-if="specDefinitions.length">
+        SKU 选项列来自已绑定产品模板；每一行仍单独维护价格、重量、运费模板和库存。
+      </span>
+      <span v-else>
+        当前没有模板 SKU 选项字段；先维护默认 SKU、价格、重量、运费模板和库存即可。
+      </span>
+    </div>
 
-      <Table class="min-w-[1160px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-16 text-center">默认</TableHead>
-            <TableHead class="min-w-40">SKU</TableHead>
-            <TableHead v-for="spec in specDefinitions" :key="spec.id" class="min-w-36">
-              {{ specLabel(spec) }}
-            </TableHead>
-            <TableHead class="w-32">价格</TableHead>
-            <TableHead class="w-32">促销价</TableHead>
-            <TableHead class="w-28">重量（克）</TableHead>
-            <TableHead class="w-44">运费模板</TableHead>
-            <TableHead class="w-24">库存</TableHead>
-            <TableHead class="w-20 text-center">启用</TableHead>
-            <TableHead class="w-16 text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-for="(variant, index) in variants" :key="variant.id || `variant-${index}`">
-            <TableCell class="text-center">
-              <RadioGroupItem :value="String(index)" :aria-label="`设为默认变体 ${index + 1}`" />
-            </TableCell>
+    <Table class="min-w-[1160px]">
+      <TableHeader>
+        <TableRow>
+          <TableHead class="w-16 text-center">默认</TableHead>
+          <TableHead class="min-w-40">SKU</TableHead>
+          <TableHead v-for="spec in specDefinitions" :key="spec.id" class="min-w-36">
+            {{ specLabel(spec) }}
+          </TableHead>
+          <TableHead class="w-32">价格</TableHead>
+          <TableHead class="w-32">促销价</TableHead>
+          <TableHead class="w-28">重量（克）</TableHead>
+          <TableHead class="w-44">运费模板</TableHead>
+          <TableHead class="w-24">库存</TableHead>
+          <TableHead class="w-20 text-center">启用</TableHead>
+          <TableHead class="w-16 text-right">操作</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow v-for="(variant, index) in variants" :key="variant.id || `variant-${index}`">
+          <TableCell class="text-center">
+            <input
+              type="radio"
+              :name="defaultRadioName"
+              :checked="index === defaultIndex"
+              class="size-4 accent-primary"
+              :aria-label="`设为默认变体 ${index + 1}`"
+              @change="emit('set-default', index)"
+            >
+          </TableCell>
             <TableCell>
               <Input v-model="variant.sku" placeholder="变体 SKU" />
             </TableCell>
@@ -102,7 +105,13 @@
               <Input v-model.number="variant.stock" type="number" min="0" step="1" />
             </TableCell>
             <TableCell class="text-center">
-              <Switch v-model="variant.is_active" :aria-label="`启用变体 ${variant.sku || index + 1}`" />
+              <input
+                type="checkbox"
+                :checked="variant.is_active !== false"
+                class="size-4 accent-primary"
+                :aria-label="`启用变体 ${variant.sku || index + 1}`"
+                @change="emit('set-active', index, checkboxValue($event))"
+              >
             </TableCell>
             <TableCell class="text-right">
               <Tooltip>
@@ -122,10 +131,9 @@
                 <TooltipContent>删除变体</TooltipContent>
               </Tooltip>
             </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </RadioGroup>
+        </TableRow>
+      </TableBody>
+    </Table>
 
     <Button type="button" variant="outline" size="sm" @click="emit('add')">
       <Plus class="size-3.5" />
@@ -139,11 +147,12 @@ import { Info, Plus, Trash2 } from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+
+const defaultRadioName = `product-variant-default-${Math.random().toString(36).slice(2)}`
 
 defineProps({
   variants: {
@@ -164,7 +173,7 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['add', 'remove', 'set-default'])
+const emit = defineEmits(['add', 'remove', 'set-default', 'set-active'])
 
 const specOptions = (spec) => {
   if (!spec?.options) return []
@@ -180,6 +189,7 @@ const specLabel = (spec) => spec.unit ? `${spec.name} (${spec.unit})` : spec.nam
 const formatOption = (option) => String(option).replace(/_/g, ' ')
 const selectValue = (value) => value === undefined || value === null || value === '' ? '__empty__' : String(value)
 const shippingTemplateSelectValue = (value) => value === undefined || value === null || value === '' ? '__inherit__' : String(value)
+const checkboxValue = (event) => Boolean(event?.target?.checked)
 
 const setSelectValue = (variant, slug, value) => {
   variant.option_values[slug] = value === '__empty__' ? '' : value
@@ -188,4 +198,5 @@ const setSelectValue = (variant, slug, value) => {
 const setShippingTemplateValue = (variant, value) => {
   variant.shipping_template_id = value === '__inherit__' ? null : Number(value)
 }
+
 </script>

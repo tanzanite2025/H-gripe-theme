@@ -2,6 +2,7 @@ package order
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -9,7 +10,9 @@ import (
 	"tanzanite/internal/domain/order"
 	"tanzanite/internal/pkg/antifraud"
 	"tanzanite/internal/pkg/apierror"
+	attributionpkg "tanzanite/internal/pkg/attribution"
 	"tanzanite/internal/pkg/metrics"
+	"tanzanite/internal/pkg/orderabuse"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
@@ -18,9 +21,12 @@ import (
 )
 
 type Handler struct {
-	orderService *service.OrderService
-	cartService  *service.CartService
-	riskService  *antifraud.Service
+	orderService      *service.OrderService
+	cartService       *service.CartService
+	riskService       *antifraud.Service
+	orderAbuse        *orderabuse.Service
+	paymentProtection *service.PaymentProtectionService
+	attributionSigner *attributionpkg.Signer
 }
 
 func NewHandler(orderService *service.OrderService, cartService *service.CartService, riskServices ...*antifraud.Service) *Handler {
@@ -32,6 +38,24 @@ func NewHandler(orderService *service.OrderService, cartService *service.CartSer
 		orderService: orderService,
 		cartService:  cartService,
 		riskService:  riskService,
+	}
+}
+
+func (h *Handler) ConfigureOrderAbuse(orderAbuse *orderabuse.Service) {
+	if h != nil {
+		h.orderAbuse = orderAbuse
+	}
+}
+
+func (h *Handler) ConfigurePaymentProtection(paymentProtection *service.PaymentProtectionService) {
+	if h != nil {
+		h.paymentProtection = paymentProtection
+	}
+}
+
+func (h *Handler) ConfigureAttribution(signer *attributionpkg.Signer) {
+	if h != nil {
+		h.attributionSigner = signer
 	}
 }
 
@@ -56,6 +80,13 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	var req CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+
+	if !h.authorizeOrderCreation(c, userID.(uint)) {
+		return
+	}
+	if !h.authorizeOrderPaymentStart(c, req) {
 		return
 	}
 
@@ -123,8 +154,16 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	shippingAddr := addressFromRequest(req.ShippingAddress)
 	billingAddr := billingAddressFromRequest(shippingAddr, req.BillingAddress)
 
+	attributionContext := attributionpkg.Context{}
+	if h.attributionSigner != nil {
+		context, readErr := h.readAttributionContext(c)
+		if readErr == nil {
+			attributionContext = context
+		}
+	}
+
 	// 创建订单
-	o, err := h.orderService.CreateOrder(
+	o, err := h.orderService.CreateOrderWithAttribution(
 		c.Request.Context(),
 		userID.(uint),
 		items,
@@ -134,6 +173,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		req.ShippingMethod,
 		req.CouponCode,
 		req.PointsToUse,
+		attributionContext,
 	)
 	if err != nil {
 		if isCardLikePaymentMethod(req.PaymentMethod) && h.riskService != nil {
@@ -146,16 +186,67 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		_ = h.riskService.RecordSuccess(c.Request.Context(), riskKey)
 	}
 
-	// 清空购物车
-	_ = h.cartService.ClearCart(cart.ID)
+	if !isAsyncGatewayPaymentMethod(req.PaymentMethod) {
+		_ = h.cartService.ClearCart(cart.ID)
+	}
 
-	response.Created(c, o)
+	response.Created(c, publicOrderResponse(*o))
+}
+
+func (h *Handler) readAttributionContext(c *gin.Context) (attributionpkg.Context, error) {
+	if h == nil || h.attributionSigner == nil {
+		return attributionpkg.Context{}, attributionpkg.ErrInvalidContext
+	}
+	token, err := c.Cookie(attributionpkg.CookieName)
+	if err != nil {
+		return attributionpkg.Context{}, err
+	}
+	return h.attributionSigner.Decode(token)
+}
+
+func (h *Handler) authorizeOrderCreation(c *gin.Context, userID uint) bool {
+	if h == nil || h.orderAbuse == nil {
+		return true
+	}
+
+	sessionID, _ := c.Cookie("session_id")
+	decision, err := h.orderAbuse.Evaluate(c.Request.Context(), orderabuse.Identity{
+		UserID:    userID,
+		SessionID: sessionID,
+		IPAddress: c.ClientIP(),
+	})
+	if err != nil {
+		apierror.RespondError(c, http.StatusServiceUnavailable, "order_abuse_unavailable", "Order protection is temporarily unavailable")
+		return false
+	}
+	if decision.Allowed {
+		return true
+	}
+
+	retryAfterSeconds := int(decision.RetryAfter.Seconds())
+	if retryAfterSeconds > 0 {
+		c.Header("Retry-After", strconv.Itoa(retryAfterSeconds))
+	}
+	apierror.RespondErrorWithDetails(c, http.StatusTooManyRequests, "order_creation_rate_limited", "Too many order creation attempts. Please try again later.", gin.H{
+		"retry_after_seconds": retryAfterSeconds,
+	})
+	return false
 }
 
 func isCardLikePaymentMethod(value string) bool {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "card", "credit_card", "debit_card", "stripe", "alipay", "paypal":
+	case "card", "credit_card", "debit_card", "stripe", "alipay", "paypal", "wechat", "wechatpay", "wechat_pay":
+		return true
+	default:
+		return false
+	}
+}
+
+func isAsyncGatewayPaymentMethod(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "card", "stripe", "paypal", "alipay", "wechat", "wechatpay", "wechat_pay":
 		return true
 	default:
 		return false
@@ -166,10 +257,10 @@ func isCardLikePaymentMethod(value string) bool {
 // @Summary 获取订单详情
 // @Tags Orders
 // @Produce json
-// @Param id path int true "订单ID"
-// @Success 200 {object} order.Order
+// @Param order_number path string true "公开订单号"
+// @Success 200 {object} PublicOrderResponse
 // @Failure 404 {object} map[string]interface{}
-// @Router /api/v1/orders/{id} [get]
+// @Router /api/v1/orders/{order_number} [get]
 func (h *Handler) GetOrder(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -177,19 +268,19 @@ func (h *Handler) GetOrder(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		apierror.RespondBadRequest(c, "Invalid order ID")
+	orderNumber := strings.TrimSpace(c.Param("order_number"))
+	if orderNumber == "" {
+		apierror.RespondBadRequest(c, "Invalid order number")
 		return
 	}
 
-	o, err := h.orderService.GetOrder(uint(id), userID.(uint))
+	o, err := h.orderService.GetOrderByNumber(orderNumber, userID.(uint))
 	if err != nil {
 		apierror.RespondNotFound(c, "Order")
 		return
 	}
 
-	response.Success(c, o)
+	response.Success(c, publicOrderResponse(*o))
 }
 
 // ListOrders 获取订单列表
@@ -215,16 +306,16 @@ func (h *Handler) ListOrders(c *gin.Context) {
 		return
 	}
 
-	response.Paged(c, orders, params.Page, params.PageSize, total)
+	response.Paged(c, publicOrderResponses(orders), params.Page, params.PageSize, total)
 }
 
 // CancelOrder 取消订单
 // @Summary 取消订单
 // @Tags Orders
 // @Produce json
-// @Param id path int true "订单ID"
+// @Param order_number path string true "公开订单号"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/orders/{id}/cancel [post]
+// @Router /api/v1/orders/{order_number}/cancel [post]
 func (h *Handler) CancelOrder(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -232,13 +323,13 @@ func (h *Handler) CancelOrder(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		apierror.RespondBadRequest(c, "Invalid order ID")
+	orderNumber := strings.TrimSpace(c.Param("order_number"))
+	if orderNumber == "" {
+		apierror.RespondBadRequest(c, "Invalid order number")
 		return
 	}
 
-	if err := h.orderService.CancelOrder(uint(id), userID.(uint)); err != nil {
+	if err := h.orderService.CancelOrderByNumber(orderNumber, userID.(uint)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

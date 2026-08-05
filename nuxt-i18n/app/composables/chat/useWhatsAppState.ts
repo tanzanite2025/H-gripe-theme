@@ -4,10 +4,9 @@ import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
 import { normalizeShopProduct } from '~/composables/useShopProducts'
-import { loadChatAgentDirectory } from '~/composables/chat/useChatAgentDirectory'
+import { loadChatAgentDirectory, normalizeChatAgentOnlineStatus } from '~/composables/chat/useChatAgentDirectory'
 import { useCustomerServiceChatSync } from '~/composables/chat/useCustomerServiceChatSync'
-import { buildProductConfigConfirmMetadata } from '~/composables/chat/useProductConfigConfirmPayload'
-import { buildOrderChatMetadata } from '~/composables/chat/useOrderChatPayload'
+import { useChatMessageComposer } from '~/composables/chat/useChatMessageComposer'
 import {
   CHAT_STORAGE_EXPIRY_DAYS,
   createEmptyChatRoom,
@@ -21,7 +20,7 @@ import {
 import type { ChatRoomState, ChatTab } from '~/composables/chat/useChatStorage'
 
 export const useWhatsAppState = (emit: any) => {
-  const { t } = useI18n()
+    const { t, locale } = useI18n()
   const { user, request: authRequest } = useAuth()
   const { addToCart, openCartFromChat } = useCart()
   const {
@@ -42,7 +41,7 @@ export const useWhatsAppState = (emit: any) => {
   })
   
   // 欢迎页状态。Nuxt 前台只承接客户侧聊天，不承接客服工作台。
-  const showWelcomeScreen = ref(true)
+  const showWelcomeScreen = ref(false)
   
   // 是否有历史对话（用于显示 "Continue" 或 "Start"）
   const hasHistoryChat = ref(false)
@@ -91,13 +90,42 @@ export const useWhatsAppState = (emit: any) => {
   
   // 客服列表和选中状态
   const agents = ref<any[]>([])
+  const agentGroups = ref<any[]>([])
   const selectedAgent = ref<any>(null)
   const isLoadingAgents = ref(false)
-  
-  const welcomeAgents = computed(() => agents.value.slice(0, 3))
+
+  const welcomeAgents = computed(() => {
+    const result: any[] = []
+    const usedAgentIDs = new Set<string>()
+    const groups = Array.isArray(agentGroups.value) ? agentGroups.value : []
+
+    for (const group of groups) {
+      const groupAgent = agents.value.find((agent) => {
+        const memberships = Array.isArray(agent?.groups) ? agent.groups : []
+        return memberships.some((membership: any) => Number(membership?.id) === Number(group?.id))
+      })
+      if (!groupAgent) continue
+      const agentID = String(groupAgent?.id ?? '')
+      if (!agentID || usedAgentIDs.has(agentID)) continue
+      usedAgentIDs.add(agentID)
+      result.push(groupAgent)
+      if (result.length === 3) return result
+    }
+
+    for (const agent of agents.value) {
+      const agentID = String(agent?.id ?? '')
+      if (!agentID || usedAgentIDs.has(agentID)) continue
+      usedAgentIDs.add(agentID)
+      result.push(agent)
+      if (result.length === 3) break
+    }
+    return result
+  })
   
   // 在线客服数量
-  const onlineAgentsCount = computed(() => agents.value.length)
+  const onlineAgentsCount = computed(() => {
+    return agents.value.filter(agent => normalizeChatAgentOnlineStatus(agent) === 'online').length
+  })
   
   watch([showWelcomeScreen, welcomeAgents], () => {
     if (!showWelcomeScreen.value) return
@@ -173,6 +201,13 @@ export const useWhatsAppState = (emit: any) => {
       if (currentChatRoom.value) currentChatRoom.value.newMessage = val
     }
   })
+
+  const pendingProductReference = computed({
+    get: () => currentChatRoom.value?.pendingProductReference || null,
+    set: (val) => {
+      if (currentChatRoom.value) currentChatRoom.value.pendingProductReference = val
+    }
+  })
   
   const searchQuery = computed({
     get: () => { if (!currentChatRoom.value) return ''; if (currentChatRoom.value.searchQuery === undefined) throw new Error('[CRITICAL] searchQuery missing in current chat room'); return currentChatRoom.value.searchQuery; },
@@ -212,6 +247,7 @@ export const useWhatsAppState = (emit: any) => {
   const productDrawerVisible = ref(false)
   const productDrawerError = ref<string | null>(null)
   const productDrawerQuery = ref('')
+  const customerServiceProductSearchModalVisible = ref(false)
   const historyDrawerVisible = ref(false)
   const wishlistDrawerVisible = ref(false)
   
@@ -238,6 +274,7 @@ export const useWhatsAppState = (emit: any) => {
   // 聊天内登录弹窗状态
   const showAuthModal = ref(false)
   const authMode = ref<'login' | 'register'>('login')
+  const pendingAttachmentAction = ref<'order' | null>(null)
   
   // 打开聊天内 AuthModal（用于会员 / 保修登录）
   const openMemberAuth = (mode: 'login' | 'register') => {
@@ -253,6 +290,32 @@ export const useWhatsAppState = (emit: any) => {
   const handleChatAuthSuccess = async () => {
     showAuthModal.value = false
     await refreshMembershipData()
+    if (pendingAttachmentAction.value === 'order') {
+      pendingAttachmentAction.value = null
+      activeTab.value = 'orders'
+    }
+  }
+
+  const openOrderPicker = () => {
+    if (!user.value) {
+      pendingAttachmentAction.value = 'order'
+      openMemberAuth('login')
+      return
+    }
+    activeTab.value = 'orders'
+  }
+
+  const openCustomerServiceProductSearchModal = () => {
+    customerServiceProductSearchModalVisible.value = true
+  }
+
+  const closeCustomerServiceProductSearchModal = () => {
+    customerServiceProductSearchModalVisible.value = false
+  }
+
+  const clearPendingProductReference = () => {
+    pendingProductReference.value = null
+    saveMessagesToStorage()
   }
   
   // 关闭弹窗
@@ -421,19 +484,20 @@ export const useWhatsAppState = (emit: any) => {
 
   const {
     currentSenderEmail,
+    ensureCustomerServiceConversation,
     loadMessagesFromAPI,
     sendMessageToAPI,
+    uploadCustomerServiceAttachment,
     sendTypingIndicator,
     replaceLocalMessageWithServerMessage,
     markLocalMessageFailed,
-    checkAutoReply,
-    sendWelcomeMessage,
     connectCustomerServiceRealtime,
     closeCustomerServiceRealtime,
     agentTyping,
     clearAgentTyping
   } = useCustomerServiceChatSync({
     publicApiBase,
+    locale,
     conversationId,
     selectedAgent,
     messages,
@@ -442,6 +506,26 @@ export const useWhatsAppState = (emit: any) => {
     authRequest,
     saveMessagesToStorage,
     scrollToBottom
+  })
+
+  const {
+    sendTextMessage,
+    sendImageMessage,
+    sendProductMessage,
+    sendProductConfigConfirmMessage,
+    sendOrderMessage
+  } = useChatMessageComposer({
+    conversationId,
+    selectedAgent,
+    messages,
+    user,
+    isSending,
+    currentSenderEmail,
+    saveMessagesToStorage,
+    scrollToBottom,
+    sendMessageToAPI,
+    replaceLocalMessageWithServerMessage,
+    markLocalMessageFailed
   })
 
   const customerTypingSignalGapMs = 2500
@@ -486,47 +570,30 @@ export const useWhatsAppState = (emit: any) => {
 
   // 发送消息
   const handleSendMessage = async () => {
-    if (!newMessage.value.trim() || !selectedAgent.value || isSending.value) {
+    if ((!newMessage.value.trim() && !pendingProductReference.value) || !selectedAgent.value || isSending.value) {
       return
     }
   
-    isSending.value = true
-    const messageText = newMessage.value
+    const messageText = newMessage.value.trim()
+    const productReference = pendingProductReference.value
     newMessage.value = ''
-  
-    const messageData = {
-      id: Date.now(),
-      conversation_id: conversationId.value,
-      sender_id: user.value?.id || 0,
-      sender_name: user.value?.display_name || '访客',
-      sender_email: currentSenderEmail(),
-      message: messageText,
-      message_type: 'text',
-      created_at: new Date().toISOString(),
-      is_agent: false,
-      sync_state: 'sending'
+
+    if (productReference) {
+      const sent = await sendProductMessage(productReference, () => {
+        pendingProductReference.value = null
+        activeTab.value = 'chat'
+        saveMessagesToStorage()
+        scrollToBottom()
+      })
+
+      if (!sent) {
+        newMessage.value = messageText
+        return
+      }
     }
-  
-    try {
-      // 1. 先添加到本地显示
-      messages.value.push(messageData)
-      scrollToBottom()
-      
-      // 2. 保存到 localStorage
-      saveMessagesToStorage()
-      
-      // 3. 发送到后端 API（实时存储）
-      const response = await sendMessageToAPI(messageData)
-      replaceLocalMessageWithServerMessage(messageData.id, response)
-      
-      // 4. 检查关键词自动回复
-      await checkAutoReply(messageText)
-    } catch (error) {
-      markLocalMessageFailed(messageData.id)
-      console.error('发送失败', error)
-      // 可以添加重试逻辑或提示用户
-    } finally {
-      isSending.value = false
+
+    if (messageText) {
+      await sendTextMessage(messageText)
     }
   }
   
@@ -571,7 +638,6 @@ export const useWhatsAppState = (emit: any) => {
           url: item.preview_url || normalized.url,
           priceValue: normalized.priceNumber,
           price: normalized.priceLabel,
-          maxStock: normalized.stockQuantity || 0,
         }
       })
       
@@ -595,7 +661,6 @@ export const useWhatsAppState = (emit: any) => {
       sku: product.sku,
       thumbnail: product.thumbnail,
       price: Number(product.priceValue || 0),
-      maxStock: Number(product.maxStock || 0)
     })
   
     if (result.success) {
@@ -619,41 +684,16 @@ export const useWhatsAppState = (emit: any) => {
   }
   
   const shareProductMessageToChat = async (product: any, errorLabel: string) => {
-    if (!selectedAgent.value || isSending.value) return
-    
-    isSending.value = true
-    
-    const messageData = {
-      id: Date.now(),
-      conversation_id: conversationId.value,
-      sender_id: user.value?.id || 0,
-      sender_name: user.value?.display_name || '访客',
-      sender_email: currentSenderEmail(),
-      message: product.title || '商品',
-      message_type: 'product',
-      metadata: {
-        title: product.title,
-        url: product.url,
-        thumbnail: product.thumbnail,
-        price: product.price
-      },
-      created_at: new Date().toISOString(),
-      is_agent: false,
-      sync_state: 'sending'
-    }
-    
-    try {
-      messages.value.push(messageData)
-      saveMessagesToStorage()
-      const response = await sendMessageToAPI(messageData)
-      replaceLocalMessageWithServerMessage(messageData.id, response)
+    const sent = await sendProductMessage(product, () => {
       activeTab.value = 'chat'
+      if (productDrawerVisible.value) {
+        handleProductDrawerClose()
+      }
+      closeCustomerServiceProductSearchModal()
       scrollToBottom()
-    } catch (error) {
-      markLocalMessageFailed(messageData.id)
-      console.error(errorLabel, error)
-    } finally {
-      isSending.value = false
+    })
+    if (!sent) {
+      console.error(errorLabel)
     }
   }
 
@@ -662,44 +702,24 @@ export const useWhatsAppState = (emit: any) => {
     return shareProductMessageToChat(product, '分享商品失败:')
   }
 
+  const handleSelectCustomerServiceProductFromSearchModal = (product: any) => {
+    pendingProductReference.value = product
+    activeTab.value = 'chat'
+    closeCustomerServiceProductSearchModal()
+    saveMessagesToStorage()
+  }
+
   const shareProductConfigConfirmToChat = async (payload: any) => {
     const product = payload?.product || payload
     const variant = payload?.variant || payload?.selectedVariant || null
-    if (!selectedAgent.value || isSending.value || !product) return
+    if (!product) return
 
-    isSending.value = true
-
-    const metadata = buildProductConfigConfirmMetadata(product, variant)
-    const productTitle = metadata.product.title || product.title || product.name || 'Product'
-    const messageData = {
-      id: Date.now(),
-      conversation_id: conversationId.value,
-      sender_id: user.value?.id || 0,
-      sender_name: user.value?.display_name || '访客',
-      sender_email: currentSenderEmail(),
-      message: `Configuration confirmation request: ${productTitle}`,
-      message_type: 'config_confirm',
-      metadata,
-      created_at: new Date().toISOString(),
-      is_agent: false,
-      sync_state: 'sending'
-    }
-
-    try {
-      messages.value.push(messageData)
-      saveMessagesToStorage()
-      const response = await sendMessageToAPI(messageData)
-      replaceLocalMessageWithServerMessage(messageData.id, response)
+    await sendProductConfigConfirmMessage(product, variant, () => {
       activeTab.value = 'chat'
       handleProductDrawerClose()
       displayToast('Configuration request sent', 1800)
       scrollToBottom()
-    } catch (error) {
-      markLocalMessageFailed(messageData.id)
-      console.error('发送配置确认失败:', error)
-    } finally {
-      isSending.value = false
-    }
+    })
   }
   
   // 从浏览历史分享商品到聊天
@@ -726,39 +746,10 @@ export const useWhatsAppState = (emit: any) => {
   
   // 分享订单到聊天
   const shareOrderToChat = async (order: any) => {
-    if (!selectedAgent.value || isSending.value) return
-    
-    isSending.value = true
-
-    const metadata = buildOrderChatMetadata(order)
-    
-    const messageData = {
-      id: Date.now(),
-      conversation_id: conversationId.value,
-      sender_id: user.value?.id || 0,
-      sender_name: user.value?.display_name || '访客',
-      sender_email: currentSenderEmail(),
-      message: `Order confirmation request: ${metadata.order_number || metadata.order_id}`,
-      message_type: 'order',
-      metadata,
-      created_at: new Date().toISOString(),
-      is_agent: false,
-      sync_state: 'sending'
-    }
-    
-    try {
-      messages.value.push(messageData)
-      saveMessagesToStorage()
-      const response = await sendMessageToAPI(messageData)
-      replaceLocalMessageWithServerMessage(messageData.id, response)
+    await sendOrderMessage(order, () => {
       activeTab.value = 'chat'
       scrollToBottom()
-    } catch (error) {
-      markLocalMessageFailed(messageData.id)
-      console.error('分享订单失败:', error)
-    } finally {
-      isSending.value = false
-    }
+    })
   }
   
   // 获取客服列表（带缓存）
@@ -768,13 +759,14 @@ export const useWhatsAppState = (emit: any) => {
       const directory = await loadChatAgentDirectory({
         apiBase: publicApiBase.value,
         currentUserId: user.value?.id,
-        allowDevFallback: import.meta.dev
+        allowDevFallback: false
       })
 
       if (directory.emailSettings) {
         emailSettings.value = directory.emailSettings
       }
 
+      agentGroups.value = Array.isArray(directory.groups) ? directory.groups : []
       if (directory.agents.length > 0) {
         agents.value = directory.agents
         await initializeSelectedAgent()
@@ -805,7 +797,9 @@ export const useWhatsAppState = (emit: any) => {
       selectedAgent.value = defaultAgent
       ensureChatRoom(defaultAgent.id)
       loadMessagesFromStorage()
-      await sendWelcomeMessage()
+      await ensureCustomerServiceConversation()
+      await loadMessagesFromAPI()
+      connectCustomerServiceRealtime()
     }
   }
   
@@ -817,7 +811,7 @@ export const useWhatsAppState = (emit: any) => {
     loadMessagesFromStorage()
   }
   
-  const agentThemePalette = ['#6b73ff', '#40ffaa', '#C77DFF'] as const
+  const agentThemePalette = ['#6b73ff', '#B5FF6D', '#C77DFF'] as const
   const getAgentThemeColor = (agentId: number) => {
     return agentThemePalette[(agentId - 1) % agentThemePalette.length] || agentThemePalette[0]
   }
@@ -827,76 +821,68 @@ export const useWhatsAppState = (emit: any) => {
     return getAgentThemeColor(selectedAgent.value.id)
   })
   
-  // 获取首字母
-  const getInitials = (name: string) => {
-    if (!name) return '?'
-    const parts = name.split(' ')
-    if (parts.length >= 2) {
-      return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || '?'
-    }
-    return name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2) || '?'
-  }
-  
   // ...
   // 图片上传处理
-  const handleImageUpload = async (event: Event) => {
+  const handleImageUpload = async (event: Event, source: 'library' | 'camera' = 'library') => {
     const target = event.target as HTMLInputElement
-    const file = target.files?.[0]
-    
-    if (!file) return
-    
-    // 检查文件大小（限制5MB）
-    if (file.size > 5 * 1024 * 1024) {
-      alert('图片大小不能超过 5MB')
+    const files = Array.from(target.files || [])
+
+    if (files.length === 0) return
+
+    const maxAttachments = user.value ? 4 : 1
+    if (files.length > maxAttachments) {
+      alert(user.value ? '一次最多上传 4 张图片' : '游客一次只能上传 1 张图片')
       return
     }
-    
-    isUploadingImage.value = true
-    
-    try {
-      // TODO: 实现图片上传到服务器
-      // 这里暂时使用 FileReader 转为 base64
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        const imageUrl = e.target?.result as string
-        
-        // 创建图片消息
-        const messageData = {
-          id: Date.now(),
-          conversation_id: conversationId.value,
-          sender_id: user.value?.id || 0,
-          sender_name: user.value?.display_name || '访客',
-          sender_email: currentSenderEmail(),
-          message: '[图片]',
-          message_type: 'image',
-          attachment_url: imageUrl,
-          created_at: new Date().toISOString(),
-          is_agent: false,
-          sync_state: 'sending'
-        }
-        
-        // 添加到消息列表
-        messages.value.push(messageData)
-        saveMessagesToStorage()
-        scrollToBottom()
-        
-        // 发送到后端
-        try {
-          const response = await sendMessageToAPI(messageData)
-          replaceLocalMessageWithServerMessage(messageData.id, response)
-        } catch (error) {
-          markLocalMessageFailed(messageData.id)
-          console.error('发送图片失败', error)
-        }
+
+    for (const file of files) {
+      // 检查文件大小（限制5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片大小不能超过 5MB')
+        return
       }
-      
-      reader.readAsDataURL(file)
+
+      if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件')
+        return
+      }
+    }
+
+    isUploadingImage.value = true
+
+    try {
+      const uploadedAssets: any[] = []
+      for (const file of files) {
+        uploadedAssets.push(await uploadCustomerServiceAttachment(file, source))
+      }
+
+      const attachmentUrls = uploadedAssets.map(asset => asset.url).filter(Boolean)
+      const sent = await sendImageMessage(
+        attachmentUrls,
+        {
+          kind: 'image',
+          source,
+          asset_id: uploadedAssets[0]?.id || null,
+          file_name: uploadedAssets[0]?.original_filename || files[0]?.name || '',
+          mime_type: uploadedAssets[0]?.mime_type || files[0]?.type || '',
+          size: uploadedAssets[0]?.size || files[0]?.size || 0,
+          files: uploadedAssets.map((asset, index) => ({
+            asset_id: asset.id || null,
+            file_name: asset.original_filename || files[index]?.name || '',
+            mime_type: asset.mime_type || files[index]?.type || '',
+            size: asset.size || files[index]?.size || 0,
+            url: asset.url || ''
+          }))
+        }
+      )
+      if (!sent) {
+        throw new Error('image message was not sent')
+      }
     } catch (error) {
       console.error('上传图片失败:', error)
       alert('上传失败，请重试')
     } finally {
       isUploadingImage.value = false
-      // 清空文件选择
       if (target) {
         target.value = ''
       }
@@ -926,6 +912,7 @@ export const useWhatsAppState = (emit: any) => {
     showWelcomeScreen,
     hasHistoryChat,
     agents,
+    agentGroups,
     selectedAgent,
     welcomeAgents,
     onlineAgentsCount,
@@ -936,6 +923,7 @@ export const useWhatsAppState = (emit: any) => {
     messages,
     activeTab,
     newMessage,
+    pendingProductReference,
     searchQuery,
     searchResults,
     isSearching,
@@ -944,6 +932,7 @@ export const useWhatsAppState = (emit: any) => {
     productDrawerVisible,
     productDrawerError,
     productDrawerQuery,
+    customerServiceProductSearchModalVisible,
     historyDrawerVisible,
     wishlistDrawerVisible,
     isUploadingImage,
@@ -962,10 +951,15 @@ export const useWhatsAppState = (emit: any) => {
     authMode,
     currentThemeColor,
     openMemberAuth,
+    openOrderPicker,
+    openCustomerServiceProductSearchModal,
+    closeCustomerServiceProductSearchModal,
+    clearPendingProductReference,
     handleWarrantyLoginRequest,
     handleChatAuthSuccess,
     handleClose,
     enterChat,
+    selectAgent,
     selectAgentFromWelcome,
     handleMessageContextMenu,
     handleSendMessage,
@@ -974,11 +968,11 @@ export const useWhatsAppState = (emit: any) => {
     handleProductDrawerClose,
     handleHistoryDrawerClose,
     shareProductToChat,
+    handleSelectCustomerServiceProductFromSearchModal,
     shareProductConfigConfirmToChat,
     handleShareProductFromHistory,
     shareOrderToChat,
     openCartFromChat,
-    getInitials,
     handleImageUpload
   }
 }

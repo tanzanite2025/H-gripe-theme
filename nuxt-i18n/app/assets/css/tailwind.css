@@ -34,6 +34,15 @@
       navigation. Page roots must not add their own arbitrary top offsets.
     */
     --tz-page-content-top-gap: clamp(1rem, 1vw, 1.25rem);
+    --tz-safe-area-top: env(safe-area-inset-top, 0px);
+    --tz-safe-area-right: env(safe-area-inset-right, 0px);
+    --tz-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --tz-safe-area-left: env(safe-area-inset-left, 0px);
+    --tz-mobile-small-viewport-height: 100vh;
+    --tz-mobile-dynamic-viewport-height: 100vh;
+    --tz-mobile-viewport-height: var(--tz-mobile-small-viewport-height);
+    --tz-mobile-safe-viewport-height: calc(var(--tz-mobile-viewport-height) - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
+    --tz-mobile-modal-safe-padding-bottom: max(0.75rem, calc(0.75rem + var(--tz-safe-area-bottom)));
 
     /*
       Semantic text colors for the dark storefront.
@@ -44,7 +53,16 @@
     --tz-text-secondary: #cbd5e1;
     --tz-text-muted: #94a3b8;
     --tz-text-disabled: #64748b;
-    --tz-text-accent: #67e8f9;
+    --tz-brand-primary: #b5ff6d;
+    --tz-brand-primary-hover: #c8ff91;
+    --tz-text-accent: var(--tz-brand-primary);
+    --tz-card-surface: #111116;
+    --tz-input-surface: #0b0b0e;
+    --tz-form-panel-surface: #141414;
+    --tz-form-control-surface: #090909;
+    --tz-form-control-border: rgba(255, 255, 255, 0.22);
+    --tz-form-control-focus-border: rgba(255, 255, 255, 0.78);
+    --tz-form-control-focus-ring: rgba(255, 255, 255, 0.24);
   }
 
   html {
@@ -63,6 +81,19 @@
   select {
     font: inherit;
   }
+
+  @supports (height: 100svh) {
+    :root {
+      --tz-mobile-small-viewport-height: 100svh;
+      --tz-mobile-viewport-height: var(--tz-mobile-small-viewport-height);
+    }
+  }
+
+  @supports (height: 100dvh) {
+    :root {
+      --tz-mobile-dynamic-viewport-height: 100dvh;
+    }
+  }
 }
 
 @layer components {
@@ -72,7 +103,7 @@
    * Keep this class scoped to UserFeedbackThread.vue.
    */
   .share-your-feedback-card {
-    background-color: #11151e;
+    background-color: var(--tz-card-surface);
   }
 
   /*
@@ -80,7 +111,7 @@
    * Keep this separate from the Share Your Feedback card class.
    */
   .shop-page-product-collection-display-card {
-    background-color: #11151e;
+    background-color: var(--tz-card-surface);
   }
 
   /*
@@ -88,7 +119,56 @@
    * Keep this separate from the feedback and shop product collection cards.
    */
   .membership-and-points-modal-card {
-    background-color: #11151e;
+    background-color: var(--tz-card-surface);
+  }
+
+  /*
+   * Shared close control for storefront drawers, dialogs and overlays.
+   * Keep the control neutral so green remains an accent rather than a
+   * repeated modal background.
+   */
+  .tz-global-close-btn {
+    display: inline-flex;
+    width: 2rem !important;
+    height: 2rem !important;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    border-radius: 0.75rem !important;
+    background: #ffffff !important;
+    color: #050505 !important;
+    padding: 0 !important;
+    font-size: 0.875rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      color 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .tz-global-close-btn:hover {
+    border-color: rgba(0, 0, 0, 0.2) !important;
+    background: #f3f3f3 !important;
+    color: #000000 !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+    transform: scale(1.05);
+  }
+
+  .tz-global-close-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 2px;
+  }
+
+  .tz-global-close-btn :where(svg) {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
   }
 
   .page-content-shell {
@@ -235,17 +315,17 @@
   }
 
   .tz-faq-answer :where(a) {
-    color: #38bdf8;
+    color: var(--tz-text-accent);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
 
   .tz-faq-answer :where(a:hover) {
-    color: #22d3ee;
+    color: var(--tz-brand-primary-hover);
   }
 
   .premium-card {
-    @apply border-none bg-[#11151e];
+    @apply border-none bg-[var(--tz-card-surface)];
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   }
 
@@ -292,6 +372,72 @@
 
   .tz-text-accent {
     color: var(--tz-text-accent);
+  }
+
+  /*
+   * Neutral form controls keep blue surfaces from breaking the dark card
+   * system. Checkboxes, radios, and range inputs retain their native styling.
+   */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    border-color: var(--tz-form-control-border) !important;
+    background-color: var(--tz-form-control-surface) !important;
+    background-image: none !important;
+    color: var(--tz-text-primary) !important;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range'])::placeholder,
+  textarea::placeholder {
+    color: var(--tz-text-muted) !important;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):focus,
+  textarea:focus,
+  select:focus {
+    outline: none !important;
+    border-color: var(--tz-form-control-focus-border) !important;
+    box-shadow: 0 0 0 1px var(--tz-form-control-focus-ring) !important;
+  }
+
+  @media (max-width: 767px) {
+    .tz-mobile-safe-modal-mask {
+      padding-top: var(--tz-safe-area-top);
+      padding-right: var(--tz-safe-area-right);
+      padding-bottom: var(--tz-safe-area-bottom);
+      padding-left: var(--tz-safe-area-left);
+    }
+
+    .tz-mobile-safe-full-height {
+      height: var(--tz-mobile-safe-viewport-height);
+      max-height: var(--tz-mobile-safe-viewport-height);
+    }
+
+    .tz-mobile-safe-drawer-90-height {
+      height: min(90vh, var(--tz-mobile-safe-viewport-height));
+      max-height: min(90vh, var(--tz-mobile-safe-viewport-height));
+    }
+
+    .tz-mobile-safe-max-height {
+      max-height: var(--tz-mobile-safe-viewport-height);
+    }
+
+    .tz-mobile-safe-bottom-padding {
+      padding-bottom: var(--tz-mobile-modal-safe-padding-bottom);
+    }
+
+    .tz-safe-fixed-bottom {
+      bottom: var(--tz-safe-area-bottom);
+    }
+  }
+
+  @media (max-width: 767px) {
+    @supports (height: 100svh) {
+      .tz-mobile-safe-drawer-90-height {
+        height: min(90svh, var(--tz-mobile-safe-viewport-height));
+        max-height: min(90svh, var(--tz-mobile-safe-viewport-height));
+      }
+    }
   }
 }
 

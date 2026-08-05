@@ -1,10 +1,14 @@
 package repository
 
 import (
+	"errors"
 	"tanzanite/internal/domain/loyalty"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
+
+var ErrRedeemOptionOutOfStock = errors.New("redeem gift card option is out of stock")
 
 type LoyaltyProgramRepository struct {
 	db *gorm.DB
@@ -75,4 +79,30 @@ func (r *LoyaltyProgramRepository) CreateVersion(config *loyalty.ProgramConfig) 
 		config.RedeemOptions = options
 		return nil
 	})
+}
+
+func (r *LoyaltyProgramRepository) ConsumeRedeemOption(configID, optionID uint) (*loyalty.ProgramRedeemOption, error) {
+	var option loyalty.ProgramRedeemOption
+	if err := r.db.
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("id = ? AND config_id = ?", optionID, configID).
+		First(&option).Error; err != nil {
+		return nil, err
+	}
+	if option.RemainingQuantity() <= 0 {
+		return nil, ErrRedeemOptionOutOfStock
+	}
+
+	result := r.db.Model(&loyalty.ProgramRedeemOption{}).
+		Where("id = ? AND config_id = ? AND redeemed_quantity < stock_quantity", optionID, configID).
+		UpdateColumn("redeemed_quantity", gorm.Expr("redeemed_quantity + 1"))
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, ErrRedeemOptionOutOfStock
+	}
+
+	option.RedeemedQuantity++
+	return &option, nil
 }

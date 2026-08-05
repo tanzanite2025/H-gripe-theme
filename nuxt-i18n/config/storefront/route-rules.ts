@@ -23,6 +23,7 @@ interface BuildStorefrontRouteRulesOptions {
   internalApiOrigin: string
   localeCodes: string[]
   defaultLocale: string
+  htmlCacheEnabled?: boolean
 }
 
 const immutableAssetHeaders = {
@@ -43,10 +44,6 @@ const immutableAssetRoutePatterns = [
 ]
 
 const storefrontRedirects = [
-  {
-    from: '/company/about',
-    to: '/company/ourstory',
-  },
   {
     from: '/guides/technical',
     to: '/guides',
@@ -114,6 +111,7 @@ export const buildStorefrontRouteRules = ({
   internalApiOrigin,
   localeCodes,
   defaultLocale,
+  htmlCacheEnabled = true,
 }: BuildStorefrontRouteRulesOptions) => {
   const routeRules: StorefrontRouteRules = {
     '/api/**': {
@@ -135,8 +133,10 @@ export const buildStorefrontRouteRules = ({
     }
   }
 
-  for (const policy of storefrontHtmlCachePolicies) {
-    addLocalizedRule(routeRules, policy.paths, localeCodes, defaultLocale, cacheRule(policy))
+  if (htmlCacheEnabled) {
+    for (const policy of storefrontHtmlCachePolicies) {
+      addLocalizedRule(routeRules, policy.paths, localeCodes, defaultLocale, cacheRule(policy))
+    }
   }
 
   addLocalizedRule(routeRules, storefrontNoStorePagePaths, localeCodes, defaultLocale, {

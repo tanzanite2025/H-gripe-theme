@@ -40,16 +40,20 @@ export const roleTone = (role) => ({
 export const getOrderStatusName = (status) => ({
   pending: '待付款',
   paid: '已付款',
+  processing: '处理中',
   shipped: '已发货',
   completed: '已完成',
+  payment_expired: '支付超时',
   cancelled: '已取消'
 })[status] || status
 
 export const orderStatusTone = (status) => ({
   pending: 'amber',
   paid: 'green',
+  processing: 'amber',
   shipped: 'blue',
-  completed: 'gray',
+  completed: 'green',
+  payment_expired: 'amber',
   cancelled: 'coral'
 })[status] || 'gray'
 

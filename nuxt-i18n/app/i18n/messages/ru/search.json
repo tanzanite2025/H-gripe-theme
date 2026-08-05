@@ -2,5 +2,8 @@
   "placeholder": "Поиск...",
   "button": "Поиск",
   "popularTitle": "Популярные запросы",
-  "popularAriaLabel": "Популярные запросы"
+  "popularAriaLabel": "Популярные запросы",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

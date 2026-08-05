@@ -1,79 +1,12 @@
 <template>
   <main class="shop-page w-full pt-0 pb-16 space-y-6">
     <section class="rounded-xl bg-white/5 p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
-      <form class="shop-search-form" @submit.prevent="runQuickSearch">
-        <label class="shop-search-input-shell">
-          <span class="sr-only">{{ $t('sidebar.searchProductPlaceholder', 'Enter product name...') }}</span>
-          <input
-            v-model="quickFreeTextQuery"
-            type="text"
-            :placeholder="$t('sidebar.searchProductPlaceholder', 'Enter product name...')"
-            class="shop-search-input-inner"
-          />
-        </label>
-
-        <div class="shop-price-range" :aria-label="$t('filter.priceRange', 'Price Range')">
-          <span class="shop-price-range__label">{{ $t('filter.price', 'Price') }}</span>
-          <label class="shop-currency-field">
-            <span class="sr-only">{{ $t('filter.currency', 'Currency') }}</span>
-            <select
-              v-model="quickCurrency"
-              :disabled="paymentCurrenciesLoading || paymentCurrencies.length === 0"
-              aria-label="Currency"
-            >
-              <option value="" disabled>{{ currencySelectLabel }}</option>
-              <option
-                v-for="currency in paymentCurrencies"
-                :key="currency"
-                :value="currency"
-              >
-                {{ currency }}
-              </option>
-            </select>
-          </label>
-          <label class="shop-price-field">
-            <span>{{ $t('filter.from', 'From') }}</span>
-            <input
-              v-model.number="quickPriceMin"
-              type="number"
-              min="0"
-              inputmode="numeric"
-              aria-label="Minimum price"
-            />
-          </label>
-          <label class="shop-price-field">
-            <span>{{ $t('filter.to', 'To') }}</span>
-            <input
-              v-model.number="quickPriceMax"
-              type="number"
-              min="0"
-              inputmode="numeric"
-              aria-label="Maximum price"
-            />
-          </label>
-        </div>
-
-        <div class="shop-search-actions">
-          <button
-            type="submit"
-            class="shop-search-submit"
-          >
-            {{ $t('sidebar.search', 'Search') }}
-          </button>
-
-          <button
-            type="button"
-            class="shop-filter-button"
-            :aria-label="$t('filter.filters', 'Filters')"
-            @click="openFilters"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-.553.894l-4 2A1 1 0 019 21v-8.586L3.293 6.707A1 1 0 013 6V4z" />
-            </svg>
-            <span>{{ $t('filter.filters', 'Filters') }}</span>
-          </button>
-        </div>
-      </form>
+      <ShopProductQuickSearchForm
+        density="page"
+        show-filter-button
+        @submit="handleSearch"
+        @filter-click="openFilters"
+      />
     </section>
 
     <teleport to="body">
@@ -163,7 +96,7 @@
                 <h3 class="text-xs font-semibold text-white line-clamp-2 mb-1">
                   {{ product.title }}
                 </h3>
-                <p v-if="product.priceLabel" class="text-xs text-[#40ffaa] mb-2">
+                <p v-if="product.priceLabel" class="text-xs text-[#B5FF6D] mb-2">
                   {{ product.priceLabel }}
                 </p>
                 <div class="mt-auto flex gap-1.5 items-center">
@@ -206,8 +139,8 @@
               <span>{{ $t('common.previous', 'Previous') }}</span>
             </button>
 
-            <span class="shop-pagination__count">
-              {{ productPagination.page }} / {{ productPagination.totalPages }}
+            <span class="shop-pagination__count" :aria-label="$t('common.currentPage', 'Current page')">
+              {{ productPagination.page }}
             </span>
 
             <button
@@ -237,6 +170,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useShopCategories } from '~/composables/useShopCategories'
@@ -244,7 +178,6 @@ import type { ShopCategory } from '~/composables/useShopCategories'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
-import { usePaymentCurrencies } from '~/composables/usePaymentCurrencies'
 
 definePageMeta({
   layout: 'products',
@@ -255,11 +188,6 @@ const { t } = useI18n()
 const { fetchShopProducts } = useShopProducts()
 
 const SHOP_PRODUCTS_PAGE_SIZE = 24
-const quickFreeTextQuery = ref('')
-const quickSearchQuery = ref('')
-const quickPriceMin = ref(0)
-const quickPriceMax = ref(5000)
-const quickCurrency = ref('')
 const categoryFilterOpen = ref(false)
 const currentProductPage = ref(1)
 
@@ -284,22 +212,12 @@ interface ProductSearchPayload {
 
 const currentSearch = ref<ProductSearchPayload | null>(null)
 
-const DEFAULT_QUICK_FILTERS: ProductSearchFiltersPayload = {
+const createDefaultSearchFilters = (): ProductSearchFiltersPayload => ({
   priceRange: [0, 5000],
   attributes: {},
-}
+})
 
 const { pendingSearch, presetCategorySlug } = useShopSearchSheet()
-const {
-  currencies: paymentCurrencies,
-  loading: paymentCurrenciesLoading,
-  loadCurrencies: loadPaymentCurrencies,
-} = usePaymentCurrencies()
-
-const currencySelectLabel = computed(() => {
-  if (paymentCurrenciesLoading.value) return '...'
-  return t('filter.currency', 'Currency')
-})
 
 const openFilters = () => {
   categoryFilterOpen.value = true
@@ -310,10 +228,6 @@ const openFilters = () => {
 
 const closeCategoryFilter = () => {
   categoryFilterOpen.value = false
-}
-
-const syncQuickSearchQuery = () => {
-  quickSearchQuery.value = quickFreeTextQuery.value.trim()
 }
 
 const categorySlugToKeyword = (slug: string) => slug.replace(/[-_]+/g, ' ').trim()
@@ -346,38 +260,6 @@ const buildProductKeyword = (payload?: ProductSearchPayload) => joinUniqueSearch
     : null,
 ])
 
-const normalizedQuickPriceRange = (): [number, number] => {
-  const fallbackMin = DEFAULT_QUICK_FILTERS.priceRange[0]
-  const fallbackMax = DEFAULT_QUICK_FILTERS.priceRange[1]
-  const rawMin = Number(quickPriceMin.value)
-  const rawMax = Number(quickPriceMax.value)
-  const min = Number.isFinite(rawMin) ? Math.max(0, rawMin) : fallbackMin
-  const max = Number.isFinite(rawMax) ? Math.max(0, rawMax) : fallbackMax
-
-  return min <= max ? [min, max] : [max, min]
-}
-
-const buildQuickFilters = (): ProductSearchFiltersPayload => {
-  const filters: ProductSearchFiltersPayload = {
-    priceRange: normalizedQuickPriceRange(),
-    attributes: {},
-  }
-
-  if (quickCurrency.value && paymentCurrencies.value.includes(quickCurrency.value)) {
-    filters.currency = quickCurrency.value
-  }
-
-  return filters
-}
-
-const runQuickSearch = () => {
-  syncQuickSearchQuery()
-  handleSearch({
-    query: quickSearchQuery.value,
-    filters: buildQuickFilters(),
-  })
-}
-
 const buildProductQueryParams = (payload?: ProductSearchPayload) => {
   const params: Record<string, any> = {
     page: currentProductPage.value,
@@ -402,10 +284,6 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
       params.price_max = max
     }
 
-    if (payload.filters?.currency) {
-      params.currency = payload.filters.currency
-    }
-
     const attrs = payload.filters?.attributes
     if (attrs && typeof attrs === 'object') {
       params.attributes = JSON.stringify(attrs)
@@ -419,7 +297,9 @@ const { data: asyncData, pending, error: asyncError, refresh } = await useAsyncD
   'shop-products',
   () => {
     const params = buildProductQueryParams(currentSearch.value || undefined)
-    Object.assign(params, route.query)
+    const routeQuery = { ...route.query }
+    delete routeQuery.currency
+    Object.assign(params, routeQuery)
 
     return fetchShopProducts(params)
   }
@@ -439,22 +319,17 @@ const products = computed<ShopProduct[]>(() => {
 
 const productPagination = computed(() => {
   const raw = asyncData.value?.raw as any
-  const meta = raw?.meta && typeof raw.meta === 'object' ? raw.meta : {}
-  const page = Math.max(1, Number(meta.page || currentProductPage.value || 1))
-  const perPage = Math.max(1, Number(meta.per_page || SHOP_PRODUCTS_PAGE_SIZE))
-  const total = Math.max(0, Number(meta.total || products.value.length || 0))
-  const totalPages = Math.max(1, Number(meta.total_pages || Math.ceil(total / perPage) || 1))
+  const page = Math.max(1, currentProductPage.value || 1)
+  const hasMore = raw?.has_more === true
 
   return {
     page,
-    perPage,
-    total,
-    totalPages,
+    hasMore,
   }
 })
-const showPagination = computed(() => productPagination.value.totalPages > 1)
+const showPagination = computed(() => productPagination.value.page > 1 || productPagination.value.hasMore)
 const canGoPrevious = computed(() => productPagination.value.page > 1)
-const canGoNext = computed(() => productPagination.value.page < productPagination.value.totalPages)
+const canGoNext = computed(() => productPagination.value.hasMore)
 
 const loading = computed(() => pending.value)
 const error = computed(() => asyncError.value?.message || null)
@@ -500,7 +375,7 @@ const onCategorySelect = (category: ShopCategory | null) => {
   const base: ProductSearchPayload =
     currentSearch.value || ({
       query: '',
-      filters: buildQuickFilters(),
+      filters: createDefaultSearchFilters(),
     } as ProductSearchPayload)
 
   const next: ProductSearchPayload = {
@@ -513,8 +388,7 @@ const onCategorySelect = (category: ShopCategory | null) => {
 }
 
 const goToProductPage = (page: number) => {
-  const totalPages = productPagination.value.totalPages
-  const nextPage = Math.min(Math.max(1, page), totalPages)
+  const nextPage = Math.max(1, page)
   if (nextPage === productPagination.value.page && nextPage === currentProductPage.value) return
 
   currentProductPage.value = nextPage
@@ -540,14 +414,7 @@ const applyPresetCategoryFromSlug = () => {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    loadCategories(),
-    loadPaymentCurrencies(),
-  ])
-
-  if (!quickCurrency.value && paymentCurrencies.value.length > 0) {
-    quickCurrency.value = paymentCurrencies.value[0]
-  }
+  await loadCategories()
 
   // 页面首次挂载时，如果是从 Inner tube 等入口过来，先根据 slug 预设分类
   applyPresetCategoryFromSlug()
@@ -573,21 +440,6 @@ watch(pendingSearch, async (payload) => {
   applyPresetCategoryFromSlug()
 
   handleSearch(payload as unknown as ProductSearchPayload)
-})
-
-watch(quickFreeTextQuery, () => {
-  syncQuickSearchQuery()
-})
-
-watch(paymentCurrencies, (currencies) => {
-  if (!currencies.length) {
-    quickCurrency.value = ''
-    return
-  }
-
-  if (!quickCurrency.value || !currencies.includes(quickCurrency.value)) {
-    quickCurrency.value = currencies[0]
-  }
 })
 
 const handleAddToWishlist = async (product: ShopProduct) => {
@@ -679,122 +531,6 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   }
 }
 
-.shop-search-form {
-  display: grid;
-  grid-template-columns: minmax(14rem, 1fr) minmax(18rem, 24rem) auto;
-  gap: 8px;
-  align-items: stretch;
-}
-
-.shop-search-input-shell {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
-  border-radius: 10px;
-  box-shadow:
-    0 2px 6px -3px rgba(0,0,0,0.9),
-    0 0 6px rgba(15,23,42,0.7);
-}
-
-.shop-search-input-inner {
-  width: 100%;
-  min-width: 0;
-  height: 38px;
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  font-size: 13px;
-  outline: none;
-}
-
-.shop-search-input-inner::placeholder {
-  color: var(--tz-text-muted);
-}
-
-.shop-price-range {
-  display: grid;
-  grid-template-columns: auto minmax(5.5rem, 0.72fr) minmax(0, 1fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  min-height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.62);
-  padding: 4px 8px;
-}
-
-.shop-price-range__label {
-  color: rgba(226, 232, 240, 0.72);
-  font-size: var(--tz-type-micro-label);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.shop-currency-field,
-.shop-price-field {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 5px;
-  border-radius: 8px;
-  background: rgba(2, 6, 23, 0.34);
-  padding: 4px 7px;
-}
-
-.shop-currency-field select {
-  width: 100%;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 800;
-  outline: none;
-}
-
-.shop-currency-field select:disabled {
-  color: rgba(148, 163, 184, 0.64);
-  cursor: not-allowed;
-}
-
-.shop-currency-field option {
-  background: #020617;
-  color: #ffffff;
-}
-
-.shop-price-field span {
-  color: rgba(203, 213, 225, 0.78);
-  font-size: var(--tz-type-micro-label);
-  font-weight: 750;
-  white-space: nowrap;
-}
-
-.shop-price-field input {
-  width: 100%;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  font-size: 13px;
-  outline: none;
-}
-
-.shop-price-field input::-webkit-outer-spin-button,
-.shop-price-field input::-webkit-inner-spin-button {
-  margin: 0;
-  appearance: none;
-}
-
-.shop-search-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .shop-pagination {
   display: flex;
   align-items: center;
@@ -847,44 +583,6 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   color: rgba(226, 232, 240, 0.82);
 }
 
-.shop-search-submit,
-.shop-filter-button {
-  min-height: 38px;
-  border-radius: 10px;
-  padding: 0 16px;
-  font-weight: 800;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.shop-search-submit {
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 8px 8px 22px rgba(0,0,0,0.92);
-}
-
-.shop-search-submit:hover {
-  box-shadow: 10px 10px 26px rgba(0,0,0,0.95);
-}
-
-.shop-filter-button {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-.shop-filter-button:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.15);
-}
-
 .shop-category-sheet {
   position: fixed;
   inset: 0;
@@ -903,7 +601,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 22px 22px 16px 16px;
   background:
-    radial-gradient(circle at top left, rgba(64, 255, 170, 0.12), transparent 42%),
+    radial-gradient(circle at top left, rgba(181, 255, 109, 0.12), transparent 42%),
     linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
   padding: 14px;
   box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 1);
@@ -973,34 +671,6 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   }
 }
 
-@media (max-width: 768px) {
-  .shop-search-form {
-    grid-template-columns: 1fr;
-  }
-
-  .shop-price-range {
-    grid-template-columns: auto minmax(5.5rem, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .shop-search-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .shop-filter-button {
-    display: inline-flex;
-  }
-}
-
-@media (max-width: 430px) {
-  .shop-price-range {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .shop-price-range__label {
-    grid-column: 1 / -1;
-  }
-}
 </style>
 
 

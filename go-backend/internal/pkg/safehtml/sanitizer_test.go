@@ -32,3 +32,37 @@ func TestSanitizeFiltersUnsafeLinks(t *testing.T) {
 		t.Fatalf("safe relative link was not preserved: %s", got)
 	}
 }
+
+func TestSanitizePreservesSafeProductDetailMedia(t *testing.T) {
+	got, err := Sanitize(`<figure><img src="/uploads/detail.webp" alt="Angle" onerror="alert(1)"><figcaption>Angle view</figcaption><video src="https://cdn.example.com/demo.webm" poster="/uploads/poster.webp" autoplay onplay="alert(1)"></video></figure>`)
+	if err != nil {
+		t.Fatalf("Sanitize() error = %v", err)
+	}
+	for _, expected := range []string{
+		`<figure>`,
+		`<img src="/uploads/detail.webp" alt="Angle" loading="lazy">`,
+		`<figcaption>Angle view</figcaption>`,
+		`<video src="https://cdn.example.com/demo.webm" poster="/uploads/poster.webp" controls preload="metadata"></video>`,
+	} {
+		if !strings.Contains(got, expected) {
+			t.Fatalf("expected %q in sanitized html: %s", expected, got)
+		}
+	}
+	for _, forbidden := range []string{"onerror", "onplay", "autoplay"} {
+		if strings.Contains(got, forbidden) {
+			t.Fatalf("unsafe media attribute survived: %s", got)
+		}
+	}
+}
+
+func TestSanitizeDropsUnsafeProductDetailMediaSources(t *testing.T) {
+	got, err := Sanitize(`<img src="data:image/svg+xml;base64,aaa"><video src="//evil.example/demo.webm"></video><img src="uploads/not-rooted.webp">`)
+	if err != nil {
+		t.Fatalf("Sanitize() error = %v", err)
+	}
+	for _, forbidden := range []string{"<img", "<video", "data:", "evil.example", "not-rooted"} {
+		if strings.Contains(got, forbidden) {
+			t.Fatalf("unsafe media survived: %s", got)
+		}
+	}
+}

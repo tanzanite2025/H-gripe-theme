@@ -5,23 +5,25 @@
         <div class="flex flex-col">
           <component
             :is="titleTag"
-            class="tz-text-primary font-semibold"
-            :class="variant === 'compact' ? 'text-base' : 'text-lg'"
+            class="font-bold text-white leading-tight"
+            :class="variant === 'compact' ? 'text-2xl sm:text-3xl' : 'text-lg'"
           >
             {{ t('contactLocation.title') }}
           </component>
-          <div class="mt-[6px] h-1 w-14 rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#3b82f6] shadow-[0_0_18px_rgba(45,212,191,0.25)]"></div>
-          <p class="mt-[3px] tz-text-secondary leading-relaxed break-words" :class="variant === 'compact' ? 'text-sm' : 'text-base'">
+          <p
+            v-if="variant !== 'compact'"
+            class="mt-[3px] tz-text-secondary leading-relaxed break-words"
+          >
             {{ contactLocation.addressText }}
           </p>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="flex w-full max-w-[220px] flex-col gap-2">
           <a
             :href="contactLocation.openGoogleDirectionsUrl || contactLocation.openGoogleMapsUrl"
             target="_blank"
             rel="noopener"
-            class="px-4 py-2 rounded-full text-sm font-semibold bg-white text-slate-950 hover:bg-white/90 transition-all"
+            class="flex min-h-10 w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-white/90"
           >
             {{ t('contactLocation.getDirections') }}
           </a>
@@ -29,7 +31,7 @@
             :href="contactLocation.openGoogleMapsUrl"
             target="_blank"
             rel="noopener"
-            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-primary shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="flex min-h-10 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
           >
             {{ t('contactLocation.openGoogle') }}
           </a>
@@ -38,14 +40,14 @@
             :href="contactLocation.openAppleMapsUrl"
             target="_blank"
             rel="noopener"
-            class="px-4 py-2 rounded-full text-sm font-semibold bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-primary shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="flex min-h-10 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
           >
             {{ t('contactLocation.openApple') }}
           </a>
         </div>
       </div>
 
-      <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_4px_14px_-10px_rgba(0,0,0,0.9),0_0_12px_rgba(15,23,42,0.85)]">
+      <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_4px_14px_-10px_rgba(0,0,0,0.9)]">
         <button
           v-if="!showInteractive"
           type="button"
@@ -62,9 +64,9 @@
             decoding="async"
             @error="previewImageFailed = true"
           />
-          <div v-else class="w-full" :class="[mapHeightClass, 'bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_60%)]']"></div>
+          <div v-else class="w-full bg-black" :class="mapHeightClass"></div>
 
-          <div class="absolute inset-0 bg-black/25"></div>
+          <div class="absolute inset-0 bg-black/20"></div>
           <div class="absolute inset-0 flex items-center justify-center px-4">
             <span class="px-5 py-2.5 rounded-full text-sm font-semibold bg-black/60 text-white backdrop-blur-sm border border-white/15">
               {{ t('contactLocation.loadMap') }}
@@ -113,7 +115,7 @@ const mapHeightClass = computed(() => {
 
 const containerClass = computed(() => {
   if (props.layout === 'split') {
-    return 'grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start'
+    return 'grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,240px)_minmax(0,720px)] lg:items-center lg:justify-center lg:gap-8'
   }
   return 'flex flex-col gap-4'
 })

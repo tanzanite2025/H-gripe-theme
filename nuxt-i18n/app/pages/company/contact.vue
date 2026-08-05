@@ -31,7 +31,7 @@
         </div>
 
         <!-- China Factory -->
-         <div class="group bg-[#11151e] rounded-2xl p-6 border border-slate-700/50 hover:border-teal-500/30 transition-all duration-300 flex flex-col">
+         <div class="group bg-[var(--tz-card-surface)] rounded-2xl p-6 border border-slate-700/50 hover:border-teal-500/30 transition-all duration-300 flex flex-col">
             <h3 class="text-lg font-bold text-white mb-1">Manufacturing & R&D Base</h3>
             <div class="text-xs uppercase tracking-wider text-teal-400 font-semibold mb-2">Xiamen, China</div>
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
@@ -46,7 +46,7 @@
       </div>
 
       <!-- Bank Info (Folded/Compact) -->
-      <div class="bg-gradient-to-br from-slate-900 via-[#11151e] to-slate-900 rounded-2xl border border-slate-700/50 overflow-hidden mb-12">
+      <div class="bg-gradient-to-br from-slate-900 via-[var(--tz-card-surface)] to-slate-900 rounded-2xl border border-slate-700/50 overflow-hidden mb-12">
         <div class="p-4 md:p-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>

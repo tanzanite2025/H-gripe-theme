@@ -3,6 +3,7 @@ package admin
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/service"
 
@@ -129,6 +130,10 @@ func (h *SettingsHandler) GetPaymentSettings(c *gin.Context) {
 	h.writeSettingsGroup(c, "payment", "failed to fetch payment settings")
 }
 
+func (h *SettingsHandler) GetAPISettings(c *gin.Context) {
+	h.writeSettingsGroup(c, "api", "failed to fetch API settings")
+}
+
 func (h *SettingsHandler) GetLoyaltySettings(c *gin.Context) {
 	h.writeDomainManagedSettingsGroupError(c)
 }
@@ -149,7 +154,8 @@ func (h *SettingsHandler) writeSettingsGroup(c *gin.Context, group, errorMessage
 }
 
 func isDomainManagedAdminSettingGroup(group string) bool {
-	return group == "loyalty" || group == "redeem"
+	group = strings.ToLower(strings.TrimSpace(group))
+	return group == "loyalty" || group == "redeem" || group == "currency" || group == "payment_secret"
 }
 
 func (h *SettingsHandler) writeDomainManagedSettingsGroupError(c *gin.Context) {

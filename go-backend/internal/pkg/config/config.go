@@ -12,20 +12,29 @@ import (
 )
 
 type Config struct {
-	Server         ServerConfig         `mapstructure:"server"`
-	Database       DatabaseConfig       `mapstructure:"database"`
-	Redis          RedisConfig          `mapstructure:"redis"`
-	JWT            JWTConfig            `mapstructure:"jwt"`
-	OAuth          OAuthConfig          `mapstructure:"oauth"`
-	I18n           I18nConfig           `mapstructure:"i18n"`
-	CORS           CORSConfig           `mapstructure:"cors"`
-	Cookie         CookieConfig         `mapstructure:"cookie"`
-	Cache          CacheConfig          `mapstructure:"cache"`
-	Log            LogConfig            `mapstructure:"log"`
-	Worker         WorkerConfig         `mapstructure:"worker"`
-	AntiAbuse      AntiAbuseConfig      `mapstructure:"anti_abuse"`
-	PaymentRisk    PaymentRiskConfig    `mapstructure:"payment_risk"`
-	RequestSigning RequestSigningConfig `mapstructure:"request_signing"`
+	Server                ServerConfig                `mapstructure:"server"`
+	Database              DatabaseConfig              `mapstructure:"database"`
+	Redis                 RedisConfig                 `mapstructure:"redis"`
+	JWT                   JWTConfig                   `mapstructure:"jwt"`
+	OAuth                 OAuthConfig                 `mapstructure:"oauth"`
+	GoogleMerchant        GoogleMerchantConfig        `mapstructure:"google_merchant"`
+	I18n                  I18nConfig                  `mapstructure:"i18n"`
+	CORS                  CORSConfig                  `mapstructure:"cors"`
+	Cookie                CookieConfig                `mapstructure:"cookie"`
+	Cache                 CacheConfig                 `mapstructure:"cache"`
+	Log                   LogConfig                   `mapstructure:"log"`
+	Worker                WorkerConfig                `mapstructure:"worker"`
+	BehaviorEvents        BehaviorEventsConfig        `mapstructure:"behavior_events"`
+	AntiAbuse             AntiAbuseConfig             `mapstructure:"anti_abuse"`
+	OrderAbuse            OrderAbuseConfig            `mapstructure:"order_abuse"`
+	OrderNumber           OrderNumberConfig           `mapstructure:"order_number"`
+	PaymentRisk           PaymentRiskConfig           `mapstructure:"payment_risk"`
+	PaymentRiskMonitoring PaymentRiskMonitoringConfig `mapstructure:"payment_risk_monitoring"`
+	PaymentProtection     PaymentProtectionConfig     `mapstructure:"payment_protection"`
+	PaymentThreeDS        PaymentThreeDSConfig        `mapstructure:"payment_3ds"`
+	VisitorRisk           VisitorRiskConfig           `mapstructure:"visitor_risk"`
+	RequestSigning        RequestSigningConfig        `mapstructure:"request_signing"`
+	MediaUpload           MediaUploadConfig           `mapstructure:"media_upload"`
 }
 
 type ServerConfig struct {
@@ -69,6 +78,15 @@ type OAuthConfig struct {
 	GoogleClientID string `mapstructure:"google_client_id"`
 }
 
+type GoogleMerchantConfig struct {
+	ClientID           string `mapstructure:"client_id"`
+	ClientSecret       string `mapstructure:"client_secret"`
+	RedirectURL        string `mapstructure:"redirect_url"`
+	PostConnectURL     string `mapstructure:"post_connect_url"`
+	TokenEncryptionKey string `mapstructure:"token_encryption_key"`
+	StateTTLSeconds    int    `mapstructure:"state_ttl_seconds"`
+}
+
 type I18nConfig struct {
 	DefaultLocale    string   `mapstructure:"default_locale"`
 	SupportedLocales []string `mapstructure:"supported_locales"`
@@ -103,10 +121,31 @@ type LogConfig struct {
 }
 
 type WorkerConfig struct {
-	Enabled                        bool `mapstructure:"enabled"`
-	TrackingPollingEnabled         bool `mapstructure:"tracking_polling_enabled"`
-	TrackingPollingIntervalSeconds int  `mapstructure:"tracking_polling_interval_seconds"`
-	TrackingPollingBatchLimit      int  `mapstructure:"tracking_polling_batch_limit"`
+	Enabled                              bool `mapstructure:"enabled"`
+	TrackingPollingEnabled               bool `mapstructure:"tracking_polling_enabled"`
+	TrackingPollingIntervalSeconds       int  `mapstructure:"tracking_polling_interval_seconds"`
+	TrackingPollingBatchLimit            int  `mapstructure:"tracking_polling_batch_limit"`
+	VisitorProfileCleanupEnabled         bool `mapstructure:"visitor_profile_cleanup_enabled"`
+	VisitorProfileCleanupIntervalSeconds int  `mapstructure:"visitor_profile_cleanup_interval_seconds"`
+	BehaviorEventCleanupEnabled          bool `mapstructure:"behavior_event_cleanup_enabled"`
+	BehaviorEventCleanupIntervalSeconds  int  `mapstructure:"behavior_event_cleanup_interval_seconds"`
+	OutboxDispatchEnabled                bool `mapstructure:"outbox_dispatch_enabled"`
+	OutboxDispatchIntervalSeconds        int  `mapstructure:"outbox_dispatch_interval_seconds"`
+	OutboxDispatchBatchLimit             int  `mapstructure:"outbox_dispatch_batch_limit"`
+	OutboxDispatchLockTimeoutSeconds     int  `mapstructure:"outbox_dispatch_lock_timeout_seconds"`
+	PaymentExpirationEnabled             bool `mapstructure:"payment_expiration_enabled"`
+	PaymentExpirationIntervalSeconds     int  `mapstructure:"payment_expiration_interval_seconds"`
+	PaymentPendingTTLSeconds             int  `mapstructure:"payment_pending_ttl_seconds"`
+	PaymentExpirationBatchLimit          int  `mapstructure:"payment_expiration_batch_limit"`
+	PaymentRiskMonitoringEnabled         bool `mapstructure:"payment_risk_monitoring_enabled"`
+	PaymentRiskMonitoringIntervalSeconds int  `mapstructure:"payment_risk_monitoring_interval_seconds"`
+}
+
+type BehaviorEventsConfig struct {
+	LowIntentRetentionDays      int `mapstructure:"low_intent_retention_days"`
+	StandardIntentRetentionDays int `mapstructure:"standard_intent_retention_days"`
+	HighIntentRetentionDays     int `mapstructure:"high_intent_retention_days"`
+	CleanupBatchLimit           int `mapstructure:"cleanup_batch_limit"`
 }
 
 type AntiAbuseConfig struct {
@@ -120,6 +159,31 @@ type AntiAbuseConfig struct {
 	VerificationCircuitSeconds           int    `mapstructure:"verification_circuit_seconds"`
 }
 
+type OrderAbuseConfig struct {
+	Enabled                     bool `mapstructure:"enabled"`
+	OrderCreateWindowSeconds    int  `mapstructure:"order_create_window_seconds"`
+	MaxOrderCreationsPerUser    int  `mapstructure:"max_order_creations_per_user"`
+	MaxOrderCreationsPerSession int  `mapstructure:"max_order_creations_per_session"`
+	MaxOrderCreationsPerIP      int  `mapstructure:"max_order_creations_per_ip"`
+}
+
+type OrderNumberConfig struct {
+	Secret         string `mapstructure:"secret"`
+	PreviousSecret string `mapstructure:"previous_secret"`
+	NodeID         uint16 `mapstructure:"node_id"`
+}
+
+func (c OrderNumberConfig) EffectiveSecret(jwtSecret string) string {
+	if secret := strings.TrimSpace(c.Secret); secret != "" {
+		return secret
+	}
+	return strings.TrimSpace(jwtSecret)
+}
+
+func (c OrderNumberConfig) EffectivePreviousSecret() string {
+	return strings.TrimSpace(c.PreviousSecret)
+}
+
 type PaymentRiskConfig struct {
 	FailureWindowSeconds int `mapstructure:"failure_window_seconds"`
 	FailureThreshold     int `mapstructure:"failure_threshold"`
@@ -127,11 +191,54 @@ type PaymentRiskConfig struct {
 	HighRiskScore        int `mapstructure:"high_risk_score"`
 }
 
+type PaymentRiskMonitoringConfig struct {
+	Enabled                     bool    `mapstructure:"enabled"`
+	AlertEnabled                bool    `mapstructure:"alert_enabled"`
+	WindowDays                  int     `mapstructure:"window_days"`
+	MinimumSuccessfulPayments   int     `mapstructure:"minimum_successful_payments"`
+	WarningDisputeActivityRate  float64 `mapstructure:"warning_dispute_activity_rate"`
+	CriticalDisputeActivityRate float64 `mapstructure:"critical_dispute_activity_rate"`
+	WarningEarlyFraudRate       float64 `mapstructure:"warning_early_fraud_rate"`
+	CriticalEarlyFraudRate      float64 `mapstructure:"critical_early_fraud_rate"`
+	WarningRefundRate           float64 `mapstructure:"warning_refund_rate"`
+	CriticalRefundRate          float64 `mapstructure:"critical_refund_rate"`
+	AutoStepUpEnabled           bool    `mapstructure:"auto_step_up_enabled"`
+}
+
+type PaymentProtectionConfig struct {
+	Enabled                            bool `mapstructure:"enabled"`
+	MaxControlDurationHours            int  `mapstructure:"max_control_duration_hours"`
+	MaxPausePaymentDurationHours       int  `mapstructure:"max_pause_payment_duration_hours"`
+	MaxGlobalPausePaymentDurationHours int  `mapstructure:"max_global_pause_payment_duration_hours"`
+}
+
+type PaymentThreeDSConfig struct {
+	AdaptiveEnabled     bool    `mapstructure:"adaptive_enabled"`
+	LowRiskMaxAmount    float64 `mapstructure:"low_risk_max_amount"`
+	TrustedPaidOrders   int     `mapstructure:"trusted_paid_orders"`
+	VisitorRiskLookback int     `mapstructure:"visitor_risk_lookback_days"`
+	StepUpRiskScore     int     `mapstructure:"step_up_risk_score"`
+	ChallengeRiskScore  int     `mapstructure:"challenge_risk_score"`
+}
+
+type VisitorRiskConfig struct {
+	Enabled              bool   `mapstructure:"enabled"`
+	HashSalt             string `mapstructure:"hash_salt"`
+	FlushIntervalSeconds int    `mapstructure:"flush_interval_seconds"`
+	MaxPendingFacts      int    `mapstructure:"max_pending_facts"`
+	SamplePathLimit      int    `mapstructure:"sample_path_limit"`
+	RetentionDays        int    `mapstructure:"retention_days"`
+}
+
 type RequestSigningConfig struct {
 	Enabled        bool     `mapstructure:"enabled"`
 	Key            string   `mapstructure:"key"`
 	MaxSkewSeconds int      `mapstructure:"max_skew_seconds"`
 	RequiredPaths  []string `mapstructure:"required_paths"`
+}
+
+type MediaUploadConfig struct {
+	AccountStorageQuotaBytes int64 `mapstructure:"account_storage_quota_bytes"`
 }
 
 // Load 加载配置文件
@@ -214,6 +321,13 @@ func setDefaults() {
 
 	viper.SetDefault("oauth.google_client_id", "")
 
+	viper.SetDefault("google_merchant.client_id", "")
+	viper.SetDefault("google_merchant.client_secret", "")
+	viper.SetDefault("google_merchant.redirect_url", "")
+	viper.SetDefault("google_merchant.post_connect_url", "http://localhost:9300/google-merchant")
+	viper.SetDefault("google_merchant.token_encryption_key", "")
+	viper.SetDefault("google_merchant.state_ttl_seconds", 600)
+
 	viper.SetDefault("i18n.default_locale", "en")
 	viper.SetDefault("i18n.supported_locales", locales.SupportedLocaleCodes())
 
@@ -249,6 +363,25 @@ func setDefaults() {
 	viper.SetDefault("worker.tracking_polling_enabled", false)
 	viper.SetDefault("worker.tracking_polling_interval_seconds", 300)
 	viper.SetDefault("worker.tracking_polling_batch_limit", 20)
+	viper.SetDefault("worker.visitor_profile_cleanup_enabled", false)
+	viper.SetDefault("worker.visitor_profile_cleanup_interval_seconds", 86400)
+	viper.SetDefault("worker.behavior_event_cleanup_enabled", false)
+	viper.SetDefault("worker.behavior_event_cleanup_interval_seconds", 86400)
+	viper.SetDefault("worker.outbox_dispatch_enabled", false)
+	viper.SetDefault("worker.outbox_dispatch_interval_seconds", 10)
+	viper.SetDefault("worker.outbox_dispatch_batch_limit", 100)
+	viper.SetDefault("worker.outbox_dispatch_lock_timeout_seconds", 300)
+	viper.SetDefault("worker.payment_expiration_enabled", false)
+	viper.SetDefault("worker.payment_expiration_interval_seconds", 900)
+	viper.SetDefault("worker.payment_pending_ttl_seconds", 1800)
+	viper.SetDefault("worker.payment_expiration_batch_limit", 100)
+	viper.SetDefault("worker.payment_risk_monitoring_enabled", false)
+	viper.SetDefault("worker.payment_risk_monitoring_interval_seconds", 3600)
+
+	viper.SetDefault("behavior_events.low_intent_retention_days", 30)
+	viper.SetDefault("behavior_events.standard_intent_retention_days", 60)
+	viper.SetDefault("behavior_events.high_intent_retention_days", 180)
+	viper.SetDefault("behavior_events.cleanup_batch_limit", 5000)
 
 	viper.SetDefault("anti_abuse.turnstile_required", false)
 	viper.SetDefault("anti_abuse.turnstile_secret_key", "")
@@ -259,15 +392,58 @@ func setDefaults() {
 	viper.SetDefault("anti_abuse.verification_global_limit", 100)
 	viper.SetDefault("anti_abuse.verification_circuit_seconds", 300)
 
+	viper.SetDefault("order_abuse.enabled", false)
+	viper.SetDefault("order_abuse.order_create_window_seconds", 600)
+	viper.SetDefault("order_abuse.max_order_creations_per_user", 3)
+	viper.SetDefault("order_abuse.max_order_creations_per_session", 3)
+	viper.SetDefault("order_abuse.max_order_creations_per_ip", 12)
+
+	viper.SetDefault("order_number.secret", "")
+	viper.SetDefault("order_number.previous_secret", "")
+	viper.SetDefault("order_number.node_id", 0)
+
 	viper.SetDefault("payment_risk.failure_window_seconds", 600)
-	viper.SetDefault("payment_risk.failure_threshold", 2)
+	viper.SetDefault("payment_risk.failure_threshold", 3)
 	viper.SetDefault("payment_risk.delay_seconds", 2)
 	viper.SetDefault("payment_risk.high_risk_score", 60)
+
+	viper.SetDefault("payment_risk_monitoring.enabled", true)
+	viper.SetDefault("payment_risk_monitoring.alert_enabled", false)
+	viper.SetDefault("payment_risk_monitoring.window_days", 30)
+	viper.SetDefault("payment_risk_monitoring.minimum_successful_payments", 20)
+	viper.SetDefault("payment_risk_monitoring.warning_dispute_activity_rate", 0.005)
+	viper.SetDefault("payment_risk_monitoring.critical_dispute_activity_rate", 0.008)
+	viper.SetDefault("payment_risk_monitoring.warning_early_fraud_rate", 0.005)
+	viper.SetDefault("payment_risk_monitoring.critical_early_fraud_rate", 0.009)
+	viper.SetDefault("payment_risk_monitoring.warning_refund_rate", 0.08)
+	viper.SetDefault("payment_risk_monitoring.critical_refund_rate", 0.15)
+	viper.SetDefault("payment_risk_monitoring.auto_step_up_enabled", true)
+
+	viper.SetDefault("payment_protection.enabled", true)
+	viper.SetDefault("payment_protection.max_control_duration_hours", 168)
+	viper.SetDefault("payment_protection.max_pause_payment_duration_hours", 24)
+	viper.SetDefault("payment_protection.max_global_pause_payment_duration_hours", 2)
+
+	viper.SetDefault("payment_3ds.adaptive_enabled", true)
+	viper.SetDefault("payment_3ds.low_risk_max_amount", 100.0)
+	viper.SetDefault("payment_3ds.trusted_paid_orders", 1)
+	viper.SetDefault("payment_3ds.visitor_risk_lookback_days", 30)
+	viper.SetDefault("payment_3ds.step_up_risk_score", 20)
+	viper.SetDefault("payment_3ds.challenge_risk_score", 60)
+
+	viper.SetDefault("visitor_risk.enabled", false)
+	viper.SetDefault("visitor_risk.hash_salt", "")
+	viper.SetDefault("visitor_risk.flush_interval_seconds", 60)
+	viper.SetDefault("visitor_risk.max_pending_facts", 5000)
+	viper.SetDefault("visitor_risk.sample_path_limit", 8)
+	viper.SetDefault("visitor_risk.retention_days", 365)
 
 	viper.SetDefault("request_signing.enabled", false)
 	viper.SetDefault("request_signing.key", "")
 	viper.SetDefault("request_signing.max_skew_seconds", 30)
 	viper.SetDefault("request_signing.required_paths", []string{})
+
+	viper.SetDefault("media_upload.account_storage_quota_bytes", 20<<30)
 }
 
 func bindEnvironment() {
@@ -297,6 +473,13 @@ func bindEnvironment() {
 
 	_ = viper.BindEnv("oauth.google_client_id", "GOOGLE_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_ID", "NUXT_PUBLIC_GOOGLE_CLIENT_ID")
 
+	_ = viper.BindEnv("google_merchant.client_id", "GOOGLE_MERCHANT_CLIENT_ID")
+	_ = viper.BindEnv("google_merchant.client_secret", "GOOGLE_MERCHANT_CLIENT_SECRET")
+	_ = viper.BindEnv("google_merchant.redirect_url", "GOOGLE_MERCHANT_REDIRECT_URL")
+	_ = viper.BindEnv("google_merchant.post_connect_url", "GOOGLE_MERCHANT_POST_CONNECT_URL")
+	_ = viper.BindEnv("google_merchant.token_encryption_key", "GOOGLE_MERCHANT_TOKEN_ENCRYPTION_KEY")
+	_ = viper.BindEnv("google_merchant.state_ttl_seconds", "GOOGLE_MERCHANT_STATE_TTL_SECONDS")
+
 	_ = viper.BindEnv("cookie.secure", "COOKIE_SECURE")
 	_ = viper.BindEnv("cookie.same_site", "COOKIE_SAME_SITE")
 	_ = viper.BindEnv("cookie.domain", "COOKIE_DOMAIN")
@@ -309,6 +492,25 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.tracking_polling_enabled", "WORKER_TRACKING_POLLING_ENABLED", "TRACKING_POLLING_ENABLED")
 	_ = viper.BindEnv("worker.tracking_polling_interval_seconds", "WORKER_TRACKING_POLLING_INTERVAL_SECONDS", "TRACKING_POLLING_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.tracking_polling_batch_limit", "WORKER_TRACKING_POLLING_BATCH_LIMIT", "TRACKING_POLLING_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.visitor_profile_cleanup_enabled", "WORKER_VISITOR_PROFILE_CLEANUP_ENABLED", "VISITOR_PROFILE_CLEANUP_ENABLED")
+	_ = viper.BindEnv("worker.visitor_profile_cleanup_interval_seconds", "WORKER_VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS", "VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.behavior_event_cleanup_enabled", "WORKER_BEHAVIOR_EVENT_CLEANUP_ENABLED", "BEHAVIOR_EVENT_CLEANUP_ENABLED")
+	_ = viper.BindEnv("worker.behavior_event_cleanup_interval_seconds", "WORKER_BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS", "BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.outbox_dispatch_enabled", "WORKER_OUTBOX_DISPATCH_ENABLED", "OUTBOX_DISPATCH_ENABLED")
+	_ = viper.BindEnv("worker.outbox_dispatch_interval_seconds", "WORKER_OUTBOX_DISPATCH_INTERVAL_SECONDS", "OUTBOX_DISPATCH_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.outbox_dispatch_batch_limit", "WORKER_OUTBOX_DISPATCH_BATCH_LIMIT", "OUTBOX_DISPATCH_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.outbox_dispatch_lock_timeout_seconds", "WORKER_OUTBOX_DISPATCH_LOCK_TIMEOUT_SECONDS", "OUTBOX_DISPATCH_LOCK_TIMEOUT_SECONDS")
+	_ = viper.BindEnv("worker.payment_expiration_enabled", "WORKER_PAYMENT_EXPIRATION_ENABLED", "PAYMENT_EXPIRATION_ENABLED")
+	_ = viper.BindEnv("worker.payment_expiration_interval_seconds", "WORKER_PAYMENT_EXPIRATION_INTERVAL_SECONDS", "PAYMENT_EXPIRATION_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.payment_pending_ttl_seconds", "WORKER_PAYMENT_PENDING_TTL_SECONDS", "PAYMENT_PENDING_TTL_SECONDS")
+	_ = viper.BindEnv("worker.payment_expiration_batch_limit", "WORKER_PAYMENT_EXPIRATION_BATCH_LIMIT", "PAYMENT_EXPIRATION_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.payment_risk_monitoring_enabled", "WORKER_PAYMENT_RISK_MONITORING_ENABLED", "PAYMENT_RISK_MONITORING_WORKER_ENABLED")
+	_ = viper.BindEnv("worker.payment_risk_monitoring_interval_seconds", "WORKER_PAYMENT_RISK_MONITORING_INTERVAL_SECONDS", "PAYMENT_RISK_MONITORING_INTERVAL_SECONDS")
+
+	_ = viper.BindEnv("behavior_events.low_intent_retention_days", "BEHAVIOR_EVENTS_LOW_INTENT_RETENTION_DAYS")
+	_ = viper.BindEnv("behavior_events.standard_intent_retention_days", "BEHAVIOR_EVENTS_STANDARD_INTENT_RETENTION_DAYS")
+	_ = viper.BindEnv("behavior_events.high_intent_retention_days", "BEHAVIOR_EVENTS_HIGH_INTENT_RETENTION_DAYS")
+	_ = viper.BindEnv("behavior_events.cleanup_batch_limit", "BEHAVIOR_EVENTS_CLEANUP_BATCH_LIMIT")
 
 	_ = viper.BindEnv("anti_abuse.turnstile_required", "TURNSTILE_REQUIRED")
 	_ = viper.BindEnv("anti_abuse.turnstile_secret_key", "TURNSTILE_SECRET_KEY")
@@ -319,15 +521,58 @@ func bindEnvironment() {
 	_ = viper.BindEnv("anti_abuse.verification_global_limit", "VERIFICATION_GLOBAL_LIMIT")
 	_ = viper.BindEnv("anti_abuse.verification_circuit_seconds", "VERIFICATION_CIRCUIT_SECONDS")
 
+	_ = viper.BindEnv("order_abuse.enabled", "ORDER_ABUSE_ENABLED")
+	_ = viper.BindEnv("order_abuse.order_create_window_seconds", "ORDER_ABUSE_ORDER_CREATE_WINDOW_SECONDS")
+	_ = viper.BindEnv("order_abuse.max_order_creations_per_user", "ORDER_ABUSE_MAX_ORDER_CREATIONS_PER_USER")
+	_ = viper.BindEnv("order_abuse.max_order_creations_per_session", "ORDER_ABUSE_MAX_ORDER_CREATIONS_PER_SESSION")
+	_ = viper.BindEnv("order_abuse.max_order_creations_per_ip", "ORDER_ABUSE_MAX_ORDER_CREATIONS_PER_IP")
+
+	_ = viper.BindEnv("order_number.secret", "ORDER_NUMBER_SECRET")
+	_ = viper.BindEnv("order_number.previous_secret", "ORDER_NUMBER_PREVIOUS_SECRET")
+	_ = viper.BindEnv("order_number.node_id", "ORDER_NUMBER_NODE_ID")
+
 	_ = viper.BindEnv("payment_risk.failure_window_seconds", "PAYMENT_RISK_FAILURE_WINDOW_SECONDS")
 	_ = viper.BindEnv("payment_risk.failure_threshold", "PAYMENT_RISK_FAILURE_THRESHOLD")
 	_ = viper.BindEnv("payment_risk.delay_seconds", "PAYMENT_RISK_DELAY_SECONDS")
 	_ = viper.BindEnv("payment_risk.high_risk_score", "PAYMENT_RISK_HIGH_RISK_SCORE")
 
+	_ = viper.BindEnv("payment_risk_monitoring.enabled", "PAYMENT_RISK_MONITORING_ENABLED")
+	_ = viper.BindEnv("payment_risk_monitoring.alert_enabled", "PAYMENT_RISK_MONITORING_ALERT_ENABLED")
+	_ = viper.BindEnv("payment_risk_monitoring.window_days", "PAYMENT_RISK_MONITORING_WINDOW_DAYS")
+	_ = viper.BindEnv("payment_risk_monitoring.minimum_successful_payments", "PAYMENT_RISK_MONITORING_MINIMUM_SUCCESSFUL_PAYMENTS")
+	_ = viper.BindEnv("payment_risk_monitoring.warning_dispute_activity_rate", "PAYMENT_RISK_MONITORING_WARNING_DISPUTE_ACTIVITY_RATE")
+	_ = viper.BindEnv("payment_risk_monitoring.critical_dispute_activity_rate", "PAYMENT_RISK_MONITORING_CRITICAL_DISPUTE_ACTIVITY_RATE")
+	_ = viper.BindEnv("payment_risk_monitoring.warning_early_fraud_rate", "PAYMENT_RISK_MONITORING_WARNING_EARLY_FRAUD_RATE")
+	_ = viper.BindEnv("payment_risk_monitoring.critical_early_fraud_rate", "PAYMENT_RISK_MONITORING_CRITICAL_EARLY_FRAUD_RATE")
+	_ = viper.BindEnv("payment_risk_monitoring.warning_refund_rate", "PAYMENT_RISK_MONITORING_WARNING_REFUND_RATE")
+	_ = viper.BindEnv("payment_risk_monitoring.critical_refund_rate", "PAYMENT_RISK_MONITORING_CRITICAL_REFUND_RATE")
+	_ = viper.BindEnv("payment_risk_monitoring.auto_step_up_enabled", "PAYMENT_RISK_MONITORING_AUTO_STEP_UP_ENABLED")
+
+	_ = viper.BindEnv("payment_protection.enabled", "PAYMENT_PROTECTION_ENABLED")
+	_ = viper.BindEnv("payment_protection.max_control_duration_hours", "PAYMENT_PROTECTION_MAX_CONTROL_DURATION_HOURS")
+	_ = viper.BindEnv("payment_protection.max_pause_payment_duration_hours", "PAYMENT_PROTECTION_MAX_PAUSE_PAYMENT_DURATION_HOURS")
+	_ = viper.BindEnv("payment_protection.max_global_pause_payment_duration_hours", "PAYMENT_PROTECTION_MAX_GLOBAL_PAUSE_PAYMENT_DURATION_HOURS")
+
+	_ = viper.BindEnv("payment_3ds.adaptive_enabled", "PAYMENT_3DS_ADAPTIVE_ENABLED")
+	_ = viper.BindEnv("payment_3ds.low_risk_max_amount", "PAYMENT_3DS_LOW_RISK_MAX_AMOUNT")
+	_ = viper.BindEnv("payment_3ds.trusted_paid_orders", "PAYMENT_3DS_TRUSTED_PAID_ORDERS")
+	_ = viper.BindEnv("payment_3ds.visitor_risk_lookback_days", "PAYMENT_3DS_VISITOR_RISK_LOOKBACK_DAYS")
+	_ = viper.BindEnv("payment_3ds.step_up_risk_score", "PAYMENT_3DS_STEP_UP_RISK_SCORE")
+	_ = viper.BindEnv("payment_3ds.challenge_risk_score", "PAYMENT_3DS_CHALLENGE_RISK_SCORE")
+
+	_ = viper.BindEnv("visitor_risk.enabled", "VISITOR_RISK_ENABLED")
+	_ = viper.BindEnv("visitor_risk.hash_salt", "VISITOR_RISK_HASH_SALT")
+	_ = viper.BindEnv("visitor_risk.flush_interval_seconds", "VISITOR_RISK_FLUSH_INTERVAL_SECONDS")
+	_ = viper.BindEnv("visitor_risk.max_pending_facts", "VISITOR_RISK_MAX_PENDING_FACTS")
+	_ = viper.BindEnv("visitor_risk.sample_path_limit", "VISITOR_RISK_SAMPLE_PATH_LIMIT")
+	_ = viper.BindEnv("visitor_risk.retention_days", "VISITOR_RISK_RETENTION_DAYS")
+
 	_ = viper.BindEnv("request_signing.enabled", "REQUEST_SIGNING_ENABLED")
 	_ = viper.BindEnv("request_signing.key", "REQUEST_SIGNING_KEY")
 	_ = viper.BindEnv("request_signing.max_skew_seconds", "REQUEST_SIGNING_MAX_SKEW_SECONDS")
 	_ = viper.BindEnv("request_signing.required_paths", "REQUEST_SIGNING_REQUIRED_PATHS")
+
+	_ = viper.BindEnv("media_upload.account_storage_quota_bytes", "MEDIA_UPLOAD_ACCOUNT_STORAGE_QUOTA_BYTES")
 }
 
 func splitEnvList(value string) []string {
@@ -420,6 +665,27 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("anti-abuse verification limits must be positive")
 		}
 	}
+	if cfg.OrderAbuse.Enabled {
+		if cfg.OrderAbuse.OrderCreateWindowSeconds <= 0 {
+			return fmt.Errorf("order abuse order create window must be positive")
+		}
+		if cfg.OrderAbuse.MaxOrderCreationsPerUser <= 0 &&
+			cfg.OrderAbuse.MaxOrderCreationsPerSession <= 0 &&
+			cfg.OrderAbuse.MaxOrderCreationsPerIP <= 0 {
+			return fmt.Errorf("order abuse requires at least one positive identity limit")
+		}
+	}
+	if cfg.OrderNumber.NodeID > 1023 {
+		return fmt.Errorf("ORDER_NUMBER_NODE_ID must be between 0 and 1023")
+	}
+	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.OrderNumber.EffectiveSecret(cfg.JWT.Secret)) < 32 {
+		return fmt.Errorf("ORDER_NUMBER_SECRET or JWT_SECRET must be at least 32 characters in release mode")
+	}
+	if strings.EqualFold(cfg.Server.Mode, "release") &&
+		cfg.OrderNumber.EffectivePreviousSecret() != "" &&
+		len(cfg.OrderNumber.EffectivePreviousSecret()) < 32 {
+		return fmt.Errorf("ORDER_NUMBER_PREVIOUS_SECRET must be at least 32 characters in release mode when configured")
+	}
 	if cfg.PaymentRisk.FailureThreshold != 0 ||
 		cfg.PaymentRisk.FailureWindowSeconds != 0 ||
 		cfg.PaymentRisk.DelaySeconds != 0 ||
@@ -431,11 +697,117 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("payment risk configuration is invalid")
 		}
 	}
+	if cfg.PaymentRiskMonitoring.Enabled {
+		if cfg.PaymentRiskMonitoring.WindowDays <= 0 ||
+			cfg.PaymentRiskMonitoring.MinimumSuccessfulPayments <= 0 ||
+			cfg.PaymentRiskMonitoring.WarningDisputeActivityRate < 0 ||
+			cfg.PaymentRiskMonitoring.CriticalDisputeActivityRate < cfg.PaymentRiskMonitoring.WarningDisputeActivityRate ||
+			cfg.PaymentRiskMonitoring.WarningEarlyFraudRate < 0 ||
+			cfg.PaymentRiskMonitoring.CriticalEarlyFraudRate < cfg.PaymentRiskMonitoring.WarningEarlyFraudRate ||
+			cfg.PaymentRiskMonitoring.WarningRefundRate < 0 ||
+			cfg.PaymentRiskMonitoring.CriticalRefundRate < cfg.PaymentRiskMonitoring.WarningRefundRate {
+			return fmt.Errorf("payment risk monitoring configuration is invalid")
+		}
+	}
+	if cfg.PaymentThreeDS.AdaptiveEnabled {
+		if cfg.PaymentThreeDS.LowRiskMaxAmount < 0 ||
+			cfg.PaymentThreeDS.TrustedPaidOrders <= 0 ||
+			cfg.PaymentThreeDS.VisitorRiskLookback <= 0 ||
+			cfg.PaymentThreeDS.StepUpRiskScore <= 0 ||
+			cfg.PaymentThreeDS.ChallengeRiskScore <= 0 ||
+			cfg.PaymentThreeDS.StepUpRiskScore > cfg.PaymentThreeDS.ChallengeRiskScore {
+			return fmt.Errorf("payment 3DS configuration is invalid")
+		}
+	}
+	if cfg.PaymentProtection.Enabled {
+		if cfg.PaymentProtection.MaxControlDurationHours <= 0 ||
+			cfg.PaymentProtection.MaxPausePaymentDurationHours <= 0 ||
+			cfg.PaymentProtection.MaxGlobalPausePaymentDurationHours <= 0 {
+			return fmt.Errorf("payment protection max control durations must be positive when protection is enabled")
+		}
+		if cfg.PaymentProtection.MaxPausePaymentDurationHours > cfg.PaymentProtection.MaxControlDurationHours ||
+			cfg.PaymentProtection.MaxGlobalPausePaymentDurationHours > cfg.PaymentProtection.MaxPausePaymentDurationHours {
+			return fmt.Errorf("payment protection pause duration limits must not exceed broader control duration limits")
+		}
+	}
+	if cfg.Worker.VisitorProfileCleanupEnabled && cfg.Worker.VisitorProfileCleanupIntervalSeconds <= 0 {
+		return fmt.Errorf("visitor profile cleanup interval must be positive when cleanup is enabled")
+	}
+	if cfg.Worker.BehaviorEventCleanupEnabled && cfg.Worker.BehaviorEventCleanupIntervalSeconds <= 0 {
+		return fmt.Errorf("behavior event cleanup interval must be positive when cleanup is enabled")
+	}
+	if cfg.Worker.OutboxDispatchEnabled {
+		if cfg.Worker.OutboxDispatchIntervalSeconds <= 0 ||
+			cfg.Worker.OutboxDispatchBatchLimit <= 0 ||
+			cfg.Worker.OutboxDispatchLockTimeoutSeconds <= 0 {
+			return fmt.Errorf("outbox dispatch configuration is invalid")
+		}
+	}
+	if cfg.Worker.PaymentExpirationEnabled {
+		if cfg.Worker.PaymentExpirationIntervalSeconds <= 0 ||
+			cfg.Worker.PaymentPendingTTLSeconds <= 0 ||
+			cfg.Worker.PaymentExpirationBatchLimit <= 0 {
+			return fmt.Errorf("payment expiration configuration is invalid")
+		}
+	}
+	if cfg.Worker.PaymentRiskMonitoringEnabled && cfg.Worker.PaymentRiskMonitoringIntervalSeconds <= 0 {
+		return fmt.Errorf("payment risk monitoring interval must be positive when monitoring is enabled")
+	}
+	if cfg.BehaviorEvents.LowIntentRetentionDays != 0 ||
+		cfg.BehaviorEvents.StandardIntentRetentionDays != 0 ||
+		cfg.BehaviorEvents.HighIntentRetentionDays != 0 ||
+		cfg.BehaviorEvents.CleanupBatchLimit != 0 {
+		if cfg.BehaviorEvents.LowIntentRetentionDays <= 0 ||
+			cfg.BehaviorEvents.StandardIntentRetentionDays <= 0 ||
+			cfg.BehaviorEvents.HighIntentRetentionDays <= 0 ||
+			cfg.BehaviorEvents.CleanupBatchLimit <= 0 {
+			return fmt.Errorf("behavior events retention configuration is invalid")
+		}
+		if cfg.BehaviorEvents.LowIntentRetentionDays > cfg.BehaviorEvents.StandardIntentRetentionDays ||
+			cfg.BehaviorEvents.StandardIntentRetentionDays > cfg.BehaviorEvents.HighIntentRetentionDays {
+			return fmt.Errorf("behavior events retention days must be ordered low <= standard <= high")
+		}
+	}
+	if cfg.VisitorRisk.Enabled {
+		if cfg.VisitorRisk.FlushIntervalSeconds <= 0 ||
+			cfg.VisitorRisk.MaxPendingFacts <= 0 ||
+			cfg.VisitorRisk.SamplePathLimit <= 0 ||
+			cfg.VisitorRisk.RetentionDays <= 0 {
+			return fmt.Errorf("visitor risk configuration is invalid")
+		}
+	}
 	if cfg.RequestSigning.Enabled && len(strings.TrimSpace(cfg.RequestSigning.Key)) < 32 {
 		return fmt.Errorf("REQUEST_SIGNING_KEY must be at least 32 characters when request signing is enabled")
 	}
 	if cfg.RequestSigning.Enabled && cfg.RequestSigning.MaxSkewSeconds <= 0 {
 		return fmt.Errorf("request signing max skew must be positive")
+	}
+	if cfg.MediaUpload.AccountStorageQuotaBytes <= 0 {
+		return fmt.Errorf("media upload account storage quota must be positive")
+	}
+	googleMerchantOAuthFields := []string{
+		strings.TrimSpace(cfg.GoogleMerchant.ClientID),
+		strings.TrimSpace(cfg.GoogleMerchant.ClientSecret),
+		strings.TrimSpace(cfg.GoogleMerchant.RedirectURL),
+	}
+	googleMerchantConfiguredFields := 0
+	for _, field := range googleMerchantOAuthFields {
+		if field != "" {
+			googleMerchantConfiguredFields++
+		}
+	}
+	if googleMerchantConfiguredFields != 0 && googleMerchantConfiguredFields != len(googleMerchantOAuthFields) {
+		return fmt.Errorf("Google Merchant OAuth requires client id, client secret, and redirect URL together")
+	}
+	if googleMerchantConfiguredFields == len(googleMerchantOAuthFields) &&
+		len(strings.TrimSpace(cfg.GoogleMerchant.TokenEncryptionKey)) < 32 {
+		return fmt.Errorf("GOOGLE_MERCHANT_TOKEN_ENCRYPTION_KEY must be at least 32 characters when Google Merchant OAuth is configured")
+	}
+	if googleMerchantConfiguredFields != 0 && cfg.GoogleMerchant.StateTTLSeconds <= 0 {
+		return fmt.Errorf("Google Merchant OAuth state TTL must be positive")
+	}
+	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.Server.TrustedProxies) == 0 {
+		return fmt.Errorf("trusted proxies are required in release mode")
 	}
 
 	if cfg.Database.Host == "" {

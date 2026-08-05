@@ -2,5 +2,8 @@
   "placeholder": "ค้นหา...",
   "button": "ค้นหา",
   "popularTitle": "การค้นหายอดนิยม",
-  "popularAriaLabel": "การค้นหายอดนิยม"
+  "popularAriaLabel": "การค้นหายอดนิยม",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

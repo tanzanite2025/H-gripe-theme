@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS shipping_carrier_services (
     service_name VARCHAR(160) NOT NULL,
     route_name VARCHAR(160),
     countries TEXT NOT NULL DEFAULT '[]',
-    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(10) NOT NULL,
     billing_mode VARCHAR(40) NOT NULL DEFAULT 'actual_weight',
     first_weight_grams INTEGER NOT NULL DEFAULT 0,
     additional_weight_grams INTEGER NOT NULL DEFAULT 0,
@@ -30,7 +30,7 @@ ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS service_code VARC
 ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS service_name VARCHAR(160);
 ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS route_name VARCHAR(160);
 ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS countries TEXT DEFAULT '[]';
-ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'USD';
+ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS currency VARCHAR(10) NOT NULL;
 ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS billing_mode VARCHAR(40) DEFAULT 'actual_weight';
 ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS first_weight_grams INTEGER DEFAULT 0;
 ALTER TABLE shipping_carrier_services ADD COLUMN IF NOT EXISTS additional_weight_grams INTEGER DEFAULT 0;

@@ -33,7 +33,6 @@
             <div class="account-cart-item__title">{{ item.title }}</div>
             <div class="account-cart-item__meta">
               <span>{{ formatPrice(item.price) }}</span>
-              <span v-if="item.sku">SKU {{ item.sku }}</span>
             </div>
             <div class="account-cart-item__actions">
               <button type="button" @click="decrementQuantity(item.id)">
@@ -66,9 +65,6 @@
         </div>
       </div>
 
-      <button type="button" class="account-cart-checkout" @click="checkoutNow">
-        {{ t('cartDrawer.actions.checkout', 'Checkout') }} →
-      </button>
     </template>
   </section>
 </template>
@@ -91,7 +87,6 @@ const {
   incrementQuantity,
   decrementQuantity,
   removeFromCart,
-  openCheckout,
   formatPrice,
 } = useCart()
 
@@ -101,10 +96,6 @@ const emit = defineEmits<{
 
 const cartImage = (item: CartItem) => item.thumbnail || item.image || ''
 
-const checkoutNow = () => {
-  openCheckout()
-  emit('close')
-}
 </script>
 
 <style scoped>
@@ -128,7 +119,7 @@ const checkoutNow = () => {
 }
 
 .tab-head p {
-  color: rgba(103, 232, 249, 0.9);
+  color: rgba(181, 255, 109, 0.9);
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -143,7 +134,7 @@ const checkoutNow = () => {
 }
 
 .tab-head > strong {
-  color: #40ffaa;
+  color: #B5FF6D;
   font-size: 1rem;
   font-weight: 900;
   white-space: nowrap;
@@ -165,7 +156,7 @@ const checkoutNow = () => {
 
 .account-loading,
 .account-empty span {
-  color: rgba(226, 232, 240, 0.78);
+  color: rgba(232, 232, 232, 0.78);
   font-size: 0.82rem;
 }
 
@@ -178,7 +169,7 @@ const checkoutNow = () => {
 .account-empty :deep(svg) {
   width: 2.2rem;
   height: 2.2rem;
-  color: rgba(64, 255, 170, 0.72);
+  color: rgba(181, 255, 109, 0.72);
 }
 
 .account-empty strong {
@@ -189,8 +180,8 @@ const checkoutNow = () => {
 .account-empty a {
   margin-top: 0.3rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  background: #B5FF6D;
+  color: #050505;
   padding: 0.65rem 1rem;
   font-size: 0.8rem;
   font-weight: 850;
@@ -225,7 +216,7 @@ const checkoutNow = () => {
   overflow: hidden;
   border-radius: 0.95rem;
   background: rgba(255, 255, 255, 0.07);
-  color: rgba(226, 232, 240, 0.72);
+  color: rgba(232, 232, 232, 0.72);
 }
 
 .account-cart-item__image img {
@@ -258,12 +249,12 @@ const checkoutNow = () => {
   flex-wrap: wrap;
   gap: 0.45rem;
   margin-top: 0.25rem;
-  color: rgba(226, 232, 240, 0.72);
+  color: rgba(232, 232, 232, 0.72);
   font-size: var(--tz-type-micro-label);
 }
 
 .account-cart-item__meta span:first-child {
-  color: #40ffaa;
+  color: #B5FF6D;
   font-weight: 850;
 }
 
@@ -319,7 +310,7 @@ const checkoutNow = () => {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  color: rgba(226, 232, 240, 0.78);
+  color: rgba(232, 232, 232, 0.78);
   font-size: 0.78rem;
 }
 
@@ -341,8 +332,8 @@ const checkoutNow = () => {
 .account-cart-checkout {
   min-height: 2.7rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  background: #B5FF6D;
+  color: #050505;
   font-size: 0.86rem;
   font-weight: 900;
 }

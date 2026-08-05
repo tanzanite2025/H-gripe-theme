@@ -21,8 +21,9 @@ func NewHandler(settingService *service.SettingService) *Handler {
 }
 
 var publicDomainManagedSettingGroups = map[string]struct{}{
-	"loyalty": {},
-	"redeem":  {},
+	"loyalty":  {},
+	"redeem":   {},
+	"currency": {},
 }
 
 func (h *Handler) GetSiteSettings(c *gin.Context) {
@@ -136,7 +137,9 @@ func isPublicSettingGroupManagedByDomain(group string) bool {
 
 func isPublicSettingKeyManagedByDomain(key string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(key))
-	return strings.HasPrefix(normalized, "tz_loyalty_") || strings.HasPrefix(normalized, "tz_redeem_")
+	return strings.HasPrefix(normalized, "tz_loyalty_") ||
+		strings.HasPrefix(normalized, "tz_redeem_") ||
+		strings.HasPrefix(normalized, "currency_")
 }
 
 func filterPublicSettingsManagedByDomain(settings []setting.Setting) []setting.Setting {

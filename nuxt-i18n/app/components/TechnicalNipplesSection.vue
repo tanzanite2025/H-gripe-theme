@@ -23,7 +23,7 @@
     <!-- Tab 1: Brass VS Alloy -->
     <div v-show="activeTab === 'brass-vs-alloy'" class="space-y-8">
        <!-- Intro -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-amber-500">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-amber-500">
           <h3 class="text-xl font-bold text-slate-100 mb-2">Brass vs. Alloy Nipples: How to Choose</h3>
       <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
              When configuring a wheelset, the choice between brass and alloy affects weight, durability, and aesthetics. Here is a breakdown to help you decide.
@@ -200,7 +200,7 @@
           
           <div class="grid md:grid-cols-3 gap-6">
              <!-- Double Square -->
-             <div class="bg-[#11151e] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
+             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
                 <div class="p-4 flex-1">
                    <strong class="block text-sky-400 mb-2">Double Square</strong>
                    <p class="text-xs tz-text-secondary mb-3">
@@ -215,7 +215,7 @@
              </div>
 
              <!-- Upside Down (Internal) -->
-             <div class="bg-[#11151e] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
+             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
                 <div class="p-4 flex-1">
                    <strong class="block tz-text-primary mb-2">Internal (Upside Down)</strong>
                    <p class="text-xs tz-text-secondary mb-3">
@@ -230,7 +230,7 @@
              </div>
              
              <!-- Secure Lock -->
-             <div class="bg-[#11151e] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
+             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
                 <div class="h-32 overflow-hidden bg-white/5">
                     <GuideImage
                       src="/public/wheelsetbuyersguide/wheelcomponents/nipple/choosenipple/sapim-securelock-nipple.webp"

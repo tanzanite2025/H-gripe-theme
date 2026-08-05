@@ -2,5 +2,8 @@
   "placeholder": "Search...",
   "button": "Search",
   "popularTitle": "Popular searches",
-  "popularAriaLabel": "Popular searches"
+  "popularAriaLabel": "Popular searches",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

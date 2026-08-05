@@ -45,3 +45,21 @@ func TestRoleUserIsValid(t *testing.T) {
 		t.Fatal("expected user role to be valid")
 	}
 }
+
+func TestMerchantPermissionsAreSeparateFromProductPermissions(t *testing.T) {
+	if PermMerchantView == Permission("") || PermMerchantEdit == Permission("") || PermMerchantSync == Permission("") {
+		t.Fatal("expected merchant permissions to be explicit")
+	}
+	if PermMerchantView == PermProductView || PermMerchantEdit == PermProductEdit {
+		t.Fatal("merchant permissions must not alias product permissions")
+	}
+	if !RoleAdmin.HasPermission(PermMerchantView) || !RoleAdmin.HasPermission(PermMerchantEdit) || !RoleAdmin.HasPermission(PermMerchantSync) {
+		t.Fatal("admin should have full merchant permissions")
+	}
+	if !RoleEditor.HasPermission(PermMerchantSync) {
+		t.Fatal("editor should keep day-to-day merchant sync access")
+	}
+	if RoleViewer.HasPermission(PermMerchantView) || RoleSupport.HasPermission(PermMerchantView) {
+		t.Fatal("viewer and support roles should not enter merchant operations by default")
+	}
+}

@@ -7,24 +7,66 @@
       <div class="product-summary">
         <h1 class="product-title">{{ product.name }}</h1>
         <p v-if="product.short_description" class="product-description" v-html="product.short_description" />
-        <p v-else-if="product.description" class="product-description" v-html="product.description" />
+        <p v-else-if="productSummaryDescription" class="product-description">{{ productSummaryDescription }}</p>
         <div class="product-meta" aria-live="polite" aria-atomic="true">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
           <span v-if="displaySKU" class="product-sku">SKU: {{ displaySKU }}</span>
           <span v-if="product.product_type?.name" class="product-sku">{{ product.product_type.name }}</span>
         </div>
-        <div v-if="activeVariants.length" class="product-variants">
-          <label for="variant-select">Choose SKU</label>
-          <select id="variant-select" v-model.number="selectedVariantId">
-            <option
-              v-for="variant in activeVariants"
-              :key="variant.id"
-              :value="variant.id"
+        <div v-if="activeVariants.length" class="product-purchase-panel">
+          <div v-if="variantOptionGroups.length" class="variant-option-groups">
+            <fieldset
+              v-for="group in variantOptionGroups"
+              :key="group.slug"
+              class="variant-option-group"
             >
-              {{ variantLabel(variant) }}
-            </option>
-          </select>
-          <p class="variant-stock" role="status" aria-live="polite">Stock: {{ selectedVariant?.stock ?? 0 }}</p>
+              <legend>{{ group.name }}</legend>
+              <div class="variant-option-buttons">
+                <button
+                  v-for="option in group.options"
+                  :key="`${group.slug}-${option.value}`"
+                  type="button"
+                  class="variant-option-button"
+                  :class="{
+                    'variant-option-button--selected': option.selected,
+                    'variant-option-button--out': !option.available,
+                  }"
+                  :aria-pressed="option.selected"
+                  @click="selectVariantOption(group.slug, option.value)"
+                >
+                  <span>{{ option.value }}</span>
+                  <small v-if="!option.available">Out</small>
+                </button>
+              </div>
+            </fieldset>
+          </div>
+          <div v-else-if="activeVariants.length > 1" class="product-variants">
+            <label for="variant-select">Choose SKU</label>
+            <select id="variant-select" v-model.number="selectedVariantId">
+              <option
+                v-for="variant in activeVariants"
+                :key="variant.id"
+                :value="variant.id"
+              >
+                {{ variantLabel(variant) }}
+              </option>
+            </select>
+          </div>
+
+          <dl class="selected-sku-facts" aria-live="polite" aria-atomic="true">
+            <div v-if="displaySKU">
+              <dt>SKU</dt>
+              <dd>{{ displaySKU }}</dd>
+            </div>
+            <div v-if="selectedVariantWeight">
+              <dt>Weight</dt>
+              <dd>{{ selectedVariantWeight }}g</dd>
+            </div>
+            <div>
+              <dt>Availability</dt>
+              <dd>{{ selectedAvailability === 'in_stock' ? 'Available' : 'Out of stock' }}</dd>
+            </div>
+          </dl>
         </div>
         <button
           type="button"
@@ -74,9 +116,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRuntimeConfig, useAsyncData, useHead } from '#imports'
 import { useCart } from '~/composables/useCart'
+import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
+import { usePaymentCurrencies } from '~/composables/usePaymentCurrencies'
 import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
 
 definePageMeta({
@@ -103,35 +147,39 @@ interface ProductMedia {
 }
 
 interface ProductType {
-  id: number
+  id?: number
   name: string
   slug: string
+  spec_definitions?: SpecDefinition[]
 }
 
 interface SpecDefinition {
-  id: number
+  id?: number
   name: string
   slug: string
   group?: string
   field_type: string
   unit?: string
   is_visible?: boolean
+  is_variant_option?: boolean
+  sort_order?: number
 }
 
 interface ProductSpecValue {
-  id: number
+  id?: number
   value: string
   definition?: SpecDefinition
 }
 
 interface ProductVariant {
   id: number
-  sku: string
+  sku?: string
   title?: string
   option_values?: string | Record<string, string>
   price: number
   sale_price?: number | null
-  stock: number
+  weight_grams?: number | null
+  availability: 'in_stock' | 'out_of_stock'
   is_default?: boolean
   is_active?: boolean
 }
@@ -147,7 +195,7 @@ interface GoProduct {
   sku?: string
   price: number
   sale_price?: number
-  stock?: number
+  availability?: 'in_stock' | 'out_of_stock'
   media?: ProductMedia[]
   thumbnail?: string
   meta_title?: string
@@ -163,6 +211,13 @@ const selectedVariantId = ref<number | null>(null)
 const { addToCart, openCart } = useCart()
 const { toCartItem } = useShopProducts()
 const { addToHistory } = useBrowsingHistory()
+const { track: trackBehaviorEvent } = useBehaviorEvents()
+const { defaultOrderCurrency, loadCurrencies } = usePaymentCurrencies()
+
+await loadCurrencies()
+
+let activeTrackedProductID = 0
+let productVisibleSince = 0
 
 const slug = computed(() => String(route.params.slug || ''))
 
@@ -220,6 +275,12 @@ const metaDescription = computed(() => {
   return `${text.slice(0, 157)}...`
 })
 
+const productSummaryDescription = computed(() => {
+  const text = stripHtml(product.value?.description || '')
+  if (text.length <= 220) return text
+  return `${text.slice(0, 217)}...`
+})
+
 const productMediaImages = computed<ProductMedia[]>(() => {
   return (product.value?.media || []).filter((item) => {
     return item.media_type === 'image' && item.url && item.is_visible !== false
@@ -262,13 +323,27 @@ const activeVariants = computed(() => {
   return (product.value?.variants || []).filter((variant) => variant.is_active !== false)
 })
 
-watch(product, (currentProduct) => {
+const isVariantInStock = (variant: ProductVariant) => variant.availability === 'in_stock'
+const requestedVariantId = computed(() => {
+  const value = Number(route.query.variant || 0)
+  return Number.isFinite(value) && value > 0 ? value : 0
+})
+
+watch([product, requestedVariantId], ([currentProduct, variantId]) => {
   const variants = (currentProduct?.variants || []).filter((variant) => variant.is_active !== false)
   if (variants.length === 0) {
     selectedVariantId.value = null
     return
   }
-  const defaultVariant = variants.find((variant) => variant.is_default) || variants[0]
+  const requestedVariant = variants.find((variant) => variant.id === variantId)
+  if (requestedVariant) {
+    selectedVariantId.value = requestedVariant.id
+    return
+  }
+  const defaultVariant = variants.find((variant) => variant.is_default && isVariantInStock(variant))
+    || variants.find(isVariantInStock)
+    || variants.find((variant) => variant.is_default)
+    || variants[0]
   if (!defaultVariant) return
   selectedVariantId.value = defaultVariant.id
 }, { immediate: true })
@@ -278,9 +353,17 @@ const selectedVariant = computed(() => {
   return activeVariants.value.find((variant) => variant.id === selectedVariantId.value) || null
 })
 
-const parseVariantOptions = (variant: ProductVariant) => {
+const parseVariantOptions = (variant: ProductVariant): Record<string, string> => {
   if (!variant.option_values) return {}
-  if (typeof variant.option_values === 'object') return variant.option_values
+  if (typeof variant.option_values === 'object') {
+    return Object.entries(variant.option_values).reduce<Record<string, string>>((acc, [key, raw]) => {
+      const value = String(raw ?? '').trim()
+      if (key && value) {
+        acc[key] = value
+      }
+      return acc
+    }, {})
+  }
   try {
     const parsed = JSON.parse(variant.option_values)
     return parsed && typeof parsed === 'object' ? parsed as Record<string, string> : {}
@@ -289,13 +372,159 @@ const parseVariantOptions = (variant: ProductVariant) => {
   }
 }
 
+type VariantOptionGroup = {
+  slug: string
+  name: string
+  options: Array<{
+    value: string
+    selected: boolean
+    available: boolean
+  }>
+}
+
+const humanizeSpecSlug = (slug: string) => {
+  return slug
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, char => char.toUpperCase())
+}
+
+const variantOptionDefinitions = computed(() => {
+  const definitions = product.value?.product_type?.spec_definitions || []
+  return definitions
+    .filter((definition) => definition.is_visible !== false && definition.is_variant_option)
+    .sort((left, right) => {
+      const leftOrder = Number(left.sort_order || 0)
+      const rightOrder = Number(right.sort_order || 0)
+      if (leftOrder !== rightOrder) return leftOrder - rightOrder
+      return String(left.name || left.slug).localeCompare(String(right.name || right.slug))
+    })
+})
+
+const specDefinitionsBySlug = computed(() => {
+  const entries = (product.value?.product_type?.spec_definitions || [])
+    .filter((definition) => definition.slug)
+    .map((definition) => [definition.slug, definition] as const)
+  return new Map(entries)
+})
+
+const variantOptionSlugs = computed(() => {
+  const slugs = variantOptionDefinitions.value.map((definition) => definition.slug)
+  const seen = new Set(slugs)
+
+  activeVariants.value.forEach((variant) => {
+    Object.keys(parseVariantOptions(variant)).forEach((slug) => {
+      if (!slug || seen.has(slug)) return
+      const definition = specDefinitionsBySlug.value.get(slug)
+      if (definition?.is_visible === false) return
+      seen.add(slug)
+      slugs.push(slug)
+    })
+  })
+
+  return slugs
+})
+
+const currentVariantOptions = computed(() => {
+  return selectedVariant.value ? parseVariantOptions(selectedVariant.value) : {}
+})
+
+const variantOptionGroups = computed<VariantOptionGroup[]>(() => {
+  return variantOptionSlugs.value
+    .map((slug) => {
+      const definition = specDefinitionsBySlug.value.get(slug)
+      const optionsByValue = new Map<string, VariantOptionGroup['options'][number]>()
+
+      activeVariants.value.forEach((variant) => {
+        const value = String(parseVariantOptions(variant)[slug] || '').trim()
+        if (!value) return
+
+        const existing = optionsByValue.get(value)
+        const available = variant.availability === 'in_stock'
+        if (existing) {
+          existing.available = existing.available || available
+          return
+        }
+
+        optionsByValue.set(value, {
+          value,
+          selected: currentVariantOptions.value[slug] === value,
+          available,
+        })
+      })
+
+      return {
+        slug,
+        name: definition?.name || humanizeSpecSlug(slug),
+        options: [...optionsByValue.values()],
+      }
+    })
+    .filter((group) => group.options.length > 0)
+})
+
+const selectVariantOption = (slug: string, value: string) => {
+  const requestedOptions = {
+    ...currentVariantOptions.value,
+    [slug]: value,
+  }
+
+  const isExactMatch = (variant: ProductVariant) => {
+    const options = parseVariantOptions(variant)
+    return Object.entries(requestedOptions).every(([key, expectedValue]) => {
+      return !expectedValue || options[key] === expectedValue
+    })
+  }
+
+  const isFallbackMatch = (variant: ProductVariant) => {
+    return parseVariantOptions(variant)[slug] === value
+  }
+
+  const exactVariant = activeVariants.value.find((variant) => isExactMatch(variant) && isVariantInStock(variant))
+    || activeVariants.value.find(isExactMatch)
+  const fallbackVariant = activeVariants.value.find((variant) => isFallbackMatch(variant) && isVariantInStock(variant))
+    || activeVariants.value.find(isFallbackMatch)
+
+  const nextVariant = exactVariant || fallbackVariant
+  if (nextVariant) {
+    selectedVariantId.value = nextVariant.id
+  }
+}
+
 const variantLabel = (variant: ProductVariant) => {
   const options = Object.values(parseVariantOptions(variant)).filter(Boolean)
-  const optionLabel = options.length ? ` · ${options.join(' / ')}` : ''
-  return `${variant.title || variant.sku}${optionLabel}`
+  const optionText = options.join(' / ')
+  const title = variant.title || optionText || variant.sku || 'Option'
+  const optionLabel = optionText && title !== optionText ? ` · ${optionText}` : ''
+  const skuLabel = variant.sku ? ` · ${variant.sku}` : ''
+  const weightLabel = variant.weight_grams ? ` · ${variant.weight_grams}g` : ''
+  return `${title}${optionLabel}${skuLabel}${weightLabel}`
 }
 
 const displaySKU = computed(() => selectedVariant.value?.sku || product.value?.sku || '')
+
+const selectedVariantWeight = computed(() => {
+  const value = Number(selectedVariant.value?.weight_grams || 0)
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : null
+})
+
+const selectedCartTitle = computed(() => {
+  const productName = product.value?.name || ''
+  const variant = selectedVariant.value
+  if (!variant) return productName
+
+  const optionText = Object.values(parseVariantOptions(variant)).filter(Boolean).join(' / ')
+  if (optionText) {
+    return `${productName} - ${optionText}`
+  }
+
+  const variantTitle = String(variant.title || '').trim()
+  if (variantTitle && variantTitle.toLowerCase() !== 'default') {
+    return `${productName} - ${variantTitle}`
+  }
+
+  return productName
+})
 
 const effectivePrice = computed(() => {
   return selectedVariant.value?.sale_price
@@ -305,13 +534,20 @@ const effectivePrice = computed(() => {
     ?? 0
 })
 
-const selectedStock = computed(() => {
-  if (selectedVariant.value) return selectedVariant.value.stock
-  return product.value && activeVariants.value.length === 0 ? product.value.stock ?? 0 : 0
+const selectedAvailability = computed(() => {
+  if (selectedVariant.value) return selectedVariant.value.availability || 'out_of_stock'
+  if (product.value && activeVariants.value.length === 0) {
+    return product.value.availability || 'out_of_stock'
+  }
+  return 'out_of_stock'
 })
 
 const canAddToCart = computed(() => {
-  return Boolean(product.value && Number(effectivePrice.value) > 0 && selectedStock.value > 0)
+  return Boolean(
+    product.value
+      && Number(effectivePrice.value) > 0
+      && selectedAvailability.value === 'in_stock'
+  )
 })
 
 const formattedPrice = computed(() => {
@@ -319,15 +555,17 @@ const formattedPrice = computed(() => {
   if (raw == null) return ''
   const numeric = Number(raw)
   if (!Number.isFinite(numeric)) return ''
+  const currencyCode = defaultOrderCurrency.value
+  if (!currencyCode) return numeric.toFixed(2)
   try {
     return new Intl.NumberFormat(locale.value.replace('_', '-'), {
       style: 'currency',
-      currency: 'USD',
+      currency: currencyCode,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(numeric)
   } catch (err) {
-    return `$${numeric.toFixed(2)}`
+    return numeric.toFixed(2)
   }
 })
 
@@ -336,6 +574,20 @@ watch(product, (currentProduct) => {
 
   const productID = Number(currentProduct.id)
   if (!Number.isInteger(productID) || productID <= 0) return
+
+  if (activeTrackedProductID !== productID) {
+    trackProductDwell('product_change')
+    activeTrackedProductID = productID
+    productVisibleSince = Date.now()
+    trackBehaviorEvent({
+      eventType: 'product_view',
+      productId: productID,
+      metadata: {
+        surface: 'product_page',
+        product_type: currentProduct.product_type?.slug || '',
+      },
+    })
+  }
 
   addToHistory({
     id: productID,
@@ -346,6 +598,50 @@ watch(product, (currentProduct) => {
   })
 }, { immediate: true })
 
+function trackProductDwell(reason: 'product_change' | 'visibility_hidden' | 'unmount') {
+  if (!import.meta.client || !activeTrackedProductID || !productVisibleSince) return
+
+  const durationSeconds = Math.min(
+    1800,
+    Math.max(0, Math.round((Date.now() - productVisibleSince) / 1000))
+  )
+  if (durationSeconds < 1) {
+    productVisibleSince = reason === 'visibility_hidden' ? 0 : productVisibleSince
+    return
+  }
+
+  trackBehaviorEvent({
+    eventType: 'product_dwell',
+    productId: activeTrackedProductID,
+    metadata: {
+      surface: 'product_page',
+      duration_seconds: durationSeconds,
+      end_reason: reason,
+    },
+  })
+  productVisibleSince = reason === 'visibility_hidden' ? 0 : Date.now()
+}
+
+const handleProductVisibilityChange = () => {
+  if (!import.meta.client) return
+  if (document.visibilityState === 'hidden') {
+    trackProductDwell('visibility_hidden')
+    return
+  }
+  if (activeTrackedProductID && !productVisibleSince) {
+    productVisibleSince = Date.now()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('visibilitychange', handleProductVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  trackProductDwell('unmount')
+  document.removeEventListener('visibilitychange', handleProductVisibilityChange)
+})
+
 const addSelectedToCart = () => {
   if (!product.value || !shopProduct.value || !canAddToCart.value) return
 
@@ -355,8 +651,9 @@ const addSelectedToCart = () => {
     price: Number(effectivePrice.value),
     salePrice: variant?.sale_price ?? product.value.sale_price ?? null,
     sku: variant?.sku || product.value.sku || '',
+    title: selectedCartTitle.value,
     thumbnail: primaryImage.value || undefined,
-    stockQuantity: selectedStock.value,
+    weightGrams: selectedVariantWeight.value,
   }))
 
   if (result?.success) {
@@ -417,11 +714,15 @@ const productSchema = computed(() => {
     if (raw == null) return null
     const numeric = Number(raw)
     if (!Number.isFinite(numeric)) return null
+    const currencyCode = defaultOrderCurrency.value
+    if (!currencyCode) return null
     return {
       '@type': 'Offer',
       price: numeric,
-      priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock',
+      priceCurrency: currencyCode,
+      availability: selectedAvailability.value === 'in_stock'
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
       url: canonicalUrl.value
     }
   })()
@@ -580,11 +881,86 @@ useHead(() => {
   }
 }
 
+.product-purchase-panel {
+  display: grid;
+  gap: 1rem;
+  max-width: 34rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+}
+
+.variant-option-groups {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.variant-option-group {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
 .product-variants {
   display: grid;
   gap: 0.5rem;
-  margin-top: 1rem;
-  max-width: 24rem;
+  max-width: 100%;
+}
+
+.variant-option-group legend {
+  margin-bottom: 0.5rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.variant-option-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.variant-option-button {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.07);
+  color: #f8fafc;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.55rem 0.75rem;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.variant-option-button:hover {
+  border-color: rgba(181, 255, 109, 0.65);
+  background: rgba(181, 255, 109, 0.12);
+  transform: translateY(-1px);
+}
+
+.variant-option-button--selected {
+  border-color: rgba(181, 255, 109, 0.9);
+  background: rgba(181, 255, 109, 0.18);
+  color: #f8fafc;
+}
+
+.variant-option-button--out:not(.variant-option-button--selected) {
+  color: rgba(226, 232, 240, 0.68);
+}
+
+.variant-option-button small {
+  color: #fca5a5;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .product-variants label {
@@ -592,7 +968,7 @@ useHead(() => {
   font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
 }
 
 .product-variants select {
@@ -609,16 +985,38 @@ useHead(() => {
   color: #f8fafc;
 }
 
-.variant-stock {
-  color: var(--tz-text-muted);
-  font-size: 0.9rem;
+.selected-sku-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.85rem;
+}
+
+.selected-sku-facts div {
+  min-width: 0;
+}
+
+.selected-sku-facts dt {
+  color: rgba(226, 232, 240, 0.62);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.selected-sku-facts dd {
+  margin: 0.2rem 0 0;
+  color: #f8fafc;
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .product-add-button {
   width: fit-content;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(135deg, #6b73ff, #40ffaa);
+  background: linear-gradient(135deg, #6b73ff, #B5FF6D);
   color: #06111f;
   cursor: pointer;
   font-weight: 800;
@@ -630,6 +1028,7 @@ useHead(() => {
   transform: translateY(-1px);
 }
 
+.variant-option-button:focus-visible,
 .product-variants select:focus-visible,
 .product-add-button:focus-visible {
   outline: 2px solid #38bdf8;
@@ -702,7 +1101,7 @@ useHead(() => {
   font-size: 0.9rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
 }
 
 .spec-group dl {

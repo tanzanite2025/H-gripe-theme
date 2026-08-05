@@ -1,15 +1,11 @@
 <template>
   <div class="tubeless-guide space-y-8">
     <!-- 1. Intro Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
       <h2 class="text-xl font-bold text-slate-100 mb-6 flex items-center justify-center gap-2">
         Tubeless Tires Overview
       </h2>
       
-      <div class="mb-8">
-        <TubelessProducts />
-      </div>
-
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl mx-auto">
          <GuideImage
             class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
@@ -29,7 +25,7 @@
     </div>
 
     <!-- 2. System Comparison (Definitions) -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
        <div class="flex items-center justify-center gap-3 mb-6">
          <span class="h-px w-8 bg-slate-700"></span>
          <h3 class="text-lg font-bold text-slate-100 uppercase tracking-wider">System Definitions</h3>
@@ -72,7 +68,7 @@
     </div>
 
     <!-- 3. Suitability Card -->
-     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-l-4 border-teal-500">
+     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-l-4 border-teal-500">
         <h3 class="text-xl font-bold text-slate-100 mb-4">Is Tubeless For Me?</h3>
       <p class="tz-text-secondary text-sm leading-relaxed max-w-3xl mx-auto mb-6">
            If you ride daily commutes or casual leisure, <strong>Inner Tubes</strong> are sufficient and low maintenance.
@@ -92,7 +88,7 @@
      </div>
 
     <!-- 4. Key Differences Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
        <h3 class="text-lg font-bold text-slate-100 mb-6 uppercase tracking-wider">Key Advantages Overview</h3>
        
        <div class="grid gap-4 md:grid-cols-3">
@@ -113,7 +109,7 @@
 
     <!-- Navigation CTAs -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-6 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-6 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
            <h4 class="text-slate-100 font-bold mb-2">Installation Guide</h4>
            <p class="text-xs tz-text-muted mb-4">Step-by-step visual instructions</p>
            <button
@@ -125,7 +121,7 @@
            </button>
         </div>
 
-        <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-6 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-6 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
            <h4 class="text-slate-100 font-bold mb-2">Pressure Check</h4>
            <p class="text-xs tz-text-muted mb-4">Find optimal PSI for Tubeless</p>
            <button
@@ -141,7 +137,6 @@
 </template>
 
 <script setup lang="ts">
-import TubelessProducts from '~/components/TubelessProducts.vue'
 import GuideImage from '~/components/GuideImage.vue'
 
 // Match SizeChartsTabId from parent

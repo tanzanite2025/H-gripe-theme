@@ -53,6 +53,14 @@ var (
 			Help:      "Payment or checkout attempts delayed by the carding risk policy.",
 		},
 	)
+	CommercialIntelligenceActions = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "tanzanite",
+			Name:      "commercial_intelligence_actions_total",
+			Help:      "Commercial intelligence behavior protection actions by seed and outcome.",
+		},
+		[]string{"seed_id", "outcome"},
+	)
 )
 
 func init() {
@@ -92,6 +100,11 @@ func init() {
 	register(PaymentRiskDelayed, func(collector prometheus.Collector) {
 		if existing, ok := collector.(prometheus.Counter); ok {
 			PaymentRiskDelayed = existing
+		}
+	})
+	register(CommercialIntelligenceActions, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			CommercialIntelligenceActions = existing
 		}
 	})
 }

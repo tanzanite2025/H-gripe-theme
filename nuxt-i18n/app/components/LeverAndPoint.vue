@@ -1,7 +1,7 @@
 <template>
   <div class="flex justify-center pt-0 pb-0 w-full">
     <div class="membership-and-points-modal-card sidebar-panel leverandpoint-shell w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] rounded-2xl border border-white/10 backdrop-blur-xl shadow-[0_18px_44px_rgba(0,0,0,0.92)] relative overflow-hidden flex flex-col" role="region" aria-label="Membership Levels and Points">
-      <button class="absolute right-2 top-2 z-50 w-7 h-7 inline-flex items-center justify-center border border-white/15 rounded-md bg-black/30 text-white/75 pointer-events-auto hover:bg-white/10 hover:text-white transition-all" type="button" @click="$emit('close')">×</button>
+      <button class="tz-global-close-btn absolute right-2 top-2 z-50 pointer-events-auto" type="button" @click="$emit('close')">×</button>
       <div class="flex-1 flex py-4 px-0 md:p-4 md:px-5 pointer-events-auto overflow-hidden box-border">
         <div class="w-full h-full overflow-hidden pt-6">
           <MembershipAndPointsTabs variant="modal" class="h-full" />
@@ -39,7 +39,7 @@
       >
         <div
           v-if="showPrivacyModal"
-          class="fixed inset-0 z-[12000] flex items-end justify-center p-0 md:p-4 pointer-events-none"
+          class="fixed inset-0 z-[12000] flex items-end justify-center p-0 md:p-4 pointer-events-none tz-mobile-safe-modal-mask"
         >
           <div class="wa-drawer-backdrop" @click="closePrivacy"></div>
           <div class="relative z-10 pointer-events-none w-full max-w-[1400px]">
@@ -126,28 +126,14 @@ const handleMemberCenter = () => {
 
 @media (max-width: 767px) {
   .leverandpoint-shell {
-    height: 100vh;
-    max-height: 100vh;
+    height: var(--tz-mobile-safe-viewport-height, 100vh);
+    max-height: var(--tz-mobile-safe-viewport-height, 100vh);
   }
 
   .membership-and-points-modal-actions {
     padding-top: 0.25rem;
-    padding-bottom: 0.5rem;
+    padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 0.75rem);
     gap: 0.25rem;
-  }
-
-  @supports (height: 100svh) {
-    .leverandpoint-shell {
-      height: 100svh;
-      max-height: 100svh;
-    }
-  }
-
-  @supports (height: 100dvh) {
-    .leverandpoint-shell {
-      height: 100dvh;
-      max-height: 100dvh;
-    }
   }
 }
 </style>

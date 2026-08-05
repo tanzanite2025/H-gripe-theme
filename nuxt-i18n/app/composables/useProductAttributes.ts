@@ -49,7 +49,7 @@ export const useProductAttributes = () => {
     return base.replace(/\/$/, '')
   })
 
-  const colorAttributes = ref<AttributeWithValues[]>([])
+  const filterableAttributes = ref<AttributeWithValues[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -116,7 +116,7 @@ export const useProductAttributes = () => {
     return [...bySlug.values()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
   }
 
-  const loadFilterableColorAttributes = async () => {
+  const loadFilterableProductSpecs = async () => {
     if (loading.value) return
 
     loading.value = true
@@ -131,21 +131,24 @@ export const useProductAttributes = () => {
       )
 
       const items = Array.isArray(response?.data) ? response.data : []
-      colorAttributes.value = buildAttributesFromTypes(items)
+      filterableAttributes.value = buildAttributesFromTypes(items)
     } catch (e: any) {
       // eslint-disable-next-line no-console
       console.error('Failed to load product type filters:', e)
       error.value = e?.data?.message || e?.message || 'Failed to load product attributes.'
-      colorAttributes.value = []
+      filterableAttributes.value = []
     } finally {
       loading.value = false
     }
   }
 
   return {
-    colorAttributes,
+    filterableAttributes,
+    // Backward-compatible aliases for older callers.
+    colorAttributes: filterableAttributes,
     loading,
     error,
-    loadFilterableColorAttributes,
+    loadFilterableProductSpecs,
+    loadFilterableColorAttributes: loadFilterableProductSpecs,
   }
 }

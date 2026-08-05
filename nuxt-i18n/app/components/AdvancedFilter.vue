@@ -274,10 +274,12 @@ const localFilters = ref<FilterState>({
   preOrder: props.initialFilters?.preOrder ?? false,
   sortBy: props.initialFilters?.sortBy || 'newest',
   minRating: props.initialFilters?.minRating || 0,
-  attributes: (() => { if (!props.initialFilters?.attributes) throw new Error("[CRITICAL] attributes missing"); return props.initialFilters.attributes; })(),
+  attributes: props.initialFilters?.attributes ? { ...props.initialFilters.attributes } : {},
 })
 
-const attributeFilters = computed(() => { if (!props.attributeFilters) throw new Error("[CRITICAL] attributeFilters missing"); return props.attributeFilters; })
+const attributeFilters = computed(() => {
+  return Array.isArray(props.attributeFilters) ? props.attributeFilters : []
+})
 
 // 为属性下拉展开状态生成稳定的 key（即使后端 slug 为空也可用）
 const getAttributeKey = (attr: AttributeFilterConfig): string => {
@@ -296,16 +298,11 @@ const ensureExpandedDefaults = () => {
   const map: Record<string, boolean> = { ...expandedGroups.value }
   let changed = false
 
-  const isMobile = () => {
-    if (typeof window === 'undefined') return false
-    return !!window.matchMedia && window.matchMedia('(max-width: 768px)').matches
-  }
-
-  attributeFilters.value.forEach((attr, index) => {
+  attributeFilters.value.forEach((attr) => {
     const key = getAttributeKey(attr)
     if (!key) return
     if (typeof map[key] === 'undefined') {
-      map[key] = isMobile() ? false : index === 0
+      map[key] = false
       changed = true
     }
   })
@@ -322,10 +319,14 @@ const isGroupExpanded = (key: string): boolean => {
 
 const toggleGroupExpanded = (key: string) => {
   if (!key) return
-  expandedGroups.value = {
-    ...expandedGroups.value,
-    [key]: !expandedGroups.value[key],
-  }
+  const shouldOpen = !expandedGroups.value[key]
+  const next: Record<string, boolean> = {}
+  attributeFilters.value.forEach((attr) => {
+    const attrKey = getAttributeKey(attr)
+    if (attrKey) next[attrKey] = false
+  })
+  next[key] = shouldOpen
+  expandedGroups.value = next
 }
 
 // 初始化属性筛选：默认每个属性组全选
@@ -333,9 +334,8 @@ const initializeAttributeSelections = (force = false): boolean => {
   const attrs = attributeFilters.value
   if (!attrs || !attrs.length) return false
 
-  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
   const currentAttributes: Record<string, string[]> = {
-    ...localFilters.value.attributes,
+    ...(localFilters.value.attributes || {}),
   }
 
   let changed = false
@@ -349,8 +349,7 @@ const initializeAttributeSelections = (force = false): boolean => {
       return
     }
 
-    if (!attr.values) throw new Error("[CRITICAL] attr.values missing")
-    const allValues = attr.values
+    const allValues = (Array.isArray(attr.values) ? attr.values : [])
       .filter((v) => v && typeof v.slug === 'string' && v.slug.length > 0)
       .map((v) => v.slug)
 
@@ -430,11 +429,9 @@ const handleFilterChange = () => {
 
 // 属性筛选：检查某个属性值是否已被选中
 const isAttributeSelected = (attrSlug: string, valueSlug: string): boolean => {
-  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
-  const attributes = localFilters.value.attributes
-  if (!attributes[attrSlug]) throw new Error(`[CRITICAL] attributes[${attrSlug}] missing`)
+  const attributes = localFilters.value.attributes || {}
   const selected = attributes[attrSlug]
-  return selected.includes(valueSlug)
+  return Array.isArray(selected) && selected.includes(valueSlug)
 }
 
 // 属性按钮上的选中汇总：All / 选中数量（0 时显示 0）
@@ -442,13 +439,11 @@ const getAttributeSummary = (attr: AttributeFilterConfig): string => {
   const key = getAttributeKey(attr)
   if (!key) return 'All'
 
-  if (!attr.values) throw new Error("[CRITICAL] attr.values missing")
-  const values = attr.values.filter((v) => v && v.is_enabled !== false)
+  const values = (Array.isArray(attr.values) ? attr.values : []).filter((v) => v && v.is_enabled !== false)
   const total = values.length
   if (!total) return 'All'
 
-  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
-  const attributes = localFilters.value.attributes
+  const attributes = localFilters.value.attributes || {}
   const selected = Array.isArray(attributes[key]) ? attributes[key] : []
 
   const selectedCount = values.reduce((count, v) => {
@@ -475,8 +470,7 @@ const formatAttributeValueLabel = (attrSlug: string, valueName: string): string 
 
 // 属性筛选：切换选中状态
 const toggleAttributeSelection = (attrSlug: string, valueSlug: string, checked: boolean) => {
-  if (!localFilters.value.attributes) throw new Error("[CRITICAL] attributes missing")
-  const currentAttributes = { ...localFilters.value.attributes }
+  const currentAttributes = { ...(localFilters.value.attributes || {}) }
   const currentValues = Array.isArray(currentAttributes[attrSlug])
     ? [...currentAttributes[attrSlug]]
     : []
@@ -537,11 +531,12 @@ watch(() => props.initialFilters, (newFilters) => {
 .advanced-filter {
   width: 100%;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 /* 筛选区块 */
 .filter-section {
-  margin-bottom: 0.5rem; /* 行与行之间再紧凑一点 */
+  margin-bottom: 0;
 }
 
 .filter-section:last-of-type {
@@ -549,23 +544,25 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .filter-label {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   margin-bottom: 0.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--tz-text-secondary);
+  text-transform: uppercase;
 }
 
 /* 顶部行：价格 + 属性下拉 同一行展示（大屏），小屏自动换行 */
 .filter-top-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.75rem 1rem;
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  overflow: visible;
 }
 
 .filter-top-row .price-range-inline {
-  flex: 1 1 260px;
-  min-width: 220px;
+  min-width: 0;
 }
 
 .attribute-top-row {
@@ -576,28 +573,35 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .attribute-accordion-row {
-  flex: 1 1 100%;
   width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: start;
+  gap: 0.6rem;
+  overflow: visible;
 }
 
 .attribute-accordion-item {
-  border-radius: 0.75rem;
-  background: rgba(2, 6, 23, 0.75);
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 0;
+  background: transparent;
   border: none;
-  box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.9),
-    0 2px 12px rgba(0, 0, 0, 0.85);
-  overflow: hidden;
+  box-shadow: none;
+  overflow: visible;
 }
 
 /* Price range 行内布局：标题 + 输入框一行展示 */
 .price-range-inline {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  min-height: 46px;
+  padding: 0 0.75rem;
+  border-radius: 8px;
+  background: #020202;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .price-range-inline .filter-label {
@@ -606,7 +610,7 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .price-range-inline .price-range-container {
-  flex: 1;
+  flex: 0 1 auto;
 }
 
 /* 紧凑模式 */
@@ -626,7 +630,7 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 价格范围 */
 .price-range-container {
-  padding: 0.25rem 0;
+  padding: 0;
 }
 
 .price-inputs {
@@ -638,14 +642,13 @@ watch(() => props.initialFilters, (newFilters) => {
 .price-input-wrapper {
   display: flex;
   align-items: center;
-  padding: 0 0.5rem;
+  min-width: 76px;
+  padding: 0 0.55rem;
   height: 2rem;
-  border-radius: 0.5rem;
-  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95));
-  border: none;
-  box-shadow:
-    0 2px 5px -4px rgba(0,0,0,0.9),
-    0 0 5px rgba(15,23,42,0.7);
+  border-radius: 8px;
+  background: #050505;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .price-prefix {
@@ -655,7 +658,7 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .price-input {
-  width: 3rem;
+  width: 3.1rem;
   background: transparent;
   border: none;
   outline: none;
@@ -687,37 +690,44 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 属性下拉开关按钮 */
 .attribute-toggle {
-  border: none;
-  background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #020202;
   color: #ffffff;
   cursor: pointer;
-  padding: 0.6rem 0.85rem;
+  padding: 0 0.75rem;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  border-radius: 0;
-  font-size: 0.8125rem;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
-  box-shadow:
-    0 2px 6px -4px rgba(0,0,0,0.9),
-    0 0 8px rgba(15,23,42,0.85);
+  gap: 0.55rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  box-shadow: none;
 }
 
 .attribute-toggle-icon {
   display: inline-block;
-  font-size: var(--tz-type-micro-label);
-  color: #ffffff;
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  color: #B5FF6D;
   transition: transform 0.15s ease;
 }
 
 .attribute-label {
   line-height: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .attribute-toggle:hover {
-  background: linear-gradient(135deg, rgba(31,41,55,0.98), rgba(15,23,42,0.96));
+  background: #070707;
+  border-color: rgba(181, 255, 109, 0.35);
   color: #ffffff;
 }
 
@@ -727,14 +737,25 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 属性下拉浮层 */
 .attribute-dropdown {
-  position: static;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
   margin: 0;
-  padding: 0.5rem 0.85rem 0.75rem;
+  padding: 0.75rem;
   box-sizing: border-box;
-  width: 100%;
-  background: rgba(30, 41, 59, 0.35);
-  border-top: none;
-  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.85);
+  width: min(360px, calc(100vw - 48px));
+  max-height: 260px;
+  overflow-y: auto;
+  background: #030303;
+  border: 1px solid rgba(181, 255, 109, 0.42);
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72);
+}
+
+.attribute-accordion-item:nth-last-child(-n + 2) .attribute-dropdown {
+  right: 0;
+  left: auto;
 }
 
 /* 下拉动效 */
@@ -772,8 +793,7 @@ watch(() => props.initialFilters, (newFilters) => {
 .advanced-filter .checkbox-group {
   display: flex;
   flex-wrap: wrap;
-  column-gap: 0.75rem; /* 横向间距稍大一点 */
-  row-gap: 0.25rem;    /* 纵向间距保持较小，整体高度不会太高 */
+  gap: 0.45rem 0.5rem;
 }
 
 .advanced-filter .checkbox-item {
@@ -781,17 +801,16 @@ watch(() => props.initialFilters, (newFilters) => {
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  padding: 0.35rem 0.65rem;
+  padding: 0.32rem 0.58rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(15,23,42,0.92), rgba(15,23,42,0.72));
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.55);
+  background: #070707;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.08s ease;
 }
 
 .advanced-filter .checkbox-item:hover {
-  background: linear-gradient(135deg, rgba(31,41,55,0.92), rgba(15,23,42,0.75));
+  background: #101010;
 }
 
 .advanced-filter .checkbox-input {
@@ -805,20 +824,19 @@ watch(() => props.initialFilters, (newFilters) => {
 .advanced-filter .checkbox-label {
   display: inline-flex;
   align-items: center;
-  font-size: 0.875rem;
+  font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.9);
   user-select: none;
 }
 
 .advanced-filter .checkbox-item.is-selected {
-  background: rgba(255, 255, 255, 0.86);
-  border-color: rgba(255, 255, 255, 0.95);
-  box-shadow:
-    0 10px 22px rgba(0, 0, 0, 0.7);
+  background: #070707;
+  border-color: rgba(181, 255, 109, 0.58);
+  box-shadow: none;
 }
 
 .advanced-filter .checkbox-item.is-selected .checkbox-label {
-  color: rgba(0, 0, 0, 0.92);
+  color: #ffffff;
 }
 
 .advanced-filter .checkbox-input:focus-visible + .checkbox-label {
@@ -865,7 +883,78 @@ watch(() => props.initialFilters, (newFilters) => {
   color: rgba(0, 0, 0, 0.9);
 }
 
+@media (min-width: 769px) and (max-width: 1200px) {
+  .filter-top-row {
+    grid-template-columns: 1fr;
+  }
+
+  .price-range-inline {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .attribute-accordion-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .attribute-accordion-item:nth-child(even) .attribute-dropdown {
+    right: 0;
+    left: auto;
+  }
+}
+
 @media (max-width: 768px) {
+  .filter-top-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .price-range-inline {
+    min-height: 0;
+    padding: 0.75rem 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
+    border: none;
+    background: transparent;
+  }
+
+  .attribute-accordion-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .attribute-accordion-item {
+    flex: 0 1 auto;
+    border-radius: 8px;
+    background: #020202;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+
+  .attribute-toggle {
+    min-height: 44px;
+    padding: 0.7rem 0.85rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .attribute-dropdown {
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    padding: 0 0.85rem 0.85rem;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
 	/* 在移动端让 Color / Diameter / Brake 等属性按钮自然流式排列，避免强制 50% 宽度导致溢出 */
 	.attribute-top-row {
 		flex-wrap: wrap;

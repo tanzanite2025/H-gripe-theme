@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -19,6 +21,7 @@ import (
 	"tanzanite/internal/pkg/database"
 	"tanzanite/internal/pkg/logger"
 	"tanzanite/internal/pkg/scheduler"
+	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/pkg/worker"
 
 	"github.com/gin-gonic/gin"
@@ -135,6 +138,61 @@ func main() {
 		logger.Info("tracking scheduler disabled")
 	}
 
+	var visitorProfileCleanupScheduler *scheduler.VisitorProfileCleanupScheduler
+	if cfg.Worker.VisitorProfileCleanupEnabled {
+		visitorProfileCleanupScheduler = scheduler.NewVisitorProfileCleanupScheduler(deps.Services.VisitorProfile, cfg.Worker)
+		visitorProfileCleanupScheduler.Start(context.Background())
+	} else {
+		logger.Info("visitor profile cleanup scheduler disabled")
+	}
+
+	var behaviorEventCleanupScheduler *scheduler.BehaviorEventCleanupScheduler
+	if cfg.Worker.BehaviorEventCleanupEnabled {
+		behaviorEventCleanupScheduler = scheduler.NewBehaviorEventCleanupScheduler(deps.Services.BehaviorEvents, cfg.Worker)
+		behaviorEventCleanupScheduler.Start(context.Background())
+	} else {
+		logger.Info("behavior event cleanup scheduler disabled")
+	}
+
+	var outboxDispatchScheduler *scheduler.OutboxDispatchScheduler
+	if cfg.Worker.OutboxDispatchEnabled {
+		if deps.Services.Outbox == nil || deps.Services.Outbox.HandlerCount() == 0 {
+			logger.Warn("outbox dispatch scheduler enabled but no handlers are configured; pending events will be retained")
+		} else {
+			outboxDispatchScheduler = scheduler.NewOutboxDispatchScheduler(deps.Services.Outbox, cfg.Worker)
+			outboxDispatchScheduler.Start(context.Background())
+		}
+	} else {
+		logger.Info("outbox dispatch scheduler disabled")
+	}
+
+	var paymentExpirationScheduler *scheduler.PaymentExpirationScheduler
+	if cfg.Worker.PaymentExpirationEnabled {
+		paymentExpirationScheduler = scheduler.NewPaymentExpirationScheduler(deps.Services.Order, cfg.Worker)
+		paymentExpirationScheduler.Start(context.Background())
+	} else {
+		logger.Info("payment expiration scheduler disabled")
+	}
+
+	var paymentRiskMonitoringScheduler *scheduler.PaymentRiskMonitoringScheduler
+	if cfg.Worker.PaymentRiskMonitoringEnabled {
+		paymentRiskMonitoringScheduler = scheduler.NewPaymentRiskMonitoringScheduler(
+			deps.Services.PaymentRiskMonitoring,
+			cfg.Worker,
+		)
+		paymentRiskMonitoringScheduler.Start(context.Background())
+	} else {
+		logger.Info("payment risk monitoring scheduler disabled")
+	}
+
+	var visitorRiskFlushScheduler *scheduler.VisitorRiskFlushScheduler
+	if cfg.VisitorRisk.Enabled {
+		visitorRiskFlushScheduler = scheduler.NewVisitorRiskFlushScheduler(deps.Services.VisitorRisk, cfg.VisitorRisk)
+		visitorRiskFlushScheduler.Start(context.Background())
+	} else {
+		logger.Info("visitor risk telemetry disabled")
+	}
+
 	go func() {
 		logger.Info("server started",
 			zap.String("addr", cfg.Server.Port),
@@ -164,6 +222,24 @@ func main() {
 	if trackingScheduler != nil {
 		trackingScheduler.Stop()
 	}
+	if visitorProfileCleanupScheduler != nil {
+		visitorProfileCleanupScheduler.Stop()
+	}
+	if behaviorEventCleanupScheduler != nil {
+		behaviorEventCleanupScheduler.Stop()
+	}
+	if outboxDispatchScheduler != nil {
+		outboxDispatchScheduler.Stop()
+	}
+	if paymentExpirationScheduler != nil {
+		paymentExpirationScheduler.Stop()
+	}
+	if paymentRiskMonitoringScheduler != nil {
+		paymentRiskMonitoringScheduler.Stop()
+	}
+	if visitorRiskFlushScheduler != nil {
+		visitorRiskFlushScheduler.Stop()
+	}
 
 	logger.Info("server stopped")
 }
@@ -173,11 +249,17 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, 
 	if err := router.SetTrustedProxies(cfg.Server.TrustedProxies); err != nil {
 		logger.Fatal("trusted proxy configuration failed", zap.Error(err))
 	}
+	trustedEdgeMetadata, err := middleware.NewTrustedEdgeMetadata(cfg.Server.TrustedProxies)
+	if err != nil {
+		logger.Fatal("trusted edge metadata configuration failed", zap.Error(err))
+	}
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORS(cfg.CORS))
 	router.Use(middleware.SecurityHeaders())
 	router.Use(middleware.PrometheusMetrics())
+	router.Use(trustedEdgeMetadata)
+	router.Use(middleware.CommercialCrawlerBlocker())
 	router.Use(middleware.RequestSignature(cfg.RequestSigning, redisCache.Client()))
 	router.Use(middleware.GlobalRateLimit(1000))
 
@@ -193,9 +275,68 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, 
 	})
 
 	health.RegisterRoutes(router.Group(""), db, redisCache.Client(), Version, BuildTime)
+	registerLocalUploadsRoute(router, deps)
 
 	v1.RegisterRoutes(router, deps, cfg)
 	admin.RegisterAdminRoutes(router, deps, cfg)
 
 	return router
+}
+
+func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
+	storageConfig := storage.LoadConfigFromEnv()
+	if storageConfig.Type != storage.StorageTypeLocal {
+		return
+	}
+
+	uploadRoot, err := filepath.Abs(storageConfig.LocalPath)
+	if err != nil {
+		logger.Warn("failed to resolve local upload directory", zap.Error(err))
+		return
+	}
+
+	if err := os.MkdirAll(uploadRoot, 0o750); err != nil {
+		logger.Warn("failed to create local upload directory", zap.String("path", uploadRoot), zap.Error(err))
+		return
+	}
+
+	fileServer := http.FileServer(http.Dir(uploadRoot))
+	router.GET("/uploads/*key", func(c *gin.Context) {
+		key, ok := sanitizePublicUploadKey(c.Param("key"))
+		if !ok {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		if deps != nil && deps.Services.Media != nil {
+			allowed, err := deps.Services.Media.CanServePublicUpload(key)
+			if err != nil {
+				logger.Warn("failed to authorize public upload", zap.String("key", key), zap.Error(err))
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+			if !allowed {
+				c.Status(http.StatusNotFound)
+				return
+			}
+		}
+
+		c.Request.URL.Path = "/" + key
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
+}
+
+func sanitizePublicUploadKey(raw string) (string, bool) {
+	key := strings.Trim(strings.ReplaceAll(raw, "\\", "/"), "/")
+	if key == "" {
+		return "", false
+	}
+
+	for _, segment := range strings.Split(key, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return "", false
+		}
+	}
+
+	return key, true
 }

@@ -1,7 +1,7 @@
 <template>
   <div class="inner-tube-guide space-y-5 md:space-y-6">
     <!-- Step 1: Search / Intro Card -->
-     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5">
+     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5">
        <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div class="text-center md:text-left">
           <div class="sizecharts-section__step-header sizecharts-section__step-header--compact md:justify-start">
@@ -30,7 +30,7 @@
 
 
     <!-- Step 2: Valve Selection Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5 text-center">
        <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
          <span class="sizecharts-section__step-badge">2</span>
            <h3 class="sizecharts-section__step-title">
@@ -112,7 +112,7 @@
     </div>
 
     <!-- Step 3: Tube Type Selection -->
-     <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5 text-center">
+     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-4 md:p-5 text-center">
        <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
          <span class="sizecharts-section__step-badge">3</span>
            <h3 class="sizecharts-section__step-title">

@@ -1,19 +1,19 @@
 <template>
-  <AdminFormSection title="商品媒体" description="商品主图、轮播图、详情图和视频都属于商品本身，不使用图库数据。">
+  <AdminFormSection title="商品媒体" description="这里只维护商品主图、图库图片和商品视频；详情内容中的图片或视频请放在详细描述里。">
     <div class="space-y-4">
       <div class="grid gap-3 md:grid-cols-2">
         <label class="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5">
           <input
             class="sr-only"
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp"
             multiple
             :disabled="uploading"
             @change="emit('upload', $event, 'image')"
           />
           <ImageIcon class="size-5 text-muted-foreground" />
           <span class="text-sm font-medium">上传商品图片</span>
-          <span class="text-xs text-muted-foreground">主图、轮播图、详情图，最多按商品排序展示</span>
+          <span class="text-xs text-muted-foreground">主图或图库图片，按排序展示在商品页媒体区</span>
         </label>
 
         <label class="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5">
@@ -87,8 +87,8 @@
 
             <div class="min-w-0 space-y-3">
               <div class="grid gap-3 sm:grid-cols-2">
-                <AdminFormField label="用途">
-                  <Select v-model="mediaItem.role">
+                <AdminFormField :label="mediaItem.media_type === 'video' ? '媒体类型' : '图片位置'">
+                  <Select v-if="mediaItem.media_type === 'image'" v-model="mediaItem.role">
                     <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem
@@ -100,6 +100,12 @@
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  <div
+                    v-else
+                    class="flex h-9 items-center rounded-md border bg-muted/30 px-3 text-sm font-medium text-muted-foreground"
+                  >
+                    商品视频
+                  </div>
                 </AdminFormField>
                 <AdminFormField label="排序">
                   <Input v-model.number="mediaItem.sort_order" type="number" min="0" />

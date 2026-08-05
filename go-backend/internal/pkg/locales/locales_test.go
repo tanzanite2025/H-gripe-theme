@@ -14,7 +14,7 @@ func TestResolveSupported(t *testing.T) {
 		{name: "simplified chinese region", input: "zh-CN", output: "zh_cn"},
 		{name: "simplified chinese underscore", input: "zh_CN", output: "zh_cn"},
 		{name: "english region", input: "en-US", output: "en"},
-		{name: "pidgin region", input: "pcm-NG", output: "pcm"},
+		{name: "removed pidgin region", input: "pcm-NG", output: ""},
 		{name: "accept language fragment", input: "fr-FR;q=0.8", output: "fr"},
 		{name: "unsupported", input: "zz-ZZ", output: ""},
 		{name: "traditional chinese unsupported", input: "zh-TW", output: ""},

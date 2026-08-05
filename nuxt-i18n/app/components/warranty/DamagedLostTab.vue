@@ -15,9 +15,9 @@
           <h3 class="text-slate-100 font-bold text-lg mb-3 pt-0.5">Normal Acceptance</h3>
           <ul class="space-y-3 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-teal-500/60">
             <li>If the package is intact, please sign for it.</li>
-            <li>If you notice damage, note it on the delivery slip or refuse the package. The goods will be returned to Tanzanite.</li>
+            <li>If you notice damage, note it on the delivery slip or refuse the package. The goods will be returned to us.</li>
             <li>
-              If you need to file a claim with the carrier, they will issue a claim number. Please provide this number to Tanzanite so we can track the shipment. Once the returned goods are received, we will arrange re-shipment within <strong class="text-white">10 business days</strong>.
+              If you need to file a claim with the carrier, they will issue a claim number. Please provide this number to our support team so we can track the shipment. Once the returned goods are received, we will arrange re-shipment within <strong class="text-white">10 business days</strong>.
             </li>
           </ul>
         </div>
@@ -41,7 +41,9 @@
           <h3 class="text-slate-100 font-bold text-lg mb-3 pt-0.5">Damage During Transit</h3>
           <ul class="space-y-3 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-teal-500/60">
             <li>If the package appears intact but the product is seriously damaged during transit, please keep the waybill, packaging, and related materials.</li>
-            <li>Contact us within <strong class="text-white">7 days of receipt</strong> at <a href="mailto:support@tanzanite.site" class="text-teal-400 hover:text-teal-300 transition-colors">support@tanzanite.site</a>.</li>
+            <li>
+              Contact us within <strong class="text-white">7 days of receipt</strong><template v-if="contactEmail"> at <a :href="contactEmailHref" class="text-teal-400 hover:text-teal-300 transition-colors">{{ contactEmail }}</a></template>.
+            </li>
           </ul>
         </div>
 
@@ -50,8 +52,10 @@
           <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">4</div>
           <h3 class="text-slate-100 font-bold text-lg mb-3 pt-0.5">Lost Shipment</h3>
           <ul class="space-y-3 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-teal-500/60">
-            <li>If the goods are lost during transit, please contact us immediately at <a href="mailto:support@tanzanite.site" class="text-teal-400 hover:text-teal-300 transition-colors">support@tanzanite.site</a>.</li>
-            <li>All Tanzanite shipments are insured, and we will assist you with the claim process.</li>
+            <li>
+              If the goods are lost during transit, please contact us immediately<template v-if="contactEmail"> at <a :href="contactEmailHref" class="text-teal-400 hover:text-teal-300 transition-colors">{{ contactEmail }}</a></template>.
+            </li>
+            <li>All shipments are insured, and we will assist you with the claim process.</li>
           </ul>
         </div>
       </div>
@@ -60,7 +64,16 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+const props = defineProps<{
+  contactEmail?: string
+}>()
+
 defineEmits<{
   (e: 'change-tab', id: string): void
 }>()
+
+const contactEmail = computed(() => props.contactEmail?.trim() || '')
+const contactEmailHref = computed(() => `mailto:${contactEmail.value}`)
 </script>

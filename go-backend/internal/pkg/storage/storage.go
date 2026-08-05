@@ -21,6 +21,22 @@ type StorageService interface {
 	GetURL(filename string) string
 }
 
+type StoredObject struct {
+	ReadCloser io.ReadCloser
+	Name       string
+	MimeType   string
+	Size       int64
+	ModTime    time.Time
+}
+
+type ObjectOpener interface {
+	Open(ctx context.Context, key string) (*StoredObject, error)
+}
+
+type PresignedURLProvider interface {
+	GetPresignedURL(ctx context.Context, key string, duration time.Duration) (string, error)
+}
+
 // StorageType 存储类型
 type StorageType string
 
@@ -173,7 +189,41 @@ func (s *localStorage) Delete(ctx context.Context, url string) error {
 
 // GetURL 获取文件 URL
 func (s *localStorage) GetURL(filename string) string {
-	return fmt.Sprintf("%s/uploads/%s", s.config.BaseURL, filename)
+	cleanName := strings.TrimPrefix(filepath.ToSlash(filename), "/")
+	return fmt.Sprintf("%s/uploads/%s", strings.TrimRight(s.config.BaseURL, "/"), cleanName)
+}
+
+func (s *localStorage) Open(ctx context.Context, key string) (*StoredObject, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	filePath, err := s.localPath(key)
+	if err != nil {
+		return nil, err
+	}
+
+	// #nosec G304 -- filePath is constrained to the configured upload root by localPath.
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	stat, err := file.Stat()
+	if err != nil {
+		_ = file.Close()
+		return nil, err
+	}
+
+	return &StoredObject{
+		ReadCloser: file,
+		Name:       filepath.Base(key),
+		MimeType:   detectContentType(key),
+		Size:       stat.Size(),
+		ModTime:    stat.ModTime(),
+	}, nil
 }
 
 func (s *localStorage) localPath(name string) (string, error) {
@@ -228,7 +278,7 @@ func (s *localStorage) generateFilename(originalFilename string) string {
 	datePath := now.Format("2006/01/02")
 
 	// 组合文件名: YYYY/MM/DD/uuid.ext
-	return filepath.Join(datePath, fmt.Sprintf("%s%s", id, ext))
+	return filepath.ToSlash(filepath.Join(datePath, fmt.Sprintf("%s%s", id, ext)))
 }
 
 func newS3Storage(config *Config) (StorageService, error) {

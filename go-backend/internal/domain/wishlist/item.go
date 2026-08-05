@@ -19,22 +19,3 @@ type Item struct {
 func (Item) TableName() string {
 	return "wishlist_items"
 }
-
-type ItemResponse struct {
-	ID        uint                         `json:"id"`
-	ProductID uint                         `json:"product_id"`
-	CreatedAt time.Time                    `json:"created_at"`
-	Product   *product.ProductListResponse `json:"product,omitempty"`
-}
-
-func (i *Item) ToResponse() *ItemResponse {
-	resp := &ItemResponse{
-		ID:        i.ID,
-		ProductID: i.ProductID,
-		CreatedAt: i.CreatedAt,
-	}
-	if i.Product != nil {
-		resp.Product = i.Product.ToListResponse()
-	}
-	return resp
-}

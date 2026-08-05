@@ -1,8 +1,9 @@
 package product
 
 import (
-	"strconv"
+	"strings"
 	"tanzanite/internal/api/middleware"
+	productdomain "tanzanite/internal/domain/product"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
@@ -14,6 +15,11 @@ import (
 type Handler struct {
 	productService *service.ProductService
 }
+
+const (
+	publicCatalogDefaultPageSize = 12
+	publicCatalogMaxPageSize     = 24
+)
 
 func NewHandler(productService *service.ProductService) *Handler {
 	return &Handler{
@@ -27,39 +33,43 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	params := pagination.ParsePagination(c)
 
 	if c.Query("page_size") == "" {
-		params.PageSize = 12
+		params.PageSize = publicCatalogDefaultPageSize
+	}
+	if params.PageSize > publicCatalogMaxPageSize {
+		params.PageSize = publicCatalogMaxPageSize
 	}
 
-	products, total, err := h.productService.ListPublic(locale, featured, params.Page, params.PageSize)
+	products, _, err := h.productService.ListPublic(
+		locale,
+		featured,
+		params.Page,
+		params.PageSize+1,
+	)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	response.Paged(c, products, params.Page, params.PageSize, total)
+	publicProducts, hasMore := trimPublicProductPage(products, params.PageSize)
+	c.JSON(200, gin.H{
+		"code":      0,
+		"data":      PublicProductsFromDomain(publicProducts),
+		"page_size": params.PageSize,
+		"has_more":  hasMore,
+	})
 }
 
 func (h *Handler) GetProduct(c *gin.Context) {
-	idOrSlug := c.Param("id")
+	slug := strings.TrimSpace(c.Param("id"))
 	locale := middleware.GetLocale(c)
 
-	if id, err := strconv.ParseUint(idOrSlug, 10, 32); err == nil {
-		product, err := h.productService.GetPublicByID(uint(id))
-		if err != nil {
-			apierror.RespondNotFound(c, "Product")
-			return
-		}
-		response.Success(c, product)
-		return
-	}
-
-	product, err := h.productService.GetPublicBySlug(idOrSlug, locale)
+	product, err := h.productService.GetPublicBySlug(slug, locale)
 	if err != nil {
 		apierror.RespondNotFound(c, "Product")
 		return
 	}
 
-	response.Success(c, product)
+	response.Success(c, PublicProductFromDomain(*product))
 }
 
 func (h *Handler) GetFilterableAttributes(c *gin.Context) {
@@ -70,7 +80,7 @@ func (h *Handler) GetFilterableAttributes(c *gin.Context) {
 	}
 	c.JSON(200, gin.H{
 		"success": true,
-		"data":    attrs,
+		"data":    PublicProductAttributesFromDomain(attrs),
 	})
 }
 
@@ -81,5 +91,12 @@ func (h *Handler) ListProductTypes(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, productTypes)
+	response.Success(c, PublicProductTypesFromDomain(productTypes))
+}
+
+func trimPublicProductPage(products []productdomain.Product, pageSize int) ([]productdomain.Product, bool) {
+	if pageSize < 1 || len(products) <= pageSize {
+		return products, false
+	}
+	return products[:pageSize], true
 }

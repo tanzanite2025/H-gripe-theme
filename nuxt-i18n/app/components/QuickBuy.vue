@@ -4,7 +4,7 @@
     <!-- 遮罩层 -->
     <Transition name="fade">
       <div
-        class="fixed inset-0 z-[10002] flex items-center justify-center p-0 md:p-4"
+        class="fixed inset-0 z-[10002] flex items-center justify-center p-0 md:p-4 tz-mobile-safe-modal-mask"
         @click.self="handleClose"
       >
         <!-- 半透明背景遮罩 -->
@@ -12,12 +12,10 @@
         <!-- 弹窗内容 -->
         <Transition name="slide-up" appear>
           <div
-            class="sidebar-panel quickbuy-modal-shell relative max-w-[1400px] w-full h-[90vh] md:h-[700px] max-h-[85vh] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] box-border flex flex-col overflow-hidden"
+            class="sidebar-panel quickbuy-modal-shell relative w-[90vw] max-w-none h-[80vh] max-h-[80vh] bg-black backdrop-blur-xl border border-white/15 rounded-2xl shadow-[0_18px_44px_rgba(0,0,0,0.72)] box-border flex flex-col overflow-hidden"
             role="dialog"
             aria-modal="true"
           >
-        <!-- 背景装饰，与聊天欢迎页一致 -->
-        <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
         <!-- 头部 -->
         <header class="flex items-center justify-between px-3.5 max-md:px-2 py-2.5 max-md:py-2 border-b border-white/10 rounded-t-2xl overflow-hidden max-md:gap-1.5">
           <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" :aria-label="t('quickBuy.stepsAriaLabel')">
@@ -30,7 +28,7 @@
                 <span 
                   class="w-7 h-7 max-md:w-[22px] max-md:h-[22px] rounded-full grid place-items-center font-bold transition-all duration-200"
                   :class="[
-                    n === step ? 'bg-[var(--accent-color,#6b73ff)] text-white shadow-[0_0_0_3px_rgba(107,115,255,0.25)]' :
+                    n === step ? 'bg-white text-black shadow-[0_0_0_3px_rgba(255,255,255,0.16)]' :
                     n < step ? 'bg-[#3c4454] text-white' :
                     'bg-[#2c2f35] text-white/90'
                   ]"
@@ -40,7 +38,7 @@
             </ol>
           </nav>
           <button 
-            class="flex-none ml-1.5 max-md:ml-0 appearance-none border-0 bg-transparent text-white text-[22px] cursor-pointer px-2 py-1 rounded-lg hover:bg-white/10 transition-colors" 
+            class="tz-global-close-btn flex-none ml-1.5 max-md:ml-0"
             type="button" 
             :aria-label="t('common.close', 'Close')"
             @click="handleClose"
@@ -51,7 +49,7 @@
         <section class="px-3.5 py-3 flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <div
             v-if="isUsingFallbackConfig"
-            class="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs leading-relaxed text-amber-100"
+            class="rounded-xl border border-white/15 bg-white/[0.055] px-3 py-2 text-xs leading-relaxed text-white/75"
           >
             {{ t('quickBuy.fallbackNotice') }}
           </div>
@@ -65,7 +63,7 @@
               v-model.trim="query"
               type="text"
               :placeholder="t('quickBuy.search.placeholder')"
-              class="w-full px-3 py-2.5 rounded-lg bg-white/[0.06] text-white border border-white box-border max-w-full focus:outline-none focus:border-[#6b73ff] transition-colors"
+              class="quickbuy-search-input w-full px-3 py-2.5 rounded-lg bg-white/[0.06] text-white border border-white box-border max-w-full focus:outline-none transition-colors"
               @keydown.enter.prevent="triggerSearch"
               @input="scheduleSearch"
             />
@@ -89,7 +87,7 @@
                 />
                 <div class="flex flex-col gap-1">
                   <div class="text-sm text-white">{{ product.title }}</div>
-                  <div class="text-[#40ffaa]">{{ product.priceLabel || '$0' }}</div>
+                  <div class="text-white/90">{{ product.priceLabel || '$0' }}</div>
                 </div>
               </li>
             </ul>
@@ -101,7 +99,7 @@
         </section>
 
         <!-- 底部 -->
-        <footer class="relative flex flex-col items-center justify-center gap-1.5 max-md:gap-1 px-3.5 py-2.5 max-md:pt-4 border-t border-white/[0.08] rounded-b-2xl overflow-hidden">
+        <footer class="quickbuy-modal-footer relative flex flex-col items-center justify-center gap-1.5 max-md:gap-1 px-3.5 py-2.5 max-md:pt-4 border-t border-white/[0.08] rounded-b-2xl overflow-hidden">
           <div class="tz-text-secondary text-[13px] text-center max-md:order-1 max-md:-mb-1">{{ footerText }}</div>
           <div class="inline-flex items-center gap-2 tz-text-primary font-semibold max-md:order-3 max-md:text-[13px] max-md:-mt-1">
             <span>{{ t('quickBuy.summary.items') }}: {{ totalQty }}</span>
@@ -119,21 +117,16 @@
             >{{ t('common.previous', 'Previous') }}</button>
             <button
               v-if="step < totalSteps"
-              class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
+              class="appearance-none border border-white bg-white text-black px-3.5 py-2 rounded-full cursor-pointer hover:bg-white/90 transition-colors"
               type="button" 
               @click="next"
             >{{ t('common.next', 'Next') }}</button>
             <template v-else>
               <button 
-                class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
+                class="appearance-none border border-white bg-white text-black px-3.5 py-2 rounded-full cursor-pointer hover:bg-white/90 transition-colors"
                 type="button" 
                 @click="goToCart"
               >{{ t('quickBuy.actions.toCart') }}</button>
-              <button 
-                class="appearance-none border border-[#6b73ff] bg-[#6b73ff] text-white px-3.5 py-2 rounded-full cursor-pointer hover:brightness-110 transition-all" 
-                type="button" 
-                @click="goToCheckout"
-              >{{ t('quickBuy.actions.payment') }}</button>
             </template>
           </div>
         </footer>
@@ -345,14 +338,6 @@ const goToCart = () => {
   emit('close')
 }
 
-const goToCheckout = () => {
-  addSelectionsToCart()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('open-checkout-modal'))
-  }
-  emit('close')
-}
-
 const selectProduct = (product: ShopProduct) => {
   selections.value.push({
     id: product.id,
@@ -406,22 +391,26 @@ onBeforeUnmount(() => {
 
 @media (max-width: 767px) {
   .quickbuy-modal-shell {
-    height: min(95vh, calc(100vh - 16px));
-    max-height: min(95vh, calc(100vh - 16px));
+    height: min(80vh, var(--tz-mobile-safe-viewport-height, 80vh));
+    max-height: min(80vh, var(--tz-mobile-safe-viewport-height, 80vh));
   }
 
   @supports (height: 100svh) {
     .quickbuy-modal-shell {
-      height: min(95svh, calc(100svh - 16px));
-      max-height: min(95svh, calc(100svh - 16px));
+      height: min(80svh, var(--tz-mobile-safe-viewport-height, 80svh));
+      max-height: min(80svh, var(--tz-mobile-safe-viewport-height, 80svh));
     }
   }
 
   @supports (height: 100dvh) {
     .quickbuy-modal-shell {
-      height: min(95dvh, calc(100dvh - 16px));
-      max-height: min(95dvh, calc(100dvh - 16px));
+      height: min(80dvh, var(--tz-mobile-safe-viewport-height, 80dvh));
+      max-height: min(80dvh, var(--tz-mobile-safe-viewport-height, 80dvh));
     }
+  }
+
+  .quickbuy-modal-footer {
+    padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 0.75rem);
   }
 }
 </style>

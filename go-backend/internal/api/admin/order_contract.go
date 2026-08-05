@@ -45,6 +45,8 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 	switch {
 	case errors.Is(err, service.ErrOrderNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+	case errors.Is(err, service.ErrSystemManagedOrderStatus):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderDeleteNotAllowed):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrTrackingNumberRequired),

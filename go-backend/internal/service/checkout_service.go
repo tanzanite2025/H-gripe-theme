@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
@@ -26,6 +27,7 @@ type CheckoutQuoteInput struct {
 	ShippingAddress      order.Address
 	CouponCode           string
 	PointsToUse          int
+	Currency             string
 	LoyaltyProgramConfig *loyalty.ProgramConfig
 }
 
@@ -44,6 +46,7 @@ type CheckoutQuote struct {
 	PointsToUse     int               `json:"points_to_use"`
 	ProgramConfigID *uint             `json:"loyalty_program_config_id,omitempty"`
 	Coupon          *coupon.Coupon    `json:"coupon,omitempty"`
+	Currency        string            `json:"currency"`
 }
 
 type checkoutRepositories struct {
@@ -105,6 +108,10 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if len(input.Items) == 0 {
 		return nil, errors.New("cart is empty")
 	}
+	quoteCurrency := strings.ToUpper(strings.TrimSpace(input.Currency))
+	if quoteCurrency == "" {
+		return nil, errors.New("order currency is required")
+	}
 
 	items := make([]order.OrderItem, len(input.Items))
 	shippingItems := make([]ShippingQuoteItemInput, 0, len(input.Items))
@@ -164,9 +171,10 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		return nil, errors.New("shipping quote service is not configured")
 	}
 	shippingQuote, err := repos.shippingService.QuoteResolvedItems(ShippingQuoteInput{
-		Country: input.ShippingAddress.Country,
-		Amount:  subtotal,
-		Items:   shippingItems,
+		Country:  input.ShippingAddress.Country,
+		Amount:   subtotal,
+		Currency: quoteCurrency,
+		Items:    shippingItems,
 	})
 	if err != nil {
 		return nil, err
@@ -215,6 +223,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		PointsToUse:     pointsToUse,
 		ProgramConfigID: programConfigID,
 		Coupon:          targetCoupon,
+		Currency:        quoteCurrency,
 	}, nil
 }
 
@@ -276,8 +285,7 @@ func (s *CheckoutService) currentLoyaltyProgramConfig() (*loyalty.ProgramConfig,
 	if s.loyaltyProgram != nil {
 		return s.loyaltyProgram.GetActive()
 	}
-	defaults := loyalty.DefaultProgramConfig()
-	return &defaults, nil
+	return nil, ErrLoyaltyProgramConfigNotFound
 }
 
 func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository, code string, amount float64) (*coupon.Coupon, float64, error) {

@@ -1,4 +1,20 @@
 {
-  "title": "Frequently Asked Questions",
-  "subtitle": "Find answers to common questions about our products and services"
+  "title": "الأسئلة الشائعة",
+  "subtitle": "اعثر على إجابات للأسئلة الشائعة حول منتجاتنا وخدماتنا",
+  "ui": {
+    "categorizedSupport": "دعم مصنف",
+    "quickAnswers": "إجابات سريعة عن الأسئلة الشائعة",
+    "categoriesAriaLabel": "تصنيفات FAQ",
+    "categoriesLabel": "تصنيفات FAQ",
+    "all": "الكل",
+    "viewAll": "عرض كل FAQ",
+    "emptySection": "لا توجد FAQ متاحة لهذا القسم.",
+    "pageIntro": "تصفح الأسئلة الشائعة والإجابات السريعة حول الطلبات والمنتجات والخدمة.",
+    "searchPlaceholder": "ابحث في FAQ...",
+    "viewMoreContent": "عرض المزيد من المحتوى",
+    "noResults": "لم يتم العثور على FAQ تطابق \"{query}\"",
+    "allFaqsMetaTitle": "كل FAQ",
+    "loadingAnswers": "جار تحميل الإجابات",
+    "illustrationAlt": "صورة FAQ"
+  }
 }

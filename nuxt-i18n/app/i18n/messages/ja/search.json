@@ -2,5 +2,8 @@
   "placeholder": "検索...",
   "button": "検索",
   "popularTitle": "人気の検索",
-  "popularAriaLabel": "人気の検索"
+  "popularAriaLabel": "人気の検索",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

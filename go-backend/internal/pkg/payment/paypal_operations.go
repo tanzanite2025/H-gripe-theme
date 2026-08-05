@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/plutov/paypal/v4"
@@ -24,10 +25,24 @@ func (g *paypalGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 	// 提取金额和货币
 	var amount float64
 	var currency string
+	transactionID := capturedOrder.ID
+	metadata := map[string]string{
+		"paypal_order_id": capturedOrder.ID,
+	}
 	if len(capturedOrder.PurchaseUnits) > 0 {
 		pu := capturedOrder.PurchaseUnits[0]
+		if orderID := firstPayPalNonBlank(pu.ReferenceID); orderID != "" {
+			metadata["order_id"] = orderID
+		}
 		if pu.Payments != nil && len(pu.Payments.Captures) > 0 {
 			capture := pu.Payments.Captures[0]
+			if strings.TrimSpace(capture.ID) != "" {
+				transactionID = strings.TrimSpace(capture.ID)
+				metadata["paypal_capture_id"] = transactionID
+			}
+			if orderID := firstPayPalNonBlank(capture.CustomID, metadata["order_id"]); orderID != "" {
+				metadata["order_id"] = orderID
+			}
 			if capture.Amount != nil {
 				amount, err = parsePaymentAmount("paypal capture amount", capture.Amount.Value)
 				if err != nil {
@@ -43,47 +58,70 @@ func (g *paypalGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 		Status:        capturedOrder.Status,
 		Amount:        amount,
 		Currency:      currency,
-		TransactionID: capturedOrder.ID,
+		TransactionID: transactionID,
 		CreatedAt:     time.Now(),
+		Metadata:      metadata,
 	}, nil
 }
 
 // RefundPayment 退款PayPal支付
 func (g *paypalGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+}
+
+func (g *paypalGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	paymentID = strings.TrimSpace(paymentID)
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
-	// 首先获取订单详情以获取capture ID
+	directRefund, directErr := g.refundPayPalCapture(ctx, paymentID, paymentID, amount, options, "")
+	if directErr == nil {
+		return directRefund, nil
+	}
+
+	// The stored transaction id is normally a PayPal capture id. If an older row
+	// contains the PayPal order id instead, fall back to resolving the capture.
 	order, err := g.client.GetOrder(ctx, paymentID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get paypal order: %w", err)
+		return nil, fmt.Errorf("failed to refund paypal capture directly: %v; failed to get paypal order: %w", directErr, err)
 	}
-
-	if len(order.PurchaseUnits) == 0 || order.PurchaseUnits[0].Payments == nil {
-		return nil, fmt.Errorf("no payment captures found for order")
+	captureID, captureCurrency, ok := firstPayPalCaptureFromOrder(order)
+	if !ok {
+		return nil, fmt.Errorf("no captures found for paypal order")
 	}
-
-	captures := order.PurchaseUnits[0].Payments.Captures
-	if len(captures) == 0 {
-		return nil, fmt.Errorf("no captures found for order")
+	refundResponse, err := g.refundPayPalCapture(ctx, paymentID, captureID, amount, options, captureCurrency)
+	if err != nil {
+		return nil, err
 	}
+	return refundResponse, nil
+}
 
-	// 使用第一个capture进行退款
-	captureID := captures[0].ID
+func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentReference string, captureID string, amount float64, options RefundOptions, fallbackCurrency string) (*RefundResponse, error) {
+	captureID = strings.TrimSpace(captureID)
+	if captureID == "" {
+		return nil, fmt.Errorf("paypal capture id is required")
+	}
 
 	// 构建退款请求
 	refundReq := paypal.RefundCaptureRequest{}
 	if amount > 0 {
+		currency := firstPayPalNonBlank(options.Currency, fallbackCurrency)
+		if currency == "" {
+			return nil, fmt.Errorf("paypal refund currency is required for partial refunds")
+		}
+		refundAmount, err := FormatMajorAmount(amount, currency)
+		if err != nil {
+			return nil, err
+		}
 		refundReq.Amount = &paypal.Money{
-			Currency: captures[0].Amount.Currency,
-			Value:    fmt.Sprintf("%.2f", amount),
+			Currency: strings.ToUpper(strings.TrimSpace(currency)),
+			Value:    refundAmount,
 		}
 	}
-	// 如果amount为0，则全额退款（不设置Amount字段）
 
 	// 执行退款
-	refundResp, err := g.client.RefundCapture(ctx, captureID, refundReq)
+	refundResp, err := g.client.RefundCaptureWithPaypalRequestId(ctx, captureID, refundReq, options.IdempotencyKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to refund paypal capture: %w", err)
 	}
@@ -95,15 +133,40 @@ func (g *paypalGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		refundAmount = amount
 	}
 
 	return &RefundResponse{
 		ID:        refundResp.ID,
-		PaymentID: paymentID,
+		PaymentID: paymentReference,
 		Amount:    refundAmount,
 		Status:    refundResp.Status,
 		CreatedAt: time.Now(),
 	}, nil
+}
+
+func firstPayPalCaptureFromOrder(order *paypal.Order) (string, string, bool) {
+	if order == nil {
+		return "", "", false
+	}
+	for _, unit := range order.PurchaseUnits {
+		if unit.Payments == nil {
+			continue
+		}
+		for _, capture := range unit.Payments.Captures {
+			captureID := strings.TrimSpace(capture.ID)
+			if captureID == "" {
+				continue
+			}
+			currency := ""
+			if capture.Amount != nil {
+				currency = capture.Amount.Currency
+			}
+			return captureID, currency, true
+		}
+	}
+	return "", "", false
 }
 
 // GetPayment 查询PayPal支付
@@ -139,4 +202,13 @@ func (g *paypalGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 		TransactionID: order.ID,
 		CreatedAt:     time.Now(),
 	}, nil
+}
+
+func firstPayPalNonBlank(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
 }

@@ -1,14 +1,5 @@
 <template>
-  <Tabs :model-value="activeTab" class="gap-4" @update:model-value="emit('update:activeTab', $event)">
-    <TabsList variant="line" class="h-10 w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
-      <TabsTrigger v-for="tab in tabItems" :key="tab.value" :value="tab.value" class="h-9 flex-none px-3">
-        <component :is="tab.icon" class="size-4" />
-        {{ tab.label }}
-      </TabsTrigger>
-    </TabsList>
-
-    <ShippingOverviewPanel />
-
+  <Tabs :model-value="activeTab" class="gap-4">
     <ShippingTemplatesPanel
       :templates="templates"
       :tracking-carrier-mappings="trackingCarrierMappings"
@@ -106,29 +97,18 @@
 
 <script setup>
 import { ref } from 'vue'
-import {
-  Calculator,
-  ClipboardList,
-  MapPin,
-  Package,
-  Radar,
-  RefreshCw,
-  Route,
-  Truck,
-} from '@lucide/vue'
 import ShippingCarrierServicesPanel from '@/components/admin/shipping/ShippingCarrierServicesPanel.vue'
 import ShippingCarriersPanel from '@/components/admin/shipping/ShippingCarriersPanel.vue'
-import ShippingOverviewPanel from '@/components/admin/shipping/ShippingOverviewPanel.vue'
 import ShippingPackagingPanel from '@/components/admin/shipping/ShippingPackagingPanel.vue'
 import ShippingQuoteCalculator from '@/components/admin/shipping/ShippingQuoteCalculator.vue'
 import ShippingTemplatesPanel from '@/components/admin/shipping/ShippingTemplatesPanel.vue'
 import ShippingZonesPanel from '@/components/admin/shipping/ShippingZonesPanel.vue'
 import TrackingProvidersPanel from '@/components/admin/shipping/TrackingProvidersPanel.vue'
 import TrackingShipmentsPanel from '@/components/admin/shipping/TrackingShipmentsPanel.vue'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 
 defineProps({
-  activeTab: { type: String, default: 'overview' },
+  activeTab: { type: String, default: 'templates' },
   templates: { type: Array, default: () => [] },
   zones: { type: Array, default: () => [] },
   carriers: { type: Array, default: () => [] },
@@ -143,7 +123,6 @@ defineProps({
 })
 
 const emit = defineEmits([
-  'update:activeTab',
   'create-template',
   'edit-template',
   'create-mapping',
@@ -166,18 +145,6 @@ const emit = defineEmits([
 
 const trackingShipmentsPanelRef = ref(null)
 const refresh = () => trackingShipmentsPanelRef.value?.refresh?.()
-
-const tabItems = [
-  { value: 'overview', label: '概览', icon: ClipboardList },
-  { value: 'templates', label: '运费模板', icon: Calculator },
-  { value: 'zones', label: '配送区域', icon: MapPin },
-  { value: 'carriers', label: '承运商', icon: Truck },
-  { value: 'services', label: '线路服务', icon: Route },
-  { value: 'quote', label: '试算器', icon: Calculator },
-  { value: 'packaging', label: '包装规则', icon: Package },
-  { value: 'tracking', label: '追踪配置', icon: Radar },
-  { value: 'trackingShipments', label: '追踪任务', icon: RefreshCw },
-]
 
 defineExpose({ refresh })
 </script>

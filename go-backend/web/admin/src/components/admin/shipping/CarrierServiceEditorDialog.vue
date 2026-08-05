@@ -82,7 +82,7 @@
           </AdminFormField>
 
           <AdminFormField label="币种">
-            <Input v-model.trim="form.currency" class="font-mono uppercase" maxlength="10" placeholder="USD" />
+            <Input v-model.trim="form.currency" class="font-mono uppercase" maxlength="10" placeholder="ISO 4217" />
           </AdminFormField>
 
           <AdminFormField label="首重 g">

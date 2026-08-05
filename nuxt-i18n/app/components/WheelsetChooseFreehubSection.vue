@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-8">
     <!-- Intro Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
        <div class="flex flex-col items-center">
 
           <h3 class="text-lg font-bold tz-text-primary mb-2">Select Your Freehub Body</h3>
@@ -13,7 +13,7 @@
     </div>
 
     <!-- 1. Shimano Ecosystem (Blue) -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
        <div class="flex items-center gap-3 mb-6 pb-3 border-b border-blue-500/10">
            <h3 class="text-lg font-bold tz-text-primary">Shimano Ecosystem</h3>
        </div>
@@ -70,7 +70,7 @@
     </div>
 
     <!-- 2. SRAM Ecosystem (Red) -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
        <div class="flex items-center gap-3 mb-6 pb-3 border-b border-red-500/10">
            <h3 class="text-lg font-bold tz-text-primary">SRAM Ecosystem</h3>
        </div>
@@ -116,7 +116,7 @@
     </div>
 
     <!-- 3. Campagnolo Ecosystem (Indigo) -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
        <div class="flex items-center gap-3 mb-6 pb-3 border-b border-indigo-500/10">
            <h3 class="text-lg font-bold tz-text-primary">Campagnolo Ecosystem</h3>
        </div>
@@ -166,7 +166,7 @@
             <h3 class="text-base font-bold tz-text-primary mb-4 px-2 border-l-4 border-slate-500">
          Technical Reference: Freehub Standards & Groupsets
        </h3>
-       <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[#11151e]">
+       <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[var(--tz-card-surface)]">
             <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
               <thead class="bg-slate-800/50 font-bold tz-text-primary uppercase tracking-wider tz-micro-label sm:text-xs">
               <tr>
@@ -218,7 +218,7 @@
             <h3 class="text-base font-bold tz-text-primary mt-8 mb-4 px-2 border-l-4 border-slate-500">
          Technical Reference: Compatibility & Spacer Matrix
        </h3>
-       <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[#11151e]">
+       <div class="overflow-x-auto rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-[var(--tz-card-surface)]">
             <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
               <thead class="bg-slate-800/50 font-bold tz-text-primary uppercase tracking-wider tz-micro-label sm:text-xs">
               <tr>

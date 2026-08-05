@@ -1,9 +1,10 @@
 {
-  "yes": "はい",
-  "no": "いいえ",
   "close": "Close",
   "previous": "Previous",
   "next": "Next",
   "loading": "Loading...",
-  "backToHome": "Back to Home"
+  "backToHome": "Back to Home",
+  "viewAll": "View all",
+  "explore": "Explore",
+  "currentPage": "Current page"
 }

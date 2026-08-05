@@ -118,6 +118,18 @@ Admin address:
 - `http://localhost:9300`
 - backend API base: `/api/admin`
 
+The local dev launcher also ensures a first backoffice account exists after the
+API health check passes:
+
+- Email: `admin@example.com`
+- Password: `Admin123456!`
+- Role: `admin`
+
+Override these with `DEV_ADMIN_EMAIL`, `DEV_ADMIN_USERNAME`,
+`DEV_ADMIN_PASSWORD`, and `DEV_ADMIN_ROLE` before running `npm run dev`. If a
+backoffice user already exists, the bootstrap is skipped. Set
+`DEV_ADMIN_RESET=true` to reset or create the configured dev admin account.
+
 ## Docker Compose
 
 The root `docker-compose.yml` can start PostgreSQL, Redis, backend, and the Nuxt storefront:
@@ -159,6 +171,8 @@ Production entry points:
 The ERP application is a separate project. Do not reuse its images, volumes, environment variables, database, or project name.
 
 The production template intentionally leaves payment gateways and outbound SMTP disabled. Their current packages are not yet wired and verified as provider-specific end-to-end production flows; see the runbook before enabling either integration.
+
+Build and deploy the Nuxt storefront through the Linux Docker image path. Do not upload a Windows-built `nuxt-i18n/.output`; `@nuxt/image` packages native `sharp` binaries for the build machine, while production runs on Linux.
 
 ## Testing
 

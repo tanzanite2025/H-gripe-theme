@@ -5,6 +5,7 @@ import (
 
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/loyalty"
+	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -21,6 +22,8 @@ func TestRedeemPointsForGiftCardIsIdempotentAndLossless(t *testing.T) {
 	redemptionRepo := repository.NewGiftCardRedemptionRepository(db)
 	programRepo := repository.NewLoyaltyProgramRepository(db)
 	programService := NewLoyaltyProgramService(programRepo)
+	currencyPolicyService := seedTestCurrencyPolicy(t, db)
+	programService.ConfigureCurrencyPolicy(currencyPolicyService)
 
 	txManager := repository.NewTxManager(
 		db,
@@ -31,9 +34,11 @@ func TestRedeemPointsForGiftCardIsIdempotentAndLossless(t *testing.T) {
 		repository.NewPaymentRepository(db),
 	)
 	txManager.ConfigureGiftCardRedemptionRepository(redemptionRepo)
+	txManager.ConfigureLoyaltyProgramRepository(programRepo)
 	marketingService := NewMarketingService(txManager, couponRepo, loyaltyRepo)
 	marketingService.ConfigureLoyaltyProgram(programService)
 	marketingService.ConfigureGiftCardRedemptions(redemptionRepo)
+	marketingService.ConfigureCurrencyPolicy(currencyPolicyService)
 
 	config, err := programService.Update(LoyaltyProgramConfigInput{
 		Enabled:                   true,
@@ -48,7 +53,11 @@ func TestRedeemPointsForGiftCardIsIdempotentAndLossless(t *testing.T) {
 		CheckInStreakIntervalDays: 7,
 		CheckInStreakBonusPoints:  5,
 		CheckInMaxPoints:          50,
-		RedeemValuesCents:         []int64{1000},
+		RedeemOptions: []LoyaltyProgramOptionInput{{
+			ValueCents:    1000,
+			Currency:      "USD",
+			StockQuantity: 1,
+		}},
 	})
 	require.NoError(t, err)
 
@@ -103,6 +112,8 @@ func TestRedeemPointsForGiftCardRollsBackOnInsufficientPoints(t *testing.T) {
 	redemptionRepo := repository.NewGiftCardRedemptionRepository(db)
 	programRepo := repository.NewLoyaltyProgramRepository(db)
 	programService := NewLoyaltyProgramService(programRepo)
+	currencyPolicyService := seedTestCurrencyPolicy(t, db)
+	programService.ConfigureCurrencyPolicy(currencyPolicyService)
 
 	txManager := repository.NewTxManager(
 		db,
@@ -113,8 +124,10 @@ func TestRedeemPointsForGiftCardRollsBackOnInsufficientPoints(t *testing.T) {
 		repository.NewPaymentRepository(db),
 	)
 	txManager.ConfigureGiftCardRedemptionRepository(redemptionRepo)
+	txManager.ConfigureLoyaltyProgramRepository(programRepo)
 	marketingService := NewMarketingService(txManager, couponRepo, loyaltyRepo)
 	marketingService.ConfigureLoyaltyProgram(programService)
+	marketingService.ConfigureCurrencyPolicy(currencyPolicyService)
 
 	config, err := programService.Update(LoyaltyProgramConfigInput{
 		Enabled:                   true,
@@ -129,7 +142,11 @@ func TestRedeemPointsForGiftCardRollsBackOnInsufficientPoints(t *testing.T) {
 		CheckInStreakIntervalDays: 7,
 		CheckInStreakBonusPoints:  5,
 		CheckInMaxPoints:          50,
-		RedeemValuesCents:         []int64{1000},
+		RedeemOptions: []LoyaltyProgramOptionInput{{
+			ValueCents:    1000,
+			Currency:      "USD",
+			StockQuantity: 1,
+		}},
 	})
 	require.NoError(t, err)
 	require.NoError(t, db.Create(&loyalty.UserLoyalty{UserID: 7, AvailablePoints: 10}).Error)
@@ -167,6 +184,7 @@ func openRedemptionTestDB(t *testing.T) *gorm.DB {
 		&loyalty.UserLoyalty{},
 		&loyalty.ProgramConfig{},
 		&loyalty.ProgramRedeemOption{},
+		&setting.Setting{},
 	))
 	return db
 }

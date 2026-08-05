@@ -5,6 +5,7 @@ type AuthRequest = <T = any>(path: string, options?: any, errorMessage?: string)
 
 interface CustomerServiceChatSyncOptions {
   publicApiBase: ComputedRef<string>
+  locale: Ref<string>
   conversationId: Ref<string>
   selectedAgent: Ref<any>
   messages: WritableComputedRef<any[]>
@@ -26,6 +27,7 @@ const realtimeEventTypes = [
 
 export const useCustomerServiceChatSync = ({
   publicApiBase,
+  locale,
   conversationId,
   selectedAgent,
   messages,
@@ -69,6 +71,10 @@ export const useCustomerServiceChatSync = ({
       message_type: message.message_type || 'text',
       metadata: message.metadata || null,
       attachment_url: message.attachment_url || '',
+      attachments: Array.isArray(message.attachments)
+        ? message.attachments
+        : (message.attachment_url ? [message.attachment_url] : []),
+      source: message.source || '',
       created_at: message.created_at || new Date().toISOString(),
       is_agent: !!message.is_agent,
       sync_state: 'persisted'
@@ -98,6 +104,13 @@ export const useCustomerServiceChatSync = ({
       }
     }
 
+    if (normalized.message_type === 'faq') {
+      return {
+        ...normalized,
+        type: 'faq'
+      }
+    }
+
     return normalized
   }
 
@@ -124,6 +137,8 @@ export const useCustomerServiceChatSync = ({
           metadata: normalized.metadata || local.metadata || null,
           message_type: normalized.message_type || local.message_type || 'text',
           attachment_url: normalized.attachment_url || local.attachment_url || '',
+          attachments: normalized.attachments?.length ? normalized.attachments : (local.attachments || []),
+          source: normalized.source || local.source || '',
           type: local.type || normalized.type,
           title: local.title || normalized.title,
           url: local.url || normalized.url,
@@ -158,6 +173,8 @@ export const useCustomerServiceChatSync = ({
       metadata: persisted.metadata || local.metadata || null,
       message_type: persisted.message_type || local.message_type || 'text',
       attachment_url: persisted.attachment_url || local.attachment_url || '',
+      attachments: persisted.attachments?.length ? persisted.attachments : (local.attachments || []),
+      source: persisted.source || local.source || '',
       type: local.type || persisted.type,
       title: local.title || persisted.title,
       url: local.url || persisted.url,
@@ -179,7 +196,8 @@ export const useCustomerServiceChatSync = ({
       method: 'POST',
       credentials: 'include',
       body: {
-        agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
+        agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : '',
+        locale: locale.value
       }
     })
     const id = rememberConversationId(response)
@@ -224,9 +242,11 @@ export const useCustomerServiceChatSync = ({
             sender_name: user.value?.display_name || '访客',
             sender_email: currentSenderEmail(),
             agent_id: selectedAgent.value?.id || '',
+            locale: locale.value,
             message_type: messageData.message_type || 'text',
             metadata: messageData.metadata || null,
-            attachment_url: messageData.attachment_url || ''
+            attachment_url: messageData.attachment_url || '',
+            attachments: Array.isArray(messageData.attachments) ? messageData.attachments : []
           })
         },
         'Failed to send customer-service message'
@@ -239,48 +259,27 @@ export const useCustomerServiceChatSync = ({
     }
   }
 
-  const checkAutoReply = async (userMessage: string) => {
-    try {
-      const currentConversationId = await ensureCustomerServiceConversation()
-      const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/match`, {
-        method: 'POST',
-        credentials: 'include',
-        body: {
-          message: userMessage,
-          conversation_id: currentConversationId,
-          agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
-        }
-      })
-      rememberConversationId(response)
+  const uploadCustomerServiceAttachment = async (
+    file: File,
+    source: 'library' | 'camera' = 'library'
+  ) => {
+    const currentConversationId = await ensureCustomerServiceConversation()
+    const formData = new FormData()
+    formData.append('conversation_id', currentConversationId)
+    formData.append('source', source)
+    formData.append('file', file)
 
-      if (response.success && response.data.reply && import.meta.client) {
-        window.setTimeout(() => {
-          loadMessagesFromAPI()
-        }, 500)
-      }
-    } catch (error) {
-      console.error('自动回复检查失败', error)
+    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/attachments`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    })
+
+    const asset = response?.asset || response?.data?.asset || response?.data || null
+    if (!asset?.url) {
+      throw new Error('[CRITICAL] customer-service attachment upload returned no asset URL')
     }
-  }
-
-  const sendWelcomeMessage = async () => {
-    try {
-      const currentConversationId = await ensureCustomerServiceConversation()
-      const response = await $fetch<any>(`${publicApiBase.value}/customer-service/auto-reply/welcome`, {
-        credentials: 'include',
-        params: {
-          conversation_id: currentConversationId,
-          agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : ''
-        }
-      })
-      rememberConversationId(response)
-
-      if (response.success && response.data.message && !response.data.already_sent) {
-        await loadMessagesFromAPI()
-      }
-    } catch (error) {
-      console.error('发送欢迎语失败:', error)
-    }
+    return asset
   }
 
   const customerServiceEventURL = (currentConversationId: string) => {
@@ -443,11 +442,10 @@ export const useCustomerServiceChatSync = ({
     ensureCustomerServiceConversation,
     loadMessagesFromAPI,
     sendMessageToAPI,
+    uploadCustomerServiceAttachment,
     sendTypingIndicator,
     replaceLocalMessageWithServerMessage,
     markLocalMessageFailed,
-    checkAutoReply,
-    sendWelcomeMessage,
     connectCustomerServiceRealtime,
     closeCustomerServiceRealtime,
     agentTyping,

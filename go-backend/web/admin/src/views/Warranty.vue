@@ -14,26 +14,7 @@
 
     <AdminStatsGrid :items="statItems" />
 
-    <Tabs v-model="activeTab" class="gap-4">
-      <TabsList variant="line" class="h-10 w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
-        <TabsTrigger value="registrations" class="h-9 flex-none px-3">
-          <ShieldCheck class="size-4" />
-          注册记录
-        </TabsTrigger>
-        <TabsTrigger value="claims" class="h-9 flex-none px-3">
-          <FileWarning class="size-4" />
-          保修申请
-        </TabsTrigger>
-        <TabsTrigger value="expiring" class="h-9 flex-none px-3">
-          <Clock3 class="size-4" />
-          即将到期
-        </TabsTrigger>
-        <TabsTrigger value="boundary" class="h-9 flex-none px-3">
-          <GitBranch class="size-4" />
-          数据边界
-        </TabsTrigger>
-      </TabsList>
-
+    <Tabs :model-value="activeTab" class="gap-4">
       <WarrantyRegistrationsTab
         :registrations="registrations"
         :loading="loading.registrations"
@@ -93,11 +74,7 @@
 
 <script setup>
 import {
-  Clock3,
-  FileWarning,
-  GitBranch,
   RefreshCw,
-  ShieldCheck
 } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
@@ -106,7 +83,7 @@ import WarrantyClaimsTab from '@/components/admin/warranty/WarrantyClaimsTab.vue
 import WarrantyExpiringTab from '@/components/admin/warranty/WarrantyExpiringTab.vue'
 import WarrantyRegistrationsTab from '@/components/admin/warranty/WarrantyRegistrationsTab.vue'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs } from '@/components/ui/tabs'
 import { useWarrantyAdmin } from '@/composables/warranty/useWarrantyAdmin'
 
 const {

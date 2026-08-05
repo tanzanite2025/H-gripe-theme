@@ -14,11 +14,13 @@
 
     <AppFooter />
     <GradientDockMenu />
+    <BehaviorAttributionBootstrap />
   </div>
 </template>
 
 <script setup lang="ts">
 import AppFooter from '~/components/AppFooter.vue'
+import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
 import PageFaqSlot from '~/components/PageFaqSlot.vue'
 </script>
@@ -29,7 +31,7 @@ import PageFaqSlot from '~/components/PageFaqSlot.vue'
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at top, #020617 0, #020617 24%, #000000 100%);
+  background: #000000;
 }
 
 .layout-main {

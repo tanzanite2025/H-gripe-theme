@@ -48,9 +48,6 @@
         <button type="submit">
           {{ t('accountSidebar.addresses.saveToCheckout', 'Use for checkout') }}
         </button>
-        <button type="button" class="address-form__ghost" @click="checkoutNow">
-          {{ t('cartDrawer.actions.checkout', 'Checkout') }} →
-        </button>
       </div>
     </form>
 
@@ -66,13 +63,9 @@ import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart, type ShippingAddress } from '~/composables/useCart'
 
-const emit = defineEmits<{
-  (event: 'close'): void
-}>()
-
 const { t } = useI18n()
 const auth = useAuth()
-const { shippingAddress, setShippingAddress, openCheckout } = useCart()
+const { shippingAddress, setShippingAddress } = useCart()
 
 const emptyAddress = (): ShippingAddress => ({
   name: '',
@@ -111,12 +104,6 @@ const saveAddress = () => {
   flashSaved()
 }
 
-const checkoutNow = () => {
-  saveAddress()
-  openCheckout()
-  emit('close')
-}
-
 watch(
   () => shippingAddress.value,
   (address) => fillForm(address),
@@ -138,7 +125,7 @@ watch(
 }
 
 .tab-head p {
-  color: rgba(103, 232, 249, 0.9);
+  color: rgba(181, 255, 109, 0.9);
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -157,20 +144,20 @@ watch(
   grid-template-columns: auto 1fr;
   gap: 0.6rem;
   border-radius: 1rem;
-  background: rgba(96, 165, 250, 0.11);
+  background: rgba(181, 255, 109, 0.1);
   padding: 0.75rem;
 }
 
 .address-boundary :deep(svg) {
   width: 1rem;
   height: 1rem;
-  color: #67e8f9;
+  color: #B5FF6D;
   margin-top: 0.1rem;
 }
 
 .address-boundary p {
   margin: 0;
-  color: rgba(226, 232, 240, 0.8);
+  color: rgba(232, 232, 232, 0.8);
   font-size: var(--tz-type-micro-label);
   line-height: 1.45;
 }
@@ -188,7 +175,7 @@ watch(
 .address-form span {
   display: block;
   margin-bottom: 0.32rem;
-  color: rgba(226, 232, 240, 0.78);
+  color: rgba(232, 232, 232, 0.78);
   font-size: var(--tz-type-micro-label);
   font-weight: 750;
 }
@@ -206,8 +193,8 @@ watch(
 }
 
 .address-form input:focus {
-  border-color: rgba(64, 255, 170, 0.7);
-  box-shadow: 0 0 0 3px rgba(64, 255, 170, 0.12);
+  border-color: rgba(181, 255, 109, 0.7);
+  box-shadow: 0 0 0 3px rgba(181, 255, 109, 0.12);
 }
 
 .address-form__wide,
@@ -225,8 +212,8 @@ watch(
 .address-form__actions button {
   min-height: 2.55rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  background: #B5FF6D;
+  color: #050505;
   font-size: 0.8rem;
   font-weight: 900;
 }
@@ -240,8 +227,8 @@ watch(
 .account-toast {
   margin: 0;
   border-radius: 999px;
-  background: rgba(64, 255, 170, 0.12);
-  color: #bfffe3;
+  background: rgba(181, 255, 109, 0.12);
+  color: #e7ffd1;
   padding: 0.6rem 0.8rem;
   text-align: center;
   font-size: 0.75rem;

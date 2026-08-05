@@ -41,18 +41,24 @@ func (h *Handler) AddMessage(c *gin.Context) {
 		Content     string   `json:"content" binding:"required"`
 		Attachments []string `json:"attachments"`
 	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, ticketMessageJSONMaxBytes)
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondTicketJSONBindError(c, err)
 		return
 	}
 
-	attachments, _ := json.Marshal(req.Attachments)
+	attachmentValues, err := h.sanitizeTicketMessageAttachments(req.Attachments, ticketMessageAttachmentMaxCount)
+	if err != nil {
+		respondTicketAttachmentError(c, err)
+		return
+	}
+	attachments := marshalTicketMessageAttachments(attachmentValues...)
 
 	msg := &ticket.TicketMessage{
 		TicketID:    uint(ticketID),
 		Content:     req.Content,
 		MessageType: "text",
-		Attachments: string(attachments),
+		Attachments: attachments,
 	}
 
 	if err := h.ticketService.AddMessage(msg, userID.(uint), isStaff); err != nil {
@@ -149,11 +155,8 @@ func ticketConversationResponse(item ticket.Ticket) gin.H {
 }
 
 func ticketMessageResponse(item ticket.TicketMessage) gin.H {
-	attachmentURL := ""
-	var attachments []string
-	if err := json.Unmarshal([]byte(item.Attachments), &attachments); err == nil && len(attachments) > 0 {
-		attachmentURL = attachments[0]
-	}
+	attachments := parseTicketMessageAttachments(item.Attachments)
+	attachmentURL := firstTicketMessageAttachment(attachments)
 
 	senderName := "Customer"
 	if item.IsStaff {
@@ -169,7 +172,9 @@ func ticketMessageResponse(item ticket.TicketMessage) gin.H {
 		"sender_id":       item.UserID,
 		"sender_name":     senderName,
 		"message":         item.Content,
+		"source":          ticketMessageSource(item.Metadata),
 		"attachment_url":  attachmentURL,
+		"attachments":     attachments,
 		"created_at":      item.CreatedAt,
 		"is_read":         item.IsRead,
 		"is_agent":        item.IsStaff,
@@ -177,11 +182,8 @@ func ticketMessageResponse(item ticket.TicketMessage) gin.H {
 }
 
 func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversationID, senderName, messageType string, metadata interface{}) gin.H {
-	attachmentURL := ""
-	var attachments []string
-	if err := json.Unmarshal([]byte(item.Attachments), &attachments); err == nil && len(attachments) > 0 {
-		attachmentURL = attachments[0]
-	}
+	attachments := parseTicketMessageAttachments(item.Attachments)
+	attachmentURL := firstTicketMessageAttachment(attachments)
 
 	if strings.TrimSpace(senderName) == "" {
 		if item.IsStaff {
@@ -210,7 +212,9 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 		"message":         item.Content,
 		"message_type":    messageType,
 		"metadata":        metadata,
+		"source":          ticketMessageSource(item.Metadata),
 		"attachment_url":  attachmentURL,
+		"attachments":     attachments,
 		"created_at":      item.CreatedAt,
 		"is_agent":        item.IsStaff,
 	}
@@ -219,7 +223,7 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 func normalizeTicketMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "config_confirm":
+	case "product", "order", "image", "link", "faq", "config_confirm":
 		return value
 	default:
 		return "text"
@@ -238,6 +242,38 @@ func marshalTicketMessageMetadata(value interface{}) (string, error) {
 		return "", nil
 	}
 	return string(payload), nil
+}
+
+func parseTicketMessageAttachments(value string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return []string{}
+	}
+	var attachments []string
+	if err := json.Unmarshal([]byte(value), &attachments); err != nil || attachments == nil {
+		return []string{}
+	}
+	return attachments
+}
+
+func firstTicketMessageAttachment(attachments []string) string {
+	if len(attachments) == 0 {
+		return ""
+	}
+	return attachments[0]
+}
+
+func ticketMessageSource(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+		return ""
+	}
+	source, _ := payload["_source"].(string)
+	return strings.TrimSpace(source)
 }
 
 func marshalTicketMessageAttachments(values ...string) string {

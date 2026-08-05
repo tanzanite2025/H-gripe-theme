@@ -87,7 +87,7 @@ func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T
 	assert.Equal(t, int64(0), productCount)
 }
 
-func TestProductServiceUpdateAdminProductPreservesInactiveVariant(t *testing.T) {
+func TestProductServiceUpdateAdminProductPreservesInactiveVariantWhenAnotherVariantIsActive(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productType := seedCarbonRimType(t, db)
 	createdProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-INACTIVE", "inactive-rim", map[string]string{
@@ -108,14 +108,71 @@ func TestProductServiceUpdateAdminProductPreservesInactiveVariant(t *testing.T) 
 				IsDefault:    true,
 				IsActive:     &inactive,
 			},
+			{
+				SKU:          "RIM-INACTIVE-ACTIVE-VAR",
+				OptionValues: map[string]string{"brake_type": "rim"},
+				Price:        419,
+				Stock:        7,
+				IsDefault:    false,
+				IsActive:     boolPtr(true),
+			},
 		},
 		UpdateVariants: true,
 	})
 
 	require.NoError(t, err)
-	require.Len(t, updatedProduct.Variants, 1)
-	assert.False(t, updatedProduct.Variants[0].IsActive)
-	assert.Equal(t, 0, updatedProduct.TotalVariantStock())
+	require.Len(t, updatedProduct.Variants, 2)
+	assert.Equal(t, 7, updatedProduct.TotalVariantStock())
+
+	var inactiveVariant, activeVariant *product.ProductVariant
+	for i := range updatedProduct.Variants {
+		switch updatedProduct.Variants[i].SKU {
+		case createdProduct.Variants[0].SKU:
+			inactiveVariant = &updatedProduct.Variants[i]
+		case "RIM-INACTIVE-ACTIVE-VAR":
+			activeVariant = &updatedProduct.Variants[i]
+		}
+	}
+	require.NotNil(t, inactiveVariant)
+	require.NotNil(t, activeVariant)
+	assert.False(t, inactiveVariant.IsActive)
+	assert.False(t, inactiveVariant.IsDefault)
+	assert.True(t, activeVariant.IsActive)
+	assert.True(t, activeVariant.IsDefault)
+}
+
+func TestProductServiceCreateAdminProductRejectsAllInactiveVariants(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+	inactive := false
+
+	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductTypeID: &productType.ID,
+		Name:          "Inactive SKU Rim",
+		Slug:          "inactive-sku-rim",
+		Status:        "active",
+		Locale:        "en",
+		SpecValues: map[string]string{
+			"outer_width_mm": "30",
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "RIM-ALL-INACTIVE-DISC",
+				OptionValues: map[string]string{"brake_type": "disc"},
+				Price:        399,
+				Stock:        15,
+				IsDefault:    true,
+				IsActive:     &inactive,
+			},
+		},
+	})
+
+	require.ErrorIs(t, err, ErrProductVariantInvalid)
+	assert.Nil(t, createdProduct)
+
+	var productCount int64
+	require.NoError(t, db.Model(&product.Product{}).Count(&productCount).Error)
+	assert.Equal(t, int64(0), productCount)
 }
 
 func TestProductServiceCreateAdminProductRequiresVariant(t *testing.T) {
@@ -214,21 +271,44 @@ func TestProductRepositoryPurchasableVariantRejectsInactiveProduct(t *testing.T)
 	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
-func TestProductServicePublicListsFallBackToEnglish(t *testing.T) {
+func TestProductServicePublicCatalogIgnoresProductLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productType := seedCarbonRimType(t, db)
-	englishRim := createProductWithSpecs(t, productService, productType.ID, "RIM-EN", "english-rim", map[string]string{
-		"outer_width_mm": "30",
-	}, map[string]string{"brake_type": "disc"})
+	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductTypeID: &productType.ID,
+		Name:          "Unified Rim",
+		Slug:          "global-rim",
+		Status:        "active",
+		Locale:        "zh_cn",
+		SpecValues: map[string]string{
+			"outer_width_mm": "30",
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "RIM-GLOBAL-VAR",
+				OptionValues: map[string]string{"brake_type": "disc"},
+				Price:        399,
+				Stock:        5,
+				IsDefault:    true,
+				IsActive:     boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, createdProduct)
 
-	listed, listTotal, err := productService.List("zh", "active", false, 1, 20)
+	publicProduct, err := productService.GetPublicBySlug("global-rim", "en")
+	require.NoError(t, err)
+	assert.Equal(t, createdProduct.ID, publicProduct.ID)
+
+	listed, listTotal, err := productService.ListPublic("en", false, 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), listTotal)
 	require.Len(t, listed, 1)
-	assert.Equal(t, englishRim.ID, listed[0].ID)
+	assert.Equal(t, createdProduct.ID, listed[0].ID)
 
 	searched, searchTotal, err := productService.SearchPublic(ProductSearchInput{
-		Locale:   "zh",
+		Locale:   "en",
 		Status:   "active",
 		Page:     1,
 		PageSize: 20,
@@ -236,7 +316,13 @@ func TestProductServicePublicListsFallBackToEnglish(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), searchTotal)
 	require.Len(t, searched, 1)
-	assert.Equal(t, englishRim.ID, searched[0].ID)
+	assert.Equal(t, createdProduct.ID, searched[0].ID)
+
+	available, availableTotal, err := productService.ListPublicAvailable("en", 1, 20)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), availableTotal)
+	require.Len(t, available, 1)
+	assert.Equal(t, createdProduct.ID, available[0].ID)
 }
 
 func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {

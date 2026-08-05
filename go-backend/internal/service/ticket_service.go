@@ -13,13 +13,18 @@ var ErrTicketRouteMismatch = errors.New("ticket must be handled by its dedicated
 type TicketService struct {
 	ticketRepo *repository.TicketRepository
 	userRepo   *repository.UserRepository
+	faqRepo    *repository.FAQRepository
 }
 
-func NewTicketService(ticketRepo *repository.TicketRepository, userRepo *repository.UserRepository) *TicketService {
-	return &TicketService{
+func NewTicketService(ticketRepo *repository.TicketRepository, userRepo *repository.UserRepository, faqRepos ...*repository.FAQRepository) *TicketService {
+	service := &TicketService{
 		ticketRepo: ticketRepo,
 		userRepo:   userRepo,
 	}
+	if len(faqRepos) > 0 {
+		service.faqRepo = faqRepos[0]
+	}
+	return service
 }
 
 func (s *TicketService) CreateTicket(t *ticket.Ticket) error {

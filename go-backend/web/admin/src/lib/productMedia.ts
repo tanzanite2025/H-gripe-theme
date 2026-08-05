@@ -47,7 +47,7 @@ export const getProductThumbnail = (product: any) => {
   }
 
   const primaryVideo = visibleItems.find((item) => (
-    item.media_type === 'video' && hasUrl(item) && (item.is_primary || item.role === 'video' || item.role === 'detail')
+    item.media_type === 'video' && hasUrl(item) && item.role === 'video'
   ))
   const fallbackVideo = visibleItems.find((item) => item.media_type === 'video' && hasUrl(item))
   const video = primaryVideo || fallbackVideo
@@ -69,24 +69,40 @@ export const getProductThumbnail = (product: any) => {
   }
 }
 
-export const createProductMediaItem = (overrides: Record<string, any> = {}, sortOrder = 0) => ({
-  id: null,
-  local_key: `media-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-  variant_id: null,
-  media_asset_id: null,
-  media_type: 'image',
-  role: 'gallery',
-  url: '',
-  thumbnail_url: '',
-  poster_url: '',
-  alt: '',
-  title: '',
-  locale: '',
-  sort_order: sortOrder,
-  is_primary: false,
-  is_visible: true,
-  ...overrides
-})
+export const normalizeProductMediaRole = (type: string, role: unknown, isPrimary = false) => {
+  const mediaType = type === 'video' ? 'video' : 'image'
+  const value = String(role || '').trim().toLowerCase()
+
+  if (mediaType === 'video') return 'video'
+  if (value === 'primary' || isPrimary) return 'primary'
+  return 'gallery'
+}
+
+export const createProductMediaItem = (overrides: Record<string, any> = {}, sortOrder = 0) => {
+  const item = {
+    id: null,
+    local_key: `media-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    variant_id: null,
+    media_asset_id: null,
+    media_type: 'image',
+    role: 'gallery',
+    url: '',
+    thumbnail_url: '',
+    poster_url: '',
+    alt: '',
+    title: '',
+    locale: '',
+    sort_order: sortOrder,
+    is_primary: false,
+    is_visible: true,
+    ...overrides
+  }
+
+  item.media_type = item.media_type === 'video' ? 'video' : 'image'
+  item.role = normalizeProductMediaRole(item.media_type, item.role, Boolean(item.is_primary))
+  item.is_primary = item.media_type === 'image' && (Boolean(item.is_primary) || item.role === 'primary')
+  return item
+}
 
 export const buildProductMediaFormValues = (product: any) => (
   (product.media || []).map((item, index) => createProductMediaItem({
@@ -111,13 +127,11 @@ export const getProductMediaTypeLabel = (type: string) => ({ image: '图片', vi
 
 export const getProductMediaRoleOptions = (type: string) => type === 'video'
   ? [
-      { label: '商品视频', value: 'video' },
-      { label: '详情视频', value: 'detail' }
+      { label: '商品视频', value: 'video' }
     ]
   : [
       { label: '主图', value: 'primary' },
-      { label: '轮播图', value: 'gallery' },
-      { label: '详情图', value: 'detail' }
+      { label: '图库图片', value: 'gallery' }
     ]
 
 export const normalizeProductMediaOrder = (items: Array<Record<string, any>>) => {
@@ -127,6 +141,14 @@ export const normalizeProductMediaOrder = (items: Array<Record<string, any>>) =>
 }
 
 export const ensureSinglePrimaryProductImage = (items: Array<Record<string, any>>) => {
+  items.forEach((item) => {
+    item.media_type = item.media_type === 'video' ? 'video' : 'image'
+    item.role = normalizeProductMediaRole(item.media_type, item.role, Boolean(item.is_primary))
+    if (item.media_type === 'video') {
+      item.is_primary = false
+    }
+  })
+
   let primaryIndex = items.findIndex((item) => (
     item.media_type === 'image' && (item.is_primary || item.role === 'primary')
   ))
@@ -153,8 +175,8 @@ export const normalizeProductMediaForPayload = (items: Array<Record<string, any>
       id: item.id || undefined,
       variant_id: item.variant_id || undefined,
       media_asset_id: item.media_asset_id || undefined,
-      media_type: item.media_type || 'image',
-      role: item.role || (item.media_type === 'video' ? 'video' : 'gallery'),
+      media_type: item.media_type === 'video' ? 'video' : 'image',
+      role: normalizeProductMediaRole(item.media_type, item.role, Boolean(item.is_primary)),
       url: String(item.url || '').trim(),
       thumbnail_url: String(item.thumbnail_url || '').trim(),
       poster_url: String(item.poster_url || '').trim(),
@@ -162,7 +184,7 @@ export const normalizeProductMediaForPayload = (items: Array<Record<string, any>
       title: String(item.title || '').trim(),
       locale: String(item.locale || '').trim(),
       sort_order: Number(item.sort_order ?? index * 10),
-      is_primary: Boolean(item.is_primary),
+      is_primary: item.media_type === 'image' && Boolean(item.is_primary),
       is_visible: item.is_visible !== false
     }))
 }

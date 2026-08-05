@@ -9,7 +9,7 @@
            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">1</div>
            <h3 class="text-slate-100 font-bold text-lg mb-2 pt-0.5">Applicable Products</h3>
            <ul class="space-y-2 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-teal-500/60">
-              <li>This policy applies to all <strong class="text-white">Tanzanite series Wheels/Rims</strong>.</li>
+              <li>This policy applies to all <strong class="text-white">eligible Wheels/Rims</strong>.</li>
               <li>You can use the product filter on our website to identify which series your wheelset belongs to.</li>
            </ul>
          </div>
@@ -37,15 +37,15 @@
               <div class="bg-slate-800/20 rounded-lg p-5 border border-slate-700/50 md:col-span-2">
                   <h4 class="text-teal-400 font-bold text-sm mb-3">1. Manufacturing Defects</h4>
                   <ul class="space-y-2 tz-text-secondary text-xs leading-relaxed list-disc pl-4 marker:text-teal-500/40">
-                      <li>Within <strong class="text-white">30 days of receipt</strong>: Tanzanite will replace the rim and cover shipping costs.</li>
-                      <li>After <strong class="text-white">31 days</strong> (within warranty period): Tanzanite will replace the rim, but shipping costs are the customer's responsibility.</li>
+                      <li>Within <strong class="text-white">30 days of receipt</strong>: we will replace the rim and cover shipping costs.</li>
+                      <li>After <strong class="text-white">31 days</strong> (within warranty period): we will replace the rim, but shipping costs are the customer's responsibility.</li>
                   </ul>
               </div>
               <!-- 3.2 Product Upgrade -->
                <div class="bg-slate-800/20 rounded-lg p-5 border border-slate-700/50">
                   <h4 class="text-teal-400 font-bold text-sm mb-3">2. Product Upgrade</h4>
                   <ul class="space-y-2 tz-text-secondary text-xs leading-relaxed list-disc pl-4 marker:text-teal-500/40">
-                      <li>Tanzanite reserves the right to replace your rim with a stronger, more durable model.</li>
+                      <li>We reserve the right to replace your rim with a stronger, more durable model.</li>
                       <li>If discontinued, we will upgrade you to the latest equivalent model at no cost.</li>
                   </ul>
               </div>
@@ -76,7 +76,7 @@
               <li>Improper assembly or maintenance by unauthorized technicians.</li>
               <li>Installation of incompatible parts, accessories, or tires.</li>
               <li>Damage caused by crashes, accidental impact, misuse, heat damage, or non-compliance with usage guidelines.</li>
-              <li>Issues related to spokes/nipples/assembly if not built by Tanzanite.</li>
+              <li>Issues related to spokes/nipples/assembly if not built by our team.</li>
               <li>Normal wear and tear (bearings, decals, etc.).</li>
            </ul>
          </div>
@@ -86,7 +86,7 @@
            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">5</div>
            <h3 class="text-slate-100 font-bold text-lg mb-2 pt-0.5">Contact</h3>
            <div class="space-y-3 tz-text-secondary text-sm">
-              <p>Email: <a href="mailto:support@tanzanite.site" class="text-teal-400 hover:text-teal-300 transition-colors">support@tanzanite.site</a></p>
+              <p v-if="contactEmail">Email: <a :href="contactEmailHref" class="text-teal-400 hover:text-teal-300 transition-colors">{{ contactEmail }}</a></p>
               <p>
                   <a href="#" @click.prevent="$emit('change-tab', 'submit-warranty')" class="inline-flex items-center gap-1 text-teal-400 hover:text-teal-300 font-bold transition-colors">
                  Submit a Claim 
@@ -101,7 +101,16 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+const props = defineProps<{
+  contactEmail?: string
+}>()
+
 defineEmits<{
   (e: 'change-tab', id: string): void
 }>()
+
+const contactEmail = computed(() => props.contactEmail?.trim() || '')
+const contactEmailHref = computed(() => `mailto:${contactEmail.value}`)
 </script>

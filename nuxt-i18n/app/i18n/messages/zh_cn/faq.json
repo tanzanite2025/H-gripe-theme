@@ -1,4 +1,20 @@
 {
-  "title": "Frequently Asked Questions",
-  "subtitle": "Find answers to common questions about our products and services"
+  "title": "常见问题",
+  "subtitle": "查找有关产品与服务的常见问题解答",
+  "ui": {
+    "categorizedSupport": "分类支持",
+    "quickAnswers": "快速查看常见问题答案",
+    "categoriesAriaLabel": "FAQ 分类",
+    "categoriesLabel": "FAQ 分类",
+    "all": "全部",
+    "viewAll": "查看全部 FAQ",
+    "emptySection": "此部分暂无 FAQ。",
+    "pageIntro": "浏览有关订单、产品与服务的常见问题和快速答案。",
+    "searchPlaceholder": "搜索 FAQ...",
+    "viewMoreContent": "查看更多内容",
+    "noResults": "没有找到与“{query}”匹配的 FAQ",
+    "allFaqsMetaTitle": "全部 FAQ",
+    "loadingAnswers": "正在加载答案",
+    "illustrationAlt": "FAQ 配图"
+  }
 }

@@ -46,13 +46,12 @@ const toggle = (keyword: string) => {
 
 <style scoped>
 .popular-searches {
-  margin-top: 8px;
-  margin-bottom: 8px;
+  margin: 0;
 }
 
 .popular-searches__title {
-  margin: 0 0 6px;
-  font-size: 0.78rem;
+  margin: 0 0 8px;
+  font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -63,7 +62,7 @@ const toggle = (keyword: string) => {
 .popular-searches__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .popular-searches__chip {
@@ -71,22 +70,40 @@ const toggle = (keyword: string) => {
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  padding: 0.35rem 0.65rem;
+  padding: 0.32rem 0.62rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(15,23,42,0.92), rgba(15,23,42,0.72));
-  border: none;
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.55);
-  font-size: 0.875rem;
+  background: #070707;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
   transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.08s ease;
 }
 
 .popular-searches__chip--active {
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow:
-    0 10px 22px rgba(0, 0, 0, 0.7);
-  color: rgba(0, 0, 0, 0.92);
+  background: #050505;
+  border-color: rgba(181, 255, 109, 0.62);
+  box-shadow: none;
+  color: #ffffff;
+}
+
+@media (min-width: 769px) {
+  .popular-searches {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 14px;
+  }
+
+  .popular-searches__title {
+    margin: 0;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  .popular-searches__chips {
+    gap: 6px;
+  }
 }
 </style>

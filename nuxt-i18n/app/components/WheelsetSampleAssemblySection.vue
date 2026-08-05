@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-8">
     <!-- Intro Banner -->
-    <div class="relative overflow-hidden rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6 text-center">
+    <div class="relative overflow-hidden rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6 text-center">
        <div class="flex flex-col items-center">
 
          <h3 class="text-xl font-bold text-slate-100 mb-2">Professional Wheel Building Service</h3>
@@ -30,7 +30,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
        <!-- 1. The Process (Emerald) -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
           <div class="flex items-center gap-3 mb-5 pb-3 border-b border-emerald-500/10">
             <h3 class="text-lg font-bold tz-text-primary">Service Process</h3>
          </div>
@@ -41,22 +41,22 @@
 
             <!-- Steps -->
             <div class="relative pl-8">
-               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[#11151e]"></span>
+               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[var(--tz-card-surface)]"></span>
                <strong class="block text-emerald-400 text-xs uppercase tracking-wider mb-1">1. Shipping</strong>
                <p class="text-xs tz-text-secondary">Send components to our designated address.</p>
             </div>
             <div class="relative pl-8">
-               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-slate-600 ring-4 ring-[#11151e]"></span>
+               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-slate-600 ring-4 ring-[var(--tz-card-surface)]"></span>
                <strong class="block tz-text-primary text-xs uppercase tracking-wider mb-1">2. Confirmation</strong>
                <p class="text-xs tz-text-secondary">We inspect and confirm receipt of all items.</p>
             </div>
              <div class="relative pl-8">
-               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-slate-600 ring-4 ring-[#11151e]"></span>
+               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-slate-600 ring-4 ring-[var(--tz-card-surface)]"></span>
                <strong class="block tz-text-primary text-xs uppercase tracking-wider mb-1">3. Assembly & Testing</strong>
                <p class="text-xs tz-text-secondary">Professional build + tension/safety analysis.</p>
             </div>
              <div class="relative pl-8">
-               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[#11151e]"></span>
+               <span class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[var(--tz-card-surface)]"></span>
                <strong class="block text-emerald-400 text-xs uppercase tracking-wider mb-1">4. Delivery</strong>
                <p class="text-xs tz-text-secondary">Finished wheelset shipped back or ready for pickup.</p>
             </div>
@@ -64,7 +64,7 @@
        </div>
 
        <!-- 2. Scope & Notes (Amber) -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
           <div class="flex items-center gap-3 mb-5 pb-3 border-b border-amber-500/10">
             <h3 class="text-lg font-bold tz-text-primary">Scope & Notes</h3>
          </div>
@@ -89,7 +89,7 @@
     </div>
 
     <!-- DIY Support Section -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center">
        <h3 class="text-lg font-bold tz-text-primary mb-3">Building Your Own Wheels?</h3>
        <p class="text-sm tz-text-secondary mb-6 max-w-2xl mx-auto">
           If you prefer to assemble yourself using TANZANITE parts, we support you! access our technical guides and customization options below.

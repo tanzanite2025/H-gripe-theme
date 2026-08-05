@@ -261,6 +261,19 @@ data:
           summary: "Payment risk delays are elevated"
           description: "Risk-based checkout delays are being applied frequently. Review carding activity and checkout false positives."
 
+      # 商业情报保护动作升高时，检查异常目录抓取、订单枚举和购物车探测。
+      - alert: CommercialIntelligenceProtectionSpike
+        expr: |
+          sum by (seed_id, outcome) (
+            rate(tanzanite_commercial_intelligence_actions_total[5m])
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Commercial intelligence protection actions are elevated"
+          description: "Protection actions for {{ $labels.seed_id }} / {{ $labels.outcome }} are sustained above 0.05 events per second. Review source concentration, false positives, and high-value endpoint traffic."
+
       # 验证码/邮件发送量异常时，先确认全局预算和供应商账单状态。
       - alert: VerificationDeliveryVolumeHigh
         expr: sum(increase(tanzanite_verification_send_attempts_total{result="accepted"}[5m])) > 300

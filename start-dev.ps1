@@ -9,7 +9,7 @@ $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LogDir = Join-Path $Root 'output/dev'
 
 $Ports = [ordered]@{
-  Storefront = 9100
+  Storefront = 9199
   Api        = 9200
   Admin      = 9300
   Postgres   = 9400
@@ -146,6 +146,103 @@ function Start-DevProcess(
   Write-Ok "$Name started, PID $($process.Id)"
   Write-Host "  stdout: $stdout" -ForegroundColor DarkGray
   Write-Host "  stderr: $stderr" -ForegroundColor DarkGray
+
+  return $process
+}
+
+function Get-EnvOrDefault([string]$Name, [string]$Default) {
+  $value = [Environment]::GetEnvironmentVariable($Name, 'Process')
+  if ([string]::IsNullOrWhiteSpace($value)) {
+    return $Default
+  }
+  return $value
+}
+
+function Invoke-DevAdminBootstrap {
+  Write-Section 'Ensuring DEV admin account'
+
+  $devAdminEmail = Get-EnvOrDefault 'DEV_ADMIN_EMAIL' 'admin@example.com'
+  $devAdminUsername = Get-EnvOrDefault 'DEV_ADMIN_USERNAME' 'admin'
+  $devAdminPassword = Get-EnvOrDefault 'DEV_ADMIN_PASSWORD' 'Admin123456!'
+  $devAdminRole = Get-EnvOrDefault 'DEV_ADMIN_ROLE' 'admin'
+  $devAdminReset = Get-EnvOrDefault 'DEV_ADMIN_RESET' ''
+
+  $envValues = [ordered]@{
+    SERVER_MODE         = 'debug'
+    DB_HOST             = 'localhost'
+    DB_PORT             = [string]$Ports.Postgres
+    DB_USERNAME         = 'tanzanite'
+    DB_PASSWORD         = 'tanzanite_password'
+    DB_NAME             = 'tanzanite'
+    DB_LOG_LEVEL        = 'silent'
+    DEV_ADMIN_BOOTSTRAP = 'true'
+    DEV_ADMIN_EMAIL     = $devAdminEmail
+    DEV_ADMIN_USERNAME  = $devAdminUsername
+    DEV_ADMIN_PASSWORD  = $devAdminPassword
+    DEV_ADMIN_ROLE      = $devAdminRole
+    DEV_ADMIN_RESET     = $devAdminReset
+  }
+
+  $previousEnv = @{}
+  foreach ($key in $envValues.Keys) {
+    $previousEnv[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
+    [Environment]::SetEnvironmentVariable($key, $envValues[$key], 'Process')
+  }
+
+  Push-Location (Join-Path $Root 'go-backend')
+  try {
+    go run ./cmd/dev-admin | Out-Host
+    Write-Ok "DEV admin account ready: $devAdminEmail"
+  } catch {
+    Write-Fail "DEV admin bootstrap failed: $($_.Exception.Message)"
+    exit 1
+  } finally {
+    Pop-Location
+    foreach ($key in $previousEnv.Keys) {
+      [Environment]::SetEnvironmentVariable($key, $previousEnv[$key], 'Process')
+    }
+  }
+}
+
+function Show-LogTail([string]$Path) {
+  if (-not (Test-Path -LiteralPath $Path)) {
+    Write-Warn "Log not found: $Path"
+    return
+  }
+
+  Get-Content -LiteralPath $Path -Tail 40 | ForEach-Object {
+    Write-Host "  $_" -ForegroundColor DarkGray
+  }
+}
+
+function Wait-DevHttpReady(
+  [string]$Name,
+  [System.Diagnostics.Process]$Process,
+  [string]$Url,
+  [string]$ErrorLog,
+  [int]$TimeoutSeconds
+) {
+  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  while ((Get-Date) -lt $deadline) {
+    $Process.Refresh()
+    if ($Process.HasExited) {
+      Write-Fail "$Name exited before it was reachable: $Url"
+      Show-LogTail $ErrorLog
+      return $false
+    }
+
+    try {
+      Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 2 | Out-Null
+      Write-Ok "$Name is reachable: $Url"
+      return $true
+    } catch {
+      Start-Sleep -Seconds 1
+    }
+  }
+
+  Write-Warn "$Name is not reachable yet: $Url"
+  Write-Warn "Check log: $ErrorLog"
+  return $false
 }
 
 function Stop-Dev {
@@ -241,35 +338,43 @@ $backendCommand = @"
 `$env:STOREFRONT_HTML_CACHE_PURGE_TOKEN='dev-html-cache-purge-token'
 go run ./cmd/server
 "@
-Start-DevProcess -Name 'Go API' -WorkingDirectory (Join-Path $Root 'go-backend') -Command $backendCommand -LogName 'go-api'
+$apiProcess = Start-DevProcess -Name 'Go API' -WorkingDirectory (Join-Path $Root 'go-backend') -Command $backendCommand -LogName 'go-api'
 
 $apiHealthUrl = "http://localhost:$($Ports.Api)/health"
 $apiReady = Wait-HttpOk -Url $apiHealthUrl -TimeoutSeconds 90
 if ($apiReady) {
   Write-Ok "Go API health check passed: http://localhost:$($Ports.Api)/health"
+  Invoke-DevAdminBootstrap
 } else {
   Write-Warn "Go API health check is not ready yet. Check log: $(Join-Path $LogDir 'go-api.err.log')"
+  Write-Warn 'Skipping DEV admin bootstrap until the API and database are ready.'
 }
 
 Write-Section 'Starting Nuxt Storefront'
 $storefrontCommand = @"
 `$env:NUXT_PUBLIC_API_BASE='http://localhost:$($Ports.Api)'
 `$env:API_INTERNAL_ORIGIN='http://localhost:$($Ports.Api)'
-`$env:NUXT_HTML_CACHE_DRIVER='redis'
-`$env:NUXT_HTML_CACHE_REDIS_HOST='localhost'
-`$env:NUXT_HTML_CACHE_REDIS_PORT='$($Ports.Redis)'
-`$env:NUXT_HTML_CACHE_REDIS_DB='1'
+`$env:NUXT_HTML_CACHE_ENABLED='false'
+`$env:NUXT_HTML_CACHE_DRIVER='memory'
 `$env:NUXT_HTML_CACHE_PURGE_TOKEN='dev-html-cache-purge-token'
 npm run dev
 "@
-Start-DevProcess -Name 'Nuxt Storefront' -WorkingDirectory (Join-Path $Root 'nuxt-i18n') -Command $storefrontCommand -LogName 'storefront'
+$storefrontProcess = Start-DevProcess -Name 'Nuxt Storefront' -WorkingDirectory (Join-Path $Root 'nuxt-i18n') -Command $storefrontCommand -LogName 'storefront'
+$storefrontErrorLog = Join-Path $LogDir 'storefront.err.log'
+if (-not (Wait-DevHttpReady -Name 'Nuxt Storefront' -Process $storefrontProcess -Url "http://localhost:$($Ports.Storefront)" -ErrorLog $storefrontErrorLog -TimeoutSeconds 90)) {
+  exit 1
+}
 
 Write-Section 'Starting Admin Console'
 $adminCommand = @"
 `$env:VITE_API_BASE_URL=''
 npm run dev
 "@
-Start-DevProcess -Name 'Admin Console' -WorkingDirectory (Join-Path $Root 'go-backend/web/admin') -Command $adminCommand -LogName 'admin'
+$adminProcess = Start-DevProcess -Name 'Admin Console' -WorkingDirectory (Join-Path $Root 'go-backend/web/admin') -Command $adminCommand -LogName 'admin'
+$adminErrorLog = Join-Path $LogDir 'admin.err.log'
+if (-not (Wait-DevHttpReady -Name 'Admin Console' -Process $adminProcess -Url "http://localhost:$($Ports.Admin)" -ErrorLog $adminErrorLog -TimeoutSeconds 60)) {
+  exit 1
+}
 
 Write-Section 'Local DEV is up'
 Write-Host "Storefront : http://localhost:$($Ports.Storefront)" -ForegroundColor White

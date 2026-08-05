@@ -21,6 +21,7 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
+var migrationNamePattern = regexp.MustCompile(`^\d+_[a-z0-9_]+\.(up|down)\.sql$`)
 var upMigrationNamePattern = regexp.MustCompile(`^\d+_[a-z0-9_]+\.up\.sql$`)
 var unsupportedMigrationSyntaxPattern = regexp.MustCompile(
 	`(?i)\bAUTO_INCREMENT\b|\bUNSIGNED\b|\bUNIX_TIMESTAMP\b|\bUNIQUE\s+KEY\b|\bENGINE=|\+goose`,
@@ -38,8 +39,8 @@ func TestSQLMigrationFilesFollowGolangMigrateConvention(t *testing.T) {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".sql" {
 			continue
 		}
-		if !upMigrationNamePattern.MatchString(entry.Name()) {
-			t.Errorf("migration %q does not follow <version>_<name>.up.sql", entry.Name())
+		if !migrationNamePattern.MatchString(entry.Name()) {
+			t.Errorf("migration %q does not follow <version>_<name>.(up|down).sql", entry.Name())
 			continue
 		}
 		contents, err := os.ReadFile(filepath.Join(migrationDir, entry.Name()))
@@ -51,13 +52,15 @@ func TestSQLMigrationFilesFollowGolangMigrateConvention(t *testing.T) {
 			t.Errorf("migration %q contains unsupported MySQL or Goose syntax", entry.Name())
 		}
 
-		versionText, _, _ := strings.Cut(entry.Name(), "_")
-		version, err := strconv.Atoi(versionText)
-		if err != nil {
-			t.Errorf("parse migration version from %q: %v", entry.Name(), err)
-			continue
+		if upMigrationNamePattern.MatchString(entry.Name()) {
+			versionText, _, _ := strings.Cut(entry.Name(), "_")
+			version, err := strconv.Atoi(versionText)
+			if err != nil {
+				t.Errorf("parse migration version from %q: %v", entry.Name(), err)
+				continue
+			}
+			versions = append(versions, version)
 		}
-		versions = append(versions, version)
 	}
 
 	if len(versions) == 0 {

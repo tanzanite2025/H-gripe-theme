@@ -3,6 +3,7 @@ package product
 import (
 	"strconv"
 	"strings"
+
 	"tanzanite/internal/api/middleware"
 	productdomain "tanzanite/internal/domain/product"
 	"tanzanite/internal/pkg/apierror"
@@ -11,6 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ListPublicChatProducts powers storefront search and customer-service product
+// selection. It shares the hardened catalog response contract so this legacy
+// search path cannot become a more verbose data-extraction side channel.
 func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 	keyword := strings.TrimSpace(c.Query("keyword"))
@@ -24,11 +28,14 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
+	if pageSize < 1 {
+		pageSize = publicCatalogDefaultPageSize
+	}
+	if pageSize > publicCatalogMaxPageSize {
+		pageSize = publicCatalogMaxPageSize
 	}
 
-	products, total, err := h.productService.SearchPublic(service.ProductSearchInput{
+	products, _, err := h.productService.SearchPublic(service.ProductSearchInput{
 		Locale:      locale,
 		Keyword:     keyword,
 		TypeSlug:    typeSlug,
@@ -36,194 +43,22 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		PriceMax:    priceMax,
 		SpecFilters: specFilters,
 		Page:        page,
-		PageSize:    pageSize,
+		PageSize:    pageSize + 1,
 	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	items := make([]gin.H, 0, len(products))
-	for _, item := range products {
-		items = append(items, makePublicChatProduct(item))
-	}
-
+	publicProducts, hasMore := trimPublicProductPage(products, pageSize)
 	c.JSON(200, gin.H{
-		"success": true,
-		"items":   items,
-		"meta": gin.H{
-			"page":        page,
-			"per_page":    pageSize,
-			"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
-			"total":       total,
-			"filters":     []string{"keyword", "product_type", "price_min", "price_max", "attributes"},
-			"sorting":     []string{"updated_at"},
-		},
+		"code":      0,
+		"data":      PublicProductsFromDomain(publicProducts),
+		"page_size": pageSize,
+		"has_more":  hasMore,
 	})
 }
 
-func makePublicChatProduct(item productdomain.Product) gin.H {
-	thumbnail := primaryProductMediaImageURL(item)
-
-	salePrice := 0.0
-	price, sale := item.DisplayPrices()
-	if sale != nil {
-		salePrice = *sale
-	}
-	defaultVariantID := uint(0)
-	if defaultVariant := item.DefaultVariant(); defaultVariant != nil {
-		defaultVariantID = defaultVariant.ID
-	}
-
-	return gin.H{
-		"id":                 item.ID,
-		"title":              item.Name,
-		"status":             item.Status,
-		"excerpt":            item.ShortDesc,
-		"slug":               item.Slug,
-		"sku":                item.DisplaySKU(),
-		"thumbnail":          thumbnail,
-		"product_type":       makePublicProductType(item.ProductType),
-		"media":              makePublicProductMedia(item.Media),
-		"images":             makePublicProductMediaImages(item.Media),
-		"videos":             makePublicProductVideos(item.Media),
-		"default_variant_id": defaultVariantID,
-		"variant_count":      len(item.ActiveVariants()),
-		"variants":           makePublicVariants(item.ActiveVariants()),
-		"prices": gin.H{
-			"regular": price,
-			"sale":    salePrice,
-			"member":  0,
-		},
-		"stock": gin.H{
-			"quantity": item.TotalVariantStock(),
-			"alert":    0,
-		},
-		"preview_url": "/shop/" + item.Slug,
-		"updated_at":  item.UpdatedAt,
-		"created_at":  item.CreatedAt,
-	}
-}
-
-func makePublicProductType(productType *productdomain.ProductType) gin.H {
-	if productType == nil {
-		return nil
-	}
-
-	specDefinitions := make([]gin.H, 0, len(productType.SpecDefinitions))
-	for _, definition := range productType.SpecDefinitions {
-		if !definition.IsVisible {
-			continue
-		}
-		specDefinitions = append(specDefinitions, gin.H{
-			"id":                definition.ID,
-			"group":             definition.Group,
-			"name":              definition.Name,
-			"slug":              definition.Slug,
-			"field_type":        definition.FieldType,
-			"unit":              definition.Unit,
-			"is_variant_option": definition.IsVariantOption,
-			"sort_order":        definition.SortOrder,
-		})
-	}
-
-	return gin.H{
-		"id":               productType.ID,
-		"name":             productType.Name,
-		"slug":             productType.Slug,
-		"spec_definitions": specDefinitions,
-	}
-}
-
-func primaryProductMediaImageURL(item productdomain.Product) string {
-	for _, mediaItem := range item.Media {
-		if mediaItem.MediaType == "image" && mediaItem.IsVisible && mediaItem.URL != "" && (mediaItem.IsPrimary || mediaItem.Role == "primary") {
-			return mediaItem.URL
-		}
-	}
-	for _, mediaItem := range item.Media {
-		if mediaItem.MediaType == "image" && mediaItem.IsVisible && mediaItem.URL != "" {
-			return mediaItem.URL
-		}
-	}
-	return ""
-}
-
-func makePublicProductMedia(mediaItems []productdomain.ProductMedia) []gin.H {
-	items := make([]gin.H, 0, len(mediaItems))
-	for _, mediaItem := range mediaItems {
-		if !mediaItem.IsVisible || mediaItem.URL == "" {
-			continue
-		}
-		items = append(items, gin.H{
-			"id":            mediaItem.ID,
-			"variant_id":    mediaItem.VariantID,
-			"media_type":    mediaItem.MediaType,
-			"role":          mediaItem.Role,
-			"url":           mediaItem.URL,
-			"thumbnail_url": mediaItem.ThumbnailURL,
-			"poster_url":    mediaItem.PosterURL,
-			"alt":           mediaItem.Alt,
-			"title":         mediaItem.Title,
-			"sort_order":    mediaItem.SortOrder,
-			"is_primary":    mediaItem.IsPrimary,
-		})
-	}
-	return items
-}
-
-func makePublicProductMediaImages(mediaItems []productdomain.ProductMedia) []gin.H {
-	media := makePublicProductMedia(mediaItems)
-	images := make([]gin.H, 0, len(media))
-	for _, item := range media {
-		if item["media_type"] == "image" {
-			images = append(images, item)
-		}
-	}
-	return images
-}
-
-func makePublicProductVideos(mediaItems []productdomain.ProductMedia) []gin.H {
-	videos := make([]gin.H, 0)
-	for _, mediaItem := range mediaItems {
-		if mediaItem.MediaType != "video" || !mediaItem.IsVisible || mediaItem.URL == "" {
-			continue
-		}
-		videos = append(videos, gin.H{
-			"id":            mediaItem.ID,
-			"variant_id":    mediaItem.VariantID,
-			"media_type":    mediaItem.MediaType,
-			"role":          mediaItem.Role,
-			"url":           mediaItem.URL,
-			"thumbnail_url": mediaItem.ThumbnailURL,
-			"poster_url":    mediaItem.PosterURL,
-			"alt":           mediaItem.Alt,
-			"title":         mediaItem.Title,
-			"sort_order":    mediaItem.SortOrder,
-			"is_primary":    mediaItem.IsPrimary,
-		})
-	}
-	return videos
-}
-
-func makePublicVariants(variants []productdomain.ProductVariant) []gin.H {
-	items := make([]gin.H, 0, len(variants))
-	for _, variant := range variants {
-		salePrice := 0.0
-		if variant.SalePrice != nil {
-			salePrice = *variant.SalePrice
-		}
-		items = append(items, gin.H{
-			"id":            variant.ID,
-			"sku":           variant.SKU,
-			"title":         variant.Title,
-			"option_values": variant.OptionValues,
-			"price":         variant.Price,
-			"sale_price":    salePrice,
-			"stock":         variant.Stock,
-			"weight_grams":  variant.Weight,
-			"is_default":    variant.IsDefault,
-		})
-	}
-	return items
+func makePublicChatProduct(item productdomain.Product) PublicProduct {
+	return PublicProductFromDomain(item)
 }

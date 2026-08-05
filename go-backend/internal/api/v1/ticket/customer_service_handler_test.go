@@ -49,6 +49,36 @@ func TestReadVisitorSessionIDRejectsTamperedSignature(t *testing.T) {
 	}
 }
 
+func TestPublicCustomerServiceLocaleStripsAcceptLanguageWeight(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	context := testContextWithVisitorCookie("")
+	context.Request.Header.Set("Accept-Language", "en-US;q=0.9,zh-CN;q=0.8")
+
+	if got := publicCustomerServiceLocale(context); got != "en" {
+		t.Fatalf("expected locale %q, got %q", "en", got)
+	}
+}
+
+func TestPublicCustomerServiceLocaleExplicitValueOverridesHeaders(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	context := testContextWithVisitorCookie("")
+	context.Request.Header.Set("Accept-Language", "en-US")
+
+	if got := publicCustomerServiceLocale(context, "zh-CN"); got != "zh_cn" {
+		t.Fatalf("expected explicit locale %q, got %q", "zh_cn", got)
+	}
+}
+
+func TestPublicCustomerServiceLocaleUnknownExplicitValueDoesNotFallback(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	context := testContextWithVisitorCookie("")
+	context.Request.Header.Set("Accept-Language", "en-US")
+
+	if got := publicCustomerServiceLocale(context, "xx-YY"); got != "" {
+		t.Fatalf("expected unknown explicit locale to disable localized auto reply, got %q", got)
+	}
+}
+
 func testContextWithVisitorCookie(value string) *gin.Context {
 	recorder := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(recorder)

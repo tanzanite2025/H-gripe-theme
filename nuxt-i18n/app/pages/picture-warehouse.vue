@@ -75,9 +75,9 @@
     <!-- Brand Tab -->
     <section v-show="activeTab === 'brand'" class="mt-4 space-y-3">
       <div>
-        <h2 class="mb-1 text-sm font-semibold text-white">Tanzanite photos</h2>
+        <h2 class="mb-1 text-sm font-semibold text-white">Brand photos</h2>
         <p class="mb-3 text-xs tz-text-secondary">
-          Official product and detail shots curated by the Tanzanite team.
+          Official product and detail shots curated by our team.
         </p>
 
         <div class="min-h-[60px]">
@@ -231,7 +231,7 @@
             </div>
             <button
               type="submit"
-              class="inline-flex items-center justify-center h-9 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-5 text-xs font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
+              class="inline-flex items-center justify-center h-9 rounded-full bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] px-5 text-xs font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
               :disabled="uploading"
             >
               <span v-if="uploading">Uploading…</span>
@@ -252,11 +252,11 @@
       >
         <div
           v-if="isLightboxOpen"
-          class="fixed inset-0 z-[1400] flex items-center justify-center bg-black/75 px-3"
+          class="fixed inset-0 z-[1400] flex items-center justify-center bg-black/75 px-3 tz-mobile-safe-modal-mask"
           @click.self="closeLightbox"
         >
           <div
-            class="relative w-full max-w-[960px] max-h-[90vh] bg-slate-950 rounded-2xl flex flex-col overflow-hidden md:overflow-y-auto"
+            class="picture-lightbox-panel relative w-full max-w-[960px] max-h-[90vh] bg-slate-950 rounded-2xl flex flex-col overflow-hidden md:overflow-y-auto"
           >
             <!-- 顶部标题 + 关闭按钮 -->
             <header
@@ -293,7 +293,7 @@
                     v-if="currentImageUrl"
                     :src="currentImageUrl"
                     alt="Photo"
-                    class="max-w-full max-h-[65vh] object-contain rounded shadow-lg"
+                    class="picture-lightbox-image max-w-full max-h-[65vh] object-contain rounded shadow-lg"
                   />
                   <div v-else class="w-full max-w-[500px] aspect-square bg-slate-800 rounded flex items-center justify-center tz-text-muted">
                     No image
@@ -1058,5 +1058,14 @@ const copyShareLink = async () => {
   color: var(--tz-text-secondary);
 }
 
+@media (max-width: 767px) {
+  .picture-lightbox-panel {
+    max-height: min(90vh, var(--tz-mobile-safe-viewport-height, 90vh));
+  }
+
+  .picture-lightbox-image {
+    max-height: min(65vh, calc(var(--tz-mobile-safe-viewport-height, 100vh) - 12rem));
+  }
+}
 </style>
 

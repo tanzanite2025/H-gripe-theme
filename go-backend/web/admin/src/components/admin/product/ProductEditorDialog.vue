@@ -2,38 +2,32 @@
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent
       size="full"
-      class="h-[94dvh] max-h-[calc(100dvh-1rem)] overflow-hidden p-0"
+      data-product-editor-dialog
+      class="!flex h-[94dvh] max-h-[calc(100dvh-1rem)] !w-[95dvw] !max-w-[95dvw] flex-col gap-0 overflow-hidden p-0"
+      style="overflow: hidden;"
       @open-auto-focus.prevent
     >
-      <form class="flex h-full min-h-0 min-w-0 flex-col" @submit.prevent="emit('submit')">
+      <form class="flex min-h-0 min-w-0 flex-1 flex-col" @submit.prevent="emit('submit')">
         <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
           <DialogTitle>{{ mode === 'create' ? '添加商品' : '编辑商品' }}</DialogTitle>
           <DialogDescription>先录入商品基础识别信息，再绑定产品模板；模板决定下方商品字段和 SKU 选项列。</DialogDescription>
         </DialogHeader>
 
-        <div class="min-h-0 min-w-0 flex-1 space-y-5 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-5 [scrollbar-gutter:stable]">
-          <div class="grid gap-2 rounded-2xl border border-dashed bg-muted/20 p-3 text-xs leading-5 text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-xl bg-background/70 px-3 py-2">
-              <span class="font-mono text-[10px] font-black text-primary">01</span>
-              <strong class="mt-0.5 block text-foreground">基础识别</strong>
-              <span>名称、Slug、语言和描述，只负责识别这个商品。</span>
-            </div>
-            <div class="rounded-xl bg-background/70 px-3 py-2">
-              <span class="font-mono text-[10px] font-black text-primary">02</span>
-              <strong class="mt-0.5 block text-foreground">绑定模板</strong>
-              <span>车圈、车架等模板决定后续字段结构。</span>
-            </div>
-            <div class="rounded-xl bg-background/70 px-3 py-2">
-              <span class="font-mono text-[10px] font-black text-primary">03</span>
-              <strong class="mt-0.5 block text-foreground">填写参数</strong>
-              <span>商品参数来自模板，但具体值只属于当前商品。</span>
-            </div>
-            <div class="rounded-xl bg-background/70 px-3 py-2">
-              <span class="font-mono text-[10px] font-black text-primary">04</span>
-              <strong class="mt-0.5 block text-foreground">维护 SKU</strong>
-              <span>价格、重量、库存和 SKU 选项按每行变体维护。</span>
-            </div>
-          </div>
+        <div
+          class="product-editor-dialog__scroll min-h-0 min-w-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-8 pt-4 [scrollbar-gutter:stable]"
+          @wheel.stop
+          @touchmove.stop
+        >
+          <ol class="grid gap-1.5 rounded-lg border border-dashed bg-muted/20 p-2 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
+            <li
+              v-for="step in editorSteps"
+              :key="step.no"
+              class="flex min-w-0 items-center gap-2 rounded-md bg-background/70 px-2.5 py-1.5"
+            >
+              <span class="font-mono text-[10px] font-black text-primary">{{ step.no }}</span>
+              <strong class="min-w-0 truncate text-foreground">{{ step.label }}</strong>
+            </li>
+          </ol>
 
           <AdminFormSection title="基础信息" description="这里不放规格字段；规格字段必须先通过产品模板统一定义，再在下方录入具体值。">
             <div class="grid gap-4 md:grid-cols-3">
@@ -56,15 +50,18 @@
               <AdminFormField label="简短描述" class="md:col-span-3">
                 <Textarea v-model="form.short_description" class="min-h-20" placeholder="用于列表和摘要展示" />
               </AdminFormField>
-              <AdminFormField label="详细描述" class="md:col-span-3">
-                <Textarea v-model="form.description" class="min-h-28" placeholder="请输入商品详细描述" />
+              <AdminFormField label="详细描述" class="md:col-span-3" :error="errors.description">
+                <ProductDescriptionEditor
+                  v-model="form.description"
+                  @update:model-value="emit('clear-error', 'description')"
+                />
               </AdminFormField>
             </div>
           </AdminFormSection>
 
-          <AdminFormSection title="绑定产品模板" description="这是商品资料和模板字段之间的总开关。选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
-            <div class="grid gap-4 xl:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.1fr)]">
-              <div class="space-y-2">
+          <AdminFormSection title="绑定产品模板" description="选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
+            <div class="grid gap-3 2xl:grid-cols-[minmax(20rem,0.68fr)_minmax(0,1.32fr)]">
+              <div class="grid gap-3 rounded-xl border bg-muted/20 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end 2xl:block 2xl:space-y-3">
                 <AdminFormField label="产品模板">
                   <Select :model-value="productTypeSelectValue" @update:model-value="emit('product-type-select', $event)">
                     <SelectTrigger class="w-full"><SelectValue placeholder="请选择产品模板" /></SelectTrigger>
@@ -76,45 +73,49 @@
                     </SelectContent>
                   </Select>
                 </AdminFormField>
-                <p class="text-xs leading-5 text-muted-foreground">
-                  模板只定义“要填哪些字段”，不保存某个商品的具体重量、价格、库存或尺寸值。
-                </p>
                 <Button type="button" variant="outline" size="sm" as-child>
-                  <RouterLink to="/product-types">
+                  <RouterLink to="/catalog/templates">
                     <Tags class="size-3.5" />
                     维护产品模板
                   </RouterLink>
                 </Button>
+                <p class="text-xs leading-5 text-muted-foreground lg:col-span-2 2xl:col-span-1">
+                  模板只定义字段结构，当前商品的重量、价格、库存和尺寸值仍在这里维护。
+                </p>
               </div>
 
-              <div class="rounded-2xl border border-dashed bg-muted/20 p-4">
-                <div v-if="selectedProductType" class="space-y-3">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm font-bold">{{ selectedProductType.name }}</span>
-                    <span class="rounded-full bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                      {{ selectedProductType.slug }}
-                    </span>
-                  </div>
-                  <p v-if="selectedProductType.description" class="text-xs leading-5 text-muted-foreground">
-                    {{ selectedProductType.description }}
-                  </p>
-                  <div class="grid gap-2 sm:grid-cols-2">
-                    <div class="rounded-xl bg-background/70 px-3 py-2">
-                      <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">商品字段</span>
-                      <strong class="mt-1 block font-mono text-lg">{{ selectedSpecDefinitions.length }}</strong>
+              <div class="rounded-xl border border-dashed bg-muted/20 p-3">
+                <div v-if="selectedProductType" class="grid gap-3 xl:grid-cols-[minmax(14rem,0.72fr)_minmax(0,1.28fr)]">
+                  <div class="min-w-0 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="min-w-0 truncate text-sm font-bold">{{ selectedProductType.name }}</span>
+                      <span class="rounded-full bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+                        {{ selectedProductType.slug }}
+                      </span>
                     </div>
-                    <div class="rounded-xl bg-background/70 px-3 py-2">
-                      <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SKU 选项字段</span>
-                      <strong class="mt-1 block font-mono text-lg">{{ variantSpecDefinitions.length }}</strong>
+                    <p v-if="selectedProductType.description" class="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                      {{ selectedProductType.description }}
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <span class="rounded-full bg-background px-2.5 py-1 text-[11px] font-black text-foreground">
+                        商品字段 {{ selectedSpecDefinitions.length }}
+                      </span>
+                      <span class="rounded-full bg-background px-2.5 py-1 text-[11px] font-black text-foreground">
+                        SKU 字段 {{ variantSpecDefinitions.length }}
+                      </span>
+                    </div>
+                    <div v-if="templateScopedValuesTouched" class="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                      切换模板会清空旧模板下的字段值和 SKU 选项值；SKU 价格、重量、库存和商品媒体会保留。
                     </div>
                   </div>
-                  <div v-if="templateScopedValuesTouched" class="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
-                    如果切换模板，旧模板下的商品字段值和 SKU 选项值会清空；SKU 价格、重量、库存和商品媒体会保留。
-                  </div>
-                  <div class="grid gap-3 lg:grid-cols-2">
-                    <div class="min-w-0 rounded-xl bg-background/70 p-3">
-                      <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">商品参数字段</span>
-                      <div v-if="selectedSpecDefinitions.length" class="mt-2 flex flex-wrap gap-1.5">
+
+                  <div class="grid min-w-0 gap-2 lg:grid-cols-2">
+                    <div class="min-w-0 rounded-xl bg-background/70 p-2.5">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">商品参数字段</span>
+                        <span class="font-mono text-xs font-black text-foreground">{{ selectedSpecDefinitions.length }}</span>
+                      </div>
+                      <div v-if="selectedSpecDefinitions.length" class="mt-2 flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
                         <span
                           v-for="spec in selectedSpecDefinitions"
                           :key="`product-${spec.id || spec.slug}`"
@@ -125,9 +126,12 @@
                       </div>
                       <p v-else class="mt-2 text-xs text-muted-foreground">该模板没有商品级参数字段。</p>
                     </div>
-                    <div class="min-w-0 rounded-xl bg-background/70 p-3">
-                      <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SKU 选项字段</span>
-                      <div v-if="variantSpecDefinitions.length" class="mt-2 flex flex-wrap gap-1.5">
+                    <div class="min-w-0 rounded-xl bg-background/70 p-2.5">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SKU 选项字段</span>
+                        <span class="font-mono text-xs font-black text-primary">{{ variantSpecDefinitions.length }}</span>
+                      </div>
+                      <div v-if="variantSpecDefinitions.length" class="mt-2 flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
                         <span
                           v-for="spec in variantSpecDefinitions"
                           :key="`variant-${spec.id || spec.slug}`"
@@ -136,7 +140,7 @@
                           {{ getSpecLabel(spec) }}
                         </span>
                       </div>
-                      <p v-else class="mt-2 text-xs text-muted-foreground">该模板没有 SKU 选项字段，仅维护默认 SKU 的价格、重量和库存。</p>
+                      <p v-else class="mt-2 text-xs text-muted-foreground">没有 SKU 选项字段，仅维护默认 SKU。</p>
                     </div>
                   </div>
                 </div>
@@ -151,10 +155,11 @@
             title="商品参数（来自模板）"
             :description="selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定产品模板，但具体值不写回模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
           >
-            <div v-if="selectedSpecDefinitions.length" class="grid gap-4 md:grid-cols-2">
+            <div v-if="selectedSpecDefinitions.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
               <AdminFormField
                 v-for="spec in selectedSpecDefinitions"
                 :key="spec.id || spec.slug"
+                class="min-w-0"
                 :label="getSpecLabel(spec)"
                 :required="spec.is_required"
                 :error="errors[`spec:${spec.slug}`]"
@@ -207,6 +212,7 @@
                 @add="emit('add-variant')"
                 @remove="emit('remove-variant', $event)"
                 @set-default="emit('set-default-variant', $event)"
+                @set-active="(...args) => emit('set-variant-active', ...args)"
               />
             </div>
             <p v-if="errors.variants" class="mt-2 text-xs font-medium text-destructive">{{ errors.variants }}</p>
@@ -272,7 +278,7 @@
           </AdminFormSection>
         </div>
 
-        <DialogFooter class="mx-0 mb-0 shrink-0 rounded-b-lg border-t bg-background px-5 py-4">
+        <DialogFooter class="mx-0 mb-0 shrink-0 rounded-b-[32px] border-t bg-background/95 px-5 py-4 backdrop-blur">
           <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
           <Button type="submit" :disabled="submitting">
             <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
@@ -289,6 +295,7 @@ import { RouterLink } from 'vue-router'
 import { LoaderCircle, Tags } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminFormSection from '@/components/admin/AdminFormSection.vue'
+import ProductDescriptionEditor from '@/components/admin/product/ProductDescriptionEditor.vue'
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
 import { Button } from '@/components/ui/button'
@@ -305,6 +312,13 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+
+const editorSteps = [
+  { no: '01', label: '基础识别' },
+  { no: '02', label: '绑定模板' },
+  { no: '03', label: '填写参数' },
+  { no: '04', label: '维护 SKU' },
+]
 
 defineProps({
   open: { type: Boolean, default: false },
@@ -339,6 +353,7 @@ const emit = defineEmits([
   'add-variant',
   'remove-variant',
   'set-default-variant',
+  'set-variant-active',
   'upload-media',
   'add-media-url',
   'set-primary-media',
@@ -346,3 +361,18 @@ const emit = defineEmits([
   'remove-media',
 ])
 </script>
+
+<style scoped>
+:global([data-product-editor-dialog]) {
+  display: flex !important;
+  overflow: hidden !important;
+}
+
+:global([data-product-editor-dialog] > form) {
+  min-height: 0;
+}
+
+.product-editor-dialog__scroll {
+  max-height: 100%;
+}
+</style>

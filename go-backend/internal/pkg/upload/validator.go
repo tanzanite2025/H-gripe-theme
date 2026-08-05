@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -12,10 +16,14 @@ import (
 )
 
 const (
-	CodeEmptyFile    = "empty_file"
-	CodeFileTooLarge = "file_too_large"
-	CodeInvalidType  = "invalid_type"
-	CodeTooManyFiles = "too_many_files"
+	CodeEmptyFile         = "empty_file"
+	CodeFileTooLarge      = "file_too_large"
+	CodeInvalidType       = "invalid_type"
+	CodeInvalidDimensions = "invalid_dimensions"
+	CodeTooManyFiles      = "too_many_files"
+
+	imageHeaderInspectionBytes = 1 << 20
+	webPHeaderInspectionBytes  = 64
 )
 
 type ValidationError struct {
@@ -31,6 +39,9 @@ type FileRule struct {
 	MaxSize             int64
 	AllowedExtensions   []string
 	AllowedContentTypes []string
+	MaxWidth            int
+	MaxHeight           int
+	MaxPixels           int64
 }
 
 type FilesRule struct {
@@ -45,6 +56,9 @@ var (
 			MaxSize:             5 << 20,
 			AllowedExtensions:   []string{".webp"},
 			AllowedContentTypes: []string{"image/webp"},
+			MaxWidth:            6000,
+			MaxHeight:           6000,
+			MaxPixels:           16_000_000,
 		},
 		MaxFiles:     10,
 		MaxTotalSize: 50 << 20,
@@ -53,6 +67,9 @@ var (
 		MaxSize:             5 << 20,
 		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp", ".gif"},
 		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp", "image/gif"},
+		MaxWidth:            6000,
+		MaxHeight:           6000,
+		MaxPixels:           16_000_000,
 	}
 	FAQAnswerImageRule = FileRule{
 		MaxSize:             3 << 20,
@@ -64,6 +81,9 @@ var (
 			MaxSize:             8 << 20,
 			AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp", ".gif"},
 			AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp", "image/gif"},
+			MaxWidth:            8000,
+			MaxHeight:           8000,
+			MaxPixels:           24_000_000,
 		},
 		MaxFiles:     10,
 		MaxTotalSize: 80 << 20,
@@ -75,11 +95,14 @@ var (
 	}
 	ProductImageRule = FileRule{
 		MaxSize:             12 << 20,
-		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp", ".gif"},
-		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp", "image/gif"},
+		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp"},
+		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp"},
+		MaxWidth:            8000,
+		MaxHeight:           8000,
+		MaxPixels:           24_000_000,
 	}
 	ProductVideoRule = FileRule{
-		MaxSize:             200 << 20,
+		MaxSize:             80 << 20,
 		AllowedExtensions:   []string{".mp4", ".mov", ".webm"},
 		AllowedContentTypes: []string{"video/mp4", "video/quicktime", "video/webm"},
 	}
@@ -103,24 +126,14 @@ func ValidateFile(file *multipart.FileHeader, rule FileRule) error {
 	if !contentTypeAllowed(contentType, rule.AllowedContentTypes) {
 		return validationError(CodeInvalidType, "invalid_type: %s content type %s is not allowed", file.Filename, contentType)
 	}
-	return nil
+	return validateImageDimensions(file, rule, contentType)
 }
 
 func ValidateWebPDimensions(file *multipart.FileHeader, expectedWidth, expectedHeight int) error {
 	if file == nil {
 		return validationError(CodeEmptyFile, "empty_file: uploaded file is empty")
 	}
-	src, err := file.Open()
-	if err != nil {
-		return fmt.Errorf("failed to inspect WebP dimensions: %w", err)
-	}
-	defer func() { _ = src.Close() }()
-
-	data, err := io.ReadAll(io.LimitReader(src, file.Size+1))
-	if err != nil {
-		return fmt.Errorf("failed to read WebP file: %w", err)
-	}
-	width, height, err := parseWebPDimensions(data)
+	width, height, err := webPDimensions(file)
 	if err != nil {
 		return validationError(CodeInvalidType, "invalid_type: unable to read WebP dimensions")
 	}
@@ -128,6 +141,62 @@ func ValidateWebPDimensions(file *multipart.FileHeader, expectedWidth, expectedH
 		return validationError(CodeInvalidType, "invalid_type: FAQ image must be exactly %dx%d pixels (received %dx%d)", expectedWidth, expectedHeight, width, height)
 	}
 	return nil
+}
+
+func validateImageDimensions(file *multipart.FileHeader, rule FileRule, contentType string) error {
+	if rule.MaxWidth <= 0 && rule.MaxHeight <= 0 && rule.MaxPixels <= 0 {
+		return nil
+	}
+
+	width, height, err := imageDimensions(file, contentType)
+	if err != nil {
+		return validationError(CodeInvalidType, "invalid_type: unable to read image dimensions")
+	}
+	if width <= 0 || height <= 0 {
+		return validationError(CodeInvalidType, "invalid_type: image dimensions are invalid")
+	}
+	if rule.MaxWidth > 0 && width > rule.MaxWidth {
+		return validationError(CodeInvalidDimensions, "invalid_dimensions: %s width exceeds %d pixels", file.Filename, rule.MaxWidth)
+	}
+	if rule.MaxHeight > 0 && height > rule.MaxHeight {
+		return validationError(CodeInvalidDimensions, "invalid_dimensions: %s height exceeds %d pixels", file.Filename, rule.MaxHeight)
+	}
+	if rule.MaxPixels > 0 && int64(width)*int64(height) > rule.MaxPixels {
+		return validationError(CodeInvalidDimensions, "invalid_dimensions: %s exceeds %d total pixels", file.Filename, rule.MaxPixels)
+	}
+	return nil
+}
+
+func imageDimensions(file *multipart.FileHeader, contentType string) (int, int, error) {
+	if contentType == "image/webp" {
+		return webPDimensions(file)
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return 0, 0, fmt.Errorf("open image: %w", err)
+	}
+	defer func() { _ = src.Close() }()
+
+	config, _, err := image.DecodeConfig(io.LimitReader(src, imageHeaderInspectionBytes))
+	if err != nil {
+		return 0, 0, err
+	}
+	return config.Width, config.Height, nil
+}
+
+func webPDimensions(file *multipart.FileHeader) (int, int, error) {
+	src, err := file.Open()
+	if err != nil {
+		return 0, 0, fmt.Errorf("open WebP image: %w", err)
+	}
+	defer func() { _ = src.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(src, webPHeaderInspectionBytes))
+	if err != nil {
+		return 0, 0, fmt.Errorf("read WebP image header: %w", err)
+	}
+	return parseWebPDimensions(data)
 }
 
 func ValidateFiles(files []*multipart.FileHeader, rule FilesRule) error {
@@ -162,6 +231,8 @@ func HTTPStatus(err error) int {
 	switch ErrorCode(err) {
 	case CodeFileTooLarge:
 		return http.StatusRequestEntityTooLarge
+	case CodeInvalidDimensions:
+		return http.StatusUnprocessableEntity
 	case CodeInvalidType:
 		return http.StatusUnsupportedMediaType
 	default:

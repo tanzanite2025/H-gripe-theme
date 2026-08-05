@@ -4,8 +4,14 @@
     <div v-if="batchVisible && $slots.batch" class="relative z-10 border-b border-dashed border-border/70 bg-muted/20 px-4 py-2.5">
       <slot name="batch" />
     </div>
+    <div v-if="$slots.header" class="relative z-10 border-b border-dashed border-border/70 px-4 py-3">
+      <slot name="header" />
+    </div>
 
-    <div class="relative z-10 min-h-40 overflow-x-auto">
+    <div
+      class="relative z-10 min-w-0"
+      :class="scrollBody ? 'min-h-0 flex-1 overflow-auto' : 'min-h-40 overflow-x-auto'"
+    >
       <div
         v-if="loading"
         class="absolute inset-0 z-10 flex items-center justify-center bg-card/80 backdrop-blur-[1px]"
@@ -15,7 +21,7 @@
       <slot />
     </div>
 
-    <div v-if="$slots.footer" class="relative z-10 border-t border-dashed border-border/70 px-4 py-3">
+    <div v-if="$slots.footer" class="relative z-10 shrink-0 border-t border-dashed border-border/70 px-4 py-3">
       <slot name="footer" />
     </div>
   </Card>
@@ -31,6 +37,10 @@ defineProps({
     default: false
   },
   batchVisible: {
+    type: Boolean,
+    default: false
+  },
+  scrollBody: {
     type: Boolean,
     default: false
   }

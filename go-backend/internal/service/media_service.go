@@ -1,62 +1,45 @@
 package service
 
 import (
-	"context"
-	"mime/multipart"
-	"path"
-	"strings"
-	"tanzanite/internal/domain/media"
+	"errors"
+
 	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
 )
 
+var (
+	ErrMediaAssetNotFound               = errors.New("media asset not found")
+	ErrUnsupportedMediaType             = errors.New("unsupported media type")
+	ErrUnsupportedMediaStatus           = errors.New("unsupported media status")
+	ErrUnsupportedVisibility            = errors.New("unsupported media visibility")
+	ErrMediaUploadFileRequired          = errors.New("media upload file is required")
+	ErrMediaAssetURLUnavailable         = errors.New("media asset url is unavailable")
+	ErrMediaStorageUnavailable          = errors.New("media storage unavailable")
+	ErrMediaAssetForbidden              = errors.New("media asset is not public")
+	ErrMediaUploadIdentityRequired      = errors.New("media upload identity is required")
+	ErrMediaAccountStorageQuotaExceeded = errors.New("media account storage quota exceeded")
+)
+
+// MediaService coordinates media-asset operations. Individual workflows live
+// in dedicated files for upload, catalog, access, evidence, references, and
+// deletion so each can grow independently.
 type MediaService struct {
-	repo    *repository.MediaRepository
-	storage storage.StorageService
+	repo                     *repository.MediaRepository
+	storage                  storage.StorageService
+	settings                 *SettingService
+	accountStorageQuotaBytes int64
 }
 
-type MediaUploadInput struct {
-	File       *multipart.FileHeader
-	MediaType  string
-	Alt        string
-	Caption    string
-	UploaderID uint
-}
-
-func NewMediaService(repo *repository.MediaRepository, storageSvc storage.StorageService) *MediaService {
+func NewMediaService(
+	repo *repository.MediaRepository,
+	storageSvc storage.StorageService,
+	settingSvc *SettingService,
+	accountStorageQuotaBytes int64,
+) *MediaService {
 	return &MediaService{
-		repo:    repo,
-		storage: storageSvc,
+		repo:                     repo,
+		storage:                  storageSvc,
+		settings:                 settingSvc,
+		accountStorageQuotaBytes: accountStorageQuotaBytes,
 	}
-}
-
-func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) (*media.MediaAsset, error) {
-	url, err := s.storage.Upload(ctx, input.File)
-	if err != nil {
-		return nil, err
-	}
-
-	asset := &media.MediaAsset{
-		Filename:         path.Base(url),
-		OriginalFilename: input.File.Filename,
-		URL:              url,
-		StorageKey:       strings.TrimPrefix(path.Base(url), "/"),
-		MimeType:         input.File.Header.Get("Content-Type"),
-		MediaType:        input.MediaType,
-		Size:             input.File.Size,
-		Alt:              input.Alt,
-		Caption:          input.Caption,
-		UploaderID:       input.UploaderID,
-		Status:           "active",
-		Visibility:       "public",
-	}
-	if asset.MediaType == "" {
-		asset.MediaType = "image"
-	}
-
-	if err := s.repo.CreateAsset(asset); err != nil {
-		return nil, err
-	}
-
-	return asset, nil
 }

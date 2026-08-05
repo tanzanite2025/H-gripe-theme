@@ -11,11 +11,9 @@
       >
         <h2 class="sizecharts-section__title">Safety instructions</h2>
         <WheelsetSafetyInstructionsSection
-          :openWhatsAppChat="openWhatsAppChat"
           :goToTubelessInstallation="goToTubelessInstallation"
           :goToTechnicalTension="goToTechnicalTension"
           :goToWarranty="goToWarranty"
-
         />
       </section>
 
@@ -43,7 +41,7 @@
 
         <div class="space-y-6">
            <!-- Mullet wheelsets (Amber) -->
-           <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
                <div class="flex items-center gap-3 mb-4 pb-3 border-b border-amber-500/10">
           <h3 class="text-lg font-bold tz-text-primary">Mullet Wheelsets (Mixed Size)</h3>
                </div>
@@ -74,7 +72,7 @@
            </div>
 
            <!-- Custom Front & Rear Wheels (Sky) -->
-           <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
                <div class="flex items-center gap-3 mb-4 pb-3 border-b border-sky-500/10">
           <h3 class="text-lg font-bold tz-text-primary">Single Wheel Customization</h3>
                </div>
@@ -346,7 +344,7 @@ const goToAboutAppearance = async () => {
 }
 
 .wheelset-link {
-  color: #2dd4bf;
+  color: #B5FF6D;
   text-decoration: underline;
 }
 

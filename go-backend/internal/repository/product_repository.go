@@ -111,10 +111,11 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 	return &p, nil
 }
 
-// FindBySlug 鏍规嵁slug鍜岃瑷€鏌ユ壘浜у搧
+// FindBySlug finds a product by slug. When locale is empty, it treats products
+// as a unified storefront catalog item instead of a translated content row.
 func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, error) {
 	var p product.Product
-	err := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
@@ -122,7 +123,13 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	}).Where("slug = ? AND locale = ?", slug, locale).First(&p).Error
+	}).Where("slug = ?", slug)
+
+	if locale != "" {
+		query = query.Where("locale = ?", locale)
+	}
+
+	err := query.First(&p).Error
 	if err != nil {
 		return nil, err
 	}

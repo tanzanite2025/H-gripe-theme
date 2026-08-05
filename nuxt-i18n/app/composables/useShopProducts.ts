@@ -1,5 +1,8 @@
 import { useRuntimeConfig } from '#imports'
+import { useI18n } from 'vue-i18n'
 import type { CartItem } from '~~/types/cart'
+
+export type ShopProductAvailability = 'in_stock' | 'out_of_stock'
 
 export interface ShopProduct {
   id: number
@@ -17,20 +20,20 @@ export interface ShopProduct {
     regular: number
     sale: number
   }
-  stockQuantity: number | null
+  availability: ShopProductAvailability
   productType?: ShopProductType | null
   variants: ShopProductVariant[]
 }
 
 export interface ShopProductType {
-  id: number
+  id?: number
   name: string
   slug: string
   specDefinitions: ShopProductSpecDefinition[]
 }
 
 export interface ShopProductSpecDefinition {
-  id: number
+  id?: number
   name: string
   slug: string
   group?: string
@@ -42,16 +45,15 @@ export interface ShopProductSpecDefinition {
 
 export interface ShopProductVariant {
   id: number
-  sku: string
+  sku?: string
   title: string
   optionValues: Record<string, string>
   priceNumber: number
   price?: number
   salePriceNumber: number | null
   sale_price?: number | null
-  stockQuantity: number
-  stock?: number
-  weightGrams: number
+  availability: ShopProductAvailability
+  weightGrams?: number
   isDefault: boolean
 }
 
@@ -69,7 +71,7 @@ export interface ShopProductCartOptions {
   sku?: string
   title?: string
   thumbnail?: string
-  stockQuantity?: number | null
+  weightGrams?: number | null
 }
 
 const toFiniteNumber = (value: unknown, fallback = 0) => {
@@ -94,6 +96,10 @@ const toOptionalPositiveNumber = (value: unknown) => {
 }
 
 const formatPriceLabel = (amount: number) => (amount > 0 ? `$${amount}` : '')
+
+const normalizeAvailability = (value: unknown): ShopProductAvailability => {
+  return value === 'out_of_stock' ? 'out_of_stock' : 'in_stock'
+}
 
 const parseOptionValues = (value: unknown): Record<string, string> => {
   if (!value) return {}
@@ -122,13 +128,13 @@ const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
 
   return definitions
     .map((definition: any): ShopProductSpecDefinition | null => {
-      const id = toFiniteNumber(definition?.id)
+      const id = toOptionalPositiveNumber(definition?.id)
       const slug = String(definition?.slug || '').trim()
       const name = String(definition?.name || slug || '').trim()
-      if (!id || !slug || !name) return null
+      if (!slug || !name) return null
 
       return {
-        id,
+        ...(id ? { id } : {}),
         name,
         slug,
         group: definition?.group ? String(definition.group) : undefined,
@@ -143,13 +149,13 @@ const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
 
 const normalizeProductType = (item: any): ShopProductType | null => {
   if (!item?.product_type) return null
-  const id = toFiniteNumber(item.product_type.id)
+  const id = toOptionalPositiveNumber(item.product_type.id)
   const slug = String(item.product_type.slug || '').trim()
   const name = String(item.product_type.name || slug || '').trim()
-  if (!id || !slug || !name) return null
+  if (!slug || !name) return null
 
   return {
-    id,
+    ...(id ? { id } : {}),
     name,
     slug,
     specDefinitions: normalizeSpecDefinitions(item),
@@ -159,27 +165,27 @@ const normalizeProductType = (item: any): ShopProductType | null => {
 const normalizeVariant = (variant: any): ShopProductVariant | null => {
   const id = toFiniteNumber(variant?.id)
   const sku = String(variant?.sku || '').trim()
-  if (!id || !sku) return null
+  if (!id) return null
 
   const regular = toFiniteNumber(variant?.price)
   const sale = toOptionalNumber(variant?.sale_price)
   const salePriceNumber = sale && sale > 0 ? sale : null
   const priceNumber = salePriceNumber ?? regular
   const optionValues = parseOptionValues(variant?.option_values)
-  const title = String(variant?.title || Object.values(optionValues).join(' / ') || sku).trim()
+  const title = String(variant?.title || Object.values(optionValues).join(' / ') || sku || `Option ${id}`).trim()
+  const weightGrams = toOptionalPositiveNumber(variant?.weight_grams)
 
   return {
     id,
-    sku,
+    ...(sku ? { sku } : {}),
     title,
     optionValues,
     priceNumber,
     price: regular,
     salePriceNumber,
     sale_price: salePriceNumber,
-    stockQuantity: toFiniteNumber(variant?.stock),
-    stock: toFiniteNumber(variant?.stock),
-    weightGrams: toFiniteNumber(variant?.weight_grams),
+    availability: normalizeAvailability(variant?.availability),
+    ...(weightGrams ? { weightGrams } : {}),
     isDefault: Boolean(variant?.is_default),
   }
 }
@@ -206,11 +212,6 @@ export const normalizeShopProduct = (item: any): ShopProduct => {
     imageMedia.find((mediaItem: any) => mediaItem?.is_primary || mediaItem?.role === 'primary') ||
     imageMedia[0]
   const thumbnail = item?.thumbnail || item?.featured_image || primaryMediaImage?.url || undefined
-  const stock =
-    typeof item?.stock === 'object'
-      ? toOptionalNumber(item?.stock?.quantity)
-      : toOptionalNumber(item?.stock ?? defaultVariant?.stock)
-
   return {
     id,
     productId: id,
@@ -227,7 +228,7 @@ export const normalizeShopProduct = (item: any): ShopProduct => {
       regular,
       sale,
     },
-    stockQuantity: stock,
+    availability: normalizeAvailability(item?.availability),
     productType: normalizeProductType(item),
     variants,
   }
@@ -242,10 +243,20 @@ const extractProductItems = (response: any): any[] => {
 
 export function useShopProducts() {
   const config = useRuntimeConfig()
+  const { locale } = useI18n()
   const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+  const productRequestHeaders = () => {
+    const currentLocale = String(locale.value || '').trim()
+    return currentLocale ? { 'Accept-Language': currentLocale } : undefined
+  }
 
+  // Legacy search source kept for existing shop and customer-service flows.
+  // Recommendation baseline data must use fetchPublicShopProducts instead.
   const fetchShopProducts = async (params: ShopProductQueryParams): Promise<ShopProductsResult> => {
-    const response = await $fetch<any>(`${baseURL}/customer-service/products`, { params })
+    const response = await $fetch<any>(`${baseURL}/customer-service/products`, {
+      params,
+      headers: productRequestHeaders(),
+    })
     const items = extractProductItems(response).map(normalizeShopProduct)
 
     return {
@@ -254,14 +265,12 @@ export function useShopProducts() {
     }
   }
 
-  const fetchFeaturedShopProducts = async (
-    params: ShopProductQueryParams = {}
-  ): Promise<ShopProductsResult> => {
+  const fetchPublicShopProducts = async (params: ShopProductQueryParams): Promise<ShopProductsResult> => {
     const response = await $fetch<any>(`${baseURL}/products`, {
+      headers: productRequestHeaders(),
       params: {
         status: 'active',
-        featured: true,
-        page_size: 4,
+        page_size: 12,
         ...params,
       },
     })
@@ -273,21 +282,34 @@ export function useShopProducts() {
     }
   }
 
+  const fetchFeaturedShopProducts = async (
+    params: ShopProductQueryParams = {}
+  ): Promise<ShopProductsResult> => {
+    return fetchPublicShopProducts({
+      featured: true,
+      page_size: 4,
+      ...params,
+    })
+  }
+
   const toCartItem = (
     product: ShopProduct,
     options: ShopProductCartOptions = {}
   ): Omit<CartItem, 'quantity'> => {
     const variantId =
       options.variantId === undefined ? product.defaultVariantId : options.variantId
+    const selectedVariant = variantId
+      ? product.variants.find(variant => Number(variant.id) === Number(variantId)) || null
+      : product.variants.find(variant => variant.isDefault) || product.variants[0] || null
     const price = options.price ?? product.priceNumber
     const salePrice =
       options.salePrice === undefined
         ? product.prices.sale > 0 ? product.prices.sale : null
         : options.salePrice
     const thumbnail = options.thumbnail ?? product.thumbnail
-    const stockQuantity =
-      options.stockQuantity === undefined ? product.stockQuantity : options.stockQuantity
     const title = options.title ?? product.title
+    const sku = options.sku ?? selectedVariant?.sku ?? product.sku
+    const weightGrams = options.weightGrams ?? selectedVariant?.weightGrams ?? null
 
     return {
       id: variantId || product.id,
@@ -296,18 +318,18 @@ export function useShopProducts() {
       title,
       name: title,
       slug: product.slug,
-      sku: options.sku,
+      sku: sku || undefined,
       price,
       sale_price: salePrice,
       image: thumbnail,
       thumbnail,
-      maxStock: stockQuantity ?? undefined,
-      stock: stockQuantity ?? undefined,
+      weight_grams: weightGrams || undefined,
     }
   }
 
   return {
     baseURL,
+    fetchPublicShopProducts,
     fetchFeaturedShopProducts,
     fetchShopProducts,
     toCartItem,

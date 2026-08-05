@@ -280,6 +280,32 @@
       "alertFailed": "Transfer failed.",
       "alertRetry": "Transfer failed. Please try again later.",
       "requestFailed": "Transfer request failed"
+    },
+    "attachments": {
+      "title": "Add to chat",
+      "open": "Add attachment or reference",
+      "photoLibrary": "Send phone image",
+      "camera": "Take photo",
+      "order": "Send order",
+      "product": "Send product"
+    },
+    "productPicker": {
+      "title": "Select a product",
+      "description": "Search for a product and add it to the message composer.",
+      "placeholder": "Search products...",
+      "search": "Search",
+      "searching": "Searching...",
+      "clear": "Clear search",
+      "collapse": "Close product picker",
+      "empty": "Enter a product name, SKU, or keyword to search.",
+      "noResults": "No products found.",
+      "error": "Product search failed. Please try again.",
+      "send": "Send product",
+      "select": "Select product"
+    },
+    "productDraft": {
+      "selected": "Selected product",
+      "remove": "Remove selected product"
     }
   },
   "checkout": {
@@ -302,7 +328,11 @@
         "completeShipping": "Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.",
         "selectPaypalCountry": "Please select a country/region we can ship to before continuing to PayPal.",
         "orderSuccess": "Order submitted successfully!",
-        "orderFailed": "Order submission failed, please try again"
+        "orderFailed": "Order submission failed, please try again",
+        "loginRequired": "Please sign in before checkout.",
+        "emptyCart": "Your cart is empty.",
+        "paymentUnavailable": "This payment method is temporarily unavailable.",
+        "paymentPending": "Payment is not complete yet. Please check your order status later."
       }
     },
     "order": {
@@ -352,7 +382,9 @@
         "cta": "Continue to Stripe",
         "points": {
           "sca": "Great for customers that require SCA/3DS."
-        }
+        },
+        "confirm": "Confirm payment",
+        "confirming": "Confirming..."
       },
       "bank": {
         "title": "Bank transfer",
@@ -373,6 +405,18 @@
         "cta": "Continue with WorldFirst",
         "points": {
           "b2b": "Recommended for B2B cross-border payments."
+        }
+      },
+      "wechat": {
+        "title": "Pay with WeChat Pay",
+        "optionTitle": "WeChat Pay",
+        "subtitle": "Scan to pay",
+        "description": "You scan a WeChat Pay QR code and we confirm the payment server-side before clearing your cart.",
+        "stepperDescription": "After the order is created, we show a WeChat Pay QR code and keep checking the verified payment status.",
+        "cta": "Continue to WeChat Pay",
+        "points": {
+          "recipient": "Required: recipient name + phone number",
+          "scan": "Use the QR code with WeChat Pay on your phone."
         }
       }
     },
@@ -468,6 +512,68 @@
       "state": "State",
       "zip": "ZIP",
       "country": "Country"
+    },
+    "paypalReturn": {
+      "title": {
+        "loading": "Confirming PayPal payment",
+        "success": "Payment confirmed",
+        "error": "Payment could not be confirmed"
+      },
+      "messages": {
+        "capturing": "Please wait while we confirm the payment with PayPal.",
+        "loginRequired": "Please sign in with the account that placed this order.",
+        "missingData": "PayPal returned without the required order data.",
+        "incomplete": "PayPal payment is not complete yet.",
+        "success": "Your payment has been confirmed. We are preparing your order.",
+        "failed": "Unable to confirm this PayPal payment."
+      },
+      "actions": {
+        "continueShopping": "Continue shopping"
+      }
+    },
+    "paypalCancel": {
+      "title": "PayPal payment cancelled",
+      "message": "The order is still unpaid. You can try payment again or contact support.",
+      "actions": {
+        "tryAgain": "Try again"
+      }
+    },
+    "alipayReturn": {
+      "title": {
+        "loading": "Confirming Alipay payment",
+        "success": "Payment confirmed",
+        "error": "Payment could not be confirmed"
+      },
+      "messages": {
+        "confirming": "Please wait while we confirm the payment with Alipay.",
+        "loginRequired": "Please sign in with the account that placed this order.",
+        "missingData": "Alipay returned without the required order data.",
+        "incomplete": "Alipay payment is not complete yet.",
+        "success": "Your payment has been confirmed. We are preparing your order.",
+        "failed": "Unable to confirm this Alipay payment."
+      }
+    },
+    "wechatPay": {
+      "title": {
+        "loading": "Preparing WeChat Pay",
+        "waiting": "Scan with WeChat Pay",
+        "success": "Payment confirmed",
+        "error": "Payment could not be confirmed"
+      },
+      "messages": {
+        "loading": "Please wait while we prepare your WeChat Pay QR code.",
+        "scan": "Scan this QR code in WeChat to complete payment.",
+        "pending": "Waiting for payment confirmation.",
+        "loginRequired": "Please sign in with the account that placed this order.",
+        "missingData": "WeChat Pay opened without the required order data.",
+        "success": "Your payment has been confirmed. We are preparing your order.",
+        "failed": "Unable to confirm this WeChat Pay payment."
+      },
+      "actions": {
+        "checkNow": "Check payment",
+        "checking": "Checking..."
+      },
+      "qrAlt": "WeChat Pay QR code"
     }
   },
   "common": {
@@ -475,7 +581,10 @@
     "previous": "Previous",
     "next": "Next",
     "loading": "Loading...",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "viewAll": "View all",
+    "explore": "Explore",
+    "currentPage": "Current page"
   },
   "company": {
     "nav": {
@@ -588,8 +697,24 @@
     "saved": "Disimpan"
   },
   "faq": {
-    "title": "Frequently Asked Questions",
-    "subtitle": "Find answers to common questions about our products and services"
+    "title": "Pertanyaan yang Sering Diajukan",
+    "subtitle": "Temukan jawaban atas pertanyaan umum tentang produk dan layanan kami",
+    "ui": {
+      "categorizedSupport": "Dukungan berdasarkan kategori",
+      "quickAnswers": "Jawaban cepat untuk pertanyaan umum",
+      "categoriesAriaLabel": "Kategori FAQ",
+      "categoriesLabel": "Kategori FAQ",
+      "all": "Semua",
+      "viewAll": "Lihat semua FAQ",
+      "emptySection": "Tidak ada FAQ untuk bagian ini.",
+      "pageIntro": "Telusuri pertanyaan umum dan jawaban cepat tentang pesanan, produk, dan layanan.",
+      "searchPlaceholder": "Cari FAQ...",
+      "viewMoreContent": "Lihat konten lainnya",
+      "noResults": "Tidak ada FAQ yang cocok dengan \"{query}\"",
+      "allFaqsMetaTitle": "Semua FAQ",
+      "loadingAnswers": "Memuat jawaban",
+      "illustrationAlt": "Ilustrasi FAQ"
+    }
   },
   "feedback": {
     "defaultSubtitle": "Help us improve this page and the tools you use every day.",
@@ -613,7 +738,8 @@
     "defaultTitle": "Share your feedback",
     "required": "Please enter your feedback before submitting.",
     "submitFailed": "Failed to submit feedback. Please try again.",
-    "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed."
+    "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed.",
+    "checkingEligibility": "Checking sign-in status..."
   },
   "feedbackForm": {
     "pageEyebrow": "Product feedback",
@@ -707,14 +833,16 @@
     "tags": "Tags",
     "dateRange": "Date Range",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "currency": "Currency"
   },
   "footer": {
     "menus": {
       "products": "Products",
       "support": "Support",
       "company": "Company",
-      "resources": "RESOURCES"
+      "resources": "RESOURCES",
+      "policies": "Policies"
     },
     "links": {
       "shop": "Shop",
@@ -757,7 +885,9 @@
     "pointsRequired": "Points required",
     "redeeming": "Redeeming...",
     "redeem": "Redeem",
-    "noCards": "No gift cards available"
+    "noCards": "No gift cards available",
+    "myCards": "My Gift Cards",
+    "remaining": "Remaining"
   },
   "guidesTireguides": {
     "innerTube": {
@@ -834,6 +964,12 @@
       }
     }
   },
+  "header": {
+    "searchHint": {
+      "title": "Cari produk dan FAQ",
+      "body": "Klik untuk mencari produk, FAQ, dan lainnya."
+    }
+  },
   "home": {
     "meta": {
       "title": "Factory-Direct Carbon Rims & Wheelsets",
@@ -859,7 +995,8 @@
         "shop": "Shop",
         "about": "About",
         "pictureWarehouse": "Gallery"
-      }
+      },
+      "welcome": "WELCOME!"
     },
     "trust": {
       "title": "Shop with Confidence"
@@ -1080,33 +1217,27 @@
   },
   "member": {
     "brief": {
-      "membershipLevel": "Tingkat keanggotaan:",
-      "productDiscountRate": "Tarif diskon produk:",
-      "pointsDiscountRate": "Tarif diskon poin:",
-      "canBeStacked": "Dapat ditumpuk",
       "level": "Level",
-      "productDiscount": "Product Discount",
-      "pointsDiscount": "Points",
-      "stackable": "Stackable"
-    },
-    "common": {
-      "yes": "Ya",
-      "no": "Tidak"
+      "stackable": "Stackable",
+      "levelDesc": "Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.",
+      "discountRate": "Discount Rate",
+      "discountRateDesc": "The member-level price discount configured in the backend.",
+      "stackableDesc": "Shows whether this tier benefit can combine with other eligible promotions during checkout."
     },
     "levels": {
       "title": "Tingkat keanggotaan",
       "header": {
         "level": "Tingkat",
         "pointsRequired": "Poin yang dibutuhkan",
-        "productDiscount": "Diskon produk",
-        "pointsDiscount": "Diskon poin"
+        "discountRate": "Discount Rate"
       },
       "rows": {
         "ordinary": "Biasa",
         "bronze": "Perunggu",
         "silver": "Perak",
         "gold": "Emas",
-        "supreme": "Tertinggi"
+        "platinum": "Platinum",
+        "diamond": "Diamond"
       }
     },
     "points": {
@@ -1117,19 +1248,40 @@
       "consumeDesc": "1 Dolar = 1 Poin",
       "daily": "Masuk harian",
       "dailyDesc": "1 poin (berlaku 30 hari)",
-      "unit": "pts"
+      "unit": "pts",
+      "redeem": "Redemption rate",
+      "redemptionRule": "{points} Points = {currency}{amount}",
+      "checkin": "Daily check-in",
+      "checkinRule": "{base} Points (up to {max}; +{bonus} every {interval} consecutive days)",
+      "referralRule": "{referrer} Points (invitee gets {referee} Points)",
+      "pointValueSingular": "{points} Point",
+      "pointsValue": "{points} Points",
+      "notConfigured": "Not configured",
+      "purchaseEarn": "Order completion",
+      "purchaseEarnRule": "{points} per 1 {currency} of product amount after discounts, awarded after order completion",
+      "purchaseEarnDisabled": "Purchase earning is not enabled",
+      "redemptionDisplayRule": "{points} = {currency} {amount}",
+      "redemptionDisabled": "Points redemption is not enabled",
+      "checkinBaseRule": "{base} per check-in",
+      "checkinMaxRule": "up to {max}",
+      "checkinStreakRule": "+{bonus} every {interval} consecutive days",
+      "checkinDisabled": "Daily check-in points are not enabled",
+      "referralDisplayRule": "Inviter gets {referrer}; invitee gets {referee}",
+      "referralDisabled": "Referral points are not enabled"
     },
     "tabs": {
       "myInfo": "My info",
       "levers": "Levers",
-      "exchange": "Exchange"
+      "exchange": "Exchange",
+      "ariaLabel": "Membership sections"
     },
     "viewAll": "View Full",
     "myBenefits": "My Benefits",
     "coupons": "Coupons",
     "pointCards": "Point Cards",
     "copyLink": "Copy Invite Link",
-    "pageTitle": "Membership and Points"
+    "pageTitle": "Membership and Points",
+    "giftCards": "Gift Cards"
   },
   "menu": {
     "shop": {
@@ -1253,6 +1405,12 @@
     "section9Title": "9. Perubahan kebijakan ini",
     "section9Body": "Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Setiap perubahan akan dipublikasikan di halaman ini dengan tanggal berlaku yang diperbarui."
   },
+  "productCategoryNavigationCards": {
+    "heading": "Product categories",
+    "all": "View spokes, tires, and more",
+    "loading": "Loading categories...",
+    "empty": "No categories available."
+  },
   "productInformationTabs": {
     "sectionLabel": "Informasi produk",
     "tabListLabel": "Bagian informasi produk",
@@ -1299,9 +1457,6 @@
     "company": "Company",
     "country": "Country/Region",
     "phone": "Phone"
-  },
-  "promo": {
-    "memberCta": "Diskon hingga 50% untuk anggota"
   },
   "quickBuy": {
     "stepsAriaLabel": "Langkah beli cepat",
@@ -1351,7 +1506,10 @@
     "placeholder": "Cari...",
     "button": "Cari",
     "popularTitle": "Pencarian populer",
-    "popularAriaLabel": "Pencarian populer"
+    "popularAriaLabel": "Pencarian populer",
+    "recommendedProducts": "Recommended Products",
+    "recommendedProductsTitle": "Start with popular picks",
+    "recommendedCategoriesTitle": "Browse by type"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Kategori toko",

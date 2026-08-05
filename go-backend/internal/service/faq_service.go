@@ -10,9 +10,10 @@ import (
 )
 
 type FAQService struct {
-	faqRepo                        *repository.FAQRepository
-	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
-	storage                        storage.StorageService
+	faqRepo                          *repository.FAQRepository
+	storefrontHTMLCacheInvalidator   *StorefrontHTMLCacheInvalidator
+	storefrontContentReleaseNotifier *StorefrontContentReleaseNotifier
+	storage                          storage.StorageService
 }
 
 func NewFAQService(faqRepo *repository.FAQRepository, storageSvc storage.StorageService) *FAQService {
@@ -26,12 +27,26 @@ func (s *FAQService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHT
 	s.storefrontHTMLCacheInvalidator = invalidator
 }
 
-func (s *FAQService) invalidateStorefrontHTMLCache(reason string) {
-	if s.storefrontHTMLCacheInvalidator == nil {
-		return
-	}
+func (s *FAQService) SetStorefrontContentReleaseNotifier(notifier *StorefrontContentReleaseNotifier) {
+	s.storefrontContentReleaseNotifier = notifier
+}
 
-	s.storefrontHTMLCacheInvalidator.PurgeAllAsync(reason)
+func (s *FAQService) notifyStorefrontContentChange(reason string) {
+	if s.storefrontHTMLCacheInvalidator != nil {
+		s.storefrontHTMLCacheInvalidator.PurgeAllAsync(reason)
+	}
+	if s.storefrontContentReleaseNotifier != nil {
+		s.storefrontContentReleaseNotifier.TriggerAsync(reason)
+	}
+}
+
+func hasPublishedFAQStatus(items ...*faq.FAQ) bool {
+	for _, item := range items {
+		if item != nil && normalizeFAQStatus(item.Status, "") == "published" {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *FAQService) UploadAnswerImage(ctx context.Context, file *multipart.FileHeader) (string, error) {
@@ -88,12 +103,19 @@ func (s *FAQService) Create(f *faq.FAQ) error {
 	if err := s.faqRepo.Create(f); err != nil {
 		return err
 	}
-	s.invalidateStorefrontHTMLCache("admin faq create")
+	if hasPublishedFAQStatus(f) {
+		s.notifyStorefrontContentChange("admin faq create")
+	}
 	return nil
 }
 
 // Update 更新FAQ
 func (s *FAQService) Update(f *faq.FAQ) error {
+	previousFAQ, err := s.faqRepo.FindByID(f.ID)
+	if err != nil {
+		return err
+	}
+
 	if err := s.normalizeFAQContent(f); err != nil {
 		return err
 	}
@@ -108,7 +130,9 @@ func (s *FAQService) Update(f *faq.FAQ) error {
 	if err := s.faqRepo.Update(f); err != nil {
 		return err
 	}
-	s.invalidateStorefrontHTMLCache("admin faq update")
+	if hasPublishedFAQStatus(previousFAQ, f) {
+		s.notifyStorefrontContentChange("admin faq update")
+	}
 	return nil
 }
 
@@ -179,24 +203,34 @@ func (s *FAQService) Delete(id uint) error {
 }
 
 func (s *FAQService) deleteFAQByID(id uint, shouldInvalidateHTML bool) error {
+	item, err := s.faqRepo.FindByID(id)
+	if err != nil {
+		return err
+	}
 	if err := s.faqRepo.Delete(id); err != nil {
 		return err
 	}
-	if shouldInvalidateHTML {
-		s.invalidateStorefrontHTMLCache("admin faq delete")
+	if shouldInvalidateHTML && hasPublishedFAQStatus(item) {
+		s.notifyStorefrontContentChange("admin faq delete")
 	}
 	return nil
 }
 
 func (s *FAQService) BatchDelete(ids []uint) (int, error) {
 	deleted := 0
+	shouldNotify := false
 	for _, id := range ids {
-		if err := s.deleteFAQByID(id, false); err == nil {
+		item, err := s.faqRepo.FindByID(id)
+		if err != nil {
+			continue
+		}
+		if err := s.faqRepo.Delete(id); err == nil {
 			deleted++
+			shouldNotify = shouldNotify || hasPublishedFAQStatus(item)
 		}
 	}
-	if deleted > 0 {
-		s.invalidateStorefrontHTMLCache("admin faq batch delete")
+	if deleted > 0 && shouldNotify {
+		s.notifyStorefrontContentChange("admin faq batch delete")
 	}
 	return deleted, nil
 }
@@ -213,20 +247,34 @@ func (s *FAQService) Search(keyword, locale string, page, pageSize int) ([]faq.F
 
 // UpdateOrder 更新排序
 func (s *FAQService) UpdateOrder(id uint, order int) error {
+	item, err := s.faqRepo.FindByID(id)
+	if err != nil {
+		return err
+	}
 	if err := s.faqRepo.UpdateOrder(id, order); err != nil {
 		return err
 	}
-	s.invalidateStorefrontHTMLCache("admin faq order update")
+	if hasPublishedFAQStatus(item) {
+		s.notifyStorefrontContentChange("admin faq order update")
+	}
 	return nil
 }
 
 // BatchUpdateOrder 批量更新排序
 func (s *FAQService) BatchUpdateOrder(orders map[uint]int) error {
+	shouldNotify := false
+	for id := range orders {
+		item, err := s.faqRepo.FindByID(id)
+		if err == nil && hasPublishedFAQStatus(item) {
+			shouldNotify = true
+			break
+		}
+	}
 	if err := s.faqRepo.BatchUpdateOrder(orders); err != nil {
 		return err
 	}
-	if len(orders) > 0 {
-		s.invalidateStorefrontHTMLCache("admin faq batch order update")
+	if len(orders) > 0 && shouldNotify {
+		s.notifyStorefrontContentChange("admin faq batch order update")
 	}
 	return nil
 }

@@ -212,6 +212,32 @@
       "whatsapp": "WhatsApp",
       "email": "Email"
     },
+    "attachments": {
+      "title": "Add to chat",
+      "open": "Add attachment or reference",
+      "photoLibrary": "Send phone image",
+      "camera": "Take photo",
+      "order": "Send order",
+      "product": "Send product"
+    },
+    "productPicker": {
+      "title": "Select a product",
+      "description": "Search for a product and add it to the message composer.",
+      "placeholder": "Search products...",
+      "search": "Search",
+      "searching": "Searching...",
+      "clear": "Clear search",
+      "collapse": "Close product picker",
+      "empty": "Enter a product name, SKU, or keyword to search.",
+      "noResults": "No products found.",
+      "error": "Product search failed. Please try again.",
+      "send": "Send product",
+      "select": "Select product"
+    },
+    "productDraft": {
+      "selected": "Selected product",
+      "remove": "Remove selected product"
+    },
     "fallback": {
       "agent": "Agent",
       "customer": "Customer",
@@ -301,6 +327,10 @@
         "couponApplied": "Coupon applied successfully!",
         "completeShipping": "Please complete your shipping address and contact details so we can confirm shipping to your region before continuing.",
         "selectPaypalCountry": "Please select a country/region we can ship to before continuing to PayPal.",
+        "loginRequired": "Please sign in before checkout.",
+        "emptyCart": "Your cart is empty.",
+        "paymentUnavailable": "This payment method is temporarily unavailable.",
+        "paymentPending": "Payment is not complete yet. Please check your order status later.",
         "orderSuccess": "Order submitted successfully!",
         "orderFailed": "Order submission failed, please try again"
       }
@@ -332,15 +362,27 @@
         }
       },
       "alipay": {
-        "title": "Alipay / WeChat / UnionPay",
-        "optionTitle": "Alipay / WeChat / UnionPay",
-        "subtitle": "Local wallets",
-        "description": "You approve the payment in your local wallet. We still collect shipping info here to prepare dispatch.",
-        "stepperDescription": "Approve payment inside your usual wallet. We still gather shipping details in this tab to prepare dispatch and confirm customs information.",
-        "cta": "Pay with local wallet",
+        "title": "Pay with Alipay",
+        "optionTitle": "Alipay",
+        "subtitle": "Alipay wallet",
+        "description": "You will be redirected to Alipay to approve the payment. We only store the verified order result.",
+        "stepperDescription": "Approve payment on Alipay after confirming shipping details here. We verify the trade server-side before marking the order paid.",
+        "cta": "Continue to Alipay",
         "points": {
           "recipient": "Required: recipient name + phone number",
-          "wallets": "Great for China-mainland wallets and UnionPay."
+          "wallets": "Great for customers who prefer Alipay wallet checkout."
+        }
+      },
+      "wechat": {
+        "title": "Pay with WeChat Pay",
+        "optionTitle": "WeChat Pay",
+        "subtitle": "Scan to pay",
+        "description": "You scan a WeChat Pay QR code and we confirm the payment server-side before clearing your cart.",
+        "stepperDescription": "After the order is created, we show a WeChat Pay QR code and keep checking the verified payment status.",
+        "cta": "Continue to WeChat Pay",
+        "points": {
+          "recipient": "Required: recipient name + phone number",
+          "scan": "Use the QR code with WeChat Pay on your phone."
         }
       },
       "stripe": {
@@ -350,6 +392,8 @@
         "description": "Stripe handles your card details and any extra verification. We only store the payment status.",
         "stepperDescription": "Stripe handles card input and any extra verification. We keep the form minimal here and let Stripe manage the sensitive fields.",
         "cta": "Continue to Stripe",
+        "confirm": "Confirm payment",
+        "confirming": "Confirming...",
         "points": {
           "sca": "Great for customers that require SCA/3DS."
         }
@@ -468,14 +512,79 @@
       "state": "State",
       "zip": "ZIP",
       "country": "Country"
+    },
+    "paypalReturn": {
+      "title": {
+        "loading": "Confirming PayPal payment",
+        "success": "Payment confirmed",
+        "error": "Payment could not be confirmed"
+      },
+      "messages": {
+        "capturing": "Please wait while we confirm the payment with PayPal.",
+        "loginRequired": "Please sign in with the account that placed this order.",
+        "missingData": "PayPal returned without the required order data.",
+        "incomplete": "PayPal payment is not complete yet.",
+        "success": "Your payment has been confirmed. We are preparing your order.",
+        "failed": "Unable to confirm this PayPal payment."
+      },
+      "actions": {
+        "continueShopping": "Continue shopping"
+      }
+    },
+    "paypalCancel": {
+      "title": "PayPal payment cancelled",
+      "message": "The order is still unpaid. You can try payment again or contact support.",
+      "actions": {
+        "tryAgain": "Try again"
+      }
+    },
+    "alipayReturn": {
+      "title": {
+        "loading": "Confirming Alipay payment",
+        "success": "Payment confirmed",
+        "error": "Payment could not be confirmed"
+      },
+      "messages": {
+        "confirming": "Please wait while we confirm the payment with Alipay.",
+        "loginRequired": "Please sign in with the account that placed this order.",
+        "missingData": "Alipay returned without the required order data.",
+        "incomplete": "Alipay payment is not complete yet.",
+        "success": "Your payment has been confirmed. We are preparing your order.",
+        "failed": "Unable to confirm this Alipay payment."
+      }
+    },
+    "wechatPay": {
+      "title": {
+        "loading": "Preparing WeChat Pay",
+        "waiting": "Scan with WeChat Pay",
+        "success": "Payment confirmed",
+        "error": "Payment could not be confirmed"
+      },
+      "messages": {
+        "loading": "Please wait while we prepare your WeChat Pay QR code.",
+        "scan": "Scan this QR code in WeChat to complete payment.",
+        "pending": "Waiting for payment confirmation.",
+        "loginRequired": "Please sign in with the account that placed this order.",
+        "missingData": "WeChat Pay opened without the required order data.",
+        "success": "Your payment has been confirmed. We are preparing your order.",
+        "failed": "Unable to confirm this WeChat Pay payment."
+      },
+      "actions": {
+        "checkNow": "Check payment",
+        "checking": "Checking..."
+      },
+      "qrAlt": "WeChat Pay QR code"
     }
   },
   "common": {
     "close": "Close",
     "previous": "Previous",
     "next": "Next",
+    "currentPage": "Current page",
     "loading": "Loading...",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "viewAll": "View all",
+    "explore": "Explore"
   },
   "company": {
     "nav": {
@@ -589,7 +698,23 @@
   },
   "faq": {
     "title": "Frequently Asked Questions",
-    "subtitle": "Find answers to common questions about our products and services"
+    "subtitle": "Find answers to common questions about our products and services",
+    "ui": {
+      "categorizedSupport": "Categorized Support",
+      "quickAnswers": "Quick answers to common questions",
+      "categoriesAriaLabel": "FAQ categories",
+      "categoriesLabel": "FAQ Categories",
+      "all": "All",
+      "viewAll": "View All FAQs",
+      "emptySection": "No FAQs available for this section.",
+      "pageIntro": "Browse common questions and quick answers about orders, products, and service.",
+      "searchPlaceholder": "Search FAQs...",
+      "viewMoreContent": "View More Content",
+      "noResults": "No FAQs found matching \"{query}\"",
+      "allFaqsMetaTitle": "All FAQs",
+      "loadingAnswers": "Loading answers",
+      "illustrationAlt": "FAQ illustration"
+    }
   },
   "feedback": {
     "defaultSubtitle": "Help us improve this page and the tools you use every day.",
@@ -613,7 +738,8 @@
     "defaultTitle": "Share your feedback",
     "required": "Please enter your feedback before submitting.",
     "submitFailed": "Failed to submit feedback. Please try again.",
-    "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed."
+    "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed.",
+    "checkingEligibility": "Checking sign-in status..."
   },
   "feedbackForm": {
     "pageEyebrow": "Product feedback",
@@ -707,13 +833,15 @@
     "tags": "Tags",
     "dateRange": "Date Range",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "currency": "Currency"
   },
   "footer": {
     "menus": {
       "products": "Products",
       "support": "Support",
       "company": "Company",
+      "policies": "Policies",
       "resources": "RESOURCES"
     },
     "links": {
@@ -757,7 +885,9 @@
     "pointsRequired": "Points required",
     "redeeming": "Redeeming...",
     "redeem": "Redeem",
-    "noCards": "No gift cards available"
+    "remaining": "Remaining",
+    "noCards": "No gift cards available",
+    "myCards": "My Gift Cards"
   },
   "guidesTireguides": {
     "innerTube": {
@@ -834,6 +964,12 @@
       }
     }
   },
+  "header": {
+    "searchHint": {
+      "title": "Search products and FAQ",
+      "body": "Click to search products, FAQ, and more."
+    }
+  },
   "home": {
     "meta": {
       "title": "Factory-Direct Carbon Rims & Wheelsets",
@@ -841,6 +977,7 @@
     },
     "hero": {
       "title": "Factory-Direct Carbon Rims & Wheelsets",
+      "welcome": "WELCOME!",
       "subtitle": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability.",
       "stackAriaLabel": "Hero image cards",
       "dotAriaLabel": "Go to card {index}",
@@ -1080,6 +1217,7 @@
   },
   "member": {
     "tabs": {
+      "ariaLabel": "Membership sections",
       "myInfo": "My info",
       "levers": "Levers",
       "exchange": "Exchange"
@@ -1087,20 +1225,41 @@
     "viewAll": "View Full",
     "points": {
       "unit": "pts",
-      "title": "How to Earn Points?",
+      "title": "Points Rules",
+      "pointValueSingular": "{points} Point",
+      "pointsValue": "{points} Points",
+      "notConfigured": "Not configured",
+      "purchaseEarn": "Order completion",
+      "purchaseEarnRule": "{points} per 1 {currency} of product amount after discounts, awarded after order completion",
+      "purchaseEarnDisabled": "Purchase earning is not enabled",
       "invite": "Invite new users",
       "inviteDesc": "50 Points (invitee gets 30 Points)",
       "consume": "Consumption",
       "consumeDesc": "1 Dollar = 1 Point",
       "daily": "Daily login",
-      "dailyDesc": "1 Point (30 days validity)"
+      "dailyDesc": "1 Point (30 days validity)",
+      "redeem": "Redemption rate",
+      "redemptionDisplayRule": "{points} = {currency} {amount}",
+      "redemptionDisabled": "Points redemption is not enabled",
+      "redemptionRule": "{points} Points = {currency}{amount}",
+      "checkin": "Daily check-in",
+      "checkinBaseRule": "{base} per check-in",
+      "checkinMaxRule": "up to {max}",
+      "checkinStreakRule": "+{bonus} every {interval} consecutive days",
+      "checkinDisabled": "Daily check-in points are not enabled",
+      "checkinRule": "{base} Points (up to {max}; +{bonus} every {interval} consecutive days)",
+      "referralDisplayRule": "Inviter gets {referrer}; invitee gets {referee}",
+      "referralDisabled": "Referral points are not enabled",
+      "referralRule": "{referrer} Points (invitee gets {referee} Points)"
     },
     "myBenefits": "My Benefits",
     "brief": {
       "level": "Level",
-      "productDiscount": "Product Discount",
-      "pointsDiscount": "Points",
-      "stackable": "Stackable"
+      "levelDesc": "Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.",
+      "discountRate": "Discount Rate",
+      "discountRateDesc": "The member-level price discount configured in the backend.",
+      "stackable": "Stackable",
+      "stackableDesc": "Shows whether this tier benefit can combine with other eligible promotions during checkout."
     },
     "coupons": "Coupons",
     "pointCards": "Point Cards",
@@ -1109,12 +1268,20 @@
       "header": {
         "level": "Level",
         "pointsRequired": "Points Required",
-        "productDiscount": "Product Discount",
-        "pointsDiscount": "Points Discount"
+        "discountRate": "Discount Rate"
+      },
+      "rows": {
+        "ordinary": "Ordinary",
+        "bronze": "Bronze",
+        "silver": "Silver",
+        "gold": "Gold",
+        "platinum": "Platinum",
+        "diamond": "Diamond"
       }
     },
     "copyLink": "Copy Invite Link",
-    "pageTitle": "Membership and Points"
+    "pageTitle": "Membership and Points",
+    "giftCards": "Gift Cards"
   },
   "menu": {
     "shop": {
@@ -1238,6 +1405,12 @@
     "section9Title": "9. Changes to This Policy",
     "section9Body": "We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date."
   },
+  "productCategoryNavigationCards": {
+    "heading": "Product categories",
+    "all": "View spokes, tires, and more",
+    "loading": "Loading categories...",
+    "empty": "No categories available."
+  },
   "productInformationTabs": {
     "sectionLabel": "Product information",
     "tabListLabel": "Product information sections",
@@ -1333,7 +1506,10 @@
     "placeholder": "Search...",
     "button": "Search",
     "popularTitle": "Popular searches",
-    "popularAriaLabel": "Popular searches"
+    "popularAriaLabel": "Popular searches",
+    "recommendedProducts": "Recommended Products",
+    "recommendedProductsTitle": "Start with popular picks",
+    "recommendedCategoriesTitle": "Browse by type"
   },
   "shopCategoryMenu": {
     "ariaLabel": "Shop categories",

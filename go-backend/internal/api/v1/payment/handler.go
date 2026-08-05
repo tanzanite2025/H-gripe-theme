@@ -1,8 +1,22 @@
 package payment
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"tanzanite/internal/domain/auth"
+	"tanzanite/internal/domain/currency"
+	orderdomain "tanzanite/internal/domain/order"
+	"tanzanite/internal/pkg/antibot"
+	"tanzanite/internal/pkg/antifraud"
 	"tanzanite/internal/pkg/apierror"
+	pgateway "tanzanite/internal/pkg/payment"
+	"tanzanite/internal/pkg/response"
+	"tanzanite/internal/pkg/visitorcookie"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -12,14 +26,55 @@ type Handler struct {
 	paymentService  *service.PaymentService
 	orderService    *service.OrderService
 	settingsService *service.AdminSettingsService
+	currencyPolicy  *service.CurrencyPolicyService
+	threeDSPolicy   *service.PaymentThreeDSPolicyService
+	riskMonitoring  *service.PaymentRiskMonitoringService
+	protection      *service.PaymentProtectionService
+	refundReview    *service.PaymentRefundRecommendationService
+	antiBot         *antibot.Service
+	antiFraud       *antifraud.Service
+	gatewayFactory  func(*pgateway.Config) (pgateway.PaymentGateway, error)
+	publicBaseURL   string
 }
 
-func NewHandler(paymentService *service.PaymentService, orderService *service.OrderService, settingsService *service.AdminSettingsService) *Handler {
+func NewHandler(
+	paymentService *service.PaymentService,
+	orderService *service.OrderService,
+	settingsService *service.AdminSettingsService,
+	currencyPolicy *service.CurrencyPolicyService,
+	threeDSPolicy *service.PaymentThreeDSPolicyService,
+	riskMonitoring *service.PaymentRiskMonitoringService,
+	protection *service.PaymentProtectionService,
+	refundReview *service.PaymentRefundRecommendationService,
+	antiBot *antibot.Service,
+	antiFraud *antifraud.Service,
+) *Handler {
 	return &Handler{
 		paymentService:  paymentService,
 		orderService:    orderService,
 		settingsService: settingsService,
+		currencyPolicy:  currencyPolicy,
+		threeDSPolicy:   threeDSPolicy,
+		riskMonitoring:  riskMonitoring,
+		protection:      protection,
+		refundReview:    refundReview,
+		antiBot:         antiBot,
+		antiFraud:       antiFraud,
 	}
+}
+
+func (h *Handler) newPaymentGateway(config *pgateway.Config) (pgateway.PaymentGateway, error) {
+	if h != nil && h.gatewayFactory != nil {
+		return h.gatewayFactory(config)
+	}
+	return pgateway.NewPaymentGateway(config)
+}
+
+func (h *Handler) ConfigurePublicBaseURL(baseURL string) {
+	if h == nil {
+		return
+	}
+	h.publicBaseURL = normalizePaymentBaseURL(baseURL)
 }
 
 func (h *Handler) authorizeOrderPaymentRead(c *gin.Context, orderID uint) bool {
@@ -41,4 +96,283 @@ func (h *Handler) authorizeOrderPaymentRead(c *gin.Context, orderID uint) bool {
 	}
 
 	return true
+}
+
+// CreateStripePaymentIntent creates a server-priced PaymentIntent for an
+// existing unpaid order. The client receives only Stripe's publishable key and
+// client secret; payment completion still comes from the verified webhook.
+func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		apierror.RespondUnauthorized(c)
+		return
+	}
+
+	var req struct {
+		OrderNumber  string `json:"order_number" binding:"required"`
+		CaptchaToken string `json:"captcha_token"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+
+	orderRecord, err := h.orderService.GetOrderByNumber(strings.TrimSpace(req.OrderNumber), userIDValue.(uint))
+	if err != nil {
+		apierror.RespondNotFound(c, "Order")
+		return
+	}
+	if orderRecord.PaymentStatus == "paid" {
+		apierror.RespondBadRequest(c, "Order is already paid")
+		return
+	}
+	if orderRecord.Status == "cancelled" || orderRecord.Status == "refunded" || orderRecord.Status == "payment_expired" {
+		apierror.RespondBadRequest(c, "Order is not payable")
+		return
+	}
+
+	if !h.authorizePaymentStart(c, paymentStartProtectionInput{
+		Provider: string(pgateway.GatewayStripe),
+		Order:    orderRecord,
+	}) {
+		return
+	}
+
+	riskIdentity := h.stripePaymentRiskIdentity(c, userIDValue.(uint))
+	if !h.authorizeStripePaymentRisk(c, riskIdentity, req.CaptchaToken, orderRecord) {
+		return
+	}
+
+	config, err := h.loadGatewayConfig(pgateway.GatewayStripe)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	if config.PublishableKey == "" {
+		config.PublishableKey = pgateway.LoadConfigFromEnv(pgateway.GatewayStripe).PublishableKey
+	}
+	if config.ThreeDSecure == "" {
+		config.ThreeDSecure = "automatic"
+	}
+	if config.PublishableKey == "" {
+		apierror.RespondError(c, 503, "stripe_publishable_key_missing", "Stripe publishable key is not configured")
+		return
+	}
+
+	orderCurrency, err := strictOrderCurrency(orderRecord)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	if !ensureGatewayCurrency(c, pgateway.GatewayStripe, orderCurrency) {
+		return
+	}
+	gateway, err := h.newPaymentGateway(config)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	threeDSDecision := h.decideStripeThreeDS(c, orderRecord, userIDValue.(uint), config.ThreeDSecure)
+	metadata := map[string]string{
+		"order_number": orderRecord.OrderNumber,
+	}
+	for key, value := range threeDSDecision.Metadata() {
+		metadata[key] = value
+	}
+
+	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
+		Amount:         orderRecord.TotalAmount,
+		Currency:       orderCurrency,
+		OrderID:        orderRecord.OrderNumber,
+		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
+		IdempotencyKey: fmt.Sprintf("order-%d-stripe-payment-intent", orderRecord.ID),
+		ThreeDSecure:   threeDSDecision.Mode,
+		Customer: &pgateway.Customer{
+			Name:  orderRecord.ShippingAddress.FirstName + " " + orderRecord.ShippingAddress.LastName,
+			Email: orderRecord.ShippingAddress.Email,
+			Phone: orderRecord.ShippingAddress.Phone,
+		},
+		Metadata: metadata,
+	})
+	if err != nil {
+		apierror.RespondError(c, 502, "stripe_payment_intent_failed", err.Error())
+		if h.antiFraud != nil {
+			_ = h.antiFraud.RecordAttemptFailure(c.Request.Context(), riskIdentity)
+		}
+		return
+	}
+	if h.antiFraud != nil {
+		if err := h.antiFraud.BindPaymentIntent(c.Request.Context(), paymentResponse.TransactionID, riskIdentity); err != nil {
+			apierror.RespondInternalError(c, err)
+			return
+		}
+	}
+	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
+		Provider:      string(pgateway.GatewayStripe),
+		OrderNumber:   orderRecord.OrderNumber,
+		TransactionID: paymentResponse.TransactionID,
+		PaymentMethod: "stripe",
+		Status:        "pending",
+		Amount:        paymentResponse.Amount,
+		Currency:      paymentResponse.Currency,
+	}); err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+
+	response.Success(c, paymentResponse)
+}
+
+func (h *Handler) stripePaymentRiskIdentity(c *gin.Context, userID uint) antifraud.AttemptIdentity {
+	return antifraud.AttemptIdentity{
+		Provider:    string(pgateway.GatewayStripe),
+		UserID:      fmt.Sprint(userID),
+		SessionID:   stripeRequestSessionID(c),
+		AnonymousID: stripeRequestAnonymousID(c),
+		IPAddress:   c.ClientIP(),
+		UserAgent:   c.Request.UserAgent(),
+	}
+}
+
+func (h *Handler) authorizeStripePaymentRisk(c *gin.Context, identity antifraud.AttemptIdentity, captchaToken string, orderRecord *orderdomain.Order) bool {
+	if h == nil || h.antiFraud == nil {
+		return true
+	}
+	decision, err := h.antiFraud.EvaluateAttempt(c.Request.Context(), antifraud.AttemptInput{
+		Identity: identity,
+		Signals: antifraud.Signals{
+			IPCountry:      stripeRequestCountry(c),
+			BillingCountry: orderRecord.BillingAddress.Country,
+			UserAgent:      c.Request.UserAgent(),
+		},
+	})
+	if err != nil {
+		apierror.RespondError(c, http.StatusServiceUnavailable, "payment_risk_unavailable", "Payment risk service is temporarily unavailable")
+		return false
+	}
+	if decision.Delay > 0 && !waitPaymentRiskDelay(c.Request.Context(), decision.Delay) {
+		apierror.RespondError(c, http.StatusRequestTimeout, "payment_risk_check_timeout", "Payment risk check timed out")
+		return false
+	}
+	if decision.Action == antifraud.DecisionActionBlock {
+		apierror.RespondError(c, http.StatusForbidden, "payment_blocked", "Payment could not be started")
+		return false
+	}
+	if !decision.ChallengeRequired {
+		return true
+	}
+	if h.antiBot == nil || !h.antiBot.Required() {
+		apierror.RespondError(c, http.StatusServiceUnavailable, "payment_challenge_unavailable", "Payment verification challenge is not configured")
+		return false
+	}
+	if strings.TrimSpace(captchaToken) == "" {
+		respondPaymentChallengeRequired(c, decision)
+		return false
+	}
+	if err := h.antiBot.VerifyChallenge(c.Request.Context(), captchaToken, c.ClientIP()); err != nil {
+		if errors.Is(err, antibot.ErrChallengeRequired) || errors.Is(err, antibot.ErrChallengeInvalid) {
+			respondPaymentChallengeRequired(c, decision)
+			return false
+		}
+		apierror.RespondError(c, http.StatusServiceUnavailable, "payment_challenge_unavailable", "Payment verification challenge is temporarily unavailable")
+		return false
+	}
+	return true
+}
+
+func waitPaymentRiskDelay(ctx context.Context, delay time.Duration) bool {
+	if delay <= 0 {
+		return true
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func respondPaymentChallengeRequired(c *gin.Context, decision antifraud.Decision) {
+	apierror.RespondErrorWithDetails(c, http.StatusForbidden, "payment_challenge_required", "Payment verification challenge required", gin.H{
+		"challenge_required": true,
+		"action":             "payment",
+		"risk_action":        decision.Action,
+		"reason":             decision.ChallengeReason,
+		"failures":           decision.Failures,
+		"reasons":            decision.Reasons,
+	})
+}
+
+func (h *Handler) decideStripeThreeDS(
+	c *gin.Context,
+	orderRecord *orderdomain.Order,
+	userID uint,
+	baseMode string,
+) service.PaymentThreeDSDecision {
+	if h == nil || h.threeDSPolicy == nil || orderRecord == nil {
+		return service.PaymentThreeDSDecision{
+			Mode:      pgateway.NormalizeThreeDSecureMode(baseMode),
+			Strategy:  "configured",
+			RiskLevel: "normal",
+			Reasons:   []string{"adaptive_3ds_unavailable"},
+		}
+	}
+
+	return h.threeDSPolicy.Decide(c.Request.Context(), service.PaymentThreeDSDecisionInput{
+		Provider:        string(pgateway.GatewayStripe),
+		UserID:          userID,
+		OrderID:         orderRecord.ID,
+		Amount:          orderRecord.TotalAmount,
+		Currency:        normalizedOrderCurrency(orderRecord),
+		BaseMode:        baseMode,
+		IPAddress:       c.ClientIP(),
+		IPCountry:       stripeRequestCountry(c),
+		UserAgent:       c.Request.UserAgent(),
+		SessionID:       stripeRequestSessionID(c),
+		BillingCountry:  orderRecord.BillingAddress.Country,
+		ShippingCountry: orderRecord.ShippingAddress.Country,
+		PaymentMethod:   orderRecord.PaymentMethod,
+	})
+}
+
+func normalizedOrderCurrency(orderRecord *orderdomain.Order) string {
+	if orderRecord == nil {
+		return ""
+	}
+	return currency.NormalizeCode(orderRecord.Currency)
+}
+
+func strictOrderCurrency(orderRecord *orderdomain.Order) (string, error) {
+	value := normalizedOrderCurrency(orderRecord)
+	if !currency.IsValidCode(value) || !currency.IsCatalogCode(value) {
+		return "", fmt.Errorf("order currency is not configured")
+	}
+	return value, nil
+}
+
+func stripeRequestCountry(c *gin.Context) string {
+	return paymentRequestCountry(c)
+}
+
+func stripeRequestSessionID(c *gin.Context) string {
+	for _, cookieName := range []string{"session_id", visitorcookie.CustomerServiceVisitorCookie} {
+		if value, err := c.Cookie(cookieName); err == nil && strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
+func stripeRequestAnonymousID(c *gin.Context) string {
+	for _, header := range []string{"X-Tanzanite-Anonymous-ID", "X-Anonymous-ID", "X-Visitor-ID"} {
+		if value := strings.TrimSpace(c.GetHeader(header)); value != "" {
+			return value
+		}
+	}
+	if value, ok := visitorcookie.ExistingCustomerServiceVisitorHash(c, nil); ok {
+		return value
+	}
+	return ""
 }

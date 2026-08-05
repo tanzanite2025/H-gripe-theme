@@ -8,7 +8,7 @@
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div 
+      <div
         v-if="leftOpen"
         class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
         @click="handleBackdropClick"
@@ -16,7 +16,7 @@
     </transition>
 
     <!-- 左侧面板 (Sidebar) -->
-    <aside 
+    <aside
       class="fixed left-0 top-0 sidepanel-shell pointer-events-none z-[9999]"
       aria-label="Sidebar"
     >
@@ -28,23 +28,25 @@
         }"
       >
         <!-- 左侧关闭按钮 -->
-        <button 
-          class="absolute top-2 right-2 w-8 h-8 inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-blue-500 text-black font-bold text-sm cursor-pointer hover:shadow-[0_4px_12px_rgba(45,212,191,0.4)] hover:scale-105 transition-all z-10 pointer-events-auto" 
-          type="button" 
-          @click="closeLeft" 
+        <button
+          class="tz-global-close-btn absolute top-2 right-2 z-10 pointer-events-auto"
+          type="button"
+          @click="closeLeft"
           aria-label="Close sidebar"
-        >×</button>
-        
+        >
+          <span class="text-sm leading-none">×</span>
+        </button>
+
         <!-- 左侧把手按钮 -->
-        <button 
-          class="sidebar-handle sidebar-handle--left w-[26px] h-[120px] rounded-r-[26px] box-border inline-flex items-center justify-center absolute -right-[26px] top-1/2 -translate-y-1/2 bg-gradient-to-br from-purple-500 to-indigo-500 border-2 border-[rgba(124,117,255,0.85)] shadow-[0_0_0_3px_rgba(124,117,255,0.18)] text-[#e8e9ff] cursor-pointer pointer-events-auto hover:brightness-110 hover:shadow-[0_0_0_4px_rgba(124,117,255,0.22),0_8px_22px_rgba(0,0,0,0.42)] focus-visible:brightness-110 focus-visible:shadow-[0_0_0_4px_rgba(124,117,255,0.22),0_8px_22px_rgba(0,0,0,0.42)] transition-all" 
-          type="button" 
-          @click="toggleLeft" 
+        <button
+          class="sidebar-handle sidebar-handle--left w-[26px] h-[120px] rounded-r-[26px] box-border inline-flex items-center justify-center absolute -right-[26px] top-1/2 -translate-y-1/2 bg-[#B5FF6D] border-2 border-[rgba(181,255,109,0.8)] shadow-[0_0_0_3px_rgba(181,255,109,0.16)] text-black cursor-pointer pointer-events-auto hover:brightness-110 hover:shadow-[0_0_0_4px_rgba(181,255,109,0.2),0_8px_22px_rgba(0,0,0,0.42)] focus-visible:brightness-110 focus-visible:shadow-[0_0_0_4px_rgba(181,255,109,0.2),0_8px_22px_rgba(0,0,0,0.42)] transition-all"
+          type="button"
+          @click="toggleLeft"
           :aria-expanded="leftOpen"
         >
           <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs leading-none">{{ leftArrow }}</span>
         </button>
-        
+
         <!-- 左侧内容 -->
         <div class="w-full h-full box-border m-0 relative overflow-y-auto pt-10 px-2 pb-0 md:pt-12 md:px-4 md:pb-4 rounded-none md:rounded-2xl">
           <slot name="left" />
@@ -123,24 +125,34 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
-/* 侧边栏面板背景 - Style C 渐变 */
+/* 侧边栏面板背景 */
 .sidebar-panel {
-  background: radial-gradient(circle at 50% 0%, #0f172a 0%, #000000 100%);
+  background: #000;
 }
 
  .sidepanel-shell {
-   height: 100vh;
+   height: var(--tz-mobile-safe-viewport-height, 100vh);
  }
 
  @supports (height: 100svh) {
    .sidepanel-shell {
-     height: 100svh;
+     height: var(--tz-mobile-safe-viewport-height, 100svh);
    }
  }
 
  @supports (height: 100dvh) {
    .sidepanel-shell {
-     height: 100dvh;
+     height: var(--tz-mobile-safe-viewport-height, 100dvh);
+   }
+ }
+
+ @media (max-width: 767px) {
+   .sidepanel-shell {
+     top: var(--tz-safe-area-top, 0px);
+   }
+
+   .sidepanel-shell .sidebar-panel > div {
+     padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 0.75rem);
    }
  }
 

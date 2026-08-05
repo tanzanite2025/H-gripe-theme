@@ -12,6 +12,9 @@
             <span v-if="section.id === 'support'">
               {{ $t('footer.menus.support', 'Support') }}
             </span>
+            <span v-else-if="section.id === 'policies'">
+              {{ $t('footer.menus.policies', 'Policies') }}
+            </span>
             <span v-else>
               {{ $t(section.titleKey) }}
             </span>
@@ -26,28 +29,30 @@
 
         <!-- Special brand/contact column for the 'resources' section -->
         <div v-if="section.id === 'resources'" class="footer-menus__brand-text mobile-accordion-content">
-          <p v-if="siteName" class="footer-menus__brand-name">
-            {{ siteName }}
-          </p>
-          <p v-if="siteDescription" class="footer-menus__brand-paragraph">
-            {{ siteDescription }}
-          </p>
-          <p v-if="contactEmail" class="footer-menus__brand-paragraph">
-            <a
-              :href="`mailto:${contactEmail}`"
-              class="footer-menus__link"
-            >
-              {{ contactEmail }}
-            </a>
-          </p>
-          <p v-if="contactPhone" class="footer-menus__brand-paragraph">
-            <a
-              :href="`tel:${contactPhone}`"
-              class="footer-menus__link"
-            >
-              {{ contactPhone }}
-            </a>
-          </p>
+          <template v-if="canRenderSiteSettings">
+            <p v-if="siteName" class="footer-menus__brand-name">
+              {{ siteName }}
+            </p>
+            <p v-if="siteDescription" class="footer-menus__brand-paragraph">
+              {{ siteDescription }}
+            </p>
+            <p v-if="contactEmail" class="footer-menus__brand-paragraph">
+              <a
+                :href="`mailto:${contactEmail}`"
+                class="footer-menus__link"
+              >
+                {{ contactEmail }}
+              </a>
+            </p>
+            <p v-if="contactPhone" class="footer-menus__brand-paragraph">
+              <a
+                :href="`tel:${contactPhone}`"
+                class="footer-menus__link"
+              >
+                {{ contactPhone }}
+              </a>
+            </p>
+          </template>
         </div>
 
         <!-- Support section link list -->
@@ -118,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useLocalePath } from '#imports'
 import type { FooterSection } from '~/utils/footerMenus'
 import { footerMenus } from '~/utils/footerMenus'
@@ -135,6 +140,11 @@ const siteName = computed(() => siteSettings.value.siteTitle?.trim() || '')
 const siteDescription = computed(() => siteSettings.value.siteDescription?.trim() || '')
 const contactEmail = computed(() => siteSettings.value.contactEmail?.trim() || '')
 const contactPhone = computed(() => siteSettings.value.contactPhone?.trim() || '')
+const canRenderSiteSettings = ref(false)
+
+onMounted(() => {
+  canRenderSiteSettings.value = true
+})
 
 const sections = computed<FooterSection[]>(() => {
   if (props.menus && props.menus.length) {
@@ -161,8 +171,8 @@ const isOpen = (id: string) => {
 
 .footer-menus__grid {
   display: grid;
-  /* 4 equal-width columns on larger screens */
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Keep policies aligned as a dedicated fifth column on larger screens. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1.5rem;
 }
 

@@ -1,73 +1,45 @@
-import { ref } from 'vue'
-
-interface PaymentMethodCurrencySource {
-  supported_currencies?: string | string[] | null
+interface CurrencyPolicyPayload {
+  default_order_currency?: string
+  default_checkout_currency?: string
 }
 
-const extractList = <T>(payload: unknown): T[] => {
-  let current = payload
-
-  for (let depth = 0; depth < 3; depth += 1) {
-    if (Array.isArray(current)) return current as T[]
-    if (!current || typeof current !== 'object') return []
-
-    const record = current as Record<string, unknown>
-    if (Array.isArray(record.items)) return record.items as T[]
-    current = record.data
-  }
-
-  return []
-}
-
-const splitCurrencyCodes = (value: PaymentMethodCurrencySource['supported_currencies']) => {
-  if (Array.isArray(value)) return value
-  if (typeof value !== 'string') return []
-
-  return value.split(',')
+const normalizeCode = (value: unknown) => {
+  const code = String(value || '').trim().toUpperCase()
+  return /^[A-Z]{3}$/.test(code) ? code : ''
 }
 
 export const usePaymentCurrencies = () => {
   const { request } = useApiRequest()
 
-  const currencies = ref<string[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  const defaultOrderCurrency = useState<string>('currency-policy-default-order', () => '')
+  const loading = useState<boolean>('currency-policy-loading', () => false)
+  const error = useState<string | null>('currency-policy-error', () => null)
 
   const loadCurrencies = async () => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await request<unknown>(
-        '/payment/methods?enabled=true',
+      const response = await request<{ data?: CurrencyPolicyPayload }>(
+        '/settings/currency-policy',
         { headers: { accept: 'application/json' } },
-        'Unable to load payment methods'
+        'Unable to load currency policy'
       )
-      const methods = extractList<PaymentMethodCurrencySource>(response)
-      const seen = new Set<string>()
-      const next: string[] = []
-
-      for (const method of methods) {
-        for (const rawCode of splitCurrencyCodes(method.supported_currencies)) {
-          const code = String(rawCode || '').trim().toUpperCase()
-          if (!/^[A-Z]{3}$/.test(code) || seen.has(code)) continue
-
-          seen.add(code)
-          next.push(code)
-        }
+      const policy = response?.data || (response as unknown as CurrencyPolicyPayload)
+      defaultOrderCurrency.value = normalizeCode(policy?.default_order_currency || policy?.default_checkout_currency)
+      if (!defaultOrderCurrency.value) {
+        throw new Error('Currency policy is incomplete')
       }
-
-      currencies.value = next
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unable to load payment currencies'
-      currencies.value = []
+      error.value = e instanceof Error ? e.message : 'Unable to load default order currency'
+      defaultOrderCurrency.value = ''
     } finally {
       loading.value = false
     }
   }
 
   return {
-    currencies,
+    defaultOrderCurrency,
     loading,
     error,
     loadCurrencies,

@@ -1,5 +1,5 @@
 <template>
-  <AdminTablePanel :loading="loading || structureLoading" :batch-visible="selectedFaqs.length > 0">
+  <AdminTablePanel class="h-full min-h-0" :loading="loading || structureLoading" :batch-visible="selectedFaqs.length > 0" scroll-body>
     <template #batch>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-xs font-medium">已选择 {{ selectedFaqs.length }} 个 FAQ</span>
@@ -10,8 +10,8 @@
       </div>
     </template>
 
-    <div class="border-b border-border/70 px-4 pt-3">
-      <div class="flex min-w-0 items-center gap-1.5">
+    <div class="border-b border-border/70 px-4 py-3">
+      <div class="flex min-w-0 items-center gap-2">
         <div
           ref="localeScrollArea"
           class="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
@@ -23,16 +23,16 @@
           >
             <TabsList
               variant="default"
-              class="h-9 w-max min-w-full max-w-none flex-nowrap justify-start gap-1.5 rounded-2xl bg-muted/50 p-1.5"
+              class="h-11 w-max min-w-full max-w-none flex-nowrap justify-start gap-2 rounded-2xl bg-muted/50 p-1.5"
             >
               <TabsTrigger
                 v-for="(locale, index) in structureLocales"
                 :key="locale.value"
                 :ref="(element) => setLocaleTriggerRef(locale.value, element)"
                 :value="locale.value"
-                class="h-6 flex-none gap-1 px-3 text-[11px] font-bold normal-case tracking-normal data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm"
+          class="h-8 flex-none gap-1.5 px-3.5 text-xs font-bold normal-case tracking-normal"
               >
-                <span class="font-mono text-[10px] opacity-60">{{ localeNumber(index) }}</span>
+                <span class="font-mono text-[11px] opacity-60">{{ localeNumber(index) }}</span>
                 <span>{{ locale.label }}</span>
               </TabsTrigger>
             </TabsList>
@@ -45,7 +45,7 @@
               type="button"
               variant="outline"
               size="icon"
-              class="size-8 shrink-0 rounded-full"
+              class="size-9 shrink-0 rounded-full"
               aria-label="选择更多语言"
               title="更多语言"
             >

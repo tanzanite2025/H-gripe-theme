@@ -210,6 +210,25 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
   margin: 0 0 1rem;
 }
 
+.product-information__content :deep(ul),
+.product-information__content :deep(ol) {
+  margin: 0 0 1rem;
+  padding-left: 1.35rem;
+  list-style-position: outside;
+}
+
+.product-information__content :deep(ul) {
+  list-style-type: disc;
+}
+
+.product-information__content :deep(ol) {
+  list-style-type: decimal;
+}
+
+.product-information__content :deep(li) {
+  margin: 0.35rem 0;
+}
+
 .product-information__content :deep(a) {
   color: #7dd3fc;
   text-decoration: underline;
@@ -223,11 +242,34 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
   color: #f8fafc;
 }
 
+.product-information__content :deep(blockquote) {
+  margin: 1.25rem 0;
+  border-left: 3px solid rgba(56, 189, 248, 0.75);
+  color: #dbeafe;
+  padding-left: 1rem;
+}
+
+.product-information__content :deep(figure) {
+  margin: 1.4rem 0;
+}
+
 .product-information__content :deep(img),
-.product-information__content :deep(video),
-.product-information__content :deep(iframe) {
+.product-information__content :deep(video) {
+  display: block;
   max-width: 100%;
   height: auto;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.product-information__content :deep(video) {
+  width: 100%;
+}
+
+.product-information__content :deep(figcaption) {
+  margin-top: 0.55rem;
+  color: var(--tz-text-muted);
+  font-size: 0.9rem;
 }
 
 .product-information__content :deep(pre),

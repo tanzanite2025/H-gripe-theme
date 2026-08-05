@@ -66,7 +66,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div v-for="(cert, index) in certificates" :key="index" class="group relative bg-[#11151e] rounded-2xl p-4 md:p-6 border border-slate-700/50 hover:border-teal-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/5 hover:-translate-y-1">
+            <div v-for="(cert, index) in certificates" :key="index" class="group relative bg-[var(--tz-card-surface)] rounded-2xl p-4 md:p-6 border border-slate-700/50 hover:border-teal-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/5 hover:-translate-y-1">
                 
                 <h4 class="text-lg font-bold text-white mb-2">{{ cert.title }}</h4>
                 <p class="text-xs tz-text-secondary mb-4 h-10 line-clamp-2">{{ cert.description }}</p>

@@ -2,6 +2,7 @@ import { ref, computed, watch } from 'vue'
 import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
+import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 
 export interface ShippingAddress {
   name: string
@@ -18,7 +19,6 @@ const isCartOpen = ref(false)
 const isCheckoutOpen = ref(false)
 const cartVariant = ref<'default' | 'checkout-bottom' | 'lever-bottom' | 'chat-bottom'>('default')
 const shippingAddress = ref<ShippingAddress | null>(null)
-const selectedPaymentMethod = ref<string>('')
 const isLoadingCart = ref(false)
 
 let eventListenersAdded = false
@@ -41,9 +41,7 @@ const normalizeBackendCartItem = (item: any): CartItem => {
   const productId = item.product_id
   const variantId = item.variant_id || null
   const product = item.product || {}
-  const variant = item.variant || {}
-  const stock = variant.stock ?? product.stock ?? 0
-  const weightGrams = variant.weight_grams ?? product.weight_grams ?? null
+  const thumbnail = resolveProductThumbnail(product)
 
   return {
     id: cartItemKey(productId, variantId),
@@ -52,23 +50,19 @@ const normalizeBackendCartItem = (item: any): CartItem => {
     name: product.name || 'Unknown Product',
     title: product.name || 'Unknown Product',
     slug: product.slug || '',
-    sku: variant.sku || product.sku || '',
-    product_type_id: product.product_type_id ?? null,
     price: item.price,
-    sale_price: variant.sale_price ?? product.sale_price,
+    sale_price: product.sale_price,
     quantity: item.quantity,
-    image: resolveProductThumbnail(product),
+    image: thumbnail,
+    thumbnail,
     categories: product.categories || [],
-    stock,
-    maxStock: stock,
-    weight_grams: weightGrams,
-    weight: weightGrams ? weightGrams / 1000 : undefined,
   }
 }
 
 export const useCart = () => {
   const auth = useAuth()
   const calculation = useCartCalculation()
+  const { track: trackBehaviorEvent } = useBehaviorEvents()
 
   const loadCartFromBackend = async () => {
     isLoadingCart.value = true
@@ -192,10 +186,6 @@ export const useCart = () => {
     window.addEventListener('open-cart-drawer', () => {
       isCartOpen.value = true
     })
-    window.addEventListener('open-checkout-modal', () => {
-      isCartOpen.value = false
-      isCheckoutOpen.value = true
-    })
   }
 
   watch(() => auth.isAuthenticated.value, async (newVal, oldVal) => {
@@ -238,15 +228,23 @@ export const useCart = () => {
     }
 
     if (existingItem) {
-      if (existingItem.maxStock && existingItem.quantity >= existingItem.maxStock) {
-        return { success: false, message: 'Stock limit reached' }
-      }
       existingItem.quantity++
       syncAction('update', productId, existingItem.quantity, variantId)
     } else {
       cartItems.value.push({ ...normalizedProduct, id: itemId, product_id: productId, variant_id: variantId, quantity: 1 })
       syncAction('add', productId, 1, variantId)
     }
+
+    trackBehaviorEvent({
+      eventType: 'add_to_cart',
+      productId,
+      metadata: {
+        source: 'cart_action',
+        variant_id: variantId || 0,
+        quantity: 1,
+        cart_action: existingItem ? 'increment' : 'add',
+      },
+    })
 
     return { success: true, message: 'Added to cart' }
   }
@@ -258,9 +256,6 @@ export const useCart = () => {
       removeFromCart(id)
       return
     }
-    if (item.maxStock && quantity > item.maxStock) {
-      quantity = item.maxStock
-    }
     item.quantity = quantity
     syncAction('update', item.product_id || item.id, quantity, item.variant_id || null)
   }
@@ -268,9 +263,6 @@ export const useCart = () => {
   const incrementQuantity = (id: number) => {
     const item = cartItems.value.find(item => item.id === id)
     if (!item) return
-    if (item.maxStock && item.quantity >= item.maxStock) {
-      return { success: false, message: 'Stock limit reached' }
-    }
     item.quantity++
     syncAction('update', item.product_id || item.id, item.quantity, item.variant_id || null)
     return { success: true }
@@ -308,15 +300,17 @@ export const useCart = () => {
   const openCartFromCheckout = () => { cartVariant.value = 'checkout-bottom'; isCartOpen.value = true }
   const openCartFromLever = () => { cartVariant.value = 'lever-bottom'; isCartOpen.value = true }
   const openCartFromChat = () => { cartVariant.value = 'chat-bottom'; isCartOpen.value = true }
-
   const openCheckout = () => { isCartOpen.value = false; isCheckoutOpen.value = true }
   const closeCheckout = () => { isCheckoutOpen.value = false }
-  const backToCart = () => { isCheckoutOpen.value = false; isCartOpen.value = true }
+  const backToCart = () => { closeCheckout(); openCartFromCheckout() }
 
   const setShippingAddress = (address: ShippingAddress) => { shippingAddress.value = address }
-  const setPaymentMethod = (method: string) => { selectedPaymentMethod.value = method }
 
-  const formatPrice = (price: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
+  const { defaultOrderCurrency } = usePaymentCurrencies()
+  const formatPrice = (price: number, currency = defaultOrderCurrency.value) => {
+    if (!currency) return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price)
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(price)
+  }
 
   return {
     cartItems,
@@ -324,7 +318,6 @@ export const useCart = () => {
     isCheckoutOpen,
     cartVariant,
     shippingAddress,
-    selectedPaymentMethod,
     isLoadingCart,
 
     cartCount,
@@ -353,7 +346,6 @@ export const useCart = () => {
     backToCart,
 
     setShippingAddress,
-    setPaymentMethod,
     formatPrice,
   }
 }

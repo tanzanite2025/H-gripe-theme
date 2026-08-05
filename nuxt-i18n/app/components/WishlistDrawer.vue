@@ -43,7 +43,7 @@
               :aria-label="t('wishlistDrawer.closeAriaLabel')"
               @click="handleClose"
             >
-              <span class="text-lg leading-none">x</span>
+              <Icon name="lucide:x" class="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -96,20 +96,20 @@
                 <img
                   v-if="item.product?.thumbnail"
                   :src="item.product.thumbnail"
-                  :alt="item.product?.title || t('wishlistDrawer.productImageAlt')"
+                  :alt="item.product?.name || t('wishlistDrawer.productImageAlt')"
                   class="w-full h-32 object-cover"
                 />
                 <div class="px-3 pt-2 pb-3 flex-1 flex flex-col">
                   <div class="text-sm font-semibold text-white truncate">
-                    {{ item.product?.title || t('wishlistDrawer.productFallback') }}
+                    {{ item.product?.name || t('wishlistDrawer.productFallback') }}
                   </div>
-                  <div v-if="displayPrice(item)" class="text-xs text-[#40ffaa] mt-1">
+                  <div v-if="displayPrice(item)" class="text-xs text-[#B5FF6D] mt-1">
                     {{ displayPrice(item) }}
                   </div>
                   <div class="mt-3 flex justify-end gap-2">
                     <button
                       type="button"
-                      class="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] text-white hover:from-[#35e599] hover:to-[#5a62ee] transition-colors shadow-sm"
+                      class="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] text-white hover:from-[#A6F05F] hover:to-[#5a62ee] transition-colors shadow-sm"
                       @click="handleShare(item)"
                     >
                       {{ t('wishlistDrawer.actions.shareToChat') }}
@@ -166,10 +166,10 @@ const handleClose = () => {
 }
 
 const displayPrice = (item: any) => {
-  const prices = item?.product?.prices
-  if (!prices) return ''
-  if (prices.sale && prices.sale > 0) return `$${prices.sale}`
-  if (prices.regular && prices.regular > 0) return `$${prices.regular}`
+  const product = item?.product
+  if (!product) return ''
+  if (product.sale_price && product.sale_price > 0) return `$${product.sale_price}`
+  if (product.price && product.price > 0) return `$${product.price}`
   return ''
 }
 
@@ -179,8 +179,8 @@ const handleShare = (item: any) => {
   const price = displayPrice(item)
   const payload = {
     id: product.id ?? item.product_id,
-    title: product.title,
-    url: product.preview_url || `/shop/${product.slug || product.id}`,
+    title: product.name,
+    url: `/shop/${product.slug || product.id}`,
     thumbnail: product.thumbnail,
     price,
   }

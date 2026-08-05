@@ -33,8 +33,16 @@ func (g *MockPaymentGateway) CapturePayment(ctx context.Context, paymentID strin
 }
 
 func (g *MockPaymentGateway) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+}
+
+func (g *MockPaymentGateway) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	refundID := "refund_" + paymentID
+	if options.IdempotencyKey != "" {
+		refundID = options.IdempotencyKey
+	}
 	return &RefundResponse{
-		ID:        "refund_" + paymentID,
+		ID:        refundID,
 		PaymentID: paymentID,
 		Amount:    amount,
 		Status:    "succeeded",

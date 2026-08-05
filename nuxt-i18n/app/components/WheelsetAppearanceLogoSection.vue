@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Intro / Recommendation Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-sky-500">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-sky-500">
        <h3 class="text-lg font-bold tz-text-primary mb-3">
          Why we recommend laser-engraved logos
        </h3>
@@ -23,7 +23,7 @@
     <!-- Options Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- Option 1: Custom Decals (Violet) -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-violet-500/10">
              <h3 class="text-base font-bold tz-text-primary">Customized Decals</h3>
           </div>
@@ -48,7 +48,7 @@
        </div>
 
        <!-- Option 2: Laser Engraving (Teal) -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-teal-500/10">
              <h3 class="text-base font-bold tz-text-primary">Laser Engraving</h3>
           </div>
@@ -109,7 +109,7 @@
     </div>
 
     <!-- Advanced Finishes Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 mt-6">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 mt-6">
        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/50">
            <h3 class="text-base font-bold tz-text-primary">Pro Options: Weave & Finish</h3>
            <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-1 rounded border border-slate-700">For OEM / Teams</span>

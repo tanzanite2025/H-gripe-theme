@@ -22,6 +22,44 @@ export const customerServiceApi = {
     return payload.agents ?? []
   },
 
+  async listAgentDirectory() {
+    return unwrapPayload(await axios.get('/api/admin/customer-service/agents'))
+  },
+
+  async listGroups() {
+    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/groups'))
+    return payload.groups ?? []
+  },
+
+  async listAutoReplyRules() {
+    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/auto-reply/rules'))
+    return payload.rules ?? []
+  },
+
+  async listAutoReplyFAQGroups(params: Record<string, any> = {}) {
+    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/auto-reply/faqs', { params }))
+    return payload.pages ?? []
+  },
+
+  async getAutoReplyRule(ruleId: number | string) {
+    const payload = unwrapPayload(await axios.get(`/api/admin/customer-service/auto-reply/rules/${ruleId}`))
+    return payload.rule ?? null
+  },
+
+  async createAutoReplyRule(rule: Record<string, any>) {
+    const payload = unwrapPayload(await axios.post('/api/admin/customer-service/auto-reply/rules', rule))
+    return payload.rule ?? null
+  },
+
+  async updateAutoReplyRule(ruleId: number | string, rule: Record<string, any>) {
+    const payload = unwrapPayload(await axios.put(`/api/admin/customer-service/auto-reply/rules/${ruleId}`, rule))
+    return payload.rule ?? null
+  },
+
+  async deleteAutoReplyRule(ruleId: number | string) {
+    return unwrapPayload(await axios.delete(`/api/admin/customer-service/auto-reply/rules/${ruleId}`))
+  },
+
   buildEventsUrl(scope = 'inbox') {
     const query = new URLSearchParams({ scope })
     const baseURL = String(axios.defaults?.baseURL || '').replace(/\/$/, '')
@@ -44,8 +82,8 @@ export const customerServiceApi = {
     }))
   },
 
-  async sendMessage(conversationId: number | string, message: string) {
-    return unwrapPayload(await axios.post(`/api/admin/customer-service/conversations/${conversationId}/messages`, { message }))
+  async sendMessage(conversationId: number | string, message: string, attachments: string[] = []) {
+    return unwrapPayload(await axios.post(`/api/admin/customer-service/conversations/${conversationId}/messages`, { message, attachments }))
   },
 
   async transferConversation(conversationId: number | string, assignedTo: number) {

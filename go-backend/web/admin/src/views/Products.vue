@@ -3,7 +3,7 @@
     <AdminPageHeader title="商品管理" description="管理商品资料、规格、SKU 变体和库存状态">
       <template #actions>
         <Button variant="outline" as-child>
-          <RouterLink to="/product-types">
+          <RouterLink to="/catalog/templates">
             <Tags class="size-4" />
             产品模板
           </RouterLink>
@@ -34,12 +34,14 @@
       :selection-state="selectionState"
       :can-edit="hasPermission('product:edit')"
       :can-delete="hasPermission('product:delete')"
+      :can-sync-google="hasPermission('merchant:edit')"
       :locale-name="supportedLanguages.localeName"
       @batch-status="requestBatchStatus"
       @batch-delete="requestBatchDelete"
       @toggle-all-products="toggleAllProducts"
       @toggle-product="toggleProduct"
       @edit="showEditDialog"
+      @sync-google="openGoogleSync"
       @toggle-status="requestToggleStatus"
       @delete="requestDelete"
       @update-page="updatePage"
@@ -75,6 +77,7 @@
       @add-variant="addVariant"
       @remove-variant="removeVariant"
       @set-default-variant="setDefaultVariant"
+      @set-variant-active="setVariantActive"
       @upload-media="handleMediaUpload"
       @add-media-url="addMediaUrl"
       @set-primary-media="setPrimaryMedia"
@@ -95,7 +98,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   Boxes,
@@ -120,6 +123,7 @@ import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const shippingTemplates = ref([])
 const supportedLanguages = useSupportedLanguages()
 const languageOptions = supportedLanguages.languageOptions
@@ -172,6 +176,7 @@ const {
   addVariant,
   removeVariant,
   setDefaultVariant,
+  setVariantActive,
   handleProductTypeSelect,
   fetchProductTypes,
   showCreateDialog,
@@ -219,6 +224,10 @@ const statItems = computed(() => [
 ])
 
 const hasPermission = (permission) => authStore.hasPermission(permission)
+const openGoogleSync = (product) => {
+  if (!hasPermission('merchant:edit')) return
+  router.push({ name: 'GoogleMerchant', query: { product_id: product.id } })
+}
 
 const setConfirmation = (values) => Object.assign(confirmation, {
   open: true,

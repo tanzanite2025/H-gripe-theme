@@ -1,11 +1,13 @@
 export const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 export const formatMoney = (amount) => Number(amount || 0).toFixed(2)
 
-export const formatCurrency = (amount, currency = 'USD') => {
+export const formatCurrency = (amount, currency = '') => {
+  const normalizedCurrency = String(currency || '').trim().toUpperCase()
   try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: currency || 'USD' }).format(Number(amount || 0))
+    if (!normalizedCurrency) throw new Error('missing currency')
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: normalizedCurrency }).format(Number(amount || 0))
   } catch {
-    return `${currency || ''} ${formatMoney(amount)}`.trim()
+    return `${normalizedCurrency || '币种缺失'} ${formatMoney(amount)}`.trim()
   }
 }
 

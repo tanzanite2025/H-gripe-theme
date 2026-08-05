@@ -23,7 +23,8 @@
       "shop": "Shop",
       "about": "About",
       "pictureWarehouse": "Gallery"
-    }
+    },
+    "welcome": "WELCOME!"
   },
   "trust": {
     "title": "Shop with Confidence"

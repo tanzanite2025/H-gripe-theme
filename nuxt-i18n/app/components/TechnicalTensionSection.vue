@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-8">
     <!-- Intro Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-amber-500">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-amber-500">
        <h3 class="text-lg font-bold text-slate-100 mb-2">Wheel Spoke Tension Standard</h3>
       <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto mb-6">
           Tension is the soul of a wheel. We customize tension based on **Rider Weight**, **Usage**, and **Rim Material** to balance stiffness, durability, and comfort.
@@ -26,7 +26,7 @@
     <!-- 1. Key Factors Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- Rider Weight -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-amber-500 mb-4 flex items-center gap-2">
               Effect of Rider Weight
            </h3>
@@ -43,7 +43,7 @@
        </div>
 
        <!-- Usage Scenarios -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-sky-500 mb-4 flex items-center gap-2">
               Standard by Usage
            </h3>
@@ -65,7 +65,7 @@
     </div>
 
     <!-- 2. Tension Chart -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] overflow-hidden">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] overflow-hidden">
        <div class="p-4 bg-slate-800/50 border-b border-slate-700/50 flex items-center justify-between">
         <h3 class="font-bold tz-text-primary">Recommended Drive-Side Tension (kgf)</h3>
           <span class="text-xs font-mono tz-text-muted bg-slate-900 px-2 py-1 rounded">Unit: kgf</span>
@@ -114,7 +114,7 @@
     </div>
 
     <!-- 3. Workshop Process (Timeline) -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
        <h3 class="text-lg font-bold text-fuchsia-500 mb-6 flex items-center gap-2">
           Our Workshop Building Process
        </h3>
@@ -122,7 +122,7 @@
        <div class="relative pl-6 border-l-2 border-slate-700 space-y-8">
           <!-- Step 1 -->
           <div class="relative">
-             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+             <span class="absolute -left-[31px] bg-[var(--tz-card-surface)] p-1">
                 <span class="w-3 h-3 rounded-full bg-slate-500 block"></span>
              </span>
               <h4 class="text-sm font-bold tz-text-primary">1. Baseline Calculation</h4>
@@ -130,7 +130,7 @@
           </div>
           <!-- Step 2 -->
           <div class="relative">
-             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+             <span class="absolute -left-[31px] bg-[var(--tz-card-surface)] p-1">
                 <span class="w-3 h-3 rounded-full bg-indigo-500 block"></span>
              </span>
               <h4 class="text-sm font-bold tz-text-primary">2. Usage Adjustment</h4>
@@ -138,7 +138,7 @@
           </div>
           <!-- Step 3 -->
           <div class="relative">
-             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+             <span class="absolute -left-[31px] bg-[var(--tz-card-surface)] p-1">
                 <span class="w-3 h-3 rounded-full bg-rose-500 block"></span>
              </span>
               <h4 class="text-sm font-bold tz-text-primary">3. Safety Cap Check</h4>
@@ -146,7 +146,7 @@
           </div>
           <!-- Step 4 -->
           <div class="relative">
-             <span class="absolute -left-[31px] bg-[#11151e] p-1">
+             <span class="absolute -left-[31px] bg-[var(--tz-card-surface)] p-1">
                 <span class="w-3 h-3 rounded-full bg-emerald-500 block"></span>
              </span>
               <h4 class="text-sm font-bold tz-text-primary">4. Stress Relief & Balancing</h4>

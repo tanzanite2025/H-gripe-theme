@@ -4,23 +4,18 @@ import { fetchFaqData } from '~/data/faq'
 import type { FaqCategory, PageFaqProps } from '~/data/faq/types'
 
 export async function usePageFaq(props: PageFaqProps) {
-  const { locale } = useI18n()
+  const { locale, t } = useI18n()
   const { data: asyncFaqData } = await useAsyncData(
     () => `faq-${props.pageId}-${locale.value}`,
     () => props.data ? Promise.resolve(props.data) : fetchFaqData(props.pageId),
     { watch: [locale] }
   )
   const faqData = computed(() => props.data || asyncFaqData.value || null)
-  const displayTitle = computed(() => props.title || faqData.value?.title || 'Frequently Asked Questions')
+  const displayTitle = computed(() => props.title || faqData.value?.title || t('faq.title'))
   const expandedItems = ref<Set<string>>(new Set())
 
   const toggleItem = (itemId: string) => {
-    if (expandedItems.value.has(itemId)) {
-      expandedItems.value.delete(itemId)
-    } else {
-      expandedItems.value.add(itemId)
-    }
-    expandedItems.value = new Set(expandedItems.value)
+    expandedItems.value = expandedItems.value.has(itemId) ? new Set<string>() : new Set([itemId])
   }
 
   const displayCategories = computed(() => {

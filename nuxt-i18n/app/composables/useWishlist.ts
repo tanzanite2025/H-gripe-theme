@@ -1,20 +1,18 @@
 import { ref, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 
 export interface WishlistItem {
   id: number
   product_id: number
-  created_at: string
   product?: {
-    id?: number
-    title?: string
-    slug?: string
-    preview_url?: string
+    id: number
+    name: string
+    slug: string
+    price: number
+    sale_price?: number | null
+    availability: 'in_stock' | 'out_of_stock'
     thumbnail?: string
-    prices?: {
-      regular?: number
-      sale?: number
-    }
   }
 }
 
@@ -30,6 +28,7 @@ const wishlistMessage = (err: unknown, fallback: string) => {
 
 export const useWishlist = () => {
   const auth = useAuth()
+  const { track: trackBehaviorEvent } = useBehaviorEvents()
 
   const ensureAuthenticated = async () => {
     if (!auth.initialized.value) {
@@ -95,6 +94,13 @@ export const useWishlist = () => {
           items.value.unshift(item)
         }
       }
+      trackBehaviorEvent({
+        eventType: 'wishlist_add',
+        productId,
+        metadata: {
+          source: 'wishlist_action',
+        },
+      })
       return { success: true, item }
     } catch (e: unknown) {
       console.error('Failed to add to wishlist:', e)

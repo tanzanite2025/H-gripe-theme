@@ -120,7 +120,7 @@ const handleSelect = (category: ShopCategory | null) => {
 }
 
 .shop-category-chips__item:focus-visible {
-  outline: 2px solid rgba(64, 255, 170, 0.78);
+  outline: 2px solid rgba(181, 255, 109, 0.78);
   outline-offset: 0.2rem;
 }
 

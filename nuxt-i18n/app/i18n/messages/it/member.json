@@ -1,32 +1,26 @@
 {
   "brief": {
-    "membershipLevel": "Livello di appartenenza:",
-    "productDiscountRate": "Tasso sconto prodotto:",
-    "pointsDiscountRate": "Tasso sconto punti:",
-    "canBeStacked": "Combinabile",
     "level": "Level",
-    "productDiscount": "Product Discount",
-    "pointsDiscount": "Points",
-    "stackable": "Stackable"
-  },
-  "common": {
-    "yes": "Sì",
-    "no": "No"
+    "stackable": "Stackable",
+    "levelDesc": "Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.",
+    "discountRate": "Discount Rate",
+    "discountRateDesc": "The member-level price discount configured in the backend.",
+    "stackableDesc": "Shows whether this tier benefit can combine with other eligible promotions during checkout."
   },
   "levels": {
     "title": "Livelli di appartenenza",
     "header": {
       "level": "Livello",
       "pointsRequired": "Punti richiesti",
-      "productDiscount": "Sconto prodotto",
-      "pointsDiscount": "Sconto punti"
+      "discountRate": "Discount Rate"
     },
     "rows": {
       "ordinary": "Ordinario",
       "bronze": "Bronzo",
       "silver": "Argento",
       "gold": "Oro",
-      "supreme": "Supremo"
+      "platinum": "Platinum",
+      "diamond": "Diamond"
     }
   },
   "points": {
@@ -37,17 +31,38 @@
     "consumeDesc": "1 Dollaro = 1 Punto",
     "daily": "Accesso quotidiano",
     "dailyDesc": "1 punto (validità 30 giorni)",
-    "unit": "pts"
+    "unit": "pts",
+    "redeem": "Redemption rate",
+    "redemptionRule": "{points} Points = {currency}{amount}",
+    "checkin": "Daily check-in",
+    "checkinRule": "{base} Points (up to {max}; +{bonus} every {interval} consecutive days)",
+    "referralRule": "{referrer} Points (invitee gets {referee} Points)",
+    "pointValueSingular": "{points} Point",
+    "pointsValue": "{points} Points",
+    "notConfigured": "Not configured",
+    "purchaseEarn": "Order completion",
+    "purchaseEarnRule": "{points} per 1 {currency} of product amount after discounts, awarded after order completion",
+    "purchaseEarnDisabled": "Purchase earning is not enabled",
+    "redemptionDisplayRule": "{points} = {currency} {amount}",
+    "redemptionDisabled": "Points redemption is not enabled",
+    "checkinBaseRule": "{base} per check-in",
+    "checkinMaxRule": "up to {max}",
+    "checkinStreakRule": "+{bonus} every {interval} consecutive days",
+    "checkinDisabled": "Daily check-in points are not enabled",
+    "referralDisplayRule": "Inviter gets {referrer}; invitee gets {referee}",
+    "referralDisabled": "Referral points are not enabled"
   },
   "tabs": {
     "myInfo": "My info",
     "levers": "Levers",
-    "exchange": "Exchange"
+    "exchange": "Exchange",
+    "ariaLabel": "Membership sections"
   },
   "viewAll": "View Full",
   "myBenefits": "My Benefits",
   "coupons": "Coupons",
   "pointCards": "Point Cards",
   "copyLink": "Copy Invite Link",
-  "pageTitle": "Membership and Points"
+  "pageTitle": "Membership and Points",
+  "giftCards": "Gift Cards"
 }

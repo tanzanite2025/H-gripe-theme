@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="系统设置" description="管理站点、邮件、搜索、社交、会员积分与支付配置">
+    <AdminPageHeader :title="pageTitle" :description="pageDescription">
       <template #actions>
         <Button
-          v-if="hasPermission('settings:edit') && activeTab !== 'public_chat'"
+          v-if="hasPermission('settings:edit') && !selfSavingTabs.has(activeTab)"
           :disabled="saving || loadingSettings"
           @click="saveSettings"
         >
@@ -20,28 +20,38 @@
       </div>
 
       <SettingsTabsPanel
-        v-model:active-tab="activeTab"
+        :active-tab="activeTab"
         v-model:show-smtp-password="showSmtpPassword"
         v-model:show-payment-secrets="showPaymentSecrets"
         :site-settings="siteSettings"
         :email-settings="emailSettings"
         :seo-settings="seoSettings"
         :social-settings="socialSettings"
-        :loyalty-settings="loyaltySettings"
-        :redeem-settings="redeemSettings"
         :payment-settings="paymentSettings"
+        :api-settings="apiSettings"
+        :commercial-crawler-protection="commercialCrawlerProtection"
+        :loading-commercial-crawler-protection="loadingCommercialCrawlerProtection"
+        :payment-currency-options="paymentCurrencyOptions"
+        :loading-payment-currencies="loadingPaymentCurrencies"
         :payment-runtime="paymentRuntime"
         :loading-payment-runtime="loadingPaymentRuntime"
         :social-fields="socialFields"
         :loading-public-chat-agents="loadingPublicChatAgents"
+        :loading-public-chat-groups="loadingPublicChatGroups"
         :loading-public-chat-agent-candidates="loadingPublicChatAgentCandidates"
         :public-chat-agents-summary="publicChatAgentsSummary"
         :public-chat-agents="publicChatAgents"
+        :public-chat-groups="publicChatGroups"
         :public-chat-agent-warnings="publicChatAgentWarnings"
         :can-edit="hasPermission('settings:edit')"
         @open-agent-dialog="openPublicChatAgentDialog"
-        @refresh-public-chat="fetchPublicChatAgents"
+        @open-group-dialog="openPublicChatGroupDialog"
+        @edit-group="editPublicChatGroup"
+        @delete-group="deletePublicChatGroup"
+        @refresh-public-chat="refreshPublicChat"
         @refresh-payment-runtime="fetchPaymentRuntime"
+        @refresh-commercial-crawler-protection="fetchCommercialCrawlerProtection"
+        @currency-policy-saved="fetchPaymentCurrencies(true)"
       />
     </div>
 
@@ -50,31 +60,73 @@
       :form="publicChatAgentForm"
       :candidates="publicChatAgentCandidates"
       :selected-candidate="selectedPublicChatAgentCandidate"
+      :groups="publicChatGroups.filter((group) => group.status === 'active')"
       :loading-candidates="loadingPublicChatAgentCandidates"
       :saving="publicChatAgentSaving"
       @save="savePublicChatAgent"
+    />
+
+    <PublicChatGroupDialog
+      v-model:open="publicChatGroupDialogOpen"
+      :form="publicChatGroupForm"
+      :saving="publicChatGroupSaving"
+      @save="savePublicChatGroup"
     />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { LoaderCircle, Save } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import PublicChatAgentDialog from '@/components/admin/settings/PublicChatAgentDialog.vue'
+import PublicChatGroupDialog from '@/components/admin/settings/PublicChatGroupDialog.vue'
 import SettingsTabsPanel from '@/components/admin/settings/SettingsTabsPanel.vue'
 import { Button } from '@/components/ui/button'
+import { useRouteTab } from '@/composables/useRouteTab'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
-const activeTab = ref('site')
+const DAILY_API_REFRESH_MINUTES = 1440
+const EXCHANGE_RATE_PROVIDER = 'ExchangeRate-API'
+const EXCHANGE_RATE_BASE_CURRENCY = 'USD'
+const EXCHANGE_RATE_ENDPOINT = 'https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}'
+const activeTab = useRouteTab({
+  defaultValue: 'site',
+  values: ['site', 'email', 'seo', 'social', 'currency', 'payment', 'api', 'commercial_crawler', 'public_chat'],
+  routes: {
+    site: 'SettingsSite',
+    email: 'SettingsEmail',
+    seo: 'SettingsSeo',
+    social: 'SettingsSocial',
+    currency: 'PaymentCurrency',
+    payment: 'PaymentSettings',
+    api: 'SettingsApi',
+    commercial_crawler: 'SettingsCommercialCrawler',
+    public_chat: 'SupportPublicChat',
+  },
+})
+const pageTitle = computed(() => (
+  ['currency', 'payment'].includes(activeTab.value)
+    ? '支付管理'
+    : activeTab.value === 'public_chat'
+      ? 'Public Chat'
+      : '系统设置'
+))
+const pageDescription = computed(() => {
+  if (activeTab.value === 'currency') return '管理订单、支付和退款使用的币种策略'
+  if (activeTab.value === 'payment') return '管理支付网关、支付方式与运行状态'
+  if (activeTab.value === 'public_chat') return '管理公开客服、客服组与前台聊天配置'
+  return '管理站点、邮件、搜索、社交、API、安全与客服配置'
+})
 const saving = ref(false)
 const loadingSettings = ref(false)
 const showSmtpPassword = ref(false)
 const showPaymentSecrets = ref(false)
 const loadedGroups = new Set()
+const selfSavingTabs = new Set(['currency', 'commercial_crawler', 'public_chat'])
 
 const siteSettings = reactive({
   site_name: '',
@@ -84,6 +136,9 @@ const siteSettings = reactive({
   site_logo: '',
   contact_email: '',
   contact_phone: '',
+  copyright_holder: '',
+  copyright_notice: '',
+  copyright_url: '',
   admin_brand_name: '',
   admin_brand_initial: '',
   admin_panel_label: '',
@@ -94,37 +149,45 @@ const siteSettings = reactive({
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
 const seoSettings = reactive({ meta_title: '', meta_description: '', meta_keywords: '', google_analytics: '', google_tag_manager: '' })
 const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
-const loyaltySettings = reactive({
-  tz_loyalty_referral_referrer_points: 100,
-  tz_loyalty_referral_referee_points: 50,
-  tz_loyalty_checkin_base_points: 10,
-  tz_loyalty_checkin_streak_interval_days: 7,
-  tz_loyalty_checkin_streak_bonus_points: 5,
-  tz_loyalty_checkin_max_points: 50
-})
-const redeemSettings = reactive({
-  tz_redeem_enabled: true,
-  tz_redeem_currency: 'USD',
-  tz_redeem_exchange_rate: 100,
-  tz_redeem_min_points: 1000,
-  tz_redeem_max_value_per_day: 500,
-  tz_redeem_card_expiry_days: 365,
-  tz_redeem_preset_values: '10,50,100,200,500'
-})
-const loyaltyProgramConfigVersion = ref(0)
 const paymentSettings = reactive({ gateway: '', test_mode: true })
+const apiSettings = reactive({
+  exchange_rate_enabled: false,
+  exchange_rate_provider: EXCHANGE_RATE_PROVIDER,
+  exchange_rate_endpoint: EXCHANGE_RATE_ENDPOINT,
+  exchange_rate_query_template: '',
+  exchange_rate_base_currency: EXCHANGE_RATE_BASE_CURRENCY,
+  exchange_rate_quote_currencies: '',
+  exchange_rate_refresh_minutes: DAILY_API_REFRESH_MINUTES,
+  exchange_rate_api_key: '',
+  time_api_enabled: false,
+  time_api_provider: '',
+  time_api_endpoint: '',
+  time_api_query_template: 'timezone={timezone}',
+  time_api_default_timezone: 'Asia/Shanghai',
+  time_api_refresh_minutes: DAILY_API_REFRESH_MINUTES,
+  time_api_key_ref: ''
+})
 const paymentRuntime = ref(null)
 const loadingPaymentRuntime = ref(false)
+const commercialCrawlerProtection = ref(null)
+const loadingCommercialCrawlerProtection = ref(false)
+const paymentCurrencyOptions = ref([])
+const loadingPaymentCurrencies = ref(false)
+const paymentCurrenciesLoaded = ref(false)
 
 const loadingPublicChatAgents = ref(false)
 const publicChatAgentsOverview = ref(null)
 const publicChatAgentsSummary = computed(() => publicChatAgentsOverview.value?.summary || {})
 const publicChatAgents = computed(() => publicChatAgentsOverview.value?.agents || [])
 const publicChatAgentWarnings = computed(() => publicChatAgentsOverview.value?.warnings || [])
+const loadingPublicChatGroups = ref(false)
+const publicChatGroups = ref([])
 const loadingPublicChatAgentCandidates = ref(false)
 const publicChatAgentCandidates = ref([])
 const publicChatAgentDialogOpen = ref(false)
 const publicChatAgentSaving = ref(false)
+const publicChatGroupDialogOpen = ref(false)
+const publicChatGroupSaving = ref(false)
 const publicChatAgentForm = reactive({
   user_id: '',
   agent_id: '',
@@ -132,7 +195,17 @@ const publicChatAgentForm = reactive({
   email: '',
   avatar: '',
   whatsapp: '',
-  status: 'active'
+  status: 'active',
+  online_status: 'offline',
+  group_ids: []
+})
+const publicChatGroupForm = reactive({
+  id: 0,
+  code: '',
+  name: '',
+  description: '',
+  status: 'active',
+  sort_order: 0
 })
 const selectedPublicChatAgentCandidate = computed(() =>
   publicChatAgentCandidates.value.find((candidate) => String(candidate.user_id) === String(publicChatAgentForm.user_id))
@@ -147,6 +220,41 @@ const socialFields = [
   { key: 'wechat', label: '微信', placeholder: '二维码 URL' }
 ]
 
+const normalizeCurrencyCode = (currency) => String(currency || '').trim().toUpperCase()
+
+const applyExchangeRatePreset = () => {
+  apiSettings.exchange_rate_provider = EXCHANGE_RATE_PROVIDER
+  apiSettings.exchange_rate_endpoint = EXCHANGE_RATE_ENDPOINT
+  apiSettings.exchange_rate_query_template = ''
+  apiSettings.exchange_rate_base_currency = EXCHANGE_RATE_BASE_CURRENCY
+  apiSettings.exchange_rate_refresh_minutes = DAILY_API_REFRESH_MINUTES
+}
+
+const applyAPICurrencyDefaults = () => {
+  applyExchangeRatePreset()
+  const options = paymentCurrencyOptions.value
+  if (options.length === 0) return
+
+  const quoteOptions = options.filter((currency) => currency !== EXCHANGE_RATE_BASE_CURRENCY)
+  const allowed = new Set(quoteOptions)
+  const quoteCurrencies = String(apiSettings.exchange_rate_quote_currencies || '')
+    .split(/[\s,;，；]+/)
+    .map(normalizeCurrencyCode)
+    .filter((currency) => allowed.has(currency))
+
+  if (quoteCurrencies.length) {
+    apiSettings.exchange_rate_quote_currencies = Array.from(new Set(quoteCurrencies)).join(',')
+    return
+  }
+
+  apiSettings.exchange_rate_quote_currencies = quoteOptions.join(',')
+}
+
+const applyAPIRefreshDefaults = () => {
+  applyExchangeRatePreset()
+  apiSettings.time_api_refresh_minutes = DAILY_API_REFRESH_MINUTES
+}
+
 const groupDefinitions = {
   site: {
     target: siteSettings,
@@ -158,6 +266,9 @@ const groupDefinitions = {
       site_logo: { type: 'string', public: true, description: 'Site logo URL' },
       contact_email: { type: 'string', public: true, description: 'Contact email' },
       contact_phone: { type: 'string', public: true, description: 'Contact phone' },
+      copyright_holder: { type: 'string', public: false, description: 'Copyright holder for image evidence' },
+      copyright_notice: { type: 'string', public: false, description: 'Copyright notice for image evidence' },
+      copyright_url: { type: 'string', public: false, description: 'Copyright policy URL for image evidence' },
       admin_brand_name: { type: 'string', public: true, description: 'Admin brand name' },
       admin_brand_initial: { type: 'string', public: true, description: 'Admin brand initial' },
       admin_panel_label: { type: 'string', public: true, description: 'Admin panel label' },
@@ -191,34 +302,31 @@ const groupDefinitions = {
     target: socialSettings,
     fields: Object.fromEntries(socialFields.map((field) => [field.key, { type: 'string', public: true, description: field.label }]))
   },
-  loyalty: {
-    target: loyaltySettings,
-    fields: {
-      tz_loyalty_referral_referrer_points: { type: 'number', public: true, description: 'Points awarded to the referrer after the first purchase' },
-      tz_loyalty_referral_referee_points: { type: 'number', public: true, description: 'Points awarded to the referred user after the first purchase' },
-      tz_loyalty_checkin_base_points: { type: 'number', public: true, description: 'Base points awarded for a daily check-in' },
-      tz_loyalty_checkin_streak_interval_days: { type: 'number', public: true, description: 'Consecutive check-in days required for a bonus' },
-      tz_loyalty_checkin_streak_bonus_points: { type: 'number', public: true, description: 'Additional points for each completed check-in streak interval' },
-      tz_loyalty_checkin_max_points: { type: 'number', public: true, description: 'Maximum points awarded for one daily check-in' }
-    }
-  },
-  redeem: {
-    target: redeemSettings,
-    fields: {
-      tz_redeem_enabled: { type: 'boolean', public: true, description: 'Whether point redemption is enabled' },
-      tz_redeem_currency: { type: 'string', public: true, description: 'Gift card currency code' },
-      tz_redeem_exchange_rate: { type: 'number', public: true, description: 'Points required for one unit of gift card value' },
-      tz_redeem_min_points: { type: 'number', public: true, description: 'Minimum points required to redeem' },
-      tz_redeem_max_value_per_day: { type: 'number', public: true, description: 'Maximum gift card value redeemable per day' },
-      tz_redeem_card_expiry_days: { type: 'number', public: true, description: 'Redeemed gift card expiry days' },
-      tz_redeem_preset_values: { type: 'string', public: true, description: 'Comma-separated preset gift card values' }
-    }
-  },
   payment: {
     target: paymentSettings,
     fields: {
       gateway: { type: 'string', public: false, description: 'Payment gateway' },
       test_mode: { type: 'boolean', public: false, description: 'Payment test mode' }
+    }
+  },
+  api: {
+    target: apiSettings,
+    fields: {
+      exchange_rate_enabled: { type: 'boolean', public: false, description: 'Exchange rate API enabled' },
+      exchange_rate_provider: { type: 'string', public: false, description: 'Exchange rate API provider' },
+      exchange_rate_endpoint: { type: 'string', public: false, description: 'Exchange rate API endpoint' },
+      exchange_rate_query_template: { type: 'string', public: false, description: 'Exchange rate API query template' },
+      exchange_rate_base_currency: { type: 'string', public: false, description: 'Exchange rate base currency' },
+      exchange_rate_quote_currencies: { type: 'string', public: false, description: 'Exchange rate quote currencies' },
+      exchange_rate_refresh_minutes: { type: 'number', public: false, description: 'Exchange rate refresh interval in minutes' },
+      exchange_rate_api_key: { type: 'string', public: false, description: 'ExchangeRate-API key' },
+      time_api_enabled: { type: 'boolean', public: false, description: 'Time API enabled' },
+      time_api_provider: { type: 'string', public: false, description: 'Time API provider' },
+      time_api_endpoint: { type: 'string', public: false, description: 'Time API endpoint' },
+      time_api_query_template: { type: 'string', public: false, description: 'Time API query template' },
+      time_api_default_timezone: { type: 'string', public: false, description: 'Time API default timezone' },
+      time_api_refresh_minutes: { type: 'number', public: false, description: 'Time API refresh interval in minutes' },
+      time_api_key_ref: { type: 'string', public: false, description: 'Time API key reference' }
     }
   }
 }
@@ -242,35 +350,6 @@ const fetchSettings = async (group, force = false) => {
   if (!definition || (!force && loadedGroups.has(group))) return
   loadingSettings.value = true
   try {
-    if (group === 'loyalty' || group === 'redeem') {
-      const response = await axios.get('/api/admin/marketing/loyalty/program-config')
-      const config = response.data?.config
-      if (config) {
-        loyaltyProgramConfigVersion.value = Number(config.version || 0)
-        Object.assign(loyaltySettings, {
-          tz_loyalty_referral_referrer_points: Number(config.referral_referrer_points || 0),
-          tz_loyalty_referral_referee_points: Number(config.referral_referee_points || 0),
-          tz_loyalty_checkin_base_points: Number(config.checkin_base_points || 0),
-          tz_loyalty_checkin_streak_interval_days: Number(config.checkin_streak_interval_days || 1),
-          tz_loyalty_checkin_streak_bonus_points: Number(config.checkin_streak_bonus_points || 0),
-          tz_loyalty_checkin_max_points: Number(config.checkin_max_points || 0)
-        })
-        Object.assign(redeemSettings, {
-          tz_redeem_enabled: Boolean(config.enabled),
-          tz_redeem_currency: String(config.currency || 'USD'),
-          tz_redeem_exchange_rate: Number(config.exchange_rate_points || 0),
-          tz_redeem_min_points: Number(config.min_redeem_points || 0),
-          tz_redeem_max_value_per_day: Number(config.max_value_per_day ?? 0),
-          tz_redeem_card_expiry_days: Number(config.card_expiry_days || 0),
-          tz_redeem_preset_values: Array.isArray(config.redeem_options)
-            ? config.redeem_options.map((option) => Number(option.value ?? 0)).filter((value) => value > 0).join(',')
-            : ''
-        })
-      }
-      loadedGroups.add('loyalty')
-      loadedGroups.add('redeem')
-      return
-    }
     const response = await axios.get(`/api/admin/settings/${group}`, { params: { locale: 'en' } })
     const settings = Array.isArray(response.data.settings) ? response.data.settings : []
     const prefixed = settings.filter((setting) => setting.key.startsWith(`${group}_`))
@@ -282,6 +361,10 @@ const fetchSettings = async (group, force = false) => {
       }
     })
     loadedGroups.add(group)
+    if (group === 'api') {
+      applyAPICurrencyDefaults()
+      applyAPIRefreshDefaults()
+    }
   } catch (error) {
     console.error(`Failed to fetch ${group} settings:`, error)
   } finally {
@@ -289,8 +372,36 @@ const fetchSettings = async (group, force = false) => {
   }
 }
 
+const fetchPaymentCurrencies = async (force = false) => {
+  if (!force && paymentCurrenciesLoaded.value) {
+    applyAPICurrencyDefaults()
+    return
+  }
+
+  loadingPaymentCurrencies.value = true
+  try {
+    const response = await axios.get('/api/admin/settings/currency-policy')
+    const policy = response.data?.policy || {}
+    const acceptedCurrencies = Array.isArray(policy.accepted_currencies)
+      ? policy.accepted_currencies
+      : Array.isArray(policy.checkout_currencies)
+        ? policy.checkout_currencies
+        : []
+    paymentCurrencyOptions.value = acceptedCurrencies
+        .map(normalizeCurrencyCode)
+        .filter((currency) => /^[A-Z]{3}$/.test(currency))
+    paymentCurrenciesLoaded.value = true
+    applyAPICurrencyDefaults()
+  } catch (error) {
+    console.error('Failed to fetch payment currencies:', error)
+    paymentCurrencyOptions.value = []
+  } finally {
+    loadingPaymentCurrencies.value = false
+  }
+}
+
 const fetchPublicChatAgents = async () => {
-  loadingPublicChatAgents.value = true
+	loadingPublicChatAgents.value = true
   try {
     const response = await axios.get('/api/admin/settings/public-chat-agents')
     publicChatAgentsOverview.value = response.data || null
@@ -298,7 +409,24 @@ const fetchPublicChatAgents = async () => {
     console.error('Failed to fetch Public Chat agents:', error)
   } finally {
     loadingPublicChatAgents.value = false
+	}
+}
+
+const fetchPublicChatGroups = async () => {
+  loadingPublicChatGroups.value = true
+  try {
+    const response = await axios.get('/api/admin/settings/public-chat-groups')
+    publicChatGroups.value = Array.isArray(response.data?.groups) ? response.data.groups : []
+  } catch (error) {
+    console.error('Failed to fetch Public Chat groups:', error)
+    publicChatGroups.value = []
+  } finally {
+    loadingPublicChatGroups.value = false
   }
+}
+
+const refreshPublicChat = async () => {
+  await Promise.all([fetchPublicChatAgents(), fetchPublicChatGroups()])
 }
 
 const fetchPaymentRuntime = async () => {
@@ -311,6 +439,19 @@ const fetchPaymentRuntime = async () => {
     paymentRuntime.value = null
   } finally {
     loadingPaymentRuntime.value = false
+  }
+}
+
+const fetchCommercialCrawlerProtection = async () => {
+  loadingCommercialCrawlerProtection.value = true
+  try {
+    const response = await axios.get('/api/admin/settings/commercial-crawler-protection')
+    commercialCrawlerProtection.value = response.data || null
+  } catch (error) {
+    console.error('Failed to fetch commercial crawler protection:', error)
+    commercialCrawlerProtection.value = null
+  } finally {
+    loadingCommercialCrawlerProtection.value = false
   }
 }
 
@@ -342,7 +483,9 @@ const resetPublicChatAgentForm = () => {
     email: '',
     avatar: '',
     whatsapp: '',
-    status: 'active'
+    status: 'active',
+    online_status: 'offline',
+    group_ids: []
   })
 }
 
@@ -354,12 +497,16 @@ const applyPublicChatCandidateDefaults = (candidate) => {
   publicChatAgentForm.avatar = candidate.profile_avatar || ''
   publicChatAgentForm.whatsapp = candidate.profile_whatsapp || ''
   publicChatAgentForm.status = candidate.profile_status || 'active'
+  publicChatAgentForm.online_status = candidate.profile_online_status || 'offline'
+  publicChatAgentForm.group_ids = Array.isArray(candidate.profile_group_ids)
+    ? candidate.profile_group_ids.map((id) => Number(id)).filter(Boolean)
+    : []
 }
 
 const openPublicChatAgentDialog = async () => {
   resetPublicChatAgentForm()
   publicChatAgentDialogOpen.value = true
-  await fetchPublicChatAgentCandidates()
+  await Promise.all([fetchPublicChatAgentCandidates(), fetchPublicChatGroups()])
 }
 
 const savePublicChatAgent = async () => {
@@ -368,24 +515,102 @@ const savePublicChatAgent = async () => {
     return
   }
 
+   const publicEmail = publicChatAgentForm.email.trim() || selectedPublicChatAgentCandidate.value?.email?.trim() || ''
+   const publicWhatsApp = publicChatAgentForm.whatsapp.trim()
+   if (publicChatAgentForm.status === 'active' && (!publicEmail || !publicWhatsApp)) {
+     toast.error('公开客服启用前必须填写公开邮箱和 WhatsApp，前台聊天头像选择弹层会使用这两个联系方式')
+     return
+   }
+
   publicChatAgentSaving.value = true
   try {
     const response = await axios.post('/api/admin/settings/public-chat-agents', {
       user_id: Number(publicChatAgentForm.user_id),
       agent_id: publicChatAgentForm.agent_id.trim(),
       name: publicChatAgentForm.name.trim(),
-      email: publicChatAgentForm.email.trim(),
+      email: publicEmail,
       avatar: publicChatAgentForm.avatar.trim(),
-      whatsapp: publicChatAgentForm.whatsapp.trim(),
-      status: publicChatAgentForm.status
+      whatsapp: publicWhatsApp,
+      status: publicChatAgentForm.status,
+      online_status: publicChatAgentForm.online_status,
+      group_ids: Array.isArray(publicChatAgentForm.group_ids)
+        ? publicChatAgentForm.group_ids.map((id) => Number(id)).filter(Boolean)
+        : []
     })
     toast.success(response.data?.created ? '已添加 Public Chat 客服 Profile' : '已更新 Public Chat 客服 Profile')
     publicChatAgentDialogOpen.value = false
     await fetchPublicChatAgents()
   } catch (error) {
     console.error('Failed to save Public Chat agent profile:', error)
+     toast.error(error?.response?.data?.error || 'Public Chat 客服 Profile 保存失败')
   } finally {
     publicChatAgentSaving.value = false
+  }
+}
+
+const resetPublicChatGroupForm = () => {
+  Object.assign(publicChatGroupForm, {
+    id: 0,
+    code: '',
+    name: '',
+    description: '',
+    status: 'active',
+    sort_order: 0
+  })
+}
+
+const openPublicChatGroupDialog = () => {
+  resetPublicChatGroupForm()
+  publicChatGroupDialogOpen.value = true
+}
+
+const editPublicChatGroup = (group) => {
+  Object.assign(publicChatGroupForm, {
+    id: Number(group?.id || 0),
+    code: group?.code || '',
+    name: group?.name || '',
+    description: group?.description || '',
+    status: group?.status || 'active',
+    sort_order: Number(group?.sort_order || 0)
+  })
+  publicChatGroupDialogOpen.value = true
+}
+
+const savePublicChatGroup = async () => {
+  if (!publicChatGroupForm.name.trim()) {
+    toast.error('请输入客服组名称')
+    return
+  }
+  publicChatGroupSaving.value = true
+  try {
+    const payload = {
+      code: publicChatGroupForm.code.trim(),
+      name: publicChatGroupForm.name.trim(),
+      description: publicChatGroupForm.description.trim(),
+      status: publicChatGroupForm.status,
+      sort_order: Number(publicChatGroupForm.sort_order) || 0
+    }
+    const response = publicChatGroupForm.id
+      ? await axios.put(`/api/admin/settings/public-chat-groups/${publicChatGroupForm.id}`, payload)
+      : await axios.post('/api/admin/settings/public-chat-groups', payload)
+    toast.success(response.data?.created ? '客服组已创建' : '客服组已保存')
+    publicChatGroupDialogOpen.value = false
+    await Promise.all([fetchPublicChatGroups(), fetchPublicChatAgents()])
+  } catch (error) {
+    toast.error(error?.response?.data?.error || '客服组保存失败')
+  } finally {
+    publicChatGroupSaving.value = false
+  }
+}
+
+const deletePublicChatGroup = async (group) => {
+  if (!group?.id || !window.confirm(`确定删除客服组“${group.name}”吗？已绑定客服会变为未分组。`)) return
+  try {
+    await axios.delete(`/api/admin/settings/public-chat-groups/${group.id}`)
+    toast.success('客服组已删除')
+    await Promise.all([fetchPublicChatGroups(), fetchPublicChatAgents()])
+  } catch (error) {
+    toast.error(error?.response?.data?.error || '客服组删除失败')
   }
 }
 
@@ -393,39 +618,9 @@ const saveSettings = async () => {
   const group = activeTab.value
   const definition = groupDefinitions[group]
   if (!definition) return
-  if (group === 'loyalty' || group === 'redeem') {
-    const redeemValuesCents = String(redeemSettings.tz_redeem_preset_values)
-      .split(',')
-      .map((value) => Number(value.trim()))
-      .filter((value) => Number.isFinite(value) && value > 0)
-      .map((value) => Math.round(value * 100))
-    saving.value = true
-    try {
-      await axios.put('/api/admin/marketing/loyalty/program-config', {
-        enabled: Boolean(redeemSettings.tz_redeem_enabled),
-        currency: String(redeemSettings.tz_redeem_currency || 'USD').toUpperCase(),
-        exchange_rate_points: Number(redeemSettings.tz_redeem_exchange_rate),
-        min_redeem_points: Number(redeemSettings.tz_redeem_min_points),
-        max_value_per_day_cents: Math.round(Number(redeemSettings.tz_redeem_max_value_per_day) * 100),
-        card_expiry_days: Number(redeemSettings.tz_redeem_card_expiry_days),
-        referral_referrer_points: Number(loyaltySettings.tz_loyalty_referral_referrer_points),
-        referral_referee_points: Number(loyaltySettings.tz_loyalty_referral_referee_points),
-        checkin_base_points: Number(loyaltySettings.tz_loyalty_checkin_base_points),
-        checkin_streak_interval_days: Number(loyaltySettings.tz_loyalty_checkin_streak_interval_days),
-        checkin_streak_bonus_points: Number(loyaltySettings.tz_loyalty_checkin_streak_bonus_points),
-        checkin_max_points: Number(loyaltySettings.tz_loyalty_checkin_max_points),
-        redeem_values_cents: redeemValuesCents
-      })
-      loadedGroups.delete('loyalty')
-      loadedGroups.delete('redeem')
-      await fetchSettings(group, true)
-      toast.success('积分与兑换规则已生成新版本')
-    } catch (error) {
-      console.error('Failed to save loyalty program config:', error)
-    } finally {
-      saving.value = false
-    }
-    return
+  if (group === 'api') {
+    applyAPIRefreshDefaults()
+    applyAPICurrencyDefaults()
   }
   const settings = Object.entries(definition.fields).map(([key, metadata]) => ({
     key,
@@ -457,12 +652,20 @@ watch(() => publicChatAgentForm.user_id, (userID) => {
 })
 
 watch(activeTab, (tab) => {
-  if (tab === 'public_chat') fetchPublicChatAgents()
+  if (tab === 'public_chat') {
+    fetchPublicChatAgents()
+    fetchPublicChatGroups()
+  }
+  else if (tab === 'commercial_crawler') {
+    fetchCommercialCrawlerProtection()
+  }
+  else if (tab === 'currency') {
+    fetchPaymentCurrencies(true)
+  }
   else {
     fetchSettings(tab)
     if (tab === 'payment') fetchPaymentRuntime()
+    if (tab === 'api') fetchPaymentCurrencies()
   }
-})
-
-onMounted(() => fetchSettings('site'))
+}, { immediate: true })
 </script>

@@ -1,24 +1,5 @@
 <template>
-  <Tabs :model-value="activeTab" class="gap-4" @update:model-value="emit('update:activeTab', $event)">
-    <TabsList variant="line" class="h-10 w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
-      <TabsTrigger value="coupons" class="h-9 flex-none px-4">
-        <BadgePercent class="size-4" />
-        优惠券
-      </TabsTrigger>
-      <TabsTrigger value="giftcards" class="h-9 flex-none px-4">
-        <Gift class="size-4" />
-        礼品卡
-      </TabsTrigger>
-      <TabsTrigger value="loyalty" class="h-9 flex-none px-4">
-        <Coins class="size-4" />
-        积分
-      </TabsTrigger>
-      <TabsTrigger value="levels" class="h-9 flex-none px-4">
-        <Crown class="size-4" />
-        会员等级
-      </TabsTrigger>
-    </TabsList>
-
+  <Tabs :model-value="activeTab" class="gap-4">
     <TabsContent value="coupons" class="space-y-3">
       <CouponTablePanel
         :loading="couponsLoading"
@@ -42,18 +23,27 @@
     </TabsContent>
 
     <TabsContent value="giftcards" class="space-y-3">
+      <GiftCardRedeemOptionsPanel
+        :redeem-settings="redeemSettings"
+        :loading="loyaltyProgramLoading"
+        :saving="loyaltyProgramSaving"
+        :payment-currency-options="paymentCurrencyOptions"
+        :payment-currencies-loading="paymentCurrenciesLoading"
+        :can-edit="canEdit"
+        @refresh="emit('refresh-loyalty-program-config')"
+        @save="emit('save-loyalty-program-config')"
+      />
+
       <GiftCardTablePanel
         :loading="giftCardsLoading"
         :gift-cards="giftCards"
         :filters="giftCardFilters"
         :pagination="giftCardPagination"
-        :can-create="canCreate"
         :format-currency="formatCurrency"
         :format-date="formatDate"
         :gift-card-status-name="giftCardStatusName"
         :gift-card-status-tone="giftCardStatusTone"
         @filter-change="emit('gift-card-filter-change')"
-        @create="emit('create-gift-card')"
         @view="emit('view-gift-card', $event)"
         @update-page="emit('update-gift-card-page', $event)"
         @update-page-size="emit('update-gift-card-page-size', $event)"
@@ -61,57 +51,74 @@
     </TabsContent>
 
     <TabsContent value="loyalty" class="space-y-3">
-      <LoyaltyPanel
-        :loading="loyaltyLoading"
-        :transactions="loyaltyTransactions"
-        :filters="loyaltyFilters"
-        :pagination="loyaltyPagination"
-        :form="loyaltyForm"
-        :errors="loyaltyErrors"
-        :submitting="loyaltySubmitting"
-        :can-adjust="canCreate"
-        :loyalty-type-name="loyaltyTypeName"
-        :format-date="formatDate"
-        @apply-filter="emit('loyalty-filter-change')"
-        @update-page="emit('update-loyalty-page', $event)"
-        @update-page-size="emit('update-loyalty-page-size', $event)"
-        @submit="emit('submit-loyalty-adjustment')"
-        @clear-error="emit('clear-loyalty-error', $event)"
-      />
+      <Tabs :model-value="activeSubTab" class="gap-3">
+        <TabsContent value="transactions" class="space-y-3">
+          <LoyaltyPanel
+            :loading="loyaltyLoading"
+            :transactions="loyaltyTransactions"
+            :filters="loyaltyFilters"
+            :pagination="loyaltyPagination"
+            :form="loyaltyForm"
+            :errors="loyaltyErrors"
+            :submitting="loyaltySubmitting"
+            :can-adjust="canCreate"
+            :loyalty-type-name="loyaltyTypeName"
+            :format-date="formatDate"
+            @apply-filter="emit('loyalty-filter-change')"
+            @update-page="emit('update-loyalty-page', $event)"
+            @update-page-size="emit('update-loyalty-page-size', $event)"
+            @submit="emit('submit-loyalty-adjustment')"
+            @clear-error="emit('clear-loyalty-error', $event)"
+          />
+        </TabsContent>
+
+        <TabsContent value="rules" class="space-y-3">
+          <LoyaltyProgramSettingsPanel
+            :loyalty-settings="loyaltySettings"
+            :version="loyaltyProgramVersion"
+            :loading="loyaltyProgramLoading"
+            :saving="loyaltyProgramSaving"
+            :can-edit="canEdit"
+            :points-base-currency="pointsBaseCurrency"
+            @refresh="emit('refresh-loyalty-program-config')"
+            @save="emit('save-loyalty-program-config')"
+          />
+        </TabsContent>
+      </Tabs>
     </TabsContent>
 
     <TabsContent value="levels" class="space-y-3">
-      <div class="flex justify-end">
-        <Button v-if="canCreate" size="sm" @click="emit('create-level')">
-          <Plus class="size-3.5" />
-          创建等级
-        </Button>
+      <div class="rounded-2xl border bg-card/75 px-4 py-3 text-xs text-muted-foreground shadow-sm">
+        <p>系统内置普通、铜牌、银牌、金牌、铂金、钻石六个会员等级。这里维护积分区间、折扣率和权益说明，不再新建或删除等级。</p>
+        <p v-if="levelsUsingFallback" class="mt-1 text-[11px] font-bold text-amber-600 dark:text-amber-300">
+          接口暂未返回真实会员等级，当前显示默认预览；请确认后端迁移已执行并重启服务后再编辑。
+        </p>
       </div>
 
       <MemberLevelTablePanel
         :loading="levelsLoading"
         :levels="levels"
         :can-edit="canEdit"
-        :can-delete="canDelete"
+        :can-delete="false"
         :format-rate="formatRate"
         @edit="emit('edit-level', $event)"
-        @delete="emit('delete-level', $event)"
       />
     </TabsContent>
   </Tabs>
 </template>
 
 <script setup>
-import { BadgePercent, Coins, Crown, Gift, Plus } from '@lucide/vue'
 import CouponTablePanel from '@/components/admin/marketing/CouponTablePanel.vue'
+import GiftCardRedeemOptionsPanel from '@/components/admin/marketing/GiftCardRedeemOptionsPanel.vue'
 import GiftCardTablePanel from '@/components/admin/marketing/GiftCardTablePanel.vue'
 import LoyaltyPanel from '@/components/admin/marketing/LoyaltyPanel.vue'
+import LoyaltyProgramSettingsPanel from '@/components/admin/marketing/LoyaltyProgramSettingsPanel.vue'
 import MemberLevelTablePanel from '@/components/admin/marketing/MemberLevelTablePanel.vue'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 
 defineProps({
   activeTab: { type: String, default: 'coupons' },
+  activeSubTab: { type: String, default: 'transactions' },
   canCreate: { type: Boolean, default: false },
   canEdit: { type: Boolean, default: false },
   canDelete: { type: Boolean, default: false },
@@ -138,13 +145,21 @@ defineProps({
   loyaltyErrors: { type: Object, default: () => ({}) },
   loyaltySubmitting: { type: Boolean, default: false },
   loyaltyTypeName: { type: Function, required: true },
+  loyaltySettings: { type: Object, required: true },
+  redeemSettings: { type: Object, required: true },
+  pointsBaseCurrency: { type: String, default: 'USD' },
+  loyaltyProgramVersion: { type: Number, default: 0 },
+  loyaltyProgramLoading: { type: Boolean, default: false },
+  loyaltyProgramSaving: { type: Boolean, default: false },
+  paymentCurrencyOptions: { type: Array, default: () => [] },
+  paymentCurrenciesLoading: { type: Boolean, default: false },
   levelsLoading: { type: Boolean, default: false },
   levels: { type: Array, default: () => [] },
+  levelsUsingFallback: { type: Boolean, default: false },
   formatRate: { type: Function, required: true }
 })
 
 const emit = defineEmits([
-  'update:activeTab',
   'coupon-filter-change',
   'create-coupon',
   'edit-coupon',
@@ -152,7 +167,6 @@ const emit = defineEmits([
   'update-coupon-page',
   'update-coupon-page-size',
   'gift-card-filter-change',
-  'create-gift-card',
   'view-gift-card',
   'update-gift-card-page',
   'update-gift-card-page-size',
@@ -161,6 +175,8 @@ const emit = defineEmits([
   'update-loyalty-page-size',
   'submit-loyalty-adjustment',
   'clear-loyalty-error',
+  'refresh-loyalty-program-config',
+  'save-loyalty-program-config',
   'create-level',
   'edit-level',
   'delete-level'

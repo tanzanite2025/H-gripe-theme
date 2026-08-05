@@ -27,16 +27,28 @@
           v-for="option in visiblePaymentOptions"
           :key="option.id"
           class="rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[6px_10px_30px_rgba(0,0,0,0.55)] overflow-hidden transition-colors"
+          :class="isPaymentOptionAvailable(option) ? '' : 'opacity-75'"
         >
           <button
             type="button"
             class="w-full px-4 py-3 flex items-center justify-between gap-3 text-left"
-            :class="activeMethod === option.id ? 'tz-text-primary' : 'tz-text-secondary'"
+            :class="[
+              activeMethod === option.id ? 'tz-text-primary' : 'tz-text-secondary',
+              isPaymentOptionAvailable(option) ? 'hover:bg-white/[0.03]' : 'cursor-not-allowed'
+            ]"
+            :disabled="!isPaymentOptionAvailable(option)"
+            :aria-disabled="!isPaymentOptionAvailable(option)"
             @click="handleSelect(option.id)"
           >
             <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <span class="text-sm font-semibold">{{ option.title }}</span>
+                <span
+                  v-if="!isPaymentOptionAvailable(option)"
+                  class="inline-flex items-center rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200"
+                >
+                  {{ paymentOptionUnavailableText(option) }}
+                </span>
                 <div v-if="optionIcons[option.id]?.length" class="flex items-center gap-1">
                   <img
                     v-for="icon in optionIcons[option.id]"
@@ -53,9 +65,9 @@
             </div>
             <div
               class="inline-flex items-center justify-center rounded-full px-2 py-0.5 tz-micro-label font-semibold uppercase tracking-[0.2em] shadow-[3px_3px_12px_rgba(0,0,0,0.35)]"
-              :class="activeMethod === option.id ? 'bg-white text-slate-900' : 'bg-white/10 tz-text-secondary'"
+              :class="paymentOptionPillClass(option)"
             >
-              {{ activeMethod === option.id ? t('checkout.stepper.payment.selected') : t('checkout.stepper.payment.tapToView') }}
+              {{ paymentOptionStatusText(option) }}
             </div>
           </button>
 
@@ -66,6 +78,12 @@
             <p class="leading-relaxed">
               {{ option.description }}
             </p>
+            <p
+              v-if="!isPaymentOptionAvailable(option)"
+              class="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-amber-100"
+            >
+              {{ paymentOptionUnavailableText(option) }}
+            </p>
             <ul v-if="option.points?.length" class="space-y-1 tz-text-secondary">
               <li v-for="point in option.points" :key="point" class="flex items-start gap-2">
                 <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300 translate-y-1"></span>
@@ -74,7 +92,9 @@
             </ul>
             <button
               type="button"
-              class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-semibold text-slate-900 bg-white hover:brightness-95 transition"
+              class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-semibold transition"
+              :class="isPaymentOptionAvailable(option) ? 'text-slate-900 bg-white hover:brightness-95' : 'bg-white/10 tz-text-disabled cursor-not-allowed'"
+              :disabled="!isPaymentOptionAvailable(option)"
               @click="handleContinueFromStepOne"
             >
               {{ t('checkout.stepper.payment.continueWithMethod') }} →
@@ -456,15 +476,26 @@
         </section>
 
         <div class="rounded-2xl bg-[radial-gradient(circle_at_bottom,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] px-4 py-4 space-y-2 hidden md:block shadow-[6px_10px_30px_rgba(0,0,0,0.55)]">
-          <ChatStartButton
-            class="w-full text-sm"
-            :label="desktopCtaLabel"
+          <StripePaymentElement
+            v-if="stripePaymentSession"
+            :session="stripePaymentSession"
+            :confirm-label="stripePaymentConfirmLabel"
+            :confirming-label="stripePaymentConfirmingLabel"
             :disabled="isSubmitting"
-            @click="handleSubmitMock"
+            @confirmed="handleStripeConfirmed"
+            @error="handleStripeError"
           />
-          <p v-if="ctaDescription" class="tz-description tz-text-secondary text-center">
-            {{ ctaDescription }}
-          </p>
+          <template v-else>
+            <ChatStartButton
+              class="w-full text-sm"
+              :label="desktopCtaLabel"
+              :disabled="isSubmitting || !canStartSelectedPayment"
+              @click="handleSubmitMock"
+            />
+            <p v-if="ctaDescription" class="tz-description tz-text-secondary text-center">
+              {{ ctaDescription }}
+            </p>
+          </template>
         </div>
       </div>
 
@@ -475,11 +506,21 @@
             {{ mobilePaymentDescription }}
           </p>
         </div>
+        <StripePaymentElement
+          v-if="stripePaymentSession"
+          :session="stripePaymentSession"
+          :confirm-label="stripePaymentConfirmLabel"
+          :confirming-label="stripePaymentConfirmingLabel"
+          :disabled="isSubmitting"
+          @confirmed="handleStripeConfirmed"
+          @error="handleStripeError"
+        />
         <ChatStartButton
+          v-else
           class="w-full justify-center text-xs"
           size="md"
           :label="desktopCtaLabel"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || !canStartSelectedPayment"
           @click="handleSubmitMock"
         />
       </div>
@@ -488,20 +529,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from '#imports'
 import StepperDot from './StepperDot.vue'
 import ChatStartButton from '~/components/ChatStartButton.vue'
+import StripePaymentElement from '~/components/StripePaymentElement.vue'
+import type { StripeConfirmationResult, StripePaymentSession } from '~/composables/useStripePayment'
+import type { CheckoutPaymentOption } from '~/types/payment'
 
 type Step = 1 | 2 | 3
 
-interface PaymentOption {
-  id: string
-  title: string
-  subtitle: string
-  description: string
-  points?: string[]
-}
+type PaymentOption = CheckoutPaymentOption
 
 interface ShippingForm {
   country: string
@@ -568,6 +606,9 @@ const props = defineProps<{
   mobilePaymentTitle?: string
   mobilePaymentDescription?: string
   isSubmitting?: boolean
+  stripePaymentSession?: StripePaymentSession | null
+  stripePaymentConfirmLabel?: string
+  stripePaymentConfirmingLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -583,12 +624,32 @@ const emit = defineEmits<{
   (e: 'open-contact'): void
   (e: 'open-freight'): void
   (e: 'save-cart'): void
+  (e: 'stripe-confirmed', result: StripeConfirmationResult): void
+  (e: 'stripe-error', message: string): void
 }>()
 
 const { t, locale } = useI18n()
 
 const currentStep = ref<Step>(props.initialStep ?? 1)
 const activeMethod = ref(props.initialMethod ?? 'card')
+
+watch(
+  () => props.initialStep,
+  (step) => {
+    if (step && step !== currentStep.value) {
+      currentStep.value = step
+    }
+  },
+)
+
+watch(
+  () => props.initialMethod,
+  (method) => {
+    if (method && method !== activeMethod.value) {
+      activeMethod.value = method
+    }
+  },
+)
 
 const fallbackPaymentOptions = computed<PaymentOption[]>(() => {
   const priceText = formatPrice(orderSummary.value?.totals?.total ?? 0)
@@ -611,6 +672,16 @@ const fallbackPaymentOptions = computed<PaymentOption[]>(() => {
       points: [
         t('checkout.payment.alipay.points.recipient'),
         t('checkout.payment.alipay.points.wallets'),
+      ],
+    },
+    {
+      id: 'wechat',
+      title: t('checkout.payment.wechat.optionTitle'),
+      subtitle: `${priceText} · ${t('checkout.payment.wechat.subtitle')}`,
+      description: t('checkout.payment.wechat.stepperDescription'),
+      points: [
+        t('checkout.payment.wechat.points.recipient'),
+        t('checkout.payment.wechat.points.scan'),
       ],
     },
     {
@@ -656,6 +727,49 @@ const visiblePaymentOptions = computed(() =>
   props.paymentOptions?.length ? props.paymentOptions : fallbackPaymentOptions.value,
 )
 
+const temporaryUnavailableLabel = computed(() =>
+  String(locale.value || '').toLowerCase().startsWith('zh') ? '暂时不可用' : 'Temporarily unavailable',
+)
+
+const isPaymentOptionAvailable = (option: PaymentOption) =>
+  option.enabled !== false && option.available !== false
+
+const activePaymentOption = computed(() =>
+  visiblePaymentOptions.value.find(option => option.id === activeMethod.value) ?? null,
+)
+
+const canStartSelectedPayment = computed(() => {
+  const option = activePaymentOption.value
+  return Boolean(option && isPaymentOptionAvailable(option))
+})
+
+const normalizeUnavailableReason = (option: PaymentOption) =>
+  String(option.unavailableReason || option.unavailable_reason || '').trim()
+
+const paymentOptionUnavailableText = (option: PaymentOption) => {
+  const reason = normalizeUnavailableReason(option)
+  if (!reason || reason === 'temporarily_unavailable') {
+    return temporaryUnavailableLabel.value
+  }
+  return reason.replace(/_/g, ' ')
+}
+
+const paymentOptionStatusText = (option: PaymentOption) => {
+  if (!isPaymentOptionAvailable(option)) {
+    return paymentOptionUnavailableText(option)
+  }
+  return activeMethod.value === option.id
+    ? t('checkout.stepper.payment.selected')
+    : t('checkout.stepper.payment.tapToView')
+}
+
+const paymentOptionPillClass = (option: PaymentOption) => {
+  if (!isPaymentOptionAvailable(option)) {
+    return 'bg-amber-400/10 text-amber-200'
+  }
+  return activeMethod.value === option.id ? 'bg-white text-slate-900' : 'bg-white/10 tz-text-secondary'
+}
+
 const optionIcons: Record<string, string[]> = {
   card: [
     '/checkoutstepper/step1/credit-debit-cards/visa.svg',
@@ -666,11 +780,8 @@ const optionIcons: Record<string, string[]> = {
     '/checkoutstepper/step1/credit-debit-cards/discover.svg',
     '/checkoutstepper/step1/credit-debit-cards/jcb.svg',
   ],
-  alipay: [
-    '/checkoutstepper/step1/alipay-wechat/alipay.svg',
-    '/checkoutstepper/step1/alipay-wechat/wechatpay.svg',
-    '/checkoutstepper/step1/alipay-wechat/unionpay.svg',
-  ],
+  alipay: ['/checkoutstepper/step1/alipay-wechat/alipay.svg'],
+  wechat: ['/checkoutstepper/step1/alipay-wechat/wechatpay.svg'],
   bank: ['/checkoutstepper/step1/bank-transfer/bank-transfer.svg'],
   paypal: ['/checkoutstepper/step1/paypal/paypal.svg'],
   stripe: ['/checkoutstepper/step1/stripe/stripe.svg'],
@@ -697,7 +808,7 @@ const pointsToUse = computed(() => props.pointsToUse ?? 0)
 const maxPointsToUse = computed(() => props.maxPointsToUse ?? pointsAvailable.value)
 const pointsHint = computed(() => props.pointsHint ?? t('checkout.modal.pointsHint'))
 const orderSummary = computed(() => props.orderSummary)
-const currency = computed(() => props.currency ?? 'USD')
+const currency = computed(() => props.currency ?? '')
 const showShippingForm = computed(() => props.showShippingForm !== false && Boolean(props.shippingForm))
 const shippingForm = computed(() => props.shippingForm)
 const countrySearchValue = computed(() => props.countrySearch ?? '')
@@ -712,6 +823,9 @@ const ctaDescription = computed(() => props.ctaDescription ?? '')
 const mobilePaymentTitle = computed(() => props.mobilePaymentTitle ?? t('checkout.stepper.review.continueToCheckout'))
 const mobilePaymentDescription = computed(() => props.mobilePaymentDescription ?? '')
 const isSubmitting = computed(() => props.isSubmitting ?? false)
+const stripePaymentSession = computed(() => props.stripePaymentSession ?? null)
+const stripePaymentConfirmLabel = computed(() => props.stripePaymentConfirmLabel ?? desktopCtaLabel.value)
+const stripePaymentConfirmingLabel = computed(() => props.stripePaymentConfirmingLabel ?? desktopCtaLabel.value)
 const giftCardDiscount = computed(() => {
   const totals = orderSummary.value?.totals as unknown as { giftCardDiscount?: number } | undefined
   const val = totals?.giftCardDiscount
@@ -749,12 +863,31 @@ const setMethod = (method: string) => {
   emit('update:method', method)
 }
 
+watch(
+  visiblePaymentOptions,
+  (options) => {
+    if (!options.length) return
+
+    const current = options.find(option => option.id === activeMethod.value)
+    if (current && isPaymentOptionAvailable(current)) return
+
+    const next = options.find(isPaymentOptionAvailable)
+    if (next && next.id !== activeMethod.value) {
+      setMethod(next.id)
+    }
+  },
+  { immediate: true },
+)
+
 const handleSelect = (id: string) => {
+  const option = visiblePaymentOptions.value.find(item => item.id === id)
+  if (!option || !isPaymentOptionAvailable(option)) return
   if (activeMethod.value === id && currentStep.value === 1) return
   setMethod(id)
 }
 
 const handleContinueFromStepOne = () => {
+  if (!canStartSelectedPayment.value) return
   setStep(2)
 }
 
@@ -807,12 +940,15 @@ const handleCountrySearchInput = (event: Event) => {
 
 const formatPrice = (value: number) => {
   try {
+    if (!currency.value) {
+      return value.toFixed(2)
+    }
     return new Intl.NumberFormat(locale.value, {
       style: 'currency',
       currency: currency.value,
     }).format(value)
   } catch {
-    return `$${value.toFixed(2)}`
+    return value.toFixed(2)
   }
 }
 
@@ -838,7 +974,19 @@ const handleOpenContact = () => emit('open-contact')
 const handleOpenFreight = () => emit('open-freight')
 const handleSaveCart = () => emit('save-cart')
 
+const handleStripeConfirmed = (result: StripeConfirmationResult) => {
+  emit('stripe-confirmed', result)
+}
+
+const handleStripeError = (message: string) => {
+  emit('stripe-error', message)
+}
+
 const handleSubmitMock = () => {
+  if (!canStartSelectedPayment.value) {
+    setStep(1)
+    return
+  }
   emit('submit')
 }
 </script>

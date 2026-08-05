@@ -195,7 +195,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if input.MetaDesc != nil {
 		existingProduct.MetaDesc = *input.MetaDesc
 	}
-
 	var specValues []product.ProductSpecValue
 	if input.UpdateSpecValues {
 		specValues, err = s.buildSpecValues(existingProduct.ProductTypeID, input.SpecValues)
@@ -240,7 +239,7 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 	}
 
 	items := make([]product.ProductMedia, 0, len(input))
-	primaryByType := make(map[string]bool)
+	hasPrimaryImage := false
 	for index, item := range input {
 		mediaType := strings.ToLower(strings.TrimSpace(item.MediaType))
 		if mediaType == "" {
@@ -250,15 +249,9 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 			return nil, fmt.Errorf("%w: unsupported media type %q", ErrProductMediaInvalid, item.MediaType)
 		}
 
-		role := strings.ToLower(strings.TrimSpace(item.Role))
-		if role == "" {
-			if item.IsPrimary {
-				role = "primary"
-			} else if mediaType == "video" {
-				role = "video"
-			} else {
-				role = "gallery"
-			}
+		role, err := normalizeAdminProductMediaRole(mediaType, item.Role, item.IsPrimary)
+		if err != nil {
+			return nil, err
 		}
 
 		url := strings.TrimSpace(item.URL)
@@ -271,12 +264,13 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 			isVisible = *item.IsVisible
 		}
 
-		isPrimary := item.IsPrimary || role == "primary"
+		isPrimary := mediaType == "image" && (item.IsPrimary || role == "primary")
 		if isPrimary {
-			if primaryByType[mediaType] {
-				return nil, fmt.Errorf("%w: only one primary %s media is allowed", ErrProductMediaInvalid, mediaType)
+			if hasPrimaryImage {
+				return nil, fmt.Errorf("%w: only one primary image media is allowed", ErrProductMediaInvalid)
 			}
-			primaryByType[mediaType] = true
+			hasPrimaryImage = true
+			role = "primary"
 		}
 
 		id := uint(0)
@@ -305,7 +299,7 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 		}
 	}
 
-	if !primaryByType["image"] {
+	if !hasPrimaryImage {
 		for i := range items {
 			if items[i].MediaType == "image" && items[i].IsVisible {
 				items[i].IsPrimary = true
@@ -316,6 +310,37 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 	}
 
 	return items, nil
+}
+
+func normalizeAdminProductMediaRole(mediaType, rawRole string, isPrimary bool) (string, error) {
+	role := strings.ToLower(strings.TrimSpace(rawRole))
+
+	switch mediaType {
+	case "image":
+		if role == "" {
+			if isPrimary {
+				return "primary", nil
+			}
+			return "gallery", nil
+		}
+		if role != "primary" && role != "gallery" {
+			return "", fmt.Errorf("%w: unsupported image media role %q", ErrProductMediaInvalid, rawRole)
+		}
+		if isPrimary {
+			return "primary", nil
+		}
+		return role, nil
+	case "video":
+		if role == "" {
+			return "video", nil
+		}
+		if role != "video" {
+			return "", fmt.Errorf("%w: unsupported video media role %q", ErrProductMediaInvalid, rawRole)
+		}
+		return "video", nil
+	default:
+		return "", fmt.Errorf("%w: unsupported media type %q", ErrProductMediaInvalid, mediaType)
+	}
 }
 
 func (s *ProductService) Delete(id uint) error {
