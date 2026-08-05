@@ -7,6 +7,7 @@ import (
 	"strings"
 	"tanzanite/internal/domain/auth"
 	"tanzanite/internal/domain/ticket"
+	userdomain "tanzanite/internal/domain/user"
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
@@ -96,6 +97,11 @@ func (h *TicketHandler) ListCustomerServiceAgents(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
+	groups, err := h.ticketService.ListCustomerServiceAgentGroups(500, false)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 
 	items := make([]gin.H, 0, len(agents))
 	for _, agent := range agents {
@@ -112,10 +118,26 @@ func (h *TicketHandler) ListCustomerServiceAgents(c *gin.Context) {
 			"whatsapp":      agent.WhatsApp,
 			"online_status": agent.OnlineStatus,
 			"status":        agent.Status,
+			"group_ids":     adminCustomerServiceAgentGroupIDs(agent.Groups),
+			"groups":        adminCustomerServiceAgentGroupsResponse(agent.Groups),
+			"primary_group": adminCustomerServicePrimaryAgentGroup(agent.Groups),
 		})
 	}
 
-	response.Success(c, gin.H{"agents": items})
+	response.Success(c, gin.H{
+		"agents": items,
+		"groups": adminCustomerServiceGroupsResponse(groups),
+	})
+}
+
+// ListCustomerServiceGroups returns active groups for inbox filters and routing selectors.
+func (h *TicketHandler) ListCustomerServiceGroups(c *gin.Context) {
+	groups, err := h.ticketService.ListCustomerServiceAgentGroups(500, false)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"groups": adminCustomerServiceGroupsResponse(groups)})
 }
 
 // GetCustomerServiceConversationContext returns the customer snapshot beside one chat.
@@ -170,18 +192,21 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 	}
 
 	var req struct {
-		Message       string `json:"message" binding:"required"`
-		AttachmentURL string `json:"attachment_url"`
+		Message       string   `json:"message" binding:"required"`
+		AttachmentURL string   `json:"attachment_url"`
+		Attachments   []string `json:"attachments"`
 	}
+	limitAdminCustomerServiceJSONBody(c)
 	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+		respondAdminJSONBindError(c, err)
 		return
 	}
 
 	agentUserID, canViewAll := adminCustomerServiceScope(c)
-	attachments := []string{}
-	if strings.TrimSpace(req.AttachmentURL) != "" {
-		attachments = append(attachments, strings.TrimSpace(req.AttachmentURL))
+	attachments, err := h.sanitizeAdminCustomerServiceAttachments(req.AttachmentURL, req.Attachments)
+	if err != nil {
+		respondAdminAttachmentError(c, err)
+		return
 	}
 	attachmentsJSON, _ := json.Marshal(attachments)
 
@@ -360,6 +385,17 @@ func parseAdminCustomerServiceConversationFilters(c *gin.Context) (service.Custo
 		}
 	}
 
+	groupIDRaw := normalizeAdminCustomerServiceFilterValue(c.Query("group_id"))
+	if groupIDRaw != "" {
+		groupID, err := strconv.ParseUint(groupIDRaw, 10, 32)
+		if err != nil || groupID == 0 {
+			apierror.RespondBadRequest(c, "Invalid customer-service group filter")
+			return input, false
+		}
+		groupIDValue := uint(groupID)
+		input.GroupID = &groupIDValue
+	}
+
 	return input, true
 }
 
@@ -403,6 +439,10 @@ func adminCustomerServiceConversationFilterResponse(input service.CustomerServic
 	if input.AssignedTo != nil && *input.AssignedTo > 0 {
 		assignedTo = strconv.FormatUint(uint64(*input.AssignedTo), 10)
 	}
+	groupID := "all"
+	if input.GroupID != nil && *input.GroupID > 0 {
+		groupID = strconv.FormatUint(uint64(*input.GroupID), 10)
+	}
 	status := input.Status
 	if status == "" {
 		status = "all"
@@ -417,8 +457,58 @@ func adminCustomerServiceConversationFilterResponse(input service.CustomerServic
 		"status":      status,
 		"identity":    identity,
 		"assigned_to": assignedTo,
+		"group_id":    groupID,
 		"unread":      input.UnreadOnly,
 	}
+}
+
+func adminCustomerServiceGroupsResponse(groups []userdomain.AgentGroup) []gin.H {
+	items := make([]gin.H, 0, len(groups))
+	for _, group := range groups {
+		items = append(items, adminCustomerServiceGroupResponse(group))
+	}
+	return items
+}
+
+func adminCustomerServiceAgentGroupsResponse(groups []userdomain.AgentGroup) []gin.H {
+	items := make([]gin.H, 0, len(groups))
+	for _, group := range groups {
+		if group.Status != "" && group.Status != "active" {
+			continue
+		}
+		items = append(items, adminCustomerServiceGroupResponse(group))
+	}
+	return items
+}
+
+func adminCustomerServiceGroupResponse(group userdomain.AgentGroup) gin.H {
+	return gin.H{
+		"id":          group.ID,
+		"code":        group.Code,
+		"name":        group.Name,
+		"description": group.Description,
+		"status":      group.Status,
+		"sort_order":  group.SortOrder,
+	}
+}
+
+func adminCustomerServiceAgentGroupIDs(groups []userdomain.AgentGroup) []uint {
+	ids := make([]uint, 0, len(groups))
+	for _, group := range groups {
+		if group.ID > 0 && (group.Status == "" || group.Status == "active") {
+			ids = append(ids, group.ID)
+		}
+	}
+	return ids
+}
+
+func adminCustomerServicePrimaryAgentGroup(groups []userdomain.AgentGroup) interface{} {
+	for _, group := range groups {
+		if group.ID > 0 && (group.Status == "" || group.Status == "active") {
+			return adminCustomerServiceGroupResponse(group)
+		}
+	}
+	return nil
 }
 
 func adminCustomerServiceScope(c *gin.Context) (uint, bool) {
@@ -518,7 +608,7 @@ func adminCustomerServiceFallbackSummary(item ticket.Ticket, customerName string
 
 func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
 	attachmentURL := ""
-	var attachments []string
+	attachments := []string{}
 	if err := json.Unmarshal([]byte(item.Attachments), &attachments); err == nil && len(attachments) > 0 {
 		attachmentURL = attachments[0]
 	}
@@ -532,7 +622,9 @@ func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
 		"content":         item.Content,
 		"message_type":    normalizeAdminCustomerServiceMessageType(item.MessageType),
 		"metadata":        parseAdminCustomerServiceMessageMetadata(item.Metadata),
+		"source":          adminCustomerServiceMessageSource(item.Metadata),
 		"attachment_url":  attachmentURL,
+		"attachments":     attachments,
 		"created_at":      item.CreatedAt,
 		"is_read":         item.IsRead,
 		"is_agent":        item.IsStaff,
@@ -542,7 +634,7 @@ func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
 func normalizeAdminCustomerServiceMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "config_confirm":
+	case "product", "order", "image", "link", "faq", "config_confirm":
 		return value
 	default:
 		return "text"
@@ -559,6 +651,15 @@ func parseAdminCustomerServiceMessageMetadata(value string) interface{} {
 		return nil
 	}
 	return payload
+}
+
+func adminCustomerServiceMessageSource(value string) string {
+	payload, ok := parseAdminCustomerServiceMessageMetadata(value).(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	source, _ := payload["_source"].(string)
+	return strings.TrimSpace(source)
 }
 
 func adminCustomerDisplayName(item ticket.Ticket) string {

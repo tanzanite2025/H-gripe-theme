@@ -21,7 +21,7 @@
           class="h-10 md:h-[42px] px-3 md:px-4 rounded-xl md:rounded-lg text-sm font-semibold disabled:opacity-50 transition-colors whitespace-nowrap"
           :class="isSearching
             ? 'bg-[rgba(15,23,42,0.98)] tz-text-disabled shadow-[0_2px_6px_-4px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]'
-            : 'bg-[linear-gradient(135deg,rgba(45,212,191,0.7),rgba(59,130,246,0.85))] text-white shadow-[0_4px_14px_-8px_rgba(59,130,246,0.8),0_0_14px_rgba(45,212,191,0.55)]'"
+            : 'bg-white text-slate-950 shadow-[0_4px_14px_-8px_rgba(0,0,0,0.95),0_0_14px_rgba(255,255,255,0.14)] hover:bg-white/90'"
         >
           {{ isSearching ? 'Searching...' : 'Search' }}
         </button>

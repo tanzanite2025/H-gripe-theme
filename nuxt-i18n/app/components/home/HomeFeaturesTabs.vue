@@ -37,7 +37,7 @@
                 <!-- Active Indicator Dot -->
                 <div 
                   class="w-2 h-2 rounded-full transition-colors duration-200"
-                  :class="activeIndex === index ? 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.6)]' : 'bg-slate-600 group-hover:bg-slate-500'"
+                  :class="activeIndex === index ? 'bg-teal-400 shadow-[0_0_8px_rgba(181,255,109,0.6)]' : 'bg-slate-600 group-hover:bg-slate-500'"
                 ></div>
                 
                 <span 
@@ -58,7 +58,7 @@
             v-model="activeIndex"
           >
             <template #card="{ item, index }">
-              <div class="h-full w-full rounded-2xl premium-card p-6 flex flex-col justify-center items-center text-center border border-white/10 bg-[#11151e]">
+              <div class="h-full w-full rounded-2xl premium-card p-6 flex flex-col justify-center items-center text-center border border-white/10 bg-[var(--tz-card-surface)]">
                 
                 <!-- Card Content -->
                 <h3 class="text-xl font-bold text-white mb-3">{{ $t(item.titleKey) }}</h3>

@@ -2,6 +2,22 @@ import { useRuntimeConfig } from 'nuxt/app'
 
 export type MaybeJson = Record<string, unknown> | string | null
 
+export class ApiRequestError extends Error {
+  status: number
+  code?: string
+  details?: unknown
+  payload: MaybeJson
+
+  constructor(message: string, options: { status: number; code?: string; details?: unknown; payload: MaybeJson }) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.status = options.status
+    this.code = options.code
+    this.details = options.details
+    this.payload = options.payload
+  }
+}
+
 const defaultCredentials: RequestCredentials = 'include'
 const csrfCookieName = 'csrf_token'
 const csrfHeaderName = 'X-CSRF-Token'
@@ -87,6 +103,21 @@ const extractMessage = (payload: MaybeJson, fallback: string) => {
   return typeof message === 'string' && message.trim().length > 0 ? message : fallback
 }
 
+const extractCode = (payload: MaybeJson) => {
+  if (!payload || typeof payload === 'string') {
+    return undefined
+  }
+  const code = payload.code
+  return typeof code === 'string' && code.trim().length > 0 ? code : undefined
+}
+
+const extractDetails = (payload: MaybeJson) => {
+  if (!payload || typeof payload === 'string') {
+    return undefined
+  }
+  return payload.details
+}
+
 export function useApiRequest() {
   const config = useRuntimeConfig()
   const baseURL = config.public?.apiBase || '/api/v1'
@@ -116,7 +147,12 @@ export function useApiRequest() {
     const payload = await readResponse(response)
 
     if (!response.ok) {
-      throw new Error(extractMessage(payload, fallbackMessage))
+      throw new ApiRequestError(extractMessage(payload, fallbackMessage), {
+        status: response.status,
+        code: extractCode(payload),
+        details: extractDetails(payload),
+        payload,
+      })
     }
 
     return payload as T

@@ -12,6 +12,7 @@ type AgentProfile struct {
 	AgentID      string         `gorm:"uniqueIndex;size:50;not null" json:"agent_id"`
 	UserID       *uint          `gorm:"index" json:"user_id"`
 	User         *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Groups       []AgentGroup   `gorm:"many2many:customer_service_agent_group_members;joinForeignKey:AgentProfileID;joinReferences:GroupID" json:"groups,omitempty"`
 	Name         string         `gorm:"size:100;not null" json:"name"`
 	Email        string         `gorm:"size:100;index" json:"email"`
 	Avatar       string         `gorm:"size:500" json:"avatar"`

@@ -3,12 +3,23 @@
     <DialogContent size="md" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
       <form class="space-y-5" @submit.prevent="emit('submit')">
         <DialogHeader>
-          <DialogTitle>{{ mode === 'create' ? '创建会员等级' : '编辑会员等级' }}</DialogTitle>
-          <DialogDescription>设置积分区间、会员折扣和积分倍率。</DialogDescription>
+          <DialogTitle>{{ mode === 'create' ? '创建会员等级' : '编辑会员等级规则' }}</DialogTitle>
+          <DialogDescription>
+            {{ mode === 'create' ? '设置积分区间、会员折扣和权益说明。' : '等级名称为系统内置，只维护积分区间、折扣率和权益说明。' }}
+          </DialogDescription>
         </DialogHeader>
         <div class="grid gap-4 sm:grid-cols-2">
           <AdminFormField label="等级名称" required :error="errors.name" class="sm:col-span-2">
-            <Input v-model="form.name" placeholder="请输入等级名称" @input="emit('clear-error', 'name')" />
+            <Input
+              v-if="mode === 'create'"
+              v-model="form.name"
+              placeholder="请输入等级名称"
+              @input="emit('clear-error', 'name')"
+            />
+            <div v-else class="flex h-9 items-center justify-between rounded-xl border bg-muted/30 px-3 text-sm">
+              <span class="font-bold text-foreground">{{ memberLevelLabel(form.name) }}</span>
+              <span class="font-mono text-[11px] uppercase text-muted-foreground">{{ form.name }}</span>
+            </div>
           </AdminFormField>
           <AdminFormField label="最小积分" required :error="errors.min_points">
             <Input v-model.number="form.min_points" type="number" min="0" step="1" @input="emit('clear-error', 'min_points')" />
@@ -18,21 +29,6 @@
           </AdminFormField>
           <AdminFormField label="折扣率（%）">
             <Input v-model.number="form.discount_rate" type="number" min="0" max="100" step="0.01" />
-          </AdminFormField>
-          <AdminFormField label="积分倍数">
-            <Input v-model.number="form.points_multiplier" type="number" min="0.01" step="0.01" />
-          </AdminFormField>
-          <AdminFormField label="排序">
-            <Input v-model.number="form.sort_order" type="number" min="0" step="1" />
-          </AdminFormField>
-          <AdminFormField label="图标">
-            <Input v-model="form.icon" placeholder="图标名称或 URL" />
-          </AdminFormField>
-          <AdminFormField label="颜色" class="sm:col-span-2">
-            <div class="flex gap-2">
-              <input v-model="form.color" type="color" class="h-9 w-12 cursor-pointer rounded-xl border border-dashed bg-transparent p-1" aria-label="选择等级颜色" />
-              <Input v-model="form.color" class="font-mono text-xs uppercase" placeholder="#2563eb" />
-            </div>
           </AdminFormField>
           <AdminFormField label="权益说明" class="sm:col-span-2">
             <Textarea v-model="form.benefits" class="min-h-24" />
@@ -66,4 +62,17 @@ defineProps({
   submitting: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+
+const memberLevelLabel = (name) => {
+  const key = String(name || '').trim().toLowerCase()
+  const labels = {
+    ordinary: '普通',
+    bronze: '铜牌',
+    silver: '银牌',
+    gold: '金牌',
+    platinum: '铂金',
+    diamond: '钻石',
+  }
+  return labels[key] || name || '-'
+}
 </script>

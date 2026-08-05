@@ -2,5 +2,8 @@
   "placeholder": "खोजें...",
   "button": "खोजें",
   "popularTitle": "लोकप्रिय खोजें",
-  "popularAriaLabel": "लोकप्रिय खोजें"
+  "popularAriaLabel": "लोकप्रिय खोजें",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

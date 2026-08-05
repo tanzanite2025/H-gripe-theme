@@ -1,27 +1,22 @@
 /**
- * FAQ Data Registry
+ * Public FAQ storefront data API.
  *
  * The Go backend owns editable page/category metadata and FAQ content for
- * storefront rendering. Static FAQ files are retained only as legacy source
- * data and are not used as a storefront fallback.
+ * storefront rendering. Legacy static FAQ source data intentionally stays out
+ * of this public barrel so storefront code cannot accidentally bypass backend
+ * multilingual content.
  */
 
-export {
-  faqRegistry,
-  faqRoutePathByPageId,
-  getAllFaqData,
-  getAllFaqItems,
-  getFaqData,
-  getFaqDataByRoutePath,
-  getPageFaqId,
-  resolvePageFaqData,
-  resolvePageFaqDataList,
-  type ResolvedPageFaqData
-} from './registry'
 export {
   fetchAllFaqData,
   fetchFaqData,
   fetchFaqDataByRoutePath
 } from './backend'
+export {
+  getPageFaqId,
+  resolvePageFaqData,
+  resolvePageFaqDataList,
+  type ResolvedPageFaqData
+} from './helpers'
 export { normalizeFaqRoutePath, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from './routing'
 export * from './types'

@@ -3,7 +3,7 @@
       <div class="company-section__header flex flex-col items-center justify-center text-center mb-10 w-full px-4">
         <h2 class="sr-only">Hole Patterns</h2>
         <p class="text-[0.95rem] tz-text-secondary max-w-4xl w-full text-center leading-relaxed">
-          TANZANITE offers a variety of rim drilling patterns to meet different hub geometries and lacing requirements.
+          A variety of rim drilling patterns is available to meet different hub geometries and lacing requirements.
         </p>
       </div>
 
@@ -30,7 +30,7 @@
       <!-- Info Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
          <!-- Card 1: Our Support -->
-         <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Our Support</h3>
             <ul class="space-y-3 text-sm tz-text-secondary">
                <li class="flex items-start gap-3">
@@ -53,7 +53,7 @@
          </div>
 
          <!-- Card 2: Customization Services -->
-         <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Customization Services</h3>
             <p class="text-sm tz-text-secondary mb-3">We support customers with tailored drilling solutions based on specific needs:</p>
             <ul class="space-y-3 text-sm tz-text-secondary">
@@ -73,7 +73,7 @@
          </div>
 
          <!-- Card 3: Advantages -->
-         <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Advantages of Automated Machinery</h3>
             <p class="text-sm tz-text-secondary mb-3">All drilling processes are carried out using our <strong class="text-white">self-developed automated machinery</strong>, ensuring:</p>
             <ul class="space-y-3 text-sm tz-text-secondary">
@@ -93,20 +93,20 @@
          </div>
 
          <!-- Card 4: Our Commitment -->
-         <div class="bg-[#11151e] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
             <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Our Commitment</h3>
              <p class="text-sm tz-text-secondary leading-relaxed">
-               By combining automation with customization, TANZANITE provides the most suitable rim drilling solutions for different riders and brands, guaranteeing long-term stability and reliability.
+               By combining automation with customization, we provide suitable rim drilling solutions for different riders and brands, supporting long-term stability and reliability.
              </p>
          </div>
       </div>
 
     <!-- Video Modal -->
-    <div v-if="showHolePatternVideo" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" @click="showHolePatternVideo = false">
-       <button class="absolute top-4 right-4 text-white hover:text-rose-500 transition-colors" @click="showHolePatternVideo = false">
+    <div v-if="showHolePatternVideo" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 tz-mobile-safe-modal-mask" @click="showHolePatternVideo = false">
+       <button class="hole-pattern-video-close absolute text-white hover:text-rose-500 transition-colors" @click="showHolePatternVideo = false">
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
        </button>
-       <div class="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl" @click.stop>
+       <div class="hole-pattern-video-content relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl" @click.stop>
           <video 
             class="w-full h-full object-contain"
             src="/company/ourstory/holepatterns/TANZANITE-automated-wheel-rimhole-drilling–customizable-Patterns_medium.webm?v=2"
@@ -123,3 +123,14 @@ import { ref } from 'vue'
 
 const showHolePatternVideo = ref(false)
 </script>
+
+<style scoped>
+.hole-pattern-video-close {
+  top: max(1rem, calc(1rem + var(--tz-safe-area-top, 0px)));
+  right: max(1rem, calc(1rem + var(--tz-safe-area-right, 0px)));
+}
+
+.hole-pattern-video-content {
+  max-height: var(--tz-mobile-safe-viewport-height, 100vh);
+}
+</style>

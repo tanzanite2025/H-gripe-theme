@@ -23,12 +23,8 @@
 
     <div class="points-grid">
       <div class="points-card">
-        <span>{{ t('member.brief.productDiscount', 'Product Discount') }}</span>
+        <span>{{ t('member.brief.discountRate', 'Discount Rate') }}</span>
         <strong>{{ discountText }}</strong>
-      </div>
-      <div class="points-card">
-        <span>{{ t('member.brief.pointsDiscount', 'Points Discount') }}</span>
-        <strong>{{ pointsDiscountText }}</strong>
       </div>
       <div class="points-card">
         <span>{{ t('member.coupons', 'Coupons') }}</span>
@@ -61,8 +57,7 @@ const props = withDefaults(defineProps<{
   points?: number | string
   tierInfo?: { pct?: number }
   levelDiscounts?: {
-    product?: number
-    points?: number
+    discountRate?: number
   }
   coupons?: number
   pointCards?: number
@@ -85,8 +80,12 @@ const localePath = useLocalePath()
 
 const pointsNumber = computed(() => Number(props.points || 0))
 const progressPct = computed(() => Math.max(0, Math.min(100, Number(props.tierInfo?.pct ?? 0))))
-const discountText = computed(() => `${Number(props.levelDiscounts?.product ?? 0)}%`)
-const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points ?? 0)}%`)
+const formatBenefitNumber = (value: number) => {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return '0'
+  return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(2).replace(/\.?0+$/, '')
+}
+const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDiscounts?.discountRate ?? 0))}%`)
 </script>
 
 <style scoped>
@@ -103,14 +102,14 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
   gap: 0.8rem;
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at top left, rgba(64, 255, 170, 0.16), transparent 52%),
+    radial-gradient(circle at top left, rgba(181, 255, 109, 0.06), transparent 52%),
     rgba(255, 255, 255, 0.055);
   padding: 1rem;
 }
 
 .points-hero p {
   margin: 0;
-  color: rgba(203, 213, 225, 0.78);
+  color: rgba(212, 212, 212, 0.78);
   font-size: var(--tz-type-micro-label);
   font-weight: 700;
   text-transform: uppercase;
@@ -133,7 +132,7 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
 }
 
 .points-hero__score strong {
-  color: #40ffaa;
+  color: #B5FF6D;
   font-size: 1.7rem;
   font-weight: 900;
   line-height: 1;
@@ -141,7 +140,7 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
 
 .points-hero__score span {
   margin-top: 0.25rem;
-  color: rgba(226, 232, 240, 0.75);
+  color: rgba(232, 232, 232, 0.75);
   font-size: var(--tz-type-micro-label);
   font-weight: 700;
 }
@@ -156,21 +155,21 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
   height: 0.52rem;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.22);
+  background: rgba(160, 160, 160, 0.22);
 }
 
 .points-progress__bar span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #40ffaa, #60a5fa);
+  background: #B5FF6D;
 }
 
 .points-progress__meta {
   display: flex;
   justify-content: space-between;
   margin-top: 0.5rem;
-  color: rgba(226, 232, 240, 0.78);
+  color: rgba(232, 232, 232, 0.78);
   font-size: 0.75rem;
 }
 
@@ -197,7 +196,7 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
 }
 
 .points-card span {
-  color: rgba(203, 213, 225, 0.82);
+  color: rgba(212, 212, 212, 0.82);
   font-size: var(--tz-type-micro-label);
   line-height: 1.35;
 }
@@ -238,8 +237,8 @@ const pointsDiscountText = computed(() => `${Number(props.levelDiscounts?.points
 }
 
 .points-actions a {
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  background: #B5FF6D;
+  color: #050505;
 }
 
 .points-actions svg {

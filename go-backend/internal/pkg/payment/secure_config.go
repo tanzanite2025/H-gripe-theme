@@ -138,6 +138,20 @@ func DecryptSecureGatewayConfig(value, masterKey string) (SecureGatewayConfig, e
 	return SecureGatewayConfig{}, fmt.Errorf("payment config decrypt failed")
 }
 
+func DecodeStoredSecureGatewayConfig(value string, provider GatewayType) (SecureGatewayConfig, error) {
+	if !PaymentConfigMasterKeyConfigured() {
+		return SecureGatewayConfig{}, fmt.Errorf("%s is required to read encrypted payment config", PaymentConfigMasterKeyEnv)
+	}
+	config, err := DecryptSecureGatewayConfig(value, PaymentConfigMasterKey())
+	if err != nil {
+		return SecureGatewayConfig{}, err
+	}
+	if config.Provider != provider {
+		return SecureGatewayConfig{}, fmt.Errorf("payment config provider mismatch")
+	}
+	return config, nil
+}
+
 func GatewayConfigFromSecureConfig(config SecureGatewayConfig) *Config {
 	credentials := config.Credentials
 	gatewayConfig := &Config{
@@ -152,7 +166,9 @@ func GatewayConfigFromSecureConfig(config SecureGatewayConfig) *Config {
 	case GatewayStripe:
 		gatewayConfig.APIKey = credentials["api_key"]
 		gatewayConfig.SecretKey = credentials["api_key"]
+		gatewayConfig.PublishableKey = credentials["publishable_key"]
 		gatewayConfig.WebhookSecret = credentials["webhook_secret"]
+		gatewayConfig.ThreeDSecure = NormalizeThreeDSecureMode(credentials["three_ds_mode"])
 	case GatewayPayPal:
 		gatewayConfig.APIKey = credentials["client_id"]
 		gatewayConfig.SecretKey = credentials["secret"]
@@ -163,8 +179,13 @@ func GatewayConfigFromSecureConfig(config SecureGatewayConfig) *Config {
 		gatewayConfig.WebhookSecret = credentials["public_key"]
 	case GatewayWechat:
 		gatewayConfig.APIKey = credentials["mch_id"]
+		gatewayConfig.WechatAppID = credentials["app_id"]
 		gatewayConfig.SecretKey = credentials["private_key_path"]
 		gatewayConfig.WebhookSecret = credentials["merchant_serial"]
+		gatewayConfig.WechatAPIv3Key = credentials["api_v3_key"]
+		gatewayConfig.WechatPayPlatformCertificate = credentials["platform_certificate"]
+		gatewayConfig.WechatPayPlatformPublicKey = credentials["platform_public_key"]
+		gatewayConfig.WechatPayPlatformPublicKeyID = credentials["platform_public_key_id"]
 	}
 
 	return gatewayConfig
@@ -184,15 +205,26 @@ func SecureGatewayConfiguredFields(config SecureGatewayConfig) []string {
 func SecureGatewayCredentialFields(provider GatewayType) []string {
 	switch provider {
 	case GatewayStripe:
-		return []string{"api_key", "webhook_secret"}
+		return []string{"api_key", "publishable_key", "webhook_secret", "three_ds_mode"}
 	case GatewayPayPal:
 		return []string{"client_id", "secret", "webhook_id"}
 	case GatewayAlipay:
 		return []string{"app_id", "private_key", "public_key"}
 	case GatewayWechat:
-		return []string{"mch_id", "app_id", "private_key_path", "merchant_serial", "api_v3_key"}
+		return []string{"mch_id", "app_id", "private_key_path", "merchant_serial", "api_v3_key", "platform_certificate", "platform_public_key", "platform_public_key_id"}
 	default:
 		return nil
+	}
+}
+
+func NormalizeThreeDSecureMode(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "any":
+		return "any"
+	case "challenge":
+		return "challenge"
+	default:
+		return "automatic"
 	}
 }
 

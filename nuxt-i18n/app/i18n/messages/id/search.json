@@ -2,5 +2,8 @@
   "placeholder": "Cari...",
   "button": "Cari",
   "popularTitle": "Pencarian populer",
-  "popularAriaLabel": "Pencarian populer"
+  "popularAriaLabel": "Pencarian populer",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

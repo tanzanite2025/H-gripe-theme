@@ -10,7 +10,10 @@
     >
       <div class="header-mega__shell">
         <div class="header-mega__content">
-          <div class="header-mega__grid">
+          <div
+            class="header-mega__grid"
+            :class="`header-mega__grid--${section.id}`"
+          >
             <article
               v-for="{ card, children, displaySize } in cardsWithChildren"
               :key="card.id"
@@ -18,6 +21,7 @@
               :class="[
                 `header-mega-card--${displaySize}`,
                 `header-mega-card--${card.accent}`,
+                `header-mega-card--card-${card.id}`,
                 { 'header-mega-card--has-children': children.length > 0 },
               ]"
             >
@@ -28,19 +32,24 @@
                 :to="localizedTo(card.to)"
                 @click="scheduleNavigateClose"
               >
-                <span class="header-mega-card__icon" aria-hidden="true">
-                  <Icon :name="card.icon" />
-                </span>
-
                 <span class="header-mega-card__body">
                   <span v-if="shouldShowCardLabel(card)" class="header-mega-card__label">
                     {{ cardLabel(card) }}
                   </span>
                   <span class="header-mega-card__title">{{ cardTitle(card) }}</span>
-                  <span class="header-mega-card__description">{{ card.description }}</span>
+                  <span
+                    v-if="!shouldShowProductCategoryNavigationCardsInsideCard(card)"
+                    class="header-mega-card__description"
+                  >
+                    {{ card.description }}
+                  </span>
                 </span>
 
-                <span class="header-mega-card__arrow" aria-hidden="true">
+                <span
+                  v-if="!children.length && !shouldShowProductCategoryNavigationCardsInsideCard(card)"
+                  class="header-mega-card__arrow"
+                  aria-hidden="true"
+                >
                   <Icon name="lucide:arrow-up-right" />
                 </span>
               </NuxtLink>
@@ -57,12 +66,38 @@
                   :to="localizedTo(child.to)"
                   @click.stop="scheduleNavigateClose"
                 >
-                  {{ childLabel(child) }}
+                  <span class="header-mega-card__child-label">{{ childLabel(child) }}</span>
+                  <span
+                    v-if="childDescription(child)"
+                    class="header-mega-card__child-description"
+                  >
+                    {{ childDescription(child) }}
+                  </span>
+                  <span class="header-mega-card__child-arrow" aria-hidden="true">
+                    <Icon name="lucide:arrow-up-right" />
+                  </span>
                 </NuxtLink>
               </div>
+
+              <ProductCategoryNavigationCards
+                v-if="shouldShowProductCategoryNavigationCardsInsideCard(card)"
+                class="header-mega__product-category-navigation"
+                density="compact"
+                :product-category-display-limit="4"
+                @navigate="scheduleNavigateClose"
+              />
             </article>
           </div>
         </div>
+
+        <button
+          type="button"
+          class="header-mega__collapse"
+          aria-label="Close menu"
+          @click="closePanel"
+        >
+          <Icon name="lucide:chevron-up" />
+        </button>
       </div>
     </div>
   </transition>
@@ -71,6 +106,7 @@
 <script setup lang="ts">
 import { computed, unref } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
+import ProductCategoryNavigationCards from '~/components/shop/ProductCategoryNavigationCards.vue'
 import type { PrimaryMegaNavCard, PrimaryMegaNavSection } from '~/utils/primaryMegaNav'
 import {
   getPrimaryMegaNavCardChildren,
@@ -122,6 +158,10 @@ const scheduleNavigateClose = () => {
   }, 0)
 }
 
+const closePanel = () => {
+  emit('navigate')
+}
+
 const displaySizeForCard = (card: PrimaryMegaNavCard, children: PageSubNavigationChild[]) => {
   if (children.length > 0 && (card.size === 'compact' || card.size === 'standard')) {
     return 'wide'
@@ -145,6 +185,10 @@ const cardsWithChildren = computed(() => {
   })
 })
 
+const shouldShowProductCategoryNavigationCardsInsideCard = (card: PrimaryMegaNavCard) => {
+  return props.section?.id === 'products' && card.id === 'shop'
+}
+
 const cardLabel = (card: PrimaryMegaNavCard) => {
   return t(card.labelKey, card.labelFallback) as string
 }
@@ -165,61 +209,102 @@ const childLabel = (child: PageSubNavigationChild) => {
   if (child.labelKey) return t(child.labelKey, child.fallback || child.label || child.id) as string
   return child.label || child.fallback || child.id
 }
+
+const childDescription = (child: PageSubNavigationChild) => {
+  if (child.descriptionKey) return t(child.descriptionKey, child.description || '') as string
+  return child.description || ''
+}
 </script>
 
 <style scoped>
 .header-mega {
   position: absolute;
   left: 50%;
-  top: calc(100% - 0.4rem);
-  width: min(95vw, 1180px);
+  top: calc(100% - 1px);
+  width: 100vw;
+  max-width: none;
   transform: translateX(-50%);
+  transform-origin: top center;
   z-index: 116;
   pointer-events: auto;
+  will-change: opacity, transform, clip-path;
+  clip-path: inset(0 0 0 0);
 }
 
 .header-mega__shell {
   position: relative;
+  height: min(560px, calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-offset, 92px) - 18px));
   overflow: hidden;
-  border-radius: 30px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background:
-    radial-gradient(circle at top left, rgba(64, 255, 170, 0.16), transparent 34%),
-    radial-gradient(circle at 80% 20%, rgba(107, 115, 255, 0.18), transparent 30%),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-right: 0;
+  border-left: 0;
+  border-top-color: rgba(255, 255, 255, 0.38);
+  border-bottom-color: rgba(255, 255, 255, 0.34);
+  background: #000000;
   box-shadow:
     0 30px 80px -28px rgba(0, 0, 0, 1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .header-mega__shell::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 18px 18px;
-  mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.8), transparent 70%);
-  pointer-events: none;
+  display: none;
 }
 
 .header-mega__shell::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: 29px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  pointer-events: none;
+  display: none;
 }
 
 .header-mega__content {
   position: relative;
   z-index: 1;
-  max-height: min(690px, calc(100vh - var(--site-header-offset, 92px) - 18px));
+  box-sizing: border-box;
+  height: 100%;
+  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 18px;
+  padding: 18px clamp(18px, 4vw, 56px) 54px;
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.7) transparent;
+}
+
+.header-mega__collapse {
+  position: absolute;
+  right: 50%;
+  bottom: 10px;
+  z-index: 4;
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(50%);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #050505;
+  box-shadow: 0 14px 34px -24px rgba(0, 0, 0, 1);
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.header-mega__collapse:hover,
+.header-mega__collapse:focus-visible {
+  border-color: rgba(255, 255, 255, 0.72);
+  transform: translateX(50%) translateY(-1px);
+}
+
+.header-mega__collapse:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.42);
+  outline-offset: 2px;
+}
+
+.header-mega__collapse :deep(svg) {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2.4;
 }
 
 .header-mega__content::-webkit-scrollbar {
@@ -232,17 +317,69 @@ const childLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega__grid {
+  column-count: 4;
+  column-gap: 14px;
+}
+
+.header-mega__grid--products {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-auto-flow: row;
-  align-items: start;
-  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  column-count: initial;
+  column-gap: normal;
+  gap: 14px;
+}
+
+.header-mega__grid--products .header-mega-card {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  break-inside: auto;
+  overflow: hidden;
+}
+
+.header-mega__grid--products .header-mega-card--card-shop {
+  grid-column: 1;
+  grid-row: 1 / -1;
+}
+
+.header-mega__grid--products .header-mega-card--card-membership-and-points {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.header-mega__grid--products .header-mega-card--card-picture-warehouse {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.header-mega__grid--products .header-mega-card--card-spoke-calculator {
+  grid-column: 3;
+  grid-row: 1 / -1;
+}
+
+.header-mega__product-category-navigation {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 var(--mega-card-padding) var(--mega-card-padding);
+}
+
+.header-mega-card--card-shop .header-mega-card__main {
+  flex: 0 0 auto;
+  min-height: 0;
+  padding-bottom: 10px;
 }
 
 .header-mega-card {
-  --mega-accent: #40ffaa;
-  --mega-accent-soft: rgba(64, 255, 170, 0.14);
-  --mega-accent-shadow: rgba(64, 255, 170, 0.35);
+  --mega-accent: #B5FF6D;
+  --mega-accent-soft: rgba(181, 255, 109, 0.14);
+  --mega-accent-shadow: rgba(181, 255, 109, 0.35);
   --mega-card-padding: 16px;
   --mega-card-child-offset: 74px;
 
@@ -250,47 +387,29 @@ const childLabel = (child: PageSubNavigationChild) => {
   display: flex;
   flex-direction: column;
   align-self: start;
+  break-inside: avoid;
   min-width: 0;
-  min-height: 120px;
-  overflow: hidden;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background:
-    linear-gradient(135deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.88)),
-    radial-gradient(circle at top left, var(--mega-accent-soft), transparent 62%);
+  width: 100%;
+  min-height: 132px;
+  margin: 0 0 14px;
+  overflow: visible;
+  vertical-align: top;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: inherit;
-  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 1);
+  box-shadow: none;
   transition:
-    transform 0.22s ease,
-    border-color 0.22s ease,
-    background 0.22s ease,
-    box-shadow 0.22s ease;
+    color 0.22s ease,
+    background 0.22s ease;
 }
 
 .header-mega-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--mega-accent);
-  opacity: 0.78;
-  transition: width 0.22s ease, opacity 0.22s ease;
+  display: none;
 }
 
 .header-mega-card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--mega-accent) 54%, rgba(255, 255, 255, 0.12));
-  background:
-    linear-gradient(135deg, rgba(36, 48, 70, 0.94), rgba(15, 23, 42, 0.96)),
-    radial-gradient(circle at top left, var(--mega-accent-soft), transparent 58%);
-  box-shadow:
-    0 26px 56px -30px rgba(0, 0, 0, 1),
-    0 12px 34px -30px var(--mega-accent-shadow);
-}
-
-.header-mega-card:hover::before {
-  width: 7px;
-  opacity: 1;
+  background: transparent;
 }
 
 .header-mega-card__main {
@@ -300,13 +419,14 @@ const childLabel = (child: PageSubNavigationChild) => {
   flex: 1 1 auto;
   min-width: 0;
   min-height: inherit;
-  gap: 14px;
+  gap: 12px;
   padding: var(--mega-card-padding);
   color: inherit;
   text-decoration: none;
 }
 
 .header-mega-card--has-children .header-mega-card__main {
+  flex: 0 0 auto;
   min-height: 0;
   padding-bottom: 10px;
 }
@@ -316,43 +436,7 @@ const childLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega-card__glow {
-  position: absolute;
-  right: -40px;
-  top: -44px;
-  width: 130px;
-  height: 130px;
-  border-radius: 999px;
-  background: var(--mega-accent-soft);
-  filter: blur(6px);
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.header-mega-card__icon {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--mega-accent-soft);
-  color: var(--mega-accent);
-  transition: all 0.22s ease;
-}
-
-.header-mega-card__icon :deep(svg) {
-  width: 22px;
-  height: 22px;
-}
-
-.header-mega-card:hover .header-mega-card__icon {
-  background: var(--mega-accent);
-  color: #020617;
-  transform: scale(1.05) rotate(-4deg);
-  box-shadow: 0 16px 32px -18px var(--mega-accent-shadow);
+  display: none;
 }
 
 .header-mega-card__body {
@@ -375,10 +459,10 @@ const childLabel = (child: PageSubNavigationChild) => {
 .header-mega-card__title {
   margin-top: 6px;
   color: #f8fafc;
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .header-mega-card__body > .header-mega-card__title:first-child {
@@ -390,8 +474,8 @@ const childLabel = (child: PageSubNavigationChild) => {
   margin-top: 8px;
   overflow: hidden;
   color: rgba(203, 213, 225, 0.72);
-  font-size: var(--tz-type-caption);
-  line-height: 1.45;
+  font-size: 17px;
+  line-height: 1.48;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
@@ -423,26 +507,27 @@ const childLabel = (child: PageSubNavigationChild) => {
 .header-mega-card__children {
   position: relative;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: auto;
-  padding: 0 var(--mega-card-padding) var(--mega-card-padding) var(--mega-card-child-offset);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  margin-top: 0;
+  padding: 0 var(--mega-card-padding) var(--mega-card-padding);
 }
 
 .header-mega-card__child {
-  display: inline-flex;
-  min-height: 28px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) 18px;
+  min-height: 46px;
   align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--mega-accent) 34%, rgba(255, 255, 255, 0.1));
-  background: rgba(15, 23, 42, 0.58);
-  padding: 0.38rem 0.62rem;
+  column-gap: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #000000;
+  padding: 0.62rem 0.9rem;
   color: rgba(241, 245, 249, 0.86);
-  font-size: var(--tz-type-micro-label);
+  font-size: 16px;
   font-weight: 750;
-  line-height: 1;
+  line-height: 1.3;
   text-decoration: none;
   transition:
     border-color 0.18s ease,
@@ -453,64 +538,70 @@ const childLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__child:hover {
   border-color: var(--mega-accent);
-  background: color-mix(in srgb, var(--mega-accent) 16%, rgba(15, 23, 42, 0.76));
+  background: #000000;
   color: #ffffff;
   transform: translateY(-1px);
+}
+
+.header-mega-card__child-label {
+  min-width: 0;
+  color: rgba(248, 250, 252, 0.92);
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-mega-card__child-description {
+  min-width: 0;
+  color: rgba(203, 213, 225, 0.58);
+  font-size: 16px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-mega-card__child:hover .header-mega-card__child-description {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+.header-mega-card__child-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(226, 232, 240, 0.58);
+  transition:
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.header-mega-card__child-arrow :deep(svg) {
+  width: 14px;
+  height: 14px;
+}
+
+.header-mega-card__child:hover .header-mega-card__child-arrow {
+  color: #ffffff;
+  transform: translate(2px, -2px);
 }
 
 .header-mega-card--feature {
   --mega-card-padding: 20px;
   --mega-card-child-offset: 90px;
-
-  grid-column: span 6;
-  min-height: 174px;
-}
-
-.header-mega-card--feature .header-mega-card__icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 20px;
-}
-
-.header-mega-card--feature .header-mega-card__icon :deep(svg) {
-  width: 27px;
-  height: 27px;
-}
-
-.header-mega-card--feature .header-mega-card__title {
-  font-size: 20px;
 }
 
 .header-mega-card--feature .header-mega-card__description {
-  font-size: 13px;
+  font-size: 17px;
   -webkit-line-clamp: 4;
-}
-
-.header-mega-card--wide {
-  grid-column: span 6;
-  min-height: 142px;
-}
-
-.header-mega-card--standard {
-  grid-column: span 3;
-  min-height: 132px;
 }
 
 .header-mega-card--compact {
   --mega-card-child-offset: 68px;
-
-  grid-column: span 3;
-  min-height: 104px;
 }
 
 .header-mega-card--compact .header-mega-card__main {
   align-items: center;
-}
-
-.header-mega-card--compact .header-mega-card__icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
 }
 
 .header-mega-card--compact .header-mega-card__description {
@@ -518,65 +609,92 @@ const childLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega-card--mint {
-  --mega-accent: #40ffaa;
-  --mega-accent-soft: rgba(64, 255, 170, 0.13);
-  --mega-accent-shadow: rgba(64, 255, 170, 0.36);
+  --mega-accent: #B5FF6D;
+  --mega-accent-soft: rgba(181, 255, 109, 0.13);
+  --mega-accent-shadow: rgba(181, 255, 109, 0.36);
 }
 
 .header-mega-card--blue {
-  --mega-accent: #38bdf8;
-  --mega-accent-soft: rgba(56, 189, 248, 0.14);
-  --mega-accent-shadow: rgba(56, 189, 248, 0.34);
+  --mega-accent: #B5FF6D;
+  --mega-accent-soft: rgba(181, 255, 109, 0.13);
+  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
 }
 
 .header-mega-card--violet {
-  --mega-accent: #8b5cf6;
-  --mega-accent-soft: rgba(139, 92, 246, 0.16);
-  --mega-accent-shadow: rgba(139, 92, 246, 0.34);
+  --mega-accent: #B5FF6D;
+  --mega-accent-soft: rgba(181, 255, 109, 0.13);
+  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
 }
 
 .header-mega-card--amber {
-  --mega-accent: #f59e0b;
-  --mega-accent-soft: rgba(245, 158, 11, 0.14);
-  --mega-accent-shadow: rgba(245, 158, 11, 0.32);
+  --mega-accent: #B5FF6D;
+  --mega-accent-soft: rgba(181, 255, 109, 0.13);
+  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
 }
 
 .header-mega-card--rose {
-  --mega-accent: #fb7185;
-  --mega-accent-soft: rgba(251, 113, 133, 0.14);
-  --mega-accent-shadow: rgba(251, 113, 133, 0.32);
+  --mega-accent: #B5FF6D;
+  --mega-accent-soft: rgba(181, 255, 109, 0.13);
+  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
 }
 
 .header-mega-card--slate {
-  --mega-accent: #cbd5e1;
-  --mega-accent-soft: rgba(203, 213, 225, 0.12);
-  --mega-accent-shadow: rgba(203, 213, 225, 0.26);
+  --mega-accent: #B5FF6D;
+  --mega-accent-soft: rgba(181, 255, 109, 0.13);
+  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
 }
 
 .header-mega-enter-active,
 .header-mega-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.24s ease,
+    transform 0.36s cubic-bezier(0.2, 0.8, 0.2, 1),
+    clip-path 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .header-mega-enter-from,
 .header-mega-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(-8px) scale(0.985);
+  transform: translateX(-50%) translateY(-16px);
+  clip-path: inset(0 0 100% 0);
+}
+
+.header-mega-enter-to,
+.header-mega-leave-from {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  clip-path: inset(0 0 0 0);
 }
 
 @media (max-width: 1100px) {
   .header-mega__grid {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    column-count: 2;
   }
 
-  .header-mega-card--feature {
-    grid-column: span 4;
+  .header-mega__grid--products {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    align-items: start;
+    gap: 14px;
   }
 
-  .header-mega-card--wide,
-  .header-mega-card--standard,
-  .header-mega-card--compact {
-    grid-column: span 4;
+  .header-mega__grid--products .header-mega-card--card-shop {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .header-mega__grid--products .header-mega-card--card-membership-and-points,
+  .header-mega__grid--products .header-mega-card--card-picture-warehouse,
+  .header-mega__grid--products .header-mega-card--card-spoke-calculator {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .header-mega__grid--products .header-mega-card {
+    height: auto;
+    overflow: visible;
   }
 }
 
@@ -591,18 +709,25 @@ const childLabel = (child: PageSubNavigationChild) => {
 
   .header-mega__shell {
     height: 100%;
-    border-radius: 22px 22px 0 0;
+    border-radius: 0;
     box-sizing: border-box;
   }
 
   .header-mega__content {
     height: 100%;
     max-height: none;
-    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 10px calc(48px + env(safe-area-inset-bottom));
+  }
+
+  .header-mega__collapse {
+    bottom: calc(10px + env(safe-area-inset-bottom));
   }
 
   .header-mega__grid {
+    display: grid;
     grid-template-columns: 1fr;
+    column-count: initial;
+    column-gap: normal;
     gap: 10px;
   }
 
@@ -613,10 +738,17 @@ const childLabel = (child: PageSubNavigationChild) => {
     grid-column: 1 / -1;
   }
 
+  .header-mega__product-category-navigation {
+    padding: 0 var(--mega-card-padding) var(--mega-card-padding);
+  }
+
   .header-mega-card {
     --mega-card-padding: 12px;
     --mega-card-child-offset: 12px;
     min-height: 0;
+    width: auto;
+    margin: 0;
+    break-inside: auto;
     border-radius: 18px;
   }
 
@@ -624,28 +756,7 @@ const childLabel = (child: PageSubNavigationChild) => {
     gap: 10px;
   }
 
-  .header-mega-card__icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 14px;
-  }
-
-  .header-mega-card__icon :deep(svg) {
-    width: 20px;
-    height: 20px;
-  }
-
-  .header-mega-card--feature .header-mega-card__icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 15px;
-  }
-
-  .header-mega-card--feature .header-mega-card__icon :deep(svg) {
-    width: 22px;
-    height: 22px;
-  }
-
+  .header-mega-card__title,
   .header-mega-card--feature .header-mega-card__title {
     font-size: 17px;
   }
@@ -656,12 +767,32 @@ const childLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega-card__children {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
     padding-top: 0;
   }
 
   .header-mega-card__child {
+    display: inline-flex;
     min-height: 30px;
+    justify-content: center;
+    border-radius: 999px;
     font-size: var(--tz-type-micro-label);
+    line-height: 1;
+  }
+
+  .header-mega-card__child-label {
+    font-size: var(--tz-type-micro-label);
+  }
+
+  .header-mega-card__child-description {
+    display: none;
+  }
+
+  .header-mega-card__child-arrow {
+    display: none;
   }
 }
 </style>

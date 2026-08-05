@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="图库管理" description="管理图片集合、封面和图库内素材">
+    <AdminPageHeader title="品牌图库" description="管理前台展示的品牌图片、封面和图库素材">
       <template #actions>
         <Button v-if="hasPermission('gallery:create')" @click="showCreateDialog">
           <Plus class="size-4" />

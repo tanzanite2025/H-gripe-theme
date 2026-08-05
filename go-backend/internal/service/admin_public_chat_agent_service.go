@@ -16,13 +16,21 @@ type AdminPublicChatAgentService struct {
 }
 
 var (
-	ErrPublicChatAgentUserRequired  = errors.New("public chat agent user_id is required")
-	ErrPublicChatAgentUserNotFound  = errors.New("public chat agent user not found")
-	ErrPublicChatAgentUserInvalid   = errors.New("public chat agent user must be active admin, manager or support")
-	ErrPublicChatAgentIDInvalid     = errors.New("public chat agent_id must be 50 characters or fewer")
-	ErrPublicChatAgentIDTaken       = errors.New("public chat agent_id is already used")
-	ErrPublicChatAgentStatusInvalid = errors.New("public chat agent status must be active or inactive")
-	ErrPublicChatAgentOnlineInvalid = errors.New("public chat agent online_status must be online, busy, away or offline")
+	ErrPublicChatAgentUserRequired     = errors.New("public chat agent user_id is required")
+	ErrPublicChatAgentUserNotFound     = errors.New("public chat agent user not found")
+	ErrPublicChatAgentUserInvalid      = errors.New("public chat agent user must be active admin, manager or support")
+	ErrPublicChatAgentIDInvalid        = errors.New("public chat agent_id must be 50 characters or fewer")
+	ErrPublicChatAgentIDTaken          = errors.New("public chat agent_id is already used")
+	ErrPublicChatAgentStatusInvalid    = errors.New("public chat agent status must be active or inactive")
+	ErrPublicChatAgentOnlineInvalid    = errors.New("public chat agent online_status must be online, busy, away or offline")
+	ErrPublicChatAgentEmailRequired    = errors.New("public chat agent email is required for active profiles")
+	ErrPublicChatAgentWhatsAppRequired = errors.New("public chat agent whatsapp is required for active profiles")
+	ErrPublicChatAgentGroupInvalid     = errors.New("public chat agent group is invalid")
+	ErrPublicChatGroupNameRequired     = errors.New("public chat group name is required")
+	ErrPublicChatGroupCodeInvalid      = errors.New("public chat group code is invalid")
+	ErrPublicChatGroupCodeTaken        = errors.New("public chat group code is already used")
+	ErrPublicChatGroupStatusInvalid    = errors.New("public chat group status must be active or inactive")
+	ErrPublicChatGroupNotFound         = errors.New("public chat group not found")
 )
 
 type AdminPublicChatAgentsOverview struct {
@@ -37,38 +45,52 @@ type AdminPublicChatAgentsSummary struct {
 }
 
 type AdminPublicChatAgent struct {
-	ID             uint      `json:"id"`
-	AgentID        string    `json:"agent_id"`
-	UserID         *uint     `json:"user_id"`
-	Username       string    `json:"username"`
-	Email          string    `json:"email"`
-	DisplayName    string    `json:"display_name"`
-	RawRole        string    `json:"raw_role"`
-	NormalizedRole auth.Role `json:"normalized_role"`
-	UserStatus     string    `json:"user_status"`
-	ProfileStatus  string    `json:"profile_status"`
-	OnlineStatus   string    `json:"online_status"`
-	Avatar         string    `json:"avatar"`
-	WhatsApp       string    `json:"whatsapp"`
-	Exposed        bool      `json:"exposed"`
+	ID             uint                        `json:"id"`
+	AgentID        string                      `json:"agent_id"`
+	UserID         *uint                       `json:"user_id"`
+	Username       string                      `json:"username"`
+	Email          string                      `json:"email"`
+	DisplayName    string                      `json:"display_name"`
+	RawRole        string                      `json:"raw_role"`
+	NormalizedRole auth.Role                   `json:"normalized_role"`
+	UserStatus     string                      `json:"user_status"`
+	ProfileStatus  string                      `json:"profile_status"`
+	OnlineStatus   string                      `json:"online_status"`
+	Avatar         string                      `json:"avatar"`
+	WhatsApp       string                      `json:"whatsapp"`
+	GroupIDs       []uint                      `json:"group_ids"`
+	Groups         []AdminPublicChatAgentGroup `json:"groups"`
+	Exposed        bool                        `json:"exposed"`
+}
+
+type AdminPublicChatAgentGroup struct {
+	ID          uint   `json:"id"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	SortOrder   int    `json:"sort_order"`
 }
 
 type AdminPublicChatAgentCandidate struct {
-	UserID          uint      `json:"user_id"`
-	Username        string    `json:"username"`
-	Email           string    `json:"email"`
-	DisplayName     string    `json:"display_name"`
-	RawRole         string    `json:"raw_role"`
-	NormalizedRole  auth.Role `json:"normalized_role"`
-	UserStatus      string    `json:"user_status"`
-	HasProfile      bool      `json:"has_profile"`
-	ProfileID       *uint     `json:"profile_id"`
-	AgentID         string    `json:"agent_id"`
-	ProfileName     string    `json:"profile_name"`
-	ProfileEmail    string    `json:"profile_email"`
-	ProfileAvatar   string    `json:"profile_avatar"`
-	ProfileWhatsApp string    `json:"profile_whatsapp"`
-	ProfileStatus   string    `json:"profile_status"`
+	UserID              uint                        `json:"user_id"`
+	Username            string                      `json:"username"`
+	Email               string                      `json:"email"`
+	DisplayName         string                      `json:"display_name"`
+	RawRole             string                      `json:"raw_role"`
+	NormalizedRole      auth.Role                   `json:"normalized_role"`
+	UserStatus          string                      `json:"user_status"`
+	HasProfile          bool                        `json:"has_profile"`
+	ProfileID           *uint                       `json:"profile_id"`
+	AgentID             string                      `json:"agent_id"`
+	ProfileName         string                      `json:"profile_name"`
+	ProfileEmail        string                      `json:"profile_email"`
+	ProfileAvatar       string                      `json:"profile_avatar"`
+	ProfileWhatsApp     string                      `json:"profile_whatsapp"`
+	ProfileStatus       string                      `json:"profile_status"`
+	ProfileOnlineStatus string                      `json:"profile_online_status"`
+	ProfileGroupIDs     []uint                      `json:"profile_group_ids"`
+	ProfileGroups       []AdminPublicChatAgentGroup `json:"profile_groups"`
 }
 
 type AdminPublicChatAgentUpsertInput struct {
@@ -80,6 +102,16 @@ type AdminPublicChatAgentUpsertInput struct {
 	WhatsApp     string `json:"whatsapp"`
 	Status       string `json:"status"`
 	OnlineStatus string `json:"online_status"`
+	GroupIDs     []uint `json:"group_ids"`
+}
+
+type AdminPublicChatGroupUpsertInput struct {
+	ID          uint   `json:"id"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	SortOrder   int    `json:"sort_order"`
 }
 
 func NewAdminPublicChatAgentService(userRepo *repository.UserRepository) *AdminPublicChatAgentService {
@@ -111,6 +143,21 @@ func (s *AdminPublicChatAgentService) ListPublicChatAgents(limit int) (*AdminPub
 	if len(agents) == 0 {
 		warnings = append(warnings, "当前未配置 public chat 客服 profile")
 	}
+	for _, item := range items {
+		if !item.Exposed {
+			continue
+		}
+		name := strings.TrimSpace(item.DisplayName)
+		if name == "" {
+			name = fmt.Sprintf("Profile #%d", item.ID)
+		}
+		if strings.TrimSpace(item.Email) == "" {
+			warnings = append(warnings, fmt.Sprintf("%s 缺少公开邮箱，前台客服选择弹层无法显示邮箱入口", name))
+		}
+		if strings.TrimSpace(item.WhatsApp) == "" {
+			warnings = append(warnings, fmt.Sprintf("%s 缺少 WhatsApp，前台客服选择弹层无法显示 WhatsApp 入口", name))
+		}
+	}
 
 	return &AdminPublicChatAgentsOverview{
 		Summary: AdminPublicChatAgentsSummary{
@@ -120,6 +167,18 @@ func (s *AdminPublicChatAgentService) ListPublicChatAgents(limit int) (*AdminPub
 		Agents:   items,
 		Warnings: warnings,
 	}, nil
+}
+
+func (s *AdminPublicChatAgentService) ListPublicChatGroups(limit int) ([]AdminPublicChatAgentGroup, error) {
+	groups, err := s.userRepo.FindCustomerServiceAgentGroups(limit, true)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]AdminPublicChatAgentGroup, 0, len(groups))
+	for _, group := range groups {
+		items = append(items, makeAdminPublicChatAgentGroup(group))
+	}
+	return items, nil
 }
 
 func (s *AdminPublicChatAgentService) ListPublicChatAgentCandidates(limit int) ([]AdminPublicChatAgentCandidate, error) {
@@ -164,6 +223,9 @@ func (s *AdminPublicChatAgentService) ListPublicChatAgentCandidates(limit int) (
 			item.ProfileAvatar = profile.Avatar
 			item.ProfileWhatsApp = profile.WhatsApp
 			item.ProfileStatus = profile.Status
+			item.ProfileOnlineStatus = profile.OnlineStatus
+			item.ProfileGroupIDs = adminPublicChatAgentGroupIDs(profile.Groups)
+			item.ProfileGroups = makeAdminPublicChatAgentGroups(profile.Groups)
 		}
 		candidates = append(candidates, item)
 	}
@@ -237,6 +299,15 @@ func (s *AdminPublicChatAgentService) UpsertPublicChatAgentProfile(input AdminPu
 	if email == "" {
 		email = strings.TrimSpace(agentUser.Email)
 	}
+	whatsApp := strings.TrimSpace(input.WhatsApp)
+	if status == "active" {
+		if email == "" {
+			return nil, false, ErrPublicChatAgentEmailRequired
+		}
+		if whatsApp == "" {
+			return nil, false, ErrPublicChatAgentWhatsAppRequired
+		}
+	}
 
 	created := existingProfile == nil
 	profile := existingProfile
@@ -250,7 +321,7 @@ func (s *AdminPublicChatAgentService) UpsertPublicChatAgentProfile(input AdminPu
 	profile.Name = name
 	profile.Email = email
 	profile.Avatar = strings.TrimSpace(input.Avatar)
-	profile.WhatsApp = strings.TrimSpace(input.WhatsApp)
+	profile.WhatsApp = whatsApp
 	profile.Status = status
 	profile.OnlineStatus = onlineStatus
 
@@ -262,9 +333,91 @@ func (s *AdminPublicChatAgentService) UpsertPublicChatAgentProfile(input AdminPu
 		return nil, false, err
 	}
 
-	profile.User = agentUser
-	item := makeAdminPublicChatAgent(*profile)
+	if err := s.userRepo.ReplaceCustomerServiceAgentProfileGroups(profile.ID, input.GroupIDs); err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, false, ErrPublicChatAgentGroupInvalid
+		}
+		return nil, false, err
+	}
+
+	savedProfile, err := s.userRepo.FindCustomerServiceAgentProfileByUserIDWithGroups(input.UserID)
+	if err != nil {
+		return nil, false, err
+	}
+	item := makeAdminPublicChatAgent(*savedProfile)
 	return &item, created, nil
+}
+
+func (s *AdminPublicChatAgentService) UpsertPublicChatGroup(input AdminPublicChatGroupUpsertInput) (*AdminPublicChatAgentGroup, bool, error) {
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		return nil, false, ErrPublicChatGroupNameRequired
+	}
+
+	code := normalizePublicChatGroupCode(input.Code)
+	if code == "" {
+		code = normalizePublicChatGroupCode(name)
+	}
+	if !validPublicChatGroupCode(code) {
+		return nil, false, ErrPublicChatGroupCodeInvalid
+	}
+
+	status, err := normalizePublicChatGroupStatus(input.Status)
+	if err != nil {
+		return nil, false, err
+	}
+
+	var group *user.AgentGroup
+	created := input.ID == 0
+	if created {
+		group = &user.AgentGroup{}
+	} else {
+		group, err = s.userRepo.FindCustomerServiceAgentGroupByID(input.ID)
+		if err != nil {
+			if repository.IsRecordNotFound(err) {
+				return nil, false, ErrPublicChatGroupNotFound
+			}
+			return nil, false, err
+		}
+	}
+
+	conflict, err := s.userRepo.FindCustomerServiceAgentGroupByCode(code)
+	if err != nil && !repository.IsRecordNotFound(err) {
+		return nil, false, err
+	}
+	if err == nil && conflict.ID != group.ID {
+		return nil, false, ErrPublicChatGroupCodeTaken
+	}
+
+	group.Code = code
+	group.Name = name
+	group.Description = strings.TrimSpace(input.Description)
+	group.Status = status
+	group.SortOrder = input.SortOrder
+
+	if created {
+		if err := s.userRepo.CreateCustomerServiceAgentGroup(group); err != nil {
+			return nil, false, err
+		}
+	} else if err := s.userRepo.UpdateCustomerServiceAgentGroup(group); err != nil {
+		return nil, false, err
+	}
+
+	item := makeAdminPublicChatAgentGroup(*group)
+	return &item, created, nil
+}
+
+func (s *AdminPublicChatAgentService) DeletePublicChatGroup(id uint) error {
+	if id == 0 {
+		return ErrPublicChatGroupNotFound
+	}
+	if _, err := s.userRepo.FindCustomerServiceAgentGroupByID(id); err != nil {
+		if repository.IsRecordNotFound(err) {
+			return ErrPublicChatGroupNotFound
+		}
+		return err
+	}
+	return s.userRepo.DeleteCustomerServiceAgentGroup(id)
 }
 
 func isPublicChatAgentExposed(agent user.AgentProfile) bool {
@@ -326,8 +479,39 @@ func makeAdminPublicChatAgent(agent user.AgentProfile) AdminPublicChatAgent {
 		OnlineStatus:   agent.OnlineStatus,
 		Avatar:         agent.Avatar,
 		WhatsApp:       agent.WhatsApp,
+		GroupIDs:       adminPublicChatAgentGroupIDs(agent.Groups),
+		Groups:         makeAdminPublicChatAgentGroups(agent.Groups),
 		Exposed:        isPublicChatAgentExposed(agent),
 	}
+}
+
+func makeAdminPublicChatAgentGroups(groups []user.AgentGroup) []AdminPublicChatAgentGroup {
+	items := make([]AdminPublicChatAgentGroup, 0, len(groups))
+	for _, group := range groups {
+		items = append(items, makeAdminPublicChatAgentGroup(group))
+	}
+	return items
+}
+
+func makeAdminPublicChatAgentGroup(group user.AgentGroup) AdminPublicChatAgentGroup {
+	return AdminPublicChatAgentGroup{
+		ID:          group.ID,
+		Code:        group.Code,
+		Name:        group.Name,
+		Description: group.Description,
+		Status:      group.Status,
+		SortOrder:   group.SortOrder,
+	}
+}
+
+func adminPublicChatAgentGroupIDs(groups []user.AgentGroup) []uint {
+	ids := make([]uint, 0, len(groups))
+	for _, group := range groups {
+		if group.ID > 0 {
+			ids = append(ids, group.ID)
+		}
+	}
+	return ids
 }
 
 func displayNameFromAdminUser(item user.User) string {
@@ -369,4 +553,37 @@ func normalizePublicChatAgentOnlineStatus(status string) (string, error) {
 	default:
 		return "", ErrPublicChatAgentOnlineInvalid
 	}
+}
+
+func normalizePublicChatGroupStatus(status string) (string, error) {
+	status = strings.ToLower(strings.TrimSpace(status))
+	if status == "" {
+		status = "active"
+	}
+	switch status {
+	case "active", "inactive":
+		return status, nil
+	default:
+		return "", ErrPublicChatGroupStatusInvalid
+	}
+}
+
+func normalizePublicChatGroupCode(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.ReplaceAll(value, " ", "_")
+	value = strings.ReplaceAll(value, "-", "_")
+	return value
+}
+
+func validPublicChatGroupCode(value string) bool {
+	if value == "" || len([]rune(value)) > 50 {
+		return false
+	}
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			continue
+		}
+		return false
+	}
+	return true
 }

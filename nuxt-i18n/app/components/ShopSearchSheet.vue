@@ -8,11 +8,9 @@
     >
       <div
         v-if="isOpen"
-        class="fixed inset-0 z-[14000] flex items-end justify-center p-0 md:p-4"
+        class="fixed inset-0 z-[14000] flex items-end justify-center p-0 tz-mobile-safe-modal-mask"
         @click.self="close"
       >
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="close"></div>
-
         <Transition
           enter-active-class="transition-all duration-300 ease-out"
           leave-active-class="transition-all duration-200 ease-in"
@@ -22,35 +20,45 @@
           leave-to-class="translate-y-full opacity-0"
           appear
         >
-          <section
+          <div
             v-if="isOpen"
-            class="sidebar-panel relative pointer-events-auto w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] bg-slate-950/80 backdrop-blur-xl border-2 border-[#6b73ff]/40 rounded-2xl shadow-[0_0_30px_rgba(107,115,255,0.6)] flex flex-col overflow-hidden"
-            aria-modal="true"
-            role="dialog"
-            :aria-label="$t('sidebar.searchProducts', 'Search Products')"
+            class="shop-search-sheet-shell w-full"
           >
-            <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
+            <section
+              class="shop-search-sheet-panel relative pointer-events-auto w-full max-w-none tz-mobile-safe-full-height md:h-[82vh] md:max-h-[900px] bg-black rounded-none flex flex-col overflow-hidden"
+              :class="{ 'shop-search-sheet-panel--dragging': isDraggingPanel }"
+              ref="panelRef"
+              aria-modal="true"
+              role="dialog"
+              :aria-label="$t('sidebar.searchProducts', 'Search Products')"
+            >
+              <div
+                class="shop-search-sheet-drag-edge absolute inset-x-0 top-0 z-30 h-4"
+                aria-hidden="true"
+                @pointerdown="startPanelDrag"
+              ></div>
 
-            <header class="relative z-10 flex items-center justify-between px-4 md:px-6 py-4 border-b border-white/10">
-              <h2 class="text-lg md:text-xl font-semibold text-white">
-                {{ $t('sidebar.searchProducts', 'Search Products') }}
-              </h2>
-              <button
-                type="button"
-                class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
-                :aria-label="$t('common.close', 'Close')"
-                @click="close"
-              >
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </header>
+              <header class="relative z-10 flex items-center justify-between px-4 md:px-6 py-4">
+                <h2 class="text-lg md:text-xl font-semibold text-[#B5FF6D]">
+                  {{ $t('sidebar.searchProducts', 'Search Products') }}
+                </h2>
+                <button
+                  type="button"
+                  class="tz-global-close-btn"
+                  :aria-label="$t('common.close', 'Close')"
+                  @click="close"
+                >
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </header>
 
-            <div class="relative z-10 flex-1 overflow-y-auto px-4 md:px-6 py-4">
-              <ProductSearchPanel @search="handleSearch" />
-            </div>
-          </section>
+              <div class="relative z-10 flex-1 overflow-y-auto px-4 md:px-6 py-4">
+                <ProductSearchPanel @search="handleSearch" />
+              </div>
+            </section>
+          </div>
         </Transition>
       </div>
     </Transition>
@@ -58,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import ProductSearchPanel from '~/components/ProductSearchPanel.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
@@ -79,6 +87,79 @@ watch(
 const handleSearch = async (payload: ShopSearchPayload) => {
   await submit(payload)
 }
+
+const dragOffsetY = ref(0)
+const isDraggingPanel = ref(false)
+const panelRef = ref<HTMLElement | null>(null)
+let activeDragPointerId: number | null = null
+let dragStartY = 0
+
+const setPanelDragOffset = (offset: number) => {
+  dragOffsetY.value = offset
+  panelRef.value?.style.setProperty('--shop-search-sheet-drag-y', `${offset}px`)
+}
+
+const stopPanelDragListeners = () => {
+  if (typeof window === 'undefined') return
+  window.removeEventListener('pointermove', onPanelDragMove)
+  window.removeEventListener('pointerup', finishPanelDrag)
+  window.removeEventListener('pointercancel', cancelPanelDrag)
+}
+
+const resetPanelDrag = () => {
+  stopPanelDragListeners()
+  activeDragPointerId = null
+  dragStartY = 0
+  setPanelDragOffset(0)
+  panelRef.value?.style.removeProperty('transition')
+  isDraggingPanel.value = false
+}
+
+const onPanelDragMove = (event: PointerEvent) => {
+  if (activeDragPointerId !== null && event.pointerId !== activeDragPointerId) return
+
+  event.preventDefault()
+  const maxOffset = typeof window === 'undefined' ? 360 : window.innerHeight * 0.65
+  setPanelDragOffset(Math.min(Math.max(event.clientY - dragStartY, 0), maxOffset))
+}
+
+const finishPanelDrag = (event: PointerEvent) => {
+  if (activeDragPointerId !== null && event.pointerId !== activeDragPointerId) return
+
+  const shouldClose = dragOffsetY.value > 96
+  resetPanelDrag()
+
+  if (shouldClose) {
+    close()
+  }
+}
+
+const cancelPanelDrag = () => {
+  resetPanelDrag()
+}
+
+const startPanelDrag = (event: PointerEvent) => {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  if (typeof window === 'undefined') return
+
+  event.preventDefault()
+  const target = event.currentTarget as HTMLElement | null
+  target?.setPointerCapture?.(event.pointerId)
+  activeDragPointerId = event.pointerId
+  dragStartY = event.clientY
+  panelRef.value?.style.setProperty('transition', 'none')
+  setPanelDragOffset(0)
+  isDraggingPanel.value = true
+  window.addEventListener('pointermove', onPanelDragMove)
+  window.addEventListener('pointerup', finishPanelDrag)
+  window.addEventListener('pointercancel', cancelPanelDrag)
+}
+
+watch(isOpen, (open) => {
+  if (!open) {
+    resetPanelDrag()
+  }
+})
 
 const onKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
@@ -104,8 +185,57 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_SHOP_SEARCH, false)
+  resetPanelDrag()
   if (typeof window === 'undefined') return
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('ui:popup-open', onGlobalPopup as EventListener)
 })
 </script>
+
+<style scoped>
+.shop-search-sheet-panel {
+  height: var(--tz-mobile-safe-viewport-height, 100dvh);
+  max-height: var(--tz-mobile-safe-viewport-height, 100dvh);
+  background: #000000;
+  background-image: none;
+  border: 1px solid rgba(181, 255, 109, 0.22);
+  transform: translateY(var(--shop-search-sheet-drag-y, 0));
+  transition: transform 0.2s ease;
+  will-change: transform;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.78);
+}
+
+.shop-search-sheet-panel::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 1px;
+  content: '';
+  background: #B5FF6D;
+  opacity: 0.62;
+}
+
+.shop-search-sheet-panel--dragging {
+  transition: none !important;
+}
+
+.shop-search-sheet-drag-edge {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.shop-search-sheet-panel--dragging .shop-search-sheet-drag-edge {
+  cursor: grabbing;
+}
+
+@media (min-width: 768px) {
+  .shop-search-sheet-panel {
+    height: 82vh;
+    max-height: 900px;
+  }
+}
+</style>

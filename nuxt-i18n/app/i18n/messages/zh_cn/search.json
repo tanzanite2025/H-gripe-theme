@@ -2,5 +2,8 @@
   "placeholder": "搜索...",
   "button": "搜索",
   "popularTitle": "热门搜索",
-  "popularAriaLabel": "热门搜索"
+  "popularAriaLabel": "热门搜索",
+  "recommendedProducts": "推荐产品",
+  "recommendedProductsTitle": "从热门选择开始",
+  "recommendedCategoriesTitle": "按类型浏览"
 }

@@ -75,6 +75,11 @@ const (
 	PermGalleryEdit   Permission = "gallery:edit"
 	PermGalleryDelete Permission = "gallery:delete"
 
+	PermMediaView   Permission = "media:view"
+	PermMediaCreate Permission = "media:create"
+	PermMediaEdit   Permission = "media:edit"
+	PermMediaDelete Permission = "media:delete"
+
 	PermSubscriptionView   Permission = "subscription:view"
 	PermSubscriptionEdit   Permission = "subscription:edit"
 	PermSubscriptionDelete Permission = "subscription:delete"
@@ -91,6 +96,10 @@ const (
 	PermMarketingCreate Permission = "marketing:create"
 	PermMarketingEdit   Permission = "marketing:edit"
 	PermMarketingDelete Permission = "marketing:delete"
+
+	PermMerchantView Permission = "merchant:view"
+	PermMerchantEdit Permission = "merchant:edit"
+	PermMerchantSync Permission = "merchant:sync"
 
 	PermShippingView     Permission = "shipping:view"
 	PermShippingCreate   Permission = "shipping:create"
@@ -115,9 +124,11 @@ var RolePermissions = map[Role][]Permission{
 		PermContentView, PermContentCreate, PermContentEdit, PermContentDelete,
 		PermFAQView, PermFAQCreate, PermFAQEdit, PermFAQDelete,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit, PermGalleryDelete,
+		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete,
 		PermSubscriptionView, PermSubscriptionEdit, PermSubscriptionDelete, PermSubscriptionExport,
 		PermTicketView, PermTicketCreate, PermTicketEdit, PermTicketAssign, PermTicketClose, PermTicketDelete,
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
+		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingDelete, PermShippingTracking,
 		PermSettingsView, PermSettingsEdit,
 		PermLogsView,
@@ -130,9 +141,11 @@ var RolePermissions = map[Role][]Permission{
 		PermContentView, PermContentCreate, PermContentEdit, PermContentDelete,
 		PermFAQView, PermFAQCreate, PermFAQEdit, PermFAQDelete,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit, PermGalleryDelete,
+		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete,
 		PermSubscriptionView, PermSubscriptionEdit, PermSubscriptionExport,
 		PermTicketView, PermTicketCreate, PermTicketEdit, PermTicketAssign, PermTicketClose,
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
+		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingTracking,
 		PermSettingsView,
 		PermLogsView,
@@ -143,11 +156,14 @@ var RolePermissions = map[Role][]Permission{
 		PermContentView, PermContentCreate, PermContentEdit,
 		PermFAQView, PermFAQCreate, PermFAQEdit,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit,
+		PermMediaView, PermMediaCreate, PermMediaEdit,
+		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 	},
 	RoleSupport: {
 		PermOrderView,
 		PermUserView,
 		PermTicketView, PermTicketCreate, PermTicketEdit, PermTicketClose,
+		PermMediaView,
 		PermSubscriptionView,
 		PermShippingView, PermShippingTracking,
 	},
@@ -158,6 +174,7 @@ var RolePermissions = map[Role][]Permission{
 		PermContentView,
 		PermFAQView,
 		PermGalleryView,
+		PermMediaView,
 		PermSubscriptionView,
 		PermTicketView,
 		PermMarketingView,

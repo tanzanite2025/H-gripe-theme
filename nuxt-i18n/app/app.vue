@@ -16,7 +16,7 @@
       <NuxtPage />
     </NuxtLayout>
     
-    <!-- 购物车和结账弹窗 -->
+    <!-- 购物车与搜索面板 -->
     <LazyCartDrawer />
     <LazyCheckoutModal />
     <LazyShopSearchSheet />

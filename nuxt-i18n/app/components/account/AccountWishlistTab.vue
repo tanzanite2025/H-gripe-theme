@@ -77,22 +77,11 @@ defineEmits<{
 
 interface ProductLike {
   id?: number | string
-  product_id?: number | string
-  variant_id?: number | string | null
-  title?: string
   name?: string
   slug?: string
-  sku?: string
   thumbnail?: string
-  featured_image?: string
-  image?: string
   price?: number | string
   sale_price?: number | string | null
-  regular_price?: number | string
-  prices?: {
-    sale?: number | string
-    regular?: number | string
-  }
 }
 
 const { t } = useI18n()
@@ -114,22 +103,17 @@ const toNumber = (value: unknown): number | null => {
 
 const productId = (item: WishlistItem): number | null => {
   const product = productOf(item)
-  return toNumber(product.id ?? product.product_id ?? item.product_id)
-}
-
-const variantId = (item: WishlistItem): number | null => {
-  const product = productOf(item)
-  return toNumber(product.variant_id)
+  return toNumber(product.id ?? item.product_id)
 }
 
 const productTitle = (item: WishlistItem) => {
   const product = productOf(item)
-  return product.title || product.name || t('wishlistDrawer.productFallback', 'Product')
+  return product.name || t('wishlistDrawer.productFallback', 'Product')
 }
 
 const productImage = (item: WishlistItem) => {
   const product = productOf(item)
-  return product.thumbnail || product.featured_image || product.image || ''
+  return product.thumbnail || ''
 }
 
 const productSlug = (item: WishlistItem) => {
@@ -144,7 +128,7 @@ const productPath = (item: WishlistItem) => {
 
 const rawPrice = (item: WishlistItem) => {
   const product = productOf(item)
-  return toNumber(product.prices?.sale ?? product.sale_price ?? product.price ?? product.prices?.regular ?? product.regular_price)
+  return toNumber(product.sale_price ?? product.price)
 }
 
 const displayPrice = (item: WishlistItem) => {
@@ -172,11 +156,9 @@ const addWishlistItemToCart = (item: WishlistItem) => {
   const result = addToCart({
     id,
     product_id: id,
-    variant_id: variantId(item),
     title: productTitle(item),
     name: productTitle(item),
     slug: product.slug || '',
-    sku: product.sku || '',
     price,
     sale_price: toNumber(product.sale_price),
     thumbnail: productImage(item),
@@ -231,7 +213,7 @@ watch(
 }
 
 .tab-head p {
-  color: rgba(103, 232, 249, 0.9);
+  color: rgba(181, 255, 109, 0.9);
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -278,7 +260,7 @@ watch(
 
 .account-loading,
 .account-empty span {
-  color: rgba(226, 232, 240, 0.78);
+  color: rgba(232, 232, 232, 0.78);
   font-size: 0.82rem;
 }
 
@@ -296,7 +278,7 @@ watch(
 .account-empty :deep(svg) {
   width: 2.2rem;
   height: 2.2rem;
-  color: rgba(64, 255, 170, 0.72);
+  color: rgba(181, 255, 109, 0.72);
 }
 
 .account-empty strong {
@@ -307,8 +289,8 @@ watch(
 .account-empty a {
   margin-top: 0.3rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  background: #B5FF6D;
+  color: #050505;
   padding: 0.65rem 1rem;
   font-size: 0.8rem;
   font-weight: 850;
@@ -343,7 +325,7 @@ watch(
   overflow: hidden;
   border-radius: 0.95rem;
   background: rgba(255, 255, 255, 0.07);
-  color: rgba(226, 232, 240, 0.72);
+  color: rgba(232, 232, 232, 0.72);
 }
 
 .account-product-card__image img {
@@ -376,7 +358,7 @@ watch(
 .account-product-card__price {
   display: block;
   margin-top: 0.2rem;
-  color: #40ffaa;
+  color: #B5FF6D;
   font-size: 0.79rem;
   font-weight: 850;
 }
@@ -391,7 +373,7 @@ watch(
 .account-product-card__actions button {
   min-height: 1.9rem;
   border-radius: 999px;
-  background: rgba(64, 255, 170, 0.16);
+  background: rgba(181, 255, 109, 0.16);
   color: #ffffff;
   padding: 0 0.72rem;
   font-size: var(--tz-type-micro-label);
@@ -400,14 +382,14 @@ watch(
 
 .account-product-card__actions .account-product-card__ghost {
   background: rgba(255, 255, 255, 0.08);
-  color: rgba(226, 232, 240, 0.82);
+  color: rgba(232, 232, 232, 0.82);
 }
 
 .account-toast {
   margin: 0;
   border-radius: 999px;
-  background: rgba(64, 255, 170, 0.12);
-  color: #bfffe3;
+  background: rgba(181, 255, 109, 0.12);
+  color: #e7ffd1;
   padding: 0.6rem 0.8rem;
   text-align: center;
   font-size: 0.75rem;

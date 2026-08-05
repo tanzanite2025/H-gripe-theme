@@ -6,7 +6,7 @@
     <figure v-if="canShowImage" class="faq-answer-content__media">
       <img
         :src="imageUrl"
-        :alt="imageAlt || 'FAQ illustration'"
+        :alt="imageAlt || t('faq.ui.illustrationAlt')"
         width="800"
         height="800"
         loading="lazy"
@@ -19,6 +19,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   answer: string

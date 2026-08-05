@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"tanzanite/internal/domain/product"
@@ -67,6 +68,29 @@ func TestCartServiceKeepsProductVariantsAsSeparateLines(t *testing.T) {
 	assert.InDelta(t, 100, itemsByVariant[blackVariant.ID].Price, 0.001)
 	assert.Equal(t, 2, itemsByVariant[whiteVariant.ID].Quantity)
 	assert.InDelta(t, 120, itemsByVariant[whiteVariant.ID].Price, 0.001)
+}
+
+func TestCartSummaryReadDoesNotCreateMissingAnonymousCart(t *testing.T) {
+	db, cartService := newTestCartService(t)
+
+	summary, err := cartService.GetCartSummary(nil, "")
+	require.NoError(t, err)
+	require.NotNil(t, summary)
+	assert.Zero(t, summary.ItemCount)
+	assert.Zero(t, summary.Total)
+	assert.Empty(t, summary.Items)
+
+	var cartCount int64
+	require.NoError(t, db.Model(&product.Cart{}).Count(&cartCount).Error)
+	assert.EqualValues(t, 0, cartCount)
+}
+
+func TestAnonymousCartCreationRequiresSessionID(t *testing.T) {
+	_, cartService := newTestCartService(t)
+
+	cart, err := cartService.GetOrCreateCart(nil, "")
+	require.Nil(t, cart)
+	assert.True(t, errors.Is(err, ErrCartNotFound))
 }
 
 func newTestCartService(t *testing.T) (*gorm.DB, *CartService) {

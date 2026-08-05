@@ -1,6 +1,6 @@
 <template>
   <!-- Tire width -> rim internal width helper -->
-  <div class="mt-5 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)] text-center">
+  <div class="tire-rim-helper-card mt-5 rounded-2xl bg-[var(--tz-form-panel-surface)] p-4 text-center">
     <h3 class="mb-2 text-sm font-semibold tz-text-primary">
       Tire width to rim internal width helper
     </h3>
@@ -23,7 +23,7 @@
           max="130"
           step="1"
           placeholder="e.g. 28 or 57"
-          class="mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs tz-text-primary shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0"
+          class="tire-rim-helper__input mt-1 w-full rounded-md bg-[var(--tz-form-control-surface)] px-2 py-1.5 text-xs tz-text-primary outline-none focus:ring-0"
         />
       </div>
 
@@ -32,24 +32,20 @@
           Rim type
         </span>
         <div
-          class="inline-flex rounded-full bg-slate-800/80 p-0.5 shadow-[2px_2px_6px_rgba(0,0,0,0.85)]"
+          class="tire-rim-helper__toggle-group inline-flex rounded-full bg-[var(--tz-form-control-surface)] p-0.5"
         >
           <button
             type="button"
-            class="rounded-full px-3 py-1 tz-caption transition-colors"
-            :class="rimType === 'hookless'
-              ? 'bg-sky-400 text-slate-900'
-              : 'tz-text-secondary hover:text-slate-50'"
+            class="tire-rim-helper__toggle rounded-full px-3 py-1 tz-caption transition-colors"
+            :class="{ 'tire-rim-helper__toggle--active': rimType === 'hookless' }"
             @click="rimType = 'hookless'"
           >
             Hookless (TSS)
           </button>
           <button
             type="button"
-            class="rounded-full px-3 py-1 tz-caption transition-colors"
-            :class="rimType === 'hooked'
-              ? 'bg-sky-400 text-slate-900'
-              : 'tz-text-secondary hover:text-slate-50'"
+            class="tire-rim-helper__toggle rounded-full px-3 py-1 tz-caption transition-colors"
+            :class="{ 'tire-rim-helper__toggle--active': rimType === 'hooked' }"
             @click="rimType = 'hooked'"
           >
             Hooked (TC)
@@ -71,7 +67,7 @@
         v-else
         class="text-xs tz-text-secondary"
       >
-        <p class="font-semibold text-sky-300">
+        <p class="tire-rim-helper__result font-semibold">
           Recommended rim internal width:
           {{ tireRimSuggestion.minRim }} - {{ tireRimSuggestion.maxRim }} mm
         </p>
@@ -85,7 +81,7 @@
     <div v-if="!hideSearchButton" class="mt-4 flex justify-center">
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
+        class="tire-rim-helper__search inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold shadow-[0_4px_14px_rgba(0,0,0,0.9)] transition-all"
         @click="() => openShopSearch()"
       >
         Search for suitable width rims
@@ -209,3 +205,77 @@ const tireRimSuggestion = computed<TireRimSuggestion | null>(() => {
 })
 </script>
 
+<style scoped>
+.tire-rim-helper-card {
+  border: 1px solid rgba(181, 255, 109, 0.14);
+  background-color: var(--tz-form-panel-surface) !important;
+  background-image: none !important;
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.78);
+}
+
+.tire-rim-helper__input {
+  border: 1px solid var(--tz-form-control-border);
+  background-color: var(--tz-form-control-surface) !important;
+  background-image: none !important;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.72);
+}
+
+.tire-rim-helper__input:focus {
+  border-color: var(--tz-brand-primary);
+}
+
+.tire-rim-helper__toggle-group {
+  background-color: var(--tz-form-control-surface) !important;
+  background-image: none !important;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.72);
+}
+
+.tire-rim-helper__result {
+  color: var(--tz-brand-primary);
+}
+
+.tire-rim-helper__toggle {
+  border: 1px solid rgba(181, 255, 109, 0.35);
+  background-color: #171d13;
+  background-image: none;
+  color: var(--tz-text-secondary);
+}
+
+.tire-rim-helper__toggle:hover,
+.tire-rim-helper__toggle:focus-visible {
+  border-color: rgba(181, 255, 109, 0.85);
+  color: #f8fff1;
+  outline: none;
+}
+
+.tire-rim-helper__toggle--active {
+  border-color: var(--tz-brand-primary);
+  background-color: var(--tz-brand-primary);
+  background-image: none;
+  color: #0b1020;
+  box-shadow: 0 0 0 1px rgba(181, 255, 109, 0.15), 0 4px 14px rgba(181, 255, 109, 0.16);
+}
+
+.tire-rim-helper__toggle--active:hover,
+.tire-rim-helper__toggle--active:focus-visible {
+  border-color: var(--tz-brand-primary-hover);
+  background-color: var(--tz-brand-primary-hover);
+  background-image: none;
+  color: #0b1020;
+}
+
+.tire-rim-helper__search {
+  border: 1px solid var(--tz-brand-primary);
+  background: var(--tz-brand-primary);
+  color: #0b1020;
+}
+
+.tire-rim-helper__search:hover,
+.tire-rim-helper__search:focus-visible {
+  border-color: var(--tz-brand-primary-hover);
+  background: var(--tz-brand-primary-hover);
+  box-shadow: 0 8px 22px -6px rgba(181, 255, 109, 0.55);
+  transform: translateY(-1px);
+  outline: none;
+}
+</style>

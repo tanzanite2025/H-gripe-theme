@@ -1,2 +1,8 @@
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: SimilarwebBot
+User-agent: BuiltWith
+Disallow: /
+
 User-Agent: *
 Disallow:

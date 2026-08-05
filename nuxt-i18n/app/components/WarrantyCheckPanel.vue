@@ -244,19 +244,20 @@ const resetForm = () => {
 
 .warranty-check__login-btn {
   padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  background: var(--tz-brand-primary);
   border: none;
   border-radius: 9999px;
   color: #020617;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .warranty-check__login-btn:hover {
+  background: var(--tz-brand-primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(45, 212, 191, 0.4);
+  box-shadow: 0 6px 18px rgba(181, 255, 109, 0.4);
 }
 
 /* 查询表单 */
@@ -292,8 +293,8 @@ const resetForm = () => {
 .warranty-check__input:focus {
   outline: none;
   box-shadow:
-    0 0 0 1px rgba(45, 212, 191, 0.75),
-    0 0 14px rgba(45, 212, 191, 0.35);
+    0 0 0 1px rgba(181, 255, 109, 0.75),
+    0 0 14px rgba(181, 255, 109, 0.35);
 }
 
 .warranty-check__input::placeholder {
@@ -302,14 +303,14 @@ const resetForm = () => {
 
 .warranty-check__submit-btn {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #B5FF6D 0%, #3b82f6 100%);
   border: none;
   border-radius: 9999px;
   color: #020617;
   font-weight: 600;
   cursor: pointer;
   min-width: 100px;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
   transition: opacity 0.2s, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -320,7 +321,7 @@ const resetForm = () => {
 
 .warranty-check__submit-btn:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(45, 212, 191, 0.4);
+  box-shadow: 0 6px 18px rgba(181, 255, 109, 0.4);
 }
 
 .warranty-check__spinner {
@@ -423,8 +424,8 @@ const resetForm = () => {
 }
 
 .warranty-check__status--valid {
-  background: rgba(34, 197, 94, 0.15);
-  color: #86efac;
+  background: rgba(181, 255, 109, 0.15);
+  color: #D3FFA8;
 }
 
 .warranty-check__status--expired {
@@ -472,8 +473,8 @@ const resetForm = () => {
 }
 
 .warranty-check__remaining--valid {
-  background: rgba(34, 197, 94, 0.1);
-  color: #86efac;
+  background: rgba(181, 255, 109, 0.1);
+  color: #D3FFA8;
 }
 
 .warranty-check__remaining--expired {
@@ -565,10 +566,10 @@ const resetForm = () => {
 }
 
 .warranty-check__action-btn:not(.warranty-check__action-btn--secondary) {
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #B5FF6D 0%, #3b82f6 100%);
   border: none;
   color: #020617;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
 }
 
 .warranty-check__action-btn--secondary {

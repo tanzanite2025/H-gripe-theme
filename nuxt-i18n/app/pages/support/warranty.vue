@@ -11,14 +11,17 @@
     
     <WarrantyDamagedLostTab 
       v-show="activeTab === 'damaged-lost'" 
+      :contact-email="supportEmail"
     />
     
     <WarrantyReturnsTab 
       v-show="activeTab === 'returns'" 
+      :contact-email="supportEmail"
     />
     
     <WarrantyWarrantyPolicyTab 
       v-show="activeTab === 'warranty'" 
+      :contact-email="supportEmail"
       @change-tab="setActiveTab" 
     />
     
@@ -39,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from '#imports'
 import WarrantyChangeCancelTab from '~/components/warranty/ChangeCancelTab.vue'
 import WarrantyDamagedLostTab from '~/components/warranty/DamagedLostTab.vue'
@@ -53,6 +56,7 @@ import {
   warrantyTabs,
   type WarrantyTabId,
 } from '~/utils/pageSubNavigation'
+import { useSiteSettings } from '~/composables/usePublicSettings'
 
 definePageMeta({
   layout: 'support',
@@ -63,9 +67,11 @@ useHead({
 })
 
 const tabs = warrantyTabs
+const { siteSettings } = useSiteSettings()
 
 const activeTab = ref<WarrantyTabId>('warranty')
 const route = useRoute()
+const supportEmail = computed(() => siteSettings.value.contactEmail?.trim() || '')
 
 const setActiveTab = (id: WarrantyTabId | string) => {
   if (!isPageSubNavigationTabId(tabs, id)) return

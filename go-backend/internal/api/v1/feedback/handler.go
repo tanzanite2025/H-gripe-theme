@@ -135,7 +135,10 @@ func normalizePagination(page, pageSize int) (int, int) {
 
 func respondFeedbackError(c *gin.Context, err error) {
 	switch {
-	case errors.Is(err, service.ErrFeedbackMissingThread), errors.Is(err, service.ErrFeedbackMissingContent):
+	case errors.Is(err, service.ErrFeedbackMissingThread),
+		errors.Is(err, service.ErrFeedbackMissingContent),
+		errors.Is(err, service.ErrFeedbackContentTooLong),
+		errors.Is(err, service.ErrFeedbackNameTooLong):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_payload", "message": err.Error()})
 	case errors.Is(err, service.ErrFeedbackInvalidStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_status", "message": err.Error()})

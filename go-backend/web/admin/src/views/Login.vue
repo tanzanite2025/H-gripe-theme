@@ -37,7 +37,9 @@
                     />
                   </div>
                 </FormControl>
-                <FormMessage />
+                <div class="min-h-5 text-left" aria-live="polite">
+                  <FormMessage class="text-[11px] leading-5" />
+                </div>
               </FormItem>
             </FormField>
 
@@ -67,7 +69,9 @@
                     </Button>
                   </div>
                 </FormControl>
-                <FormMessage />
+                <div class="min-h-5 text-left" aria-live="polite">
+                  <FormMessage class="text-[11px] leading-5" />
+                </div>
               </FormItem>
             </FormField>
 

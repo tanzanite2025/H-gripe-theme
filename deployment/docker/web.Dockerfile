@@ -7,6 +7,7 @@ RUN apk upgrade --no-cache \
     && chown -R nginx:nginx /var/cache/nginx /tmp
 
 COPY nginx/theme-web.conf /etc/nginx/nginx.conf
+COPY nginx/trusted-proxies.conf /etc/nginx/trusted-proxies.conf
 
 USER nginx
 

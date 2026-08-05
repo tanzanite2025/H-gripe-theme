@@ -108,6 +108,7 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 		Status:        "paid",
 		PaymentStatus: "paid",
 		TotalAmount:   199,
+		Currency:      "USD",
 	}
 	order.ShippingAddress.Email = "rider@example.test"
 	require.NoError(t, db.Create(&order).Error)
@@ -200,6 +201,7 @@ func seedWarrantyOrderItem(t *testing.T, db *gorm.DB, orderNumber string, userID
 		Status:        "paid",
 		PaymentStatus: "paid",
 		TotalAmount:   199,
+		Currency:      "USD",
 	}
 	require.NoError(t, db.Create(&order).Error)
 

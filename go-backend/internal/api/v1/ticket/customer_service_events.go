@@ -25,7 +25,7 @@ func (h *Handler) StreamPublicCustomerServiceEvents(c *gin.Context) {
 		return
 	}
 
-	t, err := h.ticketService.GetPublicCustomerServiceConversation(conversationID, h.publicCustomerOwner(c))
+	t, err := h.ticketService.GetPublicCustomerServiceConversation(conversationID, h.existingPublicCustomerOwner(c))
 	if err != nil {
 		writePublicCustomerServiceError(c, err)
 		return

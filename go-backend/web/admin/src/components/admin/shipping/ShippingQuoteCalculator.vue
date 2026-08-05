@@ -23,8 +23,8 @@
             />
           </AdminFormField>
 
-          <AdminFormField label="币种">
-            <Input v-model.trim="form.currency" class="font-mono uppercase" placeholder="USD" maxlength="10" />
+          <AdminFormField label="币种" required :error="errors.currency">
+            <Input v-model.trim="form.currency" class="font-mono uppercase" placeholder="ISO 4217" maxlength="10" @input="clearError('currency')" />
           </AdminFormField>
         </div>
 
@@ -110,7 +110,7 @@
           </div>
           <div class="rounded-lg border bg-muted/35 p-3">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">币种</span>
-            <p class="mt-1 text-2xl font-black tracking-tighter">{{ quote.currency || 'USD' }}</p>
+            <p class="mt-1 text-2xl font-black tracking-tighter">{{ quote.currency || '币种缺失' }}</p>
           </div>
           <div class="rounded-lg border bg-muted/35 p-3">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">免运</span>
@@ -247,7 +247,7 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 
 const form = reactive({
   country: 'US',
-  currency: 'USD',
+  currency: '',
   items: [
     {
       product_id: '',
@@ -295,6 +295,7 @@ const clearItemError = (index, field) => {
 const validate = () => {
   Object.keys(errors).forEach((key) => delete errors[key])
   if (!form.country?.trim()) errors.country = '请输入国家/地区代码'
+  if (!form.currency?.trim()) errors.currency = '请输入报价币种'
 
   form.items.forEach((item, index) => {
     if (!Number(item.product_id || 0)) errors[itemErrorKey(index, 'product_id')] = '请输入 Product ID'
@@ -306,7 +307,7 @@ const validate = () => {
 
 const buildPayload = () => ({
   country: form.country.trim().toUpperCase(),
-  currency: form.currency?.trim().toUpperCase() || 'USD',
+  currency: form.currency.trim().toUpperCase(),
   items: form.items.map((item) => ({
     product_id: Number(item.product_id),
     variant_id: Number(item.variant_id || 0) > 0 ? Number(item.variant_id) : null,

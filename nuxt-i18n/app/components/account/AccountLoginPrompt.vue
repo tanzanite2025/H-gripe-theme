@@ -96,8 +96,8 @@ const features = [
   gap: 0.9rem;
   border-radius: 1.5rem;
   background:
-    radial-gradient(circle at top left, rgba(64, 255, 170, 0.15), transparent 48%),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.92));
+    radial-gradient(circle at top left, rgba(181, 255, 109, 0.06), transparent 48%),
+    linear-gradient(135deg, rgba(20, 20, 22, 0.98), rgba(5, 5, 5, 0.92));
   box-shadow: 0 18px 42px -24px rgba(0, 0, 0, 0.95);
   padding: 1rem;
 }
@@ -110,8 +110,9 @@ const features = [
   align-items: center;
   justify-content: center;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  background: #ffffff;
+  color: #050505;
 }
 
 .account-login-prompt__icon :deep(svg) {
@@ -125,7 +126,7 @@ const features = [
 
 .account-login-prompt__eyebrow {
   margin: 0 0 0.3rem;
-  color: #67e8f9;
+  color: #B5FF6D;
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -142,7 +143,7 @@ const features = [
 
 .account-login-prompt__copy p:last-child {
   margin: 0.45rem 0 0;
-  color: rgba(226, 232, 240, 0.82);
+  color: rgba(232, 232, 232, 0.82);
   font-size: 0.84rem;
   line-height: 1.55;
 }
@@ -163,8 +164,9 @@ const features = [
 }
 
 .account-login-prompt__primary {
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  background: #ffffff;
+  color: #050505;
 }
 
 .account-login-prompt__secondary {
@@ -198,7 +200,7 @@ const features = [
 .account-login-prompt__feature :deep(svg) {
   width: 1.1rem;
   height: 1.1rem;
-  color: #40ffaa;
+  color: #B5FF6D;
 }
 
 .account-login-prompt__feature strong,
@@ -213,7 +215,7 @@ const features = [
 
 .account-login-prompt__feature span {
   margin-top: 0.1rem;
-  color: rgba(226, 232, 240, 0.78);
+  color: rgba(232, 232, 232, 0.78);
   font-size: 0.76rem;
   line-height: 1.4;
 }

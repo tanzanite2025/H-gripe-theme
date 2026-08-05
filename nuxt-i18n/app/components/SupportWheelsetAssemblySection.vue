@@ -1,7 +1,7 @@
 <template>
   <div class="wheelset-assembly-section space-y-12">
     <!-- Intro / Overview Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
       <h2 class="text-xl font-bold tz-text-primary mb-4 flex items-center justify-center gap-2">
         Wheelset Assembly Instructions
       </h2>
@@ -16,11 +16,11 @@
       <!-- Step 0: Preparation -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-slate-800 text-slate-300 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-slate-800 text-slate-300 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">0</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
              <h3 class="text-lg font-bold tz-text-primary mb-3">Preparation</h3>
              <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-4 list-none pl-0">
@@ -57,11 +57,11 @@
        <!-- Step 1: Lacing the Wheel -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">1</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
              <h3 class="text-lg font-bold tz-text-primary mb-3">Lacing the Wheel</h3>
              <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
@@ -90,11 +90,11 @@
        <!-- Step 2: Installing Nipples -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">2</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
              <h3 class="text-lg font-bold tz-text-primary mb-3">Installing Nipples</h3>
              <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
@@ -129,11 +129,11 @@
        <!-- Step 3: Tensioning the Spokes -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">3</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
              <h3 class="text-lg font-bold tz-text-primary mb-3">Tensioning the Spokes</h3>
              <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
@@ -162,11 +162,11 @@
        <!-- Step 4: Truing the Wheel -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">4</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
              <h3 class="text-lg font-bold tz-text-primary mb-3">Truing the Wheel</h3>
              <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
@@ -196,11 +196,11 @@
       <!-- Step 5: Stress Relief -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">5</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
              <h3 class="text-lg font-bold tz-text-primary mb-3">Stress Relief</h3>
              <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-indigo-500">
@@ -238,11 +238,11 @@
       <!-- Step 6: Final Inspection -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-emerald-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-emerald-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">6</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
              <h3 class="text-lg font-bold tz-text-primary mb-3">Final Inspection</h3>
              <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-3 list-disc pl-4 marker:text-emerald-500">
@@ -275,7 +275,7 @@
     </div>
 
     <!-- Notes Section -->
-    <div class="rounded-2xl bg-[#11151e] border border-slate-700/50 p-6 md:p-8 mt-12">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] border border-slate-700/50 p-6 md:p-8 mt-12">
        <h3 class="text-lg font-bold tz-text-primary mb-4 flex items-center gap-2">
         <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
         Important Technical Notes
@@ -321,7 +321,7 @@
       <div class="support-video-modal__content">
         <button
           type="button"
-          class="support-video-modal__close"
+          class="tz-global-close-btn support-video-modal__close"
           @click="showStressReliefVideo = false"
         >
           ×
@@ -356,6 +356,11 @@ const showStressReliefVideo = ref(false)
   display: flex;
   align-items: center;
   justify-content: center;
+  padding:
+    var(--tz-safe-area-top, 0px)
+    var(--tz-safe-area-right, 0px)
+    var(--tz-safe-area-bottom, 0px)
+    var(--tz-safe-area-left, 0px);
 }
 
 .support-video-modal__backdrop {
@@ -379,32 +384,16 @@ const showStressReliefVideo = ref(false)
 
 .support-video-modal__close {
   position: absolute;
-  top: 0.5rem;
-  right: 1rem;
-  background: rgba(0, 0, 0, 0.5);
-  border: none;
-  color: var(--tz-text-primary);
-  font-size: 2rem;
+  top: max(0.5rem, calc(0.5rem + var(--tz-safe-area-top, 0px)));
+  right: max(1rem, calc(1rem + var(--tz-safe-area-right, 0px)));
   line-height: 1;
-  cursor: pointer;
   z-index: 50;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.support-video-modal__close:hover {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .support-video-modal__video {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 80vh;
+  max-height: min(80vh, var(--tz-mobile-safe-viewport-height, 80vh));
 }
 </style>

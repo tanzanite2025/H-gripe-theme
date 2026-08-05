@@ -1,7 +1,7 @@
 <template>
   <div class="match-guide space-y-8">
     <!-- Card 1: Tire and Frame Clearance -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
       <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
         Tire and Frame Clearance Guide
       </h2>
@@ -35,7 +35,7 @@
     </div>
 
     <!-- Card 2: Circumference -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
       <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center justify-center gap-2 uppercase tracking-wide">
         Exact Circumference Guide
       </h3>

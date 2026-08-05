@@ -41,13 +41,17 @@ func (s *OrderService) ListAdminOrders(page, pageSize int, status, paymentStatus
 }
 
 func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
+	if isSystemManagedOrderStatus(status) {
+		return fmt.Errorf("%w: %s", ErrSystemManagedOrderStatus, status)
+	}
+
+	if status == "completed" {
+		return s.completeOrderWithLoyaltyReward(id)
+	}
+
 	o, err := s.orderRepo.FindByID(id)
 	if err != nil {
 		return normalizeOrderError(err)
-	}
-
-	if isSystemManagedOrderStatus(status) {
-		return fmt.Errorf("%w: %s", ErrSystemManagedOrderStatus, status)
 	}
 
 	if !o.CanTransitionTo(status) {
@@ -62,7 +66,7 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 }
 
 func isSystemManagedOrderStatus(status string) bool {
-	return status == "paid" || status == "refunded"
+	return status == "paid" || status == "refunded" || status == "payment_expired"
 }
 
 func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
@@ -220,7 +224,7 @@ func (s *OrderService) DeleteAdminOrder(id uint) error {
 		return err
 	}
 
-	if o.Status != "cancelled" && o.Status != "refunded" {
+	if o.Status != "cancelled" && o.Status != "refunded" && o.Status != "payment_expired" {
 		return ErrOrderDeleteNotAllowed
 	}
 

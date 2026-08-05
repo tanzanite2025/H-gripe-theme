@@ -52,6 +52,10 @@ func (s *UserService) ListUsers(page, pageSize int, role, status, search string)
 	return s.userRepo.FindAllWithFilters(page, pageSize, role, status, search)
 }
 
+func (s *UserService) ListCustomerAccounts(page, pageSize int, status, search string) ([]user.User, int64, error) {
+	return s.userRepo.FindAllWithFilters(page, pageSize, string(auth.RoleUser), status, search)
+}
+
 func (s *UserService) GetUser(id uint) (*user.User, error) {
 	u, err := s.userRepo.FindByID(id)
 	if repository.IsRecordNotFound(err) {

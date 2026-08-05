@@ -3,6 +3,7 @@ package showcase
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"tanzanite/internal/pkg/upload"
 	"tanzanite/internal/service"
 
@@ -24,8 +25,17 @@ func (h *ShowcaseHandler) Upload(c *gin.Context) {
 
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil { // 10 MB max memory
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form", "message": err.Error(), "code": "tpg_invalid_form"})
+		status := http.StatusBadRequest
+		code := "tpg_invalid_form"
+		if strings.Contains(strings.ToLower(err.Error()), "too large") {
+			status = http.StatusRequestEntityTooLarge
+			code = upload.CodeFileTooLarge
+		}
+		c.JSON(status, gin.H{"error": "Failed to parse form", "message": err.Error(), "code": code})
 		return
+	}
+	if c.Request.MultipartForm != nil {
+		defer func() { _ = c.Request.MultipartForm.RemoveAll() }()
 	}
 
 	form := c.Request.MultipartForm

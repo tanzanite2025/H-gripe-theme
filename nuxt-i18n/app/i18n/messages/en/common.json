@@ -2,6 +2,9 @@
   "close": "Close",
   "previous": "Previous",
   "next": "Next",
+  "currentPage": "Current page",
   "loading": "Loading...",
-  "backToHome": "Back to Home"
+  "backToHome": "Back to Home",
+  "viewAll": "View all",
+  "explore": "Explore"
 }

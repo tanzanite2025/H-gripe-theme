@@ -1,13 +1,13 @@
 <template>
-  <Card class="overflow-hidden py-0">
-    <CardHeader class="border-b bg-muted/30 px-4 py-3">
+  <Card class="h-full min-h-0 overflow-hidden py-0">
+    <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3">
       <CardTitle class="flex items-center gap-2">
         <Fingerprint class="size-4 text-primary" />
         画像详情
       </CardTitle>
       <CardDescription>只展示已采集事实，不猜测邮箱、地区或身份</CardDescription>
     </CardHeader>
-    <CardContent class="space-y-4 p-4">
+    <CardContent class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
       <div v-if="!selectedProfile" class="flex min-h-72 flex-col items-center justify-center text-center text-muted-foreground">
         <UserRound class="mb-2 size-8 opacity-55" />
         <p class="text-xs leading-6">从左侧列表选择一个访客画像查看详情。</p>
@@ -24,6 +24,12 @@
           <dl class="grid grid-cols-2 gap-2 text-xs">
             <DetailItem label="Profile ID">#{{ selectedProfile.id }}</DetailItem>
             <DetailItem label="User ID">{{ selectedProfile.user_id || '-' }}</DetailItem>
+            <DetailItem label="Status">
+              <AdminStatusBadge :tone="statusTone(selectedProfile.profile_status)">
+                {{ statusLabel(selectedProfile.profile_status) }}
+              </AdminStatusBadge>
+            </DetailItem>
+            <DetailItem label="Quality">Q{{ selectedProfile.profile_quality_score || 0 }}</DetailItem>
             <DetailItem label="Email" class="col-span-2">{{ selectedProfile.email || '未采集' }}</DetailItem>
             <DetailItem label="Email Source" class="col-span-2">{{ selectedProfile.email_source || 'not_captured' }}</DetailItem>
           </dl>
@@ -62,6 +68,10 @@
           <h3 class="mb-3 text-xs font-black uppercase tracking-wider">时间</h3>
           <dl class="grid gap-2 text-xs">
             <DetailItem label="Last Seen">{{ formatDate(selectedProfile.last_seen_at) }}</DetailItem>
+            <DetailItem label="Last Meaningful">{{ formatDate(selectedProfile.last_meaningful_seen_at) }}</DetailItem>
+            <DetailItem label="First Meaningful">{{ formatDate(selectedProfile.first_meaningful_seen_at) }}</DetailItem>
+            <DetailItem label="Last Action">{{ actionLabel(selectedProfile.last_meaningful_action) }}</DetailItem>
+            <DetailItem label="Retention Until">{{ formatDate(selectedProfile.retention_until) }}</DetailItem>
             <DetailItem label="Created">{{ formatDate(selectedProfile.created_at) }}</DetailItem>
             <DetailItem label="Updated">{{ formatDate(selectedProfile.updated_at) }}</DetailItem>
           </dl>
@@ -81,6 +91,28 @@ defineProps({
   selectedProfile: { type: Object, default: null },
   formatDate: { type: Function, required: true },
 })
+
+const statusLabel = (status) => ({
+  active: '有效',
+  candidate: '候选',
+  archived: '归档',
+  suppressed: '抑制',
+})[status] || '有效'
+
+const statusTone = (status) => ({
+  active: 'green',
+  candidate: 'amber',
+  archived: 'gray',
+  suppressed: 'coral',
+})[status] || 'green'
+
+const actionLabel = (action) => ({
+  cart_action: '购物车动作',
+  customer_service: '客服会话',
+  email_capture: '邮箱捕获',
+  account: '账号绑定',
+  identity_bind: '身份绑定',
+})[action] || '无有效动作'
 
 const DetailItem = defineComponent({
   props: {

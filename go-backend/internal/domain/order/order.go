@@ -1,7 +1,10 @@
 package order
 
 import (
+	"errors"
 	"time"
+
+	"tanzanite/internal/domain/currency"
 
 	"gorm.io/gorm"
 )
@@ -11,9 +14,9 @@ type Order struct {
 	ID                       uint   `gorm:"primarykey" json:"id"`
 	OrderNumber              string `gorm:"uniqueIndex;not null" json:"order_number"`
 	UserID                   uint   `gorm:"index" json:"user_id"`
-	Status                   string `gorm:"index;default:'pending'" json:"status"` // pending, paid, processing, shipped, completed, cancelled, refunded
+	Status                   string `gorm:"index;default:'pending'" json:"status"` // pending, paid, processing, shipped, completed, cancelled, payment_expired, refunded
 	PaymentMethod            string `json:"payment_method"`
-	PaymentStatus            string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, refunded
+	PaymentStatus            string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, expired, refunded
 	ShippingMethod           string `json:"shipping_method"`
 	ShippingStatus           string `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
 	TrackingNumber           string `json:"tracking_number"`
@@ -30,6 +33,7 @@ type Order struct {
 	TaxAmount      float64 `gorm:"default:0" json:"tax_amount"`
 	DiscountAmount float64 `gorm:"default:0" json:"discount_amount"`
 	TotalAmount    float64 `gorm:"not null" json:"total_amount"`
+	Currency       string  `gorm:"not null;index" json:"currency"`
 
 	// 优惠信息
 	CouponCode  string  `json:"coupon_code"`
@@ -92,7 +96,7 @@ func (Order) TableName() string {
 // BeforeCreate GORM钩子：创建前
 func (o *Order) BeforeCreate(tx *gorm.DB) error {
 	if o.OrderNumber == "" {
-		o.OrderNumber = generateOrderNumber()
+		return errors.New("order number is required")
 	}
 	if o.Status == "" {
 		o.Status = "pending"
@@ -103,18 +107,23 @@ func (o *Order) BeforeCreate(tx *gorm.DB) error {
 	if o.ShippingStatus == "" {
 		o.ShippingStatus = "pending"
 	}
+	o.Currency = currency.NormalizeCode(o.Currency)
+	if !currency.IsValidCode(o.Currency) || !currency.IsCatalogCode(o.Currency) {
+		return errors.New("order currency must be a supported ISO 4217 code")
+	}
 	return nil
 }
 
 // OrderStatusTransition 订单状态流转规则
 var OrderStatusTransition = map[string][]string{
-	"pending":    {"cancelled"},
-	"paid":       {"processing", "cancelled"},
-	"processing": {"shipped", "cancelled"},
-	"shipped":    {"completed", "cancelled"},
-	"completed":  {},
-	"cancelled":  {},
-	"refunded":   {},
+	"pending":         {"cancelled", "payment_expired"},
+	"paid":            {"processing", "cancelled"},
+	"processing":      {"shipped", "cancelled"},
+	"shipped":         {"completed", "cancelled"},
+	"completed":       {},
+	"cancelled":       {},
+	"payment_expired": {},
+	"refunded":        {},
 }
 
 // CanTransitionTo 检查是否可以转换到目标状态
@@ -129,20 +138,4 @@ func (o *Order) CanTransitionTo(targetStatus string) bool {
 		}
 	}
 	return false
-}
-
-// generateOrderNumber 生成订单号
-func generateOrderNumber() string {
-	// 格式: TZ + YYYYMMDD + 6位随机数
-	now := time.Now()
-	return now.Format("TZ20060102") + randomString(6)
-}
-
-func randomString(n int) string {
-	const letters = "0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
-	}
-	return string(b)
 }

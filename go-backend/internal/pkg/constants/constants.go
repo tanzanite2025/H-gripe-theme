@@ -111,13 +111,6 @@ const (
 	HeaderXForwardedFor  = "X-Forwarded-For"
 )
 
-// Supported currencies
-var SupportedCurrencies = []string{
-	"USD", "EUR", "GBP", "JPY",
-	"CNY", "KRW", "AUD", "CAD",
-	"CHF", "SEK", "NOK", "DKK",
-}
-
 // Image formats
 var SupportedImageFormats = []string{
 	"jpg", "jpeg", "png", "gif",

@@ -1,4 +1,20 @@
 {
   "title": "Frequently Asked Questions",
-  "subtitle": "Find answers to common questions about our products and services"
+  "subtitle": "Find answers to common questions about our products and services",
+  "ui": {
+    "categorizedSupport": "Categorized Support",
+    "quickAnswers": "Quick answers to common questions",
+    "categoriesAriaLabel": "FAQ categories",
+    "categoriesLabel": "FAQ Categories",
+    "all": "All",
+    "viewAll": "View All FAQs",
+    "emptySection": "No FAQs available for this section.",
+    "pageIntro": "Browse common questions and quick answers about orders, products, and service.",
+    "searchPlaceholder": "Search FAQs...",
+    "viewMoreContent": "View More Content",
+    "noResults": "No FAQs found matching \"{query}\"",
+    "allFaqsMetaTitle": "All FAQs",
+    "loadingAnswers": "Loading answers",
+    "illustrationAlt": "FAQ illustration"
+  }
 }

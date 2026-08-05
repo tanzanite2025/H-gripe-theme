@@ -15,37 +15,44 @@ type MarketingService struct {
 	redemptionRepo *repository.GiftCardRedemptionRepository
 	setting        *SettingService
 	program        *LoyaltyProgramService
+	currencyPolicy *CurrencyPolicyService
+}
+
+func isDefaultMemberLevelName(name string) bool {
+	switch name {
+	case "Ordinary", "Bronze", "Silver", "Gold", "Platinum", "Diamond":
+		return true
+	default:
+		return false
+	}
 }
 
 var (
 	ErrMarketingNotFound  = errors.New("marketing resource not found")
 	ErrCouponCodeExists   = errors.New("coupon code already exists")
-	ErrGiftCardCodeExists = errors.New("gift card code already exists")
 	ErrInvalidMemberLevel = errors.New("invalid member level")
 )
 
 type MemberLevelCreateInput struct {
-	Name             string
-	MinPoints        int
-	MaxPoints        int
-	DiscountRate     float64
-	PointsMultiplier float64
-	Benefits         string
-	Icon             string
-	Color            string
-	SortOrder        int
+	Name         string
+	MinPoints    int
+	MaxPoints    int
+	DiscountRate float64
+	Benefits     string
+	Icon         string
+	Color        string
+	SortOrder    int
 }
 
 type MemberLevelUpdateInput struct {
-	Name             *string
-	MinPoints        *int
-	MaxPoints        *int
-	DiscountRate     *float64
-	PointsMultiplier *float64
-	Benefits         *string
-	Icon             *string
-	Color            *string
-	SortOrder        *int
+	Name         *string
+	MinPoints    *int
+	MaxPoints    *int
+	DiscountRate *float64
+	Benefits     *string
+	Icon         *string
+	Color        *string
+	SortOrder    *int
 }
 
 func NewMarketingService(
@@ -71,6 +78,10 @@ func (s *MarketingService) ConfigureLoyaltyProgram(program *LoyaltyProgramServic
 
 func (s *MarketingService) ConfigureGiftCardRedemptions(repo *repository.GiftCardRedemptionRepository) {
 	s.redemptionRepo = repo
+}
+
+func (s *MarketingService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
+	s.currencyPolicy = policy
 }
 
 func (s *MarketingService) ListLoyaltyTransactions(userID uint, page, pageSize int) ([]loyalty.LoyaltyTransaction, int64, error) {
@@ -120,20 +131,19 @@ func (s *MarketingService) GetMemberLevel(id uint) (*loyalty.MemberLevel, error)
 }
 
 func (s *MarketingService) CreateMemberLevelAdmin(input MemberLevelCreateInput) (*loyalty.MemberLevel, error) {
-	if err := s.validateMemberLevelInput(0, input.MinPoints, input.MaxPoints, input.DiscountRate, input.PointsMultiplier); err != nil {
+	if err := s.validateMemberLevelInput(0, input.MinPoints, input.MaxPoints, input.DiscountRate); err != nil {
 		return nil, err
 	}
 
 	level := &loyalty.MemberLevel{
-		Name:             input.Name,
-		MinPoints:        input.MinPoints,
-		MaxPoints:        input.MaxPoints,
-		DiscountRate:     input.DiscountRate,
-		PointsMultiplier: input.PointsMultiplier,
-		Benefits:         input.Benefits,
-		Icon:             input.Icon,
-		Color:            input.Color,
-		SortOrder:        input.SortOrder,
+		Name:         input.Name,
+		MinPoints:    input.MinPoints,
+		MaxPoints:    input.MaxPoints,
+		DiscountRate: input.DiscountRate,
+		Benefits:     input.Benefits,
+		Icon:         input.Icon,
+		Color:        input.Color,
+		SortOrder:    input.SortOrder,
 	}
 	if err := s.loyaltyRepo.CreateMemberLevel(level); err != nil {
 		return nil, err
@@ -147,9 +157,6 @@ func (s *MarketingService) UpdateMemberLevelAdmin(id uint, input MemberLevelUpda
 		return nil, err
 	}
 
-	if input.Name != nil {
-		level.Name = *input.Name
-	}
 	if input.MinPoints != nil {
 		level.MinPoints = *input.MinPoints
 	}
@@ -159,23 +166,10 @@ func (s *MarketingService) UpdateMemberLevelAdmin(id uint, input MemberLevelUpda
 	if input.DiscountRate != nil {
 		level.DiscountRate = *input.DiscountRate
 	}
-	if input.PointsMultiplier != nil {
-		level.PointsMultiplier = *input.PointsMultiplier
-	}
 	if input.Benefits != nil {
 		level.Benefits = *input.Benefits
 	}
-	if input.Icon != nil {
-		level.Icon = *input.Icon
-	}
-	if input.Color != nil {
-		level.Color = *input.Color
-	}
-	if input.SortOrder != nil {
-		level.SortOrder = *input.SortOrder
-	}
-
-	if err := s.validateMemberLevelInput(level.ID, level.MinPoints, level.MaxPoints, level.DiscountRate, level.PointsMultiplier); err != nil {
+	if err := s.validateMemberLevelInput(level.ID, level.MinPoints, level.MaxPoints, level.DiscountRate); err != nil {
 		return nil, err
 	}
 
@@ -187,20 +181,21 @@ func (s *MarketingService) UpdateMemberLevelAdmin(id uint, input MemberLevelUpda
 }
 
 func (s *MarketingService) DeleteMemberLevelAdmin(id uint) error {
-	if _, err := s.GetMemberLevel(id); err != nil {
+	level, err := s.GetMemberLevel(id)
+	if err != nil {
 		return err
+	}
+	if isDefaultMemberLevelName(level.Name) {
+		return ErrInvalidMemberLevel
 	}
 	return s.loyaltyRepo.DeleteMemberLevel(id)
 }
 
-func (s *MarketingService) validateMemberLevelInput(excludeID uint, minPoints, maxPoints int, discountRate, pointsMultiplier float64) error {
+func (s *MarketingService) validateMemberLevelInput(excludeID uint, minPoints, maxPoints int, discountRate float64) error {
 	if minPoints < 0 || maxPoints < minPoints {
 		return ErrInvalidMemberLevel
 	}
 	if discountRate < 0 || discountRate > 100 {
-		return ErrInvalidMemberLevel
-	}
-	if pointsMultiplier <= 0 {
 		return ErrInvalidMemberLevel
 	}
 	overlaps, err := s.loyaltyRepo.CountOverlappingMemberLevels(excludeID, minPoints, maxPoints)
@@ -372,16 +367,7 @@ func (s *MarketingService) getCurrentProgramConfig() (*loyalty.ProgramConfig, er
 	if s.program != nil {
 		return s.program.GetActive()
 	}
-
-	defaults := loyalty.DefaultProgramConfig()
-	defaults.RedeemOptions = []loyalty.ProgramRedeemOption{
-		{ValueCents: 1000, SortOrder: 0},
-		{ValueCents: 5000, SortOrder: 1},
-		{ValueCents: 10000, SortOrder: 2},
-		{ValueCents: 20000, SortOrder: 3},
-		{ValueCents: 50000, SortOrder: 4},
-	}
-	return &defaults, nil
+	return nil, ErrLoyaltyProgramConfigNotFound
 }
 
 func programConfigID(config *loyalty.ProgramConfig) *uint {
@@ -426,5 +412,30 @@ func normalizeMarketingError(err error) error {
 
 // ListMemberLevels 获取所有会员等级
 func (s *MarketingService) ListMemberLevels() ([]loyalty.MemberLevel, error) {
+	levels, err := s.loyaltyRepo.FindAllMemberLevels()
+	if err != nil {
+		return nil, err
+	}
+	if len(levels) > 0 {
+		return levels, nil
+	}
+
+	for _, level := range defaultMemberLevels() {
+		candidate := level
+		if err := s.loyaltyRepo.CreateMemberLevel(&candidate); err != nil {
+			return nil, err
+		}
+	}
 	return s.loyaltyRepo.FindAllMemberLevels()
+}
+
+func defaultMemberLevels() []loyalty.MemberLevel {
+	return []loyalty.MemberLevel{
+		{Name: "Ordinary", MinPoints: 0, MaxPoints: 499, DiscountRate: 0, Benefits: "[]", Icon: "circle", Color: "#f8fafc", SortOrder: 0},
+		{Name: "Bronze", MinPoints: 500, MaxPoints: 1999, DiscountRate: 0, Benefits: "[]", Icon: "medal", Color: "#b87333", SortOrder: 10},
+		{Name: "Silver", MinPoints: 2000, MaxPoints: 4999, DiscountRate: 0, Benefits: "[]", Icon: "medal", Color: "#c0c0c0", SortOrder: 20},
+		{Name: "Gold", MinPoints: 5000, MaxPoints: 9999, DiscountRate: 0, Benefits: "[]", Icon: "medal", Color: "#d4af37", SortOrder: 30},
+		{Name: "Platinum", MinPoints: 10000, MaxPoints: 19999, DiscountRate: 0, Benefits: "[]", Icon: "gem", Color: "#e5e4e2", SortOrder: 40},
+		{Name: "Diamond", MinPoints: 20000, MaxPoints: 999999999, DiscountRate: 0, Benefits: "[]", Icon: "gem", Color: "#b9f2ff", SortOrder: 50},
+	}
 }

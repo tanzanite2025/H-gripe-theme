@@ -565,6 +565,7 @@
 import { computed, reactive, watch } from 'vue'
 import { RIM_DATABASE, HUB_DATABASE, type RimModel, type HubModel } from '~/data/spoke-calculator/database'
 import { computeSpokeLength } from '~/utils/spokeMath'
+import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 
 interface WheelConfig {
   spokeCount: number
@@ -732,6 +733,8 @@ interface SpokeResult {
 
 const frontResult = ref<SpokeResult | null>(null)
 const rearResult = ref<SpokeResult | null>(null)
+const lastTrackedCalculation = ref('')
+const { track: trackBehaviorEvent } = useBehaviorEvents()
 
 // Display values for front wheel
 const frontLeftDisplay = computed(() => (frontResult.value?.leftLengthMm ?? 0).toFixed(1))
@@ -746,6 +749,8 @@ const onCalculate = () => {
   loading.value = true
 
   try {
+    let completedWheelCount = 0
+
     // Validate front wheel inputs
     if (frontConfig.erd && frontConfig.leftFlangePcd && frontConfig.rightFlangePcd &&
         frontConfig.leftFlange != null && frontConfig.rightFlange != null) {
@@ -769,6 +774,7 @@ const onCalculate = () => {
           frontConfig.nippleLength
         ),
       }
+      completedWheelCount += 1
     }
 
     // Validate rear wheel inputs
@@ -793,6 +799,33 @@ const onCalculate = () => {
           rearConfig.nippleType,
           rearConfig.nippleLength
         ),
+      }
+      completedWheelCount += 1
+    }
+
+    if (completedWheelCount > 0) {
+      const fingerprint = JSON.stringify({
+        front: frontConfig,
+        rear: rearConfig,
+      })
+
+      if (fingerprint !== lastTrackedCalculation.value) {
+        lastTrackedCalculation.value = fingerprint
+        trackBehaviorEvent({
+          eventType: 'calculator_use',
+          metadata: {
+            source: 'spoke_calculator',
+            wheel_count: completedWheelCount,
+            front_spoke_count: frontConfig.spokeCount,
+            rear_spoke_count: rearConfig.spokeCount,
+            front_crossing: frontConfig.crossing,
+            rear_crossing: rearConfig.crossing,
+            front_rim_selected: Boolean(frontConfig.rimModelId),
+            rear_rim_selected: Boolean(rearConfig.rimModelId),
+            front_hub_selected: Boolean(frontConfig.hubModelId),
+            rear_hub_selected: Boolean(rearConfig.hubModelId),
+          },
+        })
       }
     }
   } catch (e: any) {

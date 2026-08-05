@@ -1,6 +1,10 @@
 <template>
   <div class="space-y-3">
-    <div class="flex flex-wrap items-end justify-between gap-3">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">已发行礼品卡</h3>
+        <p class="mt-1 text-xs text-muted-foreground">这里仅查看已经生成的真实卡号和余额。</p>
+      </div>
       <label class="w-48 space-y-1.5">
         <span class="text-xs font-medium text-muted-foreground">状态</span>
         <Select v-model="filters.status" @update:model-value="emit('filter-change')">
@@ -14,10 +18,6 @@
           </SelectContent>
         </Select>
       </label>
-      <Button v-if="canCreate" size="sm" @click="emit('create')">
-        <Plus class="size-3.5" />
-        创建礼品卡
-      </Button>
     </div>
 
     <AdminTablePanel :loading="loading">
@@ -76,7 +76,7 @@
 </template>
 
 <script setup>
-import { Eye, Gift, Plus } from '@lucide/vue'
+import { Eye, Gift } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -89,12 +89,11 @@ defineProps({
   giftCards: { type: Array, default: () => [] },
   filters: { type: Object, required: true },
   pagination: { type: Object, required: true },
-  canCreate: { type: Boolean, default: false },
   formatCurrency: { type: Function, required: true },
   formatDate: { type: Function, required: true },
   giftCardStatusName: { type: Function, required: true },
   giftCardStatusTone: { type: Function, required: true },
 })
 
-const emit = defineEmits(['filter-change', 'create', 'view', 'update-page', 'update-page-size'])
+const emit = defineEmits(['filter-change', 'view', 'update-page', 'update-page-size'])
 </script>

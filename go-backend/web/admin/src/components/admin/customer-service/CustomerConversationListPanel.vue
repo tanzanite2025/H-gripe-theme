@@ -1,6 +1,6 @@
 <template>
-  <Card class="min-h-[420px] overflow-hidden py-0">
-    <CardHeader class="border-b bg-muted/30 px-4 py-3">
+  <Card class="h-full min-h-0 overflow-hidden py-0">
+    <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3">
       <CardTitle>会话列表</CardTitle>
       <CardDescription>按客户会话隔离，每个卡片对应一个 conversation</CardDescription>
     </CardHeader>
@@ -18,8 +18,8 @@
           v-for="conversation in conversations"
           :key="conversation.id"
           type="button"
-          class="group w-full rounded-2xl border border-dashed p-3 text-left transition-all hover:border-primary/45 hover:bg-muted/45"
-          :class="selectedConversation?.id === conversation.id ? 'border-primary/60 bg-primary/5 shadow-[0_8px_28px_rgba(15,23,42,0.08)]' : 'border-border/80 bg-card'"
+          class="group w-full rounded-2xl border border-dashed p-3 text-left transition-all hover:border-admin-selected-border hover:bg-muted/45"
+          :class="selectedConversation?.id === conversation.id ? 'border-admin-selected-border bg-admin-selected-soft shadow-[var(--admin-control-selected-surface-shadow)]' : 'border-border/80 bg-card'"
           @click="emit('select', conversation)"
         >
           <div class="flex items-start gap-3">
@@ -73,7 +73,7 @@
       </div>
     </div>
 
-    <CardFooter class="justify-between gap-3 text-xs text-muted-foreground">
+    <CardFooter class="shrink-0 justify-between gap-3 text-xs text-muted-foreground">
       <span>共 {{ pagination.total }} 条</span>
       <div class="flex items-center gap-2">
         <Button variant="outline" size="sm" :disabled="pagination.page <= 1 || loading" @click="emit('change-page', pagination.page - 1)">上一页</Button>

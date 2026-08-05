@@ -3,7 +3,9 @@ package service
 import (
 	"testing"
 
+	"tanzanite/internal/domain/currency"
 	"tanzanite/internal/domain/loyalty"
+	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -14,8 +16,7 @@ import (
 
 func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	db := openLoyaltyProgramTestDB(t)
-	repo := repository.NewLoyaltyProgramRepository(db)
-	service := NewLoyaltyProgramService(repo)
+	service := newTestLoyaltyProgramService(t, db)
 
 	first, err := service.Update(LoyaltyProgramConfigInput{
 		Enabled:                   true,
@@ -65,10 +66,59 @@ func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	require.Equal(t, 100, archived.ExchangeRatePoints)
 }
 
+func TestLoyaltyProgramServiceDoesNotCarryRedeemedQuantitiesToNewVersion(t *testing.T) {
+	db := openLoyaltyProgramTestDB(t)
+	service := newTestLoyaltyProgramService(t, db)
+
+	first, err := service.Update(LoyaltyProgramConfigInput{
+		Enabled:                   true,
+		Currency:                  "USD",
+		ExchangeRatePoints:        100,
+		MinRedeemPoints:           1000,
+		MaxValuePerDayCents:       50000,
+		CardExpiryDays:            365,
+		ReferralReferrerPoints:    100,
+		ReferralRefereePoints:     50,
+		CheckInBasePoints:         10,
+		CheckInStreakIntervalDays: 7,
+		CheckInStreakBonusPoints:  5,
+		CheckInMaxPoints:          50,
+		RedeemOptions: []LoyaltyProgramOptionInput{
+			{ValueCents: 1000, Currency: "USD", StockQuantity: 5},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, first.RedeemOptions, 1)
+	require.NoError(t, db.Model(&loyalty.ProgramRedeemOption{}).
+		Where("id = ?", first.RedeemOptions[0].ID).
+		Update("redeemed_quantity", 3).Error)
+
+	second, err := service.Update(LoyaltyProgramConfigInput{
+		Enabled:                   true,
+		Currency:                  "USD",
+		ExchangeRatePoints:        100,
+		MinRedeemPoints:           1000,
+		MaxValuePerDayCents:       50000,
+		CardExpiryDays:            365,
+		ReferralReferrerPoints:    100,
+		ReferralRefereePoints:     50,
+		CheckInBasePoints:         10,
+		CheckInStreakIntervalDays: 7,
+		CheckInStreakBonusPoints:  5,
+		CheckInMaxPoints:          50,
+		RedeemOptions: []LoyaltyProgramOptionInput{
+			{ValueCents: 1000, Currency: "USD", StockQuantity: 1},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, second.RedeemOptions, 1)
+	require.Equal(t, int64(0), second.RedeemOptions[0].RedeemedQuantity)
+	require.Equal(t, int64(1), second.RedeemOptions[0].StockQuantity)
+}
+
 func TestLoyaltyProgramPublicConfigMarksUnavailableOptionsInactive(t *testing.T) {
 	db := openLoyaltyProgramTestDB(t)
-	repo := repository.NewLoyaltyProgramRepository(db)
-	service := NewLoyaltyProgramService(repo)
+	service := newTestLoyaltyProgramService(t, db)
 
 	_, err := service.Update(LoyaltyProgramConfigInput{
 		Enabled:                   true,
@@ -83,12 +133,16 @@ func TestLoyaltyProgramPublicConfigMarksUnavailableOptionsInactive(t *testing.T)
 		CheckInStreakIntervalDays: 7,
 		CheckInStreakBonusPoints:  5,
 		CheckInMaxPoints:          50,
-		RedeemValuesCents:         []int64{500, 1000},
+		RedeemOptions: []LoyaltyProgramOptionInput{
+			{ValueCents: 500, Currency: "USD", StockQuantity: 0},
+			{ValueCents: 1000, Currency: "USD", StockQuantity: 2},
+		},
 	})
 	require.NoError(t, err)
 
 	response, err := service.GetPublicConfig()
 	require.NoError(t, err)
+	require.Equal(t, LoyaltyPointsBaseCurrency, response.PointsBaseCurrency)
 	require.Len(t, response.RedeemOptions, 2)
 	require.Equal(t, "inactive", response.RedeemOptions[0].Status)
 	require.Equal(t, "active", response.RedeemOptions[1].Status)
@@ -109,8 +163,28 @@ func openLoyaltyProgramTestDB(t *testing.T) *gorm.DB {
 	})
 
 	require.NoError(t, db.AutoMigrate(
+		&setting.Setting{},
 		&loyalty.ProgramConfig{},
 		&loyalty.ProgramRedeemOption{},
 	))
 	return db
+}
+
+func newTestLoyaltyProgramService(t *testing.T, db *gorm.DB) *LoyaltyProgramService {
+	t.Helper()
+	program := NewLoyaltyProgramService(repository.NewLoyaltyProgramRepository(db))
+	program.ConfigureCurrencyPolicy(seedTestCurrencyPolicy(t, db))
+	return program
+}
+
+func seedTestCurrencyPolicy(t *testing.T, db *gorm.DB) *CurrencyPolicyService {
+	t.Helper()
+	policy := NewCurrencyPolicyService(repository.NewSettingRepository(db))
+	_, err := policy.UpdatePolicy(currency.Policy{
+		AccountingCurrency:   "USD",
+		DefaultOrderCurrency: "USD",
+		AcceptedCurrencies:   []string{"USD"},
+	})
+	require.NoError(t, err)
+	return policy
 }

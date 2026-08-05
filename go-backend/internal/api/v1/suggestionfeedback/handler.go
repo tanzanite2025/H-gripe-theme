@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"strings"
 	domainsuggestion "tanzanite/internal/domain/suggestionfeedback"
 	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/pkg/upload"
@@ -60,8 +61,15 @@ func (h *Handler) Upload(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "too large") {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": upload.CodeFileTooLarge, "message": err.Error()})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_file", "message": "No file uploaded"})
 		return
+	}
+	if c.Request.MultipartForm != nil {
+		defer func() { _ = c.Request.MultipartForm.RemoveAll() }()
 	}
 	if err := upload.ValidateFile(file, upload.SuggestionImageRule); err != nil {
 		c.JSON(upload.HTTPStatus(err), gin.H{"error": upload.ErrorCode(err), "message": err.Error()})

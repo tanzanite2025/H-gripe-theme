@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="订阅管理" description="查看邮件订阅来源、状态和退订记录">
+    <AdminPageHeader title="邮件订阅" description="查看邮件订阅来源、状态和退订记录">
       <template #actions>
         <Button v-if="hasPermission('subscription:export')" variant="outline" @click="exportEmails">
           <Download class="size-4" />

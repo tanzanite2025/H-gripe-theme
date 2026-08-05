@@ -40,10 +40,13 @@ func NormalizeLocale(locale string) string {
 func GetLocaleFromPath(path string) string {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) > 0 {
+		if strings.TrimSpace(parts[0]) == "" {
+			return ""
+		}
 		locale := NormalizeLocale(parts[0])
 		if IsValidLocale(locale) {
 			return locale
 		}
 	}
-	return "en"
+	return ""
 }

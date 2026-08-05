@@ -8,6 +8,32 @@
     "whatsapp": "WhatsApp",
     "email": "邮箱"
   },
+  "attachments": {
+    "title": "添加到聊天",
+    "open": "添加图片或业务信息",
+    "photoLibrary": "发送手机图片",
+    "camera": "拍照",
+    "order": "发送订单",
+    "product": "发送商品"
+  },
+  "productPicker": {
+    "title": "选择商品",
+    "description": "搜索商品并添加到聊天输入区。",
+    "placeholder": "搜索商品名称、SKU 或关键词",
+    "search": "搜索",
+    "searching": "搜索中...",
+    "clear": "清除搜索",
+    "collapse": "关闭商品选择器",
+    "empty": "输入商品名称、SKU 或关键词开始搜索。",
+    "noResults": "没有找到商品。",
+    "error": "商品搜索失败，请重试。",
+    "send": "发送商品",
+    "select": "选择商品"
+  },
+  "productDraft": {
+    "selected": "已选择商品",
+    "remove": "移除已选择商品"
+  },
   "fallback": {
     "agent": "客服",
     "customer": "客户",

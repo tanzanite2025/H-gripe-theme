@@ -6,10 +6,10 @@
       <!-- Intro -->
       <div class="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
         <p class="tz-text-secondary leading-relaxed">
-          If the product you receive does not match your order, please do not use it and contact our customer service team (<a href="mailto:support@tanzanite.site" class="text-teal-400 hover:text-teal-300 font-medium transition-colors">support@tanzanite.site</a>).
+          If the product you receive does not match your order, please do not use it and contact our customer service team<template v-if="contactEmail"> (<a :href="contactEmailHref" class="text-teal-400 hover:text-teal-300 font-medium transition-colors">{{ contactEmail }}</a>)</template>.
         </p>
         <p class="tz-text-secondary text-sm mt-2">
-          If a return and refund request is approved, unless otherwise agreed by Tanzanite, the following terms apply:
+          If a return and refund request is approved, unless otherwise agreed by our team, the following terms apply:
         </p>
       </div>
 
@@ -22,7 +22,7 @@
               <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">1</div>
               <h4 class="text-slate-100 font-bold text-lg mb-2 pt-0.5">Eligibility</h4>
               <p class="tz-text-secondary text-sm leading-relaxed">
-                Only products shipped from Tanzanite, delivered within the past <strong class="text-white">30 days</strong>, and in resalable condition will be considered for return and refund.
+                Only products shipped from our facility, delivered within the past <strong class="text-white">30 days</strong>, and in resalable condition will be considered for return and refund.
               </p>
             </div>
 
@@ -31,7 +31,7 @@
               <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">2</div>
               <h4 class="text-slate-100 font-bold text-lg mb-2 pt-0.5">Special Orders</h4>
               <p class="tz-text-secondary text-sm leading-relaxed">
-                Non-stock or custom-configured products (special orders) are not eligible for return or refund, unless the issue is caused by <strong class="text-white">Tanzanite's error</strong>.
+                Non-stock or custom-configured products (special orders) are not eligible for return or refund, unless the issue is caused by <strong class="text-white">our error</strong>.
               </p>
             </div>
 
@@ -40,7 +40,7 @@
               <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">3</div>
               <h4 class="text-slate-100 font-bold text-lg mb-2 pt-0.5">Refund Timeline</h4>
               <p class="tz-text-secondary text-sm leading-relaxed">
-                If Tanzanite approves the return and refund, the refund will be issued within <strong class="text-white">3 business days</strong> after the goods are received and inspected by Tanzanite.
+                If we approve the return and refund, the refund will be issued within <strong class="text-white">3 business days</strong> after the goods are received and inspected by our team.
               </p>
             </div>
          </div>
@@ -75,5 +75,12 @@
 </template>
 
 <script setup lang="ts">
-// No emits or props needed for this tab currently
+import { computed } from 'vue'
+
+const props = defineProps<{
+  contactEmail?: string
+}>()
+
+const contactEmail = computed(() => props.contactEmail?.trim() || '')
+const contactEmailHref = computed(() => `mailto:${contactEmail.value}`)
 </script>

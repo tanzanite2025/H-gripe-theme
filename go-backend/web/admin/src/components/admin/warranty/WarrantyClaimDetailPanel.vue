@@ -174,7 +174,7 @@
               :disabled="!canEdit || serviceRecordCreating"
               @update:model-value="updateServiceRecordField('summary', $event)"
             />
-            <div class="grid grid-cols-[minmax(0,1fr)_90px] gap-2">
+            <div class="grid grid-cols-[minmax(0,1fr)_90px_92px] gap-2">
               <Input
                 :model-value="serviceRecordForm.performedAt"
                 type="date"
@@ -192,12 +192,20 @@
                 :disabled="!canEdit || serviceRecordCreating"
                 @update:model-value="updateServiceRecordField('costAmount', $event)"
               />
+              <Input
+                :model-value="serviceRecordForm.currency"
+                class="h-9 rounded-full font-mono uppercase"
+                maxlength="8"
+                placeholder="币种"
+                :disabled="!canEdit || serviceRecordCreating"
+                @update:model-value="updateServiceRecordField('currency', $event)"
+              />
             </div>
             <div class="flex justify-end">
               <Button
                 size="sm"
                 class="rounded-full font-black uppercase tracking-wider"
-                :disabled="!canEdit || serviceRecordCreating || !serviceRecordForm.summary.trim()"
+                :disabled="!canEdit || serviceRecordCreating || !serviceRecordForm.summary.trim() || !serviceRecordForm.currency.trim()"
                 @click="$emit('create-service-record')"
               >
                 <LoaderCircle v-if="serviceRecordCreating" class="size-3.5 animate-spin" />

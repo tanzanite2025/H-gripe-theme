@@ -23,7 +23,7 @@
     <!-- Tab: Technology (Existing Content) -->
     <div v-show="activeTab === 'technology'" class="space-y-8">
     <!-- Intro Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
        <h3 class="text-lg font-bold text-slate-100 mb-2">Bicycle Hub Key Specifications</h3>
       <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto">
           Understanding the core specifications of your hubs is critical for wheel building and frame compatibility.
@@ -31,7 +31,7 @@
     </div>
 
     <!-- 1. Spoke Interface Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
        <div class="flex items-center gap-3 mb-6 pb-3 border-b border-sky-500/10">
         <h3 class="text-lg font-bold tz-text-primary">1. Spoke Type: J-Bend vs. Straight-Pull</h3>
        </div>
@@ -98,7 +98,7 @@
     <!-- 2. Tech Specs Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- Axle Specs -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-amber-500 mb-4 flex items-center gap-2">
               Axle Standards
            </h3>
@@ -118,7 +118,7 @@
        </div>
 
        <!-- Brake Interface -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-rose-500 mb-4 flex items-center gap-2">
               Brake Interface
            </h3>
@@ -144,7 +144,7 @@
     <!-- 3. Ratchet & Holes -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- Hole Count -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-fuchsia-500 mb-4 flex items-center gap-2">
               Hole Count Logic
            </h3>
@@ -165,7 +165,7 @@
        </div>
 
        <!-- Ratchet System -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-cyan-500 mb-4 flex items-center gap-2">
               Ratchet Engagement
            </h3>
@@ -208,7 +208,7 @@
     <!-- Tab: Choose hubs (New Content) -->
     <div v-show="activeTab === 'choose-hubs'" class="space-y-8">
       <!-- Intro Card -->
-      <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-indigo-500">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-indigo-500">
           <h3 class="text-xl font-bold tz-text-primary mb-2">Hub Selection Guide</h3>
           <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
             Choosing the right hub is a balance between serviceability, performance, and compatibility.
@@ -250,7 +250,7 @@
       </div>
 
       <!-- 3. Hole Count -->
-      <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6">
          <h3 class="text-lg font-bold text-fuchsia-400 mb-4 flex items-center gap-2">
             3. Hole Count Selection
          </h3>

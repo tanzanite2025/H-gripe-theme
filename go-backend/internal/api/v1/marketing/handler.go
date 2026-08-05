@@ -241,14 +241,19 @@ func (h *Handler) GetLoyaltyRules(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"version":                      config.Version,
-		"referral_referrer_points":     config.ReferralReferrerPoints,
-		"referral_referee_points":      config.ReferralRefereePoints,
-		"checkin_base_points":          config.CheckInBasePoints,
-		"checkin_streak_interval_days": config.CheckInStreakIntervalDays,
-		"checkin_streak_bonus_points":  config.CheckInStreakBonusPoints,
-		"checkin_max_points":           config.CheckInMaxPoints,
-		"redemption_exchange_rate":     config.ExchangeRatePoints,
+		"version":                                config.Version,
+		"currency":                               service.LoyaltyPointsBaseCurrency,
+		"points_base_currency":                   service.LoyaltyPointsBaseCurrency,
+		"purchase_earn_points_per_currency_unit": config.PurchaseEarnPointsPerUnit,
+		"purchase_earn_trigger":                  "order_completed",
+		"purchase_earn_amount_basis":             "order_subtotal_minus_discounts",
+		"referral_referrer_points":               config.ReferralReferrerPoints,
+		"referral_referee_points":                config.ReferralRefereePoints,
+		"checkin_base_points":                    config.CheckInBasePoints,
+		"checkin_streak_interval_days":           config.CheckInStreakIntervalDays,
+		"checkin_streak_bonus_points":            config.CheckInStreakBonusPoints,
+		"checkin_max_points":                     config.CheckInMaxPoints,
+		"redemption_exchange_rate":               config.ExchangeRatePoints,
 	})
 }
 

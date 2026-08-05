@@ -91,9 +91,9 @@ export const orderItems = (message: any) => {
 
 export const formatOrderTotal = (order: any) => {
   const total = Number(order?.total || 0)
-  const currency = order?.currency || 'USD'
+  const currency = String(order?.currency || '').trim().toUpperCase()
   if (!Number.isFinite(total) || total <= 0) return currency
-  return `${currency} ${total.toFixed(2)}`
+  return `${currency || '币种缺失'} ${total.toFixed(2)}`
 }
 
 export const statusDisplayValue = (status: any) => {

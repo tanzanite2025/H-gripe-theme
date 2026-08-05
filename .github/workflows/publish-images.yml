@@ -47,6 +47,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          npm run check:production-artifacts
 
       - name: Build admin
         working-directory: go-backend/web/admin

@@ -24,8 +24,9 @@ export const useCustomerServiceInbox = () => {
   const replyMessage = ref('')
   const transferTo = ref('')
   const assignableAgents = ref<any[]>([])
+  const assignableGroups = ref<any[]>([])
   const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
-  const filters = reactive({ search: '', status: 'all', identity: 'all', assignedTo: 'all', unread: 'all' })
+  const filters = reactive({ search: '', status: 'all', identity: 'all', assignedTo: 'all', groupId: 'all', unread: 'all' })
 
   const totalPages = computed(() => Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize)))
 
@@ -56,6 +57,7 @@ export const useCustomerServiceInbox = () => {
         status: filters.status !== 'all' ? filters.status : undefined,
         identity: filters.identity !== 'all' ? filters.identity : undefined,
         assigned_to: filters.assignedTo !== 'all' ? filters.assignedTo : undefined,
+        group_id: filters.groupId !== 'all' ? filters.groupId : undefined,
         unread: filters.unread === 'unread' ? 'true' : undefined,
       })
       conversations.value = data.conversations || []
@@ -97,10 +99,13 @@ export const useCustomerServiceInbox = () => {
 
   const fetchAgents = async () => {
     try {
-      assignableAgents.value = await customerServiceApi.listAgents()
+      const directory = await customerServiceApi.listAgentDirectory()
+      assignableAgents.value = directory.agents || []
+      assignableGroups.value = directory.groups || await customerServiceApi.listGroups()
     } catch (error) {
       console.error('Failed to fetch public chat agents:', error)
       assignableAgents.value = []
+      assignableGroups.value = []
     }
   }
 
@@ -154,6 +159,7 @@ export const useCustomerServiceInbox = () => {
     filters.status = 'all'
     filters.identity = 'all'
     filters.assignedTo = 'all'
+    filters.groupId = 'all'
     filters.unread = 'all'
     pagination.page = 1
     await fetchConversations()
@@ -172,6 +178,7 @@ export const useCustomerServiceInbox = () => {
     replyMessage,
     transferTo,
     assignableAgents,
+    assignableGroups,
     pagination,
     filters,
     totalPages,

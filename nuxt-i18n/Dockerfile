@@ -1,5 +1,7 @@
 FROM node:24-alpine AS build
 WORKDIR /app
+# Nuxt Image defaults to an architecture-neutral provider. Set
+# NUXT_IMAGE_PROVIDER explicitly only when deployment owns a CDN/IPX pipeline.
 COPY package*.json ./
 RUN npm ci
 COPY . .
@@ -7,16 +9,19 @@ ARG NUXT_PUBLIC_API_BASE=/api/v1
 ARG NITRO_PRESET=node-server
 ARG API_INTERNAL_ORIGIN=http://api:9000
 ARG CDN_URL=
+ARG NUXT_IMAGE_PROVIDER=none
 ENV NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
 ENV NITRO_PRESET=${NITRO_PRESET}
 ENV API_INTERNAL_ORIGIN=${API_INTERNAL_ORIGIN}
 ENV CDN_URL=${CDN_URL}
+ENV NUXT_IMAGE_PROVIDER=${NUXT_IMAGE_PROVIDER}
 RUN npm run build
 
 FROM node:24-alpine
 WORKDIR /app
 COPY --from=build /app/.output ./.output
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+RUN find .output -type f -name '*.map' -delete \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000

@@ -1,0 +1,179 @@
+# Payment Provider Integration Runbook
+
+This document records the long-term integration boundaries for Stripe, PayPal, Alipay, and WeChat Pay. It is written for implementation, deployment, and handover. Keep customer-facing copy brand-neutral.
+
+## Architecture Boundary
+
+Payment providers are explicit customer-selected checkout methods. The system must not silently move a customer from one provider to another after risk evaluation or provider failure.
+
+Current supported providers:
+
+- Stripe: card payment with PaymentIntent and 3DS policy support.
+- PayPal: redirect approval flow, capture flow, and verified webhook finalization.
+- Alipay: redirect payment flow with asynchronous notify verification.
+- WeChat Pay: Native QR payment flow with asynchronous API v3 notify verification.
+
+The following actions are intentionally not automatic:
+
+- No automatic refund execution from risk thresholds alone.
+- No automatic fallback to another payment channel.
+- No global hard shutdown of checkout from monitoring alone.
+- No marking an order as paid from an unsigned frontend callback alone.
+
+Webhook or provider-side verified query remains the source of truth for paid state.
+
+## Runtime Endpoints
+
+Storefront checkout creates a local order first, then creates a provider order/session.
+
+| Provider | Create Endpoint | Confirm/Capture Endpoint | Webhook/Notify Endpoint |
+| --- | --- | --- | --- |
+| Stripe | `POST /api/v1/payment/stripe/payment-intents` | Payment Element confirm on client | `POST /api/v1/payment/webhook/stripe` |
+| PayPal | `POST /api/v1/payment/paypal/orders` | `POST /api/v1/payment/paypal/orders/:paypal_order_id/capture` | `POST /api/v1/payment/webhook/paypal` |
+| Alipay | `POST /api/v1/payment/alipay/orders` | `POST /api/v1/payment/alipay/orders/:order_number/confirm` | `POST /api/v1/payment/webhook/alipay` |
+| WeChat Pay | `POST /api/v1/payment/wechat/orders` | `POST /api/v1/payment/wechat/orders/:order_number/confirm` | `POST /api/v1/payment/webhook/wechat` |
+
+The confirm endpoints are for user experience and recovery. Provider notify/webhook must still be configured in production because browser redirects can be closed, blocked, delayed, or replayed.
+
+Payment webhook payloads are capped at 1MiB at the application boundary before provider dispatch.
+
+## Required Environment Variables
+
+Environment variables are the fallback runtime source. Encrypted admin settings can override them when `PAYMENT_CONFIG_MASTER_KEY` is configured.
+
+### Shared Runtime
+
+- `SERVER_BASE_URL`: trusted backend public base URL used to build provider webhook/notify URLs.
+- `PAYMENT_CONFIG_MASTER_KEY`: enables encrypted admin payment settings.
+
+In production, `SERVER_BASE_URL` must be the externally reachable HTTPS backend origin. Do not rely on request `Host` headers for provider notify URLs behind a proxy or CDN.
+
+The admin runtime readiness panel must show callback URLs derived from the same `SERVER_BASE_URL`. The URL copied into Stripe, PayPal, Alipay, or WeChat Pay dashboards should exactly match the runtime readiness callback URL and the URL generated during payment creation.
+
+The admin callback reachability probe sends a minimal unsigned `POST` to the selected provider webhook URL. A provider signature failure response such as HTTP 400 or 401 is expected and means the request reached the application webhook boundary. HTTP 404/405 indicates a routing or proxy path problem. DNS failures, connection timeouts, TLS failures, or edge blocks mean the public callback URL is not reachable from the backend runtime.
+
+### Stripe
+
+- `STRIPE_API_KEY` or `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_ENVIRONMENT=production`
+- Optional: `STRIPE_3DS_MODE=automatic|any|challenge`
+
+### PayPal
+
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_SECRET`
+- `PAYPAL_WEBHOOK_ID`
+- `PAYPAL_ENVIRONMENT=production`
+
+### Alipay
+
+- `ALIPAY_APP_ID`
+- `ALIPAY_PRIVATE_KEY`
+- `ALIPAY_PUBLIC_KEY`
+- `ALIPAY_ENVIRONMENT=production`
+
+### WeChat Pay
+
+- `WECHAT_MCH_ID`
+- `WECHAT_APP_ID`
+- `WECHAT_PRIVATE_KEY_PATH`
+- `WECHAT_MERCHANT_SERIAL`
+- `WECHAT_API_V3_KEY`
+- One verifier option:
+  - `WECHAT_PAY_PLATFORM_CERTIFICATE`, or
+  - `WECHAT_PAY_PLATFORM_PUBLIC_KEY` plus `WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID`
+- `WECHAT_ENVIRONMENT=production`
+
+## Admin Encrypted Config Fields
+
+When `PAYMENT_CONFIG_MASTER_KEY` is configured, operators can save provider secrets from the admin payment settings panel. Secrets are write-only and are not returned to the browser.
+
+| Provider | Required Admin Fields |
+| --- | --- |
+| Stripe | `api_key`, `publishable_key`, `webhook_secret` |
+| PayPal | `client_id`, `secret`, `webhook_id` |
+| Alipay | `app_id`, `private_key`, `public_key` |
+| WeChat Pay | `mch_id`, `app_id`, `private_key_path`, `merchant_serial`, `api_v3_key`, plus platform certificate or platform public key pair |
+
+Use the runtime readiness panel before enabling a provider. Production readiness should be green only when both active payment creation and webhook verification credentials are present.
+
+Saving encrypted admin credentials with `environment=production` requires the typed confirmation `PRODUCTION`. Deleting an encrypted gateway config requires a provider-scoped confirmation such as `DELETE STRIPE`, `DELETE PAYPAL`, `DELETE ALIPAY`, or `DELETE WECHAT`. These confirmations are enforced by the backend API, not only by the admin UI.
+
+Generic admin settings endpoints must not write, read, or delete `payment_gateway_*` keys or the `payment_secret` group. Payment gateway secrets must go through the dedicated gateway config endpoints so encryption, confirmation, runtime readiness, and audit logging stay together.
+
+When encrypted admin payment config exists and `PAYMENT_CONFIG_MASTER_KEY` is
+configured, the runtime payment path uses that domain-managed config before
+falling back to environment variables. This applies to provider order/session
+creation, provider query/capture confirmation, webhook/notify verification,
+runtime readiness display, and manual provider refund execution. Only a missing
+domain-managed config falls back to environment variables; unreadable or
+provider-mismatched encrypted config is treated as a configuration error.
+
+Manual provider refund execution passes the original transaction currency and
+amount into the gateway adapter. PayPal refunds prefer the stored capture id and
+fall back to resolving a capture from a stored PayPal order id for older rows.
+WeChat Pay partial refunds send both the refund amount and original transaction
+amount, as required by the provider API.
+
+High-risk admin payment actions are written to the audit log:
+
+- Saving encrypted gateway config records provider, environment, production flag, submitted/configured field names, status, failure stage, operator, IP, user agent, and request path.
+- Deleting encrypted gateway config records provider, confirmation result, status, operator, IP, user agent, and request path.
+- Running callback reachability probes records provider, callback URL, HTTP status, route reachability, expected signature failure state, operator, IP, user agent, and request path.
+- Creating, updating, or deleting payment methods records method id, code, fee/min/max amounts, enabled flag, sort order, settings presence/length, old-value summary when available, operator, IP, user agent, and request path.
+- Updating the currency policy records accounting currency, default order currency, accepted-currency count/list, old/new summaries when available, operator, IP, user agent, and request path.
+- Creating a local refund draft records order, transaction, requested/net amount, line-item count, restock count, status, operator, IP, user agent, and request path. It does not execute a provider refund.
+- Executing a pending refund records refund, order, transaction, provider, amount, currency, execution status, attempt count, provider-refund-id presence, operator, IP, user agent, and request path.
+- Updating refund recommendations records recommendation, provider, source kind, requested status, linked refund id when present, and operator metadata. It does not call a provider.
+- Submitting Stripe dispute evidence records dispute id, submit/stage mode, evidence-file presence flags, statement presence/length, result status, operator, IP, user agent, and request path.
+- Creating or updating payment reviews records review id, status, linked order/transaction/dispute ids, payment-intent presence, assignee, operator, IP, user agent, and request path.
+- Recomputing payment risk monitoring and creating/revoking manual payment protection controls record their operational inputs and outcome.
+
+Audit payloads must never store raw credential values, webhook secrets, private keys, API v3 keys, payment-method settings JSON/text, typed confirmation text, refund reasons, dispute narrative statements, internal review notes, or customer communication content. Only field names, presence flags, lengths, identifiers, and operational metadata are safe to keep.
+
+## Currency Boundary
+
+Stripe supports the site currency catalog. PayPal supports a fixed provider-safe currency set. Alipay and WeChat Pay are currently restricted to CNY.
+
+If the default order currency is not supported by a provider, the storefront payment method list should return it as unavailable. Backend provider creation endpoints must also reject unsupported order currency before creating provider SDK requests.
+
+Currency policy updates are audited because they can make providers available or unavailable at checkout. The audit record stores normalized ISO currency codes and counts only; it does not store raw request bodies.
+
+## Risk Control Boundary
+
+`pause_payment` controls can hide or block a provider, country, or payment method before provider SDK creation. This is the correct long-term boundary for operational intervention.
+
+Examples:
+
+- Pause `provider=stripe` during acquiring incidents.
+- Pause `country=XX` during abuse spikes.
+- Pause `payment_method=wechat_pay` during provider maintenance.
+
+Do not implement automatic provider failover inside these controls. A customer who selected one provider should see a clear unavailable state and choose another method manually.
+
+## Production Acceptance Checklist
+
+Before enabling a provider in production:
+
+- Runtime readiness shows required credentials configured.
+- Public webhook URL is reachable over HTTPS.
+- Provider dashboard points to the exact webhook URL shown by runtime readiness.
+- Signature verification succeeds in sandbox or provider test mode.
+- Provider ACK format is accepted:
+  - PayPal receives a normal HTTP 2xx response after processing.
+  - Alipay receives a plain text `success` body after successful notification verification and processing.
+  - WeChat Pay receives HTTP 204 with no response body after successful API v3 notification verification and processing.
+- A small live payment creates a local order, creates a provider payment, receives provider notify/webhook, records a transaction, marks the order paid, and clears the cart after confirmation.
+- Duplicate webhook delivery is idempotent and does not create duplicate transactions.
+- Unsupported currency methods are hidden or marked unavailable.
+- `pause_payment` for provider scope blocks active payment creation before provider SDK calls.
+
+## Operational Notes
+
+PayPal, Alipay, and WeChat Pay are asynchronous checkout methods. Do not clear the cart immediately after local order creation. Clear it only after the provider confirms payment or after the customer reaches a verified success state.
+
+WeChat Native payment returns a QR code URL. The storefront generates the QR image locally in the browser and stores only the short payment session in `sessionStorage`.
+
+Alipay browser return is not enough by itself. Treat provider notify verification as the final settlement signal.

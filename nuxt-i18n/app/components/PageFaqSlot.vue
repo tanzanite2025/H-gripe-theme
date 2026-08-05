@@ -10,7 +10,7 @@
         <span class="page-faq-slot__loader-dot" aria-hidden="true" />
         <div class="min-w-0">
           <p class="page-faq-slot__eyebrow">FAQ</p>
-          <p class="page-faq-slot__loader-text">Loading answers</p>
+          <p class="page-faq-slot__loader-text">{{ t('faq.ui.loadingAnswers') }}</p>
         </div>
       </header>
 
@@ -42,7 +42,7 @@ import PageFaq from '~/components/PageFaq.vue'
 import { fetchFaqDataByRoutePath, getPageFaqId, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from '~/data/faq'
 
 const route = useRoute()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const shouldLoadFaqSlot = computed(() => shouldAutoInsertFaqForRoute(route.path))
 const faqLookupRoutePath = computed(() => resolveFaqRouteLookupPath(route.path))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
@@ -27,6 +28,12 @@ func NewWechatGateway(config *Config) (PaymentGateway, error) {
 	if config == nil {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
+	if config.WechatAppID == "" {
+		return nil, fmt.Errorf("wechat app_id is required")
+	}
+	if config.WechatAPIv3Key == "" {
+		return nil, fmt.Errorf("wechat api_v3_key is required")
+	}
 
 	// config.APIKey = AppID
 	// config.SecretKey = 商户API密钥（32字节）
@@ -42,12 +49,12 @@ func NewWechatGateway(config *Config) (PaymentGateway, error) {
 
 	// 从环境变量获取商户ID
 	// 在实际使用中，可以添加到Config结构中
-	mchID := config.APIKey // 临时使用APIKey字段存储商户ID
+	mchID := config.APIKey // APIKey stores the merchant ID for the legacy gateway interface.
 
 	// 创建微信支付客户端
 	ctx := context.Background()
 	opts := []core.ClientOption{
-		option.WithWechatPayAutoAuthCipher(mchID, config.WebhookSecret, mchPrivateKey, ""),
+		option.WithWechatPayAutoAuthCipher(mchID, config.WebhookSecret, mchPrivateKey, config.WechatAPIv3Key),
 	}
 
 	client, err := core.NewClient(ctx, opts...)
@@ -59,7 +66,7 @@ func NewWechatGateway(config *Config) (PaymentGateway, error) {
 		config:        config,
 		client:        client,
 		mchID:         mchID,
-		appID:         config.APIKey, // 临时使用
+		appID:         config.WechatAppID,
 		mchPrivateKey: mchPrivateKey,
 	}, nil
 }
@@ -69,22 +76,31 @@ func (g *wechatGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if err := ValidatePaymentRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
+	if err := ValidateGatewayCurrency(g.config.Type, req.Currency); err != nil {
+		return nil, fmt.Errorf("invalid payment request: %w", err)
+	}
 
 	// 创建Native支付服务
 	svc := native.NativeApiService{Client: g.client}
 
-	// 构建支付请求
-	amount := int64(req.Amount * 100) // 微信支付金额单位为分
+	notifyURL := req.NotifyURL
+	if notifyURL == "" {
+		return nil, fmt.Errorf("wechat notify_url is required")
+	}
+	amount, err := MajorToMinorAmount(req.Amount, req.Currency)
+	if err != nil {
+		return nil, err
+	}
 
 	prepayReq := native.PrepayRequest{
 		Appid:       core.String(g.appID),
 		Mchid:       core.String(g.mchID),
 		Description: core.String(req.Description),
 		OutTradeNo:  core.String(req.OrderID),
-		NotifyUrl:   core.String("https://yourdomain.com/api/v1/webhooks/wechat"),
+		NotifyUrl:   core.String(notifyURL),
 		Amount: &native.Amount{
 			Total:    core.Int64(amount),
-			Currency: core.String("CNY"),
+			Currency: core.String(req.Currency),
 		},
 	}
 
@@ -99,6 +115,9 @@ func (g *wechatGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if err != nil {
 		return nil, fmt.Errorf("failed to create wechat payment: %w", err)
 	}
+	if resp.CodeUrl == nil || *resp.CodeUrl == "" {
+		return nil, fmt.Errorf("wechat payment response did not include code_url")
+	}
 
 	// 构建元数据
 	metadata := req.Metadata
@@ -112,7 +131,7 @@ func (g *wechatGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 		ID:            req.OrderID,
 		Status:        "NOTPAY",
 		Amount:        req.Amount,
-		Currency:      "CNY",
+		Currency:      req.Currency,
 		PaymentURL:    *resp.CodeUrl, // 二维码链接
 		TransactionID: req.OrderID,
 		CreatedAt:     time.Now(),
@@ -132,6 +151,10 @@ func (g *wechatGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 
 // RefundPayment 退款微信支付
 func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+}
+
+func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
@@ -141,9 +164,26 @@ func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 
 	// 生成退款单号
 	refundNo := fmt.Sprintf("refund_%s_%d", paymentID, time.Now().Unix())
+	if options.IdempotencyKey != "" {
+		refundNo = options.IdempotencyKey
+	}
 
 	// 构建退款请求
-	refundAmount := int64(amount * 100)
+	currency := strings.ToUpper(strings.TrimSpace(options.Currency))
+	if currency == "" {
+		currency = "CNY"
+	}
+	refundAmount, err := MajorToMinorAmount(amount, currency)
+	if err != nil {
+		return nil, err
+	}
+	totalAmount := refundAmount
+	if options.OriginalAmount > 0 {
+		totalAmount, err = MajorToMinorAmount(options.OriginalAmount, currency)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	refundReq := refunddomestic.CreateRequest{
 		OutTradeNo:  core.String(paymentID),
@@ -151,9 +191,12 @@ func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 		Reason:      core.String("Customer refund request"),
 		Amount: &refunddomestic.AmountReq{
 			Refund:   core.Int64(refundAmount),
-			Total:    core.Int64(refundAmount), // 应该是原始订单金额
-			Currency: core.String("CNY"),
+			Total:    core.Int64(totalAmount),
+			Currency: core.String(currency),
 		},
+	}
+	if options.Reason != "" {
+		refundReq.Reason = core.String(options.Reason)
 	}
 
 	// 执行退款
@@ -165,7 +208,7 @@ func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 	return &RefundResponse{
 		ID:        *resp.OutRefundNo,
 		PaymentID: paymentID,
-		Amount:    float64(*resp.Amount.Refund) / 100,
+		Amount:    amount,
 		Status:    string(*resp.Status),
 		CreatedAt: time.Now(),
 	}, nil

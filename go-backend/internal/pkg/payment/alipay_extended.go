@@ -58,6 +58,9 @@ func (g *alipayGatewayImpl) CreateAlipayWapPayment(ctx context.Context, req *Pay
 	if req.CancelURL != "" {
 		p.QuitURL = req.CancelURL
 	}
+	if req.NotifyURL != "" {
+		p.NotifyURL = req.NotifyURL
+	}
 
 	// 生成支付URL
 	paymentURL, err := g.client.TradeWapPay(p)

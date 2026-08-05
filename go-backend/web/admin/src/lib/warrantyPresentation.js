@@ -111,9 +111,10 @@ export const orderItemLabel = (item) => {
   return `#${item.id} ${item.product_name || `Product ${item.product_id}`}${sku}${variant} × ${item.quantity || 1}`
 }
 
-export const formatMoney = (amount, currency = 'USD') => {
+export const formatMoney = (amount, currency = '') => {
   const value = Number(amount || 0)
-  return `${currency || 'USD'} ${value.toFixed(2)}`
+  const normalizedCurrency = String(currency || '').trim().toUpperCase()
+  return `${normalizedCurrency || '币种缺失'} ${value.toFixed(2)}`
 }
 
 export const formatDate = (value) => value ? new Date(value).toLocaleDateString('zh-CN') : '-'

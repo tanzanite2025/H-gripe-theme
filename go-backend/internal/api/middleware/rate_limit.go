@@ -20,9 +20,13 @@ type RateLimiter struct {
 
 // NewRateLimiter 创建限流器
 func NewRateLimiter(rps int, burst int) *RateLimiter {
+	return newRateLimiter(rate.Limit(rps), burst)
+}
+
+func newRateLimiter(requestRate rate.Limit, burst int) *RateLimiter {
 	return &RateLimiter{
 		limiters: make(map[string]*rate.Limiter),
-		rate:     rate.Limit(rps),
+		rate:     requestRate,
 		burst:    burst,
 	}
 }
@@ -93,6 +97,40 @@ func RateLimitByUser(rps int) gin.HandlerFunc {
 		limiter := limiter.getLimiter(key)
 
 		if !limiter.Allow() {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error":   "Too many requests",
+				"message": "Rate limit exceeded. Please try again later.",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// RateLimitByUserPerMinute limits authenticated actions whose payload or
+// downstream work is too expensive for a per-second policy.
+func RateLimitByUserPerMinute(requestsPerMinute, burst int) gin.HandlerFunc {
+	if requestsPerMinute <= 0 {
+		panic("requests per minute must be positive")
+	}
+	if burst < 1 {
+		burst = 1
+	}
+
+	limiter := newRateLimiter(rate.Limit(float64(requestsPerMinute)/60), burst)
+	limiter.cleanupOldLimiters()
+
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			userID = c.ClientIP()
+		}
+
+		key := fmt.Sprintf("user_%v", userID)
+		if !limiter.getLimiter(key).Allow() {
+			c.Header("Retry-After", "20")
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error":   "Too many requests",
 				"message": "Rate limit exceeded. Please try again later.",

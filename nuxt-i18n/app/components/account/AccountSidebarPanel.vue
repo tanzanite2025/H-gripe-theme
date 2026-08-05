@@ -220,8 +220,8 @@ watch(
   gap: 0.85rem;
   border-radius: 1.55rem;
   background:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.2), transparent 42%),
-    linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(2, 6, 23, 0.92));
+    radial-gradient(circle at top left, rgba(181, 255, 109, 0.06), transparent 42%),
+    linear-gradient(135deg, rgba(20, 20, 22, 0.98), rgba(5, 5, 5, 0.94));
   box-shadow: 0 18px 44px -26px rgba(0, 0, 0, 1);
   padding: 1rem;
 }
@@ -232,7 +232,7 @@ watch(
 
 .account-sidebar__kicker {
   margin: 0 0 0.35rem;
-  color: #67e8f9;
+  color: #B5FF6D;
   font-size: var(--tz-type-micro-label);
   font-weight: 900;
   letter-spacing: 0.18em;
@@ -251,7 +251,7 @@ watch(
 
 .account-sidebar__hero p:last-child {
   margin: 0.45rem 0 0;
-  color: rgba(226, 232, 240, 0.82);
+  color: rgba(232, 232, 232, 0.82);
   font-size: 0.8rem;
   line-height: 1.45;
 }
@@ -264,7 +264,7 @@ watch(
   gap: 0.35rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
-  color: rgba(226, 232, 240, 0.88);
+  color: rgba(232, 232, 232, 0.88);
   padding: 0 0.7rem;
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
@@ -295,7 +295,7 @@ watch(
 }
 
 .account-sidebar__stats span {
-  color: rgba(203, 213, 225, 0.8);
+  color: rgba(212, 212, 212, 0.8);
   font-size: var(--tz-type-micro-label);
   font-weight: 750;
 }
@@ -325,7 +325,7 @@ watch(
   justify-content: center;
   gap: 0.35rem;
   border-radius: 0.95rem;
-  color: rgba(226, 232, 240, 0.78);
+  color: rgba(232, 232, 232, 0.78);
   font-size: var(--tz-type-micro-label);
   font-weight: 850;
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
@@ -344,8 +344,8 @@ watch(
 }
 
 .account-sidebar__tab--active {
-  background: linear-gradient(135deg, #4efce7, #60a5fa);
-  color: #020617;
+  background: #B5FF6D;
+  color: #050505;
   transform: translateY(-1px);
 }
 
@@ -362,7 +362,7 @@ watch(
 
 .account-sidebar__content::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.5);
+  background: rgba(160, 160, 160, 0.5);
 }
 
 @media (min-width: 768px) {

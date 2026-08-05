@@ -58,7 +58,7 @@
       <div class="support-video-modal__content">
         <button
           type="button"
-          class="support-video-modal__close"
+          class="tz-global-close-btn support-video-modal__close"
           @click="showSpokeHoleVideo = false"
         >
           ×
@@ -83,7 +83,7 @@
       <div class="support-video-modal__content">
         <button
           type="button"
-          class="support-video-modal__close"
+          class="tz-global-close-btn support-video-modal__close"
           @click="showWheelsetVideo = false"
         >
           ×
@@ -200,6 +200,11 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
+  padding:
+    var(--tz-safe-area-top, 0px)
+    var(--tz-safe-area-right, 0px)
+    var(--tz-safe-area-bottom, 0px)
+    var(--tz-safe-area-left, 0px);
 }
 
 .support-video-modal__backdrop {
@@ -222,18 +227,15 @@ watch(
 
 .support-video-modal__close {
   position: absolute;
-  top: 0.35rem;
-  right: 0.6rem;
-  background: transparent;
-  border: none;
-  color: #e5e7eb;
-  font-size: 1.4rem;
-  cursor: pointer;
+  top: max(0.5rem, calc(0.5rem + var(--tz-safe-area-top, 0px)));
+  right: max(1rem, calc(1rem + var(--tz-safe-area-right, 0px)));
+  z-index: 50;
 }
 
 .support-video-modal__video {
   display: block;
   width: 100%;
   height: auto;
+  max-height: min(80vh, var(--tz-mobile-safe-viewport-height, 80vh));
 }
 </style>

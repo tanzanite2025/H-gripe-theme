@@ -11,7 +11,9 @@ import (
 	"tanzanite/internal/domain/order"
 	paymentdomain "tanzanite/internal/domain/payment"
 	"tanzanite/internal/domain/product"
+	"tanzanite/internal/domain/setting"
 	shippingdomain "tanzanite/internal/domain/shipping"
+	"tanzanite/internal/pkg/ordernumber"
 	"tanzanite/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -84,7 +86,7 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 
 func TestOrderServiceCreateOrderUsesVersionedLoyaltyExchangeRate(t *testing.T) {
 	db, orderService := newTestOrderService(t)
-	programService := NewLoyaltyProgramService(repository.NewLoyaltyProgramRepository(db))
+	programService := newTestLoyaltyProgramService(t, db)
 	config, err := programService.Update(LoyaltyProgramConfigInput{
 		Enabled:                   true,
 		Currency:                  "USD",
@@ -299,12 +301,262 @@ func TestOrderServiceCreateOrderRejectsProductWithoutVariant(t *testing.T) {
 	assert.Equal(t, int64(0), orderCount)
 }
 
+func TestOrderServiceExpireStalePendingPaymentsReleasesReservations(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	now := time.Now().UTC()
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 50, 5)
+	seedUserLoyalty(t, db, userID, 1000)
+	seedCoupon(t, db, "EXPIRE10", "fixed", 10, 1)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 2}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"EXPIRE10",
+		100,
+	)
+	require.NoError(t, err)
+
+	oldActivity := now.Add(-45 * time.Minute)
+	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Updates(map[string]interface{}{
+		"created_at": oldActivity,
+		"updated_at": oldActivity,
+	}).Error)
+	require.NoError(t, db.Create(&paymentdomain.Transaction{
+		OrderID:       createdOrder.ID,
+		TransactionID: "pi_expire_old",
+		PaymentMethod: "stripe",
+		Amount:        createdOrder.TotalAmount,
+		Currency:      "USD",
+		Status:        "requires_action",
+		CreatedAt:     oldActivity,
+		UpdatedAt:     oldActivity,
+	}).Error)
+
+	result, err := orderService.ExpireStalePendingPayments(now, 30*time.Minute, 100)
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.ScannedCandidates)
+	assert.Equal(t, 1, result.ExpiredOrders)
+	assert.Equal(t, int64(1), result.ExpiredOpenTransactions)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, createdOrder.ID).Error)
+	assert.Equal(t, "payment_expired", savedOrder.Status)
+	assert.Equal(t, "expired", savedOrder.PaymentStatus)
+	assert.NotNil(t, savedOrder.CancelledAt)
+
+	var savedTransaction paymentdomain.Transaction
+	require.NoError(t, db.Where("transaction_id = ?", "pi_expire_old").First(&savedTransaction).Error)
+	assert.Equal(t, "expired", savedTransaction.Status)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 5, savedProduct.Stock)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 5, savedVariant.Stock)
+
+	var savedLoyalty loyalty.UserLoyalty
+	require.NoError(t, db.Where("user_id = ?", userID).First(&savedLoyalty).Error)
+	assert.Equal(t, 1000, savedLoyalty.AvailablePoints)
+	assert.Equal(t, 0, savedLoyalty.UsedPoints)
+
+	var savedCoupon coupon.Coupon
+	require.NoError(t, db.Where("code = ?", "EXPIRE10").First(&savedCoupon).Error)
+	assert.Equal(t, 0, savedCoupon.UsedCount)
+
+	var usageCount int64
+	require.NoError(t, db.Model(&coupon.CouponUsage{}).Where("order_id = ?", createdOrder.ID).Count(&usageCount).Error)
+	assert.Equal(t, int64(0), usageCount)
+}
+
+func TestOrderServiceExpireStalePendingPaymentsSkipsRecentPaymentActivity(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	now := time.Now().UTC()
+	productRecord := seedProduct(t, db, 50, 5)
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"stripe",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+
+	oldCreatedAt := now.Add(-2 * time.Hour)
+	recentActivity := now.Add(-10 * time.Minute)
+	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Updates(map[string]interface{}{
+		"created_at": oldCreatedAt,
+		"updated_at": oldCreatedAt,
+	}).Error)
+	require.NoError(t, db.Create(&paymentdomain.Transaction{
+		OrderID:       createdOrder.ID,
+		TransactionID: "pi_recent_activity",
+		PaymentMethod: "stripe",
+		Amount:        createdOrder.TotalAmount,
+		Currency:      "USD",
+		Status:        "processing",
+		CreatedAt:     oldCreatedAt,
+		UpdatedAt:     recentActivity,
+	}).Error)
+
+	result, err := orderService.ExpireStalePendingPayments(now, 30*time.Minute, 100)
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, result.ScannedCandidates)
+	assert.Equal(t, 0, result.ExpiredOrders)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, createdOrder.ID).Error)
+	assert.Equal(t, "pending", savedOrder.Status)
+	assert.Equal(t, "unpaid", savedOrder.PaymentStatus)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 4, savedProduct.Stock)
+}
+
 func TestOrderStatusTransitionUsesDomainRules(t *testing.T) {
 	assert.False(t, (&order.Order{Status: "pending"}).CanTransitionTo("paid"))
+	assert.True(t, (&order.Order{Status: "pending"}).CanTransitionTo("payment_expired"))
 	assert.True(t, (&order.Order{Status: "shipped"}).CanTransitionTo("completed"))
 	assert.False(t, (&order.Order{Status: "shipped"}).CanTransitionTo("delivered"))
 	assert.False(t, (&order.Order{Status: "paid"}).CanTransitionTo("refunded"))
 	assert.False(t, (&order.Order{Status: "cancelled"}).CanTransitionTo("paid"))
+	assert.False(t, (&order.Order{Status: "payment_expired"}).CanTransitionTo("paid"))
+}
+
+func TestOrderServiceCompletingOrderAwardsPurchasePointsOnce(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	require.NoError(t, db.Create(&loyalty.MemberLevel{
+		Name:         "Gold",
+		MinPoints:    0,
+		MaxPoints:    999999,
+		DiscountRate: 0,
+		Benefits:     "[]",
+		SortOrder:    10,
+	}).Error)
+
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-COMPLETE-POINTS",
+		UserID:         userID,
+		Status:         "shipped",
+		PaymentStatus:  "paid",
+		SubtotalAmount: 120,
+		DiscountAmount: 20,
+		TotalAmount:    115,
+		Currency:       "USD",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	require.NoError(t, orderService.UpdateOrderStatus(orderRecord.ID, "completed"))
+
+	var earnedTransactions []loyalty.LoyaltyTransaction
+	require.NoError(t, db.Where(
+		"user_id = ? AND type = ? AND source = ? AND source_id = ?",
+		userID,
+		"earn",
+		"order",
+		orderRecord.ID,
+	).Find(&earnedTransactions).Error)
+	require.Len(t, earnedTransactions, 1)
+	assert.Equal(t, 100, earnedTransactions[0].Points)
+	assert.Equal(t, 100, earnedTransactions[0].Balance)
+	require.NotNil(t, earnedTransactions[0].ProgramConfigID)
+
+	var userLoyalty loyalty.UserLoyalty
+	require.NoError(t, db.Where("user_id = ?", userID).First(&userLoyalty).Error)
+	assert.Equal(t, 100, userLoyalty.AvailablePoints)
+	assert.Equal(t, 100, userLoyalty.TotalPoints)
+
+	require.Error(t, orderService.UpdateOrderStatus(orderRecord.ID, "completed"))
+	var count int64
+	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).
+		Where("user_id = ? AND type = ? AND source = ? AND source_id = ?", userID, "earn", "order", orderRecord.ID).
+		Count(&count).Error)
+	assert.EqualValues(t, 1, count)
+}
+
+func TestOrderServiceCompletionRejectsNonUSDPointsWithoutConversion(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(43)
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-COMPLETE-EUR-POINTS",
+		UserID:         userID,
+		Status:         "shipped",
+		PaymentStatus:  "paid",
+		SubtotalAmount: 120,
+		DiscountAmount: 20,
+		TotalAmount:    115,
+		Currency:       "EUR",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	err := orderService.UpdateOrderStatus(orderRecord.ID, "completed")
+
+	require.ErrorIs(t, err, ErrInvalidLoyaltyProgramConfig)
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "shipped", savedOrder.Status)
+
+	var count int64
+	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).
+		Where("user_id = ? AND type = ? AND source = ? AND source_id = ?", userID, "earn", "order", orderRecord.ID).
+		Count(&count).Error)
+	assert.EqualValues(t, 0, count)
+}
+
+func TestOrderServiceCreateOrderUsesDefaultOrderCurrency(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 50, 5)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.Equal(t, "USD", createdOrder.Currency)
+}
+
+func TestOrderServiceCreateOrderRejectsPaymentMethodUnsupportedDefaultCurrency(t *testing.T) {
+	_, orderService := newTestOrderService(t)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: 1, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"wechat",
+		"standard",
+		"",
+		0,
+	)
+
+	require.Error(t, err)
+	assert.Nil(t, createdOrder)
+	assert.Contains(t, err.Error(), "cannot collect order currency USD")
 }
 
 func TestOrderServiceRejectsPaymentManagedStatusUpdates(t *testing.T) {
@@ -315,11 +567,13 @@ func TestOrderServiceRejectsPaymentManagedStatusUpdates(t *testing.T) {
 		Status:        "pending",
 		PaymentStatus: "unpaid",
 		TotalAmount:   100,
+		Currency:      "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
 	require.ErrorIs(t, orderService.UpdateOrderStatus(orderRecord.ID, "paid"), ErrSystemManagedOrderStatus)
 	require.ErrorIs(t, orderService.UpdateOrderStatus(orderRecord.ID, "refunded"), ErrSystemManagedOrderStatus)
+	require.ErrorIs(t, orderService.UpdateOrderStatus(orderRecord.ID, "payment_expired"), ErrSystemManagedOrderStatus)
 
 	var savedOrder order.Order
 	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
@@ -337,6 +591,7 @@ func TestOrderServiceUpdateTrackingInfoResolvesProviderCarrierCode(t *testing.T)
 		UserID:      42,
 		Status:      "processing",
 		TotalAmount: 100,
+		Currency:    "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -382,6 +637,7 @@ func TestOrderServiceUpdateTrackingInfoDefaultsToOrderCarrierService(t *testing.
 		CarrierID:        &carrier.ID,
 		CarrierServiceID: &carrierService.ID,
 		TotalAmount:      100,
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -427,6 +683,7 @@ func TestOrderServiceSyncOrderTrackingUsesStoredTrackingSource(t *testing.T) {
 		TrackingProviderID:  &provider.ID,
 		ProviderCarrierCode: "DHL",
 		TotalAmount:         100,
+		Currency:            "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -449,10 +706,24 @@ func TestOrderServiceSyncOrderTrackingUsesStoredTrackingSource(t *testing.T) {
 }
 
 func TestOrderServiceGenerateOrderNumberFormat(t *testing.T) {
-	orderNumber := (&OrderService{}).generateOrderNumber()
+	generator, err := ordernumber.NewGenerator("test-order-number-secret", 0)
+	require.NoError(t, err)
+	service := &OrderService{numberGenerator: generator}
+	orderNumber, err := service.generateOrderNumber()
 
-	assert.True(t, strings.HasPrefix(orderNumber, "ORD"+time.Now().Format("20060102")))
-	assert.Len(t, orderNumber, 19)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(orderNumber, "TZ-"+time.Now().UTC().Format("2006")+"-"))
+	assert.True(t, generator.Validate(orderNumber))
+}
+
+func TestOrderServiceRejectsSequentialPublicOrderNumber(t *testing.T) {
+	generator, err := ordernumber.NewGenerator("test-order-number-secret", 0)
+	require.NoError(t, err)
+	service := &OrderService{numberGenerator: generator}
+
+	assert.False(t, service.validatesKnownProtectedOrderNumber("1001"))
+	assert.False(t, service.validatesKnownProtectedOrderNumber("#1001"))
+	assert.True(t, service.validatesKnownProtectedOrderNumber("ORD-LEGACY-1001"))
 }
 
 func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
@@ -486,6 +757,8 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&loyalty.ProgramConfig{},
 		&loyalty.ProgramRedeemOption{},
 		&loyalty.MemberLevel{},
+		&setting.Setting{},
+		&paymentdomain.Transaction{},
 		&paymentdomain.TaxRate{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
@@ -509,8 +782,33 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	seedDefaultShippingTemplate(t, db)
 	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo, shippingService)
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
+	currencyPolicyService := seedTestCurrencyPolicy(t, db)
+	programRepo := repository.NewLoyaltyProgramRepository(db)
+	txManager.ConfigureLoyaltyProgramRepository(programRepo)
+	programService := NewLoyaltyProgramService(programRepo)
+	programService.ConfigureCurrencyPolicy(currencyPolicyService)
+	_, err = programService.Update(LoyaltyProgramConfigInput{
+		Enabled:                   true,
+		Currency:                  "USD",
+		PurchaseEarnPointsPerUnit: 1,
+		ExchangeRatePoints:        100,
+		MinRedeemPoints:           1000,
+		MaxValuePerDayCents:       50000,
+		CardExpiryDays:            365,
+		ReferralReferrerPoints:    100,
+		ReferralRefereePoints:     50,
+		CheckInBasePoints:         10,
+		CheckInStreakIntervalDays: 7,
+		CheckInStreakBonusPoints:  5,
+		CheckInMaxPoints:          50,
+		RedeemValuesCents:         []int64{1000, 5000, 10000},
+	})
+	require.NoError(t, err)
+	checkoutService.ConfigureLoyaltyProgram(programService)
+	numberGenerator, err := ordernumber.NewGenerator("test-order-number-secret", 0)
+	require.NoError(t, err)
 
-	return db, NewOrderService(txManager, orderRepo, checkoutService, shippingService)
+	return db, NewOrderService(txManager, orderRepo, checkoutService, shippingService, currencyPolicyService, numberGenerator)
 }
 
 func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {
@@ -581,11 +879,10 @@ func seedUserLoyalty(t *testing.T, db *gorm.DB, userID uint, points int) {
 	t.Helper()
 
 	require.NoError(t, db.FirstOrCreate(&loyalty.MemberLevel{}, loyalty.MemberLevel{
-		Name:             "Test Level",
-		MinPoints:        0,
-		MaxPoints:        999999,
-		DiscountRate:     5,
-		PointsMultiplier: 1,
+		Name:         "Test Level",
+		MinPoints:    0,
+		MaxPoints:    999999,
+		DiscountRate: 5,
 	}).Error)
 
 	require.NoError(t, db.Create(&loyalty.UserLoyalty{

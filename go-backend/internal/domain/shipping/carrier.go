@@ -37,7 +37,7 @@ type CarrierService struct {
 	ServiceName           string            `gorm:"type:varchar(160);not null" json:"service_name"`
 	RouteName             string            `gorm:"type:varchar(160)" json:"route_name"`
 	Countries             string            `gorm:"type:text;default:'[]';not null" json:"countries"`
-	Currency              string            `gorm:"type:varchar(10);default:'USD';not null" json:"currency"`
+	Currency              string            `gorm:"type:varchar(10);not null" json:"currency"`
 	BillingMode           string            `gorm:"type:varchar(40);default:'actual_weight';not null" json:"billing_mode"`
 	FirstWeightGrams      int               `gorm:"default:0;not null" json:"first_weight_grams"`
 	AdditionalWeightGrams int               `gorm:"default:0;not null" json:"additional_weight_grams"`

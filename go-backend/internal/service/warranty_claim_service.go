@@ -399,7 +399,7 @@ func (s *RegistrationService) CreateWarrantyServiceRecord(claimID uint, input Wa
 
 	currency := strings.ToUpper(strings.TrimSpace(input.Currency))
 	if currency == "" {
-		currency = "USD"
+		return nil, errors.New("service record currency is required")
 	}
 
 	record := &registration.WarrantyServiceRecord{

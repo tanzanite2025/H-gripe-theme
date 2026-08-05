@@ -1,47 +1,49 @@
 <template>
   <AdminTablePanel :loading="loading">
-    <Table class="min-w-[900px]">
+    <Table class="min-w-[780px]">
       <TableHeader>
         <TableRow>
           <TableHead>等级名称</TableHead>
           <TableHead class="w-52">积分范围</TableHead>
           <TableHead class="w-28 text-right">折扣率</TableHead>
-          <TableHead class="w-28 text-right">积分倍数</TableHead>
           <TableHead>权益说明</TableHead>
           <TableHead class="w-20 text-right">排序</TableHead>
           <TableHead class="w-16 text-right">操作</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableEmpty v-if="levels.length === 0" :colspan="7">
+        <TableEmpty v-if="levels.length === 0" :colspan="6">
           <div class="flex flex-col items-center text-muted-foreground">
             <Crown class="mb-2 size-7 opacity-55" />
             <span class="text-xs">暂无会员等级</span>
           </div>
         </TableEmpty>
-        <TableRow v-for="level in levels" :key="level.id">
+        <TableRow v-for="level in levels" :key="level.id || level.name">
           <TableCell>
             <div class="flex items-center gap-2">
               <span class="size-3 rounded-full border" :style="{ backgroundColor: level.color || '#94a3b8' }" />
-              <span class="font-bold text-xs">{{ level.name }}</span>
+              <span class="font-bold text-xs">{{ memberLevelLabel(level.name) }}</span>
             </div>
           </TableCell>
           <TableCell class="tabular-nums">{{ level.min_points }} - {{ level.max_points }}</TableCell>
           <TableCell class="text-right tabular-nums">{{ formatRate(level.discount_rate) }}</TableCell>
-          <TableCell class="text-right tabular-nums">{{ Number(level.points_multiplier || 1).toFixed(2) }}x</TableCell>
           <TableCell class="max-w-72 truncate text-muted-foreground">{{ level.benefits || '-' }}</TableCell>
           <TableCell class="text-right tabular-nums">{{ level.sort_order || 0 }}</TableCell>
           <TableCell class="text-right">
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button variant="ghost" size="icon" :aria-label="`管理会员等级 ${level.name}`">
+                <Button variant="ghost" size="icon" :aria-label="`管理会员等级 ${memberLevelLabel(level.name)}`">
                   <MoreHorizontal class="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" class="w-36">
-                <DropdownMenuItem v-if="canEdit" @select="emit('edit', level)">
+                <DropdownMenuItem
+                  v-if="canEdit"
+                  :disabled="!level.id"
+                  @select="level.id && emit('edit', level)"
+                >
                   <Pencil class="size-4" />
-                  编辑
+                  {{ level.id ? '编辑' : '待初始化' }}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator v-if="canDelete" />
                 <DropdownMenuItem
@@ -83,4 +85,17 @@ defineProps({
 })
 
 const emit = defineEmits(['edit', 'delete'])
+
+const memberLevelLabel = (name) => {
+  const key = String(name || '').trim().toLowerCase()
+  const labels = {
+    ordinary: '普通',
+    bronze: '铜牌',
+    silver: '银牌',
+    gold: '金牌',
+    platinum: '铂金',
+    diamond: '钻石',
+  }
+  return labels[key] || name || '-'
+}
 </script>

@@ -40,7 +40,7 @@
         <TabsContent value="users" class="mt-0">
           <div class="flex min-h-9 items-center justify-between">
             <strong class="text-xs font-black uppercase tracking-wider text-foreground/80">最近用户</strong>
-            <Button variant="link" size="sm" class="px-0 font-bold text-xs" @click="emit('navigate', '/users')">
+            <Button variant="link" size="sm" class="px-0 font-bold text-xs" @click="emit('navigate', '/access/admin-users')">
               查看全部
               <ArrowRight class="size-3.5 ml-1" />
             </Button>

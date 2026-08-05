@@ -24,13 +24,7 @@ func NewAlipayGateway(config *Config) (PaymentGateway, error) {
 	var client *alipay.Client
 	var err error
 
-	if config.Environment == "production" {
-		// 生产环境
-		client, err = alipay.New(config.APIKey, config.SecretKey, false)
-	} else {
-		// 沙箱环境
-		client, err = alipay.New(config.APIKey, config.SecretKey, true)
-	}
+	client, err = alipay.New(config.APIKey, config.SecretKey, config.Environment == "production")
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alipay client: %w", err)
@@ -55,6 +49,9 @@ func (g *alipayGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if err := ValidatePaymentRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
+	if err := ValidateGatewayCurrency(g.config.Type, req.Currency); err != nil {
+		return nil, fmt.Errorf("invalid payment request: %w", err)
+	}
 
 	// 构建支付请求参数
 	var p = alipay.TradePagePay{}
@@ -72,8 +69,9 @@ func (g *alipayGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	// 	p.QuitURL = req.CancelURL
 	// }
 
-	// 设置通知URL（需要从配置或请求中获取）
-	// p.NotifyURL = "https://yourdomain.com/api/v1/webhooks/alipay"
+	if req.NotifyURL != "" {
+		p.NotifyURL = req.NotifyURL
+	}
 
 	// 生成支付URL
 	paymentURL, err := g.client.TradePagePay(p)
@@ -138,18 +136,28 @@ func (g *alipayGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 
 // RefundPayment 退款支付宝支付
 func (g *alipayGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+}
+
+func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
 	// 生成退款单号
 	refundNo := fmt.Sprintf("refund_%s_%d", paymentID, time.Now().Unix())
+	if options.IdempotencyKey != "" {
+		refundNo = options.IdempotencyKey
+	}
 
 	// 构建退款请求
 	var p = alipay.TradeRefund{}
 	p.OutTradeNo = paymentID
 	p.RefundAmount = fmt.Sprintf("%.2f", amount)
 	p.RefundReason = "Customer refund request"
+	if options.Reason != "" {
+		p.RefundReason = options.Reason
+	}
 	p.OutRequestNo = refundNo
 
 	// 执行退款

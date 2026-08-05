@@ -66,4 +66,14 @@ export const footerMenus: FooterSection[] = [
     // You can fill links for this column later
     links: [],
   },
+  {
+    id: 'policies',
+    titleKey: 'footer.menus.policies',
+    links: [
+      { labelKey: 'policyTabs.privacy', to: '/policies/privacy' },
+      { labelKey: 'policyTabs.cookie', to: '/policies/cookie' },
+      { labelKey: 'policyTabs.refundReturn', to: '/policies/refund-return' },
+      { labelKey: 'policyTabs.terms', to: '/policies/terms' },
+    ],
+  },
 ]

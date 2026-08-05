@@ -11,7 +11,6 @@ export interface OrderChatItem {
 }
 
 export interface OrderChatMetadata {
-  order_id: number
   order_number: string
   title: string
   status: string
@@ -72,21 +71,19 @@ const normalizeOrderItems = (order: Record<string, any>): OrderChatItem[] => {
 
 export const buildOrderChatMetadata = (order: Record<string, any>): OrderChatMetadata => {
   const items = normalizeOrderItems(order)
-  const orderID = toFiniteNumber(order?.id ?? order?.order_id)
   const orderNumber = String(order?.order_number || order?.orderNumber || '').trim()
-  const title = String(order?.title || `Order #${orderNumber || orderID}`).trim()
+  const title = String(order?.title || (orderNumber ? `Order #${orderNumber}` : 'Order')).trim()
   const total = toFiniteNumber(order?.total ?? order?.total_amount)
 
   return {
-    order_id: orderID,
     order_number: orderNumber,
     title,
     status: String(order?.status || '').trim(),
     payment_status: String(order?.payment_status || '').trim(),
     shipping_status: String(order?.shipping_status || '').trim(),
     total,
-    currency: String(order?.currency || 'USD').trim(),
-    url: String(order?.url || (orderID ? `/orders/${orderID}` : '')).trim(),
+    currency: String(order?.currency || '').trim().toUpperCase(),
+    url: String(order?.url || '').trim(),
     thumbnail: String(order?.thumbnail || '').trim(),
     item_count: toFiniteNumber(order?.item_count, items.reduce((sum, item) => sum + item.quantity, 0)),
     items,

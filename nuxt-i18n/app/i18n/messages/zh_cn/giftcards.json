@@ -4,5 +4,7 @@
   "pointsRequired": "Points required",
   "redeeming": "Redeeming...",
   "redeem": "Redeem",
-  "noCards": "No gift cards available"
+  "noCards": "No gift cards available",
+  "myCards": "我的礼品卡",
+  "remaining": "Remaining"
 }

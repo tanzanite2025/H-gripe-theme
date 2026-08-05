@@ -16,7 +16,7 @@ export interface ProductConfigConfirmSelection {
   variant_title: string
   sku: string
   options: ProductConfigConfirmOption[]
-  stock: number | null
+  availability: 'in_stock' | 'out_of_stock'
   weight_grams: number | null
   price: string
   price_value: number
@@ -175,7 +175,10 @@ export const buildProductConfigConfirmMetadata = (
   )
   const url = String(product?.url || (slug ? `/shop/${slug}` : '')).trim()
   const optionRows = variantOptionRows(product, selectedVariant)
-  const stock = toNullablePositiveNumber(selectedVariant?.stockQuantity ?? selectedVariant?.stock)
+  const availability = selectedVariant?.availability === 'in_stock'
+    || product?.availability === 'in_stock'
+    ? 'in_stock'
+    : 'out_of_stock'
   const weightGrams = toNullablePositiveNumber(selectedVariant?.weightGrams ?? selectedVariant?.weight_grams)
   const variantTitle = String(selectedVariant?.title || optionRows.map(item => item.value).join(' / ') || '').trim()
 
@@ -196,7 +199,7 @@ export const buildProductConfigConfirmMetadata = (
       variant_title: variantTitle,
       sku,
       options: optionRows,
-      stock,
+      availability,
       weight_grams: weightGrams,
       price,
       price_value: priceValue,

@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="内容管理" description="管理文章、发布状态、多语言版本和搜索信息">
+    <AdminPageHeader title="博客内容" description="管理前台 Blog 文章、发布状态、多语言版本和搜索信息">
       <template #actions>
         <Button v-if="hasPermission('content:create')" @click="showCreateDialog">
           <Plus class="size-4" />

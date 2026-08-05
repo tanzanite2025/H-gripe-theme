@@ -54,6 +54,15 @@ func (r *OrderRepository) FindByIDForUpdate(id uint) (*order.Order, error) {
 	return &o, nil
 }
 
+func (r *OrderRepository) FindByIDForUpdateWithItems(id uint) (*order.Order, error) {
+	var o order.Order
+	err := r.lockForUpdate(r.db).Preload("Items").First(&o, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
 // FindByOrderNumber 根据订单号查找订单
 func (r *OrderRepository) FindByOrderNumber(orderNumber string) (*order.Order, error) {
 	var o order.Order
@@ -103,11 +112,25 @@ func (r *OrderRepository) UpdateStatus(id uint, status string) error {
 		updates["shipped_at"] = time.Now()
 	case "completed":
 		updates["completed_at"] = time.Now()
-	case "cancelled":
+	case "cancelled", "payment_expired":
 		updates["cancelled_at"] = time.Now()
 	}
 
 	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *OrderRepository) MarkPaymentExpired(id uint, expiredAt time.Time) error {
+	if expiredAt.IsZero() {
+		expiredAt = time.Now()
+	}
+	return r.db.Model(&order.Order{}).
+		Where("id = ? AND status = ? AND payment_status = ?", id, "pending", "unpaid").
+		Updates(map[string]interface{}{
+			"status":         "payment_expired",
+			"payment_status": "expired",
+			"cancelled_at":   expiredAt,
+			"updated_at":     expiredAt,
+		}).Error
 }
 
 // Delete 删除订单
@@ -154,4 +177,38 @@ func (r *OrderRepository) UpdateTrackingInfo(id uint, info order.TrackingInfoUpd
 	}
 
 	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *OrderRepository) FindPaymentExpirationCandidates(cutoff time.Time, limit int) ([]order.Order, error) {
+	var orders []order.Order
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+
+	query := r.db.Model(&order.Order{}).
+		Preload("Items").
+		Where("orders.status = ? AND orders.payment_status = ?", "pending", "unpaid").
+		Where("NOT EXISTS (SELECT 1 FROM transactions WHERE transactions.order_id = orders.id AND transactions.status = ?)", "completed").
+		Where("COALESCE((SELECT MAX(transactions.updated_at) FROM transactions WHERE transactions.order_id = orders.id), orders.created_at) <= ?", cutoff)
+
+	err := query.Order("created_at ASC").Limit(limit).Find(&orders).Error
+	return orders, err
+}
+
+func (r *OrderRepository) CountPaidOrdersForUserBefore(userID uint, excludeOrderID uint) (int64, error) {
+	if r == nil || r.db == nil || userID == 0 {
+		return 0, nil
+	}
+
+	query := r.db.Model(&order.Order{}).
+		Where("user_id = ? AND payment_status = ?", userID, "paid")
+	if excludeOrderID > 0 {
+		query = query.Where("id <> ?", excludeOrderID)
+	}
+
+	var count int64
+	if err := query.Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

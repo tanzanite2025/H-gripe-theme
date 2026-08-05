@@ -4,6 +4,10 @@ Last audited: 2026-07-25
 
 This document is the current source for Tanzanite's Public Chat boundary. Update it whenever chat routes, ownership rules, message payloads, or frontend/admin component responsibilities change.
 
+Related implementation design:
+
+- `CHAT-ATTACHMENT-HUB.md`: `+` button Attachment Hub for phone image, camera capture, order reference, and product reference flows.
+
 ## Hard boundary
 
 The storefront must not contain a staff chat console.
@@ -30,8 +34,6 @@ These routes are consumed by Nuxt customer UI:
 | Publish customer typing state | `POST /api/v1/customer-service/typing` |
 | Read customer-owned messages | `GET /api/v1/customer-service/messages/:conversation_id` |
 | Subscribe to customer-owned realtime events | `GET /api/v1/customer-service/events` |
-| Welcome auto-reply | `GET /api/v1/customer-service/auto-reply/welcome` |
-| Keyword auto-reply | `POST /api/v1/customer-service/auto-reply/match` |
 | Customer chat orders | `GET /api/v1/customer-service/orders` |
 | Customer chat product search | `GET /api/v1/customer-service/products` |
 
@@ -78,7 +80,13 @@ Conversation listing filters are applied in the Go API/repository layer, not by 
   - Must not own customer-service HTTP persistence or SSE internals directly.
 - `app/composables/chat/useCustomerServiceChatSync.ts`
   - Customer-service HTTP/SSE sync boundary for the storefront.
-  - Owns `conversation_id` persistence from backend responses, customer message send, server message normalization, optimistic-message replacement/failure marking, welcome/keyword auto-reply refresh, and EventSource lifecycle.
+  - Owns `conversation_id` persistence from backend responses, customer message send, server message normalization, optimistic-message replacement/failure marking, persisted-history refresh, and EventSource lifecycle.
+  - Welcome automatic replies are triggered by Go while creating/reusing the
+    customer-service conversation. The storefront refreshes persisted history;
+    it must not call the legacy welcome endpoint as the primary flow.
+  - Keyword automatic replies are now triggered by Go after the customer
+    message is persisted. The storefront only refreshes persisted history and
+    must not issue a second matching request.
   - Keeps HTTP `/customer-service/messages/:conversation_id` as the message source of truth; SSE remains a refresh/invalidation signal.
 - `app/components/whatsapp/ChatWelcomePanel.vue`
   - Public agent/profile selection for customers.

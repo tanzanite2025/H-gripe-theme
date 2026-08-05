@@ -9,7 +9,7 @@
           </DialogDescription>
         </DialogHeader>
 
-        <Alert v-if="selectedCandidate?.has_profile" class="border-blue-200 bg-blue-50 text-blue-900">
+        <Alert v-if="selectedCandidate?.has_profile" class="border-border bg-muted/40 text-foreground">
           <Info class="size-4" />
           <AlertTitle>该用户已有 Profile</AlertTitle>
           <AlertDescription>再次保存会更新现有 Profile，不会重复创建。</AlertDescription>
@@ -43,6 +43,18 @@
             </Select>
           </AdminFormField>
 
+          <AdminFormField label="在线状态" required description="前台只显示状态点，不再显示 ONLINE 文案。">
+            <Select v-model="form.online_status" :disabled="saving">
+              <SelectTrigger class="w-full"><SelectValue placeholder="请选择在线状态" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="online">online · 在线</SelectItem>
+                <SelectItem value="busy">busy · 忙碌</SelectItem>
+                <SelectItem value="away">away · 暂离</SelectItem>
+                <SelectItem value="offline">offline · 离线</SelectItem>
+              </SelectContent>
+            </Select>
+          </AdminFormField>
+
           <AdminFormField label="Agent ID" description="不填写时自动使用 user-用户ID；如需对接外部系统可手动改。">
             <Input v-model="form.agent_id" :disabled="saving" placeholder="user-1" maxlength="50" />
           </AdminFormField>
@@ -51,16 +63,33 @@
             <Input v-model="form.name" :disabled="saving" placeholder="客服名称" />
           </AdminFormField>
 
-          <AdminFormField label="公开邮箱" description="不填写时使用后台用户邮箱。">
+          <AdminFormField label="公开邮箱" description="active 状态必须有邮箱；前台聊天头像选择弹层会显示这个邮箱。">
             <Input v-model="form.email" :disabled="saving" type="email" placeholder="support@example.com" />
           </AdminFormField>
 
-          <AdminFormField label="WhatsApp">
+          <AdminFormField label="WhatsApp" description="active 状态必须填写；前台聊天头像选择弹层和快捷联系按钮会使用它。">
             <Input v-model="form.whatsapp" :disabled="saving" placeholder="+1 000 000 0000" />
           </AdminFormField>
 
           <AdminFormField label="头像 URL" class="md:col-span-2">
             <Input v-model="form.avatar" :disabled="saving" type="url" placeholder="https://..." />
+          </AdminFormField>
+
+          <AdminFormField label="客服分组" class="md:col-span-2" description="一个客服可以同时属于多个组。">
+            <div v-if="groups.length" class="grid gap-2 sm:grid-cols-2">
+              <label
+                v-for="group in groups"
+                :key="group.id"
+                class="flex items-start gap-2 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-xs"
+              >
+                <input v-model="form.group_ids" type="checkbox" :value="group.id" class="mt-0.5 size-4 accent-[var(--admin-selected)]" :disabled="saving || group.status !== 'active'" />
+                <span class="min-w-0">
+                  <strong class="block truncate">{{ group.name }}</strong>
+                  <span class="block truncate text-muted-foreground">{{ group.code }}</span>
+                </span>
+              </label>
+            </div>
+            <p v-else class="text-xs text-muted-foreground">暂无 active 客服组，请先创建客服组。</p>
           </AdminFormField>
         </div>
 
@@ -90,6 +119,7 @@ defineProps({
   form: { type: Object, required: true },
   candidates: { type: Array, default: () => [] },
   selectedCandidate: { type: Object, default: null },
+  groups: { type: Array, default: () => [] },
   loadingCandidates: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
 })

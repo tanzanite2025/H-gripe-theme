@@ -5,10 +5,11 @@ import type { MemberTier } from '../types/cart-calculation-types'
 
 export const MEMBER_TIERS: Record<string, MemberTier> = {
   ordinary: { name: 'Ordinary', min: 0, max: 499, discount: 0 },
-  bronze: { name: 'Bronze', min: 500, max: 1999, discount: 5 },
-  silver: { name: 'Silver', min: 2000, max: 4999, discount: 10 },
-  gold: { name: 'Gold', min: 5000, max: 9999, discount: 15 },
-  platinum: { name: 'Platinum', min: 10000, max: null, discount: 20 },
+  bronze: { name: 'Bronze', min: 500, max: 1999, discount: 0 },
+  silver: { name: 'Silver', min: 2000, max: 4999, discount: 0 },
+  gold: { name: 'Gold', min: 5000, max: 9999, discount: 0 },
+  platinum: { name: 'Platinum', min: 10000, max: 19999, discount: 0 },
+  diamond: { name: 'Diamond', min: 20000, max: null, discount: 0 },
 }
 
 /**

@@ -146,9 +146,6 @@ func (r shippingCarrierServiceRequest) toDomain() shippingdomain.CarrierService 
 	}
 
 	currency := strings.ToUpper(strings.TrimSpace(r.Currency))
-	if currency == "" {
-		currency = "USD"
-	}
 
 	billingMode := strings.ToLower(strings.TrimSpace(r.BillingMode))
 	if billingMode == "" {

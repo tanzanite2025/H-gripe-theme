@@ -1,12 +1,25 @@
 <template>
   <AdminFilterPanel>
-    <form class="grid gap-3 lg:grid-cols-[minmax(220px,1.2fr)_140px_140px_180px_130px_auto_auto]" @submit.prevent="emit('apply')">
+    <form class="grid gap-3 lg:grid-cols-[minmax(220px,1.2fr)_140px_140px_180px_180px_130px_auto_auto]" @submit.prevent="emit('apply')">
       <label class="space-y-1 block">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
         <div class="relative">
           <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
           <Input v-model="filters.search" class="h-9 pl-9" placeholder="客户、邮箱、会话 ID、消息内容" />
         </div>
+      </label>
+
+      <label class="space-y-1 block">
+        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">GROUP / 客服组</span>
+        <Select v-model="filters.groupId">
+          <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部客服组</SelectItem>
+            <SelectItem v-for="group in assignableGroups" :key="group.id" :value="String(group.id)">
+              {{ group.name }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </label>
 
       <label class="space-y-1 block">
@@ -87,6 +100,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 defineProps({
   filters: { type: Object, required: true },
   assignableAgents: { type: Array, default: () => [] },
+  assignableGroups: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
 })
 

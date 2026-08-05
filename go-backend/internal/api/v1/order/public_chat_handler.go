@@ -2,7 +2,6 @@ package order
 
 import (
 	"encoding/json"
-	"strconv"
 	"strings"
 	orderdomain "tanzanite/internal/domain/order"
 	"tanzanite/internal/pkg/apierror"
@@ -38,21 +37,20 @@ func (h *Handler) ListPublicChatOrders(c *gin.Context) {
 func makePublicChatOrder(item orderdomain.Order) gin.H {
 	title := "Order #" + item.OrderNumber
 	if item.OrderNumber == "" {
-		title = "Order #" + strconv.FormatUint(uint64(item.ID), 10)
+		title = "Order"
 	}
 
 	return gin.H{
-		"id":              item.ID,
 		"order_number":    item.OrderNumber,
 		"title":           title,
 		"status":          item.Status,
 		"payment_status":  item.PaymentStatus,
 		"shipping_status": item.ShippingStatus,
 		"total":           item.TotalAmount,
-		"currency":        "USD",
+		"currency":        item.Currency,
 		"date":            item.CreatedAt.Format("2006-01-02"),
 		"created_at":      item.CreatedAt.Format(time.RFC3339),
-		"url":             "/orders/" + strconv.FormatUint(uint64(item.ID), 10),
+		"url":             "",
 		"thumbnail":       "",
 		"item_count":      publicChatOrderItemCount(item.Items),
 		"items":           makePublicChatOrderItems(item.Items),
@@ -73,7 +71,6 @@ func makePublicChatOrderItems(items []orderdomain.OrderItem) []gin.H {
 	result := make([]gin.H, 0, len(items))
 	for _, item := range items {
 		result = append(result, gin.H{
-			"id":           item.ID,
 			"product_id":   item.ProductID,
 			"variant_id":   item.VariantID,
 			"product_name": item.ProductName,

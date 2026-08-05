@@ -3,6 +3,8 @@ package payment
 import (
 	"fmt"
 	"regexp"
+
+	"tanzanite/internal/domain/currency"
 )
 
 // validateConfig 验证支付网关配置
@@ -43,11 +45,10 @@ func ValidatePaymentRequest(req *PaymentRequest) error {
 	if req.Currency == "" {
 		return fmt.Errorf("currency is required")
 	}
+	req.Currency = currency.NormalizeCode(req.Currency)
 
-	// 验证货币代码格式 (ISO 4217)
-	currencyRegex := regexp.MustCompile(`^[A-Z]{3}$`)
-	if !currencyRegex.MatchString(req.Currency) {
-		return fmt.Errorf("invalid currency code: must be 3 uppercase letters")
+	if !currency.IsValidCode(req.Currency) || !currency.IsCatalogCode(req.Currency) {
+		return fmt.Errorf("unsupported currency code")
 	}
 
 	if req.OrderID == "" {

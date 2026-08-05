@@ -2,26 +2,40 @@ package admin
 
 import (
 	"errors"
-	"regexp"
 	"strings"
 	paymentdomain "tanzanite/internal/domain/payment"
+	"time"
 )
 
-var paymentCurrencyCodePattern = regexp.MustCompile(`^[A-Z]{3}$`)
-
 type paymentMethodRequest struct {
-	Name                string  `json:"name" binding:"required"`
-	Code                string  `json:"code" binding:"required"`
-	Icon                string  `json:"icon"`
-	Description         string  `json:"description"`
-	FeeType             string  `json:"fee_type"`
-	FeeValue            float64 `json:"fee_value"`
-	MinAmount           float64 `json:"min_amount"`
-	MaxAmount           float64 `json:"max_amount"`
-	SupportedCurrencies string  `json:"supported_currencies"`
-	Enabled             *bool   `json:"enabled"`
-	SortOrder           int     `json:"sort_order"`
-	Settings            string  `json:"settings"`
+	Name        string  `json:"name" binding:"required"`
+	Code        string  `json:"code" binding:"required"`
+	Icon        string  `json:"icon"`
+	Description string  `json:"description"`
+	FeeType     string  `json:"fee_type"`
+	FeeValue    float64 `json:"fee_value"`
+	MinAmount   float64 `json:"min_amount"`
+	MaxAmount   float64 `json:"max_amount"`
+	Enabled     *bool   `json:"enabled"`
+	SortOrder   int     `json:"sort_order"`
+	Settings    string  `json:"settings"`
+}
+
+type paymentMethodResponse struct {
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	Code        string    `json:"code"`
+	Icon        string    `json:"icon"`
+	Description string    `json:"description"`
+	FeeType     string    `json:"fee_type"`
+	FeeValue    float64   `json:"fee_value"`
+	MinAmount   float64   `json:"min_amount"`
+	MaxAmount   float64   `json:"max_amount"`
+	Enabled     bool      `json:"enabled"`
+	SortOrder   int       `json:"sort_order"`
+	Settings    string    `json:"settings"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 func (r paymentMethodRequest) toDomain() (paymentdomain.PaymentMethod, error) {
@@ -35,50 +49,46 @@ func (r paymentMethodRequest) toDomain() (paymentdomain.PaymentMethod, error) {
 		feeType = "fixed"
 	}
 
-	currencies, err := normalizePaymentCurrencies(r.SupportedCurrencies)
-	if err != nil {
-		return paymentdomain.PaymentMethod{}, err
-	}
-
 	return paymentdomain.PaymentMethod{
-		Name:                strings.TrimSpace(r.Name),
-		Code:                strings.ToLower(strings.TrimSpace(r.Code)),
-		Icon:                strings.TrimSpace(r.Icon),
-		Description:         strings.TrimSpace(r.Description),
-		FeeType:             feeType,
-		FeeValue:            r.FeeValue,
-		MinAmount:           r.MinAmount,
-		MaxAmount:           r.MaxAmount,
-		SupportedCurrencies: strings.Join(currencies, ","),
-		Enabled:             enabled,
-		SortOrder:           r.SortOrder,
-		Settings:            strings.TrimSpace(r.Settings),
+		Name:        strings.TrimSpace(r.Name),
+		Code:        strings.ToLower(strings.TrimSpace(r.Code)),
+		Icon:        strings.TrimSpace(r.Icon),
+		Description: strings.TrimSpace(r.Description),
+		FeeType:     feeType,
+		FeeValue:    r.FeeValue,
+		MinAmount:   r.MinAmount,
+		MaxAmount:   r.MaxAmount,
+		Enabled:     enabled,
+		SortOrder:   r.SortOrder,
+		Settings:    strings.TrimSpace(r.Settings),
 	}, nil
 }
 
-func normalizePaymentCurrencies(input string) ([]string, error) {
-	parts := strings.FieldsFunc(input, func(r rune) bool {
-		return r == ',' || r == ';' || r == '，' || r == '；' || r == '\n' || r == '\r' || r == '\t' || r == ' '
-	})
-
-	seen := make(map[string]bool, len(parts))
-	currencies := make([]string, 0, len(parts))
-	for _, part := range parts {
-		code := strings.ToUpper(strings.TrimSpace(part))
-		if code == "" {
-			continue
-		}
-		if !paymentCurrencyCodePattern.MatchString(code) {
-			return nil, errors.New("supported currencies must be 3-letter currency codes")
-		}
-		if seen[code] {
-			continue
-		}
-		seen[code] = true
-		currencies = append(currencies, code)
+func paymentMethodToResponse(method paymentdomain.PaymentMethod) paymentMethodResponse {
+	return paymentMethodResponse{
+		ID:          method.ID,
+		Name:        method.Name,
+		Code:        method.Code,
+		Icon:        method.Icon,
+		Description: method.Description,
+		FeeType:     method.FeeType,
+		FeeValue:    method.FeeValue,
+		MinAmount:   method.MinAmount,
+		MaxAmount:   method.MaxAmount,
+		Enabled:     method.Enabled,
+		SortOrder:   method.SortOrder,
+		Settings:    method.Settings,
+		CreatedAt:   method.CreatedAt,
+		UpdatedAt:   method.UpdatedAt,
 	}
+}
 
-	return currencies, nil
+func paymentMethodsToResponse(methods []paymentdomain.PaymentMethod) []paymentMethodResponse {
+	items := make([]paymentMethodResponse, 0, len(methods))
+	for _, method := range methods {
+		items = append(items, paymentMethodToResponse(method))
+	}
+	return items
 }
 
 func validatePaymentMethod(method paymentdomain.PaymentMethod) error {

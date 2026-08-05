@@ -78,6 +78,118 @@ func TestValidateConfigAllowsShortJWTSecretInDebug(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsInvalidPaymentExpirationConfig(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker.PaymentExpirationEnabled = true
+	cfg.Worker.PaymentExpirationIntervalSeconds = 900
+	cfg.Worker.PaymentPendingTTLSeconds = 0
+	cfg.Worker.PaymentExpirationBatchLimit = 100
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject invalid payment expiration config")
+	}
+}
+
+func TestValidateConfigRejectsInvalidPaymentRiskMonitoringSchedule(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker.PaymentRiskMonitoringEnabled = true
+	cfg.Worker.PaymentRiskMonitoringIntervalSeconds = 0
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject an invalid payment risk monitoring schedule")
+	}
+}
+
+func TestValidateConfigRejectsOrderAbuseWithoutIdentityLimit(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.OrderAbuse = OrderAbuseConfig{
+		Enabled:                  true,
+		OrderCreateWindowSeconds: 600,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject enabled order abuse protection without an identity limit")
+	}
+}
+
+func TestValidateConfigRejectsShortPreviousOrderNumberSecretInRelease(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Server.Mode = "release"
+	cfg.JWT.Secret = "test-production-secret-at-least-32-chars"
+	cfg.OrderNumber.PreviousSecret = "short-secret"
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a short previous order number secret in release mode")
+	}
+}
+
+func TestValidateConfigRejectsInvalidPaymentThreeDSConfig(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.PaymentThreeDS = PaymentThreeDSConfig{
+		AdaptiveEnabled:     true,
+		LowRiskMaxAmount:    100,
+		TrustedPaidOrders:   0,
+		VisitorRiskLookback: 30,
+		StepUpRiskScore:     80,
+		ChallengeRiskScore:  60,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject invalid payment 3DS config")
+	}
+}
+
+func TestValidateConfigRejectsInvalidPaymentProtectionDurationHierarchy(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.PaymentProtection = PaymentProtectionConfig{
+		Enabled:                            true,
+		MaxControlDurationHours:            24,
+		MaxPausePaymentDurationHours:       48,
+		MaxGlobalPausePaymentDurationHours: 2,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject pause duration above the broader control duration")
+	}
+
+	cfg.PaymentProtection.MaxPausePaymentDurationHours = 24
+	cfg.PaymentProtection.MaxGlobalPausePaymentDurationHours = 25
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject global pause duration above the broader pause duration")
+	}
+}
+
+func TestValidateConfigRejectsInvalidOutboxDispatchConfig(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker.OutboxDispatchEnabled = true
+	cfg.Worker.OutboxDispatchIntervalSeconds = 10
+	cfg.Worker.OutboxDispatchBatchLimit = 0
+	cfg.Worker.OutboxDispatchLockTimeoutSeconds = 300
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject invalid outbox dispatch config")
+	}
+}
+
+func TestValidateConfigRejectsMissingMediaUploadQuota(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.MediaUpload.AccountStorageQuotaBytes = 0
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a missing media upload storage quota")
+	}
+}
+
+func TestValidateConfigRejectsReleaseWithoutTrustedProxies(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Server.Mode = "release"
+	cfg.JWT.Secret = "test-production-secret-at-least-32-chars"
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject release mode without trusted proxies")
+	}
+}
+
 func TestSplitEnvListTrimsAndDropsEmptyValues(t *testing.T) {
 	got := splitEnvList("https://tanzanite.site, https://admin.tanzanite.site, ,")
 	want := []string{"https://tanzanite.site", "https://admin.tanzanite.site"}
@@ -135,5 +247,8 @@ func validTestConfig() *Config {
 			Database: "tanzanite",
 		},
 		JWT: JWTConfig{Secret: "test-secret"},
+		MediaUpload: MediaUploadConfig{
+			AccountStorageQuotaBytes: 20 << 30,
+		},
 	}
 }

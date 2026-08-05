@@ -212,6 +212,32 @@
       "whatsapp": "WhatsApp",
       "email": "邮箱"
     },
+    "attachments": {
+      "title": "添加到聊天",
+      "open": "添加图片或业务信息",
+      "photoLibrary": "发送手机图片",
+      "camera": "拍照",
+      "order": "发送订单",
+      "product": "发送商品"
+    },
+    "productPicker": {
+      "title": "选择商品",
+      "description": "搜索商品并添加到聊天输入区。",
+      "placeholder": "搜索商品名称、SKU 或关键词",
+      "search": "搜索",
+      "searching": "搜索中...",
+      "clear": "清除搜索",
+      "collapse": "关闭商品选择器",
+      "empty": "输入商品名称、SKU 或关键词开始搜索。",
+      "noResults": "没有找到商品。",
+      "error": "商品搜索失败，请重试。",
+      "send": "发送商品",
+      "select": "选择商品"
+    },
+    "productDraft": {
+      "selected": "已选择商品",
+      "remove": "移除已选择商品"
+    },
     "fallback": {
       "agent": "客服",
       "customer": "客户",
@@ -301,6 +327,10 @@
         "couponApplied": "优惠券已应用！",
         "completeShipping": "请先填写完整配送地址和联系方式，我们需要确认该地区可配送后再继续。",
         "selectPaypalCountry": "继续跳转 PayPal 前，请先选择一个可配送的国家/地区。",
+        "loginRequired": "请先登录再结账。",
+        "emptyCart": "购物车为空。",
+        "paymentUnavailable": "此支付方式暂时不可用。",
+        "paymentPending": "支付暂未完成，请稍后查看订单状态。",
         "orderSuccess": "订单提交成功！",
         "orderFailed": "订单提交失败，请重试"
       }
@@ -332,15 +362,27 @@
         }
       },
       "alipay": {
-        "title": "支付宝 / 微信 / 银联",
-        "optionTitle": "支付宝 / 微信 / 银联",
-        "subtitle": "本地钱包",
-        "description": "你会在本地钱包中确认付款。我们仍会在这里收集配送信息，用于准备发货。",
-        "stepperDescription": "请在你常用的钱包中确认付款。我们仍会收集配送信息，用于准备发货并确认清关信息。",
-        "cta": "使用本地钱包付款",
+        "title": "使用支付宝付款",
+        "optionTitle": "支付宝",
+        "subtitle": "支付宝钱包",
+        "description": "你将跳转到支付宝确认付款。我们只保存服务端核验后的订单结果。",
+        "stepperDescription": "请先在这里确认配送信息，然后跳转到支付宝付款。系统会在服务端查验交易结果后再标记订单已支付。",
+        "cta": "继续前往支付宝",
         "points": {
           "recipient": "必填：收件人姓名 + 电话",
-          "wallets": "适合中国大陆钱包和银联用户。"
+          "wallets": "适合习惯使用支付宝钱包结账的客户。"
+        }
+      },
+      "wechat": {
+        "title": "使用微信支付",
+        "optionTitle": "微信支付",
+        "subtitle": "扫码付款",
+        "description": "你将扫描微信支付二维码付款。系统确认支付成功后才会清空购物车。",
+        "stepperDescription": "订单创建后会显示微信支付二维码，并持续向后端确认已核验的支付状态。",
+        "cta": "继续前往微信支付",
+        "points": {
+          "recipient": "必填：收件人姓名 + 电话",
+          "scan": "请用手机微信扫描二维码完成付款。"
         }
       },
       "stripe": {
@@ -350,6 +392,8 @@
         "description": "Stripe 会处理你的银行卡详情和额外验证。我们只保存支付状态。",
         "stepperDescription": "Stripe 会处理银行卡输入和额外验证。这里保持表单尽量简洁，敏感字段交给 Stripe 管理。",
         "cta": "继续前往 Stripe",
+        "confirm": "确认支付",
+        "confirming": "正在确认...",
         "points": {
           "sca": "适合需要 SCA/3DS 验证的客户。"
         }
@@ -468,6 +512,68 @@
       "state": "State",
       "zip": "ZIP",
       "country": "Country"
+    },
+    "paypalReturn": {
+      "title": {
+        "loading": "正在确认 PayPal 支付",
+        "success": "支付已确认",
+        "error": "支付无法确认"
+      },
+      "messages": {
+        "capturing": "请稍等，我们正在向 PayPal 确认支付结果。",
+        "loginRequired": "请使用下单账号登录后再确认支付。",
+        "missingData": "PayPal 返回缺少必要订单数据。",
+        "incomplete": "PayPal 支付尚未完成。",
+        "success": "支付已确认，我们会开始准备订单。",
+        "failed": "无法确认这笔 PayPal 支付。"
+      },
+      "actions": {
+        "continueShopping": "继续购物"
+      }
+    },
+    "paypalCancel": {
+      "title": "PayPal 支付已取消",
+      "message": "订单仍处于未支付状态。你可以重新尝试支付，或联系客服处理。",
+      "actions": {
+        "tryAgain": "重新支付"
+      }
+    },
+    "alipayReturn": {
+      "title": {
+        "loading": "正在确认支付宝支付",
+        "success": "支付已确认",
+        "error": "支付无法确认"
+      },
+      "messages": {
+        "confirming": "请稍等，我们正在向支付宝确认支付结果。",
+        "loginRequired": "请使用下单账号登录后再确认支付。",
+        "missingData": "支付宝返回缺少必要订单数据。",
+        "incomplete": "支付宝支付尚未完成。",
+        "success": "支付已确认，我们会开始准备订单。",
+        "failed": "无法确认这笔支付宝支付。"
+      }
+    },
+    "wechatPay": {
+      "title": {
+        "loading": "正在准备微信支付",
+        "waiting": "请使用微信扫码付款",
+        "success": "支付已确认",
+        "error": "支付无法确认"
+      },
+      "messages": {
+        "loading": "请稍等，我们正在生成微信支付二维码。",
+        "scan": "请用微信扫描此二维码完成付款。",
+        "pending": "正在等待支付确认。",
+        "loginRequired": "请使用下单账号登录后再确认支付。",
+        "missingData": "微信支付页面缺少必要订单数据。",
+        "success": "支付已确认，我们会开始准备订单。",
+        "failed": "无法确认这笔微信支付。"
+      },
+      "actions": {
+        "checkNow": "检查支付状态",
+        "checking": "正在检查..."
+      },
+      "qrAlt": "微信支付二维码"
     }
   },
   "common": {
@@ -475,7 +581,10 @@
     "previous": "Previous",
     "next": "Next",
     "loading": "Loading...",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "viewAll": "查看全部",
+    "explore": "探索",
+    "currentPage": "Current page"
   },
   "company": {
     "nav": {
@@ -588,8 +697,24 @@
     "saved": "收藏"
   },
   "faq": {
-    "title": "Frequently Asked Questions",
-    "subtitle": "Find answers to common questions about our products and services"
+    "title": "常见问题",
+    "subtitle": "查找有关产品与服务的常见问题解答",
+    "ui": {
+      "categorizedSupport": "分类支持",
+      "quickAnswers": "快速查看常见问题答案",
+      "categoriesAriaLabel": "FAQ 分类",
+      "categoriesLabel": "FAQ 分类",
+      "all": "全部",
+      "viewAll": "查看全部 FAQ",
+      "emptySection": "此部分暂无 FAQ。",
+      "pageIntro": "浏览有关订单、产品与服务的常见问题和快速答案。",
+      "searchPlaceholder": "搜索 FAQ...",
+      "viewMoreContent": "查看更多内容",
+      "noResults": "没有找到与“{query}”匹配的 FAQ",
+      "allFaqsMetaTitle": "全部 FAQ",
+      "loadingAnswers": "正在加载答案",
+      "illustrationAlt": "FAQ 配图"
+    }
   },
   "feedback": {
     "defaultSubtitle": "帮助我们改进这个页面以及您每天使用的工具。",
@@ -613,7 +738,8 @@
     "defaultTitle": "分享您的反馈",
     "required": "请先输入反馈内容再提交。",
     "submitFailed": "反馈提交失败，请重试。",
-    "pendingMessage": "提交成功。您的反馈将在审核后显示。"
+    "pendingMessage": "提交成功。您的反馈将在审核后显示。",
+    "checkingEligibility": "Checking sign-in status..."
   },
   "feedbackForm": {
     "pageEyebrow": "产品反馈",
@@ -707,7 +833,8 @@
     "tags": "Tags",
     "dateRange": "Date Range",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "currency": "货币"
   },
   "footer": {
     "links": {
@@ -732,6 +859,7 @@
       "products": "Products",
       "support": "Support",
       "company": "Company",
+      "policies": "Policies",
       "resources": "RESOURCES"
     },
     "brand": {
@@ -757,7 +885,9 @@
     "pointsRequired": "Points required",
     "redeeming": "Redeeming...",
     "redeem": "Redeem",
-    "noCards": "No gift cards available"
+    "noCards": "No gift cards available",
+    "myCards": "我的礼品卡",
+    "remaining": "Remaining"
   },
   "guidesTireguides": {
     "innerTube": {
@@ -834,6 +964,12 @@
       }
     }
   },
+  "header": {
+    "searchHint": {
+      "title": "搜索产品和 FAQ",
+      "body": "点击搜索产品、FAQ 等内容。"
+    }
+  },
   "home": {
     "meta": {
       "title": "Factory-Direct Carbon Rims & Wheelsets",
@@ -841,6 +977,7 @@
     },
     "hero": {
       "title": "Factory-Direct Carbon Rims & Wheelsets",
+      "welcome": "WELCOME!",
       "subtitle": "In-house carbon layup and QC—engineered for speed, stiffness, and reliability.",
       "stackAriaLabel": "Hero image cards",
       "dotAriaLabel": "Go to card {index}",
@@ -1080,56 +1217,71 @@
   },
   "member": {
     "brief": {
-      "membershipLevel": "会员等级：",
-      "productDiscountRate": "商品折扣率：",
-      "pointsDiscountRate": "积分折扣率：",
-      "canBeStacked": "可叠加",
-      "level": "Level",
-      "productDiscount": "Product Discount",
-      "pointsDiscount": "Points",
-      "stackable": "Stackable"
-    },
-    "common": {
-      "yes": "是",
-      "no": "否"
+      "level": "会员等级",
+      "levelDesc": "会员等级用于表示账号累计成长状态，并决定该等级对应的权益规则。",
+      "discountRate": "折扣率",
+      "discountRateDesc": "后台会员等级配置的价格折扣率。",
+      "stackable": "可叠加",
+      "stackableDesc": "用于表示当前等级权益是否可以和其他符合条件的优惠一起使用。"
     },
     "levels": {
       "title": "会员等级",
       "header": {
         "level": "等级",
         "pointsRequired": "所需积分",
-        "productDiscount": "商品折扣",
-        "pointsDiscount": "积分折扣"
+        "discountRate": "折扣率"
       },
       "rows": {
-        "ordinary": "普通会员",
-        "bronze": "青铜会员",
-        "silver": "白银会员",
-        "gold": "黄金会员",
-        "supreme": "至尊会员"
+        "ordinary": "普通",
+        "bronze": "铜牌",
+        "silver": "银牌",
+        "gold": "金牌",
+        "platinum": "铂金",
+        "diamond": "钻石"
       }
     },
     "points": {
-      "title": "如何获得积分？",
+      "title": "积分规则",
+      "pointValueSingular": "{points} 积分",
+      "pointsValue": "{points} 积分",
+      "notConfigured": "未配置",
+      "purchaseEarn": "订单完成返积分",
+      "purchaseEarnRule": "订单完成后，按优惠后的商品成交金额每 1 {currency} 返 {points}",
+      "purchaseEarnDisabled": "消费返积分未开启",
       "invite": "邀请新用户",
       "inviteDesc": "邀请成功奖励 50 积分（被邀请者 30 积分）",
       "consume": "消费换积分",
       "consumeDesc": "1 美元 = 1 积分",
       "daily": "每日登录",
       "dailyDesc": "每日登录奖励 1 积分（有效期 30 天）",
-      "unit": "pts"
+      "unit": "pts",
+      "redeem": "兑换比例",
+      "redemptionDisplayRule": "{points} = {currency} {amount}",
+      "redemptionDisabled": "积分兑换未开启",
+      "redemptionRule": "{points} 积分 = {currency}{amount}",
+      "checkin": "每日签到",
+      "checkinBaseRule": "每次签到 {base}",
+      "checkinMaxRule": "最高 {max}",
+      "checkinStreakRule": "连续签到每 {interval} 天额外 +{bonus}",
+      "checkinDisabled": "每日签到积分未开启",
+      "checkinRule": "{base} 积分（最高 {max}；连续签到每 {interval} 天额外 +{bonus}）",
+      "referralDisplayRule": "邀请人获得 {referrer}；被邀请人获得 {referee}",
+      "referralDisabled": "邀请奖励未开启",
+      "referralRule": "{referrer} 积分（被邀请人获得 {referee} 积分）"
     },
     "tabs": {
-      "myInfo": "My info",
-      "levers": "Levers",
-      "exchange": "Exchange"
+      "myInfo": "我的信息",
+      "levers": "等级权益",
+      "exchange": "积分兑换",
+      "ariaLabel": "Membership sections"
     },
-    "viewAll": "View Full",
-    "myBenefits": "My Benefits",
-    "coupons": "Coupons",
-    "pointCards": "Point Cards",
-    "copyLink": "Copy Invite Link",
-    "pageTitle": "Membership and Points"
+    "viewAll": "查看全部",
+    "myBenefits": "我的权益",
+    "coupons": "优惠券",
+    "pointCards": "积分卡",
+    "copyLink": "复制邀请链接",
+    "pageTitle": "Membership and Points",
+    "giftCards": "礼品卡"
   },
   "menu": {
     "shop": {
@@ -1253,6 +1405,12 @@
     "section9Title": "9. 本政策的变更",
     "section9Body": "我们可能会不时更新本隐私政策。任何变更都会在本页面公布，并更新生效日期。"
   },
+  "productCategoryNavigationCards": {
+    "heading": "Product categories",
+    "all": "View spokes, tires, and more",
+    "loading": "Loading categories...",
+    "empty": "No categories available."
+  },
   "productInformationTabs": {
     "sectionLabel": "商品信息",
     "tabListLabel": "商品信息分类",
@@ -1299,9 +1457,6 @@
     "company": "Company",
     "country": "Country/Region",
     "phone": "Phone"
-  },
-  "promo": {
-    "memberCta": "会员最高享受 50% 折扣"
   },
   "quickBuy": {
     "stepsAriaLabel": "快速购买步骤",
@@ -1351,7 +1506,10 @@
     "placeholder": "搜索...",
     "button": "搜索",
     "popularTitle": "热门搜索",
-    "popularAriaLabel": "热门搜索"
+    "popularAriaLabel": "热门搜索",
+    "recommendedProducts": "推荐产品",
+    "recommendedProductsTitle": "从热门选择开始",
+    "recommendedCategoriesTitle": "按类型浏览"
   },
   "shopCategoryMenu": {
     "ariaLabel": "商品分类",

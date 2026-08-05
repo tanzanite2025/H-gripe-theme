@@ -11,22 +11,19 @@
       >
         <div class="h-full flex items-center gap-3 px-3" :class="getInnerClass(agent)">
           <span class="relative shrink-0 w-14 h-14">
-<!-- ... (middle content remains same) ... -->
-
             <span
               class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden"
               :class="isSelected(agent) ? 'text-black/80' : 'tz-text-primary'"
             >
               <template v-if="getAvatarSrc(agent)">
-                <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full" :class="getAvatarImgFitClass(agent)" />
-              </template>
-              <template v-else>
-                {{ getInitials(agent.name) }}
+                <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" />
               </template>
             </span>
 
             <span
-              class="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgba(52,211,153,0.25),0_0_10px_rgba(52,211,153,0.7)]"
+              class="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full"
+              :class="getStatusDotClass(agent)"
+              :title="getStatusLabel(agent)"
               aria-hidden="true"
             ></span>
           </span>
@@ -39,13 +36,12 @@
               >
                 {{ agent.name }}
               </span>
-              <span class="tz-caption text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
             </span>
             <span
               class="mt-0.5 block text-xs truncate"
               :class="isSelected(agent) ? 'text-black/70' : 'tz-text-secondary'"
             >
-              {{ getAgentDescription(agent.name) }}
+              {{ getAgentDescription(agent) }}
             </span>
           </span>
 
@@ -66,14 +62,13 @@
           <span class="relative shrink-0 w-14 h-14">
             <span class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden tz-text-primary">
               <template v-if="getAvatarSrc(agent)">
-                <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full" :class="getAvatarImgFitClass(agent)" />
-              </template>
-              <template v-else>
-                {{ getInitials(agent.name) }}
+                <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" />
               </template>
             </span>
             <span
-              class="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgba(52,211,153,0.25),0_0_10px_rgba(52,211,153,0.7)]"
+              class="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full"
+              :class="getStatusDotClass(agent)"
+              :title="getStatusLabel(agent)"
               aria-hidden="true"
             ></span>
           </span>
@@ -81,9 +76,8 @@
           <span class="min-w-0 flex-1">
             <span class="flex items-center gap-2">
               <span class="text-sm font-semibold tz-text-primary truncate">{{ agent.name }}</span>
-              <span class="tz-caption text-emerald-300/95">{{ t('chatModal.agentSelector.online') }}</span>
             </span>
-            <span class="mt-0.5 block text-xs tz-text-secondary truncate">{{ getAgentDescription(agent.name) }}</span>
+            <span class="mt-0.5 block text-xs tz-text-secondary truncate">{{ getAgentDescription(agent) }}</span>
           </span>
 
           <span class="shrink-0 tz-text-muted">→</span>
@@ -159,36 +153,39 @@ const getInnerClass = (agent: any) => {
   return isSelected(agent) ? 'py-2' : 'py-1'
 }
 
-const getInitials = (name: string) => {
-  const parts = String(name || '').trim().split(/\s+/).filter(Boolean)
-  if (!parts.length) return '?'
-  const first = parts[0]?.[0] || ''
-  const second = parts.length > 1 ? parts[1]?.[0] || '' : ''
-  return `${first}${second}`.toUpperCase()
-}
-
 const getAvatarSrc = (agent: any): string => {
-  const name = String(agent?.name ?? '').toLowerCase()
-  const id = String(agent?.id ?? '')
-  const isTech = name.includes('tech') || id === 'CS002'
-  if (isTech) return '/whatsappmodel/welcome/techsupport.webp'
-  return String(agent?.avatar || '')
+  return String(agent?.avatar || '').trim()
 }
 
-const getAvatarImgFitClass = (agent: any): string => {
-  const name = String(agent?.name ?? '').toLowerCase()
-  const id = String(agent?.id ?? '')
-  const isTech = name.includes('tech') || id === 'CS002'
-  if (isTech) return 'object-contain'
-  return 'object-cover'
+const getAgentStatus = (agent: any): string => {
+  const status = String(agent?.online_status ?? agent?.status ?? '').trim().toLowerCase()
+  return ['online', 'busy', 'away', 'offline'].includes(status) ? status : 'offline'
 }
 
-const getAgentDescription = (name: string) => {
-  const key = String(name || '').toLowerCase()
-  if (key.includes('tech')) return t('chatModal.agentSelector.descriptions.tech')
-  if (key.includes('after')) return t('chatModal.agentSelector.descriptions.afterSales')
-  if (key.includes('sale')) return t('chatModal.agentSelector.descriptions.sales')
-  return t('chatModal.agentSelector.descriptions.default')
+const getStatusDotClass = (agent: any): string => {
+  switch (getAgentStatus(agent)) {
+    case 'online':
+      return 'bg-[#B5FF6D] shadow-[0_0_0_2px_rgba(181,255,109,0.25),0_0_10px_rgba(181,255,109,0.7)]'
+    case 'busy':
+      return 'bg-amber-300 shadow-[0_0_0_2px_rgba(252,211,77,0.22),0_0_10px_rgba(252,211,77,0.5)]'
+    case 'away':
+      return 'bg-yellow-500 shadow-[0_0_0_2px_rgba(234,179,8,0.2),0_0_10px_rgba(234,179,8,0.42)]'
+    default:
+      return 'bg-white/35 shadow-[0_0_0_2px_rgba(255,255,255,0.12)]'
+  }
+}
+
+const getStatusLabel = (agent: any): string => {
+  return t(`chatModal.agentPanel.status.${getAgentStatus(agent)}`)
+}
+
+const getAgentDescription = (agent: any) => {
+  const group = agent?.primary_group || (Array.isArray(agent?.groups) ? agent.groups[0] : null)
+  const code = String(group?.code || '').toLowerCase()
+  if (code === 'technical_support' || code === 'technical') return t('chatModal.agentSelector.descriptions.tech')
+  if (code === 'after_sales' || code === 'after-sales') return t('chatModal.agentSelector.descriptions.afterSales')
+  if (code === 'sales') return t('chatModal.agentSelector.descriptions.sales')
+  return String(group?.description || group?.name || '').trim() || t('chatModal.agentSelector.descriptions.default')
 }
 </script>
 

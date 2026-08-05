@@ -3,5 +3,8 @@
   "previous": "Previous",
   "next": "Next",
   "loading": "Loading...",
-  "backToHome": "Back to Home"
+  "backToHome": "Back to Home",
+  "viewAll": "查看全部",
+  "explore": "探索",
+  "currentPage": "Current page"
 }

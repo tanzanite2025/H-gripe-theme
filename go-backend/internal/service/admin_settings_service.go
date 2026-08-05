@@ -39,10 +39,22 @@ func (s *AdminSettingsService) GetSetting(key, locale string) (*setting.Setting,
 	return s.settings.Get(key, locale)
 }
 
+func (s *AdminSettingsService) GetDomainManagedSetting(key, locale string) (*setting.Setting, error) {
+	return s.settings.Get(key, locale)
+}
+
 func (s *AdminSettingsService) UpdateSetting(req setting.UpdateSettingRequest) (*setting.Setting, error) {
 	if err := rejectDomainManagedSetting(req); err != nil {
 		return nil, err
 	}
+	st := normalizeSettingRequest(req)
+	if err := s.settings.BatchSet([]setting.Setting{st}); err != nil {
+		return nil, err
+	}
+	return &st, nil
+}
+
+func (s *AdminSettingsService) UpdateDomainManagedSetting(req setting.UpdateSettingRequest) (*setting.Setting, error) {
 	st := normalizeSettingRequest(req)
 	if err := s.settings.BatchSet([]setting.Setting{st}); err != nil {
 		return nil, err
@@ -68,7 +80,7 @@ func (s *AdminSettingsService) BatchUpdateSettings(req setting.BatchUpdateSettin
 
 func rejectDomainManagedSettingGroup(group string) error {
 	normalized := strings.ToLower(strings.TrimSpace(group))
-	if normalized == "loyalty" || normalized == "redeem" {
+	if normalized == "loyalty" || normalized == "redeem" || normalized == "currency" || normalized == "payment_secret" {
 		return ErrSettingManagedByDomainService
 	}
 	return nil
@@ -78,6 +90,10 @@ func (s *AdminSettingsService) DeleteSetting(key, locale string) error {
 	if err := rejectDomainManagedSettingKey(key); err != nil {
 		return err
 	}
+	return s.settings.Delete(key, locale)
+}
+
+func (s *AdminSettingsService) DeleteDomainManagedSetting(key, locale string) error {
 	return s.settings.Delete(key, locale)
 }
 
@@ -105,7 +121,10 @@ func rejectDomainManagedSetting(req setting.UpdateSettingRequest) error {
 
 func rejectDomainManagedSettingKey(key string) error {
 	normalized := strings.ToLower(strings.TrimSpace(key))
-	if strings.HasPrefix(normalized, "tz_loyalty_") || strings.HasPrefix(normalized, "tz_redeem_") {
+	if strings.HasPrefix(normalized, "tz_loyalty_") ||
+		strings.HasPrefix(normalized, "tz_redeem_") ||
+		strings.HasPrefix(normalized, "currency_") ||
+		strings.HasPrefix(normalized, "payment_gateway_") {
 		return ErrSettingManagedByDomainService
 	}
 	return nil

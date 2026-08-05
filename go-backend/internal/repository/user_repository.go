@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"tanzanite/internal/domain/user"
 	"time"
 
@@ -125,6 +126,7 @@ func (r *UserRepository) FindCustomerServiceAgentProfiles(limit int) ([]user.Age
 	}
 
 	err := r.db.Preload("User").
+		Preload("Groups", activeCustomerServiceAgentGroupsPreload).
 		Joins("JOIN users ON users.id = customer_service_agent_profiles.user_id").
 		Where("customer_service_agent_profiles.status = ?", "active").
 		Where("users.status = ?", "active").
@@ -142,6 +144,7 @@ func (r *UserRepository) FindAllCustomerServiceAgentProfiles(limit int) ([]user.
 	}
 
 	err := r.db.Preload("User").
+		Preload("Groups", allCustomerServiceAgentGroupsPreload).
 		Order("customer_service_agent_profiles.created_at ASC, customer_service_agent_profiles.id ASC").
 		Limit(limit).
 		Find(&profiles).Error
@@ -159,9 +162,34 @@ func (r *UserRepository) FindCustomerServiceAgentProfileByUserID(userID uint) (*
 	return &profile, nil
 }
 
+func (r *UserRepository) FindCustomerServiceAgentProfileByUserIDWithGroups(userID uint) (*user.AgentProfile, error) {
+	var profile user.AgentProfile
+	err := r.db.Preload("User").
+		Preload("Groups", allCustomerServiceAgentGroupsPreload).
+		Where("user_id = ?", userID).
+		First(&profile).Error
+	if err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
+func (r *UserRepository) FindCustomerServiceAgentProfileGroupIDsByUserID(userID uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.Table("customer_service_agent_group_members AS members").
+		Select("members.group_id").
+		Joins("JOIN customer_service_agent_profiles AS profiles ON profiles.id = members.agent_profile_id").
+		Joins("JOIN customer_service_agent_groups AS groups ON groups.id = members.group_id").
+		Where("profiles.user_id = ? AND groups.status = ?", userID, "active").
+		Order("groups.sort_order ASC, groups.name ASC, groups.id ASC").
+		Scan(&ids).Error
+	return ids, err
+}
+
 func (r *UserRepository) FindCustomerServiceAgentProfileByAgentID(agentID string) (*user.AgentProfile, error) {
 	var profile user.AgentProfile
 	err := r.db.Preload("User").
+		Preload("Groups", allCustomerServiceAgentGroupsPreload).
 		Where("agent_id = ?", agentID).
 		First(&profile).Error
 	if err != nil {
@@ -176,6 +204,126 @@ func (r *UserRepository) CreateCustomerServiceAgentProfile(profile *user.AgentPr
 
 func (r *UserRepository) UpdateCustomerServiceAgentProfile(profile *user.AgentProfile) error {
 	return r.db.Save(profile).Error
+}
+
+func (r *UserRepository) FindCustomerServiceAgentGroups(limit int, includeInactive bool) ([]user.AgentGroup, error) {
+	var groups []user.AgentGroup
+	if limit < 1 || limit > 500 {
+		limit = 100
+	}
+
+	query := r.db.Model(&user.AgentGroup{})
+	if !includeInactive {
+		query = query.Where("status = ?", "active")
+	}
+	err := query.Order("sort_order ASC, name ASC, id ASC").Limit(limit).Find(&groups).Error
+	return groups, err
+}
+
+func (r *UserRepository) FindCustomerServiceAgentGroupByID(id uint) (*user.AgentGroup, error) {
+	var group user.AgentGroup
+	if err := r.db.First(&group, id).Error; err != nil {
+		return nil, err
+	}
+	return &group, nil
+}
+
+func (r *UserRepository) FindCustomerServiceAgentGroupByCode(code string) (*user.AgentGroup, error) {
+	var group user.AgentGroup
+	code = normalizeCustomerServiceAgentGroupCode(code)
+	if err := r.db.Where("code = ?", code).First(&group).Error; err != nil {
+		return nil, err
+	}
+	return &group, nil
+}
+
+func (r *UserRepository) FindCustomerServiceAgentGroupsByIDs(ids []uint) ([]user.AgentGroup, error) {
+	ids = uniqueUintValues(ids)
+	if len(ids) == 0 {
+		return []user.AgentGroup{}, nil
+	}
+
+	var groups []user.AgentGroup
+	err := r.db.Where("id IN ?", ids).Order("sort_order ASC, name ASC, id ASC").Find(&groups).Error
+	return groups, err
+}
+
+func (r *UserRepository) CreateCustomerServiceAgentGroup(group *user.AgentGroup) error {
+	return r.db.Create(group).Error
+}
+
+func (r *UserRepository) UpdateCustomerServiceAgentGroup(group *user.AgentGroup) error {
+	return r.db.Save(group).Error
+}
+
+func (r *UserRepository) DeleteCustomerServiceAgentGroup(id uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("group_id = ?", id).Delete(&user.AgentGroupMember{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&user.AgentGroup{}, id).Error
+	})
+}
+
+func (r *UserRepository) ReplaceCustomerServiceAgentProfileGroups(profileID uint, groupIDs []uint) error {
+	groupIDs = uniqueUintValues(groupIDs)
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("agent_profile_id = ?", profileID).Delete(&user.AgentGroupMember{}).Error; err != nil {
+			return err
+		}
+		if len(groupIDs) == 0 {
+			return nil
+		}
+
+		var groups []user.AgentGroup
+		if err := tx.Where("id IN ?", groupIDs).Find(&groups).Error; err != nil {
+			return err
+		}
+		if len(groups) != len(groupIDs) {
+			return ErrRecordNotFound
+		}
+
+		members := make([]user.AgentGroupMember, 0, len(groupIDs))
+		for _, groupID := range groupIDs {
+			members = append(members, user.AgentGroupMember{
+				GroupID:        groupID,
+				AgentProfileID: profileID,
+			})
+		}
+		return tx.Create(&members).Error
+	})
+}
+
+func activeCustomerServiceAgentGroupsPreload(db *gorm.DB) *gorm.DB {
+	return db.Where("customer_service_agent_groups.status = ?", "active").
+		Order("customer_service_agent_groups.sort_order ASC, customer_service_agent_groups.name ASC, customer_service_agent_groups.id ASC")
+}
+
+func allCustomerServiceAgentGroupsPreload(db *gorm.DB) *gorm.DB {
+	return db.Order("customer_service_agent_groups.sort_order ASC, customer_service_agent_groups.name ASC, customer_service_agent_groups.id ASC")
+}
+
+func uniqueUintValues(values []uint) []uint {
+	seen := make(map[uint]struct{}, len(values))
+	result := make([]uint, 0, len(values))
+	for _, value := range values {
+		if value == 0 {
+			continue
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func normalizeCustomerServiceAgentGroupCode(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.ReplaceAll(value, " ", "_")
+	value = strings.ReplaceAll(value, "-", "_")
+	return value
 }
 
 // UpdateStatus 更新用户状态

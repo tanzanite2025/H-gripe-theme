@@ -1,11 +1,18 @@
 -- Versioned loyalty configuration and lossless gift-card redemption history.
 
+INSERT INTO settings (key, value, type, locale, "group", is_public, description, created_at, updated_at)
+VALUES
+  ('currency_accounting_currency', 'USD', 'string', 'en', 'currency', true, 'Internal accounting/base currency', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('currency_default_checkout_currency', 'USD', 'string', 'en', 'currency', true, 'Default currency locked onto new orders', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('currency_checkout_currencies', 'USD', 'string', 'en', 'currency', true, 'Currencies allowed for customer checkout', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (key, locale) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS loyalty_program_configs (
     id BIGSERIAL PRIMARY KEY,
     version INTEGER NOT NULL UNIQUE,
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(3) NOT NULL,
     exchange_rate_points INTEGER NOT NULL,
     min_redeem_points INTEGER NOT NULL,
     max_value_per_day_cents BIGINT NOT NULL,
@@ -145,7 +152,12 @@ BEGIN
                 WHERE key = 'tz_redeem_enabled' AND locale = 'en'
                 LIMIT 1
             ), TRUE),
-            'USD',
+            (
+                SELECT value
+                FROM settings
+                WHERE key = 'currency_default_checkout_currency' AND locale = 'en'
+                LIMIT 1
+            ),
             COALESCE((
                 SELECT value::INTEGER
                 FROM settings

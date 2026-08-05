@@ -1,13 +1,12 @@
 <template>
-	<div ref="headerRootRef" class="fixed top-0 md:top-1.5 left-0 md:left-1/2 md:-translate-x-1/2 w-full md:w-[95vw] md:max-w-[1200px] z-[900] site-header-root">
+	<div ref="headerRootRef" class="fixed top-0 left-0 w-full z-[900] site-header-root">
 		<div
-			class="site-header-surface relative w-full rounded-none md:rounded-[30px] bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:py-2"
+			class="site-header-surface relative w-full rounded-none bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:px-0 md:py-0"
 		>
-			<!-- 桌面端：宽版极简胶囊布局 (Option B Wide) -->
-			<div class="hidden md:flex flex-col items-center gap-1">
-				<!-- 主胶囊 Header -->
-				<div class="w-full grid grid-cols-[160px_1fr_auto] lg:grid-cols-[200px_1fr_200px] items-center gap-2 lg:gap-4 px-2 lg:px-6 py-3 rounded-[99px] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] backdrop-blur-md shadow-[0_18px_45px_-18px_rgba(0,0,0,1)]">
-					
+			<!-- 桌面端：全宽单层横向导航 -->
+			<div class="hidden md:flex flex-col items-stretch">
+				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px]">
+
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
 						<div class="m-0 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffffff] via-[#e5e7eb] to-[#94a3b8] tracking-wide drop-shadow-[0_2px_8px_rgba(226,232,240,0.22)] leading-none cursor-default">
@@ -16,16 +15,16 @@
 					</div>
 
 					<!-- Nav (Centered) -->
-					<nav class="flex items-center justify-center gap-2 lg:gap-3 relative" data-header-mega-nav>
+					<nav class="flex items-center justify-center gap-5 lg:gap-8 xl:gap-10 relative" data-header-mega-nav>
 						<!-- Vertical Divider Left -->
-						<div class="w-px h-6 bg-white/10 absolute left-0 hidden xl:block"></div>
-						
+						<div class="hidden"></div>
+
 						<button
 							v-for="section in primaryMegaNavSections"
 							:key="section.id"
 							type="button"
-							class="relative inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[16px] font-medium text-white transition-all duration-200"
-							:class="currentMegaNavId === section.id ? 'font-semibold' : 'font-medium'"
+							class="site-header-menu-laser"
+							:class="{ 'site-header-menu-laser--active': currentMegaNavId === section.id }"
 							:aria-controls="megaPanelId"
 							:aria-expanded="activeMegaNavId === section.id"
 							aria-haspopup="dialog"
@@ -34,40 +33,39 @@
 							@keydown.space.prevent="toggleMegaNav(section.id)"
 							@keydown.down.prevent="openMegaNav(section.id)"
 						>
-							<span>{{ t(section.labelKey, section.labelFallback) }}</span>
+							<span class="site-header-menu-laser__text">{{ t(section.labelKey, section.labelFallback) }}</span>
 							<Icon
 								name="lucide:chevron-down"
-								class="h-3.5 w-3.5 transition-transform duration-200"
-								:class="{ 'rotate-180 text-[#40ffaa]': activeMegaNavId === section.id }"
+								class="site-header-menu-laser__icon"
+								:class="{ 'rotate-180 text-[#B5FF6D]': activeMegaNavId === section.id }"
 							/>
-							<span 
-								class="absolute bottom-[-4px] left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] transition-opacity"
-								:class="currentMegaNavId === section.id ? 'opacity-100' : 'opacity-0'"
-							></span>
 						</button>
 
 						<!-- Vertical Divider Right -->
-						<div class="w-px h-6 bg-white/10 absolute right-0 hidden xl:block"></div>
+						<div class="hidden"></div>
 					</nav>
 
 					<!-- Right Actions -->
-					<div class="flex items-center justify-end gap-4">
+					<div class="site-header-actions flex items-center justify-end">
 						<!-- Search -->
-						<button
-							class="site-header-top-icon-button--plain w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
-							@click="openSidebar"
-							aria-label="Search"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<circle cx="11" cy="11" r="8"></circle>
-								<path d="m21 21-4.3-4.3"></path>
-							</svg>
-						</button>
+						<div class="site-header-action-cell site-header-action-cell--search">
+							<button
+								class="site-header-action-button site-header-search-trigger"
+								@click="openSidebar"
+								:aria-label="searchHintTitle"
+							>
+								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
+							</button>
+							<div class="site-header-search-hint" role="tooltip">
+								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
+								<span class="site-header-search-hint__body">{{ searchHintBody }}</span>
+							</div>
+						</div>
 
 						<!-- Language -->
-						<div class="relative" data-lang-wrapper>
+						<div class="site-header-action-cell site-header-language-wrapper relative" data-lang-wrapper>
 							<button
-								class="site-header-top-icon-button--plain h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-2 tz-text-secondary hover:text-white transition-colors"
+								class="site-header-action-button site-header-language-trigger tz-text-secondary hover:text-white transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -81,7 +79,7 @@
 								<Icon v-else name="lucide:languages" class="h-5 w-5" aria-hidden="true" />
 								<span class="text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
 							</button>
-							
+
 							<!-- Dropdown Teleport Logic (Reused) -->
 							<teleport to="body">
 								<transition
@@ -92,7 +90,7 @@
 								>
 									<div
 										v-if="isOpen"
-										class="fixed inset-0 z-[1200] flex items-center justify-center md:items-start md:pt-[calc(var(--site-header-offset,80px)+18px)]"
+										class="fixed inset-0 z-[1200] flex items-center justify-center md:items-start md:pt-[calc(var(--site-header-offset,80px)+18px)] tz-mobile-safe-modal-mask"
 									>
 										<div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden"></div>
 										<div
@@ -126,24 +124,34 @@
 						</div>
 
 						<!-- Share/Points -->
-						<button
-							class="site-header-top-icon-button--plain w-10 h-10 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-[#40ffaa] transition-colors"
-							@click.stop="toggleShare()"
-							:aria-expanded="shareOpen"
-							aria-label="Open membership panel"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
-						</button>
+						<div class="site-header-action-cell site-header-action-cell--membership">
+							<button
+								class="site-header-action-button site-header-membership-trigger tz-text-secondary hover:text-[#B5FF6D] transition-colors"
+								@click.stop="toggleShare()"
+								:aria-expanded="shareOpen"
+								aria-label="Open membership panel"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
+							</button>
+						</div>
 					</div>
+
+					<teleport to="body" :disabled="!isMobileViewport">
+						<HeaderMegaMenu
+							:section="activeMegaNavSection"
+							:panel-id="megaPanelId"
+							@navigate="closeMegaNav"
+						/>
+					</teleport>
 				</div>
 
 				<!-- 面包屑 (移至胶囊下方，极简风格 - 无背景) -->
 				<nav
 					v-if="breadcrumbs.length"
 					aria-label="Breadcrumb"
-					class="flex justify-center mt-1"
+					class="site-header-breadcrumb-row flex justify-center"
 				>
-					<ol class="flex items-center gap-1.5 text-[13px] tz-text-muted leading-tight transition-colors hover:text-slate-300">
+					<ol class="flex items-center gap-1.5 text-sm tz-text-muted leading-tight transition-colors hover:text-slate-300">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
@@ -161,6 +169,11 @@
 								>
 									<span>{{ crumb.label }}</span>
 									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
+									<span
+										v-if="index === breadcrumbs.length - 1 && crumb.subNavigation.tabs.length"
+										class="breadcrumb-subnav-pulse-dot"
+										aria-hidden="true"
+									></span>
 								</button>
 
 								<div
@@ -201,17 +214,9 @@
 				</nav>
 			</div>
 
-			<teleport to="body" :disabled="!isMobileViewport">
-				<HeaderMegaMenu
-					:section="activeMegaNavSection"
-					:panel-id="megaPanelId"
-					@navigate="closeMegaNav"
-				/>
-			</teleport>
-
 			<!-- 移动端：新版极简双行布局 -->
 			<div class="md:hidden flex flex-col gap-3">
-				
+
 				<!-- 第一行：Logo (左) + 工具图标 (右) -->
 				<div class="flex items-center justify-between px-1">
 					<!-- Logo -->
@@ -220,23 +225,26 @@
 					</div>
 
 					<!-- 右侧工具图标组 -->
-					<div class="flex items-center gap-3 phone-390:gap-4">
+					<div class="site-header-actions site-header-actions--mobile flex items-center">
 						<!-- Search (Icon) -->
-						<button
-							class="site-header-top-icon-button--plain w-9 h-9 rounded-full bg-transparent flex items-center justify-center tz-text-secondary hover:text-white transition-colors"
-							@click="openSidebar"
-							aria-label="Search"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<circle cx="11" cy="11" r="8"></circle>
-								<path d="m21 21-4.3-4.3"></path>
-							</svg>
-						</button>
+						<div class="site-header-action-cell site-header-action-cell--search">
+							<button
+								class="site-header-action-button site-header-search-trigger site-header-search-trigger--mobile"
+								@click="openSidebar"
+								:aria-label="searchHintTitle"
+							>
+								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
+							</button>
+							<div class="site-header-search-hint site-header-search-hint--mobile" role="tooltip">
+								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
+								<span class="site-header-search-hint__body">{{ searchHintBody }}</span>
+							</div>
+						</div>
 
 						<!-- Language Switcher (Text + Icon) -->
-						<div class="relative" data-lang-wrapper>
+						<div class="site-header-action-cell site-header-language-wrapper relative" data-lang-wrapper>
 							<button
-								class="site-header-top-icon-button--plain h-9 min-w-[3.5rem] rounded-full bg-transparent inline-flex items-center justify-center gap-1.5 px-1.5 tz-text-secondary hover:text-white transition-colors"
+								class="site-header-action-button site-header-language-trigger tz-text-secondary hover:text-white transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -253,14 +261,16 @@
 						</div>
 
 						<!-- Share/Points (Icon) -->
-						<button
-							class="site-header-top-icon-button--plain tz-text-secondary hover:text-[#40ffaa] transition-colors p-1"
-							@click.stop="toggleShare()"
-							:aria-expanded="shareOpen"
-							aria-label="Open membership panel"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
-						</button>
+						<div class="site-header-action-cell site-header-action-cell--membership">
+							<button
+								class="site-header-action-button site-header-membership-trigger tz-text-secondary hover:text-[#B5FF6D] transition-colors"
+								@click.stop="toggleShare()"
+								:aria-expanded="shareOpen"
+								aria-label="Open membership panel"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
+							</button>
+						</div>
 					</div>
 				</div>
 
@@ -270,8 +280,8 @@
 						v-for="section in primaryMegaNavSections"
 						:key="section.id"
 						type="button"
-						class="min-w-0 py-2 rounded-lg text-[13px] phone-390:text-[14px] font-semibold text-center text-white transition-all inline-flex items-center justify-center gap-0.5"
-						:class="currentMegaNavId === section.id ? 'bg-[#2d3238] shadow-sm' : 'bg-[#101318]'"
+						class="site-header-mobile-nav__button min-w-0 py-2 rounded-lg text-[13px] phone-390:text-[14px] font-semibold text-center text-white transition-all inline-flex items-center justify-center gap-0.5"
+						:class="{ 'site-header-mobile-nav__button--active': currentMegaNavId === section.id }"
 						:aria-controls="megaPanelId"
 						:aria-expanded="activeMegaNavId === section.id"
 						aria-haspopup="dialog"
@@ -281,7 +291,7 @@
 						<Icon
 							name="lucide:chevron-down"
 							class="h-3 w-3 shrink-0 transition-transform duration-200"
-							:class="{ 'rotate-180 text-[#40ffaa]': activeMegaNavId === section.id }"
+							:class="{ 'rotate-180 text-[#B5FF6D]': activeMegaNavId === section.id }"
 						/>
 					</button>
 				</nav>
@@ -292,7 +302,7 @@
 					aria-label="Breadcrumb"
 					class="px-2 pb-1 -mt-1"
 				>
-					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-[13px] tz-text-muted leading-tight">
+					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-sm tz-text-muted leading-tight">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="index"
@@ -310,6 +320,11 @@
 								>
 									<span>{{ crumb.label }}</span>
 									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
+									<span
+										v-if="index === breadcrumbs.length - 1 && crumb.subNavigation.tabs.length"
+										class="breadcrumb-subnav-pulse-dot"
+										aria-hidden="true"
+									></span>
 								</button>
 
 								<div
@@ -362,7 +377,7 @@
 			>
 				<div
 					v-if="shareOpen"
-					class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none"
+					class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none tz-mobile-safe-modal-mask"
 				>
 					<!-- 不透明背景遮罩 -->
 					<div
@@ -501,6 +516,9 @@ const { locale, locales, setLocale, t } = useI18n() as any
 const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
+
+const searchHintTitle = computed(() => t('header.searchHint.title'))
+const searchHintBody = computed(() => t('header.searchHint.body'))
 
 const getLocaleCodes = () => {
   return (unref(locales) || [])
@@ -852,7 +870,7 @@ const currentLocale = computed<LocaleOption>(() => {
 const currentLocaleLabel = computed(() => {
   const entry = currentLocale.value
   const raw = entry.iso?.split('-')[0] || entry.code || ''
-  return raw.replace('_', '-').split('-')[0].slice(0, 2).toUpperCase()
+  return (raw.replace('_', '-').split('-')[0] || '').slice(0, 2).toUpperCase()
 })
 
 const availableLocales = computed<LocaleOption[]>(() => {
@@ -1059,6 +1077,56 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
   font-size: 12px !important;
 }
 
+@media (min-width: 768px) {
+	.site-header-root {
+		width: 100%;
+		max-width: none;
+		transform: none;
+	}
+
+	.site-header-surface {
+		border-radius: 0 !important;
+		border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+		background: rgba(0, 0, 0, 0.96) !important;
+		box-shadow: none !important;
+	}
+
+	.site-header-mainbar {
+		position: relative;
+		border-bottom: 0;
+	}
+
+	.desktop-header-grid {
+		display: flex !important;
+		grid-template-columns: none;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.desktop-header-grid > nav[data-header-mega-nav] {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		z-index: 1;
+		transform: translate(-50%, -50%);
+	}
+
+	.desktop-header-grid > :first-child,
+	.desktop-header-grid > .site-header-actions {
+		position: relative;
+		z-index: 2;
+	}
+
+	.desktop-header-grid > .site-header-actions {
+		margin-left: auto;
+	}
+
+	.site-header-breadcrumb-row {
+		min-height: 28px;
+		padding: 0.16rem 1rem 0.42rem;
+	}
+}
+
 .site-header-root .site-header-top-icon-button--plain {
 	border: 0 !important;
 	background: transparent !important;
@@ -1072,6 +1140,422 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
+}
+
+.site-header-actions {
+	--site-header-action-width: 4rem;
+	--site-header-action-height: 2.5rem;
+	--site-header-action-icon-size: 1.375rem;
+	display: flex;
+	align-items: center;
+	gap: 0.12rem !important;
+}
+
+.site-header-action-cell {
+	display: inline-flex;
+	flex: 0 0 var(--site-header-action-width);
+	width: var(--site-header-action-width);
+	min-width: 0;
+	height: var(--site-header-action-height);
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+}
+
+.site-header-action-cell--search {
+	position: relative;
+	overflow: visible;
+}
+
+.site-header-language-wrapper {
+	margin: 0;
+}
+
+.site-header-action-button {
+	position: relative;
+	box-sizing: border-box;
+	display: inline-flex;
+	overflow: hidden;
+	width: 100% !important;
+	min-width: 0 !important;
+	height: 100% !important;
+	min-height: 0 !important;
+	align-items: center;
+	justify-content: center;
+	margin: 0 !important;
+	border: 0 !important;
+	border-radius: 9999px;
+	background: transparent !important;
+	background-image: none !important;
+	color: rgba(226, 232, 240, 0.94);
+	padding: 0 0.5rem !important;
+	letter-spacing: 0;
+	line-height: 1;
+	box-shadow: none !important;
+	transition:
+		color 0.18s ease,
+		transform 0.18s ease;
+}
+
+.site-header-action-button:hover,
+.site-header-action-button:focus-visible,
+.site-header-action-button[aria-expanded='true'] {
+	border: 0 !important;
+	background: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: #ffffff;
+}
+
+.site-header-action-button:focus-visible {
+	outline: none !important;
+}
+
+.site-header-language-trigger {
+	gap: 0.48rem !important;
+	padding-inline: 0.5rem !important;
+}
+
+.site-header-language-trigger > span:first-child {
+	width: var(--site-header-action-icon-size) !important;
+	height: var(--site-header-action-icon-size) !important;
+	flex: 0 0 var(--site-header-action-icon-size) !important;
+}
+
+.site-header-language-trigger img {
+	display: block;
+	width: var(--site-header-action-icon-size) !important;
+	height: var(--site-header-action-icon-size) !important;
+	flex: 0 0 var(--site-header-action-icon-size) !important;
+}
+
+.site-header-language-trigger .iconify,
+.site-header-language-trigger svg {
+	width: var(--site-header-action-icon-size) !important;
+	height: var(--site-header-action-icon-size) !important;
+	flex: 0 0 var(--site-header-action-icon-size) !important;
+}
+
+.site-header-membership-trigger {
+	padding: 0 !important;
+}
+
+.site-header-membership-trigger:hover,
+.site-header-membership-trigger:focus-visible,
+.site-header-membership-trigger[aria-expanded='true'] {
+	border: 0 !important;
+	background: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: #B5FF6D;
+}
+
+.site-header-membership-trigger svg {
+	width: var(--site-header-action-icon-size) !important;
+	height: var(--site-header-action-icon-size) !important;
+	flex: 0 0 var(--site-header-action-icon-size) !important;
+}
+
+.site-header-search-trigger {
+	gap: 0.52rem !important;
+	border: 0 !important;
+	background: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: #B5FF6D;
+	padding: 0 0.78rem !important;
+	font-size: 0.82rem;
+	font-weight: 720;
+}
+
+.site-header-search-trigger:hover,
+.site-header-search-trigger:focus-visible {
+	border: 0 !important;
+	background: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: #ffffff;
+}
+
+.site-header-search-trigger__icon {
+	width: var(--site-header-action-icon-size);
+	height: var(--site-header-action-icon-size);
+	flex: 0 0 var(--site-header-action-icon-size);
+	margin: 0;
+	animation: site-header-search-nudge 30s ease-in-out infinite;
+}
+
+.site-header-search-trigger__label {
+	display: inline-flex;
+	align-items: center;
+	padding: 0;
+	text-transform: none;
+	white-space: nowrap;
+}
+
+.site-header-search-trigger--mobile {
+	width: 2.5rem;
+	min-width: 2.5rem;
+	height: 2.5rem;
+	padding: 0;
+	gap: 0 !important;
+}
+
+.site-header-search-trigger--mobile .site-header-search-trigger__label {
+	display: none;
+}
+
+.site-header-search-hint {
+	position: absolute;
+	top: calc(100% + 0.55rem);
+	left: 50%;
+	z-index: 1250;
+	display: grid;
+	width: max-content;
+	max-width: min(18rem, 72vw);
+	transform: translate(-50%, -0.2rem);
+	gap: 0.25rem;
+	padding: 0.72rem 0.86rem;
+	border: 1px solid rgba(181, 255, 109, 0.22);
+	border-radius: 10px;
+	background: rgba(0, 0, 0, 0.94);
+	box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.18s ease, transform 0.18s ease;
+	animation: site-header-search-hint-cycle 30s ease-in-out infinite;
+}
+
+.site-header-search-hint::before {
+	content: '';
+	position: absolute;
+	top: -5px;
+	left: 50%;
+	width: 9px;
+	height: 9px;
+	transform: translateX(-50%) rotate(45deg);
+	border-top: 1px solid rgba(181, 255, 109, 0.22);
+	border-left: 1px solid rgba(181, 255, 109, 0.22);
+	background: rgba(0, 0, 0, 0.94);
+}
+
+.site-header-search-hint__title {
+	color: #B5FF6D;
+	font-size: 0.78rem;
+	font-weight: 720;
+	line-height: 1.25;
+	white-space: nowrap;
+}
+
+.site-header-search-hint__body {
+	color: rgba(226, 232, 240, 0.84);
+	font-size: 0.72rem;
+	font-weight: 500;
+	line-height: 1.35;
+}
+
+.site-header-action-cell--search:hover .site-header-search-hint,
+.site-header-action-cell--search:focus-within .site-header-search-hint {
+	transform: translate(-50%, 0);
+	animation: none;
+	opacity: 1;
+}
+
+.site-header-search-hint--mobile {
+	top: calc(100% + 0.42rem);
+	left: 50%;
+	max-width: min(16rem, 78vw);
+}
+
+.site-header-actions--mobile {
+	--site-header-action-width: 2.5rem;
+	--site-header-action-height: 2.5rem;
+	gap: 0.28rem !important;
+}
+
+.site-header-actions--mobile .site-header-language-wrapper {
+	flex-basis: 3.55rem;
+	width: 3.55rem;
+}
+
+@keyframes site-header-search-nudge {
+	0%,
+	84%,
+	100% {
+		transform: translateY(0) scale(1);
+	}
+
+	87% {
+		transform: translateY(-1px) scale(1.06);
+	}
+
+	90% {
+		transform: translateY(0) scale(1);
+	}
+
+	93% {
+		transform: translateY(-1px) scale(1.04);
+	}
+}
+
+@keyframes site-header-search-hint-cycle {
+	0%,
+	72%,
+	100% {
+		opacity: 0;
+		transform: translate(-50%, -0.2rem);
+	}
+
+	76%,
+	88% {
+		opacity: 1;
+		transform: translate(-50%, 0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.site-header-search-trigger__icon,
+	.site-header-search-hint {
+		animation: none;
+	}
+}
+
+.site-header-menu-laser {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	padding: 0.5rem 0.75rem 0.75rem;
+	color: rgb(203 213 225 / 0.88);
+	font-size: 1.125rem;
+	font-weight: 800;
+	letter-spacing: 0;
+	line-height: 1;
+	transition: color 0.3s ease;
+}
+
+.site-header-menu-laser::after {
+	position: absolute;
+	bottom: 0.25rem;
+	left: 50%;
+	width: 0;
+	height: 2px;
+	content: '';
+	transform: translateX(-50%);
+	border-radius: 9999px;
+	background: #B5FF6D;
+	box-shadow: 0 0 10px #B5FF6D;
+	transition:
+		width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 0.3s ease;
+	opacity: 0;
+}
+
+.site-header-menu-laser__text {
+	display: inline-block;
+	transform-origin: center;
+	transition:
+		color 0.3s ease,
+		transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+	white-space: nowrap;
+}
+
+.site-header-menu-laser__icon {
+	width: 0.875rem;
+	height: 0.875rem;
+	flex-shrink: 0;
+	transition:
+		color 0.3s ease,
+		transform 0.2s ease;
+}
+
+.site-header-menu-laser:hover,
+.site-header-menu-laser:focus-visible,
+.site-header-menu-laser[aria-expanded='true'] {
+	color: #ffffff;
+}
+
+.site-header-menu-laser:hover::after,
+.site-header-menu-laser:focus-visible::after,
+.site-header-menu-laser[aria-expanded='true']::after,
+.site-header-menu-laser--active::after {
+	width: calc(100% - 1.5rem);
+	opacity: 1;
+}
+
+.site-header-menu-laser:hover .site-header-menu-laser__text,
+.site-header-menu-laser:focus-visible .site-header-menu-laser__text,
+.site-header-menu-laser[aria-expanded='true'] .site-header-menu-laser__text {
+	transform: scale(1.08);
+	color: #ffffff;
+}
+
+.site-header-menu-laser--active {
+	color: #B5FF6D;
+	font-weight: 900;
+}
+
+.site-header-menu-laser--active .site-header-menu-laser__text {
+	color: #B5FF6D;
+}
+
+.site-header-menu-laser:focus-visible {
+	outline: 1px solid rgb(181 255 109 / 0.55);
+	outline-offset: 0.16rem;
+}
+
+.site-header-mobile-nav__button {
+	position: relative;
+	overflow: hidden;
+	border: 1px solid rgb(255 255 255 / 0.04);
+	background: #101318;
+	color: #ffffff;
+}
+
+.site-header-mobile-nav__button::after {
+	position: absolute;
+	bottom: 0.18rem;
+	left: 50%;
+	width: 0;
+	height: 2px;
+	content: '';
+	transform: translateX(-50%);
+	border-radius: 9999px;
+	background: #B5FF6D;
+	box-shadow: 0 0 10px rgb(181 255 109 / 0.72);
+	opacity: 0;
+	transition:
+		width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 0.22s ease;
+}
+
+.site-header-mobile-nav__button:hover,
+.site-header-mobile-nav__button:focus-visible,
+.site-header-mobile-nav__button[aria-expanded='true'] {
+	background: #101318;
+	color: #ffffff;
+}
+
+.site-header-mobile-nav__button:focus-visible {
+	outline: 1px solid rgb(181 255 109 / 0.55);
+	outline-offset: 0.12rem;
+}
+
+.site-header-mobile-nav__button:hover::after,
+.site-header-mobile-nav__button:focus-visible::after,
+.site-header-mobile-nav__button[aria-expanded='true']::after,
+.site-header-mobile-nav__button--active::after {
+	width: calc(100% - 1.25rem);
+	opacity: 1;
+}
+
+.site-header-mobile-nav__button--active {
+	color: #B5FF6D;
+	font-weight: 800;
 }
 
 .language-dropdown-surface {
@@ -1107,7 +1591,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .breadcrumb-subnav-trigger:focus-visible {
-	outline: 1px solid rgba(64, 255, 170, 0.72);
+	outline: 1px solid rgba(181, 255, 109, 0.72);
 	outline-offset: 0.18rem;
 }
 
@@ -1119,11 +1603,42 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .breadcrumb-subnav-trigger__icon {
-	width: 0.72rem;
-	height: 0.72rem;
+	width: 0.82rem;
+	height: 0.82rem;
 	flex: 0 0 auto;
-	color: #40ffaa;
+	color: #B5FF6D;
 	transition: transform 0.18s ease;
+}
+
+.breadcrumb-subnav-pulse-dot {
+	width: 0.44rem;
+	height: 0.44rem;
+	flex: 0 0 auto;
+	border-radius: 9999px;
+	background: #B5FF6D;
+	box-shadow:
+		0 0 0 0 rgba(181, 255, 109, 0.46),
+		0 0 10px rgba(181, 255, 109, 0.72);
+	animation: breadcrumb-pulse-dot 1.35s ease-in-out infinite;
+}
+
+@keyframes breadcrumb-pulse-dot {
+	0%,
+	100% {
+		opacity: 0.58;
+		transform: scale(0.86);
+		box-shadow:
+			0 0 0 0 rgba(181, 255, 109, 0.42),
+			0 0 8px rgba(181, 255, 109, 0.56);
+	}
+
+	50% {
+		opacity: 1;
+		transform: scale(1);
+		box-shadow:
+			0 0 0 5px rgba(181, 255, 109, 0),
+			0 0 12px rgba(181, 255, 109, 0.86);
+	}
 }
 
 .breadcrumb-subnav-trigger--open .breadcrumb-subnav-trigger__icon {
@@ -1146,7 +1661,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	border: 1px solid rgba(148, 163, 184, 0.2);
 	border-radius: 0.95rem;
 	background:
-		radial-gradient(circle at top left, rgba(64, 255, 170, 0.12), transparent 42%),
+		radial-gradient(circle at top left, rgba(181, 255, 109, 0.12), transparent 42%),
 		linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
 	padding: 0.42rem;
 	box-shadow:
@@ -1180,7 +1695,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .breadcrumb-subnav-link:focus-visible {
-	outline: 1px solid rgba(64, 255, 170, 0.72);
+	outline: 1px solid rgba(181, 255, 109, 0.72);
 	outline-offset: 0.12rem;
 }
 
@@ -1216,24 +1731,49 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		max-height: 150px;
 	}
 
+	.site-header-language-trigger {
+		height: 2.5rem;
+		min-width: 3.55rem;
+		gap: 0.36rem !important;
+		padding-inline: 0.3rem !important;
+	}
+
+	.site-header-search-trigger {
+		margin: 0 !important;
+	}
+
+	.site-header-search-trigger__icon {
+		margin-right: 0;
+	}
+
+	.site-header-language-wrapper {
+		margin: 0;
+	}
+
+	.site-header-membership-trigger {
+		margin-left: 0;
+	}
+
 	.site-header-surface {
 		background: linear-gradient(180deg, #17191c 0%, #101216 52%, #0d111b 100%) !important;
 		border-bottom: 0;
 	}
 
 	.site-header-mobile-nav {
-		background: linear-gradient(180deg, #171a1f 0%, #101318 100%) !important;
+		background: transparent !important;
+		box-shadow: none !important;
 	}
 }
 
 /* iPad / small tablets: prevent desktop language switcher from overflowing header pill */
 @media (min-width: 768px) and (max-width: 1100px) {
 	.site-header-root {
-		width: 90vw;
+		width: 100%;
 	}
 
 	.desktop-header-grid {
-		grid-template-columns: 230px minmax(0, 1fr) max-content;
+		display: flex !important;
+		grid-template-columns: none;
 	}
 
 	.desktop-lang-switcher {
@@ -1268,22 +1808,37 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 @media (max-width: 767px) {
+	.language-dropdown-surface {
+		height: min(90vh, var(--tz-mobile-safe-viewport-height, 90vh));
+		max-height: min(90vh, var(--tz-mobile-safe-viewport-height, 90vh));
+	}
+
 	.leverandpoint-modal-shell {
-		height: min(95vh, calc(100vh - 16px));
-		max-height: min(95vh, calc(100vh - 16px));
+		height: min(95vh, calc(var(--tz-mobile-safe-viewport-height, 100vh) - 16px));
+		max-height: min(95vh, calc(var(--tz-mobile-safe-viewport-height, 100vh) - 16px));
 	}
 
 	@supports (height: 100svh) {
+		.language-dropdown-surface {
+			height: min(90svh, var(--tz-mobile-safe-viewport-height, 90svh));
+			max-height: min(90svh, var(--tz-mobile-safe-viewport-height, 90svh));
+		}
+
 		.leverandpoint-modal-shell {
-			height: min(95svh, calc(100svh - 16px));
-			max-height: min(95svh, calc(100svh - 16px));
+			height: min(95svh, calc(var(--tz-mobile-safe-viewport-height, 100svh) - 16px));
+			max-height: min(95svh, calc(var(--tz-mobile-safe-viewport-height, 100svh) - 16px));
 		}
 	}
 
 	@supports (height: 100dvh) {
+		.language-dropdown-surface {
+			height: min(90dvh, var(--tz-mobile-safe-viewport-height, 90dvh));
+			max-height: min(90dvh, var(--tz-mobile-safe-viewport-height, 90dvh));
+		}
+
 		.leverandpoint-modal-shell {
-			height: min(95dvh, calc(100dvh - 16px));
-			max-height: min(95dvh, calc(100dvh - 16px));
+			height: min(95dvh, calc(var(--tz-mobile-safe-viewport-height, 100dvh) - 16px));
+			max-height: min(95dvh, calc(var(--tz-mobile-safe-viewport-height, 100dvh) - 16px));
 		}
 	}
 }

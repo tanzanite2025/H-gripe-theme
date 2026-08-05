@@ -12,12 +12,14 @@ import (
 type Handler struct {
 	checkoutService *service.CheckoutService
 	cartService     *service.CartService
+	currencyPolicy  *service.CurrencyPolicyService
 }
 
-func NewHandler(checkoutService *service.CheckoutService, cartService *service.CartService) *Handler {
+func NewHandler(checkoutService *service.CheckoutService, cartService *service.CartService, currencyPolicy *service.CurrencyPolicyService) *Handler {
 	return &Handler{
 		checkoutService: checkoutService,
 		cartService:     cartService,
+		currencyPolicy:  currencyPolicy,
 	}
 }
 
@@ -65,6 +67,11 @@ func (h *Handler) Quote(c *gin.Context) {
 		apierror.RespondBadRequest(c, "Cart is empty")
 		return
 	}
+	orderCurrency, err := h.currencyPolicy.DefaultOrderCurrency()
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 
 	items := make([]order.OrderItem, len(summary.Items))
 	for i, item := range summary.Items {
@@ -81,6 +88,7 @@ func (h *Handler) Quote(c *gin.Context) {
 		ShippingAddress: toOrderAddress(req.ShippingAddress),
 		CouponCode:      req.CouponCode,
 		PointsToUse:     req.PointsToUse,
+		Currency:        orderCurrency,
 	})
 	if err != nil {
 		apierror.RespondBadRequest(c, err.Error())

@@ -23,7 +23,7 @@
     <!-- Tab: Basic Concepts -->
     <div v-show="activeTab === 'basic-concepts'">
     <!-- Intro Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center mb-8">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center mb-8">
       <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
         Basic Concepts
       </h3>
@@ -201,7 +201,7 @@
 
     <ul class="technical-spokes-list mt-8 space-y-8 w-full">
         <!-- 1. Stainless Steel -->
-        <li class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
+        <li class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
           <div class="flex items-center justify-center gap-3 mb-4">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 text-lg font-bold">1</span>
             <strong class="text-xl text-slate-100">Stainless Steel</strong>
@@ -306,7 +306,7 @@
 
         <!-- 3. Titanium Alloy (Compact) -->
         <!-- 3. Titanium Alloy -->
-        <li class="mt-6 rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
+        <li class="mt-6 rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
            <div class="flex items-center justify-center gap-3 mb-4">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">3</span>
             <strong class="text-xl tz-text-primary">Titanium Alloy</strong>
@@ -355,7 +355,7 @@
         </li>
 
          <!-- 4. Aluminum Alloy -->
-        <li class="mt-4 rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
+        <li class="mt-4 rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
            <div class="flex items-center justify-center gap-3 mb-4">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">4</span>
             <strong class="text-xl tz-text-primary">Aluminum Alloy</strong>
@@ -413,7 +413,7 @@
     <!-- Tab: Choose spoke -->
     <div v-show="activeTab === 'choose-spoke'">
        <div class="space-y-8">
-         <div class="bg-[#11151e] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] border-t-4 border-emerald-500 p-6 text-center">
+         <div class="bg-[var(--tz-card-surface)] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] border-t-4 border-emerald-500 p-6 text-center">
             <h3 class="text-xl font-bold text-slate-100 mb-2">Spoke Selection Matrix</h3>
             <p class="tz-text-secondary text-sm max-w-2xl mx-auto">
                Compare our supported spoke models to find the perfect match for your building goals—whether it's maximum durability, lightweight performance, or aerodynamic efficiency.
@@ -435,7 +435,7 @@
                   
                   <!-- SAPIM Models -->
                    <!-- 1. Leader -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM Leader</strong>
                      </td>
@@ -450,7 +450,7 @@
                   </tr>
 
                   <!-- 2. Race -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM Race</strong>
                      </td>
@@ -465,7 +465,7 @@
                   </tr>
 
                    <!-- 3. D-Light -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM D-Light</strong>
                      </td>
@@ -480,7 +480,7 @@
                   </tr>
 
                    <!-- 4. CX-Sprint -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM CX-Sprint</strong>
                      </td>
@@ -495,7 +495,7 @@
                   </tr>
 
                    <!-- 5. CX-Ray -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             <strong class="block tz-text-primary text-base">SAPIM CX-Ray</strong>
@@ -513,7 +513,7 @@
                   </tr>
 
                    <!-- 6. Super-CX -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors opacity-75">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors opacity-75">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM Super-CX</strong>
                      </td>
@@ -528,7 +528,7 @@
                   </tr>
 
                   <!-- DT Swiss Comp Race -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors border-t-4 border-slate-800">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors border-t-4 border-slate-800">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">DT Swiss Comp Race</strong>
                      </td>
@@ -543,7 +543,7 @@
                   </tr>
 
                   <!-- YT Aero -->
-                  <tr class="bg-[#11151e] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">YT Aero</strong>
                      </td>

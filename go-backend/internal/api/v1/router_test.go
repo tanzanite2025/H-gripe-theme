@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"tanzanite/internal/app"
+	settingdomain "tanzanite/internal/domain/setting"
 	shippingdomain "tanzanite/internal/domain/shipping"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/repository"
@@ -50,6 +51,113 @@ func TestAnonymousProfileProbeReturnsNoContent(t *testing.T) {
 	if w.Code != http.StatusNoContent {
 		t.Fatalf("expected anonymous profile probe to return 204, got %d: %s", w.Code, w.Body.String())
 	}
+}
+
+func TestCurrencyPolicyRouteUsesDomainHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+
+	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}))
+	seedCurrencyPolicySetting := func(key, value string) {
+		require.NoError(t, db.Create(&settingdomain.Setting{
+			Key:      key,
+			Value:    value,
+			Type:     "string",
+			Locale:   "en",
+			Group:    "currency",
+			IsPublic: true,
+		}).Error)
+	}
+	seedCurrencyPolicySetting("currency_accounting_currency", "USD")
+	seedCurrencyPolicySetting("currency_default_order_currency", "USD")
+	seedCurrencyPolicySetting("currency_accepted_currencies", "USD,EUR")
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	settingRepo := repository.NewSettingRepository(db)
+	deps := &app.Dependencies{
+		Services: app.Services{
+			CurrencyPolicy: service.NewCurrencyPolicyService(settingRepo),
+		},
+	}
+	RegisterRoutes(router, deps, cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/settings/currency-policy", nil)
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	require.Contains(t, w.Body.String(), `"default_order_currency":"USD"`)
+	require.Contains(t, w.Body.String(), `"accepted_currencies":["EUR","USD"]`)
+	require.NotContains(t, w.Body.String(), "Setting not found")
+}
+
+func TestCurrencyPolicyRouteReadsLegacySettingKeys(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+
+	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}))
+	seedCurrencyPolicySetting := func(key, value string) {
+		require.NoError(t, db.Create(&settingdomain.Setting{
+			Key:      key,
+			Value:    value,
+			Type:     "string",
+			Locale:   "en",
+			Group:    "currency",
+			IsPublic: true,
+		}).Error)
+	}
+	seedCurrencyPolicySetting("currency_accounting_currency", "USD")
+	seedCurrencyPolicySetting("currency_default_checkout_currency", "USD")
+	seedCurrencyPolicySetting("currency_checkout_currencies", "USD,EUR")
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	settingRepo := repository.NewSettingRepository(db)
+	deps := &app.Dependencies{
+		Services: app.Services{
+			CurrencyPolicy: service.NewCurrencyPolicyService(settingRepo),
+		},
+	}
+	RegisterRoutes(router, deps, cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/settings/currency-policy", nil)
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	require.Contains(t, w.Body.String(), `"default_order_currency":"USD"`)
+	require.Contains(t, w.Body.String(), `"accepted_currencies":["EUR","USD"]`)
+	require.NotContains(t, w.Body.String(), `"default_checkout_currency"`)
+	require.NotContains(t, w.Body.String(), `"checkout_currencies"`)
 }
 
 func TestExternalWebhooksBypassCSRFProtection(t *testing.T) {

@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"net/url"
 	"os"
 	"strings"
 )
@@ -78,14 +79,14 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 		Environment:           config.Environment,
 		CallbackURL:           paymentWebhookURL(baseURL, gatewayType),
 		RuntimeSource:         "environment",
-		WebhookSupported:      gatewayType == GatewayStripe,
+		WebhookSupported:      true,
 		SecretStoreConfigured: PaymentConfigMasterKeyConfigured(),
 	}
 
 	switch gatewayType {
 	case GatewayStripe:
 		status.RequiredFields = []string{"STRIPE_API_KEY or STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"}
-		status.ConfiguredFields = configuredEnvFields([]string{"STRIPE_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"})
+		status.ConfiguredFields = configuredEnvFields([]string{"STRIPE_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET"})
 		if !envAnySet("STRIPE_API_KEY", "STRIPE_SECRET_KEY") {
 			status.Missing = append(status.Missing, "STRIPE_API_KEY or STRIPE_SECRET_KEY")
 		}
@@ -111,7 +112,7 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 		}
 		status.Configured = envAnySet("PAYPAL_CLIENT_ID", "PAYPAL_API_KEY") && envAnySet("PAYPAL_SECRET", "PAYPAL_SECRET_KEY")
 		status.WebhookConfigured = envSet("PAYPAL_WEBHOOK_ID")
-		status.Blockers = append(status.Blockers, "PayPal webhook must use the official verify-webhook-signature API before production.")
+		status.ProductionReady = status.Configured && status.WebhookConfigured
 		status.DocumentationLabel = "PayPal verify webhook signature"
 		status.DocumentationURL = "https://developer.paypal.com/docs/api/webhooks/v1/#verify-webhook-signature_post"
 	case GatewayAlipay:
@@ -128,21 +129,50 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 		}
 		status.Configured = envSet("ALIPAY_APP_ID") && envSet("ALIPAY_PRIVATE_KEY")
 		status.WebhookConfigured = envSet("ALIPAY_PUBLIC_KEY")
-		status.Blockers = append(status.Blockers, "Alipay async notification signature verification is not implemented safely yet.")
+		status.ProductionReady = status.Configured && status.WebhookConfigured
 		status.DocumentationLabel = "Alipay+ notifyPayment"
 		status.DocumentationURL = "https://docs.alipayplus.com/alipayplus/alipayplus/api_acq/notify_payment"
 	case GatewayWechat:
-		status.RequiredFields = []string{"WECHAT_API_KEY", "WECHAT_SECRET_KEY", "WECHAT_WEBHOOK_SECRET"}
-		status.ConfiguredFields = configuredEnvFields(status.RequiredFields)
-		for _, key := range status.RequiredFields {
-			if !envSet(key) {
-				status.Missing = append(status.Missing, key)
-			}
+		status.RequiredFields = []string{
+			"WECHAT_MCH_ID",
+			"WECHAT_APP_ID",
+			"WECHAT_PRIVATE_KEY_PATH",
+			"WECHAT_MERCHANT_SERIAL",
+			"WECHAT_API_V3_KEY",
+			"WECHAT_PAY_PLATFORM_CERTIFICATE or WECHAT_PAY_PLATFORM_PUBLIC_KEY + WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID",
 		}
-		status.Configured = envSet("WECHAT_API_KEY") && envSet("WECHAT_SECRET_KEY")
-		status.WebhookConfigured = envSet("WECHAT_WEBHOOK_SECRET")
-		status.Blockers = append(status.Blockers, "WeChat Pay API v3 webhook header verification and resource decryption are not implemented yet.")
-		status.Warnings = append(status.Warnings, "Current WeChat payment creation still contains a placeholder notify URL.")
+		status.ConfiguredFields = configuredEnvFields([]string{
+			"WECHAT_MCH_ID",
+			"WECHAT_APP_ID",
+			"WECHAT_PRIVATE_KEY_PATH",
+			"WECHAT_MERCHANT_SERIAL",
+			"WECHAT_API_V3_KEY",
+			"WECHAT_PAY_PLATFORM_CERTIFICATE",
+			"WECHAT_PAY_PLATFORM_PUBLIC_KEY",
+			"WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID",
+		})
+		if !envSet("WECHAT_MCH_ID") {
+			status.Missing = append(status.Missing, "WECHAT_MCH_ID")
+		}
+		if !envSet("WECHAT_APP_ID") {
+			status.Missing = append(status.Missing, "WECHAT_APP_ID")
+		}
+		if !envSet("WECHAT_PRIVATE_KEY_PATH") {
+			status.Missing = append(status.Missing, "WECHAT_PRIVATE_KEY_PATH")
+		}
+		if !envSet("WECHAT_MERCHANT_SERIAL") {
+			status.Missing = append(status.Missing, "WECHAT_MERCHANT_SERIAL")
+		}
+		if !envSet("WECHAT_API_V3_KEY") {
+			status.Missing = append(status.Missing, "WECHAT_API_V3_KEY")
+		}
+		wechatPlatformVerifierConfigured := envSet("WECHAT_PAY_PLATFORM_CERTIFICATE") || (envSet("WECHAT_PAY_PLATFORM_PUBLIC_KEY") && envSet("WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID"))
+		if !wechatPlatformVerifierConfigured {
+			status.Missing = append(status.Missing, "WECHAT_PAY_PLATFORM_CERTIFICATE or WECHAT_PAY_PLATFORM_PUBLIC_KEY + WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID")
+		}
+		status.Configured = envSet("WECHAT_MCH_ID") && envSet("WECHAT_APP_ID") && envSet("WECHAT_PRIVATE_KEY_PATH") && envSet("WECHAT_MERCHANT_SERIAL")
+		status.WebhookConfigured = envSet("WECHAT_API_V3_KEY") && wechatPlatformVerifierConfigured
+		status.ProductionReady = status.Configured && status.WebhookConfigured
 		status.DocumentationLabel = "WeChat Pay APIv3 signatures"
 		status.DocumentationURL = "https://pay.wechatpay.cn/doc/v3/merchant/4012365342"
 	}
@@ -155,11 +185,33 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 }
 
 func paymentWebhookURL(baseURL string, gatewayType GatewayType) string {
-	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	baseURL = NormalizePublicBaseURL(baseURL)
 	if baseURL == "" {
 		return "/api/v1/payment/webhook/" + string(gatewayType)
 	}
 	return baseURL + "/api/v1/payment/webhook/" + string(gatewayType)
+}
+
+func GatewayWebhookURL(baseURL string, gatewayType GatewayType) string {
+	return paymentWebhookURL(baseURL, gatewayType)
+}
+
+func NormalizePublicBaseURL(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" || len(value) > 2048 {
+		return ""
+	}
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.User != nil {
+		return ""
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return ""
+	}
+	if strings.TrimSpace(parsed.Host) == "" {
+		return ""
+	}
+	return strings.TrimRight(parsed.String(), "/")
 }
 
 func applySecureGatewayStatus(status *GatewayRuntimeStatus, secureStatus SecureGatewayConfigStatus) {
@@ -198,19 +250,23 @@ func applySecureGatewayStatus(status *GatewayRuntimeStatus, secureStatus SecureG
 	case GatewayPayPal:
 		status.Configured = containsString(secureStatus.ConfiguredFields, "client_id") && containsString(secureStatus.ConfiguredFields, "secret")
 		status.WebhookConfigured = containsString(secureStatus.ConfiguredFields, "webhook_id")
-		status.ProductionReady = false
+		status.ProductionReady = status.Configured && status.WebhookConfigured
 	case GatewayAlipay:
 		status.Configured = containsString(secureStatus.ConfiguredFields, "app_id") && containsString(secureStatus.ConfiguredFields, "private_key")
 		status.WebhookConfigured = containsString(secureStatus.ConfiguredFields, "public_key")
-		status.ProductionReady = false
+		status.ProductionReady = status.Configured && status.WebhookConfigured
 	case GatewayWechat:
-		status.Configured = containsString(secureStatus.ConfiguredFields, "mch_id") && containsString(secureStatus.ConfiguredFields, "private_key_path")
-		status.WebhookConfigured = containsString(secureStatus.ConfiguredFields, "merchant_serial") && containsString(secureStatus.ConfiguredFields, "api_v3_key")
-		status.ProductionReady = false
+		wechatPlatformVerifierConfigured := containsString(secureStatus.ConfiguredFields, "platform_certificate") || (containsString(secureStatus.ConfiguredFields, "platform_public_key") && containsString(secureStatus.ConfiguredFields, "platform_public_key_id"))
+		status.Configured = containsString(secureStatus.ConfiguredFields, "mch_id") && containsString(secureStatus.ConfiguredFields, "app_id") && containsString(secureStatus.ConfiguredFields, "private_key_path") && containsString(secureStatus.ConfiguredFields, "merchant_serial")
+		status.WebhookConfigured = containsString(secureStatus.ConfiguredFields, "api_v3_key") && wechatPlatformVerifierConfigured
+		status.ProductionReady = status.Configured && status.WebhookConfigured
 	}
 }
 
 func missingSecureCredentialFields(provider GatewayType, configured []string) []string {
+	if provider == GatewayWechat {
+		return missingWechatSecureCredentialFields(configured)
+	}
 	missing := []string{}
 	for _, field := range SecureGatewayCredentialFields(provider) {
 		if !containsString(configured, field) {
@@ -218,6 +274,22 @@ func missingSecureCredentialFields(provider GatewayType, configured []string) []
 		}
 	}
 	return missing
+}
+
+func missingWechatSecureCredentialFields(configured []string) []string {
+	missing := []string{}
+	for _, field := range []string{"mch_id", "app_id", "private_key_path", "merchant_serial", "api_v3_key"} {
+		if !containsString(configured, field) {
+			missing = append(missing, field)
+		}
+	}
+	if containsString(configured, "platform_certificate") {
+		return missing
+	}
+	if containsString(configured, "platform_public_key") && containsString(configured, "platform_public_key_id") {
+		return missing
+	}
+	return append(missing, "platform_certificate or platform_public_key + platform_public_key_id")
 }
 
 func containsString(values []string, needle string) bool {

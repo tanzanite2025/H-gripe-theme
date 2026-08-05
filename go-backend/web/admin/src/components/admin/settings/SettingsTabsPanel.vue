@@ -1,16 +1,5 @@
 <template>
-  <Tabs :model-value="activeTab" class="gap-5" @update:model-value="emit('update:activeTab', $event)">
-    <TabsList variant="line" class="h-10 w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
-      <TabsTrigger value="site" class="h-9 flex-none px-3"><Globe2 class="size-4" />站点</TabsTrigger>
-      <TabsTrigger value="email" class="h-9 flex-none px-3"><Mail class="size-4" />邮件</TabsTrigger>
-      <TabsTrigger value="seo" class="h-9 flex-none px-3"><SearchCheck class="size-4" />SEO</TabsTrigger>
-      <TabsTrigger value="social" class="h-9 flex-none px-3"><Share2 class="size-4" />社交媒体</TabsTrigger>
-      <TabsTrigger value="loyalty" class="h-9 flex-none px-3"><Coins class="size-4" />积分规则</TabsTrigger>
-      <TabsTrigger value="redeem" class="h-9 flex-none px-3"><Gift class="size-4" />积分兑换</TabsTrigger>
-      <TabsTrigger value="payment" class="h-9 flex-none px-3"><CreditCard class="size-4" />支付</TabsTrigger>
-      <TabsTrigger value="public_chat" class="h-9 flex-none px-3"><Headset class="size-4" />Public Chat</TabsTrigger>
-    </TabsList>
-
+  <Tabs :model-value="activeTab" class="gap-5">
     <TabsContent value="site" class="space-y-6">
       <SettingsSection title="站点资料" description="前台使用的品牌和联系信息。">
         <div class="grid gap-4 md:grid-cols-2">
@@ -38,6 +27,24 @@
           <div v-if="siteSettings.site_logo" class="flex h-28 items-center justify-center overflow-hidden rounded-lg border bg-muted md:col-span-2">
             <img :src="siteSettings.site_logo" alt="站点 Logo 预览" class="max-h-20 max-w-[80%] object-contain" />
           </div>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="图片版权取证" description="上传时冻结到图片版权证据包，不会因后续修改设置而改写历史记录。">
+        <div class="grid gap-4 md:grid-cols-2">
+          <AdminFormField label="权利人">
+            <Input v-model="siteSettings.copyright_holder" placeholder="公司或版权主体名称" />
+          </AdminFormField>
+          <AdminFormField label="版权政策 URL">
+            <Input v-model="siteSettings.copyright_url" type="url" placeholder="https://example.com/policies/copyright" />
+          </AdminFormField>
+          <AdminFormField label="版权声明" class="md:col-span-2">
+            <Textarea
+              v-model="siteSettings.copyright_notice"
+              class="min-h-20"
+              placeholder="Copyright 2026 Example. All rights reserved."
+            />
+          </AdminFormField>
         </div>
       </SettingsSection>
 
@@ -140,57 +147,8 @@
       </SettingsSection>
     </TabsContent>
 
-    <TabsContent value="loyalty">
-      <SettingsSection title="积分规则" description="前台积分说明与后端推荐、签到奖励共用这些配置。">
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormField label="推荐人奖励积分" description="被推荐用户完成首次购买后，推荐人获得的积分。">
-            <Input v-model.number="loyaltySettings.tz_loyalty_referral_referrer_points" type="number" min="0" />
-          </AdminFormField>
-          <AdminFormField label="被推荐人奖励积分" description="被推荐用户完成首次购买后，被推荐人获得的积分。">
-            <Input v-model.number="loyaltySettings.tz_loyalty_referral_referee_points" type="number" min="0" />
-          </AdminFormField>
-          <AdminFormField label="每日签到基础积分">
-            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_base_points" type="number" min="0" />
-          </AdminFormField>
-          <AdminFormField label="连续签到奖励周期（天）">
-            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_streak_interval_days" type="number" min="1" />
-          </AdminFormField>
-          <AdminFormField label="连续签到额外积分">
-            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_streak_bonus_points" type="number" min="0" />
-          </AdminFormField>
-          <AdminFormField label="单次签到最高积分">
-            <Input v-model.number="loyaltySettings.tz_loyalty_checkin_max_points" type="number" min="0" />
-          </AdminFormField>
-        </div>
-      </SettingsSection>
-    </TabsContent>
-
-    <TabsContent value="redeem">
-      <SettingsSection title="积分兑换" description="控制前台显示的礼品卡兑换面值；这里不是已发行礼品卡库存。">
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormField label="启用积分兑换">
-            <Switch v-model="redeemSettings.tz_redeem_enabled" aria-label="启用积分兑换" />
-          </AdminFormField>
-          <AdminFormField label="礼品卡币种" description="使用 ISO 4217 三位币种代码，例如 USD。">
-            <Input v-model="redeemSettings.tz_redeem_currency" maxlength="3" />
-          </AdminFormField>
-          <AdminFormField label="兑换比例" description="例如 100 表示 100 积分兑换 1 美元礼品卡。">
-            <Input v-model.number="redeemSettings.tz_redeem_exchange_rate" type="number" min="1" />
-          </AdminFormField>
-          <AdminFormField label="最低兑换积分">
-            <Input v-model.number="redeemSettings.tz_redeem_min_points" type="number" min="0" />
-          </AdminFormField>
-          <AdminFormField label="每日最高兑换金额">
-            <Input v-model.number="redeemSettings.tz_redeem_max_value_per_day" type="number" min="0" step="0.01" />
-          </AdminFormField>
-          <AdminFormField label="兑换礼品卡有效期（天）">
-            <Input v-model.number="redeemSettings.tz_redeem_card_expiry_days" type="number" min="0" />
-          </AdminFormField>
-          <AdminFormField label="预设礼品卡面值" description="用英文逗号分隔，例如 10,50,100,200,500。">
-            <Input v-model="redeemSettings.tz_redeem_preset_values" />
-          </AdminFormField>
-        </div>
-      </SettingsSection>
+    <TabsContent value="currency">
+      <CurrencyPolicySettingsCard :can-edit="canEdit" @saved="emit('currency-policy-saved')" />
     </TabsContent>
 
     <TabsContent value="payment">
@@ -207,238 +165,13 @@
               </div>
             </div>
 
-            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-              <div class="rounded-2xl border bg-card/75 p-4 shadow-sm">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p class="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Gateway Runtime</p>
-                    <h3 class="mt-1 text-base font-black text-foreground">支付服务商就绪状态</h3>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    :disabled="loadingPaymentRuntime"
-                    @click="emit('refresh-payment-runtime')"
-                  >
-                    <RefreshCw :class="['size-3.5', loadingPaymentRuntime ? 'animate-spin' : '']" />
-                    刷新
-                  </Button>
-                </div>
-
-                <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <button
-                    v-for="gateway in paymentGatewayOptions"
-                    :key="gateway.value"
-                    type="button"
-                    class="group min-h-28 rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5"
-                    :class="gatewayCardClass(paymentRuntime, gateway.value, paymentSettings.gateway === gateway.value)"
-                    @click="paymentSettings.gateway = gateway.value"
-                  >
-                    <div class="flex items-center justify-between gap-2">
-                      <span
-                        class="text-sm font-black"
-                        :class="paymentSettings.gateway === gateway.value ? 'text-orange-500' : 'text-foreground'"
-                      >
-                        {{ gateway.label }}
-                      </span>
-                      <CheckCircle2
-                        v-if="gatewayRuntimeStatus(paymentRuntime, gateway.value)?.production_ready"
-                        class="size-4 text-emerald-500"
-                      />
-                      <XCircle
-                        v-else-if="gatewayRuntimeStatus(paymentRuntime, gateway.value) && !gatewayRuntimeStatus(paymentRuntime, gateway.value)?.webhook_supported"
-                        class="size-4 text-rose-500"
-                      />
-                      <AlertTriangle v-else class="size-4 text-amber-500" />
-                    </div>
-                    <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
-                      {{ gateway.description }}
-                    </p>
-                    <span
-                      class="mt-3 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-black"
-                      :class="runtimeStatusBadgeClass(gatewayRuntimeStatus(paymentRuntime, gateway.value))"
-                    >
-                      {{ runtimeStatusLabel(gatewayRuntimeStatus(paymentRuntime, gateway.value), loadingPaymentRuntime) }}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div class="rounded-2xl border bg-muted/30 p-4">
-                <p class="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Selected Gateway</p>
-                <div class="mt-3 space-y-3">
-                  <div>
-                    <div class="text-sm font-black text-foreground">{{ paymentGatewayLabel(paymentSettings.gateway) }}</div>
-                    <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {{ paymentGatewayDescription(paymentSettings.gateway) }}
-                    </p>
-                  </div>
-
-                  <div class="flex items-center justify-between gap-3 rounded-xl border bg-background/70 px-3 py-2.5">
-                    <div>
-                      <span class="text-xs font-bold text-foreground">后台首选测试模式</span>
-                      <p class="mt-0.5 text-xs text-muted-foreground">保存为后台记录；真实支付环境看 runtime。</p>
-                    </div>
-                    <Switch v-model="paymentSettings.test_mode" aria-label="支付测试模式" />
-                  </div>
-
-                  <div class="flex items-center justify-between text-xs">
-                    <span class="text-muted-foreground">后台记录</span>
-                    <span
-                      class="rounded-full px-2 py-0.5 font-black"
-                      :class="paymentSettings.test_mode ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'"
-                    >
-                      {{ paymentSettings.test_mode ? '测试' : '生产' }}
-                    </span>
-                  </div>
-
-                  <div class="flex items-center justify-between text-xs">
-                    <span class="text-muted-foreground">Runtime Source</span>
-                    <span class="font-bold text-foreground">{{ paymentRuntime?.runtime_source || 'environment' }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="rounded-2xl border bg-card/75 p-4 shadow-sm">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p class="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Readiness Detail</p>
-                  <h3 class="mt-1 text-base font-black text-foreground">生产就绪检查</h3>
-                </div>
-                <span
-                  class="rounded-full border px-2.5 py-1 text-[11px] font-black"
-                  :class="runtimeStatusBadgeClass(gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway))"
-                >
-                  {{ runtimeStatusLabel(gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway), loadingPaymentRuntime) }}
-                </span>
-              </div>
-
-              <div v-if="loadingPaymentRuntime" class="mt-4 flex h-28 items-center justify-center text-xs text-muted-foreground">
-                <RefreshCw class="mr-2 size-4 animate-spin" />
-                正在检查支付运行配置
-              </div>
-
-              <div v-else-if="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway)" class="mt-4 space-y-4">
-                <div class="grid gap-3 md:grid-cols-3">
-                  <div class="rounded-xl border bg-background/70 p-3">
-                    <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Environment</p>
-                    <p class="mt-1 text-sm font-black text-foreground">
-                      {{ gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).environment || 'unknown' }}
-                    </p>
-                  </div>
-                  <div class="rounded-xl border bg-background/70 p-3">
-                    <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Credentials</p>
-                    <p class="mt-1 text-sm font-black" :class="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).configured ? 'text-emerald-500' : 'text-amber-500'">
-                      {{ gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).configured ? '已配置' : '缺字段' }}
-                    </p>
-                  </div>
-                  <div class="rounded-xl border bg-background/70 p-3">
-                    <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Webhook</p>
-                    <p class="mt-1 text-sm font-black" :class="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).webhook_configured ? 'text-emerald-500' : 'text-amber-500'">
-                      {{ gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).webhook_configured ? '已配置' : '缺配置' }}
-                    </p>
-                  </div>
-                </div>
-
-                <div class="rounded-xl border bg-background/70 p-3">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Callback URL</p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      class="size-8"
-                      aria-label="复制支付回调地址"
-                      @click="copyText(gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).callback_url)"
-                    >
-                      <Copy class="size-3.5" />
-                    </Button>
-                  </div>
-                  <p class="mt-1 break-all font-mono text-xs text-foreground">
-                    {{ gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).callback_url }}
-                  </p>
-                </div>
-
-                <div class="grid gap-3 md:grid-cols-2">
-                  <div class="rounded-xl border bg-background/70 p-3">
-                    <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Required Runtime Fields</p>
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                      <span
-                        v-for="field in gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).required_fields"
-                        :key="field"
-                        class="rounded-full border bg-muted px-2 py-0.5 font-mono text-[11px] font-bold text-foreground"
-                      >
-                        {{ field }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="rounded-xl border bg-background/70 p-3">
-                    <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Configured Fields</p>
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                      <span
-                        v-for="field in gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).configured_fields"
-                        :key="field"
-                        class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-200"
-                      >
-                        {{ field }}
-                      </span>
-                      <span
-                        v-if="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).configured_fields.length === 0"
-                        class="text-xs text-muted-foreground"
-                      >
-                        暂无
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  v-if="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).missing.length"
-                  class="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3"
-                >
-                  <p class="text-xs font-black text-amber-800 dark:text-amber-100">缺失字段</p>
-                  <p class="mt-1 text-xs leading-relaxed text-amber-800/80 dark:text-amber-100/75">
-                    {{ gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).missing.join(', ') }}
-                  </p>
-                </div>
-
-                <div
-                  v-if="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).blockers.length"
-                  class="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3"
-                >
-                  <p class="text-xs font-black text-rose-700 dark:text-rose-100">生产阻塞</p>
-                  <ul class="mt-1 space-y-1 text-xs leading-relaxed text-rose-700/85 dark:text-rose-100/80">
-                    <li v-for="blocker in gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).blockers" :key="blocker">
-                      {{ blocker }}
-                    </li>
-                  </ul>
-                </div>
-
-                <a
-                  v-if="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).documentation_url"
-                  :href="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).documentation_url"
-                  target="_blank"
-                  rel="noreferrer"
-                  class="inline-flex items-center gap-2 text-xs font-black text-orange-500 hover:text-orange-400"
-                >
-                  <ShieldCheck class="size-3.5" />
-                  {{ gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway).documentation_label }}
-                </a>
-              </div>
-
-              <div v-else class="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-                选择一个支付服务商后查看生产就绪检查。
-              </div>
-            </div>
-
-            <PaymentGatewaySecureConfigPanel
-              :selected-gateway="paymentSettings.gateway"
-              :status="gatewayRuntimeStatus(paymentRuntime, paymentSettings.gateway)"
-              :secret-store-configured="paymentRuntime?.secret_store_configured === true"
+            <PaymentGatewayRuntimePanel
+              v-model:selected-gateway="paymentSettings.gateway"
+              v-model:test-mode="paymentSettings.test_mode"
+              :runtime="paymentRuntime"
+              :loading="loadingPaymentRuntime"
               :can-edit="canEdit"
-              @saved="emit('refresh-payment-runtime')"
+              @refresh="emit('refresh-payment-runtime')"
             />
           </div>
         </SettingsSection>
@@ -447,15 +180,38 @@
       </div>
     </TabsContent>
 
+    <TabsContent value="api">
+      <SettingsSection title="API 管理" description="统一管理第三方接口配置、刷新策略和凭据引用。">
+        <ApiManagementSettingsPanel
+          :api-settings="apiSettings"
+          :currency-options="paymentCurrencyOptions"
+          :loading-currencies="loadingPaymentCurrencies"
+        />
+      </SettingsSection>
+    </TabsContent>
+
+    <TabsContent value="commercial_crawler">
+      <CommercialCrawlerProtectionPanel
+        :protection="commercialCrawlerProtection"
+        :loading="loadingCommercialCrawlerProtection"
+        @refresh="emit('refresh-commercial-crawler-protection')"
+      />
+    </TabsContent>
+
     <TabsContent value="public_chat" class="space-y-4">
       <PublicChatSettingsPanel
         :loading-agents="loadingPublicChatAgents"
+        :loading-groups="loadingPublicChatGroups"
         :loading-candidates="loadingPublicChatAgentCandidates"
         :summary="publicChatAgentsSummary"
         :agents="publicChatAgents"
+        :groups="publicChatGroups"
         :warnings="publicChatAgentWarnings"
         :can-edit="canEdit"
         @open-agent-dialog="emit('open-agent-dialog')"
+        @open-group-dialog="emit('open-group-dialog')"
+        @edit-group="emit('edit-group', $event)"
+        @delete-group="emit('delete-group', $event)"
         @refresh="emit('refresh-public-chat')"
       />
     </TabsContent>
@@ -466,30 +222,19 @@
 import { defineComponent, h } from 'vue'
 import {
   AlertTriangle,
-  CheckCircle2,
-  Copy,
-  CreditCard,
   Eye,
   EyeOff,
-  Globe2,
-  Coins,
-  Gift,
-  Headset,
-  Mail,
-  RefreshCw,
-  SearchCheck,
-  ShieldCheck,
-  Share2,
-  XCircle,
 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
-import PaymentGatewaySecureConfigPanel from '@/components/admin/settings/PaymentGatewaySecureConfigPanel.vue'
+import ApiManagementSettingsPanel from '@/components/admin/settings/ApiManagementSettingsPanel.vue'
+import CurrencyPolicySettingsCard from '@/components/admin/settings/CurrencyPolicySettingsCard.vue'
+import PaymentGatewayRuntimePanel from '@/components/admin/settings/PaymentGatewayRuntimePanel.vue'
 import PaymentMethodsSettingsPanel from '@/components/admin/settings/PaymentMethodsSettingsPanel.vue'
 import PublicChatSettingsPanel from '@/components/admin/settings/PublicChatSettingsPanel.vue'
 import { Button } from '@/components/ui/button'
+import CommercialCrawlerProtectionPanel from '@/components/admin/settings/CommercialCrawlerProtectionPanel.vue'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 
 defineProps({
@@ -498,81 +243,39 @@ defineProps({
   emailSettings: { type: Object, required: true },
   seoSettings: { type: Object, required: true },
   socialSettings: { type: Object, required: true },
-  loyaltySettings: { type: Object, required: true },
-  redeemSettings: { type: Object, required: true },
   paymentSettings: { type: Object, required: true },
+  apiSettings: { type: Object, required: true },
+  commercialCrawlerProtection: { type: Object, default: null },
+  loadingCommercialCrawlerProtection: { type: Boolean, default: false },
+  paymentCurrencyOptions: { type: Array, default: () => [] },
+  loadingPaymentCurrencies: { type: Boolean, default: false },
   paymentRuntime: { type: Object, default: null },
   loadingPaymentRuntime: { type: Boolean, default: false },
   socialFields: { type: Array, default: () => [] },
   showSmtpPassword: { type: Boolean, default: false },
   showPaymentSecrets: { type: Boolean, default: false },
   loadingPublicChatAgents: { type: Boolean, default: false },
+  loadingPublicChatGroups: { type: Boolean, default: false },
   loadingPublicChatAgentCandidates: { type: Boolean, default: false },
   publicChatAgentsSummary: { type: Object, default: () => ({}) },
   publicChatAgents: { type: Array, default: () => [] },
+  publicChatGroups: { type: Array, default: () => [] },
   publicChatAgentWarnings: { type: Array, default: () => [] },
   canEdit: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
-  'update:activeTab',
   'update:showSmtpPassword',
   'update:showPaymentSecrets',
   'open-agent-dialog',
+  'open-group-dialog',
+  'edit-group',
+  'delete-group',
   'refresh-public-chat',
   'refresh-payment-runtime',
+  'currency-policy-saved',
+  'refresh-commercial-crawler-protection',
 ])
-
-const paymentGatewayOptions = [
-  { value: 'stripe', label: 'Stripe', description: 'Cards, wallets and international card checkout.' },
-  { value: 'paypal', label: 'PayPal', description: 'PayPal account checkout and express payments.' },
-  { value: 'alipay', label: '支付宝', description: '适合人民币和跨境支付宝收款场景。' },
-  { value: 'wechat', label: '微信支付', description: '适合微信生态内的扫码和小程序支付。' },
-]
-
-const paymentGatewayOption = (value) =>
-  paymentGatewayOptions.find((gateway) => gateway.value === value)
-
-const paymentGatewayLabel = (value) =>
-  paymentGatewayOption(value)?.label || '未选择支付网关'
-
-const paymentGatewayDescription = (value) =>
-  paymentGatewayOption(value)?.description || '请选择一个支付服务商后查看 runtime 检查。'
-
-const gatewayRuntimeStatus = (runtime, value) =>
-  (runtime?.gateways || []).find((gateway) => gateway.provider === value)
-
-const runtimeStatusLabel = (status, loading) => {
-  if (loading) return '检查中'
-  if (!status) return '未知'
-  if (status.production_ready) return '生产就绪'
-  if (!status.webhook_supported) return '锁定'
-  if (status.configured || status.webhook_configured) return '需补配置'
-  return '缺配置'
-}
-
-const runtimeStatusBadgeClass = (status) => {
-  if (!status) return 'border-border bg-muted text-muted-foreground'
-  if (status.production_ready) return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
-  if (!status.webhook_supported) return 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200'
-  if (status.configured || status.webhook_configured) return 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-200'
-  return 'border-border bg-muted text-muted-foreground'
-}
-
-const gatewayCardClass = (runtime, value, isSelected) => {
-  const status = gatewayRuntimeStatus(runtime, value)
-  const selectedClass = isSelected ? 'border-orange-500/55 bg-orange-500/10 shadow-[0_16px_34px_rgba(255,90,0,0.10)]' : ''
-  if (selectedClass) return selectedClass
-  if (status?.production_ready) return 'border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/35'
-  if (status && !status.webhook_supported) return 'border-rose-500/20 bg-rose-500/5 hover:border-rose-500/35'
-  if (status?.configured || status?.webhook_configured) return 'border-amber-500/20 bg-amber-500/5 hover:border-amber-500/35'
-  return 'border-border bg-background/70 hover:border-orange-500/35 hover:bg-orange-500/5'
-}
-
-const copyText = (value) => {
-  if (!value || typeof navigator === 'undefined' || !navigator.clipboard) return
-  navigator.clipboard.writeText(value)
-}
 
 const SettingsSection = defineComponent({
   props: {
@@ -580,7 +283,7 @@ const SettingsSection = defineComponent({
     description: { type: String, default: '' }
   },
   setup(props, { slots }) {
-    return () => h('section', { class: 'grid max-w-5xl gap-5 lg:grid-cols-[190px_minmax(0,1fr)]' }, [
+    return () => h('section', { class: 'grid w-full max-w-none gap-6 lg:grid-cols-[200px_minmax(0,1fr)]' }, [
       h('div', {}, [
         h('h2', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
         props.description ? h('p', { class: 'mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60' }, props.description) : null

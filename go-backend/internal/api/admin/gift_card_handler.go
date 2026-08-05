@@ -5,8 +5,6 @@ import (
 	"tanzanite/internal/pkg/apierror"
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,43 +39,6 @@ func (h *MarketingHandler) GetGiftCard(c *gin.Context) {
 		"gift_card":    detail.GiftCard,
 		"transactions": detail.Transactions,
 	})
-}
-
-func (h *MarketingHandler) CreateGiftCard(c *gin.Context) {
-	var req struct {
-		Code           string     `json:"code" binding:"required"`
-		InitialValue   float64    `json:"initial_value" binding:"required,gt=0"`
-		Currency       string     `json:"currency"`
-		RecipientEmail string     `json:"recipient_email"`
-		RecipientName  string     `json:"recipient_name"`
-		SenderName     string     `json:"sender_name"`
-		Message        string     `json:"message"`
-		CoverImage     string     `json:"cover_image"`
-		ExpiresAt      *time.Time `json:"expires_at"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondValidationError(c, err.Error())
-		return
-	}
-
-	giftCard, err := h.marketingService.CreateGiftCardAdmin(service.GiftCardCreateInput{
-		Code:           req.Code,
-		InitialValue:   req.InitialValue,
-		Currency:       req.Currency,
-		RecipientEmail: req.RecipientEmail,
-		RecipientName:  req.RecipientName,
-		SenderName:     req.SenderName,
-		Message:        req.Message,
-		CoverImage:     req.CoverImage,
-		ExpiresAt:      req.ExpiresAt,
-	})
-	if err != nil {
-		respondMarketingError(c, err, "gift card")
-		return
-	}
-
-	response.Created(c, gin.H{"gift_card": giftCard})
 }
 
 func (h *MarketingHandler) UpdateGiftCardStatus(c *gin.Context) {

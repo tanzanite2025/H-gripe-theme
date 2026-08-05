@@ -11,7 +11,7 @@ export interface ShippingQuoteItemInput {
 
 export interface ShippingQuoteRequest {
   country: string
-  currency?: string
+  currency: string
   items: ShippingQuoteItemInput[]
 }
 
@@ -105,6 +105,12 @@ export const useShippingQuote = () => {
       error.value = 'Shipping country is required'
       return null
     }
+    const currency = payload.currency.trim().toUpperCase()
+    if (!currency) {
+      quote.value = null
+      error.value = 'Shipping quote currency is required'
+      return null
+    }
 
     const items = payload.items
       .map((item) => ({
@@ -128,7 +134,7 @@ export const useShippingQuote = () => {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           country,
-          currency: payload.currency?.trim().toUpperCase() || 'USD',
+          currency,
           items,
         }),
       })
@@ -146,7 +152,7 @@ export const useShippingQuote = () => {
     }
   }
 
-  const quoteCartItems = (items: CartItem[], country: string, currency = 'USD') => {
+  const quoteCartItems = (items: CartItem[], country: string, currency: string) => {
     return quoteCart({
       country,
       currency,

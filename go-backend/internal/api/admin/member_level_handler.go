@@ -37,15 +37,14 @@ func (h *MarketingHandler) GetMemberLevel(c *gin.Context) {
 
 func (h *MarketingHandler) CreateMemberLevel(c *gin.Context) {
 	var req struct {
-		Name             string   `json:"name" binding:"required"`
-		MinPoints        *int     `json:"min_points" binding:"required"`
-		MaxPoints        *int     `json:"max_points" binding:"required"`
-		DiscountRate     float64  `json:"discount_rate"`
-		PointsMultiplier *float64 `json:"points_multiplier"`
-		Benefits         string   `json:"benefits"`
-		Icon             string   `json:"icon"`
-		Color            string   `json:"color"`
-		SortOrder        int      `json:"sort_order"`
+		Name         string  `json:"name" binding:"required"`
+		MinPoints    *int    `json:"min_points" binding:"required"`
+		MaxPoints    *int    `json:"max_points" binding:"required"`
+		DiscountRate float64 `json:"discount_rate"`
+		Benefits     string  `json:"benefits"`
+		Icon         string  `json:"icon"`
+		Color        string  `json:"color"`
+		SortOrder    int     `json:"sort_order"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -53,21 +52,15 @@ func (h *MarketingHandler) CreateMemberLevel(c *gin.Context) {
 		return
 	}
 
-	pointsMultiplier := 1.0
-	if req.PointsMultiplier != nil {
-		pointsMultiplier = *req.PointsMultiplier
-	}
-
 	level, err := h.marketingService.CreateMemberLevelAdmin(service.MemberLevelCreateInput{
-		Name:             req.Name,
-		MinPoints:        *req.MinPoints,
-		MaxPoints:        *req.MaxPoints,
-		DiscountRate:     req.DiscountRate,
-		PointsMultiplier: pointsMultiplier,
-		Benefits:         req.Benefits,
-		Icon:             req.Icon,
-		Color:            req.Color,
-		SortOrder:        req.SortOrder,
+		Name:         req.Name,
+		MinPoints:    *req.MinPoints,
+		MaxPoints:    *req.MaxPoints,
+		DiscountRate: req.DiscountRate,
+		Benefits:     req.Benefits,
+		Icon:         req.Icon,
+		Color:        req.Color,
+		SortOrder:    req.SortOrder,
 	})
 	if err != nil {
 		respondMarketingError(c, err, "member level")
@@ -85,15 +78,14 @@ func (h *MarketingHandler) UpdateMemberLevel(c *gin.Context) {
 	}
 
 	var req struct {
-		Name             *string  `json:"name"`
-		MinPoints        *int     `json:"min_points"`
-		MaxPoints        *int     `json:"max_points"`
-		DiscountRate     *float64 `json:"discount_rate"`
-		PointsMultiplier *float64 `json:"points_multiplier"`
-		Benefits         *string  `json:"benefits"`
-		Icon             *string  `json:"icon"`
-		Color            *string  `json:"color"`
-		SortOrder        *int     `json:"sort_order"`
+		Name         *string  `json:"name"`
+		MinPoints    *int     `json:"min_points"`
+		MaxPoints    *int     `json:"max_points"`
+		DiscountRate *float64 `json:"discount_rate"`
+		Benefits     *string  `json:"benefits"`
+		Icon         *string  `json:"icon"`
+		Color        *string  `json:"color"`
+		SortOrder    *int     `json:"sort_order"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -102,15 +94,14 @@ func (h *MarketingHandler) UpdateMemberLevel(c *gin.Context) {
 	}
 
 	level, err := h.marketingService.UpdateMemberLevelAdmin(uint(id), service.MemberLevelUpdateInput{
-		Name:             req.Name,
-		MinPoints:        req.MinPoints,
-		MaxPoints:        req.MaxPoints,
-		DiscountRate:     req.DiscountRate,
-		PointsMultiplier: req.PointsMultiplier,
-		Benefits:         req.Benefits,
-		Icon:             req.Icon,
-		Color:            req.Color,
-		SortOrder:        req.SortOrder,
+		Name:         req.Name,
+		MinPoints:    req.MinPoints,
+		MaxPoints:    req.MaxPoints,
+		DiscountRate: req.DiscountRate,
+		Benefits:     req.Benefits,
+		Icon:         req.Icon,
+		Color:        req.Color,
+		SortOrder:    req.SortOrder,
 	})
 	if err != nil {
 		respondMarketingError(c, err, "member level")

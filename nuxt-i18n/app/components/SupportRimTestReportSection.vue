@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
+  <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
     <h3 class="support-section__title text-center">Rim Test Report</h3>
 
     <p class="support-section__body mt-4 text-center">

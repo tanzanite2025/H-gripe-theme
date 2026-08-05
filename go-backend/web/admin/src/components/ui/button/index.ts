@@ -8,10 +8,10 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs',
-        outline: 'border-border/80 border-dashed bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 aria-expanded:bg-muted aria-expanded:text-foreground',
+        default: 'bg-admin-selected text-admin-selected-foreground hover:bg-admin-selected/90 shadow-[var(--admin-control-selected-shadow)] [&_svg]:text-admin-selected-icon',
+        outline: 'border-border/80 border-dashed bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 aria-expanded:bg-admin-selected aria-expanded:text-admin-selected-foreground aria-expanded:[&_svg]:text-admin-selected-icon',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
-        ghost: 'hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground',
+        ghost: 'hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-admin-selected aria-expanded:text-admin-selected-foreground aria-expanded:[&_svg]:text-admin-selected-icon',
         destructive: 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 focus-visible:ring-rose-500/20 dark:bg-rose-500/20',
         link: 'text-primary underline-offset-4 hover:underline',
       },

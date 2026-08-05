@@ -1,6 +1,6 @@
 <template>
   <AdminFilterPanel>
-    <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_120px_120px_120px_120px_120px_120px_auto]" @submit.prevent="emit('apply')">
+    <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.5fr)_112px_112px_112px_112px_112px_112px_112px_112px_auto]" @submit.prevent="emit('apply')">
       <label class="space-y-1 block md:col-span-2 xl:col-span-1">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
         <div class="relative">
@@ -14,6 +14,8 @@
       <AdminFilterSelect v-model="filters.cartSession" label="CART / 购物车" :options="cartOptions" />
       <AdminFilterSelect v-model="filters.customerServiceVisitor" label="CHAT / 聊天" :options="chatOptions" />
       <AdminFilterSelect v-model="filters.lastSeen" label="LAST SEEN / 活跃" :options="lastSeenOptions" />
+      <AdminFilterSelect v-model="filters.lastMeaningful" label="MEANING / 有效" :options="lastSeenOptions" />
+      <AdminFilterSelect v-model="filters.status" label="STATUS / 状态" :options="statusOptions" />
 
       <label class="space-y-1 block">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">COUNTRY / 国家</span>
@@ -67,6 +69,13 @@ const cartOptions = [
   { label: '未绑定', value: 'no' },
 ]
 const chatOptions = cartOptions
+const statusOptions = [
+  { label: '有效', value: 'active' },
+  { label: '全部', value: 'all' },
+  { label: '候选', value: 'candidate' },
+  { label: '归档', value: 'archived' },
+  { label: '抑制', value: 'suppressed' },
+]
 const lastSeenOptions = [
   { label: '全部', value: 'all' },
   { label: '24小时', value: '24h' },

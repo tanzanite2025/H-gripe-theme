@@ -21,7 +21,7 @@ export const defaultShippingCarrierServiceForm = (carriers: any[] = []) => ({
   service_name: '',
   route_name: '',
   countries: '[]',
-  currency: 'USD',
+  currency: '',
   billing_mode: 'actual_weight',
   first_weight_grams: 0,
   additional_weight_grams: 0,

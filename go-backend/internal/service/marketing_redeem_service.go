@@ -34,7 +34,9 @@ type RedeemGiftCardOption struct {
 	Label              string  `json:"label"`
 	GiftCardValue      float64 `json:"giftcard_value"`
 	GiftCardValueCents int64   `json:"giftcard_value_cents"`
+	Currency           string  `json:"currency"`
 	PointsRequired     int     `json:"points_required"`
+	RemainingQuantity  int64   `json:"remaining_quantity"`
 	Status             string  `json:"status"`
 }
 
@@ -46,16 +48,18 @@ func (s *MarketingService) ListRedeemGiftCardOptionsFromConfig(config *loyalty.P
 	options := make([]RedeemGiftCardOption, 0, len(config.RedeemOptions))
 	for _, option := range config.RedeemOptions {
 		pointsRequired, err := PointsForGiftCardValue(option.ValueCents, config.ExchangeRatePoints)
-		if err != nil || pointsRequired < config.MinRedeemPoints {
+		if err != nil || pointsRequired < config.MinRedeemPoints || option.RemainingQuantity() <= 0 {
 			continue
 		}
 		value := float64(option.ValueCents) / 100
 		options = append(options, RedeemGiftCardOption{
 			ID:                 option.ID,
-			Label:              fmt.Sprintf("%s %.2f Gift Card", config.Currency, value),
+			Label:              fmt.Sprintf("%s %.2f Gift Card", option.Currency, value),
 			GiftCardValue:      value,
 			GiftCardValueCents: option.ValueCents,
+			Currency:           option.Currency,
 			PointsRequired:     pointsRequired,
+			RemainingQuantity:  option.RemainingQuantity(),
 			Status:             "active",
 		})
 	}
@@ -80,10 +84,11 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		return nil, errors.New("redemption transaction manager is unavailable")
 	}
 
-	valueCents, err := resolveRedeemValueCents(req, config)
+	selectedOption, err := resolveRedeemOption(req, config)
 	if err != nil {
 		return nil, err
 	}
+	valueCents := selectedOption.ValueCents
 	pointsToSpend, err := PointsForGiftCardValue(valueCents, config.ExchangeRatePoints)
 	if err != nil {
 		return nil, err
@@ -138,13 +143,23 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 			)
 		}
 
+		if repos.Program == nil {
+			return errors.New("loyalty program repository is unavailable")
+		}
+		consumedOption, err := repos.Program.ConsumeRedeemOption(config.ID, selectedOption.ID)
+		if err != nil {
+			return fmt.Errorf("failed to reserve gift card stock: %w", err)
+		}
+
+		selectedOption = *consumedOption
+
 		var expiresAt *time.Time
 		if config.CardExpiryDays > 0 {
 			expiry := time.Now().AddDate(0, 0, config.CardExpiryDays)
 			expiresAt = &expiry
 		}
 
-		giftCard, err := createRedeemedGiftCard(repos.Coupon, userID, valueCents, config.Currency, expiresAt)
+		giftCard, err := createRedeemedGiftCard(repos.Coupon, userID, valueCents, selectedOption.Currency, expiresAt)
 		if err != nil {
 			return fmt.Errorf("failed to create gift card: %w", err)
 		}
@@ -155,7 +170,7 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 			GiftCardID:         giftCard.ID,
 			ProgramConfigID:    configID,
 			IdempotencyKey:     req.IdempotencyKey,
-			Currency:           config.Currency,
+			Currency:           selectedOption.Currency,
 			GiftCardValueCents: valueCents,
 			PointsSpent:        pointsToSpend,
 			Status:             "completed",
@@ -213,25 +228,28 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 	return result, nil
 }
 
-func resolveRedeemValueCents(req RedeemGiftCardRequest, config *loyalty.ProgramConfig) (int64, error) {
+func resolveRedeemOption(req RedeemGiftCardRequest, config *loyalty.ProgramConfig) (loyalty.ProgramRedeemOption, error) {
 	if req.OptionID > 0 {
 		for _, option := range config.RedeemOptions {
 			if option.ID == req.OptionID {
-				return option.ValueCents, nil
+				if option.RemainingQuantity() <= 0 {
+					return loyalty.ProgramRedeemOption{}, repository.ErrRedeemOptionOutOfStock
+				}
+				return option, nil
 			}
 		}
-		return 0, errors.New("redeem option does not belong to the active program config")
+		return loyalty.ProgramRedeemOption{}, errors.New("redeem option does not belong to the active program config")
 	}
 
 	if req.GiftCardValueCents <= 0 {
-		return 0, errors.New("redeem option is required")
+		return loyalty.ProgramRedeemOption{}, errors.New("redeem option is required")
 	}
 	for _, option := range config.RedeemOptions {
-		if option.ValueCents == req.GiftCardValueCents {
-			return option.ValueCents, nil
+		if option.ValueCents == req.GiftCardValueCents && option.RemainingQuantity() > 0 {
+			return option, nil
 		}
 	}
-	return 0, errors.New("gift card value is not an allowed redeem option")
+	return loyalty.ProgramRedeemOption{}, errors.New("gift card value is not an allowed redeem option")
 }
 
 func (s *MarketingService) redeemResultFromExisting(

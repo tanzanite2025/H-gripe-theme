@@ -4,7 +4,7 @@
       <div
         v-if="modelValue"
         ref="modalRef"
-        :class="props.embedded ? 'wa-drawer-mask' : 'fixed inset-0 z-[13000] flex items-center justify-center p-0 md:p-4'"
+        :class="props.embedded ? 'wa-drawer-mask' : 'fixed inset-0 z-[13000] flex items-center justify-center p-0 md:p-4 tz-mobile-safe-modal-mask'"
         aria-modal="true"
         role="dialog"
         @keydown.esc.prevent="close"
@@ -26,34 +26,35 @@
 
         <!-- Shell -->
         <div
+          id="auth-modal-shell"
           :class="[
             props.embedded 
-              ? 'wa-drawer-shell' 
-              : 'auth-modal__panel auth-modal-shell relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-2xl bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.98),rgba(0,0,0,1))] backdrop-blur-xl border-2 border-[#6b73ff]/40 shadow-[0_0_30px_rgba(107,115,255,0.6)] text-white flex flex-col pointer-events-auto overflow-hidden'
+              ? 'wa-drawer-shell auth-modal-shell--drawer'
+              : 'auth-modal__panel auth-modal-shell auth-modal-shell--standalone relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-2xl backdrop-blur-xl border text-white flex flex-col pointer-events-auto overflow-hidden'
           ]"
         >
           <!-- Background Decoration matches other drawers if embedded, or keep original if standalone -->
-          <div v-if="props.embedded" class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
+          <div v-if="props.embedded" class="absolute inset-x-0 top-0 h-[200px] bg-[radial-gradient(circle_at_top,rgba(181,255,109,0.06),transparent_66%)] blur-3xl pointer-events-none z-0"></div>
 
           <!-- Close Button -->
           <button
             v-if="!props.embedded"
-            class="absolute right-4 top-4 w-9 h-9 rounded-full border border-white/20 hover:bg-white/10 flex items-center justify-center z-20"
+            class="tz-global-close-btn absolute right-4 top-4 z-20"
             type="button"
             :aria-label="t('authModal.actions.close')"
             @click="close"
           >
-            x
+            <Icon name="lucide:x" class="h-3.5 w-3.5" />
           </button>
           
           <button
             v-else
-            class="absolute right-4 top-4 wa-drawer-close-btn z-20 bg-black/20 backdrop-blur-md"
+            class="tz-global-close-btn absolute right-4 top-4 z-20"
             type="button"
             :aria-label="t('authModal.actions.close')"
             @click="close"
           >
-            <span class="text-lg leading-none">x</span>
+            <Icon name="lucide:x" class="h-3.5 w-3.5" />
           </button>
 
           <!-- Body -->
@@ -67,8 +68,8 @@
                     type="button"
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'login'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_12px_26px_-14px_rgba(15,23,42,1)]'
-                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-secondary shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
+                      ? 'bg-[#B5FF6D] text-[#050505] shadow-[0_12px_26px_-14px_rgba(0,0,0,1)]'
+                      : 'bg-white/10 text-white/70 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
                     @click="setMode('login')"
                   >
                     {{ t('authModal.actions.signIn') }}
@@ -77,8 +78,8 @@
                     type="button"
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'register'
-                      ? 'bg-[linear-gradient(135deg,#4efce7_0%,#60a5fa_100%)] text-slate-950 shadow-[0_12px_26px_-14px_rgba(15,23,42,1)]'
-                      : 'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] tz-text-secondary shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
+                      ? 'bg-[#B5FF6D] text-[#050505] shadow-[0_12px_26px_-14px_rgba(0,0,0,1)]'
+                      : 'bg-white/10 text-white/70 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
                     @click="setMode('register')"
                   >
                     {{ t('authModal.actions.signUp') }}
@@ -86,9 +87,9 @@
                 </div>
 
                 <!-- Privacy Notice -->
-                <div class="mt-3 px-4 py-3 rounded-xl bg-[rgba(15,23,42,0.6)] backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                <div class="mt-3 px-4 py-3 rounded-xl bg-white/[0.055] backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
                   <p class="text-center text-xs tz-text-secondary leading-relaxed">
-                    <span class="inline-block mr-1">🛡️</span>
+                    <Icon name="lucide:shield-check" class="inline-block mr-1 h-3.5 w-3.5 text-[#B5FF6D]" />
                     {{ t('authModal.privacyNotice') }}
                   </p>
                 </div>
@@ -194,7 +195,7 @@
 
                 <div v-if="completionState" class="space-y-6 text-center">
                   <div class="flex justify-center">
-                    <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl text-[#40ffaa]">
+                    <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl text-[#B5FF6D]">
                       &#10003;
                     </div>
                   </div>
@@ -440,14 +441,27 @@ const handleCompletionCta = async () => {
 <style scoped>
 /* Standard styles for non-embedded mode */
 .auth-modal-shell {
-  height: 90vh;
-  max-height: 80vh;
+  height: min(90vh, var(--tz-mobile-safe-viewport-height, 90vh));
+  max-height: min(80vh, var(--tz-mobile-safe-viewport-height, 80vh));
+}
+
+.auth-modal-shell--standalone,
+.auth-modal-shell--drawer {
+  background: linear-gradient(135deg, #141416 0%, #050505 100%) !important;
+  background-image: linear-gradient(135deg, #141416 0%, #050505 100%) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 22px 70px -36px rgba(0, 0, 0, 1) !important;
+}
+
+.auth-modal-shell--drawer::before,
+.auth-modal-shell--drawer::after {
+  display: none !important;
 }
 
 @supports (height: 100dvh) {
   .auth-modal-shell {
-    height: 90dvh;
-    max-height: 80dvh;
+    height: min(90dvh, var(--tz-mobile-safe-viewport-height, 90dvh));
+    max-height: min(80dvh, var(--tz-mobile-safe-viewport-height, 80dvh));
   }
 }
 
@@ -485,40 +499,57 @@ const handleCompletionCta = async () => {
   border-radius: 99px;
 }
 
-.form-input {
+.auth-modal-shell--standalone .form-input,
+.auth-modal-shell--drawer .form-input {
   width: 100%;
   height: 2.6rem;
   padding: 0 0.85rem;
   border-radius: 0.75rem;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
-  border: none;
-  box-shadow:
-    0 2px 6px -3px rgba(0, 0, 0, 0.9),
-    0 0 8px rgba(15, 23, 42, 0.8);
-  color: #e5e7eb;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: none;
+  color: #f5f5f5 !important;
 }
 
-.form-input::placeholder {
+.auth-modal-shell--standalone .form-input::placeholder,
+.auth-modal-shell--drawer .form-input::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
 
-.form-input:focus {
+.auth-modal-shell--standalone .form-input:focus,
+.auth-modal-shell--drawer .form-input:focus {
   outline: none;
-  border-color: rgba(56, 189, 248, 0.9);
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  background-color: transparent !important;
   box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.95),
-    0 0 12px rgba(15, 23, 42, 0.9);
+    0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+:global(#auth-modal-shell input.form-input) {
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  color: #f5f5f5 !important;
+}
+
+:global(#auth-modal-shell input.form-input:focus) {
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  background-color: transparent !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.28) !important;
 }
 
 .primary-btn {
   height: 2.75rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-  color: #0b1120;
+  background: #ffffff;
+  color: #050505;
   font-weight: 600;
   box-shadow:
-    0 12px 30px -18px rgba(15, 23, 42, 1),
-    0 0 18px rgba(37, 99, 235, 0.6);
+    0 12px 30px -18px rgba(0, 0, 0, 1),
+    0 0 18px rgba(255, 255, 255, 0.12);
   transition:
     filter 0.2s ease,
     box-shadow 0.2s ease,
@@ -531,10 +562,10 @@ const handleCompletionCta = async () => {
 }
 
 .primary-btn:not(:disabled):hover {
-  filter: brightness(1.02);
+  filter: brightness(0.96);
   box-shadow:
-    0 10px 26px -18px rgba(15, 23, 42, 1),
-    0 0 20px rgba(56, 189, 248, 0.7);
+    0 10px 26px -18px rgba(0, 0, 0, 1),
+    0 0 20px rgba(255, 255, 255, 0.16);
   transform: translateY(-1px);
 }
 
@@ -542,7 +573,7 @@ const handleCompletionCta = async () => {
   width: 3rem;
   height: 3rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+  background: linear-gradient(135deg, rgba(18, 18, 20, 0.98), rgba(7, 7, 8, 0.96));
   border: none;
   color: #e5e7eb;
   display: inline-flex;
@@ -550,7 +581,7 @@ const handleCompletionCta = async () => {
   justify-content: center;
   box-shadow:
     0 6px 18px -12px rgba(0, 0, 0, 1),
-    0 0 10px rgba(15, 23, 42, 0.9);
+    0 0 10px rgba(0, 0, 0, 0.78);
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease,
@@ -558,24 +589,22 @@ const handleCompletionCta = async () => {
 }
 
 .social-btn:hover {
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(15, 23, 42, 0.98));
+  background: linear-gradient(135deg, rgba(28, 28, 30, 0.98), rgba(10, 10, 11, 0.98));
   box-shadow:
     0 8px 20px -12px rgba(0, 0, 0, 1),
-    0 0 14px rgba(15, 23, 42, 0.95);
+    0 0 14px rgba(181, 255, 109, 0.12);
   transform: translateY(-1px);
 }
 
 @media (max-width: 420px) {
   .auth-modal__panel {
-    height: 94vh;
-    height: 94dvh;
-    max-height: 94vh;
-    max-height: 94dvh;
+    height: min(94vh, var(--tz-mobile-safe-viewport-height, 94vh));
+    max-height: min(94vh, var(--tz-mobile-safe-viewport-height, 94vh));
     border-radius: 24px;
   }
 
   .auth-modal__body {
-    padding: 2.5rem 1.25rem 1.25rem;
+    padding: 2.5rem 1.25rem var(--tz-mobile-modal-safe-padding-bottom, 1.25rem);
   }
 
   .auth-modal__body .space-y-6 {

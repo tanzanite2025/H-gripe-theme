@@ -2,13 +2,20 @@
   <TooltipProvider>
     <div class="flex h-screen h-dvh overflow-hidden bg-background">
       <aside
-        class="hidden shrink-0 border-r border-dashed border-sidebar-border bg-sidebar transition-[width] duration-200 lg:flex"
-        :class="isCollapse ? 'w-[72px]' : 'w-[232px]'"
+        class="hidden shrink-0 border-r border-dashed border-slate-200 bg-white shadow-sm transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:flex"
+        :class="isCollapse ? 'w-[76px]' : 'w-[250px]'"
       >
         <AdminSidebar
           :items="visibleNavigationItems"
           :active-path="route.path"
           :collapsed="isCollapse"
+          :brand-initial="brandInitial"
+          :brand-name="brandName"
+          :panel-label="panelLabel"
+          :role-label="roleLabel"
+          :user="user"
+          :user-initials="userInitials"
+          @request-logout="requestLogout"
         />
       </aside>
 
@@ -22,13 +29,20 @@
           <AdminSidebar
             :items="visibleNavigationItems"
             :active-path="route.path"
+            :brand-initial="brandInitial"
+            :brand-name="brandName"
+            :panel-label="panelLabel"
+            :role-label="roleLabel"
+            :user="user"
+            :user-initials="userInitials"
+            @request-logout="requestLogout"
             @navigate="mobileSidebarOpen = false"
           />
         </SheetContent>
       </Sheet>
 
       <section class="flex min-w-0 flex-1 flex-col">
-        <header class="flex h-14 shrink-0 items-center justify-between border-b border-dashed border-border bg-card px-3 sm:px-4">
+        <header class="flex h-16 shrink-0 items-center border-b border-dashed border-slate-200 bg-white/80 px-3 backdrop-blur sm:px-4">
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
@@ -45,7 +59,7 @@
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="hidden lg:inline-flex rounded-full"
+                  class="hidden rounded-full lg:inline-flex"
                   :aria-label="isCollapse ? '展开导航' : '收起导航'"
                   @click="isCollapse = !isCollapse"
                 >
@@ -63,38 +77,10 @@
               <strong class="block truncate text-sm font-black tracking-tighter italic uppercase">{{ routeTitle }}</strong>
             </div>
           </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button variant="ghost" class="h-auto gap-2 px-1.5 py-1 sm:px-2">
-                <Avatar class="size-8 rounded-full">
-                  <AvatarFallback class="rounded-full bg-primary/10 font-mono text-xs font-black text-primary">
-                    {{ userInitials }}
-                  </AvatarFallback>
-                </Avatar>
-                <span class="hidden max-w-36 flex-col items-start leading-tight sm:flex">
-                  <strong class="w-full truncate text-xs font-bold">{{ user?.username || '管理员' }}</strong>
-                  <small class="mt-0.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ roleLabel }}</small>
-                </span>
-                <ChevronDown class="size-3.5 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-60">
-              <DropdownMenuLabel class="font-normal">
-                <span class="block text-xs font-bold">{{ user?.username || '管理员' }}</span>
-                <span class="mt-1 block truncate font-mono text-[10px] text-muted-foreground/70">{{ user?.email }}</span>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem class="text-destructive focus:text-destructive" @select="logoutDialogOpen = true">
-                <LogOut class="size-4" />
-                退出登录
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </header>
 
         <main class="min-h-0 flex-1 overflow-auto bg-muted/35 p-3 sm:p-4 lg:p-6">
-          <div class="mx-auto w-full max-w-none sm:w-[95%]">
+          <div class="mx-auto h-full min-h-0 w-full max-w-none sm:w-[95%]">
             <router-view />
           </div>
         </main>
@@ -124,28 +110,9 @@
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  ChevronDown,
-  CircleHelp,
-  Fingerprint,
-  FileText,
-  Headset,
-  Images,
-  LayoutDashboard,
-  LogOut,
-  Mail,
-  Megaphone,
   Menu,
-  MessagesSquare,
-  Package,
   PanelLeftClose,
   PanelLeftOpen,
-  ScrollText,
-  Settings,
-  ShieldCheck,
-  ShoppingCart,
-  Tags,
-  Truck,
-  Users
 } from '@lucide/vue'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import {
@@ -158,20 +125,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAdminBranding } from '@/composables/useAdminBranding'
 import { useAuthStore } from '@/stores/auth'
+import { adminNavigationItems, findActiveNavigationEntry, filterNavigationItems } from '@/lib/adminNavigation'
 
 const router = useRouter()
 const route = useRoute()
@@ -182,32 +141,17 @@ const mobileSidebarOpen = ref(false)
 const logoutDialogOpen = ref(false)
 const logoutLoading = ref(false)
 const user = computed(() => authStore.user)
-const { panelLabel, loadAdminBranding, setAdminDocumentTitle } = useAdminBranding()
+const { brandInitial, brandName, panelLabel, loadAdminBranding, setAdminDocumentTitle } = useAdminBranding()
 
-const navigationItems = [
-  { path: '/', routeName: 'Dashboard', label: '仪表板', icon: LayoutDashboard },
-  { path: '/products', routeName: 'Products', label: '商品管理', icon: Package, permission: 'product:view' },
-  { path: '/product-types', routeName: 'ProductTypes', label: '产品模板', icon: Tags, permission: 'product:view' },
-  { path: '/orders', routeName: 'Orders', label: '订单管理', icon: ShoppingCart, permission: 'order:view' },
-  { path: '/warranty', routeName: 'Warranty', label: '保修管理', icon: ShieldCheck, permission: 'product:view' },
-  { path: '/shipping', routeName: 'Shipping', label: '物流管理', icon: Truck, permission: 'shipping:view' },
-  { path: '/users', routeName: 'Users', label: '用户管理', icon: Users, permission: 'user:view' },
-  { path: '/content', routeName: 'Content', label: '内容管理', icon: FileText, permission: 'content:view' },
-  { path: '/faqs', routeName: 'FAQs', label: 'FAQ 管理', icon: CircleHelp, permission: 'faq:view' },
-  { path: '/galleries', routeName: 'Galleries', label: '图库管理', icon: Images, permission: 'gallery:view' },
-  { path: '/subscriptions', routeName: 'Subscriptions', label: '订阅管理', icon: Mail, permission: 'subscription:view' },
-  { path: '/customer-service', routeName: 'CustomerServiceChats', label: '客服对话', icon: Headset, permission: 'ticket:view' },
-  { path: '/visitor-profiles', routeName: 'VisitorProfiles', label: '访客画像', icon: Fingerprint, permission: 'ticket:view' },
-  { path: '/tickets', routeName: 'Tickets', label: '工单管理', icon: MessagesSquare, permission: 'ticket:view' },
-  { path: '/marketing', routeName: 'Marketing', label: '营销管理', icon: Megaphone, permission: 'marketing:view' },
-  { path: '/settings', routeName: 'Settings', label: '系统设置', icon: Settings, permission: 'settings:view' },
-  { path: '/audit-logs', routeName: 'AuditLogs', label: '审计日志', icon: ScrollText, permission: 'logs:view' }
-]
+const visibleNavigationItems = computed(() => filterNavigationItems(adminNavigationItems, (permission) => authStore.hasPermission(permission)))
+const activeNavigationEntry = computed(() => findActiveNavigationEntry(visibleNavigationItems.value, route.path))
+const routeTitle = computed(() => {
+  const parentLabel = activeNavigationEntry.value?.parent?.label
+  const itemLabel = activeNavigationEntry.value?.item?.label
 
-const visibleNavigationItems = computed(() =>
-  navigationItems.filter((item) => !item.permission || authStore.hasPermission(item.permission))
-)
-const routeTitle = computed(() => route.meta.title || '仪表板')
+  if (parentLabel && itemLabel && parentLabel !== itemLabel) return `${parentLabel} / ${itemLabel}`
+  return itemLabel || parentLabel || route.meta.title || '仪表板'
+})
 const userInitials = computed(() => {
   const identity = user.value?.username || user.value?.email || 'Admin'
   const parts = identity.split(/[\s_-]+/).filter(Boolean)
@@ -224,6 +168,11 @@ const roleLabel = computed(() => {
   }
   return labels[user.value?.role] || '后台用户'
 })
+
+const requestLogout = () => {
+  mobileSidebarOpen.value = false
+  logoutDialogOpen.value = true
+}
 
 const confirmLogout = async () => {
   if (logoutLoading.value) return

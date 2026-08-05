@@ -1,8 +1,11 @@
 package coupon
 
 import (
+	"errors"
 	"math"
 	"time"
+
+	"tanzanite/internal/domain/currency"
 
 	"gorm.io/gorm"
 )
@@ -15,7 +18,7 @@ type GiftCard struct {
 	Balance        float64        `gorm:"-" json:"balance"`
 	InitialCents   int64          `gorm:"column:initial_value_cents;not null;check:initial_value_cents_non_negative,initial_value_cents >= 0" json:"initial_value_cents"`
 	BalanceCents   int64          `gorm:"column:balance_cents;not null;check:balance_cents_non_negative,balance_cents >= 0" json:"balance_cents"`
-	Currency       string         `gorm:"default:'USD'" json:"currency"`
+	Currency       string         `gorm:"not null" json:"currency"`
 	Status         string         `gorm:"index" json:"status"` // active, used, expired, cancelled
 	OwnerUserID    *uint          `gorm:"index" json:"owner_user_id,omitempty"`
 	Origin         string         `gorm:"index;not null;default:'admin'" json:"origin"` // admin, loyalty_redemption
@@ -36,6 +39,10 @@ func (GiftCard) TableName() string {
 }
 
 func (gc *GiftCard) BeforeSave(tx *gorm.DB) error {
+	gc.Currency = currency.NormalizeCode(gc.Currency)
+	if !currency.IsValidCode(gc.Currency) || !currency.IsCatalogCode(gc.Currency) {
+		return errors.New("gift card currency must be a supported ISO 4217 code")
+	}
 	if gc.InitialValue > 0 || gc.InitialCents == 0 {
 		gc.InitialCents = AmountToCents(gc.InitialValue)
 	}

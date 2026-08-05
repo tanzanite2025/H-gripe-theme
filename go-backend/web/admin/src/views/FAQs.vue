@@ -1,6 +1,6 @@
 <template>
-  <div class="space-y-4">
-    <AdminPageHeader title="FAQ 管理" description="维护常见问题、分类、发布状态和展示顺序">
+  <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+    <AdminPageHeader class="shrink-0" title="FAQ 管理" description="维护常见问题、分类、发布状态和展示顺序">
       <template #actions>
         <Button v-if="hasPermission('faq:create')" @click="showCreateDialog">
           <Plus class="size-4" />
@@ -9,16 +9,19 @@
       </template>
     </AdminPageHeader>
 
-    <FAQFilterPanel
-      :filters="filters"
-      :page-filter-options="pageFilterOptions"
-      :category-filter-options="categoryFilterOptions"
-      :status-filter-options="statusFilterOptions"
-      @apply="applyFilters"
-      @reset="resetFilters"
-    />
+    <div class="shrink-0">
+      <FAQFilterPanel
+        :filters="filters"
+        :page-filter-options="pageFilterOptions"
+        :category-filter-options="categoryFilterOptions"
+        :status-filter-options="statusFilterOptions"
+        @apply="applyFilters"
+        @reset="resetFilters"
+      />
+    </div>
 
     <FAQAccordionList
+      class="min-h-0 flex-1"
       :loading="loading"
       :structure-loading="structureLoading"
       :faq-groups="faqGroups"

@@ -1,9 +1,11 @@
 <template>
   <div
-    class="browsing-history-dark w-full rounded-2xl border border-[rgba(110,110,233,0.35)]
-           bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
-           backdrop-blur-md shadow-[0_3px_9px_rgba(0,0,0,0.9)] overflow-hidden"
-    :class="{ 'browsing-history-dark--cart': density === 'cart' }"
+    class="browsing-history-dark w-full rounded-2xl border backdrop-blur-md shadow-[0_3px_9px_rgba(0,0,0,0.9)] overflow-hidden"
+    :class="[
+      density === 'cart'
+        ? 'browsing-history-dark--cart border-white/15 bg-white/[0.04]'
+        : 'border-[rgba(110,110,233,0.35)] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]',
+    ]"
   >
     <!-- 标题栏 -->
     <div class="browsing-history-dark__header flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
@@ -48,7 +50,7 @@
         >
           <!-- 商品卡片：暗色玻璃 + 纯黑阴影，无边框 -->
           <div
-            class="relative rounded-[14px]
+            class="browsing-history-dark__product-card relative rounded-[14px]
                    bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
                    shadow-[0_4px_12px_-4px_rgba(0,0,0,1)] overflow-hidden
                    transition-all duration-200"
@@ -85,7 +87,10 @@
               <h4 class="text-xs font-medium text-white line-clamp-2 mb-1">
                 {{ item.title }}
               </h4>
-              <p class="text-sm font-semibold text-[#40ffaa] mb-2">
+              <p
+                class="browsing-history-dark__price text-sm font-semibold mb-2"
+                :class="density === 'cart' ? 'text-white/90' : 'text-[#B5FF6D]'"
+              >
                 {{ item.price }}
               </p>
               
@@ -117,7 +122,10 @@
                 <!-- 分享到聊天按钮 -->
                 <button
                   @click="(e) => handleShareToChat(e, item)"
-                  class="flex-1 px-2 py-1.5 bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] hover:from-[#35e599] hover:to-[#5a62ee] rounded text-xs text-white transition-all shadow-lg"
+                  class="browsing-history-dark__share-btn flex-1 px-2 py-1.5 rounded text-xs text-white transition-all"
+                  :class="density === 'cart'
+                    ? 'border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/20'
+                    : 'bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] hover:from-[#A6F05F] hover:to-[#5a62ee] shadow-lg'"
                   title="Share to Chat"
                 >
                   <svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,11 +276,15 @@ onUnmounted(() => {
   height: 100%;
   min-height: 0;
   flex-direction: column;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  background-image: none !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__header {
   flex: 0 0 auto;
   padding-block: 0.55rem;
+  background: rgba(255, 255, 255, 0.03) !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__body {
@@ -300,6 +312,29 @@ onUnmounted(() => {
 .browsing-history-dark--cart .browsing-history-dark__empty {
   height: 100%;
   padding-block: 1rem;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__product-card {
+  background: rgba(255, 255, 255, 0.055) !important;
+  background-image: none !important;
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 1);
+}
+
+.browsing-history-dark--cart .browsing-history-dark__price {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__share-btn {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1) !important;
+  background-image: none !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__share-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.18) !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__mobile-hint {

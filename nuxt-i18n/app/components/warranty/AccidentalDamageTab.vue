@@ -18,7 +18,7 @@
            <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-300 font-bold text-sm shadow-lg shadow-black/50">2</div>
            <h3 class="text-slate-100 font-bold text-lg mb-2 pt-0.5">Product Group</h3>
            <p class="tz-text-secondary text-sm leading-relaxed">
-             Applies to all <strong class="text-white">Tanzanite series Wheels/Rims</strong>. You can use the product filter on our website to identify which series your wheelset belongs to.
+             Applies to all <strong class="text-white">eligible Wheels/Rims</strong>. You can use the product filter on our website to identify which series your wheelset belongs to.
            </p>
          </div>
 

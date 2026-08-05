@@ -14,8 +14,6 @@
              {{ t('home.featuredProducts.title') }}
           </h2>
           
-          <div class="h-1 w-20 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 shadow-[0_0_12px_rgba(59,130,246,0.5)]"></div>
-          
           <p class="text-base tz-text-secondary leading-relaxed max-w-md">
             {{ t('home.featuredProducts.subtitle') }}
           </p>
@@ -34,10 +32,10 @@
               v-for="card in cards" 
               :key="card.key" 
               :to="card.url" 
-              class="group block overflow-hidden rounded-2xl premium-card relative hover:shadow-2xl hover:shadow-blue-900/20 transition-all duration-500"
+              class="group block overflow-hidden rounded-2xl premium-card relative hover:shadow-2xl hover:shadow-black/40 transition-all duration-500"
            >
               <!-- Image Aspect -->
-              <div class="relative aspect-[4/3] bg-slate-800 overflow-hidden">
+              <div class="relative aspect-[4/3] bg-[var(--tz-card-surface)] overflow-hidden">
                  <img
                    v-if="card.thumbnail"
                    :src="card.thumbnail"
@@ -46,20 +44,20 @@
                    loading="lazy"
                  />
                  <!-- Placeholder Gradient / Image Slot -->
-                 <div
-                   v-else
-                   class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_60%)] group-hover:scale-110 transition-transform duration-700 ease-out"
+                  <div
+                    v-else
+                    class="absolute inset-0 bg-[var(--tz-card-surface)] group-hover:scale-110 transition-transform duration-700 ease-out"
                  ></div>
                  
                  <!-- Gradient Overlay -->
                  <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                  
                  <div class="absolute bottom-0 inset-x-0 p-5">
-                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">{{ card.title }}</h3>
+                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-[#B5FF6D] transition-colors">{{ card.title }}</h3>
                     <p class="tz-text-secondary text-sm line-clamp-2 mb-3">{{ card.description }}</p>
                     <div
                       v-if="card.price"
-                      class="inline-block px-3 py-1 rounded-lg bg-white/10 backdrop-blur text-xs font-medium text-white/90 border border-white/10 group-hover:bg-blue-500/20 group-hover:border-blue-500/30 transition-colors"
+                      class="inline-block px-3 py-1 rounded-lg bg-white/10 backdrop-blur text-xs font-medium text-white/90 border border-white/10 group-hover:bg-white/15 group-hover:border-white/20 transition-colors"
                     >
                        {{ card.price }}
                     </div>

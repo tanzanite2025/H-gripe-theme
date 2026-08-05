@@ -13,7 +13,7 @@
 
     <ShippingTabsPanel
       ref="trackingShipmentsPanelRef"
-      v-model:active-tab="activeTab"
+      :active-tab="activeTab"
       :templates="templates"
       :zones="zones"
       :carriers="carriers"
@@ -128,6 +128,7 @@ import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import ShippingDialogsPanel from '@/components/admin/shipping/ShippingDialogsPanel.vue'
 import ShippingTabsPanel from '@/components/admin/shipping/ShippingTabsPanel.vue'
 import { Button } from '@/components/ui/button'
+import { useRouteTab } from '@/composables/useRouteTab'
 import { useShippingCarrierManager } from '@/composables/shipping/useShippingCarrierManager'
 import { useShippingDeleteManager } from '@/composables/shipping/useShippingDeleteManager'
 import { useShippingPackagingManager } from '@/composables/shipping/useShippingPackagingManager'
@@ -138,7 +139,20 @@ import { trackingWebhookUrl } from '@/lib/shippingPresentation'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
-const activeTab = ref('overview')
+const activeTab = useRouteTab({
+  defaultValue: 'templates',
+  values: ['templates', 'zones', 'carriers', 'services', 'quote', 'packaging', 'tracking', 'trackingShipments'],
+  routes: {
+    templates: 'ShippingTemplates',
+    zones: 'ShippingZones',
+    carriers: 'ShippingCarriers',
+    services: 'ShippingServices',
+    quote: 'ShippingQuote',
+    packaging: 'ShippingPackaging',
+    tracking: 'ShippingTracking',
+    trackingShipments: 'ShippingTrackingShipments',
+  },
+})
 const trackingShipmentsPanelRef = ref(null)
 const {
   templates,

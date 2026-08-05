@@ -1,5 +1,5 @@
 <template>
-  <div :id="`accordion-item-${id}`" class="accordion-item flex flex-col rounded-xl overflow-hidden border border-white/5 transition-colors duration-3000" :class="{ 'bg-[#11151e]': isActive, 'bg-slate-800/20': !isActive }">
+  <div :id="`accordion-item-${id}`" class="accordion-item flex flex-col rounded-xl overflow-hidden border border-white/5 transition-colors duration-3000" :class="{ 'bg-[var(--tz-card-surface)]': isActive, 'bg-slate-800/20': !isActive }">
     
     <!-- Header -->
     <button

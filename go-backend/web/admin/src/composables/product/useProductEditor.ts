@@ -174,8 +174,25 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productForm.variants.forEach((variant: any, currentIndex: number) => { variant.is_default = currentIndex === index })
   }
 
+  const ensureDefaultVariantIsEnabled = () => {
+    if (!productForm.variants.length) return
+    const activeDefaultIndex = productForm.variants.findIndex((variant: any) => variant.is_default && variant.is_active !== false)
+    if (activeDefaultIndex >= 0) return
+    const firstActiveIndex = productForm.variants.findIndex((variant: any) => variant.is_active !== false)
+    setDefaultVariant(firstActiveIndex >= 0 ? firstActiveIndex : 0)
+  }
+
+  const setVariantActive = (index: number, isActive: boolean) => {
+    const variant = productForm.variants[index]
+    if (!variant) return
+    variant.is_active = Boolean(isActive)
+    ensureDefaultVariantIsEnabled()
+    clearFieldError('variants')
+  }
+
   const normalizeFormVariants = () => {
     if (!productForm.variants.length) return []
+    ensureDefaultVariantIsEnabled()
     if (!productForm.variants.some((variant: any) => variant.is_default)) productForm.variants[0].is_default = true
     return productForm.variants.map((variant: any, index: number) => {
       const optionValues: Record<string, any> = {}
@@ -234,6 +251,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     else if (new Set(payload.variants.map((variant: any) => variant.sku.toLowerCase())).size !== payload.variants.length) formErrors.variants = '变体 SKU 不能重复'
     else if (payload.variants.some((variant: any) => Number(variant.price) <= 0)) formErrors.variants = '每个变体价格必须大于 0'
     else if (payload.variants.some((variant: any) => Number(variant.stock) < 0)) formErrors.variants = '变体库存不能为负数'
+    else if (!payload.variants.some((variant: any) => variant.is_active !== false)) formErrors.variants = '请至少启用一个 SKU 变体'
     if (productForm.media.some((item: any) => !String(item.url || '').trim())) formErrors.media = '媒体条目必须填写 URL，空条目请删除'
     else if (payload.media.filter((item: any) => item.media_type === 'image' && item.is_primary).length > 1) formErrors.media = '商品主图只能设置一张'
     if (Object.keys(formErrors).length > 0) {
@@ -384,6 +402,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     addVariant,
     removeVariant,
     setDefaultVariant,
+    setVariantActive,
     handleProductTypeSelect,
     fetchProductTypes,
     showCreateDialog,

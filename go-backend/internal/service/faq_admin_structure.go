@@ -139,12 +139,12 @@ func (s *FAQService) UpsertAdminPage(pageID string, input FAQPageAdminInput) (*f
 			return nil, err
 		}
 		existingPage = &faq.FAQPage{
-			PageID: pageID,
-			Locale: locale,
+			PageID:    pageID,
+			Locale:    locale,
+			RoutePath: strings.TrimSpace(input.RoutePath),
 		}
 	}
 
-	existingPage.RoutePath = strings.TrimSpace(input.RoutePath)
 	existingPage.Domain = strings.TrimSpace(input.Domain)
 	existingPage.Title = strings.TrimSpace(input.Title)
 	existingPage.Subtitle = strings.TrimSpace(input.Subtitle)
@@ -159,7 +159,7 @@ func (s *FAQService) UpsertAdminPage(pageID string, input FAQPageAdminInput) (*f
 		return nil, err
 	}
 
-	s.invalidateStorefrontHTMLCache("admin faq page update")
+	s.notifyStorefrontContentChange("admin faq page update")
 	return existingPage, nil
 }
 
@@ -177,7 +177,7 @@ func (s *FAQService) CreateAdminCategory(input FAQCategoryAdminInput) (*faq.FAQC
 	if err := s.faqRepo.CreateCategory(category); err != nil {
 		return nil, err
 	}
-	s.invalidateStorefrontHTMLCache("admin faq category create")
+	s.notifyStorefrontContentChange("admin faq category create")
 	return category, nil
 }
 
@@ -204,7 +204,7 @@ func (s *FAQService) UpdateAdminCategory(id uint, input FAQCategoryAdminInput) (
 		return nil, err
 	}
 
-	s.invalidateStorefrontHTMLCache("admin faq category update")
+	s.notifyStorefrontContentChange("admin faq category update")
 	return existingCategory, nil
 }
 
@@ -240,7 +240,7 @@ func (s *FAQService) DeleteAdminCategory(id uint) error {
 	if err := s.faqRepo.DeleteCategory(id); err != nil {
 		return err
 	}
-	s.invalidateStorefrontHTMLCache("admin faq category delete")
+	s.notifyStorefrontContentChange("admin faq category delete")
 	return nil
 }
 

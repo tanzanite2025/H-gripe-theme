@@ -1,7 +1,7 @@
 <template>
   <div class="installation-guide space-y-12">
     <!-- Intro / Overview Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
       <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
         Tubeless Installation Guide
       </h2>
@@ -55,11 +55,11 @@
       <!-- Step 0: Preparation -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-slate-800 text-slate-300 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-slate-800 text-slate-300 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">0</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Preparation & Rim Taping</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-2 list-none pl-0">
@@ -96,11 +96,11 @@
        <!-- Step 1: Install Tire -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">1</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Install the Tire</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <p>Install the tire like a standard clincher. Push the bead into the center channel (drop center) of the rim to make mounting easier. "Massage" the tire to ensure even seating.</p>
@@ -135,11 +135,11 @@
        <!-- Step 2: Add Sealant -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-indigo-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">2</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Inject Sealant</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-2 list-none pl-0">
@@ -175,11 +175,11 @@
        <!-- Step 3: Inflate -->
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
          <!-- Icon/Marker -->
-         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#11151e] bg-emerald-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+         <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--tz-card-surface)] bg-emerald-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
             <span class="font-bold text-sm">3</span>
          </div>
          <!-- Card -->
-         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[#11151e] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
+         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 p-6">
             <h3 class="text-lg font-bold text-slate-100 mb-3">Inflate & Shake</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <p>Inflate quickly (using a pump with a reservoir or CO2 helps) to snap the beads into place. You should hear a satisfying "pop".</p>

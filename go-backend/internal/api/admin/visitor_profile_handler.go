@@ -7,6 +7,7 @@ import (
 	"tanzanite/internal/pkg/pagination"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/service"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,6 +37,8 @@ func (h *VisitorProfileHandler) ListVisitorProfiles(c *gin.Context) {
 		CartSession:            strings.TrimSpace(c.Query("cart_session")),
 		CustomerServiceVisitor: strings.TrimSpace(c.Query("customer_service_visitor")),
 		LastSeen:               strings.TrimSpace(c.Query("last_seen")),
+		LastMeaningful:         strings.TrimSpace(c.Query("last_meaningful")),
+		Status:                 strings.TrimSpace(c.Query("status")),
 	}
 
 	profiles, total, err := h.visitorProfileService.ListProfiles(params.Page, params.PageSize, input)
@@ -66,6 +69,8 @@ func (h *VisitorProfileHandler) ListVisitorProfiles(c *gin.Context) {
 			"cart_session":             emptyFilterAsAll(input.CartSession),
 			"customer_service_visitor": emptyFilterAsAll(input.CustomerServiceVisitor),
 			"last_seen":                emptyFilterAsAll(input.LastSeen),
+			"last_meaningful":          emptyFilterAsAll(input.LastMeaningful),
+			"status":                   emptyFilterAsAll(input.Status),
 		},
 	})
 }
@@ -84,6 +89,32 @@ func (h *VisitorProfileHandler) GetVisitorProfileStats(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"stats": stats})
+}
+
+// CleanupExpiredVisitorProfiles applies the configured retention status fields.
+func (h *VisitorProfileHandler) CleanupExpiredVisitorProfiles(c *gin.Context) {
+	if h.visitorProfileService == nil {
+		apierror.RespondInternalError(c, errors.New("visitor profile service is not configured"))
+		return
+	}
+
+	now := time.Now().UTC()
+	if rawNow := strings.TrimSpace(c.Query("now")); rawNow != "" {
+		parsed, err := time.Parse(time.RFC3339, rawNow)
+		if err != nil {
+			apierror.RespondBadRequest(c, "invalid cleanup reference timestamp")
+			return
+		}
+		now = parsed
+	}
+
+	result, err := h.visitorProfileService.CleanupExpiredProfiles(now)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"cleanup": result})
 }
 
 func emptyFilterAsAll(value string) string {

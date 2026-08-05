@@ -21,10 +21,12 @@ type VisitorProfileListFilters struct {
 	Identity                  string
 	CountryCode               string
 	Locale                    string
+	Status                    string
 	HasEmail                  *bool
 	HasCartSession            *bool
 	HasCustomerServiceVisitor *bool
 	LastSeenAfter             *time.Time
+	LastMeaningfulAfter       *time.Time
 }
 
 func (r *VisitorProfileRepository) FindByCustomerServiceVisitorHash(hash string) (*visitor.Profile, error) {
@@ -62,6 +64,25 @@ func (r *VisitorProfileRepository) Update(profile *visitor.Profile) error {
 	return r.db.Save(profile).Error
 }
 
+func (r *VisitorProfileRepository) DeleteExpiredCandidates(now time.Time) (int64, error) {
+	result := r.db.
+		Where("profile_status = ?", visitor.ProfileStatusCandidate).
+		Where("retention_until IS NOT NULL AND retention_until <= ?", now).
+		Delete(&visitor.Profile{})
+	return result.RowsAffected, result.Error
+}
+
+func (r *VisitorProfileRepository) ArchiveExpiredAnonymousProfiles(now time.Time) (int64, error) {
+	result := r.db.Model(&visitor.Profile{}).
+		Where("(profile_status IS NULL OR profile_status = '' OR profile_status = ?)", visitor.ProfileStatusActive).
+		Where("user_id IS NULL").
+		Where("retention_until IS NOT NULL AND retention_until <= ?", now).
+		Updates(map[string]interface{}{
+			"profile_status": visitor.ProfileStatusArchived,
+		})
+	return result.RowsAffected, result.Error
+}
+
 func (r *VisitorProfileRepository) List(page, pageSize int, filters VisitorProfileListFilters) ([]visitor.Profile, int64, error) {
 	var profiles []visitor.Profile
 	var total int64
@@ -95,6 +116,10 @@ func (r *VisitorProfileRepository) Stats() (map[string]int64, error) {
 		"customer_service_count": r.db.Model(&visitor.Profile{}).Where("customer_service_visitor_hash IS NOT NULL AND customer_service_visitor_hash <> ''"),
 		"region_count":           r.db.Model(&visitor.Profile{}).Where("country_code IS NOT NULL AND country_code <> ''"),
 		"recent_24h_count":       r.db.Model(&visitor.Profile{}).Where("last_seen_at >= ?", time.Now().UTC().Add(-24*time.Hour)),
+		"active_count":           r.db.Model(&visitor.Profile{}).Where("(profile_status IS NULL OR profile_status = '' OR profile_status = ?)", visitor.ProfileStatusActive),
+		"candidate_count":        r.db.Model(&visitor.Profile{}).Where("profile_status = ?", visitor.ProfileStatusCandidate),
+		"archived_count":         r.db.Model(&visitor.Profile{}).Where("profile_status = ?", visitor.ProfileStatusArchived),
+		"suppressed_count":       r.db.Model(&visitor.Profile{}).Where("profile_status = ?", visitor.ProfileStatusSuppressed),
 	}
 
 	for key, query := range counts {
@@ -132,6 +157,14 @@ func (r *VisitorProfileRepository) applyListFilters(query *gorm.DB, filters Visi
 		query = query.Where("LOWER(locale) = ?", locale)
 	}
 
+	switch strings.ToLower(strings.TrimSpace(filters.Status)) {
+	case "all":
+	case visitor.ProfileStatusCandidate, visitor.ProfileStatusArchived, visitor.ProfileStatusSuppressed:
+		query = query.Where("profile_status = ?", strings.ToLower(strings.TrimSpace(filters.Status)))
+	default:
+		query = query.Where("(profile_status IS NULL OR profile_status = '' OR profile_status = ?)", visitor.ProfileStatusActive)
+	}
+
 	if filters.HasEmail != nil {
 		if *filters.HasEmail {
 			query = query.Where("email IS NOT NULL AND email <> ''")
@@ -158,6 +191,10 @@ func (r *VisitorProfileRepository) applyListFilters(query *gorm.DB, filters Visi
 
 	if filters.LastSeenAfter != nil {
 		query = query.Where("last_seen_at >= ?", *filters.LastSeenAfter)
+	}
+
+	if filters.LastMeaningfulAfter != nil {
+		query = query.Where("last_meaningful_seen_at >= ?", *filters.LastMeaningfulAfter)
 	}
 
 	return query

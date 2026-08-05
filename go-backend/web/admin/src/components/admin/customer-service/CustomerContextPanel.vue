@@ -1,6 +1,6 @@
 <template>
-  <Card class="min-h-[520px] overflow-hidden py-0">
-    <CardHeader class="border-b bg-muted/30 px-4 py-3">
+  <Card class="h-full min-h-0 overflow-hidden py-0">
+    <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3">
       <CardTitle class="flex items-center gap-2">
         <UserRound class="size-4 text-primary" />
         客户上下文
@@ -8,13 +8,13 @@
       <CardDescription>只读事实源：账号、购物车、心愿单、订单和浏览记录</CardDescription>
     </CardHeader>
 
-    <CardContent class="min-h-0 space-y-4 overflow-y-auto p-4">
-      <div v-if="!selectedConversation" class="flex min-h-[420px] flex-col items-center justify-center text-center text-muted-foreground">
+    <CardContent class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+      <div v-if="!selectedConversation" class="flex h-full min-h-0 flex-col items-center justify-center text-center text-muted-foreground">
         <Info class="mb-2 size-7 opacity-55" />
         <p class="text-xs leading-6">选择会话后显示客户上下文。</p>
       </div>
 
-      <div v-else-if="loading" class="flex min-h-[420px] items-center justify-center text-muted-foreground">
+      <div v-else-if="loading" class="flex h-full min-h-0 items-center justify-center text-muted-foreground">
         <LoaderCircle class="size-5 animate-spin" />
       </div>
 

@@ -6,12 +6,13 @@ import (
 	"strings"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/order"
+	attributionpkg "tanzanite/internal/pkg/attribution"
 	"tanzanite/internal/pkg/logger"
+	pgateway "tanzanite/internal/pkg/payment"
 	"tanzanite/internal/pkg/requestctx"
 	"tanzanite/internal/repository"
 	"time"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +26,32 @@ func (s *OrderService) CreateOrder(
 	shippingMethod string,
 	couponCode string,
 	pointsToUse int,
+) (*order.Order, error) {
+	return s.CreateOrderWithAttribution(
+		ctx,
+		userID,
+		items,
+		shippingAddress,
+		billingAddress,
+		paymentMethod,
+		shippingMethod,
+		couponCode,
+		pointsToUse,
+		attributionpkg.Context{},
+	)
+}
+
+func (s *OrderService) CreateOrderWithAttribution(
+	ctx context.Context,
+	userID uint,
+	items []order.OrderItem,
+	shippingAddress order.Address,
+	billingAddress order.Address,
+	paymentMethod string,
+	shippingMethod string,
+	couponCode string,
+	pointsToUse int,
+	attributionContext attributionpkg.Context,
 ) (*order.Order, error) {
 	traceID := ""
 	if ctx != nil {
@@ -47,6 +74,20 @@ func (s *OrderService) CreateOrder(
 			return nil, err
 		}
 		quoteInput.LoyaltyProgramConfig = config
+	}
+	orderCurrency, err := s.resolveOrderCurrency()
+	if err != nil {
+		return nil, err
+	}
+	if provider := pgateway.ProviderForPaymentMethod(paymentMethod); provider != "" {
+		if err := pgateway.ValidateGatewayCurrency(pgateway.GatewayType(provider), orderCurrency); err != nil {
+			return nil, fmt.Errorf("payment method %s cannot collect order currency %s: %w", paymentMethod, orderCurrency, err)
+		}
+	}
+	quoteInput.Currency = orderCurrency
+	orderNumber, err := s.generateOrderNumber()
+	if err != nil {
+		return nil, err
 	}
 
 	var createdOrder *order.Order
@@ -76,7 +117,7 @@ func (s *OrderService) CreateOrder(
 		}
 
 		o := &order.Order{
-			OrderNumber:      s.generateOrderNumber(),
+			OrderNumber:      orderNumber,
 			UserID:           userID,
 			Status:           "pending",
 			PaymentMethod:    paymentMethod,
@@ -90,6 +131,7 @@ func (s *OrderService) CreateOrder(
 			ShippingFee:      quote.ShippingFee,
 			TaxAmount:        quote.TaxAmount,
 			DiscountAmount:   quote.DiscountAmount,
+			Currency:         orderCurrency,
 			CouponCode:       quote.CouponCode,
 			PointsUsed:       quote.PointsToUse,
 			PointsValue:      quote.PointsDiscount,
@@ -113,6 +155,9 @@ func (s *OrderService) CreateOrder(
 			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
 		}
 		createdOrder = o
+		if err := persistOrderAttribution(repos.OrderAttribution, o.ID, attributionContext); err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to save order attribution: %w", err)
+		}
 
 		if quote.PointsToUse > 0 {
 			if _, err := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
@@ -179,6 +224,16 @@ func shippingQuoteOptionSnapshot(option ShippingQuoteOption) string {
 	return strings.Join(parts, " / ")
 }
 
-func (s *OrderService) generateOrderNumber() string {
-	return fmt.Sprintf("ORD%s%s", time.Now().Format("20060102"), uuid.New().String()[:8])
+func (s *OrderService) generateOrderNumber() (string, error) {
+	if s == nil || s.numberGenerator == nil {
+		return "", ErrOrderNumberNotConfigured
+	}
+	value, err := s.numberGenerator.Generate()
+	if err != nil {
+		return "", err
+	}
+	if !s.numberGenerator.Validate(value) {
+		return "", fmt.Errorf("generated order number failed validation")
+	}
+	return value, nil
 }

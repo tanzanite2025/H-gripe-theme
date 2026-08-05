@@ -25,6 +25,10 @@ var allowedTags = map[string]bool{
 	"blockquote": true,
 	"code":       true,
 	"pre":        true,
+	"figure":     true,
+	"figcaption": true,
+	"img":        true,
+	"video":      true,
 }
 
 var inlineAliasTags = map[string]string{
@@ -46,8 +50,6 @@ var removedTags = map[string]bool{
 	"embed":    true,
 	"form":     true,
 	"input":    true,
-	"img":      true,
-	"video":    true,
 	"audio":    true,
 	"svg":      true,
 	"math":     true,
@@ -104,6 +106,12 @@ func renderNode(builder *strings.Builder, node *html.Node) error {
 		if !allowedTags[tag] {
 			return renderChildren(builder, node)
 		}
+		if tag == "img" {
+			return renderImage(builder, node)
+		}
+		if tag == "video" {
+			return renderVideo(builder, node)
+		}
 
 		builder.WriteByte('<')
 		builder.WriteString(tag)
@@ -132,6 +140,40 @@ func renderNode(builder *strings.Builder, node *html.Node) error {
 	}
 }
 
+func renderImage(builder *strings.Builder, node *html.Node) error {
+	src := nodeAttr(node, "src")
+	if src == "" || !allowedMediaSource(src) {
+		return nil
+	}
+
+	builder.WriteString(`<img src="`)
+	builder.WriteString(stdhtml.EscapeString(src))
+	builder.WriteByte('"')
+	builder.WriteString(` alt="`)
+	builder.WriteString(stdhtml.EscapeString(nodeAttr(node, "alt")))
+	builder.WriteByte('"')
+	builder.WriteString(` loading="lazy">`)
+	return nil
+}
+
+func renderVideo(builder *strings.Builder, node *html.Node) error {
+	src := nodeAttr(node, "src")
+	if src == "" || !allowedMediaSource(src) {
+		return nil
+	}
+
+	builder.WriteString(`<video src="`)
+	builder.WriteString(stdhtml.EscapeString(src))
+	builder.WriteByte('"')
+	if poster := nodeAttr(node, "poster"); poster != "" && allowedMediaSource(poster) {
+		builder.WriteString(` poster="`)
+		builder.WriteString(stdhtml.EscapeString(poster))
+		builder.WriteByte('"')
+	}
+	builder.WriteString(` controls preload="metadata"></video>`)
+	return nil
+}
+
 func renderChildren(builder *strings.Builder, node *html.Node) error {
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
 		if err := renderNode(builder, child); err != nil {
@@ -142,8 +184,12 @@ func renderChildren(builder *strings.Builder, node *html.Node) error {
 }
 
 func linkHref(node *html.Node) string {
+	return nodeAttr(node, "href")
+}
+
+func nodeAttr(node *html.Node, key string) string {
 	for _, attr := range node.Attr {
-		if strings.EqualFold(attr.Key, "href") {
+		if strings.EqualFold(attr.Key, key) {
 			return strings.TrimSpace(attr.Val)
 		}
 	}
@@ -160,5 +206,18 @@ func allowedLink(value string) bool {
 		return true
 	default:
 		return parsed.Scheme == "" && strings.HasPrefix(value, "/")
+	}
+}
+
+func allowedMediaSource(value string) bool {
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return false
+	}
+	switch strings.ToLower(parsed.Scheme) {
+	case "http", "https":
+		return true
+	default:
+		return parsed.Scheme == "" && strings.HasPrefix(value, "/") && !strings.HasPrefix(value, "//")
 	}
 }

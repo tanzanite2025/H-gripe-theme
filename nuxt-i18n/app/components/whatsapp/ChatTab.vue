@@ -3,7 +3,7 @@
     <!-- 消息列表区域 (Conversation History) -->
     <div 
       ref="messagesContainer"
-      class="flex-1 overflow-y-auto space-y-3 px-1 md:p-6 md:space-y-4"
+      class="flex-1 overflow-y-auto space-y-3 px-1 md:px-6 md:py-7 md:space-y-4"
     >
       <!-- 空状态 -->
       <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full tz-text-secondary text-sm">
@@ -53,7 +53,7 @@
               <div v-else class="truncate text-sm font-semibold text-white">
                 {{ configProduct(message).title || message.message }}
               </div>
-              <div v-if="configProduct(message).price" class="mt-1 text-xs text-[#40ffaa]">
+              <div v-if="configProduct(message).price" class="mt-1 text-xs text-[#B5FF6D]">
                 {{ configProduct(message).price }}
               </div>
               <div v-if="configProduct(message).sku" class="mt-1 tz-caption text-white/55">
@@ -96,10 +96,10 @@
         <!-- 订单确认消息 -->
         <div
           v-else-if="isOrderMessage(message)"
-          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#40ffaa]/35 bg-[#07120b]/85 p-3 text-white shadow-lg"
+          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#B5FF6D]/35 bg-[#07120b]/85 p-3 text-white shadow-lg"
         >
           <div class="flex items-center justify-between gap-3">
-            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#40ffaa]">
+            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#B5FF6D]">
               Order confirmation
             </div>
             <div class="tz-micro-label opacity-50 whitespace-nowrap">
@@ -124,7 +124,7 @@
               <span v-if="orderPayload(message).payment_status">Payment: {{ orderPayload(message).payment_status }}</span>
               <span v-if="orderPayload(message).shipping_status">Shipping: {{ orderPayload(message).shipping_status }}</span>
             </div>
-            <div class="mt-2 text-xs font-semibold text-[#40ffaa]">
+            <div class="mt-2 text-xs font-semibold text-[#B5FF6D]">
               {{ formatOrderTotal(orderPayload(message)) }}
             </div>
           </div>
@@ -144,6 +144,57 @@
               +{{ orderItems(message).length - 3 }} more item{{ orderItems(message).length - 3 > 1 ? 's' : '' }}
             </div>
           </div>
+        </div>
+
+        <!-- FAQ 引用消息 -->
+        <div
+          v-else-if="isFaqMessage(message)"
+          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-white/15 bg-black/80 p-3 text-white shadow-lg"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#B5FF6D]">
+              {{ t('chatModal.tabs.faq') }}
+            </div>
+            <div class="tz-micro-label whitespace-nowrap opacity-50">
+              {{ formatMessageTime(message.created_at) }}
+            </div>
+          </div>
+
+          <div class="mt-3 flex gap-3">
+            <img
+              v-if="faqPayload(message).answer_image_url"
+              :src="faqPayload(message).answer_image_url"
+              :alt="faqPayload(message).answer_image_alt || faqQuestion(message)"
+              class="h-16 w-16 shrink-0 rounded-xl border border-white/10 object-cover"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="mb-1 flex flex-wrap gap-x-2 gap-y-1 tz-micro-label text-white/45">
+                <span v-if="faqPayload(message).page_title || faqPayload(message).page_id">
+                  {{ faqPayload(message).page_title || faqPayload(message).page_id }}
+                </span>
+                <span v-if="faqPayload(message).category_label || faqPayload(message).category">
+                  · {{ faqPayload(message).category_label || faqPayload(message).category }}
+                </span>
+              </div>
+              <div class="break-words text-sm font-semibold leading-5 text-white">
+                {{ faqQuestion(message) }}
+              </div>
+              <div v-if="faqExcerpt(message)" class="mt-2 line-clamp-3 text-xs leading-5 text-white/60">
+                {{ faqExcerpt(message) }}
+              </div>
+            </div>
+          </div>
+
+          <a
+            v-if="faqUrl(message)"
+            :href="faqUrl(message)"
+            :target="isExternalFaqUrl(message) ? '_blank' : undefined"
+            rel="noopener"
+            class="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:border-[#B5FF6D]/45 hover:text-[#B5FF6D]"
+          >
+            <span>{{ t('faq.ui.viewAll') }}</span>
+            <span aria-hidden="true">↗</span>
+          </a>
         </div>
 
         <!-- 卡片类型消息 (Card) -->
@@ -198,9 +249,30 @@
             </div>
           </div>
           
-          <div v-if="message.attachment_url" class="mt-2">
-            <img :src="message.attachment_url" alt="附件" class="max-w-full rounded-xl" />
+          <div v-if="messageAttachments(message).length" class="mt-2 grid gap-2">
+            <img
+              v-for="attachmentUrl in messageAttachments(message)"
+              :key="attachmentUrl"
+              :src="attachmentUrl"
+              alt="附件"
+              class="max-w-full rounded-xl"
+            />
           </div>
+
+          <a
+            v-if="message.message_type === 'link' && messageMetadata(message).url"
+            :href="messageMetadata(message).url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-2 block rounded-xl border border-white/15 bg-white/[0.05] px-3 py-2 text-xs text-[#B5FF6D] underline-offset-4 hover:underline"
+          >
+            <span class="block font-semibold text-white/90">
+              {{ messageMetadata(message).title || message.message }}
+            </span>
+            <span class="mt-1 block truncate text-white/55">
+              {{ messageMetadata(message).url }}
+            </span>
+          </a>
         </div>
       </div>
 
@@ -218,7 +290,7 @@
     </div>
 
     <!-- 底部输入栏 -->
-    <div class="px-3 pb-4 md:p-4 border-t border-white/15 md:border-white/[0.08] md:bg-white/[0.02]">
+    <div class="chat-composer-bar px-3 pb-4 md:px-5 md:pt-5 md:pb-6 border-t border-white/15 md:border-white/[0.08] md:bg-white/[0.02]">
       <div v-if="showVisitorEmailCapture" class="mb-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
         <label class="block tz-compact-label text-white/55">Email for follow-up · optional</label>
         <input
@@ -231,46 +303,107 @@
           class="mt-1 h-8 w-full bg-transparent tz-caption text-white placeholder:text-white/35 focus:outline-none"
         />
       </div>
-      <form @submit.prevent="handleSendMessage" class="flex items-center gap-2">
+
+      <div
+        v-if="pendingProductReference"
+        class="mb-2 border border-[#B5FF6D]/35 bg-[#07120b]/85 px-3 py-2 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+      >
+        <div class="flex items-center gap-3">
+          <div class="h-12 w-12 shrink-0 overflow-hidden bg-white/[0.05]">
+            <img
+              v-if="pendingProductReference.thumbnail"
+              :src="pendingProductReference.thumbnail"
+              :alt="pendingProductTitle"
+              class="h-full w-full object-cover"
+            />
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <div class="tz-micro-label uppercase tracking-[0.14em] text-[#B5FF6D]">
+              {{ t('chatModal.productDraft.selected') }}
+            </div>
+            <div class="truncate text-sm font-semibold text-white">
+              {{ pendingProductTitle }}
+            </div>
+            <div class="mt-0.5 flex min-w-0 gap-2 text-xs text-white/50">
+              <span v-if="pendingProductPrice" class="shrink-0 text-[#B5FF6D]">{{ pendingProductPrice }}</span>
+              <span v-if="pendingProductSku" class="min-w-0 truncate">SKU: {{ pendingProductSku }}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="flex h-8 w-8 shrink-0 items-center justify-center border border-white/20 text-white/60 transition-colors hover:border-white/50 hover:text-white"
+            :aria-label="t('chatModal.productDraft.remove')"
+            :title="t('chatModal.productDraft.remove')"
+            @click="$emit('clearPendingProductReference')"
+          >
+            <Icon name="lucide:x" class="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <form
+        ref="attachmentActionsRoot"
+        @submit.prevent="handleSendMessage"
+        class="relative flex items-center gap-2"
+      >
         <input
+          ref="messageInputElement"
           :value="newMessage"
           @input="$emit('update:newMessage', ($event.target as HTMLInputElement).value)"
           type="text"
           placeholder="Type a message..."
-          class="flex-1 h-11 px-4 rounded-full tz-caption md:text-base text-white bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)] transition-colors"
+          class="flex-1 h-11 rounded-full border border-white/14 bg-[#1f1f1f] px-4 tz-caption text-white placeholder:text-white/58 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_2px_6px_rgba(0,0,0,0.35)] transition-colors focus:border-[#B5FF6D]/70 focus:bg-[#242424] focus:outline-none md:text-base"
           :style="{ borderColor: currentThemeColor }"
           :disabled="isSending"
         />
         
-        <input
-          ref="imageInput"
-          type="file"
-          accept="image/*"
-          class="hidden"
-          @change="handleImageUpload"
+        <div class="relative shrink-0">
+          <input
+            ref="imageLibraryInput"
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            @change="handleImageUpload($event, 'library')"
+          />
+
+          <input
+            ref="cameraInput"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            class="hidden"
+            @change="handleImageUpload($event, 'camera')"
+          />
+
+          <button
+            type="button"
+            @click="attachmentHubOpen = !attachmentHubOpen"
+            :disabled="isUploadingImage || isSending"
+            class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-white flex items-center justify-center shadow-sm shadow-black/40 disabled:opacity-50 transition-colors"
+            :aria-label="t('chatModal.attachments.open')"
+            :title="t('chatModal.attachments.open')"
+          >
+            <Icon
+              :name="isUploadingImage ? 'lucide:loader-circle' : 'lucide:plus'"
+              class="h-5 w-5"
+              :class="{ 'animate-spin': isUploadingImage }"
+            />
+          </button>
+        </div>
+
+        <ChatAttachmentHub
+          :open="attachmentHubOpen"
+          @close="attachmentHubOpen = false"
+          @select="handleAttachmentAction"
         />
         
         <button
-          type="button"
-          @click="imageInput?.click()"
-          :disabled="isUploadingImage"
-          class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-white flex items-center justify-center shadow-sm shadow-black/40 disabled:opacity-50 transition-colors"
-          title="Upload image"
-        >
-          <svg v-if="!isUploadingImage" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <svg v-else class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </button>
-        
-        <button
           type="submit"
-          :disabled="!newMessage.trim() || isSending"
-          class="shrink-0 px-4 md:px-6 h-11 rounded-full font-semibold text-sm md:text-base text-black flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          :style="{ backgroundColor: currentThemeColor }"
+          :disabled="(!newMessage.trim() && !pendingProductReference) || isSending"
+          class="shrink-0 px-4 md:px-6 h-11 rounded-full bg-[#B5FF6D] font-semibold text-sm md:text-base text-black flex items-center justify-center transition-colors hover:bg-[#A7F75D] disabled:cursor-not-allowed disabled:bg-[#B5FF6D] disabled:text-black [&_svg]:text-black"
           title="Send message"
         >
           <span v-if="!isSending">
@@ -292,8 +425,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
+import { useI18n, useLocalePath } from '#imports'
+import ChatAttachmentHub from './ChatAttachmentHub.vue'
+import type { ChatAttachmentActionId } from '~/composables/chat/useChatAttachmentActions'
 
 const props = defineProps<{
   messages: any[]
@@ -302,6 +438,7 @@ const props = defineProps<{
   showVisitorEmailCapture: boolean
   isSending: boolean
   isUploadingImage: boolean
+  pendingProductReference?: any | null
   agentTyping?: { active: boolean; displayName?: string }
   currentThemeColor: string
 }>()
@@ -310,13 +447,34 @@ const emit = defineEmits<{
   'update:newMessage': [value: string]
   'update:visitorEmail': [value: string]
   'sendMessage': []
-  'uploadImage': [event: Event]
+  'uploadImage': [event: Event, source: 'library' | 'camera']
+  'openOrderPicker': []
+  'openCustomerServiceProductSearchModal': []
+  'clearPendingProductReference': []
   'deleteMessage': [message: any]
 }>()
 
+const { t } = useI18n()
+const localePath = useLocalePath()
 const messagesContainer = ref<HTMLElement | null>(null)
-const imageInput = ref<HTMLInputElement | null>(null)
+const messageInputElement = ref<HTMLInputElement | null>(null)
+const imageLibraryInput = ref<HTMLInputElement | null>(null)
+const cameraInput = ref<HTMLInputElement | null>(null)
+const attachmentActionsRoot = ref<HTMLElement | null>(null)
+const attachmentHubOpen = ref(false)
 const isDesktop = ref(false)
+
+const pendingProductTitle = computed(() => {
+  return String(props.pendingProductReference?.title || props.pendingProductReference?.name || 'Product').trim()
+})
+
+const pendingProductPrice = computed(() => {
+  return String(props.pendingProductReference?.priceLabel || props.pendingProductReference?.price || '').trim()
+})
+
+const pendingProductSku = computed(() => {
+  return String(props.pendingProductReference?.sku || '').trim()
+})
 
 // 简单的视口检测，用于样式判断
 const checkDesktop = () => {
@@ -328,21 +486,50 @@ const throttledCheckDesktop = useThrottleFn(checkDesktop, 150)
 onMounted(() => {
   checkDesktop()
   window.addEventListener('resize', throttledCheckDesktop)
+  document.addEventListener('pointerdown', handleDocumentPointerDown)
   scrollToBottom()
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', throttledCheckDesktop)
+  document.removeEventListener('pointerdown', handleDocumentPointerDown)
 })
 
 const handleSendMessage = () => {
   emit('sendMessage')
 }
 
-const handleImageUpload = (event: Event) => {
-  emit('uploadImage', event)
-  //重置 input
-  if (imageInput.value) imageInput.value.value = ''
+const handleImageUpload = (event: Event, source: 'library' | 'camera') => {
+  emit('uploadImage', event, source)
+  const target = event.target as HTMLInputElement
+  if (target) target.value = ''
+}
+
+const handleAttachmentAction = (action: ChatAttachmentActionId) => {
+  attachmentHubOpen.value = false
+
+  if (action === 'image_library') {
+    imageLibraryInput.value?.click()
+    return
+  }
+
+  if (action === 'camera_capture') {
+    cameraInput.value?.click()
+    return
+  }
+
+  if (action === 'order_reference') {
+    emit('openOrderPicker')
+    return
+  }
+
+  emit('openCustomerServiceProductSearchModal')
+}
+
+const handleDocumentPointerDown = (event: PointerEvent) => {
+  if (!attachmentHubOpen.value) return
+  if (attachmentActionsRoot.value?.contains(event.target as Node)) return
+  attachmentHubOpen.value = false
 }
 
 // 自动滚动到底部
@@ -357,6 +544,11 @@ const scrollToBottom = () => {
 watch(() => props.messages, () => {
   scrollToBottom()
 }, { deep: true })
+
+watch(() => props.pendingProductReference, (value) => {
+  if (!value) return
+  nextTick(() => messageInputElement.value?.focus())
+})
 
 // 格式化消息时间
 const formatMessageTime = (time: string) => {
@@ -376,12 +568,28 @@ const messageMetadata = (message: any) => {
   return message.metadata
 }
 
+const messageAttachments = (message: any) => {
+  const attachments = Array.isArray(message?.attachments)
+    ? message.attachments
+    : (message?.attachment_url ? [message.attachment_url] : [])
+  const unique = new Set<string>()
+  attachments.forEach((value: any) => {
+    const attachment = String(value || '').trim()
+    if (attachment) unique.add(attachment)
+  })
+  return Array.from(unique)
+}
+
 const isConfigConfirmMessage = (message: any) => {
   return message?.message_type === 'config_confirm'
 }
 
 const isOrderMessage = (message: any) => {
   return message?.message_type === 'order'
+}
+
+const isFaqMessage = (message: any) => {
+  return message?.message_type === 'faq' || message?.type === 'faq'
 }
 
 const configProduct = (message: any) => {
@@ -410,9 +618,72 @@ const orderItems = (message: any) => {
 
 const formatOrderTotal = (order: any) => {
   const total = Number(order?.total || 0)
-  const currency = order?.currency || 'USD'
+  const currency = String(order?.currency || '').trim().toUpperCase()
   if (!Number.isFinite(total) || total <= 0) return currency
-  return `${currency} ${total.toFixed(2)}`
+  return `${currency || 'Currency missing'} ${total.toFixed(2)}`
+}
+
+const faqPayload = (message: any) => {
+  const metadata = messageMetadata(message)
+  return metadata?.faq || metadata || {}
+}
+
+const faqQuestion = (message: any) => {
+  const payload = faqPayload(message)
+  return String(payload.question || payload.title || message?.message || '').trim()
+}
+
+const stripHtml = (value: any) => String(value || '')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/&nbsp;/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+
+const faqExcerpt = (message: any) => {
+  const payload = faqPayload(message)
+  const excerpt = stripHtml(payload.answer_excerpt || payload.answerExcerpt || payload.answer || '')
+  return excerpt.length > 320 ? `${excerpt.slice(0, 317)}...` : excerpt
+}
+
+const isSafeFaqUrl = (value: any) => {
+  const raw = String(value || '').trim()
+  if (!raw) return false
+  if (raw.startsWith('/') && !raw.startsWith('//')) return true
+  try {
+    const parsed = new URL(raw)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const localizeFaqUrl = (value: string) => {
+  const [pathname, query = ''] = value.split('?', 2)
+  if (pathname !== '/support/faqs' && pathname !== '/faq') return value
+
+  const localizedPath = localePath('/support/faqs')
+  return query ? `${localizedPath}?${query}` : localizedPath
+}
+
+const faqUrl = (message: any) => {
+  const payload = faqPayload(message)
+  if (isSafeFaqUrl(payload.url)) {
+    const safeURL = String(payload.url).trim()
+    return safeURL.startsWith('/') && !safeURL.startsWith('//')
+      ? localizeFaqUrl(safeURL)
+      : safeURL
+  }
+  const pageID = String(payload.page_id || payload.pageId || '').trim()
+  const faqID = String(payload.faq_id || payload.faqId || '').trim()
+  if (pageID && faqID) {
+    return localizeFaqUrl(`/support/faqs?page=${encodeURIComponent(pageID)}&faq=${encodeURIComponent(faqID)}`)
+  }
+  return localePath('/support/faqs')
+}
+
+const isExternalFaqUrl = (message: any) => {
+  const value = faqUrl(message)
+  return value.startsWith('http://') || value.startsWith('https://')
 }
 
 // 长按逻辑
@@ -462,3 +733,11 @@ const handleMessageContextMenu = (message: any) => {
   emit('deleteMessage', message)
 }
 </script>
+
+<style scoped>
+@media (max-width: 767px) {
+  .chat-composer-bar {
+    padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 1rem);
+  }
+}
+</style>

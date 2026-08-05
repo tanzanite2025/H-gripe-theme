@@ -1,4 +1,20 @@
 {
-  "title": "Frequently Asked Questions",
-  "subtitle": "Find answers to common questions about our products and services"
+  "title": "Sık Sorulan Sorular",
+  "subtitle": "Ürünlerimiz ve hizmetlerimiz hakkında sık sorulan soruların yanıtlarını bulun",
+  "ui": {
+    "categorizedSupport": "Kategorize destek",
+    "quickAnswers": "Sık sorulara hızlı yanıtlar",
+    "categoriesAriaLabel": "FAQ kategorileri",
+    "categoriesLabel": "FAQ kategorileri",
+    "all": "Tümü",
+    "viewAll": "Tüm FAQ’ları gör",
+    "emptySection": "Bu bölüm için FAQ bulunmuyor.",
+    "pageIntro": "Siparişler, ürünler ve hizmet hakkında sık sorulan soruları ve hızlı yanıtları inceleyin.",
+    "searchPlaceholder": "FAQ ara...",
+    "viewMoreContent": "Daha fazla içerik göster",
+    "noResults": "\"{query}\" ile eşleşen FAQ bulunamadı",
+    "allFaqsMetaTitle": "Tüm FAQ’lar",
+    "loadingAnswers": "Yanıtlar yükleniyor",
+    "illustrationAlt": "FAQ görseli"
+  }
 }

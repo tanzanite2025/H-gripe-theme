@@ -28,7 +28,6 @@ func (s *PaymentService) UpdatePaymentMethod(method *payment.PaymentMethod) erro
 	existing.FeeValue = method.FeeValue
 	existing.MinAmount = method.MinAmount
 	existing.MaxAmount = method.MaxAmount
-	existing.SupportedCurrencies = method.SupportedCurrencies
 	existing.Enabled = method.Enabled
 	existing.SortOrder = method.SortOrder
 	existing.Settings = method.Settings

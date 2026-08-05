@@ -24,6 +24,7 @@ type CustomerServiceOwner struct {
 
 type CustomerServiceConversationListInput struct {
 	AssignedTo *uint
+	GroupID    *uint
 	Status     string
 	UnreadOnly bool
 	Identity   string
@@ -41,6 +42,7 @@ func (s *TicketService) GetCustomerServiceConversationsForAgent(page, pageSize i
 func (s *TicketService) ListCustomerServiceConversationsForAgent(page, pageSize int, agentUserID uint, canViewAll bool, input CustomerServiceConversationListInput) ([]ticket.Ticket, int64, error) {
 	filters := repository.CustomerServiceConversationFilters{
 		AssignedTo: input.AssignedTo,
+		GroupID:    input.GroupID,
 		Status:     input.Status,
 		UnreadOnly: input.UnreadOnly,
 		Identity:   input.Identity,
@@ -420,6 +422,10 @@ func (s *TicketService) ListCustomerServiceAgentProfiles(limit int) ([]user.Agen
 	return s.userRepo.FindCustomerServiceAgentProfiles(limit)
 }
 
+func (s *TicketService) ListCustomerServiceAgentGroups(limit int, includeInactive bool) ([]user.AgentGroup, error) {
+	return s.userRepo.FindCustomerServiceAgentGroups(limit, includeInactive)
+}
+
 func customerServiceConversationTag(conversationID string) string {
 	return "conversation_id:" + conversationID
 }
@@ -427,7 +433,7 @@ func customerServiceConversationTag(conversationID string) string {
 func normalizeCustomerServiceMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "config_confirm":
+	case "product", "order", "image", "link", "faq", "config_confirm":
 		return value
 	default:
 		return "text"

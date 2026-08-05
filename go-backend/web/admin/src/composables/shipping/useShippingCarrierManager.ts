@@ -168,7 +168,7 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
     service_name: carrierServiceForm.service_name?.trim() || '',
     route_name: carrierServiceForm.route_name?.trim() || '',
     countries: carrierServiceForm.countries?.trim() || '[]',
-    currency: carrierServiceForm.currency?.trim().toUpperCase() || 'USD',
+    currency: carrierServiceForm.currency?.trim().toUpperCase() || '',
     billing_mode: carrierServiceForm.billing_mode || 'actual_weight',
     first_weight_grams: Number(carrierServiceForm.first_weight_grams || 0),
     additional_weight_grams: Number(carrierServiceForm.additional_weight_grams || 0),

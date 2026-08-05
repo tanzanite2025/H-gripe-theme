@@ -19,6 +19,10 @@ func NewReviewService(reviewRepo *repository.ReviewRepository) *ReviewService {
 }
 
 func (s *ReviewService) CreateReview(r *review.Review) error {
+	if err := normalizeReviewSubmission(r); err != nil {
+		return err
+	}
+
 	exists, err := s.reviewRepo.CheckUserReviewExists(r.UserID, r.ProductID)
 	if err != nil {
 		return err
@@ -47,6 +51,7 @@ func (s *ReviewService) GetPublicReview(id uint) (*review.Review, error) {
 	if r.Status != "approved" {
 		return nil, ErrReviewNotPublic
 	}
+	normalizeReviewForPublic(r)
 	return r, nil
 }
 
@@ -54,15 +59,36 @@ func (s *ReviewService) GetProductReviews(productID uint, page, pageSize int, st
 	if status == "" {
 		status = "approved"
 	}
-	return s.reviewRepo.FindReviewsByProductID(productID, page, pageSize, status)
+	items, total, err := s.reviewRepo.FindReviewsByProductID(productID, page, pageSize, status)
+	if err != nil {
+		return nil, 0, err
+	}
+	for index := range items {
+		normalizeReviewForPublic(&items[index])
+	}
+	return items, total, nil
 }
 
 func (s *ReviewService) GetUserReviews(userID uint, page, pageSize int) ([]review.Review, int64, error) {
-	return s.reviewRepo.FindReviewsByUserID(userID, page, pageSize)
+	items, total, err := s.reviewRepo.FindReviewsByUserID(userID, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	for index := range items {
+		normalizeReviewForPublic(&items[index])
+	}
+	return items, total, nil
 }
 
 func (s *ReviewService) GetFeaturedReviews(limit int) ([]review.Review, error) {
-	return s.reviewRepo.FindFeaturedReviews(limit)
+	items, err := s.reviewRepo.FindFeaturedReviews(limit)
+	if err != nil {
+		return nil, err
+	}
+	for index := range items {
+		normalizeReviewForPublic(&items[index])
+	}
+	return items, nil
 }
 
 func (s *ReviewService) DeleteReview(id uint, userID uint) error {

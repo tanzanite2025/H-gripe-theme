@@ -115,7 +115,7 @@ func memberLevelMeetsRequirement(userLevel, requiredLevel string) bool {
 		return false
 	}
 
-	hierarchy := []string{"bronze", "silver", "gold", "platinum"}
+	hierarchy := []string{"ordinary", "bronze", "silver", "gold", "platinum", "diamond"}
 	userIndex := -1
 	requiredIndex := -1
 	for index, level := range hierarchy {

@@ -1,6 +1,6 @@
 # FAQ management source of truth
 
-FAQ 页面结构、分类与问答内容现在由 Go 后端数据库管理。Nuxt 前端的 `app/data/faq/pages/*` 仅保留为历史源数据，不再作为 storefront 静态兜底。
+FAQ 页面结构、分类与问答内容现在由 Go 后端数据库管理。Nuxt 前端的 `app/data/faq/pages/*` 仅保留为历史源数据，不再作为 storefront 运行时或静态构建兜底。
 
 ## Current ownership
 
@@ -12,6 +12,25 @@ FAQ 页面结构、分类与问答内容现在由 Go 后端数据库管理。Nux
 - Nuxt `PageFaq`：读取 `/api/v1/content/faq-pages/:page_id`；当后端没有可展示 FAQ 内容时不渲染 FAQ 区块。
 - Nuxt `PageFaqSlot`：页面/layout 固定 FAQ 容器。它根据当前路由匹配 `faq_pages.route_path`，自动把对应 FAQ 插入页面底部；等待接口时显示统一 FAQ skeleton loading，不再裸露 `LOAD` 文本。
 - Locale：后台 FAQ 结构对齐系统 34 个 Nuxt locale，当前语言列表来自 `/api/v1/i18n/languages`。中文使用 `zh_cn`，不再使用旧 `zh`。
+
+## SSR and publishing flow
+
+FAQ 内容不写入 Nuxt 本地 i18n，也不依赖前端静态 FAQ registry。公开页面由 Nuxt SSR 通过 `useAsyncData` 请求 Go backend，FAQ 内容因此会出现在服务端返回的 HTML 中，搜索引擎不需要等待客户端 JavaScript 才能读取内容。
+
+生产环境的推荐链路是：
+
+```text
+Admin publish
+  -> Go FAQ service writes database
+  -> purge Nuxt Nitro HTML cache
+  -> next SSR request reads fresh FAQ data
+```
+
+Go backend 通过 `STOREFRONT_HTML_CACHE_PURGE_URL` 和共享 token 调用 Nuxt `/_internal/html-cache/purge`。生产环境使用 Redis 作为 Nitro HTML cache 时，多个 storefront 实例共享同一份缓存，发布后的清理也会作用于所有实例。
+
+只有在确实需要生成一份完全静态构建产物时，才配置可选的 `STOREFRONT_CONTENT_RELEASE_WEBHOOK_URL` 和 `STOREFRONT_CONTENT_RELEASE_WEBHOOK_TOKEN`。FAQ 后台变更会向该 webhook 发送 `storefront_content_published` 事件，交给 CI 或部署平台重新构建。CI 必须能够访问同一份 backend 内容，否则单纯重新编译 Nuxt 代码不会把数据库里的新 FAQ 固化到静态文件。
+
+因此，默认部署应采用 SSR + HTML cache；CI rebuild 是特殊发布环境的可选动作，不是 FAQ 内容的第二个事实源。
 
 ## Admin code responsibilities
 

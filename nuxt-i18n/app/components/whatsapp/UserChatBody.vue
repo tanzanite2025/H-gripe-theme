@@ -2,19 +2,24 @@
   <div class="flex flex-col h-full min-h-0">
     <!-- Container -->
     <div class="flex flex-col h-full min-h-0">
-      <!-- 二级导航栏 (Products, Orders, etc.) - 不包含 Chat -->
+      <!-- 二级导航栏 -->
       <div class="flex-none px-2 pt-3 pb-2 md:py-3 md:px-4 md:border-b md:border-white/[0.08] md:bg-white/[0.02]">
-        <div class="grid grid-cols-4 md:flex md:flex-wrap gap-1 md:gap-2 justify-center">
+        <div class="grid grid-cols-5 md:flex md:flex-wrap gap-1 md:gap-2 justify-center">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             @click="handleTabClick(tab.id)"
-        class="h-9 md:h-8 px-0 md:px-4 rounded-full tz-caption md:text-xs font-semibold transition-all whitespace-nowrap flex items-center justify-center"
-            :class="activeTab === tab.id
-              ? 'bg-[linear-gradient(135deg,#2dd4bf_0%,#3b82f6_100%)] text-white shadow-[0_4px_12px_rgba(45,212,191,0.3)]'
-              : 'bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]'"
+            class="relative h-9 w-9 md:h-8 md:w-8 rounded-full border transition-all flex items-center justify-center"
+            :class="[
+              activeTab === tab.id
+                ? 'border-white bg-white text-slate-950 shadow-[0_4px_12px_rgba(0,0,0,0.55)]'
+                : 'border-white/15 bg-white/[0.08] text-white shadow-[0_3px_9px_rgba(0,0,0,0.55)] hover:border-[#B5FF6D]/60 hover:bg-white/[0.14]',
+              tab.id === 'chat' && activeTab !== 'chat' ? 'chat-return-attention' : ''
+            ]"
+            :title="t(tab.labelKey)"
+            :aria-label="t(tab.labelKey)"
           >
-            {{ t(tab.labelKey) }}
+            <Icon :name="tab.icon" class="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -30,27 +35,17 @@
           :show-visitor-email-capture="showVisitorEmailCapture"
           :is-sending="isSending"
           :is-uploading-image="isUploadingImage"
+          :pending-product-reference="pendingProductReference"
           :agent-typing="agentTyping"
           :current-theme-color="currentThemeColor"
           @update:new-message="$emit('update:newMessage', $event)"
           @update:visitor-email="$emit('update:visitorEmail', $event)"
           @send-message="$emit('sendMessage')"
-          @upload-image="$emit('uploadImage', $event)"
+          @upload-image="handleUploadImage"
+          @open-order-picker="$emit('openOrderPicker')"
+          @open-customer-service-product-search-modal="$emit('openCustomerServiceProductSearchModal')"
+          @clear-pending-product-reference="$emit('clearPendingProductReference')"
           @delete-message="$emit('deleteMessage', $event)"
-        />
-
-        <!-- 商品 Tab -->
-        <ProductTab
-          v-else-if="activeTab === 'share'"
-          :search-query="searchQuery"
-          :is-searching="isSearching"
-          :current-theme-color="currentThemeColor"
-          @update:search-query="$emit('update:searchQuery', $event)"
-          @search="$emit('search')"
-          @share-product="$emit('shareProduct', $event)"
-          @open-history="$emit('openHistory')"
-          @open-cart="$emit('openCart')"
-          @open-wishlist="$emit('openWishlist')"
         />
 
         <!-- 订单 Tab -->
@@ -74,14 +69,6 @@
           @open-auth="$emit('openAuth', $event)"
         />
 
-        <!-- Tire Tab -->
-        <div v-else-if="activeTab === 'tire'" class="h-full overflow-y-auto p-4 custom-scrollbar">
-          <TireRimHelper :hide-search-button="true" />
-        </div>
-
-        <!-- FAQ Tab -->
-        <FaqTab v-else-if="activeTab === 'faq'" />
-
         <!-- 保修 Tab -->
         <WarrantyTab
           v-else-if="activeTab === 'warranty'"
@@ -99,15 +86,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from '#imports'
 import ChatTab from './ChatTab.vue'
-import ProductTab from './ProductTab.vue'
 import OrderTab from './OrderTab.vue'
 import MemberTab from './MemberTab.vue'
-import FaqTab from './FaqTab.vue'
 import WarrantyTab from './WarrantyTab.vue'
-import TireRimHelper from '~/components/TireRimHelper.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 
 const { t } = useI18n()
@@ -122,10 +106,8 @@ const props = defineProps<{
   showVisitorEmailCapture: boolean
   isSending: boolean
   isUploadingImage: boolean
+  pendingProductReference?: any | null
   agentTyping?: { active: boolean; displayName?: string }
-  // Product Props
-  searchQuery: string
-  isSearching: boolean
   // Order Props
   ordersList: any[]
   isLoadingOrders: boolean
@@ -147,15 +129,11 @@ const emit = defineEmits<{
   'update:newMessage': [value: string]
   'update:visitorEmail': [value: string]
   'sendMessage': []
-  'uploadImage': [event: Event]
+  'uploadImage': [event: Event, source: 'library' | 'camera']
+  'openOrderPicker': []
+  'openCustomerServiceProductSearchModal': []
+  'clearPendingProductReference': []
   'deleteMessage': [message: any]
-  // Product Emits
-  'update:searchQuery': [value: string]
-  'search': []
-  'shareProduct': [product: any]
-  'openHistory': []
-  'openCart': []
-  'openWishlist': []
   // Order Emits
   'shareOrder': [order: any]
   // Member Emits
@@ -165,16 +143,68 @@ const emit = defineEmits<{
 }>()
 
 const tabs = computed(() => [
-  { id: 'share', labelKey: 'chatModal.tabs.products' },
-  { id: 'orders', labelKey: 'chatModal.tabs.orders' },
-  { id: 'tire', labelKey: 'chatModal.tabs.tire' },
-  { id: 'faq', labelKey: 'chatModal.tabs.faq' },
-  { id: 'warranty', labelKey: 'chatModal.tabs.warranty' },
-  { id: 'member', labelKey: 'chatModal.tabs.member' },
-  { id: 'calculator', labelKey: 'chatModal.tabs.calculator' },
+  { id: 'chat', labelKey: 'chatModal.actions.switchToChat', icon: 'lucide:message-circle' },
+  { id: 'orders', labelKey: 'chatModal.tabs.orders', icon: 'lucide:receipt-text' },
+  { id: 'warranty', labelKey: 'chatModal.tabs.warranty', icon: 'lucide:shield-check' },
+  { id: 'member', labelKey: 'chatModal.tabs.member', icon: 'lucide:user-round' },
+  { id: 'calculator', labelKey: 'chatModal.tabs.calculator', icon: 'lucide:calculator' },
 ])
+
+const availableTabIds = computed(() => new Set(['chat', ...tabs.value.map((tab) => tab.id)]))
+
+watch(
+  () => props.activeTab,
+  (activeTab) => {
+    if (!availableTabIds.value.has(activeTab)) {
+      emit('update:activeTab', 'chat')
+    }
+  },
+  { immediate: true },
+)
 
 const handleTabClick = (id: string) => {
   emit('update:activeTab', id)
 }
+
+const handleUploadImage = (event: Event, source: 'library' | 'camera') => {
+  emit('uploadImage', event, source)
+}
 </script>
+
+<style scoped>
+@keyframes chat-return-halo {
+  0%,
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(181, 255, 109, 0);
+  }
+
+  18% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 1px rgba(181, 255, 109, 0.28),
+      0 0 10px rgba(181, 255, 109, 0.18);
+  }
+
+  64% {
+    opacity: 0.18;
+    box-shadow:
+      0 0 0 5px rgba(181, 255, 109, 0),
+      0 0 14px rgba(181, 255, 109, 0.1);
+  }
+}
+
+.chat-return-attention {
+  isolation: isolate;
+}
+
+.chat-return-attention::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: 9999px;
+  pointer-events: none;
+  animation: chat-return-halo 2.4s ease-out infinite;
+}
+</style>

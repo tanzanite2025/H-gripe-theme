@@ -24,5 +24,6 @@
   "tags": "Tags",
   "dateRange": "Date Range",
   "from": "From",
-  "to": "To"
+  "to": "To",
+  "currency": "Currency"
 }

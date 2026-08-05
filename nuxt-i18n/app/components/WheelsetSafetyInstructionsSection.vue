@@ -19,26 +19,11 @@
        </div>
     </div>
 
-    <!-- Contact Support Strip -->
-    <div class="flex flex-col md:flex-row items-center justify-center gap-2 text-sm tz-text-secondary bg-slate-800/40 p-3 rounded-lg border border-slate-700/30">
-      <span>Have questions? Contact us at</span>
-      <a class="text-teal-400 font-medium hover:text-teal-300 transition-colors" href="mailto:support@tanzanite.site">support@tanzanite.site</a>
-      <span class="hidden md:inline text-slate-600">|</span>
-      <button
-        type="button"
-        class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-700/50 hover:bg-slate-700 tz-text-primary text-xs font-semibold transition-all"
-        @click="openWhatsAppChat"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Instant Chat
-      </button>
-    </div>
-
     <!-- Grid Layout -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
       <!-- 1. Installation & Inspection (Sky) -->
-      <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
          <div class="flex items-center gap-3 mb-5 pb-3 border-b border-sky-500/10">
             <h3 class="text-lg font-bold tz-text-primary">Installation & Inspection</h3>
          </div>
@@ -71,7 +56,7 @@
       </div>
 
       <!-- 2. Usage & Riding (Emerald) -->
-      <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
          <div class="flex items-center gap-3 mb-5 pb-3 border-b border-emerald-500/10">
             <h3 class="text-lg font-bold tz-text-primary">Usage & Riding</h3>
          </div>
@@ -99,7 +84,7 @@
       </div>
 
        <!-- 3. Regular Maintenance (Amber) -->
-      <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
          <div class="flex items-center gap-3 mb-5 pb-3 border-b border-amber-500/10">
             <h3 class="text-lg font-bold tz-text-primary">Regular Maintenance</h3>
          </div>
@@ -133,7 +118,7 @@
       </div>
 
        <!-- 4. Critical Warnings (Rose/Indigo) -->
-      <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
          <div class="flex items-center gap-3 mb-5 pb-3 border-b border-indigo-500/10">
             <span class="text-indigo-500 bg-indigo-500/10 p-2 rounded-lg">
                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
@@ -177,8 +162,7 @@
 </template>
 
 <script setup lang="ts">
-const { openWhatsAppChat, goToTubelessInstallation, goToTechnicalTension, goToWarranty } = defineProps<{
-  openWhatsAppChat: () => void | Promise<void>
+const { goToTubelessInstallation, goToTechnicalTension, goToWarranty } = defineProps<{
   goToTubelessInstallation: () => void | Promise<void>
   goToTechnicalTension: () => void | Promise<void>
   goToWarranty: () => void | Promise<void>

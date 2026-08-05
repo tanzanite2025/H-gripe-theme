@@ -102,6 +102,14 @@ func (r *LoyaltyRepository) CountTransactionsByUserAndSource(userID uint, transa
 	return count, err
 }
 
+func (r *LoyaltyRepository) CountTransactionsByUserTypeSourceAndSourceID(userID uint, transactionType, source string, sourceID uint) (int64, error) {
+	var count int64
+	err := r.db.Model(&loyalty.LoyaltyTransaction{}).
+		Where("user_id = ? AND type = ? AND source = ? AND source_id = ?", userID, transactionType, source, sourceID).
+		Count(&count).Error
+	return count, err
+}
+
 // AdjustUserPoints atomically updates a user's points summary and creates the matching ledger entry.
 func (r *LoyaltyRepository) AdjustUserPoints(userID uint, points int, transactionType, source string, sourceID uint, description string) (*loyalty.LoyaltyTransaction, error) {
 	return r.AdjustUserPointsWithConfig(userID, points, transactionType, source, sourceID, description, nil)

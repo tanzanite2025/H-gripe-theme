@@ -1,13 +1,13 @@
 <template>
-  <section class="rounded-2xl border bg-card/75 p-4 shadow-sm">
+  <section class="rounded-2xl border bg-muted/30 p-4">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <div class="flex size-9 items-center justify-center rounded-full border bg-background">
-          <LockKeyhole class="size-4 text-orange-500" />
+        <div class="flex size-8 items-center justify-center rounded-lg border bg-background">
+          <LockKeyhole class="size-3.5 text-orange-500" />
         </div>
         <div>
-          <p class="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Encrypted Secret Store</p>
-          <h3 class="mt-1 text-base font-black text-foreground">安全凭据写入</h3>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Encrypted Secret Store</p>
+          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">安全凭据写入</h3>
           <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
             只写入，不回显。留空字段会保留现有加密值。
           </p>
@@ -80,6 +80,34 @@
         </AdminFormField>
       </div>
 
+      <div v-if="form.environment === 'production'" class="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
+        <AdminFormField
+          label="生产环境确认"
+          description="保存 production 配置前必须输入确认词；后端也会强制校验。"
+        >
+          <Input
+            v-model.trim="productionConfirmation"
+            class="font-mono"
+            autocomplete="off"
+            placeholder="PRODUCTION"
+          />
+        </AdminFormField>
+      </div>
+
+      <div v-if="status?.admin_config_configured" class="rounded-xl border bg-background/70 p-3">
+        <AdminFormField
+          label="清空配置确认"
+          :description="`清空当前渠道加密配置前输入 ${expectedDeleteConfirmation}`"
+        >
+          <Input
+            v-model.trim="deleteConfirmation"
+            class="font-mono"
+            autocomplete="off"
+            :placeholder="expectedDeleteConfirmation"
+          />
+        </AdminFormField>
+      </div>
+
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-muted-foreground">
           已配置字段：{{ configuredFieldText }}
@@ -88,7 +116,7 @@
           <Button
             type="button"
             variant="outline"
-            :disabled="clearing || saving || !status?.admin_config_configured"
+            :disabled="clearing || saving || !canClearConfig"
             @click="clearConfig"
           >
             <LoaderCircle v-if="clearing" class="size-3.5 animate-spin" />
@@ -128,7 +156,9 @@ const emit = defineEmits(['saved'])
 const fieldDefinitions = {
   stripe: [
     { key: 'api_key', label: 'API Key / Secret Key', placeholder: 'sk_live_...', description: 'Stripe 后端 Secret Key。' },
+    { key: 'publishable_key', label: 'Publishable Key', placeholder: 'pk_live_...', description: '仅返回浏览器初始化 Stripe.js，不能填写 Secret Key。' },
     { key: 'webhook_secret', label: 'Webhook Secret', placeholder: 'whsec_...', description: 'Stripe webhook endpoint secret。' },
+    { key: 'three_ds_mode', label: '3DS Mode', placeholder: 'automatic / any / challenge', description: '默认 automatic；需要强制 3DS 时填写 any，高风险可填写 challenge。' },
   ],
   paypal: [
     { key: 'client_id', label: 'Client ID', placeholder: 'PayPal client id' },
@@ -145,7 +175,10 @@ const fieldDefinitions = {
     { key: 'app_id', label: 'App ID', placeholder: '微信 App ID' },
     { key: 'private_key_path', label: 'Private Key Path', placeholder: '服务端私钥文件路径' },
     { key: 'merchant_serial', label: 'Merchant Serial', placeholder: '商户证书序列号' },
-    { key: 'api_v3_key', label: 'API v3 Key', placeholder: 'APIv3 密钥' },
+    { key: 'api_v3_key', label: 'API v3 Key', placeholder: 'APIv3 密钥', description: '用于回调 resource 解密。' },
+    { key: 'platform_certificate', label: 'Platform Certificate', placeholder: '微信支付平台证书 PEM；与平台公钥二选一', description: '用于 API v3 回调验签。填写平台证书时可不填平台公钥。', multiline: true },
+    { key: 'platform_public_key', label: 'Platform Public Key', placeholder: '微信支付平台公钥 PEM；与平台证书二选一', description: '用于 API v3 回调验签。填写平台公钥时必须同时填写 Platform Public Key ID。', multiline: true },
+    { key: 'platform_public_key_id', label: 'Platform Public Key ID', placeholder: 'PUB_KEY_ID_...', description: '仅在使用微信支付平台公钥时必填。' },
   ],
 }
 
@@ -155,8 +188,15 @@ const form = reactive({
 })
 const saving = ref(false)
 const clearing = ref(false)
+const productionConfirmation = ref('')
+const deleteConfirmation = ref('')
 
 const providerFields = computed(() => fieldDefinitions[props.selectedGateway] || [])
+const expectedDeleteConfirmation = computed(() => `DELETE ${String(props.selectedGateway || '').toUpperCase()}`)
+const canClearConfig = computed(() => (
+  props.status?.admin_config_configured === true &&
+  deleteConfirmation.value === expectedDeleteConfirmation.value
+))
 const configuredFieldText = computed(() => {
   const fields = props.status?.configured_fields || []
   return fields.length ? fields.join(', ') : '暂无'
@@ -181,6 +221,10 @@ const credentialPayload = () => {
 
 const saveConfig = async () => {
   if (!props.selectedGateway) return
+  if (form.environment === 'production' && productionConfirmation.value !== 'PRODUCTION') {
+    toast.error('保存生产支付配置前请输入 PRODUCTION')
+    return
+  }
   const credentials = credentialPayload()
   if (!Object.keys(credentials).length && !props.status?.admin_config_configured) {
     toast.error('至少填写一个支付凭据字段')
@@ -192,8 +236,10 @@ const saveConfig = async () => {
     await axios.put(`/api/admin/settings/payment-gateways/${props.selectedGateway}`, {
       environment: form.environment,
       credentials,
+      confirmation: form.environment === 'production' ? productionConfirmation.value : '',
     })
     toast.success('已保存加密支付配置')
+    productionConfirmation.value = ''
     resetCredentialInputs()
     emit('saved')
   } catch (error) {
@@ -204,11 +250,18 @@ const saveConfig = async () => {
 }
 
 const clearConfig = async () => {
-  if (!props.selectedGateway || !window.confirm('清空该支付服务商的加密配置？')) return
+  if (!props.selectedGateway) return
+  if (!canClearConfig.value) {
+    toast.error(`清空前请输入 ${expectedDeleteConfirmation.value}`)
+    return
+  }
   clearing.value = true
   try {
-    await axios.delete(`/api/admin/settings/payment-gateways/${props.selectedGateway}`)
+    await axios.delete(`/api/admin/settings/payment-gateways/${props.selectedGateway}`, {
+      data: { confirmation: deleteConfirmation.value },
+    })
     toast.success('已清空加密支付配置')
+    deleteConfirmation.value = ''
     resetCredentialInputs()
     emit('saved')
   } catch (error) {
@@ -220,6 +273,8 @@ const clearConfig = async () => {
 
 watch(() => props.selectedGateway, () => {
   form.environment = props.status?.environment || 'sandbox'
+  productionConfirmation.value = ''
+  deleteConfirmation.value = ''
   resetCredentialInputs()
 }, { immediate: true })
 

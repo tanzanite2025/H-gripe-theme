@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/stripe/stripe-go/v76"
@@ -32,15 +33,33 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if err := ValidatePaymentRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
+	if err := ValidateGatewayCurrency(g.config.Type, req.Currency); err != nil {
+		return nil, fmt.Errorf("invalid payment request: %w", err)
+	}
 
-	// Stripe金额以最小货币单位计算（美分）
-	amount := int64(req.Amount * 100)
+	amount, err := MajorToMinorAmount(req.Amount, req.Currency)
+	if err != nil {
+		return nil, err
+	}
+	threeDSMode := NormalizeThreeDSecureMode(req.ThreeDSecure)
+	if req.ThreeDSecure == "" {
+		threeDSMode = NormalizeThreeDSecureMode(g.config.ThreeDSecure)
+	}
 
 	// 构建支付意图参数
 	params := &stripe.PaymentIntentParams{
-		Amount:      stripe.Int64(amount),
-		Currency:    stripe.String(req.Currency),
-		Description: stripe.String(req.Description),
+		Amount:             stripe.Int64(amount),
+		Currency:           stripe.String(req.Currency),
+		Description:        stripe.String(req.Description),
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+		PaymentMethodOptions: &stripe.PaymentIntentPaymentMethodOptionsParams{
+			Card: &stripe.PaymentIntentPaymentMethodOptionsCardParams{
+				RequestThreeDSecure: stripe.String(threeDSMode),
+			},
+		},
+	}
+	if req.IdempotencyKey != "" {
+		params.SetIdempotencyKey(req.IdempotencyKey)
 	}
 
 	// 设置客户信息
@@ -62,18 +81,19 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if params.Metadata == nil {
 		params.Metadata = make(map[string]string)
 	}
-	params.Metadata["order_id"] = req.OrderID
+	if strings.TrimSpace(params.Metadata["order_id"]) == "" {
+		params.Metadata["order_id"] = req.OrderID
+	}
+	if strings.TrimSpace(params.Metadata["order_number"]) == "" {
+		params.Metadata["order_number"] = req.OrderID
+	}
 
 	// 设置自动确认
 	params.Confirm = stripe.Bool(false)
 
 	// 如果提供了返回URL，设置支付方法选项
-	if req.ReturnURL != "" {
-		params.PaymentMethodOptions = &stripe.PaymentIntentPaymentMethodOptionsParams{
-			Card: &stripe.PaymentIntentPaymentMethodOptionsCardParams{
-				SetupFutureUsage: stripe.String("off_session"),
-			},
-		}
+	if req.ReturnURL != "" && params.PaymentMethodOptions != nil && params.PaymentMethodOptions.Card != nil {
+		params.PaymentMethodOptions.Card.SetupFutureUsage = stripe.String("off_session")
 	}
 
 	// 创建支付意图
@@ -94,15 +114,22 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	}
 
 	// 返回响应
+	responseAmount, err := MinorToMajorAmount(pi.Amount, string(pi.Currency))
+	if err != nil {
+		return nil, err
+	}
+
 	return &PaymentResponse{
-		ID:            pi.ID,
-		Status:        string(pi.Status),
-		Amount:        float64(pi.Amount) / 100,
-		Currency:      string(pi.Currency),
-		PaymentURL:    paymentURL,
-		TransactionID: pi.ID,
-		CreatedAt:     time.Unix(pi.Created, 0),
-		Metadata:      pi.Metadata,
+		ID:             pi.ID,
+		Status:         string(pi.Status),
+		Amount:         responseAmount,
+		Currency:       string(pi.Currency),
+		ClientSecret:   pi.ClientSecret,
+		PublishableKey: g.config.PublishableKey,
+		PaymentURL:     paymentURL,
+		TransactionID:  pi.ID,
+		CreatedAt:      time.Unix(pi.Created, 0),
+		Metadata:       pi.Metadata,
 	}, nil
 }
 
@@ -119,31 +146,51 @@ func (g *stripeGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 		return nil, fmt.Errorf("failed to capture stripe payment: %w", err)
 	}
 
+	responseAmount, err := MinorToMajorAmount(pi.Amount, string(pi.Currency))
+	if err != nil {
+		return nil, err
+	}
+
 	return &PaymentResponse{
-		ID:            pi.ID,
-		Status:        string(pi.Status),
-		Amount:        float64(pi.Amount) / 100,
-		Currency:      string(pi.Currency),
-		TransactionID: pi.ID,
-		CreatedAt:     time.Unix(pi.Created, 0),
-		Metadata:      pi.Metadata,
+		ID:             pi.ID,
+		Status:         string(pi.Status),
+		Amount:         responseAmount,
+		Currency:       string(pi.Currency),
+		ClientSecret:   pi.ClientSecret,
+		PublishableKey: g.config.PublishableKey,
+		TransactionID:  pi.ID,
+		CreatedAt:      time.Unix(pi.Created, 0),
+		Metadata:       pi.Metadata,
 	}, nil
 }
 
 // RefundPayment 退款Stripe支付
 func (g *stripeGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+}
+
+func (g *stripeGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
-	// 构建退款参数
-	refundAmount := int64(amount * 100)
+	pi, err := paymentintent.Get(paymentID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stripe payment for refund: %w", err)
+	}
 	params := &stripe.RefundParams{
 		PaymentIntent: stripe.String(paymentID),
+	}
+	if options.IdempotencyKey = strings.TrimSpace(options.IdempotencyKey); options.IdempotencyKey != "" {
+		params.SetIdempotencyKey(options.IdempotencyKey)
 	}
 
 	// 如果指定了金额，设置部分退款
 	if amount > 0 {
+		refundAmount, err := MajorToMinorAmount(amount, string(pi.Currency))
+		if err != nil {
+			return nil, err
+		}
 		params.Amount = stripe.Int64(refundAmount)
 	}
 
@@ -153,10 +200,15 @@ func (g *stripeGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 		return nil, fmt.Errorf("failed to create stripe refund: %w", err)
 	}
 
+	responseAmount, err := MinorToMajorAmount(r.Amount, string(pi.Currency))
+	if err != nil {
+		return nil, err
+	}
+
 	return &RefundResponse{
 		ID:        r.ID,
 		PaymentID: paymentID,
-		Amount:    float64(r.Amount) / 100,
+		Amount:    responseAmount,
 		Status:    string(r.Status),
 		CreatedAt: time.Unix(r.Created, 0),
 	}, nil
@@ -174,13 +226,20 @@ func (g *stripeGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 		return nil, fmt.Errorf("failed to get stripe payment: %w", err)
 	}
 
+	responseAmount, err := MinorToMajorAmount(pi.Amount, string(pi.Currency))
+	if err != nil {
+		return nil, err
+	}
+
 	return &PaymentResponse{
-		ID:            pi.ID,
-		Status:        string(pi.Status),
-		Amount:        float64(pi.Amount) / 100,
-		Currency:      string(pi.Currency),
-		TransactionID: pi.ID,
-		CreatedAt:     time.Unix(pi.Created, 0),
-		Metadata:      pi.Metadata,
+		ID:             pi.ID,
+		Status:         string(pi.Status),
+		Amount:         responseAmount,
+		Currency:       string(pi.Currency),
+		ClientSecret:   pi.ClientSecret,
+		PublishableKey: g.config.PublishableKey,
+		TransactionID:  pi.ID,
+		CreatedAt:      time.Unix(pi.Created, 0),
+		Metadata:       pi.Metadata,
 	}, nil
 }

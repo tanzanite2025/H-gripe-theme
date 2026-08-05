@@ -18,7 +18,13 @@
             <Input v-model="pageForm.title" placeholder="Payment FAQs" />
           </AdminFormField>
           <AdminFormField label="路由路径">
-            <Input v-model="pageForm.route_path" placeholder="/support/payment" />
+            <Input
+              :model-value="pageForm.route_path"
+              readonly
+              aria-readonly="true"
+              class="cursor-default font-mono text-muted-foreground"
+              placeholder="/support/payment"
+            />
           </AdminFormField>
           <AdminFormField label="所属域">
             <Input v-model="pageForm.domain" placeholder="support / products / guides / company" />

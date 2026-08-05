@@ -1,4 +1,20 @@
 {
-  "title": "Frequently Asked Questions",
-  "subtitle": "Find answers to common questions about our products and services"
+  "title": "Часто задаваемые вопросы",
+  "subtitle": "Найдите ответы на распространенные вопросы о наших продуктах и сервисе",
+  "ui": {
+    "categorizedSupport": "Поддержка по категориям",
+    "quickAnswers": "Краткие ответы на частые вопросы",
+    "categoriesAriaLabel": "Категории FAQ",
+    "categoriesLabel": "Категории FAQ",
+    "all": "Все",
+    "viewAll": "Смотреть все FAQ",
+    "emptySection": "Для этого раздела FAQ пока нет.",
+    "pageIntro": "Просмотрите частые вопросы и краткие ответы о заказах, продуктах и сервисе.",
+    "searchPlaceholder": "Поиск по FAQ...",
+    "viewMoreContent": "Показать больше",
+    "noResults": "FAQ по запросу «{query}» не найдены",
+    "allFaqsMetaTitle": "Все FAQ",
+    "loadingAnswers": "Загрузка ответов",
+    "illustrationAlt": "Иллюстрация FAQ"
+  }
 }

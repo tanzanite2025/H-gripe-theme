@@ -26,9 +26,6 @@
           role="dialog"
           :aria-label="t('cartDrawer.ariaLabel')"
         >
-        <!-- 背景装饰 -->
-        <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
-        
         <!-- 头部 -->
         <div class="wa-drawer-header relative z-10">
           <h2 class="wa-drawer-title text-base sm:text-xl">
@@ -39,7 +36,7 @@
             class="wa-drawer-close-btn"
             :aria-label="t('cartDrawer.closeAriaLabel')"
           >
-            <span class="text-lg leading-none">x</span>
+            <Icon name="lucide:x" class="h-3.5 w-3.5" />
           </button>
         </div>
 
@@ -70,9 +67,6 @@
                 <h3 class="text-sm font-medium text-white truncate">
                   {{ item.title }}
                 </h3>
-              <p v-if="item.sku" class="text-xs tz-text-muted mt-1">
-                  {{ t('cartDrawer.item.sku') }}: {{ item.sku }}
-                </p>
                 <p class="text-sm font-semibold text-white mt-2">
                   {{ formatPrice(item.price) }}
                 </p>
@@ -91,15 +85,13 @@
                     type="number"
                     :value="item.quantity"
                     @input="onQuantityInput(item.id, $event)"
-                    class="w-12 h-7 text-center border border-white rounded bg-white/[0.06] text-white focus:outline-none focus:ring-2 focus:ring-[#6b73ff]"
+                    class="w-12 h-7 text-center border border-white rounded bg-white/[0.06] text-white focus:outline-none focus:ring-2 focus:ring-white/35"
                     min="1"
-                    :max="item.maxStock"
                   />
                   
                   <button
                     @click="incrementQuantity(item.id)"
                     class="w-7 h-7 flex items-center justify-center rounded border border-white hover:bg-white/10 transition-colors text-white"
-                    :disabled="item.maxStock ? item.quantity >= item.maxStock : false"
                   >
                     <Icon name="lucide:plus" class="w-4 h-4" />
                   </button>
@@ -139,7 +131,7 @@
             <p class="tz-text-secondary text-sm mb-6">{{ t('cartDrawer.empty.description') }}</p>
             <button
               @click="closeCart"
-              class="px-6 py-2 bg-[#6b73ff] text-white rounded-lg hover:bg-[#5d65e8] transition-colors"
+              class="px-6 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
             >
               {{ t('cartDrawer.actions.continueShopping') }}
             </button>
@@ -181,15 +173,15 @@
           <div class="flex gap-3">
             <button
               @click="closeCart"
-              class="flex-1 px-4 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
+              class="w-full px-4 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
             >
               {{ t('cartDrawer.actions.continueShopping') }}
             </button>
             <button
               @click="openCheckout"
-              class="flex-1 px-4 py-3 bg-gradient-to-r from-[#6b73ff] to-[#a78bfa] text-white rounded-lg hover:brightness-110 transition-all font-medium shadow-lg"
+              class="w-full px-4 py-3 border border-white bg-white text-black rounded-lg hover:bg-white/90 transition-colors font-semibold"
             >
-              {{ t('cartDrawer.actions.checkout') }} →
+              {{ t('cartDrawer.actions.checkout', 'Checkout') }}
             </button>
           </div>
         </div>
@@ -215,11 +207,11 @@ const {
   tax,
   total,
   closeCart,
+  openCheckout,
   updateQuantity,
   incrementQuantity,
   decrementQuantity,
   removeFromCart,
-  openCheckout,
   formatPrice,
 } = useCart()
 
@@ -255,14 +247,16 @@ const onQuantityInput = (id: number, event: Event) => {
 
 <style scoped>
 .cart-drawer-shell {
-  height: 92vh;
-  max-height: 92vh;
+  height: min(92vh, var(--tz-mobile-safe-viewport-height, 92vh));
+  max-height: min(92vh, var(--tz-mobile-safe-viewport-height, 92vh));
+  background: #000 !important;
+  background-image: none !important;
 }
 
 @supports (height: 100dvh) {
   .cart-drawer-shell {
-    height: 92dvh;
-    max-height: 92dvh;
+    height: min(92dvh, var(--tz-mobile-safe-viewport-height, 92dvh));
+    max-height: min(92dvh, var(--tz-mobile-safe-viewport-height, 92dvh));
   }
 }
 
@@ -386,6 +380,10 @@ const onQuantityInput = (id: number, event: Event) => {
     flex-basis: min(86vw, 21rem);
     gap: 0.75rem;
     padding: 0.85rem;
+  }
+
+  .cart-drawer-summary {
+    padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 1rem);
   }
 }
 </style>

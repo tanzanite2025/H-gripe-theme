@@ -10,22 +10,8 @@
           <SubscriptionOptIn
             label="Subscribe for new products & blog updates"
           />
-          <!-- Social Icons moved here -->
           <div class="footer-subscription__social">
             <SocialIcons :items="footerSocialItems" />
-          </div>
-          
-          <!-- Payment Icons -->
-          <div class="footer-subscription__payment">
-            <span v-for="icon in paymentIcons" :key="icon.src" class="payment-icon-tile">
-              <img
-                :src="icon.src"
-                :alt="icon.alt"
-                :class="['payment-icon-tile__img', icon.className]"
-                loading="lazy"
-                decoding="async"
-              />
-            </span>
           </div>
         </div>
 
@@ -44,54 +30,29 @@
         <div class="footer-bottom__info">
           <div class="footer-info__text-wrapper">
             <p class="footer-info__text">
-              &copy; {{ currentYear }} Tanzanite®. All pages use HTTPS with SSL encryption. Payments are securely processed; no card data stored.
+              &copy; {{ currentYear }}. All pages use HTTPS with SSL encryption. Payments are securely processed; no card data stored.
             </p>
             <svg class="footer-secure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="SSL Secure">
-              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#10B981" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23" fill="#10B981" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#B5FF6D" stroke="#B5FF6D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23" fill="#B5FF6D" stroke="#B5FF6D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="sans-serif">SSL</text>
               <rect x="10.5" y="14" width="3" height="2" rx="0.5" fill="#F59E0B" />
               <path d="M10.5 14V13C10.5 12.4477 10.9477 12 11.5 12C12.0523 12 12.5 12.4477 12.5 13V14" stroke="#F59E0B" stroke-width="0.5"/>
             </svg>
           </div>
-          
-          <!-- Moved buttons here for better layout grouping -->
-          <div class="footer-info__buttons">
-            <NuxtLink
-              to="/policies/privacy"
-              class="footer-info__link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Privacy Policy
-            </NuxtLink>
-            <span class="footer-info__sep">|</span>
-            <NuxtLink
-              to="/policies/cookie"
-              class="footer-info__link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Cookie Policy
-            </NuxtLink>
-            <span class="footer-info__sep">|</span>
-            <NuxtLink
-              to="/policies/refund-return"
-              class="footer-info__link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Refund &amp; Return
-            </NuxtLink>
-            <span class="footer-info__sep">|</span>
-            <NuxtLink
-              to="/policies/terms"
-              class="footer-info__link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Terms of Service
-            </NuxtLink>
+
+          <div class="footer-bottom__utilities">
+            <div class="footer-bottom__payment" aria-label="Accepted payment methods">
+              <span v-for="icon in paymentIcons" :key="icon.src" class="payment-icon-tile">
+                <img
+                  :src="icon.src"
+                  :alt="icon.alt"
+                  :class="['payment-icon-tile__img', icon.className]"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -167,7 +128,7 @@ const paymentIcons: PaymentIcon[] = [
 }
 
  .app-footer-background-surface {
-  background: linear-gradient(140deg, #0c0f17 0%, #141925 45%, #1b2230 100%);
+  background: var(--tz-card-surface);
  }
 
 .footer-content {
@@ -183,6 +144,8 @@ const paymentIcons: PaymentIcon[] = [
 
 .footer-main-row {
   width: 100%;
+  box-sizing: border-box;
+  padding-inline: clamp(0.5rem, 1.8vw, 2rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -192,32 +155,41 @@ const paymentIcons: PaymentIcon[] = [
 
 .footer-subscription {
   width: 100%;
-  max-width: 100%; /* Fill the grid column */
-  padding: 1.5rem;
-  background: #11151e;
-  /* Remove border as requested */
-  border-radius: 16px;
-  /* Global Deep Shadow */
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .footer-menus-wrapper {
   width: 100%;
 }
 
-.footer-subscription__social {
-  margin-top: 1.5rem;
-  display: flex;
-  justify-content: center; /* Mobile center */
-  gap: 1rem; /* More space */
+.footer-subscription :deep(form) {
+  width: 100%;
 }
 
-.footer-subscription__payment {
-  margin-top: 1.5rem;
-  display: flex;
-  justify-content: center; /* Mobile center */
+.footer-subscription :deep(.subscription-opt-in__control) {
+  flex-direction: column !important;
   gap: 0.5rem;
-  flex-wrap: wrap;
+}
+
+.footer-subscription :deep(.subscription-opt-in__input) {
+  width: 100%;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.footer-subscription :deep(.subscription-opt-in__button) {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.footer-subscription__social {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.85rem;
 }
 
 .payment-icon-tile {
@@ -274,30 +246,24 @@ const paymentIcons: PaymentIcon[] = [
   flex-wrap: wrap;
 }
 
+.footer-bottom__utilities {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer-bottom__payment {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .footer-secure-icon {
   margin-top: -2px; /* Visual alignment */
-}
-
-.footer-info__buttons {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.8rem;
-}
-
-.footer-info__link {
-  color: rgba(245, 246, 250, 0.65);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.footer-info__link:hover {
-  color: #ffffff;
-  text-decoration: underline;
-}
-
-.footer-info__sep {
-  color: rgba(245, 246, 250, 0.35);
 }
 
 .footer-site {
@@ -323,14 +289,6 @@ const paymentIcons: PaymentIcon[] = [
     text-align: center;
   }
   
-  .footer-subscription__social {
-    justify-content: center;
-  }
-
-  .footer-subscription__payment {
-    justify-content: center;
-  }
-
   .footer-bottom__info {
     flex-direction: column;
     align-items: center;
@@ -347,38 +305,27 @@ const paymentIcons: PaymentIcon[] = [
 
   .footer-main-row {
     display: grid;
-    grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     align-items: start;
-    gap: clamp(2rem, 4vw, 5rem);
+    gap: clamp(1rem, 2vw, 2.5rem);
     margin-bottom: 0;
   }
 
   .footer-subscription {
-    max-width: 100%; /* Card matches grid column width (480px) */
-    padding: 1.5rem; /* Restore padding */
+    grid-column: 6;
+    grid-row: 1;
+    max-width: 100%;
     text-align: left;
   }
-  
-  .footer-subscription :deep(form) {
-    max-width: 340px; /* Limit input width prevents it from stretching too wide */
-  }
 
-  .footer-subscription__social {
-    justify-content: flex-start;
-  }
-
-  .footer-subscription__payment {
-    justify-content: flex-start;
-    /* Allow icons to use full width of the card if needed */
-    max-width: 100%; 
-  }
-  
   .footer-subscription :deep(label) {
     text-align: left;
   }
   
   .footer-menus-wrapper {
-    margin-top: 0.5rem;
+    grid-column: 1 / span 5;
+    grid-row: 1;
+    margin-top: 0;
   }
 
   .footer-bottom {
@@ -404,7 +351,7 @@ const paymentIcons: PaymentIcon[] = [
   }
 
   .app-footer-background-surface {
-    background: linear-gradient(180deg, #252b36 0%, #1a202c 46%, #0f131c 100%);
+    background: var(--tz-card-surface);
   }
   
   .footer-main-row {
@@ -415,14 +362,6 @@ const paymentIcons: PaymentIcon[] = [
     margin-bottom: 2rem;
   }
   
-  .footer-subscription {
-    max-width: 100vw !important;
-    width: 100vw;
-    box-sizing: border-box;
-    margin-right: calc(50% - 50vw);
-    margin-left: calc(50% - 50vw);
-  }
-
   .footer-content {
     gap: 0.5rem;
   }

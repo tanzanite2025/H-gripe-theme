@@ -9,6 +9,19 @@ const publicApiBase = trimTrailingSlash(
   env.NUXT_PUBLIC_API_BASE || env.GO_API_BASE || env.API_BASE || ''
 )
 const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9200')
+const imageProvider = env.NUXT_IMAGE_PROVIDER || 'none'
+const htmlCacheEnabled = String(env.NUXT_HTML_CACHE_ENABLED || 'true').toLowerCase() !== 'false'
+
+const storefrontI18nLocales = locales.map((locale: any) => {
+  const localeFile = locale.file || `${locale.code}.json`
+
+  return {
+    ...locale,
+    language: locale.language || locale.iso || locale.code,
+    file: localeFile,
+    files: locale.files || [localeFile],
+  }
+})
 
 type RollupBuildWarning = {
   code?: string
@@ -96,13 +109,24 @@ export default defineNuxtConfig({
   routeRules: {
     ...buildStorefrontRouteRules({
       internalApiOrigin,
-      localeCodes: locales.map(locale => locale.code),
+      localeCodes: storefrontI18nLocales.map(locale => locale.code),
       defaultLocale: 'en',
+      htmlCacheEnabled,
     })
   },
 
   site: {
     url: env.NUXT_SITE_URL || '',
+  },
+
+  sitemap: {
+    sources: ['/__sitemap__/dynamic-urls.json'],
+  },
+
+  image: {
+    // Keep local builds architecture-neutral; set NUXT_IMAGE_PROVIDER to a CDN/IPX
+    // provider only when that image pipeline is owned by the deployment.
+    provider: imageProvider,
   },
 
   modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon', '@nuxt/fonts'],
@@ -113,7 +137,7 @@ export default defineNuxtConfig({
 
   i18n: {
     restructureDir: 'app',
-    locales: locales as any,
+    locales: storefrontI18nLocales as any,
     lazy: true,
     langDir: 'i18n/locales',
     defaultLocale: 'en',
@@ -147,6 +171,7 @@ export default defineNuxtConfig({
 
   vite: {
     build: {
+      sourcemap: false,
       rollupOptions: {
         output: {
           manualChunks: getManualChunkName,
@@ -170,7 +195,7 @@ export default defineNuxtConfig({
     head: {
       meta: [
         { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }
       ],
     }
   },
@@ -178,8 +203,16 @@ export default defineNuxtConfig({
   // 启用默认的 SSR + 预渲染，以便生成完整静态 HTML
   ssr: true,
 
+  // Source maps are useful in development but should not ship with the
+  // storefront runtime image.
+  sourcemap: {
+    client: false,
+    server: false,
+  },
+
   nitro: {
     preset: env.NITRO_PRESET || 'node-server',
+    sourceMap: false,
     rollupConfig: {
       onwarn(warning, warn) {
         if (shouldIgnoreNitroBuildWarning(warning as RollupBuildWarning)) return
@@ -193,6 +226,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    apiInternalOrigin: internalApiOrigin,
     public: {
       apiBase: publicApiBase,
       blogApiMode: env.NUXT_PUBLIC_BLOG_API_MODE || env.BLOG_API_MODE || 'auto',

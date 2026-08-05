@@ -1,4 +1,20 @@
 {
-  "title": "Frequently Asked Questions",
-  "subtitle": "Find answers to common questions about our products and services"
+  "title": "अक्सर पूछे जाने वाले प्रश्न",
+  "subtitle": "हमारे उत्पादों और सेवाओं के बारे में सामान्य प्रश्नों के उत्तर खोजें",
+  "ui": {
+    "categorizedSupport": "श्रेणीबद्ध सहायता",
+    "quickAnswers": "सामान्य प्रश्नों के त्वरित उत्तर",
+    "categoriesAriaLabel": "FAQ श्रेणियाँ",
+    "categoriesLabel": "FAQ श्रेणियाँ",
+    "all": "सभी",
+    "viewAll": "सभी FAQ देखें",
+    "emptySection": "इस अनुभाग के लिए कोई FAQ उपलब्ध नहीं है।",
+    "pageIntro": "ऑर्डर, उत्पाद और सेवा के बारे में सामान्य प्रश्न और त्वरित उत्तर देखें।",
+    "searchPlaceholder": "FAQ खोजें...",
+    "viewMoreContent": "और सामग्री देखें",
+    "noResults": "\"{query}\" से मेल खाने वाला कोई FAQ नहीं मिला",
+    "allFaqsMetaTitle": "सभी FAQ",
+    "loadingAnswers": "उत्तर लोड हो रहे हैं",
+    "illustrationAlt": "FAQ चित्र"
+  }
 }

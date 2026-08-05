@@ -1,5 +1,6 @@
 import type { FaqRegistry, PageFaqData } from './types'
 import { normalizeFaqRoutePath } from './routing'
+import { getPageFaqId } from './helpers'
 
 import { supportPaymentFaq } from './pages/support-payment'
 import { supportShippingFaq } from './pages/support-shipping'
@@ -51,25 +52,6 @@ export const faqRoutePathByPageId: Record<string, string> = {
   'company-contact': '/company/contact',
   'company-global-partners': '/company/global-partners',
   'company-ourstory': '/company/ourstory',
-}
-
-export type ResolvedPageFaqData = PageFaqData & {
-  pageId: string
-}
-
-export function getPageFaqId(page: PageFaqData): string {
-  return page.pageId || page.id || ''
-}
-
-export function resolvePageFaqData(page: PageFaqData): ResolvedPageFaqData | null {
-  const pageId = getPageFaqId(page)
-  return pageId ? { ...page, pageId } : null
-}
-
-export function resolvePageFaqDataList(pages: PageFaqData[]): ResolvedPageFaqData[] {
-  return pages
-    .map(resolvePageFaqData)
-    .filter((page): page is ResolvedPageFaqData => Boolean(page))
 }
 
 /**

@@ -9,7 +9,7 @@
         type="email"
         v-model="email"
         :placeholder="placeholder"
-        class="subscription-opt-in__input rounded-full bg-[#0b1020]/60 border-none text-white placeholder:text-slate-500 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.6)] focus:shadow-[0_0_0_2px_rgba(0,0,0,0.9)] focus:outline-none transition-all"
+        class="subscription-opt-in__input rounded-full bg-[var(--tz-input-surface)] border-none text-white placeholder:text-slate-500 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.6)] focus:shadow-[0_0_0_2px_rgba(0,0,0,0.9)] focus:outline-none transition-all"
         :disabled="loading"
         required
         autocomplete="email"

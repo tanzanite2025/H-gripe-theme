@@ -51,7 +51,7 @@ const onClick = (event: MouseEvent) => {
   gap: 0.4rem;
   padding: 0.625rem 3.1rem 0.625rem 1.2rem;
   border-radius: 9999px;
-  border: none;
+  border: 1px solid rgba(181, 255, 109, 0.28);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
@@ -96,15 +96,16 @@ const onClick = (event: MouseEvent) => {
   .chat-start-button {
     color: #e5e7eb;
     background:
-      linear-gradient(135deg, rgba(51, 65, 85, 0.98), rgba(15, 23, 42, 0.98));
+      linear-gradient(135deg, rgba(24, 24, 24, 0.98), rgba(5, 5, 5, 0.98));
     box-shadow:
       0 10px 30px -18px rgba(0, 0, 0, 1),
-      0 0 18px rgba(15, 23, 42, 0.95);
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 0 18px rgba(181, 255, 109, 0.12);
   }
 
   .chat-start-button__overlay {
-    background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
-    box-shadow: 0 4px 12px rgba(45, 212, 191, 0.35);
+    background: #b5ff6d;
+    box-shadow: 0 4px 12px rgba(181, 255, 109, 0.22);
     z-index: 1;
     transition:
       width 0.3s ease,
@@ -119,14 +120,15 @@ const onClick = (event: MouseEvent) => {
   .chat-start-button:hover {
     box-shadow:
       0 5px 16px -10px rgba(0, 0, 0, 0.95),
-      0 0 14px rgba(15, 23, 42, 0.9);
+      inset 0 0 0 1px rgba(181, 255, 109, 0.18),
+      0 0 14px rgba(181, 255, 109, 0.16);
   }
 
   .chat-start-button:hover .chat-start-button__overlay {
     width: calc(100% - 0.6rem);
     box-shadow:
-      0 6px 18px -10px rgba(45, 212, 191, 0.45),
-      0 0 18px rgba(15, 23, 42, 0.9);
+      0 6px 18px -10px rgba(181, 255, 109, 0.48),
+      0 0 18px rgba(181, 255, 109, 0.18);
   }
 
   .chat-start-button:hover .chat-start-button__icon {
@@ -143,10 +145,11 @@ const onClick = (event: MouseEvent) => {
   .chat-start-button {
     padding: 0.625rem 1rem;
     color: #e5e7eb;
-    background: linear-gradient(135deg, rgba(51, 65, 85, 0.98), rgba(15, 23, 42, 0.98));
+    background: linear-gradient(135deg, rgba(24, 24, 24, 0.98), rgba(5, 5, 5, 0.98));
     box-shadow:
       0 10px 30px -18px rgba(0, 0, 0, 1),
-      0 0 18px rgba(15, 23, 42, 0.95);
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 0 18px rgba(181, 255, 109, 0.12);
   }
 
   .chat-start-button__label {
@@ -165,12 +168,12 @@ const onClick = (event: MouseEvent) => {
   }
 
   .chat-start-button__icon {
-    color: #020617;
+    color: #b5ff6d;
   }
 
   .chat-start-button:active {
     transform: scale(0.98);
-    box-shadow: 0 6px 18px rgba(45, 212, 191, 0.35);
+    box-shadow: 0 6px 18px rgba(181, 255, 109, 0.24);
   }
 }
 </style>

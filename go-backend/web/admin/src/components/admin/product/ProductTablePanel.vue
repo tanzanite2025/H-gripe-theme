@@ -99,6 +99,10 @@
                   <Pencil class="size-4" />
                   编辑
                 </DropdownMenuItem>
+                <DropdownMenuItem v-if="canSyncGoogle" @select="emit('sync-google', product)">
+                  <Globe2 class="size-4" />
+                  同步到 Google
+                </DropdownMenuItem>
                 <DropdownMenuItem v-if="canEdit" @select="emit('toggle-status', product)">
                   <CircleCheck v-if="product.status !== 'active'" class="size-4" />
                   <CircleOff v-else class="size-4" />
@@ -133,7 +137,7 @@
 </template>
 
 <script setup>
-import { CircleCheck, CircleOff, MoreHorizontal, PackageOpen, Pencil, Star, Trash2 } from '@lucide/vue'
+import { CircleCheck, CircleOff, Globe2, MoreHorizontal, PackageOpen, Pencil, Star, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -157,6 +161,7 @@ const props = defineProps({
   selectionState: { type: [Boolean, String], default: false },
   canEdit: { type: Boolean, default: false },
   canDelete: { type: Boolean, default: false },
+  canSyncGoogle: { type: Boolean, default: false },
   localeName: { type: Function, required: true },
 })
 
@@ -166,6 +171,7 @@ const emit = defineEmits([
   'toggle-all-products',
   'toggle-product',
   'edit',
+  'sync-google',
   'toggle-status',
   'delete',
   'update-page',

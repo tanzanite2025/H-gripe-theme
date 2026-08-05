@@ -1,16 +1,16 @@
 <template>
   <section class="grid max-w-5xl gap-5 lg:grid-cols-[190px_minmax(0,1fr)]">
     <div>
-      <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">支付方式与币种</h2>
+      <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">支付方式</h2>
       <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-        SHOP 价格区间币种来源
+        收款币种由“收款货币”统一维护
       </p>
     </div>
 
     <div class="min-w-0 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-xs text-muted-foreground">
-          已启用支付方式里的支持币种会出现在前台 SHOP 价格筛选。
+          这里只维护支付方式展示、手续费和启停状态；订单可收款币种只读取系统设置里的收款货币策略。
         </div>
         <div class="flex items-center gap-2">
           <Button type="button" variant="outline" size="sm" :disabled="loading" @click="fetchPaymentMethods">
@@ -35,14 +35,13 @@
             <TableRow>
               <TableHead class="w-[90px]">状态</TableHead>
               <TableHead>支付方式</TableHead>
-              <TableHead>支持币种</TableHead>
               <TableHead class="hidden w-[90px] text-right md:table-cell">排序</TableHead>
               <TableHead v-if="canEdit" class="w-[120px] text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="paymentMethods.length === 0">
-              <TableCell :colspan="canEdit ? 5 : 4" class="h-28 text-center text-xs text-muted-foreground">
+              <TableCell :colspan="canEdit ? 4 : 3" class="h-28 text-center text-xs text-muted-foreground">
                 暂无支付方式
               </TableCell>
             </TableRow>
@@ -57,18 +56,6 @@
                   <div class="truncate text-sm font-bold text-foreground">{{ method.name }}</div>
                   <div class="mt-0.5 font-mono text-[11px] text-muted-foreground">{{ method.code }}</div>
                 </div>
-              </TableCell>
-              <TableCell>
-                <div v-if="currencyCodes(method).length" class="flex max-w-[360px] flex-wrap gap-1.5">
-                  <span
-                    v-for="currency in currencyCodes(method)"
-                    :key="`${method.id}-${currency}`"
-                    class="inline-flex h-6 items-center rounded-full border bg-muted px-2 font-mono text-[11px] font-bold text-foreground"
-                  >
-                    {{ currency }}
-                  </span>
-                </div>
-                <span v-else class="text-xs text-muted-foreground">空</span>
               </TableCell>
               <TableCell class="hidden text-right font-mono text-xs text-muted-foreground md:table-cell">
                 {{ method.sort_order ?? 0 }}
@@ -102,7 +89,7 @@
         <form class="space-y-5" @submit.prevent="savePaymentMethod">
           <DialogHeader>
             <DialogTitle>{{ dialogMode === 'create' ? '添加支付方式' : '编辑支付方式' }}</DialogTitle>
-            <DialogDescription>维护支付方式及其允许收款币种。</DialogDescription>
+            <DialogDescription>维护支付方式、手续费和展示状态；收款币种在“收款货币”Tab 统一配置。</DialogDescription>
           </DialogHeader>
 
           <div class="grid gap-4 md:grid-cols-2">
@@ -112,10 +99,6 @@
 
             <AdminFormField label="代码" required>
               <Input v-model.trim="form.code" class="font-mono lowercase" />
-            </AdminFormField>
-
-            <AdminFormField label="支持币种" class="md:col-span-2" description="三位币种码，用逗号、空格或换行分隔。">
-              <Input v-model="form.supported_currencies" class="font-mono uppercase" />
             </AdminFormField>
 
             <AdminFormField label="手续费类型">
@@ -214,7 +197,6 @@ const emptyForm = () => ({
   fee_value: 0,
   min_amount: 0,
   max_amount: 0,
-  supported_currencies: '',
   enabled: true,
   sort_order: 0,
   settings: '',
@@ -243,29 +225,9 @@ const assignForm = (method = emptyForm()) => {
     fee_value: Number(method.fee_value || 0),
     min_amount: Number(method.min_amount || 0),
     max_amount: Number(method.max_amount || 0),
-    supported_currencies: method.supported_currencies || '',
     enabled: method.enabled !== false,
     sort_order: Number(method.sort_order || 0),
     settings: method.settings || '',
-  })
-}
-
-const currencyCodes = (method) => String(method.supported_currencies || '')
-  .split(',')
-  .map((currency) => currency.trim().toUpperCase())
-  .filter(Boolean)
-
-const normalizeCurrencyInput = (value) => {
-  const parts = String(value || '')
-    .split(/[\s,;，；]+/)
-    .map((currency) => currency.trim().toUpperCase())
-    .filter(Boolean)
-
-  const seen = new Set()
-  return parts.filter((currency) => {
-    if (seen.has(currency)) return false
-    seen.add(currency)
-    return true
   })
 }
 
@@ -295,13 +257,6 @@ const openEditDialog = (method) => {
 }
 
 const buildPayload = () => {
-  const currencies = normalizeCurrencyInput(form.supported_currencies)
-  const invalid = currencies.find((currency) => !/^[A-Z]{3}$/.test(currency))
-  if (invalid) {
-    toast.error('支持币种必须是三位字母代码')
-    return null
-  }
-
   return {
     name: form.name.trim(),
     code: form.code.trim().toLowerCase(),
@@ -311,7 +266,6 @@ const buildPayload = () => {
     fee_value: Number(form.fee_value || 0),
     min_amount: Number(form.min_amount || 0),
     max_amount: Number(form.max_amount || 0),
-    supported_currencies: currencies.join(','),
     enabled: form.enabled === true,
     sort_order: Number(form.sort_order || 0),
     settings: String(form.settings || '').trim(),

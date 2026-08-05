@@ -16,11 +16,11 @@
     <!-- FAQ Preview Section -->
     <div class="pt-[21px] pb-0">
       <div class="page-content-shell">
-        <HomeFaqPreview :max-items-per-category="4" wide fluid />
+        <HomeFaqPreview :max-categories="4" :max-items-per-category="3" wide fluid />
       </div>
     </div>
 
-    <section class="page-content-shell px-0 md:px-4 pt-[21px] pb-0">
+    <section class="page-content-shell px-0 md:px-4 pt-10 pb-10 md:pt-12 md:pb-12">
       <ContactLocationMap variant="compact" title-tag="h2" layout="split" />
     </section>
 

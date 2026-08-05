@@ -4,12 +4,15 @@ import (
 	"errors"
 	"strings"
 	"tanzanite/internal/domain/feedback"
+	"tanzanite/internal/pkg/ugc"
 	"tanzanite/internal/repository"
 )
 
 var (
 	ErrFeedbackMissingThread  = errors.New("thread is required")
 	ErrFeedbackMissingContent = errors.New("content is required")
+	ErrFeedbackContentTooLong = errors.New("feedback content is too long")
+	ErrFeedbackNameTooLong    = errors.New("feedback name is too long")
 	ErrFeedbackInvalidStatus  = errors.New("invalid feedback status")
 )
 
@@ -39,13 +42,35 @@ func (s *FeedbackService) List(threadKey, status, search string, page, pageSize 
 }
 
 func (s *FeedbackService) ListPublic(threadKey, search string, page, pageSize int) ([]feedback.Feedback, int64, error) {
-	return s.List(threadKey, "approved", search, page, pageSize)
+	items, total, err := s.List(threadKey, "approved", search, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	for index := range items {
+		items[index].Name = normalizeFeedbackPublicText(items[index].Name)
+		items[index].Content = normalizeFeedbackPublicText(items[index].Content)
+	}
+	return items, total, nil
 }
 
 func (s *FeedbackService) Create(item *feedback.Feedback) error {
 	item.ThreadKey = strings.TrimSpace(item.ThreadKey)
-	item.Content = strings.TrimSpace(item.Content)
-	item.Name = strings.TrimSpace(item.Name)
+	content, err := ugc.PlainText(item.Content, 3000)
+	if errors.Is(err, ugc.ErrTextTooLong) {
+		return ErrFeedbackContentTooLong
+	}
+	if err != nil {
+		return err
+	}
+	name, err := ugc.PlainText(item.Name, 120)
+	if errors.Is(err, ugc.ErrTextTooLong) {
+		return ErrFeedbackNameTooLong
+	}
+	if err != nil {
+		return err
+	}
+	item.Content = content
+	item.Name = name
 	item.Email = strings.TrimSpace(item.Email)
 	item.Locale = strings.TrimSpace(item.Locale)
 
@@ -80,4 +105,12 @@ func validFeedbackStatus(status string) bool {
 	default:
 		return false
 	}
+}
+
+func normalizeFeedbackPublicText(value string) string {
+	normalized, err := ugc.PlainText(value, 0)
+	if err != nil {
+		return ""
+	}
+	return normalized
 }

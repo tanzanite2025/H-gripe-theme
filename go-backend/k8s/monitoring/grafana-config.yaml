@@ -90,6 +90,17 @@ data:
                 "legendFormat": "DB Connections"
               }
             ]
+          },
+          {
+            "id": 5,
+            "title": "Commercial Intelligence Protection",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(tanzanite_commercial_intelligence_actions_total[5m])) by (seed_id, outcome)",
+                "legendFormat": "{{seed_id}} {{outcome}}"
+              }
+            ]
           }
         ]
       }

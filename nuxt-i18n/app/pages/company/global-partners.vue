@@ -13,7 +13,7 @@
         <div class="mb-4 flex flex-wrap items-center justify-center gap-3">
           <NuxtLink
             to="/company/contact"
-            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#40ffaa] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition hover:brightness-110"
+            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition hover:brightness-110"
           >
             Contact us about partnerships
           </NuxtLink>

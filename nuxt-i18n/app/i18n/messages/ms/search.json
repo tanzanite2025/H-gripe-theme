@@ -2,5 +2,8 @@
   "placeholder": "Cari...",
   "button": "Cari",
   "popularTitle": "Carian popular",
-  "popularAriaLabel": "Carian popular"
+  "popularAriaLabel": "Carian popular",
+  "recommendedProducts": "Recommended Products",
+  "recommendedProductsTitle": "Start with popular picks",
+  "recommendedCategoriesTitle": "Browse by type"
 }

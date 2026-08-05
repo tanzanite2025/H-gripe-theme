@@ -11,7 +11,14 @@ import (
 // paypalGatewayImpl PayPal 支付网关完整实现
 type paypalGatewayImpl struct {
 	config *Config
-	client *paypal.Client
+	client payPalCheckoutClient
+}
+
+type payPalCheckoutClient interface {
+	CreateOrder(context.Context, string, []paypal.PurchaseUnitRequest, *paypal.PaymentSource, *paypal.ApplicationContext) (*paypal.Order, error)
+	CaptureOrder(context.Context, string, paypal.CaptureOrderRequest) (*paypal.CaptureOrderResponse, error)
+	GetOrder(context.Context, string) (*paypal.Order, error)
+	RefundCaptureWithPaypalRequestId(context.Context, string, paypal.RefundCaptureRequest, string) (*paypal.RefundResponse, error)
 }
 
 // NewPayPalGateway 创建PayPal支付网关实例
@@ -51,13 +58,21 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if err := ValidatePaymentRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
+	if err := ValidateGatewayCurrency(g.config.Type, req.Currency); err != nil {
+		return nil, fmt.Errorf("invalid payment request: %w", err)
+	}
+	amountValue, err := FormatMajorAmount(req.Amount, req.Currency)
+	if err != nil {
+		return nil, err
+	}
 
 	// 构建购买单元
 	units := []paypal.PurchaseUnitRequest{
 		{
+			ReferenceID: req.OrderID,
 			Amount: &paypal.PurchaseUnitAmount{
 				Currency: req.Currency,
-				Value:    fmt.Sprintf("%.2f", req.Amount),
+				Value:    amountValue,
 			},
 			Description: req.Description,
 			CustomID:    req.OrderID,
@@ -66,7 +81,6 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 
 	// 构建应用上下文
 	appCtx := &paypal.ApplicationContext{
-		BrandName:          "Tanzanite Components",
 		Locale:             "en-US",
 		UserAction:         "PAY_NOW",
 		ShippingPreference: "NO_SHIPPING",

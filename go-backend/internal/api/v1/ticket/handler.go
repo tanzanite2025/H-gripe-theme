@@ -4,6 +4,7 @@ import "tanzanite/internal/service"
 
 type Handler struct {
 	ticketService         *service.TicketService
+	mediaService          *service.MediaService
 	visitorProfileService *service.VisitorProfileService
 	customerServiceEvents *service.CustomerServiceEventHub
 	allowedOrigins        []string
@@ -11,6 +12,7 @@ type Handler struct {
 }
 
 type Options struct {
+	MediaService          *service.MediaService
 	AllowedOrigins        []string
 	VisitorSecret         string
 	VisitorProfileService *service.VisitorProfileService
@@ -24,6 +26,7 @@ func NewHandler(ticketService *service.TicketService, opts ...Options) *Handler 
 	}
 	return &Handler{
 		ticketService:         ticketService,
+		mediaService:          options.MediaService,
 		visitorProfileService: options.VisitorProfileService,
 		customerServiceEvents: options.CustomerServiceEvents,
 		allowedOrigins:        append([]string(nil), options.AllowedOrigins...),

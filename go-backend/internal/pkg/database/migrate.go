@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	attributiondomain "tanzanite/internal/domain/attribution"
 	"tanzanite/internal/domain/audit"
 	"tanzanite/internal/domain/coupon"
 	"tanzanite/internal/domain/faq"
@@ -11,10 +12,13 @@ import (
 	"tanzanite/internal/domain/gallery"
 	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/media"
+	"tanzanite/internal/domain/merchant"
 	orderdomain "tanzanite/internal/domain/order"
+	outboxdomain "tanzanite/internal/domain/outbox"
 	"tanzanite/internal/domain/payment"
 	"tanzanite/internal/domain/post"
 	"tanzanite/internal/domain/product"
+	recommendationdomain "tanzanite/internal/domain/recommendation"
 	"tanzanite/internal/domain/registration"
 	"tanzanite/internal/domain/review"
 	"tanzanite/internal/domain/setting"
@@ -45,7 +49,9 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 
 	err := db.AutoMigrate(
 		&user.User{},
+		&user.AgentGroup{},
 		&user.AgentProfile{},
+		&user.AgentGroupMember{},
 		&post.Post{},
 		&post.Category{},
 		&post.PostCategory{},
@@ -59,12 +65,25 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.ProductVariant{},
 		&product.Cart{},
 		&product.CartItem{},
+		&merchant.GoogleMerchantConnection{},
+		&merchant.GoogleMerchantOffer{},
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
+		&attributiondomain.OrderAttribution{},
+		&outboxdomain.Event{},
 		&payment.PaymentMethod{},
 		&payment.TaxRate{},
 		&payment.Transaction{},
 		&payment.Refund{},
+		&payment.RefundLineItem{},
+		&payment.StripeWebhookEvent{},
+		&payment.StripeDispute{},
+		&payment.PaymentReview{},
+		&payment.PaymentRiskEvent{},
+		&payment.PaymentRiskSnapshot{},
+		&payment.PaymentRiskAlertState{},
+		&payment.PaymentProtectionControl{},
+		&payment.PaymentRefundRecommendation{},
 		&shipping.ShippingTemplate{},
 		&shipping.ShippingRule{},
 		&shipping.Carrier{},
@@ -102,6 +121,8 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&ticket.TicketMessage{},
 		&ticket.AutoReplyRule{},
 		&visitor.Profile{},
+		&visitor.RiskDailyFact{},
+		&visitor.RiskDecision{},
 		&subscription.Subscription{},
 		&verification.EmailChallenge{},
 		&showcase.Showcase{},
@@ -113,6 +134,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&feedback.Feedback{},
 		&suggestionfeedback.SuggestionFeedback{},
 		&spoke.History{},
+		&recommendationdomain.Event{},
 	)
 	if err != nil {
 		return err
@@ -120,7 +142,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 	if err := SeedDefaultSettings(db); err != nil {
 		return err
 	}
-	return SeedDefaultLoyaltyProgramConfig(db)
+	return nil
 }
 
 // SeedDefaultSettings 种子数据初始化
@@ -139,26 +161,6 @@ func SeedDefaultSettings(db *gorm.DB) error {
 		}
 	}
 	return nil
-}
-
-func SeedDefaultLoyaltyProgramConfig(db *gorm.DB) error {
-	var count int64
-	if err := db.Model(&loyalty.ProgramConfig{}).Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-
-	config := loyalty.DefaultProgramConfig()
-	config.RedeemOptions = []loyalty.ProgramRedeemOption{
-		{ValueCents: 1000, SortOrder: 0},
-		{ValueCents: 5000, SortOrder: 1},
-		{ValueCents: 10000, SortOrder: 2},
-		{ValueCents: 20000, SortOrder: 3},
-		{ValueCents: 50000, SortOrder: 4},
-	}
-	return db.Create(&config).Error
 }
 
 func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig, serverMode string) error {

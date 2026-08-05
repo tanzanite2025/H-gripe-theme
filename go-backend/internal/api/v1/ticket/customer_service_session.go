@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"tanzanite/internal/api/middleware"
 	"tanzanite/internal/domain/ticket"
 	"tanzanite/internal/pkg/visitorcookie"
 	"tanzanite/internal/service"
@@ -30,12 +31,18 @@ func publicCustomerUserID(c *gin.Context) *uint {
 }
 
 func (h *Handler) publicCustomerOwner(c *gin.Context) service.CustomerServiceOwner {
-	owner := service.CustomerServiceOwner{
+	return service.CustomerServiceOwner{
 		UserID:             publicCustomerUserID(c),
 		VisitorSessionHash: h.ensureVisitorSessionHash(c),
 	}
-	h.touchCustomerServiceVisitorProfile(c, owner, "", "")
-	return owner
+}
+
+func (h *Handler) existingPublicCustomerOwner(c *gin.Context) service.CustomerServiceOwner {
+	visitorHash, _ := h.existingVisitorSessionHash(c)
+	return service.CustomerServiceOwner{
+		UserID:             publicCustomerUserID(c),
+		VisitorSessionHash: visitorHash,
+	}
 }
 
 func (h *Handler) ensureVisitorSessionHash(c *gin.Context) string {
@@ -64,6 +71,13 @@ func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner servi
 		return
 	}
 
+	meaningfulAction := service.VisitorProfileActionCustomerService
+	qualityScore := service.VisitorProfileQualityCustomerService
+	if strings.TrimSpace(email) != "" {
+		meaningfulAction = service.VisitorProfileActionEmailCapture
+		qualityScore = service.VisitorProfileQualityEmailCapture
+	}
+
 	input := service.VisitorProfileTouchInput{
 		UserID:                     owner.UserID,
 		CustomerServiceVisitorHash: owner.VisitorSessionHash,
@@ -78,8 +92,10 @@ func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner servi
 		Timezone:                   firstNonEmptyHeader(c, "CF-Timezone", "X-Timezone"),
 		IPAddress:                  requestIP(c),
 		UserAgent:                  c.GetHeader("User-Agent"),
+		MeaningfulAction:           meaningfulAction,
+		QualityScoreDelta:          qualityScore,
 	}
-	if _, err := h.visitorProfileService.Touch(input); err != nil {
+	if _, err := h.visitorProfileService.TouchMeaningfulAction(input); err != nil {
 		return
 	}
 }
@@ -97,14 +113,14 @@ func requestLocale(c *gin.Context) string {
 }
 
 func requestCountryCode(c *gin.Context) string {
-	return firstNonEmptyHeader(c, "CF-IPCountry", "CloudFront-Viewer-Country", "X-Vercel-IP-Country", "X-Country-Code")
+	return middleware.TrustedEdgeCountry(c)
 }
 
 func requestIP(c *gin.Context) string {
 	if c.Request == nil {
 		return ""
 	}
-	return firstNonEmptyHeader(c, "CF-Connecting-IP", "X-Real-IP", "X-Forwarded-For")
+	return c.ClientIP()
 }
 
 func firstNonEmptyHeader(c *gin.Context, keys ...string) string {

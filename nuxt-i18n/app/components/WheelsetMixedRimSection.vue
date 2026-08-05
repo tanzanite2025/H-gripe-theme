@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Intro Card -->
-    <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center">
        <div class="flex flex-col items-center">
          <p class="tz-text-secondary text-sm leading-relaxed max-w-2xl mx-auto">
             Example riding scenarios where "Mixed Rim Profiles" (different front/rear specs) provide a tactical advantage.
@@ -31,7 +31,7 @@
     <!-- Scenarios Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- 1. Diff Models -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-fuchsia-500/10">
             <h3 class="text-sm font-bold tz-text-primary uppercase tracking-wide">Different Models</h3>
           </div>
@@ -41,7 +41,7 @@
        </div>
 
        <!-- 2. Diff Heights -->
-       <div class="rounded-2xl bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-fuchsia-500/10">
             <h3 class="text-sm font-bold tz-text-primary uppercase tracking-wide">Different Heights</h3>
           </div>
@@ -60,7 +60,7 @@
 
        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Card 1 -->
-          <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+          <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Climbing</strong>
                 <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Lightweight</span>
@@ -73,7 +73,7 @@
           </div>
 
           <!-- Card 2 -->
-          <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+          <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Aerodynamics</strong>
                 <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Speed</span>
@@ -86,7 +86,7 @@
           </div>
 
            <!-- Card 3 -->
-           <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+           <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Training / Durability</strong>
                 <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Stable</span>
@@ -99,7 +99,7 @@
           </div>
 
            <!-- Card 4 -->
-           <div class="bg-[#11151e] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
+           <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
              <div class="flex justify-between items-start mb-2">
                 <strong class="text-fuchsia-400 text-sm">Mixed / Versatile</strong>
                 <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">All-around</span>
@@ -129,7 +129,7 @@ const { openQuickBuy, openWhatsAppChat } = defineProps<{
 }
 
 .wheelset-link {
-  color: #2dd4bf;
+  color: #B5FF6D;
   text-decoration: underline;
 }
 

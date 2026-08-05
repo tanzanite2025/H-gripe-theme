@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS warranty_service_records (
   status VARCHAR(50) NOT NULL DEFAULT 'open',
   summary TEXT NOT NULL DEFAULT '',
   cost_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
-  currency VARCHAR(8) NOT NULL DEFAULT 'USD',
+  currency VARCHAR(8) NOT NULL,
   performed_by BIGINT REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL,
   created_by BIGINT REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL,
   performed_at TIMESTAMP,

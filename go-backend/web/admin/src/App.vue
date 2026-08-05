@@ -41,6 +41,9 @@ const onApiLoading = (event) => {
 
 onMounted(async () => {
   window.addEventListener('admin-api-loading', onApiLoading)
+  await router.isReady()
+  if (router.currentRoute.value.meta.requiresAuth === false) return
+
   const result = await authStore.initAuth()
 
   if (result.authenticated && result.permissionsUpdated) {

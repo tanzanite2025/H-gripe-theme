@@ -11,6 +11,8 @@ import (
 var (
 	ErrInvalidAuditDate     = errors.New("invalid audit date")
 	ErrAuditKeywordRequired = errors.New("audit search keyword is required")
+	ErrAuditLogRequired     = errors.New("audit log is required")
+	ErrAuditRepoUnavailable = errors.New("audit repository is unavailable")
 )
 
 type AuditService struct {
@@ -30,6 +32,19 @@ type AuditListInput struct {
 
 func NewAuditService(auditRepo *repository.AuditRepository) *AuditService {
 	return &AuditService{auditRepo: auditRepo}
+}
+
+func (s *AuditService) CreateAuditLog(log *audit.AuditLog) error {
+	if s == nil || s.auditRepo == nil {
+		return ErrAuditRepoUnavailable
+	}
+	if log == nil {
+		return ErrAuditLogRequired
+	}
+	if log.CreatedAt.IsZero() {
+		log.CreatedAt = time.Now().UTC()
+	}
+	return s.auditRepo.CreateAuditLog(log)
 }
 
 func (s *AuditService) ListAuditLogs(input AuditListInput) ([]audit.AuditLog, int64, error) {
