@@ -77,8 +77,7 @@
         <p v-else-if="productSummaryDescription" class="product-description">{{ productSummaryDescription }}</p>
         <div class="product-meta" aria-live="polite" aria-atomic="true">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
-          <span v-if="displaySKU" class="product-sku">SKU: {{ displaySKU }}</span>
-          <span v-if="product.product_type?.name" class="product-sku">{{ product.product_type.name }}</span>
+          <span v-if="product.product_type?.name" class="product-type-pill">{{ product.product_type.name }}</span>
         </div>
         <div v-if="activeVariants.length" class="product-purchase-panel">
           <div v-if="variantOptionGroups.length" class="variant-option-groups">
@@ -112,14 +111,14 @@
                   >
                     <NuxtImg v-if="option.swatchUrl" :src="option.swatchUrl" :alt="option.label" loading="lazy" format="webp" />
                   </span>
-                  <span>{{ option.label }}</span>
-                  <small v-if="!option.available">Out</small>
+                  <span class="variant-option-button__label">{{ option.label }}</span>
+                  <small v-if="!option.available" class="variant-option-button__status">Out</small>
                 </button>
               </div>
             </fieldset>
           </div>
           <div v-else-if="activeVariants.length > 1" class="product-variants">
-            <label for="variant-select">Choose SKU</label>
+            <label for="variant-select">Choose option</label>
             <select id="variant-select" v-model.number="selectedVariantId">
               <option
                 v-for="variant in activeVariants"
@@ -131,16 +130,63 @@
             </select>
           </div>
 
-          <dl class="selected-sku-facts" aria-live="polite" aria-atomic="true">
-            <div v-if="selectedVariantWeight">
+          <dl v-if="selectedVariantWeight" class="selected-sku-facts" aria-live="polite" aria-atomic="true">
+            <div class="selected-sku-fact-pill">
               <dt>Weight</dt>
               <dd>{{ selectedVariantWeight }}g</dd>
             </div>
-            <div>
-              <dt>Availability</dt>
-              <dd>{{ selectedAvailability === 'in_stock' ? 'Available' : 'Out of stock' }}</dd>
-            </div>
           </dl>
+        </div>
+        <div v-if="productPaymentOptions.length" class="product-payment-selector" aria-label="Payment method">
+          <div class="product-payment-selector__header">
+            <span>{{ t('checkout.steps.payment', 'Choose payment method') }}</span>
+            <small v-if="paymentMethodsLoading">{{ t('common.loading', 'Loading...') }}</small>
+          </div>
+          <div class="product-payment-options">
+            <button
+              v-for="option in productPaymentOptions"
+              :key="productPaymentKey(option)"
+              type="button"
+              class="product-payment-option"
+              :class="{
+                'product-payment-option--selected': selectedProductPaymentMethod === productPaymentMethod(option),
+                'product-payment-option--unavailable': !isProductPaymentAvailable(option),
+              }"
+              :disabled="!isProductPaymentAvailable(option)"
+              :aria-disabled="!isProductPaymentAvailable(option)"
+              :aria-pressed="selectedProductPaymentMethod === productPaymentMethod(option)"
+              @click="selectProductPaymentMethod(productPaymentMethod(option))"
+            >
+              <span class="product-payment-option__logos" aria-hidden="true">
+                <img
+                  v-for="logo in productPaymentLogos(option)"
+                  :key="logo.src"
+                  :src="logo.src"
+                  :alt="logo.alt"
+                  :class="logo.className"
+                  loading="lazy"
+                />
+              </span>
+              <span class="product-payment-option__body">
+                <span class="product-payment-option__title-row">
+                  <span class="product-payment-option__title">{{ productPaymentTitle(option) }}</span>
+                  <small v-if="!isProductPaymentAvailable(option)" class="product-payment-option__status">
+                    {{ productPaymentUnavailableLabel(option) }}
+                  </small>
+                </span>
+                <span class="product-payment-option__description">{{ productPaymentDescription(option) }}</span>
+              </span>
+              <Icon
+                v-if="selectedProductPaymentMethod === productPaymentMethod(option)"
+                name="lucide:check"
+                class="product-payment-option__check"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+          <p v-if="paymentMethodsError" class="product-payment-status">
+            {{ paymentMethodsError }}
+          </p>
         </div>
         <div class="product-actions" aria-label="Product actions">
           <button
@@ -151,33 +197,14 @@
           >
             {{ canAddToCart ? 'Add to cart' : 'Out of stock' }}
           </button>
-
-          <div v-if="productDirectPaymentOptions.length" class="product-direct-pay" aria-label="Express checkout">
-            <button
-              v-for="option in productDirectPaymentOptions"
-              :key="productPaymentKey(option)"
-              type="button"
-              class="product-direct-pay-button"
-              :class="{ 'product-direct-pay-button--unavailable': !isProductPaymentAvailable(option) }"
-              :disabled="!canAddToCart"
-              :aria-disabled="!canAddToCart"
-              :title="productPaymentButtonTitle(option)"
-              @click="checkoutSelectedWithPayment(productPaymentMethod(option))"
-            >
-              <Icon :name="productPaymentIcon(option)" aria-hidden="true" />
-              <span>{{ productPaymentTitle(option) }}</span>
-              <small v-if="!isProductPaymentAvailable(option)">
-                {{ productPaymentUnavailableLabel(option) }}
-              </small>
-            </button>
-          </div>
-
-          <p v-if="paymentMethodsError" class="product-payment-status">
-            {{ paymentMethodsError }}
-          </p>
-          <p v-else-if="paymentMethodsLoading" class="product-payment-status">
-            Loading payment methods...
-          </p>
+          <button
+            type="button"
+            class="product-buy-now-button"
+            :disabled="!canBuyNow"
+            @click="checkoutSelectedWithPayment"
+          >
+            {{ canBuyNow ? t('checkout.product.buyNow', 'Buy now') : productBuyNowUnavailableLabel }}
+          </button>
         </div>
       </div>
     </div>
@@ -220,6 +247,14 @@ import { useCart } from '~/composables/useCart'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
 import type { CheckoutPaymentOption } from '~/types/payment'
+import {
+  isPaymentOptionAvailable,
+  paymentMethodFromOption,
+  paymentPresentation,
+  storefrontPaymentMethodOrder,
+  type PaymentLogoAsset,
+  type StorefrontPaymentMethod,
+} from '~/utils/paymentPresentation'
 
 definePageMeta({
   layout: 'products',
@@ -370,6 +405,7 @@ const route = useRoute()
 const config = useRuntimeConfig()
 const { locale, t } = useI18n()
 const selectedVariantId = ref<number | null>(null)
+const selectedProductPaymentMethod = ref<StorefrontPaymentMethod>('card')
 const { addToCart, openCart, openCheckout } = useCart()
 const { toCartItem } = useShopProducts()
 const { displayCurrency, countryCode } = useStorefrontContext()
@@ -735,10 +771,16 @@ const humanizeSpecSlug = (slug: string) => {
     .replace(/\b\w/g, char => char.toUpperCase())
 }
 
+const hiddenStorefrontSpecSlugs = new Set(['availability', 'sku'])
+
 const variantOptionDefinitions = computed(() => {
   const definitions = product.value?.product_type?.spec_definitions || []
   return definitions
-    .filter((definition) => definition.is_visible !== false && definition.is_variant_option)
+    .filter((definition) => (
+      definition.is_visible !== false
+      && definition.is_variant_option
+      && !hiddenStorefrontSpecSlugs.has(String(definition.slug || '').trim().toLowerCase())
+    ))
     .sort((left, right) => {
       const leftOrder = Number(left.sort_order || 0)
       const rightOrder = Number(right.sort_order || 0)
@@ -761,6 +803,7 @@ const variantOptionSlugs = computed(() => {
   activeVariants.value.forEach((variant) => {
     Object.keys(parseVariantOptions(variant)).forEach((slug) => {
       if (!slug || seen.has(slug)) return
+      if (hiddenStorefrontSpecSlugs.has(String(slug).trim().toLowerCase())) return
       const definition = specDefinitionsBySlug.value.get(slug)
       if (definition?.is_visible === false) return
       seen.add(slug)
@@ -857,14 +900,11 @@ const selectVariantOption = (slug: string, value: string) => {
 const variantLabel = (variant: ProductVariant) => {
   const options = Object.values(parseVariantOptions(variant)).filter(Boolean)
   const optionText = options.join(' / ')
-  const title = variant.title || optionText || variant.sku || 'Option'
+  const title = variant.title || optionText || 'Option'
   const optionLabel = optionText && title !== optionText ? ` · ${optionText}` : ''
-  const skuLabel = variant.sku ? ` · ${variant.sku}` : ''
   const weightLabel = variant.weight_grams ? ` · ${variant.weight_grams}g` : ''
-  return `${title}${optionLabel}${skuLabel}${weightLabel}`
+  return `${title}${optionLabel}${weightLabel}`
 }
-
-const displaySKU = computed(() => selectedVariant.value?.sku || product.value?.sku || '')
 
 const selectedVariantWeight = computed(() => {
   const value = Number(selectedVariant.value?.weight_grams || 0)
@@ -936,7 +976,7 @@ const fallbackProductPaymentOptions = computed<CheckoutPaymentOption[]>(() => [
     id: 'card',
     code: 'card',
     provider: 'stripe',
-    title: 'Stripe',
+    title: 'Credit / Debit cards',
     subtitle: '',
     description: '',
     enabled: true,
@@ -978,19 +1018,9 @@ const fallbackProductPaymentOptions = computed<CheckoutPaymentOption[]>(() => [
   },
 ])
 
-const productPaymentMethod = (option: CheckoutPaymentOption) => {
-  const keys = [option.id, option.code, option.provider]
-    .map(value => String(value || '').trim().toLowerCase())
-    .filter(Boolean)
+const productPaymentMethod = (option: CheckoutPaymentOption) => paymentMethodFromOption(option)
 
-  if (keys.some(key => ['stripe', 'card', 'credit_card', 'credit-card'].includes(key))) return 'card'
-  if (keys.includes('paypal')) return 'paypal'
-  if (keys.includes('alipay')) return 'alipay'
-  if (keys.includes('wechat')) return 'wechat'
-  return keys[0] || ''
-}
-
-const productDirectPaymentOptions = computed(() => {
+const productPaymentOptions = computed(() => {
   const optionsByMethod = new Map<string, CheckoutPaymentOption>(
     fallbackProductPaymentOptions.value.map(option => [productPaymentMethod(option), option]),
   )
@@ -1000,7 +1030,7 @@ const productDirectPaymentOptions = computed(() => {
     if (method) optionsByMethod.set(method, option)
   })
 
-  return ['card', 'paypal', 'alipay', 'wechat']
+  return storefrontPaymentMethodOrder
     .map(method => optionsByMethod.get(method))
     .filter((option): option is CheckoutPaymentOption => Boolean(option))
 })
@@ -1009,46 +1039,60 @@ const productPaymentKey = (option: CheckoutPaymentOption) =>
   `${productPaymentMethod(option)}-${option.id || option.code || option.provider || 'payment'}`
 
 const productPaymentTitle = (option: CheckoutPaymentOption) => {
-  switch (productPaymentMethod(option)) {
-    case 'card': return 'Stripe'
-    case 'paypal': return 'PayPal'
-    case 'alipay': return 'Alipay'
-    case 'wechat': return 'WeChat Pay'
-    default: return option.title || option.code || option.id
-  }
+  const method = productPaymentMethod(option)
+  if (!method) return option.title || option.code || option.id
+  const presentation = paymentPresentation(method)
+  return t(presentation.titleKey, presentation.title)
 }
 
-const productPaymentIcon = (option: CheckoutPaymentOption) => {
-  switch (productPaymentMethod(option)) {
-    case 'paypal': return 'lucide:wallet-cards'
-    case 'alipay': return 'lucide:scan-line'
-    case 'wechat': return 'lucide:qr-code'
-    default: return 'lucide:credit-card'
-  }
+const productPaymentDescription = (option: CheckoutPaymentOption) => {
+  if (option.description) return option.description
+  const method = productPaymentMethod(option)
+  if (!method) return option.subtitle || ''
+  const presentation = paymentPresentation(method)
+  return t(presentation.descriptionKey, presentation.description)
 }
 
-const isProductPaymentAvailable = (option: CheckoutPaymentOption) =>
-  option.enabled !== false && option.available === true
+const productPaymentLogos = (option: CheckoutPaymentOption): PaymentLogoAsset[] => {
+  const method = productPaymentMethod(option)
+  return method ? paymentPresentation(method).logos : [{ src: '/icons/payment/default.svg', alt: productPaymentTitle(option) }]
+}
+
+const isProductPaymentAvailable = isPaymentOptionAvailable
 
 const productPaymentUnavailableLabel = (option: CheckoutPaymentOption) => {
   const reason = String(option.unavailableReason || option.unavailable_reason || '').trim()
   if (reason === 'gateway_not_configured') {
-    return t('checkout.payment.unconfigured', 'Not configured')
+    return t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
   }
   if (reason === 'gateway_config_invalid') {
-    return t('checkout.payment.configInvalid', 'Configuration error')
+    return t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
   }
   if (reason === 'disabled') {
-    return t('checkout.payment.disabled', 'Unavailable')
+    return t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
   }
-  return reason ? reason.replace(/_/g, ' ') : t('checkout.payment.unavailable', 'Unavailable')
+  return reason ? reason.replace(/_/g, ' ') : t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
 }
 
-const productPaymentButtonTitle = (option: CheckoutPaymentOption) => {
-  const title = productPaymentTitle(option)
-  return isProductPaymentAvailable(option)
-    ? `Pay with ${title}`
-    : `${title}: ${productPaymentUnavailableLabel(option)}`
+const selectedProductPaymentOption = computed(() => {
+  return productPaymentOptions.value.find(option => productPaymentMethod(option) === selectedProductPaymentMethod.value) || null
+})
+
+const canBuyNow = computed(() => Boolean(
+  canAddToCart.value
+    && selectedProductPaymentOption.value
+    && isProductPaymentAvailable(selectedProductPaymentOption.value),
+))
+
+const productBuyNowUnavailableLabel = computed(() => {
+  if (!canAddToCart.value) return t('products.detail.outOfStock', 'Out of stock')
+  if (paymentMethodsLoading.value) return t('common.loading', 'Loading...')
+  return t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
+})
+
+const selectProductPaymentMethod = (method: StorefrontPaymentMethod | '') => {
+  if (!method) return
+  selectedProductPaymentMethod.value = method
 }
 
 const formattedPrice = computed(() => {
@@ -1141,6 +1185,15 @@ const loadProductPaymentMethods = () => {
   void loadPaymentMethods(marketCountry)
 }
 
+watch(productPaymentOptions, (options) => {
+  const selectedExists = options.some(option => productPaymentMethod(option) === selectedProductPaymentMethod.value)
+  if (selectedExists) return
+
+  const firstAvailable = options.find(isProductPaymentAvailable) || options[0]
+  const method = firstAvailable ? productPaymentMethod(firstAvailable) : ''
+  if (method) selectedProductPaymentMethod.value = method
+}, { immediate: true })
+
 onMounted(() => {
   document.addEventListener('visibilitychange', handleProductVisibilityChange)
   loadProductPaymentMethods()
@@ -1180,10 +1233,10 @@ const addSelectedToCart = () => {
   }
 }
 
-const checkoutSelectedWithPayment = (paymentMethod: string) => {
+const checkoutSelectedWithPayment = () => {
   const result = addSelectedProductToCart()
-  if (result?.success && paymentMethod) {
-    openCheckout(paymentMethod)
+  if (result?.success && selectedProductPaymentMethod.value) {
+    openCheckout(selectedProductPaymentMethod.value)
   }
 }
 
@@ -1207,6 +1260,7 @@ const specGroups = computed(() => {
   ;(product.value?.spec_values || []).forEach((item) => {
     const definition = item.definition
     if (!definition || definition.is_visible === false) return
+    if (hiddenStorefrontSpecSlugs.has(String(definition.slug || '').trim().toLowerCase())) return
 
     const displayValue = formatSpecValue(item)
     if (!displayValue) return
@@ -1258,7 +1312,6 @@ const productSchema = computed(() => {
     '@type': 'Product',
     name: metaTitle.value,
     description: metaDescription.value,
-    sku: displaySKU.value,
     image: images,
     offers: offers || undefined
   }
@@ -1561,6 +1614,8 @@ useHead(() => {
 }
 
 .product-summary {
+  --product-control-pill-height: 2.125rem;
+  --product-control-pill-radius: 999px;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -1598,8 +1653,21 @@ useHead(() => {
   font-size: 1.15rem;
 }
 
-.product-sku {
+.product-type-pill {
+  display: inline-flex;
+  height: var(--product-control-pill-height);
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--product-control-pill-radius);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--tz-text-secondary);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 0.72rem;
+  white-space: nowrap;
 }
 
 @media (max-width: 767px) {
@@ -1610,17 +1678,17 @@ useHead(() => {
 
 .product-purchase-panel {
   display: grid;
-  gap: 1rem;
-  max-width: 34rem;
+  gap: 1.15rem;
+  max-width: none;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 1.15rem;
 }
 
 .variant-option-groups {
   display: grid;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .variant-option-group {
@@ -1646,30 +1714,56 @@ useHead(() => {
 }
 
 .variant-option-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 6.5rem));
+  gap: 0.45rem;
 }
 
 .variant-option-button {
   display: inline-flex;
-  min-height: 2.5rem;
+  width: 100%;
+  height: var(--product-control-pill-height);
+  min-height: 0;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  gap: 0.35rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 0.55rem;
+  border-radius: var(--product-control-pill-radius);
   background: rgba(255, 255, 255, 0.07);
   color: #f8fafc;
   cursor: pointer;
   font: inherit;
   font-size: 0.92rem;
   font-weight: 700;
-  padding: 0.55rem 0.75rem;
+  line-height: 1.2;
+  box-sizing: border-box;
+  padding: 0 0.7rem;
+  text-align: center;
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  overflow-wrap: anywhere;
+}
+
+.variant-option-button__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variant-option-button__status {
+  display: inline-flex;
+  height: 1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fca5a5;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .variant-option-button--visual {
-  min-width: 5.5rem;
+  min-width: 0;
 }
 
 .variant-option-swatch {
@@ -1711,12 +1805,6 @@ useHead(() => {
   color: rgba(226, 232, 240, 0.68);
 }
 
-.variant-option-button small {
-  color: #fca5a5;
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
 .product-variants label {
   color: var(--tz-text-secondary);
   font-size: 0.85rem;
@@ -1740,50 +1828,217 @@ useHead(() => {
 }
 
 .selected-sku-facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
   margin: 0;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  padding-top: 0.85rem;
+  padding-top: 0.75rem;
 }
 
-.selected-sku-facts div {
+.selected-sku-fact-pill {
+  display: inline-flex;
+  height: var(--product-control-pill-height);
   min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--product-control-pill-radius);
+  background: rgba(255, 255, 255, 0.055);
+  padding: 0 0.78rem;
 }
 
 .selected-sku-facts dt {
   color: rgba(226, 232, 240, 0.62);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .selected-sku-facts dd {
-  margin: 0.2rem 0 0;
+  margin: 0;
   color: #f8fafc;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-weight: 700;
+  line-height: 1;
   overflow-wrap: anywhere;
+}
+
+.product-payment-selector {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.product-payment-selector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.product-payment-selector__header small {
+  color: var(--tz-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.product-payment-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.product-payment-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 4.35rem;
+  align-items: center;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.045);
+  color: #f8fafc;
+  cursor: pointer;
+  padding: 0.75rem;
+  text-align: left;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.product-payment-option:hover:not(:disabled) {
+  border-color: rgba(181, 255, 109, 0.62);
+  background: rgba(181, 255, 109, 0.1);
+  transform: translateY(-1px);
+}
+
+.product-payment-option--selected {
+  border-color: rgba(181, 255, 109, 0.82);
+  background: rgba(181, 255, 109, 0.14);
+}
+
+.product-payment-option--unavailable {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.product-payment-option__logos {
+  display: inline-flex;
+  min-width: 3.1rem;
+  max-width: 4.9rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.18rem;
+}
+
+.product-payment-option__logos img {
+  display: block;
+  width: auto;
+  max-width: 2.35rem;
+  height: 1rem;
+  object-fit: contain;
+}
+
+.product-payment-option__logos img.payment-logo--alipay {
+  max-width: 2.75rem;
+}
+
+.product-payment-option__body {
+  display: grid;
+  min-width: 0;
+  gap: 0.24rem;
+}
+
+.product-payment-option__title-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.product-payment-option__title {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-payment-option__status {
+  display: inline-flex;
+  height: 1rem;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #fde68a;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 0.34rem;
+  white-space: nowrap;
+}
+
+.product-payment-option__description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--tz-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.product-payment-option__check {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: #b5ff6d;
 }
 
 .product-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
+}
+
+.product-add-button,
+.product-buy-now-button {
+  display: inline-flex;
+  height: var(--product-control-pill-height);
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--product-control-pill-radius);
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 1.05rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .product-add-button {
-  min-height: 2.25rem;
-  width: fit-content;
-  border: 0;
-  border-radius: 999px;
   background: #b5ff6d;
   color: #06111f;
-  cursor: pointer;
-  font-weight: 800;
-  padding: 0.42rem 1rem;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.product-buy-now-button {
+  border: 1px solid rgba(181, 255, 109, 0.55);
+  background: rgba(181, 255, 109, 0.12);
+  color: #eaffd0;
 }
 
 .product-add-button:hover:not(:disabled) {
@@ -1792,57 +2047,15 @@ useHead(() => {
   transform: translateY(-1px);
 }
 
+.product-buy-now-button:hover:not(:disabled) {
+  border-color: rgba(181, 255, 109, 0.82);
+  background: rgba(181, 255, 109, 0.18);
+  transform: translateY(-1px);
+}
+
 .product-add-button:active:not(:disabled),
-.product-direct-pay-button:active:not(:disabled) {
+.product-buy-now-button:active:not(:disabled) {
   transform: translateY(1px);
-}
-
-.product-direct-pay {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.product-direct-pay-button {
-  display: inline-flex;
-  min-height: 2.25rem;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.055);
-  color: #f8fafc;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 700;
-  padding: 0.42rem 0.75rem;
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.product-direct-pay-button:hover:not(:disabled) {
-  border-color: rgba(181, 255, 109, 0.7);
-  background: rgba(181, 255, 109, 0.1);
-}
-
-.product-direct-pay-button > svg {
-  width: 0.95rem;
-  height: 0.95rem;
-}
-
-.product-direct-pay-button small {
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 0.64rem;
-  font-weight: 600;
-}
-
-.product-direct-pay-button--unavailable {
-  border-color: rgba(255, 255, 255, 0.1);
-  color: rgba(248, 250, 252, 0.72);
-}
-
-.product-direct-pay-button--unavailable:hover:not(:disabled) {
-  border-color: rgba(245, 158, 11, 0.55);
-  background: rgba(245, 158, 11, 0.08);
 }
 
 .product-payment-status {
@@ -1855,17 +2068,25 @@ useHead(() => {
 .variant-option-button:focus-visible,
 .product-variants select:focus-visible,
 .product-add-button:focus-visible,
-.product-direct-pay-button:focus-visible {
+.product-buy-now-button:focus-visible,
+.product-payment-option:focus-visible {
   outline: 2px solid #b5ff6d;
   outline-offset: 3px;
 }
 
-.product-add-button:disabled {
+.product-add-button:disabled,
+.product-buy-now-button:disabled {
   border: 1px solid rgba(148, 163, 184, 0.24);
   background: rgba(148, 163, 184, 0.16);
   color: var(--tz-text-secondary);
   cursor: not-allowed;
   opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .product-payment-options {
+    grid-template-columns: 1fr;
+  }
 }
 
 .product-specs h2 {
