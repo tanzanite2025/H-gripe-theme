@@ -61,8 +61,15 @@
                       :aria-disabled="!isPaymentOptionAvailable(option)"
                       @click="selectPaymentOption(option)"
                     >
-                      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] text-white/75">
-                        <Icon :name="paymentIcon(option.id)" class="h-4 w-4" />
+                      <span class="checkout-payment-logos" aria-hidden="true">
+                        <img
+                          v-for="logo in paymentLogos(option)"
+                          :key="logo.src"
+                          :src="logo.src"
+                          :alt="logo.alt"
+                          :class="logo.className"
+                          loading="lazy"
+                        />
                       </span>
                       <span class="min-w-0 flex-1">
                         <span class="flex flex-wrap items-center gap-2 text-sm font-semibold">
@@ -220,7 +227,7 @@
                   {{ isSubmitting ? t('checkout.common.processing', 'Processing...') : paymentCtaLabel }}
                 </button>
                 <p v-if="!selectedPaymentAvailable" class="text-center text-xs text-white/45">
-                  {{ t('checkout.modal.messages.paymentUnavailable', 'This payment method is not configured yet.') }}
+                  {{ t('checkout.modal.messages.paymentUnavailable', 'This payment method is temporarily unavailable.') }}
                 </p>
               </aside>
             </div>
@@ -246,6 +253,13 @@ import { useWeChatPayment, type WeChatPaymentSession } from '~/composables/useWe
 import { useShippingValidation } from '~/composables/useShippingValidation'
 import type { StripeConfirmationResult, StripePaymentSession } from '~/composables/useStripePayment'
 import type { CheckoutPaymentOption } from '~/types/payment'
+import {
+  isPaymentOptionAvailable,
+  normalizeStorefrontPaymentMethod,
+  paymentMethodFromOption,
+  paymentPresentation,
+  type PaymentLogoAsset,
+} from '~/utils/paymentPresentation'
 import StripePaymentElement from '~/components/StripePaymentElement.vue'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
@@ -301,10 +315,7 @@ const checkoutQuote = ref<CheckoutQuote | null>(null)
 let quoteTimer: ReturnType<typeof setTimeout> | null = null
 
 const normalizeCheckoutPaymentMethod = (value?: string | null) => {
-  const method = String(value || '').trim().toLowerCase()
-  if (['stripe', 'credit_card', 'credit-card'].includes(method)) return 'card'
-  if (['card', 'paypal', 'alipay', 'wechat'].includes(method)) return method
-  return ''
+  return normalizeStorefrontPaymentMethod(value)
 }
 
 const form = ref({
@@ -318,7 +329,7 @@ const form = ref({
 })
 
 const fallbackPaymentOptions = computed<CheckoutPaymentOption[]>(() => [
-  { id: 'card', code: 'card', provider: 'stripe', title: 'Credit / Debit Card', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
+  { id: 'card', code: 'card', provider: 'stripe', title: 'Credit / Debit cards', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
   { id: 'paypal', code: 'paypal', provider: 'paypal', title: 'PayPal', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
   { id: 'alipay', code: 'alipay', provider: 'alipay', title: 'Alipay', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
   { id: 'wechat', code: 'wechat', provider: 'wechat', title: 'WeChat Pay', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
@@ -390,59 +401,43 @@ const canSubmit = computed(() =>
 )
 
 const paymentCtaLabel = computed(() => {
-  switch (selectedMethod.value) {
-    case 'paypal': return t('checkout.payment.paypal.cta', 'Continue to PayPal')
-    case 'alipay': return t('checkout.payment.alipay.cta', 'Continue to Alipay')
-    case 'wechat': return t('checkout.payment.wechat.cta', 'Continue to WeChat Pay')
-    default: return t('checkout.payment.card.cta', 'Continue to secure payment')
-  }
+  const method = normalizeCheckoutPaymentMethod(selectedMethod.value) || 'card'
+  const presentation = paymentPresentation(method)
+  return t(presentation.ctaKey, presentation.cta)
 })
 
 const paymentTitle = (option: CheckoutPaymentOption) => {
-  switch (option.id) {
-    case 'card': return t('checkout.payment.card.title', option.title || 'Credit / Debit Card')
-    case 'paypal': return t('checkout.payment.paypal.optionTitle', option.title || 'PayPal')
-    case 'alipay': return t('checkout.payment.alipay.optionTitle', option.title || 'Alipay')
-    case 'wechat': return t('checkout.payment.wechat.optionTitle', option.title || 'WeChat Pay')
-    default: return option.title || option.code || option.id
-  }
+  const method = paymentMethodFromOption(option)
+  if (!method) return option.title || option.code || option.id
+  const presentation = paymentPresentation(method)
+  return t(presentation.titleKey, presentation.title)
 }
 
 const paymentDescription = (option: CheckoutPaymentOption) => {
   if (option.description) return option.description
-  switch (option.id) {
-    case 'card': return t('checkout.payment.card.description', 'Secure card checkout powered by Stripe.')
-    case 'paypal': return t('checkout.payment.paypal.description', 'Pay securely with PayPal.')
-    case 'alipay': return t('checkout.payment.alipay.description', 'Pay securely with Alipay.')
-    case 'wechat': return t('checkout.payment.wechat.description', 'Scan a WeChat Pay QR code to pay.')
-    default: return option.subtitle || ''
-  }
+  const method = paymentMethodFromOption(option)
+  if (!method) return option.subtitle || ''
+  const presentation = paymentPresentation(method)
+  return t(presentation.descriptionKey, presentation.description)
 }
 
-const paymentIcon = (id: string) => {
-  switch (id) {
-    case 'paypal': return 'lucide:wallet-cards'
-    case 'alipay': return 'lucide:scan-line'
-    case 'wechat': return 'lucide:qr-code'
-    default: return 'lucide:credit-card'
-  }
+const paymentLogos = (option: CheckoutPaymentOption): PaymentLogoAsset[] => {
+  const method = paymentMethodFromOption(option)
+  return method ? paymentPresentation(method).logos : [{ src: '/icons/payment/default.svg', alt: paymentTitle(option) }]
 }
-
-const isPaymentOptionAvailable = (option: CheckoutPaymentOption) =>
-  option.enabled !== false && option.available === true
 
 const unavailableLabel = (option: CheckoutPaymentOption) => {
   const reason = String(option.unavailableReason || option.unavailable_reason || '').trim()
   if (reason === 'gateway_not_configured') {
-    return t('checkout.payment.unconfigured', 'Not configured')
+    return t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
   }
   if (reason === 'gateway_config_invalid') {
-    return t('checkout.payment.configInvalid', 'Configuration error')
+    return t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
   }
   if (reason === 'disabled') {
-    return t('checkout.payment.disabled', 'Unavailable')
+    return t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
   }
-  return reason ? reason.replace(/_/g, ' ') : t('checkout.payment.unavailable', 'Unavailable')
+  return reason ? reason.replace(/_/g, ' ') : t('checkout.payment.temporarilyUnavailable', 'Temporarily unavailable')
 }
 
 const paymentOptionClass = (option: CheckoutPaymentOption) => {
@@ -724,6 +719,28 @@ onBeforeUnmount(() => {
 .checkout-input option {
   background: #151719;
   color: #f8fafc;
+}
+
+.checkout-payment-logos {
+  display: inline-flex;
+  min-width: 3.25rem;
+  max-width: 4.9rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.18rem;
+}
+
+.checkout-payment-logos img {
+  display: block;
+  width: auto;
+  max-width: 2.35rem;
+  height: 1rem;
+  object-fit: contain;
+}
+
+.checkout-payment-logos img.payment-logo--alipay {
+  max-width: 2.75rem;
 }
 
 .fade-enter-active,

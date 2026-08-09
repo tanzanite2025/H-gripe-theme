@@ -115,7 +115,6 @@ const paymentIcons: PaymentIcon[] = [
   { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay' },
   { src: '/icons/payment/applepay.svg?v=7', alt: 'Apple Pay' },
   { src: '/icons/payment/googlepay.svg', alt: 'Google Pay' },
-  { src: '/icons/payment/stripe.svg', alt: 'Stripe' },
   { src: '/icons/payment/default.svg', alt: 'Card Payment' },
 ]
 </script>
