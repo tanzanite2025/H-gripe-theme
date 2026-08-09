@@ -45,7 +45,8 @@ const (
 	StorageTypeS3    StorageType = "s3"
 	StorageTypeOSS   StorageType = "oss"
 
-	localDirPerm os.FileMode = 0o750
+	localDirPerm  os.FileMode = 0o755
+	localFilePerm os.FileMode = 0o644
 )
 
 // Config 存储配置
@@ -82,8 +83,7 @@ func NewStorageService(config *Config) (StorageService, error) {
 
 // newLocalStorage 创建本地存储
 func newLocalStorage(config *Config) (StorageService, error) {
-	// 确保上传目录存在
-	if err := os.MkdirAll(config.LocalPath, localDirPerm); err != nil {
+	if err := ensureLocalDirectory(config.LocalPath, config.LocalPath); err != nil {
 		return nil, fmt.Errorf("failed to create upload directory: %w", err)
 	}
 
@@ -110,13 +110,12 @@ func (s *localStorage) Upload(ctx context.Context, file *multipart.FileHeader) (
 		return "", err
 	}
 	destDir := filepath.Dir(destPath)
-	if err := os.MkdirAll(destDir, localDirPerm); err != nil {
+	if err := ensureLocalDirectory(s.config.LocalPath, destDir); err != nil {
 		return "", fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	// 创建目标文件
 	// #nosec G304 -- destPath is constrained to the configured upload root by localPath.
-	dest, err := os.Create(destPath)
+	dest, err := createLocalUploadFile(destPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
@@ -142,13 +141,12 @@ func (s *localStorage) UploadFromReader(ctx context.Context, reader io.Reader, f
 		return "", err
 	}
 	destDir := filepath.Dir(destPath)
-	if err := os.MkdirAll(destDir, localDirPerm); err != nil {
+	if err := ensureLocalDirectory(s.config.LocalPath, destDir); err != nil {
 		return "", fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	// 创建目标文件
 	// #nosec G304 -- destPath is constrained to the configured upload root by localPath.
-	dest, err := os.Create(destPath)
+	dest, err := createLocalUploadFile(destPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
@@ -257,6 +255,60 @@ func (s *localStorage) localPath(name string) (string, error) {
 	}
 
 	return target, nil
+}
+
+func ensureLocalDirectory(root, dir string) error {
+	if err := os.MkdirAll(dir, localDirPerm); err != nil {
+		return err
+	}
+
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute upload path: %w", err)
+	}
+	dirAbs, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute directory path: %w", err)
+	}
+
+	rel, err := filepath.Rel(rootAbs, dirAbs)
+	if err != nil {
+		return fmt.Errorf("failed to validate directory path: %w", err)
+	}
+	parentPrefix := ".." + string(os.PathSeparator)
+	if rel == ".." || strings.HasPrefix(rel, parentPrefix) || filepath.IsAbs(rel) {
+		return fmt.Errorf("invalid directory path: outside upload directory")
+	}
+
+	current := rootAbs
+	if err := os.Chmod(current, localDirPerm); err != nil {
+		return err
+	}
+	if rel == "." {
+		return nil
+	}
+	for _, part := range strings.Split(rel, string(os.PathSeparator)) {
+		if part == "" || part == "." {
+			continue
+		}
+		current = filepath.Join(current, part)
+		if err := os.Chmod(current, localDirPerm); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createLocalUploadFile(destPath string) (*os.File, error) {
+	file, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, localFilePerm)
+	if err != nil {
+		return nil, err
+	}
+	if err := file.Chmod(localFilePerm); err != nil {
+		_ = file.Close()
+		return nil, err
+	}
+	return file, nil
 }
 
 // generateFilename 生成唯一文件名
