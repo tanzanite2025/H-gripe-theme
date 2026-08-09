@@ -107,7 +107,7 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 		if input.Currency == "" {
 			input.Currency = expectedCurrency
 		} else if input.Currency != expectedCurrency {
-			return fmt.Errorf("payment currency %s does not match order currency %s", input.Currency, expectedCurrency)
+			return fmt.Errorf("transaction currency %s does not match order currency %s", input.Currency, expectedCurrency)
 		}
 		if input.Amount > 0 && math.Abs(o.TotalAmount-input.Amount) >= gatewayPaymentAmountTolerance {
 			return fmt.Errorf("payment amount %.2f does not match order total %.2f", input.Amount, o.TotalAmount)

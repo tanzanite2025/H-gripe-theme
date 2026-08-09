@@ -78,6 +78,7 @@ export const defaultShippingTemplateForm = () => ({
   free_shipping: false,
   free_threshold: 0,
   default_fee: 0,
+  display_price_snapshots: {},
   description: '',
   enabled: true,
   rules: [],

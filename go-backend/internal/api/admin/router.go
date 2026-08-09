@@ -37,6 +37,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	userHandler := NewUserHandler(userService)
 	customerHandler := NewCustomerHandler(userService)
 	productHandler := NewProductHandler(productService)
+	productInformationTemplateHandler := NewProductInformationTemplateHandler(services.ProductInformationTemplate)
 	mediaHandler := NewMediaHandler(services.Media)
 	orderHandler := NewOrderHandler(orderService)
 	paymentHandler := NewPaymentHandler(paymentService, services.AdminSettings)
@@ -64,6 +65,10 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	commercialCrawlerHandler := NewCommercialCrawlerProtectionHandler(orderService)
 	currencyPolicyHandler := NewCurrencyPolicyHandler(services.CurrencyPolicy)
 	currencyPolicyHandler.ConfigureAuditService(services.Audit)
+	exchangeRateHandler := NewExchangeRateHandler(services.ExchangeRate)
+	exchangeRateHandler.ConfigureAuditService(services.Audit)
+	storefrontMarketHandler := NewStorefrontMarketHandler(services.StorefrontMarket)
+	storefrontMarketHandler.ConfigureAuditService(services.Audit)
 	googleMerchantHandler := NewGoogleMerchantHandler(services.GoogleMerchant, cfg.GoogleMerchant.PostConnectURL)
 	publicChatAgentHandler := NewPublicChatAgentHandler(services.AdminPublicChat)
 	auditHandler := NewAuditHandler(services.Audit)
@@ -91,6 +96,20 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		authenticated := admin.Group("")
 		authenticated.Use(middleware.AuthMiddleware(authService), middleware.RequireBackofficeAccess())
 		{
+			storefrontGroup := authenticated.Group("/storefront")
+			storefrontGroup.Use(middleware.RequirePermission(auth.PermSettingsView))
+			{
+				marketGroup := storefrontGroup.Group("/markets")
+				{
+					marketGroup.GET("", storefrontMarketHandler.ListMarkets)
+					marketGroup.GET("/options", storefrontMarketHandler.GetOptions)
+					marketGroup.GET("/:id", storefrontMarketHandler.GetMarket)
+					marketGroup.POST("", middleware.RequirePermission(auth.PermSettingsEdit), storefrontMarketHandler.CreateMarket)
+					marketGroup.PUT("/:id", middleware.RequirePermission(auth.PermSettingsEdit), storefrontMarketHandler.UpdateMarket)
+					marketGroup.DELETE("/:id", middleware.RequirePermission(auth.PermSettingsEdit), storefrontMarketHandler.DeleteMarket)
+				}
+			}
+
 			// 认证相关
 			authGroup := authenticated.Group("/auth")
 			{
@@ -153,6 +172,16 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProduct)
 				productsGroup.POST("/batch-status", middleware.RequirePermission(auth.PermProductEdit), productHandler.BatchUpdateStatus)
 				productsGroup.POST("/batch-delete", middleware.RequirePermission(auth.PermProductDelete), productHandler.BatchDelete)
+			}
+
+			productInformationTemplatesGroup := authenticated.Group("/product-information-templates")
+			productInformationTemplatesGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				productInformationTemplatesGroup.GET("", productInformationTemplateHandler.List)
+				productInformationTemplatesGroup.GET("/:id", productInformationTemplateHandler.Get)
+				productInformationTemplatesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productInformationTemplateHandler.Create)
+				productInformationTemplatesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productInformationTemplateHandler.Update)
+				productInformationTemplatesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productInformationTemplateHandler.Delete)
 			}
 
 			googleMerchantGroup := authenticated.Group("/google-merchant")
@@ -456,6 +485,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				}
 			}
 
+			// 后台定价辅助（商品、运费和设置编辑均可使用）
+			pricingGroup := authenticated.Group("/pricing")
+			pricingGroup.Use(middleware.RequireAnyPermission(auth.PermSettingsEdit, auth.PermProductEdit, auth.PermShippingEdit))
+			{
+				pricingGroup.POST("/exchange-rates/convert", exchangeRateHandler.ConvertDisplayPrices)
+			}
+
 			// 设置管理（需要设置管理权限）
 			settingsGroup := authenticated.Group("/settings")
 			settingsGroup.Use(middleware.RequirePermission(auth.PermSettingsView))
@@ -474,6 +510,9 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				settingsGroup.POST("/payment-runtime/:provider/callback-check", middleware.RequirePermission(auth.PermSettingsEdit), paymentHandler.CheckGatewayCallback)
 				settingsGroup.GET("/currency-policy", currencyPolicyHandler.GetPolicy)
 				settingsGroup.PUT("/currency-policy", middleware.RequirePermission(auth.PermSettingsEdit), currencyPolicyHandler.UpdatePolicy)
+				settingsGroup.GET("/exchange-rates", exchangeRateHandler.GetExchangeRates)
+				settingsGroup.POST("/exchange-rates/sync", middleware.RequirePermission(auth.PermSettingsEdit), exchangeRateHandler.SyncExchangeRates)
+				settingsGroup.POST("/exchange-rates/convert", middleware.RequirePermission(auth.PermSettingsEdit), exchangeRateHandler.ConvertDisplayPrices)
 				settingsGroup.PUT("/payment-gateways/:provider", middleware.RequirePermission(auth.PermSettingsEdit), paymentHandler.UpsertGatewayConfig)
 				settingsGroup.DELETE("/payment-gateways/:provider", middleware.RequirePermission(auth.PermSettingsEdit), paymentHandler.DeleteGatewayConfig)
 				settingsGroup.GET("/payment-methods", paymentHandler.ListPaymentMethods)

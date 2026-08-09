@@ -54,16 +54,20 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { BarChart3, LoaderCircle } from '@lucide/vue'
+import type { CustomerRegionAnalytics, RegionAnalyticsRow } from './customerServiceTypes'
 
-const props = defineProps({
-  analytics: { type: Object, default: null },
-  loading: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  analytics?: CustomerRegionAnalytics | null
+  loading?: boolean
+}>(), {
+  analytics: null,
+  loading: false,
 })
 
-const regionRows = computed(() => props.analytics?.regions || [])
+const regionRows = computed<RegionAnalyticsRow[]>(() => props.analytics?.regions || [])
 
 const todayLocalDate = () => {
   const now = new Date()

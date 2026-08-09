@@ -62,6 +62,10 @@
       :product-type-select-value="productTypeSelectValue"
       :shipping-template-select-value="shippingTemplateSelectValue"
       :shipping-templates="shippingTemplates"
+      :after-sales-template-select-value="afterSalesTemplateSelectValue"
+      :packaging-template-select-value="packagingTemplateSelectValue"
+      :after-sales-templates="afterSalesTemplates"
+      :packaging-templates="packagingTemplates"
       :template-scoped-values-touched="templateScopedValuesTouched"
       :uploading-media="uploadingMedia"
       :parse-spec-options="parseSpecOptions"
@@ -73,6 +77,7 @@
       @clear-error="clearFieldError"
       @product-type-select="handleProductTypeSelect"
       @product-shipping-template-select="setProductShippingTemplate"
+      @product-information-template-select="setProductInformationTemplate"
       @set-spec-select-value="setSpecSelectValue"
       @add-variant="addVariant"
       @remove-variant="removeVariant"
@@ -96,7 +101,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -114,7 +119,7 @@ import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.vue'
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
-import productApi from '@/api/products'
+import productApi, { productInformationTemplateApi } from '@/api/products'
 import shippingApi from '@/api/shipping'
 import { useProductCatalog } from '@/composables/product/useProductCatalog'
 import { useProductEditor } from '@/composables/product/useProductEditor'
@@ -124,7 +129,30 @@ import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
-const shippingTemplates = ref([])
+interface ProductInformationTemplateRecord {
+  id: number
+  kind: 'after_sales' | 'packaging'
+  name: string
+  slug?: string
+  locale?: string
+  is_enabled?: boolean
+}
+
+type AdminProductRecord = Record<string, any>
+
+interface ConfirmationState {
+  open: boolean
+  type: '' | 'status' | 'delete' | 'batch-status' | 'batch-delete'
+  target: AdminProductRecord | AdminProductRecord[] | null
+  status: string
+  title: string
+  description: string
+  confirmLabel: string
+  destructive: boolean
+}
+
+const shippingTemplates = ref<any[]>([])
+const informationTemplates = ref<ProductInformationTemplateRecord[]>([])
 const supportedLanguages = useSupportedLanguages()
 const languageOptions = supportedLanguages.languageOptions
 const {
@@ -160,6 +188,8 @@ const {
   defaultVariantIndex,
   productTypeSelectValue,
   shippingTemplateSelectValue,
+  afterSalesTemplateSelectValue,
+  packagingTemplateSelectValue,
   templateScopedValuesTouched,
   parseSpecOptions,
   formatSpecOption,
@@ -167,6 +197,7 @@ const {
   specSelectValue,
   setSpecSelectValue,
   setProductShippingTemplate,
+  setProductInformationTemplate,
   clearFieldError,
   addMediaUrl,
   handleMediaUpload,
@@ -192,7 +223,22 @@ const fetchShippingTemplates = async () => {
   }
 }
 
-const confirmation = reactive({
+const afterSalesTemplates = computed(() => informationTemplates.value.filter((item) =>
+  item.kind === 'after_sales' && (item.is_enabled !== false || item.id === productForm.after_sales_template_id)
+))
+const packagingTemplates = computed(() => informationTemplates.value.filter((item) =>
+  item.kind === 'packaging' && (item.is_enabled !== false || item.id === productForm.packaging_template_id)
+))
+
+const fetchInformationTemplates = async () => {
+  try {
+    informationTemplates.value = await productInformationTemplateApi.list({ include_disabled: true })
+  } catch (error) {
+    console.error('Failed to fetch product information templates:', error)
+  }
+}
+
+const confirmation = reactive<ConfirmationState>({
   open: false,
   type: '',
   target: null,
@@ -223,13 +269,13 @@ const statItems = computed(() => [
   { key: 'out-of-stock', label: '缺货商品', value: stats.value.out_of_stock || 0, icon: PackageOpen, tone: 'coral' }
 ])
 
-const hasPermission = (permission) => authStore.hasPermission(permission)
-const openGoogleSync = (product) => {
+const hasPermission = (permission: string) => authStore.hasPermission(permission)
+const openGoogleSync = (product: AdminProductRecord) => {
   if (!hasPermission('merchant:edit')) return
   router.push({ name: 'GoogleMerchant', query: { product_id: product.id } })
 }
 
-const setConfirmation = (values) => Object.assign(confirmation, {
+const setConfirmation = (values: Partial<ConfirmationState>) => Object.assign(confirmation, {
   open: true,
   type: '',
   target: null,
@@ -238,7 +284,7 @@ const setConfirmation = (values) => Object.assign(confirmation, {
   destructive: false,
   ...values
 })
-const requestToggleStatus = (product) => {
+const requestToggleStatus = (product: AdminProductRecord) => {
   const status = product.status === 'active' ? 'inactive' : 'active'
   const action = status === 'active' ? '上架' : '下架'
   setConfirmation({
@@ -246,11 +292,11 @@ const requestToggleStatus = (product) => {
     description: `商品“${product.name}”将被${action}。`, confirmLabel: action
   })
 }
-const requestDelete = (product) => setConfirmation({
+const requestDelete = (product: AdminProductRecord) => setConfirmation({
   type: 'delete', target: product, title: '删除商品？',
   description: `商品“${product.name}”将被永久删除，此操作不可恢复。`, confirmLabel: '删除', destructive: true
 })
-const requestBatchStatus = (status) => {
+const requestBatchStatus = (status: string) => {
   const action = status === 'active' ? '上架' : '下架'
   setConfirmation({
     type: 'batch-status', target: [...selectedProducts.value], status, title: `批量${action}商品？`,
@@ -266,15 +312,19 @@ const executeConfirmedAction = async () => {
   confirmation.open = false
   try {
     if (type === 'status') {
+      if (!target || Array.isArray(target)) return
       await productApi.updateStatus(target.id, status)
       toast.success(status === 'active' ? '商品已上架' : '商品已下架')
     } else if (type === 'delete') {
+      if (!target || Array.isArray(target)) return
       await productApi.deleteProduct(target.id)
       toast.success('商品已删除')
     } else if (type === 'batch-status') {
+      if (!Array.isArray(target)) return
       await productApi.batchUpdateStatus(target.map((product) => product.id), status)
       toast.success(status === 'active' ? '商品已批量上架' : '商品已批量下架')
     } else if (type === 'batch-delete') {
+      if (!Array.isArray(target)) return
       await productApi.batchDelete(target.map((product) => product.id))
       toast.success('商品已批量删除')
     }
@@ -288,6 +338,7 @@ onMounted(() => Promise.all([
   supportedLanguages.fetchLanguages(),
   fetchProductTypes(),
   fetchShippingTemplates(),
+  fetchInformationTemplates(),
   fetchStats(),
   fetchProducts()
 ]))

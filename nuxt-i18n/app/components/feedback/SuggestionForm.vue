@@ -196,7 +196,7 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useSuggestionFeedback } from '~/composables/useSuggestionFeedback'
-import { getCountryName } from '~/data/countries'
+import { COUNTRIES, getCountryName } from '~/data/countries'
 
 const props = withDefaults(
   defineProps<{
@@ -247,12 +247,15 @@ const form = reactive({
   attachments: [] as File[],
 })
 
-const countryOptions = computed(() => [
-  { value: 'us', label: getCountryName('US', locale.value) },
-  { value: 'cn', label: getCountryName('CN', locale.value) },
-  { value: 'ca', label: getCountryName('CA', locale.value) },
-  { value: 'de', label: getCountryName('DE', locale.value) },
-])
+const countryOptions = computed(() => {
+  const localeCode = locale.value.replace('_', '-')
+  return COUNTRIES
+    .map((country) => ({
+      value: country.code,
+      label: getCountryName(country.code, locale.value),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, localeCode))
+})
 
 const productCategories = computed(() => [
   { value: 'mtb', label: t('feedbackForm.productCategories.mtb') },
@@ -398,10 +401,11 @@ const resetForm = () => {
 
 <style scoped>
 .feedback-card {
-  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(2, 6, 23, 0.98));
-  border-radius: 24px;
+  background: var(--tz-card-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
   padding: 1.5rem;
-  box-shadow: 0 18px 35px -22px rgba(0, 0, 0, 0.95);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
   position: relative;
   overflow: hidden;
 }
@@ -411,7 +415,7 @@ const resetForm = () => {
   flex-direction: column;
   gap: 1rem;
   padding-bottom: 1.1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 @media (min-width: 768px) {
@@ -426,7 +430,7 @@ const resetForm = () => {
   font-size: 0.85rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(129, 140, 248, 0.9);
+  color: var(--tz-text-muted);
   margin-bottom: 0.5rem;
 }
 
@@ -434,7 +438,7 @@ const resetForm = () => {
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   margin: 0 0 0.25rem;
 }
 
@@ -447,10 +451,11 @@ const resetForm = () => {
   display: grid;
   grid-template-columns: repeat(2, minmax(120px, 1fr));
   gap: 0.75rem;
-  background: rgba(2, 6, 23, 0.85);
-  border-radius: 16px;
+  background: var(--tz-form-panel-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
   padding: 0.85rem;
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.65);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.32);
 }
 
 .feedback-card__stat-label {
@@ -463,7 +468,7 @@ const resetForm = () => {
   font-size: var(--tz-type-card-title);
   line-height: 1.35;
   font-weight: 600;
-  color: #e0e7ff;
+  color: var(--tz-text-primary);
   margin: 0;
 }
 
@@ -485,29 +490,30 @@ const resetForm = () => {
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.95rem;
-  color: #e2e8f0;
+  color: var(--tz-text-secondary);
 }
 
 .feedback-form__field input,
 .feedback-form__field select,
 .feedback-form__field textarea {
-  background: radial-gradient(circle at top left, rgba(14, 20, 40, 0.92), rgba(2, 6, 23, 0.95));
-  border: none;
-  border-radius: 14px;
+  background: var(--tz-form-control-surface);
+  border: 1px solid var(--tz-form-control-border);
+  border-radius: 12px;
   padding: 0.85rem 1rem;
-  color: #f1f5f9;
+  color: var(--tz-text-primary);
   font-size: 0.95rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 14px -12px rgba(0, 0, 0, 0.95);
-  transition: box-shadow 0.2s ease;
+  box-shadow: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .feedback-form__field input:focus,
 .feedback-form__field select:focus,
 .feedback-form__field textarea:focus {
   outline: none;
+  border-color: var(--tz-form-control-focus-border);
   box-shadow:
-    inset 0 0 0 1px rgba(99, 102, 241, 0.65),
-    0 0 18px rgba(99, 102, 241, 0.35);
+    0 0 0 1px var(--tz-form-control-focus-ring),
+    0 0 18px rgba(255, 255, 255, 0.08);
 }
 
 .feedback-form__field textarea {
@@ -537,47 +543,49 @@ const resetForm = () => {
 .feedback-pill {
   padding: 0.45rem 1rem;
   border-radius: 9999px;
-  border: none;
-  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.92));
-  color: rgba(226, 232, 240, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--tz-form-panel-surface);
+  color: var(--tz-text-secondary);
   font-size: 0.85rem;
-  box-shadow: 0 4px 8px -6px rgba(0, 0, 0, 0.95);
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  box-shadow: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .feedback-pill--active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.38), rgba(14, 165, 233, 0.35));
-  color: #f0f9ff;
+  background: rgba(181, 255, 109, 0.1);
+  border-color: var(--tz-brand-primary);
+  color: var(--tz-brand-primary);
   transform: translateY(-1px);
 }
 
 .feedback-pill:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.55);
+  box-shadow: 0 0 0 2px var(--tz-form-control-focus-ring);
 }
 
 .feedback-form__tag {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(248, 250, 252, 0.9);
-  background: rgba(77, 124, 15, 0.35);
+  color: var(--tz-brand-primary);
+  background: rgba(181, 255, 109, 0.08);
+  border: 1px solid rgba(181, 255, 109, 0.42);
   border-radius: 9999px;
   padding: 0.15rem 0.75rem;
 }
 
 .feedback-upload {
-  border: none;
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   padding: 1.25rem;
-  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.92));
+  background: var(--tz-form-panel-surface);
   color: var(--tz-text-secondary);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 14px 24px -18px rgba(0, 0, 0, 0.95);
+  box-shadow: none;
 }
 
 .feedback-upload__input {
@@ -615,25 +623,25 @@ const resetForm = () => {
 .feedback-upload__auth-cta {
   margin-top: 0.65rem;
   width: 100%;
-  border-radius: 14px;
-  border: 1px solid rgba(15, 23, 42, 0.85);
-  background: #fff;
-  color: #0b1120;
+  border-radius: 12px;
+  border: 1px solid var(--tz-brand-primary);
+  background: var(--tz-brand-primary);
+  color: #050505;
   font-size: 0.9rem;
   font-weight: 600;
   padding: 0.55rem 1rem;
-  box-shadow: 0 6px 18px -12px rgba(0, 0, 0, 1), 0 0 8px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .feedback-upload__auth-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 1), 0 0 10px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 2px rgba(181, 255, 109, 0.16);
 }
 
 .feedback-upload__auth-cta:active {
   transform: translateY(0);
-  box-shadow: 0 4px 14px -10px rgba(0, 0, 0, 1);
+  box-shadow: none;
 }
 
 .feedback-form__consent {
@@ -656,11 +664,11 @@ const resetForm = () => {
 }
 
 .feedback-form__submit {
-  background: linear-gradient(135deg, #22d3ee, #818cf8);
-  border: none;
+  background: var(--tz-brand-primary);
+  border: 1px solid var(--tz-brand-primary);
   border-radius: 9999px;
   padding: 0.32rem 1.6rem;
-  color: #020617;
+  color: #050505;
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
@@ -676,15 +684,15 @@ const resetForm = () => {
 }
 
 .feedback-form__secondary {
-  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
-  border: none;
+  background: var(--tz-form-panel-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
   padding: 0.3rem 1.2rem;
   color: var(--tz-text-secondary);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.95);
+  box-shadow: none;
 }
 
 .feedback-form__info {

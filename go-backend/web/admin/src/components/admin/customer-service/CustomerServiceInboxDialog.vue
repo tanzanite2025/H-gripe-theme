@@ -18,15 +18,23 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import CustomerServiceInboxWorkbench from '@/components/admin/customer-service/CustomerServiceInboxWorkbench.vue'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  title: { type: String, default: '客服工作台' },
-  description: { type: String, default: '搜索会话、回复客户，并查看客户上下文。' },
+interface CustomerServiceInboxDialogProps {
+  open?: boolean
+  title?: string
+  description?: string
+}
+
+const props = withDefaults(defineProps<CustomerServiceInboxDialogProps>(), {
+  open: false,
+  title: '客服工作台',
+  description: '搜索会话、回复客户，并查看客户上下文。',
 })
 
-const emit = defineEmits(['update:open'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+}>()
 </script>

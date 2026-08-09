@@ -27,8 +27,8 @@
         :redeem-settings="redeemSettings"
         :loading="loyaltyProgramLoading"
         :saving="loyaltyProgramSaving"
-        :payment-currency-options="paymentCurrencyOptions"
-        :payment-currencies-loading="paymentCurrenciesLoading"
+        :redeem-currency-options="redeemCurrencyOptions"
+        :redeem-currencies-loading="redeemCurrenciesLoading"
         :can-edit="canEdit"
         @refresh="emit('refresh-loyalty-program-config')"
         @save="emit('save-loyalty-program-config')"
@@ -107,78 +107,116 @@
   </Tabs>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import CouponTablePanel from '@/components/admin/marketing/CouponTablePanel.vue'
 import GiftCardRedeemOptionsPanel from '@/components/admin/marketing/GiftCardRedeemOptionsPanel.vue'
 import GiftCardTablePanel from '@/components/admin/marketing/GiftCardTablePanel.vue'
 import LoyaltyPanel from '@/components/admin/marketing/LoyaltyPanel.vue'
 import LoyaltyProgramSettingsPanel from '@/components/admin/marketing/LoyaltyProgramSettingsPanel.vue'
 import MemberLevelTablePanel from '@/components/admin/marketing/MemberLevelTablePanel.vue'
+import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
+import type {
+  CouponFilters,
+  CouponRecord,
+  GiftCardFilters,
+  GiftCardRecord,
+  GiftCardRedeemSettings,
+  LoyaltyAdjustmentForm,
+  LoyaltyErrors,
+  LoyaltyFilters,
+  LoyaltySettings,
+  LoyaltyTransaction,
+  MarketingPagination,
+  MarketingStatusDisplay,
+  MemberLevel,
+} from './marketingTypes'
 
-defineProps({
-  activeTab: { type: String, default: 'coupons' },
-  activeSubTab: { type: String, default: 'transactions' },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  couponsLoading: { type: Boolean, default: false },
-  coupons: { type: Array, default: () => [] },
-  couponFilters: { type: Object, default: () => ({}) },
-  couponPagination: { type: Object, default: () => ({}) },
-  couponValue: { type: Function, required: true },
-  couponStatus: { type: Function, required: true },
-  formatMoney: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  giftCardsLoading: { type: Boolean, default: false },
-  giftCards: { type: Array, default: () => [] },
-  giftCardFilters: { type: Object, default: () => ({}) },
-  giftCardPagination: { type: Object, default: () => ({}) },
-  formatCurrency: { type: Function, required: true },
-  giftCardStatusName: { type: Function, required: true },
-  giftCardStatusTone: { type: Function, required: true },
-  loyaltyLoading: { type: Boolean, default: false },
-  loyaltyTransactions: { type: Array, default: () => [] },
-  loyaltyFilters: { type: Object, default: () => ({}) },
-  loyaltyPagination: { type: Object, default: () => ({}) },
-  loyaltyForm: { type: Object, default: () => ({}) },
-  loyaltyErrors: { type: Object, default: () => ({}) },
-  loyaltySubmitting: { type: Boolean, default: false },
-  loyaltyTypeName: { type: Function, required: true },
-  loyaltySettings: { type: Object, required: true },
-  redeemSettings: { type: Object, required: true },
-  pointsBaseCurrency: { type: String, default: 'USD' },
-  loyaltyProgramVersion: { type: Number, default: 0 },
-  loyaltyProgramLoading: { type: Boolean, default: false },
-  loyaltyProgramSaving: { type: Boolean, default: false },
-  paymentCurrencyOptions: { type: Array, default: () => [] },
-  paymentCurrenciesLoading: { type: Boolean, default: false },
-  levelsLoading: { type: Boolean, default: false },
-  levels: { type: Array, default: () => [] },
-  levelsUsingFallback: { type: Boolean, default: false },
-  formatRate: { type: Function, required: true }
+withDefaults(defineProps<{
+  activeTab?: string
+  activeSubTab?: string
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+  couponsLoading?: boolean
+  coupons?: CouponRecord[]
+  couponFilters: CouponFilters
+  couponPagination: MarketingPagination
+  couponValue: (coupon: CouponRecord) => string
+  couponStatus: (coupon: CouponRecord) => MarketingStatusDisplay
+  formatMoney: (value: unknown) => string
+  formatDate: (value: unknown) => string
+  giftCardsLoading?: boolean
+  giftCards?: GiftCardRecord[]
+  giftCardFilters: GiftCardFilters
+  giftCardPagination: MarketingPagination
+  formatCurrency: (value: unknown, currency?: string) => string
+  giftCardStatusName: (status?: string) => string
+  giftCardStatusTone: (status?: string) => AdminStatusTone
+  loyaltyLoading?: boolean
+  loyaltyTransactions?: LoyaltyTransaction[]
+  loyaltyFilters: LoyaltyFilters
+  loyaltyPagination: MarketingPagination
+  loyaltyForm: LoyaltyAdjustmentForm
+  loyaltyErrors: LoyaltyErrors
+  loyaltySubmitting?: boolean
+  loyaltyTypeName: (type?: string | null) => string
+  loyaltySettings: LoyaltySettings
+  redeemSettings: GiftCardRedeemSettings
+  pointsBaseCurrency?: string
+  loyaltyProgramVersion?: number
+  loyaltyProgramLoading?: boolean
+  loyaltyProgramSaving?: boolean
+  redeemCurrencyOptions?: string[]
+  redeemCurrenciesLoading?: boolean
+  levelsLoading?: boolean
+  levels?: MemberLevel[]
+  levelsUsingFallback?: boolean
+  formatRate: (value: unknown) => string
+}>(), {
+  activeTab: 'coupons',
+  activeSubTab: 'transactions',
+  canCreate: false,
+  canEdit: false,
+  canDelete: false,
+  couponsLoading: false,
+  coupons: () => [],
+  giftCardsLoading: false,
+  giftCards: () => [],
+  loyaltyLoading: false,
+  loyaltyTransactions: () => [],
+  loyaltySubmitting: false,
+  pointsBaseCurrency: 'USD',
+  loyaltyProgramVersion: 0,
+  loyaltyProgramLoading: false,
+  loyaltyProgramSaving: false,
+  redeemCurrencyOptions: () => [],
+  redeemCurrenciesLoading: false,
+  levelsLoading: false,
+  levels: () => [],
+  levelsUsingFallback: false,
 })
 
-const emit = defineEmits([
-  'coupon-filter-change',
-  'create-coupon',
-  'edit-coupon',
-  'delete-coupon',
-  'update-coupon-page',
-  'update-coupon-page-size',
-  'gift-card-filter-change',
-  'view-gift-card',
-  'update-gift-card-page',
-  'update-gift-card-page-size',
-  'loyalty-filter-change',
-  'update-loyalty-page',
-  'update-loyalty-page-size',
-  'submit-loyalty-adjustment',
-  'clear-loyalty-error',
-  'refresh-loyalty-program-config',
-  'save-loyalty-program-config',
-  'create-level',
-  'edit-level',
-  'delete-level'
-])
+const emit = defineEmits<{
+  (event: 'coupon-filter-change'): void
+  (event: 'create-coupon'): void
+  (event: 'edit-coupon', coupon: CouponRecord): void
+  (event: 'delete-coupon', coupon: CouponRecord): void
+  (event: 'update-coupon-page', page: number): void
+  (event: 'update-coupon-page-size', pageSize: number): void
+  (event: 'gift-card-filter-change'): void
+  (event: 'view-gift-card', giftCard: GiftCardRecord): void
+  (event: 'update-gift-card-page', page: number): void
+  (event: 'update-gift-card-page-size', pageSize: number): void
+  (event: 'loyalty-filter-change'): void
+  (event: 'update-loyalty-page', page: number): void
+  (event: 'update-loyalty-page-size', pageSize: number): void
+  (event: 'submit-loyalty-adjustment'): void
+  (event: 'clear-loyalty-error', field: keyof LoyaltyAdjustmentForm): void
+  (event: 'refresh-loyalty-program-config'): void
+  (event: 'save-loyalty-program-config'): void
+  (event: 'create-level'): void
+  (event: 'edit-level', level: MemberLevel): void
+  (event: 'delete-level', level: MemberLevel): void
+}>()
 </script>

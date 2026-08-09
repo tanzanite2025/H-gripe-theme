@@ -74,7 +74,7 @@
                   {{ rule.reply_message }}
                 </p>
                 <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-muted-foreground">
-                  <span>语言：{{ rule.locale || '*' }}</span>
+                  <span>语言：{{ localeLabel(rule.locale) }}</span>
                   <span>优先级：{{ rule.priority || 0 }}</span>
                   <span>冷却：{{ formatCooldown(rule.cooldown_seconds) }}</span>
                   <span v-if="rule.agent_id">客服：{{ rule.agent_id }}</span>
@@ -131,15 +131,15 @@
           </label>
 
           <div class="grid grid-cols-2 gap-3">
-            <label class="space-y-1.5">
+            <div class="space-y-1.5">
               <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">语言</span>
-              <select v-model="form.locale" class="admin-auto-reply-input">
-                <option value="" disabled>请选择一种语言</option>
-                <option v-for="language in enabledLanguages" :key="language.code" :value="language.code">
-                  {{ language.native_name || language.name }} · {{ language.code }}
-                </option>
-              </select>
-            </label>
+              <StorefrontLocaleSelect
+                v-model="form.locale"
+                :language-options="languageOptions"
+                :loading="languageLoading"
+                placeholder="请选择一种语言"
+              />
+            </div>
             <label class="space-y-1.5">
               <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">客服用户 ID</span>
               <select v-model="form.agent_id" class="admin-auto-reply-input">
@@ -308,7 +308,7 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { Bot, FileText, HelpCircle, Image as ImageIcon, ImagePlus, Link2, LoaderCircle, Package, Pencil, Plus, ReceiptText, RefreshCw, Save, Trash2, X } from '@lucide/vue'
@@ -318,6 +318,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import AutoReplyFaqPickerDialog from '@/components/admin/customer-service/AutoReplyFaqPickerDialog.vue'
 import AutoReplyImagePickerDialog from '@/components/admin/customer-service/AutoReplyImagePickerDialog.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -325,7 +326,15 @@ import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import customerServiceApi from '@/api/customerService'
 
 const authStore = useAuthStore()
-const { enabledLanguages, fetchLanguages } = useSupportedLanguages()
+const supportedLanguages = useSupportedLanguages()
+const languageOptions = supportedLanguages.languageOptions
+const languageLoading = supportedLanguages.loading
+const fetchLanguages = supportedLanguages.fetchLanguages
+const defaultReplyLocale = computed(() => (
+  languageOptions.value.some((language) => language.value === 'en')
+    ? 'en'
+    : supportedLanguages.defaultLocale.value || languageOptions.value[0]?.value || 'en'
+))
 const loading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
@@ -343,7 +352,7 @@ const createForm = () => ({
   reply_message: '',
   agent_id: '',
   group_id: '',
-  locale: 'en',
+  locale: defaultReplyLocale.value,
   message_type: 'text',
   metadata: '',
   attachments: '',
@@ -588,6 +597,8 @@ const formatCooldown = (seconds) => {
 const groupName = (groupID) => {
   return groups.value.find((group) => Number(group.id) === Number(groupID))?.name || `组 #${groupID}`
 }
+
+const localeLabel = (locale) => supportedLanguages.localeName(locale)
 
 onMounted(() => {
   loadRules()

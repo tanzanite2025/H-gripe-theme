@@ -5,7 +5,7 @@
     <Transition name="cookie-slide">
       <div 
         v-if="showBanner && !showModal" 
-        class="cookie-banner fixed bottom-0 left-0 right-0 z-[9999] bg-[rgba(0,0,0,0.78)] border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.45)]"
+        class="cookie-banner fixed left-0 right-0 z-[9999] bg-[rgba(0,0,0,0.78)] border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.45)]"
       >
         <div class="cookie-banner-inner max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-center gap-4 sm:justify-between">
           <p class="text-sm text-white/75 text-center sm:text-left">
@@ -276,6 +276,10 @@ defineExpose({
 </script>
 
 <style>
+.cookie-banner {
+  bottom: calc(4rem + var(--tz-safe-area-bottom, 0px));
+}
+
 .cookie-fade-enter-active,
 .cookie-fade-leave-active {
   transition: opacity 0.3s ease;
@@ -308,6 +312,12 @@ defineExpose({
 
   .cookie-modal-actions {
     padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 1.5rem);
+  }
+}
+
+@media (min-width: 768px) {
+  .cookie-banner {
+    bottom: calc(4.5rem + var(--tz-safe-area-bottom, 0px));
   }
 }
 </style>

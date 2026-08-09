@@ -8,6 +8,9 @@ import {
   resetReactive,
 } from '@/lib/shippingForms'
 
+const TEMPLATE_DISPLAY_PRICE_FIELDS = ['default_fee', 'free_threshold']
+const RULE_DISPLAY_PRICE_FIELDS = ['min_value', 'max_value', 'fee', 'additional']
+
 export const useShippingTemplateManager = (options: Record<string, any> = {}) => {
   const fetchTemplates = options.fetchTemplates || (() => Promise.resolve())
   const fetchZones = options.fetchZones || (() => Promise.resolve())
@@ -32,6 +35,48 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     delete zoneErrors[field]
   }
 
+  const normalizeCurrencyCode = (value: any) => {
+    const code = String(value || '').trim().toUpperCase()
+    return /^[A-Z]{3}$/.test(code) ? code : ''
+  }
+
+  const normalizeDisplayPrices = (values: any) => {
+    const list = Array.isArray(values) ? values : []
+    const seen = new Set<string>()
+    return list
+      .map((item: any) => {
+        const quoteCurrency = normalizeCurrencyCode(item?.quote_currency || item?.currency)
+        if (!quoteCurrency || item?.fallback_reason) return null
+        return {
+          amount: Number(item?.amount || 0),
+          currency: quoteCurrency,
+          quote_currency: quoteCurrency,
+          rate: Number(item?.rate || 0),
+          source: String(item?.source || '').trim(),
+          converted: item?.converted !== false,
+        }
+      })
+      .filter(Boolean)
+      .filter((item: any) => item.amount > 0 && item.converted !== false)
+      .filter((item: any) => {
+        if (seen.has(item.currency)) return false
+        seen.add(item.currency)
+        return true
+      })
+  }
+
+  const normalizeDisplayPriceSnapshotMap = (value: any, allowedFields: string[]) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+    return allowedFields.reduce((result: Record<string, any[]>, field) => {
+      const prices = normalizeDisplayPrices(value[field])
+      if (prices.length) result[field] = prices
+      return result
+    }, {})
+  }
+
+  const ruleDisplayPriceFieldsForType = (templateType: string) =>
+    templateType === 'price' ? RULE_DISPLAY_PRICE_FIELDS : ['fee', 'additional']
+
   const showCreateTemplateDialog = () => {
     templateDialogMode.value = 'create'
     resetReactive(templateForm, defaultShippingTemplateForm())
@@ -46,6 +91,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       ...template,
       free_threshold: Number(template.free_threshold || 0),
       default_fee: Number(template.default_fee || 0),
+      display_price_snapshots: normalizeDisplayPriceSnapshotMap(template.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
       enabled: template.enabled !== false,
       rules: Array.isArray(template.rules) ? template.rules.map((rule: any) => ({
         id: rule.id,
@@ -54,6 +100,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         max_value: Number(rule.max_value || 0),
         fee: Number(rule.fee || 0),
         additional: Number(rule.additional || 0),
+        display_price_snapshots: normalizeDisplayPriceSnapshotMap(rule.display_price_snapshots, ruleDisplayPriceFieldsForType(template.type)),
       })) : [],
     })
     clearErrors(templateErrors)
@@ -67,6 +114,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       max_value: Number(rule.max_value || 0),
       fee: Number(rule.fee || 0),
       additional: Number(rule.additional || 0),
+      display_price_snapshots: normalizeDisplayPriceSnapshotMap(rule.display_price_snapshots, ruleDisplayPriceFieldsForType(templateForm.type)),
     }))
 
   const validateTemplate = () => {
@@ -97,6 +145,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         free_shipping: Boolean(templateForm.free_shipping),
         free_threshold: Number(templateForm.free_threshold || 0),
         default_fee: Number(templateForm.default_fee || 0),
+        display_price_snapshots: normalizeDisplayPriceSnapshotMap(templateForm.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
         description: templateForm.description || '',
         enabled: Boolean(templateForm.enabled),
         rules: normalizeTemplateRules(),

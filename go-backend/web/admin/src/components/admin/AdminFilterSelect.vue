@@ -1,7 +1,7 @@
 <template>
   <label class="block space-y-1">
     <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">{{ label }}</span>
-    <Select :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)">
+    <Select :model-value="modelValue" @update:model-value="handleValueChange">
       <SelectTrigger class="h-9 w-full">
         <SelectValue />
       </SelectTrigger>
@@ -14,14 +14,25 @@
   </label>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-defineProps({
-  modelValue: { type: String, required: true },
-  label: { type: String, required: true },
-  options: { type: Array, required: true }
-})
+interface AdminFilterOption {
+  label: string
+  value: string
+}
 
-const emit = defineEmits(['update:modelValue'])
+defineProps<{
+  modelValue: string
+  label: string
+  options: AdminFilterOption[]
+}>()
+
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: string): void
+}>()
+
+const handleValueChange = (value: unknown): void => {
+  emit('update:modelValue', String(value))
+}
 </script>

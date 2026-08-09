@@ -110,24 +110,32 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Check, HelpCircle, Image as ImageIcon, RefreshCw, Search } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import customerServiceApi from '@/api/customerService'
+import type { FAQCategory, FAQItem, FAQPage, FAQSelection } from './customerServiceTypes'
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  locale: { type: String, default: '' },
-  selectedFaqId: { type: [String, Number], default: '' },
+const props = withDefaults(defineProps<{
+  open?: boolean
+  locale?: string
+  selectedFaqId?: string | number
+}>(), {
+  open: false,
+  locale: '',
+  selectedFaqId: '',
 })
 
-const emit = defineEmits(['update:open', 'select'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'select', selection: FAQSelection): void
+}>()
 
 const loading = ref(false)
-const pages = ref([])
+const pages = ref<FAQPage[]>([])
 const searchQuery = ref('')
 const loadedLocale = ref('')
 
@@ -136,15 +144,15 @@ const normalizedLocale = computed(() => {
   return locale && locale !== '*' ? locale : ''
 })
 
-const normalizeText = (value) => String(value || '').trim().toLowerCase()
+const normalizeText = (value: unknown): string => String(value || '').trim().toLowerCase()
 
-const plainText = (value) => String(value || '')
+const plainText = (value: unknown): string => String(value || '')
   .replace(/<[^>]+>/g, ' ')
   .replace(/&nbsp;/g, ' ')
   .replace(/\s+/g, ' ')
   .trim()
 
-const pageFaqCount = (page) => {
+const pageFaqCount = (page: FAQPage): number => {
   return (page.categories || []).reduce((total, category) => total + (category.faqs?.length || 0), 0)
 }
 
@@ -169,7 +177,7 @@ const filteredPages = computed(() => {
     .filter((page) => page.categories.length > 0)
 })
 
-const isSelected = (faq) => {
+const isSelected = (faq: FAQItem): boolean => {
   return props.selectedFaqId && String(props.selectedFaqId) === String(faq?.id)
 }
 
@@ -194,7 +202,7 @@ const loadFAQs = async () => {
   }
 }
 
-const selectFAQ = (page, category, faq) => {
+const selectFAQ = (page: FAQPage, category: FAQCategory, faq: FAQItem): void => {
   emit('select', { page, category, faq })
   emit('update:open', false)
 }

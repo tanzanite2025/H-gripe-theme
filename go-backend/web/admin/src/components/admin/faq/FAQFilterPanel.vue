@@ -38,24 +38,37 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { RotateCcw, Search } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { FAQFilters } from '@/composables/faq/useFaqList'
 
-const props = defineProps({
-  filters: { type: Object, required: true },
-  pageFilterOptions: { type: Array, required: true },
-  categoryFilterOptions: { type: Array, required: true },
-  statusFilterOptions: { type: Array, required: true }
-})
+type FAQFilterKey = 'page_id' | 'category' | 'status'
 
-defineEmits(['apply', 'reset'])
+interface FAQSelectFilter {
+  key: FAQFilterKey
+  label: string
+  options: LanguageOption[]
+}
 
-const selectFilters = computed(() => [
+const props = defineProps<{
+  filters: FAQFilters
+  pageFilterOptions: LanguageOption[]
+  categoryFilterOptions: LanguageOption[]
+  statusFilterOptions: LanguageOption[]
+}>()
+
+defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
+
+const selectFilters = computed<FAQSelectFilter[]>(() => [
   { key: 'page_id', label: '页面', options: props.pageFilterOptions },
   { key: 'category', label: '分类', options: props.categoryFilterOptions },
   { key: 'status', label: '状态', options: props.statusFilterOptions }

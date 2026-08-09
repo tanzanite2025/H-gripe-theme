@@ -428,7 +428,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { AlertTriangle, CheckCircle2, CreditCard, RefreshCw, Search, Send, ShieldAlert } from '@lucide/vue'
@@ -465,6 +465,13 @@ const PaginationBar = defineComponent({
   props: { pagination: { type: Object, required: true } },
   emits: ['page', 'page-size'],
   setup(props, { emit }) {
+    const emitPageSize = (event: Event) => {
+      const target = event.target
+      if (target instanceof HTMLSelectElement) {
+        emit('page-size', Number(target.value))
+      }
+    }
+
     return () => h('div', { class: 'flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground' }, [
       h('span', `共 ${props.pagination.total || 0} 条，第 ${props.pagination.page || 1} / ${props.pagination.total_pages || 1} 页`),
       h('div', { class: 'flex items-center gap-2' }, [
@@ -481,7 +488,7 @@ const PaginationBar = defineComponent({
         h('select', {
           class: 'h-7 rounded-full border border-dashed bg-background px-2',
           value: props.pagination.page_size || 20,
-          onChange: (event) => emit('page-size', Number(event.target.value)),
+          onChange: emitPageSize,
         }, [10, 20, 50, 100].map(size => h('option', { value: size }, `${size}/页`))),
       ]),
     ])

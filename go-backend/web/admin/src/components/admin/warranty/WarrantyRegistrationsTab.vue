@@ -71,7 +71,7 @@
               <Select
                 :model-value="registration.status || 'active'"
                 :disabled="statusUpdating.registration === registration.id || !canEdit"
-                @update:model-value="$emit('update-status', registration, $event)"
+                @update:model-value="$emit('update-status', registration, String($event))"
               >
                 <SelectTrigger class="h-8 w-full rounded-full">
                   <SelectValue />
@@ -99,7 +99,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ShieldCheck } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -112,16 +112,31 @@ import {
   productName,
   userName
 } from '@/lib/warrantyPresentation'
+import type {
+  WarrantyFilters,
+  WarrantyPagination,
+  WarrantyRegistration,
+  WarrantyStatusOption,
+  WarrantyStatusUpdating
+} from './warrantyTypes'
 
-defineProps({
-  registrations: { type: Array, required: true },
-  loading: { type: Boolean, default: false },
-  filters: { type: Object, required: true },
-  pagination: { type: Object, required: true },
-  statusUpdating: { type: Object, required: true },
-  statusOptions: { type: Array, required: true },
-  canEdit: { type: Boolean, default: false }
+withDefaults(defineProps<{
+  registrations?: WarrantyRegistration[]
+  loading?: boolean
+  filters: WarrantyFilters
+  pagination: WarrantyPagination
+  statusUpdating: WarrantyStatusUpdating
+  statusOptions: WarrantyStatusOption[]
+  canEdit?: boolean
+}>(), {
+  registrations: () => [],
+  loading: false,
+  canEdit: false
 })
 
-defineEmits(['update-status', 'update-page', 'update-page-size'])
+defineEmits<{
+  (event: 'update-status', registration: WarrantyRegistration, status: string): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

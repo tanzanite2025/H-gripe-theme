@@ -51,43 +51,72 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import CustomerContextPanel from '@/components/admin/customer-service/CustomerContextPanel.vue'
 import CustomerConversationDetailPanel from '@/components/admin/customer-service/CustomerConversationDetailPanel.vue'
 import CustomerConversationListPanel from '@/components/admin/customer-service/CustomerConversationListPanel.vue'
 import CustomerServiceFilters from '@/components/admin/customer-service/CustomerServiceFilters.vue'
+import type {
+  AssignableAgent,
+  AssignableGroup,
+  CustomerContext,
+  CustomerConversation,
+  CustomerConversationMessage,
+  CustomerPagination,
+  CustomerServiceFiltersState,
+  CustomerTypingByConversation,
+  CustomerTypingState,
+} from './customerServiceTypes'
 
-defineProps({
-  filters: { type: Object, required: true },
-  conversations: { type: Array, default: () => [] },
-  selectedConversation: { type: Object, default: null },
-  customerTypingByConversation: { type: Object, default: () => ({}) },
-  pagination: { type: Object, required: true },
-  totalPages: { type: Number, default: 1 },
-  loading: { type: Boolean, default: false },
-  transferTo: { type: String, default: '' },
-  replyMessage: { type: String, default: '' },
-  messages: { type: Array, default: () => [] },
-  messagesLoading: { type: Boolean, default: false },
-  selectedCustomerTyping: { type: Object, default: null },
-  assignableAgents: { type: Array, default: () => [] },
-  assignableGroups: { type: Array, default: () => [] },
-  transferring: { type: Boolean, default: false },
-  replying: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  customerContext: { type: Object, default: null },
-  contextLoading: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  filters: CustomerServiceFiltersState
+  conversations?: CustomerConversation[]
+  selectedConversation?: CustomerConversation | null
+  customerTypingByConversation?: CustomerTypingByConversation
+  pagination: CustomerPagination
+  totalPages?: number
+  loading?: boolean
+  transferTo?: string
+  replyMessage?: string
+  messages?: CustomerConversationMessage[]
+  messagesLoading?: boolean
+  selectedCustomerTyping?: CustomerTypingState | null
+  assignableAgents?: AssignableAgent[]
+  assignableGroups?: AssignableGroup[]
+  transferring?: boolean
+  replying?: boolean
+  canEdit?: boolean
+  customerContext?: CustomerContext | null
+  contextLoading?: boolean
+}>(), {
+  conversations: () => [],
+  selectedConversation: null,
+  customerTypingByConversation: () => ({}),
+  totalPages: 1,
+  loading: false,
+  transferTo: '',
+  replyMessage: '',
+  messages: () => [],
+  messagesLoading: false,
+  selectedCustomerTyping: null,
+  assignableAgents: () => [],
+  assignableGroups: () => [],
+  transferring: false,
+  replying: false,
+  canEdit: false,
+  customerContext: null,
+  contextLoading: false,
 })
 
-const emit = defineEmits([
-  'apply',
-  'reset',
-  'select',
-  'change-page',
-  'update:transferTo',
-  'update:replyMessage',
-  'transfer',
-  'send-reply',
-  'typing-input',
-])
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+  (event: 'select', conversation: CustomerConversation): void
+  (event: 'change-page', page: number): void
+  (event: 'update:transferTo', value: string): void
+  (event: 'update:replyMessage', value: string): void
+  (event: 'transfer'): void
+  (event: 'send-reply'): void
+  (event: 'typing-input'): void
+}>()
 </script>

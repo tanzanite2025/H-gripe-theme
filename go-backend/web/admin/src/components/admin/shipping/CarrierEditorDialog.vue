@@ -72,7 +72,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -80,14 +80,27 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  ShippingCarrierForm,
+  ShippingDialogMode,
+  ShippingErrorMap
+} from './shippingTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
-  errors: { type: Object, required: true },
-  submitting: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  open?: boolean
+  mode?: ShippingDialogMode
+  form: ShippingCarrierForm
+  errors: ShippingErrorMap
+  submitting?: boolean
+}>(), {
+  open: false,
+  mode: 'create',
+  submitting: false
 })
 
-const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', field: string): void
+}>()
 </script>

@@ -24,8 +24,8 @@
           :can-delete="canDelete"
           @batch-delete="emit('batch-delete')"
           @toggle-all="emit('toggle-all', $event)"
-          @toggle-image="(...args) => emit('toggle-image', ...args)"
-          @preview="(...args) => emit('preview', ...args)"
+          @toggle-image="forwardToggleImage"
+          @preview="forwardPreview"
           @edit="emit('edit', $event)"
           @delete="emit('delete', $event)"
         />
@@ -34,33 +34,57 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Plus } from '@lucide/vue'
 import GalleryImageTablePanel from '@/components/admin/gallery/GalleryImageTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import type {
+  GalleryImage,
+  GalleryRecord,
+  GallerySelectionState,
+  GalleryTitleResolver
+} from './galleryTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  currentGallery: { type: Object, default: null },
-  images: { type: Array, default: () => [] },
-  selectedImages: { type: Array, default: () => [] },
-  imageSelectionState: { type: [Boolean, String], default: false },
-  loading: { type: Boolean, default: false },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  galleryTitle: { type: Function, required: true },
+withDefaults(defineProps<{
+  open?: boolean
+  currentGallery?: GalleryRecord | null
+  images?: GalleryImage[]
+  selectedImages?: GalleryImage[]
+  imageSelectionState?: GallerySelectionState
+  loading?: boolean
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+  galleryTitle: GalleryTitleResolver
+}>(), {
+  open: false,
+  currentGallery: null,
+  images: () => [],
+  selectedImages: () => [],
+  imageSelectionState: false,
+  loading: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits([
-  'update:open',
-  'create',
-  'batch-delete',
-  'toggle-all',
-  'toggle-image',
-  'preview',
-  'edit',
-  'delete',
-])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'create'): void
+  (event: 'batch-delete'): void
+  (event: 'toggle-all', checked: GallerySelectionState): void
+  (event: 'toggle-image', image: GalleryImage, checked: GallerySelectionState): void
+  (event: 'preview', url?: string | null, title?: string | null): void
+  (event: 'edit', image: GalleryImage): void
+  (event: 'delete', image: GalleryImage): void
+}>()
+
+const forwardToggleImage = (image: GalleryImage, checked: GallerySelectionState): void => {
+  emit('toggle-image', image, checked)
+}
+
+const forwardPreview = (url?: string | null, title?: string | null): void => {
+  emit('preview', url, title)
+}
 </script>

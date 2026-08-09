@@ -17,22 +17,31 @@
   </section>
 </template>
 
-<script setup>
-defineProps({
-  items: {
-    type: Array,
-    required: true
-  }
-})
+<script setup lang="ts">
+import type { Component } from 'vue'
 
-const toneClass = (tone) => {
-  const tones = {
+type AdminStatTone = 'blue' | 'green' | 'amber' | 'coral' | 'gray'
+
+interface AdminStatItem {
+  key?: string
+  label: string
+  value: string | number
+  icon?: Component
+  tone?: string
+}
+
+defineProps<{
+  items: AdminStatItem[]
+}>()
+
+const toneClass = (tone?: string) => {
+  const tones: Record<AdminStatTone, string> = {
     blue: 'bg-blue-50 text-blue-700',
     green: 'bg-emerald-50 text-emerald-700',
     amber: 'bg-amber-50 text-amber-700',
     coral: 'bg-rose-50 text-rose-700',
     gray: 'bg-muted text-muted-foreground'
   }
-  return tones[tone] || tones.gray
+  return tone && tone in tones ? tones[tone as AdminStatTone] : tones.gray
 }
 </script>

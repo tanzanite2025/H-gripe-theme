@@ -110,7 +110,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { MailCheck, MailOpen, MailX, MoreHorizontal, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -125,30 +125,46 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  SubscriptionBooleanResolver,
+  SubscriptionDateFormatter,
+  SubscriptionLabelResolver,
+  SubscriptionPagination,
+  SubscriptionRecord,
+  SubscriptionSelectionState,
+  SubscriptionToneResolver
+} from './subscriptionTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  subscriptions: { type: Array, default: () => [] },
-  selectedSubscriptions: { type: Array, default: () => [] },
-  selectionState: { type: [Boolean, String], default: false },
-  pagination: { type: Object, required: true },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  isSelected: { type: Function, required: true },
-  statusName: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  localeName: { type: Function, required: true },
-  sourceName: { type: Function, required: true },
-  formatDate: { type: Function, required: true }
+withDefaults(defineProps<{
+  loading?: boolean
+  subscriptions?: SubscriptionRecord[]
+  selectedSubscriptions?: SubscriptionRecord[]
+  selectionState?: SubscriptionSelectionState
+  pagination: SubscriptionPagination
+  canEdit?: boolean
+  canDelete?: boolean
+  isSelected: SubscriptionBooleanResolver
+  statusName: SubscriptionLabelResolver
+  statusTone: SubscriptionToneResolver
+  localeName: SubscriptionLabelResolver
+  sourceName: SubscriptionLabelResolver
+  formatDate: SubscriptionDateFormatter
+}>(), {
+  loading: false,
+  subscriptions: () => [],
+  selectedSubscriptions: () => [],
+  selectionState: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits([
-  'toggle-all',
-  'toggle-subscription',
-  'request-toggle-status',
-  'request-delete',
-  'request-batch-delete',
-  'update-page',
-  'update-page-size'
-])
+const emit = defineEmits<{
+  (event: 'toggle-all', checked: SubscriptionSelectionState): void
+  (event: 'toggle-subscription', subscription: SubscriptionRecord, checked: SubscriptionSelectionState): void
+  (event: 'request-toggle-status', subscription: SubscriptionRecord): void
+  (event: 'request-delete', subscription: SubscriptionRecord): void
+  (event: 'request-batch-delete'): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

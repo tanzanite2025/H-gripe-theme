@@ -233,7 +233,7 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { LoaderCircle, Plus, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -244,8 +244,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  ShippingQuoteForm,
+  ShippingQuoteItemInput,
+  ShippingQuoteOption,
+  ShippingQuoteResult
+} from './shippingTypes'
 
-const form = reactive({
+const form = reactive<ShippingQuoteForm>({
   country: 'US',
   currency: '',
   items: [
@@ -257,12 +263,12 @@ const form = reactive({
   ],
 })
 
-const errors = reactive({})
-const quote = ref(null)
+const errors = reactive<Record<string, string>>({})
+const quote = ref<ShippingQuoteResult | null>(null)
 const quoteError = ref('')
 const submitting = ref(false)
 
-const defaultItem = () => ({
+const defaultItem = (): ShippingQuoteItemInput => ({
   product_id: '',
   variant_id: '',
   quantity: 1,
@@ -283,12 +289,12 @@ const clearError = (field) => {
 
 const itemErrorKey = (index, field) => `items.${index}.${field}`
 
-const itemErrors = (index) => ({
+const itemErrors = (index: number) => ({
   product_id: errors[itemErrorKey(index, 'product_id')],
   quantity: errors[itemErrorKey(index, 'quantity')],
 })
 
-const clearItemError = (index, field) => {
+const clearItemError = (index: number, field: string) => {
   delete errors[itemErrorKey(index, field)]
 }
 
@@ -331,18 +337,18 @@ const submitQuote = async () => {
   }
 }
 
-const formatMoney = (value) => Number(value || 0).toFixed(2)
-const formatGrams = (value) => `${Number(value || 0).toLocaleString()} g`
-const selectedOptionLabel = (option) => {
+const formatMoney = (value: unknown) => Number(value || 0).toFixed(2)
+const formatGrams = (value: unknown) => `${Number(value || 0).toLocaleString()} g`
+const selectedOptionLabel = (option?: ShippingQuoteOption | null) => {
   if (!option) return '未命中线路'
   return [option.carrier_name, option.service_name].filter(Boolean).join(' / ') || `Service #${option.carrier_service_id || '-'}`
 }
-const billingModeLabel = (mode) => ({
+const billingModeLabel = (mode?: string | null) => ({
   actual_weight: '实重计费',
   volumetric_weight: '体积重计费',
   greater_of_actual_and_volumetric: '实重/体积重取大',
 }[mode] || mode || '-')
-const formatEta = (option) => {
+const formatEta = (option?: ShippingQuoteOption | null) => {
   const min = Number(option?.eta_min_days || 0)
   const max = Number(option?.eta_max_days || 0)
   if (min > 0 && max > 0) return min === max ? `${min} 天` : `${min}-${max} 天`
@@ -350,5 +356,6 @@ const formatEta = (option) => {
   if (max > 0) return `${max} 天内`
   return '-'
 }
-const isSelectedOption = (option) => Number(option?.carrier_service_id || 0) === Number(quote.value?.selected_option?.carrier_service_id || 0)
+const isSelectedOption = (option?: ShippingQuoteOption | null) =>
+  Number(option?.carrier_service_id || 0) === Number(quote.value?.selected_option?.carrier_service_id || 0)
 </script>

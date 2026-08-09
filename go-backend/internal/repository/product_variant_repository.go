@@ -44,8 +44,13 @@ func syncProductSummaryFromVariants(p *product.Product, variants []product.Produ
 
 	defaultVariant := variants[defaultIndex]
 	p.SKU = defaultVariant.SKU
+	p.Currency = defaultVariant.Currency
+	if p.Currency == "" {
+		p.Currency = product.DefaultPriceCurrency
+	}
 	p.Price = defaultVariant.Price
 	p.SalePrice = defaultVariant.SalePrice
+	p.DisplayPriceData = defaultVariant.DisplayPriceData
 	p.Stock = totalStock
 }
 

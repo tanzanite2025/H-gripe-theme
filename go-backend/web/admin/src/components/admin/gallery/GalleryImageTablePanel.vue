@@ -88,7 +88,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ImageOff, MoreHorizontal, Pencil, Trash2 } from '@lucide/vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
@@ -101,16 +101,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { GalleryId, GalleryImage, GallerySelectionState } from './galleryTypes'
 
-const props = defineProps({
-  loading: { type: Boolean, default: false },
-  images: { type: Array, default: () => [] },
-  selectedImages: { type: Array, default: () => [] },
-  imageSelectionState: { type: [Boolean, String], default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  images?: GalleryImage[]
+  selectedImages?: GalleryImage[]
+  imageSelectionState?: GallerySelectionState
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  loading: false,
+  images: () => [],
+  selectedImages: () => [],
+  imageSelectionState: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits(['batch-delete', 'toggle-all', 'toggle-image', 'preview', 'edit', 'delete'])
-const isImageSelected = (imageId) => props.selectedImages.some((image) => image.id === imageId)
+const emit = defineEmits<{
+  (event: 'batch-delete'): void
+  (event: 'toggle-all', checked: GallerySelectionState): void
+  (event: 'toggle-image', image: GalleryImage, checked: GallerySelectionState): void
+  (event: 'preview', url?: string | null, title?: string | null): void
+  (event: 'edit', image: GalleryImage): void
+  (event: 'delete', image: GalleryImage): void
+}>()
+const isImageSelected = (imageId: GalleryId): boolean => props.selectedImages.some((image) => image.id === imageId)
 </script>

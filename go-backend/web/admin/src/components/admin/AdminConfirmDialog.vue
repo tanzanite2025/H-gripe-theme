@@ -15,7 +15,7 @@
   </AlertDialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,28 +27,20 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 
-defineProps({
-  open: {
-    type: Boolean,
-    default: false
-  },
-  title: {
-    type: String,
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
-  },
-  confirmLabel: {
-    type: String,
-    default: '确定'
-  },
-  destructive: {
-    type: Boolean,
-    default: false
-  }
+withDefaults(defineProps<{
+  open?: boolean
+  title: string
+  description: string
+  confirmLabel?: string
+  destructive?: boolean
+}>(), {
+  open: false,
+  confirmLabel: '确定',
+  destructive: false
 })
 
-const emit = defineEmits(['update:open', 'confirm'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'confirm'): void
+}>()
 </script>

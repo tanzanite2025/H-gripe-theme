@@ -4,25 +4,41 @@ import productApi from '@/api/products'
 import productTypeApi from '@/api/productTypes'
 import { useProductMediaManager } from '@/composables/product/useProductMediaManager'
 import { buildProductMediaFormValues } from '@/lib/productMedia'
+import axios from '@/utils/axios'
+import type {
+  ProductFormRecord,
+  ProductVariantOptionValueForm
+} from '@/components/admin/product/productEditorTypes'
 
 export const useProductEditor = (options: Record<string, any> = {}) => {
   const refreshProducts = options.refreshProducts || (() => Promise.resolve())
   const resolveDefaultLocale = () => options.defaultLocale?.value || options.defaultLocale || ''
+  const defaultPrimaryCurrency = 'USD'
+  const normalizeCurrencyCode = (value: any) => String(value || '').trim().toUpperCase()
+  const validCurrencyCodeOrDefault = (value: any) => {
+    const code = normalizeCurrencyCode(value)
+    return /^[A-Z]{3}$/.test(code) ? code : defaultPrimaryCurrency
+  }
 
   const productTypes = ref<any[]>([])
+  const primaryCurrency = ref(defaultPrimaryCurrency)
+  const currencyPolicyLoaded = ref(false)
   const dialogVisible = ref(false)
   const dialogMode = ref<'create' | 'edit'>('create')
   const submitting = ref(false)
   const formErrors = reactive<Record<string, string>>({})
 
-  const productForm = reactive<Record<string, any>>({
+  const productForm = reactive<ProductFormRecord>({
     id: null,
     product_type_id: null,
     shipping_template_id: null,
+    after_sales_template_id: null,
+    packaging_template_id: null,
     name: '',
     slug: '',
     description: '',
     short_description: '',
+    currency: primaryCurrency.value,
     status: 'active',
     locale: resolveDefaultLocale(),
     featured: false,
@@ -30,6 +46,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     meta_description: '',
     specs: {},
     variants: [],
+    variant_option_values: [],
     media: []
   })
 
@@ -57,6 +74,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   })
   const productTypeSelectValue = computed(() => productForm.product_type_id == null ? '__none__' : String(productForm.product_type_id))
   const shippingTemplateSelectValue = computed(() => productForm.shipping_template_id == null ? '__none__' : String(productForm.shipping_template_id))
+  const afterSalesTemplateSelectValue = computed(() => productForm.after_sales_template_id == null ? '__none__' : String(productForm.after_sales_template_id))
+  const packagingTemplateSelectValue = computed(() => productForm.packaging_template_id == null ? '__none__' : String(productForm.packaging_template_id))
   const hasMeaningfulTemplateValue = (value: any) => {
     if (value === undefined || value === null || value === '') return false
     if (value === false) return false
@@ -66,7 +85,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
   const templateScopedValuesTouched = computed(() => (
     Object.values(productForm.specs || {}).some(hasMeaningfulTemplateValue) ||
-    productForm.variants.some((variant: any) => Object.values(variant.option_values || {}).some(hasMeaningfulTemplateValue))
+    productForm.variants.some((variant: any) => Object.values(variant.option_values || {}).some(hasMeaningfulTemplateValue)) ||
+    productForm.variant_option_values.some((item: ProductVariantOptionValueForm) => (
+      hasMeaningfulTemplateValue(item.value_key)
+      || hasMeaningfulTemplateValue(item.label)
+      || hasMeaningfulTemplateValue(item.color_hex)
+      || hasMeaningfulTemplateValue(item.swatch_url)
+    ))
   ))
 
   const parseSpecOptions = (spec: any) => {
@@ -88,6 +113,24 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const setProductShippingTemplate = (value: string) => {
     productForm.shipping_template_id = value === '__none__' ? null : Number(value)
     clearFieldError('shipping_template_id')
+  }
+  const setProductInformationTemplate = (field: string, value: string) => {
+    productForm[field] = value === '__none__' ? null : Number(value)
+    clearFieldError(field)
+  }
+  const primaryPriceCurrency = () => validCurrencyCodeOrDefault(primaryCurrency.value)
+
+  const fetchPrimaryPricingCurrency = async (force = false) => {
+    if (!force && currencyPolicyLoaded.value) return primaryPriceCurrency()
+    try {
+      const response = await axios.get('/api/admin/settings/currency-policy')
+      primaryCurrency.value = validCurrencyCodeOrDefault(response.data?.policy?.primary_currency)
+      currencyPolicyLoaded.value = true
+    } catch (error) {
+      console.error('Failed to fetch primary pricing currency:', error)
+      primaryCurrency.value = defaultPrimaryCurrency
+    }
+    return primaryPriceCurrency()
   }
 
   const coerceSpecValueForForm = (definition: any, value: any) => {
@@ -119,14 +162,41 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     }
   }
 
+  const normalizeDisplayPrices = (values: any) => {
+    const list = Array.isArray(values) ? values : []
+    const seen = new Set<string>()
+    return list
+      .map((item: any) => {
+        const quoteCurrency = normalizeCurrencyCode(item?.quote_currency || item?.currency)
+        if (!/^[A-Z]{3}$/.test(quoteCurrency)) return null
+        return {
+          amount: Number(item?.amount || 0),
+          currency: quoteCurrency,
+          quote_currency: quoteCurrency,
+          rate: Number(item?.rate || 0),
+          source: String(item?.source || '').trim(),
+          converted: item?.converted !== false
+        }
+      })
+      .filter(Boolean)
+      .filter((item: any) => item.amount > 0 && item.currency !== primaryPriceCurrency())
+      .filter((item: any) => {
+        if (seen.has(item.currency)) return false
+        seen.add(item.currency)
+        return true
+      })
+  }
+
   const createEmptyVariant = (overrides: Record<string, any> = {}) => ({
     id: null,
     shipping_template_id: null,
     sku: '',
     title: '',
     option_values: {},
+    currency: primaryPriceCurrency(),
     price: 0,
     sale_price: null,
+    display_prices: [],
     stock: 0,
     weight_grams: 0,
     is_default: false,
@@ -135,6 +205,59 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     ...overrides
   })
 
+  const createEmptyVariantOptionValue = (
+    overrides: Partial<ProductVariantOptionValueForm> = {}
+  ): ProductVariantOptionValueForm => ({
+    id: null,
+    spec_definition_id: 0,
+    value_key: '',
+    label: '',
+    color_hex: '',
+    swatch_media_asset_id: null,
+    swatch_url: '',
+    sort_order: 0,
+    is_enabled: true,
+    ...overrides
+  })
+
+  const buildVariantOptionValueFormValues = (product: any): ProductVariantOptionValueForm[] => (
+    (product.variant_option_values || []).map((item: any, index: number) => createEmptyVariantOptionValue({
+      id: item.id || null,
+      spec_definition_id: item.spec_definition_id || 0,
+      value_key: String(item.value_key || ''),
+      label: String(item.label || ''),
+      color_hex: String(item.color_hex || ''),
+      swatch_media_asset_id: item.swatch_media_asset_id || null,
+      swatch_url: String(item.swatch_url || ''),
+      sort_order: Number(item.sort_order ?? index * 10),
+      is_enabled: item.is_enabled !== false
+    }))
+  )
+
+  const normalizeVariantOptionValues = () => {
+    const definitionIDs = new Set(
+      variantSpecDefinitions.value
+        .map((definition: any) => Number(definition.id || 0))
+        .filter((id: number) => id > 0)
+    )
+    return productForm.variant_option_values
+      .filter((item: ProductVariantOptionValueForm) => (
+        definitionIDs.has(Number(item.spec_definition_id))
+        && String(item.value_key || '').trim()
+      ))
+      .map((item: ProductVariantOptionValueForm, index: number) => ({
+        id: item.id || undefined,
+        spec_definition_id: Number(item.spec_definition_id),
+        value_key: String(item.value_key || '').trim(),
+        label: String(item.label || '').trim(),
+        color_hex: String(item.color_hex || '').trim(),
+        swatch_media_asset_id: item.swatch_media_asset_id ? Number(item.swatch_media_asset_id) : undefined,
+        swatch_url: String(item.swatch_url || '').trim(),
+        sort_order: Number(item.sort_order ?? index * 10),
+        is_enabled: item.is_enabled !== false
+      }))
+  }
+
   const buildVariantFormValues = (product: any) => {
     const variants = (product.variants || []).map((variant: any, index: number) => createEmptyVariant({
       id: variant.id || null,
@@ -142,8 +265,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       sku: variant.sku || '',
       title: variant.title || '',
       option_values: parseVariantOptions(variant),
+      currency: primaryPriceCurrency(),
       price: Number(variant.price || 0),
       sale_price: variant.sale_price ?? null,
+      display_prices: normalizeDisplayPrices(variant.display_prices),
       stock: Number(variant.stock || 0),
       weight_grams: variant.weight_grams ?? variant.weight ?? 0,
       is_default: Boolean(variant.is_default),
@@ -206,8 +331,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         sku: String(variant.sku || '').trim(),
         title: String(variant.title || '').trim(),
         option_values: optionValues,
+        currency: primaryPriceCurrency(),
         price: Number(variant.price || 0),
         sale_price: variant.sale_price === '' || variant.sale_price == null ? null : Number(variant.sale_price),
+        display_prices: normalizeDisplayPrices(variant.display_prices),
         stock: Number(variant.stock || 0),
         weight_grams: Number(variant.weight_grams || 0),
         is_default: Boolean(variant.is_default),
@@ -221,10 +348,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     id: productForm.id,
     product_type_id: productForm.product_type_id,
     shipping_template_id: productForm.shipping_template_id,
+    after_sales_template_id: productForm.after_sales_template_id,
+    packaging_template_id: productForm.packaging_template_id,
     name: productForm.name.trim(),
     slug: productForm.slug.trim(),
     description: productForm.description,
     short_description: productForm.short_description,
+    currency: primaryPriceCurrency(),
     status: productForm.status,
     locale: productForm.locale,
     featured: productForm.featured,
@@ -232,6 +362,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     meta_description: productForm.meta_description,
     specs: { ...productForm.specs },
     variants: normalizeFormVariants(),
+    variant_option_values: normalizeVariantOptionValues(),
     media: normalizeFormMedia()
   })
 
@@ -240,6 +371,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     if (!payload.name) formErrors.name = '请输入商品名称'
     if (!payload.slug) formErrors.slug = '请输入 URL slug'
     if (!payload.locale) formErrors.locale = '请选择语言'
+    if (!/^[A-Z]{3}$/.test(payload.currency)) formErrors.currency = '请选择商品主基准币种'
     selectedSpecDefinitions.value.forEach((spec: any) => {
       const value = payload.specs[spec.slug]
       if (spec.is_required && (value === undefined || value === null || value === '')) {
@@ -273,6 +405,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     })
     productForm.specs = nextSpecs
     productForm.variants.forEach((variant: any) => { variant.option_values = {} })
+    productForm.variant_option_values = []
     clearFormErrors()
     if (hadTemplateValues) {
       toast.info('已切换产品模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
@@ -284,10 +417,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       id: null,
       product_type_id: null,
       shipping_template_id: null,
+      after_sales_template_id: null,
+      packaging_template_id: null,
       name: '',
       slug: '',
       description: '',
       short_description: '',
+      currency: primaryPriceCurrency(),
       status: 'active',
       locale: resolveDefaultLocale(),
       featured: false,
@@ -295,6 +431,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       meta_description: '',
       specs: {},
       variants: [],
+      variant_option_values: [],
       media: []
     })
     productForm.variants = [createEmptyVariant({ is_default: true })]
@@ -309,7 +446,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     }
   }
 
-  const showCreateDialog = () => {
+  const showCreateDialog = async () => {
+    await fetchPrimaryPricingCurrency()
     dialogMode.value = 'create'
     resetForm()
     dialogVisible.value = true
@@ -319,6 +457,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     dialogMode.value = 'edit'
     let detail = product
     try {
+      await fetchPrimaryPricingCurrency()
       if (productTypes.value.length === 0) await fetchProductTypes()
       detail = await productApi.get(product.id)
       if (detail.product_type && !productTypes.value.some((type) => type.id === detail.product_type.id)) {
@@ -331,10 +470,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       id: detail.id,
       product_type_id: detail.product_type_id || detail.product_type?.id || null,
       shipping_template_id: detail.shipping_template_id ?? null,
+      after_sales_template_id: detail.after_sales_template_id ?? detail.after_sales_template?.id ?? null,
+      packaging_template_id: detail.packaging_template_id ?? detail.packaging_template?.id ?? null,
       name: detail.name || '',
       slug: detail.slug || '',
       description: detail.description || '',
       short_description: detail.short_description || detail.short_desc || '',
+      currency: primaryPriceCurrency(),
       status: detail.status || 'active',
       locale: detail.locale || resolveDefaultLocale(),
       featured: Boolean(detail.featured),
@@ -342,6 +484,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       meta_description: detail.meta_description || detail.meta_desc || '',
       specs: buildSpecFormValues(detail),
       variants: buildVariantFormValues(detail),
+      variant_option_values: buildVariantOptionValueFormValues(detail),
       media: buildProductMediaFormValues(detail)
     })
     clearFormErrors()
@@ -384,6 +527,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     defaultVariantIndex,
     productTypeSelectValue,
     shippingTemplateSelectValue,
+    afterSalesTemplateSelectValue,
+    packagingTemplateSelectValue,
     templateScopedValuesTouched,
     parseSpecOptions,
     formatSpecOption,
@@ -391,6 +536,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     specSelectValue,
     setSpecSelectValue,
     setProductShippingTemplate,
+    setProductInformationTemplate,
     clearFieldError,
     addMediaUrl,
     mediaTypeLabel,

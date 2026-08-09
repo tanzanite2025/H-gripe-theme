@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	"tanzanite/internal/domain/currency"
 	productdomain "tanzanite/internal/domain/product"
 	shippingdomain "tanzanite/internal/domain/shipping"
 	"tanzanite/internal/repository"
@@ -86,6 +87,175 @@ func TestShippingServicePublicCarrierServicesRequireVisibleAssociations(t *testi
 
 	_, err = shippingService.GetPublicCarrierService(hiddenByTemplate.ID)
 	require.ErrorIs(t, err, ErrShippingNotFound)
+}
+
+func TestShippingServicePersistsDisplayPriceSnapshotsByMoneyField(t *testing.T) {
+	_, shippingService := newTestShippingQuoteService(t)
+
+	template := shippingdomain.ShippingTemplate{
+		Name:          "Display priced shipping",
+		Type:          "price",
+		DefaultFee:    20,
+		FreeThreshold: 100,
+		Enabled:       true,
+		DisplayPriceData: shippingdomain.TemplateDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+			shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee: {
+				{Amount: 2.8, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+			},
+			shippingdomain.ShippingTemplateDisplayPriceFieldFreeThreshold: {
+				{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+			},
+		}),
+		Rules: []shippingdomain.ShippingRule{
+			{
+				Region:     "US",
+				MinValue:   100,
+				MaxValue:   300,
+				Fee:        15,
+				Additional: 2,
+				DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+					shippingdomain.ShippingRuleDisplayPriceFieldMinValue: {
+						{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					},
+					shippingdomain.ShippingRuleDisplayPriceFieldFee: {
+						{Amount: 2.1, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					},
+				}),
+			},
+		},
+	}
+
+	require.NoError(t, shippingService.CreateTemplate(&template))
+
+	found, err := shippingService.GetTemplate(template.ID)
+	require.NoError(t, err)
+	templateSnapshots := currency.ParseDisplayPriceSnapshotMap(found.DisplayPriceData, shippingdomain.ShippingTemplateDisplayPriceFields...)
+	require.Len(t, templateSnapshots, 2)
+	require.Len(t, templateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee], 1)
+	assert.InDelta(t, 2.8, templateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee][0].Amount, 0.001)
+
+	require.Len(t, found.Rules, 1)
+	ruleSnapshots := currency.ParseDisplayPriceSnapshotMap(found.Rules[0].DisplayPriceData, shippingdomain.ShippingRuleDisplayPriceFields...)
+	require.Len(t, ruleSnapshots, 2)
+	require.Len(t, ruleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee], 1)
+	assert.InDelta(t, 2.1, ruleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee][0].Amount, 0.001)
+
+	found.DefaultFee = 25
+	found.DisplayPriceData = shippingdomain.TemplateDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+		shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee: {
+			{Amount: 3.5, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+		},
+	})
+	found.Rules = []shippingdomain.ShippingRule{
+		{
+			Region: "US",
+			Fee:    18,
+			DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+				shippingdomain.ShippingRuleDisplayPriceFieldFee: {
+					{Amount: 2.52, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+				},
+			}),
+		},
+	}
+	require.NoError(t, shippingService.UpdateTemplate(found))
+
+	updated, err := shippingService.GetTemplate(template.ID)
+	require.NoError(t, err)
+	updatedTemplateSnapshots := currency.ParseDisplayPriceSnapshotMap(updated.DisplayPriceData, shippingdomain.ShippingTemplateDisplayPriceFields...)
+	require.Len(t, updatedTemplateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee], 1)
+	assert.InDelta(t, 3.5, updatedTemplateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee][0].Amount, 0.001)
+	require.Len(t, updated.Rules, 1)
+	updatedRuleSnapshots := currency.ParseDisplayPriceSnapshotMap(updated.Rules[0].DisplayPriceData, shippingdomain.ShippingRuleDisplayPriceFields...)
+	require.Len(t, updatedRuleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee], 1)
+	assert.InDelta(t, 2.52, updatedRuleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee][0].Amount, 0.001)
+}
+
+func TestQuoteCartReturnsDisplayPriceFromStoredShippingSnapshots(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+
+	template := shippingdomain.ShippingTemplate{
+		Name:       "Stored display quote template",
+		Type:       "weight",
+		DefaultFee: 99,
+		Enabled:    true,
+		Rules: []shippingdomain.ShippingRule{
+			{
+				Region:     "US",
+				MinValue:   0,
+				MaxValue:   10,
+				Fee:        5,
+				Additional: 2,
+				DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+					shippingdomain.ShippingRuleDisplayPriceFieldFee: {
+						{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					},
+					shippingdomain.ShippingRuleDisplayPriceFieldAdditional: {
+						{Amount: 0.28, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					},
+				}),
+			},
+		},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	record, variant := seedQuoteProduct(t, db, 50, 2500, template.ID)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:         "US",
+		Currency:        "CNY",
+		DisplayCurrency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, 11.0, quote.ShippingFee)
+	require.NotNil(t, quote.DisplayPrice)
+	assert.Equal(t, "USD", quote.DisplayPrice.Currency)
+	assert.InDelta(t, 1.54, quote.DisplayPrice.Amount, 0.001)
+	require.Len(t, quote.DisplayPrices, 1)
+	assert.InDelta(t, 1.54, quote.DisplayPrices[0].Amount, 0.001)
+}
+
+func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+
+	template := shippingdomain.ShippingTemplate{
+		Name:       "Incomplete display quote template",
+		Type:       "weight",
+		DefaultFee: 99,
+		Enabled:    true,
+		Rules: []shippingdomain.ShippingRule{
+			{
+				Region:     "US",
+				MinValue:   0,
+				MaxValue:   10,
+				Fee:        5,
+				Additional: 2,
+				DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+					shippingdomain.ShippingRuleDisplayPriceFieldFee: {
+						{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					},
+				}),
+			},
+		},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	record, variant := seedQuoteProduct(t, db, 50, 2500, template.ID)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:         "US",
+		Currency:        "CNY",
+		DisplayCurrency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, 11.0, quote.ShippingFee)
+	assert.Nil(t, quote.DisplayPrice)
+	assert.Empty(t, quote.DisplayPrices)
 }
 
 func TestQuoteCartUsesSkuWeightWhenNoPackagingRule(t *testing.T) {

@@ -106,7 +106,7 @@
   </AlertDialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -159,22 +159,22 @@ const userInitials = computed(() => {
   return initials.toUpperCase()
 })
 const roleLabel = computed(() => {
-  const labels = {
+  const labels: Record<string, string> = {
     admin: '管理员',
     manager: '经理',
     editor: '编辑',
     support: '客服',
     viewer: '查看者'
   }
-  return labels[user.value?.role] || '后台用户'
+  return labels[user.value?.role || ''] || '后台用户'
 })
 
-const requestLogout = () => {
+const requestLogout = (): void => {
   mobileSidebarOpen.value = false
   logoutDialogOpen.value = true
 }
 
-const confirmLogout = async () => {
+const confirmLogout = async (): Promise<void> => {
   if (logoutLoading.value) return
 
   logoutLoading.value = true

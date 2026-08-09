@@ -157,7 +157,7 @@
   </DialogContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, defineComponent, h } from 'vue'
 import { RefreshCw } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -171,6 +171,18 @@ import {
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  OrderCarrierLabelResolver,
+  OrderDateFormatter,
+  OrderMoneyFormatter,
+  OrderRecord,
+  OrderShippingAddressLineResolver,
+  OrderShippingNameResolver,
+  OrderStatusNameResolver,
+  OrderStatusToneResolver,
+  TrackingEvent,
+  TrackingShipment
+} from './orderTypes'
 
 const OrderDetailSection = defineComponent({
   props: { title: { type: String, required: true } },
@@ -205,34 +217,45 @@ const AmountRow = defineComponent({
   },
 })
 
-const props = defineProps({
-  currentOrder: { type: Object, default: null },
-  currentTrackingEvents: { type: Array, default: () => [] },
-  currentTrackingShipment: { type: Object, default: null },
-  adminNote: { type: String, default: '' },
-  syncingTracking: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  orderStatusName: { type: Function, required: true },
-  orderStatusTone: { type: Function, required: true },
-  paymentStatusName: { type: Function, required: true },
-  paymentStatusTone: { type: Function, required: true },
-  shippingStatusName: { type: Function, required: true },
-  shippingStatusTone: { type: Function, required: true },
-  trackingSyncStatusName: { type: Function, required: true },
-  trackingSyncStatusTone: { type: Function, required: true },
-  trackingRegistrationStatusName: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  formatMoney: { type: Function, required: true },
-  shippingName: { type: Function, required: true },
-  shippingAddressLine: { type: Function, required: true },
-  orderCarrierLabel: { type: Function, required: true },
-  orderCarrierServiceLabel: { type: Function, required: true },
+const props = withDefaults(defineProps<{
+  currentOrder?: OrderRecord | null
+  currentTrackingEvents?: TrackingEvent[]
+  currentTrackingShipment?: TrackingShipment | null
+  adminNote?: string
+  syncingTracking?: boolean
+  canEdit?: boolean
+  orderStatusName: OrderStatusNameResolver
+  orderStatusTone: OrderStatusToneResolver
+  paymentStatusName: OrderStatusNameResolver
+  paymentStatusTone: OrderStatusToneResolver
+  shippingStatusName: OrderStatusNameResolver
+  shippingStatusTone: OrderStatusToneResolver
+  trackingSyncStatusName: OrderStatusNameResolver
+  trackingSyncStatusTone: OrderStatusToneResolver
+  trackingRegistrationStatusName: OrderStatusNameResolver
+  formatDate: OrderDateFormatter
+  formatMoney: OrderMoneyFormatter
+  shippingName: OrderShippingNameResolver
+  shippingAddressLine: OrderShippingAddressLineResolver
+  orderCarrierLabel: OrderCarrierLabelResolver
+  orderCarrierServiceLabel: OrderCarrierLabelResolver
+}>(), {
+  currentOrder: null,
+  currentTrackingEvents: () => [],
+  currentTrackingShipment: null,
+  adminNote: '',
+  syncingTracking: false,
+  canEdit: false
 })
 
-const emit = defineEmits(['update:adminNote', 'sync-tracking', 'update-note'])
+const emit = defineEmits<{
+  (event: 'update:adminNote', value: string): void
+  (event: 'sync-tracking'): void
+  (event: 'update-note'): void
+}>()
 
-const adminNoteModel = computed({
+const adminNoteModel = computed<string>({
   get: () => props.adminNote,
-  set: (value) => emit('update:adminNote', value),
+  set: (value: string) => emit('update:adminNote', value),
 })
 </script>

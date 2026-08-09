@@ -120,6 +120,7 @@ func (r *CartRepository) BulkUpsertItems(items []product.CartItem) error {
 			if err == nil {
 				existing.Quantity += item.Quantity
 				existing.Price = item.Price
+				existing.Currency = item.Currency
 				if err := tx.Save(existing).Error; err != nil {
 					return err
 				}

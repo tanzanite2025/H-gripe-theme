@@ -1,11 +1,20 @@
 import { computed, reactive, ref } from 'vue'
 import productApi from '@/api/products'
 
+interface ProductStats {
+  total?: number
+  active?: number
+  low_stock?: number
+  out_of_stock?: number
+}
+
+type ProductRecord = Record<string, any>
+
 export const useProductCatalog = () => {
   const loading = ref(false)
-  const products = ref([])
-  const selectedProducts = ref([])
-  const stats = ref({})
+  const products = ref<ProductRecord[]>([])
+  const selectedProducts = ref<ProductRecord[]>([])
+  const stats = ref<ProductStats>({})
   const filters = reactive({ search: '', status: 'all', locale: 'all', featured: 'all' })
   const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
 

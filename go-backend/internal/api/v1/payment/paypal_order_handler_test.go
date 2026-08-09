@@ -183,8 +183,8 @@ func newPayPalHandlerTestHarness(t *testing.T, gateway pgateway.PaymentGateway) 
 		paymentRepo,
 	)
 	paymentService := service.NewPaymentService(txManager, paymentRepo)
-	orderService := service.NewOrderService(nil, orderRepo, nil, nil, nil)
-	handler := NewHandler(paymentService, orderService, nil, nil, nil, nil, nil, nil, nil, nil)
+	orderService := service.NewOrderService(nil, orderRepo, nil, nil)
+	handler := NewHandler(paymentService, orderService, nil, nil, nil, nil, nil, nil, nil)
 	handler.gatewayFactory = func(*pgateway.Config) (pgateway.PaymentGateway, error) {
 		return gateway, nil
 	}

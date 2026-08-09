@@ -1,0 +1,191 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import type { AxiosError } from 'axios'
+import axios from '@/utils/axios'
+
+export interface AdminUser {
+  id?: number | string
+  username?: string
+  email?: string
+  role?: string
+  permissions: string[]
+  [key: string]: unknown
+}
+
+interface AuthResponse {
+  user?: AdminUser | null
+}
+
+interface PermissionVerificationResult {
+  valid: boolean
+  updated?: boolean
+  reason?: string
+  warning?: string
+}
+
+interface InitAuthResult {
+  authenticated: boolean
+  permissionsUpdated?: boolean
+  reason?: string
+  warning?: string
+}
+
+const readJSON = <T>(key: string, fallback: T): T => {
+  try {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) as T
+  } catch {
+    return fallback
+  }
+}
+
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<AdminUser | null>(readJSON('admin_user', null))
+  const permissions = ref<string[]>(readJSON('admin_permissions', []))
+  const initialized = ref(false)
+
+  const isAuthenticated = computed(() => !!user.value)
+
+  const persistSession = (newUser?: AdminUser | null): void => {
+    if (!newUser || !Array.isArray(newUser.permissions)) {
+      throw new Error('[CRITICAL] Missing permissions array in auth response')
+    }
+
+    user.value = newUser
+    permissions.value = newUser.permissions
+    localStorage.setItem('admin_user', JSON.stringify(newUser))
+    localStorage.setItem('admin_permissions', JSON.stringify(newUser.permissions))
+  }
+
+  const clearSession = (): void => {
+    user.value = null
+    permissions.value = []
+    localStorage.removeItem('admin_user')
+    localStorage.removeItem('admin_permissions')
+  }
+
+  const hasPermission = (permission?: string | null): boolean => {
+    if (!permission) return true
+    return permissions.value.includes(permission)
+  }
+
+  const hasRole = (role: string): boolean => {
+    return user.value?.role === role
+  }
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await axios.post<AuthResponse>('/api/admin/auth/login', {
+        email,
+        password,
+      })
+
+      persistSession(response.data?.user)
+      initialized.value = true
+      return true
+    } catch (error) {
+      console.error('Login failed:', error)
+      throw error
+    }
+  }
+
+  const loginWithGoogle = async (idToken: string): Promise<boolean> => {
+    try {
+      const response = await axios.post<AuthResponse>('/api/admin/auth/google-login', {
+        id_token: idToken,
+      })
+
+      persistSession(response.data?.user)
+      initialized.value = true
+      return true
+    } catch (error) {
+      console.error('Google login failed:', error)
+      throw error
+    }
+  }
+
+  const logout = async (): Promise<void> => {
+    try {
+      await axios.post('/api/admin/auth/logout')
+    } catch (error) {
+      console.warn('Logout request failed:', error)
+    } finally {
+      clearSession()
+      initialized.value = true
+    }
+  }
+
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      await axios.post('/api/admin/auth/refresh')
+      return true
+    } catch (error) {
+      console.error('Token refresh failed:', error)
+      clearSession()
+      return false
+    }
+  }
+
+  const verifyPermissions = async (): Promise<PermissionVerificationResult> => {
+    try {
+      const response = await axios.get<AuthResponse>('/api/admin/auth/profile')
+      const serverUser = response.data?.user
+
+      if (!serverUser || !Array.isArray(serverUser.permissions)) {
+        throw new Error('[CRITICAL] Missing permissions array in profile response')
+      }
+
+      const localPerms = JSON.stringify([...permissions.value].sort())
+      const serverPerms = JSON.stringify([...serverUser.permissions].sort())
+      persistSession(serverUser)
+
+      return {
+        valid: true,
+        updated: localPerms !== serverPerms,
+      }
+    } catch (error) {
+      console.error('[Auth] Permission verification failed', error)
+
+      if ((error as AxiosError).response?.status === 401) {
+        clearSession()
+        return { valid: false, reason: 'Session expired' }
+      }
+
+      clearSession()
+      return { valid: false, reason: 'Permission verification failed' }
+    }
+  }
+
+  const initAuth = async (): Promise<InitAuthResult> => {
+    if (initialized.value) {
+      return { authenticated: isAuthenticated.value }
+    }
+
+    const result = await verifyPermissions()
+    initialized.value = true
+
+    if (!result.valid) {
+      return { authenticated: false, reason: result.reason }
+    }
+
+    return {
+      authenticated: true,
+      permissionsUpdated: result.updated,
+      warning: result.warning,
+    }
+  }
+
+  return {
+    user,
+    permissions,
+    initialized,
+    isAuthenticated,
+    hasPermission,
+    hasRole,
+    login,
+    loginWithGoogle,
+    logout,
+    refreshToken,
+    verifyPermissions,
+    initAuth,
+  }
+})

@@ -1,7 +1,7 @@
 <template>
   <Card class="gap-0 py-0 shadow-none rounded-[24px] border-dashed border-border/80">
     <div class="uds-glow-bg" />
-    <Tabs :model-value="activeActivity" class="relative z-10" @update:model-value="emit('update:active-activity', $event)">
+    <Tabs :model-value="activeActivity" class="relative z-10" @update:model-value="updateActiveActivity">
       <CardHeader class="flex flex-col gap-3 border-b border-dashed border-border/70 py-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle class="text-sm font-black tracking-tighter italic uppercase">最近活动</CardTitle>
@@ -85,13 +85,22 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { defineComponent, h } from 'vue'
 import { ArrowRight, Inbox } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type {
+  DashboardActivity,
+  DashboardLabelResolver,
+  DashboardNumberFormatter,
+  DashboardRecentOrder,
+  DashboardRecentTicket,
+  DashboardRecentUser,
+  DashboardToneResolver
+} from './dashboardTypes'
 
 const EmptyActivity = defineComponent({
   props: {
@@ -105,19 +114,36 @@ const EmptyActivity = defineComponent({
   },
 })
 
-defineProps({
-  activeActivity: { type: String, default: 'orders' },
-  recentOrders: { type: Array, default: () => [] },
-  recentUsers: { type: Array, default: () => [] },
-  recentTickets: { type: Array, default: () => [] },
-  formatNumber: { type: Function, required: true },
-  getOrderStatusName: { type: Function, required: true },
-  orderStatusTone: { type: Function, required: true },
-  getRoleName: { type: Function, required: true },
-  roleTone: { type: Function, required: true },
-  getTicketStatusName: { type: Function, required: true },
-  ticketStatusTone: { type: Function, required: true },
+withDefaults(defineProps<{
+  activeActivity?: DashboardActivity
+  recentOrders?: DashboardRecentOrder[]
+  recentUsers?: DashboardRecentUser[]
+  recentTickets?: DashboardRecentTicket[]
+  formatNumber: DashboardNumberFormatter
+  getOrderStatusName: DashboardLabelResolver
+  orderStatusTone: DashboardToneResolver
+  getRoleName: DashboardLabelResolver
+  roleTone: DashboardToneResolver
+  getTicketStatusName: DashboardLabelResolver
+  ticketStatusTone: DashboardToneResolver
+}>(), {
+  activeActivity: 'orders',
+  recentOrders: () => [],
+  recentUsers: () => [],
+  recentTickets: () => []
 })
 
-const emit = defineEmits(['update:active-activity', 'navigate'])
+const emit = defineEmits<{
+  (event: 'update:active-activity', value: DashboardActivity): void
+  (event: 'navigate', path: string): void
+}>()
+
+const activityValues: DashboardActivity[] = ['orders', 'users', 'tickets']
+const isDashboardActivity = (value: unknown): value is DashboardActivity => (
+  typeof value === 'string' && activityValues.includes(value as DashboardActivity)
+)
+
+const updateActiveActivity = (value: unknown): void => {
+  if (isDashboardActivity(value)) emit('update:active-activity', value)
+}
 </script>

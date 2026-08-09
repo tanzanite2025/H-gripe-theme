@@ -7,10 +7,12 @@ import (
 	attributiondomain "tanzanite/internal/domain/attribution"
 	"tanzanite/internal/domain/audit"
 	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/domain/currency"
 	"tanzanite/internal/domain/faq"
 	"tanzanite/internal/domain/feedback"
 	"tanzanite/internal/domain/gallery"
 	"tanzanite/internal/domain/loyalty"
+	marketdomain "tanzanite/internal/domain/market"
 	"tanzanite/internal/domain/media"
 	"tanzanite/internal/domain/merchant"
 	orderdomain "tanzanite/internal/domain/order"
@@ -55,18 +57,23 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&post.Post{},
 		&post.Category{},
 		&post.PostCategory{},
+		&product.ProductInformationTemplate{},
 		&product.Product{},
 		&product.ProductMedia{},
 		&product.ProductAttribute{},
 		&product.AttributeValue{},
 		&product.ProductType{},
+		&product.ProductTypeTranslation{},
 		&product.SpecDefinition{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
+		&product.ProductVariantOptionValue{},
 		&product.Cart{},
 		&product.CartItem{},
 		&merchant.GoogleMerchantConnection{},
 		&merchant.GoogleMerchantOffer{},
+		&marketdomain.StorefrontMarket{},
+		&marketdomain.MarketCountry{},
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
 		&attributiondomain.OrderAttribution{},
@@ -84,6 +91,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&payment.PaymentRiskAlertState{},
 		&payment.PaymentProtectionControl{},
 		&payment.PaymentRefundRecommendation{},
+		&currency.ExchangeRate{},
 		&shipping.ShippingTemplate{},
 		&shipping.ShippingRule{},
 		&shipping.Carrier{},

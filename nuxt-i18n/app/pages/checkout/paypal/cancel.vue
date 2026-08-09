@@ -6,9 +6,6 @@
       <p>{{ t('checkout.paypalCancel.message') }}</p>
       <p v-if="orderNumber" class="paypal-cancel-order">{{ orderNumber }}</p>
       <div class="paypal-cancel-actions">
-        <button class="paypal-cancel-button paypal-cancel-button--primary" type="button" @click="openCheckout">
-          {{ t('checkout.paypalCancel.actions.tryAgain') }}
-        </button>
         <NuxtLink class="paypal-cancel-button" :to="localePath('/')">
           {{ t('checkout.paypalReturn.actions.continueShopping') }}
         </NuxtLink>
@@ -20,12 +17,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n, useLocalePath, useRoute } from '#imports'
-import { useCart } from '~/composables/useCart'
 
 const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
-const { openCheckout } = useCart()
 const firstQueryValue = (value: unknown) => Array.isArray(value) ? String(value[0] || '') : String(value || '')
 const orderNumber = computed(() => firstQueryValue(route.query.order_number).trim())
 </script>

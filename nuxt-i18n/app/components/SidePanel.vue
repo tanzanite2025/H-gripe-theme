@@ -57,11 +57,15 @@
   </ClientOnly>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, provide, onMounted, onBeforeUnmount } from 'vue'
 
+interface SidebarEventDetail {
+  side?: string
+}
+
 // 左侧 Sidebar 打开状态
-const leftOpen = ref(false)
+const leftOpen = ref<boolean>(false)
 
 // 左侧箭头：关闭时向右，打开时向左
 const leftArrow = computed(() => (leftOpen.value ? '◀' : '▶'))
@@ -101,9 +105,9 @@ defineExpose({
 })
 
 // 监听全局事件，允许外部通过 CustomEvent 打开左侧侧边栏
-const handleGlobalSidebarEvent = (event) => {
+const handleGlobalSidebarEvent = (event: Event): void => {
   try {
-    const detail = event && event.detail ? event.detail : {}
+    const detail = (event as CustomEvent<SidebarEventDetail>).detail ?? {}
     const side = detail.side || 'left'
     if (side === 'left') {
       openLeft()

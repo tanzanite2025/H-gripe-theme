@@ -181,9 +181,7 @@ func seedTestCurrencyPolicy(t *testing.T, db *gorm.DB) *CurrencyPolicyService {
 	t.Helper()
 	policy := NewCurrencyPolicyService(repository.NewSettingRepository(db))
 	_, err := policy.UpdatePolicy(currency.Policy{
-		AccountingCurrency:   "USD",
-		DefaultOrderCurrency: "USD",
-		AcceptedCurrencies:   []string{"USD"},
+		DisplayCurrencies: []string{"USD"},
 	})
 	require.NoError(t, err)
 	return policy

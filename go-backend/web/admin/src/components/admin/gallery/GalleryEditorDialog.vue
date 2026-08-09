@@ -29,21 +29,31 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import type { GalleryDialogMode, GalleryForm, GalleryFormErrors } from './galleryTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
-  errors: { type: Object, default: () => ({}) },
-  submitting: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  open?: boolean
+  mode?: GalleryDialogMode
+  form: GalleryForm
+  errors?: GalleryFormErrors
+  submitting?: boolean
+}>(), {
+  open: false,
+  mode: 'create',
+  errors: () => ({}),
+  submitting: false
 })
 
-const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', key: string): void
+}>()
 </script>

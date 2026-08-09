@@ -163,7 +163,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Calculator, Pencil, Plus, Radar, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -178,26 +178,44 @@ import {
   trackingMappingScopeLabel,
   trackingProviderName,
 } from '@/lib/shippingPresentation'
+import type {
+  ShippingCarrier,
+  ShippingCarrierService,
+  ShippingTemplate,
+  TrackingCarrierMapping,
+  TrackingProvider
+} from './shippingTypes'
 
-defineProps({
-  templates: { type: Array, default: () => [] },
-  trackingCarrierMappings: { type: Array, default: () => [] },
-  trackingProviders: { type: Array, default: () => [] },
-  carriers: { type: Array, default: () => [] },
-  carrierServices: { type: Array, default: () => [] },
-  loadingTemplates: { type: Boolean, default: false },
-  loadingTrackingMappings: { type: Boolean, default: false },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  templates?: ShippingTemplate[]
+  trackingCarrierMappings?: TrackingCarrierMapping[]
+  trackingProviders?: TrackingProvider[]
+  carriers?: ShippingCarrier[]
+  carrierServices?: ShippingCarrierService[]
+  loadingTemplates?: boolean
+  loadingTrackingMappings?: boolean
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  templates: () => [],
+  trackingCarrierMappings: () => [],
+  trackingProviders: () => [],
+  carriers: () => [],
+  carrierServices: () => [],
+  loadingTemplates: false,
+  loadingTrackingMappings: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits([
-  'create-template',
-  'edit-template',
-  'delete-template',
-  'create-mapping',
-  'edit-mapping',
-  'delete-mapping',
-])
+const emit = defineEmits<{
+  (event: 'create-template'): void
+  (event: 'edit-template', template: ShippingTemplate): void
+  (event: 'delete-template', template: ShippingTemplate): void
+  (event: 'create-mapping'): void
+  (event: 'edit-mapping', mapping: TrackingCarrierMapping): void
+  (event: 'delete-mapping', mapping: TrackingCarrierMapping): void
+}>()
 </script>

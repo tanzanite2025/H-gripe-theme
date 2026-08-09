@@ -45,7 +45,7 @@
             <Select
               :model-value="orderItemSelection"
               :disabled="!canEdit || orderItemsLoading || orderItemBinding"
-              @update:model-value="$emit('update-order-item-selection', $event)"
+              @update:model-value="$emit('update-order-item-selection', String($event))"
             >
               <SelectTrigger class="h-9 w-full rounded-full">
                 <SelectValue />
@@ -90,7 +90,7 @@
             class="min-h-36"
             placeholder="填写处理记录、判定原因、下一步动作。先保存为纯文本事实源，后续富文本/图片单独走规范。"
             :disabled="!canEdit || resolutionSaving"
-            @update:model-value="$emit('update-resolution-draft', $event)"
+            @update:model-value="$emit('update-resolution-draft', String($event))"
           />
           <div class="mt-3 flex items-center justify-between gap-3">
             <span class="text-[10px] text-muted-foreground/70">最后处理：{{ formatDateTime(selectedClaim.processed_at) }}</span>
@@ -219,7 +219,7 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { defineComponent, h } from 'vue'
 import { FileWarning, LoaderCircle } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -238,6 +238,13 @@ import {
   serviceStatusTone,
   serviceTypeLabel
 } from '@/lib/warrantyPresentation'
+import type {
+  WarrantyClaim,
+  WarrantyOrderItem,
+  WarrantyServiceRecord,
+  WarrantyServiceRecordForm,
+  WarrantyStatusOption
+} from './warrantyTypes'
 
 const DetailItem = defineComponent({
   inheritAttrs: false,
@@ -252,34 +259,47 @@ const DetailItem = defineComponent({
   }
 })
 
-defineProps({
-  detailLoading: { type: Boolean, default: false },
-  resolutionSaving: { type: Boolean, default: false },
-  orderItemsLoading: { type: Boolean, default: false },
-  orderItemBinding: { type: Boolean, default: false },
-  serviceRecordsLoading: { type: Boolean, default: false },
-  serviceRecordCreating: { type: Boolean, default: false },
-  selectedClaim: { type: Object, default: null },
-  resolutionDraft: { type: String, default: '' },
-  orderItems: { type: Array, default: () => [] },
-  orderItemSelection: { type: String, default: 'none' },
-  serviceRecords: { type: Array, default: () => [] },
-  serviceRecordForm: { type: Object, required: true },
-  serviceTypeOptions: { type: Array, required: true },
-  serviceStatusOptions: { type: Array, required: true },
-  canEdit: { type: Boolean, default: false }
+withDefaults(defineProps<{
+  detailLoading?: boolean
+  resolutionSaving?: boolean
+  orderItemsLoading?: boolean
+  orderItemBinding?: boolean
+  serviceRecordsLoading?: boolean
+  serviceRecordCreating?: boolean
+  selectedClaim?: WarrantyClaim | null
+  resolutionDraft?: string
+  orderItems?: WarrantyOrderItem[]
+  orderItemSelection?: string
+  serviceRecords?: WarrantyServiceRecord[]
+  serviceRecordForm: WarrantyServiceRecordForm
+  serviceTypeOptions: WarrantyStatusOption[]
+  serviceStatusOptions: WarrantyStatusOption[]
+  canEdit?: boolean
+}>(), {
+  detailLoading: false,
+  resolutionSaving: false,
+  orderItemsLoading: false,
+  orderItemBinding: false,
+  serviceRecordsLoading: false,
+  serviceRecordCreating: false,
+  selectedClaim: null,
+  resolutionDraft: '',
+  orderItems: () => [],
+  orderItemSelection: 'none',
+  serviceRecords: () => [],
+  canEdit: false
 })
 
-const emit = defineEmits([
-  'update-order-item-selection',
-  'bind-order-item',
-  'update-resolution-draft',
-  'save-resolution',
-  'update-service-record-form',
-  'create-service-record'
-])
+const emit = defineEmits<{
+  (event: 'update-order-item-selection', value: string): void
+  (event: 'bind-order-item'): void
+  (event: 'update-resolution-draft', value: string): void
+  (event: 'save-resolution'): void
+  (event: 'update-service-record-form', patch: Partial<WarrantyServiceRecordForm>): void
+  (event: 'create-service-record'): void
+}>()
 
-const updateServiceRecordField = (field, value) => {
-  emit('update-service-record-form', { [field]: value })
+const updateServiceRecordField = (field: keyof WarrantyServiceRecordForm, value: unknown): void => {
+  emit('update-service-record-form', { [field]: String(value ?? '') } as Partial<WarrantyServiceRecordForm>)
 }
 </script>

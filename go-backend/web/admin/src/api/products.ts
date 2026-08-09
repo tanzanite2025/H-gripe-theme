@@ -43,4 +43,32 @@ export const productApi = {
   }
 }
 
+export const productInformationTemplateApi = {
+  async list(params: Record<string, any> = {}) {
+    const response = await axios.get('/api/admin/product-information-templates', { params })
+    const payload = response.data?.data ?? response.data ?? []
+    return Array.isArray(payload) ? payload : []
+  },
+
+  async get(id: number | string) {
+    const response = await axios.get(`/api/admin/product-information-templates/${id}`)
+    return response.data?.data ?? response.data ?? {}
+  },
+
+  async create(payload: Record<string, any>) {
+    const response = await axios.post('/api/admin/product-information-templates', payload)
+    return response.data?.data ?? response.data ?? {}
+  },
+
+  async update(id: number | string, payload: Record<string, any>) {
+    const response = await axios.put(`/api/admin/product-information-templates/${id}`, payload)
+    return response.data?.data ?? response.data ?? {}
+  },
+
+  async remove(id: number | string) {
+    const response = await axios.delete(`/api/admin/product-information-templates/${id}`)
+    return response.data?.data ?? response.data ?? {}
+  }
+}
+
 export default productApi

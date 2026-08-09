@@ -8,7 +8,7 @@ import (
 	"tanzanite/internal/domain/order"
 	attributionpkg "tanzanite/internal/pkg/attribution"
 	"tanzanite/internal/pkg/logger"
-	pgateway "tanzanite/internal/pkg/payment"
+	paymentpkg "tanzanite/internal/pkg/payment"
 	"tanzanite/internal/pkg/requestctx"
 	"tanzanite/internal/repository"
 	"time"
@@ -75,16 +75,6 @@ func (s *OrderService) CreateOrderWithAttribution(
 		}
 		quoteInput.LoyaltyProgramConfig = config
 	}
-	orderCurrency, err := s.resolveOrderCurrency()
-	if err != nil {
-		return nil, err
-	}
-	if provider := pgateway.ProviderForPaymentMethod(paymentMethod); provider != "" {
-		if err := pgateway.ValidateGatewayCurrency(pgateway.GatewayType(provider), orderCurrency); err != nil {
-			return nil, fmt.Errorf("payment method %s cannot collect order currency %s: %w", paymentMethod, orderCurrency, err)
-		}
-	}
-	quoteInput.Currency = orderCurrency
 	orderNumber, err := s.generateOrderNumber()
 	if err != nil {
 		return nil, err
@@ -95,6 +85,17 @@ func (s *OrderService) CreateOrderWithAttribution(
 		quote, err := s.checkout.QuoteWithRepositories(quoteInput, repos)
 		if err != nil {
 			return err
+		}
+		orderCurrency := quote.Currency
+		if provider := paymentpkg.ProviderForPaymentMethod(paymentMethod); provider != "" {
+			if err := paymentpkg.ValidateGatewayCurrency(paymentpkg.GatewayType(provider), orderCurrency); err != nil {
+				return fmt.Errorf(
+					"payment method %s cannot process order currency %s: %w",
+					strings.TrimSpace(paymentMethod),
+					orderCurrency,
+					err,
+				)
+			}
 		}
 
 		shippingMethodSnapshot := strings.TrimSpace(shippingMethod)

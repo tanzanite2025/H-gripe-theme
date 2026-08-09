@@ -10,12 +10,20 @@ import (
 )
 
 type productTypeRequest struct {
-	Name            string                         `json:"name" binding:"required"`
-	Slug            string                         `json:"slug" binding:"required"`
-	Description     string                         `json:"description"`
-	SortOrder       int                            `json:"sort_order"`
-	IsEnabled       *bool                          `json:"is_enabled" binding:"required"`
-	SpecDefinitions []productSpecDefinitionRequest `json:"spec_definitions"`
+	Name            string                           `json:"name" binding:"required"`
+	Slug            string                           `json:"slug" binding:"required"`
+	Description     string                           `json:"description"`
+	SortOrder       int                              `json:"sort_order"`
+	IsEnabled       *bool                            `json:"is_enabled" binding:"required"`
+	Translations    *[]productTypeTranslationRequest `json:"translations"`
+	SpecDefinitions []productSpecDefinitionRequest   `json:"spec_definitions"`
+}
+
+type productTypeTranslationRequest struct {
+	ID          uint   `json:"id"`
+	Locale      string `json:"locale" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
 }
 
 type productSpecDefinitionRequest struct {
@@ -24,6 +32,7 @@ type productSpecDefinitionRequest struct {
 	Name            string `json:"name" binding:"required"`
 	Slug            string `json:"slug" binding:"required"`
 	FieldType       string `json:"field_type" binding:"required,oneof=text number select boolean"`
+	Presentation    string `json:"presentation"`
 	Unit            string `json:"unit"`
 	IsRequired      bool   `json:"is_required"`
 	IsFilterable    bool   `json:"is_filterable"`
@@ -111,6 +120,7 @@ func productTypeInputFromRequest(request productTypeRequest) service.ProductType
 			Name:            definition.Name,
 			Slug:            definition.Slug,
 			FieldType:       definition.FieldType,
+			Presentation:    definition.Presentation,
 			Unit:            definition.Unit,
 			IsRequired:      definition.IsRequired,
 			IsFilterable:    definition.IsFilterable,
@@ -121,7 +131,7 @@ func productTypeInputFromRequest(request productTypeRequest) service.ProductType
 			Validation:      definition.Validation,
 		})
 	}
-	return service.ProductTypeInput{
+	input := service.ProductTypeInput{
 		Name:            request.Name,
 		Slug:            request.Slug,
 		Description:     request.Description,
@@ -129,6 +139,19 @@ func productTypeInputFromRequest(request productTypeRequest) service.ProductType
 		IsEnabled:       request.IsEnabled != nil && *request.IsEnabled,
 		SpecDefinitions: definitions,
 	}
+	if request.Translations != nil {
+		input.UpdateTranslations = true
+		input.Translations = make([]service.ProductTypeTranslationInput, 0, len(*request.Translations))
+		for _, translation := range *request.Translations {
+			input.Translations = append(input.Translations, service.ProductTypeTranslationInput{
+				ID:          translation.ID,
+				Locale:      translation.Locale,
+				Name:        translation.Name,
+				Description: translation.Description,
+			})
+		}
+	}
+	return input
 }
 
 func respondProductTypeServiceError(c *gin.Context, err error) {
@@ -138,6 +161,8 @@ func respondProductTypeServiceError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrProductTypeSlugExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "Product type slug already exists"})
 	case errors.Is(err, service.ErrProductTypeInvalid), errors.Is(err, service.ErrProductSpecInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductTypeTranslationInvalid), errors.Is(err, service.ErrUnsupportedLocale):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to manage product type"})

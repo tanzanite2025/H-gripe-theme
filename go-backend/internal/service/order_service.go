@@ -13,7 +13,6 @@ type OrderService struct {
 	orderRepo       *repository.OrderRepository
 	checkout        *CheckoutService
 	shipping        *ShippingService
-	currency        *CurrencyPolicyService
 	numberGenerator *ordernumber.Generator
 }
 
@@ -31,7 +30,6 @@ func NewOrderService(
 	orderRepo *repository.OrderRepository,
 	checkout *CheckoutService,
 	shipping *ShippingService,
-	currencyPolicy *CurrencyPolicyService,
 	numberGenerators ...*ordernumber.Generator,
 ) *OrderService {
 	var numberGenerator *ordernumber.Generator
@@ -43,17 +41,9 @@ func NewOrderService(
 		orderRepo:       orderRepo,
 		checkout:        checkout,
 		shipping:        shipping,
-		currency:        currencyPolicy,
 		numberGenerator: numberGenerator,
 	}
 	return service
-}
-
-func (s *OrderService) resolveOrderCurrency() (string, error) {
-	if s.currency == nil {
-		return "", errors.New("currency policy service is not configured")
-	}
-	return s.currency.DefaultOrderCurrency()
 }
 
 type OrderTrackingUpdateInput struct {

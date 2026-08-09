@@ -20,7 +20,7 @@ export default defineNuxtConfig({
   router: {
     options: {
       // 支持多语言路由
-      // 例如: /blog/post 和 /zh/blog/post
+      // 例如: /blog/post 和 /zh_cn/blog/post
     }
   },
 
@@ -39,12 +39,13 @@ export default defineNuxtConfig({
   ],
 
   // i18n 配置（如果使用 @nuxtjs/i18n 模块）
+  // Storefront locale codes must mirror shared/storefront-locales.json.
   // i18n: {
   //   locales: [
   //     { code: 'en', iso: 'en-US', name: 'English' },
-  //     { code: 'zh', iso: 'zh-CN', name: '简体中文' },
+  //     { code: 'zh_cn', iso: 'zh-CN', name: '简体中文' },
   //     { code: 'fr', iso: 'fr-FR', name: 'Français' },
-  //     // ... 其他语言
+  //     // ... remaining fixed storefront locales
   //   ],
   //   defaultLocale: 'en',
   //   strategy: 'prefix_except_default', // 英文不加前缀，其他语言加前缀

@@ -78,7 +78,7 @@ Last updated: 2026-07-24
 4. i18n
    - 分类名当前来自后端数据。
    - 当前前端只翻译固定 UI 文案，不翻译动态分类名。
-   - 如果后端后续需要 34 语言分类名，应由 `/products/types` 按 locale 返回或返回明确的 localized map；不要在 Nuxt 静态语言包里手写商品类型事实源。
+   - 如果后端后续需要固定 20 个 storefront locale 的分类名，应由 `/products/types` 按 locale 返回或返回明确的 localized map；不要在 Nuxt 静态语言包里手写商品类型事实源。
 
 ## 5. 维护规则
 

@@ -187,11 +187,16 @@ func (h *Handler) ConfirmWechatOrder(c *gin.Context) {
 		})
 		return
 	}
+	transactionID := providerTransactionID(paymentResponse)
+	if transactionID == "" {
+		apierror.RespondError(c, http.StatusBadGateway, "wechat_transaction_id_missing", "WeChat Pay trade query did not return a transaction id")
+		return
+	}
 
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
 		Provider:        string(pgateway.GatewayWechat),
 		OrderNumber:     orderRecord.OrderNumber,
-		TransactionID:   gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
+		TransactionID:   transactionID,
 		PaymentMethod:   "wechat",
 		Amount:          paymentResponse.Amount,
 		Currency:        paymentResponse.Currency,

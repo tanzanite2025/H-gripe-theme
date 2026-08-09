@@ -3,6 +3,9 @@ package product
 import (
 	"time"
 
+	"tanzanite/internal/domain/currency"
+
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -13,8 +16,10 @@ type ProductVariant struct {
 	SKU                string         `gorm:"type:varchar(120);uniqueIndex;not null" json:"sku"`
 	Title              string         `gorm:"type:varchar(160)" json:"title"`
 	OptionValues       string         `gorm:"type:text;not null;uniqueIndex:idx_product_variant_options" json:"option_values"`
+	Currency           string         `gorm:"size:3;not null;default:'USD';index" json:"currency"`
 	Price              float64        `gorm:"not null" json:"price"`
 	SalePrice          *float64       `json:"sale_price"`
+	DisplayPriceData   datatypes.JSON `gorm:"column:display_prices;type:json;not null;default:'[]'" json:"display_prices,omitempty"`
 	Stock              int            `gorm:"default:0;not null" json:"stock"`
 	Weight             int            `gorm:"column:weight_grams" json:"weight_grams"`
 	IsDefault          bool           `gorm:"default:false;not null" json:"is_default"`
@@ -39,6 +44,24 @@ func (v *ProductVariant) EffectivePrice() float64 {
 func (v *ProductVariant) BeforeCreate(tx *gorm.DB) error {
 	if v.OptionValues == "" {
 		v.OptionValues = "{}"
+	}
+	return v.normalizeCurrency()
+}
+
+func (v *ProductVariant) BeforeSave(tx *gorm.DB) error {
+	return v.normalizeCurrency()
+}
+
+func (v *ProductVariant) normalizeCurrency() error {
+	v.Currency = currency.NormalizeCode(v.Currency)
+	if v.Currency == "" {
+		v.Currency = DefaultPriceCurrency
+	}
+	if !currency.IsValidCode(v.Currency) || !currency.IsCatalogCode(v.Currency) {
+		return gorm.ErrInvalidData
+	}
+	if len(v.DisplayPriceData) == 0 {
+		v.DisplayPriceData = datatypes.JSON([]byte("[]"))
 	}
 	return nil
 }

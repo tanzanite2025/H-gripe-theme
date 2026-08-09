@@ -106,8 +106,9 @@ not be described as enabled production behavior.
 Provider failover should be added only after there is a dedicated routing
 layer, not by having risk monitoring silently change checkout behavior. The
 future shape should be a separate, audited control plane that stores candidate
-providers, route priority, supported currencies/countries, provider health, and
-time-bounded operator approvals. Risk monitoring may recommend a routing
+providers, route priority, provider-declared order constraints, country
+coverage, provider health, and time-bounded operator approvals. Risk monitoring
+may recommend a routing
 change, but the live route should change only through an explicit control with
 rollback and audit history.
 

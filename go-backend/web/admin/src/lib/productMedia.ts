@@ -16,6 +16,18 @@ export const getPublicSiteOrigin = () => {
   return ''
 }
 
+export interface ProductThumbnailProduct {
+  media?: unknown
+  name?: unknown
+}
+
+export interface ProductThumbnail {
+  kind: 'image' | 'video' | 'empty'
+  src: string
+  alt: string
+  label: string
+}
+
 export const resolveProductMediaUrl = (url: unknown) => {
   const value = String(url || '').trim()
   if (!value) return ''
@@ -26,7 +38,7 @@ export const resolveProductMediaUrl = (url: unknown) => {
   return origin ? `${origin}${path}` : path
 }
 
-export const getProductThumbnail = (product: any) => {
+export const getProductThumbnail = (product: ProductThumbnailProduct): ProductThumbnail => {
   const mediaItems = Array.isArray(product?.media) ? product.media : []
   const visibleItems = mediaItems.filter((item) => item && item.is_visible !== false)
   const hasUrl = (item) => String(item?.url || '').trim().length > 0
@@ -83,6 +95,7 @@ export const createProductMediaItem = (overrides: Record<string, any> = {}, sort
     id: null,
     local_key: `media-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     variant_id: null,
+    variant_option_value_id: null,
     media_asset_id: null,
     media_type: 'image',
     role: 'gallery',
@@ -108,6 +121,7 @@ export const buildProductMediaFormValues = (product: any) => (
   (product.media || []).map((item, index) => createProductMediaItem({
     id: item.id || null,
     variant_id: item.variant_id || null,
+    variant_option_value_id: item.variant_option_value_id || null,
     media_asset_id: item.media_asset_id || null,
     media_type: item.media_type || 'image',
     role: item.role || (item.media_type === 'video' ? 'video' : 'gallery'),
@@ -174,6 +188,7 @@ export const normalizeProductMediaForPayload = (items: Array<Record<string, any>
     .map((item, index) => ({
       id: item.id || undefined,
       variant_id: item.variant_id || undefined,
+      variant_option_value_id: item.variant_option_value_id || undefined,
       media_asset_id: item.media_asset_id || undefined,
       media_type: item.media_type === 'video' ? 'video' : 'image',
       role: normalizeProductMediaRole(item.media_type, item.role, Boolean(item.is_primary)),

@@ -39,19 +39,37 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-defineProps({
-  filters: { type: Object, required: true },
-  loading: { type: Boolean, default: false },
+interface VisitorProfileFilters {
+  search: string
+  identity: string
+  email: string
+  cartSession: string
+  customerServiceVisitor: string
+  lastSeen: string
+  lastMeaningful: string
+  status: string
+  countryCode: string
+  locale: string
+}
+
+const props = withDefaults(defineProps<{
+  filters: VisitorProfileFilters
+  loading?: boolean
+}>(), {
+  loading: false,
 })
 
-const emit = defineEmits(['apply', 'reset'])
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
 
 const identityOptions = [
   { label: '全部', value: 'all' },

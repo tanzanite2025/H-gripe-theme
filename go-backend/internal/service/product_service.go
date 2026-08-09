@@ -2,15 +2,20 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/pkg/cache"
 	"tanzanite/internal/pkg/safehtml"
 	"tanzanite/internal/repository"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type ProductService struct {
 	productRepo                    *repository.ProductRepository
+	informationTemplateRepo        *repository.ProductInformationTemplateRepository
+	currencyPolicy                 *CurrencyPolicyService
 	cache                          *cache.RedisCache
 	cacheTTL                       time.Duration
 	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
@@ -24,19 +29,35 @@ func NewProductService(productRepo *repository.ProductRepository, cache *cache.R
 	}
 }
 
+func (s *ProductService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
+	if s == nil {
+		return
+	}
+	s.currencyPolicy = policy
+}
+
+func (s *ProductService) ConfigureInformationTemplateRepository(repo *repository.ProductInformationTemplateRepository) {
+	if s == nil {
+		return
+	}
+	s.informationTemplateRepo = repo
+}
+
 func (s *ProductService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
 	s.storefrontHTMLCacheInvalidator = invalidator
 }
 
 var (
-	ErrProductNotFound       = errors.New("product not found")
-	ErrProductSKUExists      = errors.New("product sku already exists")
-	ErrProductTypeNotFound   = errors.New("product type not found")
-	ErrProductTypeInvalid    = errors.New("product type invalid")
-	ErrProductTypeSlugExists = errors.New("product type slug already exists")
-	ErrProductSpecInvalid    = errors.New("product spec invalid")
-	ErrProductVariantInvalid = errors.New("product variant invalid")
-	ErrProductMediaInvalid   = errors.New("product media invalid")
+	ErrProductNotFound               = errors.New("product not found")
+	ErrProductSKUExists              = errors.New("product sku already exists")
+	ErrProductTypeNotFound           = errors.New("product type not found")
+	ErrProductTypeInvalid            = errors.New("product type invalid")
+	ErrProductTypeSlugExists         = errors.New("product type slug already exists")
+	ErrProductTypeTranslationInvalid = errors.New("product type translation invalid")
+	ErrProductLocaleImmutable        = errors.New("product locale cannot be changed after creation")
+	ErrProductSpecInvalid            = errors.New("product spec invalid")
+	ErrProductVariantInvalid         = errors.New("product variant invalid")
+	ErrProductMediaInvalid           = errors.New("product media invalid")
 )
 
 type ProductSearchInput struct {
@@ -121,6 +142,32 @@ func (s *ProductService) GetPublicBySlug(slug, locale string) (*product.Product,
 	result = sanitizeProductHTML(result)
 	_ = s.productRepo.IncrementViewCount(result.ID)
 	return result, nil
+}
+
+func (s *ProductService) validateInformationTemplate(id *uint, expectedKind, locale string, allowDisabled bool) error {
+	if id == nil || *id == 0 {
+		return nil
+	}
+	if s.informationTemplateRepo == nil {
+		return fmt.Errorf("%w: template repository is not configured", ErrProductInformationTemplateInvalid)
+	}
+	template, err := s.informationTemplateRepo.FindByID(*id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return fmt.Errorf("%w: template not found", ErrProductInformationTemplateInvalid)
+	}
+	if err != nil {
+		return err
+	}
+	if template.Kind != expectedKind {
+		return fmt.Errorf("%w: template kind is invalid", ErrProductInformationTemplateInvalid)
+	}
+	if !template.IsEnabled && !allowDisabled {
+		return fmt.Errorf("%w: template status is invalid", ErrProductInformationTemplateInvalid)
+	}
+	if template.Locale != "" && template.Locale != "en" && template.Locale != locale {
+		return fmt.Errorf("%w: template locale does not match product locale", ErrProductInformationTemplateInvalid)
+	}
+	return nil
 }
 
 func (s *ProductService) List(locale, status string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
@@ -221,6 +268,16 @@ func sanitizeProductHTML(p *product.Product) *product.Product {
 	if sanitized, err := safehtml.Sanitize(p.ShortDesc); err == nil {
 		p.ShortDesc = sanitized
 	}
+	if p.AfterSalesTemplate != nil {
+		if sanitized, err := safehtml.Sanitize(p.AfterSalesTemplate.Content); err == nil {
+			p.AfterSalesTemplate.Content = sanitized
+		}
+	}
+	if p.PackagingTemplate != nil {
+		if sanitized, err := safehtml.Sanitize(p.PackagingTemplate.Content); err == nil {
+			p.PackagingTemplate.Content = sanitized
+		}
+	}
 	return p
 }
 
@@ -231,6 +288,16 @@ func sanitizeProductSliceHTML(products []product.Product) []product.Product {
 		}
 		if sanitized, err := safehtml.Sanitize(products[index].ShortDesc); err == nil {
 			products[index].ShortDesc = sanitized
+		}
+		if products[index].AfterSalesTemplate != nil {
+			if sanitized, err := safehtml.Sanitize(products[index].AfterSalesTemplate.Content); err == nil {
+				products[index].AfterSalesTemplate.Content = sanitized
+			}
+		}
+		if products[index].PackagingTemplate != nil {
+			if sanitized, err := safehtml.Sanitize(products[index].PackagingTemplate.Content); err == nil {
+				products[index].PackagingTemplate.Content = sanitized
+			}
 		}
 	}
 	return products

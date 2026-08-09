@@ -79,10 +79,10 @@
   </DialogContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, defineComponent, h } from 'vue'
 import { LoaderCircle } from '@lucide/vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -98,25 +98,65 @@ const DetailItem = defineComponent({
   },
 })
 
-const props = defineProps({
-  currentGiftCard: { type: Object, default: null },
-  loading: { type: Boolean, default: false },
-  transactions: { type: Array, default: () => [] },
-  statusUpdate: { type: String, default: 'active' },
-  statusSubmitting: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  formatCurrency: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  giftCardStatusName: { type: Function, required: true },
-  giftCardStatusTone: { type: Function, required: true },
-  giftCardStatusOptions: { type: Function, required: true },
-  transactionTypeName: { type: Function, required: true },
+export interface GiftCardRecord {
+  id?: string | number
+  code?: string
+  status?: string
+  initial_value?: number | string
+  balance?: number | string
+  currency?: string
+  recipient_name?: string
+  recipient_email?: string
+  sender_name?: string
+  expires_at?: string
+  created_at?: string
+  updated_at?: string
+  message?: string
+}
+
+export interface GiftCardTransaction {
+  id: string | number
+  type?: string
+  amount?: number | string
+  balance?: number | string
+  note?: string
+  created_at?: string
+}
+
+export interface GiftCardStatusOption {
+  value: string
+  label: string
+}
+
+const props = withDefaults(defineProps<{
+  currentGiftCard?: GiftCardRecord | null
+  loading?: boolean
+  transactions?: GiftCardTransaction[]
+  statusUpdate?: string
+  statusSubmitting?: boolean
+  canEdit?: boolean
+  formatCurrency: (value: unknown, currency?: string) => string
+  formatDate: (value: unknown) => string
+  giftCardStatusName: (status?: string) => string
+  giftCardStatusTone: (status?: string) => AdminStatusTone
+  giftCardStatusOptions: (giftCard: GiftCardRecord) => GiftCardStatusOption[]
+  transactionTypeName: (type?: string) => string
+}>(), {
+  currentGiftCard: null,
+  loading: false,
+  transactions: () => [],
+  statusUpdate: 'active',
+  statusSubmitting: false,
+  canEdit: false,
 })
 
-const emit = defineEmits(['update:statusUpdate', 'update-status'])
+const emit = defineEmits<{
+  (event: 'update:statusUpdate', value: string): void
+  (event: 'update-status'): void
+}>()
 
-const statusUpdateModel = computed({
+const statusUpdateModel = computed<string>({
   get: () => props.statusUpdate,
-  set: (value) => emit('update:statusUpdate', value),
+  set: (value: string) => emit('update:statusUpdate', value),
 })
 </script>

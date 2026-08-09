@@ -81,38 +81,41 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { defineComponent, h } from 'vue'
 import { Fingerprint, UserRound } from '@lucide/vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { VisitorProfile } from './visitorTypes'
 
-defineProps({
-  selectedProfile: { type: Object, default: null },
-  formatDate: { type: Function, required: true },
+withDefaults(defineProps<{
+  selectedProfile?: VisitorProfile | null
+  formatDate: (value: unknown) => string
+}>(), {
+  selectedProfile: null,
 })
 
-const statusLabel = (status) => ({
+const statusLabel = (status?: string): string => ({
   active: '有效',
   candidate: '候选',
   archived: '归档',
   suppressed: '抑制',
-})[status] || '有效'
+} as Record<string, string>)[status || ''] || '有效'
 
-const statusTone = (status) => ({
+const statusTone = (status?: string): AdminStatusTone => ({
   active: 'green',
   candidate: 'amber',
   archived: 'gray',
   suppressed: 'coral',
-})[status] || 'green'
+} as Record<string, AdminStatusTone>)[status || ''] || 'green'
 
-const actionLabel = (action) => ({
+const actionLabel = (action?: string): string => ({
   cart_action: '购物车动作',
   customer_service: '客服会话',
   email_capture: '邮箱捕获',
   account: '账号绑定',
   identity_bind: '身份绑定',
-})[action] || '无有效动作'
+} as Record<string, string>)[action || ''] || '无有效动作'
 
 const DetailItem = defineComponent({
   props: {

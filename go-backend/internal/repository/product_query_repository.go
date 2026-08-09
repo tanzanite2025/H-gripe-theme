@@ -36,9 +36,17 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 
 	query := r.db.Model(&product.Product{}).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
+	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		return orderSpecDefinitions(db)
+	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("locale ASC, id ASC")
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	}).Where(activeVariantExistsSQL("pv_list"))
+	})
+	query = r.preloadProductVariantOptionValues(query).
+		Preload("AfterSalesTemplate").
+		Preload("PackagingTemplate").
+		Where(activeVariantExistsSQL("pv_list"))
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
@@ -68,9 +76,18 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		Preload("Media", func(db *gorm.DB) *gorm.DB {
 			return orderProductMedia(db)
 		}).
+		Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+			return orderSpecDefinitions(db)
+		}).
+		Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		}).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB {
 			return orderProductVariants(db)
-		}).
+		})
+	query = r.preloadProductVariantOptionValues(query).
+		Preload("AfterSalesTemplate").
+		Preload("PackagingTemplate").
 		Where("products.status = ?", "active").
 		Where(activeVariantExistsSQL("pv_recommendation")).
 		Where(`EXISTS (
@@ -107,10 +124,16 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	query := r.db.Model(&product.Product{}).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
-		return db.Order("sort_order ASC, id ASC")
+		return orderSpecDefinitions(db)
+	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("locale ASC, id ASC")
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	}).Where(activeVariantExistsSQL("pv_public"))
+	})
+	query = r.preloadProductVariantOptionValues(query).
+		Preload("AfterSalesTemplate").
+		Preload("PackagingTemplate").
+		Where(activeVariantExistsSQL("pv_public"))
 
 	if input.Locale != "" {
 		query = query.Where("products.locale = ?", input.Locale)
@@ -198,7 +221,7 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 		return orderProductMedia(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	})
+	}).Preload("AfterSalesTemplate").Preload("PackagingTemplate")
 
 	if status != "" {
 		query = query.Where("status = ?", status)

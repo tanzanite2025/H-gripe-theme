@@ -80,7 +80,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
@@ -96,17 +96,33 @@ import TicketAssignDialog from '@/components/admin/ticket/TicketAssignDialog.vue
 import TicketDetailDialog from '@/components/admin/ticket/TicketDetailDialog.vue'
 import TicketFilterPanel from '@/components/admin/ticket/TicketFilterPanel.vue'
 import TicketTablePanel from '@/components/admin/ticket/TicketTablePanel.vue'
+import type {
+  TicketBadgeTone,
+  TicketConfirmation,
+  TicketDetailPayload,
+  TicketFilters,
+  TicketId,
+  TicketListPayload,
+  TicketMessage,
+  TicketMessagesPayload,
+  TicketPagination,
+  TicketRecord,
+  TicketStats,
+  TicketStatsPayload,
+  TicketSupportUsersPayload,
+  TicketUser
+} from '@/components/admin/ticket/ticketTypes'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
 const loading = ref(false)
-const tickets = ref([])
-const stats = ref({})
+const tickets = ref<TicketRecord[]>([])
+const stats = ref<TicketStats>({})
 const detailDialogVisible = ref(false)
 const detailLoading = ref(false)
-const currentTicket = ref(null)
-const messages = ref([])
+const currentTicket = ref<TicketRecord | null>(null)
+const messages = ref<TicketMessage[]>([])
 const messagesLoading = ref(false)
 const replyMessage = ref('')
 const replying = ref(false)
@@ -116,11 +132,11 @@ const statusUpdating = ref(false)
 const assignDialogVisible = ref(false)
 const assignTo = ref('')
 const assigning = ref(false)
-const supportUsers = ref([])
+const supportUsers = ref<TicketUser[]>([])
 
-const filters = reactive({ status: 'all', priority: 'all' })
-const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
-const confirmation = reactive({ open: false, target: null, title: '', description: '' })
+const filters = reactive<TicketFilters>({ search: '', status: 'all', priority: 'all' })
+const pagination = reactive<TicketPagination>({ page: 1, pageSize: 20, total: 0 })
+const confirmation = reactive<TicketConfirmation>({ open: false, target: null, title: '', description: '' })
 
 const editableStatusOptions = [
   { label: '待处理', value: 'open' },
@@ -144,35 +160,40 @@ const statItems = computed(() => [
   { key: 'closed', label: '已解决/关闭', value: Number(stats.value.resolved || 0) + Number(stats.value.closed || 0), icon: CircleCheck, tone: 'green' }
 ])
 
-const apiData = (response) => response.data?.data ?? response.data ?? {}
-const hasPermission = (permission) => authStore.hasPermission(permission)
-const statusName = (status) => ({ open: '待处理', in_progress: '处理中', resolved: '已解决', closed: '已关闭' })[status] || status || '-'
-const statusTone = (status) => ({ open: 'amber', in_progress: 'blue', resolved: 'green', closed: 'gray' })[status] || 'gray'
-const priorityName = (priority) => ({ low: '低', medium: '中', high: '高', urgent: '紧急' })[priority] || priority || '-'
-const priorityTone = (priority) => ({ low: 'gray', medium: 'blue', high: 'amber', urgent: 'coral' })[priority] || 'gray'
-const categoryName = (category) => ({ order: '订单', product: '商品', shipping: '物流', customer_service: '在线客服', other: '其他' })[category] || category || '-'
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
-const supportUserName = (user) => user.username || user.email || `用户 ${user.id}`
-const customerName = (ticket) => ticket.user_name || ticket.user?.username || ticket.user?.email || `用户 ${ticket.user_id}`
-const assigneeName = (assignedTo) => {
+const apiData = <T>(response: { data?: T | { data?: T } }): T => {
+  const data = response.data
+  if (data && typeof data === 'object' && 'data' in data) return ((data as { data?: T }).data ?? data) as T
+  return (data ?? {}) as T
+}
+const hasPermission = (permission: string): boolean => authStore.hasPermission(permission)
+const statusName = (status?: string | null): string => ({ open: '待处理', in_progress: '处理中', resolved: '已解决', closed: '已关闭' })[status || ''] || status || '-'
+const statusTone = (status?: string | null): TicketBadgeTone => ({ open: 'amber', in_progress: 'blue', resolved: 'green', closed: 'gray' } as Record<string, TicketBadgeTone>)[status || ''] || 'gray'
+const priorityName = (priority?: string | null): string => ({ low: '低', medium: '中', high: '高', urgent: '紧急' })[priority || ''] || priority || '-'
+const priorityTone = (priority?: string | null): TicketBadgeTone => ({ low: 'gray', medium: 'blue', high: 'amber', urgent: 'coral' } as Record<string, TicketBadgeTone>)[priority || ''] || 'gray'
+const categoryName = (category?: string | null): string => ({ order: '订单', product: '商品', shipping: '物流', customer_service: '在线客服', other: '其他' })[category || ''] || category || '-'
+const formatDate = (dateString?: string | null): string => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+const supportUserName = (user: TicketUser): string => user.username || user.email || `用户 ${user.id}`
+const customerName = (ticket: TicketRecord): string => ticket.user_name || ticket.user?.username || ticket.user?.email || `用户 ${ticket.user_id}`
+const assigneeName = (assignedTo?: TicketId | null): string => {
   if (!assignedTo) return '未分配'
   const user = supportUsers.value.find((item) => Number(item.id) === Number(assignedTo))
   return user ? supportUserName(user) : `用户 ${assignedTo}`
 }
-const messageSender = (message) => message.sender_name || message.user?.username || message.user?.email || (message.is_staff ? '客服' : '客户')
+const messageSender = (message: TicketMessage): string => message.sender_name || message.user?.username || message.user?.email || (message.is_staff ? '客服' : '客户')
 
-const fetchTickets = async () => {
+const fetchTickets = async (): Promise<void> => {
   loading.value = true
   try {
     const response = await axios.get('/api/admin/tickets', {
       params: {
         page: pagination.page,
         page_size: pagination.pageSize,
+        ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
         ...(filters.status !== 'all' ? { status: filters.status } : {}),
         ...(filters.priority !== 'all' ? { priority: filters.priority } : {})
       }
     })
-    const data = apiData(response)
+    const data = apiData<TicketListPayload>(response)
     tickets.value = data.tickets || []
     pagination.total = data.pagination?.total ?? 0
   } catch (error) {
@@ -181,33 +202,49 @@ const fetchTickets = async () => {
     loading.value = false
   }
 }
-const fetchStats = async () => {
+const fetchStats = async (): Promise<void> => {
   try {
     const response = await axios.get('/api/admin/tickets/stats')
-    stats.value = apiData(response) || {}
+    stats.value = apiData<TicketStatsPayload>(response) || {}
   } catch (error) {
     console.error('Failed to fetch ticket stats:', error)
   }
 }
-const fetchSupportUsers = async () => {
+const fetchSupportUsers = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/users', { params: { role: 'support', page_size: 100 } })
+    const response = await axios.get<TicketSupportUsersPayload>('/api/admin/users', { params: { role: 'support', page_size: 100 } })
     supportUsers.value = response.data.users || []
   } catch (error) {
     console.error('Failed to fetch support users:', error)
   }
 }
-const refreshTickets = () => Promise.all([fetchTickets(), fetchStats()])
-const applyFilters = () => { pagination.page = 1; fetchTickets() }
-const resetFilters = () => { Object.assign(filters, { status: 'all', priority: 'all' }); pagination.page = 1; fetchTickets() }
-const updatePage = (page) => { pagination.page = page; fetchTickets() }
-const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchTickets() }
+const refreshTickets = async (): Promise<void> => {
+  await Promise.all([fetchTickets(), fetchStats()])
+}
+const applyFilters = (): void => {
+  pagination.page = 1
+  void fetchTickets()
+}
+const resetFilters = (): void => {
+  Object.assign(filters, { search: '', status: 'all', priority: 'all' })
+  pagination.page = 1
+  void fetchTickets()
+}
+const updatePage = (page: number): void => {
+  pagination.page = page
+  void fetchTickets()
+}
+const updatePageSize = (pageSize: number): void => {
+  pagination.pageSize = pageSize
+  pagination.page = 1
+  void fetchTickets()
+}
 
-const viewTicket = async (ticket) => {
+const viewTicket = async (ticket: TicketRecord): Promise<void> => {
   currentTicket.value = ticket
   messages.value = []
   replyMessage.value = ''
-  statusUpdate.value = ticket.status
+  statusUpdate.value = ticket.status || 'open'
   detailDialogVisible.value = true
   detailLoading.value = true
   messagesLoading.value = true
@@ -216,10 +253,10 @@ const viewTicket = async (ticket) => {
       axios.get(`/api/admin/tickets/${ticket.id}`),
       axios.get(`/api/admin/tickets/${ticket.id}/messages`)
     ])
-    const detailData = apiData(detailResponse)
-    const messageData = apiData(messagesResponse)
+    const detailData = apiData<TicketDetailPayload>(detailResponse)
+    const messageData = apiData<TicketMessagesPayload>(messagesResponse)
     currentTicket.value = detailData.ticket || ticket
-    statusUpdate.value = currentTicket.value.status
+    statusUpdate.value = currentTicket.value.status || 'open'
     messages.value = messageData.messages || currentTicket.value.messages || []
     await axios.post(`/api/admin/tickets/${ticket.id}/messages/mark-read`)
   } catch (error) {
@@ -229,11 +266,11 @@ const viewTicket = async (ticket) => {
     messagesLoading.value = false
   }
 }
-const fetchMessages = async (ticketId) => {
+const fetchMessages = async (ticketId: TicketId): Promise<void> => {
   messagesLoading.value = true
   try {
     const response = await axios.get(`/api/admin/tickets/${ticketId}/messages`)
-    messages.value = apiData(response).messages || []
+    messages.value = apiData<TicketMessagesPayload>(response).messages || []
     await axios.post(`/api/admin/tickets/${ticketId}/messages/mark-read`)
   } catch (error) {
     console.error('Failed to fetch ticket messages:', error)
@@ -241,7 +278,9 @@ const fetchMessages = async (ticketId) => {
     messagesLoading.value = false
   }
 }
-const updateStatus = async () => {
+const updateStatus = async (): Promise<void> => {
+  if (!currentTicket.value) return
+
   statusUpdating.value = true
   try {
     await axios.patch(`/api/admin/tickets/${currentTicket.value.id}/status`, { status: statusUpdate.value })
@@ -254,7 +293,9 @@ const updateStatus = async () => {
     statusUpdating.value = false
   }
 }
-const sendReply = async () => {
+const sendReply = async (): Promise<void> => {
+  if (!currentTicket.value) return
+
   const message = replyMessage.value.trim()
   if (!message) return
   replying.value = true
@@ -270,13 +311,13 @@ const sendReply = async () => {
   }
 }
 
-const showAssignDialog = (ticket) => {
+const showAssignDialog = (ticket: TicketRecord): void => {
   currentTicket.value = ticket
   assignTo.value = ticket.assigned_to ? String(ticket.assigned_to) : ''
   assignDialogVisible.value = true
 }
-const assignTicket = async () => {
-  if (!assignTo.value) return
+const assignTicket = async (): Promise<void> => {
+  if (!assignTo.value || !currentTicket.value) return
   assigning.value = true
   try {
     await axios.patch(`/api/admin/tickets/${currentTicket.value.id}/assign`, { assigned_to: Number(assignTo.value) })
@@ -293,15 +334,19 @@ const assignTicket = async () => {
   }
 }
 
-const requestDelete = (ticket) => Object.assign(confirmation, {
-  open: true,
-  target: ticket,
-  title: '删除工单？',
-  description: `工单 ${ticket.ticket_number} 及全部消息将被永久删除，此操作不可恢复。`
-})
-const executeDelete = async () => {
+const requestDelete = (ticket: TicketRecord): void => {
+  Object.assign(confirmation, {
+    open: true,
+    target: ticket,
+    title: '删除工单？',
+    description: `工单 ${ticket.ticket_number} 及全部消息将被永久删除，此操作不可恢复。`
+  })
+}
+const executeDelete = async (): Promise<void> => {
   const ticket = confirmation.target
   confirmation.open = false
+  if (!ticket) return
+
   try {
     await axios.delete(`/api/admin/tickets/${ticket.id}`)
     if (currentTicket.value?.id === ticket.id) detailDialogVisible.value = false
@@ -312,5 +357,7 @@ const executeDelete = async () => {
   }
 }
 
-onMounted(() => Promise.all([fetchTickets(), fetchStats(), fetchSupportUsers()]))
+onMounted(() => {
+  void Promise.all([fetchTickets(), fetchStats(), fetchSupportUsers()])
+})
 </script>

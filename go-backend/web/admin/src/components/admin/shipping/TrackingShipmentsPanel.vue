@@ -396,7 +396,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { Radar, RefreshCw } from '@lucide/vue'
@@ -408,50 +408,62 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  ShippingCarrier,
+  ShippingCarrierService,
+  TrackingEvent,
+  TrackingPollingState,
+  TrackingProvider,
+  TrackingShipment,
+  TrackingShipmentFilters,
+  TrackingWebhookState
+} from './shippingTypes'
 
-const props = defineProps({
-  trackingProviders: {
-    type: Array,
-    default: () => [],
-  },
-  carriers: {
-    type: Array,
-    default: () => [],
-  },
-  carrierServices: {
-    type: Array,
-    default: () => [],
-  },
-  canEdit: {
-    type: Boolean,
-    default: false,
-  },
+interface TrackingShipmentLoadingState {
+  trackingShipments: boolean
+  trackingPolling: boolean
+  trackingWebhook: boolean
+  trackingEvents: boolean
+}
+
+const props = withDefaults(defineProps<{
+  trackingProviders?: TrackingProvider[]
+  carriers?: ShippingCarrier[]
+  carrierServices?: ShippingCarrierService[]
+  canEdit?: boolean
+}>(), {
+  trackingProviders: () => [],
+  carriers: () => [],
+  carrierServices: () => [],
+  canEdit: false
 })
 
-const emit = defineEmits(['count-change'])
+const emit = defineEmits<{
+  (event: 'count-change', count: number): void
+}>()
 
-const trackingShipments = ref([])
-const trackingPollingState = ref({})
-const trackingWebhookState = ref({})
-const trackingEvents = ref([])
-const selectedTrackingShipment = ref(null)
+const trackingShipments = ref<TrackingShipment[]>([])
+const trackingPollingState = ref<TrackingPollingState>({})
+const trackingWebhookState = ref<TrackingWebhookState>({})
+const trackingEvents = ref<TrackingEvent[]>([])
+const selectedTrackingShipment = ref<TrackingShipment | null>(null)
 const eventDialogOpen = ref(false)
 const syncingDueTrackingShipments = ref(false)
-const registeringTrackingShipmentIds = ref(new Set())
-const syncingTrackingShipmentIds = ref(new Set())
-const filters = reactive(defaultFilters())
-const loading = reactive({
+const registeringTrackingShipmentIds = ref<Set<number>>(new Set())
+const syncingTrackingShipmentIds = ref<Set<number>>(new Set())
+const filters = reactive<TrackingShipmentFilters>(defaultFilters())
+const loading = reactive<TrackingShipmentLoadingState>({
   trackingShipments: false,
   trackingPolling: false,
   trackingWebhook: false,
   trackingEvents: false,
 })
 
-const trackingProvidersList = computed(() => Array.isArray(props.trackingProviders) ? props.trackingProviders : [])
-const carriersList = computed(() => Array.isArray(props.carriers) ? props.carriers : [])
-const carrierServicesList = computed(() => Array.isArray(props.carrierServices) ? props.carrierServices : [])
+const trackingProvidersList = computed<TrackingProvider[]>(() => Array.isArray(props.trackingProviders) ? props.trackingProviders : [])
+const carriersList = computed<ShippingCarrier[]>(() => Array.isArray(props.carriers) ? props.carriers : [])
+const carrierServicesList = computed<ShippingCarrierService[]>(() => Array.isArray(props.carrierServices) ? props.carrierServices : [])
 
-function defaultFilters() {
+function defaultFilters(): TrackingShipmentFilters {
   return {
     sync_status: 'all',
     registration_status: 'all',
@@ -465,16 +477,16 @@ function defaultFilters() {
   }
 }
 
-function resetReactive(target, defaults) {
+function resetReactive(target: Record<string, string>, defaults: TrackingShipmentFilters) {
   Object.keys(target).forEach((key) => delete target[key])
   Object.assign(target, defaults)
 }
 
-function isTrackingShipmentDue(shipment) {
+function isTrackingShipmentDue(shipment: TrackingShipment) {
   const status = shipment?.sync_status || 'pending'
   if (status === 'pending') return true
 
-  const nextSyncAt = shipment?.next_sync_at ? Date.parse(shipment.next_sync_at) : Number.NaN
+  const nextSyncAt = shipment?.next_sync_at ? new Date(shipment.next_sync_at).getTime() : Number.NaN
   if (!Number.isFinite(nextSyncAt)) {
     return status === 'failed'
   }
@@ -483,7 +495,7 @@ function isTrackingShipmentDue(shipment) {
 }
 
 const trackingShipmentStatusCards = computed(() => {
-  const counts = trackingShipments.value.reduce((acc, shipment) => {
+  const counts = trackingShipments.value.reduce<Record<string, number>>((acc, shipment) => {
     const status = shipment.sync_status || 'missing'
     acc[status] = (acc[status] || 0) + 1
     if (shipment.registration_status === 'failed') {
@@ -546,7 +558,7 @@ const trackingWebhookSignatureLabel = computed(() => {
   return trackingWebhookState.value.last_signature_valid ? '验签通过' : '验签失败'
 })
 
-const trackingShipmentFilterParam = (value) => {
+const trackingShipmentFilterParam = (value: unknown) => {
   const normalized = String(value ?? '').trim()
   return normalized && normalized !== 'all' ? normalized : undefined
 }
@@ -601,7 +613,7 @@ const fetchTrackingWebhookState = async () => {
   }
 }
 
-const fetchTrackingEvents = async (shipment) => {
+const fetchTrackingEvents = async (shipment?: TrackingShipment | null) => {
   const orderId = Number(shipment?.order_id || 0)
   if (!orderId) {
     trackingEvents.value = []
@@ -620,7 +632,7 @@ const fetchTrackingEvents = async (shipment) => {
   }
 }
 
-const openTrackingEvents = async (shipment) => {
+const openTrackingEvents = async (shipment: TrackingShipment) => {
   selectedTrackingShipment.value = shipment
   trackingEvents.value = []
   eventDialogOpen.value = true
@@ -665,10 +677,10 @@ const syncDueTrackingShipments = async () => {
   }
 }
 
-const isRegisteringTrackingShipment = (shipment) => registeringTrackingShipmentIds.value.has(Number(shipment.order_id))
-const isSyncingTrackingShipment = (shipment) => syncingTrackingShipmentIds.value.has(Number(shipment.order_id))
+const isRegisteringTrackingShipment = (shipment: TrackingShipment) => registeringTrackingShipmentIds.value.has(Number(shipment.order_id))
+const isSyncingTrackingShipment = (shipment: TrackingShipment) => syncingTrackingShipmentIds.value.has(Number(shipment.order_id))
 
-const registerTrackingShipment = async (shipment) => {
+const registerTrackingShipment = async (shipment: TrackingShipment) => {
   const orderId = Number(shipment?.order_id || 0)
   if (!orderId || isRegisteringTrackingShipment(shipment)) return
 
@@ -688,7 +700,7 @@ const registerTrackingShipment = async (shipment) => {
   }
 }
 
-const syncTrackingShipment = async (shipment) => {
+const syncTrackingShipment = async (shipment: TrackingShipment) => {
   const orderId = Number(shipment?.order_id || 0)
   if (!orderId || isSyncingTrackingShipment(shipment)) return
 
@@ -709,7 +721,7 @@ const syncTrackingShipment = async (shipment) => {
   }
 }
 
-const trackingShipmentStatusLabel = (status) => {
+const trackingShipmentStatusLabel = (status?: string | null) => {
   const labels = {
     pending: '待同步',
     syncing: '同步中',
@@ -719,7 +731,7 @@ const trackingShipmentStatusLabel = (status) => {
   return labels[status] || status || '未建立'
 }
 
-const trackingShipmentStatusTone = (status) => {
+const trackingShipmentStatusTone = (status?: string | null) => {
   const tones = {
     pending: 'gray',
     syncing: 'blue',
@@ -729,7 +741,7 @@ const trackingShipmentStatusTone = (status) => {
   return tones[status] || 'gray'
 }
 
-const trackingShipmentRegistrationLabel = (status) => {
+const trackingShipmentRegistrationLabel = (status?: string | null) => {
   const labels = {
     pending: '待登记',
     registered: '已登记',
@@ -738,7 +750,7 @@ const trackingShipmentRegistrationLabel = (status) => {
   return labels[status] || status || '未登记'
 }
 
-const trackingShipmentRegistrationTone = (status) => {
+const trackingShipmentRegistrationTone = (status?: string | null) => {
   const tones = {
     pending: 'gray',
     registered: 'green',
@@ -747,7 +759,7 @@ const trackingShipmentRegistrationTone = (status) => {
   return tones[status] || 'gray'
 }
 
-const trackingEventStatusTone = (status) => {
+const trackingEventStatusTone = (status?: string | null) => {
   const normalized = String(status || '').toLowerCase()
   if (normalized.includes('delivered') || normalized.includes('签收') || normalized.includes('妥投')) return 'green'
   if (normalized.includes('exception') || normalized.includes('fail') || normalized.includes('returned') || normalized.includes('异常') || normalized.includes('退回')) return 'coral'
@@ -755,25 +767,25 @@ const trackingEventStatusTone = (status) => {
   return 'gray'
 }
 
-const trackingShipmentProviderName = (shipment) => {
+const trackingShipmentProviderName = (shipment: TrackingShipment) => {
   if (shipment.provider?.provider_name) return shipment.provider.provider_name
   const provider = trackingProvidersList.value.find((item) => Number(item.id) === Number(shipment.tracking_provider_id))
   return provider?.provider_name || `Provider #${shipment.tracking_provider_id || '-'}`
 }
 
-const trackingShipmentCarrierLabel = (shipment) => {
+const trackingShipmentCarrierLabel = (shipment: TrackingShipment) => {
   if (shipment.carrier?.name) return shipment.carrier.name
   const carrier = carriersList.value.find((item) => Number(item.id) === Number(shipment.carrier_id))
   return carrier?.name || '未绑定承运商'
 }
 
-const trackingShipmentServiceLabel = (shipment) => {
+const trackingShipmentServiceLabel = (shipment: TrackingShipment) => {
   if (shipment.carrier_service?.service_name) return shipment.carrier_service.service_name
   const service = carrierServicesList.value.find((item) => Number(item.id) === Number(shipment.carrier_service_id))
   return service?.service_name || '未绑定线路'
 }
 
-const formatDate = (value) => value ? new Date(value).toLocaleString('zh-CN') : '-'
+const formatDate = (value?: string | number | Date | null) => value ? new Date(value).toLocaleString('zh-CN') : '-'
 
 defineExpose({ refresh, refreshShipments: fetchTrackingShipments })
 

@@ -36,11 +36,12 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { use } from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
+import type { EChartsOption } from 'echarts'
 import VChart from 'vue-echarts'
 import { ChartNoAxesCombined, RefreshCw } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -50,10 +51,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 
-defineProps({
-  chartLoading: { type: Boolean, default: false },
-  chartOption: { type: Object, default: null },
+withDefaults(defineProps<{
+  chartLoading?: boolean
+  chartOption?: EChartsOption | null
+}>(), {
+  chartLoading: false,
+  chartOption: null
 })
 
-const emit = defineEmits(['refresh'])
+const emit = defineEmits<{
+  (event: 'refresh'): void
+}>()
 </script>

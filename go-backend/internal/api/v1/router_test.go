@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"tanzanite/internal/app"
+	"tanzanite/internal/domain/currency"
 	settingdomain "tanzanite/internal/domain/setting"
 	shippingdomain "tanzanite/internal/domain/shipping"
 	"tanzanite/internal/pkg/config"
@@ -79,9 +80,8 @@ func TestCurrencyPolicyRouteUsesDomainHandler(t *testing.T) {
 			IsPublic: true,
 		}).Error)
 	}
-	seedCurrencyPolicySetting("currency_accounting_currency", "USD")
-	seedCurrencyPolicySetting("currency_default_order_currency", "USD")
-	seedCurrencyPolicySetting("currency_accepted_currencies", "USD,EUR")
+	seedCurrencyPolicySetting("currency_primary_currency", "CNY")
+	seedCurrencyPolicySetting("currency_display_currencies", "USD,EUR")
 
 	router := gin.New()
 	cfg := &config.Config{
@@ -101,12 +101,16 @@ func TestCurrencyPolicyRouteUsesDomainHandler(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
-	require.Contains(t, w.Body.String(), `"default_order_currency":"USD"`)
-	require.Contains(t, w.Body.String(), `"accepted_currencies":["EUR","USD"]`)
+	require.Contains(t, w.Body.String(), `"primary_currency":"CNY"`)
+	require.Contains(t, w.Body.String(), `"display_currencies":["USD","EUR"]`)
+	require.Contains(t, w.Body.String(), `"available_currencies"`)
+	require.NotContains(t, w.Body.String(), `"accounting_currency"`)
+	require.NotContains(t, w.Body.String(), `"default_order_currency"`)
+	require.NotContains(t, w.Body.String(), `"accepted_currencies"`)
 	require.NotContains(t, w.Body.String(), "Setting not found")
 }
 
-func TestCurrencyPolicyRouteReadsLegacySettingKeys(t *testing.T) {
+func TestCurrencyPolicyRouteLeavesDisplayCurrenciesEmptyWhenUnset(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
@@ -122,20 +126,6 @@ func TestCurrencyPolicyRouteReadsLegacySettingKeys(t *testing.T) {
 	})
 
 	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}))
-	seedCurrencyPolicySetting := func(key, value string) {
-		require.NoError(t, db.Create(&settingdomain.Setting{
-			Key:      key,
-			Value:    value,
-			Type:     "string",
-			Locale:   "en",
-			Group:    "currency",
-			IsPublic: true,
-		}).Error)
-	}
-	seedCurrencyPolicySetting("currency_accounting_currency", "USD")
-	seedCurrencyPolicySetting("currency_default_checkout_currency", "USD")
-	seedCurrencyPolicySetting("currency_checkout_currencies", "USD,EUR")
-
 	router := gin.New()
 	cfg := &config.Config{
 		CORS: config.CORSConfig{},
@@ -154,10 +144,60 @@ func TestCurrencyPolicyRouteReadsLegacySettingKeys(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
-	require.Contains(t, w.Body.String(), `"default_order_currency":"USD"`)
-	require.Contains(t, w.Body.String(), `"accepted_currencies":["EUR","USD"]`)
+	require.Contains(t, w.Body.String(), `"primary_currency":"USD"`)
+	require.Contains(t, w.Body.String(), `"display_currencies":[]`)
+	require.NotContains(t, w.Body.String(), `"accounting_currency"`)
+	require.NotContains(t, w.Body.String(), `"default_order_currency"`)
+	require.NotContains(t, w.Body.String(), `"accepted_currencies"`)
 	require.NotContains(t, w.Body.String(), `"default_checkout_currency"`)
 	require.NotContains(t, w.Body.String(), `"checkout_currencies"`)
+}
+
+func TestStorefrontContextRouteResolvesMarketLocaleAndCurrency(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+
+	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}))
+	settingRepo := repository.NewSettingRepository(db)
+	currencyPolicy := service.NewCurrencyPolicyService(settingRepo)
+	_, err = currencyPolicy.UpdatePolicy(currency.Policy{DisplayCurrencies: []string{"USD", "EUR", "GBP"}})
+	require.NoError(t, err)
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	deps := &app.Dependencies{
+		Services: app.Services{
+			CurrencyPolicy:    currencyPolicy,
+			StorefrontContext: service.NewStorefrontContextService(currencyPolicy),
+		},
+	}
+	RegisterRoutes(router, deps, cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/storefront/context?locale=de&currency=EUR", nil)
+	req.Header.Set("CF-IPCountry", "DE")
+	req.Header.Set("Accept-Language", "fr-FR,fr;q=0.9")
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	require.Contains(t, w.Body.String(), `"code":"DE"`)
+	require.Contains(t, w.Body.String(), `"code":"EU"`)
+	require.Contains(t, w.Body.String(), `"resolved":"de"`)
+	require.Contains(t, w.Body.String(), `"resolved":"EUR"`)
 }
 
 func TestExternalWebhooksBypassCSRFProtection(t *testing.T) {

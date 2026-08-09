@@ -11,12 +11,16 @@
   <Toaster rich-colors position="top-right" />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
+
+interface AdminApiLoadingDetail {
+  loading?: boolean
+}
 
 const authStore = useAuthStore()
 const routeLoading = ref(false)
@@ -35,8 +39,11 @@ const removeOnError = router.onError(() => {
   routeLoading.value = false
 })
 
-const onApiLoading = (event) => {
-  apiLoading.value = Boolean(event.detail?.loading)
+const onApiLoading = (event: Event): void => {
+  const detail = event instanceof CustomEvent
+    ? (event as CustomEvent<AdminApiLoadingDetail>).detail
+    : undefined
+  apiLoading.value = Boolean(detail?.loading)
 }
 
 onMounted(async () => {

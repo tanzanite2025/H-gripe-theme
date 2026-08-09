@@ -255,7 +255,7 @@ func TestRecordVerifiedGatewayPaymentRejectsCurrencyMismatch(t *testing.T) {
 	})
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "payment currency EUR does not match order currency USD")
+	assert.Contains(t, err.Error(), "transaction currency EUR does not match order currency USD")
 
 	var transactionCount int64
 	require.NoError(t, db.Model(&paymentdomain.Transaction{}).Where("transaction_id = ?", "txn_bad_currency").Count(&transactionCount).Error)

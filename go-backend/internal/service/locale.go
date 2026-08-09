@@ -21,3 +21,10 @@ func requireSupportedLocale(locale string) (string, error) {
 	}
 	return "", fmt.Errorf("%w: %s", ErrUnsupportedLocale, strings.TrimSpace(locale))
 }
+
+func optionalSupportedLocale(locale string) (string, error) {
+	if strings.TrimSpace(locale) == "" {
+		return "", nil
+	}
+	return requireSupportedLocale(locale)
+}

@@ -44,7 +44,7 @@
               :model-value="confirmation"
               autocomplete="off"
               :placeholder="expectedConfirmation"
-              @update:model-value="emit('update:confirmation', $event)"
+              @update:model-value="(value) => emit('update:confirmation', String(value))"
             />
           </label>
         </div>
@@ -66,25 +66,38 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { LoaderCircle, Trash2 } from '@lucide/vue'
+import type { MediaAsset, MediaReference } from '@/api/media'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { mediaReferenceCategoryLabel as referenceCategoryLabel, mediaReferenceTypeLabel as referenceTypeLabel } from '@/lib/mediaReferencePresentation'
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  asset: { type: Object, default: null },
-  references: { type: Array, default: () => [] },
-  total: { type: Number, default: 0 },
-  loading: { type: Boolean, default: false },
-  deleting: { type: Boolean, default: false },
-  confirmation: { type: String, default: '' },
+const props = withDefaults(defineProps<{
+  open?: boolean
+  asset?: MediaAsset | null
+  references?: MediaReference[]
+  total?: number
+  loading?: boolean
+  deleting?: boolean
+  confirmation?: string
+}>(), {
+  open: false,
+  asset: null,
+  references: () => [],
+  total: 0,
+  loading: false,
+  deleting: false,
+  confirmation: ''
 })
 
-const emit = defineEmits(['update:open', 'update:confirmation', 'confirm'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:confirmation', value: string): void
+  (event: 'confirm'): void
+}>()
 
 const assetTitle = computed(() => {
   const asset = props.asset

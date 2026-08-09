@@ -5,6 +5,9 @@
       density === 'cart'
         ? 'browsing-history-dark--cart border-white/15 bg-white/[0.04]'
         : 'border-[rgba(110,110,233,0.35)] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]',
+      {
+        'browsing-history-dark--cart-empty': density === 'cart' && !hasHistory,
+      },
     ]"
   >
     <!-- 标题栏 -->
@@ -273,7 +276,7 @@ onUnmounted(() => {
 
 .browsing-history-dark--cart {
   display: flex;
-  height: 100%;
+  height: auto;
   min-height: 0;
   flex-direction: column;
   border-color: rgba(255, 255, 255, 0.14) !important;
@@ -288,17 +291,18 @@ onUnmounted(() => {
 }
 
 .browsing-history-dark--cart .browsing-history-dark__body {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__list {
-  height: 100%;
+  height: auto;
   min-height: 0;
   padding-block: 0.65rem;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
+  align-items: flex-start;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__item {
@@ -310,8 +314,24 @@ onUnmounted(() => {
 }
 
 .browsing-history-dark--cart .browsing-history-dark__empty {
-  height: 100%;
-  padding-block: 1rem;
+  height: auto;
+  min-height: 0;
+  padding-block: 0.8rem;
+}
+
+.browsing-history-dark--cart .browsing-history-dark__empty svg {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.browsing-history-dark--cart-empty {
+  height: auto;
+  min-height: 0;
+}
+
+.browsing-history-dark--cart-empty .browsing-history-dark__body {
+  flex: 0 0 auto;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__product-card {
@@ -349,6 +369,21 @@ onUnmounted(() => {
 
   .browsing-history-dark--cart .browsing-history-dark__image {
     height: 6rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .browsing-history-dark--cart .browsing-history-dark__image {
+    height: 4.25rem;
+  }
+
+  .browsing-history-dark--cart .browsing-history-dark__product-card > .p-2 {
+    padding: 0.45rem;
+  }
+
+  .browsing-history-dark--cart .browsing-history-dark__product-card .w-8.h-8 {
+    width: 1.75rem;
+    height: 1.75rem;
   }
 }
 </style>

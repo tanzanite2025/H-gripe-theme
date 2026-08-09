@@ -110,13 +110,14 @@ func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.Shipping
 func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		updates := map[string]interface{}{
-			"name":           template.Name,
-			"type":           template.Type,
-			"free_shipping":  template.FreeShipping,
-			"free_threshold": template.FreeThreshold,
-			"default_fee":    template.DefaultFee,
-			"description":    template.Description,
-			"enabled":        template.Enabled,
+			"name":                    template.Name,
+			"type":                    template.Type,
+			"free_shipping":           template.FreeShipping,
+			"free_threshold":          template.FreeThreshold,
+			"default_fee":             template.DefaultFee,
+			"display_price_snapshots": template.DisplayPriceData,
+			"description":             template.Description,
+			"enabled":                 template.Enabled,
 		}
 		if err := tx.Model(&shipping.ShippingTemplate{}).Where("id = ?", template.ID).Updates(updates).Error; err != nil {
 			return err
@@ -170,12 +171,13 @@ func (r *ShippingRepository) UpdateRule(rule *shipping.ShippingRule) error {
 
 func (r *ShippingRepository) UpdateRuleForTemplate(rule *shipping.ShippingRule) error {
 	updates := map[string]interface{}{
-		"region":      rule.Region,
-		"min_value":   rule.MinValue,
-		"max_value":   rule.MaxValue,
-		"fee":         rule.Fee,
-		"additional":  rule.Additional,
-		"template_id": rule.TemplateID,
+		"region":                  rule.Region,
+		"min_value":               rule.MinValue,
+		"max_value":               rule.MaxValue,
+		"fee":                     rule.Fee,
+		"additional":              rule.Additional,
+		"display_price_snapshots": rule.DisplayPriceData,
+		"template_id":             rule.TemplateID,
 	}
 	return r.db.Model(&shipping.ShippingRule{}).
 		Where("id = ? AND template_id = ?", rule.ID, rule.TemplateID).

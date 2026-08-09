@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/smartwalle/alipay/v3"
@@ -140,6 +141,7 @@ func (g *alipayGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 }
 
 func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	paymentID = strings.TrimSpace(paymentID)
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
@@ -150,15 +152,10 @@ func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		refundNo = options.IdempotencyKey
 	}
 
-	// 构建退款请求
-	var p = alipay.TradeRefund{}
-	p.OutTradeNo = paymentID
-	p.RefundAmount = fmt.Sprintf("%.2f", amount)
-	p.RefundReason = "Customer refund request"
-	if options.Reason != "" {
-		p.RefundReason = options.Reason
+	p, err := buildAlipayRefundRequest(paymentID, amount, refundNo, options)
+	if err != nil {
+		return nil, err
 	}
-	p.OutRequestNo = refundNo
 
 	// 执行退款
 	rsp, err := g.client.TradeRefund(ctx, p)
@@ -182,6 +179,37 @@ func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		Amount:    refundAmount,
 		Status:    "REFUND_SUCCESS",
 		CreatedAt: time.Now(),
+	}, nil
+}
+
+func buildAlipayRefundRequest(paymentID string, amount float64, refundNo string, options RefundOptions) (alipay.TradeRefund, error) {
+	providerTradeNo := strings.TrimSpace(options.ProviderTransactionID)
+	merchantOrderNumber := strings.TrimSpace(options.MerchantOrderNumber)
+	if providerTradeNo == "" {
+		return alipay.TradeRefund{}, fmt.Errorf("alipay trade_no is required for refunds")
+	}
+	if merchantOrderNumber == "" {
+		return alipay.TradeRefund{}, fmt.Errorf("merchant order number is required for alipay refunds")
+	}
+	if amount <= 0 {
+		return alipay.TradeRefund{}, fmt.Errorf("refund amount must be greater than zero")
+	}
+	if refundNo = strings.TrimSpace(refundNo); refundNo == "" {
+		return alipay.TradeRefund{}, fmt.Errorf("refund request id is required")
+	}
+	refundAmount, err := FormatMajorAmount(amount, "CNY")
+	if err != nil {
+		return alipay.TradeRefund{}, err
+	}
+	reason := strings.TrimSpace(options.Reason)
+	if reason == "" {
+		reason = "Customer refund request"
+	}
+	return alipay.TradeRefund{
+		TradeNo:      providerTradeNo,
+		RefundAmount: refundAmount,
+		RefundReason: reason,
+		OutRequestNo: refundNo,
 	}, nil
 }
 

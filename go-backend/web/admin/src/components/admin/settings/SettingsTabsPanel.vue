@@ -3,10 +3,7 @@
     <TabsContent value="site" class="space-y-6">
       <SettingsSection title="站点资料" description="前台使用的品牌和联系信息。">
         <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormField label="站点名称">
-            <Input v-model="siteSettings.site_name" />
-          </AdminFormField>
-          <AdminFormField label="顶部品牌标题" description="控制 Nuxt 顶部特殊字体渐变字样；留空则前台不显示标题。">
+          <AdminFormField label="品牌标题" description="控制 Nuxt 顶部品牌字样、SEO 站点名和页脚品牌名。">
             <Input v-model="siteSettings.brand_title" />
           </AdminFormField>
           <AdminFormField label="联系邮箱">
@@ -18,8 +15,18 @@
           <AdminFormField label="站点 URL">
             <Input v-model="siteSettings.site_url" type="url" placeholder="https://example.com" />
           </AdminFormField>
-          <AdminFormField label="站点 Logo">
-            <Input v-model="siteSettings.site_logo" placeholder="Logo URL" />
+          <AdminFormField label="站点 Logo" description="支持输入图片 URL，或上传到媒体库后自动填入。">
+            <div class="flex min-w-0 items-center gap-2">
+              <Input v-model="siteSettings.site_logo" type="url" placeholder="Logo URL" :disabled="uploadingSiteLogo" />
+              <Button type="button" variant="outline" size="icon" :disabled="!canEdit || uploadingSiteLogo" title="上传 Logo" @click="chooseSiteLogo">
+                <LoaderCircle v-if="uploadingSiteLogo" class="size-4 animate-spin" />
+                <ImagePlus v-else class="size-4" />
+              </Button>
+              <Button v-if="siteSettings.site_logo" type="button" variant="ghost" size="icon" :disabled="!canEdit || uploadingSiteLogo" title="清空 Logo" @click="clearSiteLogo">
+                <Trash2 class="size-4" />
+              </Button>
+            </div>
+            <input ref="siteLogoInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp,image/gif" :disabled="!canEdit || uploadingSiteLogo" @change="uploadSiteLogo" />
           </AdminFormField>
           <AdminFormField label="站点描述" class="md:col-span-2">
             <Textarea v-model="siteSettings.site_description" class="min-h-24" />
@@ -148,7 +155,11 @@
     </TabsContent>
 
     <TabsContent value="currency">
-      <CurrencyPolicySettingsCard :can-edit="canEdit" @saved="emit('currency-policy-saved')" />
+      <CurrencyPolicySettingsCard :can-edit="canEdit" @saved="emit('currency-policy-saved', $event)" />
+    </TabsContent>
+
+    <TabsContent value="markets">
+      <StorefrontMarketsSettingsPanel :can-edit="canEdit" />
     </TabsContent>
 
     <TabsContent value="payment">
@@ -184,8 +195,11 @@
       <SettingsSection title="API 管理" description="统一管理第三方接口配置、刷新策略和凭据引用。">
         <ApiManagementSettingsPanel
           :api-settings="apiSettings"
-          :currency-options="paymentCurrencyOptions"
-          :loading-currencies="loadingPaymentCurrencies"
+          :primary-pricing-currency="primaryPricingCurrency"
+          :can-edit="canEdit"
+          :syncing-exchange-rates="syncingExchangeRates"
+          :saving-api-settings="savingApiSettings"
+          @sync-exchange-rates="emit('sync-exchange-rates')"
         />
       </SettingsSection>
     </TabsContent>
@@ -218,12 +232,16 @@
   </Tabs>
 </template>
 
-<script setup>
-import { defineComponent, h } from 'vue'
+<script setup lang="ts">
+import { defineComponent, h, ref } from 'vue'
+import type { PropType } from 'vue'
 import {
   AlertTriangle,
   Eye,
   EyeOff,
+  ImagePlus,
+  LoaderCircle,
+  Trash2,
 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import ApiManagementSettingsPanel from '@/components/admin/settings/ApiManagementSettingsPanel.vue'
@@ -231,42 +249,74 @@ import CurrencyPolicySettingsCard from '@/components/admin/settings/CurrencyPoli
 import PaymentGatewayRuntimePanel from '@/components/admin/settings/PaymentGatewayRuntimePanel.vue'
 import PaymentMethodsSettingsPanel from '@/components/admin/settings/PaymentMethodsSettingsPanel.vue'
 import PublicChatSettingsPanel from '@/components/admin/settings/PublicChatSettingsPanel.vue'
+import StorefrontMarketsSettingsPanel from '@/components/admin/settings/StorefrontMarketsSettingsPanel.vue'
 import { Button } from '@/components/ui/button'
 import CommercialCrawlerProtectionPanel from '@/components/admin/settings/CommercialCrawlerProtectionPanel.vue'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  CommercialCrawlerProtection,
+  PublicChatAgent,
+  PublicChatGroup,
+  PublicChatSummary,
+} from './settingsTypes'
 
-defineProps({
+interface SocialField {
+  key: string
+  label: string
+  placeholder: string
+}
+
+interface APISettings {
+  exchange_rate_enabled: boolean | string | number
+  exchange_rate_provider: string
+  exchange_rate_endpoint: string
+  exchange_rate_query_template: string
+  exchange_rate_refresh_minutes: number
+  exchange_rate_api_key: string
+  time_api_enabled: boolean | string | number
+  time_api_provider: string
+  time_api_endpoint: string
+  time_api_query_template: string
+  time_api_default_timezone: string
+  time_api_refresh_minutes: number
+  time_api_key_ref: string
+}
+
+const props = defineProps({
   activeTab: { type: String, default: 'site' },
   siteSettings: { type: Object, required: true },
   emailSettings: { type: Object, required: true },
   seoSettings: { type: Object, required: true },
   socialSettings: { type: Object, required: true },
   paymentSettings: { type: Object, required: true },
-  apiSettings: { type: Object, required: true },
-  commercialCrawlerProtection: { type: Object, default: null },
+  apiSettings: { type: Object as PropType<APISettings>, required: true },
+  primaryPricingCurrency: { type: String, default: '' },
+  commercialCrawlerProtection: { type: Object as PropType<CommercialCrawlerProtection | null>, default: null },
   loadingCommercialCrawlerProtection: { type: Boolean, default: false },
-  paymentCurrencyOptions: { type: Array, default: () => [] },
-  loadingPaymentCurrencies: { type: Boolean, default: false },
+  uploadingSiteLogo: { type: Boolean, default: false },
   paymentRuntime: { type: Object, default: null },
   loadingPaymentRuntime: { type: Boolean, default: false },
-  socialFields: { type: Array, default: () => [] },
+  syncingExchangeRates: { type: Boolean, default: false },
+  savingApiSettings: { type: Boolean, default: false },
+  socialFields: { type: Array as PropType<SocialField[]>, default: () => [] },
   showSmtpPassword: { type: Boolean, default: false },
   showPaymentSecrets: { type: Boolean, default: false },
   loadingPublicChatAgents: { type: Boolean, default: false },
   loadingPublicChatGroups: { type: Boolean, default: false },
   loadingPublicChatAgentCandidates: { type: Boolean, default: false },
-  publicChatAgentsSummary: { type: Object, default: () => ({}) },
-  publicChatAgents: { type: Array, default: () => [] },
-  publicChatGroups: { type: Array, default: () => [] },
-  publicChatAgentWarnings: { type: Array, default: () => [] },
+  publicChatAgentsSummary: { type: Object as PropType<PublicChatSummary>, default: () => ({}) },
+  publicChatAgents: { type: Array as PropType<PublicChatAgent[]>, default: () => [] },
+  publicChatGroups: { type: Array as PropType<PublicChatGroup[]>, default: () => [] },
+  publicChatAgentWarnings: { type: Array as PropType<string[]>, default: () => [] },
   canEdit: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
   'update:showSmtpPassword',
   'update:showPaymentSecrets',
+  'upload-site-logo',
   'open-agent-dialog',
   'open-group-dialog',
   'edit-group',
@@ -274,8 +324,29 @@ const emit = defineEmits([
   'refresh-public-chat',
   'refresh-payment-runtime',
   'currency-policy-saved',
+  'sync-exchange-rates',
   'refresh-commercial-crawler-protection',
 ])
+
+const siteLogoInput = ref<HTMLInputElement | null>(null)
+
+const chooseSiteLogo = () => {
+  if (!props.canEdit || props.uploadingSiteLogo) return
+  siteLogoInput.value?.click()
+}
+
+const uploadSiteLogo = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  emit('upload-site-logo', file)
+}
+
+const clearSiteLogo = () => {
+  if (props.uploadingSiteLogo) return
+  props.siteSettings.site_logo = ''
+}
 
 const SettingsSection = defineComponent({
   props: {

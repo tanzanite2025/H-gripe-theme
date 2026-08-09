@@ -94,10 +94,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { BadgePercent, MoreHorizontal, Pencil, Plus, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -110,19 +110,61 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  coupons: { type: Array, default: () => [] },
-  filters: { type: Object, required: true },
-  pagination: { type: Object, required: true },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  couponValue: { type: Function, required: true },
-  couponStatus: { type: Function, required: true },
-  formatMoney: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+interface CouponRecord {
+  id: string | number
+  code: string
+  type: string
+  value?: number | string
+  description?: string
+  min_amount?: number | string
+  used_count?: number | string
+  usage_limit?: number | string
+  start_date?: string
+  end_date?: string
+  enabled?: boolean
+}
+
+interface CouponFilters {
+  status: string
+}
+
+interface PaginationState {
+  page: number
+  pageSize: number
+  total: number
+}
+
+interface StatusDisplay {
+  label: string
+  tone: AdminStatusTone
+}
+
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  coupons?: CouponRecord[]
+  filters: CouponFilters
+  pagination: PaginationState
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+  couponValue: (coupon: CouponRecord) => string
+  couponStatus: (coupon: CouponRecord) => StatusDisplay
+  formatMoney: (value: unknown) => string
+  formatDate: (value: unknown) => string
+}>(), {
+  loading: false,
+  coupons: () => [],
+  canCreate: false,
+  canEdit: false,
+  canDelete: false,
 })
 
-const emit = defineEmits(['filter-change', 'create', 'edit', 'delete', 'update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'filter-change'): void
+  (event: 'create'): void
+  (event: 'edit', coupon: CouponRecord): void
+  (event: 'delete', coupon: CouponRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

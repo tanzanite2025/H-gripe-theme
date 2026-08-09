@@ -9,16 +9,22 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 
-const props = defineProps({
-  logged: { type: Boolean, default: false },
-  level: { type: [String, Number], default: '' },
-  topTierImageUrl: { type: String, default: '' }
+interface BadgeAvatarProps {
+  logged?: boolean
+  level?: string | number
+  topTierImageUrl?: string
+}
+
+const props = withDefaults(defineProps<BadgeAvatarProps>(), {
+  logged: false,
+  level: '',
+  topTierImageUrl: ''
 })
 
-const accent = ref('')
+const accent = ref<string>('')
 
 const tierClass = computed(() => {
   const lv = (props.level || '').toString().toLowerCase()
@@ -49,10 +55,10 @@ const badgeStyle = computed(() => {
   return {}
 })
 
-const pickFirstColor = (bg) => {
+const pickFirstColor = (bg: string): string => {
   // 粗略解析 linear-gradient 中的第一个 rgb/rgba 颜色
   const m = bg.match(/(rgba?\([^\)]+\))/)
-  return m ? m[1] : ''
+  return m?.[1] ?? ''
 }
 
 onMounted(() => {
@@ -76,7 +82,7 @@ onMounted(() => {
         '.price-weight-bar', '.cart-summary', '.checkout-summary',
         '[data-role="price-bar"]', '[data-component="price-bar"]'
       ]
-      let el = null
+      let el: Element | null = null
       for (const sel of candidates) { 
         el = document.querySelector(sel)
         if (el) break 
@@ -88,7 +94,7 @@ onMounted(() => {
         const fc = cs.color
         accent.value = (bg && bg.includes('rgb')) ? pickFirstColor(bg) : (bc || fc || '')
       }
-    } catch (_) { /* noop */ }
+    } catch { /* noop */ }
   }
 })
 </script>

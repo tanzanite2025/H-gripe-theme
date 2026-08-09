@@ -44,22 +44,31 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle, Pencil } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { ContentLabelResolver, ContentPost, ContentToneResolver } from './contentTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  currentPost: { type: Object, default: null },
-  translationsLoading: { type: Boolean, default: false },
-  translations: { type: Array, default: () => [] },
-  localeName: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  getStatusName: { type: Function, required: true }
+withDefaults(defineProps<{
+  open?: boolean
+  currentPost?: ContentPost | null
+  translationsLoading?: boolean
+  translations?: ContentPost[]
+  localeName: ContentLabelResolver
+  statusTone: ContentToneResolver
+  getStatusName: ContentLabelResolver
+}>(), {
+  open: false,
+  currentPost: null,
+  translationsLoading: false,
+  translations: () => []
 })
 
-const emit = defineEmits(['update:open', 'edit'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'edit', translation: ContentPost): void
+}>()
 </script>

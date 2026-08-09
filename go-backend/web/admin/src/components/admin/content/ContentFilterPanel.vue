@@ -29,18 +29,26 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { ContentFilters } from './contentTypes'
 
-defineProps({
-  filters: { type: Object, required: true },
-  statusFilterOptions: { type: Array, default: () => [] },
-  localeFilterOptions: { type: Array, default: () => [] }
+withDefaults(defineProps<{
+  filters: ContentFilters
+  statusFilterOptions?: LanguageOption[]
+  localeFilterOptions?: LanguageOption[]
+}>(), {
+  statusFilterOptions: () => [],
+  localeFilterOptions: () => []
 })
 
-const emit = defineEmits(['apply', 'reset'])
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
 </script>

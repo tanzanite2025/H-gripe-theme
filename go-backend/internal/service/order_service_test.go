@@ -518,7 +518,7 @@ func TestOrderServiceCompletionRejectsNonUSDPointsWithoutConversion(t *testing.T
 	assert.EqualValues(t, 0, count)
 }
 
-func TestOrderServiceCreateOrderUsesDefaultOrderCurrency(t *testing.T) {
+func TestOrderServiceCreateOrderUsesProductPriceCurrency(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	productRecord := seedProduct(t, db, 50, 5)
 
@@ -539,13 +539,14 @@ func TestOrderServiceCreateOrderUsesDefaultOrderCurrency(t *testing.T) {
 	assert.Equal(t, "USD", createdOrder.Currency)
 }
 
-func TestOrderServiceCreateOrderRejectsPaymentMethodUnsupportedDefaultCurrency(t *testing.T) {
-	_, orderService := newTestOrderService(t)
+func TestOrderServiceCreateOrderRejectsUnsupportedPaymentCurrency(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 50, 5)
 
 	createdOrder, err := orderService.CreateOrder(
 		context.Background(),
 		42,
-		[]order.OrderItem{{ProductID: 1, Quantity: 1}},
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
 		testAddress(),
 		testAddress(),
 		"wechat",
@@ -556,7 +557,38 @@ func TestOrderServiceCreateOrderRejectsPaymentMethodUnsupportedDefaultCurrency(t
 
 	require.Error(t, err)
 	assert.Nil(t, createdOrder)
-	assert.Contains(t, err.Error(), "cannot collect order currency USD")
+	assert.Contains(t, err.Error(), "wechat")
+	assert.Contains(t, err.Error(), "USD")
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Zero(t, orderCount)
+
+	var variant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+	assert.Equal(t, 5, variant.Stock)
+}
+
+func TestOrderServiceCreateOrderAcceptsSupportedPaymentCurrency(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProductWithCurrency(t, db, 50, 5, "CNY")
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"wechat",
+		"standard",
+		"",
+		0,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.Equal(t, "wechat", createdOrder.PaymentMethod)
+	assert.Equal(t, "CNY", createdOrder.Currency)
 }
 
 func TestOrderServiceRejectsPaymentManagedStatusUpdates(t *testing.T) {
@@ -808,18 +840,27 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	numberGenerator, err := ordernumber.NewGenerator("test-order-number-secret", 0)
 	require.NoError(t, err)
 
-	return db, NewOrderService(txManager, orderRepo, checkoutService, shippingService, currencyPolicyService, numberGenerator)
+	return db, NewOrderService(txManager, orderRepo, checkoutService, shippingService, numberGenerator)
 }
 
 func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {
 	t.Helper()
 
+	return seedProductWithCurrency(t, db, price, stock, "USD")
+}
+
+func seedProductWithCurrency(t *testing.T, db *gorm.DB, price float64, stock int, currencyCode string) product.Product {
+	t.Helper()
+
 	record := seedProductShell(t, db, price, stock)
+	record.Currency = currencyCode
+	require.NoError(t, db.Save(&record).Error)
 	require.NoError(t, db.Create(&product.ProductVariant{
 		ProductID:    record.ID,
 		SKU:          record.SKU,
 		Title:        "Default",
 		OptionValues: "{}",
+		Currency:     currencyCode,
 		Price:        price,
 		Stock:        stock,
 		Weight:       9000,

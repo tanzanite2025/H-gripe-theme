@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
 
 interface WarrantyRemaining {
   months: number
@@ -89,7 +90,7 @@ export const useWarrantyCheck = () => {
     if (!dateStr) return '-'
     const [year = '', month = ''] = dateStr.split('-')
 
-    if (String(locale.value).startsWith('zh')) {
+    if (isSimplifiedChineseStorefrontLocale(locale.value)) {
       return `${year}年${month}月`
     }
 

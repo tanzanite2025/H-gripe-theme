@@ -25,11 +25,17 @@
   </section>
 </template>
 
-<script setup>
-defineProps({
-  metricCards: { type: Array, default: () => [] },
-  metricToneClass: { type: Function, required: true },
+<script setup lang="ts">
+import type { DashboardMetricCard, DashboardMetricToneClass } from './dashboardTypes'
+
+withDefaults(defineProps<{
+  metricCards?: DashboardMetricCard[]
+  metricToneClass: DashboardMetricToneClass
+}>(), {
+  metricCards: () => []
 })
 
-const emit = defineEmits(['navigate'])
+const emit = defineEmits<{
+  (event: 'navigate', path: string): void
+}>()
 </script>

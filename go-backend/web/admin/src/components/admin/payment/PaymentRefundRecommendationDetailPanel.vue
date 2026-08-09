@@ -51,7 +51,7 @@
           :value="decisionStatus"
           class="h-9 w-full rounded-md border border-dashed border-border bg-background px-3 text-sm"
           :disabled="recommendation.status !== 'pending'"
-          @change="$emit('update:decisionStatus', $event.target.value)"
+          @change="handleDecisionStatusChange"
         >
           <option value="pending">保持待处理</option>
           <option value="accepted">采纳建议</option>
@@ -66,7 +66,7 @@
           rows="5"
           :disabled="recommendation.status !== 'pending'"
           placeholder="记录订单核验、客户沟通、是否后续创建人工退款"
-          @update:model-value="$emit('update:decisionNotes', $event)"
+          @update:model-value="emit('update:decisionNotes', String($event))"
         />
       </label>
       <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="recommendation.status !== 'pending' || saving" @click="$emit('save-decision')">
@@ -174,13 +174,18 @@
   </aside>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, defineComponent, h, ref, watch } from 'vue'
 import { CheckCircle2, FilePlus2, Send } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  PaymentRefundDraftPayload,
+  PaymentRefundExecutionPayload,
+  PaymentRefundRecommendation,
+} from './paymentRiskTypes'
 
 const StatusPill = defineComponent({
   props: { status: { type: String, default: '' } },
@@ -195,23 +200,31 @@ const StatusPill = defineComponent({
   },
 })
 
-const props = defineProps({
-  recommendation: { type: Object, default: null },
-  decisionStatus: { type: String, default: 'pending' },
-  decisionNotes: { type: String, default: '' },
-  saving: { type: Boolean, default: false },
-  draftSaving: { type: Boolean, default: false },
-  executionSaving: { type: Boolean, default: false },
-  executionCompleted: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  recommendation?: PaymentRefundRecommendation | null
+  decisionStatus?: string
+  decisionNotes?: string
+  saving?: boolean
+  draftSaving?: boolean
+  executionSaving?: boolean
+  executionCompleted?: boolean
+}>(), {
+  recommendation: null,
+  decisionStatus: 'pending',
+  decisionNotes: '',
+  saving: false,
+  draftSaving: false,
+  executionSaving: false,
+  executionCompleted: false,
 })
 
-const emit = defineEmits([
-  'update:decisionStatus',
-  'update:decisionNotes',
-  'save-decision',
-  'create-draft',
-  'execute-refund',
-])
+const emit = defineEmits<{
+  (event: 'update:decisionStatus', value: string): void
+  (event: 'update:decisionNotes', value: string): void
+  (event: 'save-decision'): void
+  (event: 'create-draft', payload: PaymentRefundDraftPayload): void
+  (event: 'execute-refund', payload: PaymentRefundExecutionPayload): void
+}>()
 
 const draftDialogOpen = ref(false)
 const draftAmount = ref('')
@@ -221,8 +234,8 @@ const executionDialogOpen = ref(false)
 const executionConfirmed = ref(false)
 
 const paymentReference = computed(() => {
-  const item = props.recommendation || {}
-  return item.provider_payment_id || item.payment_intent_id || item.charge_id || '-'
+  const item = props.recommendation
+  return item?.provider_payment_id || item?.payment_intent_id || item?.charge_id || '-'
 })
 
 const canCreateDraft = computed(() => {
@@ -241,8 +254,8 @@ const recommendedAmountPlaceholder = computed(() => {
   return amount > 0 ? amount.toFixed(2) : '输入退款金额'
 })
 
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
-const formatMoney = (amount, currency = '') => {
+const formatDate = (dateString: unknown): string => dateString ? new Date(dateString as string | number | Date).toLocaleString('zh-CN') : '-'
+const formatMoney = (amount: unknown, currency = ''): string => {
   const value = Number(amount || 0)
   const normalizedCurrency = String(currency || '').trim().toUpperCase()
   try {
@@ -253,20 +266,20 @@ const formatMoney = (amount, currency = '') => {
   }
 }
 
-const resetDraftForm = () => {
+const resetDraftForm = (): void => {
   const amount = Number(props.recommendation?.recommended_amount || 0)
   draftAmount.value = amount > 0 ? amount.toFixed(2) : ''
   draftReason.value = ''
   draftConfirmed.value = false
 }
 
-const openDraftDialog = () => {
+const openDraftDialog = (): void => {
   if (!canCreateDraft.value) return
   resetDraftForm()
   draftDialogOpen.value = true
 }
 
-const submitDraft = () => {
+const submitDraft = (): void => {
   if (!canCreateDraft.value || !draftConfirmed.value) return
   emit('create-draft', {
     amount: Number(draftAmount.value || 0),
@@ -276,17 +289,21 @@ const submitDraft = () => {
   })
 }
 
-const openExecutionDialog = () => {
+const openExecutionDialog = (): void => {
   executionConfirmed.value = false
   executionDialogOpen.value = true
 }
 
-const submitExecution = () => {
+const submitExecution = (): void => {
   if (!props.recommendation?.linked_refund_id || !executionConfirmed.value) return
   emit('execute-refund', {
     refund_id: props.recommendation.linked_refund_id,
     confirm: true,
   })
+}
+
+const handleDecisionStatusChange = (event: Event): void => {
+  emit('update:decisionStatus', String((event.target as HTMLSelectElement | null)?.value || ''))
 }
 
 watch(() => props.recommendation?.id, () => {

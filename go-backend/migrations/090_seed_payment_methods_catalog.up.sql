@@ -1,0 +1,77 @@
+INSERT INTO payment_methods (
+    name,
+    code,
+    icon,
+    description,
+    fee_type,
+    fee_value,
+    min_amount,
+    max_amount,
+    enabled,
+    sort_order,
+    settings,
+    created_at,
+    updated_at
+)
+VALUES
+    (
+        'Credit / Debit Card',
+        'card',
+        '',
+        'Secure card checkout powered by Stripe.',
+        'fixed',
+        0,
+        0,
+        0,
+        TRUE,
+        10,
+        '{}',
+        NOW(),
+        NOW()
+    ),
+    (
+        'PayPal',
+        'paypal',
+        '',
+        'Pay with a PayPal account or supported wallet.',
+        'fixed',
+        0,
+        0,
+        0,
+        TRUE,
+        20,
+        '{}',
+        NOW(),
+        NOW()
+    ),
+    (
+        'Alipay',
+        'alipay',
+        '',
+        'Pay through Alipay.',
+        'fixed',
+        0,
+        0,
+        0,
+        TRUE,
+        30,
+        '{}',
+        NOW(),
+        NOW()
+    ),
+    (
+        'WeChat Pay',
+        'wechat',
+        '',
+        'Scan a WeChat Pay QR code to complete payment.',
+        'fixed',
+        0,
+        0,
+        0,
+        TRUE,
+        40,
+        '{}',
+        NOW(),
+        NOW()
+    )
+ON CONFLICT (code) DO NOTHING;

@@ -111,11 +111,26 @@ runtime readiness display, and manual provider refund execution. Only a missing
 domain-managed config falls back to environment variables; unreadable or
 provider-mismatched encrypted config is treated as a configuration error.
 
-Manual provider refund execution passes the original transaction currency and
-amount into the gateway adapter. PayPal refunds prefer the stored capture id and
-fall back to resolving a capture from a stored PayPal order id for older rows.
-WeChat Pay partial refunds send both the refund amount and original transaction
-amount, as required by the provider API.
+Manual provider refund execution passes a strict refund reference set into the
+gateway adapter: merchant order number, provider transaction id, original
+transaction currency, and original transaction amount. There is no legacy
+fallback path because production orders have not been created yet.
+
+Provider-specific refund references are strict:
+
+- PayPal refunds use the stored PayPal capture id only. A stored PayPal order id
+  is not accepted as a refund reference.
+- Alipay refunds use `trade_no` only. `out_trade_no` remains the merchant order
+  number and is not used as the refund trade reference.
+- WeChat Pay refunds use `transaction_id` only and send both refund amount and
+  original transaction amount, as required by the provider API.
+
+Successful provider finalization must write refundable platform transaction
+references into the completed transaction row. PayPal must record the capture
+id, Alipay must record `trade_no`, and WeChat Pay must record `transaction_id`.
+Pending or in-progress attempts may use provider order numbers or merchant order
+numbers for traceability, but those rows are not refundable until a verified
+success writes the platform transaction id.
 
 High-risk admin payment actions are written to the audit log:
 
@@ -123,9 +138,9 @@ High-risk admin payment actions are written to the audit log:
 - Deleting encrypted gateway config records provider, confirmation result, status, operator, IP, user agent, and request path.
 - Running callback reachability probes records provider, callback URL, HTTP status, route reachability, expected signature failure state, operator, IP, user agent, and request path.
 - Creating, updating, or deleting payment methods records method id, code, fee/min/max amounts, enabled flag, sort order, settings presence/length, old-value summary when available, operator, IP, user agent, and request path.
-- Updating the currency policy records accounting currency, default order currency, accepted-currency count/list, old/new summaries when available, operator, IP, user agent, and request path.
+- Updating the storefront display-currency policy records display currency count/list, available catalog count/list, old/new summaries when available, operator, IP, user agent, and request path.
 - Creating a local refund draft records order, transaction, requested/net amount, line-item count, restock count, status, operator, IP, user agent, and request path. It does not execute a provider refund.
-- Executing a pending refund records refund, order, transaction, provider, amount, currency, execution status, attempt count, provider-refund-id presence, operator, IP, user agent, and request path.
+- Executing a pending refund records refund, order, transaction, merchant order number, provider transaction id, provider, amount, currency, execution status, attempt count, provider-refund-id presence, operator, IP, user agent, and request path.
 - Updating refund recommendations records recommendation, provider, source kind, requested status, linked refund id when present, and operator metadata. It does not call a provider.
 - Submitting Stripe dispute evidence records dispute id, submit/stage mode, evidence-file presence flags, statement presence/length, result status, operator, IP, user agent, and request path.
 - Creating or updating payment reviews records review id, status, linked order/transaction/dispute ids, payment-intent presence, assignee, operator, IP, user agent, and request path.
@@ -135,11 +150,15 @@ Audit payloads must never store raw credential values, webhook secrets, private 
 
 ## Currency Boundary
 
-Stripe supports the site currency catalog. PayPal supports a fixed provider-safe currency set. Alipay and WeChat Pay are currently restricted to CNY.
+Product, SKU, shipping, and other commercial configuration amounts use the backend primary pricing currency. The admin enters the primary amount directly; secondary display prices are filled or refreshed by a backend one-click action from cached ExchangeRate-API rates. Product and SKU price currency is the source of truth for local order currency. Storefront display currencies are only for price labels, exchange-rate hints, and admin pricing helpers.
 
-If the default order currency is not supported by a provider, the storefront payment method list should return it as unavailable. Backend provider creation endpoints must also reject unsupported order currency before creating provider SDK requests.
+The admin pricing-currency page owns the primary base currency and secondary display currency list. Exchange-rate sync reads that policy directly at runtime. The API management page only stores the provider enable flag/API key and triggers cache sync; it must not become a second currency-management surface.
 
-Currency policy updates are audited because they can make providers available or unavailable at checkout. The audit record stores normalized ISO currency codes and counts only; it does not store raw request bodies.
+Storefront payment buttons come from configured and enabled payment methods, plus runtime protection controls. If PayPal is configured and enabled, the storefront can show PayPal; if Stripe, WeChat Pay, or Alipay is configured and enabled, the storefront can show those buttons. Storefront display currency, IP-based market currency, and ExchangeRate-API conversion hints must not decide which payment buttons are exposed.
+
+Binding a provider is the button policy, not a product pricing currency policy. The local product or variant price determines the order transaction currency. After the shopper selects PayPal, Stripe, WeChat Pay, Alipay, or another method, that provider decides whether the customer's card/account/funding currency can complete payment under its own account and regional rules. Provider order/session creation still uses the local order amount and order currency, and provider callbacks/webhooks must verify signature, idempotency, amount, and currency against that order before marking it paid.
+
+Display-currency policy updates are audited because they affect storefront presentation. The audit record stores normalized ISO currency codes and counts only; it does not store raw request bodies.
 
 ## Risk Control Boundary
 
@@ -166,8 +185,9 @@ Before enabling a provider in production:
   - Alipay receives a plain text `success` body after successful notification verification and processing.
   - WeChat Pay receives HTTP 204 with no response body after successful API v3 notification verification and processing.
 - A small live payment creates a local order, creates a provider payment, receives provider notify/webhook, records a transaction, marks the order paid, and clears the cart after confirmation.
+- The completed transaction row stores a refundable platform reference: Stripe payment intent id, PayPal capture id, Alipay `trade_no`, or WeChat Pay `transaction_id`.
 - Duplicate webhook delivery is idempotent and does not create duplicate transactions.
-- Unsupported currency methods are hidden or marked unavailable.
+- Payment creation and webhook/capture handling verify provider amount and currency against the local order before marking it paid.
 - `pause_payment` for provider scope blocks active payment creation before provider SDK calls.
 
 ## Operational Notes

@@ -37,7 +37,7 @@
         type="button"
         :disabled="cartCount <= 0"
         :class="{ 'opacity-50 cursor-not-allowed hover:translate-y-0': cartCount <= 0 }"
-        @click="openCheckout"
+        @click="openCartDrawer"
       >
         <span>{{ priceDisplay }}</span>
       </button>
@@ -206,7 +206,7 @@ const priceLabel = computed(() => $t('cart.summary.price', 'Price'))
 const ctaLabel = computed(() => $t('cart.summary.openCart', 'View cart summary'))
 
 // 集成购物车系统
-const { cartCount, total, openCart, openCheckout, formatPrice } = useCart()
+const { cartCount, total, openCart, formatPrice } = useCart()
 
 const itemsCount = computed(() => cartCount.value)
 

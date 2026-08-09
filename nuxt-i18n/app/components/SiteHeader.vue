@@ -9,9 +9,10 @@
 
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
-						<div class="m-0 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffffff] via-[#e5e7eb] to-[#94a3b8] tracking-wide drop-shadow-[0_2px_8px_rgba(226,232,240,0.22)] leading-none cursor-default">
-							{{ titleText }}
-						</div>
+						<NuxtLink :to="localePath('/')" class="site-header-brand site-header-brand--desktop" :class="{ 'site-header-brand--image': siteLogo }" :aria-label="brandHomeLabel">
+							<img v-if="siteLogo" :src="siteLogo" :alt="brandLogoAlt" class="site-header-brand__image" />
+							<span v-else class="site-header-brand__text">{{ titleText }}</span>
+						</NuxtLink>
 					</div>
 
 					<!-- Nav (Centered) -->
@@ -220,9 +221,10 @@
 				<!-- 第一行：Logo (左) + 工具图标 (右) -->
 				<div class="flex items-center justify-between px-1">
 					<!-- Logo -->
-					<div class="m-0 text-2xl phone-390:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffffff] via-[#e5e7eb] to-[#94a3b8] tracking-wide drop-shadow-[0_2px_8px_rgba(226,232,240,0.22)] leading-none">
-						{{ titleText }}
-					</div>
+					<NuxtLink :to="localePath('/')" class="site-header-brand site-header-brand--mobile" :class="{ 'site-header-brand--image': siteLogo }" :aria-label="brandHomeLabel">
+						<img v-if="siteLogo" :src="siteLogo" :alt="brandLogoAlt" class="site-header-brand__image" />
+						<span v-else class="site-header-brand__text">{{ titleText }}</span>
+					</NuxtLink>
 
 					<!-- 右侧工具图标组 -->
 					<div class="site-header-actions site-header-actions--mobile flex items-center">
@@ -405,6 +407,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, unref, watch, type ComponentPublicInstance } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
+import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import HeaderMegaMenu from '~/components/HeaderMegaMenu.vue'
@@ -424,8 +427,12 @@ import {
 } from '~/utils/pageSubNavigation'
 
 // Header brand title is controlled only by the public site settings API.
+const { siteSettings } = useSiteSettings()
 const { brandTitle } = useSiteTitle()
 const titleText = computed(() => brandTitle.value)
+const siteLogo = computed(() => (siteSettings.value.siteLogo || '').toString().trim())
+const brandLogoAlt = computed(() => `${titleText.value || 'Site'} logo`)
+const brandHomeLabel = computed(() => titleText.value ? `${titleText.value} home` : 'Home')
 
 const headerRootRef = ref<HTMLElement | null>(null)
 const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
@@ -1075,6 +1082,98 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 <style scoped>
 .header-mobile-nav-text {
   font-size: 12px !important;
+}
+
+.site-header-brand {
+	display: inline-flex;
+	min-width: 0;
+	align-items: center;
+	justify-content: flex-start;
+	color: inherit;
+	line-height: 1;
+	text-decoration: none;
+	transition:
+		background-color 0.18s ease,
+		border-color 0.18s ease,
+		box-shadow 0.18s ease;
+}
+
+.site-header-brand--image {
+	justify-content: center;
+	border: 1px solid rgba(255, 255, 255, 0.68);
+	border-radius: 0.75rem;
+	background: rgba(255, 255, 255, 0.96);
+	padding: 0.22rem 0.5rem;
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.34),
+		inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.site-header-brand--image:hover,
+.site-header-brand--image:focus-visible {
+	border-color: #ffffff;
+	background: #ffffff;
+	box-shadow:
+		0 10px 28px rgba(0, 0, 0, 0.42),
+		0 0 0 1px rgba(181, 255, 109, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.site-header-brand:focus-visible {
+	outline: 2px solid rgba(181, 255, 109, 0.68);
+	outline-offset: 4px;
+}
+
+.site-header-brand__text {
+	margin: 0;
+	max-width: 100%;
+	overflow: hidden;
+	background-image: linear-gradient(90deg, #ffffff, #e5e7eb, #94a3b8);
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	font-weight: 900;
+	letter-spacing: 0;
+	line-height: 1;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	filter: drop-shadow(0 2px 8px rgba(226, 232, 240, 0.22));
+}
+
+.site-header-brand__image {
+	display: block;
+	max-width: 100%;
+	object-fit: contain;
+}
+
+.site-header-brand--desktop {
+	max-width: 17.5rem;
+}
+
+.site-header-brand--desktop .site-header-brand__text {
+	font-size: 1.875rem;
+}
+
+.site-header-brand--desktop .site-header-brand__image {
+	max-height: 2.35rem;
+}
+
+.site-header-brand--mobile {
+	max-width: calc(100vw - 7.5rem);
+}
+
+.site-header-brand--mobile .site-header-brand__text {
+	font-size: 1.5rem;
+}
+
+.site-header-brand--mobile .site-header-brand__image {
+	max-height: 2rem;
+}
+
+@media (min-width: 390px) and (max-width: 767px) {
+	.site-header-brand--mobile .site-header-brand__text {
+		font-size: 1.875rem;
+	}
 }
 
 @media (min-width: 768px) {

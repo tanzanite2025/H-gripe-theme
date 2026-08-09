@@ -30,12 +30,12 @@
         <Switch v-model="redeemSettings.tz_redeem_enabled" :disabled="!canEdit" aria-label="启用积分兑换" />
       </AdminFormField>
       <AdminFormField label="默认币种" description="新增面额默认使用该币种；每个面额仍可单独设置币种。">
-        <Select v-model="redeemSettings.tz_redeem_currency" :disabled="!canEdit || paymentCurrenciesLoading || paymentCurrencyOptions.length === 0">
+        <Select v-model="redeemSettings.tz_redeem_currency" :disabled="!canEdit || redeemCurrenciesLoading || redeemCurrencyOptions.length === 0">
           <SelectTrigger class="w-full font-mono uppercase">
-            <SelectValue :placeholder="paymentCurrenciesLoading ? '正在读取币种目录' : '选择币种'" />
+            <SelectValue :placeholder="redeemCurrenciesLoading ? '正在读取币种目录' : '选择币种'" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem v-for="currency in paymentCurrencyOptions" :key="currency" :value="currency">
+            <SelectItem v-for="currency in redeemCurrencyOptions" :key="currency" :value="currency">
               {{ currency }}
             </SelectItem>
           </SelectContent>
@@ -84,7 +84,7 @@
           type="button"
           variant="outline"
           size="sm"
-          :disabled="paymentCurrenciesLoading || paymentCurrencyOptions.length === 0"
+          :disabled="redeemCurrenciesLoading || redeemCurrencyOptions.length === 0"
           @click="addRedeemOption"
         >
           <Plus class="size-3.5" />
@@ -108,12 +108,12 @@
             <Input v-model.number="option.value" type="number" min="0.01" step="0.01" :disabled="!canEdit" />
           </AdminFormField>
           <AdminFormField label="币种">
-            <Select v-model="option.currency" :disabled="!canEdit || paymentCurrenciesLoading || paymentCurrencyOptions.length === 0">
+            <Select v-model="option.currency" :disabled="!canEdit || redeemCurrenciesLoading || redeemCurrencyOptions.length === 0">
               <SelectTrigger class="font-mono uppercase">
                 <SelectValue placeholder="币种" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="currency in paymentCurrencyOptions" :key="`${index}-${currency}`" :value="currency">
+                <SelectItem v-for="currency in redeemCurrencyOptions" :key="`${index}-${currency}`" :value="currency">
                   {{ currency }}
                 </SelectItem>
               </SelectContent>
@@ -150,7 +150,7 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle, Plus, RefreshCw, Save, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -158,19 +158,45 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 
-const props = defineProps({
-  redeemSettings: { type: Object, required: true },
-  loading: { type: Boolean, default: false },
-  saving: { type: Boolean, default: false },
-  paymentCurrencyOptions: { type: Array, default: () => [] },
-  paymentCurrenciesLoading: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
+interface GiftCardRedeemOption {
+  key?: string
+  value: number | string
+  currency: string
+  stock_quantity: number | string
+}
+
+interface GiftCardRedeemSettings {
+  tz_redeem_enabled: boolean
+  tz_redeem_currency: string
+  tz_redeem_exchange_rate: number | string
+  tz_redeem_min_points: number | string
+  tz_redeem_max_value_per_day: number | string
+  tz_redeem_card_expiry_days: number | string
+  options?: GiftCardRedeemOption[]
+}
+
+const props = withDefaults(defineProps<{
+  redeemSettings: GiftCardRedeemSettings
+  loading?: boolean
+  saving?: boolean
+  redeemCurrencyOptions?: string[]
+  redeemCurrenciesLoading?: boolean
+  canEdit?: boolean
+}>(), {
+  loading: false,
+  saving: false,
+  redeemCurrencyOptions: () => [],
+  redeemCurrenciesLoading: false,
+  canEdit: false,
 })
 
-const emit = defineEmits(['refresh', 'save'])
+const emit = defineEmits<{
+  (event: 'refresh'): void
+  (event: 'save'): void
+}>()
 
-const addRedeemOption = () => {
-  const currency = props.redeemSettings.tz_redeem_currency || props.paymentCurrencyOptions?.[0] || ''
+const addRedeemOption = (): void => {
+  const currency = props.redeemSettings.tz_redeem_currency || props.redeemCurrencyOptions?.[0] || ''
   props.redeemSettings.options = [
     ...(props.redeemSettings.options || []),
     {
@@ -182,7 +208,7 @@ const addRedeemOption = () => {
   ]
 }
 
-const removeRedeemOption = (index) => {
+const removeRedeemOption = (index: number): void => {
   props.redeemSettings.options = (props.redeemSettings.options || []).filter((_, optionIndex) => optionIndex !== index)
 }
 </script>

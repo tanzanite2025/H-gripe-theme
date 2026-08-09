@@ -93,8 +93,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Plus } from '@lucide/vue'
+import type { FAQCategory, FAQStructurePage } from '@/lib/faqAdminPresentation'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import FAQAccordionList from '@/components/admin/faq/FAQAccordionList.vue'
@@ -163,15 +164,15 @@ const {
   executeConfirmedAction
 } = useFaqAdmin()
 
-const openCreateCategoryDialog = (page) => {
+const openCreateCategoryDialog = (page: FAQStructurePage): void => {
   showCategoryDialog('create', page)
 }
 
-const openEditCategoryDialog = (page, category) => {
+const openEditCategoryDialog = (page: FAQStructurePage, category: FAQCategory): void => {
   showCategoryDialog('edit', page, category)
 }
 
-const openCreateFAQDialog = (page, category) => {
+const openCreateFAQDialog = (page: FAQStructurePage, category: FAQCategory): void => {
   showCreateDialog({ page, category })
 }
 </script>

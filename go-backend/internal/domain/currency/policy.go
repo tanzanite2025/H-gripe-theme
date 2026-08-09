@@ -2,17 +2,18 @@ package currency
 
 import (
 	"encoding/json"
-	"sort"
 	"strings"
 )
 
-// Policy is the store-wide currency policy. Gateway capability is evaluated
-// against this policy; it is not the source of the policy itself.
+const DefaultPrimaryCurrency = "USD"
+
+// Policy stores the store's primary pricing currency and secondary display
+// currencies. Payment collection currency is resolved from the order and
+// verified by gateway callbacks, not by this policy.
 type Policy struct {
-	AccountingCurrency   string           `json:"accounting_currency"`
-	DefaultOrderCurrency string           `json:"default_order_currency"`
-	AcceptedCurrencies   []string         `json:"accepted_currencies"`
-	AvailableCurrencies  []CurrencyOption `json:"available_currencies"`
+	PrimaryCurrency     string           `json:"primary_currency"`
+	DisplayCurrencies   []string         `json:"display_currencies"`
+	AvailableCurrencies []CurrencyOption `json:"available_currencies"`
 }
 
 type CurrencyOption struct {
@@ -23,26 +24,16 @@ type CurrencyOption struct {
 
 func (p *Policy) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		AccountingCurrency       string           `json:"accounting_currency"`
-		DefaultOrderCurrency     string           `json:"default_order_currency"`
-		DefaultCheckoutCurrency  string           `json:"default_checkout_currency"`
-		AcceptedCurrencies       []string         `json:"accepted_currencies"`
-		LegacyCheckoutCurrencies []string         `json:"checkout_currencies"`
-		AvailableCurrencies      []CurrencyOption `json:"available_currencies"`
+		PrimaryCurrency     string           `json:"primary_currency"`
+		DisplayCurrencies   []string         `json:"display_currencies"`
+		AvailableCurrencies []CurrencyOption `json:"available_currencies"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
-	p.AccountingCurrency = raw.AccountingCurrency
-	p.DefaultOrderCurrency = raw.DefaultOrderCurrency
-	if p.DefaultOrderCurrency == "" {
-		p.DefaultOrderCurrency = raw.DefaultCheckoutCurrency
-	}
-	p.AcceptedCurrencies = raw.AcceptedCurrencies
-	if len(p.AcceptedCurrencies) == 0 && len(raw.LegacyCheckoutCurrencies) > 0 {
-		p.AcceptedCurrencies = raw.LegacyCheckoutCurrencies
-	}
+	p.PrimaryCurrency = raw.PrimaryCurrency
+	p.DisplayCurrencies = raw.DisplayCurrencies
 	p.AvailableCurrencies = raw.AvailableCurrencies
 	return nil
 }
@@ -83,7 +74,6 @@ func NormalizeCodes(values []string) []string {
 		seen[code] = struct{}{}
 		result = append(result, code)
 	}
-	sort.Strings(result)
 	return result
 }
 
@@ -97,8 +87,8 @@ func MinorUnits(value string) (int, bool) {
 	return 0, false
 }
 
-// Catalog is deliberately a product-facing catalog, not a claim that every
-// enabled gateway/account can settle every listed currency.
+// Catalog is the admin-facing list for primary pricing and secondary display
+// currencies. It is not a claim about any enabled payment provider.
 func Catalog() []CurrencyOption {
 	return []CurrencyOption{
 		{Code: "USD", Name: "US Dollar", MinorUnits: 2},

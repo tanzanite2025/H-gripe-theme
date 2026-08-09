@@ -56,6 +56,11 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 			siteSettings.AdminHTMLTitle = st.Value
 		}
 	}
+	if siteSettings.BrandTitle != "" {
+		siteSettings.SiteName = siteSettings.BrandTitle
+	} else {
+		siteSettings.BrandTitle = siteSettings.SiteName
+	}
 
 	// 写入缓存
 	if s.cache != nil {

@@ -96,7 +96,7 @@ func newTestOrderTrackingAuthService(t *testing.T) (*gorm.DB, *service.OrderServ
 	})
 
 	require.NoError(t, db.AutoMigrate(&orderdomain.Order{}, &orderdomain.OrderItem{}))
-	return db, service.NewOrderService(nil, repository.NewOrderRepository(db), nil, nil, nil)
+	return db, service.NewOrderService(nil, repository.NewOrderRepository(db), nil, nil)
 }
 
 func seedOrderTrackingAuthOrder(t *testing.T, db *gorm.DB, userID uint) orderdomain.Order {

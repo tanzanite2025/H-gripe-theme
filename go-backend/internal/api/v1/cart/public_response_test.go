@@ -25,6 +25,7 @@ func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 				VariantID: &variantID,
 				Quantity:  1,
 				Price:     79.5,
+				Currency:  "USD",
 				Product: &productdomain.Product{
 					ID:                 7,
 					ProductTypeID:      &productTypeID,
@@ -101,6 +102,9 @@ func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 	}
 	if len(response.Items[0].Product.Media) != 1 {
 		t.Fatalf("expected one visible media item, got %d: %s", len(response.Items[0].Product.Media), body)
+	}
+	if got := response.Items[0].Currency; got != "USD" {
+		t.Fatalf("unexpected public cart item currency: %s", got)
 	}
 	if got := response.Items[0].Product.Media[0].URL; got != "https://example.test/public.jpg" {
 		t.Fatalf("unexpected public media URL: %s", got)

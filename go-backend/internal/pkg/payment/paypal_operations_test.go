@@ -43,51 +43,34 @@ func TestPayPalRefundUsesStoredCaptureIDDirectly(t *testing.T) {
 	}
 }
 
-func TestPayPalRefundFallsBackFromOrderIDToCaptureID(t *testing.T) {
+func TestPayPalRefundDoesNotResolveCaptureFromOrderID(t *testing.T) {
 	client := &fakePayPalCheckoutClient{
-		order: &paypal.Order{PurchaseUnits: []paypal.PurchaseUnit{
-			{
-				Payments: &paypal.CapturedPayments{Captures: []paypal.CaptureAmount{
-					{ID: "CAPTURE-FROM-ORDER", Amount: &paypal.PurchaseUnitAmount{Currency: "EUR", Value: "88.00"}},
-				}},
-			},
-		}},
-		fallbackRefundResponse: &paypal.RefundResponse{
-			ID:     "PAYPAL-REFUND-2",
-			Status: "COMPLETED",
-			Amount: &paypal.PurchaseUnitAmount{Currency: "EUR", Value: "10.00"},
-		},
+		refundErr: errors.New("capture not found"),
+		order:     &paypal.Order{ID: "ORDER-1"},
 	}
 	gateway := &paypalGatewayImpl{config: &Config{Type: GatewayPayPal}, client: client}
 
-	response, err := gateway.RefundPaymentWithOptions(context.Background(), "ORDER-1", 10, RefundOptions{})
+	_, err := gateway.RefundPaymentWithOptions(context.Background(), "ORDER-1", 10, RefundOptions{Currency: "EUR"})
 
-	if err != nil {
-		t.Fatalf("RefundPaymentWithOptions() error = %v", err)
+	if err == nil {
+		t.Fatalf("RefundPaymentWithOptions() expected error")
 	}
-	if response.ID != "PAYPAL-REFUND-2" {
-		t.Fatalf("unexpected refund response: %#v", response)
+	if client.getOrderID != "" {
+		t.Fatalf("expected no order lookup for refund, got %q", client.getOrderID)
 	}
-	if client.getOrderID != "ORDER-1" {
-		t.Fatalf("expected order lookup for fallback, got %q", client.getOrderID)
-	}
-	if client.refundCaptureID != "CAPTURE-FROM-ORDER" {
-		t.Fatalf("expected fallback capture id, got %q", client.refundCaptureID)
-	}
-	if client.refundRequest.Amount == nil || client.refundRequest.Amount.Currency != "EUR" || client.refundRequest.Amount.Value != "10.00" {
-		t.Fatalf("unexpected fallback refund amount request: %#v", client.refundRequest.Amount)
+	if client.refundCaptureID != "ORDER-1" {
+		t.Fatalf("expected stored reference to be used as capture id, got %q", client.refundCaptureID)
 	}
 }
 
 type fakePayPalCheckoutClient struct {
-	order                  *paypal.Order
-	getOrderID             string
-	refundCaptureID        string
-	refundRequest          paypal.RefundCaptureRequest
-	refundRequestID        string
-	refundErr              error
-	refundResponse         *paypal.RefundResponse
-	fallbackRefundResponse *paypal.RefundResponse
+	order           *paypal.Order
+	getOrderID      string
+	refundCaptureID string
+	refundRequest   paypal.RefundCaptureRequest
+	refundRequestID string
+	refundErr       error
+	refundResponse  *paypal.RefundResponse
 }
 
 func (c *fakePayPalCheckoutClient) CreateOrder(context.Context, string, []paypal.PurchaseUnitRequest, *paypal.PaymentSource, *paypal.ApplicationContext) (*paypal.Order, error) {
@@ -114,9 +97,6 @@ func (c *fakePayPalCheckoutClient) RefundCaptureWithPaypalRequestId(_ context.Co
 		err := c.refundErr
 		c.refundErr = nil
 		return nil, err
-	}
-	if c.fallbackRefundResponse != nil {
-		return c.fallbackRefundResponse, nil
 	}
 	return c.refundResponse, nil
 }

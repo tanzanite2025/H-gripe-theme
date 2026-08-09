@@ -106,7 +106,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   MoreHorizontal,
   Pencil,
@@ -128,34 +128,52 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  UserDateFormatter,
+  UserId,
+  UserLabelResolver,
+  UserNameFormatter,
+  UserPagination,
+  UserRecord,
+  UserSelectionState,
+  UserToneResolver
+} from './userTypes'
 
-const props = defineProps({
-  loading: { type: Boolean, default: false },
-  users: { type: Array, default: () => [] },
-  selectedUsers: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  selectionState: { type: [Boolean, String], default: false },
-  currentUserId: { type: [Number, String], default: null },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  getRoleName: { type: Function, required: true },
-  roleTone: { type: Function, required: true },
-  getStatusName: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  formatFullName: { type: Function, required: true },
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  users?: UserRecord[]
+  selectedUsers?: UserRecord[]
+  pagination: UserPagination
+  selectionState?: UserSelectionState
+  currentUserId?: UserId | null
+  canEdit?: boolean
+  canDelete?: boolean
+  getRoleName: UserLabelResolver
+  roleTone: UserToneResolver
+  getStatusName: UserLabelResolver
+  statusTone: UserToneResolver
+  formatDate: UserDateFormatter
+  formatFullName: UserNameFormatter
+}>(), {
+  loading: false,
+  users: () => [],
+  selectedUsers: () => [],
+  selectionState: false,
+  currentUserId: null,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits([
-  'batch-delete',
-  'toggle-all-users',
-  'toggle-user',
-  'edit',
-  'toggle-status',
-  'delete',
-  'update-page',
-  'update-page-size',
-])
+const emit = defineEmits<{
+  (event: 'batch-delete'): void
+  (event: 'toggle-all-users', checked: UserSelectionState): void
+  (event: 'toggle-user', user: UserRecord, checked: UserSelectionState): void
+  (event: 'edit', user: UserRecord): void
+  (event: 'toggle-status', user: UserRecord): void
+  (event: 'delete', user: UserRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 
-const isUserSelected = (userId) => props.selectedUsers.some((user) => user.id === userId)
+const isUserSelected = (userId: UserId): boolean => props.selectedUsers.some((user) => user.id === userId)
 </script>

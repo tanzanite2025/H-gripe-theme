@@ -155,6 +155,7 @@ func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 }
 
 func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	paymentID = strings.TrimSpace(paymentID)
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
@@ -168,35 +169,9 @@ func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		refundNo = options.IdempotencyKey
 	}
 
-	// 构建退款请求
-	currency := strings.ToUpper(strings.TrimSpace(options.Currency))
-	if currency == "" {
-		currency = "CNY"
-	}
-	refundAmount, err := MajorToMinorAmount(amount, currency)
+	refundReq, err := buildWechatRefundRequest(paymentID, amount, refundNo, options)
 	if err != nil {
 		return nil, err
-	}
-	totalAmount := refundAmount
-	if options.OriginalAmount > 0 {
-		totalAmount, err = MajorToMinorAmount(options.OriginalAmount, currency)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	refundReq := refunddomestic.CreateRequest{
-		OutTradeNo:  core.String(paymentID),
-		OutRefundNo: core.String(refundNo),
-		Reason:      core.String("Customer refund request"),
-		Amount: &refunddomestic.AmountReq{
-			Refund:   core.Int64(refundAmount),
-			Total:    core.Int64(totalAmount),
-			Currency: core.String(currency),
-		},
-	}
-	if options.Reason != "" {
-		refundReq.Reason = core.String(options.Reason)
 	}
 
 	// 执行退款
@@ -211,6 +186,52 @@ func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		Amount:    amount,
 		Status:    string(*resp.Status),
 		CreatedAt: time.Now(),
+	}, nil
+}
+
+func buildWechatRefundRequest(paymentID string, amount float64, refundNo string, options RefundOptions) (refunddomestic.CreateRequest, error) {
+	providerTransactionID := strings.TrimSpace(options.ProviderTransactionID)
+	merchantOrderNumber := strings.TrimSpace(options.MerchantOrderNumber)
+	if providerTransactionID == "" {
+		return refunddomestic.CreateRequest{}, fmt.Errorf("wechat transaction_id is required for refunds")
+	}
+	if merchantOrderNumber == "" {
+		return refunddomestic.CreateRequest{}, fmt.Errorf("merchant order number is required for wechat refunds")
+	}
+	if amount <= 0 {
+		return refunddomestic.CreateRequest{}, fmt.Errorf("refund amount must be greater than zero")
+	}
+	if options.OriginalAmount <= 0 {
+		return refunddomestic.CreateRequest{}, fmt.Errorf("original payment amount is required for wechat refunds")
+	}
+	if refundNo = strings.TrimSpace(refundNo); refundNo == "" {
+		return refunddomestic.CreateRequest{}, fmt.Errorf("refund request id is required")
+	}
+	currency := strings.ToUpper(strings.TrimSpace(options.Currency))
+	if currency == "" {
+		currency = "CNY"
+	}
+	refundAmount, err := MajorToMinorAmount(amount, currency)
+	if err != nil {
+		return refunddomestic.CreateRequest{}, err
+	}
+	totalAmount, err := MajorToMinorAmount(options.OriginalAmount, currency)
+	if err != nil {
+		return refunddomestic.CreateRequest{}, err
+	}
+	reason := strings.TrimSpace(options.Reason)
+	if reason == "" {
+		reason = "Customer refund request"
+	}
+	return refunddomestic.CreateRequest{
+		TransactionId: core.String(providerTransactionID),
+		OutRefundNo:   core.String(refundNo),
+		Reason:        core.String(reason),
+		Amount: &refunddomestic.AmountReq{
+			Refund:   core.Int64(refundAmount),
+			Total:    core.Int64(totalAmount),
+			Currency: core.String(currency),
+		},
 	}, nil
 }
 

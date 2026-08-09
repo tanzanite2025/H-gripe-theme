@@ -244,7 +244,7 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { Heart, History, Info, LoaderCircle, Mail, MapPin, PackageCheck, ShoppingCart, UserCheck, UserRound } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -256,21 +256,42 @@ import {
   signalTone,
   tierStyle,
 } from '@/lib/customerServicePresentation'
+import type {
+  CustomerAccount,
+  CustomerAnonymous,
+  CustomerBrowsing,
+  CustomerCart,
+  CustomerContact,
+  CustomerContext,
+  CustomerConversation,
+  CustomerOrders,
+  CustomerSignal,
+  CustomerWishlist,
+} from './customerServiceTypes'
 
-const props = defineProps({
-  selectedConversation: { type: Object, default: null },
-  customerContext: { type: Object, default: null },
-  loading: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  selectedConversation?: CustomerConversation | null
+  customerContext?: CustomerContext | null
+  loading?: boolean
+}>(), {
+  selectedConversation: null,
+  customerContext: null,
+  loading: false,
 })
 
-const customerAccount = computed(() => props.customerContext?.customer?.account || null)
-const customerAnonymous = computed(() => props.customerContext?.customer?.anonymous || null)
-const customerContact = computed(() => props.customerContext?.contact || {})
-const customerCart = computed(() => props.customerContext?.cart || { available: false, items: [] })
-const customerWishlist = computed(() => props.customerContext?.wishlist || { available: false, items: [] })
-const customerOrders = computed(() => props.customerContext?.orders || { available: false, items: [] })
-const customerBrowsing = computed(() => props.customerContext?.browsing || { available: false, items: [] })
-const signalItems = computed(() => {
+const customerAccount = computed<CustomerAccount | null>(() => props.customerContext?.customer?.account || null)
+const customerAnonymous = computed<CustomerAnonymous | null>(() => props.customerContext?.customer?.anonymous || null)
+const customerContact = computed<CustomerContact>(() => props.customerContext?.contact || {})
+const customerCart = computed<CustomerCart>(() => props.customerContext?.cart || { available: false, items: [] })
+const customerWishlist = computed<CustomerWishlist>(() => props.customerContext?.wishlist || { available: false, items: [] })
+const customerOrders = computed<CustomerOrders>(() => props.customerContext?.orders || { available: false, items: [] })
+const customerBrowsing = computed<CustomerBrowsing>(() => props.customerContext?.browsing || { available: false, items: [] })
+interface SignalItem extends CustomerSignal {
+  key: string
+  label: string
+}
+
+const signalItems = computed<SignalItem[]>(() => {
   const signals = props.customerContext?.signals || {}
   return [
     { key: 'region', label: '地区', ...(signals.region || {}) },

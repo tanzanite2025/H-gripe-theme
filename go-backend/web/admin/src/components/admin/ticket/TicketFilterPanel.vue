@@ -29,22 +29,32 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { TicketFilters } from './ticketTypes'
 
-const props = defineProps({
-  filters: { type: Object, required: true },
-  statusFilterOptions: { type: Array, default: () => [] },
-  priorityFilterOptions: { type: Array, default: () => [] },
+type TicketFilterField = 'status' | 'priority'
+
+const props = withDefaults(defineProps<{
+  filters: TicketFilters
+  statusFilterOptions?: LanguageOption[]
+  priorityFilterOptions?: LanguageOption[]
+}>(), {
+  statusFilterOptions: () => [],
+  priorityFilterOptions: () => []
 })
 
-const emit = defineEmits(['apply', 'reset'])
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
 
-const updateFilter = (field, value) => {
+const updateFilter = (field: TicketFilterField, value: string): void => {
   props.filters[field] = value
   emit('apply')
 }

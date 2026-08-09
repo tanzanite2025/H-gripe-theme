@@ -1,12 +1,13 @@
 # Nuxt storefront i18n current status
 
-Last updated: 2026-07-23
+Last updated: 2026-08-09
 
 This document is the current source of truth for the Nuxt storefront language-file workflow. Older completion reports and archived notes are historical context only. Update this file after each i18n block so future work does not drift.
 
 ## Current reality
 
-- The storefront declares 34 locales in `app/i18n/locales.manifest.js`.
+- The storefront declares 20 fixed storefront locales in `app/i18n/locales.manifest.ts`, aligned with `../shared/storefront-locales.json`.
+- Nuxt locale labels, flags, canonicalization, and compatibility aliases are centralized in `app/utils/storefrontLocales.ts`; active components should not maintain their own locale maps.
 - Nuxt reads aggregated locale files from `app/i18n/locales/*.json`.
 - The maintainable source files are split by module under `app/i18n/messages/<locale>/*.json`.
 - `npm run i18n:build` generates the aggregated `app/i18n/locales/*.json` files from the split `messages` files.
@@ -20,6 +21,25 @@ This document is the current source of truth for the Nuxt storefront language-fi
 ## Translation scope rules
 
 Internationalization should be added by bounded product area, not by bulk replacing every English string.
+
+Locale definitions are not part of ordinary translation work. The fixed storefront locale registry lives in
+`../shared/storefront-locales.json`; Nuxt manifest, Go backend locales, and Admin fallback locales must remain
+aligned with it. After changing locale definitions, run:
+
+```powershell
+cd nuxt-i18n
+npm run check-locales
+```
+
+This check validates:
+
+- `../shared/storefront-locales.json`
+- `app/i18n/locales.manifest.ts`
+- `../go-backend/internal/pkg/locales/locales.go`
+- `../go-backend/config/config.example.yaml`
+- `../go-backend/config/config.production.yaml`
+- `../go-backend/web/admin/src/lib/languages.ts`
+- active Nuxt `.ts` and `.vue` source for legacy unsupported locale literals and page/component-local locale lists
 
 Good candidates:
 
@@ -107,7 +127,7 @@ npm run build
 - Component: `app/components/ProductInformationTabs.vue`
 - Source module: `app/i18n/messages/<locale>/productInformationTabs.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Intentionally not translated:
   - product description HTML from backend
   - after-sales/packaging/shipping HTML from backend
@@ -121,7 +141,7 @@ npm run build
   - `app/i18n/messages/<locale>/shopPage.json`
   - `app/i18n/messages/<locale>/shopCategoryMenu.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Intentionally not translated:
   - product names, product thumbnails, prices, product URLs
   - dynamic category names from backend
@@ -136,7 +156,7 @@ npm run build
   - `app/i18n/messages/<locale>/quickBuy.json`
   - `app/i18n/messages/<locale>/dockMenu.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Validation:
   - `npm run i18n:check -- --limit=40`
   - `npm run build`
@@ -154,7 +174,7 @@ npm run build
   - `app/i18n/messages/<locale>/cartDrawer.json`
   - `app/i18n/messages/<locale>/wishlistDrawer.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Validation:
   - `npm run i18n:check -- --limit=40`
   - `npm run build`
@@ -170,7 +190,7 @@ npm run build
   - `app/components/CheckoutStepper.vue`
 - Source module: `app/i18n/messages/<locale>/checkout.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Reviewed languages: `en`, `zh_cn`
 - Fallback languages: other configured locales use English fallback copy until native UI review
 - Validation:
@@ -193,7 +213,7 @@ npm run build
 - Component: `app/components/CookieConsent.vue`
 - Source module: `app/i18n/messages/<locale>/cookieConsent.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Reviewed languages: `en`, `zh_cn`
 - Fallback languages: other configured locales use English fallback copy until native UI review
 - Validation:
@@ -209,7 +229,7 @@ npm run build
 - Component: `app/components/AuthModal.vue`
 - Source module: `app/i18n/messages/<locale>/authModal.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Reviewed languages: `en`, `zh_cn`
 - Fallback languages: other configured locales use English fallback copy until native UI review
 - Validation:
@@ -235,7 +255,7 @@ npm run build
   - `app/composables/chat/useWhatsAppState.ts`
 - Source module: `app/i18n/messages/<locale>/chatModal.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Reviewed languages: `en`, `zh_cn`
 - Fallback languages: other configured locales use English fallback copy until native UI review
 - Validation:
@@ -265,7 +285,7 @@ npm run build
   - `app/i18n/messages/<locale>/feedback.json`
   - `app/i18n/messages/<locale>/feedbackForm.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales have the complete key shape
+- Coverage: all 20 configured locales have the complete key shape
 - Reviewed language: `en`, `zh_cn`
 - Fallback languages: other configured locales use English fallback copy until native review
 - Scope cleanup:
@@ -274,7 +294,7 @@ npm run build
   - the `Register / Login` CTA is now `feedbackForm.actions.authCta`
   - category and request-type option labels are reactive to locale changes
   - country labels reuse the local `app/data/countries.ts` fact source instead of duplicating country data in language files
-  - `getCountryName` now recognizes both hyphenated and underscored Chinese locale codes such as `zh-CN` and `zh_cn`
+  - `getCountryName` now uses the centralized storefront locale helper and treats only canonical simplified Chinese storefront locale input as Chinese UI display
 - Validation:
   - `npm run i18n:fill-missing`
   - `npm run i18n:build`
@@ -290,7 +310,7 @@ npm run build
 - Component: `app/components/PopularSearchChips.vue`
 - Source module: `app/i18n/messages/<locale>/search.json`
 - Aggregated into: `app/i18n/locales/*.json`
-- Coverage: all 34 configured locales
+- Coverage: all 20 configured locales
 - Scope cleanup:
   - visible `Popular searches` title now uses `search.popularTitle`
   - section accessibility label now uses `search.popularAriaLabel`

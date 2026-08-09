@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS payment_refund_executions (
     transaction_id BIGINT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
     provider VARCHAR(32) NOT NULL,
     provider_payment_id VARCHAR(255) NOT NULL,
+    merchant_order_number VARCHAR(255) NOT NULL,
+    provider_transaction_id VARCHAR(255) NOT NULL,
     amount NUMERIC(18, 2) NOT NULL,
     currency VARCHAR(8) NOT NULL DEFAULT '',
     status VARCHAR(24) NOT NULL DEFAULT 'processing',
@@ -28,6 +30,12 @@ CREATE INDEX IF NOT EXISTS idx_payment_refund_executions_status_created
 
 CREATE INDEX IF NOT EXISTS idx_payment_refund_executions_provider_payment
     ON payment_refund_executions(provider, provider_payment_id);
+
+CREATE INDEX IF NOT EXISTS idx_payment_refund_executions_merchant_order
+    ON payment_refund_executions(merchant_order_number);
+
+CREATE INDEX IF NOT EXISTS idx_payment_refund_executions_provider_transaction
+    ON payment_refund_executions(provider, provider_transaction_id);
 
 CREATE INDEX IF NOT EXISTS idx_payment_refund_executions_provider_refund
     ON payment_refund_executions(provider_refund_id);

@@ -82,7 +82,7 @@ export const usePaymentMethods = () => {
     const key = String(codeOrProvider || '').trim().toLowerCase()
     if (!key) return false
     const availability = availabilityByCode.value[key]
-    return availability ? availability.available : true
+    return availability ? availability.available : false
   }
 
   const loadPaymentMethods = async (country?: string) => {

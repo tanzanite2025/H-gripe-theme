@@ -111,7 +111,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { CircleCheck, CircleX, Eye, MoreHorizontal, RefreshCw, ShoppingBag, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -126,36 +126,54 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  OrderDateFormatter,
+  OrderID,
+  OrderMoneyFormatter,
+  OrderPagination,
+  OrderRecord,
+  OrderSelectionState,
+  OrderShippingNameResolver,
+  OrderStatusNameResolver,
+  OrderStatusToneResolver
+} from './orderTypes'
 
-const props = defineProps({
-  loading: { type: Boolean, default: false },
-  orders: { type: Array, default: () => [] },
-  selectedOrders: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  selectionState: { type: [Boolean, String], default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  orderStatusName: { type: Function, required: true },
-  orderStatusTone: { type: Function, required: true },
-  paymentStatusName: { type: Function, required: true },
-  paymentStatusTone: { type: Function, required: true },
-  shippingStatusName: { type: Function, required: true },
-  shippingStatusTone: { type: Function, required: true },
-  shippingName: { type: Function, required: true },
-  formatMoney: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  orders?: OrderRecord[]
+  selectedOrders?: OrderRecord[]
+  pagination: OrderPagination
+  selectionState?: OrderSelectionState
+  canEdit?: boolean
+  canDelete?: boolean
+  orderStatusName: OrderStatusNameResolver
+  orderStatusTone: OrderStatusToneResolver
+  paymentStatusName: OrderStatusNameResolver
+  paymentStatusTone: OrderStatusToneResolver
+  shippingStatusName: OrderStatusNameResolver
+  shippingStatusTone: OrderStatusToneResolver
+  shippingName: OrderShippingNameResolver
+  formatMoney: OrderMoneyFormatter
+  formatDate: OrderDateFormatter
+}>(), {
+  loading: false,
+  orders: () => [],
+  selectedOrders: () => [],
+  selectionState: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits([
-  'batch-status',
-  'toggle-all-orders',
-  'toggle-order',
-  'view-detail',
-  'show-status',
-  'delete',
-  'update-page',
-  'update-page-size',
-])
+const emit = defineEmits<{
+  (event: 'batch-status', status: string): void
+  (event: 'toggle-all-orders', checked: OrderSelectionState): void
+  (event: 'toggle-order', order: OrderRecord, checked: OrderSelectionState): void
+  (event: 'view-detail', order: OrderRecord): void
+  (event: 'show-status', order: OrderRecord): void
+  (event: 'delete', order: OrderRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 
-const isOrderSelected = (orderId) => props.selectedOrders.some((order) => order.id === orderId)
+const isOrderSelected = (orderId: OrderID): boolean => props.selectedOrders.some((order) => order.id === orderId)
 </script>

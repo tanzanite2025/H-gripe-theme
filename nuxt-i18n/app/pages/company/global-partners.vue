@@ -3,7 +3,7 @@
     <h1 class="sr-only">{{ t('company.nav.globalPartners') }}</h1>
 
     <div class="w-full max-w-none">
-      <section class="rounded-2xl bg-slate-950/60 p-4 md:p-6 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
+      <section class="text-center">
         <h2 class="mb-1 text-lg font-semibold tz-text-primary">
           {{ t('company.nav.globalPartners') }}
         </h2>
@@ -13,7 +13,7 @@
         <div class="mb-4 flex flex-wrap items-center justify-center gap-3">
           <NuxtLink
             to="/company/contact"
-            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition hover:brightness-110"
+            class="premium-button premium-button--active justify-center"
           >
             Contact us about partnerships
           </NuxtLink>
@@ -21,7 +21,7 @@
             <span>or email</span>
             <a
               href="mailto:support@tanzanite.site"
-              class="inline-flex items-center justify-center rounded-full bg-slate-800/90 px-3 py-1.5 tz-caption font-medium text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] transition hover:bg-slate-700/95 hover:text-slate-50"
+              class="premium-button px-3 py-1.5 tz-caption font-medium"
             >
               support@tanzanite.site
             </a>
@@ -32,13 +32,11 @@
         <!-- Data highlights cards -->
         <section class="mt-6 grid gap-4 sm:grid-cols-3">
           <!-- 30+ countries -->
-          <div
-            class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
-          >
+          <div class="premium-card rounded-2xl p-4">
             <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
               Countries / regions
             </p>
-            <p class="mt-2 text-3xl font-semibold text-slate-50">
+            <p class="mt-2 text-3xl font-semibold tz-text-primary">
               30<span class="align-top text-lg">+</span>
             </p>
             <p class="mt-1 text-xs tz-text-secondary">
@@ -47,13 +45,11 @@
           </div>
 
           <!-- 100+ brand partners -->
-          <div
-            class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
-          >
+          <div class="premium-card rounded-2xl p-4">
             <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
               Brand partners
             </p>
-            <p class="mt-2 text-3xl font-semibold text-slate-50">
+            <p class="mt-2 text-3xl font-semibold tz-text-primary">
               100<span class="align-top text-lg">+</span>
             </p>
             <p class="mt-1 text-xs tz-text-secondary">
@@ -62,13 +58,11 @@
           </div>
 
           <!-- 500,000+ products delivered -->
-          <div
-            class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
-          >
+          <div class="premium-card rounded-2xl p-4">
             <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
               Products delivered
             </p>
-            <p class="mt-2 text-3xl font-semibold text-slate-50">
+            <p class="mt-2 text-3xl font-semibold tz-text-primary">
               500,000<span class="align-top text-lg">+</span>
             </p>
             <p class="mt-1 text-xs tz-text-secondary">
@@ -79,7 +73,7 @@
 
         <!-- Confidentiality notice for partner brands -->
         <div
-          class="mt-4 rounded-2xl bg-slate-900/80 p-3 text-sm text-sky-300 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+          class="premium-card mt-4 rounded-2xl p-3 text-center text-sm tz-text-accent"
         >
           <p class="m-0">
             Out of respect for confidentiality agreements, we do not list partner brands publicly.
@@ -96,10 +90,10 @@
           <div class="grid gap-4 sm:grid-cols-3">
             <!-- Long-term trust -->
             <div
-              class="rounded-2xl bg-slate-900/70 p-4 text-center shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+              class="premium-card rounded-2xl p-4 text-center"
             >
               <div
-                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-sky-300"
+                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-xs font-semibold tz-text-accent"
               >
                 01
               </div>
@@ -113,10 +107,10 @@
 
             <!-- Technology leadership -->
             <div
-              class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+              class="premium-card rounded-2xl p-4"
             >
               <div
-                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-sky-300"
+                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-xs font-semibold tz-text-accent"
               >
                 02
               </div>
@@ -130,10 +124,10 @@
 
             <!-- Global support -->
             <div
-              class="rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+              class="premium-card rounded-2xl p-4"
             >
               <div
-                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-sky-300"
+                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-xs font-semibold tz-text-accent"
               >
                 03
               </div>

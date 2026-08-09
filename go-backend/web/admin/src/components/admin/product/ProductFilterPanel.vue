@@ -30,19 +30,39 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-defineProps({
-  filters: { type: Object, required: true },
-  statusFilterOptions: { type: Array, default: () => [] },
-  localeFilterOptions: { type: Array, default: () => [] },
-  featuredFilterOptions: { type: Array, default: () => [] },
+interface ProductFilters {
+  search: string
+  status: string
+  locale: string
+  featured: string
+  [key: string]: unknown
+}
+
+interface FilterOption {
+  label: string
+  value: string
+}
+
+const props = withDefaults(defineProps<{
+  filters: ProductFilters
+  statusFilterOptions?: FilterOption[]
+  localeFilterOptions?: FilterOption[]
+  featuredFilterOptions?: FilterOption[]
+}>(), {
+  statusFilterOptions: () => [],
+  localeFilterOptions: () => [],
+  featuredFilterOptions: () => [],
 })
 
-const emit = defineEmits(['apply', 'reset'])
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
 </script>

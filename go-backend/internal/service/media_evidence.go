@@ -74,7 +74,7 @@ func (s *MediaService) buildCopyrightClaim(input MediaUploadInput, contentSHA256
 	}
 
 	if s.settings != nil {
-		claim.SiteName = settingValue(s.settings, "site_name")
+		claim.SiteName = firstNonEmptyString(settingValue(s.settings, "brand_title"), settingValue(s.settings, "site_name"))
 		claim.SiteURL = settingValue(s.settings, "site_url")
 		claim.RightsHolder = settingValue(s.settings, "copyright_holder")
 		claim.CopyrightNotice = settingValue(s.settings, "copyright_notice")
@@ -98,6 +98,16 @@ func (s *MediaService) buildCopyrightClaim(input MediaUploadInput, contentSHA256
 		return "", fmt.Errorf("encode copyright claim: %w", err)
 	}
 	return string(encoded), nil
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func settingValue(settings *SettingService, key string) string {

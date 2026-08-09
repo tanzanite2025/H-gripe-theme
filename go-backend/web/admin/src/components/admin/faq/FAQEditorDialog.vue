@@ -32,21 +32,13 @@
             :error="formErrors.locale"
             :description="isPlacementReadonly ? '当前上下文已锁定' : ''"
           >
-            <Select v-model="faqForm.locale" :disabled="isPlacementReadonly">
-              <SelectTrigger class="w-full">
-                <LockKeyhole
-                  v-if="isPlacementReadonly"
-                  class="size-3.5 shrink-0 text-muted-foreground"
-                  title="当前上下文已锁定"
-                />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
-                  {{ language.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <StorefrontLocaleSelect
+              v-model="faqForm.locale"
+              :language-options="languageOptions"
+              :disabled="isPlacementReadonly"
+              :locked="isPlacementReadonly"
+              locked-title="当前上下文已锁定"
+            />
           </AdminFormField>
 
           <AdminFormField label="页面" required :error="formErrors.page_id" :description="placementLocked ? '从分类添加时页面已锁定' : ''">
@@ -98,11 +90,14 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
-import { LoaderCircle, LockKeyhole } from '@lucide/vue'
+import { LoaderCircle } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
+import type { FAQCategory } from '@/lib/faqAdminPresentation'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import FaqAnswerEditor from '@/components/admin/FaqAnswerEditor.vue'
+import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -115,24 +110,34 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import type { FAQDialogMode, FAQForm, FAQFormErrors } from '@/composables/faq/useFaqEditor'
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  dialogMode: { type: String, required: true },
-  faqForm: { type: Object, required: true },
-  formErrors: { type: Object, required: true },
-  submitting: { type: Boolean, default: false },
-  faqPageOptions: { type: Array, required: true },
-  availableFaqCategories: { type: Array, required: true },
-  languageOptions: { type: Array, required: true },
-  placementLocked: { type: Boolean, default: false }
+const props = withDefaults(defineProps<{
+  open?: boolean
+  dialogMode: FAQDialogMode
+  faqForm: FAQForm
+  formErrors: FAQFormErrors
+  submitting?: boolean
+  faqPageOptions: LanguageOption[]
+  availableFaqCategories: FAQCategory[]
+  languageOptions: LanguageOption[]
+  placementLocked?: boolean
+}>(), {
+  open: false,
+  submitting: false,
+  placementLocked: false
 })
 
-const emit = defineEmits(['update:open', 'submit', 'clear-error', 'update-answer'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', key: keyof FAQForm): void
+  (event: 'update-answer', value: string): void
+}>()
 
-const openModel = computed({
+const openModel = computed<boolean>({
   get: () => props.open,
-  set: (value) => emit('update:open', value)
+  set: (value: boolean) => emit('update:open', value)
 })
 
 const isPlacementReadonly = computed(() => props.dialogMode === 'edit' || props.placementLocked)

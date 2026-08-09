@@ -29,34 +29,59 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import OrderDetailPanel from '@/components/admin/order/OrderDetailPanel.vue'
 import { Dialog } from '@/components/ui/dialog'
+import type {
+  OrderCarrierLabelResolver,
+  OrderDateFormatter,
+  OrderMoneyFormatter,
+  OrderRecord,
+  OrderShippingAddressLineResolver,
+  OrderShippingNameResolver,
+  OrderStatusNameResolver,
+  OrderStatusToneResolver,
+  TrackingEvent,
+  TrackingShipment
+} from './orderTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  adminNote: { type: String, default: '' },
-  currentOrder: { type: Object, default: null },
-  currentTrackingEvents: { type: Array, default: () => [] },
-  currentTrackingShipment: { type: Object, default: null },
-  syncingTracking: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  orderStatusName: { type: Function, required: true },
-  orderStatusTone: { type: Function, required: true },
-  paymentStatusName: { type: Function, required: true },
-  paymentStatusTone: { type: Function, required: true },
-  shippingStatusName: { type: Function, required: true },
-  shippingStatusTone: { type: Function, required: true },
-  trackingSyncStatusName: { type: Function, required: true },
-  trackingSyncStatusTone: { type: Function, required: true },
-  trackingRegistrationStatusName: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  formatMoney: { type: Function, required: true },
-  shippingName: { type: Function, required: true },
-  shippingAddressLine: { type: Function, required: true },
-  orderCarrierLabel: { type: Function, required: true },
-  orderCarrierServiceLabel: { type: Function, required: true },
+withDefaults(defineProps<{
+  open?: boolean
+  adminNote?: string
+  currentOrder?: OrderRecord | null
+  currentTrackingEvents?: TrackingEvent[]
+  currentTrackingShipment?: TrackingShipment | null
+  syncingTracking?: boolean
+  canEdit?: boolean
+  orderStatusName: OrderStatusNameResolver
+  orderStatusTone: OrderStatusToneResolver
+  paymentStatusName: OrderStatusNameResolver
+  paymentStatusTone: OrderStatusToneResolver
+  shippingStatusName: OrderStatusNameResolver
+  shippingStatusTone: OrderStatusToneResolver
+  trackingSyncStatusName: OrderStatusNameResolver
+  trackingSyncStatusTone: OrderStatusToneResolver
+  trackingRegistrationStatusName: OrderStatusNameResolver
+  formatDate: OrderDateFormatter
+  formatMoney: OrderMoneyFormatter
+  shippingName: OrderShippingNameResolver
+  shippingAddressLine: OrderShippingAddressLineResolver
+  orderCarrierLabel: OrderCarrierLabelResolver
+  orderCarrierServiceLabel: OrderCarrierLabelResolver
+}>(), {
+  open: false,
+  adminNote: '',
+  currentOrder: null,
+  currentTrackingEvents: () => [],
+  currentTrackingShipment: null,
+  syncingTracking: false,
+  canEdit: false
 })
 
-const emit = defineEmits(['update:open', 'update:adminNote', 'sync-tracking', 'update-note'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:adminNote', value: string): void
+  (event: 'sync-tracking'): void
+  (event: 'update-note'): void
+}>()
 </script>

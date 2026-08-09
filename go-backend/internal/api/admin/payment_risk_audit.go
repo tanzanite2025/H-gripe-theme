@@ -115,6 +115,8 @@ func paymentRefundExecutionAuditDetails(
 		details["execution_id"] = execution.ID
 		details["execution_status"] = execution.Status
 		details["attempt_count"] = execution.AttemptCount
+		details["merchant_order_number"] = execution.MerchantOrderNumber
+		details["provider_transaction_id_present"] = strings.TrimSpace(execution.ProviderTransactionID) != ""
 		details["provider_refund_id_present"] = strings.TrimSpace(execution.ProviderRefundID) != ""
 		details["provider_status"] = execution.ProviderStatus
 	}

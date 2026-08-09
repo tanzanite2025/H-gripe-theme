@@ -1,4 +1,4 @@
-# Tanzanite Admin Console
+# Admin Console
 
 Vue 3 + Vite admin console for the Go backend.
 

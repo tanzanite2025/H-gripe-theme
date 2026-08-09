@@ -1,6 +1,6 @@
 # 自动回复多语言架构与落地方案
 
-最后审阅日期：2026-07-29
+最后审阅日期：2026-08-09
 
 本文定义 Tanzanite 客服自动回复的多语言规则、FAQ 引用、翻译 API
 和迁移边界。本文是 `AUTO_REPLY_SYSTEM_DESIGN.md` 的多语言补充决策。
@@ -38,8 +38,8 @@
 一个规则 + 一个语言 + 一份回复内容
 ```
 
-不能把 `locale = *` 理解成“一条记录包含 34 种语言的内容”。它实际上
-只有一份 `reply_message`，无法安全代表 34 种语言。
+不能把 `locale = *` 理解成“一条记录包含 20 种 storefront locale 的内容”。
+它实际上只有一份 `reply_message`，无法安全代表 20 种语言。
 
 ### 1.2 短期的运行时原则
 
@@ -84,7 +84,16 @@
 
 ### 2.1 已存在的语言事实源
 
-后端已有统一语言清单：
+跨前后端的 storefront locale registry 是：
+
+- `shared/storefront-locales.json`
+
+它定义当前固定的 20 个 storefront locale，包括 canonical `code`、Nuxt `iso`
+和 `file`、后端/Admin 使用的英文 `name` 与 `native_name`。新增、删除或改名
+必须先改这个 registry，并运行 `nuxt-i18n/scripts/check-locales.ts`，确保
+Nuxt manifest、Go backend locales 和 Admin fallback 三处完全对齐。
+
+后端运行时语言清单：
 
 - `internal/pkg/locales/locales.go`
   - `SupportedLanguages`
@@ -98,17 +107,17 @@
 
 后台已有复用语言清单的通用逻辑：
 
-- `web/admin/src/composables/useSupportedLanguages.js`
-- `web/admin/src/lib/languages.js`
-- `web/admin/src/api/i18n.js`
+- `web/admin/src/composables/useSupportedLanguages.ts`
+- `web/admin/src/lib/languages.ts`
+- `web/admin/src/api/i18n.ts`
 
 Nuxt 前台还有自己的 locale manifest：
 
-- `nuxt-i18n/app/i18n/locales.manifest.js`
+- `nuxt-i18n/app/i18n/locales.manifest.ts`
 
-当前 34 个语言代码总体一致，中文的系统标准代码是 `zh_cn`。
+当前 20 个 storefront locale 代码必须完全一致，中文的系统标准代码是 `zh_cn`。
 自动回复不应再创建第三套语言数组，而应复用后端语言 API 和后台已有的
-语言 composable。
+语言 composable；本地 fallback 也必须与 `shared/storefront-locales.json` 对齐。
 
 ### 2.2 当前自动回复规则结构
 
@@ -132,13 +141,13 @@ Nuxt 前台还有自己的 locale manifest：
   - `cooldown_seconds`
 
 当前结构天然更适合“每个语言一条规则”。它暂时不适合一条规则保存
-34 份文本，因为没有独立的语言内容表。
+20 份文本，因为没有独立的语言内容表。
 
 ### 2.3 当前存在的职责问题
 
-#### 后台语言是自由输入
+#### 禁止后台语言自由输入
 
-`web/admin/src/views/AutoReplyRules.vue` 当前使用普通输入框，允许输入：
+后台不能为 storefront-facing 内容提供自由文本 locale 输入。历史上如果允许输入：
 
 ```text
 * / en / zh-cn
@@ -151,6 +160,9 @@ Nuxt 前台还有自己的 locale manifest：
 - 保存未知语言；
 - FAQ 选择器无法确定应该加载哪个语言；
 - 规则已经保存，但永远无法匹配。
+
+当前和后续 Admin 实现都必须使用受控 storefront locale 选择器，选项来源于
+`useSupportedLanguages()` / `StorefrontLocaleSelect`，而不是页面本地数组或自由输入。
 
 #### 自动回复 locale 解析职责
 
@@ -379,9 +391,9 @@ Welcome to Tanzanite.
 - 德语；
 - 中文；
 - 日语；
-- 其他 30 种语言。
+- 其他 storefront locale。
 
-自动复制只会制造“看起来有 34 种语言，实际内容都是英文”的假翻译状态。
+自动复制只会制造“看起来有 20 种语言，实际内容都是英文”的假翻译状态。
 
 ### 5.2 迁移建议
 
@@ -392,7 +404,7 @@ Welcome to Tanzanite.
 3. 暂停这些规则参与本地化自动回复匹配；
 4. 管理员选择一个真实语言后重新保存；
 5. 需要其他语言时，再分别创建或复制到对应语言；
-6. 不自动把 `*` 转为 34 条规则。
+6. 不自动把 `*` 转为 20 条规则。
 
 如果业务明确确认某一条规则是完全语言无关的，例如只返回一个不含自然
 语言的订单链接，未来可以单独增加 `language_neutral` 类型。但它不应和
@@ -504,7 +516,7 @@ status = published
 - 翻译草稿被访客看到；
 - 英文文本误用于德语用户；
 - 规则存在但语言内容缺失时仍然发出错误消息；
-- 前端收到 34 份内容后自行判断显示哪一份。
+- 前端收到 20 份内容后自行判断显示哪一份。
 
 ## 7. 翻译 API 设计
 
@@ -597,7 +609,8 @@ POST /api/admin/customer-service/auto-reply/rules/:id/contents/:locale/publish
 
 ### 8.1 FAQ 不应只依赖数字 ID
 
-目前自动回复 FAQ metadata 使用 `faq_id`。但 FAQ 34 国内容分别存储，
+目前自动回复 FAQ metadata 使用 `faq_id`。但 FAQ 的 20 个 storefront locale
+内容分别存储，
 不同语言的 FAQ 可能拥有不同的数据库 ID。
 
 长期应保存稳定的翻译组身份，例如：
@@ -655,7 +668,8 @@ faq_group_key + requested locale
 - alias 解析；
 - 是否为启用语言。
 
-不负责自动回复优先级和规则匹配。
+它的输入必须与 `shared/storefront-locales.json` 保持一致；不负责自动回复
+优先级和规则匹配。
 
 ### 9.2 自动回复 service
 
@@ -704,7 +718,7 @@ internal/service/ticket_auto_reply_locale.go
 长期负责：
 
 - 规则编辑；
-- 34 国内容状态矩阵；
+- 20 个 storefront locale 内容状态矩阵；
 - 翻译预览和确认；
 - 逐语言审核、发布和撤回。
 
@@ -891,7 +905,7 @@ internal/service/ticket_auto_reply_locale.go
 长期完成标准：
 
 - 规则和语言内容已经拆分；
-- 一条规则可以维护 34 个独立语言内容；
+- 一条规则可以维护 20 个独立语言内容；
 - 后台可以显示每种语言的 draft/published/missing 状态；
 - 翻译 API 只生成草稿，不直接替代人工发布；
 - 缺失语言内容不会触发自动回复；

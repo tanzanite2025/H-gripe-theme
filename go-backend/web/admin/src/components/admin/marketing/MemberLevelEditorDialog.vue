@@ -46,7 +46,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -54,18 +54,37 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
-  errors: { type: Object, required: true },
-  submitting: { type: Boolean, default: false }
-})
-const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+export interface MemberLevelForm {
+  name: string
+  min_points: number | string
+  max_points: number | string
+  discount_rate: number | string
+  benefits: string
+}
 
-const memberLevelLabel = (name) => {
+export type MemberLevelErrors = Partial<Record<keyof MemberLevelForm, string>>
+
+const props = withDefaults(defineProps<{
+  open?: boolean
+  mode?: string
+  form: MemberLevelForm
+  errors: MemberLevelErrors
+  submitting?: boolean
+}>(), {
+  open: false,
+  mode: 'create',
+  submitting: false,
+})
+
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', field: keyof MemberLevelForm): void
+}>()
+
+const memberLevelLabel = (name: unknown): string => {
   const key = String(name || '').trim().toLowerCase()
-  const labels = {
+  const labels: Record<string, string> = {
     ordinary: '普通',
     bronze: '铜牌',
     silver: '银牌',
@@ -73,6 +92,6 @@ const memberLevelLabel = (name) => {
     platinum: '铂金',
     diamond: '钻石',
   }
-  return labels[key] || name || '-'
+  return labels[key] || String(name || '-')
 }
 </script>

@@ -114,7 +114,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { FilePenLine, Languages, MoreHorizontal, Newspaper, Pencil, Send, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -129,33 +129,50 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  ContentDateFormatter,
+  ContentLabelResolver,
+  ContentPagination,
+  ContentPost,
+  ContentPostId,
+  ContentSelectionState,
+  ContentStatus,
+  ContentToneResolver
+} from './contentTypes'
 
-const props = defineProps({
-  loading: { type: Boolean, default: false },
-  posts: { type: Array, default: () => [] },
-  selectedPosts: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  selectionState: { type: [Boolean, String], default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  getStatusName: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  localeName: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  posts?: ContentPost[]
+  selectedPosts?: ContentPost[]
+  pagination: ContentPagination
+  selectionState?: ContentSelectionState
+  canEdit?: boolean
+  canDelete?: boolean
+  getStatusName: ContentLabelResolver
+  statusTone: ContentToneResolver
+  localeName: ContentLabelResolver
+  formatDate: ContentDateFormatter
+}>(), {
+  loading: false,
+  posts: () => [],
+  selectedPosts: () => [],
+  selectionState: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits([
-  'batch-status',
-  'batch-delete',
-  'toggle-all-posts',
-  'toggle-post',
-  'edit',
-  'translations',
-  'toggle-status',
-  'delete',
-  'update-page',
-  'update-page-size',
-])
+const emit = defineEmits<{
+  (event: 'batch-status', status: ContentStatus): void
+  (event: 'batch-delete'): void
+  (event: 'toggle-all-posts', checked: ContentSelectionState): void
+  (event: 'toggle-post', post: ContentPost, checked: ContentSelectionState): void
+  (event: 'edit', post: ContentPost): void
+  (event: 'translations', post: ContentPost): void
+  (event: 'toggle-status', post: ContentPost): void
+  (event: 'delete', post: ContentPost): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 
-const isPostSelected = (postId) => props.selectedPosts.some((post) => post.id === postId)
+const isPostSelected = (postId: ContentPostId): boolean => props.selectedPosts.some((post) => post.id === postId)
 </script>

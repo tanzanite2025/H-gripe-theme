@@ -227,8 +227,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, defineComponent, h, ref, watch } from 'vue'
+import type { PropType } from 'vue'
 import { toast } from 'vue-sonner'
 import {
   Activity,
@@ -243,33 +244,49 @@ import PaymentGatewaySecureConfigPanel from '@/components/admin/settings/Payment
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import axios from '@/utils/axios'
+import type {
+  PaymentCallbackCheckResult,
+  PaymentGatewayOption,
+  PaymentGatewayRuntime,
+  PaymentGatewayRuntimeStatus,
+} from './settingsTypes'
 
-const props = defineProps({
-  selectedGateway: { type: String, default: '' },
-  testMode: { type: Boolean, default: true },
-  runtime: { type: Object, default: null },
-  loading: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  selectedGateway?: string
+  testMode?: boolean
+  runtime?: PaymentGatewayRuntime | null
+  loading?: boolean
+  canEdit?: boolean
+}>(), {
+  selectedGateway: '',
+  testMode: true,
+  runtime: null,
+  loading: false,
+  canEdit: false,
 })
 
-const emit = defineEmits(['update:selectedGateway', 'update:testMode', 'refresh'])
+const emit = defineEmits<{
+  (event: 'update:selectedGateway', value: string): void
+  (event: 'update:testMode', value: boolean): void
+  (event: 'refresh'): void
+}>()
 const checkingCallback = ref(false)
-const callbackCheckResult = ref(null)
+const callbackCheckResult = ref<PaymentCallbackCheckResult | null>(null)
 
-const paymentGatewayOptions = [
+const paymentGatewayOptions: PaymentGatewayOption[] = [
   { value: 'stripe', label: 'Stripe', description: 'Cards, wallets and international card checkout.' },
   { value: 'paypal', label: 'PayPal', description: 'PayPal account checkout and express payments.' },
   { value: 'alipay', label: '支付宝', description: '适合人民币和跨境支付宝收款场景。' },
   { value: 'wechat', label: '微信支付', description: '适合微信生态内的扫码和小程序支付。' },
 ]
 
-const paymentGatewayOption = (value) => paymentGatewayOptions.find((gateway) => gateway.value === value)
-const paymentGatewayLabel = (value) => paymentGatewayOption(value)?.label || '未选择支付网关'
-const paymentGatewayDescription = (value) => paymentGatewayOption(value)?.description || '请选择一个支付服务商后查看 runtime 检查。'
-const gatewayRuntimeStatus = (value) => (props.runtime?.gateways || []).find((gateway) => gateway.provider === value)
+const paymentGatewayOption = (value: string): PaymentGatewayOption | undefined => paymentGatewayOptions.find((gateway) => gateway.value === value)
+const paymentGatewayLabel = (value: string): string => paymentGatewayOption(value)?.label || '未选择支付网关'
+const paymentGatewayDescription = (value: string): string => paymentGatewayOption(value)?.description || '请选择一个支付服务商后查看 runtime 检查。'
+const gatewayRuntimeStatus = (value: string): PaymentGatewayRuntimeStatus | undefined => (props.runtime?.gateways || []).find((gateway) => gateway.provider === value)
 const selectedRuntimeStatus = computed(() => gatewayRuntimeStatus(props.selectedGateway))
 
-const runtimeStatusLabel = (status, loading) => {
+const runtimeStatusLabel = (status?: PaymentGatewayRuntimeStatus | null, loading = false): string => {
   if (loading) return '检查中'
   if (!status) return '未知'
   if (status.production_ready) return '生产就绪'
@@ -278,7 +295,7 @@ const runtimeStatusLabel = (status, loading) => {
   return '缺配置'
 }
 
-const runtimeStatusBadgeClass = (status) => {
+const runtimeStatusBadgeClass = (status?: PaymentGatewayRuntimeStatus | null): string => {
   if (!status) return 'border-border bg-muted text-muted-foreground'
   if (status.production_ready) return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
   if (!status.webhook_supported) return 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200'
@@ -286,7 +303,7 @@ const runtimeStatusBadgeClass = (status) => {
   return 'border-border bg-muted text-muted-foreground'
 }
 
-const gatewayCardClass = (value, isSelected) => {
+const gatewayCardClass = (value: string, isSelected: boolean): string => {
   const status = gatewayRuntimeStatus(value)
   if (isSelected) return 'border-admin-selected-border bg-admin-selected-soft shadow-[var(--admin-control-selected-surface-shadow)]'
   if (status?.production_ready) return 'border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/35'
@@ -295,7 +312,7 @@ const gatewayCardClass = (value, isSelected) => {
   return 'border-border bg-background/70 hover:border-admin-selected-border hover:bg-admin-selected-soft'
 }
 
-const copyText = async (value) => {
+const copyText = async (value?: string): Promise<void> => {
   if (!value || typeof navigator === 'undefined' || !navigator.clipboard) return
   try {
     await navigator.clipboard.writeText(value)
@@ -306,7 +323,11 @@ const copyText = async (value) => {
   }
 }
 
-const checkCallback = async () => {
+interface ErrorLike {
+  response?: { data?: { message?: string } }
+}
+
+const checkCallback = async (): Promise<void> => {
   if (!props.selectedGateway || !selectedRuntimeStatus.value?.callback_url) return
   checkingCallback.value = true
   callbackCheckResult.value = null
@@ -324,13 +345,13 @@ const checkCallback = async () => {
   } catch (error) {
     console.error('Failed to probe payment callback URL:', error)
     callbackCheckResult.value = null
-    toast.error(error?.response?.data?.message || '支付回调探测失败')
+    toast.error((error as ErrorLike)?.response?.data?.message || '支付回调探测失败')
   } finally {
     checkingCallback.value = false
   }
 }
 
-const callbackCheckResultClass = (result) => {
+const callbackCheckResultClass = (result: PaymentCallbackCheckResult): string => {
   if (result?.route_reachable && result?.expected_signature_failure) {
     return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-800 dark:text-emerald-100'
   }
@@ -340,13 +361,13 @@ const callbackCheckResultClass = (result) => {
   return 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-100'
 }
 
-const callbackCheckResultTitle = (result) => {
+const callbackCheckResultTitle = (result: PaymentCallbackCheckResult): string => {
   if (result?.route_reachable && result?.expected_signature_failure) return '回调路由可达'
   if (result?.route_reachable) return '回调有响应'
   return '回调不可达'
 }
 
-const callbackCheckResultMessage = (result) => {
+const callbackCheckResultMessage = (result: PaymentCallbackCheckResult): string => {
   if (!result?.transport_reachable) return result?.error || '没有收到 HTTP 响应，请检查域名、CDN/WAF、Nginx/Caddy 和防火墙。'
   if (!result?.route_reachable) return '已收到 HTTP 响应，但没有命中支付 webhook 路由，请检查反向代理路径和后端路由。'
   if (result?.expected_signature_failure) return '已命中支付 webhook 路由；本次探测没有真实签名，返回签名失败属于预期。'
@@ -360,7 +381,7 @@ watch(() => props.selectedGateway, () => {
 const FieldList = defineComponent({
   props: {
     title: { type: String, required: true },
-    fields: { type: Array, default: () => [] },
+    fields: { type: Array as PropType<string[]>, default: () => [] },
     configured: { type: Boolean, default: false },
   },
   setup(props) {

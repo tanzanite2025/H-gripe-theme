@@ -17,6 +17,7 @@ type PublicCartItem struct {
 	VariantID *uint              `json:"variant_id"`
 	Quantity  int                `json:"quantity"`
 	Price     float64            `json:"price"`
+	Currency  string             `json:"currency"`
 	Product   *PublicCartProduct `json:"product,omitempty"`
 	Variant   *PublicCartVariant `json:"variant,omitempty"`
 }
@@ -69,6 +70,7 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary) PublicCartS
 			VariantID: item.VariantID,
 			Quantity:  item.Quantity,
 			Price:     item.Price,
+			Currency:  item.Currency,
 		}
 		if item.Variant != nil {
 			publicVariant := PublicCartVariant{

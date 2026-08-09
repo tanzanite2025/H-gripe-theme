@@ -33,6 +33,33 @@ func TestSettingServicePublicAccessFiltersPrivateSettings(t *testing.T) {
 	assert.Equal(t, []string{"site"}, groups)
 }
 
+func TestGetSiteSettingsUsesBrandTitleAsPublicSiteName(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{Key: "site_name", Value: "Legacy Name", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "brand_title", Value: "Current Brand", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+	}))
+
+	settings, err := settingService.GetSiteSettings("en")
+	require.NoError(t, err)
+	assert.Equal(t, "Current Brand", settings.BrandTitle)
+	assert.Equal(t, "Current Brand", settings.SiteName)
+}
+
+func TestGetSiteSettingsFallsBackToLegacySiteName(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{Key: "site_name", Value: "Legacy Name", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+	}))
+
+	settings, err := settingService.GetSiteSettings("en")
+	require.NoError(t, err)
+	assert.Equal(t, "Legacy Name", settings.BrandTitle)
+	assert.Equal(t, "Legacy Name", settings.SiteName)
+}
+
 func newTestSettingService(t *testing.T) (*gorm.DB, *SettingService) {
 	t.Helper()
 

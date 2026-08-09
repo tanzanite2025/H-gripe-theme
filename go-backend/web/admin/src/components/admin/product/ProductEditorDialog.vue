@@ -37,15 +37,22 @@
               <AdminFormField label="Slug" required :error="errors.slug">
                 <Input v-model="form.slug" placeholder="例如 crystal-bracelet" @input="emit('clear-error', 'slug')" />
               </AdminFormField>
-              <AdminFormField label="语言" required :error="errors.locale">
-                <Select v-model="form.locale">
-                  <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
-                      {{ language.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+              <AdminFormField
+                label="语言"
+                required
+                :error="errors.locale"
+                :description="mode === 'edit' ? '编辑商品时语言已锁定；如需其他语言，请新建对应语种商品。' : ''"
+              >
+                <StorefrontLocaleSelect
+                  v-model="form.locale"
+                  :language-options="languageOptions"
+                  :disabled="mode === 'edit'"
+                  :locked="mode === 'edit'"
+                  locked-title="商品语言已锁定"
+                />
+              </AdminFormField>
+              <AdminFormField label="主基准币种" required :error="errors.currency" description="商品和 SKU 的录入金额使用这个币种；次展示价格由后台汇率缓存填充。">
+                <Input v-model="form.currency" class="font-mono uppercase" disabled />
               </AdminFormField>
               <AdminFormField label="简短描述" class="md:col-span-3">
                 <Textarea v-model="form.short_description" class="min-h-20" placeholder="用于列表和摘要展示" />
@@ -205,7 +212,9 @@
             <div class="min-w-0 rounded-lg border">
               <ProductVariantEditor
                 :variants="form.variants"
+                :currency="form.currency"
                 :spec-definitions="variantSpecDefinitions"
+                :option-values="form.variant_option_values"
                 :default-index="defaultVariantIndex"
                 :shipping-templates="shippingTemplates"
                 class="min-w-0 p-3"
@@ -220,6 +229,9 @@
 
           <ProductMediaSection
             :media-items="form.media"
+            :variants="form.variants"
+            :variant-option-values="form.variant_option_values"
+            :spec-definitions="variantSpecDefinitions"
             :uploading="uploadingMedia"
             :error="errors.media"
             @upload="(...args) => emit('upload-media', ...args)"
@@ -252,6 +264,28 @@
                     <SelectItem value="__none__">未设置</SelectItem>
                     <SelectItem v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
                       {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <AdminFormField label="After-sales 模板">
+                <Select :model-value="afterSalesTemplateSelectValue" @update:model-value="emit('product-information-template-select', 'after_sales_template_id', $event)">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">未设置</SelectItem>
+                    <SelectItem v-for="template in afterSalesTemplates" :key="template.id" :value="String(template.id)">
+                      {{ template.name }}{{ template.locale ? `（${template.locale}）` : '' }}{{ template.is_enabled === false ? '（停用）' : '' }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <AdminFormField label="Packaging 模板">
+                <Select :model-value="packagingTemplateSelectValue" @update:model-value="emit('product-information-template-select', 'packaging_template_id', $event)">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">未设置</SelectItem>
+                    <SelectItem v-for="template in packagingTemplates" :key="template.id" :value="String(template.id)">
+                      {{ template.name }}{{ template.locale ? `（${template.locale}）` : '' }}{{ template.is_enabled === false ? '（停用）' : '' }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -290,14 +324,17 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { PropType } from 'vue'
 import { RouterLink } from 'vue-router'
 import { LoaderCircle, Tags } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminFormSection from '@/components/admin/AdminFormSection.vue'
+import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import ProductDescriptionEditor from '@/components/admin/product/ProductDescriptionEditor.vue'
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
+import type { ProductFormRecord } from '@/components/admin/product/productEditorTypes'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -320,27 +357,71 @@ const editorSteps = [
   { no: '04', label: '维护 SKU' },
 ]
 
+interface ProductSpecDefinition {
+  id?: number
+  slug: string
+  name: string
+  field_type: string
+  presentation?: string
+  is_required?: boolean
+  is_variant_option?: boolean
+  unit?: string
+  options?: string
+}
+
+interface ProductTypeRecord {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  spec_definitions?: ProductSpecDefinition[]
+}
+
+interface ShippingTemplateRecord {
+  id: number
+  name: string
+  enabled?: boolean
+}
+
+interface InformationTemplateRecord {
+  id: number
+  name: string
+  locale?: string
+  is_enabled?: boolean
+}
+
+interface LanguageOption {
+  value: string
+  label: string
+}
+
+type ProductFormValue = string | number | boolean | null | undefined
+
 defineProps({
   open: { type: Boolean, default: false },
   mode: { type: String, default: 'create' },
   submitting: { type: Boolean, default: false },
-  form: { type: Object, required: true },
-  errors: { type: Object, default: () => ({}) },
-  productTypes: { type: Array, default: () => [] },
-  selectedProductType: { type: Object, default: null },
-  selectedSpecDefinitions: { type: Array, default: () => [] },
-  variantSpecDefinitions: { type: Array, default: () => [] },
+  form: { type: Object as PropType<ProductFormRecord>, required: true },
+  errors: { type: Object as PropType<Record<string, string>>, default: () => ({}) },
+  productTypes: { type: Array as PropType<ProductTypeRecord[]>, default: () => [] },
+  selectedProductType: { type: Object as PropType<ProductTypeRecord | null>, default: null },
+  selectedSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
+  variantSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   defaultVariantIndex: { type: Number, default: 0 },
   productTypeSelectValue: { type: String, default: '__none__' },
   shippingTemplateSelectValue: { type: String, default: '__none__' },
-  shippingTemplates: { type: Array, default: () => [] },
+  shippingTemplates: { type: Array as PropType<ShippingTemplateRecord[]>, default: () => [] },
+  afterSalesTemplateSelectValue: { type: String, default: '__none__' },
+  packagingTemplateSelectValue: { type: String, default: '__none__' },
+  afterSalesTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
+  packagingTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
   templateScopedValuesTouched: { type: Boolean, default: false },
   uploadingMedia: { type: Boolean, default: false },
-  parseSpecOptions: { type: Function, required: true },
-  formatSpecOption: { type: Function, required: true },
-  getSpecLabel: { type: Function, required: true },
-  specSelectValue: { type: Function, required: true },
-  languageOptions: { type: Array, default: () => [] },
+  parseSpecOptions: { type: Function as PropType<(spec: ProductSpecDefinition) => ProductFormValue[]>, required: true },
+  formatSpecOption: { type: Function as PropType<(option: ProductFormValue) => string>, required: true },
+  getSpecLabel: { type: Function as PropType<(spec: ProductSpecDefinition) => string>, required: true },
+  specSelectValue: { type: Function as PropType<(value: ProductFormValue) => string>, required: true },
+  languageOptions: { type: Array as PropType<LanguageOption[]>, default: () => [] },
 })
 
 const emit = defineEmits([
@@ -349,6 +430,7 @@ const emit = defineEmits([
   'clear-error',
   'product-type-select',
   'product-shipping-template-select',
+  'product-information-template-select',
   'set-spec-select-value',
   'add-variant',
   'remove-variant',

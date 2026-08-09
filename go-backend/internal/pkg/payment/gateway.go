@@ -55,10 +55,12 @@ type RefundResponse struct {
 }
 
 type RefundOptions struct {
-	IdempotencyKey string  `json:"-"`
-	Reason         string  `json:"reason,omitempty"`
-	Currency       string  `json:"currency,omitempty"`
-	OriginalAmount float64 `json:"original_amount,omitempty"`
+	IdempotencyKey        string  `json:"-"`
+	Reason                string  `json:"reason,omitempty"`
+	Currency              string  `json:"currency,omitempty"`
+	OriginalAmount        float64 `json:"original_amount,omitempty"`
+	MerchantOrderNumber   string  `json:"merchant_order_number,omitempty"`
+	ProviderTransactionID string  `json:"provider_transaction_id,omitempty"`
 }
 
 // Customer 客户信息

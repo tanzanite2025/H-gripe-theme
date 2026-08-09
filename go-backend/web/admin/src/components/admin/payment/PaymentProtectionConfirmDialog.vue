@@ -40,31 +40,43 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { AlertTriangle, ShieldCheck } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  action: { type: String, default: 'force_3ds' },
-  scopeLabel: { type: String, default: '' },
-  controlId: { type: [Number, String], default: '' },
-  saving: { type: Boolean, default: false },
+interface PaymentProtectionConfirmDialogProps {
+  open?: boolean
+  mode?: string
+  action?: string
+  scopeLabel?: string
+  controlId?: number | string
+  saving?: boolean
+}
+
+const props = withDefaults(defineProps<PaymentProtectionConfirmDialogProps>(), {
+  open: false,
+  mode: 'create',
+  action: 'force_3ds',
+  scopeLabel: '',
+  controlId: '',
+  saving: false,
 })
 
-const emit = defineEmits(['update:open', 'confirm'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'confirm'): void
+}>()
 
-const confirmationText = ref('')
+const confirmationText = ref<string>('')
 
 const isRevoke = computed(() => props.mode === 'revoke')
 const isPause = computed(() => props.action === 'pause_payment')
 const isPauseOrRevoke = computed(() => isRevoke.value || isPause.value)
 const actionLabel = computed(() => {
-  const labels = {
+  const labels: Record<string, string> = {
     force_3ds: '强制 3DS',
     pause_payment: '暂停新支付',
   }

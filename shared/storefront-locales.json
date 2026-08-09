@@ -1,0 +1,22 @@
+[
+  { "code": "en", "iso": "en-US", "name": "English", "native_name": "English", "file": "en.json", "enabled": true },
+  { "code": "zh_cn", "iso": "zh-CN", "name": "Chinese (Simplified)", "native_name": "简体中文", "file": "zh_cn.json", "enabled": true },
+  { "code": "fr", "iso": "fr-FR", "name": "French", "native_name": "Français", "file": "fr.json", "enabled": true },
+  { "code": "de", "iso": "de-DE", "name": "German", "native_name": "Deutsch", "file": "de.json", "enabled": true },
+  { "code": "es", "iso": "es-ES", "name": "Spanish", "native_name": "Español", "file": "es.json", "enabled": true },
+  { "code": "ja", "iso": "ja-JP", "name": "Japanese", "native_name": "日本語", "file": "ja.json", "enabled": true },
+  { "code": "ko", "iso": "ko-KR", "name": "Korean", "native_name": "한국어", "file": "ko.json", "enabled": true },
+  { "code": "it", "iso": "it-IT", "name": "Italian", "native_name": "Italiano", "file": "it.json", "enabled": true },
+  { "code": "pt", "iso": "pt-PT", "name": "Portuguese", "native_name": "Português", "file": "pt.json", "enabled": true },
+  { "code": "ru", "iso": "ru-RU", "name": "Russian", "native_name": "Русский", "file": "ru.json", "enabled": true },
+  { "code": "ar", "iso": "ar-SA", "name": "Arabic", "native_name": "العربية", "file": "ar.json", "dir": "rtl", "enabled": true },
+  { "code": "nl", "iso": "nl-NL", "name": "Dutch", "native_name": "Nederlands", "file": "nl.json", "enabled": true },
+  { "code": "tr", "iso": "tr-TR", "name": "Turkish", "native_name": "Türkçe", "file": "tr.json", "enabled": true },
+  { "code": "id", "iso": "id-ID", "name": "Indonesian", "native_name": "Bahasa Indonesia", "file": "id.json", "enabled": true },
+  { "code": "th", "iso": "th-TH", "name": "Thai", "native_name": "ไทย", "file": "th.json", "enabled": true },
+  { "code": "sv", "iso": "sv-SE", "name": "Swedish", "native_name": "Svenska", "file": "sv.json", "enabled": true },
+  { "code": "da", "iso": "da-DK", "name": "Danish", "native_name": "Dansk", "file": "da.json", "enabled": true },
+  { "code": "fi", "iso": "fi-FI", "name": "Finnish", "native_name": "Suomi", "file": "fi.json", "enabled": true },
+  { "code": "hi", "iso": "hi-IN", "name": "Hindi", "native_name": "हिन्दी", "file": "hi.json", "enabled": true },
+  { "code": "ms", "iso": "ms-MY", "name": "Malay", "native_name": "Bahasa Melayu", "file": "ms.json", "enabled": true }
+]

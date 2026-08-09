@@ -25,7 +25,7 @@
 
       <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-muted-foreground">
         <span>{{ formatMediaSize(asset.size) }}</span>
-        <span class="text-right">{{ formatMediaDate(asset.created_at) }}</span>
+        <span class="text-right">{{ formatMediaDate(typeof asset.created_at === 'string' || typeof asset.created_at === 'number' ? asset.created_at : null) }}</span>
       </div>
 
       <div class="mt-auto flex items-center justify-between gap-2 border-t pt-3">
@@ -56,8 +56,9 @@
   </article>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Copy, FileArchive, FileVideo, Images, Pencil, Trash2 } from '@lucide/vue'
+import type { MediaAsset } from '@/api/media'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -69,11 +70,20 @@ import {
   statusLabel,
 } from '@/lib/mediaPresentation'
 
-defineProps({
-  asset: { type: Object, required: true },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  asset: MediaAsset
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits(['preview', 'copy-url', 'export-evidence', 'edit', 'delete'])
+const emit = defineEmits<{
+  (event: 'preview', asset: MediaAsset): void
+  (event: 'copy-url', asset: MediaAsset): void
+  (event: 'export-evidence', asset: MediaAsset): void
+  (event: 'edit', asset: MediaAsset): void
+  (event: 'delete', asset: MediaAsset): void
+}>()
 </script>

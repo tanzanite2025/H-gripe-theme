@@ -17,8 +17,9 @@ export const useCartTax = (
    */
   const calculateTax = (subtotal: number, shipping: number): number => {
     if (selectedTaxRates.value.length === 0) {
-      // 默认税率：10%
-      return (subtotal + shipping) * 0.1
+      // Tax depends on destination and backend configuration. Never invent a
+      // default rate before a checkout quote has been returned.
+      return 0
     }
 
     // 累加所有选中的税率

@@ -54,7 +54,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
@@ -75,16 +75,20 @@ import { useCustomerServiceRealtime } from '@/composables/customerService/useCus
 import { useCustomerServiceTyping } from '@/composables/customerService/useCustomerServiceTyping'
 import { useAuthStore } from '@/stores/auth'
 import { statusDisplayValue } from '@/lib/customerServicePresentation'
+import type { CustomerConversation } from './customerServiceTypes'
 
-defineProps({
-  showHeader: { type: Boolean, default: false },
-  showStats: { type: Boolean, default: false },
-  showRegionAnalytics: { type: Boolean, default: false },
-  title: { type: String, default: '客服对话' },
-  description: {
-    type: String,
-    default: '处理网页 Public Chat 会话；客户侧只创建和读取自己的对话，客服侧在这里回复',
-  },
+withDefaults(defineProps<{
+  showHeader?: boolean
+  showStats?: boolean
+  showRegionAnalytics?: boolean
+  title?: string
+  description?: string
+}>(), {
+  showHeader: false,
+  showStats: false,
+  showRegionAnalytics: false,
+  title: '客服对话',
+  description: '处理网页 Public Chat 会话；客户侧只创建和读取自己的对话，客服侧在这里回复',
 })
 
 const authStore = useAuthStore()
@@ -172,7 +176,7 @@ const {
   }
 })
 
-const selectConversation = async (conversation) => {
+const selectConversation = async (conversation: CustomerConversation): Promise<void> => {
   resetAgentTypingState()
   await selectInboxConversation(conversation)
 }

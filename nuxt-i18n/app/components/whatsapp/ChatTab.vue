@@ -430,6 +430,7 @@ import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath } from '#imports'
 import ChatAttachmentHub from './ChatAttachmentHub.vue'
 import type { ChatAttachmentActionId } from '~/composables/chat/useChatAttachmentActions'
+import { getStorefrontLocaleEntry } from '~/utils/storefrontLocales'
 
 const props = defineProps<{
   messages: any[]
@@ -454,7 +455,7 @@ const emit = defineEmits<{
   'deleteMessage': [message: any]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const messagesContainer = ref<HTMLElement | null>(null)
 const messageInputElement = ref<HTMLInputElement | null>(null)
@@ -553,7 +554,8 @@ watch(() => props.pendingProductReference, (value) => {
 // 格式化消息时间
 const formatMessageTime = (time: string) => {
   const date = new Date(time)
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  const localeIso = getStorefrontLocaleEntry(locale.value)?.iso || 'en-US'
+  return date.toLocaleTimeString(localeIso, { hour: '2-digit', minute: '2-digit' })
 }
 
 const messageMetadata = (message: any) => {

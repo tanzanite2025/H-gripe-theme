@@ -32,7 +32,7 @@
           <div class="account-cart-item__body">
             <div class="account-cart-item__title">{{ item.title }}</div>
             <div class="account-cart-item__meta">
-              <span>{{ formatPrice(item.price) }}</span>
+              <span>{{ formatPrice(item.price, item.currency) }}</span>
             </div>
             <div class="account-cart-item__actions">
               <button type="button" @click="decrementQuantity(item.id)">

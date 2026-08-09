@@ -28,52 +28,62 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { RefreshCw } from '@lucide/vue'
 import CustomerAccountsFilterPanel from '@/components/admin/customer/CustomerAccountsFilterPanel.vue'
 import CustomerAccountsTablePanel from '@/components/admin/customer/CustomerAccountsTablePanel.vue'
+import type {
+  CustomerAccount,
+  CustomerFilters,
+  CustomerListResponse,
+  CustomerPagination,
+  CustomerStatusTone
+} from '@/components/admin/customer/customerTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import axios from '@/utils/axios'
 
 const loading = ref(false)
-const customers = ref([])
+const customers = ref<CustomerAccount[]>([])
 
-const filters = reactive({
+const filters = reactive<CustomerFilters>({
   search: '',
   status: 'all'
 })
 
-const pagination = reactive({
+const pagination = reactive<CustomerPagination>({
   page: 1,
   pageSize: 20,
   total: 0
 })
 
-const getStatusName = (status) => ({
+const statusNames: Record<string, string> = {
   active: '活跃',
   inactive: '未激活',
   suspended: '已停用'
-})[status] || status
+}
 
-const statusTone = (status) => ({
+const statusTones: Record<string, CustomerStatusTone> = {
   active: 'green',
   inactive: 'gray',
   suspended: 'coral'
-})[status] || 'gray'
+}
 
-const formatDate = (dateString) => {
+const getStatusName = (status?: string | null): string => statusNames[status || ''] || status || '-'
+const statusTone = (status?: string | null): CustomerStatusTone => statusTones[status || ''] || 'gray'
+
+const formatDate = (dateString?: string | null): string => {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
-const formatFullName = (customer) => {
+const formatFullName = (customer: CustomerAccount): string => {
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(' ')
   return name || customer.display_name || '-'
 }
 
-const fetchCustomers = async () => {
+const fetchCustomers = async (): Promise<void> => {
   loading.value = true
   try {
     const params = {
@@ -82,7 +92,7 @@ const fetchCustomers = async () => {
       ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
       ...(filters.status !== 'all' ? { status: filters.status } : {})
     }
-    const response = await axios.get('/api/admin/customers', { params })
+    const response = await axios.get<CustomerListResponse>('/api/admin/customers', { params })
     customers.value = response.data.customers || []
     pagination.total = response.data.pagination?.total || 0
   } catch (error) {
@@ -92,28 +102,30 @@ const fetchCustomers = async () => {
   }
 }
 
-const applyFilters = () => {
+const applyFilters = (): void => {
   pagination.page = 1
-  fetchCustomers()
+  void fetchCustomers()
 }
 
-const resetFilters = () => {
+const resetFilters = (): void => {
   filters.search = ''
   filters.status = 'all'
   pagination.page = 1
-  fetchCustomers()
+  void fetchCustomers()
 }
 
-const updatePage = (page) => {
+const updatePage = (page: number): void => {
   pagination.page = page
-  fetchCustomers()
+  void fetchCustomers()
 }
 
-const updatePageSize = (pageSize) => {
+const updatePageSize = (pageSize: number): void => {
   pagination.pageSize = pageSize
   pagination.page = 1
-  fetchCustomers()
+  void fetchCustomers()
 }
 
-onMounted(fetchCustomers)
+onMounted(() => {
+  void fetchCustomers()
+})
 </script>

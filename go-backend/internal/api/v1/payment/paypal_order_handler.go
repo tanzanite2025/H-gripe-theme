@@ -167,7 +167,7 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
 			Provider:        string(pgateway.GatewayPayPal),
 			OrderNumber:     orderRecord.OrderNumber,
-			TransactionID:   paypalTransactionID(paymentResponse, paypalOrderID),
+			TransactionID:   gatewayTransactionID(paymentResponse, paypalOrderID),
 			PaymentMethod:   "paypal",
 			Status:          paypalAttemptStatus(paymentResponse.Status),
 			Amount:          paymentResponse.Amount,
@@ -179,11 +179,16 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		})
 		return
 	}
+	transactionID := paypalTransactionID(paymentResponse)
+	if transactionID == "" {
+		apierror.RespondError(c, http.StatusBadGateway, "paypal_capture_id_missing", "PayPal capture response did not return a capture id")
+		return
+	}
 
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
 		Provider:        string(pgateway.GatewayPayPal),
 		OrderNumber:     orderRecord.OrderNumber,
-		TransactionID:   paypalTransactionID(paymentResponse, paypalOrderID),
+		TransactionID:   transactionID,
 		PaymentMethod:   "paypal",
 		Amount:          paymentResponse.Amount,
 		Currency:        paymentResponse.Currency,
@@ -238,16 +243,13 @@ func paypalResponseMatchesOrder(paymentResponse *pgateway.PaymentResponse, order
 	return false
 }
 
-func paypalTransactionID(paymentResponse *pgateway.PaymentResponse, fallback string) string {
+func paypalTransactionID(paymentResponse *pgateway.PaymentResponse) string {
 	if paymentResponse != nil {
 		if value := strings.TrimSpace(paymentResponse.TransactionID); value != "" {
 			return value
 		}
-		if value := strings.TrimSpace(paymentResponse.ID); value != "" {
-			return value
-		}
 	}
-	return strings.TrimSpace(fallback)
+	return ""
 }
 
 func paypalAttemptStatus(value string) string {
