@@ -250,22 +250,23 @@ export const useCart = () => {
     return firstCurrency || baseCurrency.value || 'USD'
   })
 
-  const addToCart = (product: Omit<CartItem, 'quantity'>) => {
+  const addToCart = (product: Omit<CartItem, 'quantity'>, quantity = 1) => {
     const productId = product.product_id || product.id
     const variantId = product.variant_id || null
     const itemId = cartItemKey(productId, variantId)
     const existingItem = cartItems.value.find(item => item.id === itemId)
+    const quantityToAdd = Math.max(1, Math.floor(Number(quantity) || 1))
     const normalizedProduct = {
       ...product,
       weight: product.weight ?? (product.weight_grams ? product.weight_grams / 1000 : undefined),
     }
 
     if (existingItem) {
-      existingItem.quantity++
+      existingItem.quantity += quantityToAdd
       syncAction('update', productId, existingItem.quantity, variantId)
     } else {
-      cartItems.value.push({ ...normalizedProduct, id: itemId, product_id: productId, variant_id: variantId, quantity: 1 })
-      syncAction('add', productId, 1, variantId)
+      cartItems.value.push({ ...normalizedProduct, id: itemId, product_id: productId, variant_id: variantId, quantity: quantityToAdd })
+      syncAction('add', productId, quantityToAdd, variantId)
     }
 
     trackBehaviorEvent({
@@ -274,7 +275,7 @@ export const useCart = () => {
       metadata: {
         source: 'cart_action',
         variant_id: variantId || 0,
-        quantity: 1,
+        quantity: quantityToAdd,
         cart_action: existingItem ? 'increment' : 'add',
       },
     })
