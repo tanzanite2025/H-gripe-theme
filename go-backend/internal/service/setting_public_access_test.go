@@ -60,6 +60,37 @@ func TestGetSiteSettingsFallsBackToLegacySiteName(t *testing.T) {
 	assert.Equal(t, "Legacy Name", settings.SiteName)
 }
 
+func TestGetSiteSettingsFallsBackToEnglishForUnconfiguredLocale(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{Key: "brand_title", Value: "Global Brand", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "contact_email", Value: "brand@example.test", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+	}))
+
+	settings, err := settingService.GetSiteSettings("zh_cn")
+	require.NoError(t, err)
+	assert.Equal(t, "Global Brand", settings.BrandTitle)
+	assert.Equal(t, "Global Brand", settings.SiteName)
+	assert.Equal(t, "brand@example.test", settings.ContactEmail)
+}
+
+func TestGetSiteSettingsUsesLocaleValueBeforeEnglishFallback(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{Key: "brand_title", Value: "Global Brand", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "contact_email", Value: "brand@example.test", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "brand_title", Value: "中文品牌", Type: "string", Locale: "zh_cn", Group: "site", IsPublic: true},
+	}))
+
+	settings, err := settingService.GetSiteSettings("zh-CN")
+	require.NoError(t, err)
+	assert.Equal(t, "中文品牌", settings.BrandTitle)
+	assert.Equal(t, "中文品牌", settings.SiteName)
+	assert.Equal(t, "brand@example.test", settings.ContactEmail)
+}
+
 func newTestSettingService(t *testing.T) (*gorm.DB, *SettingService) {
 	t.Helper()
 

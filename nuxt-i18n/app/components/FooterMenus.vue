@@ -153,7 +153,7 @@ const sections = computed<FooterSection[]>(() => {
   return footerMenus
 })
 
-const openSections = ref<Record<string, boolean>>({})
+const openSections = ref<Record<string, boolean>>({ resources: true })
 
 const toggleSection = (id: string) => {
   openSections.value[id] = !openSections.value[id]

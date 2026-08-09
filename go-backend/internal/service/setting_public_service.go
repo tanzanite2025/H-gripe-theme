@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"tanzanite/internal/domain/setting"
 )
 
@@ -16,8 +17,7 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 		return &siteSettings, nil
 	}
 
-	// 从数据库获取
-	settings, err := s.GetPublicByGroup("site", locale)
+	settings, err := s.getPublicByGroupWithLocaleFallback("site", locale)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +68,50 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 	}
 
 	return &siteSettings, nil
+}
+
+func (s *SettingService) getPublicByGroupWithLocaleFallback(group, locale string) ([]setting.Setting, error) {
+	merged := make([]setting.Setting, 0)
+	seenKeys := make(map[string]struct{})
+
+	for _, candidateLocale := range publicSettingFallbackLocales(locale) {
+		settings, err := s.GetPublicByGroup(group, candidateLocale)
+		if err != nil {
+			return nil, err
+		}
+		for _, st := range settings {
+			if _, ok := seenKeys[st.Key]; ok {
+				continue
+			}
+			seenKeys[st.Key] = struct{}{}
+			merged = append(merged, st)
+		}
+	}
+
+	return merged, nil
+}
+
+func publicSettingFallbackLocales(locale string) []string {
+	locales := make([]string, 0, 4)
+	seen := make(map[string]struct{})
+	add := func(value string) {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return
+		}
+		if _, ok := seen[value]; ok {
+			return
+		}
+		seen[value] = struct{}{}
+		locales = append(locales, value)
+	}
+
+	add(locale)
+	add(strings.ToLower(strings.ReplaceAll(locale, "-", "_")))
+	add("en")
+	add("global")
+
+	return locales
 }
 
 // GetQuickBuySettings 获取快速购买设置

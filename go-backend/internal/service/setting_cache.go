@@ -2,7 +2,7 @@ package service
 
 import "fmt"
 
-const settingCacheVersion = "v3"
+const settingCacheVersion = "v4"
 
 func settingValueCacheKey(key, locale string) string {
 	return fmt.Sprintf("setting:%s:%s:%s", settingCacheVersion, key, locale)
@@ -56,6 +56,9 @@ func (s *SettingService) invalidateSettingCaches(key, group, locale string) {
 			settingsPublicGroupCacheKey(group, locale),
 			settingsStructuredCacheKey(group, locale),
 		)
+		if group == "site" && s.cache != nil {
+			_ = s.cache.DeletePattern(fmt.Sprintf("settings:%s:structured:site:*", settingCacheVersion))
+		}
 	}
 
 	for _, cacheKey := range cacheKeys {
