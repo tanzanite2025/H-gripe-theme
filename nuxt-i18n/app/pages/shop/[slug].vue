@@ -268,6 +268,16 @@
         :packaging-html="product.packaging_template?.content"
       />
     </div>
+
+    <ProductRecommendations
+      :key="`product-recommendations-${product.id}`"
+      surface="product_detail_bottom"
+      :title="t('recommendations.productDetailTitle', 'You may also like')"
+      :product-id="product.id"
+      :category-id="product.product_type_id || product.product_type?.id || null"
+      :exclude-product-ids="[product.id]"
+      :limit="6"
+    />
   </section>
   <section v-else-if="pending" class="product-page product-page--pending">Loading...</section>
   <section v-else class="product-page product-page--error" role="alert">Product not found.</section>
@@ -279,6 +289,7 @@ import { useRoute, useRuntimeConfig, useAsyncData, useHead, useRequestURL } from
 import { useCart } from '~/composables/useCart'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
+import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import type { CheckoutPaymentOption } from '~/types/payment'
 import {
   isPaymentOptionAvailable,

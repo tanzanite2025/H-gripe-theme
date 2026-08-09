@@ -18,6 +18,21 @@ export type RecommendationSource =
   | 'development-fallback'
   | 'empty'
 
+export interface RecommendationLoadOptions {
+  surface?: string
+  limit?: number
+  productId?: number | null
+  categoryId?: number | null
+  query?: string | null
+  route?: string | null
+  excludeProductIds?: Array<number | null | undefined>
+  catalogFallback?: boolean
+}
+
+const DEFAULT_RECOMMENDATION_SURFACE = 'shop_search_drawer'
+const DEFAULT_RECOMMENDATION_LIMIT = 6
+const MAX_RECOMMENDATION_LIMIT = 12
+
 const developmentProductFallbacks: RecommendationProductCard[] = [
   { id: 'fallback-carbon-wheels', title: 'Carbon Wheels', url: '/shop?keyword=Carbon%20Wheels', priceLabel: 'Search' },
   { id: 'fallback-carbon-rim', title: 'Carbon Rim', url: '/shop?keyword=Carbon%20Rim', priceLabel: 'Search' },
@@ -34,12 +49,38 @@ const developmentCategoryFallbacks: ShopCategory[] = [
   { id: -5, slug: 'hub', name: 'Hubs' },
 ]
 
+const toPositiveInteger = (value: unknown) => {
+  const numberValue = Number(value)
+  if (!Number.isInteger(numberValue) || numberValue <= 0) return null
+  return numberValue
+}
+
+const normalizeRecommendationLimit = (value: unknown) => {
+  const limit = toPositiveInteger(value) || DEFAULT_RECOMMENDATION_LIMIT
+  return Math.min(Math.max(limit, 1), MAX_RECOMMENDATION_LIMIT)
+}
+
+const normalizeRecommendationSurface = (value: unknown) => {
+  const surface = String(value || '').trim()
+  return (surface || DEFAULT_RECOMMENDATION_SURFACE).slice(0, 64)
+}
+
+const normalizeExcludedProductIds = (values?: Array<number | null | undefined>) => {
+  const seen = new Set<number>()
+  for (const value of values || []) {
+    const productId = toPositiveInteger(value)
+    if (productId) seen.add(productId)
+  }
+  return Array.from(seen)
+}
+
 export const useSmartRecommendations = () => {
   const recommendationsLoading = ref(false)
   const recommendedProducts = ref<RecommendationProductCard[]>([])
   const recommendationRequestId = ref('')
   const recommendationAlgorithmVersion = ref('')
   const recommendationSource = ref<RecommendationSource>('empty')
+  const recommendationDisplayLimit = ref(DEFAULT_RECOMMENDATION_LIMIT)
   const { request } = useApiRequest()
   const route = useRoute()
   const { locale } = useI18n()
@@ -55,10 +96,10 @@ export const useSmartRecommendations = () => {
   const displayedProductCards = computed<RecommendationProductCard[]>(() => {
     const cards = recommendedProducts.value
       .filter((product) => product && product.title && product.url)
-      .slice(0, 6)
+      .slice(0, recommendationDisplayLimit.value)
 
     if (cards.length || !import.meta.dev) return cards
-    return developmentProductFallbacks
+    return developmentProductFallbacks.slice(0, recommendationDisplayLimit.value)
   })
 
   const displayedCategoryCards = computed<ShopCategory[]>(() => {
@@ -70,21 +111,25 @@ export const useSmartRecommendations = () => {
     return developmentCategoryFallbacks
   })
 
-  const applyCatalogFallback = async () => {
+  const applyCatalogFallback = async (limit = DEFAULT_RECOMMENDATION_LIMIT, excludeProductIds: number[] = []) => {
+    const excluded = new Set(excludeProductIds)
     const result = await fetchPublicShopProducts({
       featured: false,
-      page_size: 6,
+      page_size: Math.min(MAX_RECOMMENDATION_LIMIT, limit + excluded.size),
       status: 'active',
     })
-    recommendedProducts.value = result.items.slice(0, 6).map((product) => ({
-      id: product.id,
-      title: product.title,
-      url: product.url || `/shop/${product.slug}`,
-      thumbnail: product.thumbnail,
-      priceLabel: product.priceLabel,
-      slot: 'catalog_fallback',
-      reason: 'public_catalog_fallback',
-    }))
+    recommendedProducts.value = result.items
+      .filter((product) => !excluded.has(Number(product.id)))
+      .slice(0, limit)
+      .map((product) => ({
+        id: product.id,
+        title: product.title,
+        url: product.url || `/shop/${product.slug}`,
+        thumbnail: product.thumbnail,
+        priceLabel: product.priceLabel,
+        slot: 'catalog_fallback',
+        reason: 'public_catalog_fallback',
+      }))
     recommendationSource.value = recommendedProducts.value.length
       ? 'catalog-fallback'
       : import.meta.dev
@@ -92,24 +137,39 @@ export const useSmartRecommendations = () => {
         : 'empty'
   }
 
-  const loadBaselineRecommendations = async () => {
+  const loadBaselineRecommendations = async (options: RecommendationLoadOptions = {}) => {
     if (recommendationsLoading.value) return
+
+    const limit = normalizeRecommendationLimit(options.limit)
+    const productId = toPositiveInteger(options.productId)
+    const categoryId = toPositiveInteger(options.categoryId)
+    const excludeProductIds = normalizeExcludedProductIds([
+      ...(options.excludeProductIds || []),
+      productId,
+    ])
+    const context: NonNullable<RecommendationRequest['context']> = {
+      route: String(options.route || route.fullPath || '').slice(0, 1024),
+    }
+    if (productId) context.product_id = productId
+    if (categoryId) context.category_id = categoryId
+    const query = String(options.query || '').trim()
+    if (query) context.query = query.slice(0, 256)
 
     recommendationsLoading.value = true
     recommendationRequestId.value = ''
     recommendationAlgorithmVersion.value = ''
     recommendationSource.value = 'empty'
+    recommendationDisplayLimit.value = limit
     try {
       ensureIdentity()
       const requestBody: RecommendationRequest = {
-        surface: 'shop_search_drawer',
+        surface: normalizeRecommendationSurface(options.surface),
         locale: String(locale.value || 'en'),
         anonymous_id: anonymousId.value || undefined,
         session_id: sessionId.value || undefined,
-        context: {
-          route: route.fullPath,
-        },
-        limit: 6,
+        context,
+        limit,
+        exclude_product_ids: excludeProductIds.length ? excludeProductIds : undefined,
       }
       const response = await request<{ data?: RecommendationAPIResult } | RecommendationAPIResult>(
         '/recommendations',
@@ -147,12 +207,21 @@ export const useSmartRecommendations = () => {
 
       // A successful empty response still gets a public catalog fallback while
       // the recommendation candidate set is being configured.
-      await applyCatalogFallback()
+      if (options.catalogFallback === false) {
+        recommendationSource.value = 'empty'
+        return
+      }
+      await applyCatalogFallback(limit, excludeProductIds)
     } catch (error) {
       // Keep the search drawer useful if the new recommendation endpoint is
       // unavailable during rollout.
       try {
-        await applyCatalogFallback()
+        if (options.catalogFallback === false) {
+          recommendedProducts.value = []
+          recommendationSource.value = 'empty'
+          return
+        }
+        await applyCatalogFallback(limit, excludeProductIds)
         recommendationAlgorithmVersion.value = 'public-catalog-fallback'
       } catch (fallbackError) {
         // eslint-disable-next-line no-console

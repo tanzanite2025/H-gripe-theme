@@ -157,6 +157,15 @@
       </div>
     </section>
 
+    <ProductRecommendations
+      surface="shop_index_bottom"
+      :title="$t('recommendations.shopTitle', 'Recommended products')"
+      :category-id="shopRecommendationCategoryId"
+      :query="shopRecommendationQuery"
+      :exclude-product-ids="visibleProductIds"
+      :limit="8"
+    />
+
     <section class="mt-10">
       <UserFeedbackThread
         threadKey="shop-page"
@@ -172,6 +181,7 @@ import { useRoute, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
+import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useShopCategories } from '~/composables/useShopCategories'
 import type { ShopCategory } from '~/composables/useShopCategories'
@@ -316,6 +326,13 @@ const products = computed<ShopProduct[]>(() => {
   }
   return []
 })
+
+const visibleProductIds = computed(() => products.value.map(product => product.id).filter(id => Number.isInteger(id) && id > 0))
+const shopRecommendationCategoryId = computed(() => {
+  const categoryId = Number(selectedCategory.value?.id)
+  return Number.isInteger(categoryId) && categoryId > 0 ? categoryId : null
+})
+const shopRecommendationQuery = computed(() => buildProductKeyword(currentSearch.value || undefined))
 
 const productPagination = computed(() => {
   const raw = asyncData.value?.raw as any
