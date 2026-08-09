@@ -250,12 +250,12 @@
     >
       <h2>Specifications</h2>
       <div v-for="group in specGroups" :key="group.name" class="spec-group">
-        <h3>{{ group.name }}</h3>
+        <h3 v-if="shouldShowSpecGroupHeading(group.name, specGroups.length)">{{ group.name }}</h3>
         <dl>
-          <template v-for="item in group.items" :key="item.slug">
+          <div v-for="item in group.items" :key="item.slug" class="spec-pill">
             <dt>{{ item.name }}</dt>
             <dd>{{ item.displayValue }}</dd>
-          </template>
+          </div>
         </dl>
       </div>
     </section>
@@ -1312,6 +1312,14 @@ const formatSpecValue = (item: ProductSpecValue) => {
   return value
 }
 
+const genericSpecGroupNames = new Set(['specification', 'specifications', 'specs', '规格', '規格'])
+
+const shouldShowSpecGroupHeading = (name: string, groupCount: number) => {
+  const normalizedName = String(name || '').trim().toLowerCase()
+  if (!normalizedName || genericSpecGroupNames.has(normalizedName)) return false
+  return groupCount > 1
+}
+
 const specGroups = computed(() => {
   const groups = new Map<string, Array<{ slug: string; name: string; displayValue: string }>>()
 
@@ -1422,6 +1430,8 @@ useHead(() => {
 
 <style scoped>
 .product-page {
+  --product-control-pill-height: 2.125rem;
+  --product-control-pill-radius: 999px;
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
@@ -1672,8 +1682,6 @@ useHead(() => {
 }
 
 .product-summary {
-  --product-control-pill-height: 2.125rem;
-  --product-control-pill-radius: 999px;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -2253,18 +2261,45 @@ useHead(() => {
 
 .spec-group dl {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.65rem 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.55rem;
 }
 
-.spec-group dt {
+.spec-pill {
+  display: flex;
+  height: var(--product-control-pill-height);
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--product-control-pill-radius);
+  background: rgba(255, 255, 255, 0.055);
+  padding: 0 0.78rem;
+}
+
+.spec-pill dt {
+  min-width: 0;
+  overflow: hidden;
   color: rgba(255, 255, 255, 0.56);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.spec-group dd {
+.spec-pill dd {
+  min-width: 0;
+  overflow: hidden;
   color: #fff;
+  font-size: 0.82rem;
   font-weight: 600;
   text-align: right;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 767px) {
