@@ -16,6 +16,11 @@ export interface ShopProduct {
   thumbnail?: string
   priceNumber: number
   priceLabel: string
+  currency: string
+  displayPriceNumber: number
+  displayPriceCurrency: string
+  displayPriceLabel: string
+  displayPrices: ShopProductDisplayPrice[]
   prices: {
     regular: number
     sale: number
@@ -23,6 +28,15 @@ export interface ShopProduct {
   availability: ShopProductAvailability
   productType?: ShopProductType | null
   variants: ShopProductVariant[]
+}
+
+export interface ShopProductDisplayPrice {
+  amount: number
+  currency: string
+  rate?: number
+  source?: string
+  converted?: boolean
+  fallback_reason?: string
 }
 
 export interface ShopProductType {
@@ -49,9 +63,11 @@ export interface ShopProductVariant {
   title: string
   optionValues: Record<string, string>
   priceNumber: number
+  currency: string
   price?: number
   salePriceNumber: number | null
   sale_price?: number | null
+  displayPrices: ShopProductDisplayPrice[]
   availability: ShopProductAvailability
   weightGrams?: number
   isDefault: boolean
@@ -69,6 +85,7 @@ export interface ShopProductCartOptions {
   price?: number
   salePrice?: number | null
   sku?: string
+  currency?: string
   title?: string
   thumbnail?: string
   weightGrams?: number | null
@@ -95,10 +112,49 @@ const toOptionalPositiveNumber = (value: unknown) => {
   return numberValue && numberValue > 0 ? numberValue : null
 }
 
-const formatPriceLabel = (amount: number) => (amount > 0 ? `$${amount}` : '')
+const normalizeCurrencyCode = (value: unknown) => {
+  const code = String(value || '').trim().toUpperCase()
+  return /^[A-Z]{3}$/.test(code) ? code : ''
+}
+
+const formatPriceLabel = (amount: number, currency = 'USD') => {
+  if (amount <= 0) return ''
+  const normalizedCurrency = normalizeCurrencyCode(currency) || 'USD'
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: normalizedCurrency }).format(amount)
+  } catch {
+    return `${normalizedCurrency} ${amount}`
+  }
+}
 
 const normalizeAvailability = (value: unknown): ShopProductAvailability => {
   return value === 'out_of_stock' ? 'out_of_stock' : 'in_stock'
+}
+
+const normalizeDisplayPrice = (value: any, fallbackAmount: number, fallbackCurrency: string): ShopProductDisplayPrice => {
+  const amount = toFiniteNumber(value?.amount, fallbackAmount)
+  const currency = normalizeCurrencyCode(value?.currency) || fallbackCurrency
+  return {
+    amount,
+    currency,
+    rate: toFiniteNumber(value?.rate, 1),
+    source: value?.source ? String(value.source) : undefined,
+    converted: Boolean(value?.converted),
+    fallback_reason: value?.fallback_reason ? String(value.fallback_reason) : undefined,
+  }
+}
+
+const normalizeDisplayPrices = (value: any, fallbackCurrency: string): ShopProductDisplayPrice[] => {
+  const list = Array.isArray(value) ? value : []
+  const seen = new Set<string>()
+  return list
+    .map((item: any) => normalizeDisplayPrice(item, 0, fallbackCurrency))
+    .filter(item => item.amount > 0 && normalizeCurrencyCode(item.currency))
+    .filter((item) => {
+      if (seen.has(item.currency)) return false
+      seen.add(item.currency)
+      return true
+    })
 }
 
 const parseOptionValues = (value: unknown): Record<string, string> => {
@@ -162,7 +218,7 @@ const normalizeProductType = (item: any): ShopProductType | null => {
   }
 }
 
-const normalizeVariant = (variant: any): ShopProductVariant | null => {
+const normalizeVariant = (variant: any, fallbackCurrency = 'USD'): ShopProductVariant | null => {
   const id = toFiniteNumber(variant?.id)
   const sku = String(variant?.sku || '').trim()
   if (!id) return null
@@ -171,6 +227,8 @@ const normalizeVariant = (variant: any): ShopProductVariant | null => {
   const sale = toOptionalNumber(variant?.sale_price)
   const salePriceNumber = sale && sale > 0 ? sale : null
   const priceNumber = salePriceNumber ?? regular
+  const variantCurrency = normalizeCurrencyCode(variant?.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
+  const displayPrices = normalizeDisplayPrices(variant?.display_prices, variantCurrency)
   const optionValues = parseOptionValues(variant?.option_values)
   const title = String(variant?.title || Object.values(optionValues).join(' / ') || sku || `Option ${id}`).trim()
   const weightGrams = toOptionalPositiveNumber(variant?.weight_grams)
@@ -181,18 +239,22 @@ const normalizeVariant = (variant: any): ShopProductVariant | null => {
     title,
     optionValues,
     priceNumber,
+    currency: variantCurrency,
     price: regular,
     salePriceNumber,
     sale_price: salePriceNumber,
+    displayPrices,
     availability: normalizeAvailability(variant?.availability),
     ...(weightGrams ? { weightGrams } : {}),
     isDefault: Boolean(variant?.is_default),
   }
 }
 
-export const normalizeShopProduct = (item: any): ShopProduct => {
+export const normalizeShopProduct = (item: any, fallbackCurrency = 'USD'): ShopProduct => {
   const id = toFiniteNumber(item?.id)
-  const variants = Array.isArray(item?.variants) ? item.variants.map(normalizeVariant).filter(Boolean) as ShopProductVariant[] : []
+  const variants = Array.isArray(item?.variants)
+    ? item.variants.map((variant: any) => normalizeVariant(variant, fallbackCurrency)).filter(Boolean) as ShopProductVariant[]
+    : []
   const defaultVariant = variants.find((variant) => variant.isDefault) || variants[0] || null
   const regular = toFiniteNumber(
     item?.prices?.regular,
@@ -203,6 +265,9 @@ export const normalizeShopProduct = (item: any): ShopProduct => {
     toFiniteNumber(defaultVariant?.sale_price, toFiniteNumber(item?.sale_price))
   )
   const priceNumber = sale > 0 ? sale : regular > 0 ? regular : 0
+  const productCurrency = normalizeCurrencyCode(defaultVariant?.currency || item?.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
+  const displayPrice = normalizeDisplayPrice(item?.display_price, priceNumber, productCurrency)
+  const displayPrices = normalizeDisplayPrices(item?.display_prices, productCurrency)
   const slug = String(item?.slug || id)
   const media = Array.isArray(item?.media) ? item.media : []
   const imageMedia = media.filter((mediaItem: any) => {
@@ -223,7 +288,12 @@ export const normalizeShopProduct = (item: any): ShopProduct => {
     sku: defaultVariant?.sku || item?.sku || undefined,
     thumbnail,
     priceNumber,
-    priceLabel: formatPriceLabel(priceNumber),
+    priceLabel: formatPriceLabel(displayPrice.amount, displayPrice.currency),
+    currency: productCurrency,
+    displayPriceNumber: displayPrice.amount,
+    displayPriceCurrency: displayPrice.currency,
+    displayPriceLabel: formatPriceLabel(displayPrice.amount, displayPrice.currency),
+    displayPrices,
     prices: {
       regular,
       sale,
@@ -244,10 +314,15 @@ const extractProductItems = (response: any): any[] => {
 export function useShopProducts() {
   const config = useRuntimeConfig()
   const { locale } = useI18n()
+  const { displayCurrency, countryCode, baseCurrency } = useStorefrontContext()
   const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
   const productRequestHeaders = () => {
     const currentLocale = String(locale.value || '').trim()
-    return currentLocale ? { 'Accept-Language': currentLocale } : undefined
+    const headers: Record<string, string> = {}
+    if (currentLocale) headers['Accept-Language'] = currentLocale
+    if (displayCurrency.value) headers['X-Display-Currency'] = displayCurrency.value
+    if (countryCode.value && countryCode.value !== 'ZZ') headers['X-Market-Country'] = countryCode.value
+    return Object.keys(headers).length ? headers : undefined
   }
 
   // Legacy search source kept for existing shop and customer-service flows.
@@ -257,7 +332,7 @@ export function useShopProducts() {
       params,
       headers: productRequestHeaders(),
     })
-    const items = extractProductItems(response).map(normalizeShopProduct)
+    const items = extractProductItems(response).map((item: any) => normalizeShopProduct(item, baseCurrency.value))
 
     return {
       items,
@@ -271,10 +346,12 @@ export function useShopProducts() {
       params: {
         status: 'active',
         page_size: 12,
+        currency: displayCurrency.value,
+        country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
         ...params,
       },
     })
-    const items = extractProductItems(response).map(normalizeShopProduct)
+    const items = extractProductItems(response).map((item: any) => normalizeShopProduct(item, baseCurrency.value))
 
     return {
       items,
@@ -309,6 +386,7 @@ export function useShopProducts() {
     const thumbnail = options.thumbnail ?? product.thumbnail
     const title = options.title ?? product.title
     const sku = options.sku ?? selectedVariant?.sku ?? product.sku
+    const currency = normalizeCurrencyCode(options.currency || selectedVariant?.currency || product.currency) || baseCurrency.value || 'USD'
     const weightGrams = options.weightGrams ?? selectedVariant?.weightGrams ?? null
 
     return {
@@ -320,6 +398,7 @@ export function useShopProducts() {
       slug: product.slug,
       sku: sku || undefined,
       price,
+      currency,
       sale_price: salePrice,
       image: thumbnail,
       thumbnail,

@@ -134,7 +134,7 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { LoaderCircle, LockKeyhole, Save, Trash2 } from '@lucide/vue'
@@ -143,17 +143,25 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import axios from '@/utils/axios'
+import type { PaymentGatewayCredentialField, PaymentGatewayRuntimeStatus } from './settingsTypes'
 
-const props = defineProps({
-  selectedGateway: { type: String, default: '' },
-  status: { type: Object, default: null },
-  canEdit: { type: Boolean, default: false },
-  secretStoreConfigured: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  selectedGateway?: string
+  status?: PaymentGatewayRuntimeStatus | null
+  canEdit?: boolean
+  secretStoreConfigured?: boolean
+}>(), {
+  selectedGateway: '',
+  status: null,
+  canEdit: false,
+  secretStoreConfigured: false,
 })
 
-const emit = defineEmits(['saved'])
+const emit = defineEmits<{
+  (event: 'saved'): void
+}>()
 
-const fieldDefinitions = {
+const fieldDefinitions: Record<string, PaymentGatewayCredentialField[]> = {
   stripe: [
     { key: 'api_key', label: 'API Key / Secret Key', placeholder: 'sk_live_...', description: 'Stripe 后端 Secret Key。' },
     { key: 'publishable_key', label: 'Publishable Key', placeholder: 'pk_live_...', description: '仅返回浏览器初始化 Stripe.js，不能填写 Secret Key。' },
@@ -182,7 +190,10 @@ const fieldDefinitions = {
   ],
 }
 
-const form = reactive({
+const form = reactive<{
+  environment: string
+  credentials: Record<string, string>
+}>({
   environment: 'sandbox',
   credentials: {},
 })
@@ -202,16 +213,16 @@ const configuredFieldText = computed(() => {
   return fields.length ? fields.join(', ') : '暂无'
 })
 
-const resetCredentialInputs = () => {
-  const next = {}
+const resetCredentialInputs = (): void => {
+  const next: Record<string, string> = {}
   providerFields.value.forEach((field) => {
     next[field.key] = ''
   })
   form.credentials = next
 }
 
-const credentialPayload = () => {
-  const payload = {}
+const credentialPayload = (): Record<string, string> => {
+  const payload: Record<string, string> = {}
   providerFields.value.forEach((field) => {
     const value = String(form.credentials[field.key] || '').trim()
     if (value) payload[field.key] = value

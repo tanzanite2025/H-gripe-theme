@@ -12,7 +12,18 @@ export interface ShippingQuoteItemInput {
 export interface ShippingQuoteRequest {
   country: string
   currency: string
+  display_currency?: string
   items: ShippingQuoteItemInput[]
+}
+
+export interface ShippingDisplayPrice {
+  amount: number
+  currency: string
+  quote_currency?: string
+  rate?: number
+  source?: string
+  converted?: boolean
+  fallback_reason?: string
 }
 
 export interface ShippingQuoteItemResult {
@@ -53,6 +64,8 @@ export interface ShippingQuoteOption {
   fuel_surcharge: number
   remote_surcharge: number
   shipping_fee: number
+  display_price?: ShippingDisplayPrice | null
+  display_prices?: ShippingDisplayPrice[]
   free_shipping: boolean
   eta_min_days: number
   eta_max_days: number
@@ -63,6 +76,9 @@ export interface ShippingQuoteResult {
   shipping_fee: number
   free_shipping: boolean
   currency?: string
+  display_price?: ShippingDisplayPrice | null
+  display_prices?: ShippingDisplayPrice[]
+  display_currency?: string
   source?: string
   items?: ShippingQuoteItemResult[]
   options?: ShippingQuoteOption[]
@@ -111,6 +127,7 @@ export const useShippingQuote = () => {
       error.value = 'Shipping quote currency is required'
       return null
     }
+    const displayCurrency = payload.display_currency?.trim().toUpperCase()
 
     const items = payload.items
       .map((item) => ({
@@ -135,6 +152,7 @@ export const useShippingQuote = () => {
         body: JSON.stringify({
           country,
           currency,
+          ...(displayCurrency ? { display_currency: displayCurrency } : {}),
           items,
         }),
       })
@@ -152,10 +170,11 @@ export const useShippingQuote = () => {
     }
   }
 
-  const quoteCartItems = (items: CartItem[], country: string, currency: string) => {
+  const quoteCartItems = (items: CartItem[], country: string, currency: string, displayCurrency?: string) => {
     return quoteCart({
       country,
       currency,
+      display_currency: displayCurrency,
       items: items.map(cartItemToQuoteItem).filter((item): item is ShippingQuoteItemInput => Boolean(item)),
     })
   }

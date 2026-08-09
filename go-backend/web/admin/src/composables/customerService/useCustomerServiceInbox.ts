@@ -1,5 +1,14 @@
 import { computed, reactive, ref } from 'vue'
 import customerServiceApi from '@/api/customerService'
+import type {
+  AssignableAgent,
+  AssignableGroup,
+  CustomerContext,
+  CustomerConversation,
+  CustomerConversationMessage,
+  CustomerRegionAnalytics,
+  CustomerServiceFiltersState,
+} from '@/components/admin/customer-service/customerServiceTypes'
 
 const todayLocalDate = () => {
   const now = new Date()
@@ -16,17 +25,24 @@ export const useCustomerServiceInbox = () => {
   const messagesLoading = ref(false)
   const contextLoading = ref(false)
   const regionAnalyticsLoading = ref(false)
-  const conversations = ref<any[]>([])
-  const messages = ref<any[]>([])
-  const customerContext = ref<Record<string, any> | null>(null)
-  const regionAnalytics = ref<Record<string, any> | null>(null)
-  const selectedConversation = ref<Record<string, any> | null>(null)
+  const conversations = ref<CustomerConversation[]>([])
+  const messages = ref<CustomerConversationMessage[]>([])
+  const customerContext = ref<CustomerContext | null>(null)
+  const regionAnalytics = ref<CustomerRegionAnalytics | null>(null)
+  const selectedConversation = ref<CustomerConversation | null>(null)
   const replyMessage = ref('')
   const transferTo = ref('')
-  const assignableAgents = ref<any[]>([])
-  const assignableGroups = ref<any[]>([])
+  const assignableAgents = ref<AssignableAgent[]>([])
+  const assignableGroups = ref<AssignableGroup[]>([])
   const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
-  const filters = reactive({ search: '', status: 'all', identity: 'all', assignedTo: 'all', groupId: 'all', unread: 'all' })
+  const filters = reactive<CustomerServiceFiltersState>({
+    search: '',
+    status: 'all',
+    identity: 'all',
+    assignedTo: 'all',
+    groupId: 'all',
+    unread: 'all',
+  })
 
   const totalPages = computed(() => Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize)))
 
@@ -133,7 +149,7 @@ export const useCustomerServiceInbox = () => {
     }
   }
 
-  const selectConversation = async (conversation: Record<string, any>) => {
+  const selectConversation = async (conversation: CustomerConversation) => {
     selectedConversation.value = conversation
     replyMessage.value = ''
     transferTo.value = conversation.assigned_to ? String(conversation.assigned_to) : ''

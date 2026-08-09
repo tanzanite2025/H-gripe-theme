@@ -43,6 +43,53 @@
 
           <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
             <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-black tracking-tighter italic uppercase">多语言名称</h3>
+                <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                  为已启用后台语言维护分类名称和描述。空名称不会提交，前台会回退到基础名称。
+                </p>
+              </div>
+              <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                {{ filledTranslationCount(form.translations) }} 个已填写
+              </span>
+            </div>
+
+            <div v-if="form.translations.length" class="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <section
+                v-for="translation in form.translations"
+                :key="translation.locale"
+                class="min-w-0 rounded-xl border bg-background/80 p-3"
+              >
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="truncate text-xs font-black">{{ languageLabel(translation.locale) }}</p>
+                    <p class="font-mono text-[10px] text-muted-foreground">{{ translation.locale }}</p>
+                  </div>
+                  <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    可选
+                  </span>
+                </div>
+                <div class="space-y-2">
+                  <AdminFormField label="名称">
+                    <Input v-model="translation.name" :placeholder="`请输入${languageLabel(translation.locale)}名称`" />
+                  </AdminFormField>
+                  <AdminFormField label="描述">
+                    <Textarea
+                      v-model="translation.description"
+                      class="min-h-16 resize-y"
+                      :placeholder="`请输入${languageLabel(translation.locale)}描述（可选）`"
+                    />
+                  </AdminFormField>
+                </div>
+              </section>
+            </div>
+            <div v-else class="rounded-xl border border-dashed py-6 text-center text-xs text-muted-foreground">
+              暂无已启用语言。请先在语言设置中启用语言。
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
+            <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
               <div class="space-y-1">
                 <h3 class="text-sm font-black tracking-tighter italic uppercase">字段模板</h3>
                 <p class="text-xs leading-5 text-muted-foreground">
@@ -112,6 +159,16 @@
                       </SelectContent>
                     </Select>
                   </AdminFormField>
+                  <AdminFormField v-if="spec.field_type === 'select' && spec.is_variant_option" label="前台展示">
+                    <Select v-model="spec.presentation">
+                      <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">文字按钮</SelectItem>
+                        <SelectItem value="color">颜色色板</SelectItem>
+                        <SelectItem value="image">图片选项</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </AdminFormField>
                   <AdminFormField label="单位">
                     <Input v-model="spec.unit" placeholder="可选" />
                   </AdminFormField>
@@ -121,15 +178,15 @@
                   <AdminFormField
                     v-if="spec.field_type === 'select'"
                     label="固定选项"
-                    required
+                    :required="!usesProductScopedOptions(spec)"
                     class="sm:col-span-2"
                     :error="errors[`spec:${index}:options`]"
-                    description="只填写所有该类型产品共用的选项；每行一个。"
+                    :description="usesProductScopedOptions(spec) ? '颜色/图片 SKU 选项可留空，具体颜色或图片在商品编辑页维护。' : '只填写所有该类型产品共用的选项；每行一个。'"
                   >
                     <Textarea
                       v-model="spec.optionsText"
                       class="min-h-12 font-mono text-xs"
-                      placeholder="每行一个全类型共用选项，例如：Black&#10;White"
+                      :placeholder="usesProductScopedOptions(spec) ? '可选：全类型共用颜色，例如 Black\nWhite' : '每行一个全类型共用选项，例如：Black\nWhite'"
                       @input="emit('clear-error', `spec:${index}:options`)"
                     />
                   </AdminFormField>
@@ -170,7 +227,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle, Plus, SlidersHorizontal, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -186,23 +243,52 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import type { LanguageOption } from '@/lib/languages'
+import type {
+  ProductSpecificSpecPredicate,
+  ProductTypeDialogMode,
+  ProductTypeForm,
+  ProductTypeFormErrors,
+  ProductTypeSpecForm,
+  ProductTypeTranslationForm
+} from './productTypeTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
-  errors: { type: Object, default: () => ({}) },
-  submitting: { type: Boolean, default: false },
-  showSpecAdvanced: { type: Boolean, default: false },
-  isProductSpecificSelect: { type: Function, required: true },
+const props = withDefaults(defineProps<{
+  open?: boolean
+  mode?: ProductTypeDialogMode
+  form: ProductTypeForm
+  errors?: ProductTypeFormErrors
+  submitting?: boolean
+  showSpecAdvanced?: boolean
+  isProductSpecificSelect: ProductSpecificSpecPredicate
+  languageOptions?: LanguageOption[]
+}>(), {
+  open: false,
+  mode: 'create',
+  errors: () => ({}),
+  submitting: false,
+  showSpecAdvanced: false,
+  languageOptions: () => []
 })
 
-const emit = defineEmits([
-  'update:open',
-  'update:showSpecAdvanced',
-  'submit',
-  'clear-error',
-  'add-spec',
-  'remove-spec',
-])
+const languageLabel = (locale: string): string => (
+  props.languageOptions.find((option) => option.value === locale)?.label || locale
+)
+const filledTranslationCount = (translations: ProductTypeTranslationForm[]): number => (
+  translations.filter((translation) => translation.name.trim()).length
+)
+const usesProductScopedOptions = (spec: ProductTypeSpecForm): boolean => (
+  spec.field_type === 'select' &&
+  spec.is_variant_option &&
+  (spec.presentation === 'color' || spec.presentation === 'image')
+)
+
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:showSpecAdvanced', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', key: string): void
+  (event: 'add-spec'): void
+  (event: 'remove-spec', index: number): void
+}>()
 </script>

@@ -20,7 +20,7 @@
       </div>
     </template>
 
-    <Table class="min-w-[1160px]">
+    <Table class="min-w-[1220px]">
       <TableHeader>
         <TableRow>
           <TableHead class="w-11">
@@ -31,7 +31,7 @@
             />
           </TableHead>
           <TableHead class="w-16">ID</TableHead>
-          <TableHead class="w-36">SKU</TableHead>
+          <TableHead class="w-56">SKU</TableHead>
           <TableHead class="w-20">图片</TableHead>
           <TableHead>商品名称</TableHead>
           <TableHead class="w-32">价格</TableHead>
@@ -60,16 +60,36 @@
             />
           </TableCell>
           <TableCell class="font-mono text-[10px] font-bold text-muted-foreground">{{ product.id }}</TableCell>
-          <TableCell class="font-mono text-[11px] font-bold text-muted-foreground/80">{{ product.sku || '-' }}</TableCell>
+          <TableCell class="max-w-56">
+            <div v-if="skuEntries(product).length" class="flex max-w-56 flex-wrap gap-1" :title="skuTitle(product)">
+              <span
+                v-for="entry in skuEntries(product)"
+                :key="entry.sku"
+                :class="[
+                  'max-w-full break-all rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-bold leading-tight',
+                  entry.isDefault
+                    ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected'
+                    : entry.isInactive
+                      ? 'border-border/50 bg-muted/30 text-muted-foreground/60'
+                      : 'border-border bg-muted/40 text-muted-foreground',
+                ]"
+              >
+                {{ entry.sku }}
+                <span v-if="entry.isDefault" class="ml-1 text-[9px] font-black">默认</span>
+                <span v-else-if="entry.isInactive" class="ml-1 text-[9px] font-black">停用</span>
+              </span>
+            </div>
+            <span v-else class="font-mono text-[11px] font-bold text-muted-foreground/80">-</span>
+          </TableCell>
           <TableCell>
             <ProductThumbnail :product="product" />
           </TableCell>
           <TableCell class="max-w-72 truncate font-bold text-xs">{{ product.name }}</TableCell>
           <TableCell>
             <div class="flex items-baseline gap-1.5 tabular-nums">
-              <span v-if="product.sale_price" class="font-mono text-xs font-bold text-destructive">¥{{ formatMoney(product.sale_price) }}</span>
+              <span v-if="product.sale_price" class="font-mono text-xs font-bold text-destructive">{{ formatMoney(product.sale_price, product.currency) }}</span>
               <span :class="product.sale_price ? 'font-mono text-[10px] text-muted-foreground/70 line-through' : 'font-mono text-xs font-bold'">
-                ¥{{ formatMoney(product.price) }}
+                {{ formatMoney(product.price, product.currency) }}
               </span>
             </div>
           </TableCell>
@@ -136,10 +156,10 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { CircleCheck, CircleOff, Globe2, MoreHorizontal, PackageOpen, Pencil, Star, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import ProductThumbnail from '@/components/admin/product/ProductThumbnail.vue'
 import { Button } from '@/components/ui/button'
@@ -152,35 +172,88 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { ProductPagination, ProductRecord } from './productEditorTypes'
 
-const props = defineProps({
-  loading: { type: Boolean, default: false },
-  products: { type: Array, default: () => [] },
-  selectedProducts: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  selectionState: { type: [Boolean, String], default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  canSyncGoogle: { type: Boolean, default: false },
-  localeName: { type: Function, required: true },
+type SelectionState = boolean | 'indeterminate'
+type ProductStatusAction = 'active' | 'inactive'
+interface ProductSkuEntry {
+  sku: string
+  isDefault: boolean
+  isInactive: boolean
+}
+
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  products?: ProductRecord[]
+  selectedProducts?: ProductRecord[]
+  pagination: ProductPagination
+  selectionState?: SelectionState
+  canEdit?: boolean
+  canDelete?: boolean
+  canSyncGoogle?: boolean
+  localeName: (locale?: string) => string
+}>(), {
+  loading: false,
+  products: () => [],
+  selectedProducts: () => [],
+  selectionState: false,
+  canEdit: false,
+  canDelete: false,
+  canSyncGoogle: false,
 })
 
-const emit = defineEmits([
-  'batch-status',
-  'batch-delete',
-  'toggle-all-products',
-  'toggle-product',
-  'edit',
-  'sync-google',
-  'toggle-status',
-  'delete',
-  'update-page',
-  'update-page-size',
-])
+const emit = defineEmits<{
+  (event: 'batch-status', status: ProductStatusAction): void
+  (event: 'batch-delete'): void
+  (event: 'toggle-all-products', value: SelectionState): void
+  (event: 'toggle-product', product: ProductRecord, value: SelectionState): void
+  (event: 'edit', product: ProductRecord): void
+  (event: 'sync-google', product: ProductRecord): void
+  (event: 'toggle-status', product: ProductRecord): void
+  (event: 'delete', product: ProductRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 
-const isProductSelected = (productId) => props.selectedProducts.some((product) => product.id === productId)
-const getStatusName = (status) => ({ active: '在售', inactive: '下架', out_of_stock: '缺货' })[status] || status
-const statusTone = (status) => ({ active: 'green', inactive: 'gray', out_of_stock: 'coral' })[status] || 'gray'
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
-const formatMoney = (amount) => Number(amount || 0).toFixed(2)
+const isProductSelected = (productId: ProductRecord['id']): boolean => props.selectedProducts.some((product) => product.id === productId)
+const getStatusName = (status?: string): string => ({ active: '在售', inactive: '下架', out_of_stock: '缺货' } as Record<string, string>)[status || ''] || status || '-'
+const statusTone = (status?: string): AdminStatusTone => ({ active: 'green', inactive: 'gray', out_of_stock: 'coral' } as Record<string, AdminStatusTone>)[status || ''] || 'gray'
+const skuEntries = (product: ProductRecord): ProductSkuEntry[] => {
+  const variants = Array.isArray(product.variants) ? product.variants : []
+  const entries: ProductSkuEntry[] = []
+  const seen = new Set<string>()
+
+  for (const variant of variants) {
+    const sku = String(variant?.sku || '').trim()
+    if (!sku || seen.has(sku)) continue
+    seen.add(sku)
+    entries.push({
+      sku,
+      isDefault: variant?.is_default === true || sku === product.sku,
+      isInactive: variant?.is_active === false,
+    })
+  }
+
+  const fallbackSku = String(product.sku || '').trim()
+  if (fallbackSku && !seen.has(fallbackSku)) {
+    entries.unshift({ sku: fallbackSku, isDefault: true, isInactive: false })
+  }
+
+  return entries
+}
+const skuTitle = (product: ProductRecord): string => {
+  return skuEntries(product)
+    .map((entry) => `${entry.sku}${entry.isDefault ? ' (默认)' : entry.isInactive ? ' (停用)' : ''}`)
+    .join('\n')
+}
+const formatDate = (dateString: unknown): string => dateString ? new Date(dateString as string | number | Date).toLocaleString('zh-CN') : '-'
+const formatMoney = (amount: unknown, currency = 'USD'): string => {
+  const normalizedCurrency = String(currency || 'USD').trim().toUpperCase()
+  const value = Number(amount || 0)
+  try {
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: normalizedCurrency }).format(value)
+  } catch {
+    return `${normalizedCurrency} ${value.toFixed(2)}`
+  }
+}
 </script>

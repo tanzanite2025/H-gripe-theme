@@ -101,7 +101,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import {
   Activity,
@@ -132,6 +132,33 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useRouteTab } from '@/composables/useRouteTab'
 import axios from '@/utils/axios'
+import type {
+  VisitorRiskDecisionPayload,
+  VisitorRiskFact,
+  VisitorProfile,
+} from '@/components/admin/visitor/visitorTypes'
+
+interface VisitorProfileStats {
+  total?: number
+  active_count?: number
+  candidate_count?: number
+  email_count?: number
+  cart_linked_count?: number
+  customer_service_count?: number
+  region_count?: number
+  recent_24h_count?: number
+}
+
+interface VisitorRiskStats {
+  total_facts?: number
+  watch_count?: number
+  suspicious_count?: number
+  request_count?: number
+  invalid_request_count?: number
+  bot_like_user_agent_count?: number
+  no_cookie_request_count?: number
+  meaningful_action_count?: number
+}
 
 const activeTab = useRouteTab({
   defaultValue: 'profiles',
@@ -143,11 +170,11 @@ const activeTab = useRouteTab({
 })
 const loading = ref(false)
 const riskLoading = ref(false)
-const profiles = ref([])
-const riskFacts = ref([])
-const selectedProfile = ref(null)
-const stats = ref({})
-const riskStats = ref({})
+const profiles = ref<VisitorProfile[]>([])
+const riskFacts = ref<VisitorRiskFact[]>([])
+const selectedProfile = ref<VisitorProfile | null>(null)
+const stats = ref<VisitorProfileStats>({})
+const riskStats = ref<VisitorRiskStats>({})
 const filters = reactive({
   search: '',
   identity: 'all',
@@ -169,8 +196,8 @@ const riskFilters = reactive({
 })
 const riskPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 
-const apiData = (response) => response.data?.data ?? response.data ?? {}
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+const apiData = (response: any) => response.data?.data ?? response.data ?? {}
+const formatDate = (dateString?: string | number | Date | null) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 const currentLoading = computed(() => activeTab.value === 'risk' ? riskLoading.value : loading.value)
 const cleanupLabel = computed(() => activeTab.value === 'risk' ? '清理风险数据' : '清理过期画像')
 
@@ -292,7 +319,7 @@ const fetchRiskStats = async () => {
   }
 }
 
-const submitRiskDecision = async (fact, payload) => {
+const submitRiskDecision = async (fact: VisitorRiskFact, payload: VisitorRiskDecisionPayload) => {
   await axios.post(`/api/admin/customer-service/visitor-risk-facts/${fact.id}/decision`, payload)
   await refreshRiskFacts()
 }
@@ -343,11 +370,11 @@ const resetFilters = () => {
   pagination.page = 1
   fetchProfiles()
 }
-const updatePage = (page) => {
+const updatePage = (page: number) => {
   pagination.page = page
   fetchProfiles()
 }
-const updatePageSize = (pageSize) => {
+const updatePageSize = (pageSize: number) => {
   pagination.pageSize = pageSize
   pagination.page = 1
   fetchProfiles()
@@ -366,11 +393,11 @@ const resetRiskFilters = () => {
   riskPagination.page = 1
   refreshRiskFacts()
 }
-const updateRiskPage = (page) => {
+const updateRiskPage = (page: number) => {
   riskPagination.page = page
   fetchRiskFacts()
 }
-const updateRiskPageSize = (pageSize) => {
+const updateRiskPageSize = (pageSize: number) => {
   riskPagination.pageSize = pageSize
   riskPagination.page = 1
   fetchRiskFacts()

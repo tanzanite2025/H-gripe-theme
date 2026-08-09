@@ -15,7 +15,6 @@ type MarketingService struct {
 	redemptionRepo *repository.GiftCardRedemptionRepository
 	setting        *SettingService
 	program        *LoyaltyProgramService
-	currencyPolicy *CurrencyPolicyService
 }
 
 func isDefaultMemberLevelName(name string) bool {
@@ -81,7 +80,6 @@ func (s *MarketingService) ConfigureGiftCardRedemptions(repo *repository.GiftCar
 }
 
 func (s *MarketingService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
-	s.currencyPolicy = policy
 }
 
 func (s *MarketingService) ListLoyaltyTransactions(userID uint, page, pageSize int) ([]loyalty.LoyaltyTransaction, int64, error) {

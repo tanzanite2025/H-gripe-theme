@@ -1,9 +1,9 @@
 <template>
   <section
-    class="mt-4 rounded-2xl bg-slate-950/60 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+    class="premium-card mt-4 rounded-2xl p-4"
   >
     <div class="mb-3 flex flex-col gap-1">
-      <h3 class="text-sm font-semibold text-slate-100">
+      <h3 class="text-sm font-semibold tz-text-primary">
         Global partnership network  Xiamen origin
       </h3>
       <p class="text-xs tz-text-secondary">

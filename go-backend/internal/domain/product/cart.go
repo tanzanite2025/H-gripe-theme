@@ -30,6 +30,7 @@ type CartItem struct {
 	VariantID *uint           `gorm:"not null;index;uniqueIndex:idx_cart_product_variant" json:"variant_id"`
 	Quantity  int             `gorm:"not null" json:"quantity"`
 	Price     float64         `gorm:"not null" json:"price"` // 快照价格
+	Currency  string          `gorm:"size:3;not null;default:'USD'" json:"currency"`
 	Product   *Product        `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	Variant   *ProductVariant `gorm:"foreignKey:VariantID" json:"variant,omitempty"`
 	CreatedAt time.Time       `json:"created_at"`

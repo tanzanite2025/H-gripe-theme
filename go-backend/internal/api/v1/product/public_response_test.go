@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"tanzanite/internal/domain/currency"
 	productdomain "tanzanite/internal/domain/product"
 )
 
@@ -104,6 +105,212 @@ func TestPublicProductFromDomainStatusOverridesSkuAvailability(t *testing.T) {
 				t.Fatalf("public product response exposes exact inventory: %s", payload)
 			}
 		})
+	}
+}
+
+func TestPublicProductTypeUsesRequestedTranslationWithEnglishFallback(t *testing.T) {
+	item := productdomain.Product{
+		ProductType: &productdomain.ProductType{
+			Name: "Wheelset",
+			Translations: []productdomain.ProductTypeTranslation{
+				{Locale: "en", Name: "Wheelset"},
+				{Locale: "zh_cn", Name: "轮组"},
+			},
+		},
+	}
+
+	translated := PublicProductFromDomainWithLocale(item, "", "zh_cn")
+	if translated.ProductType == nil || translated.ProductType.Name != "轮组" {
+		t.Fatalf("expected zh_cn product type translation, got %#v", translated.ProductType)
+	}
+
+	fallback := PublicProductFromDomainWithLocale(item, "", "fr")
+	if fallback.ProductType == nil || fallback.ProductType.Name != "Wheelset" {
+		t.Fatalf("expected English product type fallback, got %#v", fallback.ProductType)
+	}
+}
+
+func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *testing.T) {
+	optionValueID := uint(81)
+	item := productdomain.Product{
+		ID:     71,
+		SKU:    "VISUAL-PRODUCT",
+		Name:   "Visual Product",
+		Slug:   "visual-product",
+		Status: "active",
+		ProductType: &productdomain.ProductType{
+			Name: "Finish Product",
+			Slug: "finish_product",
+			SpecDefinitions: []productdomain.SpecDefinition{
+				{
+					ID:              7,
+					Group:           "Appearance",
+					Name:            "Finish",
+					Slug:            "finish",
+					FieldType:       "select",
+					Presentation:    "color",
+					IsVariantOption: true,
+					IsVisible:       true,
+					SortOrder:       10,
+				},
+			},
+		},
+		VariantOptionValues: []productdomain.ProductVariantOptionValue{
+			{
+				ID:               optionValueID,
+				SpecDefinitionID: 7,
+				ValueKey:         "ruby_red",
+				Label:            "Ruby Red",
+				ColorHex:         "#8F2028",
+				SwatchURL:        "/uploads/swatches/ruby-red.webp",
+				SortOrder:        10,
+				IsEnabled:        true,
+			},
+		},
+		Media: []productdomain.ProductMedia{
+			{
+				ID:                   91,
+				MediaType:            "image",
+				Role:                 "gallery",
+				VariantOptionValueID: &optionValueID,
+				URL:                  "/uploads/products/ruby-red.webp",
+				IsVisible:            true,
+			},
+		},
+		Variants: []productdomain.ProductVariant{
+			{
+				ID:           72,
+				SKU:          "VISUAL-RUBY-001",
+				OptionValues: `{"finish":"ruby_red"}`,
+				Price:        399,
+				Stock:        5,
+				IsDefault:    true,
+				IsActive:     true,
+			},
+		},
+	}
+
+	publicProduct := PublicProductFromDomain(item)
+
+	if len(publicProduct.VariantOptionValues) != 1 {
+		t.Fatalf("expected one public option value, got %#v", publicProduct.VariantOptionValues)
+	}
+	option := publicProduct.VariantOptionValues[0]
+	if option.SpecSlug != "finish" || option.ValueKey != "ruby_red" || option.Label != "Ruby Red" {
+		t.Fatalf("unexpected public option metadata: %#v", option)
+	}
+	if option.ColorHex != "#8F2028" || option.SwatchURL != "/uploads/swatches/ruby-red.webp" {
+		t.Fatalf("expected public swatch metadata, got %#v", option)
+	}
+	if len(publicProduct.Media) != 1 {
+		t.Fatalf("expected one public media item, got %#v", publicProduct.Media)
+	}
+	if publicProduct.Media[0].VariantOptionValueID == nil || *publicProduct.Media[0].VariantOptionValueID != optionValueID {
+		t.Fatalf("expected media to expose variant option value reference, got %#v", publicProduct.Media[0])
+	}
+	if publicProduct.ProductType == nil || len(publicProduct.ProductType.SpecDefinitions) != 1 || publicProduct.ProductType.SpecDefinitions[0].Presentation != "color" {
+		t.Fatalf("expected public product type to expose color presentation, got %#v", publicProduct.ProductType)
+	}
+}
+
+func TestPublicProductDisplayPriceDoesNotUseRuntimeConversion(t *testing.T) {
+	salePrice := 80.0
+	item := productdomain.Product{
+		ID:       41,
+		SKU:      "DISPLAY-CURRENCY-PRODUCT",
+		Name:     "Display Currency Product",
+		Slug:     "display-currency-product",
+		Currency: "USD",
+		Price:    120,
+		Status:   "active",
+		Variants: []productdomain.ProductVariant{
+			{
+				ID:        42,
+				SKU:       "DISPLAY-CURRENCY-VAR",
+				Title:     "Default",
+				Currency:  "EUR",
+				Price:     100,
+				SalePrice: &salePrice,
+				Stock:     4,
+				IsDefault: true,
+				IsActive:  true,
+			},
+		},
+	}
+
+	publicProduct := PublicProductFromDomainWithDisplayCurrency(item, "CNY")
+
+	if publicProduct.Currency != "EUR" {
+		t.Fatalf("expected public catalog currency to follow purchasable variant, got %q", publicProduct.Currency)
+	}
+	if publicProduct.Price != 100 {
+		t.Fatalf("expected public price to follow purchasable variant, got %.2f", publicProduct.Price)
+	}
+	if publicProduct.SalePrice == nil || *publicProduct.SalePrice != 80 {
+		t.Fatalf("expected public sale price to follow purchasable variant, got %#v", publicProduct.SalePrice)
+	}
+	if publicProduct.DisplayPrice != nil {
+		t.Fatalf("expected product display price to require a stored snapshot, got %#v", publicProduct.DisplayPrice)
+	}
+	if publicProduct.Variants[0].Currency != "EUR" || publicProduct.Variants[0].Price != 100 {
+		t.Fatalf("expected variant truth price to remain unchanged, got %#v", publicProduct.Variants[0])
+	}
+	if publicProduct.Variants[0].DisplayPrice != nil {
+		t.Fatalf("expected variant display price to require a stored snapshot, got %#v", publicProduct.Variants[0].DisplayPrice)
+	}
+}
+
+func TestPublicProductDisplayPriceUsesStoredSnapshotForRequestedCurrency(t *testing.T) {
+	displayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
+		{
+			Amount:        96.8,
+			Currency:      "USD",
+			QuoteCurrency: "USD",
+			Rate:          0.1385,
+			Source:        "direct_rate",
+			Converted:     true,
+		},
+	}, "CNY")
+	item := productdomain.Product{
+		ID:               51,
+		SKU:              "SNAPSHOT-PRODUCT",
+		Name:             "Snapshot Product",
+		Slug:             "snapshot-product",
+		Currency:         "CNY",
+		Price:            699,
+		DisplayPriceData: displayPrices,
+		Status:           "active",
+		Variants: []productdomain.ProductVariant{
+			{
+				ID:               52,
+				SKU:              "SNAPSHOT-VAR",
+				Title:            "Default",
+				Currency:         "CNY",
+				Price:            699,
+				DisplayPriceData: displayPrices,
+				Stock:            4,
+				IsDefault:        true,
+				IsActive:         true,
+			},
+		},
+	}
+
+	publicProduct := PublicProductFromDomainWithDisplayCurrency(item, "USD")
+
+	if publicProduct.DisplayPrice == nil {
+		t.Fatal("expected product display price from stored snapshot")
+	}
+	if publicProduct.DisplayPrice.Currency != "USD" || publicProduct.DisplayPrice.Amount != 96.8 {
+		t.Fatalf("expected stored USD display price, got %#v", publicProduct.DisplayPrice)
+	}
+	if len(publicProduct.DisplayPrices) != 1 || publicProduct.DisplayPrices[0].QuoteCurrency != "USD" {
+		t.Fatalf("expected product display_prices to include stored USD snapshot, got %#v", publicProduct.DisplayPrices)
+	}
+	if len(publicProduct.Variants) != 1 || publicProduct.Variants[0].DisplayPrice == nil {
+		t.Fatalf("expected variant display price from stored snapshot, got %#v", publicProduct.Variants)
+	}
+	if publicProduct.Variants[0].DisplayPrice.Currency != "USD" || publicProduct.Variants[0].DisplayPrice.Amount != 96.8 {
+		t.Fatalf("expected variant stored USD display price, got %#v", publicProduct.Variants[0].DisplayPrice)
 	}
 }
 

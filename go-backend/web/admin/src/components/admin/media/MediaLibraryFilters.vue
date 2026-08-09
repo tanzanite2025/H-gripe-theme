@@ -3,9 +3,9 @@
     <CardContent class="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_10rem_10rem]">
       <div class="relative min-w-0">
         <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input :model-value="search" class="pl-8" placeholder="搜索文件名、ALT、说明或 URL" @update:model-value="emit('update:search', $event)" @keyup.enter="emit('apply')" />
+        <Input :model-value="search" class="pl-8" placeholder="搜索文件名、ALT、说明或 URL" @update:model-value="(value) => emit('update:search', String(value))" @keyup.enter="emit('apply')" />
       </div>
-      <Select :model-value="mediaType" @update:model-value="emit('update:media-type', $event)">
+      <Select :model-value="mediaType" @update:model-value="(value) => emit('update:media-type', String(value))">
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">全部类型</SelectItem>
@@ -13,7 +13,7 @@
           <SelectItem value="video">视频</SelectItem>
         </SelectContent>
       </Select>
-      <Select :model-value="status" @update:model-value="emit('update:status', $event)">
+      <Select :model-value="status" @update:model-value="(value) => emit('update:status', String(value))">
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">全部状态</SelectItem>
@@ -38,7 +38,7 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RefreshCw, Search } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -46,13 +46,26 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-defineProps({
-  search: { type: String, default: '' },
-  mediaType: { type: String, default: 'all' },
-  status: { type: String, default: 'all' },
-  total: { type: Number, default: 0 },
-  loading: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  search?: string
+  mediaType?: string
+  status?: string
+  total?: number
+  loading?: boolean
+}>(), {
+  search: '',
+  mediaType: 'all',
+  status: 'all',
+  total: 0,
+  loading: false
 })
 
-const emit = defineEmits(['update:search', 'update:media-type', 'update:status', 'apply', 'reset', 'refresh'])
+const emit = defineEmits<{
+  (event: 'update:search', value: string): void
+  (event: 'update:media-type', value: string): void
+  (event: 'update:status', value: string): void
+  (event: 'apply'): void
+  (event: 'reset'): void
+  (event: 'refresh'): void
+}>()
 </script>

@@ -59,25 +59,40 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Eye, ScrollText } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  AuditLogDateFormatter,
+  AuditLogDurationClassResolver,
+  AuditLogLabelResolver,
+  AuditLogPagination,
+  AuditLogRecord,
+  AuditLogToneResolver
+} from './auditLogTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  logs: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  actionName: { type: Function, required: true },
-  actionTone: { type: Function, required: true },
-  resourceName: { type: Function, required: true },
-  methodTone: { type: Function, required: true },
-  durationClass: { type: Function, required: true },
-  formatDate: { type: Function, required: true }
+withDefaults(defineProps<{
+  loading?: boolean
+  logs?: AuditLogRecord[]
+  pagination: AuditLogPagination
+  actionName: AuditLogLabelResolver
+  actionTone: AuditLogToneResolver
+  resourceName: AuditLogLabelResolver
+  methodTone: AuditLogToneResolver
+  durationClass: AuditLogDurationClassResolver
+  formatDate: AuditLogDateFormatter
+}>(), {
+  loading: false,
+  logs: () => []
 })
 
-const emit = defineEmits(['view-detail', 'update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'view-detail', log: AuditLogRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from '#imports'
+import { useI18n } from 'vue-i18n'
 import { ref } from 'vue'
 
 export interface ShopCategory {
@@ -45,11 +46,17 @@ const extractProductTypes = (payload: unknown): ShopCategory[] => {
 
 export const useShopCategories = () => {
   const config = useRuntimeConfig()
+  const { locale } = useI18n()
   const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
   const categories = ref<ShopCategory[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const source = ref<ShopCategorySource>('empty')
+
+  const categoryRequestHeaders = () => {
+    const currentLocale = String(locale.value || '').trim()
+    return currentLocale ? { 'Accept-Language': currentLocale } : undefined
+  }
 
   const applyDevFallback = (reason: string) => {
     // 仅本地开发兜底：生产环境必须暴露真实空分类或接口错误，避免示例分类污染商品事实源。
@@ -70,7 +77,9 @@ export const useShopCategories = () => {
     error.value = null
 
     try {
-      const response = await $fetch<unknown>(`${baseURL}/products/types`)
+      const response = await $fetch<unknown>(`${baseURL}/products/types`, {
+        headers: categoryRequestHeaders(),
+      })
       const productTypes = extractProductTypes(response)
       if (productTypes.length) {
         categories.value = productTypes

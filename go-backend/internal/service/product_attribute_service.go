@@ -14,12 +14,21 @@ import (
 var productTypeSlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:[_-][a-z0-9]+)*$`)
 
 type ProductTypeInput struct {
-	Name            string
-	Slug            string
-	Description     string
-	SortOrder       int
-	IsEnabled       bool
-	SpecDefinitions []ProductSpecDefinitionInput
+	Name               string
+	Slug               string
+	Description        string
+	SortOrder          int
+	IsEnabled          bool
+	Translations       []ProductTypeTranslationInput
+	UpdateTranslations bool
+	SpecDefinitions    []ProductSpecDefinitionInput
+}
+
+type ProductTypeTranslationInput struct {
+	ID          uint
+	Locale      string
+	Name        string
+	Description string
 }
 
 type ProductSpecDefinitionInput struct {
@@ -28,6 +37,7 @@ type ProductSpecDefinitionInput struct {
 	Name            string
 	Slug            string
 	FieldType       string
+	Presentation    string
 	Unit            string
 	IsRequired      bool
 	IsFilterable    bool
@@ -165,7 +175,7 @@ func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*pr
 	}
 	sort.Slice(removedIDs, func(i, j int) bool { return removedIDs[i] < removedIDs[j] })
 
-	if err := s.productRepo.UpdateProductType(productType, removedIDs); err != nil {
+	if err := s.productRepo.UpdateProductType(productType, removedIDs, input.UpdateTranslations); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrProductTypeNotFound
 		}
@@ -199,6 +209,11 @@ func normalizeProductTypeInput(input ProductTypeInput) (*product.ProductType, er
 		return nil, fmt.Errorf("%w: slug must use lowercase letters, numbers, dashes, or underscores", ErrProductTypeInvalid)
 	}
 
+	translations, err := normalizeProductTypeTranslations(input.Translations)
+	if err != nil {
+		return nil, err
+	}
+
 	definitions := make([]product.SpecDefinition, 0, len(input.SpecDefinitions))
 	seenIDs := make(map[uint]struct{}, len(input.SpecDefinitions))
 	seenSlugs := make(map[string]struct{}, len(input.SpecDefinitions))
@@ -226,8 +241,45 @@ func normalizeProductTypeInput(input ProductTypeInput) (*product.ProductType, er
 		Description:     strings.TrimSpace(input.Description),
 		SortOrder:       input.SortOrder,
 		IsEnabled:       input.IsEnabled,
+		Translations:    translations,
 		SpecDefinitions: definitions,
 	}, nil
+}
+
+func normalizeProductTypeTranslations(input []ProductTypeTranslationInput) ([]product.ProductTypeTranslation, error) {
+	if input == nil {
+		return nil, nil
+	}
+
+	result := make([]product.ProductTypeTranslation, 0, len(input))
+	seenLocales := make(map[string]struct{}, len(input))
+	for index, item := range input {
+		locale, err := requireSupportedLocale(item.Locale)
+		if err != nil {
+			return nil, fmt.Errorf("%w: translation %d has invalid locale", ErrProductTypeTranslationInvalid, index+1)
+		}
+
+		name := strings.TrimSpace(item.Name)
+		if name == "" {
+			return nil, fmt.Errorf("%w: translation %d requires a name", ErrProductTypeTranslationInvalid, index+1)
+		}
+		if len(name) > 120 {
+			return nil, fmt.Errorf("%w: translation %d name is too long", ErrProductTypeTranslationInvalid, index+1)
+		}
+		if _, exists := seenLocales[locale]; exists {
+			return nil, fmt.Errorf("%w: duplicate locale %q", ErrProductTypeTranslationInvalid, locale)
+		}
+		seenLocales[locale] = struct{}{}
+
+		result = append(result, product.ProductTypeTranslation{
+			ID:          item.ID,
+			Locale:      locale,
+			Name:        name,
+			Description: strings.TrimSpace(item.Description),
+		})
+	}
+
+	return result, nil
 }
 
 func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (product.SpecDefinition, error) {
@@ -247,11 +299,24 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 		return product.SpecDefinition{}, fmt.Errorf("%w: unsupported field type %q", ErrProductSpecInvalid, fieldType)
 	}
 
+	presentation := strings.ToLower(strings.TrimSpace(input.Presentation))
+	if presentation == "" {
+		presentation = "text"
+	}
+	if presentation != "text" && presentation != "color" && presentation != "image" {
+		return product.SpecDefinition{}, fmt.Errorf("%w: unsupported presentation %q", ErrProductSpecInvalid, presentation)
+	}
+	if presentation != "text" && (!input.IsVariantOption || fieldType != "select") {
+		return product.SpecDefinition{}, fmt.Errorf("%w: color/image presentation requires a select SKU option", ErrProductSpecInvalid)
+	}
+
 	options := strings.TrimSpace(input.Options)
 	if fieldType == "select" {
 		var values []string
-		if err := json.Unmarshal([]byte(options), &values); err != nil || len(values) == 0 {
-			return product.SpecDefinition{}, fmt.Errorf("%w: select specification %q requires options", ErrProductSpecInvalid, slug)
+		if options != "" {
+			if err := json.Unmarshal([]byte(options), &values); err != nil {
+				return product.SpecDefinition{}, fmt.Errorf("%w: select specification %q requires valid options", ErrProductSpecInvalid, slug)
+			}
 		}
 		cleaned := make([]string, 0, len(values))
 		seen := make(map[string]struct{}, len(values))
@@ -267,10 +332,15 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 			cleaned = append(cleaned, value)
 		}
 		if len(cleaned) == 0 {
-			return product.SpecDefinition{}, fmt.Errorf("%w: select specification %q requires options", ErrProductSpecInvalid, slug)
+			if input.IsVariantOption && presentation != "text" {
+				options = "[]"
+			} else {
+				return product.SpecDefinition{}, fmt.Errorf("%w: select specification %q requires options", ErrProductSpecInvalid, slug)
+			}
+		} else {
+			encoded, _ := json.Marshal(cleaned)
+			options = string(encoded)
 		}
-		encoded, _ := json.Marshal(cleaned)
-		options = string(encoded)
 	} else {
 		options = ""
 	}
@@ -290,6 +360,7 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 		Name:            name,
 		Slug:            slug,
 		FieldType:       fieldType,
+		Presentation:    presentation,
 		Unit:            strings.TrimSpace(input.Unit),
 		IsRequired:      input.IsRequired,
 		IsFilterable:    input.IsFilterable,

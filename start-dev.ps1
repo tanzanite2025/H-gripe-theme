@@ -215,14 +215,33 @@ function Show-LogTail([string]$Path) {
   }
 }
 
+function Clear-StorefrontIconCache {
+  $cachePath = Join-Path $Root 'nuxt-i18n/.nuxt/cache/nuxt/icon'
+  if (-not (Test-Path -LiteralPath $cachePath)) {
+    return
+  }
+
+  $resolvedRoot = (Resolve-Path -LiteralPath $Root).Path
+  $resolvedCache = (Resolve-Path -LiteralPath $cachePath).Path
+  if (-not $resolvedCache.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Warn "Skipping Nuxt Icon cache outside repository: $resolvedCache"
+    return
+  }
+
+  Remove-Item -LiteralPath $resolvedCache -Recurse -Force -ErrorAction SilentlyContinue
+  Write-Ok 'Cleared Nuxt Icon cache'
+}
+
 function Wait-DevHttpReady(
   [string]$Name,
   [System.Diagnostics.Process]$Process,
   [string]$Url,
   [string]$ErrorLog,
-  [int]$TimeoutSeconds
+  [int]$TimeoutSeconds,
+  [int]$RequestTimeoutSeconds = 5
 ) {
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  $lastError = $null
   while ((Get-Date) -lt $deadline) {
     $Process.Refresh()
     if ($Process.HasExited) {
@@ -232,15 +251,19 @@ function Wait-DevHttpReady(
     }
 
     try {
-      Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 2 | Out-Null
+      Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $RequestTimeoutSeconds | Out-Null
       Write-Ok "$Name is reachable: $Url"
       return $true
     } catch {
+      $lastError = $_.Exception.Message
       Start-Sleep -Seconds 1
     }
   }
 
   Write-Warn "$Name is not reachable yet: $Url"
+  if (-not [string]::IsNullOrWhiteSpace($lastError)) {
+    Write-Warn "Last check error: $lastError"
+  }
   Write-Warn "Check log: $ErrorLog"
   return $false
 }
@@ -351,6 +374,7 @@ if ($apiReady) {
 }
 
 Write-Section 'Starting Nuxt Storefront'
+Clear-StorefrontIconCache
 $storefrontCommand = @"
 `$env:NUXT_PUBLIC_API_BASE='http://localhost:$($Ports.Api)'
 `$env:API_INTERNAL_ORIGIN='http://localhost:$($Ports.Api)'
@@ -361,7 +385,7 @@ npm run dev
 "@
 $storefrontProcess = Start-DevProcess -Name 'Nuxt Storefront' -WorkingDirectory (Join-Path $Root 'nuxt-i18n') -Command $storefrontCommand -LogName 'storefront'
 $storefrontErrorLog = Join-Path $LogDir 'storefront.err.log'
-if (-not (Wait-DevHttpReady -Name 'Nuxt Storefront' -Process $storefrontProcess -Url "http://localhost:$($Ports.Storefront)" -ErrorLog $storefrontErrorLog -TimeoutSeconds 90)) {
+if (-not (Wait-DevHttpReady -Name 'Nuxt Storefront' -Process $storefrontProcess -Url "http://localhost:$($Ports.Storefront)" -ErrorLog $storefrontErrorLog -TimeoutSeconds 120 -RequestTimeoutSeconds 15)) {
   exit 1
 }
 

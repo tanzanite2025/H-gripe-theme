@@ -105,7 +105,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Info, LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -114,19 +114,58 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  form: { type: Object, required: true },
-  candidates: { type: Array, default: () => [] },
-  selectedCandidate: { type: Object, default: null },
-  groups: { type: Array, default: () => [] },
-  loadingCandidates: { type: Boolean, default: false },
-  saving: { type: Boolean, default: false },
+interface PublicChatAgentForm {
+  user_id: string | number | null
+  status: string
+  online_status: string
+  agent_id: string
+  name: string
+  email: string
+  whatsapp: string
+  avatar: string
+  group_ids: Array<string | number>
+}
+
+interface PublicChatCandidate {
+  user_id: string | number
+  display_name?: string
+  username?: string
+  email?: string
+  normalized_role?: string
+  raw_role?: string
+  has_profile?: boolean
+}
+
+interface PublicChatGroup {
+  id: string | number
+  name: string
+  code: string
+  status: string
+}
+
+const props = withDefaults(defineProps<{
+  open?: boolean
+  form: PublicChatAgentForm
+  candidates?: PublicChatCandidate[]
+  selectedCandidate?: PublicChatCandidate | null
+  groups?: PublicChatGroup[]
+  loadingCandidates?: boolean
+  saving?: boolean
+}>(), {
+  open: false,
+  candidates: () => [],
+  selectedCandidate: null,
+  groups: () => [],
+  loadingCandidates: false,
+  saving: false,
 })
 
-const emit = defineEmits(['update:open', 'save'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'save'): void
+}>()
 
-const candidateLabel = (candidate) => {
+const candidateLabel = (candidate: PublicChatCandidate): string => {
   const name = candidate.display_name || candidate.username || candidate.email || `User #${candidate.user_id}`
   const role = candidate.normalized_role || candidate.raw_role || 'unknown'
   const profileSuffix = candidate.has_profile ? ' · 已有 Profile' : ''

@@ -33,26 +33,22 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
+import type { PaymentRiskProviderReport, PaymentRiskReports, PaymentRiskSnapshot } from './paymentRiskTypes'
 
-const props = defineProps({
-  reports: {
-    type: Object,
-    default: () => ({}),
-  },
-  enabled: {
-    type: Boolean,
-    default: false,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
+const props = withDefaults(defineProps<{
+  reports?: PaymentRiskReports
+  enabled?: boolean
+  loading?: boolean
+}>(), {
+  reports: () => ({}),
+  enabled: false,
+  loading: false,
 })
 
 const providers = computed(() => ['stripe', 'paypal'].map((key) => {
-  const report = props.reports?.[key] || null
+  const report: PaymentRiskProviderReport | null = props.reports?.[key] || null
   const snapshot = report?.snapshot || null
   return {
     key,
@@ -70,22 +66,22 @@ const providers = computed(() => ['stripe', 'paypal'].map((key) => {
   }
 }))
 
-const formatCount = (value) => Number(value || 0).toLocaleString('zh-CN')
-const formatPercent = (value) => `${(Number(value || 0) * 100).toFixed(2)}%`
-const formatPeriod = (snapshot) => {
+const formatCount = (value: unknown): string => Number(value || 0).toLocaleString('zh-CN')
+const formatPercent = (value: unknown): string => `${(Number(value || 0) * 100).toFixed(2)}%`
+const formatPeriod = (snapshot?: PaymentRiskSnapshot | null): string => {
   if (!snapshot?.window_start || !snapshot?.window_end) return `${snapshot?.window_days || 30} 天窗口`
   const start = new Date(snapshot.window_start).toLocaleDateString('zh-CN')
   const end = new Date(snapshot.window_end).toLocaleDateString('zh-CN')
   return `${start} - ${end}`
 }
-const levelLabel = (level) => ({
+const levelLabel = (level?: string): string => ({
   normal: '正常',
   warning: '预警',
   critical: '严重',
-}[level] || '未计算')
-const levelClass = (level) => ({
+} as Record<string, string>)[level || ''] || '未计算'
+const levelClass = (level?: string): string => ({
   normal: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700',
   warning: 'border-amber-500/25 bg-amber-500/10 text-amber-700',
   critical: 'border-rose-500/25 bg-rose-500/10 text-rose-700',
-}[level] || 'border-border bg-muted text-muted-foreground')
+} as Record<string, string>)[level || ''] || 'border-border bg-muted text-muted-foreground'
 </script>

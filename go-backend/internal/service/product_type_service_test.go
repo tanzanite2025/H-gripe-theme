@@ -39,6 +39,66 @@ func TestProductServiceCreatesManagedProductType(t *testing.T) {
 	assert.True(t, created.SpecDefinitions[0].IsVisible)
 }
 
+func TestProductServiceCreatesVisualVariantOptionWithoutFixedTemplateOptions(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "Finish Product",
+		Slug:      "finish_product_template",
+		IsEnabled: true,
+		SpecDefinitions: []ProductSpecDefinitionInput{
+			{
+				Group:           "Appearance",
+				Name:            "Finish",
+				Slug:            "finish",
+				FieldType:       "select",
+				Presentation:    "color",
+				IsVisible:       true,
+				IsVariantOption: true,
+				SortOrder:       10,
+				Options:         "",
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, created.SpecDefinitions, 1)
+	assert.Equal(t, "color", created.SpecDefinitions[0].Presentation)
+	assert.JSONEq(t, `[]`, created.SpecDefinitions[0].Options)
+}
+
+func TestProductServicePersistsAndReplacesProductTypeTranslations(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "Wheelset",
+		Slug:      "wheelset_translation_test",
+		IsEnabled: true,
+		Translations: []ProductTypeTranslationInput{
+			{Locale: "en", Name: "Wheelset"},
+			{Locale: "zh-CN", Name: "轮组"},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, created.Translations, 2)
+	assert.Equal(t, "轮组", created.NameForLocale("zh_cn"))
+
+	updated, err := productService.UpdateProductType(created.ID, ProductTypeInput{
+		Name:               "Wheelset",
+		Slug:               "wheelset_translation_test",
+		IsEnabled:          true,
+		UpdateTranslations: true,
+		Translations: []ProductTypeTranslationInput{
+			{Locale: "en", Name: "Wheelset"},
+			{Locale: "fr", Name: "Jeu de roues"},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, updated.Translations, 2)
+	assert.Equal(t, "Wheelset", updated.NameForLocale("zh_cn"))
+	assert.Equal(t, "Jeu de roues", updated.NameForLocale("fr"))
+}
+
 func TestProductServiceUpdatesProductTypeAndReplacesSpecs(t *testing.T) {
 	_, productService := newTestProductService(t)
 	created, err := productService.CreateProductType(ProductTypeInput{

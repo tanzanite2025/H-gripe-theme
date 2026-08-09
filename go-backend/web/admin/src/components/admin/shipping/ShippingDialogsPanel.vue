@@ -100,7 +100,7 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import CarrierEditorDialog from '@/components/admin/shipping/CarrierEditorDialog.vue'
 import CarrierServiceEditorDialog from '@/components/admin/shipping/CarrierServiceEditorDialog.vue'
@@ -110,89 +110,130 @@ import ShippingTemplateEditorDialog from '@/components/admin/shipping/ShippingTe
 import ShippingZoneEditorDialog from '@/components/admin/shipping/ShippingZoneEditorDialog.vue'
 import TrackingCarrierMappingEditorDialog from '@/components/admin/shipping/TrackingCarrierMappingEditorDialog.vue'
 import TrackingProviderEditorDialog from '@/components/admin/shipping/TrackingProviderEditorDialog.vue'
+import type {
+  ShippingCarrier,
+  ShippingCarrierForm,
+  ShippingCarrierService,
+  ShippingCarrierServiceForm,
+  ShippingDialogMode,
+  ShippingErrorMap,
+  ShippingTemplate,
+  ShippingTemplateForm,
+  ShippingZone,
+  ShippingZoneForm,
+  PackagingRule,
+  PackagingRuleForm,
+  TrackingCarrierMapping,
+  TrackingCarrierMappingForm,
+  TrackingProvider,
+  TrackingProviderForm
+} from './shippingTypes'
 
-defineProps({
-  templates: { type: Array, default: () => [] },
-  carriers: { type: Array, default: () => [] },
-  carrierServices: { type: Array, default: () => [] },
-  trackingProviders: { type: Array, default: () => [] },
-
-  templateOpen: { type: Boolean, default: false },
-  templateMode: { type: String, default: 'create' },
-  templateSubmitting: { type: Boolean, default: false },
-  templateErrors: { type: Object, required: true },
-  templateForm: { type: Object, required: true },
-
-  zoneOpen: { type: Boolean, default: false },
-  zoneMode: { type: String, default: 'create' },
-  zoneSubmitting: { type: Boolean, default: false },
-  zoneErrors: { type: Object, required: true },
-  zoneForm: { type: Object, required: true },
-
-  carrierOpen: { type: Boolean, default: false },
-  carrierMode: { type: String, default: 'create' },
-  carrierSubmitting: { type: Boolean, default: false },
-  carrierErrors: { type: Object, required: true },
-  carrierForm: { type: Object, required: true },
-
-  carrierServiceOpen: { type: Boolean, default: false },
-  carrierServiceMode: { type: String, default: 'create' },
-  carrierServiceSubmitting: { type: Boolean, default: false },
-  carrierServiceErrors: { type: Object, required: true },
-  carrierServiceForm: { type: Object, required: true },
-
-  trackingProviderOpen: { type: Boolean, default: false },
-  trackingProviderMode: { type: String, default: 'create' },
-  trackingProviderSubmitting: { type: Boolean, default: false },
-  trackingProviderErrors: { type: Object, required: true },
-  trackingProviderForm: { type: Object, required: true },
-  trackingProviderWebhookUrl: { type: String, default: '' },
-
-  trackingCarrierMappingOpen: { type: Boolean, default: false },
-  trackingCarrierMappingMode: { type: String, default: 'create' },
-  trackingCarrierMappingSubmitting: { type: Boolean, default: false },
-  trackingCarrierMappingErrors: { type: Object, required: true },
-  trackingCarrierMappingForm: { type: Object, required: true },
-
-  packagingOpen: { type: Boolean, default: false },
-  packagingMode: { type: String, default: 'create' },
-  packagingSubmitting: { type: Boolean, default: false },
-  packagingErrors: { type: Object, required: true },
-  packagingForm: { type: Object, required: true },
-
-  packagingAppliesOpen: { type: Boolean, default: false },
-  packagingAppliesRule: { type: Object, default: null },
-
-  deleteOpen: { type: Boolean, default: false },
-  deleteTitle: { type: String, default: '' },
-  deleteDescription: { type: String, default: '' },
+withDefaults(defineProps<{
+  templates?: ShippingTemplate[]
+  carriers?: ShippingCarrier[]
+  carrierServices?: ShippingCarrierService[]
+  trackingProviders?: TrackingProvider[]
+  templateOpen?: boolean
+  templateMode?: ShippingDialogMode
+  templateSubmitting?: boolean
+  templateErrors: ShippingErrorMap
+  templateForm: ShippingTemplateForm
+  zoneOpen?: boolean
+  zoneMode?: ShippingDialogMode
+  zoneSubmitting?: boolean
+  zoneErrors: ShippingErrorMap
+  zoneForm: ShippingZoneForm
+  carrierOpen?: boolean
+  carrierMode?: ShippingDialogMode
+  carrierSubmitting?: boolean
+  carrierErrors: ShippingErrorMap
+  carrierForm: ShippingCarrierForm
+  carrierServiceOpen?: boolean
+  carrierServiceMode?: ShippingDialogMode
+  carrierServiceSubmitting?: boolean
+  carrierServiceErrors: ShippingErrorMap
+  carrierServiceForm: ShippingCarrierServiceForm
+  trackingProviderOpen?: boolean
+  trackingProviderMode?: ShippingDialogMode
+  trackingProviderSubmitting?: boolean
+  trackingProviderErrors: ShippingErrorMap
+  trackingProviderForm: TrackingProviderForm
+  trackingProviderWebhookUrl?: string
+  trackingCarrierMappingOpen?: boolean
+  trackingCarrierMappingMode?: ShippingDialogMode
+  trackingCarrierMappingSubmitting?: boolean
+  trackingCarrierMappingErrors: ShippingErrorMap
+  trackingCarrierMappingForm: TrackingCarrierMappingForm
+  packagingOpen?: boolean
+  packagingMode?: ShippingDialogMode
+  packagingSubmitting?: boolean
+  packagingErrors: ShippingErrorMap
+  packagingForm: PackagingRuleForm
+  packagingAppliesOpen?: boolean
+  packagingAppliesRule?: PackagingRule | null
+  deleteOpen?: boolean
+  deleteTitle?: string
+  deleteDescription?: string
+}>(), {
+  templates: () => [],
+  carriers: () => [],
+  carrierServices: () => [],
+  trackingProviders: () => [],
+  templateOpen: false,
+  templateMode: 'create',
+  templateSubmitting: false,
+  zoneOpen: false,
+  zoneMode: 'create',
+  zoneSubmitting: false,
+  carrierOpen: false,
+  carrierMode: 'create',
+  carrierSubmitting: false,
+  carrierServiceOpen: false,
+  carrierServiceMode: 'create',
+  carrierServiceSubmitting: false,
+  trackingProviderOpen: false,
+  trackingProviderMode: 'create',
+  trackingProviderSubmitting: false,
+  trackingProviderWebhookUrl: '',
+  trackingCarrierMappingOpen: false,
+  trackingCarrierMappingMode: 'create',
+  trackingCarrierMappingSubmitting: false,
+  packagingOpen: false,
+  packagingMode: 'create',
+  packagingSubmitting: false,
+  packagingAppliesOpen: false,
+  packagingAppliesRule: null,
+  deleteOpen: false,
+  deleteTitle: '',
+  deleteDescription: '',
 })
 
-const emit = defineEmits([
-  'update:templateOpen',
-  'update:zoneOpen',
-  'update:carrierOpen',
-  'update:carrierServiceOpen',
-  'update:trackingProviderOpen',
-  'update:trackingCarrierMappingOpen',
-  'update:packagingOpen',
-  'update:packagingAppliesOpen',
-  'update:deleteOpen',
-  'save-template',
-  'save-zone',
-  'save-carrier',
-  'save-carrier-service',
-  'save-tracking-provider',
-  'save-tracking-carrier-mapping',
-  'save-packaging-rule',
-  'clear-template-error',
-  'clear-zone-error',
-  'clear-carrier-error',
-  'clear-carrier-service-error',
-  'clear-tracking-provider-error',
-  'clear-tracking-carrier-mapping-error',
-  'clear-packaging-error',
-  'packaging-applies-updated',
-  'confirm-delete',
-])
+const emit = defineEmits<{
+  (event: 'update:templateOpen', value: boolean): void
+  (event: 'update:zoneOpen', value: boolean): void
+  (event: 'update:carrierOpen', value: boolean): void
+  (event: 'update:carrierServiceOpen', value: boolean): void
+  (event: 'update:trackingProviderOpen', value: boolean): void
+  (event: 'update:trackingCarrierMappingOpen', value: boolean): void
+  (event: 'update:packagingOpen', value: boolean): void
+  (event: 'update:packagingAppliesOpen', value: boolean): void
+  (event: 'update:deleteOpen', value: boolean): void
+  (event: 'save-template'): void
+  (event: 'save-zone'): void
+  (event: 'save-carrier'): void
+  (event: 'save-carrier-service'): void
+  (event: 'save-tracking-provider'): void
+  (event: 'save-tracking-carrier-mapping'): void
+  (event: 'save-packaging-rule'): void
+  (event: 'clear-template-error', field: unknown): void
+  (event: 'clear-zone-error', field: unknown): void
+  (event: 'clear-carrier-error', field: unknown): void
+  (event: 'clear-carrier-service-error', field: unknown): void
+  (event: 'clear-tracking-provider-error', field: unknown): void
+  (event: 'clear-tracking-carrier-mapping-error', field: unknown): void
+  (event: 'clear-packaging-error', field: unknown): void
+  (event: 'packaging-applies-updated'): void
+  (event: 'confirm-delete'): void
+}>()
 </script>

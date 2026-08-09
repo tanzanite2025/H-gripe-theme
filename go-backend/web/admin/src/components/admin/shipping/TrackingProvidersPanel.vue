@@ -107,7 +107,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Copy, Pencil, Plus, Radar, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -121,14 +121,26 @@ import {
   trackingProviderHasWebhookSecret,
   trackingWebhookUrl,
 } from '@/lib/shippingPresentation'
+import type { TrackingProvider } from './shippingTypes'
 
-defineProps({
-  trackingProviders: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  trackingProviders?: TrackingProvider[]
+  loading?: boolean
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  trackingProviders: () => [],
+  loading: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits(['create', 'edit', 'delete', 'copy-webhook'])
+const emit = defineEmits<{
+  (event: 'create'): void
+  (event: 'edit', provider: TrackingProvider): void
+  (event: 'delete', provider: TrackingProvider): void
+  (event: 'copy-webhook', provider: TrackingProvider): void
+}>()
 </script>

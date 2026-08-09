@@ -27,22 +27,17 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 
-defineProps({
-  loading: {
-    type: Boolean,
-    default: false
-  },
-  batchVisible: {
-    type: Boolean,
-    default: false
-  },
-  scrollBody: {
-    type: Boolean,
-    default: false
-  }
+withDefaults(defineProps<{
+  loading?: boolean
+  batchVisible?: boolean
+  scrollBody?: boolean
+}>(), {
+  loading: false,
+  batchVisible: false,
+  scrollBody: false
 })
 </script>

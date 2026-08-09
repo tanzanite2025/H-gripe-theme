@@ -36,6 +36,9 @@ func LoadConfigFromEnv(gatewayType GatewayType) *Config {
 		if config.SecretKey == "" {
 			config.SecretKey = os.Getenv("PAYPAL_SECRET")
 		}
+		if config.WebhookSecret == "" {
+			config.WebhookSecret = os.Getenv("PAYPAL_WEBHOOK_ID")
+		}
 		if config.Environment == "" || config.Environment == "sandbox" {
 			config.Environment = getEnv("PAYPAL_MODE", config.Environment)
 		}

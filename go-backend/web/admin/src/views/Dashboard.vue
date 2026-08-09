@@ -39,7 +39,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -58,6 +58,16 @@ import DashboardHeader from '@/components/admin/dashboard/DashboardHeader.vue'
 import DashboardMetricGrid from '@/components/admin/dashboard/DashboardMetricGrid.vue'
 import DashboardQuickActionsPanel from '@/components/admin/dashboard/DashboardQuickActionsPanel.vue'
 import DashboardSalesChartPanel from '@/components/admin/dashboard/DashboardSalesChartPanel.vue'
+import type {
+  DashboardActivity,
+  DashboardMetricCard,
+  DashboardQuickAction,
+  DashboardRecentOrder,
+  DashboardRecentTicket,
+  DashboardRecentUser,
+  DashboardSalesChartResponse,
+  DashboardStats
+} from '@/components/admin/dashboard/dashboardTypes'
 import {
   buildSalesChartOption,
   currentDashboardDate,
@@ -76,17 +86,17 @@ import axios from '@/utils/axios'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const stats = ref({})
+const stats = ref<DashboardStats>({})
 const chartLoading = ref(false)
-const chartOption = ref(null)
-const recentOrders = ref([])
-const recentUsers = ref([])
-const recentTickets = ref([])
-const activeActivity = ref('orders')
+const chartOption = ref<any>(null)
+const recentOrders = ref<DashboardRecentOrder[]>([])
+const recentUsers = ref<DashboardRecentUser[]>([])
+const recentTickets = ref<DashboardRecentTicket[]>([])
+const activeActivity = ref<DashboardActivity>('orders')
 
 const currentDate = currentDashboardDate()
 
-const metricCards = computed(() => [
+const metricCards = computed<DashboardMetricCard[]>(() => [
   {
     key: 'orders',
     label: '总订单数',
@@ -129,7 +139,7 @@ const metricCards = computed(() => [
   }
 ])
 
-const quickActions = [
+const quickActions: DashboardQuickAction[] = [
   { label: '添加商品', path: '/catalog/products', permission: 'product:create', icon: PackagePlus, tone: 'blue' },
   { label: '查看订单', path: '/orders', permission: 'order:view', icon: ShoppingCart, tone: 'green' },
   { label: '后台账号', path: '/access/admin-users', permission: 'user:view', icon: Users, tone: 'amber' },
@@ -143,15 +153,17 @@ const visibleQuickActions = computed(() =>
   quickActions.filter((action) => authStore.hasPermission(action.permission))
 )
 
-const navigateTo = (path) => router.push(path)
+const navigateTo = (path: string): void => {
+  void router.push(path)
+}
 
-const notifyLoadFailure = () => {
+const notifyLoadFailure = (): void => {
   toast.error('部分仪表盘数据加载失败', { id: 'dashboard-load-error' })
 }
 
-const fetchStats = async () => {
+const fetchStats = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/dashboard/stats')
+    const response = await axios.get<DashboardStats>('/api/admin/dashboard/stats')
     stats.value = response.data
   } catch (error) {
     console.error('Failed to fetch stats:', error)
@@ -159,10 +171,10 @@ const fetchStats = async () => {
   }
 }
 
-const fetchSalesChart = async () => {
+const fetchSalesChart = async (): Promise<void> => {
   chartLoading.value = true
   try {
-    const response = await axios.get('/api/admin/dashboard/sales-chart')
+    const response = await axios.get<DashboardSalesChartResponse>('/api/admin/dashboard/sales-chart')
     const data = response.data.data || []
     chartOption.value = buildSalesChartOption(data)
   } catch (error) {
@@ -173,9 +185,9 @@ const fetchSalesChart = async () => {
   }
 }
 
-const fetchRecentOrders = async () => {
+const fetchRecentOrders = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/dashboard/recent-orders')
+    const response = await axios.get<{ orders?: DashboardRecentOrder[] }>('/api/admin/dashboard/recent-orders')
     if (!response.data || !Array.isArray(response.data.orders)) {
       throw new Error('[CRITICAL] Missing orders array in response')
     }
@@ -186,9 +198,9 @@ const fetchRecentOrders = async () => {
   }
 }
 
-const fetchRecentUsers = async () => {
+const fetchRecentUsers = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/dashboard/recent-users')
+    const response = await axios.get<{ users?: DashboardRecentUser[] }>('/api/admin/dashboard/recent-users')
     if (!response.data || !Array.isArray(response.data.users)) {
       throw new Error('[CRITICAL] Missing users array in response')
     }
@@ -199,9 +211,9 @@ const fetchRecentUsers = async () => {
   }
 }
 
-const fetchRecentTickets = async () => {
+const fetchRecentTickets = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/dashboard/recent-tickets')
+    const response = await axios.get<{ tickets?: DashboardRecentTicket[] }>('/api/admin/dashboard/recent-tickets')
     if (!response.data || !Array.isArray(response.data.tickets)) {
       throw new Error('[CRITICAL] Missing tickets array in response')
     }
@@ -213,10 +225,10 @@ const fetchRecentTickets = async () => {
 }
 
 onMounted(() => {
-  fetchStats()
-  fetchSalesChart()
-  fetchRecentOrders()
-  fetchRecentUsers()
-  fetchRecentTickets()
+  void fetchStats()
+  void fetchSalesChart()
+  void fetchRecentOrders()
+  void fetchRecentUsers()
+  void fetchRecentTickets()
 })
 </script>

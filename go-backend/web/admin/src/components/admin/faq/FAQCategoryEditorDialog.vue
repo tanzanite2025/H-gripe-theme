@@ -19,14 +19,13 @@
             </Select>
           </AdminFormField>
           <AdminFormField label="语言" required description="跟随当前路由页面">
-            <Select v-model="categoryForm.locale" disabled>
-              <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
-                  {{ language.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <StorefrontLocaleSelect
+              v-model="categoryForm.locale"
+              :language-options="languageOptions"
+              disabled
+              locked
+              locked-title="跟随当前路由页面"
+            />
           </AdminFormField>
           <AdminFormField label="分类名称" required>
             <Input v-model="categoryForm.name" placeholder="Payment Methods" />
@@ -63,10 +62,12 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { LoaderCircle } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
+import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -78,20 +79,27 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { FAQCategoryDialogMode, FAQCategoryForm } from '@/composables/faq/useFaqStructure'
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, required: true },
-  categoryForm: { type: Object, required: true },
-  submitting: { type: Boolean, default: false },
-  structurePageOptions: { type: Array, required: true },
-  languageOptions: { type: Array, required: true }
+const props = withDefaults(defineProps<{
+  open?: boolean
+  mode: FAQCategoryDialogMode
+  categoryForm: FAQCategoryForm
+  submitting?: boolean
+  structurePageOptions: LanguageOption[]
+  languageOptions: LanguageOption[]
+}>(), {
+  open: false,
+  submitting: false
 })
 
-const emit = defineEmits(['update:open', 'submit'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+}>()
 
-const openModel = computed({
+const openModel = computed<boolean>({
   get: () => props.open,
-  set: (value) => emit('update:open', value)
+  set: (value: boolean) => emit('update:open', value)
 })
 </script>

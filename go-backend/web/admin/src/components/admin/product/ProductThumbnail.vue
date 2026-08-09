@@ -22,17 +22,19 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { ImageIcon, Video } from '@lucide/vue'
-import { getProductThumbnail } from '@/lib/productMedia'
+import {
+  getProductThumbnail,
+  type ProductThumbnail,
+  type ProductThumbnailProduct,
+} from '@/lib/productMedia'
 
-const props = defineProps({
-  product: {
-    type: Object,
-    required: true
-  }
-})
+interface ProductThumbnailProps {
+  product: ProductThumbnailProduct
+}
 
-const thumbnail = computed(() => getProductThumbnail(props.product))
+const props = defineProps<ProductThumbnailProps>()
+const thumbnail = computed<ProductThumbnail>(() => getProductThumbnail(props.product))
 </script>

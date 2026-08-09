@@ -20,15 +20,19 @@
                 <AdminFormField label="标题" required :error="errors.title">
                   <Input v-model="form.title" placeholder="请输入文章标题" @input="emit('clear-error', 'title')" />
                 </AdminFormField>
-                <AdminFormField label="语言" required :error="errors.locale">
-                  <Select v-model="form.locale">
-                    <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="language in languageOptions" :key="language.value" :value="language.value">
-                        {{ language.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                <AdminFormField
+                  label="语言"
+                  required
+                  :error="errors.locale"
+                  :description="mode === 'edit' ? '编辑文章时语言已锁定；如需其他语言，请新建对应语种文章。' : ''"
+                >
+                  <StorefrontLocaleSelect
+                    v-model="form.locale"
+                    :language-options="languageOptions"
+                    :disabled="mode === 'edit'"
+                    :locked="mode === 'edit'"
+                    locked-title="文章语言已锁定"
+                  />
                 </AdminFormField>
                 <AdminFormField label="Slug" required :error="errors.slug" class="md:col-span-2">
                   <Input v-model="form.slug" placeholder="例如 crystal-care-guide" @input="emit('clear-error', 'slug')" />
@@ -117,9 +121,11 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Image as ImageIcon, LoaderCircle } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
+import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -132,15 +138,26 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import type { ContentDialogMode, ContentFormErrors, ContentPostForm } from './contentTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
-  errors: { type: Object, default: () => ({}) },
-  submitting: { type: Boolean, default: false },
-  languageOptions: { type: Array, default: () => [] }
+withDefaults(defineProps<{
+  open?: boolean
+  mode?: ContentDialogMode
+  form: ContentPostForm
+  errors?: ContentFormErrors
+  submitting?: boolean
+  languageOptions?: LanguageOption[]
+}>(), {
+  open: false,
+  mode: 'create',
+  errors: () => ({}),
+  submitting: false,
+  languageOptions: () => []
 })
 
-const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', key: string): void
+}>()
 </script>

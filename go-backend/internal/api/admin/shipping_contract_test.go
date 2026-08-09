@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"tanzanite/internal/domain/currency"
 	shippingdomain "tanzanite/internal/domain/shipping"
 )
 
@@ -44,5 +45,63 @@ func TestTrackingCarrierMappingRequestPreservesProviderCarrierCode(t *testing.T)
 
 	if mapping.ProviderCarrierCode != req.ProviderCarrierCode {
 		t.Fatalf("expected provider carrier code to be preserved, got %q", mapping.ProviderCarrierCode)
+	}
+}
+
+func TestShippingTemplateRequestPersistsDisplayPriceSnapshotsByMoneyField(t *testing.T) {
+	req := shippingTemplateRequest{
+		Name:       "Display priced shipping",
+		Type:       "price",
+		DefaultFee: 20,
+		DisplayPriceSnapshots: map[string][]currency.DisplayPriceSnapshot{
+			"default_fee": {{Amount: 2.8, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+			"fee":         {{Amount: 99, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "invalid_scope", Converted: true}},
+		},
+		Rules: []shippingRuleRequest{
+			{
+				Region:   "us",
+				MinValue: 100,
+				Fee:      15,
+				DisplayPriceSnapshots: map[string][]currency.DisplayPriceSnapshot{
+					"min_value": {{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+					"fee":       {{Amount: 2.1, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+				},
+			},
+		},
+	}
+
+	template := req.toDomain()
+
+	templateSnapshots := currency.ParseDisplayPriceSnapshotMap(template.DisplayPriceData, shippingdomain.ShippingTemplateDisplayPriceFields...)
+	if len(templateSnapshots) != 1 || len(templateSnapshots["default_fee"]) != 1 {
+		t.Fatalf("expected template default_fee display snapshot only, got %#v", templateSnapshots)
+	}
+	ruleSnapshots := currency.ParseDisplayPriceSnapshotMap(template.Rules[0].DisplayPriceData, shippingdomain.ShippingRuleDisplayPriceFields...)
+	if len(ruleSnapshots) != 2 || len(ruleSnapshots["min_value"]) != 1 || len(ruleSnapshots["fee"]) != 1 {
+		t.Fatalf("expected rule min_value and fee display snapshots, got %#v", ruleSnapshots)
+	}
+}
+
+func TestShippingTemplateRequestDropsNonMoneyRuleThresholdSnapshots(t *testing.T) {
+	req := shippingTemplateRequest{
+		Name: "Weight shipping",
+		Type: "weight",
+		Rules: []shippingRuleRequest{
+			{
+				Region:   "us",
+				MinValue: 1,
+				Fee:      15,
+				DisplayPriceSnapshots: map[string][]currency.DisplayPriceSnapshot{
+					"min_value": {{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+					"fee":       {{Amount: 2.1, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+				},
+			},
+		},
+	}
+
+	template := req.toDomain()
+	ruleSnapshots := currency.ParseDisplayPriceSnapshotMap(template.Rules[0].DisplayPriceData, shippingdomain.ShippingRuleDisplayPriceFields...)
+	if len(ruleSnapshots) != 1 || len(ruleSnapshots["fee"]) != 1 {
+		t.Fatalf("expected only fee display snapshot for weight rule, got %#v", ruleSnapshots)
 	}
 }

@@ -79,7 +79,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Eye, MessagesSquare, MoreHorizontal, Trash2, UserRoundCog } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -93,22 +93,42 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  TicketAssigneeResolver,
+  TicketCustomerResolver,
+  TicketDateFormatter,
+  TicketLabelResolver,
+  TicketPagination,
+  TicketRecord,
+  TicketToneResolver
+} from './ticketTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  tickets: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  categoryName: { type: Function, required: true },
-  statusName: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  priorityName: { type: Function, required: true },
-  priorityTone: { type: Function, required: true },
-  customerName: { type: Function, required: true },
-  assigneeName: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+withDefaults(defineProps<{
+  loading?: boolean
+  tickets?: TicketRecord[]
+  pagination: TicketPagination
+  canEdit?: boolean
+  canDelete?: boolean
+  categoryName: TicketLabelResolver
+  statusName: TicketLabelResolver
+  statusTone: TicketToneResolver
+  priorityName: TicketLabelResolver
+  priorityTone: TicketToneResolver
+  customerName: TicketCustomerResolver
+  assigneeName: TicketAssigneeResolver
+  formatDate: TicketDateFormatter
+}>(), {
+  loading: false,
+  tickets: () => [],
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits(['view', 'assign', 'delete', 'update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'view', ticket: TicketRecord): void
+  (event: 'assign', ticket: TicketRecord): void
+  (event: 'delete', ticket: TicketRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

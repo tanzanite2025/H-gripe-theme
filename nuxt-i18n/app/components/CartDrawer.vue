@@ -68,7 +68,7 @@
                   {{ item.title }}
                 </h3>
                 <p class="text-sm font-semibold text-white mt-2">
-                  {{ formatPrice(item.price) }}
+                  {{ formatPrice(item.price, item.currency) }}
                 </p>
 
                 <!-- 数量控制 -->
@@ -158,11 +158,15 @@
             </div>
             <div class="flex justify-between text-sm">
               <span class="tz-text-secondary">{{ t('cartDrawer.summary.tax') }}</span>
-              <span class="font-medium text-white">{{ formatPrice(tax) }}</span>
+              <span class="font-medium text-white text-right">
+                {{ t('cartDrawer.summary.calculatedAtCheckout') }}
+              </span>
             </div>
             <div class="flex justify-between text-base font-semibold pt-2 border-t border-white/10">
               <span class="text-white">{{ t('cartDrawer.summary.estimatedTotal') }}</span>
-              <span class="text-white">{{ formatPrice(total) }}</span>
+              <span class="text-white text-right">
+                {{ t('cartDrawer.summary.calculatedAtCheckout') }}
+              </span>
             </div>
           </div>
 
@@ -170,18 +174,21 @@
             {{ t('cartDrawer.summary.finalShippingNote') }}
           </p>
 
-          <div class="flex gap-3">
+          <div class="grid gap-3 sm:grid-cols-2">
             <button
-              @click="closeCart"
+              type="button"
               class="w-full px-4 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
+              @click="closeCart"
             >
               {{ t('cartDrawer.actions.continueShopping') }}
             </button>
             <button
-              @click="openCheckout"
-              class="w-full px-4 py-3 border border-white bg-white text-black rounded-lg hover:bg-white/90 transition-colors font-semibold"
+              type="button"
+              class="w-full px-4 py-3 rounded-lg bg-white text-slate-900 transition-colors font-semibold hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="!cartItems.length"
+              @click="() => openCheckout()"
             >
-              {{ t('cartDrawer.actions.checkout', 'Checkout') }}
+              {{ t('checkout.modal.actions.checkout', 'Checkout') }}
             </button>
           </div>
         </div>
@@ -204,8 +211,6 @@ const {
   cartVariant,
   cartCount,
   subtotal,
-  tax,
-  total,
   closeCart,
   openCheckout,
   updateQuantity,
@@ -253,6 +258,10 @@ const onQuantityInput = (id: number, event: Event) => {
   background-image: none !important;
 }
 
+.cart-drawer-shell > .wa-drawer-header {
+  flex: 0 0 auto;
+}
+
 @supports (height: 100dvh) {
   .cart-drawer-shell {
     height: min(92dvh, var(--tz-mobile-safe-viewport-height, 92dvh));
@@ -265,14 +274,13 @@ const onQuantityInput = (id: number, event: Event) => {
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
   overflow: hidden;
 }
 
 .cart-drawer-cart-section {
-  flex: 1 1 58%;
-  min-height: 11rem;
-  max-height: 58%;
+  flex: 1 1 14rem;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -281,9 +289,10 @@ const onQuantityInput = (id: number, event: Event) => {
   height: 100%;
   min-height: 0;
   gap: 1rem;
+  align-items: flex-start;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0.125rem 0.125rem 0.65rem;
+  padding: 0.125rem 0.125rem 0.45rem;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.72) transparent;
@@ -301,18 +310,19 @@ const onQuantityInput = (id: number, event: Event) => {
 .cart-drawer-item-card {
   display: flex;
   flex: 0 0 min(82vw, 22rem);
+  align-self: flex-start;
   min-height: 0;
-  max-height: 100%;
+  height: 8.75rem;
+  max-height: none;
   gap: 1rem;
   overflow: hidden;
-  padding: 1rem;
+  padding: 0.8rem;
 }
 
 .cart-drawer-history-section {
-  flex: 0 1 38%;
-  min-height: 10rem;
-  max-height: 38%;
-  overflow: hidden;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 .cart-drawer-content--empty {
@@ -321,8 +331,8 @@ const onQuantityInput = (id: number, event: Event) => {
 
 .cart-drawer-empty-state {
   display: flex;
-  flex: 0 0 42%;
-  min-height: 10rem;
+  flex: 0 0 auto;
+  min-height: 12rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -331,17 +341,20 @@ const onQuantityInput = (id: number, event: Event) => {
 }
 
 .cart-drawer-history-section--empty {
-  flex: 1 1 auto;
-  max-height: none;
+  flex: 0 0 auto;
 }
 
 .cart-drawer-summary {
   flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 0.9rem 1.5rem 1rem;
 }
 
 @media (min-width: 768px) {
   .cart-drawer-shell {
-    width: min(96vw, 1400px);
+    width: 90vw;
+    max-width: 90vw;
     height: min(92vh, 1040px);
     max-height: 92vh;
   }
@@ -354,7 +367,8 @@ const onQuantityInput = (id: number, event: Event) => {
   }
 
   .cart-drawer-content {
-    gap: 1.15rem;
+    gap: 0.95rem;
+    padding: 1rem 1.5rem;
   }
 
   .cart-drawer-item-card {
@@ -363,27 +377,52 @@ const onQuantityInput = (id: number, event: Event) => {
 }
 
 @media (max-width: 767px) {
+  .cart-drawer-shell {
+    width: 100%;
+    max-width: 100%;
+    height: calc(100vh - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
+    max-height: calc(100vh - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
+  }
+
+  @supports (height: 100svh) {
+    .cart-drawer-shell {
+      height: calc(100svh - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
+      max-height: calc(100svh - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
+    }
+  }
+
+  @supports (height: 100dvh) {
+    .cart-drawer-shell {
+      height: calc(100dvh - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
+      max-height: calc(100dvh - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
+    }
+  }
+
   .cart-drawer-content {
-    gap: 0.75rem;
+    flex: 1 1 auto;
+    gap: 0.65rem;
     padding: 0.85rem;
   }
 
   .cart-drawer-cart-section {
-    min-height: 10rem;
+    min-height: 12rem;
   }
 
   .cart-drawer-history-section {
-    min-height: 9rem;
+    flex-basis: auto;
   }
 
   .cart-drawer-item-card {
     flex-basis: min(86vw, 21rem);
     gap: 0.75rem;
-    padding: 0.85rem;
+    height: 8rem;
+    padding: 0.7rem;
   }
 
   .cart-drawer-summary {
-    padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 1rem);
+    max-height: 42%;
+    overflow-y: auto;
+    padding: 0.8rem 0.85rem var(--tz-mobile-modal-safe-padding-bottom, 1rem);
   }
 }
 </style>

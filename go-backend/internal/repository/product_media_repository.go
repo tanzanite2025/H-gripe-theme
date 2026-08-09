@@ -12,6 +12,9 @@ func replaceProductMedia(tx *gorm.DB, productID uint, mediaItems []product.Produ
 	if err := tx.Where("product_id = ?", productID).Find(&existingItems).Error; err != nil {
 		return err
 	}
+	if err := ensureProductMediaReferencesBelongToProduct(tx, productID, mediaItems); err != nil {
+		return err
+	}
 
 	existingByID := make(map[uint]product.ProductMedia, len(existingItems))
 	for _, item := range existingItems {
@@ -43,4 +46,32 @@ func replaceProductMedia(tx *gorm.DB, productID uint, mediaItems []product.Produ
 		deleteQuery = deleteQuery.Where("id NOT IN ?", keepIDs)
 	}
 	return deleteQuery.Delete(&product.ProductMedia{}).Error
+}
+
+func ensureProductMediaReferencesBelongToProduct(tx *gorm.DB, productID uint, mediaItems []product.ProductMedia) error {
+	for i := range mediaItems {
+		if mediaItems[i].VariantID != nil {
+			var count int64
+			if err := tx.Model(&product.ProductVariant{}).
+				Where("id = ? AND product_id = ?", *mediaItems[i].VariantID, productID).
+				Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				return fmt.Errorf("%w: variant %d does not belong to product %d", ErrProductMediaReferenceInvalid, *mediaItems[i].VariantID, productID)
+			}
+		}
+		if mediaItems[i].VariantOptionValueID != nil {
+			var count int64
+			if err := tx.Model(&product.ProductVariantOptionValue{}).
+				Where("id = ? AND product_id = ?", *mediaItems[i].VariantOptionValueID, productID).
+				Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				return fmt.Errorf("%w: variant option value %d does not belong to product %d", ErrProductMediaReferenceInvalid, *mediaItems[i].VariantOptionValueID, productID)
+			}
+		}
+	}
+	return nil
 }

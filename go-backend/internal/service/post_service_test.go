@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"tanzanite/internal/domain/post"
@@ -91,6 +92,53 @@ func TestPostServicePublicTranslationsRequirePublishedPosts(t *testing.T) {
 
 	_, err = postService.GetPublicTranslations(draftTranslation.ID)
 	require.ErrorIs(t, err, ErrPostNotFound)
+}
+
+func TestPostServiceUpdateAdminPostRejectsLocaleChange(t *testing.T) {
+	db, postService := newTestPostService(t)
+
+	existingPost := post.Post{
+		Title:    "English",
+		Slug:     "english-post",
+		Content:  "<p>English</p>",
+		Status:   "published",
+		AuthorID: 1,
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&existingPost).Error)
+
+	nextLocale := "fr"
+	updatedPost, err := postService.UpdateAdminPost(existingPost.ID, PostUpdateInput{
+		Locale: &nextLocale,
+	})
+	require.Nil(t, updatedPost)
+	require.True(t, errors.Is(err, ErrPostLocaleImmutable))
+
+	storedPost, err := postService.GetAdminPost(existingPost.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "en", storedPost.Locale)
+}
+
+func TestPostServiceUpdateAdminPostAcceptsSameLocaleAlias(t *testing.T) {
+	db, postService := newTestPostService(t)
+
+	existingPost := post.Post{
+		Title:    "English",
+		Slug:     "english-alias-post",
+		Content:  "<p>English</p>",
+		Status:   "published",
+		AuthorID: 1,
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&existingPost).Error)
+
+	nextLocale := "en-US"
+	updatedPost, err := postService.UpdateAdminPost(existingPost.ID, PostUpdateInput{
+		Locale: &nextLocale,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, updatedPost)
+	assert.Equal(t, "en", updatedPost.Locale)
 }
 
 func newTestPostService(t *testing.T) (*gorm.DB, *PostService) {

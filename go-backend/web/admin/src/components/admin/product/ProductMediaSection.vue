@@ -112,6 +112,28 @@
                 </AdminFormField>
               </div>
 
+              <AdminFormField label="关联范围">
+                <Select :model-value="mediaScopeValue(mediaItem)" @update:model-value="setMediaScope(mediaItem, $event)">
+                  <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__product__">商品公共媒体</SelectItem>
+                    <SelectItem v-for="variant in persistedVariants" :key="`variant-${variant.id}`" :value="`variant:${variant.id}`">
+                      SKU：{{ variant.sku || variant.title || variant.id }}
+                    </SelectItem>
+                    <SelectItem
+                      v-for="option in enabledVariantOptionValues"
+                      :key="`option-${option.id}`"
+                      :value="`option:${option.id}`"
+                    >
+                      {{ optionDefinitionName(option) }}：{{ option.label || option.value_key }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p class="mt-1 text-[11px] leading-4 text-muted-foreground">
+                  可把同一组图片绑定到颜色选项，避免颜色 × 尺寸重复上传。
+                </p>
+              </AdminFormField>
+
               <AdminFormField label="媒体 URL" required>
                 <Input v-model="mediaItem.url" placeholder="上传后自动填充，也可粘贴外部 CDN URL" @input="emit('clear-error')" />
               </AdminFormField>
@@ -171,7 +193,8 @@
   </AdminFormSection>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from 'vue'
 import { ImageIcon, LoaderCircle, Plus, Star, Trash2, Video } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminFormSection from '@/components/admin/AdminFormSection.vue'
@@ -182,19 +205,53 @@ import {
   getProductMediaRoleOptions,
   getProductMediaTypeLabel,
 } from '@/lib/productMedia'
+import type {
+  ProductMediaForm,
+  ProductMediaType,
+  ProductSpecDefinition,
+  ProductVariantForm,
+  ProductVariantOptionValueForm,
+} from './productEditorTypes'
 
-defineProps({
-  mediaItems: { type: Array, default: () => [] },
-  uploading: { type: Boolean, default: false },
-  error: { type: String, default: '' },
+const props = withDefaults(defineProps<{
+  mediaItems?: ProductMediaForm[]
+  variants?: ProductVariantForm[]
+  variantOptionValues?: ProductVariantOptionValueForm[]
+  specDefinitions?: ProductSpecDefinition[]
+  uploading?: boolean
+  error?: string
+}>(), {
+  mediaItems: () => [],
+  variants: () => [],
+  variantOptionValues: () => [],
+  specDefinitions: () => [],
+  uploading: false,
+  error: '',
 })
 
-const emit = defineEmits([
-  'upload',
-  'add-url',
-  'clear-error',
-  'set-primary',
-  'move',
-  'remove',
-])
+const emit = defineEmits<{
+  (event: 'upload', value: Event, mediaType: ProductMediaType): void
+  (event: 'add-url', mediaType: ProductMediaType): void
+  (event: 'clear-error'): void
+  (event: 'set-primary', index: number): void
+  (event: 'move', index: number, direction: -1 | 1): void
+  (event: 'remove', index: number): void
+}>()
+
+const enabledVariantOptionValues = computed(() => props.variantOptionValues.filter((item) => item?.is_enabled !== false && item?.id))
+const persistedVariants = computed(() => props.variants.filter((item) => Number(item?.id || 0) > 0))
+const optionDefinitionName = (option: ProductVariantOptionValueForm): string => {
+  const definition = props.specDefinitions.find((item) => Number(item?.id) === Number(option?.spec_definition_id))
+  return definition?.name || definition?.slug || '选项'
+}
+const mediaScopeValue = (item: ProductMediaForm): string => {
+  if (item?.variant_id) return `variant:${item.variant_id}`
+  if (item?.variant_option_value_id) return `option:${item.variant_option_value_id}`
+  return '__product__'
+}
+const setMediaScope = (item: ProductMediaForm, value: unknown): void => {
+  const raw = String(value || '')
+  item.variant_id = raw.startsWith('variant:') ? Number(raw.slice(8)) : null
+  item.variant_option_value_id = raw.startsWith('option:') ? Number(raw.slice(7)) : null
+}
 </script>

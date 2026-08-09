@@ -90,19 +90,48 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-defineProps({
-  filters: { type: Object, required: true },
-  assignableAgents: { type: Array, default: () => [] },
-  assignableGroups: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false },
+interface CustomerServiceFiltersState {
+  search: string
+  groupId: string
+  status: string
+  identity: string
+  assignedTo: string
+  unread: string
+  [key: string]: string
+}
+
+interface AssignableAgent {
+  id?: string | number
+  user_id?: string | number
+  name?: string
+  email?: string
+}
+
+interface AssignableGroup {
+  id: string | number
+  name: string
+}
+
+const props = withDefaults(defineProps<{
+  filters: CustomerServiceFiltersState
+  assignableAgents?: AssignableAgent[]
+  assignableGroups?: AssignableGroup[]
+  loading?: boolean
+}>(), {
+  assignableAgents: () => [],
+  assignableGroups: () => [],
+  loading: false,
 })
 
-const emit = defineEmits(['apply', 'reset'])
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
 </script>

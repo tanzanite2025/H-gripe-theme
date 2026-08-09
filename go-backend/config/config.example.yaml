@@ -90,6 +90,10 @@ cors:
     - "Content-Type"
     - "Accept-Language"
     - "X-CSRF-Token"
+    - "X-Locale"
+    - "X-Display-Currency"
+    - "X-Market-Country"
+    - "X-Country-Code"
   expose_headers:
     - "Content-Length"
   allow_credentials: true

@@ -49,7 +49,7 @@
           <div class="grid gap-3 sm:grid-cols-2">
             <label class="block space-y-1">
               <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">CARRIER / 本地承运商</span>
-              <Select v-model="statusForm.carrier_id" @update:model-value="emit('carrier-change', $event)">
+              <Select v-model="statusForm.carrier_id" @update:model-value="(value) => emit('carrier-change', String(value))">
                 <SelectTrigger class="w-full"><SelectValue placeholder="可选：选择承运商" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">不指定承运商</SelectItem>
@@ -62,7 +62,7 @@
 
             <label class="block space-y-1">
               <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SERVICE / 线路服务</span>
-              <Select v-model="statusForm.carrier_service_id" @update:model-value="emit('carrier-service-change', $event)">
+              <Select v-model="statusForm.carrier_service_id" @update:model-value="(value) => emit('carrier-service-change', String(value))">
                 <SelectTrigger class="w-full"><SelectValue placeholder="可选：选择线路服务" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">不指定线路服务</SelectItem>
@@ -92,7 +92,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -105,18 +105,39 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type {
+  OrderStatusForm,
+  OrderStatusOption,
+  ShippingCarrier,
+  ShippingCarrierService,
+  TrackingProvider
+} from './orderTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  statusForm: { type: Object, required: true },
-  editableOrderStatusOptions: { type: Array, default: () => [] },
-  editableShippingStatusOptions: { type: Array, default: () => [] },
-  trackingProviders: { type: Array, default: () => [] },
-  carriers: { type: Array, default: () => [] },
-  filteredStatusCarrierServices: { type: Array, default: () => [] },
-  resolvedProviderCarrierCodeLabel: { type: String, default: '未匹配映射' },
-  submitting: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  open?: boolean
+  statusForm: OrderStatusForm
+  editableOrderStatusOptions?: OrderStatusOption[]
+  editableShippingStatusOptions?: OrderStatusOption[]
+  trackingProviders?: TrackingProvider[]
+  carriers?: ShippingCarrier[]
+  filteredStatusCarrierServices?: ShippingCarrierService[]
+  resolvedProviderCarrierCodeLabel?: string
+  submitting?: boolean
+}>(), {
+  open: false,
+  editableOrderStatusOptions: () => [],
+  editableShippingStatusOptions: () => [],
+  trackingProviders: () => [],
+  carriers: () => [],
+  filteredStatusCarrierServices: () => [],
+  resolvedProviderCarrierCodeLabel: '未匹配映射',
+  submitting: false
 })
 
-const emit = defineEmits(['update:open', 'submit', 'carrier-change', 'carrier-service-change'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'carrier-change', value: string): void
+  (event: 'carrier-service-change', value: string): void
+}>()
 </script>

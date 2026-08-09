@@ -32,127 +32,137 @@ type Dependencies struct {
 }
 
 type Repositories struct {
-	User                *repository.UserRepository
-	Post                *repository.PostRepository
-	Product             *repository.ProductRepository
-	Cart                *repository.CartRepository
-	Setting             *repository.SettingRepository
-	FAQ                 *repository.FAQRepository
-	Order               *repository.OrderRepository
-	OrderAttribution    *repository.OrderAttributionRepository
-	Payment             *repository.PaymentRepository
-	PaymentRisk         *repository.PaymentRiskRepository
-	PaymentProtection   *repository.PaymentProtectionRepository
-	PaymentRefundReview *repository.PaymentRefundRecommendationRepository
-	PaymentRefundExec   *repository.PaymentRefundExecutionRepository
-	Shipping            *repository.ShippingRepository
-	Coupon              *repository.CouponRepository
-	Loyalty             *repository.LoyaltyRepository
-	LoyaltyProgram      *repository.LoyaltyProgramRepository
-	GiftCardRedemption  *repository.GiftCardRedemptionRepository
-	Review              *repository.ReviewRepository
-	Ticket              *repository.TicketRepository
-	Gallery             *repository.GalleryRepository
-	Media               *repository.MediaRepository
-	GoogleMerchant      *repository.GoogleMerchantRepository
-	Registration        *repository.RegistrationRepository
-	Audit               *repository.AuditRepository
-	Showcase            *repository.ShowcaseRepository
-	Wishlist            *repository.WishlistRepository
-	Feedback            *repository.FeedbackRepository
-	SuggestionFeedback  *repository.SuggestionFeedbackRepository
-	Spoke               *repository.SpokeRepository
-	Subscription        *repository.SubscriptionRepository
-	EmailChallenge      *repository.EmailChallengeRepository
-	VisitorProfile      *repository.VisitorProfileRepository
-	RecommendationEvent *repository.RecommendationEventRepository
-	VisitorRiskFact     *repository.VisitorRiskFactRepository
-	Outbox              *repository.OutboxRepository
+	User                       *repository.UserRepository
+	Post                       *repository.PostRepository
+	Product                    *repository.ProductRepository
+	ProductInformationTemplate *repository.ProductInformationTemplateRepository
+	Cart                       *repository.CartRepository
+	Setting                    *repository.SettingRepository
+	FAQ                        *repository.FAQRepository
+	Order                      *repository.OrderRepository
+	OrderAttribution           *repository.OrderAttributionRepository
+	Payment                    *repository.PaymentRepository
+	PaymentRisk                *repository.PaymentRiskRepository
+	PaymentProtection          *repository.PaymentProtectionRepository
+	PaymentRefundReview        *repository.PaymentRefundRecommendationRepository
+	PaymentRefundExec          *repository.PaymentRefundExecutionRepository
+	ExchangeRate               *repository.ExchangeRateRepository
+	Shipping                   *repository.ShippingRepository
+	Coupon                     *repository.CouponRepository
+	Loyalty                    *repository.LoyaltyRepository
+	LoyaltyProgram             *repository.LoyaltyProgramRepository
+	GiftCardRedemption         *repository.GiftCardRedemptionRepository
+	Review                     *repository.ReviewRepository
+	Ticket                     *repository.TicketRepository
+	Gallery                    *repository.GalleryRepository
+	Media                      *repository.MediaRepository
+	StorefrontMarket           *repository.StorefrontMarketRepository
+	GoogleMerchant             *repository.GoogleMerchantRepository
+	Registration               *repository.RegistrationRepository
+	Audit                      *repository.AuditRepository
+	Showcase                   *repository.ShowcaseRepository
+	Wishlist                   *repository.WishlistRepository
+	Feedback                   *repository.FeedbackRepository
+	SuggestionFeedback         *repository.SuggestionFeedbackRepository
+	Spoke                      *repository.SpokeRepository
+	Subscription               *repository.SubscriptionRepository
+	EmailChallenge             *repository.EmailChallengeRepository
+	VisitorProfile             *repository.VisitorProfileRepository
+	RecommendationEvent        *repository.RecommendationEventRepository
+	VisitorRiskFact            *repository.VisitorRiskFactRepository
+	Outbox                     *repository.OutboxRepository
 }
 
 type Services struct {
-	Auth                   *service.AuthService
-	Post                   *service.PostService
-	Product                *service.ProductService
-	Cart                   *service.CartService
-	Setting                *service.SettingService
-	AdminSettings          *service.AdminSettingsService
-	AdminPublicChat        *service.AdminPublicChatAgentService
-	FAQ                    *service.FAQService
-	Gallery                *service.GalleryService
-	Media                  *service.MediaService
-	Registration           *service.RegistrationService
-	Checkout               *service.CheckoutService
-	Order                  *service.OrderService
-	Payment                *service.PaymentService
-	Marketing              *service.MarketingService
-	LoyaltyProgram         *service.LoyaltyProgramService
-	Review                 *service.ReviewService
-	Ticket                 *service.TicketService
-	CustomerServiceContext *service.CustomerServiceContextService
-	CustomerServiceEvents  *service.CustomerServiceEventHub
-	Subscription           *service.SubscriptionService
-	Sitemap                *service.SitemapService
-	Showcase               *service.ShowcaseService
-	Wishlist               *service.WishlistService
-	Feedback               *service.FeedbackService
-	SuggestionFeedback     *service.SuggestionFeedbackService
-	User                   *service.UserService
-	Dashboard              *service.DashboardService
-	Audit                  *service.AuditService
-	Shipping               *service.ShippingService
-	Spoke                  *service.SpokeService
-	VisitorProfile         *service.VisitorProfileService
-	BehaviorEvents         *service.BehaviorEventService
-	Recommendations        *service.RecommendationService
-	VisitorRisk            *service.VisitorRiskService
-	PaymentRiskMonitoring  *service.PaymentRiskMonitoringService
-	PaymentProtection      *service.PaymentProtectionService
-	PaymentRefundReview    *service.PaymentRefundRecommendationService
-	PaymentThreeDS         *service.PaymentThreeDSPolicyService
-	Outbox                 *service.OutboxService
-	CurrencyPolicy         *service.CurrencyPolicyService
-	GoogleMerchant         *service.GoogleMerchantService
+	Auth                       *service.AuthService
+	Post                       *service.PostService
+	Product                    *service.ProductService
+	ProductInformationTemplate *service.ProductInformationTemplateService
+	Cart                       *service.CartService
+	Setting                    *service.SettingService
+	AdminSettings              *service.AdminSettingsService
+	AdminPublicChat            *service.AdminPublicChatAgentService
+	FAQ                        *service.FAQService
+	Gallery                    *service.GalleryService
+	Media                      *service.MediaService
+	Registration               *service.RegistrationService
+	Checkout                   *service.CheckoutService
+	Order                      *service.OrderService
+	Payment                    *service.PaymentService
+	Marketing                  *service.MarketingService
+	LoyaltyProgram             *service.LoyaltyProgramService
+	Review                     *service.ReviewService
+	Ticket                     *service.TicketService
+	CustomerServiceContext     *service.CustomerServiceContextService
+	CustomerServiceEvents      *service.CustomerServiceEventHub
+	Subscription               *service.SubscriptionService
+	Sitemap                    *service.SitemapService
+	Showcase                   *service.ShowcaseService
+	Wishlist                   *service.WishlistService
+	Feedback                   *service.FeedbackService
+	SuggestionFeedback         *service.SuggestionFeedbackService
+	User                       *service.UserService
+	Dashboard                  *service.DashboardService
+	Audit                      *service.AuditService
+	Shipping                   *service.ShippingService
+	Spoke                      *service.SpokeService
+	VisitorProfile             *service.VisitorProfileService
+	BehaviorEvents             *service.BehaviorEventService
+	Recommendations            *service.RecommendationService
+	VisitorRisk                *service.VisitorRiskService
+	PaymentRiskMonitoring      *service.PaymentRiskMonitoringService
+	PaymentProtection          *service.PaymentProtectionService
+	PaymentRefundReview        *service.PaymentRefundRecommendationService
+	PaymentThreeDS             *service.PaymentThreeDSPolicyService
+	Outbox                     *service.OutboxService
+	CurrencyPolicy             *service.CurrencyPolicyService
+	ExchangeRate               *service.ExchangeRateService
+	StorefrontMarket           *service.StorefrontMarketService
+	StorefrontContext          *service.StorefrontContextService
+	GoogleMerchant             *service.GoogleMerchantService
 }
 
 func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) (*Dependencies, error) {
 	repos := Repositories{
-		User:                repository.NewUserRepository(db),
-		Post:                repository.NewPostRepository(db),
-		Product:             repository.NewProductRepository(db),
-		Cart:                repository.NewCartRepository(db),
-		Setting:             repository.NewSettingRepository(db),
-		FAQ:                 repository.NewFAQRepository(db),
-		Order:               repository.NewOrderRepository(db),
-		OrderAttribution:    repository.NewOrderAttributionRepository(db),
-		Payment:             repository.NewPaymentRepository(db),
-		PaymentRisk:         repository.NewPaymentRiskRepository(db),
-		PaymentProtection:   repository.NewPaymentProtectionRepository(db),
-		PaymentRefundReview: repository.NewPaymentRefundRecommendationRepository(db),
-		PaymentRefundExec:   repository.NewPaymentRefundExecutionRepository(db),
-		Shipping:            repository.NewShippingRepository(db),
-		Coupon:              repository.NewCouponRepository(db),
-		Loyalty:             repository.NewLoyaltyRepository(db),
-		LoyaltyProgram:      repository.NewLoyaltyProgramRepository(db),
-		GiftCardRedemption:  repository.NewGiftCardRedemptionRepository(db),
-		Review:              repository.NewReviewRepository(db),
-		Ticket:              repository.NewTicketRepository(db),
-		Gallery:             repository.NewGalleryRepository(db),
-		Media:               repository.NewMediaRepository(db),
-		GoogleMerchant:      repository.NewGoogleMerchantRepository(db),
-		Registration:        repository.NewRegistrationRepository(db),
-		Audit:               repository.NewAuditRepository(db),
-		Showcase:            repository.NewShowcaseRepository(db),
-		Wishlist:            repository.NewWishlistRepository(db),
-		Feedback:            repository.NewFeedbackRepository(db),
-		SuggestionFeedback:  repository.NewSuggestionFeedbackRepository(db),
-		Spoke:               repository.NewSpokeRepository(db),
-		Subscription:        repository.NewSubscriptionRepository(db),
-		EmailChallenge:      repository.NewEmailChallengeRepository(db),
-		VisitorProfile:      repository.NewVisitorProfileRepository(db),
-		RecommendationEvent: repository.NewRecommendationEventRepository(db),
-		VisitorRiskFact:     repository.NewVisitorRiskFactRepository(db),
-		Outbox:              repository.NewOutboxRepository(db),
+		User:                       repository.NewUserRepository(db),
+		Post:                       repository.NewPostRepository(db),
+		Product:                    repository.NewProductRepository(db),
+		ProductInformationTemplate: repository.NewProductInformationTemplateRepository(db),
+		Cart:                       repository.NewCartRepository(db),
+		Setting:                    repository.NewSettingRepository(db),
+		FAQ:                        repository.NewFAQRepository(db),
+		Order:                      repository.NewOrderRepository(db),
+		OrderAttribution:           repository.NewOrderAttributionRepository(db),
+		Payment:                    repository.NewPaymentRepository(db),
+		PaymentRisk:                repository.NewPaymentRiskRepository(db),
+		PaymentProtection:          repository.NewPaymentProtectionRepository(db),
+		PaymentRefundReview:        repository.NewPaymentRefundRecommendationRepository(db),
+		PaymentRefundExec:          repository.NewPaymentRefundExecutionRepository(db),
+		ExchangeRate:               repository.NewExchangeRateRepository(db),
+		Shipping:                   repository.NewShippingRepository(db),
+		Coupon:                     repository.NewCouponRepository(db),
+		Loyalty:                    repository.NewLoyaltyRepository(db),
+		LoyaltyProgram:             repository.NewLoyaltyProgramRepository(db),
+		GiftCardRedemption:         repository.NewGiftCardRedemptionRepository(db),
+		Review:                     repository.NewReviewRepository(db),
+		Ticket:                     repository.NewTicketRepository(db),
+		Gallery:                    repository.NewGalleryRepository(db),
+		Media:                      repository.NewMediaRepository(db),
+		StorefrontMarket:           repository.NewStorefrontMarketRepository(db),
+		GoogleMerchant:             repository.NewGoogleMerchantRepository(db),
+		Registration:               repository.NewRegistrationRepository(db),
+		Audit:                      repository.NewAuditRepository(db),
+		Showcase:                   repository.NewShowcaseRepository(db),
+		Wishlist:                   repository.NewWishlistRepository(db),
+		Feedback:                   repository.NewFeedbackRepository(db),
+		SuggestionFeedback:         repository.NewSuggestionFeedbackRepository(db),
+		Spoke:                      repository.NewSpokeRepository(db),
+		Subscription:               repository.NewSubscriptionRepository(db),
+		EmailChallenge:             repository.NewEmailChallengeRepository(db),
+		VisitorProfile:             repository.NewVisitorProfileRepository(db),
+		RecommendationEvent:        repository.NewRecommendationEventRepository(db),
+		VisitorRiskFact:            repository.NewVisitorRiskFactRepository(db),
+		Outbox:                     repository.NewOutboxRepository(db),
 	}
 
 	storageConfig := storage.LoadConfigFromEnv()
@@ -184,6 +194,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	storefrontContentReleaseNotifier := service.NewStorefrontContentReleaseNotifierFromEnv()
 	settingService := service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL)
 	currencyPolicyService := service.NewCurrencyPolicyService(repos.Setting)
+	exchangeRateService := service.NewExchangeRateService(repos.ExchangeRate, repos.Setting)
+	storefrontMarketService := service.NewStorefrontMarketService(repos.StorefrontMarket)
 	storefrontBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL")), "/")
 	if storefrontBaseURL == "" {
 		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")
@@ -191,7 +203,6 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	googleMerchantService := service.NewGoogleMerchantService(
 		repos.GoogleMerchant,
 		repos.Product,
-		currencyPolicyService,
 		cfg.GoogleMerchant,
 		storefrontBaseURL,
 	)
@@ -207,28 +218,32 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	}
 
 	services := Services{
-		Auth:                  service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
-		Post:                  service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL),
-		Product:               service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL),
-		Cart:                  service.NewCartService(repos.Cart, repos.Product),
-		Setting:               settingService,
-		CurrencyPolicy:        currencyPolicyService,
-		GoogleMerchant:        googleMerchantService,
-		FAQ:                   service.NewFAQService(repos.FAQ, storageSvc),
-		Gallery:               service.NewGalleryService(repos.Gallery),
-		Media:                 service.NewMediaService(repos.Media, storageSvc, settingService, cfg.MediaUpload.AccountStorageQuotaBytes),
-		Registration:          service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
-		Checkout:              service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
-		Marketing:             service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
-		LoyaltyProgram:        loyaltyProgramService,
-		Review:                service.NewReviewService(repos.Review),
-		Ticket:                service.NewTicketService(repos.Ticket, repos.User, repos.FAQ),
-		CustomerServiceEvents: service.NewCustomerServiceEventHub(),
-		Subscription:          service.NewSubscriptionService(repos.Subscription),
-		Sitemap:               service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
-		Showcase:              service.NewShowcaseService(repos.Showcase, storageSvc),
-		Wishlist:              service.NewWishlistService(repos.Wishlist, repos.Product),
-		Feedback:              service.NewFeedbackService(repos.Feedback),
+		Auth:                       service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
+		Post:                       service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL),
+		Product:                    service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL),
+		ProductInformationTemplate: service.NewProductInformationTemplateService(repos.ProductInformationTemplate),
+		Cart:                       service.NewCartService(repos.Cart, repos.Product),
+		Setting:                    settingService,
+		CurrencyPolicy:             currencyPolicyService,
+		ExchangeRate:               exchangeRateService,
+		StorefrontMarket:           storefrontMarketService,
+		StorefrontContext:          service.NewStorefrontContextServiceWithMarkets(currencyPolicyService, storefrontMarketService),
+		GoogleMerchant:             googleMerchantService,
+		FAQ:                        service.NewFAQService(repos.FAQ, storageSvc),
+		Gallery:                    service.NewGalleryService(repos.Gallery),
+		Media:                      service.NewMediaService(repos.Media, storageSvc, settingService, cfg.MediaUpload.AccountStorageQuotaBytes),
+		Registration:               service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
+		Checkout:                   service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
+		Marketing:                  service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
+		LoyaltyProgram:             loyaltyProgramService,
+		Review:                     service.NewReviewService(repos.Review),
+		Ticket:                     service.NewTicketService(repos.Ticket, repos.User, repos.FAQ),
+		CustomerServiceEvents:      service.NewCustomerServiceEventHub(),
+		Subscription:               service.NewSubscriptionService(repos.Subscription),
+		Sitemap:                    service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
+		Showcase:                   service.NewShowcaseService(repos.Showcase, storageSvc),
+		Wishlist:                   service.NewWishlistService(repos.Wishlist, repos.Product),
+		Feedback:                   service.NewFeedbackService(repos.Feedback),
 		SuggestionFeedback: service.NewSuggestionFeedbackService(
 			repos.SuggestionFeedback,
 		),
@@ -265,6 +280,9 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Marketing.ConfigureGiftCardRedemptions(repos.GiftCardRedemption)
 	services.Marketing.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Checkout.ConfigureLoyaltyProgram(loyaltyProgramService)
+	services.Product.ConfigureCurrencyPolicy(currencyPolicyService)
+	services.Product.ConfigureInformationTemplateRepository(repos.ProductInformationTemplate)
+	services.ExchangeRate.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Registration.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
 	services.Registration.ConfigureEmailBaseURL(storefrontBaseURL)
 	services.Subscription.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
@@ -289,7 +307,6 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.Order,
 		services.Checkout,
 		shippingService,
-		currencyPolicyService,
 		orderNumberGenerator,
 	)
 	services.Payment = service.NewPaymentService(txManager, repos.Payment)

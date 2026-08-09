@@ -12,13 +12,18 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import type { GalleryPreviewImage } from './galleryTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  image: { type: Object, required: true },
+withDefaults(defineProps<{
+  open?: boolean
+  image: GalleryPreviewImage
+}>(), {
+  open: false
 })
 
-const emit = defineEmits(['update:open'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+}>()
 </script>

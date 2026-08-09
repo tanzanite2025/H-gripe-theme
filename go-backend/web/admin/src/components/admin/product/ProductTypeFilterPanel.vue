@@ -21,20 +21,28 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { ProductTypeFilters } from './productTypeTypes'
 
-defineProps({
-  filters: { type: Object, required: true }
-})
+interface ProductTypeFilterOption {
+  label: string
+  value: string
+}
 
-const emit = defineEmits(['reset'])
+defineProps<{
+  filters: ProductTypeFilters
+}>()
 
-const statusOptions = [
+const emit = defineEmits<{
+  (event: 'reset'): void
+}>()
+
+const statusOptions: ProductTypeFilterOption[] = [
   { label: '全部状态', value: 'all' },
   { label: '已启用', value: 'enabled' },
   { label: '已停用', value: 'disabled' },

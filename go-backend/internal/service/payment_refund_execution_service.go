@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	orderdomain "tanzanite/internal/domain/order"
 	paymentdomain "tanzanite/internal/domain/payment"
 	pgateway "tanzanite/internal/pkg/payment"
 	"tanzanite/internal/repository"
@@ -27,6 +28,7 @@ type ExecutePendingRefundInput struct {
 type pendingRefundExecutionPlan struct {
 	Refund      *paymentdomain.Refund
 	Transaction *paymentdomain.Transaction
+	Order       *orderdomain.Order
 	Execution   *paymentdomain.PaymentRefundExecution
 }
 
@@ -49,11 +51,13 @@ func (s *PaymentService) ExecutePendingRefund(
 		return nil, nil, err
 	}
 
-	response, err := input.Gateway.RefundPaymentWithOptions(ctx, plan.Transaction.TransactionID, plan.Refund.Amount, pgateway.RefundOptions{
-		IdempotencyKey: plan.Execution.IdempotencyKey,
-		Reason:         plan.Refund.Reason,
-		Currency:       plan.Transaction.Currency,
-		OriginalAmount: plan.Transaction.Amount,
+	response, err := input.Gateway.RefundPaymentWithOptions(ctx, plan.Execution.ProviderTransactionID, plan.Refund.Amount, pgateway.RefundOptions{
+		IdempotencyKey:        plan.Execution.IdempotencyKey,
+		Reason:                plan.Refund.Reason,
+		Currency:              plan.Transaction.Currency,
+		OriginalAmount:        plan.Transaction.Amount,
+		MerchantOrderNumber:   plan.Execution.MerchantOrderNumber,
+		ProviderTransactionID: plan.Execution.ProviderTransactionID,
 	})
 	if err != nil {
 		execution, failErr := s.failPendingRefundExecution(plan.Execution.RefundID, err.Error())
@@ -115,6 +119,21 @@ func (s *PaymentService) beginPendingRefundExecution(input ExecutePendingRefundI
 		if transaction.Status != "completed" {
 			return errors.New("transaction is not refundable")
 		}
+		providerTransactionID := strings.TrimSpace(transaction.TransactionID)
+		if providerTransactionID == "" {
+			return errors.New("provider transaction id is required for refund execution")
+		}
+		orderRecord, err := repos.Order.FindByIDForUpdate(refund.OrderID)
+		if err != nil {
+			return normalizeOrderError(err)
+		}
+		merchantOrderNumber := strings.TrimSpace(orderRecord.OrderNumber)
+		if merchantOrderNumber == "" {
+			return errors.New("merchant order number is required for refund execution")
+		}
+		if orderRecord.ID != transaction.OrderID {
+			return errors.New("refund order does not belong to transaction")
+		}
 		provider, err := normalizeRefundExecutionProvider(transaction.PaymentMethod)
 		if err != nil {
 			return err
@@ -138,36 +157,41 @@ func (s *PaymentService) beginPendingRefundExecution(input ExecutePendingRefundI
 			execution.AttemptCount++
 			execution.RequestedByID = input.AdminID
 			execution.RequestedAt = now
+			execution.ProviderPaymentID = providerTransactionID
 			execution.ErrorMessage = ""
 			execution.ProviderRefundID = ""
 			execution.ProviderStatus = ""
+			execution.MerchantOrderNumber = merchantOrderNumber
+			execution.ProviderTransactionID = providerTransactionID
 			execution.GatewayResponseJSON = ""
 			execution.CompletedAt = nil
 			if err := repos.RefundExecution.Update(execution); err != nil {
 				return err
 			}
-			plan = &pendingRefundExecutionPlan{Refund: refund, Transaction: transaction, Execution: execution}
+			plan = &pendingRefundExecutionPlan{Refund: refund, Transaction: transaction, Order: orderRecord, Execution: execution}
 			return nil
 		}
 
 		execution = &paymentdomain.PaymentRefundExecution{
-			RefundID:          refund.ID,
-			OrderID:           refund.OrderID,
-			TransactionID:     transaction.ID,
-			Provider:          provider,
-			ProviderPaymentID: transaction.TransactionID,
-			Amount:            refund.Amount,
-			Currency:          transaction.Currency,
-			Status:            paymentdomain.PaymentRefundExecutionStatusProcessing,
-			IdempotencyKey:    refundExecutionIdempotencyKey(refund.ID),
-			AttemptCount:      1,
-			RequestedByID:     input.AdminID,
-			RequestedAt:       now,
+			RefundID:              refund.ID,
+			OrderID:               refund.OrderID,
+			TransactionID:         transaction.ID,
+			Provider:              provider,
+			ProviderPaymentID:     providerTransactionID,
+			MerchantOrderNumber:   merchantOrderNumber,
+			ProviderTransactionID: providerTransactionID,
+			Amount:                refund.Amount,
+			Currency:              transaction.Currency,
+			Status:                paymentdomain.PaymentRefundExecutionStatusProcessing,
+			IdempotencyKey:        refundExecutionIdempotencyKey(refund.ID),
+			AttemptCount:          1,
+			RequestedByID:         input.AdminID,
+			RequestedAt:           now,
 		}
 		if err := repos.RefundExecution.Create(execution); err != nil {
 			return err
 		}
-		plan = &pendingRefundExecutionPlan{Refund: refund, Transaction: transaction, Execution: execution}
+		plan = &pendingRefundExecutionPlan{Refund: refund, Transaction: transaction, Order: orderRecord, Execution: execution}
 		return nil
 	})
 	if err != nil {

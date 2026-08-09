@@ -91,7 +91,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Image as ImageIcon, Images, MoreHorizontal, Pencil, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -104,18 +104,38 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  GalleryCoverResolver,
+  GalleryDateFormatter,
+  GalleryImageCountResolver,
+  GalleryPagination,
+  GalleryRecord,
+  GalleryTitleResolver
+} from './galleryTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  galleries: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  galleryTitle: { type: Function, required: true },
-  galleryCover: { type: Function, required: true },
-  galleryImageCount: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+withDefaults(defineProps<{
+  loading?: boolean
+  galleries?: GalleryRecord[]
+  pagination: GalleryPagination
+  canEdit?: boolean
+  canDelete?: boolean
+  galleryTitle: GalleryTitleResolver
+  galleryCover: GalleryCoverResolver
+  galleryImageCount: GalleryImageCountResolver
+  formatDate: GalleryDateFormatter
+}>(), {
+  loading: false,
+  galleries: () => [],
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits(['preview', 'view-images', 'edit', 'delete', 'update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'preview', url: string, title: string): void
+  (event: 'view-images', gallery: GalleryRecord): void
+  (event: 'edit', gallery: GalleryRecord): void
+  (event: 'delete', gallery: GalleryRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

@@ -48,8 +48,12 @@ func TestPaymentServiceExecutePendingRefundCompletesLocalRefund(t *testing.T) {
 	require.Equal(t, refundExecutionIdempotencyKey(refund.ID), gateway.options.IdempotencyKey)
 	require.Equal(t, transaction.Currency, gateway.options.Currency)
 	require.Equal(t, transaction.Amount, gateway.options.OriginalAmount)
+	require.Equal(t, orderRecord.OrderNumber, gateway.options.MerchantOrderNumber)
+	require.Equal(t, transaction.TransactionID, gateway.options.ProviderTransactionID)
 	require.Equal(t, transaction.TransactionID, gateway.paymentID)
 	require.Equal(t, 80.0, gateway.amount)
+	require.Equal(t, orderRecord.OrderNumber, execution.MerchantOrderNumber)
+	require.Equal(t, transaction.TransactionID, execution.ProviderTransactionID)
 
 	updatedTransaction, err := repository.NewPaymentRepository(db).FindTransactionByID(transaction.ID)
 	require.NoError(t, err)

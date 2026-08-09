@@ -45,7 +45,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Clock3 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -58,9 +58,13 @@ import {
   registrationStatusTone,
   userName
 } from '@/lib/warrantyPresentation'
+import type { WarrantyRegistration } from './warrantyTypes'
 
-defineProps({
-  expiring: { type: Array, required: true },
-  loading: { type: Boolean, default: false }
+withDefaults(defineProps<{
+  expiring?: WarrantyRegistration[]
+  loading?: boolean
+}>(), {
+  expiring: () => [],
+  loading: false
 })
 </script>

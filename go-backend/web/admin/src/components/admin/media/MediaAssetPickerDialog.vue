@@ -82,7 +82,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { toRef } from 'vue'
 import { ImageOff, Images, RefreshCw, Search } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
@@ -92,14 +92,28 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMediaAssetPicker } from '@/composables/media/useMediaAssetPicker'
 import { assetAccessURL, assetTitle, formatMediaSize } from '@/lib/mediaPresentation'
+import type { MediaAsset } from '@/api/media'
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  selectedUrls: { type: Array, default: () => [] },
+interface MediaAssetSelection {
+  url: string
+  image: MediaAsset
+  asset: MediaAsset
+}
+
+const props = withDefaults(defineProps<{
+  open?: boolean
+  selectedUrls?: string[]
+}>(), {
+  open: false,
+  selectedUrls: () => [],
 })
 
-const emit = defineEmits(['update:open', 'select'])
-const isSelected = (url) => Boolean(url) && props.selectedUrls.includes(url)
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'select', selection: MediaAssetSelection): void
+}>()
+
+const isSelected = (url?: string | null): boolean => Boolean(url) && props.selectedUrls.includes(String(url))
 const {
   loading,
   assets,
@@ -110,7 +124,7 @@ const {
   updatePageSize,
 } = useMediaAssetPicker(toRef(props, 'open'))
 
-const selectAsset = (asset) => {
+const selectAsset = (asset: MediaAsset): void => {
   if (!asset?.url) return
   emit('select', { url: asset.url, image: asset, asset })
 }

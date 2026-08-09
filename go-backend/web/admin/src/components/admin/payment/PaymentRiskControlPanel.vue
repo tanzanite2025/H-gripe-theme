@@ -165,7 +165,7 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { AlertTriangle, RefreshCw, ShieldCheck } from '@lucide/vue'
@@ -176,6 +176,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  PaymentProtectionAction,
+  PaymentProtectionAuditLog,
+  PaymentProtectionControl,
+  PaymentProtectionControlPayload,
+  PaymentProtectionPolicy,
+  PaymentProtectionScopeType,
+} from './paymentRiskTypes'
 
 const StatusPill = defineComponent({
   props: { status: { type: String, default: '' } },
@@ -192,23 +200,35 @@ const StatusPill = defineComponent({
 const loading = ref(false)
 const saving = ref(false)
 const enabled = ref(false)
-const protectionPolicy = ref({
+const protectionPolicy = ref<PaymentProtectionPolicy>({
   max_control_duration_hours: 168,
   max_pause_payment_duration_hours: 24,
   max_global_pause_payment_duration_hours: 2,
 })
-const controls = ref([])
-const selectedControl = ref(null)
-const auditLogs = ref([])
-const pendingCreatePayload = ref(null)
-const confirmDialog = reactive({
+const controls = ref<PaymentProtectionControl[]>([])
+const selectedControl = ref<PaymentProtectionControl | null>(null)
+const auditLogs = ref<PaymentProtectionAuditLog[]>([])
+const pendingCreatePayload = ref<PaymentProtectionControlPayload | null>(null)
+const confirmDialog = reactive<{
+  open: boolean
+  mode: 'create' | 'revoke'
+  action: PaymentProtectionAction
+  scopeLabel: string
+  controlId: string | number
+}>({
   open: false,
   mode: 'create',
   action: 'force_3ds',
   scopeLabel: '',
   controlId: '',
 })
-const form = reactive({
+const form = reactive<{
+  action: PaymentProtectionAction
+  scope_type: PaymentProtectionScopeType
+  scope_value: string
+  expires_at: string
+  reason: string
+}>({
   action: 'force_3ds',
   scope_type: 'global',
   scope_value: 'stripe',
@@ -222,13 +242,13 @@ const providerScopeOptions = [
   { value: 'wechat', label: 'WeChat Pay' },
 ]
 
-const formatDate = (value) => value ? new Date(value).toLocaleString('zh-CN') : '-'
-const statusLabel = (status) => ({ active: '生效中', expired: '已过期', revoked: '已撤销' }[status] || '未知')
-const actionLabel = (action) => ({ force_3ds: '强制 3DS', pause_payment: '暂停新支付' }[action] || action || '-')
-const actionDescription = (action) => ({
+const formatDate = (value: unknown): string => value ? new Date(value as string | number | Date).toLocaleString('zh-CN') : '-'
+const statusLabel = (status?: string): string => ({ active: '生效中', expired: '已过期', revoked: '已撤销' }[status || ''] || '未知')
+const actionLabel = (action?: string): string => ({ force_3ds: '强制 3DS', pause_payment: '暂停新支付' }[action || ''] || action || '-')
+const actionDescription = (action?: string): string => ({
   force_3ds: '匹配范围内的新 Stripe 支付将要求更强的银行认证。',
   pause_payment: '匹配范围内的新订单创建与新支付启动会被拒绝，已创建或已完成的支付不受影响。',
-}[action] || '')
+}[action || ''] || '')
 const actionSubmitLabel = computed(() => form.action === 'pause_payment' ? '启用暂停新支付' : '启用强制 3DS')
 const currentMaxDurationHours = computed(() => {
   if (form.action !== 'pause_payment') return numericPolicyValue('max_control_duration_hours', 168)
@@ -236,28 +256,28 @@ const currentMaxDurationHours = computed(() => {
   return numericPolicyValue('max_pause_payment_duration_hours', 24)
 })
 const maxExpiryInput = computed(() => expiryInputValue(currentMaxDurationHours.value))
-const formatScope = (control) => {
+const formatScope = (control: { scope_type?: string; scope_value?: string } | null): string => {
   if (!control || control.scope_type === 'global') return '全局'
   const labels = { provider: '提供商', country: '国家/地区', payment_method: '支付方式' }
-  return `${labels[control.scope_type] || control.scope_type}: ${control.scope_value}`
+  return `${labels[control.scope_type as keyof typeof labels] || control.scope_type}: ${control.scope_value || ''}`
 }
 
-function numericPolicyValue(key, fallback) {
+function numericPolicyValue(key: string, fallback: number): number {
   const value = Number(protectionPolicy.value?.[key])
   return Number.isFinite(value) && value > 0 ? value : fallback
 }
 
-function defaultExpiry(hours = 24) {
+function defaultExpiry(hours = 24): string {
   const value = new Date(Date.now() + hours * 60 * 60 * 1000)
   value.setMinutes(0, 0, 0)
   return toDateTimeLocalInputValue(value)
 }
 
-function expiryInputValue(hours) {
+function expiryInputValue(hours: number): string {
   return toDateTimeLocalInputValue(new Date(Date.now() + hours * 60 * 60 * 1000))
 }
 
-function toDateTimeLocalInputValue(value) {
+function toDateTimeLocalInputValue(value: Date): string {
   return value.toISOString().slice(0, 16)
 }
 
@@ -269,7 +289,7 @@ function clampExpiryToPolicy() {
   }
 }
 
-const refresh = async () => {
+const refresh = async (): Promise<void> => {
   loading.value = true
   try {
     const payload = await paymentRiskApi.listProtectionControls(true)
@@ -284,13 +304,13 @@ const refresh = async () => {
   }
 }
 
-const selectControl = async (control) => {
+const selectControl = async (control: PaymentProtectionControl): Promise<void> => {
   selectedControl.value = control
   const payload = await paymentRiskApi.listProtectionControlAudit(control.id)
   auditLogs.value = payload.logs || []
 }
 
-const createControl = () => {
+const createControl = (): void => {
   if (!form.reason.trim()) {
     toast.error('请填写保护原因')
     return
@@ -316,7 +336,7 @@ const createControl = () => {
   confirmDialog.open = true
 }
 
-const submitCreateControl = async () => {
+const submitCreateControl = async (): Promise<void> => {
   if (!pendingCreatePayload.value) return
   saving.value = true
   try {
@@ -332,7 +352,7 @@ const submitCreateControl = async () => {
   }
 }
 
-const openRevokeConfirmation = () => {
+const openRevokeConfirmation = (): void => {
   if (!selectedControl.value) return
   confirmDialog.mode = 'revoke'
   confirmDialog.action = selectedControl.value.action
@@ -341,14 +361,14 @@ const openRevokeConfirmation = () => {
   confirmDialog.open = true
 }
 
-const setConfirmDialogOpen = (open) => {
+const setConfirmDialogOpen = (open: boolean): void => {
   confirmDialog.open = open
   if (!open && !saving.value) {
     pendingCreatePayload.value = null
   }
 }
 
-const revokeControl = async () => {
+const revokeControl = async (): Promise<void> => {
   if (!selectedControl.value) return
   saving.value = true
   try {
@@ -362,7 +382,7 @@ const revokeControl = async () => {
   }
 }
 
-const confirmProtectionAction = async () => {
+const confirmProtectionAction = async (): Promise<void> => {
   if (confirmDialog.mode === 'revoke') {
     await revokeControl()
     return

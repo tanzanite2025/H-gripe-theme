@@ -7,13 +7,25 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import MediaAssetPickerDialog from '@/components/admin/media/MediaAssetPickerDialog.vue'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  selectedUrls: { type: Array, default: () => [] },
+interface MediaAssetSelection {
+  url: string
+  image?: unknown
+  asset?: unknown
+}
+
+const props = withDefaults(defineProps<{
+  open?: boolean
+  selectedUrls?: string[]
+}>(), {
+  open: false,
+  selectedUrls: () => [],
 })
 
-const emit = defineEmits(['update:open', 'select'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'select', value: MediaAssetSelection): void
+}>()
 </script>

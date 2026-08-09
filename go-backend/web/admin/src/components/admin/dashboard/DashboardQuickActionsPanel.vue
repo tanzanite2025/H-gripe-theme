@@ -23,15 +23,20 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { DashboardMetricToneClass, DashboardQuickAction } from './dashboardTypes'
 
-defineProps({
-  actions: { type: Array, default: () => [] },
-  metricToneClass: { type: Function, required: true },
+withDefaults(defineProps<{
+  actions?: DashboardQuickAction[]
+  metricToneClass: DashboardMetricToneClass
+}>(), {
+  actions: () => []
 })
 
-const emit = defineEmits(['navigate'])
+const emit = defineEmits<{
+  (event: 'navigate', path: string): void
+}>()
 </script>

@@ -84,7 +84,7 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle, MapPin, MessageCircleOff, UserCheck, UserRound } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
@@ -104,16 +104,32 @@ import {
   statusLabel,
   statusTone,
 } from '@/lib/customerServicePresentation'
+import type {
+  AssignableAgent,
+  CustomerConversation,
+  CustomerPagination,
+  CustomerTypingByConversation,
+} from './customerServiceTypes'
 
-defineProps({
-  conversations: { type: Array, default: () => [] },
-  selectedConversation: { type: Object, default: null },
-  assignableAgents: { type: Array, default: () => [] },
-  customerTypingByConversation: { type: Object, default: () => ({}) },
-  pagination: { type: Object, required: true },
-  totalPages: { type: Number, default: 1 },
-  loading: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  conversations?: CustomerConversation[]
+  selectedConversation?: CustomerConversation | null
+  assignableAgents?: AssignableAgent[]
+  customerTypingByConversation?: CustomerTypingByConversation
+  pagination: CustomerPagination
+  totalPages?: number
+  loading?: boolean
+}>(), {
+  conversations: () => [],
+  selectedConversation: null,
+  assignableAgents: () => [],
+  customerTypingByConversation: () => ({}),
+  totalPages: 1,
+  loading: false,
 })
 
-const emit = defineEmits(['select', 'change-page'])
+const emit = defineEmits<{
+  (event: 'select', conversation: CustomerConversation): void
+  (event: 'change-page', page: number): void
+}>()
 </script>

@@ -31,6 +31,19 @@ func orderProductVariants(db *gorm.DB) *gorm.DB {
 	return db.Order("product_variants.sort_order ASC, product_variants.id ASC")
 }
 
+func orderProductVariantOptionValues(db *gorm.DB) *gorm.DB {
+	return db.Order("product_variant_option_values.sort_order ASC, product_variant_option_values.id ASC")
+}
+
+func (r *ProductRepository) preloadProductVariantOptionValues(db *gorm.DB) *gorm.DB {
+	if r.db.Migrator().HasTable(&product.ProductVariantOptionValue{}) {
+		return db.Preload("VariantOptionValues", func(db *gorm.DB) *gorm.DB {
+			return orderProductVariantOptionValues(db)
+		})
+	}
+	return db
+}
+
 // Create 鍒涘缓浜у搧
 func (r *ProductRepository) Create(p *product.Product) error {
 	return r.db.Create(p).Error
@@ -41,10 +54,20 @@ func (r *ProductRepository) CreateWithSpecValues(p *product.Product, specValues 
 }
 
 func (r *ProductRepository) CreateWithSpecValuesAndVariants(p *product.Product, specValues []product.ProductSpecValue, variants []product.ProductVariant) error {
-	return r.CreateWithSpecValuesVariantsAndMedia(p, specValues, variants, nil)
+	return r.CreateWithSpecValuesVariantsOptionValuesAndMedia(p, specValues, variants, nil, nil)
 }
 
 func (r *ProductRepository) CreateWithSpecValuesVariantsAndMedia(p *product.Product, specValues []product.ProductSpecValue, variants []product.ProductVariant, mediaItems []product.ProductMedia) error {
+	return r.CreateWithSpecValuesVariantsOptionValuesAndMedia(p, specValues, variants, nil, mediaItems)
+}
+
+func (r *ProductRepository) CreateWithSpecValuesVariantsOptionValuesAndMedia(
+	p *product.Product,
+	specValues []product.ProductSpecValue,
+	variants []product.ProductVariant,
+	optionValues []product.ProductVariantOptionValue,
+	mediaItems []product.ProductMedia,
+) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		syncProductSummaryFromVariants(p, variants)
 		if err := tx.Create(p).Error; err != nil {
@@ -80,7 +103,19 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsAndMedia(p *product.Prod
 			}
 		}
 
+		if len(optionValues) > 0 {
+			for i := range optionValues {
+				optionValues[i].ProductID = p.ID
+			}
+			if err := tx.Create(&optionValues).Error; err != nil {
+				return err
+			}
+		}
+
 		if len(mediaItems) > 0 {
+			if err := ensureProductMediaReferencesBelongToProduct(tx, p.ID, mediaItems); err != nil {
+				return err
+			}
 			for i := range mediaItems {
 				mediaItems[i].ProductID = p.ID
 			}
@@ -96,15 +131,19 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsAndMedia(p *product.Prod
 // FindByID 鏍规嵁ID鏌ユ壘浜у搧
 func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 	var p product.Product
-	err := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
+	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("locale ASC, id ASC")
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	}).First(&p, id).Error
+	})
+	query = r.preloadProductVariantOptionValues(query)
+	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").First(&p, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -119,11 +158,14 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
+	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("locale ASC, id ASC")
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	}).Where("slug = ?", slug)
+	})
+	query = r.preloadProductVariantOptionValues(query).Preload("AfterSalesTemplate").Preload("PackagingTemplate").Where("slug = ?", slug)
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
@@ -139,8 +181,10 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 // FindBySKU 鏍规嵁SKU鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	var p product.Product
-	err := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
-		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) }).
+	query := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
+		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) })
+	query = r.preloadProductVariantOptionValues(query)
+	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").
 		Where("sku = ?", sku).First(&p).Error
 	if err != nil {
 		return nil, err
@@ -173,6 +217,20 @@ func (r *ProductRepository) UpdateWithSpecValuesAndVariants(p *product.Product, 
 }
 
 func (r *ProductRepository) UpdateWithSpecValuesVariantsAndMedia(p *product.Product, specValues []product.ProductSpecValue, replaceSpecs bool, variants []product.ProductVariant, replaceVariants bool, mediaItems []product.ProductMedia, replaceMedia bool) error {
+	return r.UpdateWithSpecValuesVariantsOptionValuesAndMedia(p, specValues, replaceSpecs, variants, replaceVariants, nil, false, mediaItems, replaceMedia)
+}
+
+func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
+	p *product.Product,
+	specValues []product.ProductSpecValue,
+	replaceSpecs bool,
+	variants []product.ProductVariant,
+	replaceVariants bool,
+	optionValues []product.ProductVariantOptionValue,
+	replaceOptionValues bool,
+	mediaItems []product.ProductMedia,
+	replaceMedia bool,
+) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if replaceVariants {
 			syncProductSummaryFromVariants(p, variants)
@@ -198,6 +256,12 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsAndMedia(p *product.Prod
 
 		if replaceVariants {
 			if err := replaceProductVariants(tx, p.ID, variants); err != nil {
+				return err
+			}
+		}
+
+		if replaceOptionValues {
+			if err := replaceProductVariantOptionValues(tx, p.ID, optionValues); err != nil {
 				return err
 			}
 		}

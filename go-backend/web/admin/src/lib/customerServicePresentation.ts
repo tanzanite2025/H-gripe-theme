@@ -1,3 +1,5 @@
+import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
+
 export const customerSummary = (conversation: any) => conversation?.customer_summary || {}
 
 export const conversationIsMember = (conversation: any) => {
@@ -112,16 +114,16 @@ export const statusLabel = (status: any) => ({
   resolved: '已解决',
 } as Record<string, string>)[status] || status || '-'
 
-export const statusTone = (status: any) => ({
+export const statusTone = (status: any): AdminStatusTone => ({
   active: 'blue',
   pending: 'amber',
   closed: 'gray',
   open: 'amber',
   in_progress: 'blue',
   resolved: 'green',
-} as Record<string, string>)[status] || 'gray'
+} as Record<string, AdminStatusTone>)[status] || 'gray'
 
-export const signalTone = (status: any) => {
+export const signalTone = (status: any): AdminStatusTone => {
   if (['captured', 'verified', 'bound', 'created', 'linked'].includes(status)) return 'green'
   if (['missing', 'not_captured', 'not_linked', 'not_created', 'missing_user'].includes(status)) return 'amber'
   return 'gray'

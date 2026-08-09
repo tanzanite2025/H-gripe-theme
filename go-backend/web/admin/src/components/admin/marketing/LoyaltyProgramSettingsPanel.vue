@@ -106,23 +106,33 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, defineComponent, h } from 'vue'
 import { LoaderCircle, RefreshCw, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { LoyaltySettings } from './marketingTypes'
 
-const props = defineProps({
-  loyaltySettings: { type: Object, required: true },
-  pointsBaseCurrency: { type: String, default: 'USD' },
-  version: { type: Number, default: 0 },
-  loading: { type: Boolean, default: false },
-  saving: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  loyaltySettings: LoyaltySettings
+  pointsBaseCurrency?: string
+  version?: number
+  loading?: boolean
+  saving?: boolean
+  canEdit?: boolean
+}>(), {
+  pointsBaseCurrency: 'USD',
+  version: 0,
+  loading: false,
+  saving: false,
+  canEdit: false,
 })
 
-const emit = defineEmits(['refresh', 'save'])
+const emit = defineEmits<{
+  (event: 'refresh'): void
+  (event: 'save'): void
+}>()
 
 const baseCurrency = computed(() => String(props.pointsBaseCurrency || 'USD').trim().toUpperCase() || 'USD')
 
@@ -131,11 +141,11 @@ const ProgramSection = defineComponent({
     title: { type: String, required: true },
     description: { type: String, default: '' },
   },
-  setup(props, { slots }) {
+  setup(sectionProps, { slots }) {
     return () => h('section', { class: 'grid w-full max-w-none gap-5 rounded-2xl border bg-card/75 p-4 shadow-sm lg:grid-cols-[190px_minmax(0,1fr)]' }, [
       h('div', {}, [
-        h('h4', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
-        props.description ? h('p', { class: 'mt-1 text-[10px] font-bold leading-relaxed text-muted-foreground' }, props.description) : null,
+        h('h4', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, sectionProps.title),
+        sectionProps.description ? h('p', { class: 'mt-1 text-[10px] font-bold leading-relaxed text-muted-foreground' }, sectionProps.description) : null,
       ]),
       h('div', { class: 'min-w-0' }, slots.default?.()),
     ])

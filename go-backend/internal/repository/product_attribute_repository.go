@@ -99,6 +99,8 @@ func (r *ProductRepository) FindAllProductTypes(includeDisabled bool) ([]product
 	var productTypes []product.ProductType
 	query := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
+	}).Preload("Translations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("locale ASC, id ASC")
 	})
 	if !includeDisabled {
 		query = query.Where("is_enabled = ?", true)
@@ -112,6 +114,8 @@ func (r *ProductRepository) FindProductTypeByID(id uint) (*product.ProductType, 
 	var productType product.ProductType
 	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
+	}).Preload("Translations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("locale ASC, id ASC")
 	}).First(&productType, id).Error
 	if err != nil {
 		return nil, err
@@ -123,6 +127,8 @@ func (r *ProductRepository) FindProductTypeBySlug(slug string) (*product.Product
 	var productType product.ProductType
 	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
+	}).Preload("Translations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("locale ASC, id ASC")
 	}).Where("slug = ?", slug).First(&productType).Error
 	if err != nil {
 		return nil, err
@@ -145,8 +151,10 @@ func (r *ProductRepository) ProductTypeSlugExists(slug string, excludeID uint) (
 func (r *ProductRepository) CreateProductType(productType *product.ProductType) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		definitions := productType.SpecDefinitions
+		translations := productType.Translations
 		isEnabled := productType.IsEnabled
 		productType.SpecDefinitions = nil
+		productType.Translations = nil
 		if err := tx.Create(productType).Error; err != nil {
 			return err
 		}
@@ -162,11 +170,21 @@ func (r *ProductRepository) CreateProductType(productType *product.ProductType) 
 			}
 		}
 		productType.SpecDefinitions = definitions
+
+		for index := range translations {
+			translations[index].ProductTypeID = productType.ID
+		}
+		if len(translations) > 0 {
+			if err := tx.Create(&translations).Error; err != nil {
+				return err
+			}
+		}
+		productType.Translations = translations
 		return nil
 	})
 }
 
-func (r *ProductRepository) UpdateProductType(productType *product.ProductType, removedSpecIDs []uint) error {
+func (r *ProductRepository) UpdateProductType(productType *product.ProductType, removedSpecIDs []uint, updateTranslations bool) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&product.ProductType{}).Where("id = ?", productType.ID).Updates(map[string]interface{}{
 			"name":        productType.Name,
@@ -207,6 +225,24 @@ func (r *ProductRepository) UpdateProductType(productType *product.ProductType, 
 			if err := tx.Where("product_type_id = ? AND id IN ?", productType.ID, removedSpecIDs).
 				Delete(&product.SpecDefinition{}).Error; err != nil {
 				return err
+			}
+		}
+
+		if updateTranslations {
+			if err := tx.Where("product_type_id = ?", productType.ID).
+				Delete(&product.ProductTypeTranslation{}).Error; err != nil {
+				return err
+			}
+
+			translations := productType.Translations
+			for index := range translations {
+				translations[index].ID = 0
+				translations[index].ProductTypeID = productType.ID
+			}
+			if len(translations) > 0 {
+				if err := tx.Create(&translations).Error; err != nil {
+					return err
+				}
 			}
 		}
 		return nil

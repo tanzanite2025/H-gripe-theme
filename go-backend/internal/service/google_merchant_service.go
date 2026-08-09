@@ -22,11 +22,10 @@ var (
 )
 
 type GoogleMerchantService struct {
-	offers         *repository.GoogleMerchantRepository
-	products       *repository.ProductRepository
-	currencyPolicy *CurrencyPolicyService
-	googleConfig   config.GoogleMerchantConfig
-	storefrontURL  string
+	offers        *repository.GoogleMerchantRepository
+	products      *repository.ProductRepository
+	googleConfig  config.GoogleMerchantConfig
+	storefrontURL string
 }
 
 type GoogleMerchantOfferInput struct {
@@ -53,16 +52,14 @@ type GoogleMerchantOfferInput struct {
 func NewGoogleMerchantService(
 	offers *repository.GoogleMerchantRepository,
 	products *repository.ProductRepository,
-	currencyPolicy *CurrencyPolicyService,
 	googleConfig config.GoogleMerchantConfig,
 	storefrontURL string,
 ) *GoogleMerchantService {
 	return &GoogleMerchantService{
-		offers:         offers,
-		products:       products,
-		currencyPolicy: currencyPolicy,
-		googleConfig:   googleConfig,
-		storefrontURL:  strings.TrimRight(strings.TrimSpace(storefrontURL), "/"),
+		offers:        offers,
+		products:      products,
+		googleConfig:  googleConfig,
+		storefrontURL: strings.TrimRight(strings.TrimSpace(storefrontURL), "/"),
 	}
 }
 
@@ -332,11 +329,6 @@ func (s *GoogleMerchantService) validateReadyOfferWithStorefrontURL(offer *merch
 	}
 	if !currency.IsCatalogCode(offer.CurrencyCode) {
 		return fmt.Errorf("%w: supported currency is required", ErrGoogleMerchantOfferInvalid)
-	}
-	if s.currencyPolicy != nil {
-		if _, err := s.currencyPolicy.ValidateAcceptedCurrency(offer.CurrencyCode); err != nil {
-			return fmt.Errorf("%w: currency must be accepted for order payment collection", ErrGoogleMerchantOfferInvalid)
-		}
 	}
 	price := offer.Variant.Price
 	if offer.PriceOverride != nil {

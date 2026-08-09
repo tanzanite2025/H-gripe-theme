@@ -39,25 +39,39 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { defineComponent, h } from 'vue'
+import type { PropType } from 'vue'
 import { CircleAlert, LoaderCircle } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import type {
+  AuditLogDateFormatter,
+  AuditLogJsonValue,
+  AuditLogLabelResolver,
+  AuditLogRecord,
+  AuditLogToneResolver
+} from './auditLogTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  detailLoading: { type: Boolean, default: false },
-  currentLog: { type: Object, default: null },
-  actionName: { type: Function, required: true },
-  actionTone: { type: Function, required: true },
-  resourceName: { type: Function, required: true },
-  methodTone: { type: Function, required: true },
-  formatDate: { type: Function, required: true }
+withDefaults(defineProps<{
+  open?: boolean
+  detailLoading?: boolean
+  currentLog?: AuditLogRecord | null
+  actionName: AuditLogLabelResolver
+  actionTone: AuditLogToneResolver
+  resourceName: AuditLogLabelResolver
+  methodTone: AuditLogToneResolver
+  formatDate: AuditLogDateFormatter
+}>(), {
+  open: false,
+  detailLoading: false,
+  currentLog: null
 })
 
-const emit = defineEmits(['update:open'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+}>()
 
 const DetailItem = defineComponent({
   props: {
@@ -73,7 +87,10 @@ const DetailItem = defineComponent({
 })
 
 const JsonSection = defineComponent({
-  props: { title: { type: String, required: true }, value: { type: String, required: true } },
+  props: {
+    title: { type: String, required: true },
+    value: { type: null as unknown as PropType<AuditLogJsonValue>, required: true }
+  },
   setup(props) {
     return () => h('section', { class: 'min-w-0 space-y-2' }, [
       h('h3', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
@@ -82,7 +99,7 @@ const JsonSection = defineComponent({
   }
 })
 
-const formatJSON = (value) => {
+const formatJSON = (value: AuditLogJsonValue): string => {
   if (typeof value !== 'string') return JSON.stringify(value, null, 2)
   try { return JSON.stringify(JSON.parse(value), null, 2) } catch { return value }
 }

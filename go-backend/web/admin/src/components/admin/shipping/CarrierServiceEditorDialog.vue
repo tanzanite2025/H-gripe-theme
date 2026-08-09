@@ -138,7 +138,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -147,16 +147,33 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  ShippingCarrier,
+  ShippingCarrierServiceForm,
+  ShippingDialogMode,
+  ShippingErrorMap,
+  ShippingTemplate
+} from './shippingTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
-  errors: { type: Object, required: true },
-  carriers: { type: Array, default: () => [] },
-  templates: { type: Array, default: () => [] },
-  submitting: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  open?: boolean
+  mode?: ShippingDialogMode
+  form: ShippingCarrierServiceForm
+  errors: ShippingErrorMap
+  carriers?: ShippingCarrier[]
+  templates?: ShippingTemplate[]
+  submitting?: boolean
+}>(), {
+  open: false,
+  mode: 'create',
+  carriers: () => [],
+  templates: () => [],
+  submitting: false
 })
 
-const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', field: string): void
+}>()
 </script>

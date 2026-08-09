@@ -93,7 +93,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Pencil, Plus, Route, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -109,16 +109,33 @@ import {
   formatServiceWeightStep,
   formatVolumetricDivisor,
 } from '@/lib/shippingPresentation'
+import type {
+  ShippingCarrier,
+  ShippingCarrierService,
+  ShippingTemplate
+} from './shippingTypes'
 
-defineProps({
-  carrierServices: { type: Array, default: () => [] },
-  carriers: { type: Array, default: () => [] },
-  templates: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  carrierServices?: ShippingCarrierService[]
+  carriers?: ShippingCarrier[]
+  templates?: ShippingTemplate[]
+  loading?: boolean
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  carrierServices: () => [],
+  carriers: () => [],
+  templates: () => [],
+  loading: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false,
 })
 
-const emit = defineEmits(['create', 'edit', 'delete'])
+const emit = defineEmits<{
+  (event: 'create'): void
+  (event: 'edit', service: ShippingCarrierService): void
+  (event: 'delete', service: ShippingCarrierService): void
+}>()
 </script>

@@ -18,12 +18,10 @@ func (h *CurrencyPolicyHandler) recordCurrencyPolicyAudit(c *gin.Context, event 
 }
 
 func currencyPolicyAuditDetails(policy currency.Policy) map[string]interface{} {
-	accepted := currency.NormalizeCodes(policy.AcceptedCurrencies)
 	details := map[string]interface{}{
-		"accounting_currency":      currency.NormalizeCode(policy.AccountingCurrency),
-		"default_order_currency":   currency.NormalizeCode(policy.DefaultOrderCurrency),
-		"accepted_currency_count":  len(accepted),
-		"accepted_currencies":      accepted,
+		"primary_currency":         currency.NormalizeCode(policy.PrimaryCurrency),
+		"display_currencies":       currency.NormalizeCodes(policy.DisplayCurrencies),
+		"display_currency_count":   len(currency.NormalizeCodes(policy.DisplayCurrencies)),
 		"available_currency_count": len(policy.AvailableCurrencies),
 	}
 	if len(policy.AvailableCurrencies) > 0 {

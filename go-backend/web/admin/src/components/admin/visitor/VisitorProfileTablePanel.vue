@@ -91,42 +91,51 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Fingerprint } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { VisitorPagination, VisitorProfile } from './visitorTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  profiles: { type: Array, default: () => [] },
-  selectedProfile: { type: Object, default: null },
-  pagination: { type: Object, required: true },
-  formatDate: { type: Function, required: true },
+withDefaults(defineProps<{
+  loading?: boolean
+  profiles?: VisitorProfile[]
+  selectedProfile?: VisitorProfile | null
+  pagination: VisitorPagination
+  formatDate: (value: unknown) => string
+}>(), {
+  loading: false,
+  profiles: () => [],
+  selectedProfile: null,
 })
 
-const emit = defineEmits(['select-profile', 'update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'select-profile', profile: VisitorProfile): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 
-const statusLabel = (status) => ({
+const statusLabel = (status?: string): string => ({
   active: '有效',
   candidate: '候选',
   archived: '归档',
   suppressed: '抑制',
-})[status] || '有效'
+} as Record<string, string>)[status || ''] || '有效'
 
-const statusTone = (status) => ({
+const statusTone = (status?: string): AdminStatusTone => ({
   active: 'green',
   candidate: 'amber',
   archived: 'gray',
   suppressed: 'coral',
-})[status] || 'green'
+} as Record<string, AdminStatusTone>)[status || ''] || 'green'
 
-const actionLabel = (action) => ({
+const actionLabel = (action?: string): string => ({
   cart_action: '购物车动作',
   customer_service: '客服会话',
   email_capture: '邮箱捕获',
   account: '账号绑定',
   identity_bind: '身份绑定',
-})[action] || '无有效动作'
+} as Record<string, string>)[action || ''] || '无有效动作'
 </script>

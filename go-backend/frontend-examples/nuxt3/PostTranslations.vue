@@ -15,7 +15,6 @@
           class="translation-link"
           :aria-current="locale === currentLocale ? 'page' : undefined"
         >
-          <span class="locale-flag">{{ getFlagEmoji(locale) }}</span>
           <span class="locale-name">{{ getLocaleName(locale) }}</span>
           <span v-if="locale === currentLocale" class="current-badge">
             (Current)
@@ -63,47 +62,6 @@ onMounted(async () => {
 // 获取语言名称
 const getLocaleName = (locale: string): string => {
   return languageNames.value[locale] || locale
-}
-
-// 获取国旗 Emoji
-const getFlagEmoji = (locale: string): string => {
-  const flagMap: Record<string, string> = {
-    'en': '🇬🇧',
-    'zh': '🇨🇳',
-    'zh-TW': '🇹🇼',
-    'ja': '🇯🇵',
-    'ko': '🇰🇷',
-    'fr': '🇫🇷',
-    'de': '🇩🇪',
-    'es': '🇪🇸',
-    'it': '🇮🇹',
-    'pt': '🇵🇹',
-    'ru': '🇷🇺',
-    'ar': '🇸🇦',
-    'nl': '🇳🇱',
-    'pl': '🇵🇱',
-    'tr': '🇹🇷',
-    'vi': '🇻🇳',
-    'th': '🇹🇭',
-    'id': '🇮🇩',
-    'ms': '🇲🇾',
-    'hi': '🇮🇳',
-    'bn': '🇧🇩',
-    'ta': '🇮🇳',
-    'te': '🇮🇳',
-    'mr': '🇮🇳',
-    'ur': '🇵🇰',
-    'fa': '🇮🇷',
-    'he': '🇮🇱',
-    'sv': '🇸🇪',
-    'no': '🇳🇴',
-    'da': '🇩🇰',
-    'fi': '🇫🇮',
-    'cs': '🇨🇿',
-    'hu': '🇭🇺',
-    'ro': '🇷🇴',
-  }
-  return flagMap[locale] || '🌐'
 }
 </script>
 
@@ -161,11 +119,6 @@ const getFlagEmoji = (locale: string): string => {
   border-color: #3b82f6;
   color: white;
   cursor: default;
-}
-
-.locale-flag {
-  font-size: 1.25rem;
-  line-height: 1;
 }
 
 .locale-name {

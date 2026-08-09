@@ -28,7 +28,7 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import HomeHero from '~/components/home/HomeHero.vue'
 import HomeFeaturesTabs from '~/components/home/HomeFeaturesTabs.vue'
 import HomeFeatures from '~/components/home/HomeFeatures.vue'

@@ -127,6 +127,13 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 		if err != nil {
 			return nil, err
 		}
+		currentLocale, err := requireSupportedLocale(existingPost.Locale)
+		if err != nil {
+			return nil, err
+		}
+		if locale != currentLocale {
+			return nil, ErrPostLocaleImmutable
+		}
 		nextLocale = locale
 	}
 	if nextSlug != existingPost.Slug || nextLocale != existingPost.Locale {

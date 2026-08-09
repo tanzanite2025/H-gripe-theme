@@ -23,6 +23,7 @@ func TestGetProductAllowsNumericSlugWithoutIDLookup(t *testing.T) {
 	}
 	if err := db.AutoMigrate(
 		&productdomain.ProductType{},
+		&productdomain.ProductTypeTranslation{},
 		&productdomain.SpecDefinition{},
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},

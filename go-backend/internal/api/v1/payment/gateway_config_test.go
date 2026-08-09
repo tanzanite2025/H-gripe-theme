@@ -42,7 +42,7 @@ func TestLoadGatewayConfigUsesDomainManagedEncryptedConfig(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	handler := NewHandler(nil, nil, adminSettings, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(nil, nil, adminSettings, nil, nil, nil, nil, nil, nil)
 	config, err := handler.loadGatewayConfig(pgateway.GatewayPayPal)
 
 	require.NoError(t, err)

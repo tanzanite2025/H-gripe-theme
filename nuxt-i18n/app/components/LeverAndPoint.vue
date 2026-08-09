@@ -1,7 +1,7 @@
 <template>
   <div class="flex justify-center pt-0 pb-0 w-full">
     <div class="membership-and-points-modal-card sidebar-panel leverandpoint-shell w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] rounded-2xl border border-white/10 backdrop-blur-xl shadow-[0_18px_44px_rgba(0,0,0,0.92)] relative overflow-hidden flex flex-col" role="region" aria-label="Membership Levels and Points">
-      <button class="tz-global-close-btn absolute right-2 top-2 z-50 pointer-events-auto" type="button" @click="$emit('close')">×</button>
+      <button class="tz-global-close-btn absolute right-2 top-2 z-50 pointer-events-auto" type="button" @click="emit('close')">×</button>
       <div class="flex-1 flex py-4 px-0 md:p-4 md:px-5 pointer-events-auto overflow-hidden box-border">
         <div class="w-full h-full overflow-hidden pt-6">
           <MembershipAndPointsTabs variant="modal" class="h-full" />
@@ -52,17 +52,19 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import PrivacyStatementModal from '~/components/PrivacyStatementModal.vue'
 import MembershipAndPointsTabs from '~/components/MembershipAndPointsTabs.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 
-const emit = defineEmits(['close'])
+const emit = defineEmits<{
+  (event: 'close'): void
+}>()
 const { t: $t } = useI18n()
 const localePath = useLocalePath()
-const showPrivacyModal = ref(false)
+const showPrivacyModal = ref<boolean>(false)
 
 const SIDEBAR_TOKEN_MODAL = 'lever-modal'
 const SIDEBAR_TOKEN_PRIVACY = 'lever-privacy'
@@ -81,16 +83,16 @@ onBeforeUnmount(() => {
 })
 
 // Privacy statement
-const handlePrivacy = () => {
+const handlePrivacy = (): void => {
   showPrivacyModal.value = true
 }
 
-const closePrivacy = () => {
+const closePrivacy = (): void => {
   showPrivacyModal.value = false
 }
 
 // Member Center - 跳转到会员中心页面
-const handleMemberCenter = () => {
+const handleMemberCenter = (): void => {
   const target = localePath('/membershipandpoints')
   if (typeof window !== 'undefined' && target) {
     window.location.href = String(target)

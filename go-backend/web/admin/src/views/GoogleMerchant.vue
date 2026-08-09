@@ -293,7 +293,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ChevronRight, Link2, Pencil, Plus, RefreshCw, Save, Trash2, Unlink2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -311,6 +311,96 @@ import productApi from '@/api/products'
 import { useAuthStore } from '@/stores/auth'
 import { useRoute, useRouter } from 'vue-router'
 
+type GoogleMerchantID = number
+
+interface GoogleMerchantVariant {
+  id: GoogleMerchantID
+  sku?: string
+}
+
+interface GoogleMerchantProduct {
+  id: GoogleMerchantID
+  name?: string
+  variants?: GoogleMerchantVariant[]
+}
+
+interface GoogleMerchantOffer {
+  id: GoogleMerchantID | null
+  product_id: GoogleMerchantID
+  variant_id: GoogleMerchantID
+  offer_id: string
+  title: string
+  description: string
+  brand: string
+  condition: string
+  google_product_category: string
+  gtin: string
+  mpn: string
+  identifier_exists: boolean | null
+  target_country: string
+  content_language: string
+  currency_code: string
+  feed_label: string
+  price_override: number | null
+  sale_price_override: number | null
+  publication_status: string
+  sync_status?: string
+  last_validated_at?: string | number | Date | null
+  last_sync_at?: string | number | Date | null
+  last_error?: string
+  product?: { name?: string }
+  variant?: { sku?: string }
+}
+
+interface GoogleMerchantConnection {
+  configured: boolean
+  oauth_configured: boolean
+  token_encryption_configured: boolean
+  connected: boolean
+  status: string
+  google_account_email: string
+  merchant_account_id: string
+  data_source_id: string
+  storefront_base_url: string
+  last_connected_at: string | number | Date | null
+  last_error: string
+}
+
+interface GoogleMerchantConnectionForm {
+  merchant_account_id: string
+  data_source_id: string
+  storefront_base_url: string
+}
+
+interface RemoteProductPrice {
+  amount_micros?: number | string
+  currency_code?: string
+}
+
+interface RemoteProductStatus {
+  item_level_issues?: unknown[]
+  destination_statuses?: Array<{ approved_countries?: unknown[] }>
+}
+
+interface RemoteProduct {
+  name: string
+  offer_id?: string
+  content_language?: string
+  feed_label?: string
+  archived?: boolean
+  product_status?: RemoteProductStatus
+  product_attributes?: {
+    image_link?: string
+    title?: string
+    link?: string
+    price?: RemoteProductPrice
+    sale_price?: RemoteProductPrice
+    availability?: string
+  }
+}
+
+type GoogleMerchantOfferForm = GoogleMerchantOffer
+
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -322,15 +412,35 @@ const connectionSaving = ref(false)
 const oauthStarting = ref(false)
 const disconnecting = ref(false)
 const remoteLoading = ref(false)
-const products = ref([])
-const offers = ref([])
-const remoteProducts = ref([])
+const products = ref<GoogleMerchantProduct[]>([])
+const offers = ref<GoogleMerchantOffer[]>([])
+const remoteProducts = ref<RemoteProduct[]>([])
 const remoteNextPageToken = ref('')
 const dialogOpen = ref(false)
-const syncingOfferId = ref(null)
-const removingRemoteOfferId = ref(null)
-const form = reactive({})
-const connection = reactive({
+const syncingOfferId = ref<GoogleMerchantID | null>(null)
+const removingRemoteOfferId = ref<GoogleMerchantID | null>(null)
+const form = reactive<GoogleMerchantOfferForm>({
+  id: null,
+  product_id: 0,
+  variant_id: 0,
+  offer_id: '',
+  title: '',
+  description: '',
+  brand: '',
+  condition: 'new',
+  google_product_category: '',
+  gtin: '',
+  mpn: '',
+  identifier_exists: null,
+  target_country: '',
+  content_language: '',
+  currency_code: '',
+  feed_label: '',
+  price_override: null,
+  sale_price_override: null,
+  publication_status: 'draft'
+})
+const connection = reactive<GoogleMerchantConnection>({
   configured: false,
   oauth_configured: false,
   token_encryption_configured: false,
@@ -343,25 +453,25 @@ const connection = reactive({
   last_connected_at: null,
   last_error: ''
 })
-const connectionForm = reactive({
+const connectionForm = reactive<GoogleMerchantConnectionForm>({
   merchant_account_id: '',
   data_source_id: '',
   storefront_base_url: ''
 })
 const identifierValue = computed({
   get: () => form.identifier_exists == null ? '' : String(form.identifier_exists),
-  set: (value) => { form.identifier_exists = value === '' ? null : value === 'true' }
+  set: (value: string) => { form.identifier_exists = value === '' ? null : value === 'true' }
 })
 const selectedProduct = computed(() => products.value.find((item) => item.id === Number(form.product_id)) || null)
 
-const emptyForm = () => ({
+const emptyForm = (): GoogleMerchantOfferForm => ({
   id: null, product_id: 0, variant_id: 0, offer_id: '', title: '', description: '', brand: '',
   condition: 'new', google_product_category: '', gtin: '', mpn: '', identifier_exists: null,
   target_country: '', content_language: '', currency_code: '', feed_label: '',
   price_override: null, sale_price_override: null, publication_status: 'draft'
 })
-const reset = (values = {}) => Object.assign(form, emptyForm(), values)
-const applyConnection = (values = {}) => {
+const reset = (values: Partial<GoogleMerchantOfferForm> = {}) => Object.assign(form, emptyForm(), values)
+const applyConnection = (values: Partial<GoogleMerchantConnection> = {}) => {
   Object.assign(connection, {
     ...connection,
     ...values
@@ -480,15 +590,14 @@ const openCreate = () => {
   }
   dialogOpen.value = true
 }
-const openEdit = (offer) => {
+const openEdit = (offer: GoogleMerchantOffer) => {
   reset({ ...offer, id: offer.id, product_id: offer.product_id, variant_id: offer.variant_id })
   dialogOpen.value = true
 }
 const save = async () => {
   saving.value = true
   try {
-    const payload = { ...form }
-    delete payload.id
+    const { id, product, variant, sync_status, last_validated_at, last_sync_at, last_error, ...payload } = form
     const result = form.id ? await googleMerchantApi.updateOffer(form.id, payload) : await googleMerchantApi.createOffer(payload)
     toast.success('Google 同步资料已保存')
     dialogOpen.value = false
@@ -500,7 +609,7 @@ const save = async () => {
     saving.value = false
   }
 }
-const validate = async (offer) => {
+const validate = async (offer: GoogleMerchantOffer) => {
   try {
     await googleMerchantApi.validateOffer(offer.id)
     toast.success('校验通过，已标记为待同步')
@@ -509,7 +618,7 @@ const validate = async (offer) => {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '校验未通过')
   }
 }
-const canSync = (offer) => {
+const canSync = (offer: GoogleMerchantOffer) => {
   return Boolean(
       connection.connected &&
       connection.merchant_account_id &&
@@ -520,8 +629,8 @@ const canSync = (offer) => {
       offer.sync_status !== 'syncing'
   )
 }
-const hasRemoteSubmission = (offer) => Boolean(offer?.last_sync_at && offer.sync_status !== 'removed')
-const canRemoveRemote = (offer) => {
+const hasRemoteSubmission = (offer: GoogleMerchantOffer | null | undefined) => Boolean(offer?.last_sync_at && offer.sync_status !== 'removed')
+const canRemoveRemote = (offer: GoogleMerchantOffer) => {
   return Boolean(
       canSubmitToGoogle.value &&
       hasRemoteSubmission(offer) &&
@@ -530,7 +639,7 @@ const canRemoveRemote = (offer) => {
       connection.data_source_id
   )
 }
-const syncButtonTitle = (offer) => {
+const syncButtonTitle = (offer: GoogleMerchantOffer) => {
   if (!canSubmitToGoogle.value) return '缺少 Google Merchant 同步权限'
   if (!connection.connected) return '请先连接 Google Merchant'
   if (!connection.merchant_account_id || !connection.data_source_id) return '请先配置 Merchant Account ID 和 Data Source ID'
@@ -538,14 +647,14 @@ const syncButtonTitle = (offer) => {
   if (offer.publication_status !== 'ready') return '请先完成校验'
   return offer.sync_status === 'sync_failed' ? '重试此 SKU' : '同步此 SKU'
 }
-const removeRemoteButtonTitle = (offer) => {
+const removeRemoteButtonTitle = (offer: GoogleMerchantOffer) => {
   if (!canSubmitToGoogle.value) return '缺少 Google Merchant 同步权限'
   if (!hasRemoteSubmission(offer)) return '此 SKU 尚未提交到 Google'
   if (!connection.connected) return '请先连接 Google Merchant'
   if (!connection.merchant_account_id || !connection.data_source_id) return '请先配置 Merchant Account ID 和 Data Source ID'
   return '从 Google Merchant 撤回此 SKU，本地同步配置会保留'
 }
-const syncOffer = async (offer) => {
+const syncOffer = async (offer: GoogleMerchantOffer) => {
   syncingOfferId.value = offer.id
   try {
     await googleMerchantApi.syncOffer(offer.id)
@@ -558,7 +667,7 @@ const syncOffer = async (offer) => {
     syncingOfferId.value = null
   }
 }
-const removeRemote = async (offer) => {
+const removeRemote = async (offer: GoogleMerchantOffer) => {
   if (!window.confirm(`确定从 Google Merchant 撤回 ${offer.offer_id}？本地同步配置会保留。`)) return
   removingRemoteOfferId.value = offer.id
   try {
@@ -572,7 +681,7 @@ const removeRemote = async (offer) => {
     removingRemoteOfferId.value = null
   }
 }
-const remove = async (offer) => {
+const remove = async (offer: GoogleMerchantOffer) => {
   if (hasRemoteSubmission(offer)) {
     toast.error('请先从 Google 撤回，再删除本地同步配置')
     return
@@ -581,7 +690,7 @@ const remove = async (offer) => {
   await googleMerchantApi.deleteOffer(offer.id)
   await refresh()
 }
-const statusLabel = (status) => ({
+const statusLabel = (status?: string) => ({
   ready: '待同步',
   not_synced: '未校验',
   validation_failed: '校验失败',
@@ -589,8 +698,8 @@ const statusLabel = (status) => ({
   synced: '已提交',
   sync_failed: '同步失败',
   removed: '已撤回'
-})[status] || status || '-'
-const statusTone = (status) => {
+})[status || ''] || status || '-'
+const statusTone = (status?: string) => {
   if (status === 'ready' || status === 'synced') return 'green'
   if (status === 'validation_failed' || status === 'sync_failed') return 'coral'
   if (status === 'syncing') return 'amber'
@@ -608,32 +717,32 @@ const connectionTone = computed(() => {
   if (connection.status === 'error') return 'coral'
   return 'gray'
 })
-const normalizedAvailability = (availability) => String(availability || '').toLowerCase()
-const remoteAvailabilityLabel = (availability) => ({
+const normalizedAvailability = (availability?: string) => String(availability || '').toLowerCase()
+const remoteAvailabilityLabel = (availability?: string) => ({
   in_stock: '有货',
   out_of_stock: '缺货',
   preorder: '预售',
   backorder: '补货中'
 })[normalizedAvailability(availability)] || availability || '-'
-const remoteAvailabilityTone = (availability) => normalizedAvailability(availability) === 'in_stock' ? 'green' : 'gray'
-const remoteStatusLabel = (product) => {
+const remoteAvailabilityTone = (availability?: string) => normalizedAvailability(availability) === 'in_stock' ? 'green' : 'gray'
+const remoteStatusLabel = (product: RemoteProduct) => {
   if (product?.product_status?.item_level_issues?.length) return `问题 ${product.product_status.item_level_issues.length}`
   if (product?.archived) return '已归档'
   if (product?.product_status?.destination_statuses?.some((item) => item.approved_countries?.length)) return '已批准'
   return '处理中'
 }
-const remoteStatusTone = (product) => {
+const remoteStatusTone = (product: RemoteProduct) => {
   if (product?.product_status?.item_level_issues?.length) return 'coral'
   if (product?.archived) return 'gray'
   if (product?.product_status?.destination_statuses?.some((item) => item.approved_countries?.length)) return 'green'
   return 'amber'
 }
-const formatRemotePrice = (price) => {
+const formatRemotePrice = (price?: RemoteProductPrice) => {
   const amount = Number(price?.amount_micros)
   if (!Number.isFinite(amount) || !price?.currency_code) return '-'
   return `${(amount / 1_000_000).toFixed(2)} ${price.currency_code}`
 }
-const formatDate = (value) => value ? new Date(value).toLocaleString('zh-CN') : '-'
+const formatDate = (value?: string | number | Date | null) => value ? new Date(value).toLocaleString('zh-CN') : '-'
 
 onMounted(async () => {
   await handleOAuthResult()

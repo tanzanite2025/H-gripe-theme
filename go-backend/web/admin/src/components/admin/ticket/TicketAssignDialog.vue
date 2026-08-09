@@ -8,7 +8,7 @@
         </DialogHeader>
         <label class="block space-y-1.5">
           <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">负责人</span>
-          <Select :model-value="assignTo" @update:model-value="emit('update:assignTo', $event)">
+          <Select :model-value="assignTo" @update:model-value="(value) => emit('update:assignTo', String(value))">
             <SelectTrigger class="w-full"><SelectValue placeholder="请选择负责人" /></SelectTrigger>
             <SelectContent>
               <SelectItem v-for="user in supportUsers" :key="user.id" :value="String(user.id)">
@@ -29,20 +29,31 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { TicketRecord, TicketUser } from './ticketTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  currentTicket: { type: Object, default: null },
-  assignTo: { type: String, default: '' },
-  assigning: { type: Boolean, default: false },
-  supportUsers: { type: Array, default: () => [] },
-  supportUserName: { type: Function, required: true },
+withDefaults(defineProps<{
+  open?: boolean
+  currentTicket?: TicketRecord | null
+  assignTo?: string
+  assigning?: boolean
+  supportUsers?: TicketUser[]
+  supportUserName: (user: TicketUser) => string
+}>(), {
+  open: false,
+  currentTicket: null,
+  assignTo: '',
+  assigning: false,
+  supportUsers: () => []
 })
 
-const emit = defineEmits(['update:open', 'update:assignTo', 'submit'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:assignTo', value: string): void
+  (event: 'submit'): void
+}>()
 </script>

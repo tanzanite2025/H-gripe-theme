@@ -11,7 +11,7 @@ FAQ 页面结构、分类与问答内容现在由 Go 后端数据库管理。Nux
 - Admin `/faqs`：负责编辑页面结构、分类结构和 FAQ 内容。
 - Nuxt `PageFaq`：读取 `/api/v1/content/faq-pages/:page_id`；当后端没有可展示 FAQ 内容时不渲染 FAQ 区块。
 - Nuxt `PageFaqSlot`：页面/layout 固定 FAQ 容器。它根据当前路由匹配 `faq_pages.route_path`，自动把对应 FAQ 插入页面底部；等待接口时显示统一 FAQ skeleton loading，不再裸露 `LOAD` 文本。
-- Locale：后台 FAQ 结构对齐系统 34 个 Nuxt locale，当前语言列表来自 `/api/v1/i18n/languages`。中文使用 `zh_cn`，不再使用旧 `zh`。
+- Locale：后台 FAQ 结构对齐固定的 20 个 storefront locale。跨前后端事实源是 `shared/storefront-locales.json`，运行时语言列表来自 `/api/v1/i18n/languages`。中文使用 `zh_cn`，不再使用旧 `zh`。
 
 ## SSR and publishing flow
 
@@ -159,7 +159,7 @@ Forbidden in `answer`:
 - 已新增 FAQ 轻量答案边界：后台答案编辑支持轻量 HTML，Go 后端保存和公开读取时统一清洗，图片从答案 HTML 中拆出为 FAQ 专用单图字段。
 - 已新增 FAQ 图片上传边界：后台和 Go 后端都校验 `image/webp`、`800 x 800`、最多一张；Nuxt 用固定答案内容组件渲染桌面两列/移动单列，并取消 FAQ 展开内容的固定 `max-height` 截断。
 - 已新增 `031_faq_route_coverage.up.sql`，把当前使用 `products` / `support` layout 的 Nuxt 页面补进 `faq_pages` / `faq_categories`，包括 `/shop`、`/shop/:slug`、旧 `/products/:slug`、blog、policies、`/company/about`、`/picture-warehouse`、`/support/faqs` 和旧 `/faq`。这些页面即使暂时没有 FAQ 条目，也能在后台结构面板看到，不再让前台自动容器请求稳定页面时出现 404。
-- 已新增 `041_faq_structure_supported_locales.up.sql`，把旧 `zh` 数据迁到 `zh_cn`，并为系统 34 个 locale 补齐 FAQ 页面/分类结构壳。FAQ 问答内容不会复制到未录入的语言。
+- 已新增 `041_faq_structure_supported_locales.up.sql`，把旧 `zh` 数据迁到 `zh_cn`，并为系统 20 个 storefront locale 补齐 FAQ 页面/分类结构壳。FAQ 问答内容不会复制到未录入的语言。
 - 已新增 Nuxt FAQ lookup 规则：真实商品详情 URL 统一查 `/shop/:slug`，旧产品详情 route 查 `/products/:slug`；`/support/faqs` 与 `/faq` 作为 FAQ 聚合页只展示自身内容，不再通过 layout 自动追加第二个 FAQ 区块。
 - 已完成 `PageFaqSlot` 统一 FAQ skeleton loading：接口等待或客户端路由切换时显示 FAQ 标题、加载提示和三条骨架问题/答案行，不再显示裸 `LOAD` 文本。
 
@@ -167,7 +167,7 @@ Forbidden in `answer`:
 
 ## Initial seed
 
-Migration `028_faq_page_category_source.up.sql` seeds the first Nuxt FAQ page/category structure for legacy `en` and `zh`; `041_faq_structure_supported_locales.up.sql` migrates legacy Chinese to `zh_cn` and expands structure coverage to the supported 34 locales.
+Migration `028_faq_page_category_source.up.sql` seeds the first Nuxt FAQ page/category structure for legacy `en` and `zh`; `041_faq_structure_supported_locales.up.sql` migrates legacy Chinese to `zh_cn` and expands structure coverage to the supported 20 storefront locales.
 
 Migration `031_faq_route_coverage.up.sql` extends that seed to every current Nuxt route covered by the automatic FAQ slot and adds a unique live `(route_path, locale)` index. When adding a new route to `products` or `support` layout, update this route coverage at the same time unless the route is explicitly excluded from `PageFaqSlot`.
 

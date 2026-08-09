@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"tanzanite/internal/domain/coupon"
+	"tanzanite/internal/domain/currency"
 	"tanzanite/internal/domain/loyalty"
 	"tanzanite/internal/domain/order"
+	productdomain "tanzanite/internal/domain/product"
 	"tanzanite/internal/repository"
 	"time"
 )
@@ -25,9 +26,9 @@ type CheckoutQuoteInput struct {
 	UserID               uint
 	Items                []order.OrderItem
 	ShippingAddress      order.Address
+	DisplayCurrency      string
 	CouponCode           string
 	PointsToUse          int
-	Currency             string
 	LoyaltyProgramConfig *loyalty.ProgramConfig
 }
 
@@ -108,14 +109,10 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if len(input.Items) == 0 {
 		return nil, errors.New("cart is empty")
 	}
-	quoteCurrency := strings.ToUpper(strings.TrimSpace(input.Currency))
-	if quoteCurrency == "" {
-		return nil, errors.New("order currency is required")
-	}
-
 	items := make([]order.OrderItem, len(input.Items))
 	shippingItems := make([]ShippingQuoteItemInput, 0, len(input.Items))
 	var subtotal float64
+	quoteCurrency := ""
 	for i, item := range input.Items {
 		if item.Quantity <= 0 {
 			return nil, fmt.Errorf("invalid quantity for product ID %d", item.ProductID)
@@ -132,6 +129,18 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		resolvedVariantID := variant.ID
 		variantID := &resolvedVariantID
 		price := variant.EffectivePrice()
+		itemCurrency := currency.NormalizeCode(variant.Currency)
+		if itemCurrency == "" {
+			itemCurrency = productdomain.DefaultPriceCurrency
+		}
+		if !currency.IsValidCode(itemCurrency) || !currency.IsCatalogCode(itemCurrency) {
+			return nil, fmt.Errorf("unsupported price currency for SKU %s", variant.SKU)
+		}
+		if quoteCurrency == "" {
+			quoteCurrency = itemCurrency
+		} else if quoteCurrency != itemCurrency {
+			return nil, errors.New("cart contains multiple price currencies")
+		}
 		sku := variant.SKU
 		attributes := variant.OptionValues
 		availableStock := variant.Stock
@@ -166,15 +175,19 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			WeightGrams:        variant.Weight,
 		})
 	}
+	if quoteCurrency == "" {
+		return nil, errors.New("product price currency is required")
+	}
 
 	if repos.shippingService == nil {
 		return nil, errors.New("shipping quote service is not configured")
 	}
 	shippingQuote, err := repos.shippingService.QuoteResolvedItems(ShippingQuoteInput{
-		Country:  input.ShippingAddress.Country,
-		Amount:   subtotal,
-		Currency: quoteCurrency,
-		Items:    shippingItems,
+		Country:         input.ShippingAddress.Country,
+		Amount:          subtotal,
+		Currency:        quoteCurrency,
+		DisplayCurrency: input.DisplayCurrency,
+		Items:           shippingItems,
 	})
 	if err != nil {
 		return nil, err

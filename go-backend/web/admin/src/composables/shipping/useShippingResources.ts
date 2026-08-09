@@ -18,6 +18,7 @@ export const useShippingResources = () => {
     services: false,
     tracking: false,
     trackingMappings: false,
+    trackingShipments: false,
     packaging: false,
   })
 

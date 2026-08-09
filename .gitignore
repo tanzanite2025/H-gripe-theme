@@ -12,6 +12,7 @@ output/
 vendor/
 .playwright-cli/
 .codex-gh-artifacts-*/
+go-backend/uploads/
 
 # IDE & OS
 .vscode/

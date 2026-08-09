@@ -59,7 +59,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
@@ -75,18 +75,25 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import type { FAQPageForm } from '@/composables/faq/useFaqStructure'
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  pageForm: { type: Object, required: true },
-  submitting: { type: Boolean, default: false },
-  localeName: { type: Function, required: true }
+const props = withDefaults(defineProps<{
+  open?: boolean
+  pageForm: FAQPageForm
+  submitting?: boolean
+  localeName: (locale?: string | null) => string
+}>(), {
+  open: false,
+  submitting: false
 })
 
-const emit = defineEmits(['update:open', 'submit'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+}>()
 
-const openModel = computed({
+const openModel = computed<boolean>({
   get: () => props.open,
-  set: (value) => emit('update:open', value)
+  set: (value: boolean) => emit('update:open', value)
 })
 </script>

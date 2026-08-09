@@ -15,16 +15,16 @@
         <div class="space-y-3">
           <label class="block space-y-1.5">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">ALT 文本</span>
-            <Input :model-value="alt" @update:model-value="emit('update:alt', $event)" />
+            <Input :model-value="alt" @update:model-value="(value) => emit('update:alt', String(value))" />
           </label>
           <label class="block space-y-1.5">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">说明</span>
-            <Textarea :model-value="caption" class="min-h-24" @update:model-value="emit('update:caption', $event)" />
+            <Textarea :model-value="caption" class="min-h-24" @update:model-value="(value) => emit('update:caption', String(value))" />
           </label>
           <div class="grid grid-cols-2 gap-3">
             <label class="block space-y-1.5">
               <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">状态</span>
-              <Select :model-value="status" @update:model-value="emit('update:status', $event)">
+              <Select :model-value="status" @update:model-value="(value) => emit('update:status', String(value))">
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">启用</SelectItem>
@@ -34,7 +34,7 @@
             </label>
             <label class="block space-y-1.5">
               <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">可见性</span>
-              <Select :model-value="visibility" @update:model-value="emit('update:visibility', $event)">
+              <Select :model-value="visibility" @update:model-value="(value) => emit('update:visibility', String(value))">
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="public">公开</SelectItem>
@@ -57,8 +57,9 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { FileVideo, LoaderCircle, Save } from '@lucide/vue'
+import type { MediaAsset } from '@/api/media'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -66,22 +67,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { assetAccessURL } from '@/lib/mediaPresentation'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  asset: { type: Object, default: null },
-  alt: { type: String, default: '' },
-  caption: { type: String, default: '' },
-  status: { type: String, default: 'active' },
-  visibility: { type: String, default: 'public' },
-  saving: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  open?: boolean
+  asset?: MediaAsset | null
+  alt?: string
+  caption?: string
+  status?: string
+  visibility?: string
+  saving?: boolean
+}>(), {
+  open: false,
+  asset: null,
+  alt: '',
+  caption: '',
+  status: 'active',
+  visibility: 'public',
+  saving: false
 })
 
-const emit = defineEmits([
-  'update:open',
-  'update:alt',
-  'update:caption',
-  'update:status',
-  'update:visibility',
-  'save',
-])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:alt', value: string): void
+  (event: 'update:caption', value: string): void
+  (event: 'update:status', value: string): void
+  (event: 'update:visibility', value: string): void
+  (event: 'save'): void
+}>()
 </script>

@@ -95,7 +95,7 @@
   </Tabs>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import ShippingCarrierServicesPanel from '@/components/admin/shipping/ShippingCarrierServicesPanel.vue'
 import ShippingCarriersPanel from '@/components/admin/shipping/ShippingCarriersPanel.vue'
@@ -106,44 +106,77 @@ import ShippingZonesPanel from '@/components/admin/shipping/ShippingZonesPanel.v
 import TrackingProvidersPanel from '@/components/admin/shipping/TrackingProvidersPanel.vue'
 import TrackingShipmentsPanel from '@/components/admin/shipping/TrackingShipmentsPanel.vue'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
+import type {
+  PackagingRule,
+  ShippingCarrier,
+  ShippingCarrierService,
+  ShippingLoadingState,
+  ShippingResource,
+  ShippingTemplate,
+  ShippingZone,
+  TrackingCarrierMapping,
+  TrackingProvider
+} from './shippingTypes'
 
-defineProps({
-  activeTab: { type: String, default: 'templates' },
-  templates: { type: Array, default: () => [] },
-  zones: { type: Array, default: () => [] },
-  carriers: { type: Array, default: () => [] },
-  carrierServices: { type: Array, default: () => [] },
-  trackingProviders: { type: Array, default: () => [] },
-  trackingCarrierMappings: { type: Array, default: () => [] },
-  packagingRules: { type: Array, default: () => [] },
-  loading: { type: Object, default: () => ({}) },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  activeTab?: string
+  templates?: ShippingTemplate[]
+  zones?: ShippingZone[]
+  carriers?: ShippingCarrier[]
+  carrierServices?: ShippingCarrierService[]
+  trackingProviders?: TrackingProvider[]
+  trackingCarrierMappings?: TrackingCarrierMapping[]
+  packagingRules?: PackagingRule[]
+  loading?: ShippingLoadingState
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  activeTab: 'templates',
+  templates: () => [],
+  zones: () => [],
+  carriers: () => [],
+  carrierServices: () => [],
+  trackingProviders: () => [],
+  trackingCarrierMappings: () => [],
+  packagingRules: () => [],
+  loading: () => ({
+    templates: false,
+    zones: false,
+    carriers: false,
+    services: false,
+    tracking: false,
+    trackingMappings: false,
+    trackingShipments: false,
+    packaging: false
+  }),
+  canCreate: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits([
-  'create-template',
-  'edit-template',
-  'create-mapping',
-  'edit-mapping',
-  'create-zone',
-  'edit-zone',
-  'create-carrier',
-  'edit-carrier',
-  'create-carrier-service',
-  'edit-carrier-service',
-  'create-packaging',
-  'edit-packaging',
-  'show-packaging-applies',
-  'create-tracking-provider',
-  'edit-tracking-provider',
-  'copy-webhook',
-  'count-change',
-  'delete',
-])
+const emit = defineEmits<{
+  (event: 'create-template'): void
+  (event: 'edit-template', template: ShippingTemplate): void
+  (event: 'create-mapping'): void
+  (event: 'edit-mapping', mapping: TrackingCarrierMapping): void
+  (event: 'create-zone'): void
+  (event: 'edit-zone', zone: ShippingZone): void
+  (event: 'create-carrier'): void
+  (event: 'edit-carrier', carrier: ShippingCarrier): void
+  (event: 'create-carrier-service'): void
+  (event: 'edit-carrier-service', service: ShippingCarrierService): void
+  (event: 'create-packaging'): void
+  (event: 'edit-packaging', rule: PackagingRule): void
+  (event: 'show-packaging-applies', rule: PackagingRule): void
+  (event: 'create-tracking-provider'): void
+  (event: 'edit-tracking-provider', provider: TrackingProvider): void
+  (event: 'copy-webhook', provider: TrackingProvider): void
+  (event: 'count-change', count: number): void
+  (event: 'delete', resourceType: string, resource: ShippingResource): void
+}>()
 
-const trackingShipmentsPanelRef = ref(null)
+const trackingShipmentsPanelRef = ref<{ refresh?: () => Promise<void> | void } | null>(null)
 const refresh = () => trackingShipmentsPanelRef.value?.refresh?.()
 
 defineExpose({ refresh })

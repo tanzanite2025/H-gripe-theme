@@ -49,7 +49,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -58,11 +58,26 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  form: { type: Object, required: true },
-  saving: { type: Boolean, default: false },
+interface PublicChatGroupForm {
+  id?: string | number | null
+  code: string
+  name: string
+  sort_order: number | string
+  status: string
+  description: string
+}
+
+const props = withDefaults(defineProps<{
+  open?: boolean
+  form: PublicChatGroupForm
+  saving?: boolean
+}>(), {
+  open: false,
+  saving: false,
 })
 
-const emit = defineEmits(['update:open', 'save'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'save'): void
+}>()
 </script>

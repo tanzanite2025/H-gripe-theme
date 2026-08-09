@@ -41,7 +41,13 @@ func (h *Handler) GetPaymentMethod(c *gin.Context) {
 		return
 	}
 
-	item, err := h.paymentMethodToAvailabilityResponse(c, *method)
+	context, err := h.resolvePaymentMethodAvailabilityContext(c)
+	if err != nil {
+		apierror.RespondError(c, 503, "payment_methods_unavailable", "Payment methods are temporarily unavailable")
+		return
+	}
+
+	item, err := h.paymentMethodToAvailabilityResponse(c, *method, context)
 	if err != nil {
 		apierror.RespondError(c, 503, "payment_methods_unavailable", "Payment methods are temporarily unavailable")
 		return

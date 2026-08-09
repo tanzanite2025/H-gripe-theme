@@ -4,6 +4,7 @@ export interface CartItem {
   variant_id?: number | null
   title: string
   price: number
+  currency?: string
   quantity: number
   slug?: string
   name?: string

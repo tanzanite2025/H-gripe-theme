@@ -74,41 +74,34 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-const props = defineProps({
-  page: {
-    type: Number,
-    required: true
-  },
-  pageSize: {
-    type: Number,
-    required: true
-  },
-  total: {
-    type: Number,
-    required: true
-  },
-  pageSizes: {
-    type: Array,
-    default: () => [10, 20, 50, 100]
-  }
+const props = withDefaults(defineProps<{
+  page: number
+  pageSize: number
+  total: number
+  pageSizes?: number[]
+}>(), {
+  pageSizes: () => [10, 20, 50, 100]
 })
 
-const emit = defineEmits(['update:page', 'update:pageSize'])
+const emit = defineEmits<{
+  (event: 'update:page', value: number): void
+  (event: 'update:pageSize', value: number): void
+}>()
 const jumpValue = ref(String(props.page))
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)))
 const rangeStart = computed(() => (props.total === 0 ? 0 : (props.page - 1) * props.pageSize + 1))
 const rangeEnd = computed(() => Math.min(props.page * props.pageSize, props.total))
-const pageSizeModel = computed({
+const pageSizeModel = computed<string>({
   get: () => String(props.pageSize),
-  set: (value) => {
+  set: (value: string) => {
     emit('update:pageSize', Number(value))
   }
 })
@@ -118,7 +111,7 @@ const visiblePages = computed(() => {
   return Array.from({ length: end - start + 1 }, (_, index) => start + index)
 })
 
-const goTo = (nextPage) => {
+const goTo = (nextPage: number) => {
   const normalized = Math.min(totalPages.value, Math.max(1, nextPage))
   if (normalized !== props.page) emit('update:page', normalized)
 }

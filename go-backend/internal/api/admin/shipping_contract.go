@@ -2,28 +2,31 @@ package admin
 
 import (
 	"strings"
+	"tanzanite/internal/domain/currency"
 	shippingdomain "tanzanite/internal/domain/shipping"
 	"time"
 )
 
 type shippingTemplateRequest struct {
-	Name          string                `json:"name" binding:"required"`
-	Type          string                `json:"type" binding:"required"`
-	FreeShipping  bool                  `json:"free_shipping"`
-	FreeThreshold float64               `json:"free_threshold"`
-	DefaultFee    float64               `json:"default_fee"`
-	Description   string                `json:"description"`
-	Enabled       *bool                 `json:"enabled"`
-	Rules         []shippingRuleRequest `json:"rules"`
+	Name                  string                                     `json:"name" binding:"required"`
+	Type                  string                                     `json:"type" binding:"required"`
+	FreeShipping          bool                                       `json:"free_shipping"`
+	FreeThreshold         float64                                    `json:"free_threshold"`
+	DefaultFee            float64                                    `json:"default_fee"`
+	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
+	Description           string                                     `json:"description"`
+	Enabled               *bool                                      `json:"enabled"`
+	Rules                 []shippingRuleRequest                      `json:"rules"`
 }
 
 type shippingRuleRequest struct {
-	ID         uint    `json:"id"`
-	Region     string  `json:"region"`
-	MinValue   float64 `json:"min_value"`
-	MaxValue   float64 `json:"max_value"`
-	Fee        float64 `json:"fee"`
-	Additional float64 `json:"additional"`
+	ID                    uint                                       `json:"id"`
+	Region                string                                     `json:"region"`
+	MinValue              float64                                    `json:"min_value"`
+	MaxValue              float64                                    `json:"max_value"`
+	Fee                   float64                                    `json:"fee"`
+	Additional            float64                                    `json:"additional"`
+	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
 }
 
 type shippingZoneRequest struct {
@@ -111,31 +114,48 @@ func (r shippingTemplateRequest) toDomain() shippingdomain.ShippingTemplate {
 		enabled = *r.Enabled
 	}
 
+	templateType := strings.TrimSpace(r.Type)
 	template := shippingdomain.ShippingTemplate{
-		Name:          strings.TrimSpace(r.Name),
-		Type:          strings.TrimSpace(r.Type),
-		FreeShipping:  r.FreeShipping,
-		FreeThreshold: r.FreeThreshold,
-		DefaultFee:    r.DefaultFee,
-		Description:   strings.TrimSpace(r.Description),
-		Enabled:       enabled,
+		Name:             strings.TrimSpace(r.Name),
+		Type:             templateType,
+		FreeShipping:     r.FreeShipping,
+		FreeThreshold:    r.FreeThreshold,
+		DefaultFee:       r.DefaultFee,
+		DisplayPriceData: shippingdomain.TemplateDisplayPriceSnapshotsJSON(r.DisplayPriceSnapshots),
+		Description:      strings.TrimSpace(r.Description),
+		Enabled:          enabled,
 	}
 
 	for _, rule := range r.Rules {
-		template.Rules = append(template.Rules, rule.toDomain())
+		template.Rules = append(template.Rules, rule.toDomainForTemplateType(templateType))
 	}
 
 	return template
 }
 
 func (r shippingRuleRequest) toDomain() shippingdomain.ShippingRule {
+	return r.toDomainWithDisplayPriceFields(shippingdomain.ShippingRuleDisplayPriceFields)
+}
+
+func (r shippingRuleRequest) toDomainForTemplateType(templateType string) shippingdomain.ShippingRule {
+	if strings.TrimSpace(templateType) == "price" {
+		return r.toDomainWithDisplayPriceFields(shippingdomain.ShippingRuleDisplayPriceFields)
+	}
+	return r.toDomainWithDisplayPriceFields([]string{
+		shippingdomain.ShippingRuleDisplayPriceFieldFee,
+		shippingdomain.ShippingRuleDisplayPriceFieldAdditional,
+	})
+}
+
+func (r shippingRuleRequest) toDomainWithDisplayPriceFields(fields []string) shippingdomain.ShippingRule {
 	return shippingdomain.ShippingRule{
-		ID:         r.ID,
-		Region:     strings.ToUpper(strings.TrimSpace(r.Region)),
-		MinValue:   r.MinValue,
-		MaxValue:   r.MaxValue,
-		Fee:        r.Fee,
-		Additional: r.Additional,
+		ID:               r.ID,
+		Region:           strings.ToUpper(strings.TrimSpace(r.Region)),
+		MinValue:         r.MinValue,
+		MaxValue:         r.MaxValue,
+		Fee:              r.Fee,
+		Additional:       r.Additional,
+		DisplayPriceData: currency.DisplayPriceSnapshotMapJSON(r.DisplayPriceSnapshots, "", fields...),
 	}
 }
 

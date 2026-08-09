@@ -1,3 +1,5 @@
+import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
+
 /**
  * 国家列表数据
  * ISO 3166-1 alpha-2 国家代码
@@ -115,9 +117,8 @@ export function getCountryByCode(code: string): Country | undefined {
 export function getCountryName(code: string, locale: string = 'en'): string {
   const country = getCountryByCode(code)
   if (!country) return code
-  
-  const normalizedLocale = locale.toLowerCase().replace('_', '-')
-  if (normalizedLocale === 'zh' || normalizedLocale.startsWith('zh-')) {
+
+  if (isSimplifiedChineseStorefrontLocale(locale)) {
     return country.nameZh || country.name
   }
   return country.name

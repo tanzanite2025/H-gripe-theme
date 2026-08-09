@@ -6,18 +6,18 @@
     
     <ul class="translations-list">
       <li 
-        v-for="(trans, locale) in translations" 
-        :key="locale"
-        :class="{ 'current-locale': locale === currentLocale }"
+        v-for="trans in visibleTranslations"
+        :key="trans.locale"
+        :class="{ 'current-locale': trans.locale === currentLocaleCode }"
       >
         <NuxtLink 
           :to="trans.url" 
           class="translation-link"
-          :aria-current="locale === currentLocale ? 'page' : undefined"
+          :aria-current="trans.locale === currentLocaleCode ? 'page' : undefined"
         >
-          <span class="locale-flag">{{ getFlagEmoji(locale) }}</span>
-          <span class="locale-name">{{ getLocaleName(locale) }}</span>
-          <span v-if="locale === currentLocale" class="current-badge">
+          <span class="locale-flag">{{ getFlagEmoji(trans.locale) }}</span>
+          <span class="locale-name">{{ getLocaleName(trans.locale) }}</span>
+          <span v-if="trans.locale === currentLocaleCode" class="current-badge">
             (Current)
           </span>
         </NuxtLink>
@@ -29,6 +29,11 @@
 <script setup lang="ts">
 import { useBlogApi } from '~/composables/useBlogApi'
 import { useI18n } from '#imports'
+import {
+  getStorefrontLocaleFlag,
+  getStorefrontLocaleName,
+  normalizeStorefrontLocaleCode,
+} from '~/utils/storefrontLocales'
 
 interface PostTranslation {
   id: number
@@ -49,15 +54,32 @@ const props = withDefaults(defineProps<Props>(), {
   showCurrentLocale: true
 })
 
-const { locale: currentLocale, locales } = useI18n()
+const { locale: currentLocale } = useI18n()
 const { getPostTranslations } = useBlogApi()
 
 const translations = ref<Record<string, PostTranslation>>({})
+const currentLocaleCode = computed(() => normalizeStorefrontLocaleCode(currentLocale.value) || 'en')
+
+const visibleTranslations = computed<PostTranslation[]>(() => {
+  const byLocale = new Map<string, PostTranslation>()
+
+  for (const [rawLocale, translation] of Object.entries(translations.value)) {
+    const canonicalLocale = normalizeStorefrontLocaleCode(translation.locale || rawLocale)
+    if (!canonicalLocale) continue
+    if (!props.showCurrentLocale && canonicalLocale === currentLocaleCode.value) continue
+
+    byLocale.set(canonicalLocale, {
+      ...translation,
+      locale: canonicalLocale,
+    })
+  }
+
+  return Array.from(byLocale.values())
+})
 
 // 计算是否有翻译
 const hasTranslations = computed(() => {
-  const count = Object.keys(translations.value).length
-  return props.showCurrentLocale ? count > 1 : count > 0
+  return props.showCurrentLocale ? visibleTranslations.value.length > 1 : visibleTranslations.value.length > 0
 })
 
 // 加载翻译数据
@@ -67,50 +89,12 @@ onMounted(async () => {
 
 // 获取语言名称
 const getLocaleName = (localeCode: string): string => {
-  const allLocales = locales.value as Array<{ code: string; name?: string; nativeName?: string }> | undefined
-  const found = allLocales?.find(l => l.code === localeCode)
-  return found?.name || found?.nativeName || localeCode
+  return getStorefrontLocaleName(localeCode, localeCode)
 }
 
 // 获取国旗 Emoji
 const getFlagEmoji = (locale: string): string => {
-  const flagMap: Record<string, string> = {
-    'en': '🇬🇧',
-    'zh': '🇨🇳',
-    'zh-TW': '🇹🇼',
-    'ja': '🇯🇵',
-    'ko': '🇰🇷',
-    'fr': '🇫🇷',
-    'de': '🇩🇪',
-    'es': '🇪🇸',
-    'it': '🇮🇹',
-    'pt': '🇵🇹',
-    'ru': '🇷🇺',
-    'ar': '🇸🇦',
-    'nl': '🇳🇱',
-    'pl': '🇵🇱',
-    'tr': '🇹🇷',
-    'vi': '🇻🇳',
-    'th': '🇹🇭',
-    'id': '🇮🇩',
-    'ms': '🇲🇾',
-    'hi': '🇮🇳',
-    'bn': '🇧🇩',
-    'ta': '🇮🇳',
-    'te': '🇮🇳',
-    'mr': '🇮🇳',
-    'ur': '🇵🇰',
-    'fa': '🇮🇷',
-    'he': '🇮🇱',
-    'sv': '🇸🇪',
-    'no': '🇳🇴',
-    'da': '🇩🇰',
-    'fi': '🇫🇮',
-    'cs': '🇨🇿',
-    'hu': '🇭🇺',
-    'ro': '🇷🇴',
-  }
-  return flagMap[locale] || '🌐'
+  return getStorefrontLocaleFlag(locale)
 }
 </script>
 

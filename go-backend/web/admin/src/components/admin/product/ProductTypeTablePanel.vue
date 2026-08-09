@@ -75,7 +75,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { CircleCheck, CircleOff, MoreHorizontal, Pencil, Tags, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -88,15 +88,29 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  ProductTypeDateFormatter,
+  ProductTypeRecord,
+  ProductTypeVariantSpecCounter
+} from './productTypeTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  types: { type: Array, default: () => [] },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  variantSpecCount: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+withDefaults(defineProps<{
+  loading?: boolean
+  types?: ProductTypeRecord[]
+  canEdit?: boolean
+  canDelete?: boolean
+  variantSpecCount: ProductTypeVariantSpecCounter
+  formatDate: ProductTypeDateFormatter
+}>(), {
+  loading: false,
+  types: () => [],
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits(['edit', 'toggle', 'delete'])
+const emit = defineEmits<{
+  (event: 'edit', type: ProductTypeRecord): void
+  (event: 'toggle', type: ProductTypeRecord): void
+  (event: 'delete', type: ProductTypeRecord): void
+}>()
 </script>

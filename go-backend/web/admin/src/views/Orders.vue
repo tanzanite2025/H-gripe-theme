@@ -100,7 +100,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
@@ -143,25 +143,57 @@ import {
 } from '@/lib/orderPresentation'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
+import type {
+  OrderConfirmation,
+  OrderFilters,
+  OrderID,
+  OrderPagination,
+  OrderRecord,
+  OrderStatItem,
+  OrderStats,
+  OrderStatusForm,
+  OrderStatusTone,
+  ShippingCarrier,
+  ShippingCarrierService,
+  TrackingCarrierMapping,
+  TrackingEvent,
+  TrackingProvider,
+  TrackingShipment
+} from '@/components/admin/order/orderTypes'
+
+interface OrderListResponse {
+  orders?: OrderRecord[]
+  pagination?: Partial<OrderPagination>
+}
+
+interface OrderDetailResponse {
+  order?: OrderRecord | null
+  tracking_shipment?: TrackingShipment | null
+}
+
+interface TrackingEventsResponse {
+  data?: TrackingEvent[] | { data?: TrackingEvent[]; events?: TrackingEvent[] }
+  events?: TrackingEvent[]
+}
 
 const authStore = useAuthStore()
 const loading = ref(false)
-const orders = ref([])
-const selectedOrders = ref([])
+const orders = ref<OrderRecord[]>([])
+const selectedOrders = ref<OrderRecord[]>([])
 const detailDialogVisible = ref(false)
 const statusDialogVisible = ref(false)
 const submitting = ref(false)
 const syncingTracking = ref(false)
-const currentOrder = ref(null)
-const currentTrackingEvents = ref([])
-const currentTrackingShipment = ref(null)
-const stats = ref({})
-const carriers = ref([])
-const carrierServices = ref([])
-const trackingProviders = ref([])
-const trackingCarrierMappings = ref([])
+const currentOrder = ref<OrderRecord | null>(null)
+const currentTrackingEvents = ref<TrackingEvent[]>([])
+const currentTrackingShipment = ref<TrackingShipment | null>(null)
+const stats = ref<OrderStats>({})
+const carriers = ref<ShippingCarrier[]>([])
+const carrierServices = ref<ShippingCarrierService[]>([])
+const trackingProviders = ref<TrackingProvider[]>([])
+const trackingCarrierMappings = ref<TrackingCarrierMapping[]>([])
 
-const filters = reactive({
+const filters = reactive<OrderFilters>({
   search: '',
   status: 'all',
   payment_status: 'all',
@@ -170,8 +202,8 @@ const filters = reactive({
   end_date: ''
 })
 
-const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
-const statusForm = reactive({
+const pagination = reactive<OrderPagination>({ page: 1, pageSize: 20, total: 0 })
+const statusForm = reactive<OrderStatusForm>({
   id: null,
   order_number: '',
   status: 'pending',
@@ -182,7 +214,7 @@ const statusForm = reactive({
   carrier_service_id: 'none'
 })
 const adminNoteForm = reactive({ admin_note: '' })
-const confirmation = reactive({
+const confirmation = reactive<OrderConfirmation>({
   open: false,
   type: '',
   target: null,
@@ -193,7 +225,7 @@ const confirmation = reactive({
   destructive: false
 })
 
-const statItems = computed(() => [
+const statItems = computed<OrderStatItem[]>(() => [
   { key: 'total', label: '总订单数', value: stats.value.total || 0, icon: ShoppingBag, tone: 'gray' },
   { key: 'today', label: '今日订单', value: stats.value.today || 0, icon: CalendarCheck2, tone: 'blue' },
   { key: 'revenue', label: '总销售额', value: `¥${formatMoney(stats.value.total_revenue)}`, icon: Banknote, tone: 'green' },
@@ -243,9 +275,12 @@ const resolvedProviderCarrierCodeLabel = computed(() => {
   return `${mapping.provider_carrier_code}${mapping.provider_carrier_name ? ` / ${mapping.provider_carrier_name}` : ''}`
 })
 
-const hasPermission = (permission) => authStore.hasPermission(permission)
-const defaultTrackingProviderValue = () => trackingProviders.value[0]?.id ? String(trackingProviders.value[0].id) : 'none'
-const providerValueForLocalShippingSource = (carrierIDValue, carrierServiceIDValue) => {
+const hasPermission = (permission: string): boolean => authStore.hasPermission(permission)
+const defaultTrackingProviderValue = (): string => (trackingProviders.value[0]?.id ? String(trackingProviders.value[0].id) : 'none')
+const providerValueForLocalShippingSource = (
+  carrierIDValue: OrderID | null | undefined,
+  carrierServiceIDValue: OrderID | null | undefined
+): string => {
   const carrierServiceID = numericSelectID(carrierServiceIDValue)
   if (carrierServiceID) {
     const serviceMapping = trackingCarrierMappings.value.find((mapping) =>
@@ -269,25 +304,25 @@ const providerValueForLocalShippingSource = (carrierIDValue, carrierServiceIDVal
 
   return defaultTrackingProviderValue()
 }
-const defaultTrackingProviderForOrder = (order) => {
+const defaultTrackingProviderForOrder = (order: OrderRecord | null): string => {
   const storedProvider = selectValueFromID(order?.tracking_provider_id)
   if (storedProvider !== 'none') return storedProvider
   return providerValueForLocalShippingSource(order?.carrier_id, order?.carrier_service_id)
 }
-const orderCarrierLabel = (order) => {
+const orderCarrierLabel = (order: OrderRecord | null): string => {
   const carrierID = Number(order?.carrier_id)
   if (!Number.isFinite(carrierID) || carrierID <= 0) return '-'
   const carrier = carriers.value.find((item) => Number(item.id) === carrierID)
   return carrier ? `${carrier.name} / ${carrier.code}` : `Carrier #${carrierID}`
 }
-const orderCarrierServiceLabel = (order) => {
+const orderCarrierServiceLabel = (order: OrderRecord | null): string => {
   const serviceID = Number(order?.carrier_service_id)
   if (!Number.isFinite(serviceID) || serviceID <= 0) return '-'
   const service = carrierServices.value.find((item) => Number(item.id) === serviceID)
   return service ? `${service.service_name} / ${service.service_code}` : `Carrier service #${serviceID}`
 }
 
-const buildFilterParams = () => ({
+const buildFilterParams = (): Record<string, string> => ({
   ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
   ...(filters.status !== 'all' ? { status: filters.status } : {}),
   ...(filters.payment_status !== 'all' ? { payment_status: filters.payment_status } : {}),
@@ -296,19 +331,19 @@ const buildFilterParams = () => ({
   ...(filters.end_date ? { end_date: filters.end_date } : {})
 })
 
-const fetchStats = async () => {
+const fetchStats = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/orders/stats')
+    const response = await axios.get<OrderStats>('/api/admin/orders/stats')
     stats.value = response.data || {}
   } catch (error) {
     console.error('Failed to fetch order stats:', error)
   }
 }
 
-const fetchOrders = async () => {
+const fetchOrders = async (): Promise<void> => {
   loading.value = true
   try {
-    const response = await axios.get('/api/admin/orders', {
+    const response = await axios.get<OrderListResponse>('/api/admin/orders', {
       params: { page: pagination.page, page_size: pagination.pageSize, ...buildFilterParams() }
     })
     orders.value = response.data.orders || []
@@ -321,7 +356,7 @@ const fetchOrders = async () => {
   }
 }
 
-const fetchShippingLookups = async () => {
+const fetchShippingLookups = async (): Promise<void> => {
   try {
     const [providerList, carrierList, serviceList, mappingList] = await Promise.all([
       shippingApi.listTrackingProviders({ enabled: 'true' }),
@@ -338,22 +373,23 @@ const fetchShippingLookups = async () => {
   }
 }
 
-const unwrapTrackingEvents = (response) => {
-  const payload = response.data?.data ?? response.data ?? {}
+const unwrapTrackingEvents = (response: { data?: TrackingEventsResponse | TrackingEvent[] }): TrackingEvent[] => {
+  const responseData = response.data
+  const payload = Array.isArray(responseData) ? responseData : responseData?.data ?? responseData ?? {}
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload.data)) return payload.data
   if (Array.isArray(payload.events)) return payload.events
   return []
 }
 
-const fetchOrderTrackingEvents = async (orderID) => {
+const fetchOrderTrackingEvents = async (orderID: OrderID | null | undefined): Promise<void> => {
   if (!orderID) {
     currentTrackingEvents.value = []
     return
   }
 
   try {
-    const response = await axios.get(`/api/v1/shipping/orders/${orderID}/tracking`)
+    const response = await axios.get<TrackingEventsResponse>(`/api/v1/shipping/orders/${orderID}/tracking`)
     currentTrackingEvents.value = unwrapTrackingEvents(response)
   } catch (error) {
     currentTrackingEvents.value = []
@@ -361,25 +397,25 @@ const fetchOrderTrackingEvents = async (orderID) => {
   }
 }
 
-const refreshOrders = () => Promise.all([fetchOrders(), fetchStats()])
-const applyFilters = () => { pagination.page = 1; fetchOrders() }
-const resetFilters = () => {
+const refreshOrders = (): Promise<[void, void]> => Promise.all([fetchOrders(), fetchStats()])
+const applyFilters = (): void => { pagination.page = 1; void fetchOrders() }
+const resetFilters = (): void => {
   Object.assign(filters, { search: '', status: 'all', payment_status: 'all', shipping_status: 'all', start_date: '', end_date: '' })
   pagination.page = 1
   fetchOrders()
 }
-const updatePage = (page) => { pagination.page = page; fetchOrders() }
-const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchOrders() }
+const updatePage = (page: number): void => { pagination.page = page; void fetchOrders() }
+const updatePageSize = (pageSize: number): void => { pagination.pageSize = pageSize; pagination.page = 1; void fetchOrders() }
 
-const showOrderDetail = async (order) => {
+const showOrderDetail = async (order: OrderRecord): Promise<void> => {
   try {
     currentTrackingShipment.value = null
     const [response] = await Promise.all([
-      axios.get(`/api/admin/orders/${order.id}`),
+      axios.get<OrderDetailResponse>(`/api/admin/orders/${order.id}`),
       fetchShippingLookups(),
       fetchOrderTrackingEvents(order.id)
     ])
-    currentOrder.value = response.data.order
+    currentOrder.value = response.data.order || null
     currentTrackingShipment.value = response.data.tracking_shipment || null
     adminNoteForm.admin_note = currentOrder.value.admin_note || ''
     detailDialogVisible.value = true
@@ -388,7 +424,7 @@ const showOrderDetail = async (order) => {
   }
 }
 
-const showStatusDialog = async (order) => {
+const showStatusDialog = async (order: OrderRecord): Promise<void> => {
   await fetchShippingLookups()
   Object.assign(statusForm, {
     id: order.id,
@@ -403,7 +439,7 @@ const showStatusDialog = async (order) => {
   statusDialogVisible.value = true
 }
 
-const handleStatusCarrierChange = (value) => {
+const handleStatusCarrierChange = (value: string): void => {
   const carrierID = numericSelectID(value)
   if (!carrierID) {
     statusForm.carrier_id = 'none'
@@ -417,7 +453,7 @@ const handleStatusCarrierChange = (value) => {
   statusForm.tracking_provider_id = providerValueForLocalShippingSource(carrierID, statusForm.carrier_service_id)
 }
 
-const handleStatusCarrierServiceChange = (value) => {
+const handleStatusCarrierServiceChange = (value: string): void => {
   const serviceID = numericSelectID(value)
   if (!serviceID) {
     statusForm.carrier_service_id = 'none'
@@ -431,7 +467,7 @@ const handleStatusCarrierServiceChange = (value) => {
   statusForm.tracking_provider_id = providerValueForLocalShippingSource(statusForm.carrier_id, serviceID)
 }
 
-const submitStatus = async () => {
+const submitStatus = async (): Promise<void> => {
   submitting.value = true
   try {
     await axios.patch(`/api/admin/orders/${statusForm.id}/status`, { status: statusForm.status })
@@ -468,7 +504,7 @@ const submitStatus = async () => {
   }
 }
 
-const syncCurrentOrderTracking = async () => {
+const syncCurrentOrderTracking = async (): Promise<void> => {
   if (!currentOrder.value?.id) return
 
   syncingTracking.value = true
@@ -485,28 +521,31 @@ const syncCurrentOrderTracking = async () => {
   }
 }
 
-const updateAdminNote = async () => {
+const updateAdminNote = async (): Promise<void> => {
   try {
+    if (!currentOrder.value?.id) return
     await axios.patch(`/api/admin/orders/${currentOrder.value.id}/admin-note`, { admin_note: adminNoteForm.admin_note })
-    currentOrder.value.admin_note = adminNoteForm.admin_note
+    if (currentOrder.value) currentOrder.value.admin_note = adminNoteForm.admin_note
     toast.success('管理员备注已保存')
   } catch (error) {
     console.error('Failed to update admin note:', error)
   }
 }
 
-const isSelected = (orderId) => selectedOrders.value.some((order) => order.id === orderId)
-const toggleAllOrders = (checked) => { selectedOrders.value = checked === true ? [...orders.value] : [] }
-const toggleOrder = (order, checked) => {
+const isSelected = (orderId: OrderID): boolean => selectedOrders.value.some((order) => order.id === orderId)
+const toggleAllOrders = (checked: boolean | 'indeterminate'): void => { selectedOrders.value = checked === true ? [...orders.value] : [] }
+const toggleOrder = (order: OrderRecord, checked: boolean | 'indeterminate'): void => {
   if (checked === true && !isSelected(order.id)) selectedOrders.value = [...selectedOrders.value, order]
   else if (checked !== true) selectedOrders.value = selectedOrders.value.filter((selected) => selected.id !== order.id)
 }
 
-const setConfirmation = (values) => Object.assign(confirmation, { open: true, destructive: false, confirmLabel: '确定', ...values })
-const requestDelete = (order) => setConfirmation({
+const setConfirmation = (values: Partial<OrderConfirmation>): void => {
+  Object.assign(confirmation, { open: true, destructive: false, confirmLabel: '确定', ...values })
+}
+const requestDelete = (order: OrderRecord): void => setConfirmation({
   type: 'delete', target: order, title: '删除订单？', description: `订单 ${order.order_number} 将被永久删除，此操作不可恢复。`, confirmLabel: '删除', destructive: true
 })
-const requestBatchStatus = (status) => {
+const requestBatchStatus = (status: string): void => {
   const completing = status === 'completed'
   setConfirmation({
     type: 'batch-status',
@@ -519,14 +558,16 @@ const requestBatchStatus = (status) => {
   })
 }
 
-const executeConfirmedAction = async () => {
+const executeConfirmedAction = async (): Promise<void> => {
   const { type, target, status } = confirmation
   confirmation.open = false
   try {
     if (type === 'delete') {
+      if (!target || Array.isArray(target)) return
       await axios.delete(`/api/admin/orders/${target.id}`)
       toast.success('订单已删除')
     } else if (type === 'batch-status') {
+      if (!target || !Array.isArray(target)) return
       const response = await axios.post('/api/admin/orders/batch-status', {
         order_ids: target.map((order) => order.id),
         status
@@ -539,7 +580,7 @@ const executeConfirmedAction = async () => {
   }
 }
 
-const exportOrders = async () => {
+const exportOrders = async (): Promise<void> => {
   try {
     const query = new URLSearchParams(buildFilterParams()).toString()
     const response = await axios.get(`/api/admin/orders/export${query ? `?${query}` : ''}`, { responseType: 'blob' })
@@ -556,7 +597,7 @@ const exportOrders = async () => {
 }
 
 onMounted(() => {
-  refreshOrders()
-  fetchShippingLookups()
+  void refreshOrders()
+  void fetchShippingLookups()
 })
 </script>

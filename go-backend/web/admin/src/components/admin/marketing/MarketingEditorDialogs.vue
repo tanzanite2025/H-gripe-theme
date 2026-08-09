@@ -21,29 +21,38 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import CouponEditorDialog from '@/components/admin/marketing/CouponEditorDialog.vue'
+import type { CouponErrors, CouponForm } from '@/components/admin/marketing/CouponEditorDialog.vue'
 import MemberLevelEditorDialog from '@/components/admin/marketing/MemberLevelEditorDialog.vue'
+import type { MemberLevelErrors, MemberLevelForm } from '@/components/admin/marketing/MemberLevelEditorDialog.vue'
 
-defineProps({
-  couponOpen: { type: Boolean, default: false },
-  couponMode: { type: String, default: 'create' },
-  couponForm: { type: Object, required: true },
-  couponErrors: { type: Object, required: true },
-  couponSubmitting: { type: Boolean, default: false },
-  levelOpen: { type: Boolean, default: false },
-  levelMode: { type: String, default: 'create' },
-  levelForm: { type: Object, required: true },
-  levelErrors: { type: Object, required: true },
-  levelSubmitting: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  couponOpen?: boolean
+  couponMode?: string
+  couponForm: CouponForm
+  couponErrors: CouponErrors
+  couponSubmitting?: boolean
+  levelOpen?: boolean
+  levelMode?: string
+  levelForm: MemberLevelForm
+  levelErrors: MemberLevelErrors
+  levelSubmitting?: boolean
+}>(), {
+  couponOpen: false,
+  couponMode: 'create',
+  couponSubmitting: false,
+  levelOpen: false,
+  levelMode: 'create',
+  levelSubmitting: false,
 })
 
-const emit = defineEmits([
-  'update:couponOpen',
-  'update:levelOpen',
-  'submit-coupon',
-  'submit-level',
-  'clear-coupon-error',
-  'clear-level-error',
-])
+const emit = defineEmits<{
+  (event: 'update:couponOpen', value: boolean): void
+  (event: 'update:levelOpen', value: boolean): void
+  (event: 'submit-coupon'): void
+  (event: 'submit-level'): void
+  (event: 'clear-coupon-error', field: unknown): void
+  (event: 'clear-level-error', field: unknown): void
+}>()
 </script>

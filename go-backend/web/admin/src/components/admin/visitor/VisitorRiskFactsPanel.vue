@@ -170,12 +170,12 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { LoaderCircle, MoreHorizontal, ShieldAlert, ShieldCheck } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -190,18 +190,29 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  VisitorPagination,
+  VisitorRiskDecisionPayload,
+  VisitorRiskFact,
+} from './visitorTypes'
 
-const props = defineProps({
-  loading: { type: Boolean, default: false },
-  facts: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  formatDate: { type: Function, required: true },
-  saveDecision: { type: Function, required: true },
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  facts?: VisitorRiskFact[]
+  pagination: VisitorPagination
+  formatDate: (value: unknown) => string
+  saveDecision: (fact: VisitorRiskFact, payload: VisitorRiskDecisionPayload) => Promise<void>
+}>(), {
+  loading: false,
+  facts: () => [],
 })
 
-const emit = defineEmits(['update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 const decisionDialogOpen = ref(false)
-const selectedFact = ref(null)
+const selectedFact = ref<VisitorRiskFact | null>(null)
 const decisionSubmitting = ref(false)
 const decisionError = ref('')
 const decisionForm = reactive({
@@ -210,38 +221,38 @@ const decisionForm = reactive({
   expiresAt: '',
 })
 
-const riskLabel = (level) => ({
+const riskLabel = (level?: string): string => ({
   normal: '正常',
   watch: '观察',
   suspicious: '可疑',
   block: '封禁候选',
-})[level] || '正常'
+} as Record<string, string>)[level || ''] || '正常'
 
-const riskTone = (level) => ({
+const riskTone = (level?: string): AdminStatusTone => ({
   normal: 'gray',
   watch: 'amber',
   suspicious: 'coral',
   block: 'coral',
-})[level] || 'gray'
+} as Record<string, AdminStatusTone>)[level || ''] || 'gray'
 
-const decisionActionLabel = (action) => ({
+const decisionActionLabel = (action?: string): string => ({
   ignore: '忽略',
   watch: '观察',
   temporary_block: '临时封禁',
   block_candidate: '封禁候选',
-})[action] || action || '未知'
+} as Record<string, string>)[action || ''] || action || '未知'
 
-const decisionScopeLabel = (fact) => fact?.user_agent_hash_preview ? 'IP + UA' : 'IP'
+const decisionScopeLabel = (fact?: VisitorRiskFact | null): string => fact?.user_agent_hash_preview ? 'IP + UA' : 'IP'
 
-const formatDateTimeLocal = (value) => {
+const formatDateTimeLocal = (value: unknown): string => {
   if (!value) return ''
-  const date = new Date(value)
+  const date = new Date(value as string | number | Date)
   if (Number.isNaN(date.getTime())) return ''
   const pad = (part) => String(part).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-const openDecisionDialog = (fact) => {
+const openDecisionDialog = (fact: VisitorRiskFact): void => {
   selectedFact.value = fact
   decisionError.value = ''
   decisionForm.action = fact.decision?.action || 'watch'
@@ -250,7 +261,11 @@ const openDecisionDialog = (fact) => {
   decisionDialogOpen.value = true
 }
 
-const submitDecision = async () => {
+interface ErrorLike {
+  response?: { data?: { error?: string; message?: string } }
+}
+
+const submitDecision = async (): Promise<void> => {
   if (!selectedFact.value) return
   const reason = decisionForm.reason.trim()
   if (!reason) {
@@ -278,8 +293,8 @@ const submitDecision = async () => {
   }
 }
 
-const formatDay = (day) => {
+const formatDay = (day: unknown): string => {
   if (!day) return '-'
-  return new Date(day).toLocaleDateString('zh-CN')
+  return new Date(day as string | number | Date).toLocaleDateString('zh-CN')
 }
 </script>

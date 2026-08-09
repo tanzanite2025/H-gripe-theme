@@ -191,11 +191,16 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 		})
 		return
 	}
+	transactionID := providerTransactionID(paymentResponse)
+	if transactionID == "" {
+		apierror.RespondError(c, http.StatusBadGateway, "alipay_transaction_id_missing", "Alipay trade query did not return a trade number")
+		return
+	}
 
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
 		Provider:        string(pgateway.GatewayAlipay),
 		OrderNumber:     orderRecord.OrderNumber,
-		TransactionID:   gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
+		TransactionID:   transactionID,
 		PaymentMethod:   "alipay",
 		Amount:          paymentResponse.Amount,
 		Currency:        paymentResponse.Currency,

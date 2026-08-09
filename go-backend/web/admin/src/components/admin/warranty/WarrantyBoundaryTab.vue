@@ -26,7 +26,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { FileWarning, GitBranch, ShieldCheck } from '@lucide/vue'
 import { TabsContent } from '@/components/ui/tabs'
 </script>

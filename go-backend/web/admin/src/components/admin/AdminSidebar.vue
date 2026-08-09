@@ -140,113 +140,114 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import { ChevronDown, LogOut } from '@lucide/vue'
+import type { AdminNavigationItem } from '@/lib/adminNavigation'
+import type { AdminUser } from '@/stores/auth'
 
-const props = defineProps({
-  collapsed: {
-    type: Boolean,
-    default: false
-  },
-  activePath: {
-    type: String,
-    required: true
-  },
-  items: {
-    type: Array,
-    required: true
-  },
-  brandInitial: {
-    type: String,
-    default: ''
-  },
-  brandName: {
-    type: String,
-    default: ''
-  },
-  panelLabel: {
-    type: String,
-    default: ''
-  },
-  roleLabel: {
-    type: String,
-    default: ''
-  },
-  user: {
-    type: Object,
-    default: null
-  },
-  userInitials: {
-    type: String,
-    default: 'AD'
-  }
+const props = withDefaults(defineProps<{
+  collapsed?: boolean
+  activePath: string
+  items: AdminNavigationItem[]
+  brandInitial?: string
+  brandName?: string
+  panelLabel?: string
+  roleLabel?: string
+  user?: AdminUser | null
+  userInitials?: string
+}>(), {
+  collapsed: false,
+  brandInitial: '',
+  brandName: '',
+  panelLabel: '',
+  roleLabel: '',
+  user: null,
+  userInitials: 'AD'
 })
 
-const emit = defineEmits(['navigate', 'request-logout'])
-const hoveredItem = ref(null)
-const hoverTipStyle = ref({})
-const secondaryGroupKey = ref(null)
+const emit = defineEmits<{
+  (event: 'navigate'): void
+  (event: 'request-logout'): void
+}>()
+const hoveredItem = ref<AdminNavigationItem | null>(null)
+const hoverTipStyle = ref<CSSProperties>({})
+const secondaryGroupKey = ref<string | null>(null)
 
-const itemKey = (item) => item.id || item.path || item.routeName || item.label
-const hasChildren = (item) => Array.isArray(item.children) && item.children.length > 0
+const itemKey = (item: AdminNavigationItem): string => item.id || item.path || item.routeName || item.label
+const hasChildren = (item: AdminNavigationItem): item is AdminNavigationItem & { children: AdminNavigationItem[] } => (
+  Array.isArray(item.children) && item.children.length > 0
+)
 
-const matchesPath = (path) => {
+const matchesPath = (path?: string): boolean => {
   if (!path) return false
   if (path === '/') return props.activePath === '/'
   return props.activePath === path || props.activePath.startsWith(`${path}/`)
 }
 
-const isChildActive = (child, parent = null) => {
+const isChildActive = (child: AdminNavigationItem, parent: AdminNavigationItem | null = null): boolean => {
   const path = child.path || parent?.path
   if (!matchesPath(path)) return false
   return path !== parent?.path || props.activePath === path
 }
 
-const isGroupActive = (item) => {
+const isGroupActive = (item: AdminNavigationItem): boolean => {
   if (matchesPath(item.path)) return true
   return hasChildren(item) && item.children.some((child) => isChildActive(child, item))
 }
 
-const activeChild = (item) => (item.children || []).find((child) => isChildActive(child, item))
+const activeChild = (item: AdminNavigationItem): AdminNavigationItem | undefined => (
+  (item.children || []).find((child) => isChildActive(child, item))
+)
 
 const activeGroupKey = computed(() => {
   const activeGroup = props.items.find((item) => hasChildren(item) && isGroupActive(item))
   return activeGroup ? itemKey(activeGroup) : null
 })
 
-const isGroupOpen = (item) => {
+const isGroupOpen = (item: AdminNavigationItem): boolean => {
   const key = itemKey(item)
   return key === activeGroupKey.value || key === secondaryGroupKey.value
 }
 
-const isSecondaryGroupOpen = (item) => (
+const isSecondaryGroupOpen = (item: AdminNavigationItem): boolean => (
   isGroupOpen(item) && !isGroupActive(item)
 )
 
-const toggleGroup = (item) => {
+const toggleGroup = (item: AdminNavigationItem): void => {
   const key = itemKey(item)
   if (!hasChildren(item) || isGroupActive(item)) return
   secondaryGroupKey.value = secondaryGroupKey.value === key ? null : key
 }
 
-const itemTarget = (item, parent = null) => {
+const itemTarget = (item: AdminNavigationItem, parent: AdminNavigationItem | null = null): RouteLocationRaw => {
   const target = hasChildren(item) ? item.children[0] : item
+  const routeName = target.routeName || parent?.routeName || item.routeName
+  if (routeName) return { name: routeName }
+
+  const path = target.path || parent?.path || item.path
+  if (path) return path
+
   return {
-    name: target.routeName || parent?.routeName || item.routeName,
+    name: 'Dashboard',
   }
 }
 
-const navCode = (item) => item.code || item.routeName || item.label
+const navCode = (item: AdminNavigationItem): string => item.code || item.routeName || item.label
 
-const hideHoverTip = () => {
+const hideHoverTip = (): void => {
   hoveredItem.value = null
 }
 
-const showHoverTip = (item, event) => {
+const showHoverTip = (item: AdminNavigationItem, event: MouseEvent | FocusEvent): void => {
   if (!props.collapsed) return
 
-  const rect = event.currentTarget.getBoundingClientRect()
+  const target = event.currentTarget
+  if (!(target instanceof HTMLElement)) return
+
+  const rect = target.getBoundingClientRect()
   hoveredItem.value = item
   hoverTipStyle.value = {
     left: `${rect.right + 8}px`,
@@ -255,10 +256,12 @@ const showHoverTip = (item, event) => {
 }
 
 const hoverTipText = computed(() => {
-  if (!hoveredItem.value) return ''
-  const child = activeChild(hoveredItem.value)
-  const childLabel = child ? ` / ${child.label}` : hasChildren(hoveredItem.value) ? ` / ${hoveredItem.value.children.length} 项` : ''
-  return `${navCode(hoveredItem.value)} / ${hoveredItem.value.label}${childLabel}`
+  const item = hoveredItem.value
+  if (!item) return ''
+
+  const child = activeChild(item)
+  const childLabel = child ? ` / ${child.label}` : hasChildren(item) ? ` / ${item.children.length} 项` : ''
+  return `${navCode(item)} / ${item.label}${childLabel}`
 })
 
 const brandTitle = computed(() => props.brandName?.trim() || 'SALES CONSOLE')
@@ -274,8 +277,7 @@ const brandMark = computed(() => {
 })
 
 const displayName = computed(() => {
-  const currentUser = props.user || {}
-  return currentUser.username || currentUser.email || 'Admin User'
+  return props.user?.username || props.user?.email || 'Admin User'
 })
 
 const userEmail = computed(() => props.user?.email || '')

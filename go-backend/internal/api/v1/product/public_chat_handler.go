@@ -53,7 +53,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	publicProducts, hasMore := trimPublicProductPage(products, pageSize)
 	c.JSON(200, gin.H{
 		"code":      0,
-		"data":      PublicProductsFromDomain(publicProducts),
+		"data":      PublicProductsFromDomainWithLocale(publicProducts, locale),
 		"page_size": pageSize,
 		"has_more":  hasMore,
 	})

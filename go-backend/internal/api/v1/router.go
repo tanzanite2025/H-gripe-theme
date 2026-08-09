@@ -23,6 +23,7 @@ import (
 	"tanzanite/internal/api/v1/shipping"
 	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/api/v1/spoke"
+	"tanzanite/internal/api/v1/storefront"
 	"tanzanite/internal/api/v1/subscription"
 	"tanzanite/internal/api/v1/suggestionfeedback"
 	"tanzanite/internal/api/v1/ticket"
@@ -75,16 +76,18 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	contentHandler := content.NewHandler(postService, faqService)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
+	productHandler.ConfigureStorefrontContext(services.StorefrontContext)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
 		VisitorProfileService: services.VisitorProfile,
 		VisitorSecret:         cfg.JWT.Secret,
 	})
 	settingsHandler := settings.NewHandler(settingService)
-	currencyHandler := currencyapi.NewHandler(services.CurrencyPolicy)
+	storefrontContextHandler := storefront.NewContextHandler(services.StorefrontContext)
+	currencyHandler := currencyapi.NewHandler(services.CurrencyPolicy, services.ExchangeRate)
 	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
 	orderHandler.ConfigureOrderAbuse(deps.OrderAbuse)
 	orderHandler.ConfigurePaymentProtection(services.PaymentProtection)
-	checkoutHandler := checkout.NewHandler(checkoutService, cartService, services.CurrencyPolicy)
+	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService, services.LoyaltyProgram)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
@@ -98,13 +101,13 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		paymentService,
 		orderService,
 		services.AdminSettings,
-		services.CurrencyPolicy,
 		services.PaymentThreeDS,
 		services.PaymentRiskMonitoring,
 		services.PaymentProtection,
 		services.PaymentRefundReview,
 		deps.AntiBot,
 		deps.AntiFraud,
+		services.StorefrontContext,
 	)
 	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
 	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
@@ -146,6 +149,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	v1.Use(middleware.I18n())
 	v1.Use(middleware.VisitorRiskTelemetry(services.VisitorRisk))
 	{
+		storefrontGroup := v1.Group("/storefront")
+		{
+			storefrontGroup.GET("/context", storefrontContextHandler.GetContext)
+		}
+
 		// 认证路由（公开）
 		authGroup := v1.Group("/auth")
 		authGroup.Use(middleware.RateLimit(10)) // 10 RPS for auth endpoints
@@ -383,6 +391,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)
 			settingsGroup.GET("/group/:group", settingsHandler.GetSettingsByGroup)
 			settingsGroup.GET("/:key", settingsHandler.GetSetting)
+		}
+
+		currencyGroup := v1.Group("/currency")
+		{
+			currencyGroup.GET("/exchange-rates", currencyHandler.ListExchangeRates)
 		}
 
 		// i18n 路由（公开）

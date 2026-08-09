@@ -51,7 +51,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
@@ -66,6 +66,18 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import SubscriptionFilterPanel from '@/components/admin/subscription/SubscriptionFilterPanel.vue'
 import SubscriptionTablePanel from '@/components/admin/subscription/SubscriptionTablePanel.vue'
+import type {
+  SubscriptionBatchDeleteResponse,
+  SubscriptionConfirmation,
+  SubscriptionEmailsResponse,
+  SubscriptionFilters,
+  SubscriptionListResponse,
+  SubscriptionPagination,
+  SubscriptionRecord,
+  SubscriptionSelectionState,
+  SubscriptionStats,
+  SubscriptionStatusTone
+} from '@/components/admin/subscription/subscriptionTypes'
 import { Button } from '@/components/ui/button'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useAuthStore } from '@/stores/auth'
@@ -74,12 +86,12 @@ import axios from '@/utils/axios'
 const authStore = useAuthStore()
 const supportedLanguages = useSupportedLanguages()
 const loading = ref(false)
-const subscriptions = ref([])
-const selectedSubscriptions = ref([])
-const stats = ref({})
-const filters = reactive({ status: 'all' })
-const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
-const confirmation = reactive({
+const subscriptions = ref<SubscriptionRecord[]>([])
+const selectedSubscriptions = ref<SubscriptionRecord[]>([])
+const stats = ref<SubscriptionStats>({})
+const filters = reactive<SubscriptionFilters>({ search: '', status: 'all' })
+const pagination = reactive<SubscriptionPagination>({ page: 1, pageSize: 20, total: 0 })
+const confirmation = reactive<SubscriptionConfirmation>({
   open: false,
   type: '',
   target: null,
@@ -120,25 +132,33 @@ const statItems = computed(() => [
     tone: 'blue'
   }
 ])
-const selectionState = computed(() => {
+const selectionState = computed<SubscriptionSelectionState>(() => {
   if (subscriptions.value.length === 0 || selectedSubscriptions.value.length === 0) return false
   return selectedSubscriptions.value.length === subscriptions.value.length ? true : 'indeterminate'
 })
 
-const hasPermission = (permission) => authStore.hasPermission(permission)
-const statusName = (status) => ({ active: '活跃', unsubscribed: '已退订', cancelled: '已退订' })[status] || status || '-'
-const statusTone = (status) => status === 'active' ? 'green' : 'gray'
-const localeName = supportedLanguages.localeName
-const sourceName = (source) => ({ website: '网站', popup: '弹窗', footer: '页脚', checkout: '结账页' })[source] || source || '-'
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+const statusNames: Record<string, string> = { active: '活跃', unsubscribed: '已退订', cancelled: '已退订' }
+const sourceNames: Record<string, string> = { website: '网站', popup: '弹窗', footer: '页脚', checkout: '结账页' }
 
-const fetchSubscriptions = async () => {
+const hasPermission = (permission: string): boolean => authStore.hasPermission(permission)
+const statusName = (status?: string | null): string => statusNames[status || ''] || status || '-'
+const statusTone = (status?: string | null): SubscriptionStatusTone => status === 'active' ? 'green' : 'gray'
+const localeName = supportedLanguages.localeName
+const sourceName = (source?: string | null): string => sourceNames[source || ''] || source || '-'
+const formatDate = (dateString?: string | null): string => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+
+const isSubscriptionRecord = (target: SubscriptionConfirmation['target']): target is SubscriptionRecord => (
+  Boolean(target) && !Array.isArray(target)
+)
+
+const fetchSubscriptions = async (): Promise<void> => {
   loading.value = true
   try {
-    const response = await axios.get('/api/admin/subscriptions', {
+    const response = await axios.get<SubscriptionListResponse>('/api/admin/subscriptions', {
       params: {
         page: pagination.page,
         page_size: pagination.pageSize,
+        ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
         ...(filters.status !== 'all' ? { status: filters.status } : {})
       }
     })
@@ -151,25 +171,42 @@ const fetchSubscriptions = async () => {
     loading.value = false
   }
 }
-const fetchStats = async () => {
+const fetchStats = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/subscriptions/stats')
+    const response = await axios.get<SubscriptionStats>('/api/admin/subscriptions/stats')
     stats.value = response.data || {}
   } catch (error) {
     console.error('Failed to fetch subscription stats:', error)
   }
 }
-const refreshSubscriptions = () => Promise.all([fetchSubscriptions(), fetchStats()])
-const applyFilters = () => { pagination.page = 1; fetchSubscriptions() }
-const resetFilters = () => { filters.status = 'all'; pagination.page = 1; fetchSubscriptions() }
-const updatePage = (page) => { pagination.page = page; fetchSubscriptions() }
-const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchSubscriptions() }
+const refreshSubscriptions = async (): Promise<void> => {
+  await Promise.all([fetchSubscriptions(), fetchStats()])
+}
+const applyFilters = (): void => {
+  pagination.page = 1
+  void fetchSubscriptions()
+}
+const resetFilters = (): void => {
+  filters.search = ''
+  filters.status = 'all'
+  pagination.page = 1
+  void fetchSubscriptions()
+}
+const updatePage = (page: number): void => {
+  pagination.page = page
+  void fetchSubscriptions()
+}
+const updatePageSize = (pageSize: number): void => {
+  pagination.pageSize = pageSize
+  pagination.page = 1
+  void fetchSubscriptions()
+}
 
-const isSelected = (email) => selectedSubscriptions.value.some((subscription) => subscription.email === email)
-const toggleAllSubscriptions = (checked) => {
+const isSelected = (email: string): boolean => selectedSubscriptions.value.some((subscription) => subscription.email === email)
+const toggleAllSubscriptions = (checked: SubscriptionSelectionState): void => {
   selectedSubscriptions.value = checked === true ? [...subscriptions.value] : []
 }
-const toggleSubscription = (subscription, checked) => {
+const toggleSubscription = (subscription: SubscriptionRecord, checked: SubscriptionSelectionState): void => {
   if (checked === true && !isSelected(subscription.email)) {
     selectedSubscriptions.value = [...selectedSubscriptions.value, subscription]
   } else if (checked !== true) {
@@ -177,16 +214,18 @@ const toggleSubscription = (subscription, checked) => {
   }
 }
 
-const setConfirmation = (values) => Object.assign(confirmation, {
-  open: true,
-  type: '',
-  target: null,
-  status: '',
-  confirmLabel: '确定',
-  destructive: false,
-  ...values
-})
-const requestToggleStatus = (subscription) => {
+const setConfirmation = (values: Partial<SubscriptionConfirmation>): void => {
+  Object.assign(confirmation, {
+    open: true,
+    type: '',
+    target: null,
+    status: '',
+    confirmLabel: '确定',
+    destructive: false,
+    ...values
+  })
+}
+const requestToggleStatus = (subscription: SubscriptionRecord): void => {
   const status = subscription.status === 'active' ? 'unsubscribed' : 'active'
   const restoring = status === 'active'
   setConfirmation({
@@ -198,7 +237,7 @@ const requestToggleStatus = (subscription) => {
     confirmLabel: restoring ? '恢复订阅' : '确认退订'
   })
 }
-const requestDelete = (subscription) => setConfirmation({
+const requestDelete = (subscription: SubscriptionRecord): void => setConfirmation({
   type: 'delete',
   target: subscription,
   title: '删除订阅？',
@@ -206,7 +245,7 @@ const requestDelete = (subscription) => setConfirmation({
   confirmLabel: '删除',
   destructive: true
 })
-const requestBatchDelete = () => setConfirmation({
+const requestBatchDelete = (): void => setConfirmation({
   type: 'batch-delete',
   target: [...selectedSubscriptions.value],
   title: '批量删除订阅？',
@@ -214,18 +253,18 @@ const requestBatchDelete = () => setConfirmation({
   confirmLabel: '批量删除',
   destructive: true
 })
-const executeConfirmedAction = async () => {
+const executeConfirmedAction = async (): Promise<void> => {
   const { type, target, status } = confirmation
   confirmation.open = false
   try {
-    if (type === 'status') {
+    if (type === 'status' && isSubscriptionRecord(target)) {
       await axios.patch(`/api/admin/subscriptions/${encodeURIComponent(target.email)}/status`, { status })
       toast.success(status === 'active' ? '订阅已恢复' : '订阅已标记为退订')
-    } else if (type === 'delete') {
+    } else if (type === 'delete' && isSubscriptionRecord(target)) {
       await axios.delete(`/api/admin/subscriptions/${encodeURIComponent(target.email)}`)
       toast.success('订阅已删除')
-    } else if (type === 'batch-delete') {
-      const response = await axios.post('/api/admin/subscriptions/batch-delete', {
+    } else if (type === 'batch-delete' && Array.isArray(target)) {
+      const response = await axios.post<SubscriptionBatchDeleteResponse>('/api/admin/subscriptions/batch-delete', {
         emails: target.map((subscription) => subscription.email)
       })
       toast.success(`已删除 ${response.data.deleted ?? target.length} 条订阅`)
@@ -236,9 +275,9 @@ const executeConfirmedAction = async () => {
   }
 }
 
-const exportEmails = async () => {
+const exportEmails = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/subscriptions/active-emails')
+    const response = await axios.get<SubscriptionEmailsResponse>('/api/admin/subscriptions/active-emails')
     const emails = Array.isArray(response.data.emails) ? response.data.emails : []
     const blob = new Blob([emails.join('\n')], { type: 'text/plain;charset=utf-8' })
     const url = window.URL.createObjectURL(blob)
@@ -254,7 +293,7 @@ const exportEmails = async () => {
 }
 
 onMounted(() => {
-  Promise.all([
+  void Promise.all([
     supportedLanguages.fetchLanguages(),
     refreshSubscriptions()
   ])

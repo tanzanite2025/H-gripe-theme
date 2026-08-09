@@ -107,7 +107,8 @@ func (h *Handler) handleAlipayWebhook(c *gin.Context, payload []byte) {
 	}
 	transactionID := strings.TrimSpace(notification.TradeNo)
 	if transactionID == "" {
-		transactionID = strings.TrimSpace(notification.OutTradeNo)
+		respondAlipayWebhookFailure(c, http.StatusBadRequest)
+		return
 	}
 
 	payment := verifiedProviderPayment{
@@ -156,7 +157,8 @@ func (h *Handler) handleWechatWebhook(c *gin.Context, payload []byte) {
 	}
 	transactionID := strings.TrimSpace(transaction.TransactionID)
 	if transactionID == "" {
-		transactionID = strings.TrimSpace(transaction.OutTradeNo)
+		respondWechatWebhookFailure(c, http.StatusBadRequest, "wechat transaction_id is required")
+		return
 	}
 
 	payment := verifiedProviderPayment{
@@ -262,10 +264,10 @@ func paypalVerifiedPaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayloa
 
 	payment := verifiedProviderPayment{
 		Provider:        pgateway.GatewayPayPal,
-		TransactionID:   strings.TrimSpace(order.ID),
 		PaymentMethod:   "paypal",
 		GatewayResponse: string(rawPayload),
 	}
+	foundCompletedCapture := false
 	for _, unit := range order.PurchaseUnits {
 		if payment.OrderNumber == "" {
 			payment.OrderNumber = firstNonBlank(unit.CustomID, unit.InvoiceID, unit.ReferenceID)
@@ -275,36 +277,34 @@ func paypalVerifiedPaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayloa
 				if !strings.EqualFold(strings.TrimSpace(capture.Status), "COMPLETED") {
 					continue
 				}
-				if strings.TrimSpace(capture.ID) != "" {
-					payment.TransactionID = strings.TrimSpace(capture.ID)
+				foundCompletedCapture = true
+				payment.TransactionID = strings.TrimSpace(capture.ID)
+				if payment.TransactionID == "" {
+					return verifiedProviderPayment{}, true, fmt.Errorf("paypal completed capture does not contain a capture id")
 				}
 				if payment.OrderNumber == "" {
 					payment.OrderNumber = strings.TrimSpace(capture.CustomID)
 				}
-				if capture.Amount != nil {
-					payment.Currency = capture.Amount.Currency
-					amount, err := pgateway.ParsePaymentAmount("paypal capture amount", capture.Amount.Value)
-					if err != nil {
-						return verifiedProviderPayment{}, true, err
-					}
-					payment.Amount = amount
+				if capture.Amount == nil {
+					return verifiedProviderPayment{}, true, fmt.Errorf("paypal completed capture does not contain amount")
 				}
+				payment.Currency = capture.Amount.Currency
+				amount, err := pgateway.ParsePaymentAmount("paypal capture amount", capture.Amount.Value)
+				if err != nil {
+					return verifiedProviderPayment{}, true, err
+				}
+				payment.Amount = amount
 				break
 			}
 		}
-		if payment.Amount <= 0 && unit.Amount != nil {
-			payment.Currency = unit.Amount.Currency
-			amount, err := pgateway.ParsePaymentAmount("paypal purchase unit amount", unit.Amount.Value)
-			if err != nil {
-				return verifiedProviderPayment{}, true, err
-			}
-			payment.Amount = amount
-		}
-		if payment.OrderNumber != "" && payment.Amount > 0 && payment.Currency != "" {
+		if payment.OrderNumber != "" && payment.TransactionID != "" && payment.Amount > 0 && payment.Currency != "" {
 			break
 		}
 	}
 
+	if !foundCompletedCapture {
+		return verifiedProviderPayment{}, true, fmt.Errorf("paypal order resource does not contain a completed capture")
+	}
 	if payment.OrderNumber == "" {
 		return verifiedProviderPayment{}, true, fmt.Errorf("paypal order resource does not contain order metadata")
 	}

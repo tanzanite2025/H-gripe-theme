@@ -94,9 +94,10 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ImageOff, LoaderCircle, UploadCloud } from '@lucide/vue'
+import type { MediaAsset } from '@/api/media'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import MediaAssetCard from '@/components/admin/media/MediaAssetCard.vue'
@@ -111,13 +112,20 @@ import { useMediaLibraryAssets } from '@/composables/media/useMediaLibraryAssets
 import { assetAccessURL } from '@/lib/mediaPresentation'
 import { useAuthStore } from '@/stores/auth'
 
+interface MediaEditorState extends Record<string, unknown> {
+  alt: string
+  caption: string
+  status: string
+  visibility: string
+}
+
 const authStore = useAuthStore()
-const fileInput = ref(null)
-const preview = ref(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+const preview = ref<MediaAsset | null>(null)
 const previewOpen = ref(false)
 const editorOpen = ref(false)
-const editingAsset = ref(null)
-const editor = reactive({ alt: '', caption: '', status: 'active', visibility: 'public' })
+const editingAsset = ref<MediaAsset | null>(null)
+const editor = reactive<MediaEditorState>({ alt: '', caption: '', status: 'active', visibility: 'public' })
 
 const {
   assets,
@@ -142,20 +150,21 @@ const canCreate = computed(() => authStore.hasPermission('media:create'))
 const canEdit = computed(() => authStore.hasPermission('media:edit'))
 const canDelete = computed(() => authStore.hasPermission('media:delete'))
 
-const triggerUpload = () => fileInput.value?.click()
+const triggerUpload = (): void => fileInput.value?.click()
 
-const handleUpload = async (event) => {
-  const file = event.target.files?.[0]
-  event.target.value = ''
+const handleUpload = async (event: Event): Promise<void> => {
+  const input = event.target instanceof HTMLInputElement ? event.target : null
+  const file = input?.files?.[0] || null
+  if (input) input.value = ''
   await uploadFile(file)
 }
 
-const previewAsset = (asset) => {
+const previewAsset = (asset: MediaAsset): void => {
   preview.value = asset
   previewOpen.value = true
 }
 
-const editAsset = (asset) => {
+const editAsset = (asset: MediaAsset): void => {
   editingAsset.value = asset
   Object.assign(editor, {
     alt: asset.alt || '',
@@ -166,14 +175,16 @@ const editAsset = (asset) => {
   editorOpen.value = true
 }
 
-const saveEditor = async () => {
+const saveEditor = async (): Promise<void> => {
   const saved = await saveAsset(editingAsset.value, editor)
   if (saved) {
     editorOpen.value = false
   }
 }
 
-const copyAssetURL = (asset) => copyURL(asset, assetAccessURL(asset))
+const copyAssetURL = (asset: MediaAsset): Promise<void> => copyURL(asset, assetAccessURL(asset))
 
-onMounted(fetchAssets)
+onMounted(() => {
+  void fetchAssets()
+})
 </script>

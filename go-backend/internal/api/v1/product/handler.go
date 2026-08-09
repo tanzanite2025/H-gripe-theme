@@ -2,6 +2,7 @@ package product
 
 import (
 	"strings"
+
 	"tanzanite/internal/api/middleware"
 	productdomain "tanzanite/internal/domain/product"
 	"tanzanite/internal/pkg/apierror"
@@ -13,7 +14,8 @@ import (
 )
 
 type Handler struct {
-	productService *service.ProductService
+	productService    *service.ProductService
+	storefrontContext *service.StorefrontContextService
 }
 
 const (
@@ -27,8 +29,16 @@ func NewHandler(productService *service.ProductService) *Handler {
 	}
 }
 
+func (h *Handler) ConfigureStorefrontContext(contextService *service.StorefrontContextService) {
+	if h == nil {
+		return
+	}
+	h.storefrontContext = contextService
+}
+
 func (h *Handler) ListProducts(c *gin.Context) {
-	locale := middleware.GetLocale(c)
+	publicContext := h.resolvePublicContext(c)
+	locale := publicContext.Locale
 	featured := c.Query("featured") == "true"
 	params := pagination.ParsePagination(c)
 
@@ -53,7 +63,8 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	publicProducts, hasMore := trimPublicProductPage(products, params.PageSize)
 	c.JSON(200, gin.H{
 		"code":      0,
-		"data":      PublicProductsFromDomain(publicProducts),
+		"data":      PublicProductsFromDomainWithLocaleAndDisplayCurrency(publicProducts, publicContext.DisplayCurrency, locale),
+		"context":   publicContext.Response,
 		"page_size": params.PageSize,
 		"has_more":  hasMore,
 	})
@@ -61,7 +72,8 @@ func (h *Handler) ListProducts(c *gin.Context) {
 
 func (h *Handler) GetProduct(c *gin.Context) {
 	slug := strings.TrimSpace(c.Param("id"))
-	locale := middleware.GetLocale(c)
+	publicContext := h.resolvePublicContext(c)
+	locale := publicContext.Locale
 
 	product, err := h.productService.GetPublicBySlug(slug, locale)
 	if err != nil {
@@ -69,7 +81,11 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, PublicProductFromDomain(*product))
+	c.JSON(200, gin.H{
+		"code":    0,
+		"data":    PublicProductFromDomainWithLocale(*product, publicContext.DisplayCurrency, publicContext.Locale),
+		"context": publicContext.Response,
+	})
 }
 
 func (h *Handler) GetFilterableAttributes(c *gin.Context) {
@@ -91,7 +107,7 @@ func (h *Handler) ListProductTypes(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, PublicProductTypesFromDomain(productTypes))
+	response.Success(c, PublicProductTypesFromDomainWithLocale(productTypes, middleware.GetLocale(c)))
 }
 
 func trimPublicProductPage(products []productdomain.Product, pageSize int) ([]productdomain.Product, bool) {

@@ -3,14 +3,14 @@
     <div>
       <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">支付方式</h2>
       <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-        收款币种由“收款货币”统一维护
+        网关绑定后即可参与前台支付
       </p>
     </div>
 
     <div class="min-w-0 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-xs text-muted-foreground">
-          这里只维护支付方式展示、手续费和启停状态；订单可收款币种只读取系统设置里的收款货币策略。
+          这里只维护前台支付按钮、手续费和启停状态；启用 PayPal，前台就展示 PayPal。
         </div>
         <div class="flex items-center gap-2">
           <Button type="button" variant="outline" size="sm" :disabled="loading" @click="fetchPaymentMethods">
@@ -22,6 +22,13 @@
             添加支付方式
           </Button>
         </div>
+      </div>
+
+      <div class="flex gap-2 border-l-2 border-primary/40 px-3 py-2 text-xs text-muted-foreground">
+        <Info class="mt-0.5 size-4 shrink-0 text-primary" />
+        <p>
+          商品价格和订单币种由商品/规格价格决定；汇率 API 只影响前台展示换算。绑定 Stripe、PayPal、微信等收款方式后，可收交易币种以该网关及其商户账户能力为准，客户侧付款币种由网关负责换汇和扣款。
+        </p>
       </div>
 
       <div class="overflow-hidden rounded-lg border">
@@ -89,7 +96,7 @@
         <form class="space-y-5" @submit.prevent="savePaymentMethod">
           <DialogHeader>
             <DialogTitle>{{ dialogMode === 'create' ? '添加支付方式' : '编辑支付方式' }}</DialogTitle>
-            <DialogDescription>维护支付方式、手续费和展示状态；收款币种在“收款货币”Tab 统一配置。</DialogDescription>
+            <DialogDescription>维护前台支付按钮、手续费和展示状态。启用后 Nuxt 前台会展示该支付方式；客户侧付款币种由网关处理。</DialogDescription>
           </DialogHeader>
 
           <div class="grid gap-4 md:grid-cols-2">
@@ -130,7 +137,7 @@
             <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
               <div>
                 <span class="text-xs font-medium">启用</span>
-                <p class="mt-0.5 text-xs text-muted-foreground">停用后前台不会读取该方式的币种。</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">停用后前台不会展示该支付方式。</p>
               </div>
               <Switch v-model="form.enabled" aria-label="支付方式启用状态" />
             </div>
@@ -161,10 +168,10 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
-import { LoaderCircle, Pencil, Plus, RefreshCw, Trash2 } from '@lucide/vue'
+import { Info, LoaderCircle, Pencil, Plus, RefreshCw, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -182,12 +189,15 @@ import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import axios from '@/utils/axios'
+import type { PaymentMethodForm, PaymentMethodRecord } from './settingsTypes'
 
-defineProps({
-  canEdit: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  canEdit?: boolean
+}>(), {
+  canEdit: false,
 })
 
-const emptyForm = () => ({
+const emptyForm = (): PaymentMethodForm => ({
   id: null,
   name: '',
   code: '',
@@ -202,15 +212,15 @@ const emptyForm = () => ({
   settings: '',
 })
 
-const paymentMethods = ref([])
+const paymentMethods = ref<PaymentMethodRecord[]>([])
 const loading = ref(false)
 const submitting = ref(false)
-const deletingID = ref(null)
+const deletingID = ref<number | string | null>(null)
 const dialogOpen = ref(false)
-const dialogMode = ref('create')
-const form = reactive(emptyForm())
+const dialogMode = ref<'create' | 'edit'>('create')
+const form = reactive<PaymentMethodForm>(emptyForm())
 
-const unwrapPaymentMethods = (payload) => {
+const unwrapPaymentMethods = (payload: Record<string, any>): PaymentMethodRecord[] => {
   const root = payload?.data
   if (Array.isArray(root)) return root
   if (Array.isArray(root?.data)) return root.data
@@ -218,7 +228,7 @@ const unwrapPaymentMethods = (payload) => {
   return []
 }
 
-const assignForm = (method = emptyForm()) => {
+const assignForm = (method: Partial<PaymentMethodRecord | PaymentMethodForm> = emptyForm()): void => {
   Object.assign(form, emptyForm(), {
     ...method,
     fee_type: method.fee_type || 'fixed',
@@ -250,13 +260,13 @@ const openCreateDialog = () => {
   dialogOpen.value = true
 }
 
-const openEditDialog = (method) => {
+const openEditDialog = (method: PaymentMethodRecord): void => {
   dialogMode.value = 'edit'
   assignForm(method)
   dialogOpen.value = true
 }
 
-const buildPayload = () => {
+const buildPayload = (): Omit<PaymentMethodForm, 'id'> => {
   return {
     name: form.name.trim(),
     code: form.code.trim().toLowerCase(),
@@ -298,7 +308,7 @@ const savePaymentMethod = async () => {
   }
 }
 
-const deletePaymentMethod = async (method) => {
+const deletePaymentMethod = async (method: PaymentMethodRecord): Promise<void> => {
   if (!window.confirm(`删除支付方式「${method.name}」？`)) return
 
   deletingID.value = method.id

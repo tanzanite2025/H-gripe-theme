@@ -96,7 +96,7 @@
                 <Select
                   :model-value="claim.status || 'submitted'"
                   :disabled="statusUpdating.claim === claim.id || !canEdit"
-                  @update:model-value="$emit('update-status', claim, $event)"
+                  @update:model-value="$emit('update-status', claim, String($event))"
                   @click.stop
                 >
                   <SelectTrigger class="h-8 w-full rounded-full">
@@ -150,7 +150,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { FileWarning, Image as ImageIcon, LoaderCircle, Video } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -165,41 +165,66 @@ import {
   issueTypeLabel,
   registrationProductName
 } from '@/lib/warrantyPresentation'
+import type {
+  WarrantyClaim,
+  WarrantyFilters,
+  WarrantyOrderItem,
+  WarrantyPagination,
+  WarrantyServiceRecord,
+  WarrantyServiceRecordForm,
+  WarrantyStatusOption,
+  WarrantyStatusUpdating
+} from './warrantyTypes'
 
-defineProps({
-  claims: { type: Array, required: true },
-  loading: { type: Boolean, default: false },
-  detailLoading: { type: Boolean, default: false },
-  resolutionSaving: { type: Boolean, default: false },
-  orderItemsLoading: { type: Boolean, default: false },
-  orderItemBinding: { type: Boolean, default: false },
-  serviceRecordsLoading: { type: Boolean, default: false },
-  serviceRecordCreating: { type: Boolean, default: false },
-  filters: { type: Object, required: true },
-  pagination: { type: Object, required: true },
-  statusUpdating: { type: Object, required: true },
-  statusOptions: { type: Array, required: true },
-  selectedClaim: { type: Object, default: null },
-  resolutionDraft: { type: String, default: '' },
-  orderItems: { type: Array, default: () => [] },
-  orderItemSelection: { type: String, default: 'none' },
-  serviceRecords: { type: Array, default: () => [] },
-  serviceRecordForm: { type: Object, required: true },
-  serviceTypeOptions: { type: Array, required: true },
-  serviceStatusOptions: { type: Array, required: true },
-  canEdit: { type: Boolean, default: false }
+withDefaults(defineProps<{
+  claims?: WarrantyClaim[]
+  loading?: boolean
+  detailLoading?: boolean
+  resolutionSaving?: boolean
+  orderItemsLoading?: boolean
+  orderItemBinding?: boolean
+  serviceRecordsLoading?: boolean
+  serviceRecordCreating?: boolean
+  filters: WarrantyFilters
+  pagination: WarrantyPagination
+  statusUpdating: WarrantyStatusUpdating
+  statusOptions: WarrantyStatusOption[]
+  selectedClaim?: WarrantyClaim | null
+  resolutionDraft?: string
+  orderItems?: WarrantyOrderItem[]
+  orderItemSelection?: string
+  serviceRecords?: WarrantyServiceRecord[]
+  serviceRecordForm: WarrantyServiceRecordForm
+  serviceTypeOptions: WarrantyStatusOption[]
+  serviceStatusOptions: WarrantyStatusOption[]
+  canEdit?: boolean
+}>(), {
+  claims: () => [],
+  loading: false,
+  detailLoading: false,
+  resolutionSaving: false,
+  orderItemsLoading: false,
+  orderItemBinding: false,
+  serviceRecordsLoading: false,
+  serviceRecordCreating: false,
+  selectedClaim: null,
+  resolutionDraft: '',
+  orderItems: () => [],
+  orderItemSelection: 'none',
+  serviceRecords: () => [],
+  canEdit: false
 })
 
-defineEmits([
-  'update-status',
-  'select-claim',
-  'update-order-item-selection',
-  'bind-order-item',
-  'update-resolution-draft',
-  'save-resolution',
-  'update-service-record-form',
-  'create-service-record',
-  'update-page',
-  'update-page-size'
-])
+defineEmits<{
+  (event: 'update-status', claim: WarrantyClaim, status: string): void
+  (event: 'select-claim', claim: WarrantyClaim): void
+  (event: 'update-order-item-selection', value: string): void
+  (event: 'bind-order-item'): void
+  (event: 'update-resolution-draft', value: string): void
+  (event: 'save-resolution'): void
+  (event: 'update-service-record-form', patch: Partial<WarrantyServiceRecordForm>): void
+  (event: 'create-service-record'): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

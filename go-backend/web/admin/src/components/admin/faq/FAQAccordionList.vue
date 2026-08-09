@@ -298,9 +298,12 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { Check, ChevronDown, Ellipsis, FolderPlus, Pencil, Plus, Trash2 } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
+import type { FAQCategory, FAQID, FAQItemLike, FAQStatusTone, FAQStructurePage } from '@/lib/faqAdminPresentation'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
@@ -314,43 +317,50 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { FAQPagination } from '@/composables/faq/useFaqList'
 
-const props = defineProps({
-  loading: { type: Boolean, default: false },
-  structureLoading: { type: Boolean, default: false },
-  faqGroups: { type: Array, required: true },
-  selectedFaqs: { type: Array, required: true },
-  pagination: { type: Object, required: true },
-  structureLocales: { type: Array, required: true },
-  activeStructureLocale: { type: String, required: true },
-  hasPermission: { type: Function, required: true },
-  isSelected: { type: Function, required: true },
-  plainText: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  statusName: { type: Function, required: true },
-  visibilityName: { type: Function, required: true },
-  visibilityTone: { type: Function, required: true },
-  domainName: { type: Function, required: true }
+type FAQSelectionState = boolean | string
+type TemplateRefTarget = Element | ComponentPublicInstance | null
+
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  structureLoading?: boolean
+  faqGroups: FAQStructurePage[]
+  selectedFaqs: FAQItemLike[]
+  pagination: FAQPagination
+  structureLocales: LanguageOption[]
+  activeStructureLocale: string
+  hasPermission: (permission: string) => boolean
+  isSelected: (faqID?: FAQID | null) => boolean
+  plainText: (value?: string | null) => string
+  statusTone: (status?: string | null) => FAQStatusTone
+  statusName: (status?: string | null) => string
+  visibilityName: (status?: string | null) => string
+  visibilityTone: (status?: string | null) => FAQStatusTone
+  domainName: (domain?: string | null) => string
+}>(), {
+  loading: false,
+  structureLoading: false
 })
 
-const expandedPages = ref(new Set())
-const localeScrollArea = ref(null)
-const localeTriggerRefs = new Map()
+const expandedPages = ref<Set<string>>(new Set())
+const localeScrollArea = ref<HTMLElement | null>(null)
+const localeTriggerRefs = new Map<string, HTMLElement>()
 const hasLocaleOverflow = ref(false)
-let localeResizeObserver = null
+let localeResizeObserver: ResizeObserver | null = null
 
-const pageKey = (page) => `${page.page_id || ''}\u0000${page.locale || ''}`
-const localeNumber = (index) => String(index + 1).padStart(2, '0')
-const setLocaleTriggerRef = (locale, element) => {
-  const target = element?.$el || element
-  if (target) localeTriggerRefs.set(locale, target)
+const pageKey = (page: FAQStructurePage): string => `${page.page_id || ''}\u0000${page.locale || ''}`
+const localeNumber = (index: number): string => String(index + 1).padStart(2, '0')
+const setLocaleTriggerRef = (locale: string, element: TemplateRefTarget): void => {
+  const target = element && '$el' in element ? element.$el : element
+  if (target instanceof HTMLElement) localeTriggerRefs.set(locale, target)
   else localeTriggerRefs.delete(locale)
 }
-const updateLocaleOverflow = () => {
+const updateLocaleOverflow = (): void => {
   const area = localeScrollArea.value
   hasLocaleOverflow.value = Boolean(area && area.scrollWidth > area.clientWidth + 1)
 }
-const centerActiveLocale = async (locale = props.activeStructureLocale, behavior = 'smooth') => {
+const centerActiveLocale = async (locale = props.activeStructureLocale, behavior: ScrollBehavior = 'smooth'): Promise<void> => {
   await nextTick()
   const area = localeScrollArea.value
   const target = localeTriggerRefs.get(locale)
@@ -369,18 +379,18 @@ const centerActiveLocale = async (locale = props.activeStructureLocale, behavior
     behavior
   })
 }
-const selectLocale = (locale) => {
-  emit('switch-locale', locale)
+const selectLocale = (locale: unknown): void => {
+  if (typeof locale === 'string') emit('switch-locale', locale)
 }
-const isPageExpanded = (key) => expandedPages.value.has(key)
-const togglePage = (key) => {
+const isPageExpanded = (key: string): boolean => expandedPages.value.has(key)
+const togglePage = (key: string): void => {
   const next = new Set(expandedPages.value)
   if (next.has(key)) next.delete(key)
   else next.add(key)
   expandedPages.value = next
 }
 
-const pageFAQCount = (page) => (
+const pageFAQCount = (page: FAQStructurePage): number => (
   (page.categories || []).reduce((total, category) => total + (category.faqs?.length || 0), 0)
 )
 
@@ -391,18 +401,18 @@ watch(() => props.faqGroups, (groups) => {
   expandedPages.value = next
 }, { immediate: true })
 
-const emit = defineEmits([
-  'switch-locale',
-  'toggle-faq',
-  'edit',
-  'delete',
-  'batch-delete',
-  'edit-page',
-  'create-category',
-  'edit-category',
-  'delete-category',
-  'create-faq'
-])
+const emit = defineEmits<{
+  (event: 'switch-locale', locale: string): void
+  (event: 'toggle-faq', faq: FAQItemLike, checked: FAQSelectionState): void
+  (event: 'edit', faq: FAQItemLike): void
+  (event: 'delete', faq: FAQItemLike): void
+  (event: 'batch-delete'): void
+  (event: 'edit-page', page: FAQStructurePage): void
+  (event: 'create-category', page: FAQStructurePage): void
+  (event: 'edit-category', page: FAQStructurePage, category: FAQCategory): void
+  (event: 'delete-category', category: FAQCategory): void
+  (event: 'create-faq', page: FAQStructurePage, category: FAQCategory): void
+}>()
 
 watch(
   () => [props.structureLocales, props.activeStructureLocale],

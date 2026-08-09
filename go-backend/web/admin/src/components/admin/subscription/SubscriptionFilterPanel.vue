@@ -28,20 +28,29 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { SubscriptionFilters } from './subscriptionTypes'
 
-defineProps({
-  filters: { type: Object, required: true }
-})
+interface SubscriptionFilterOption {
+  label: string
+  value: string
+}
 
-const emit = defineEmits(['apply', 'reset'])
+defineProps<{
+  filters: SubscriptionFilters
+}>()
 
-const statusOptions = [
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
+
+const statusOptions: SubscriptionFilterOption[] = [
   { label: '全部状态', value: 'all' },
   { label: '已订阅', value: 'active' }
 ]

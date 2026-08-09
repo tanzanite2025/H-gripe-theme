@@ -88,7 +88,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -98,12 +98,40 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
-  errors: { type: Object, required: true },
-  submitting: { type: Boolean, default: false }
+export interface CouponForm {
+  code: string
+  type: 'fixed' | 'percentage' | string
+  value: number | string
+  min_amount: number | string
+  max_discount: number | string
+  usage_limit: number | string
+  usage_limit_per_user: number | string
+  enabled: boolean
+  start_date: string
+  end_date: string
+  description: string
+  applicable_products: string
+  excluded_products: string
+  applicable_categories: string
+}
+
+export type CouponErrors = Partial<Record<keyof CouponForm, string>>
+
+const props = withDefaults(defineProps<{
+  open?: boolean
+  mode?: string
+  form: CouponForm
+  errors: CouponErrors
+  submitting?: boolean
+}>(), {
+  open: false,
+  mode: 'create',
+  submitting: false,
 })
-const emit = defineEmits(['update:open', 'submit', 'clear-error'])
+
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'submit'): void
+  (event: 'clear-error', field: keyof CouponForm): void
+}>()
 </script>

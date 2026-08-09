@@ -76,7 +76,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { Eye, FilePenLine, FileText, Plus, Send } from '@lucide/vue'
@@ -85,6 +85,23 @@ import ContentEditorDialog from '@/components/admin/content/ContentEditorDialog.
 import ContentFilterPanel from '@/components/admin/content/ContentFilterPanel.vue'
 import ContentTablePanel from '@/components/admin/content/ContentTablePanel.vue'
 import ContentTranslationsDialog from '@/components/admin/content/ContentTranslationsDialog.vue'
+import type {
+  ContentBadgeTone,
+  ContentConfirmation,
+  ContentDialogMode,
+  ContentFilters,
+  ContentFormErrors,
+  ContentListResponse,
+  ContentPagination,
+  ContentPost,
+  ContentPostForm,
+  ContentPostId,
+  ContentPostPayload,
+  ContentSelectionState,
+  ContentStats,
+  ContentStatus,
+  ContentTranslationsResponse
+} from '@/components/admin/content/contentTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import { Button } from '@/components/ui/button'
@@ -94,24 +111,24 @@ import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
 const loading = ref(false)
-const posts = ref([])
-const selectedPosts = ref([])
+const posts = ref<ContentPost[]>([])
+const selectedPosts = ref<ContentPost[]>([])
 const dialogVisible = ref(false)
 const translationsDialogVisible = ref(false)
 const translationsLoading = ref(false)
-const dialogMode = ref('create')
+const dialogMode = ref<ContentDialogMode>('create')
 const submitting = ref(false)
-const currentPost = ref(null)
-const translations = ref([])
-const stats = ref({})
-const formErrors = reactive({})
+const currentPost = ref<ContentPost | null>(null)
+const translations = ref<ContentPost[]>([])
+const stats = ref<ContentStats>({})
+const formErrors = reactive<ContentFormErrors>({})
 const supportedLanguages = useSupportedLanguages()
 const languageOptions = supportedLanguages.languageOptions
-const resolveDefaultLocale = () => supportedLanguages.defaultLocale.value || ''
+const resolveDefaultLocale = (): string => supportedLanguages.defaultLocale.value || ''
 
-const filters = reactive({ search: '', status: 'all', locale: 'all' })
-const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
-const postForm = reactive({
+const filters = reactive<ContentFilters>({ search: '', status: 'all', locale: 'all' })
+const pagination = reactive<ContentPagination>({ page: 1, pageSize: 20, total: 0 })
+const postForm = reactive<ContentPostForm>({
   id: null,
   title: '',
   slug: '',
@@ -127,7 +144,7 @@ const postForm = reactive({
   canonical_url: '',
   translation_group_id: null
 })
-const confirmation = reactive({
+const confirmation = reactive<ContentConfirmation>({
   open: false,
   type: '',
   target: null,
@@ -152,20 +169,31 @@ const statItems = computed(() => [
   { key: 'draft', label: '草稿', value: stats.value.draft || 0, icon: FilePenLine, tone: 'amber' },
   { key: 'views', label: '总浏览量', value: Number(stats.value.total_views || 0).toLocaleString('zh-CN'), icon: Eye, tone: 'blue' }
 ])
-const selectionState = computed(() => {
+const selectionState = computed<ContentSelectionState>(() => {
   if (posts.value.length === 0 || selectedPosts.value.length === 0) return false
   return selectedPosts.value.length === posts.value.length ? true : 'indeterminate'
 })
 
-const hasPermission = (permission) => authStore.hasPermission(permission)
-const getStatusName = (status) => ({ draft: '草稿', published: '已发布', archived: '已归档' })[status] || status
-const statusTone = (status) => ({ draft: 'gray', published: 'green', archived: 'amber' })[status] || 'gray'
-const localeName = supportedLanguages.localeName
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+const statusNames: Record<string, string> = { draft: '草稿', published: '已发布', archived: '已归档' }
+const statusTones: Record<string, ContentBadgeTone> = { draft: 'gray', published: 'green', archived: 'amber' }
 
-const clearFormErrors = () => Object.keys(formErrors).forEach((key) => delete formErrors[key])
-const clearFieldError = (field) => { delete formErrors[field] }
-const buildPostPayload = () => ({
+const hasPermission = (permission: string): boolean => authStore.hasPermission(permission)
+const getStatusName = (status?: string | null): string => statusNames[status || ''] || status || '-'
+const statusTone = (status?: string | null): ContentBadgeTone => statusTones[status || ''] || 'gray'
+const localeName = supportedLanguages.localeName
+const formatDate = (dateString?: string | null): string => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
+
+const contentStatuses: ContentStatus[] = ['draft', 'published', 'archived']
+const normalizeContentStatus = (status?: string | null): ContentStatus => (
+  contentStatuses.includes(status as ContentStatus) ? status as ContentStatus : 'draft'
+)
+const isContentPost = (target: ContentConfirmation['target']): target is ContentPost => (
+  Boolean(target) && !Array.isArray(target)
+)
+
+const clearFormErrors = (): void => Object.keys(formErrors).forEach((key) => delete formErrors[key])
+const clearFieldError = (field: string): void => { delete formErrors[field] }
+const buildPostPayload = (): ContentPostPayload => ({
   title: postForm.title.trim(),
   slug: postForm.slug.trim(),
   content: postForm.content,
@@ -180,7 +208,7 @@ const buildPostPayload = () => ({
   canonical_url: postForm.canonical_url.trim(),
   translation_group_id: postForm.translation_group_id
 })
-const validateForm = (payload) => {
+const validateForm = (payload: ContentPostPayload): boolean => {
   clearFormErrors()
   if (!payload.title) formErrors.title = '请输入文章标题'
   if (!payload.slug) formErrors.slug = '请输入 URL slug'
@@ -191,7 +219,7 @@ const validateForm = (payload) => {
   }
   return true
 }
-const resetForm = () => {
+const resetForm = (): void => {
   Object.assign(postForm, {
     id: null,
     title: '',
@@ -211,23 +239,23 @@ const resetForm = () => {
   clearFormErrors()
 }
 
-const buildFilterParams = () => ({
+const buildFilterParams = (): Record<string, string> => ({
   ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
   ...(filters.status !== 'all' ? { status: filters.status } : {}),
   ...(filters.locale !== 'all' ? { locale: filters.locale } : {})
 })
-const fetchStats = async () => {
+const fetchStats = async (): Promise<void> => {
   try {
-    const response = await axios.get('/api/admin/content/posts/stats')
+    const response = await axios.get<ContentStats>('/api/admin/content/posts/stats')
     stats.value = response.data || {}
   } catch (error) {
     console.error('Failed to fetch content stats:', error)
   }
 }
-const fetchPosts = async () => {
+const fetchPosts = async (): Promise<void> => {
   loading.value = true
   try {
-    const response = await axios.get('/api/admin/content/posts', {
+    const response = await axios.get<ContentListResponse>('/api/admin/content/posts', {
       params: { page: pagination.page, page_size: pagination.pageSize, ...buildFilterParams() }
     })
     posts.value = response.data.posts || []
@@ -239,22 +267,34 @@ const fetchPosts = async () => {
     loading.value = false
   }
 }
-const refreshContent = () => Promise.all([fetchPosts(), fetchStats()])
-const applyFilters = () => { pagination.page = 1; fetchPosts() }
-const resetFilters = () => {
+const refreshContent = async (): Promise<void> => {
+  await Promise.all([fetchPosts(), fetchStats()])
+}
+const applyFilters = (): void => {
+  pagination.page = 1
+  void fetchPosts()
+}
+const resetFilters = (): void => {
   Object.assign(filters, { search: '', status: 'all', locale: 'all' })
   pagination.page = 1
-  fetchPosts()
+  void fetchPosts()
 }
-const updatePage = (page) => { pagination.page = page; fetchPosts() }
-const updatePageSize = (pageSize) => { pagination.pageSize = pageSize; pagination.page = 1; fetchPosts() }
+const updatePage = (page: number): void => {
+  pagination.page = page
+  void fetchPosts()
+}
+const updatePageSize = (pageSize: number): void => {
+  pagination.pageSize = pageSize
+  pagination.page = 1
+  void fetchPosts()
+}
 
-const showCreateDialog = () => {
+const showCreateDialog = (): void => {
   dialogMode.value = 'create'
   resetForm()
   dialogVisible.value = true
 }
-const showEditDialog = (post) => {
+const showEditDialog = (post: ContentPost): void => {
   dialogMode.value = 'edit'
   Object.assign(postForm, {
     id: post.id,
@@ -262,7 +302,7 @@ const showEditDialog = (post) => {
     slug: post.slug || '',
     content: post.content || '',
     excerpt: post.excerpt || '',
-    status: post.status || 'draft',
+    status: normalizeContentStatus(post.status),
     locale: post.locale || resolveDefaultLocale(),
     featured_image: post.featured_image || '',
     tags: post.tags || '',
@@ -275,7 +315,7 @@ const showEditDialog = (post) => {
   clearFormErrors()
   dialogVisible.value = true
 }
-const submitForm = async () => {
+const submitForm = async (): Promise<void> => {
   const payload = buildPostPayload()
   if (!validateForm(payload)) return
   submitting.value = true
@@ -283,7 +323,7 @@ const submitForm = async () => {
     if (dialogMode.value === 'create') {
       await axios.post('/api/admin/content/posts', payload)
       toast.success('文章创建成功')
-    } else {
+    } else if (postForm.id !== null) {
       await axios.put(`/api/admin/content/posts/${postForm.id}`, payload)
       toast.success('文章更新成功')
     }
@@ -296,13 +336,13 @@ const submitForm = async () => {
   }
 }
 
-const showTranslationsDialog = async (post) => {
+const showTranslationsDialog = async (post: ContentPost): Promise<void> => {
   currentPost.value = post
   translations.value = []
   translationsDialogVisible.value = true
   translationsLoading.value = true
   try {
-    const response = await axios.get(`/api/admin/content/posts/${post.id}/translations`)
+    const response = await axios.get<ContentTranslationsResponse>(`/api/admin/content/posts/${post.id}/translations`)
     if (!Array.isArray(response.data?.translations)) throw new Error('Missing translations array in response')
     translations.value = response.data.translations
   } catch (error) {
@@ -312,27 +352,29 @@ const showTranslationsDialog = async (post) => {
     translationsLoading.value = false
   }
 }
-const editTranslation = (translation) => {
+const editTranslation = (translation: ContentPost): void => {
   translationsDialogVisible.value = false
   showEditDialog(translation)
 }
 
-const isSelected = (postId) => selectedPosts.value.some((post) => post.id === postId)
-const toggleAllPosts = (checked) => { selectedPosts.value = checked === true ? [...posts.value] : [] }
-const togglePost = (post, checked) => {
+const isSelected = (postId: ContentPostId): boolean => selectedPosts.value.some((post) => post.id === postId)
+const toggleAllPosts = (checked: ContentSelectionState): void => { selectedPosts.value = checked === true ? [...posts.value] : [] }
+const togglePost = (post: ContentPost, checked: ContentSelectionState): void => {
   if (checked === true && !isSelected(post.id)) selectedPosts.value = [...selectedPosts.value, post]
   else if (checked !== true) selectedPosts.value = selectedPosts.value.filter((selected) => selected.id !== post.id)
 }
-const setConfirmation = (values) => Object.assign(confirmation, {
-  open: true,
-  type: '',
-  target: null,
-  status: '',
-  confirmLabel: '确定',
-  destructive: false,
-  ...values
-})
-const requestToggleStatus = (post) => {
+const setConfirmation = (values: Partial<ContentConfirmation>): void => {
+  Object.assign(confirmation, {
+    open: true,
+    type: '',
+    target: null,
+    status: '',
+    confirmLabel: '确定',
+    destructive: false,
+    ...values
+  })
+}
+const requestToggleStatus = (post: ContentPost): void => {
   const status = post.status === 'published' ? 'draft' : 'published'
   const action = status === 'published' ? '发布' : '转为草稿'
   setConfirmation({
@@ -340,35 +382,35 @@ const requestToggleStatus = (post) => {
     description: `文章“${post.title}”将被${action}。`, confirmLabel: action
   })
 }
-const requestDelete = (post) => setConfirmation({
+const requestDelete = (post: ContentPost): void => setConfirmation({
   type: 'delete', target: post, title: '删除文章？',
   description: `文章“${post.title}”将被永久删除，此操作不可恢复。`, confirmLabel: '删除', destructive: true
 })
-const requestBatchStatus = (status) => {
+const requestBatchStatus = (status: ContentStatus): void => {
   const action = status === 'published' ? '发布' : '转为草稿'
   setConfirmation({
     type: 'batch-status', target: [...selectedPosts.value], status, title: `批量${action}文章？`,
     description: `将 ${selectedPosts.value.length} 篇文章批量${action}。`, confirmLabel: `批量${action}`
   })
 }
-const requestBatchDelete = () => setConfirmation({
+const requestBatchDelete = (): void => setConfirmation({
   type: 'batch-delete', target: [...selectedPosts.value], title: '批量删除文章？',
   description: `${selectedPosts.value.length} 篇文章将被永久删除，此操作不可恢复。`, confirmLabel: '批量删除', destructive: true
 })
-const executeConfirmedAction = async () => {
+const executeConfirmedAction = async (): Promise<void> => {
   const { type, target, status } = confirmation
   confirmation.open = false
   try {
-    if (type === 'status') {
+    if (type === 'status' && isContentPost(target)) {
       await axios.patch(`/api/admin/content/posts/${target.id}/status`, { status })
       toast.success(status === 'published' ? '文章已发布' : '文章已转为草稿')
-    } else if (type === 'delete') {
+    } else if (type === 'delete' && isContentPost(target)) {
       await axios.delete(`/api/admin/content/posts/${target.id}`)
       toast.success('文章已删除')
-    } else if (type === 'batch-status') {
+    } else if (type === 'batch-status' && Array.isArray(target)) {
       await axios.post('/api/admin/content/posts/batch-status', { post_ids: target.map((post) => post.id), status })
       toast.success(status === 'published' ? '文章已批量发布' : '文章已批量转为草稿')
-    } else if (type === 'batch-delete') {
+    } else if (type === 'batch-delete' && Array.isArray(target)) {
       await axios.post('/api/admin/content/posts/batch-delete', { post_ids: target.map((post) => post.id) })
       toast.success('文章已批量删除')
     }
@@ -378,5 +420,7 @@ const executeConfirmedAction = async () => {
   }
 }
 
-onMounted(() => Promise.all([supportedLanguages.fetchLanguages(), fetchStats(), fetchPosts()]))
+onMounted(() => {
+  void Promise.all([supportedLanguages.fetchLanguages(), fetchStats(), fetchPosts()])
+})
 </script>

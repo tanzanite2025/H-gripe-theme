@@ -1,4 +1,4 @@
-# Tanzanite Documentation
+# Project Documentation
 
 This directory is a project-level documentation hub. It is not the source of truth for runtime behavior; the current code and root `README.md` win when documents disagree.
 

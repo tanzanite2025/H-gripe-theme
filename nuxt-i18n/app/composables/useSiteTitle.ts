@@ -30,7 +30,7 @@ export function useSiteTitle() {
   })
 
   const brandTitle = computed(() => {
-    return (siteSettings.value.brandTitle ?? '').toString().trim()
+    return (siteSettings.value.brandTitle || siteSettings.value.siteTitle || '').toString().trim()
   })
 
   return { siteTitle, brandTitle }

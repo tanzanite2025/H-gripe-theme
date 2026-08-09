@@ -29,20 +29,29 @@
   </AdminFilterPanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RotateCcw, Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { UserFilters } from './userTypes'
 
-defineProps({
-  filters: { type: Object, required: true }
-})
+interface UserFilterOption {
+  label: string
+  value: string
+}
 
-const emit = defineEmits(['apply', 'reset'])
+defineProps<{
+  filters: UserFilters
+}>()
 
-const roleOptions = [
+const emit = defineEmits<{
+  (event: 'apply'): void
+  (event: 'reset'): void
+}>()
+
+const roleOptions: UserFilterOption[] = [
   { label: '全部角色', value: 'all' },
   { label: '超级管理员', value: 'admin' },
   { label: '经理', value: 'manager' },
@@ -51,7 +60,7 @@ const roleOptions = [
   { label: '查看者', value: 'viewer' }
 ]
 
-const statusOptions = [
+const statusOptions: UserFilterOption[] = [
   { label: '全部状态', value: 'all' },
   { label: '活跃', value: 'active' },
   { label: '未激活', value: 'inactive' },

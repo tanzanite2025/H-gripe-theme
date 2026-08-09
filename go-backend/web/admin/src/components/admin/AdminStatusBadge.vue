@@ -4,19 +4,20 @@
   </Badge>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { Badge } from '@/components/ui/badge'
 
-const props = defineProps({
-  tone: {
-    type: String,
-    default: 'gray'
-  }
+export type AdminStatusTone = 'blue' | 'green' | 'amber' | 'coral' | 'gray'
+
+const props = withDefaults(defineProps<{
+  tone?: AdminStatusTone
+}>(), {
+  tone: 'gray'
 })
 
 const toneClass = computed(() => {
-  const tones = {
+  const tones: Record<AdminStatusTone, string> = {
     blue: 'rounded-full h-4 px-2 border border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[8px] font-bold tracking-tight inline-flex items-center',
     green: 'rounded-full h-4 px-2 border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[8px] font-bold tracking-tight inline-flex items-center',
     amber: 'rounded-full h-4 px-2 border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-[8px] font-bold tracking-tight inline-flex items-center',

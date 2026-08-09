@@ -269,7 +269,7 @@
   </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { ArrowRightLeft, Headset, LoaderCircle, MessageCircleOff, Send } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
@@ -298,43 +298,60 @@ import {
   statusLabel,
   statusTone,
 } from '@/lib/customerServicePresentation'
+import type {
+  AssignableAgent,
+  CustomerConversation,
+  CustomerConversationMessage,
+  CustomerTypingState,
+} from './customerServiceTypes'
 
-const props = defineProps({
-  selectedConversation: { type: Object, default: null },
-  messages: { type: Array, default: () => [] },
-  messagesLoading: { type: Boolean, default: false },
-  selectedCustomerTyping: { type: Object, default: null },
-  assignableAgents: { type: Array, default: () => [] },
-  transferTo: { type: String, default: '' },
-  replyMessage: { type: String, default: '' },
-  transferring: { type: Boolean, default: false },
-  replying: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  selectedConversation?: CustomerConversation | null
+  messages?: CustomerConversationMessage[]
+  messagesLoading?: boolean
+  selectedCustomerTyping?: CustomerTypingState | null
+  assignableAgents?: AssignableAgent[]
+  transferTo?: string
+  replyMessage?: string
+  transferring?: boolean
+  replying?: boolean
+  canEdit?: boolean
+}>(), {
+  selectedConversation: null,
+  messages: () => [],
+  messagesLoading: false,
+  selectedCustomerTyping: null,
+  assignableAgents: () => [],
+  transferTo: '',
+  replyMessage: '',
+  transferring: false,
+  replying: false,
+  canEdit: false,
 })
 
-const emit = defineEmits([
-  'update:transferTo',
-  'update:replyMessage',
-  'transfer',
-  'send-reply',
-  'typing-input',
-])
+const emit = defineEmits<{
+  (event: 'update:transferTo', value: string): void
+  (event: 'update:replyMessage', value: string): void
+  (event: 'transfer'): void
+  (event: 'send-reply'): void
+  (event: 'typing-input'): void
+}>()
 
-const transferModel = computed({
+const transferModel = computed<string>({
   get: () => props.transferTo,
-  set: (value) => emit('update:transferTo', value),
+  set: (value: string) => emit('update:transferTo', value),
 })
 
-const replyModel = computed({
+const replyModel = computed<string>({
   get: () => props.replyMessage,
-  set: (value) => emit('update:replyMessage', value),
+  set: (value: string) => emit('update:replyMessage', value),
 })
 
-const messageAttachments = (message) => {
+const messageAttachments = (message: CustomerConversationMessage): string[] => {
   const attachments = Array.isArray(message?.attachments)
     ? message.attachments
     : (message?.attachment_url ? [message.attachment_url] : [])
-  const unique = new Set()
+  const unique = new Set<string>()
   attachments.forEach((value) => {
     const attachment = String(value || '').trim()
     if (attachment) unique.add(attachment)

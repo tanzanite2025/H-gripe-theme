@@ -87,7 +87,7 @@ func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPayme
 			return err
 		}
 		if input.Currency != expectedCurrency {
-			return fmt.Errorf("payment currency %s does not match order currency %s", input.Currency, expectedCurrency)
+			return fmt.Errorf("transaction currency %s does not match order currency %s", input.Currency, expectedCurrency)
 		}
 		if math.Abs(o.TotalAmount-input.Amount) >= gatewayPaymentAmountTolerance {
 			return fmt.Errorf("payment amount %.2f does not match order total %.2f", input.Amount, o.TotalAmount)

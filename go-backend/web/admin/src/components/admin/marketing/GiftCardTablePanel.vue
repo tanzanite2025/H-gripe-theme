@@ -75,25 +75,56 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Eye, Gift } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
-import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  giftCards: { type: Array, default: () => [] },
-  filters: { type: Object, required: true },
-  pagination: { type: Object, required: true },
-  formatCurrency: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  giftCardStatusName: { type: Function, required: true },
-  giftCardStatusTone: { type: Function, required: true },
+interface GiftCardRecord {
+  id: string | number
+  code: string
+  initial_value?: number | string
+  balance?: number | string
+  currency?: string
+  recipient_name?: string
+  recipient_email?: string
+  status?: string
+  expires_at?: string
+  created_at?: string
+}
+
+interface GiftCardFilters {
+  status: string
+}
+
+interface PaginationState {
+  page: number
+  pageSize: number
+  total: number
+}
+
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  giftCards?: GiftCardRecord[]
+  filters: GiftCardFilters
+  pagination: PaginationState
+  formatCurrency: (value: unknown, currency?: string) => string
+  formatDate: (value: unknown) => string
+  giftCardStatusName: (status?: string) => string
+  giftCardStatusTone: (status?: string) => AdminStatusTone
+}>(), {
+  loading: false,
+  giftCards: () => [],
 })
 
-const emit = defineEmits(['filter-change', 'view', 'update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'filter-change'): void
+  (event: 'view', giftCard: GiftCardRecord): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

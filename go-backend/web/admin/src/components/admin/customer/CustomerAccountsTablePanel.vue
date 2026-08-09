@@ -44,22 +44,36 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { UsersRound } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type {
+  CustomerAccount,
+  CustomerDateFormatter,
+  CustomerNameFormatter,
+  CustomerPagination,
+  CustomerStatusNameResolver,
+  CustomerStatusToneResolver
+} from './customerTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  customers: { type: Array, default: () => [] },
-  pagination: { type: Object, required: true },
-  getStatusName: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  formatFullName: { type: Function, required: true },
+withDefaults(defineProps<{
+  loading?: boolean
+  customers?: CustomerAccount[]
+  pagination: CustomerPagination
+  getStatusName: CustomerStatusNameResolver
+  statusTone: CustomerStatusToneResolver
+  formatDate: CustomerDateFormatter
+  formatFullName: CustomerNameFormatter
+}>(), {
+  loading: false,
+  customers: () => []
 })
 
-const emit = defineEmits(['update-page', 'update-page-size'])
+const emit = defineEmits<{
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+}>()
 </script>

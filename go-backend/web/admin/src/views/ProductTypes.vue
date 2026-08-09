@@ -42,6 +42,7 @@
       :errors="formErrors"
       :submitting="submitting"
       :is-product-specific-select="isProductSpecificSelect"
+      :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
       @add-spec="addSpecDefinition"
@@ -59,8 +60,8 @@
   </div>
 </template>
 
-<script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+<script setup lang="ts">
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
@@ -77,39 +78,60 @@ import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import ProductTypeEditorDialog from '@/components/admin/product/ProductTypeEditorDialog.vue'
 import ProductTypeFilterPanel from '@/components/admin/product/ProductTypeFilterPanel.vue'
 import ProductTypeTablePanel from '@/components/admin/product/ProductTypeTablePanel.vue'
+import type {
+  ProductSpecFieldType,
+  ProductSpecPresentation,
+  ProductTypeDialogMode,
+  ProductTypeFilters,
+  ProductTypeForm,
+  ProductTypeFormErrors,
+  ProductTypePayload,
+  ProductTypeRecord,
+  ProductTypeSpecDefinition,
+  ProductTypeSpecForm,
+  ProductTypeTranslation,
+  ProductTypeTranslationForm
+} from '@/components/admin/product/productTypeTypes'
 import { Button } from '@/components/ui/button'
+import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
+import { normalizeLocaleCode } from '@/lib/languages'
 import { useAuthStore } from '@/stores/auth'
 import productTypeApi from '@/api/productTypes'
 
 const authStore = useAuthStore()
+const supportedLanguages = useSupportedLanguages()
+const languageOptions = supportedLanguages.languageOptions
 const loading = ref(false)
 const submitting = ref(false)
 const dialogVisible = ref(false)
-const dialogMode = ref('create')
+const dialogMode = ref<ProductTypeDialogMode>('create')
 const showSpecAdvanced = ref(false)
-const productTypes = ref([])
-const filters = reactive({ search: '', status: 'all' })
-const formErrors = reactive({})
-const confirmation = reactive({ open: false, target: null })
+const productTypes = ref<ProductTypeRecord[]>([])
+const filters = reactive<ProductTypeFilters>({ search: '', status: 'all' })
+const formErrors = reactive<ProductTypeFormErrors>({})
+const confirmation = reactive<{ open: boolean; target: ProductTypeRecord | null }>({ open: false, target: null })
 let nextSpecKey = 1
 
-const typeForm = reactive({
+const typeForm = reactive<ProductTypeForm>({
   id: null,
   name: '',
   slug: '',
   description: '',
   sort_order: 0,
   is_enabled: true,
+  translations: [],
   spec_definitions: []
 })
 
-const filteredTypes = computed(() => {
+const filteredTypes = computed<ProductTypeRecord[]>(() => {
   const keyword = filters.search.trim().toLowerCase()
   return productTypes.value.filter((type) => {
     if (filters.status === 'enabled' && !type.is_enabled) return false
     if (filters.status === 'disabled' && type.is_enabled) return false
     if (!keyword) return true
-    return String(type.name || '').toLowerCase().includes(keyword) || String(type.slug || '').toLowerCase().includes(keyword)
+    return String(type.name || '').toLowerCase().includes(keyword)
+      || String(type.slug || '').toLowerCase().includes(keyword)
+      || (type.translations || []).some((translation) => String(translation.name || '').toLowerCase().includes(keyword))
   })
 })
 
@@ -120,23 +142,38 @@ const statItems = computed(() => [
   { key: 'variants', label: '变体字段', value: productTypes.value.reduce((total, type) => total + variantSpecCount(type), 0), icon: Boxes, tone: 'amber' }
 ])
 
-const hasPermission = (permission) => authStore.hasPermission(permission)
-const formatDate = (value) => value ? new Date(value).toLocaleString('zh-CN') : '-'
-const variantSpecCount = (type) => (type.spec_definitions || []).filter((spec) => spec.is_variant_option).length
+const hasPermission = (permission: string): boolean => authStore.hasPermission(permission)
+const formatDate = (value?: string | null): string => value ? new Date(value).toLocaleString('zh-CN') : '-'
+const variantSpecCount = (type: ProductTypeRecord): number => (type.spec_definitions || []).filter((spec) => spec.is_variant_option).length
 const productSpecificSpecPattern = /(weight|重量|size|尺寸|diameter|直径|width|宽|height|高|depth|深|length|长|pack|包装|数量|count|qty)/i
-const isProductSpecificSelect = (spec) => (
+const isProductSpecificSelect = (spec: ProductTypeSpecForm): boolean => (
   spec.field_type === 'select' &&
   Boolean(String(spec.optionsText || '').trim()) &&
   productSpecificSpecPattern.test(`${spec.name || ''} ${spec.slug || ''}`)
 )
+const usesProductScopedOptions = (spec: ProductTypeSpecForm): boolean => (
+  spec.field_type === 'select' &&
+  spec.is_variant_option &&
+  (spec.presentation === 'color' || spec.presentation === 'image')
+)
 
-const createEmptySpec = (overrides = {}) => ({
+const fieldTypes: ProductSpecFieldType[] = ['text', 'number', 'select', 'boolean']
+const normalizeFieldType = (fieldType?: string | null): ProductSpecFieldType => (
+  fieldTypes.includes(fieldType as ProductSpecFieldType) ? fieldType as ProductSpecFieldType : 'text'
+)
+const presentations: ProductSpecPresentation[] = ['text', 'color', 'image']
+const normalizePresentation = (presentation?: string | null): ProductSpecPresentation => (
+  presentations.includes(presentation as ProductSpecPresentation) ? presentation as ProductSpecPresentation : 'text'
+)
+
+const createEmptySpec = (overrides: Partial<ProductTypeSpecForm> = {}): ProductTypeSpecForm => ({
   id: 0,
   clientKey: nextSpecKey++,
   group: '',
   name: '',
   slug: '',
   field_type: 'text',
+  presentation: 'text',
   unit: '',
   is_required: false,
   is_filterable: false,
@@ -148,7 +185,7 @@ const createEmptySpec = (overrides = {}) => ({
   ...overrides
 })
 
-const optionsToText = (options) => {
+const optionsToText = (options?: string | null): string => {
   if (!options) return ''
   try {
     const parsed = JSON.parse(options)
@@ -158,14 +195,60 @@ const optionsToText = (options) => {
   }
 }
 
-const apiSpecToForm = (spec) => ({
+const apiSpecToForm = (spec: ProductTypeSpecDefinition): ProductTypeSpecForm => ({
   ...createEmptySpec(),
   ...spec,
   clientKey: nextSpecKey++,
+  id: spec.id ?? 0,
+  group: String(spec.group || ''),
+  name: String(spec.name || ''),
+  slug: String(spec.slug || ''),
+  field_type: normalizeFieldType(spec.field_type),
+  presentation: normalizePresentation(spec.presentation),
+  unit: String(spec.unit || ''),
+  sort_order: Number(spec.sort_order || 0),
+  validation: String(spec.validation || ''),
   optionsText: optionsToText(spec.options)
 })
 
-const resetForm = () => {
+const translationRowsFor = (source: ProductTypeTranslation[] = []): ProductTypeTranslationForm[] => {
+  const existing = new Map<string, ProductTypeTranslation>()
+  source.forEach((translation) => {
+    const locale = normalizeLocaleCode(translation.locale)
+    if (locale) existing.set(locale, translation)
+  })
+
+  const rows = languageOptions.value.map((option) => {
+    const translation = existing.get(option.value)
+    return {
+      id: translation?.id ?? null,
+      locale: option.value,
+      name: String(translation?.name || ''),
+      description: String(translation?.description || '')
+    }
+  })
+  const displayedLocales = new Set(rows.map((translation) => translation.locale))
+
+  for (const [locale, translation] of existing) {
+    if (displayedLocales.has(locale)) continue
+    rows.push({
+      id: translation.id ?? null,
+      locale,
+      name: String(translation.name || ''),
+      description: String(translation.description || '')
+    })
+  }
+
+  return rows
+}
+
+watch(languageOptions, () => {
+  if (typeForm.id === null && typeForm.translations.length === 0) {
+    typeForm.translations = translationRowsFor()
+  }
+})
+
+const resetForm = (): void => {
   Object.assign(typeForm, {
     id: null,
     name: '',
@@ -173,19 +256,20 @@ const resetForm = () => {
     description: '',
     sort_order: 0,
     is_enabled: true,
+    translations: translationRowsFor(),
     spec_definitions: []
   })
   clearFormErrors()
 }
 
-const showCreateDialog = () => {
+const showCreateDialog = (): void => {
   dialogMode.value = 'create'
   resetForm()
   showSpecAdvanced.value = false
   dialogVisible.value = true
 }
 
-const showEditDialog = (type) => {
+const showEditDialog = (type: ProductTypeRecord): void => {
   dialogMode.value = 'edit'
   showSpecAdvanced.value = false
   Object.assign(typeForm, {
@@ -195,46 +279,54 @@ const showEditDialog = (type) => {
     description: type.description || '',
     sort_order: Number(type.sort_order || 0),
     is_enabled: type.is_enabled !== false,
+    translations: translationRowsFor(type.translations || []),
     spec_definitions: (type.spec_definitions || []).map(apiSpecToForm)
   })
   clearFormErrors()
   dialogVisible.value = true
 }
 
-const addSpecDefinition = () => {
+const addSpecDefinition = (): void => {
   const spec = createEmptySpec()
   spec.sort_order = typeForm.spec_definitions.length * 10
   typeForm.spec_definitions.push(spec)
 }
 
-const removeSpecDefinition = (index) => {
+const removeSpecDefinition = (index: number): void => {
   typeForm.spec_definitions.splice(index, 1)
   clearFormErrors()
 }
 
-const clearFormErrors = () => Object.keys(formErrors).forEach((key) => delete formErrors[key])
-const clearFieldError = (key) => { delete formErrors[key] }
+const clearFormErrors = (): void => Object.keys(formErrors).forEach((key) => delete formErrors[key])
+const clearFieldError = (key: string): void => { delete formErrors[key] }
 
-const specOptions = (spec) => spec.optionsText
+const specOptionsFromText = (text?: string | null): string[] => String(text || '')
   .split(/\r?\n/)
   .map((value) => value.trim())
   .filter(Boolean)
   .filter((value, index, values) => values.indexOf(value) === index)
 
-const validateForm = () => {
+const specOptions = (spec: ProductTypeSpecForm): string[] => specOptionsFromText(spec.optionsText)
+
+const specPayloadOptions = (spec: ProductTypeSpecForm | ProductTypeSpecDefinition): string[] => {
+  if ('optionsText' in spec) return specOptionsFromText(spec.optionsText)
+  return specOptionsFromText(optionsToText(spec.options))
+}
+
+const validateForm = (): boolean => {
   clearFormErrors()
   const slugPattern = /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/
   if (!typeForm.name.trim()) formErrors.name = '请输入模板名称'
   if (!slugPattern.test(typeForm.slug.trim())) formErrors.slug = '请输入有效的模板标识'
 
-  const seenSlugs = new Set()
+  const seenSlugs = new Set<string>()
   typeForm.spec_definitions.forEach((spec, index) => {
     if (!spec.name.trim()) formErrors[`spec:${index}:name`] = '请输入字段名称'
     const slug = spec.slug.trim()
     if (!slugPattern.test(slug)) formErrors[`spec:${index}:slug`] = '请输入有效的字段标识'
     else if (seenSlugs.has(slug)) formErrors[`spec:${index}:slug`] = '字段标识不能重复'
     else seenSlugs.add(slug)
-    if (spec.field_type === 'select' && specOptions(spec).length === 0) {
+    if (spec.field_type === 'select' && specOptions(spec).length === 0 && !usesProductScopedOptions(spec)) {
       formErrors[`spec:${index}:options`] = '请至少填写一个选项'
     }
   })
@@ -246,32 +338,45 @@ const validateForm = () => {
   return true
 }
 
-const buildPayload = (source = typeForm, enabled = source.is_enabled) => ({
+const buildPayload = (
+  source: ProductTypeForm | ProductTypeRecord = typeForm,
+  enabled = source.is_enabled !== false
+): ProductTypePayload => ({
   name: String(source.name || '').trim(),
   slug: String(source.slug || '').trim().toLowerCase(),
   description: String(source.description || '').trim(),
   sort_order: Number(source.sort_order || 0),
   is_enabled: Boolean(enabled),
-  spec_definitions: (source.spec_definitions || []).map((spec) => ({
-    id: Number(spec.id || 0),
-    group: String(spec.group || '').trim(),
-    name: String(spec.name || '').trim(),
-    slug: String(spec.slug || '').trim().toLowerCase(),
-    field_type: spec.field_type || 'text',
-    unit: String(spec.unit || '').trim(),
-    is_required: Boolean(spec.is_required),
-    is_filterable: Boolean(spec.is_filterable),
-    is_visible: Boolean(spec.is_visible),
-    is_variant_option: Boolean(spec.is_variant_option),
-    sort_order: Number(spec.sort_order || 0),
-    options: spec.field_type === 'select'
-      ? JSON.stringify(spec.optionsText === undefined ? optionsToText(spec.options).split(/\r?\n/).filter(Boolean) : specOptions(spec))
-      : '',
-    validation: String(spec.validation || '')
-  }))
+  translations: (source.translations || [])
+    .map((translation) => ({
+      id: Number(translation.id || 0),
+      locale: String(translation.locale || '').trim(),
+      name: String(translation.name || '').trim(),
+      description: String(translation.description || '').trim()
+    }))
+    .filter((translation) => translation.locale && translation.name),
+  spec_definitions: (source.spec_definitions || []).map((spec) => {
+    const fieldType = normalizeFieldType(spec.field_type)
+    return {
+      id: Number(spec.id || 0),
+      group: String(spec.group || '').trim(),
+      name: String(spec.name || '').trim(),
+      slug: String(spec.slug || '').trim().toLowerCase(),
+      field_type: fieldType,
+      presentation: fieldType === 'select' && spec.is_variant_option ? normalizePresentation(spec.presentation) : 'text',
+      unit: String(spec.unit || '').trim(),
+      is_required: Boolean(spec.is_required),
+      is_filterable: Boolean(spec.is_filterable),
+      is_visible: Boolean(spec.is_visible),
+      is_variant_option: Boolean(spec.is_variant_option),
+      sort_order: Number(spec.sort_order || 0),
+      options: fieldType === 'select' ? JSON.stringify(specPayloadOptions(spec)) : '',
+      validation: String(spec.validation || '')
+    }
+  })
 })
 
-const fetchProductTypes = async () => {
+const fetchProductTypes = async (): Promise<void> => {
   loading.value = true
   try {
     productTypes.value = await productTypeApi.list({ include_disabled: true })
@@ -282,13 +387,13 @@ const fetchProductTypes = async () => {
   }
 }
 
-const submitForm = async () => {
+const submitForm = async (): Promise<void> => {
   if (!validateForm()) return
   submitting.value = true
   try {
     const payload = buildPayload()
     if (dialogMode.value === 'create') await productTypeApi.create(payload)
-    else await productTypeApi.update(typeForm.id, payload)
+    else if (typeForm.id !== null) await productTypeApi.update(typeForm.id, payload)
     toast.success(dialogMode.value === 'create' ? '产品模板已创建' : '产品模板已更新')
     dialogVisible.value = false
     await fetchProductTypes()
@@ -299,7 +404,7 @@ const submitForm = async () => {
   }
 }
 
-const toggleType = async (type) => {
+const toggleType = async (type: ProductTypeRecord): Promise<void> => {
   try {
     await productTypeApi.update(type.id, buildPayload(type, !type.is_enabled))
     toast.success(type.is_enabled ? '产品模板已停用' : '产品模板已启用')
@@ -309,8 +414,10 @@ const toggleType = async (type) => {
   }
 }
 
-const requestDelete = (type) => Object.assign(confirmation, { open: true, target: type })
-const deleteType = async () => {
+const requestDelete = (type: ProductTypeRecord): void => {
+  Object.assign(confirmation, { open: true, target: type })
+}
+const deleteType = async (): Promise<void> => {
   const type = confirmation.target
   confirmation.open = false
   if (!type) return
@@ -325,7 +432,12 @@ const deleteType = async () => {
   }
 }
 
-const resetFilters = () => Object.assign(filters, { search: '', status: 'all' })
+const resetFilters = (): void => { Object.assign(filters, { search: '', status: 'all' }) }
 
-onMounted(fetchProductTypes)
+onMounted(() => {
+  void Promise.all([
+    supportedLanguages.fetchLanguages(),
+    fetchProductTypes()
+  ])
+})
 </script>

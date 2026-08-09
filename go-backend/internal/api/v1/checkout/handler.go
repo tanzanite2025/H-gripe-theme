@@ -12,19 +12,18 @@ import (
 type Handler struct {
 	checkoutService *service.CheckoutService
 	cartService     *service.CartService
-	currencyPolicy  *service.CurrencyPolicyService
 }
 
-func NewHandler(checkoutService *service.CheckoutService, cartService *service.CartService, currencyPolicy *service.CurrencyPolicyService) *Handler {
+func NewHandler(checkoutService *service.CheckoutService, cartService *service.CartService) *Handler {
 	return &Handler{
 		checkoutService: checkoutService,
 		cartService:     cartService,
-		currencyPolicy:  currencyPolicy,
 	}
 }
 
 type QuoteRequest struct {
 	ShippingAddress AddressRequest `json:"shipping_address"`
+	DisplayCurrency string         `json:"display_currency"`
 	CouponCode      string         `json:"coupon_code"`
 	PointsToUse     int            `json:"points_to_use"`
 }
@@ -67,12 +66,6 @@ func (h *Handler) Quote(c *gin.Context) {
 		apierror.RespondBadRequest(c, "Cart is empty")
 		return
 	}
-	orderCurrency, err := h.currencyPolicy.DefaultOrderCurrency()
-	if err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
 	items := make([]order.OrderItem, len(summary.Items))
 	for i, item := range summary.Items {
 		items[i] = order.OrderItem{
@@ -86,9 +79,9 @@ func (h *Handler) Quote(c *gin.Context) {
 		UserID:          userID,
 		Items:           items,
 		ShippingAddress: toOrderAddress(req.ShippingAddress),
+		DisplayCurrency: req.DisplayCurrency,
 		CouponCode:      req.CouponCode,
 		PointsToUse:     req.PointsToUse,
-		Currency:        orderCurrency,
 	})
 	if err != nil {
 		apierror.RespondBadRequest(c, err.Error())

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"tanzanite/internal/domain/currency"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/repository"
 )
@@ -16,8 +17,10 @@ type ProductVariantInput struct {
 	SKU                string
 	Title              string
 	OptionValues       map[string]string
+	Currency           string
 	Price              float64
 	SalePrice          *float64
+	DisplayPrices      []currency.DisplayPriceSnapshot
 	Stock              int
 	Weight             int
 	IsDefault          bool
@@ -87,7 +90,7 @@ func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]
 	return specValues, nil
 }
 
-func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVariantInput) ([]product.ProductVariant, error) {
+func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVariantInput, productCurrency string, optionDisplayValues []product.ProductVariantOptionValue) ([]product.ProductVariant, error) {
 	if len(inputs) == 0 {
 		return nil, fmt.Errorf("%w: at least one variant is required", ErrProductVariantInvalid)
 	}
@@ -96,13 +99,25 @@ func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVari
 	if err != nil {
 		return nil, err
 	}
+	configuredOptionValues := variantOptionValueKeysBySlug(variantDefinitions, optionDisplayValues)
 
 	variants := make([]product.ProductVariant, 0, len(inputs))
 	defaultIndex := -1
 	seenSKU := make(map[string]struct{}, len(inputs))
 	seenOptions := make(map[string]struct{}, len(inputs))
+	productCurrency, err = s.normalizeAdminProductPriceCurrency(productCurrency)
+	if err != nil {
+		return nil, err
+	}
 
 	for i, input := range inputs {
+		variantCurrency := currency.NormalizeCode(input.Currency)
+		if variantCurrency == "" {
+			variantCurrency = productCurrency
+		}
+		if variantCurrency != productCurrency {
+			return nil, fmt.Errorf("%w: all variants must use product currency %s", ErrProductVariantInvalid, productCurrency)
+		}
 		input.SKU = strings.TrimSpace(input.SKU)
 		if input.SKU == "" {
 			return nil, fmt.Errorf("%w: sku is required", ErrProductVariantInvalid)
@@ -122,7 +137,7 @@ func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVari
 		}
 		seenSKU[skuKey] = struct{}{}
 
-		optionValues, optionJSON, err := s.normalizeVariantOptions(variantDefinitions, input.OptionValues)
+		optionValues, optionJSON, err := s.normalizeVariantOptions(variantDefinitions, input.OptionValues, configuredOptionValues)
 		if err != nil {
 			return nil, err
 		}
@@ -144,8 +159,10 @@ func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVari
 			SKU:                input.SKU,
 			Title:              strings.TrimSpace(input.Title),
 			OptionValues:       optionJSON,
+			Currency:           variantCurrency,
 			Price:              input.Price,
 			SalePrice:          input.SalePrice,
+			DisplayPriceData:   currency.DisplayPriceSnapshotsJSON(input.DisplayPrices, variantCurrency),
 			Stock:              input.Stock,
 			Weight:             input.Weight,
 			IsDefault:          input.IsDefault,
@@ -243,7 +260,7 @@ func (s *ProductService) loadVariantDefinitions(productTypeID *uint) (map[string
 	return definitions, nil
 }
 
-func (s *ProductService) normalizeVariantOptions(definitions map[string]product.SpecDefinition, rawValues map[string]string) (map[string]string, string, error) {
+func (s *ProductService) normalizeVariantOptions(definitions map[string]product.SpecDefinition, rawValues map[string]string, configuredOptionValues map[string]map[string]struct{}) (map[string]string, string, error) {
 	if len(rawValues) > 0 && len(definitions) == 0 {
 		return nil, "", fmt.Errorf("%w: product_type_id is required when variant options are provided", ErrProductVariantInvalid)
 	}
@@ -253,6 +270,17 @@ func (s *ProductService) normalizeVariantOptions(definitions map[string]product.
 		definition, ok := definitions[slug]
 		if !ok {
 			return nil, "", fmt.Errorf("%w: unknown variant option %s", ErrProductVariantInvalid, slug)
+		}
+		if allowedValues := configuredOptionValues[slug]; len(allowedValues) > 0 {
+			value := strings.TrimSpace(raw)
+			if value == "" {
+				continue
+			}
+			if _, ok := allowedValues[value]; !ok {
+				return nil, "", fmt.Errorf("%w: %s is not a configured option display value for %s", ErrProductVariantInvalid, value, slug)
+			}
+			normalizedValues[slug] = value
+			continue
 		}
 		normalized, err := normalizeSpecValue(definition, raw)
 		if err != nil {
@@ -279,6 +307,34 @@ func (s *ProductService) normalizeVariantOptions(definitions map[string]product.
 		return nil, "", err
 	}
 	return normalizedValues, string(encoded), nil
+}
+
+func variantOptionValueKeysBySlug(definitions map[string]product.SpecDefinition, values []product.ProductVariantOptionValue) map[string]map[string]struct{} {
+	if len(definitions) == 0 || len(values) == 0 {
+		return nil
+	}
+
+	definitionsByID := make(map[uint]product.SpecDefinition, len(definitions))
+	for _, definition := range definitions {
+		definitionsByID[definition.ID] = definition
+	}
+
+	result := make(map[string]map[string]struct{})
+	for _, value := range values {
+		definition, ok := definitionsByID[value.SpecDefinitionID]
+		if !ok {
+			continue
+		}
+		valueKey := strings.TrimSpace(value.ValueKey)
+		if valueKey == "" {
+			continue
+		}
+		if _, ok := result[definition.Slug]; !ok {
+			result[definition.Slug] = make(map[string]struct{})
+		}
+		result[definition.Slug][valueKey] = struct{}{}
+	}
+	return result
 }
 
 func variantTitle(values map[string]string) string {

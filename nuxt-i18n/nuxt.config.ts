@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { defineNuxtConfig } from 'nuxt/config'
-import locales from './app/i18n/locales.manifest.js'
+import locales from './app/i18n/locales.manifest'
 import { buildStorefrontRouteRules } from './config/storefront/route-rules'
 
 const env = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) || {}
@@ -10,9 +10,10 @@ const publicApiBase = trimTrailingSlash(
 )
 const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9200')
 const imageProvider = env.NUXT_IMAGE_PROVIDER || 'none'
-const htmlCacheEnabled = String(env.NUXT_HTML_CACHE_ENABLED || 'true').toLowerCase() !== 'false'
+const htmlCacheDefault = env.NODE_ENV === 'production' ? 'true' : 'false'
+const htmlCacheEnabled = String(env.NUXT_HTML_CACHE_ENABLED ?? htmlCacheDefault).toLowerCase() !== 'false'
 
-const storefrontI18nLocales = locales.map((locale: any) => {
+const storefrontI18nLocales = locales.map((locale) => {
   const localeFile = locale.file || `${locale.code}.json`
 
   return {

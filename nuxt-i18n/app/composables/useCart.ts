@@ -18,12 +18,36 @@ const cartItems = ref<CartItem[]>([])
 const isCartOpen = ref(false)
 const isCheckoutOpen = ref(false)
 const cartVariant = ref<'default' | 'checkout-bottom' | 'lever-bottom' | 'chat-bottom'>('default')
+const preferredCheckoutPaymentMethod = ref('')
 const shippingAddress = ref<ShippingAddress | null>(null)
 const isLoadingCart = ref(false)
 
 let eventListenersAdded = false
 
 const cartItemKey = (productId: number, variantId?: number | null) => variantId || productId
+
+const normalizeCurrencyCode = (value: unknown) => {
+  const code = String(value || '').trim().toUpperCase()
+  return /^[A-Z]{3}$/.test(code) ? code : ''
+}
+
+const normalizeCheckoutPaymentMethod = (value?: string | null) => {
+  const method = String(value || '').trim().toLowerCase()
+  if (['stripe', 'credit_card', 'credit-card'].includes(method)) return 'card'
+  if (['card', 'paypal', 'alipay', 'wechat'].includes(method)) return method
+  return ''
+}
+
+const extractCartSummaryItems = (payload: unknown): unknown[] => {
+  let current = payload
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return []
+    const record = current as Record<string, unknown>
+    if (Array.isArray(record.items)) return record.items
+    current = record.data
+  }
+  return []
+}
 
 const resolveProductThumbnail = (product: any): string => {
   const media = Array.isArray(product?.media) ? product.media : []
@@ -37,11 +61,13 @@ const resolveProductThumbnail = (product: any): string => {
   return product?.thumbnail || product?.featured_image || primaryImage?.url || ''
 }
 
-const normalizeBackendCartItem = (item: any): CartItem => {
+const normalizeBackendCartItem = (item: any, fallbackCurrency = 'USD'): CartItem => {
   const productId = item.product_id
   const variantId = item.variant_id || null
   const product = item.product || {}
+  const variant = item.variant || {}
   const thumbnail = resolveProductThumbnail(product)
+  const itemCurrency = normalizeCurrencyCode(item.currency || variant.currency || product.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
 
   return {
     id: cartItemKey(productId, variantId),
@@ -51,6 +77,7 @@ const normalizeBackendCartItem = (item: any): CartItem => {
     title: product.name || 'Unknown Product',
     slug: product.slug || '',
     price: item.price,
+    currency: itemCurrency,
     sale_price: product.sale_price,
     quantity: item.quantity,
     image: thumbnail,
@@ -63,12 +90,14 @@ export const useCart = () => {
   const auth = useAuth()
   const calculation = useCartCalculation()
   const { track: trackBehaviorEvent } = useBehaviorEvents()
+  const { baseCurrency } = useStorefrontContext()
 
   const loadCartFromBackend = async () => {
     isLoadingCart.value = true
     try {
       const summary = await auth.request<any>('/cart/summary')
-      cartItems.value = summary?.items?.map(normalizeBackendCartItem) || []
+      cartItems.value = extractCartSummaryItems(summary)
+        .map((item: any) => normalizeBackendCartItem(item, baseCurrency.value))
     } catch (e) {
       console.error('Failed to load cart from backend', e)
     } finally {
@@ -216,6 +245,10 @@ export const useCart = () => {
   const tax = computed(() => calculation.calculateTax(subtotal.value, shipping.value))
   const total = computed(() => calculation.calculateTotal(cartItems.value).total)
   const priceBreakdown = computed(() => calculation.calculateTotal(cartItems.value))
+  const cartCurrency = computed(() => {
+    const firstCurrency = cartItems.value.map(item => normalizeCurrencyCode(item.currency)).find(Boolean)
+    return firstCurrency || baseCurrency.value || 'USD'
+  })
 
   const addToCart = (product: Omit<CartItem, 'quantity'>) => {
     const productId = product.product_id || product.id
@@ -297,19 +330,29 @@ export const useCart = () => {
   const openCart = () => { cartVariant.value = 'default'; isCartOpen.value = true }
   const closeCart = () => { isCartOpen.value = false }
   const toggleCart = () => { isCartOpen.value = !isCartOpen.value }
+  const openCheckout = (paymentMethod?: string) => {
+    preferredCheckoutPaymentMethod.value = normalizeCheckoutPaymentMethod(paymentMethod)
+    isCartOpen.value = false
+    isCheckoutOpen.value = true
+  }
+  const closeCheckout = () => { isCheckoutOpen.value = false }
+  const backToCart = () => {
+    closeCheckout()
+    openCartFromCheckout()
+  }
   const openCartFromCheckout = () => { cartVariant.value = 'checkout-bottom'; isCartOpen.value = true }
   const openCartFromLever = () => { cartVariant.value = 'lever-bottom'; isCartOpen.value = true }
   const openCartFromChat = () => { cartVariant.value = 'chat-bottom'; isCartOpen.value = true }
-  const openCheckout = () => { isCartOpen.value = false; isCheckoutOpen.value = true }
-  const closeCheckout = () => { isCheckoutOpen.value = false }
-  const backToCart = () => { closeCheckout(); openCartFromCheckout() }
 
   const setShippingAddress = (address: ShippingAddress) => { shippingAddress.value = address }
 
-  const { defaultOrderCurrency } = usePaymentCurrencies()
-  const formatPrice = (price: number, currency = defaultOrderCurrency.value) => {
-    if (!currency) return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price)
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(price)
+  const formatPrice = (price: number, currency = cartCurrency.value || baseCurrency.value || 'USD') => {
+    try {
+      if (!currency) return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price)
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(price)
+    } catch {
+      return `${currency || ''} ${Number(price || 0).toFixed(2)}`.trim()
+    }
   }
 
   return {
@@ -317,6 +360,7 @@ export const useCart = () => {
     isCartOpen,
     isCheckoutOpen,
     cartVariant,
+    preferredCheckoutPaymentMethod,
     shippingAddress,
     isLoadingCart,
 
@@ -326,6 +370,7 @@ export const useCart = () => {
     tax,
     total,
     priceBreakdown,
+    cartCurrency,
     calculation,
 
     addToCart,
@@ -338,12 +383,12 @@ export const useCart = () => {
     openCart,
     closeCart,
     toggleCart,
-    openCartFromCheckout,
-    openCartFromLever,
-    openCartFromChat,
     openCheckout,
     closeCheckout,
     backToCart,
+    openCartFromCheckout,
+    openCartFromLever,
+    openCartFromChat,
 
     setShippingAddress,
     formatPrice,

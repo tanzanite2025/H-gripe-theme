@@ -23,9 +23,8 @@ func TestCurrencyPolicyUpdateAuditRecordsOldAndNewPolicy(t *testing.T) {
 	auditRecorder := &fakePaymentAuditRecorder{}
 	handler, policyService := newCurrencyPolicyAuditTestHandler(t, auditRecorder)
 	require.NoError(t, seedCurrencyPolicy(policyService, currency.Policy{
-		AccountingCurrency:   "USD",
-		DefaultOrderCurrency: "USD",
-		AcceptedCurrencies:   []string{"USD", "EUR"},
+		PrimaryCurrency:   "CNY",
+		DisplayCurrencies: []string{"USD", "EUR"},
 	}))
 
 	recorder := httptest.NewRecorder()
@@ -35,7 +34,7 @@ func TestCurrencyPolicyUpdateAuditRecordsOldAndNewPolicy(t *testing.T) {
 	context.Request = httptest.NewRequest(
 		http.MethodPut,
 		"/api/admin/settings/currency-policy",
-		strings.NewReader(`{"accounting_currency":"usd","default_order_currency":"gbp","accepted_currencies":["gbp","usd","gbp"]}`),
+		strings.NewReader(`{"primary_currency":"cny","display_currencies":["gbp","usd","gbp"]}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
 	context.Request.Header.Set("User-Agent", "admin-test-agent")
@@ -56,20 +55,20 @@ func TestCurrencyPolicyUpdateAuditRecordsOldAndNewPolicy(t *testing.T) {
 
 	var changes map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.Changes), &changes))
-	require.Equal(t, "USD", changes["accounting_currency"])
-	require.Equal(t, "GBP", changes["default_order_currency"])
-	require.Equal(t, []interface{}{"GBP", "USD"}, changes["accepted_currencies"])
-	require.Equal(t, float64(2), changes["accepted_currency_count"])
+	require.Equal(t, "CNY", changes["primary_currency"])
+	require.Equal(t, []interface{}{"GBP", "USD"}, changes["display_currencies"])
+	require.Equal(t, float64(2), changes["display_currency_count"])
+	require.Greater(t, changes["available_currency_count"].(float64), float64(0))
 
 	var oldValue map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.OldValue), &oldValue))
-	require.Equal(t, "USD", oldValue["accounting_currency"])
-	require.Equal(t, "USD", oldValue["default_order_currency"])
-	require.Equal(t, []interface{}{"EUR", "USD"}, oldValue["accepted_currencies"])
+	require.Equal(t, "CNY", oldValue["primary_currency"])
+	require.Equal(t, []interface{}{"USD", "EUR"}, oldValue["display_currencies"])
 
 	var newValue map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.NewValue), &newValue))
-	require.Equal(t, "GBP", newValue["default_order_currency"])
+	require.Equal(t, "CNY", newValue["primary_currency"])
+	require.Equal(t, []interface{}{"GBP", "USD"}, newValue["display_currencies"])
 }
 
 func TestCurrencyPolicyUpdateValidationFailureIsAuditLogged(t *testing.T) {
@@ -82,7 +81,7 @@ func TestCurrencyPolicyUpdateValidationFailureIsAuditLogged(t *testing.T) {
 	context.Request = httptest.NewRequest(
 		http.MethodPut,
 		"/api/admin/settings/currency-policy",
-		strings.NewReader(`{"accounting_currency":"USD","default_order_currency":"BTC","accepted_currencies":["USD"]}`),
+		strings.NewReader(`{"primary_currency":"CNY","display_currencies":["BTC","USD"]}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
 
@@ -94,13 +93,12 @@ func TestCurrencyPolicyUpdateValidationFailureIsAuditLogged(t *testing.T) {
 	require.Equal(t, adminAuditActionUpdate, log.Action)
 	require.Equal(t, adminAuditResourceCurrencyPolicy, log.Resource)
 	require.Equal(t, adminAuditStatusFailed, log.Status)
-	require.Contains(t, log.ErrorMessage, "unsupported default order currency")
+	require.Contains(t, log.ErrorMessage, "unsupported display currency")
 
 	var changes map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.Changes), &changes))
-	require.Equal(t, "USD", changes["accounting_currency"])
-	require.Equal(t, "BTC", changes["default_order_currency"])
-	require.Equal(t, []interface{}{"USD"}, changes["accepted_currencies"])
+	require.Equal(t, "CNY", changes["primary_currency"])
+	require.Equal(t, []interface{}{"BTC", "USD"}, changes["display_currencies"])
 }
 
 func newCurrencyPolicyAuditTestHandler(t *testing.T, auditRecorder *fakePaymentAuditRecorder) (*CurrencyPolicyHandler, *service.CurrencyPolicyService) {

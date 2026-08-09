@@ -81,16 +81,23 @@ export const normalizeRuntimeSocialLinks = (value: unknown): ApiSocialLink[] => 
     })
 }
 
-const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => ({
-  siteTitle: asString(raw.siteTitle ?? raw.site_name),
-  brandTitle: asString(raw.brandTitle ?? raw.brand_title),
-  siteDescription: asString(raw.siteDescription ?? raw.site_description),
-  siteUrl: asString(raw.siteUrl ?? raw.site_url),
-  siteLogo: asString(raw.siteLogo ?? raw.site_logo),
-  contactEmail: asString(raw.contactEmail ?? raw.contact_email),
-  contactPhone: asString(raw.contactPhone ?? raw.contact_phone),
-  socialLinks: normalizeRuntimeSocialLinks(raw.socialLinks ?? raw.social_links)
-})
+const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => {
+  const brandTitle = asString(raw.brandTitle ?? raw.brand_title)
+  const legacySiteTitle = asString(raw.siteTitle ?? raw.site_name)
+  const siteTitle = brandTitle || legacySiteTitle
+  const siteLogo = asString(raw.siteLogo ?? raw.site_logo).trim()
+
+  return {
+    siteTitle,
+    brandTitle: brandTitle || siteTitle,
+    siteDescription: asString(raw.siteDescription ?? raw.site_description),
+    siteUrl: asString(raw.siteUrl ?? raw.site_url),
+    siteLogo: siteLogo === '/images/logo.png' ? '' : siteLogo,
+    contactEmail: asString(raw.contactEmail ?? raw.contact_email),
+    contactPhone: asString(raw.contactPhone ?? raw.contact_phone),
+    socialLinks: normalizeRuntimeSocialLinks(raw.socialLinks ?? raw.social_links)
+  }
+}
 
 const normalizeQuickBuySettings = (raw: RawSettings): QuickBuyConfigProp => ({
   enabled: raw.enabled === undefined ? undefined : asBoolean(raw.enabled),
@@ -108,7 +115,12 @@ const normalizeQuickBuySettings = (raw: RawSettings): QuickBuyConfigProp => ({
 
 export function useSiteSettings() {
   const config = useRuntimeConfig()
-  const apiBase = computed(() => normalizeBaseUrl((config.public as { apiBase?: string }).apiBase || '/api/v1'))
+  const apiBase = computed(() => {
+    const publicBase = normalizeBaseUrl((config.public as { apiBase?: string }).apiBase || '')
+    if (publicBase) return publicBase
+    const internalOrigin = normalizeBaseUrl((config as { apiInternalOrigin?: string }).apiInternalOrigin || '')
+    return internalOrigin ? `${internalOrigin}/api/v1` : '/api/v1'
+  })
 
   const { data } = useAsyncData<SiteSettingsResponse | null>(
     'mytheme-site-settings',
@@ -125,7 +137,6 @@ export function useSiteSettings() {
       }
     },
     {
-      server: false,
       default: () => null
     }
   )

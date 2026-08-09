@@ -9,6 +9,7 @@ type SpecDefinition struct {
 	Name            string    `gorm:"type:varchar(120);not null" json:"name"`
 	Slug            string    `gorm:"type:varchar(120);not null;uniqueIndex:idx_product_type_spec_slug" json:"slug"`
 	FieldType       string    `gorm:"type:varchar(32);default:'text';not null" json:"field_type"`
+	Presentation    string    `gorm:"type:varchar(32);default:'text';not null" json:"presentation"`
 	Unit            string    `gorm:"type:varchar(32)" json:"unit"`
 	IsRequired      bool      `gorm:"default:false;not null" json:"is_required"`
 	IsFilterable    bool      `gorm:"default:false;not null" json:"is_filterable"`

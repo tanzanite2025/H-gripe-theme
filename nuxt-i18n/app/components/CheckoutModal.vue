@@ -3,123 +3,229 @@
     <Transition name="fade">
       <div
         v-if="isCheckoutOpen"
-        class="fixed inset-0 z-[12000] flex items-center justify-center p-0 md:p-4 tz-mobile-safe-modal-mask"
-        aria-modal="true"
+        class="fixed inset-0 z-[12000] flex items-center justify-center bg-black/80 p-0 backdrop-blur-sm md:p-5"
         role="dialog"
+        aria-modal="true"
         @click.self="closeCheckout"
       >
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
-
-        <Transition name="scale" appear>
-          <div
-            v-if="isCheckoutOpen"
-            class="checkout-modal-shell relative flex w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black text-white shadow-[0_18px_44px_rgba(0,0,0,0.72)]"
-          >
-            <header class="relative flex items-center justify-center border-b border-white/10 px-3 py-3 md:px-6">
-              <h2 class="sr-only">{{ t('checkout.modal.title') }}</h2>
-              <div class="flex items-center gap-2 overflow-x-auto">
-                <button
-                  type="button"
-                  class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-white/90"
-                  @click="openCartFromCheckout"
-                >
-                  {{ t('checkout.modal.actions.viewCart') }}
-                </button>
-                <button
-                  type="button"
-                  class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-white/90"
-                  @click="handleOpenShippingChat"
-                >
-                  {{ t('checkout.modal.actions.livechat') }}
-                </button>
-                <button
-                  type="button"
-                  class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-white/90"
-                  @click="openContactSupport"
-                >
-                  {{ t('checkout.modal.actions.email') }}
-                </button>
-              </div>
+        <section class="checkout-shell relative flex h-full w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#090a0b] text-white shadow-2xl md:h-[min(92vh,900px)] md:rounded-2xl">
+          <header class="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 md:px-6">
+            <div>
+              <p class="text-[10px] uppercase tracking-[0.24em] text-white/45">{{ t('checkout.modal.title', 'Checkout') }}</p>
+              <h2 class="mt-1 text-base font-semibold">{{ t('checkout.stepper.review.continueToCheckout', 'Complete your order') }}</h2>
+            </div>
+            <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="tz-global-close-btn absolute right-3 top-1/2 -translate-y-1/2"
-                :aria-label="t('checkout.modal.closeAriaLabel')"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-xs text-white/75 transition hover:bg-white/10"
+                @click="backToCart"
+              >
+                <Icon name="lucide:shopping-cart" class="h-3.5 w-3.5" />
+                {{ t('checkout.modal.actions.viewCart', 'View cart') }}
+              </button>
+              <button
+                type="button"
+                class="tz-global-close-btn"
+                :aria-label="t('checkout.modal.closeAriaLabel', 'Close checkout')"
                 @click="closeCheckout"
               >
                 <Icon name="lucide:x" class="h-3.5 w-3.5" />
               </button>
-            </header>
-
-            <div class="px-3 pt-2 md:px-6">
-              <div class="checkout-modal-ssl-banner mx-auto flex max-w-[480px] items-center justify-center gap-2 text-center text-xs leading-tight text-emerald-100">
-                <img
-                  src="/checkout/secured_ssl-preview.png"
-                  :alt="t('checkout.modal.sslAlt')"
-                  class="h-12 w-auto md:h-16"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <p>{{ t('checkout.modal.sslNote') }}</p>
-              </div>
             </div>
+          </header>
 
-            <p
-              v-if="checkoutError"
-              class="mx-3 mt-2 rounded-xl border border-rose-300/25 bg-rose-300/10 px-3 py-2 text-xs text-rose-100 md:mx-6"
-            >
-              {{ checkoutError }}
-            </p>
+          <div class="min-h-0 flex-1 overflow-y-auto">
+            <div class="grid gap-5 p-4 md:grid-cols-[minmax(0,1fr)_300px] md:p-6">
+              <main class="space-y-5">
+                <section class="border-b border-white/10 pb-5">
+                  <div class="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 class="text-sm font-semibold">{{ t('checkout.steps.payment', 'Choose payment method') }}</h3>
+                      <p class="mt-1 text-xs text-white/55">
+                        {{ t('checkout.stepper.payment.pickProvider', 'Choose a configured payment provider') }}
+                      </p>
+                    </div>
+                    <span v-if="paymentMethodsLoading" class="text-xs text-white/45">
+                      {{ t('common.loading', 'Loading...') }}
+                    </span>
+                  </div>
 
-            <div class="min-h-0 flex-1 overflow-y-auto px-0 pb-2 md:px-6 md:pb-4">
-              <CheckoutStepper
-                :initial-step="currentStepperStep"
-                :initial-method="activePaymentTab"
-                :coupon-input="couponCode"
-                :is-applying-coupon="isApplyingCoupon"
-                :applied-coupon="appliedCouponDisplayPayload"
-                :points-available="calculation.userPoints.value?.available || 0"
-                :is-using-points="calculation.usePointsDiscount.value"
-                :points-to-use="calculation.pointsToUse.value"
-                :max-points-to-use="calculation.userPoints.value?.available || 0"
-                :points-hint="t('checkout.modal.pointsHint')"
-                :payment-options="stepperOptions"
-                :order-summary="stepperOrderSummary"
-                :currency="checkoutCurrency"
-                :show-shipping-form="true"
-                :shipping-form="form"
-                :country-search="countrySearch"
-                :shippable-countries="filteredShippableCountries"
-                :non-shippable-countries="filteredNonShippableCountries"
-                :shipping-validation="normalizedShippingValidation"
-                :estimated-delivery="estimatedDelivery"
-                :zip-placeholder="zipPlaceholder"
-                :zip-hint="zipHint"
-                :desktop-cta-label="paymentCtaLabel"
-                :cta-description="desktopCtaDescription"
-                :mobile-payment-title="mobilePaymentTitle"
-                :mobile-payment-description="mobilePaymentDescription"
-                :is-submitting="isSubmitting"
-                :stripe-payment-session="stripePaymentSession"
-                :stripe-payment-confirm-label="stripePaymentConfirmLabel"
-                :stripe-payment-confirming-label="stripePaymentConfirmingLabel"
-                @update:step="handleStepperStepChange"
-                @update:method="handleStepperSelect"
-                @coupon-input="handleStepperCouponInput"
-                @apply-coupon="handleApplyCoupon"
-                @toggle-points="handleStepperTogglePoints"
-                @points-input="handleStepperPointsInput"
-                @update-shipping-field="handleStepperShippingField"
-                @country-search="handleStepperCountrySearch"
-                @open-contact="openContactSupport"
-                @open-freight="openFreightForwarder"
-                @save-cart="saveCartForLater"
-                @submit="handleSubmit"
-                @stripe-confirmed="handleStripeConfirmed"
-                @stripe-error="handleStripeError"
-              />
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    <button
+                      v-for="option in visiblePaymentOptions"
+                      :key="option.id"
+                      type="button"
+                      class="flex min-h-20 items-center gap-3 rounded-xl border px-3 py-3 text-left transition"
+                      :class="paymentOptionClass(option)"
+                      :disabled="!isPaymentOptionAvailable(option)"
+                      :aria-disabled="!isPaymentOptionAvailable(option)"
+                      @click="selectPaymentOption(option)"
+                    >
+                      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] text-white/75">
+                        <Icon :name="paymentIcon(option.id)" class="h-4 w-4" />
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <span class="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                          {{ paymentTitle(option) }}
+                          <span
+                            v-if="!isPaymentOptionAvailable(option)"
+                            class="rounded-full bg-amber-300/10 px-2 py-0.5 text-[10px] font-medium text-amber-200"
+                          >
+                            {{ unavailableLabel(option) }}
+                          </span>
+                        </span>
+                        <span class="mt-1 block text-xs text-white/50">{{ paymentDescription(option) }}</span>
+                      </span>
+                      <Icon
+                        v-if="selectedMethod === option.id"
+                        name="lucide:check"
+                        class="h-4 w-4 shrink-0 text-white"
+                      />
+                    </button>
+                  </div>
+
+                  <p v-if="paymentMethodsError" class="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
+                    {{ paymentMethodsError }}
+                  </p>
+                  <p v-if="selectedOption && !selectedPaymentAvailable" class="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
+                    {{ unavailableLabel(selectedOption) }}
+                  </p>
+                </section>
+
+                <section class="space-y-3">
+                  <div>
+                    <h3 class="text-sm font-semibold">{{ t('checkout.stepper.shipping.addressTitle', 'Shipping address') }}</h3>
+                    <p class="mt-1 text-xs text-white/55">
+                      {{ t('checkout.stepper.shipping.addressHelp', 'Use the address where this order should be delivered.') }}
+                    </p>
+                  </div>
+
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="sm:col-span-2">
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.countryRegion', 'Country / region') }}</span>
+                      <select v-model="form.country" class="checkout-input">
+                        <option value="" disabled>{{ t('checkout.stepper.shipping.selectCountry', 'Select country') }}</option>
+                        <option v-for="country in COUNTRIES" :key="country.code" :value="country.code">
+                          {{ countryLabel(country) }}
+                        </option>
+                      </select>
+                    </label>
+                    <label class="sm:col-span-2">
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.recipient', 'Recipient') }}</span>
+                      <input v-model.trim="form.name" class="checkout-input" type="text" autocomplete="name" />
+                    </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.phone', 'Phone') }}</span>
+                      <input v-model.trim="form.phone" class="checkout-input" type="tel" autocomplete="tel" />
+                    </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.city', 'City') }}</span>
+                      <input v-model.trim="form.city" class="checkout-input" type="text" autocomplete="address-level2" />
+                    </label>
+                    <label class="sm:col-span-2">
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.address', 'Address') }}</span>
+                      <input v-model.trim="form.address" class="checkout-input" type="text" autocomplete="street-address" />
+                    </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.zip', 'Postal code') }}</span>
+                      <input
+                        v-model.trim="form.zip"
+                        class="checkout-input"
+                        type="text"
+                        autocomplete="postal-code"
+                        :placeholder="zipPlaceholder"
+                      />
+                    </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.review.orderNotes', 'Order notes') }}</span>
+                      <input v-model.trim="form.notes" class="checkout-input" type="text" />
+                    </label>
+                  </div>
+
+                  <p v-if="zipHint" class="text-xs text-white/45">{{ zipHint }}</p>
+                  <p v-if="shippingValidation.reason && form.country" class="rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs text-rose-100">
+                    {{ shippingValidation.reason }}
+                  </p>
+                </section>
+
+                <section v-if="stripePaymentSession" class="border-t border-white/10 pt-5">
+                  <div class="mb-3">
+                    <h3 class="text-sm font-semibold">{{ t('checkout.payment.stripe.title', 'Secure card payment') }}</h3>
+                    <p class="mt-1 text-xs text-white/55">
+                      {{ t('checkout.payment.stripe.description', 'Your card details are handled by Stripe.') }}
+                    </p>
+                  </div>
+                  <StripePaymentElement
+                    :session="stripePaymentSession"
+                    :confirm-label="t('checkout.payment.stripe.confirm', 'Confirm payment')"
+                    :confirming-label="t('checkout.payment.stripe.confirming', 'Confirming...')"
+                    :disabled="isSubmitting"
+                    @confirmed="handleStripeConfirmed"
+                    @error="handleStripeError"
+                  />
+                </section>
+
+                <p v-if="checkoutError" class="rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs text-rose-100">
+                  {{ checkoutError }}
+                </p>
+              </main>
+
+              <aside class="h-fit space-y-4 border-t border-white/10 pt-5 md:sticky md:top-0 md:border-t-0 md:border-l md:pl-5 md:pt-0">
+                <div>
+                  <h3 class="text-sm font-semibold">{{ t('checkout.stepper.summary.title', 'Order summary') }}</h3>
+                  <div class="mt-3 space-y-3">
+                    <article v-for="item in cartItems" :key="item.id" class="flex gap-3">
+                      <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]">
+                        <img v-if="item.thumbnail" :src="item.thumbnail" :alt="item.title" class="h-full w-full object-cover" />
+                        <div v-else class="flex h-full items-center justify-center text-white/35">
+                          <Icon name="lucide:image" class="h-4 w-4" />
+                        </div>
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-xs font-medium">{{ item.title }}</p>
+                        <p class="mt-1 text-xs text-white/50">× {{ item.quantity }}</p>
+                      </div>
+                      <span class="text-xs font-medium">{{ formatPrice(item.price * item.quantity, item.currency) }}</span>
+                    </article>
+                  </div>
+                </div>
+
+                <div class="space-y-2 border-t border-white/10 pt-4 text-sm">
+                  <div class="flex justify-between gap-3 text-white/60">
+                    <span>{{ t('checkout.stepper.summary.subtotal', 'Subtotal') }}</span>
+                    <span>{{ formatPrice(orderTotals.subtotal, cartCurrency) }}</span>
+                  </div>
+                  <div class="flex justify-between gap-3 text-white/60">
+                    <span>{{ t('checkout.stepper.summary.shipping', 'Shipping') }}</span>
+                    <span>{{ shippingLabel }}</span>
+                  </div>
+                  <div class="flex justify-between gap-3 text-white/60">
+                    <span>{{ t('checkout.stepper.summary.tax', 'Tax') }}</span>
+                    <span>{{ checkoutAmountLabel(orderTotals.tax) }}</span>
+                  </div>
+                  <div class="flex justify-between gap-3 border-t border-white/10 pt-3 text-base font-semibold">
+                    <span>{{ t('checkout.stepper.summary.total', 'Total') }}</span>
+                    <span>{{ checkoutAmountLabel(orderTotals.total) }}</span>
+                  </div>
+                </div>
+
+                <button
+                  v-if="!stripePaymentSession"
+                  type="button"
+                  class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-45"
+                  :disabled="isSubmitting || !canSubmit"
+                  @click="submitOrder"
+                >
+                  <Icon v-if="isSubmitting" name="lucide:loader-circle" class="h-4 w-4 animate-spin" />
+                  {{ isSubmitting ? t('checkout.common.processing', 'Processing...') : paymentCtaLabel }}
+                </button>
+                <p v-if="!selectedPaymentAvailable" class="text-center text-xs text-white/45">
+                  {{ t('checkout.modal.messages.paymentUnavailable', 'This payment method is not configured yet.') }}
+                </p>
+              </aside>
             </div>
           </div>
-        </Transition>
+        </section>
       </div>
     </Transition>
 
@@ -128,116 +234,78 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, type ComputedRef } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
-import { COUNTRIES } from '~/data/countries'
+import { COUNTRIES, getCountryName, getZipFormatHint } from '~/data/countries'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
-import { usePaymentCurrencies } from '~/composables/usePaymentCurrencies'
 import { usePaymentMethods } from '~/composables/usePaymentMethods'
 import { useAlipayPayment } from '~/composables/useAlipayPayment'
 import { usePayPalPayment } from '~/composables/usePayPalPayment'
 import { useWeChatPayment, type WeChatPaymentSession } from '~/composables/useWeChatPayment'
 import { useShippingValidation } from '~/composables/useShippingValidation'
-import { useChatWidget } from '~/composables/useChatWidget'
-import type { ShippingQuoteResult } from '~/composables/useShippingQuote'
 import type { StripeConfirmationResult, StripePaymentSession } from '~/composables/useStripePayment'
 import type { CheckoutPaymentOption } from '~/types/payment'
+import StripePaymentElement from '~/components/StripePaymentElement.vue'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
-type PaymentTab = 'card' | 'paypal' | 'alipay' | 'wechat' | 'stripe' | 'bank' | 'worldfirst'
-type StepperStep = 1 | 2 | 3
-type ShippingField = 'country' | 'name' | 'phone' | 'address' | 'city' | 'zip' | 'notes'
 
 interface CheckoutQuote {
-  subtotal_amount: number
-  shipping_fee: number
-  shipping_quote?: ShippingQuoteResult
-  tax_amount: number
-  member_discount: number
-  points_discount: number
-  coupon_discount: number
-  discount_amount: number
-  total_amount: number
-  coupon_code?: string
-  points_to_use: number
+  subtotal_amount?: number
+  shipping_fee?: number
+  tax_amount?: number
+  total_amount?: number
+  shipping_quote?: { selected_option?: { service_name?: string; service_code?: string } }
 }
 
-interface PublicOrderResponse {
+interface OrderResponse {
   order_number: string
-  payment_method: string
-  payment_status: string
-  total_amount: number
-  currency: string
 }
 
-type StripePaymentIntentResponse = StripePaymentSession & {
-  client_secret?: string
-  publishable_key?: string
-}
-
-type CartPriceBreakdown = {
-  subtotal?: number
-  shipping?: number
-  tax?: number
-  total: number
-  pointsDiscount?: number
-  couponDiscount?: number
-  giftCardDiscount?: number
-}
-
-const unwrapApiData = <T,>(payload: ApiResponse<T> | null | undefined): T | null => {
-  let current: unknown = payload
-  for (let depth = 0; depth < 3; depth += 1) {
-    if (!current || typeof current !== 'object') return (current as T) || null
-    if (!('data' in current)) return current as T
-    current = (current as { data?: unknown }).data
-  }
-  return null
-}
-
+const { t, locale } = useI18n()
+const localePath = useLocalePath()
+const auth = useAuth()
 const {
   cartItems,
+  cartCurrency,
   isCheckoutOpen,
+  preferredCheckoutPaymentMethod,
   priceBreakdown,
-  closeCheckout,
   formatPrice,
   clearCart,
-  calculation,
-  openCartFromCheckout,
+  closeCheckout,
+  backToCart,
 } = useCart()
-const auth = useAuth()
-const { t } = useI18n()
-const localePath = useLocalePath()
-const { defaultOrderCurrency } = usePaymentCurrencies()
-const { loadPaymentMethods, availabilityByCode } = usePaymentMethods()
-const { createAlipayOrder, redirectToAlipay } = useAlipayPayment()
+const {
+  paymentMethodOptions,
+  paymentMethodsLoading,
+  paymentMethodsError,
+  loadPaymentMethods,
+} = usePaymentMethods()
 const { createPayPalOrder, redirectToPayPal } = usePayPalPayment()
+const { createAlipayOrder, redirectToAlipay } = useAlipayPayment()
 const { createWeChatOrder } = useWeChatPayment()
-const { openChat } = useChatWidget()
 const {
   loadShippingTemplates,
   validateShipping,
-  getShippableCountries,
-  getEstimatedDeliveryText,
-  getZipFormatHint,
+  getZipFormatHint: getShippingZipFormatHint,
 } = useShippingValidation()
+const { baseCurrency } = useStorefrontContext()
 
-const checkoutCurrency = computed(() => defaultOrderCurrency.value || 'USD')
-const typedPriceBreakdown = priceBreakdown as ComputedRef<CartPriceBreakdown>
-const activePaymentTab = ref<PaymentTab>('card')
-const currentStepperStep = ref<StepperStep>(1)
-const checkoutQuote = ref<CheckoutQuote | null>(null)
-const checkoutQuoteError = ref<string | null>(null)
-const isFetchingCheckoutQuote = ref(false)
-const isSubmitting = ref(false)
-const isApplyingCoupon = ref(false)
-const couponCode = ref('')
-const countrySearch = ref('')
+const selectedMethod = ref('card')
 const checkoutError = ref('')
+const isSubmitting = ref(false)
 const showAuthModal = ref(false)
 const stripePaymentSession = ref<StripePaymentSession | null>(null)
-let checkoutQuoteTimer: ReturnType<typeof setTimeout> | null = null
+const checkoutQuote = ref<CheckoutQuote | null>(null)
+let quoteTimer: ReturnType<typeof setTimeout> | null = null
+
+const normalizeCheckoutPaymentMethod = (value?: string | null) => {
+  const method = String(value || '').trim().toLowerCase()
+  if (['stripe', 'credit_card', 'credit-card'].includes(method)) return 'card'
+  if (['card', 'paypal', 'alipay', 'wechat'].includes(method)) return method
+  return ''
+}
 
 const form = ref({
   country: '',
@@ -249,220 +317,151 @@ const form = ref({
   notes: '',
 })
 
-const selectedPointsToUse = computed(() =>
-  calculation.usePointsDiscount.value ? calculation.pointsToUse.value || 0 : 0,
+const fallbackPaymentOptions = computed<CheckoutPaymentOption[]>(() => [
+  { id: 'card', code: 'card', provider: 'stripe', title: 'Credit / Debit Card', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
+  { id: 'paypal', code: 'paypal', provider: 'paypal', title: 'PayPal', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
+  { id: 'alipay', code: 'alipay', provider: 'alipay', title: 'Alipay', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
+  { id: 'wechat', code: 'wechat', provider: 'wechat', title: 'WeChat Pay', subtitle: '', description: '', enabled: true, available: false, unavailableReason: 'gateway_not_configured' },
+])
+
+const visiblePaymentOptions = computed(() =>
+  paymentMethodOptions.value.length ? paymentMethodOptions.value : fallbackPaymentOptions.value,
 )
 
-const paymentCopy = computed<Record<PaymentTab, { title: string; description: string; cta: string }>>(() => ({
-  card: {
-    title: t('checkout.payment.card.title'),
-    description: t('checkout.payment.card.description'),
-    cta: t('checkout.payment.card.cta'),
-  },
-  paypal: {
-    title: t('checkout.payment.paypal.title'),
-    description: t('checkout.payment.paypal.description'),
-    cta: t('checkout.payment.paypal.cta'),
-  },
-  alipay: {
-    title: t('checkout.payment.alipay.title'),
-    description: t('checkout.payment.alipay.description'),
-    cta: t('checkout.payment.alipay.cta'),
-  },
-  wechat: {
-    title: t('checkout.payment.wechat.title'),
-    description: t('checkout.payment.wechat.description'),
-    cta: t('checkout.payment.wechat.cta'),
-  },
-  stripe: {
-    title: t('checkout.payment.stripe.title'),
-    description: t('checkout.payment.stripe.description'),
-    cta: t('checkout.payment.stripe.cta'),
-  },
-  bank: {
-    title: t('checkout.payment.bank.title'),
-    description: t('checkout.payment.bank.description'),
-    cta: t('checkout.payment.bank.cta'),
-  },
-  worldfirst: {
-    title: t('checkout.payment.worldfirst.title'),
-    description: t('checkout.payment.worldfirst.description'),
-    cta: t('checkout.payment.worldfirst.cta'),
-  },
-}))
-
-const paymentAvailability = (keys: string[]) => {
-  for (const key of keys) {
-    const state = availabilityByCode.value[key.toLowerCase()]
-    if (state) return state
-  }
-  return { available: true, reason: '' }
-}
-
-const withPaymentAvailability = (
-  option: CheckoutPaymentOption,
-  keys: string[],
-): CheckoutPaymentOption => {
-  const state = paymentAvailability(keys)
-  return {
-    ...option,
-    code: option.code || option.id,
-    available: state.available,
-    unavailableReason: state.reason || undefined,
-  }
-}
-
-const stepperOptions = computed<CheckoutPaymentOption[]>(() => {
-  const priceText = formatPrice(checkoutQuote.value?.total_amount ?? typedPriceBreakdown.value.total, checkoutCurrency.value)
-  return [
-    withPaymentAvailability({
-      id: 'card',
-      title: t('checkout.payment.card.title'),
-      subtitle: `${priceText} · ${t('checkout.payment.card.subtitle')}`,
-      description: t('checkout.payment.card.stepperDescription'),
-      points: [t('checkout.payment.card.points.shipping'), t('checkout.payment.card.points.immediate')],
-      provider: 'stripe',
-    }, ['card', 'credit_card', 'stripe']),
-    withPaymentAvailability({
-      id: 'paypal',
-      title: t('checkout.payment.paypal.optionTitle'),
-      subtitle: `${priceText} · ${t('checkout.payment.paypal.subtitle')}`,
-      description: t('checkout.payment.paypal.stepperDescription'),
-      points: [t('checkout.payment.paypal.points.country')],
-      provider: 'paypal',
-    }, ['paypal']),
-    withPaymentAvailability({
-      id: 'stripe',
-      title: t('checkout.payment.stripe.optionTitle'),
-      subtitle: `${priceText} · ${t('checkout.payment.stripe.subtitle')}`,
-      description: t('checkout.payment.stripe.stepperDescription'),
-      points: [t('checkout.payment.stripe.points.sca')],
-      provider: 'stripe',
-    }, ['stripe', 'card']),
-    withPaymentAvailability({
-      id: 'alipay',
-      title: t('checkout.payment.alipay.optionTitle'),
-      subtitle: `${priceText} · ${t('checkout.payment.alipay.subtitle')}`,
-      description: t('checkout.payment.alipay.stepperDescription'),
-      points: [t('checkout.payment.alipay.points.recipient'), t('checkout.payment.alipay.points.wallets')],
-      provider: 'alipay',
-    }, ['alipay']),
-    withPaymentAvailability({
-      id: 'wechat',
-      title: t('checkout.payment.wechat.optionTitle'),
-      subtitle: `${priceText} · ${t('checkout.payment.wechat.subtitle')}`,
-      description: t('checkout.payment.wechat.stepperDescription'),
-      points: [t('checkout.payment.wechat.points.recipient'), t('checkout.payment.wechat.points.scan')],
-      provider: 'wechat',
-    }, ['wechat', 'wechatpay', 'wechat_pay']),
-    withPaymentAvailability({
-      id: 'bank',
-      title: t('checkout.payment.bank.title'),
-      subtitle: `${priceText} · ${t('checkout.payment.bank.subtitle')}`,
-      description: t('checkout.payment.bank.stepperDescription'),
-      points: [t('checkout.payment.bank.points.reference')],
-    }, ['bank']),
-    withPaymentAvailability({
-      id: 'worldfirst',
-      title: t('checkout.payment.worldfirst.optionTitle'),
-      subtitle: `${priceText} · ${t('checkout.payment.worldfirst.subtitle')}`,
-      description: t('checkout.payment.worldfirst.stepperDescription'),
-      points: [t('checkout.payment.worldfirst.points.b2b')],
-    }, ['worldfirst']),
-  ]
-})
-
-const selectedPaymentOption = computed(() =>
-  stepperOptions.value.find(option => option.id === activePaymentTab.value),
+const selectedOption = computed(() =>
+  visiblePaymentOptions.value.find(option => option.id === selectedMethod.value) || null,
 )
-const selectedPaymentAvailable = computed(() => selectedPaymentOption.value?.available !== false)
-const mobilePaymentTitle = computed(() => paymentCopy.value[activePaymentTab.value].title)
-const mobilePaymentDescription = computed(() => paymentCopy.value[activePaymentTab.value].description)
-const paymentCtaLabel = computed(() => paymentCopy.value[activePaymentTab.value].cta)
-const desktopCtaDescription = computed(() => paymentCopy.value[activePaymentTab.value].description)
-const stripePaymentConfirmLabel = computed(() => t('checkout.payment.stripe.confirm', 'Confirm payment'))
-const stripePaymentConfirmingLabel = computed(() => t('checkout.payment.stripe.confirming', 'Confirming...'))
-const appliedCouponDisplayPayload = computed(() => checkoutQuote.value?.coupon_code || '')
+const selectedPaymentAvailable = computed(() =>
+  Boolean(selectedOption.value && selectedOption.value.enabled !== false && selectedOption.value.available === true),
+)
 
-const shippingOptionLabel = (option: ShippingQuoteResult['selected_option'] | null | undefined) => {
-  if (!option) return ''
-  const serviceLabel = option.service_name
-    ? option.service_code ? `${option.service_name} (${option.service_code})` : option.service_name
-    : option.service_code || ''
-  return [option.carrier_name, option.route_name && option.route_name !== option.service_name ? option.route_name : '', serviceLabel]
-    .filter(Boolean)
-    .join(' / ')
-}
-
-const shippingValidation = computed(() => validateShipping(form.value.country, form.value.zip))
-const shippingState = computed<'select' | 'available' | 'unavailable' | 'checking'>(() => {
-  if (!form.value.country) return 'select'
-  if (checkoutQuoteError.value) return 'unavailable'
-  if (!shippingValidation.value.isShippable) return 'unavailable'
-  if (isFetchingCheckoutQuote.value || !checkoutQuote.value) return 'checking'
-  return 'available'
+const shippingValidation = computed(() =>
+  validateShipping(form.value.country, form.value.zip),
+)
+const zipHint = computed(() => {
+  if (!form.value.country) return ''
+  return getShippingZipFormatHint(form.value.country)?.hint || ''
+})
+const zipPlaceholder = computed(() => {
+  if (!form.value.country) return ''
+  return getZipFormatHint(form.value.country)?.placeholder || ''
 })
 
-const stepperOrderSummary = computed(() => {
-  const localTotals = typedPriceBreakdown.value
+const orderTotals = computed(() => {
+  const local = priceBreakdown.value as {
+    subtotal?: number
+  }
   const quote = checkoutQuote.value
-  const selectedOptionLabel = shippingOptionLabel(quote?.shipping_quote?.selected_option)
-  const shippingQuoteLabels = Array.from(new Set(
-    quote?.shipping_quote?.items?.map(item => item.template_name).filter(Boolean) || [],
-  ))
-  const shippingLabel = selectedOptionLabel || shippingQuoteLabels.join(', ') || shippingValidation.value.matchedRule?.service_label
-
   return {
-    items: cartItems.value.map(item => ({
-      id: item.id ?? item.sku ?? item.title ?? '',
-      title: item.title ?? t('checkout.order.itemFallback'),
-      quantity: item.quantity ?? 1,
-      price: item.price ?? 0,
-      thumbnail: item.thumbnail ?? null,
-    })),
-    totals: {
-      subtotal: quote?.subtotal_amount ?? localTotals.subtotal ?? 0,
-      shipping: quote ? quote.shipping_fee : null,
-      shippingLabel,
-      shippingState: shippingState.value,
-      tax: quote?.tax_amount ?? localTotals.tax ?? 0,
-      pointsDiscount: quote?.points_discount ?? localTotals.pointsDiscount ?? 0,
-      couponDiscount: quote?.coupon_discount ?? localTotals.couponDiscount ?? 0,
-      giftCardDiscount: localTotals.giftCardDiscount ?? 0,
-      total: quote?.total_amount ?? localTotals.total ?? 0,
-    },
+    subtotal: Number(quote?.subtotal_amount ?? local.subtotal ?? 0),
+    shipping: quote ? Number(quote.shipping_fee ?? 0) : null,
+    tax: quote ? Number(quote.tax_amount ?? 0) : null,
+    total: quote ? Number(quote.total_amount ?? 0) : null,
   }
 })
 
-const normalizedShippingValidation = computed(() => ({
-  isShippable: Boolean(shippingValidation.value.isShippable),
-  reason: checkoutQuoteError.value || shippingValidation.value.reason,
-  matchedRule: shippingValidation.value.matchedRule
-    ? {
-        service_label: shippingValidation.value.matchedRule.service_label,
-        free_over: shippingValidation.value.matchedRule.free_over ?? undefined,
-      }
-    : undefined,
-}))
+const shippingLabel = computed(() => {
+  if (!form.value.country) return t('checkout.stepper.shipping.state.selectCountry', 'Select country')
+  if (checkoutQuote.value?.shipping_quote?.selected_option) {
+    const option = checkoutQuote.value.shipping_quote.selected_option
+    return option.service_name || option.service_code || t('checkout.stepper.shipping.state.calculating', 'Calculating...')
+  }
+  return orderTotals.value.shipping !== null && orderTotals.value.shipping > 0
+    ? formatPrice(orderTotals.value.shipping, cartCurrency.value)
+    : t('checkout.stepper.shipping.state.calculating', 'Calculating...')
+})
 
-const shippableCountryCodes = computed(() => getShippableCountries())
-const shippableCountries = computed(() => COUNTRIES.filter(country => shippableCountryCodes.value.includes(country.code)))
-const nonShippableCountries = computed(() => COUNTRIES.filter(country => !shippableCountryCodes.value.includes(country.code)))
-const filteredShippableCountries = computed(() => filterCountries(shippableCountries.value, countrySearch.value))
-const filteredNonShippableCountries = computed(() => filterCountries(nonShippableCountries.value, countrySearch.value))
-const estimatedDelivery = computed(() =>
-  shippingValidation.value.isShippable ? getEstimatedDeliveryText(shippingValidation.value.matchedRule) : null,
+const checkoutAmountLabel = (amount: number | null) =>
+  amount === null
+    ? t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout')
+    : formatPrice(amount, cartCurrency.value)
+
+const canSubmit = computed(() =>
+  cartItems.value.length > 0 &&
+  selectedPaymentAvailable.value &&
+  Boolean(
+    form.value.country &&
+    form.value.name.trim() &&
+    form.value.phone.trim() &&
+    form.value.address.trim() &&
+    form.value.city.trim() &&
+    shippingValidation.value.isShippable,
+  ),
 )
-const zipFormatHint = computed(() => form.value.country ? getZipFormatHint(form.value.country) : null)
-const zipPlaceholder = computed(() => zipFormatHint.value?.placeholder || t('checkout.stepper.shipping.zipPlaceholder'))
-const zipHint = computed(() => zipFormatHint.value?.hint || '')
 
-function filterCountries(countries: Array<{ code: string; name: string }>, term: string) {
-  const normalized = term.trim().toLowerCase()
-  if (!normalized) return countries
-  return countries.filter(country =>
-    country.name.toLowerCase().includes(normalized) || country.code.toLowerCase().includes(normalized),
-  )
+const paymentCtaLabel = computed(() => {
+  switch (selectedMethod.value) {
+    case 'paypal': return t('checkout.payment.paypal.cta', 'Continue to PayPal')
+    case 'alipay': return t('checkout.payment.alipay.cta', 'Continue to Alipay')
+    case 'wechat': return t('checkout.payment.wechat.cta', 'Continue to WeChat Pay')
+    default: return t('checkout.payment.card.cta', 'Continue to secure payment')
+  }
+})
+
+const paymentTitle = (option: CheckoutPaymentOption) => {
+  switch (option.id) {
+    case 'card': return t('checkout.payment.card.title', option.title || 'Credit / Debit Card')
+    case 'paypal': return t('checkout.payment.paypal.optionTitle', option.title || 'PayPal')
+    case 'alipay': return t('checkout.payment.alipay.optionTitle', option.title || 'Alipay')
+    case 'wechat': return t('checkout.payment.wechat.optionTitle', option.title || 'WeChat Pay')
+    default: return option.title || option.code || option.id
+  }
+}
+
+const paymentDescription = (option: CheckoutPaymentOption) => {
+  if (option.description) return option.description
+  switch (option.id) {
+    case 'card': return t('checkout.payment.card.description', 'Secure card checkout powered by Stripe.')
+    case 'paypal': return t('checkout.payment.paypal.description', 'Pay securely with PayPal.')
+    case 'alipay': return t('checkout.payment.alipay.description', 'Pay securely with Alipay.')
+    case 'wechat': return t('checkout.payment.wechat.description', 'Scan a WeChat Pay QR code to pay.')
+    default: return option.subtitle || ''
+  }
+}
+
+const paymentIcon = (id: string) => {
+  switch (id) {
+    case 'paypal': return 'lucide:wallet-cards'
+    case 'alipay': return 'lucide:scan-line'
+    case 'wechat': return 'lucide:qr-code'
+    default: return 'lucide:credit-card'
+  }
+}
+
+const isPaymentOptionAvailable = (option: CheckoutPaymentOption) =>
+  option.enabled !== false && option.available === true
+
+const unavailableLabel = (option: CheckoutPaymentOption) => {
+  const reason = String(option.unavailableReason || option.unavailable_reason || '').trim()
+  if (reason === 'gateway_not_configured') {
+    return t('checkout.payment.unconfigured', 'Not configured')
+  }
+  if (reason === 'gateway_config_invalid') {
+    return t('checkout.payment.configInvalid', 'Configuration error')
+  }
+  if (reason === 'disabled') {
+    return t('checkout.payment.disabled', 'Unavailable')
+  }
+  return reason ? reason.replace(/_/g, ' ') : t('checkout.payment.unavailable', 'Unavailable')
+}
+
+const paymentOptionClass = (option: CheckoutPaymentOption) => {
+  if (!isPaymentOptionAvailable(option)) {
+    return 'cursor-not-allowed border-white/10 bg-white/[0.025] opacity-60'
+  }
+  return selectedMethod.value === option.id
+    ? 'border-white/60 bg-white/[0.10]'
+    : 'border-white/10 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.07]'
+}
+
+const countryLabel = (country: { code: string; name: string }) =>
+  getCountryName(country.code, String(locale.value || 'en'))
+
+const selectPaymentOption = (option: CheckoutPaymentOption) => {
+  if (!isPaymentOptionAvailable(option)) return
+  selectedMethod.value = option.id
+  stripePaymentSession.value = null
+  checkoutError.value = ''
 }
 
 const buildShippingAddressPayload = () => {
@@ -479,56 +478,44 @@ const buildShippingAddressPayload = () => {
   }
 }
 
-const isFormValid = computed(() =>
-  Boolean(
-    form.value.country &&
-    shippingValidation.value.isShippable &&
-    form.value.name.trim() &&
-    form.value.phone.trim() &&
-    form.value.address.trim() &&
-    form.value.city.trim(),
-  ),
-)
+const unwrapApiData = <T,>(payload: ApiResponse<T> | null | undefined): T | null => {
+  let current: unknown = payload
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (!current || typeof current !== 'object') return (current as T) || null
+    if (!('data' in current)) return current as T
+    current = (current as { data?: unknown }).data
+  }
+  return null
+}
 
-const fetchCheckoutQuote = async (showError = false) => {
-  if (!isCheckoutOpen.value || !cartItems.value.length || !form.value.country) {
+const refreshCheckoutQuote = async () => {
+  if (!isCheckoutOpen.value || !cartItems.value.length || !form.value.country || !auth.isAuthenticated.value) {
     checkoutQuote.value = null
-    checkoutQuoteError.value = null
-    return false
+    return
   }
 
-  isFetchingCheckoutQuote.value = true
-  checkoutQuoteError.value = null
   try {
     const response = await auth.request<ApiResponse<CheckoutQuote>>('/checkout/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        shipping_address: buildShippingAddressPayload(),
-        coupon_code: couponCode.value.trim(),
-        points_to_use: selectedPointsToUse.value,
-      }),
+      body: JSON.stringify({ shipping_address: buildShippingAddressPayload() }),
     })
-    const quote = unwrapApiData<CheckoutQuote>(response)
-    if (!quote) throw new Error(t('checkout.modal.messages.invalidQuote'))
-    checkoutQuote.value = quote
-    return true
-  } catch (error) {
-    const message = error instanceof Error ? error.message : t('checkout.modal.messages.unableRefreshQuote')
+    checkoutQuote.value = unwrapApiData<CheckoutQuote>(response)
+  } catch {
     checkoutQuote.value = null
-    checkoutQuoteError.value = message
-    if (showError) checkoutError.value = message
-    return false
-  } finally {
-    isFetchingCheckoutQuote.value = false
   }
 }
 
-const scheduleCheckoutQuoteRefresh = () => {
-  if (checkoutQuoteTimer) clearTimeout(checkoutQuoteTimer)
-  checkoutQuoteTimer = setTimeout(() => {
-    void fetchCheckoutQuote(false)
-  }, 300)
+const scheduleQuoteRefresh = () => {
+  if (quoteTimer) clearTimeout(quoteTimer)
+  quoteTimer = setTimeout(() => { void refreshCheckoutQuote() }, 300)
+}
+
+const ensureCheckoutData = async () => {
+  await Promise.all([
+    loadShippingTemplates(),
+    loadPaymentMethods(form.value.country || undefined),
+  ])
 }
 
 const requireAuthenticatedUser = async () => {
@@ -539,50 +526,24 @@ const requireAuthenticatedUser = async () => {
   return false
 }
 
-const paymentMethodForOrder = () => activePaymentTab.value === 'card' ? 'card' : activePaymentTab.value
-const isStripeMethod = () => activePaymentTab.value === 'card' || activePaymentTab.value === 'stripe'
-
-const createLocalOrder = async (): Promise<PublicOrderResponse> => {
-  const orderPayload = {
-    items: cartItems.value.map(item => ({
-      product_id: Number(item.product_id || item.id || 0),
-      variant_id: item.variant_id || null,
-      quantity: Math.max(1, Number(item.quantity || 1)),
-    })),
-    shipping_address: buildShippingAddressPayload(),
-    payment_method: paymentMethodForOrder(),
-    shipping_method: 'standard',
-    coupon_code: couponCode.value.trim(),
-    points_to_use: selectedPointsToUse.value,
-    client_risk: {
-      billing_country: form.value.country.trim().toUpperCase(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-    },
-  }
-
-  const response = await auth.request<ApiResponse<PublicOrderResponse>>('/orders', {
+const createLocalOrder = async (): Promise<OrderResponse> => {
+  const response = await auth.request<ApiResponse<OrderResponse>>('/orders', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(orderPayload),
+    body: JSON.stringify({
+      items: cartItems.value.map(item => ({
+        product_id: Number(item.product_id || item.id || 0),
+        variant_id: item.variant_id || null,
+        quantity: Math.max(1, Number(item.quantity || 1)),
+      })),
+      shipping_address: buildShippingAddressPayload(),
+      payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
+      shipping_method: 'standard',
+    }),
   })
-  const order = unwrapApiData<PublicOrderResponse>(response)
-  if (!order?.order_number) throw new Error(t('checkout.modal.messages.orderFailed'))
+  const order = unwrapApiData<OrderResponse>(response)
+  if (!order?.order_number) throw new Error(t('checkout.modal.messages.orderFailed', 'Order submission failed'))
   return order
-}
-
-const createStripePaymentIntent = async (orderNumber: string) => {
-  const response = await auth.request<ApiResponse<StripePaymentIntentResponse>>('/payment/stripe/payment-intents', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ order_number: orderNumber }),
-  })
-  const session = unwrapApiData<StripePaymentIntentResponse>(response)
-  const clientSecret = session?.clientSecret || session?.client_secret || ''
-  const publishableKey = session?.publishableKey || session?.publishable_key || ''
-  if (!clientSecret || !publishableKey) {
-    throw new Error('Invalid Stripe payment response')
-  }
-  stripePaymentSession.value = { clientSecret, publishableKey }
 }
 
 const checkoutUrl = (path: string, orderNumber: string) => {
@@ -592,58 +553,56 @@ const checkoutUrl = (path: string, orderNumber: string) => {
   return target.toString()
 }
 
-const startPayPalPayment = async (orderNumber: string) => {
-  const session = await createPayPalOrder({
-    orderNumber,
-    returnUrl: checkoutUrl('/checkout/paypal/return', orderNumber),
-    cancelUrl: checkoutUrl('/checkout/paypal/cancel', orderNumber),
-  })
-  redirectToPayPal(session)
-}
-
-const startAlipayPayment = async (orderNumber: string) => {
-  const session = await createAlipayOrder({
-    orderNumber,
-    returnUrl: checkoutUrl('/checkout/alipay/return', orderNumber),
-    cancelUrl: '',
-  })
-  redirectToAlipay(session)
-}
-
-const weChatSessionStorageKey = (orderNumber: string) => `checkout:wechat:${orderNumber}`
-
-const startWeChatPayment = async (orderNumber: string) => {
-  const session: WeChatPaymentSession = await createWeChatOrder({ orderNumber })
-  if (import.meta.client) {
-    window.sessionStorage.setItem(weChatSessionStorageKey(orderNumber), JSON.stringify(session))
-    const target = new URL(localePath('/checkout/wechat/pay'), window.location.origin)
-    target.searchParams.set('order_number', orderNumber)
-    window.location.assign(target.toString())
+const startProviderPayment = async (orderNumber: string) => {
+  if (selectedMethod.value === 'paypal') {
+    const session = await createPayPalOrder({
+      orderNumber,
+      returnUrl: checkoutUrl('/checkout/paypal/return', orderNumber),
+      cancelUrl: checkoutUrl('/checkout/paypal/cancel', orderNumber),
+    })
+    redirectToPayPal(session)
+    return
   }
+
+  if (selectedMethod.value === 'alipay') {
+    const session = await createAlipayOrder({
+      orderNumber,
+      returnUrl: checkoutUrl('/checkout/alipay/return', orderNumber),
+      cancelUrl: '',
+    })
+    redirectToAlipay(session)
+    return
+  }
+
+  if (selectedMethod.value === 'wechat') {
+    const session: WeChatPaymentSession = await createWeChatOrder({ orderNumber })
+    if (import.meta.client) {
+      window.sessionStorage.setItem(`checkout:wechat:${orderNumber}`, JSON.stringify(session))
+      const target = new URL(localePath('/checkout/wechat/pay'), window.location.origin)
+      target.searchParams.set('order_number', orderNumber)
+      window.location.assign(target.toString())
+    }
+    return
+  }
+
+  const response = await auth.request<ApiResponse<StripePaymentSession & { client_secret?: string; publishable_key?: string }>>('/payment/stripe/payment-intents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ order_number: orderNumber }),
+  })
+  const session = unwrapApiData<StripePaymentSession & { client_secret?: string; publishable_key?: string }>(response)
+  const clientSecret = session?.clientSecret || session?.client_secret || ''
+  const publishableKey = session?.publishableKey || session?.publishable_key || ''
+  if (!clientSecret || !publishableKey) throw new Error('Stripe payment response is incomplete')
+  stripePaymentSession.value = { clientSecret, publishableKey }
 }
 
-const completeOfflineOrder = () => {
-  clearCart()
-  closeCheckout()
-  resetCheckoutState()
-  alert(t('checkout.modal.messages.orderSuccess'))
-}
-
-const resetCheckoutState = () => {
-  currentStepperStep.value = 1
-  stripePaymentSession.value = null
-  checkoutQuote.value = null
-  checkoutQuoteError.value = null
-  checkoutError.value = ''
-  couponCode.value = ''
-}
-
-const handleSubmit = async () => {
+const submitOrder = async () => {
   if (isSubmitting.value) return
   checkoutError.value = ''
 
   if (!selectedPaymentAvailable.value) {
-    checkoutError.value = selectedPaymentOption.value?.unavailableReason || t('checkout.modal.messages.paymentUnavailable', 'This payment method is temporarily unavailable.')
+    checkoutError.value = unavailableLabel(selectedOption.value || fallbackPaymentOptions.value[0]!)
     return
   }
   if (!cartItems.value.length) {
@@ -651,37 +610,18 @@ const handleSubmit = async () => {
     return
   }
   if (!(await requireAuthenticatedUser())) return
-  if (!isFormValid.value) {
-    checkoutError.value = t('checkout.modal.messages.completeShipping')
+  if (!canSubmit.value) {
+    checkoutError.value = t('checkout.modal.messages.completeShipping', 'Please complete your shipping address and contact details.')
     return
   }
 
   isSubmitting.value = true
   try {
-    const quoteReady = await fetchCheckoutQuote(true)
-    if (!quoteReady) return
+    await refreshCheckoutQuote()
     const order = await createLocalOrder()
-
-    if (activePaymentTab.value === 'paypal') {
-      await startPayPalPayment(order.order_number)
-      return
-    }
-    if (activePaymentTab.value === 'alipay') {
-      await startAlipayPayment(order.order_number)
-      return
-    }
-    if (activePaymentTab.value === 'wechat') {
-      await startWeChatPayment(order.order_number)
-      return
-    }
-    if (isStripeMethod()) {
-      await createStripePaymentIntent(order.order_number)
-      return
-    }
-
-    completeOfflineOrder()
+    await startProviderPayment(order.order_number)
   } catch (error) {
-    checkoutError.value = error instanceof Error ? error.message : t('checkout.modal.messages.orderFailed')
+    checkoutError.value = error instanceof Error ? error.message : t('checkout.modal.messages.orderFailed', 'Order submission failed')
   } finally {
     isSubmitting.value = false
   }
@@ -692,8 +632,7 @@ const handleStripeConfirmed = (result: StripeConfirmationResult) => {
   if (['succeeded', 'processing', 'requires_capture'].includes(result.status)) {
     clearCart()
     closeCheckout()
-    resetCheckoutState()
-    alert(t('checkout.modal.messages.orderSuccess'))
+    checkoutError.value = ''
     return
   }
   checkoutError.value = t('checkout.modal.messages.paymentPending', 'Payment is not complete yet. Please check your order status later.')
@@ -703,121 +642,97 @@ const handleStripeError = (message: string) => {
   checkoutError.value = message
 }
 
-const handleStepperSelect = (tab: string) => {
-  activePaymentTab.value = tab as PaymentTab
-  currentStepperStep.value = 1
-  stripePaymentSession.value = null
-}
-const handleStepperStepChange = (step: StepperStep) => { currentStepperStep.value = step }
-const handleStepperShippingField = ({ field, value }: { field: ShippingField; value: string }) => { form.value[field] = value }
-const handleStepperCountrySearch = (value: string) => { countrySearch.value = value }
-const handleStepperCouponInput = (value: string) => { couponCode.value = value }
-const handleStepperTogglePoints = (value: boolean) => { calculation.usePointsDiscount.value = value }
-const handleStepperPointsInput = (value: number) => { calculation.pointsToUse.value = value }
-
-const handleApplyCoupon = async () => {
-  if (!couponCode.value.trim()) return
-  isApplyingCoupon.value = true
-  const success = await fetchCheckoutQuote(true)
-  isApplyingCoupon.value = false
-  if (success) alert(t('checkout.modal.messages.couponApplied'))
-}
-
-const handleOpenShippingChat = () => {
-  openChat({ showAgentList: true })
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
-  }
-}
-const openContactSupport = () => { if (import.meta.client) window.open(localePath('/company/contact'), '_blank') }
-const openFreightForwarder = () => { if (import.meta.client) window.open('/help/freight-forwarder', '_blank') }
-const saveCartForLater = () => { alert(t('checkout.modal.messages.cartSaved')) }
-const handleAuthSuccess = () => {
+const handleAuthSuccess = async () => {
   showAuthModal.value = false
   checkoutError.value = ''
-  void fetchCheckoutQuote(false)
+  await refreshCheckoutQuote()
 }
 
-onMounted(async () => {
-  calculation.initialize()
-  await loadShippingTemplates()
+watch(isCheckoutOpen, (open) => {
+  if (open) {
+    const preferredMethod = normalizeCheckoutPaymentMethod(preferredCheckoutPaymentMethod.value)
+    if (preferredMethod) {
+      selectedMethod.value = preferredMethod
+      stripePaymentSession.value = null
+      checkoutError.value = ''
+    }
+    void ensureCheckoutData()
+    void auth.ensureSession()
+  } else {
+    stripePaymentSession.value = null
+    checkoutError.value = ''
+  }
+}, { immediate: true })
+
+watch(preferredCheckoutPaymentMethod, (method) => {
+  if (!isCheckoutOpen.value) return
+  const preferredMethod = normalizeCheckoutPaymentMethod(method)
+  if (!preferredMethod) return
+  selectedMethod.value = preferredMethod
+  stripePaymentSession.value = null
+  checkoutError.value = ''
 })
 
-watch(isCheckoutOpen, (open) => {
-  if (!open) {
-    resetCheckoutState()
-    return
+watch(() => form.value.country, () => {
+  if (isCheckoutOpen.value) {
+    void loadPaymentMethods(form.value.country || undefined)
+    scheduleQuoteRefresh()
   }
-  void requireAuthenticatedUser()
-  void loadPaymentMethods(form.value.country || undefined)
-  scheduleCheckoutQuoteRefresh()
 })
 
 watch(
-  () => [
-    isCheckoutOpen.value,
-    cartItems.value.map(item => `${item.id}:${item.quantity}`).join('|'),
-    form.value.country,
-    form.value.city,
-    form.value.zip,
-    couponCode.value.trim(),
-    selectedPointsToUse.value,
-  ],
+  () => [form.value.name, form.value.phone, form.value.address, form.value.city, form.value.zip],
   () => {
-    if (isCheckoutOpen.value) {
-      void loadPaymentMethods(form.value.country || undefined)
-      scheduleCheckoutQuoteRefresh()
-    }
+    if (isCheckoutOpen.value) scheduleQuoteRefresh()
   },
 )
 
-onUnmounted(() => {
-  if (checkoutQuoteTimer) clearTimeout(checkoutQuoteTimer)
+onBeforeUnmount(() => {
+  if (quoteTimer) clearTimeout(quoteTimer)
 })
 </script>
 
 <style scoped>
-.checkout-modal-shell {
-  height: min(95vh, calc(100vh - 16px));
-  max-height: min(95vh, calc(100vh - 16px));
+.checkout-shell {
+  background-image: none;
 }
 
-.checkout-modal-ssl-banner {
-  border: 1px solid rgba(148, 255, 223, 0.35);
-  border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(54, 213, 149, 0.22), rgba(59, 130, 246, 0.16));
-  padding: 0.2rem 1.1rem;
+.checkout-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.75rem;
 }
 
-@supports (height: 100dvh) {
-  .checkout-modal-shell {
-    height: min(95dvh, calc(100dvh - 16px));
-    max-height: min(95dvh, calc(100dvh - 16px));
-  }
+.checkout-input {
+  width: 100%;
+  min-height: 2.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.65rem 0.8rem;
+  color: #f8fafc;
+  font-size: 0.8rem;
+  outline: none;
 }
 
-@media (min-width: 768px) {
-  .checkout-modal-shell {
-    height: min(780px, 95vh);
-  }
+.checkout-input:focus {
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.checkout-input option {
+  background: #151719;
+  color: #f8fafc;
 }
 
 .fade-enter-active,
-.fade-leave-active,
-.scale-enter-active,
-.scale-leave-active {
-  transition: all 0.2s ease;
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,
-.fade-leave-to,
-.scale-enter-from,
-.scale-leave-to {
+.fade-leave-to {
   opacity: 0;
-}
-
-.scale-enter-from,
-.scale-leave-to {
-  transform: scale(0.98);
 }
 </style>

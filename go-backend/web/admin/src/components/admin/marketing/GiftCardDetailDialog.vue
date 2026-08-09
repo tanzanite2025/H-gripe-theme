@@ -19,25 +19,42 @@
   </Dialog>
 </template>
 
-<script setup>
-import GiftCardDetailPanel from '@/components/admin/marketing/GiftCardDetailPanel.vue'
+<script setup lang="ts">
+import GiftCardDetailPanel, {
+  type GiftCardRecord,
+  type GiftCardStatusOption,
+  type GiftCardTransaction,
+} from '@/components/admin/marketing/GiftCardDetailPanel.vue'
+import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Dialog } from '@/components/ui/dialog'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  statusUpdate: { type: String, default: 'active' },
-  currentGiftCard: { type: Object, default: null },
-  loading: { type: Boolean, default: false },
-  transactions: { type: Array, default: () => [] },
-  statusSubmitting: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  formatCurrency: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
-  giftCardStatusName: { type: Function, required: true },
-  giftCardStatusTone: { type: Function, required: true },
-  giftCardStatusOptions: { type: Function, required: true },
-  transactionTypeName: { type: Function, required: true },
+const props = withDefaults(defineProps<{
+  open?: boolean
+  statusUpdate?: string
+  currentGiftCard?: GiftCardRecord | null
+  loading?: boolean
+  transactions?: GiftCardTransaction[]
+  statusSubmitting?: boolean
+  canEdit?: boolean
+  formatCurrency: (value: unknown, currency?: string) => string
+  formatDate: (value: unknown) => string
+  giftCardStatusName: (status?: string) => string
+  giftCardStatusTone: (status?: string) => AdminStatusTone
+  giftCardStatusOptions: (giftCard: GiftCardRecord) => GiftCardStatusOption[]
+  transactionTypeName: (type?: string) => string
+}>(), {
+  open: false,
+  statusUpdate: 'active',
+  currentGiftCard: null,
+  loading: false,
+  transactions: () => [],
+  statusSubmitting: false,
+  canEdit: false,
 })
 
-const emit = defineEmits(['update:open', 'update:statusUpdate', 'update-status'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:statusUpdate', value: string): void
+  (event: 'update-status'): void
+}>()
 </script>

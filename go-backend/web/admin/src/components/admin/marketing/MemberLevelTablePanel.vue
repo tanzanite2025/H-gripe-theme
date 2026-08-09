@@ -63,7 +63,7 @@
   </AdminTablePanel>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Crown, MoreHorizontal, Pencil, Trash2 } from '@lucide/vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
@@ -76,19 +76,38 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  levels: { type: Array, default: () => [] },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
-  formatRate: { type: Function, required: true },
+interface MemberLevel {
+  id?: string | number | null
+  name?: string
+  color?: string
+  min_points?: number | string
+  max_points?: number | string
+  discount_rate?: number | string
+  benefits?: string
+  sort_order?: number | string
+}
+
+const props = withDefaults(defineProps<{
+  loading?: boolean
+  levels?: MemberLevel[]
+  canEdit?: boolean
+  canDelete?: boolean
+  formatRate: (value: unknown) => string
+}>(), {
+  loading: false,
+  levels: () => [],
+  canEdit: false,
+  canDelete: false,
 })
 
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits<{
+  (event: 'edit', level: MemberLevel): void
+  (event: 'delete', level: MemberLevel): void
+}>()
 
-const memberLevelLabel = (name) => {
+const memberLevelLabel = (name: unknown): string => {
   const key = String(name || '').trim().toLowerCase()
-  const labels = {
+  const labels: Record<string, string> = {
     ordinary: '普通',
     bronze: '铜牌',
     silver: '银牌',
@@ -96,6 +115,6 @@ const memberLevelLabel = (name) => {
     platinum: '铂金',
     diamond: '钻石',
   }
-  return labels[key] || name || '-'
+  return labels[key] || String(name || '-')
 }
 </script>

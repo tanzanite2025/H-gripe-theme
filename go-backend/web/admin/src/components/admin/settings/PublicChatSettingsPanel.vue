@@ -169,7 +169,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Headset, Info, Pencil, Plus, RefreshCw, Trash2, TriangleAlert } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -177,21 +177,37 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { PublicChatAgent, PublicChatGroup, PublicChatSummary } from './settingsTypes'
 
-defineProps({
-  loadingAgents: { type: Boolean, default: false },
-  loadingGroups: { type: Boolean, default: false },
-  loadingCandidates: { type: Boolean, default: false },
-  summary: { type: Object, default: () => ({}) },
-  agents: { type: Array, default: () => [] },
-  groups: { type: Array, default: () => [] },
-  warnings: { type: Array, default: () => [] },
-  canEdit: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  loadingAgents?: boolean
+  loadingGroups?: boolean
+  loadingCandidates?: boolean
+  summary?: PublicChatSummary
+  agents?: PublicChatAgent[]
+  groups?: PublicChatGroup[]
+  warnings?: string[]
+  canEdit?: boolean
+}>(), {
+  loadingAgents: false,
+  loadingGroups: false,
+  loadingCandidates: false,
+  summary: () => ({}),
+  agents: () => [],
+  groups: () => [],
+  warnings: () => [],
+  canEdit: false,
 })
 
-const emit = defineEmits(['open-agent-dialog', 'open-group-dialog', 'edit-group', 'delete-group', 'refresh'])
+const emit = defineEmits<{
+  (event: 'open-agent-dialog'): void
+  (event: 'open-group-dialog'): void
+  (event: 'edit-group', group: PublicChatGroup): void
+  (event: 'delete-group', group: PublicChatGroup): void
+  (event: 'refresh'): void
+}>()
 
-const agentInitials = (agent) => {
+const agentInitials = (agent: PublicChatAgent): string => {
   const name = agent.display_name || agent.username || agent.email || '?'
   return name.slice(0, 2).toUpperCase()
 }

@@ -1,6 +1,6 @@
-# Tanzanite Go Backend
+# Go Backend
 
-This is the Go API service for the Tanzanite e-commerce project. It serves both the Nuxt storefront and the Vue admin console.
+This is the Go API service for the commerce platform. It serves both the Nuxt storefront and the Vue admin console.
 
 The project is still under active development and has not launched in production. Treat this file as a practical backend entry point, not a production-readiness claim.
 

@@ -1,5 +1,6 @@
 import type { PageFaqData } from './types'
 import { normalizeFaqRoutePath } from './routing'
+import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 
 function hasFaqContent(page?: PageFaqData): page is PageFaqData {
   return Boolean(page?.categories?.some(category => category.items.length > 0))
@@ -12,9 +13,7 @@ function hasAnyFaqContent(pages?: PageFaqData[]): pages is PageFaqData[] {
 function getBackendFaqLocale() {
   try {
     const { locale } = useI18n()
-    const currentLocale = String(locale.value || 'en').trim().toLowerCase().replace(/-/g, '_')
-    if (['zh', 'zh_cn', 'zh_hans', 'zh_sg'].includes(currentLocale)) return 'zh_cn'
-    return currentLocale || 'en'
+    return normalizeStorefrontLocaleCode(locale.value) || 'en'
   } catch {
     return 'en'
   }

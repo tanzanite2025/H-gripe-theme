@@ -23,14 +23,20 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { MediaAsset } from '@/api/media'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { assetAccessURL, assetTitle } from '@/lib/mediaPresentation'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  asset: { type: Object, default: null },
+withDefaults(defineProps<{
+  open?: boolean
+  asset?: MediaAsset | null
+}>(), {
+  open: false,
+  asset: null
 })
 
-const emit = defineEmits(['update:open'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+}>()
 </script>

@@ -29,12 +29,14 @@
         :social-settings="socialSettings"
         :payment-settings="paymentSettings"
         :api-settings="apiSettings"
+        :primary-pricing-currency="primaryPricingCurrency"
         :commercial-crawler-protection="commercialCrawlerProtection"
         :loading-commercial-crawler-protection="loadingCommercialCrawlerProtection"
-        :payment-currency-options="paymentCurrencyOptions"
-        :loading-payment-currencies="loadingPaymentCurrencies"
+        :uploading-site-logo="uploadingSiteLogo"
         :payment-runtime="paymentRuntime"
         :loading-payment-runtime="loadingPaymentRuntime"
+        :syncing-exchange-rates="syncingExchangeRates"
+        :saving-api-settings="saving && activeTab === 'api'"
         :social-fields="socialFields"
         :loading-public-chat-agents="loadingPublicChatAgents"
         :loading-public-chat-groups="loadingPublicChatGroups"
@@ -50,8 +52,10 @@
         @delete-group="deletePublicChatGroup"
         @refresh-public-chat="refreshPublicChat"
         @refresh-payment-runtime="fetchPaymentRuntime"
+        @sync-exchange-rates="syncExchangeRates"
+        @currency-policy-saved="handleCurrencyPolicySaved"
         @refresh-commercial-crawler-protection="fetchCommercialCrawlerProtection"
-        @currency-policy-saved="fetchPaymentCurrencies(true)"
+        @upload-site-logo="uploadSiteLogo"
       />
     </div>
 
@@ -75,7 +79,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { LoaderCircle, Save } from '@lucide/vue'
@@ -85,48 +89,67 @@ import PublicChatGroupDialog from '@/components/admin/settings/PublicChatGroupDi
 import SettingsTabsPanel from '@/components/admin/settings/SettingsTabsPanel.vue'
 import { Button } from '@/components/ui/button'
 import { useRouteTab } from '@/composables/useRouteTab'
+import mediaApi from '@/api/media'
+import { assetAccessURL } from '@/lib/mediaPresentation'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
 const DAILY_API_REFRESH_MINUTES = 1440
 const EXCHANGE_RATE_PROVIDER = 'ExchangeRate-API'
-const EXCHANGE_RATE_BASE_CURRENCY = 'USD'
+const DEFAULT_PRICING_CURRENCY = 'USD'
 const EXCHANGE_RATE_ENDPOINT = 'https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}'
 const activeTab = useRouteTab({
   defaultValue: 'site',
-  values: ['site', 'email', 'seo', 'social', 'currency', 'payment', 'api', 'commercial_crawler', 'public_chat'],
+  values: ['site', 'email', 'seo', 'social', 'currency', 'markets', 'payment', 'api', 'commercial_crawler', 'public_chat'],
   routes: {
     site: 'SettingsSite',
     email: 'SettingsEmail',
     seo: 'SettingsSeo',
     social: 'SettingsSocial',
-    currency: 'PaymentCurrency',
+    currency: ['SettingsCurrency', 'PaymentCurrency'],
+    markets: 'SettingsMarkets',
     payment: 'PaymentSettings',
     api: 'SettingsApi',
     commercial_crawler: 'SettingsCommercialCrawler',
     public_chat: 'SupportPublicChat',
   },
 })
+
+type SettingValueType = 'string' | 'number' | 'boolean'
+
+interface SettingFieldDefinition {
+  type: SettingValueType
+  public: boolean
+  description: string
+}
+
+interface SettingsGroupDefinition {
+  target: Record<string, any>
+  fields: Record<string, SettingFieldDefinition>
+}
+
 const pageTitle = computed(() => (
   ['currency', 'payment'].includes(activeTab.value)
-    ? '支付管理'
+    ? activeTab.value === 'currency' ? '系统设置' : '支付管理'
     : activeTab.value === 'public_chat'
       ? 'Public Chat'
       : '系统设置'
 ))
 const pageDescription = computed(() => {
-  if (activeTab.value === 'currency') return '管理订单、支付和退款使用的币种策略'
+  if (activeTab.value === 'currency') return '管理主基准币种、次展示币种和汇率缓存联动'
+  if (activeTab.value === 'markets') return '管理国家、市场、语言与展示币种解析规则'
   if (activeTab.value === 'payment') return '管理支付网关、支付方式与运行状态'
   if (activeTab.value === 'public_chat') return '管理公开客服、客服组与前台聊天配置'
   return '管理站点、邮件、搜索、社交、API、安全与客服配置'
 })
 const saving = ref(false)
 const loadingSettings = ref(false)
+const uploadingSiteLogo = ref(false)
 const showSmtpPassword = ref(false)
 const showPaymentSecrets = ref(false)
 const loadedGroups = new Set()
-const selfSavingTabs = new Set(['currency', 'commercial_crawler', 'public_chat'])
+const selfSavingTabs = new Set(['currency', 'markets', 'api', 'commercial_crawler', 'public_chat'])
 
 const siteSettings = reactive({
   site_name: '',
@@ -155,8 +178,6 @@ const apiSettings = reactive({
   exchange_rate_provider: EXCHANGE_RATE_PROVIDER,
   exchange_rate_endpoint: EXCHANGE_RATE_ENDPOINT,
   exchange_rate_query_template: '',
-  exchange_rate_base_currency: EXCHANGE_RATE_BASE_CURRENCY,
-  exchange_rate_quote_currencies: '',
   exchange_rate_refresh_minutes: DAILY_API_REFRESH_MINUTES,
   exchange_rate_api_key: '',
   time_api_enabled: false,
@@ -169,11 +190,11 @@ const apiSettings = reactive({
 })
 const paymentRuntime = ref(null)
 const loadingPaymentRuntime = ref(false)
+const syncingExchangeRates = ref(false)
+const primaryPricingCurrency = ref(DEFAULT_PRICING_CURRENCY)
+const currencyPolicyLoaded = ref(false)
 const commercialCrawlerProtection = ref(null)
 const loadingCommercialCrawlerProtection = ref(false)
-const paymentCurrencyOptions = ref([])
-const loadingPaymentCurrencies = ref(false)
-const paymentCurrenciesLoaded = ref(false)
 
 const loadingPublicChatAgents = ref(false)
 const publicChatAgentsOverview = ref(null)
@@ -221,33 +242,39 @@ const socialFields = [
 ]
 
 const normalizeCurrencyCode = (currency) => String(currency || '').trim().toUpperCase()
+const validCurrencyCodeOrDefault = (currency) => {
+  const normalized = normalizeCurrencyCode(currency)
+  return /^[A-Z]{3}$/.test(normalized) ? normalized : DEFAULT_PRICING_CURRENCY
+}
+
+const fetchCurrencyPolicyForSettings = async (force = false) => {
+  if (!force && currencyPolicyLoaded.value) return
+  try {
+    const response = await axios.get('/api/admin/settings/currency-policy')
+    const policy = response.data?.policy || {}
+    primaryPricingCurrency.value = validCurrencyCodeOrDefault(policy.primary_currency)
+    currencyPolicyLoaded.value = true
+  } catch (error) {
+    console.error('Failed to fetch currency policy:', error)
+    primaryPricingCurrency.value = DEFAULT_PRICING_CURRENCY
+  }
+}
+
+const handleCurrencyPolicySaved = async (policy = null) => {
+  currencyPolicyLoaded.value = false
+  if (policy) {
+    primaryPricingCurrency.value = validCurrencyCodeOrDefault(policy.primary_currency)
+    currencyPolicyLoaded.value = true
+  } else {
+    await fetchCurrencyPolicyForSettings(true)
+  }
+}
 
 const applyExchangeRatePreset = () => {
   apiSettings.exchange_rate_provider = EXCHANGE_RATE_PROVIDER
   apiSettings.exchange_rate_endpoint = EXCHANGE_RATE_ENDPOINT
   apiSettings.exchange_rate_query_template = ''
-  apiSettings.exchange_rate_base_currency = EXCHANGE_RATE_BASE_CURRENCY
   apiSettings.exchange_rate_refresh_minutes = DAILY_API_REFRESH_MINUTES
-}
-
-const applyAPICurrencyDefaults = () => {
-  applyExchangeRatePreset()
-  const options = paymentCurrencyOptions.value
-  if (options.length === 0) return
-
-  const quoteOptions = options.filter((currency) => currency !== EXCHANGE_RATE_BASE_CURRENCY)
-  const allowed = new Set(quoteOptions)
-  const quoteCurrencies = String(apiSettings.exchange_rate_quote_currencies || '')
-    .split(/[\s,;，；]+/)
-    .map(normalizeCurrencyCode)
-    .filter((currency) => allowed.has(currency))
-
-  if (quoteCurrencies.length) {
-    apiSettings.exchange_rate_quote_currencies = Array.from(new Set(quoteCurrencies)).join(',')
-    return
-  }
-
-  apiSettings.exchange_rate_quote_currencies = quoteOptions.join(',')
 }
 
 const applyAPIRefreshDefaults = () => {
@@ -255,12 +282,11 @@ const applyAPIRefreshDefaults = () => {
   apiSettings.time_api_refresh_minutes = DAILY_API_REFRESH_MINUTES
 }
 
-const groupDefinitions = {
+const groupDefinitions: Record<string, SettingsGroupDefinition> = {
   site: {
     target: siteSettings,
     fields: {
-      site_name: { type: 'string', public: true, description: 'Site name' },
-      brand_title: { type: 'string', public: true, description: 'Top gradient brand title' },
+      brand_title: { type: 'string', public: true, description: 'Public brand title' },
       site_description: { type: 'string', public: true, description: 'Site description' },
       site_url: { type: 'string', public: true, description: 'Public site URL' },
       site_logo: { type: 'string', public: true, description: 'Site logo URL' },
@@ -300,7 +326,10 @@ const groupDefinitions = {
   },
   social: {
     target: socialSettings,
-    fields: Object.fromEntries(socialFields.map((field) => [field.key, { type: 'string', public: true, description: field.label }]))
+    fields: Object.fromEntries(socialFields.map((field) => [
+      field.key,
+      { type: 'string' as const, public: true, description: field.label }
+    ])) as Record<string, SettingFieldDefinition>
   },
   payment: {
     target: paymentSettings,
@@ -316,8 +345,6 @@ const groupDefinitions = {
       exchange_rate_provider: { type: 'string', public: false, description: 'Exchange rate API provider' },
       exchange_rate_endpoint: { type: 'string', public: false, description: 'Exchange rate API endpoint' },
       exchange_rate_query_template: { type: 'string', public: false, description: 'Exchange rate API query template' },
-      exchange_rate_base_currency: { type: 'string', public: false, description: 'Exchange rate base currency' },
-      exchange_rate_quote_currencies: { type: 'string', public: false, description: 'Exchange rate quote currencies' },
       exchange_rate_refresh_minutes: { type: 'number', public: false, description: 'Exchange rate refresh interval in minutes' },
       exchange_rate_api_key: { type: 'string', public: false, description: 'ExchangeRate-API key' },
       time_api_enabled: { type: 'boolean', public: false, description: 'Time API enabled' },
@@ -345,6 +372,25 @@ const settingKey = (setting, group, fields) => {
   return setting.key.startsWith(`${group}_`) ? setting.key.slice(group.length + 1) : setting.key
 }
 
+const legacySiteSettingKeys = new Set(['site_name'])
+
+const applyFetchedSetting = (setting, group, definition) => {
+  const key = settingKey(setting, group, definition.fields)
+  if (key in definition.target) {
+    definition.target[key] = coerceSettingValue(setting.value, definition.fields[key]?.type || setting.type)
+    return
+  }
+  if (group === 'site' && legacySiteSettingKeys.has(key)) {
+    definition.target[key] = coerceSettingValue(setting.value, setting.type || 'string')
+  }
+}
+
+const normalizeSiteBrandSettings = () => {
+  if (!siteSettings.brand_title.trim() && siteSettings.site_name.trim()) {
+    siteSettings.brand_title = siteSettings.site_name
+  }
+}
+
 const fetchSettings = async (group, force = false) => {
   const definition = groupDefinitions[group]
   if (!definition || (!force && loadedGroups.has(group))) return
@@ -354,49 +400,16 @@ const fetchSettings = async (group, force = false) => {
     const settings = Array.isArray(response.data.settings) ? response.data.settings : []
     const prefixed = settings.filter((setting) => setting.key.startsWith(`${group}_`))
     const canonical = settings.filter((setting) => !setting.key.startsWith(`${group}_`))
-    ;[...prefixed, ...canonical].forEach((setting) => {
-      const key = settingKey(setting, group, definition.fields)
-      if (key in definition.target) {
-        definition.target[key] = coerceSettingValue(setting.value, definition.fields[key]?.type || setting.type)
-      }
-    })
+    ;[...prefixed, ...canonical].forEach((setting) => applyFetchedSetting(setting, group, definition))
     loadedGroups.add(group)
+    if (group === 'site') normalizeSiteBrandSettings()
     if (group === 'api') {
-      applyAPICurrencyDefaults()
       applyAPIRefreshDefaults()
     }
   } catch (error) {
     console.error(`Failed to fetch ${group} settings:`, error)
   } finally {
     loadingSettings.value = false
-  }
-}
-
-const fetchPaymentCurrencies = async (force = false) => {
-  if (!force && paymentCurrenciesLoaded.value) {
-    applyAPICurrencyDefaults()
-    return
-  }
-
-  loadingPaymentCurrencies.value = true
-  try {
-    const response = await axios.get('/api/admin/settings/currency-policy')
-    const policy = response.data?.policy || {}
-    const acceptedCurrencies = Array.isArray(policy.accepted_currencies)
-      ? policy.accepted_currencies
-      : Array.isArray(policy.checkout_currencies)
-        ? policy.checkout_currencies
-        : []
-    paymentCurrencyOptions.value = acceptedCurrencies
-        .map(normalizeCurrencyCode)
-        .filter((currency) => /^[A-Z]{3}$/.test(currency))
-    paymentCurrenciesLoaded.value = true
-    applyAPICurrencyDefaults()
-  } catch (error) {
-    console.error('Failed to fetch payment currencies:', error)
-    paymentCurrencyOptions.value = []
-  } finally {
-    loadingPaymentCurrencies.value = false
   }
 }
 
@@ -614,13 +627,41 @@ const deletePublicChatGroup = async (group) => {
   }
 }
 
+const uploadSiteLogo = async (file) => {
+  if (!file) return
+  if (!file.type?.startsWith('image/')) {
+    toast.error('Logo 只能上传图片文件')
+    return
+  }
+
+  uploadingSiteLogo.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('media_type', 'image')
+    const asset = await mediaApi.uploadAsset(formData)
+    const logoURL = String(assetAccessURL(asset) || asset?.url || '').trim()
+    if (!logoURL) {
+      toast.error('上传成功但没有返回 Logo 地址')
+      return
+    }
+    siteSettings.site_logo = logoURL
+    toast.success('Logo 已上传，保存设置后前台生效')
+  } catch (error) {
+    console.error('Failed to upload site logo:', error)
+    toast.error('Logo 上传失败，请检查文件类型和大小')
+  } finally {
+    uploadingSiteLogo.value = false
+  }
+}
+
 const saveSettings = async () => {
   const group = activeTab.value
   const definition = groupDefinitions[group]
   if (!definition) return
+  if (group === 'site') normalizeSiteBrandSettings()
   if (group === 'api') {
     applyAPIRefreshDefaults()
-    applyAPICurrencyDefaults()
   }
   const settings = Object.entries(definition.fields).map(([key, metadata]) => ({
     key,
@@ -639,10 +680,29 @@ const saveSettings = async () => {
     if (group === 'payment') await deleteLegacyPaymentSecrets()
     await fetchSettings(group, true)
     if (group === 'payment') await fetchPaymentRuntime()
+    return true
   } catch (error) {
     console.error('Failed to save settings:', error)
+    return false
   } finally {
     saving.value = false
+  }
+}
+
+const syncExchangeRates = async () => {
+  if (!hasPermission('settings:edit')) return
+  syncingExchangeRates.value = true
+  try {
+    const response = await axios.post('/api/admin/settings/exchange-rates/sync')
+    const rates = response.data?.data?.rates || response.data?.rates || []
+    toast.success(`汇率缓存已同步：${rates.length} 个币种`)
+    loadedGroups.delete('api')
+    await fetchSettings('api', true)
+  } catch (error) {
+    console.error('Failed to sync exchange rates:', error)
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '汇率同步失败')
+  } finally {
+    syncingExchangeRates.value = false
   }
 }
 
@@ -659,13 +719,12 @@ watch(activeTab, (tab) => {
   else if (tab === 'commercial_crawler') {
     fetchCommercialCrawlerProtection()
   }
-  else if (tab === 'currency') {
-    fetchPaymentCurrencies(true)
+  else if (tab === 'api') {
+    fetchCurrencyPolicyForSettings().finally(() => fetchSettings(tab))
   }
   else {
     fetchSettings(tab)
     if (tab === 'payment') fetchPaymentRuntime()
-    if (tab === 'api') fetchPaymentCurrencies()
   }
 }, { immediate: true })
 </script>

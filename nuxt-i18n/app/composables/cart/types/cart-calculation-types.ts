@@ -85,6 +85,7 @@ export interface CartItem {
   variant_id?: number | null
   product_type_id?: number | null
   price: number
+  currency?: string
   quantity: number
   weight?: number
   weight_grams?: number

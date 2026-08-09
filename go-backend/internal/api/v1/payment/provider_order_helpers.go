@@ -170,9 +170,16 @@ func gatewayTransactionID(paymentResponse *pgateway.PaymentResponse, fallback st
 	return strings.TrimSpace(fallback)
 }
 
+func providerTransactionID(paymentResponse *pgateway.PaymentResponse) string {
+	if paymentResponse == nil {
+		return ""
+	}
+	return strings.TrimSpace(paymentResponse.TransactionID)
+}
+
 func ensureGatewayCurrency(c *gin.Context, provider pgateway.GatewayType, currency string) bool {
 	if err := pgateway.ValidateGatewayCurrency(provider, currency); err != nil {
-		apierror.RespondError(c, http.StatusBadRequest, "payment_currency_not_supported", err.Error())
+		apierror.RespondError(c, http.StatusBadRequest, "provider_order_currency_not_supported", err.Error())
 		return false
 	}
 	return true

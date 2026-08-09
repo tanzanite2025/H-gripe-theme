@@ -77,7 +77,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Coins, LoaderCircle, Search } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
@@ -86,19 +86,37 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  LoyaltyAdjustmentForm,
+  LoyaltyErrors,
+  LoyaltyFilters,
+  LoyaltyTransaction,
+  MarketingPagination,
+} from './marketingTypes'
 
-defineProps({
-  loading: { type: Boolean, default: false },
-  transactions: { type: Array, default: () => [] },
-  filters: { type: Object, required: true },
-  pagination: { type: Object, required: true },
-  form: { type: Object, required: true },
-  errors: { type: Object, required: true },
-  submitting: { type: Boolean, default: false },
-  canAdjust: { type: Boolean, default: false },
-  loyaltyTypeName: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+withDefaults(defineProps<{
+  loading?: boolean
+  transactions: LoyaltyTransaction[]
+  filters: LoyaltyFilters
+  pagination: MarketingPagination
+  form: LoyaltyAdjustmentForm
+  errors: LoyaltyErrors
+  submitting?: boolean
+  canAdjust?: boolean
+  loyaltyTypeName: (type?: string | null) => string
+  formatDate: (value: unknown) => string
+}>(), {
+  loading: false,
+  transactions: () => [],
+  submitting: false,
+  canAdjust: false,
 })
 
-const emit = defineEmits(['apply-filter', 'update-page', 'update-page-size', 'submit', 'clear-error'])
+const emit = defineEmits<{
+  (event: 'apply-filter'): void
+  (event: 'update-page', page: number): void
+  (event: 'update-page-size', pageSize: number): void
+  (event: 'submit'): void
+  (event: 'clear-error', field: keyof LoyaltyAdjustmentForm): void
+}>()
 </script>

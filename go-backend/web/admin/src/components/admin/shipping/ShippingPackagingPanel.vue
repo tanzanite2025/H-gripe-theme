@@ -84,7 +84,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Link2, Package, Pencil, Plus, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -92,14 +92,26 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TabsContent } from '@/components/ui/tabs'
 import { appliesCount, formatDimensions, formatWeight } from '@/lib/shippingPresentation'
+import type { PackagingRule } from './shippingTypes'
 
-defineProps({
-  packagingRules: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  packagingRules?: PackagingRule[]
+  loading?: boolean
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  packagingRules: () => [],
+  loading: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false
 })
 
-const emit = defineEmits(['create', 'edit', 'delete', 'show-applies'])
+const emit = defineEmits<{
+  (event: 'create'): void
+  (event: 'edit', rule: PackagingRule): void
+  (event: 'delete', rule: PackagingRule): void
+  (event: 'show-applies', rule: PackagingRule): void
+}>()
 </script>

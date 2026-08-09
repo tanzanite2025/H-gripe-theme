@@ -89,6 +89,10 @@ cors:
     - Content-Type
     - Accept-Language
     - X-CSRF-Token
+    - X-Locale
+    - X-Display-Currency
+    - X-Market-Country
+    - X-Country-Code
     - X-Request-ID
     - X-Request-Timestamp
     - X-Request-Nonce

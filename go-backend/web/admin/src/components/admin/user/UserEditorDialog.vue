@@ -140,8 +140,9 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Eye, EyeOff, LoaderCircle } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -155,14 +156,25 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { UserDialogMode } from './userTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  submitting: { type: Boolean, default: false },
-  showPassword: { type: Boolean, default: false },
-  languageOptions: { type: Array, default: () => [] }
+withDefaults(defineProps<{
+  open?: boolean
+  mode?: UserDialogMode
+  submitting?: boolean
+  showPassword?: boolean
+  languageOptions?: LanguageOption[]
+}>(), {
+  open: false,
+  mode: 'create',
+  submitting: false,
+  showPassword: false,
+  languageOptions: () => []
 })
 
-const emit = defineEmits(['update:open', 'update:showPassword', 'submit'])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:showPassword', value: boolean): void
+  (event: 'submit', value: Event): void
+}>()
 </script>

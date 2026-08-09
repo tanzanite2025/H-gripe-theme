@@ -81,7 +81,7 @@
           <div class="warranty-check__info-row">
             <span class="warranty-check__info-label">{{ $t('warranty.fields.product_type') }}</span>
             <span class="warranty-check__info-value">
-              {{ String(resultLocale).startsWith('zh') ? result.product_type.name_zh : result.product_type.name }}
+              {{ useChineseWarrantyLabels ? result.product_type.name_zh : result.product_type.name }}
             </span>
           </div>
           <div v-if="result.product_name" class="warranty-check__info-row">
@@ -128,7 +128,7 @@
               class="warranty-check__record-item"
             >
               <span class="warranty-check__record-type">
-                {{ String(resultLocale).startsWith('zh') ? record.type_name_zh : record.type_name }}
+                {{ useChineseWarrantyLabels ? record.type_name_zh : record.type_name }}
               </span>
               <span class="warranty-check__record-date">{{ record.date }}</span>
               <span v-if="record.description" class="warranty-check__record-desc">
@@ -161,6 +161,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useWarrantyCheck } from '~/composables/useWarrantyCheck'
+import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
 
 const props = defineProps<{
   isLoggedIn: boolean
@@ -172,7 +173,7 @@ const emit = defineEmits<{
 
 const { locale } = useI18n()
 const localePath = useLocalePath()
-const resultLocale = computed(() => locale.value)
+const useChineseWarrantyLabels = computed(() => isSimplifiedChineseStorefrontLocale(locale.value))
 
 const {
   productCode,

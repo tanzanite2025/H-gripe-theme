@@ -111,7 +111,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
@@ -284,7 +284,7 @@ const {
   fetchTrackingCarrierMappings,
 })
 
-const hasPermission = (permission) => authStore.hasPermission(permission)
+const hasPermission = (permission: string) => authStore.hasPermission(permission)
 
 const refreshCurrentTab = () => refreshShippingTab(activeTab.value, trackingShipmentsPanelRef)
 
@@ -340,7 +340,7 @@ const statItems = computed(() => [
   },
 ])
 
-const copyTrackingWebhookUrl = async (provider) => {
+const copyTrackingWebhookUrl = async (provider: any) => {
   const url = trackingWebhookUrl(provider)
   if (!url) return
 

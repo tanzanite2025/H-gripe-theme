@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"tanzanite/internal/domain/audit"
-	"tanzanite/internal/domain/currency"
 	paymentdomain "tanzanite/internal/domain/payment"
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/pkg/config"
@@ -23,6 +22,13 @@ import (
 )
 
 func TestListPaymentMethodsMarksPausedProviderUnavailable(t *testing.T) {
+	t.Setenv("STRIPE_SECRET_KEY", "stripe-secret")
+	t.Setenv("STRIPE_PUBLISHABLE_KEY", "stripe-publishable")
+	t.Setenv("STRIPE_WEBHOOK_SECRET", "stripe-webhook")
+	t.Setenv("PAYPAL_CLIENT_ID", "paypal-client")
+	t.Setenv("PAYPAL_SECRET", "paypal-secret")
+	t.Setenv("PAYPAL_WEBHOOK_ID", "paypal-webhook")
+
 	db := newPaymentMethodAvailabilityTestDB(t)
 	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Card", Code: "card", Enabled: true}).Error)
 	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "PayPal", Code: "paypal", Enabled: true}).Error)
@@ -76,6 +82,10 @@ func TestListPaymentMethodsMarksPausedProviderUnavailable(t *testing.T) {
 }
 
 func TestListPaymentMethodsUsesCountryQueryForAvailability(t *testing.T) {
+	t.Setenv("STRIPE_SECRET_KEY", "stripe-secret")
+	t.Setenv("STRIPE_PUBLISHABLE_KEY", "stripe-publishable")
+	t.Setenv("STRIPE_WEBHOOK_SECRET", "stripe-webhook")
+
 	db := newPaymentMethodAvailabilityTestDB(t)
 	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Card", Code: "card", Enabled: true}).Error)
 
@@ -119,18 +129,10 @@ func TestListPaymentMethodsUsesCountryQueryForAvailability(t *testing.T) {
 	require.Equal(t, "temporarily_unavailable", payload.Data.Data[0].UnavailableReason)
 }
 
-func TestListPaymentMethodsMarksUnsupportedDefaultCurrencyUnavailable(t *testing.T) {
+func TestListPaymentMethodsDoesNotRequireCurrencyPolicy(t *testing.T) {
 	db := newPaymentMethodAvailabilityTestDB(t)
 	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Card", Code: "card", Enabled: true}).Error)
 	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "WeChat Pay", Code: "wechat_pay", Enabled: true}).Error)
-
-	currencyPolicy := service.NewCurrencyPolicyService(repository.NewSettingRepository(db))
-	_, err := currencyPolicy.UpdatePolicy(currency.Policy{
-		AccountingCurrency:   "USD",
-		DefaultOrderCurrency: "USD",
-		AcceptedCurrencies:   []string{"USD"},
-	})
-	require.NoError(t, err)
 
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
@@ -139,7 +141,6 @@ func TestListPaymentMethodsMarksUnsupportedDefaultCurrencyUnavailable(t *testing
 
 	handler := &Handler{
 		paymentService: service.NewPaymentService(nil, repository.NewPaymentRepository(db)),
-		currencyPolicy: currencyPolicy,
 	}
 	handler.ListPaymentMethods(context)
 
@@ -157,9 +158,48 @@ func TestListPaymentMethodsMarksUnsupportedDefaultCurrencyUnavailable(t *testing
 	for _, item := range payload.Data.Data {
 		byCode[item.Code] = item
 	}
-	require.True(t, byCode["card"].Available)
+	require.False(t, byCode["card"].Available)
+	require.Equal(t, "gateway_not_configured", byCode["card"].UnavailableReason)
 	require.False(t, byCode["wechat_pay"].Available)
-	require.Equal(t, "currency_not_supported", byCode["wechat_pay"].UnavailableReason)
+	require.Equal(t, "gateway_not_configured", byCode["wechat_pay"].UnavailableReason)
+}
+
+func TestListPaymentMethodsIgnoresDisplayAndOrderCurrencyForButtonExposure(t *testing.T) {
+	db := newPaymentMethodAvailabilityTestDB(t)
+	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Card", Code: "card", Enabled: true}).Error)
+	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Alipay", Code: "alipay", Enabled: true}).Error)
+	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "WeChat Pay", Code: "wechat_pay", Enabled: true}).Error)
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = httptest.NewRequest(http.MethodGet, "/api/v1/payment/methods?country=US&currency=EUR&order_currency=USD", nil)
+
+	handler := &Handler{
+		paymentService: service.NewPaymentService(nil, repository.NewPaymentRepository(db)),
+	}
+	handler.ListPaymentMethods(context)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var payload struct {
+		Data struct {
+			Data []paymentMethodResponse `json:"data"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
+
+	byCode := map[string]paymentMethodResponse{}
+	for _, item := range payload.Data.Data {
+		byCode[item.Code] = item
+	}
+	require.False(t, byCode["card"].Available)
+	require.False(t, byCode["alipay"].Available)
+	require.False(t, byCode["wechat_pay"].Available)
+	require.Equal(t, "gateway_not_configured", byCode["wechat_pay"].UnavailableReason)
+	require.NotContains(t, recorder.Body.String(), "market_code")
+	require.NotContains(t, recorder.Body.String(), "currency")
+	require.NotContains(t, recorder.Body.String(), "supported_currencies")
 }
 
 func newPaymentMethodAvailabilityTestDB(t *testing.T) *gorm.DB {

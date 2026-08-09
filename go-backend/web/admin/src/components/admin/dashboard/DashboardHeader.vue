@@ -12,10 +12,10 @@
   </header>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { CalendarDays } from '@lucide/vue'
 
-defineProps({
-  currentDate: { type: String, required: true },
-})
+defineProps<{
+  currentDate: string
+}>()
 </script>

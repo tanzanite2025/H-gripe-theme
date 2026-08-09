@@ -54,7 +54,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { CircleCheck, CircleDashed } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { TabsContent } from '@/components/ui/tabs'

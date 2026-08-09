@@ -140,7 +140,6 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 	service := NewGoogleMerchantService(
 		repository.NewGoogleMerchantRepository(db),
 		repository.NewProductRepository(db),
-		nil,
 		configlessGoogleMerchantForTest(),
 		"https://tanzanite.site",
 	)

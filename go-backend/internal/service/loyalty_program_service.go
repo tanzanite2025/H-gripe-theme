@@ -81,8 +81,7 @@ type LoyaltyProgramOptionResponse struct {
 }
 
 type LoyaltyProgramService struct {
-	repo           *repository.LoyaltyProgramRepository
-	currencyPolicy *CurrencyPolicyService
+	repo *repository.LoyaltyProgramRepository
 }
 
 func NewLoyaltyProgramService(repo *repository.LoyaltyProgramRepository) *LoyaltyProgramService {
@@ -90,7 +89,6 @@ func NewLoyaltyProgramService(repo *repository.LoyaltyProgramRepository) *Loyalt
 }
 
 func (s *LoyaltyProgramService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
-	s.currencyPolicy = policy
 }
 
 func (s *LoyaltyProgramService) GetActive() (*loyalty.ProgramConfig, error) {
@@ -165,23 +163,6 @@ func (s *LoyaltyProgramService) Update(input LoyaltyProgramConfigInput) (*loyalt
 		return nil, err
 	}
 	return config, nil
-}
-
-func (s *LoyaltyProgramService) validatePolicyCurrency(code string) error {
-	if s == nil || s.currencyPolicy == nil {
-		return errors.New("currency policy service is not configured")
-	}
-
-	policy, err := s.currencyPolicy.GetPolicy()
-	if err != nil {
-		return err
-	}
-	for _, allowed := range policy.AcceptedCurrencies {
-		if allowed == code {
-			return nil
-		}
-	}
-	return fmt.Errorf("%w: loyalty gift card currency %s is not accepted for order payment collection", ErrInvalidCurrencyPolicy, code)
 }
 
 func validateProgramConfig(config *loyalty.ProgramConfig) error {

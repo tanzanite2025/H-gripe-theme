@@ -184,33 +184,45 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { RefreshCw, ShieldAlert, ShieldCheck } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+import type {
+  CommercialCrawlerEnforcementLayer,
+  CommercialCrawlerIntelligenceSeed,
+  CommercialCrawlerProtection,
+  CommercialCrawlerRule,
+  OrderNumberProtection,
+} from './settingsTypes'
 
-const props = defineProps({
-  protection: { type: Object, default: null },
-  loading: { type: Boolean, default: false },
+const props = withDefaults(defineProps<{
+  protection?: CommercialCrawlerProtection | null
+  loading?: boolean
+}>(), {
+  protection: null,
+  loading: false,
 })
 
-const emit = defineEmits(['refresh'])
+const emit = defineEmits<{
+  (event: 'refresh'): void
+}>()
 
 const enabled = computed(() => props.protection?.enabled === true)
 const responseStatus = computed(() => Number(props.protection?.response_status) || 403)
-const rules = computed(() => Array.isArray(props.protection?.rules) ? props.protection.rules : [])
-const enforcement = computed(() => Array.isArray(props.protection?.enforcement) ? props.protection.enforcement : [])
-const intelligenceSeeds = computed(() => Array.isArray(props.protection?.intelligence_seeds) ? props.protection.intelligence_seeds : [])
-const orderNumberProtection = computed(() => props.protection?.order_number_protection || null)
+const rules = computed<CommercialCrawlerRule[]>(() => Array.isArray(props.protection?.rules) ? props.protection.rules : [])
+const enforcement = computed<CommercialCrawlerEnforcementLayer[]>(() => Array.isArray(props.protection?.enforcement) ? props.protection.enforcement : [])
+const intelligenceSeeds = computed<CommercialCrawlerIntelligenceSeed[]>(() => Array.isArray(props.protection?.intelligence_seeds) ? props.protection.intelligence_seeds : [])
+const orderNumberProtection = computed<OrderNumberProtection | null>(() => props.protection?.order_number_protection || null)
 
-const seedCategoryLabel = (category) => ({
+const seedCategoryLabel = (category?: string): string => ({
   known_crawler: '已知商业爬虫',
   browser_extension: '浏览器插件',
   inventory_probe: '库存探测行为',
   order_enumeration: '订单枚举行为',
-}[category] || '商业情报种子')
+} as Record<string, string>)[category || ''] || '商业情报种子'
 
-const seedEnforcementLabel = (enforcementMode, action) => {
+const seedEnforcementLabel = (enforcementMode?: string, action?: string): string => {
   if (enforcementMode === 'enforced' && action === 'block_403') return '已拦截'
   if (enforcementMode === 'enforced' && action === 'not_found_404') return '探测入口已封锁'
   if (enforcementMode === 'enforced') return '行为保护已启用'
@@ -218,10 +230,10 @@ const seedEnforcementLabel = (enforcementMode, action) => {
   return enforcementMode
 }
 
-const seedActionLabel = (action) => ({
+const seedActionLabel = (action?: string): string => ({
   block_403: '当前动作：命中后返回 HTTP 403',
   rate_limit_429: '当前动作：命中后返回 HTTP 429，并要求稍后重试',
   not_found_404: '当前动作：平台指纹探测路径返回 HTTP 404',
   behavior_detection_pending: '当前动作：待接入行为检测与分级限速',
-}[action] || `当前动作：${action}`)
+} as Record<string, string>)[action || ''] || `当前动作：${action || '-'}`
 </script>

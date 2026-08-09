@@ -78,7 +78,7 @@
   </TabsContent>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Pencil, Plus, Trash2, Truck } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -86,14 +86,25 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TabsContent } from '@/components/ui/tabs'
 import { serviceAreaLabel } from '@/lib/shippingPresentation'
+import type { ShippingCarrier } from './shippingTypes'
 
-defineProps({
-  carriers: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false },
-  canCreate: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  canDelete: { type: Boolean, default: false },
+withDefaults(defineProps<{
+  carriers?: ShippingCarrier[]
+  loading?: boolean
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
+}>(), {
+  carriers: () => [],
+  loading: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false,
 })
 
-const emit = defineEmits(['create', 'edit', 'delete'])
+const emit = defineEmits<{
+  (event: 'create'): void
+  (event: 'edit', carrier: ShippingCarrier): void
+  (event: 'delete', carrier: ShippingCarrier): void
+}>()
 </script>

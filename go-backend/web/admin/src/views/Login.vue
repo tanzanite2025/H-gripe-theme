@@ -114,9 +114,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { AxiosError } from 'axios'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { z } from 'zod'
@@ -129,6 +130,15 @@ import { Input } from '@/components/ui/input'
 import { useAdminBranding } from '@/composables/useAdminBranding'
 import { useAdminGoogleAuth } from '@/composables/useAdminGoogleAuth'
 import { useAuthStore } from '@/stores/auth'
+
+interface ApiErrorPayload {
+  error?: string
+  message?: string
+}
+
+interface GoogleCredentialResponse {
+  credential?: string
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -149,6 +159,25 @@ const {
   loadAdminBranding,
   setAdminDocumentTitle
 } = useAdminBranding()
+
+const resolveRedirectTarget = (): string => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect.trim() ? redirect : '/'
+}
+
+const isGoogleCredentialResponse = (response: unknown): response is GoogleCredentialResponse => (
+  typeof response === 'object' && response !== null && 'credential' in response
+)
+
+const apiErrorData = (error: unknown): ApiErrorPayload | undefined => (
+  (error as AxiosError<ApiErrorPayload>).response?.data
+)
+
+const loginErrorMessage = (error: unknown): string => apiErrorData(error)?.error || '登录失败'
+const googleLoginErrorMessage = (error: unknown): string => {
+  const data = apiErrorData(error)
+  return data?.message || data?.error || 'Google 登录失败'
+}
 
 onMounted(async () => {
   await loadAdminBranding()
@@ -185,16 +214,16 @@ const onSubmit = handleSubmit(async (values) => {
   try {
     await authStore.login(values.email, values.password)
     toast.success('登录成功')
-    await router.push(route.query.redirect || '/')
+    await router.push(resolveRedirectTarget())
   } catch (error) {
-    toast.error(error.response?.data?.error || '登录失败', { id: 'admin-login-error' })
+    toast.error(loginErrorMessage(error), { id: 'admin-login-error' })
   } finally {
     loading.value = false
   }
 })
 
-const onGoogleCredential = async (response) => {
-  if (!response?.credential) {
+const onGoogleCredential = async (response: unknown): Promise<void> => {
+  if (!isGoogleCredentialResponse(response) || !response.credential) {
     googleError.value = 'Google 登录未返回有效凭据'
     googleLoading.value = false
     return
@@ -203,15 +232,15 @@ const onGoogleCredential = async (response) => {
   try {
     await authStore.loginWithGoogle(response.credential)
     toast.success('登录成功')
-    await router.push(route.query.redirect || '/')
+    await router.push(resolveRedirectTarget())
   } catch (error) {
-    googleError.value = error.response?.data?.message || error.response?.data?.error || 'Google 登录失败'
+    googleError.value = googleLoginErrorMessage(error)
   } finally {
     googleLoading.value = false
   }
 }
 
-const onGoogleSubmit = async () => {
+const onGoogleSubmit = async (): Promise<void> => {
   if (googleLoading.value || loading.value) return
 
   googleLoading.value = true

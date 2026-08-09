@@ -35,7 +35,7 @@
               <h3 class="text-sm font-black tracking-tighter italic uppercase">处理操作</h3>
               <label class="block space-y-1.5">
                 <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">状态</span>
-                <Select :model-value="statusUpdate" @update:model-value="emit('update:statusUpdate', $event)">
+                <Select :model-value="statusUpdate" @update:model-value="(value) => emit('update:statusUpdate', String(value))">
                   <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem v-for="option in editableStatusOptions" :key="option.value" :value="option.value">
@@ -91,7 +91,7 @@
             </div>
 
             <form v-if="canEdit" class="border-t p-4" @submit.prevent="emit('send-reply')">
-              <Textarea :model-value="replyMessage" class="min-h-24 resize-y" placeholder="输入回复内容" @update:model-value="emit('update:replyMessage', $event)" />
+              <Textarea :model-value="replyMessage" class="min-h-24 resize-y" placeholder="输入回复内容" @update:model-value="(value) => emit('update:replyMessage', String(value))" />
               <div class="mt-3 flex justify-end">
                 <Button type="submit" :disabled="replying || !replyMessage.trim()">
                   <LoaderCircle v-if="replying" class="size-4 animate-spin" />
@@ -107,51 +107,75 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { defineComponent, h } from 'vue'
+import type { PropType } from 'vue'
 import { LoaderCircle, MessageCircleOff, Send, UserRoundCog } from '@lucide/vue'
+import type { LanguageOption } from '@/lib/languages'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  TicketAssigneeResolver,
+  TicketCustomerResolver,
+  TicketDateFormatter,
+  TicketLabelResolver,
+  TicketMessage,
+  TicketMessageSenderResolver,
+  TicketRecord,
+  TicketToneResolver
+} from './ticketTypes'
 
-defineProps({
-  open: { type: Boolean, default: false },
-  currentTicket: { type: Object, default: null },
-  detailLoading: { type: Boolean, default: false },
-  messages: { type: Array, default: () => [] },
-  messagesLoading: { type: Boolean, default: false },
-  replyMessage: { type: String, default: '' },
-  replying: { type: Boolean, default: false },
-  statusUpdate: { type: String, default: 'open' },
-  statusUpdating: { type: Boolean, default: false },
-  editableStatusOptions: { type: Array, default: () => [] },
-  canEdit: { type: Boolean, default: false },
-  categoryName: { type: Function, required: true },
-  statusName: { type: Function, required: true },
-  statusTone: { type: Function, required: true },
-  priorityName: { type: Function, required: true },
-  priorityTone: { type: Function, required: true },
-  customerName: { type: Function, required: true },
-  assigneeName: { type: Function, required: true },
-  messageSender: { type: Function, required: true },
-  formatDate: { type: Function, required: true },
+withDefaults(defineProps<{
+  open?: boolean
+  currentTicket?: TicketRecord | null
+  detailLoading?: boolean
+  messages?: TicketMessage[]
+  messagesLoading?: boolean
+  replyMessage?: string
+  replying?: boolean
+  statusUpdate?: string
+  statusUpdating?: boolean
+  editableStatusOptions?: LanguageOption[]
+  canEdit?: boolean
+  categoryName: TicketLabelResolver
+  statusName: TicketLabelResolver
+  statusTone: TicketToneResolver
+  priorityName: TicketLabelResolver
+  priorityTone: TicketToneResolver
+  customerName: TicketCustomerResolver
+  assigneeName: TicketAssigneeResolver
+  messageSender: TicketMessageSenderResolver
+  formatDate: TicketDateFormatter
+}>(), {
+  open: false,
+  currentTicket: null,
+  detailLoading: false,
+  messages: () => [],
+  messagesLoading: false,
+  replyMessage: '',
+  replying: false,
+  statusUpdate: 'open',
+  statusUpdating: false,
+  editableStatusOptions: () => [],
+  canEdit: false
 })
 
-const emit = defineEmits([
-  'update:open',
-  'update:replyMessage',
-  'update:statusUpdate',
-  'update-status',
-  'show-assign',
-  'send-reply',
-])
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'update:replyMessage', value: string): void
+  (event: 'update:statusUpdate', value: string): void
+  (event: 'update-status'): void
+  (event: 'show-assign', ticket: TicketRecord): void
+  (event: 'send-reply'): void
+}>()
 
 const DetailItem = defineComponent({
   props: {
     label: { type: String, required: true },
-    value: { type: [String, Number], default: '' }
+    value: { type: [String, Number] as PropType<string | number>, default: '' }
   },
   setup(props, { slots }) {
     return () => h('div', { class: 'space-y-1' }, [

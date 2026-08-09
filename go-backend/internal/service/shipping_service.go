@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"tanzanite/internal/domain/currency"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/domain/shipping"
 	"tanzanite/internal/pkg/tracking"
@@ -43,10 +44,11 @@ type ShippingQuoteItemInput struct {
 }
 
 type ShippingQuoteInput struct {
-	Country  string                   `json:"country"`
-	Amount   float64                  `json:"amount"`
-	Currency string                   `json:"currency,omitempty"`
-	Items    []ShippingQuoteItemInput `json:"items"`
+	Country         string                   `json:"country"`
+	Amount          float64                  `json:"amount"`
+	Currency        string                   `json:"currency,omitempty"`
+	DisplayCurrency string                   `json:"display_currency,omitempty"`
+	Items           []ShippingQuoteItemInput `json:"items"`
 }
 
 type ShippingQuoteItem struct {
@@ -68,39 +70,44 @@ type ShippingQuoteItem struct {
 }
 
 type ShippingQuote struct {
-	ShippingFee    float64               `json:"shipping_fee"`
-	FreeShipping   bool                  `json:"free_shipping"`
-	Currency       string                `json:"currency,omitempty"`
-	Source         string                `json:"source,omitempty"`
-	Items          []ShippingQuoteItem   `json:"items,omitempty"`
-	Options        []ShippingQuoteOption `json:"options,omitempty"`
-	SelectedOption *ShippingQuoteOption  `json:"selected_option,omitempty"`
+	ShippingFee     float64                         `json:"shipping_fee"`
+	FreeShipping    bool                            `json:"free_shipping"`
+	Currency        string                          `json:"currency,omitempty"`
+	DisplayPrice    *currency.DisplayPriceSnapshot  `json:"display_price,omitempty"`
+	DisplayPrices   []currency.DisplayPriceSnapshot `json:"display_prices,omitempty"`
+	DisplayCurrency string                          `json:"display_currency,omitempty"`
+	Source          string                          `json:"source,omitempty"`
+	Items           []ShippingQuoteItem             `json:"items,omitempty"`
+	Options         []ShippingQuoteOption           `json:"options,omitempty"`
+	SelectedOption  *ShippingQuoteOption            `json:"selected_option,omitempty"`
 }
 
 type ShippingQuoteOption struct {
-	CarrierID             uint    `json:"carrier_id"`
-	CarrierName           string  `json:"carrier_name"`
-	CarrierCode           string  `json:"carrier_code"`
-	CarrierServiceID      uint    `json:"carrier_service_id"`
-	ServiceCode           string  `json:"service_code"`
-	ServiceName           string  `json:"service_name"`
-	RouteName             string  `json:"route_name,omitempty"`
-	TemplateID            uint    `json:"template_id"`
-	TemplateName          string  `json:"template_name"`
-	Currency              string  `json:"currency,omitempty"`
-	BillingMode           string  `json:"billing_mode"`
-	ActualWeightGrams     int     `json:"actual_weight_grams"`
-	VolumetricWeightGrams int     `json:"volumetric_weight_grams"`
-	ChargeWeightGrams     int     `json:"charge_weight_grams"`
-	BillableWeightGrams   int     `json:"billable_weight_grams"`
-	BaseFee               float64 `json:"base_fee"`
-	FuelSurcharge         float64 `json:"fuel_surcharge"`
-	RemoteSurcharge       float64 `json:"remote_surcharge"`
-	ShippingFee           float64 `json:"shipping_fee"`
-	FreeShipping          bool    `json:"free_shipping"`
-	EtaMinDays            int     `json:"eta_min_days"`
-	EtaMaxDays            int     `json:"eta_max_days"`
-	SortOrder             int     `json:"sort_order"`
+	CarrierID             uint                            `json:"carrier_id"`
+	CarrierName           string                          `json:"carrier_name"`
+	CarrierCode           string                          `json:"carrier_code"`
+	CarrierServiceID      uint                            `json:"carrier_service_id"`
+	ServiceCode           string                          `json:"service_code"`
+	ServiceName           string                          `json:"service_name"`
+	RouteName             string                          `json:"route_name,omitempty"`
+	TemplateID            uint                            `json:"template_id"`
+	TemplateName          string                          `json:"template_name"`
+	Currency              string                          `json:"currency,omitempty"`
+	BillingMode           string                          `json:"billing_mode"`
+	ActualWeightGrams     int                             `json:"actual_weight_grams"`
+	VolumetricWeightGrams int                             `json:"volumetric_weight_grams"`
+	ChargeWeightGrams     int                             `json:"charge_weight_grams"`
+	BillableWeightGrams   int                             `json:"billable_weight_grams"`
+	BaseFee               float64                         `json:"base_fee"`
+	FuelSurcharge         float64                         `json:"fuel_surcharge"`
+	RemoteSurcharge       float64                         `json:"remote_surcharge"`
+	ShippingFee           float64                         `json:"shipping_fee"`
+	DisplayPrice          *currency.DisplayPriceSnapshot  `json:"display_price,omitempty"`
+	DisplayPrices         []currency.DisplayPriceSnapshot `json:"display_prices,omitempty"`
+	FreeShipping          bool                            `json:"free_shipping"`
+	EtaMinDays            int                             `json:"eta_min_days"`
+	EtaMaxDays            int                             `json:"eta_max_days"`
+	SortOrder             int                             `json:"sort_order"`
 }
 
 type TrackingCarrierResolutionInput struct {
@@ -597,10 +604,12 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 		}
 	}
 
+	displayCurrency := currency.NormalizeCode(input.DisplayCurrency)
 	var shippingFee float64
 	freeShipping := false
+	groupDisplayPriceSets := make([][]currency.DisplayPriceSnapshot, 0, len(groups))
 	for _, group := range groups {
-		groupFee, groupFree := calculateTemplateShippingFee(
+		groupFee, groupFree, groupDisplayPrices := calculateTemplateShippingFeeWithDisplayPrices(
 			group.Template,
 			country,
 			group.TotalWeightGrams,
@@ -612,6 +621,9 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			freeShipping = true
 		}
 		shippingFee += groupFee
+		if groupFee > 0 {
+			groupDisplayPriceSets = append(groupDisplayPriceSets, groupDisplayPrices)
+		}
 		distributeGroupFee(group, resolvedItems, quoteItems, groupFee, groupFree)
 	}
 
@@ -619,6 +631,7 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 	if shippingFee > 0 {
 		freeShipping = false
 	}
+	displayPrices := combineDisplayPriceSets(groupDisplayPriceSets)
 
 	currency := strings.TrimSpace(input.Currency)
 	if currency == "" {
@@ -626,7 +639,7 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 	}
 	currency = strings.ToUpper(currency)
 
-	options, err := s.quoteCarrierServiceOptions(country, currency, resolvedItems, groups, cartAmount)
+	options, err := s.quoteCarrierServiceOptions(country, currency, displayCurrency, resolvedItems, groups, cartAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -638,19 +651,23 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 		selectedOption = &options[0]
 		shippingFee = selectedOption.ShippingFee
 		freeShipping = selectedOption.FreeShipping
+		displayPrices = selectedOption.DisplayPrices
 		if group := singleShippingQuoteGroup(groups); group != nil {
 			distributeGroupFee(group, resolvedItems, quoteItems, selectedOption.ShippingFee, selectedOption.FreeShipping)
 		}
 	}
 
 	return &ShippingQuote{
-		ShippingFee:    shippingFee,
-		FreeShipping:   freeShipping,
-		Currency:       currency,
-		Source:         source,
-		Items:          quoteItems,
-		Options:        options,
-		SelectedOption: selectedOption,
+		ShippingFee:     shippingFee,
+		FreeShipping:    freeShipping,
+		Currency:        currency,
+		DisplayPrice:    displayPriceForCurrency(displayCurrency, displayPrices),
+		DisplayPrices:   displayPrices,
+		DisplayCurrency: displayCurrency,
+		Source:          source,
+		Items:           quoteItems,
+		Options:         options,
+		SelectedOption:  selectedOption,
 	}, nil
 }
 
@@ -1229,6 +1246,7 @@ func (s *ShippingService) GetProductPackagingRules(productID uint) ([]shipping.P
 func (s *ShippingService) quoteCarrierServiceOptions(
 	country string,
 	currency string,
+	displayCurrency string,
 	resolvedItems []resolvedShippingItem,
 	groups map[uint]*shippingQuoteGroup,
 	cartAmount float64,
@@ -1245,7 +1263,7 @@ func (s *ShippingService) quoteCarrierServiceOptions(
 
 	options := make([]ShippingQuoteOption, 0, len(carrierServices))
 	for i := range carrierServices {
-		option, ok := buildCarrierServiceQuoteOption(carrierServices[i], group, resolvedItems, country, currency, cartAmount)
+		option, ok := buildCarrierServiceQuoteOption(carrierServices[i], group, resolvedItems, country, currency, displayCurrency, cartAmount)
 		if ok {
 			options = append(options, option)
 		}
@@ -1270,6 +1288,7 @@ func buildCarrierServiceQuoteOption(
 	resolvedItems []resolvedShippingItem,
 	country string,
 	currency string,
+	displayCurrency string,
 	cartAmount float64,
 ) (ShippingQuoteOption, bool) {
 	if group == nil || service.Template == nil || !service.Enabled || !service.Template.Enabled {
@@ -1313,7 +1332,7 @@ func buildCarrierServiceQuoteOption(
 	}
 
 	billableWeightGrams := carrierServiceBillableWeightGrams(chargeWeightGrams, service)
-	baseFee, freeShipping := calculateTemplateShippingFee(
+	baseFee, freeShipping, baseDisplayPrices := calculateTemplateShippingFeeWithDisplayPrices(
 		service.Template,
 		country,
 		billableWeightGrams,
@@ -1332,6 +1351,7 @@ func buildCarrierServiceQuoteOption(
 		remoteSurcharge = roundMoney(service.RemoteSurcharge)
 		shippingFee = roundMoney(baseFee + fuelSurcharge + remoteSurcharge)
 	}
+	displayPrices := deriveCarrierServiceDisplayPrices(baseDisplayPrices, baseFee, fuelSurcharge, remoteSurcharge, freeShipping)
 
 	return ShippingQuoteOption{
 		CarrierID:             service.Carrier.ID,
@@ -1353,6 +1373,8 @@ func buildCarrierServiceQuoteOption(
 		FuelSurcharge:         fuelSurcharge,
 		RemoteSurcharge:       remoteSurcharge,
 		ShippingFee:           shippingFee,
+		DisplayPrice:          displayPriceForCurrency(displayCurrency, displayPrices),
+		DisplayPrices:         displayPrices,
 		FreeShipping:          freeShipping,
 		EtaMinDays:            service.EtaMinDays,
 		EtaMaxDays:            service.EtaMaxDays,
@@ -1526,12 +1548,31 @@ func calculateTemplateShippingFee(
 	amount float64,
 	cartAmount float64,
 ) (float64, bool) {
+	shippingFee, freeShipping, _ := calculateTemplateShippingFeeWithDisplayPrices(
+		template,
+		country,
+		totalWeightGrams,
+		quantity,
+		amount,
+		cartAmount,
+	)
+	return shippingFee, freeShipping
+}
+
+func calculateTemplateShippingFeeWithDisplayPrices(
+	template *shipping.ShippingTemplate,
+	country string,
+	totalWeightGrams int,
+	quantity int,
+	amount float64,
+	cartAmount float64,
+) (float64, bool, []currency.DisplayPriceSnapshot) {
 	if template == nil {
-		return 0, false
+		return 0, false, nil
 	}
 
 	if template.FreeShipping && cartAmount >= template.FreeThreshold {
-		return 0, true
+		return 0, true, nil
 	}
 
 	value := float64(totalWeightGrams) / 1000
@@ -1543,14 +1584,20 @@ func calculateTemplateShippingFee(
 	}
 
 	shippingFee := template.DefaultFee
+	displayPrices := templateFeeDisplayPrices(template)
 	for _, rule := range template.Rules {
 		if shippingRuleMatchesCountry(rule.Region, country) && shippingRuleMatchesValue(rule, value) {
 			shippingFee = calculateRuleFee(rule, value)
+			displayPrices = ruleFeeDisplayPrices(rule, value)
 			break
 		}
 	}
 
-	return roundMoney(shippingFee), false
+	shippingFee = roundMoney(shippingFee)
+	if shippingFee <= 0 {
+		return shippingFee, false, nil
+	}
+	return shippingFee, false, displayPrices
 }
 
 func shippingRuleMatchesValue(rule shipping.ShippingRule, value float64) bool {
@@ -1563,6 +1610,237 @@ func calculateRuleFee(rule shipping.ShippingRule, value float64) float64 {
 		fee += math.Ceil(value-rule.MinValue) * rule.Additional
 	}
 	return fee
+}
+
+func templateFeeDisplayPrices(template *shipping.ShippingTemplate) []currency.DisplayPriceSnapshot {
+	if template == nil || template.DefaultFee <= 0 {
+		return nil
+	}
+	snapshots := currency.ParseDisplayPriceSnapshotMap(template.DisplayPriceData, shipping.ShippingTemplateDisplayPriceFields...)
+	return roundDisplayPriceSnapshots(snapshots[shipping.ShippingTemplateDisplayPriceFieldDefaultFee])
+}
+
+func ruleFeeDisplayPrices(rule shipping.ShippingRule, value float64) []currency.DisplayPriceSnapshot {
+	snapshots := currency.ParseDisplayPriceSnapshotMap(rule.DisplayPriceData, shipping.ShippingRuleDisplayPriceFields...)
+	additionalUnits := 0
+	if rule.Additional > 0 && value > rule.MinValue {
+		additionalUnits = int(math.Ceil(value - rule.MinValue))
+	}
+
+	needsFee := rule.Fee > 0
+	needsAdditional := additionalUnits > 0 && rule.Additional > 0
+	if !needsFee && !needsAdditional {
+		return nil
+	}
+
+	feeByCurrency := displayPriceSnapshotsByCurrency(snapshots[shipping.ShippingRuleDisplayPriceFieldFee])
+	additionalByCurrency := displayPriceSnapshotsByCurrency(snapshots[shipping.ShippingRuleDisplayPriceFieldAdditional])
+	candidateCurrencies := map[string]struct{}{}
+	if needsFee {
+		for code := range feeByCurrency {
+			candidateCurrencies[code] = struct{}{}
+		}
+	}
+	if needsAdditional {
+		for code := range additionalByCurrency {
+			candidateCurrencies[code] = struct{}{}
+		}
+	}
+
+	codes := sortedDisplayPriceCurrencyCodes(candidateCurrencies)
+	result := make([]currency.DisplayPriceSnapshot, 0, len(codes))
+	for _, code := range codes {
+		amount := 0.0
+		var combined currency.DisplayPriceSnapshot
+		initialized := false
+		if needsFee {
+			feeSnapshot, ok := feeByCurrency[code]
+			if !ok {
+				continue
+			}
+			amount += feeSnapshot.Amount
+			combined = mergeDisplayPriceSnapshotMetadata(combined, feeSnapshot, initialized)
+			initialized = true
+		}
+		if needsAdditional {
+			additionalSnapshot, ok := additionalByCurrency[code]
+			if !ok {
+				continue
+			}
+			amount += float64(additionalUnits) * additionalSnapshot.Amount
+			combined = mergeDisplayPriceSnapshotMetadata(combined, additionalSnapshot, initialized)
+			initialized = true
+		}
+		if amount <= 0 || !initialized {
+			continue
+		}
+		combined.Amount = roundMoney(amount)
+		combined.Currency = code
+		combined.QuoteCurrency = code
+		result = append(result, combined)
+	}
+	return result
+}
+
+func combineDisplayPriceSets(sets [][]currency.DisplayPriceSnapshot) []currency.DisplayPriceSnapshot {
+	if len(sets) == 0 {
+		return nil
+	}
+
+	totals := map[string]currency.DisplayPriceSnapshot{}
+	counts := map[string]int{}
+	for _, set := range sets {
+		for code, snapshot := range displayPriceSnapshotsByCurrency(set) {
+			total, exists := totals[code]
+			if exists {
+				total = mergeDisplayPriceSnapshotMetadata(total, snapshot, true)
+			} else {
+				total = snapshot
+				total.Amount = 0
+			}
+			total.Amount += snapshot.Amount
+			total.Currency = code
+			total.QuoteCurrency = code
+			totals[code] = total
+			counts[code]++
+		}
+	}
+
+	candidates := map[string]struct{}{}
+	for code := range totals {
+		candidates[code] = struct{}{}
+	}
+
+	codes := sortedDisplayPriceCurrencyCodes(candidates)
+	result := make([]currency.DisplayPriceSnapshot, 0, len(codes))
+	for _, code := range codes {
+		if counts[code] != len(sets) {
+			continue
+		}
+		snapshot := totals[code]
+		snapshot.Amount = roundMoney(snapshot.Amount)
+		if snapshot.Amount > 0 {
+			result = append(result, snapshot)
+		}
+	}
+	return result
+}
+
+func deriveCarrierServiceDisplayPrices(
+	baseDisplayPrices []currency.DisplayPriceSnapshot,
+	baseFee float64,
+	fuelSurcharge float64,
+	remoteSurcharge float64,
+	freeShipping bool,
+) []currency.DisplayPriceSnapshot {
+	if freeShipping || baseFee <= 0 || remoteSurcharge > 0 {
+		return nil
+	}
+
+	multiplier := 1.0
+	if fuelSurcharge > 0 {
+		multiplier += fuelSurcharge / baseFee
+	}
+
+	result := make([]currency.DisplayPriceSnapshot, 0, len(baseDisplayPrices))
+	for _, snapshot := range baseDisplayPrices {
+		code := currency.NormalizeCode(snapshot.Currency)
+		if code == "" {
+			code = currency.NormalizeCode(snapshot.QuoteCurrency)
+		}
+		amount := roundMoney(snapshot.Amount * multiplier)
+		if amount <= 0 || code == "" {
+			continue
+		}
+		snapshot.Amount = amount
+		snapshot.Currency = code
+		snapshot.QuoteCurrency = code
+		result = append(result, snapshot)
+	}
+	return result
+}
+
+func displayPriceForCurrency(displayCurrency string, displayPrices []currency.DisplayPriceSnapshot) *currency.DisplayPriceSnapshot {
+	displayCurrency = currency.NormalizeCode(displayCurrency)
+	if displayCurrency == "" {
+		return nil
+	}
+	for i := range displayPrices {
+		if currency.NormalizeCode(displayPrices[i].Currency) == displayCurrency {
+			return &displayPrices[i]
+		}
+	}
+	return nil
+}
+
+func roundDisplayPriceSnapshots(snapshots []currency.DisplayPriceSnapshot) []currency.DisplayPriceSnapshot {
+	if len(snapshots) == 0 {
+		return nil
+	}
+	result := make([]currency.DisplayPriceSnapshot, 0, len(snapshots))
+	for _, snapshot := range snapshots {
+		code := currency.NormalizeCode(snapshot.Currency)
+		if code == "" {
+			code = currency.NormalizeCode(snapshot.QuoteCurrency)
+		}
+		amount := roundMoney(snapshot.Amount)
+		if amount <= 0 || code == "" {
+			continue
+		}
+		snapshot.Amount = amount
+		snapshot.Currency = code
+		snapshot.QuoteCurrency = code
+		result = append(result, snapshot)
+	}
+	return result
+}
+
+func displayPriceSnapshotsByCurrency(snapshots []currency.DisplayPriceSnapshot) map[string]currency.DisplayPriceSnapshot {
+	result := make(map[string]currency.DisplayPriceSnapshot, len(snapshots))
+	for _, snapshot := range snapshots {
+		code := currency.NormalizeCode(snapshot.Currency)
+		if code == "" {
+			code = currency.NormalizeCode(snapshot.QuoteCurrency)
+		}
+		amount := roundMoney(snapshot.Amount)
+		if amount <= 0 || code == "" {
+			continue
+		}
+		snapshot.Amount = amount
+		snapshot.Currency = code
+		snapshot.QuoteCurrency = code
+		if _, exists := result[code]; !exists {
+			result[code] = snapshot
+		}
+	}
+	return result
+}
+
+func mergeDisplayPriceSnapshotMetadata(
+	current currency.DisplayPriceSnapshot,
+	next currency.DisplayPriceSnapshot,
+	initialized bool,
+) currency.DisplayPriceSnapshot {
+	if !initialized {
+		return next
+	}
+	if current.Source != next.Source {
+		current.Source = "stored_display_snapshot"
+	}
+	if current.Rate != next.Rate {
+		current.Rate = 0
+	}
+	current.Converted = current.Converted || next.Converted
+	return current
+}
+
+func sortedDisplayPriceCurrencyCodes(values map[string]struct{}) []string {
+	codes := make([]string, 0, len(values))
+	for code := range values {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	return codes
 }
 
 func shippingRuleMatchesCountry(region string, country string) bool {

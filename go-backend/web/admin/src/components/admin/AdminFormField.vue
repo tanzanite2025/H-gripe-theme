@@ -12,12 +12,17 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  label: { type: String, required: true },
-  forId: { type: String, default: '' },
-  required: { type: Boolean, default: false },
-  error: { type: String, default: '' },
-  description: { type: String, default: '' }
+<script setup lang="ts">
+withDefaults(defineProps<{
+  label: string
+  forId?: string
+  required?: boolean
+  error?: string
+  description?: string
+}>(), {
+  forId: '',
+  required: false,
+  error: '',
+  description: ''
 })
 </script>

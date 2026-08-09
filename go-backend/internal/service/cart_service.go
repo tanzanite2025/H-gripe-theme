@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"strings"
+	"tanzanite/internal/domain/currency"
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/repository"
 )
@@ -75,13 +76,13 @@ func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.
 }
 
 func (s *CartService) ValidateAddToCart(productID uint, variantID *uint, quantity int) error {
-	_, _, _, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
+	_, _, _, _, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
 	return err
 }
 
 func (s *CartService) HasPurchasableSyncItems(items []SyncCartItemReq) bool {
 	for _, item := range items {
-		if _, _, _, err := s.resolvePurchasableCartItem(item.ProductID, item.VariantID, item.Quantity); err == nil {
+		if _, _, _, _, err := s.resolvePurchasableCartItem(item.ProductID, item.VariantID, item.Quantity); err == nil {
 			return true
 		}
 	}
@@ -89,7 +90,7 @@ func (s *CartService) HasPurchasableSyncItems(items []SyncCartItemReq) bool {
 }
 
 func (s *CartService) AddToCart(cartID, productID uint, variantID *uint, quantity int) error {
-	price, availableStock, resolvedVariantID, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
+	price, itemCurrency, availableStock, resolvedVariantID, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
 	if err != nil {
 		return err
 	}
@@ -101,6 +102,7 @@ func (s *CartService) AddToCart(cartID, productID uint, variantID *uint, quantit
 		}
 		existingItem.Quantity += quantity
 		existingItem.Price = price
+		existingItem.Currency = itemCurrency
 		return s.cartRepo.UpdateItem(existingItem)
 	}
 	if !repository.IsRecordNotFound(err) {
@@ -113,6 +115,7 @@ func (s *CartService) AddToCart(cartID, productID uint, variantID *uint, quantit
 		VariantID: resolvedVariantID,
 		Quantity:  quantity,
 		Price:     price,
+		Currency:  itemCurrency,
 	})
 }
 
@@ -131,13 +134,14 @@ func (s *CartService) UpdateCartItem(cartID, productID uint, variantID *uint, qu
 		return errors.New("product not found")
 	}
 
-	price, availableStock, _ := purchasablePriceStock(variant)
+	price, itemCurrency, availableStock, _ := purchasablePriceStock(variant)
 	if availableStock < quantity {
 		return errors.New("insufficient stock")
 	}
 
 	item.Quantity = quantity
 	item.Price = price
+	item.Currency = itemCurrency
 	return s.cartRepo.UpdateItem(item)
 }
 
@@ -162,7 +166,7 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 
 	var cartItems []product.CartItem
 	for _, req := range items {
-		price, _, resolvedVariantID, err := s.resolvePurchasableCartItem(req.ProductID, req.VariantID, req.Quantity)
+		price, itemCurrency, _, resolvedVariantID, err := s.resolvePurchasableCartItem(req.ProductID, req.VariantID, req.Quantity)
 		if err != nil {
 			continue
 		}
@@ -173,6 +177,7 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 			VariantID: resolvedVariantID,
 			Quantity:  req.Quantity,
 			Price:     price,
+			Currency:  itemCurrency,
 		})
 	}
 
@@ -203,24 +208,31 @@ func (s *CartService) ClearCart(cartID uint) error {
 	return s.cartRepo.ClearCart(cartID)
 }
 
-func (s *CartService) resolvePurchasableCartItem(productID uint, variantID *uint, quantity int) (float64, int, *uint, error) {
+func (s *CartService) resolvePurchasableCartItem(productID uint, variantID *uint, quantity int) (float64, string, int, *uint, error) {
 	if quantity <= 0 {
-		return 0, 0, nil, errors.New("quantity must be greater than 0")
+		return 0, "", 0, nil, errors.New("quantity must be greater than 0")
 	}
 
 	_, variant, err := s.productRepo.FindPurchasableVariant(productID, variantID)
 	if err != nil || variant == nil {
-		return 0, 0, nil, errors.New("product not found")
+		return 0, "", 0, nil, errors.New("product not found")
 	}
 
-	price, availableStock, resolvedVariantID := purchasablePriceStock(variant)
+	price, itemCurrency, availableStock, resolvedVariantID := purchasablePriceStock(variant)
 	if availableStock < quantity {
-		return 0, 0, nil, errors.New("insufficient stock")
+		return 0, "", 0, nil, errors.New("insufficient stock")
 	}
-	return price, availableStock, resolvedVariantID, nil
+	return price, itemCurrency, availableStock, resolvedVariantID, nil
 }
 
-func purchasablePriceStock(variant *product.ProductVariant) (float64, int, *uint) {
+func purchasablePriceStock(variant *product.ProductVariant) (float64, string, int, *uint) {
 	variantID := variant.ID
-	return variant.EffectivePrice(), variant.Stock, &variantID
+	itemCurrency := currency.NormalizeCode(variant.Currency)
+	if itemCurrency == "" {
+		itemCurrency = product.DefaultPriceCurrency
+	}
+	if !currency.IsValidCode(itemCurrency) || !currency.IsCatalogCode(itemCurrency) {
+		itemCurrency = product.DefaultPriceCurrency
+	}
+	return variant.EffectivePrice(), itemCurrency, variant.Stock, &variantID
 }

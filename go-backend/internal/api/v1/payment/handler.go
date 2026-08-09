@@ -23,37 +23,36 @@ import (
 )
 
 type Handler struct {
-	paymentService  *service.PaymentService
-	orderService    *service.OrderService
-	settingsService *service.AdminSettingsService
-	currencyPolicy  *service.CurrencyPolicyService
-	threeDSPolicy   *service.PaymentThreeDSPolicyService
-	riskMonitoring  *service.PaymentRiskMonitoringService
-	protection      *service.PaymentProtectionService
-	refundReview    *service.PaymentRefundRecommendationService
-	antiBot         *antibot.Service
-	antiFraud       *antifraud.Service
-	gatewayFactory  func(*pgateway.Config) (pgateway.PaymentGateway, error)
-	publicBaseURL   string
+	paymentService    *service.PaymentService
+	orderService      *service.OrderService
+	settingsService   *service.AdminSettingsService
+	threeDSPolicy     *service.PaymentThreeDSPolicyService
+	riskMonitoring    *service.PaymentRiskMonitoringService
+	protection        *service.PaymentProtectionService
+	refundReview      *service.PaymentRefundRecommendationService
+	storefrontContext *service.StorefrontContextService
+	antiBot           *antibot.Service
+	antiFraud         *antifraud.Service
+	gatewayFactory    func(*pgateway.Config) (pgateway.PaymentGateway, error)
+	publicBaseURL     string
 }
 
 func NewHandler(
 	paymentService *service.PaymentService,
 	orderService *service.OrderService,
 	settingsService *service.AdminSettingsService,
-	currencyPolicy *service.CurrencyPolicyService,
 	threeDSPolicy *service.PaymentThreeDSPolicyService,
 	riskMonitoring *service.PaymentRiskMonitoringService,
 	protection *service.PaymentProtectionService,
 	refundReview *service.PaymentRefundRecommendationService,
 	antiBot *antibot.Service,
 	antiFraud *antifraud.Service,
+	storefrontContexts ...*service.StorefrontContextService,
 ) *Handler {
-	return &Handler{
+	handler := &Handler{
 		paymentService:  paymentService,
 		orderService:    orderService,
 		settingsService: settingsService,
-		currencyPolicy:  currencyPolicy,
 		threeDSPolicy:   threeDSPolicy,
 		riskMonitoring:  riskMonitoring,
 		protection:      protection,
@@ -61,6 +60,10 @@ func NewHandler(
 		antiBot:         antiBot,
 		antiFraud:       antiFraud,
 	}
+	if len(storefrontContexts) > 0 {
+		handler.storefrontContext = storefrontContexts[0]
+	}
+	return handler
 }
 
 func (h *Handler) newPaymentGateway(config *pgateway.Config) (pgateway.PaymentGateway, error) {

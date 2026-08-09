@@ -39,8 +39,8 @@
       :loyalty-program-version="loyaltyProgramVersion"
       :loyalty-program-loading="loyaltyProgramLoading"
       :loyalty-program-saving="loyaltyProgramSaving"
-      :payment-currency-options="paymentCurrencyOptions"
-      :payment-currencies-loading="paymentCurrenciesLoading"
+      :redeem-currency-options="redeemCurrencyOptions"
+      :redeem-currencies-loading="redeemCurrenciesLoading"
       :levels-loading="levelsLoading"
       :levels="levels"
       :levels-using-fallback="levelsUsingFallback"
@@ -112,7 +112,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { BadgePercent, Coins, Crown, Gift } from '@lucide/vue'
@@ -123,6 +123,19 @@ import GiftCardDetailDialog from '@/components/admin/marketing/GiftCardDetailDia
 import MarketingEditorDialogs from '@/components/admin/marketing/MarketingEditorDialogs.vue'
 import MarketingTabsPanel from '@/components/admin/marketing/MarketingTabsPanel.vue'
 import { useRouteTab } from '@/composables/useRouteTab'
+import type { CouponErrors, CouponForm } from '@/components/admin/marketing/CouponEditorDialog.vue'
+import type { MemberLevelErrors, MemberLevelForm } from '@/components/admin/marketing/MemberLevelEditorDialog.vue'
+import type { GiftCardTransaction } from '@/components/admin/marketing/GiftCardDetailPanel.vue'
+import type {
+  CouponRecord,
+  GiftCardRecord,
+  GiftCardRedeemOption,
+  GiftCardRedeemSettings,
+  LoyaltyAdjustmentForm,
+  LoyaltyErrors,
+  LoyaltyTransaction,
+  MemberLevel,
+} from '@/components/admin/marketing/marketingTypes'
 import {
   couponStatus,
   couponValue,
@@ -140,6 +153,55 @@ import {
 } from '@/lib/marketingPresentation'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
+
+interface MarketingStats {
+  coupons?: {
+    total?: number
+  }
+}
+
+interface CouponEditorForm extends CouponForm {
+  id: string | number | null
+}
+
+interface MemberLevelEditorForm extends MemberLevelForm {
+  id: string | number | null
+  sort_order: number | string
+  icon: string
+  color: string
+}
+
+interface GiftCardDetail extends GiftCardRecord {
+  id: string | number
+}
+
+interface ConfirmationState {
+  open: boolean
+  type: 'coupon' | 'level' | ''
+  target: CouponRecord | MemberLevel | null
+  title: string
+  description: string
+}
+
+interface LoyaltyProgramConfig {
+  version?: number | string
+  points_base_currency?: string
+  available_currencies?: Array<{ code?: string }>
+  purchase_earn_points_per_currency_unit?: number | string
+  referral_referrer_points?: number | string
+  referral_referee_points?: number | string
+  checkin_base_points?: number | string
+  checkin_streak_interval_days?: number | string
+  checkin_streak_bonus_points?: number | string
+  checkin_max_points?: number | string
+  enabled?: boolean
+  currency?: string
+  exchange_rate_points?: number | string
+  min_redeem_points?: number | string
+  max_value_per_day?: number | string
+  card_expiry_days?: number | string
+  redeem_options?: Array<GiftCardRedeemOption & { id?: string | number }>
+}
 
 const authStore = useAuthStore()
 const activeTab = useRouteTab({
@@ -161,30 +223,30 @@ const activeSubTab = useRouteTab({
   },
   enabled: () => activeTab.value === 'loyalty',
 })
-const stats = ref({})
+const stats = ref<MarketingStats>({})
 
 const couponsLoading = ref(false)
-const coupons = ref([])
+const coupons = ref<CouponRecord[]>([])
 const couponFilters = reactive({ status: 'all' })
 const couponPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const couponDialogVisible = ref(false)
 const couponDialogMode = ref('create')
 const couponSubmitting = ref(false)
-const couponErrors = reactive({})
-const couponForm = reactive({
+const couponErrors = reactive<CouponErrors>({})
+const couponForm = reactive<CouponEditorForm>({
   id: null, code: '', type: 'fixed', value: 0, description: '', min_amount: 0, max_discount: 0,
   usage_limit: 0, usage_limit_per_user: 0, start_date: '', end_date: '', applicable_products: '',
   excluded_products: '', applicable_categories: '', enabled: true
 })
 
 const giftCardsLoading = ref(false)
-const giftCards = ref([])
+const giftCards = ref<GiftCardRecord[]>([])
 const giftCardFilters = reactive({ status: 'all' })
 const giftCardPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const giftCardDetailVisible = ref(false)
 const giftCardDetailLoading = ref(false)
-const currentGiftCard = ref(null)
-const giftCardTransactions = ref([])
+const currentGiftCard = ref<GiftCardDetail | null>(null)
+const giftCardTransactions = ref<GiftCardTransaction[]>([])
 const giftCardStatusUpdate = ref('active')
 const giftCardStatusSubmitting = ref(false)
 const couponsLoaded = ref(false)
@@ -192,12 +254,12 @@ const giftCardsLoaded = ref(false)
 const levelsLoaded = ref(false)
 
 const loyaltyLoading = ref(false)
-const loyaltyTransactions = ref([])
+const loyaltyTransactions = ref<LoyaltyTransaction[]>([])
 const loyaltyFilters = reactive({ user_id: '' })
 const loyaltyPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const loyaltySubmitting = ref(false)
-const loyaltyErrors = reactive({})
-const loyaltyForm = reactive({ user_id: '', points: 0, description: '' })
+const loyaltyErrors = reactive<LoyaltyErrors>({})
+const loyaltyForm = reactive<LoyaltyAdjustmentForm>({ user_id: '', points: 0, description: '' })
 const loyaltySettings = reactive({
   tz_loyalty_purchase_earn_points_per_currency_unit: 1,
   tz_loyalty_referral_referrer_points: 100,
@@ -221,18 +283,18 @@ const pointsBaseCurrency = ref('USD')
 const loyaltyProgramLoading = ref(false)
 const loyaltyProgramSaving = ref(false)
 const loyaltyProgramLoaded = ref(false)
-const paymentCurrencyOptions = ref([])
-const paymentCurrenciesLoading = ref(false)
-const paymentCurrenciesLoaded = ref(false)
+const redeemCurrencyOptions = ref<string[]>([])
+const redeemCurrenciesLoading = ref(false)
+const redeemCurrenciesLoaded = ref(false)
 
 const levelsLoading = ref(false)
-const levels = ref([])
+const levels = ref<MemberLevel[]>([])
 const levelsUsingFallback = ref(false)
 const levelDialogVisible = ref(false)
 const levelDialogMode = ref('create')
 const levelSubmitting = ref(false)
-const levelErrors = reactive({})
-const levelForm = reactive({
+const levelErrors = reactive<MemberLevelErrors>({})
+const levelForm = reactive<MemberLevelEditorForm>({
   id: null, name: '', min_points: 0, max_points: 0, discount_rate: 0,
   sort_order: 0, benefits: '', icon: '', color: '#B5FF6D'
 })
@@ -246,12 +308,12 @@ const DEFAULT_MEMBER_LEVELS = [
   { name: 'Diamond', min_points: 20000, max_points: 999999999, discount_rate: 0, benefits: '[]', color: '#b9f2ff', sort_order: 50 }
 ]
 
-const defaultMemberLevels = () =>
+const defaultMemberLevels = (): MemberLevel[] =>
   DEFAULT_MEMBER_LEVELS.map((level) => ({ ...level, id: null, is_fallback: true }))
 
-const confirmation = reactive({ open: false, type: '', target: null, title: '', description: '' })
+const confirmation = reactive<ConfirmationState>({ open: false, type: '', target: null, title: '', description: '' })
 
-const statCount = (value, unit) => `${Number(value || 0).toLocaleString('zh-CN')} ${unit}`
+const statCount = (value: unknown, unit: string) => `${Number(value || 0).toLocaleString('zh-CN')} ${unit}`
 const couponRuleCount = computed(() => stats.value.coupons?.total ?? couponPagination.total ?? coupons.value.length)
 const giftCardRedeemStatus = computed(() => {
   if (!loyaltyProgramLoaded.value) return loyaltyProgramLoading.value ? '加载中' : '未加载'
@@ -270,41 +332,41 @@ const statItems = computed(() => [
   { key: 'member-level-rules', label: '会员等级规则', value: statCount(memberLevelRuleCount.value, '级'), icon: Crown, tone: 'green' }
 ])
 
-const apiData = (response) => response.data?.data ?? response.data ?? {}
-const hasPermission = (permission) => authStore.hasPermission(permission)
-const clearErrors = (errors) => Object.keys(errors).forEach((key) => delete errors[key])
-const clearCouponError = (field) => { delete couponErrors[field] }
-const clearLoyaltyError = (field) => { delete loyaltyErrors[field] }
-const clearLevelError = (field) => { delete levelErrors[field] }
+const apiData = (response: any) => response.data?.data ?? response.data ?? {}
+const hasPermission = (permission: string) => authStore.hasPermission(permission)
+const clearErrors = (errors: Record<string, unknown>) => Object.keys(errors).forEach((key) => delete errors[key])
+const clearCouponError = (field: keyof CouponForm) => { delete couponErrors[field] }
+const clearLoyaltyError = (field: keyof LoyaltyAdjustmentForm) => { delete loyaltyErrors[field] }
+const clearLevelError = (field: keyof MemberLevelForm) => { delete levelErrors[field] }
 
-const normalizeCurrencyCode = (currency) => String(currency || '').trim().toUpperCase()
+const normalizeCurrencyCode = (currency: unknown) => String(currency || '').trim().toUpperCase()
 
-const applySupportedRedeemCurrency = () => {
-  if (paymentCurrencyOptions.value.length === 0) return
+const applyRedeemCurrencySelection = () => {
+  if (redeemCurrencyOptions.value.length === 0) return
 
   const selected = normalizeCurrencyCode(redeemSettings.tz_redeem_currency)
-  redeemSettings.tz_redeem_currency = paymentCurrencyOptions.value.includes(selected)
+  redeemSettings.tz_redeem_currency = redeemCurrencyOptions.value.includes(selected)
     ? selected
-    : paymentCurrencyOptions.value[0]
+    : redeemCurrencyOptions.value[0]
 }
 
-const fetchPaymentCurrencies = async (force = false) => {
-  if (!force && paymentCurrenciesLoaded.value) return
+const fetchRedeemCurrencies = async (force = false) => {
+  if (!force && redeemCurrenciesLoaded.value) return
 
-  paymentCurrenciesLoading.value = true
+  redeemCurrenciesLoading.value = true
   try {
     const response = await axios.get('/api/admin/settings/currency-policy')
     const policy = response.data?.policy || {}
-    paymentCurrencyOptions.value = Array.isArray(policy.available_currencies)
+    redeemCurrencyOptions.value = Array.isArray(policy.available_currencies)
       ? policy.available_currencies.map((currency) => normalizeCurrencyCode(currency.code)).filter((currency) => /^[A-Z]{3}$/.test(currency))
       : []
-    paymentCurrenciesLoaded.value = true
-    applySupportedRedeemCurrency()
+    redeemCurrenciesLoaded.value = true
+    applyRedeemCurrencySelection()
   } catch (error) {
-    console.error('Failed to fetch payment currencies:', error)
-    paymentCurrencyOptions.value = []
+    console.error('Failed to fetch redeem currencies:', error)
+    redeemCurrencyOptions.value = []
   } finally {
-    paymentCurrenciesLoading.value = false
+    redeemCurrenciesLoading.value = false
   }
 }
 
@@ -334,8 +396,8 @@ const fetchCoupons = async () => {
   }
 }
 const applyCouponFilter = () => { couponPagination.page = 1; fetchCoupons() }
-const updateCouponPage = (page) => { couponPagination.page = page; fetchCoupons() }
-const updateCouponPageSize = (pageSize) => { couponPagination.pageSize = pageSize; couponPagination.page = 1; fetchCoupons() }
+const updateCouponPage = (page: number) => { couponPagination.page = page; fetchCoupons() }
+const updateCouponPageSize = (pageSize: number) => { couponPagination.pageSize = pageSize; couponPagination.page = 1; fetchCoupons() }
 const resetCouponForm = () => {
   Object.assign(couponForm, {
     id: null, code: '', type: 'fixed', value: 0, description: '', min_amount: 0, max_discount: 0,
@@ -345,7 +407,7 @@ const resetCouponForm = () => {
   clearErrors(couponErrors)
 }
 const showCreateCouponDialog = () => { couponDialogMode.value = 'create'; resetCouponForm(); couponDialogVisible.value = true }
-const showEditCouponDialog = async (coupon) => {
+const showEditCouponDialog = async (coupon: CouponRecord) => {
   couponDialogMode.value = 'edit'
   try {
     const response = await axios.get(`/api/admin/marketing/coupons/${coupon.id}`)
@@ -419,9 +481,9 @@ const fetchGiftCards = async () => {
   }
 }
 const applyGiftCardFilter = () => { giftCardPagination.page = 1; fetchGiftCards() }
-const updateGiftCardPage = (page) => { giftCardPagination.page = page; fetchGiftCards() }
-const updateGiftCardPageSize = (pageSize) => { giftCardPagination.pageSize = pageSize; giftCardPagination.page = 1; fetchGiftCards() }
-const viewGiftCard = async (giftCard) => {
+const updateGiftCardPage = (page: number) => { giftCardPagination.page = page; fetchGiftCards() }
+const updateGiftCardPageSize = (pageSize: number) => { giftCardPagination.pageSize = pageSize; giftCardPagination.page = 1; fetchGiftCards() }
+const viewGiftCard = async (giftCard: GiftCardRecord) => {
   currentGiftCard.value = giftCard
   giftCardTransactions.value = []
   giftCardStatusUpdate.value = giftCard.status
@@ -432,7 +494,7 @@ const viewGiftCard = async (giftCard) => {
     const data = apiData(response)
     currentGiftCard.value = data.gift_card || giftCard
     giftCardTransactions.value = data.transactions || []
-    giftCardStatusUpdate.value = currentGiftCard.value.status
+    giftCardStatusUpdate.value = currentGiftCard.value?.status || 'active'
   } catch (error) {
     console.error('Failed to fetch gift card detail:', error)
   } finally {
@@ -440,6 +502,7 @@ const viewGiftCard = async (giftCard) => {
   }
 }
 const updateGiftCardStatus = async () => {
+  if (!currentGiftCard.value) return
   giftCardStatusSubmitting.value = true
   try {
     const response = await axios.patch(`/api/admin/marketing/gift-cards/${currentGiftCard.value.id}/status`, { status: giftCardStatusUpdate.value })
@@ -474,8 +537,8 @@ const fetchLoyaltyTransactions = async () => {
   }
 }
 const applyLoyaltyFilter = () => { loyaltyPagination.page = 1; fetchLoyaltyTransactions() }
-const updateLoyaltyPage = (page) => { loyaltyPagination.page = page; fetchLoyaltyTransactions() }
-const updateLoyaltyPageSize = (pageSize) => { loyaltyPagination.pageSize = pageSize; loyaltyPagination.page = 1; fetchLoyaltyTransactions() }
+const updateLoyaltyPage = (page: number) => { loyaltyPagination.page = page; fetchLoyaltyTransactions() }
+const updateLoyaltyPageSize = (pageSize: number) => { loyaltyPagination.pageSize = pageSize; loyaltyPagination.page = 1; fetchLoyaltyTransactions() }
 const validateLoyaltyAdjustment = () => {
   clearErrors(loyaltyErrors)
   if (!Number(loyaltyForm.user_id)) loyaltyErrors.user_id = '请输入用户 ID'
@@ -494,7 +557,7 @@ const submitLoyaltyAdjustment = async () => {
       description: loyaltyForm.description.trim()
     })
     toast.success('积分调整已写入流水')
-    loyaltyFilters.user_id = loyaltyForm.user_id
+    loyaltyFilters.user_id = String(loyaltyForm.user_id)
     loyaltyForm.points = 0
     loyaltyForm.description = ''
     await Promise.all([fetchLoyaltyTransactions(), fetchStats()])
@@ -505,7 +568,7 @@ const submitLoyaltyAdjustment = async () => {
   }
 }
 
-const applyLoyaltyProgramConfig = (config) => {
+const applyLoyaltyProgramConfig = (config?: LoyaltyProgramConfig) => {
   if (!config) return
   loyaltyProgramVersion.value = Number(config.version || 0)
   pointsBaseCurrency.value = normalizeCurrencyCode(config.points_base_currency || 'USD') || 'USD'
@@ -513,8 +576,8 @@ const applyLoyaltyProgramConfig = (config) => {
     ? config.available_currencies.map((currency) => normalizeCurrencyCode(currency.code)).filter((currency) => /^[A-Z]{3}$/.test(currency))
     : []
   if (catalogCurrencies.length > 0) {
-    paymentCurrencyOptions.value = catalogCurrencies
-    paymentCurrenciesLoaded.value = true
+    redeemCurrencyOptions.value = catalogCurrencies
+    redeemCurrenciesLoaded.value = true
   }
   Object.assign(loyaltySettings, {
     tz_loyalty_purchase_earn_points_per_currency_unit: Number(config.purchase_earn_points_per_currency_unit ?? 1),
@@ -543,7 +606,7 @@ const applyLoyaltyProgramConfig = (config) => {
         }))
       : []
   })
-  applySupportedRedeemCurrency()
+  applyRedeemCurrencySelection()
 }
 
 const fetchLoyaltyProgramConfig = async (force = false) => {
@@ -562,7 +625,7 @@ const fetchLoyaltyProgramConfig = async (force = false) => {
 
 const refreshLoyaltyProgramConfig = () => Promise.all([
   fetchLoyaltyProgramConfig(true),
-  fetchPaymentCurrencies(true)
+  fetchRedeemCurrencies(true)
 ])
 
 const saveLoyaltyProgramConfig = async () => {
@@ -583,9 +646,9 @@ const saveLoyaltyProgramConfig = async () => {
     toast.error('请在礼品卡页面设置默认币种')
     return
   }
-  if (redeemOptions.some((option) => !paymentCurrencyOptions.value.includes(option.currency))) {
+  if (redeemOptions.some((option) => !redeemCurrencyOptions.value.includes(option.currency))) {
     toast.error('兑换面值中存在无效礼品卡币种')
-    applySupportedRedeemCurrency()
+    applyRedeemCurrencySelection()
     return
   }
 
@@ -644,7 +707,7 @@ const resetLevelForm = () => {
   clearErrors(levelErrors)
 }
 const showCreateLevelDialog = () => { levelDialogMode.value = 'create'; resetLevelForm(); levelDialogVisible.value = true }
-const showEditLevelDialog = async (level) => {
+const showEditLevelDialog = async (level: MemberLevel) => {
   if (!level?.id) {
     toast.error('会员等级接口还未返回真实数据，请确认后端迁移已执行并重启服务')
     return
@@ -707,16 +770,17 @@ const submitLevelForm = async () => {
   }
 }
 
-const requestDeleteCoupon = (coupon) => Object.assign(confirmation, {
+const requestDeleteCoupon = (coupon: CouponRecord) => Object.assign(confirmation, {
   open: true, type: 'coupon', target: coupon, title: '删除优惠券？',
   description: `优惠券 ${coupon.code} 将被永久删除，此操作不可恢复。`
 })
-const requestDeleteLevel = (level) => Object.assign(confirmation, {
+const requestDeleteLevel = (level: MemberLevel) => Object.assign(confirmation, {
   open: true, type: 'level', target: level, title: '删除会员等级？',
   description: `会员等级“${level.name}”将被永久删除，此操作不可恢复。`
 })
 const executeDelete = async () => {
   const { type, target } = confirmation
+  if (!target) return
   confirmation.open = false
   try {
     if (type === 'coupon') {
@@ -739,13 +803,13 @@ const ensureActiveTabLoaded = () => {
     return Promise.all([
       giftCardsLoaded.value ? Promise.resolve() : fetchGiftCards(),
       loyaltyProgramLoaded.value ? Promise.resolve() : fetchLoyaltyProgramConfig(),
-      paymentCurrenciesLoaded.value ? Promise.resolve() : fetchPaymentCurrencies()
+      redeemCurrenciesLoaded.value ? Promise.resolve() : fetchRedeemCurrencies()
     ])
   }
   if (activeTab.value === 'loyalty') {
     return Promise.all([
       loyaltyProgramLoaded.value ? Promise.resolve() : fetchLoyaltyProgramConfig(),
-      paymentCurrenciesLoaded.value ? Promise.resolve() : fetchPaymentCurrencies()
+      redeemCurrenciesLoaded.value ? Promise.resolve() : fetchRedeemCurrencies()
     ])
   }
   if (activeTab.value === 'levels' && !levelsLoaded.value) return fetchLevels()

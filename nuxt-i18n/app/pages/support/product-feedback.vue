@@ -55,7 +55,7 @@ useHead({
   font-size: 0.85rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(129, 140, 248, 0.9);
+  color: var(--tz-text-muted);
   margin-bottom: 0.65rem;
 }
 
@@ -64,7 +64,7 @@ useHead({
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 700;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .support-page__title--sr-only {
