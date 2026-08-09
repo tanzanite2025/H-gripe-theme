@@ -155,7 +155,6 @@ const siteSettings = reactive({
   site_name: '',
   brand_title: '',
   site_description: '',
-  site_url: '',
   site_logo: '',
   contact_email: '',
   contact_phone: '',
@@ -288,7 +287,6 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
     fields: {
       brand_title: { type: 'string', public: true, description: 'Public brand title' },
       site_description: { type: 'string', public: true, description: 'Site description' },
-      site_url: { type: 'string', public: true, description: 'Public site URL' },
       site_logo: { type: 'string', public: true, description: 'Site logo URL' },
       contact_email: { type: 'string', public: true, description: 'Contact email' },
       contact_phone: { type: 'string', public: true, description: 'Contact phone' },

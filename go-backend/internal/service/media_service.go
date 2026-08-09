@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 
 	"tanzanite/internal/pkg/storage"
 	"tanzanite/internal/repository"
@@ -27,6 +28,7 @@ type MediaService struct {
 	repo                     *repository.MediaRepository
 	storage                  storage.StorageService
 	settings                 *SettingService
+	siteURL                  string
 	accountStorageQuotaBytes int64
 }
 
@@ -34,12 +36,14 @@ func NewMediaService(
 	repo *repository.MediaRepository,
 	storageSvc storage.StorageService,
 	settingSvc *SettingService,
+	siteURL string,
 	accountStorageQuotaBytes int64,
 ) *MediaService {
 	return &MediaService{
 		repo:                     repo,
 		storage:                  storageSvc,
 		settings:                 settingSvc,
+		siteURL:                  strings.TrimRight(strings.TrimSpace(siteURL), "/"),
 		accountStorageQuotaBytes: accountStorageQuotaBytes,
 	}
 }

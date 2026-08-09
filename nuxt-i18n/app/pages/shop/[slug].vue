@@ -275,7 +275,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRuntimeConfig, useAsyncData, useHead } from '#imports'
+import { useRoute, useRuntimeConfig, useAsyncData, useHead, useRequestURL } from '#imports'
 import { useCart } from '~/composables/useCart'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
@@ -436,6 +436,7 @@ interface GoProduct {
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const requestUrl = useRequestURL()
 const { locale, t } = useI18n()
 const selectedVariantId = ref<number | null>(null)
 const selectedProductPaymentMethod = ref<StorefrontPaymentMethod>('card')
@@ -463,7 +464,7 @@ const siteOrigin = computed(() => {
   if (value && value.trim().length) {
     return value.replace(/\/$/, '')
   }
-  return 'https://example.com'
+  return requestUrl.origin.replace(/\/$/, '')
 })
 
 const { data: product, pending, error } = await useAsyncData<GoProduct | null>(

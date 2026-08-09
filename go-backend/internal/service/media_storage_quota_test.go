@@ -50,7 +50,7 @@ func TestMediaUploadQuotaCountsSoftDeletedAssets(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, 10)
+	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 10)
 	_, err = service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "next.jpg", "image/jpeg", []byte("12345")),
 		MediaType:  "image",
@@ -92,7 +92,7 @@ func TestMediaUploadQuotaAllowsUsageAtExactLimit(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, 10)
+	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 10)
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "next.jpg", "image/jpeg", []byte("1234")),
 		MediaType:  "image",

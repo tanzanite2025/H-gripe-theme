@@ -231,7 +231,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		GoogleMerchant:             googleMerchantService,
 		FAQ:                        service.NewFAQService(repos.FAQ, storageSvc),
 		Gallery:                    service.NewGalleryService(repos.Gallery),
-		Media:                      service.NewMediaService(repos.Media, storageSvc, settingService, cfg.MediaUpload.AccountStorageQuotaBytes),
+		Media:                      service.NewMediaService(repos.Media, storageSvc, settingService, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes),
 		Registration:               service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
 		Checkout:                   service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
 		Marketing:                  service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),

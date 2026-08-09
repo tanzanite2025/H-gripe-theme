@@ -15,7 +15,6 @@ export interface SiteSettingsResponse {
   siteTitle?: string
   brandTitle?: string
   siteDescription?: string
-  siteUrl?: string
   siteLogo?: string
   contactEmail?: string
   contactPhone?: string
@@ -91,7 +90,6 @@ const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => {
     siteTitle,
     brandTitle: brandTitle || siteTitle,
     siteDescription: asString(raw.siteDescription ?? raw.site_description),
-    siteUrl: asString(raw.siteUrl ?? raw.site_url),
     siteLogo: siteLogo === '/images/logo.png' ? '' : siteLogo,
     contactEmail: asString(raw.contactEmail ?? raw.contact_email),
     contactPhone: asString(raw.contactPhone ?? raw.contact_phone),

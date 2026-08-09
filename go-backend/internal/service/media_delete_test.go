@@ -132,5 +132,5 @@ func newMediaDeleteTestService(t *testing.T, db *gorm.DB, uploadRoot string) *Me
 	})
 	require.NoError(t, err)
 
-	return NewMediaService(repository.NewMediaRepository(db), storageService, nil, 20<<30)
+	return NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 20<<30)
 }
