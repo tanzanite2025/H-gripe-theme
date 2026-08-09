@@ -18,7 +18,8 @@ import {
   useHead,
   useSwitchLocalePath,
   useI18n,
-  useState
+  useState,
+  useRequestURL
 } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
@@ -33,6 +34,7 @@ import {
   useSiteSettings
 } from '~/composables/usePublicSettings'
 const config = useRuntimeConfig()
+const requestUrl = useRequestURL()
 const auth = useAuth()
 const authUser = computed<Record<string, unknown> | null>(() => (auth.user.value as Record<string, unknown> | null) ?? null)
 
@@ -42,10 +44,9 @@ const { siteSettings: resolvedSettings } = useSiteSettings()
 const { siteTitle } = useSiteTitle()
 
 const siteUrl = computed(() => {
-  const fromSettings = (resolvedSettings.value.siteUrl || '').toString().trim()
-  if (fromSettings.length) return fromSettings.replace(/\/$/, '')
   const value = (config.public as { siteUrl?: string }).siteUrl
-  return value && value.trim().length ? value.replace(/\/$/, '') : ''
+  if (value && value.trim().length) return value.replace(/\/$/, '')
+  return requestUrl.origin.replace(/\/$/, '')
 })
 
 const defaultDescription = computed(() => {

@@ -97,5 +97,5 @@ func newMediaAssetAccessTestService(t *testing.T, assets ...media.MediaAsset) *M
 	for _, asset := range assets {
 		require.NoError(t, db.Create(&asset).Error)
 	}
-	return NewMediaService(repository.NewMediaRepository(db), nil, nil, 20<<30)
+	return NewMediaService(repository.NewMediaRepository(db), nil, nil, "", 20<<30)
 }

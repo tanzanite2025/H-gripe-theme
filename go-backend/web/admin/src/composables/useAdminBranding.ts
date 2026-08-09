@@ -10,7 +10,6 @@ interface AdminBrandingState {
   loginTitle: string
   footerText: string
   htmlTitle: string
-  siteUrl: string
 }
 
 type SiteSettingsPayload = Record<string, unknown>
@@ -35,8 +34,7 @@ const branding = reactive<AdminBrandingState>({
   panelLabel: '',
   loginTitle: '',
   footerText: '',
-  htmlTitle: '',
-  siteUrl: ''
+  htmlTitle: ''
 })
 
 let loadPromise: Promise<AdminBrandingState> | null = null
@@ -48,7 +46,6 @@ const applySettings = (raw: SiteSettingsPayload = {}): void => {
   branding.loginTitle = asString(raw.adminLoginTitle ?? raw.admin_login_title).trim()
   branding.footerText = asString(raw.adminFooterText ?? raw.admin_footer_text).trim()
   branding.htmlTitle = asString(raw.adminHTMLTitle ?? raw.admin_html_title).trim()
-  branding.siteUrl = asString(raw.siteUrl ?? raw.site_url).trim().replace(/\/+$/, '')
 }
 
 export const loadAdminBranding = async (force = false): Promise<AdminBrandingState> => {
@@ -97,7 +94,6 @@ export const useAdminBranding = () => {
   const panelLabel = computed(() => branding.panelLabel)
   const loginTitle = computed(() => branding.loginTitle)
   const footerText = computed(() => branding.footerText)
-  const siteUrl = computed(() => branding.siteUrl)
 
   return {
     branding,
@@ -106,7 +102,6 @@ export const useAdminBranding = () => {
     panelLabel,
     loginTitle,
     footerText,
-    siteUrl,
     loadAdminBranding,
     setAdminDocumentTitle
   }

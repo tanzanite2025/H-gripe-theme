@@ -51,13 +51,12 @@ func TestMediaEvidencePreservesOriginalAndDetectsStorageChanges(t *testing.T) {
 	settingService := NewSettingService(repository.NewSettingRepository(db), nil, 0)
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
 		{Key: "site_name", Value: "Northstar Wheels", Type: "string", Locale: "en", Group: "site"},
-		{Key: "site_url", Value: "https://shop.northstar.example", Type: "string", Locale: "en", Group: "site"},
 		{Key: "copyright_holder", Value: "Northstar Wheels LLC", Type: "string", Locale: "en", Group: "site"},
 		{Key: "copyright_notice", Value: "Copyright 2026 Northstar Wheels LLC. All rights reserved.", Type: "string", Locale: "en", Group: "site"},
 		{Key: "copyright_url", Value: "https://shop.northstar.example/policies/copyright", Type: "string", Locale: "en", Group: "site"},
 	}))
 
-	service := NewMediaService(repository.NewMediaRepository(db), storageService, settingService, 20<<30)
+	service := NewMediaService(repository.NewMediaRepository(db), storageService, settingService, "https://shop.northstar.example", 20<<30)
 	original := []byte("original image bytes for copyright evidence")
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "wheelset.jpg", "image/jpeg", original),

@@ -12,9 +12,6 @@
           <AdminFormField label="联系电话">
             <Input v-model="siteSettings.contact_phone" type="tel" />
           </AdminFormField>
-          <AdminFormField label="站点 URL">
-            <Input v-model="siteSettings.site_url" type="url" placeholder="https://example.com" />
-          </AdminFormField>
           <AdminFormField label="站点 Logo" description="支持输入图片 URL，或上传到媒体库后自动填入。">
             <div class="flex min-w-0 items-center gap-2">
               <Input v-model="siteSettings.site_logo" type="url" placeholder="Logo URL" :disabled="uploadingSiteLogo" />

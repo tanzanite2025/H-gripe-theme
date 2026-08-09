@@ -32,8 +32,6 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 			siteSettings.BrandTitle = st.Value
 		case "site_description":
 			siteSettings.SiteDescription = st.Value
-		case "site_url":
-			siteSettings.SiteURL = st.Value
 		case "site_logo":
 			siteSettings.SiteLogo = st.Value
 		case "contact_email":

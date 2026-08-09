@@ -5,7 +5,6 @@ type SiteSettings struct {
 	SiteName          string `json:"site_name"`
 	BrandTitle        string `json:"brand_title"`
 	SiteDescription   string `json:"site_description"`
-	SiteURL           string `json:"site_url"`
 	SiteLogo          string `json:"site_logo"`
 	ContactEmail      string `json:"contact_email"`
 	ContactPhone      string `json:"contact_phone"`
