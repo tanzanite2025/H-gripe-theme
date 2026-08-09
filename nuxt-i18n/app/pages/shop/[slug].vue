@@ -137,6 +137,39 @@
             </div>
           </dl>
         </div>
+        <div class="product-quantity-control">
+          <label for="product-quantity-input">{{ t('products.detail.quantity', 'Quantity') }}</label>
+          <div class="product-quantity-stepper" role="group" :aria-label="t('products.detail.quantity', 'Quantity')">
+            <button
+              type="button"
+              class="product-quantity-button"
+              :disabled="selectedQuantity <= 1"
+              :aria-label="t('products.detail.decreaseQuantity', 'Decrease quantity')"
+              @click="decreaseSelectedQuantity"
+            >
+              <Icon name="lucide:minus" aria-hidden="true" />
+            </button>
+            <input
+              id="product-quantity-input"
+              :value="selectedQuantity"
+              class="product-quantity-input"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              :max="maxProductQuantity"
+              @input="onSelectedQuantityInput"
+            />
+            <button
+              type="button"
+              class="product-quantity-button"
+              :disabled="selectedQuantity >= maxProductQuantity"
+              :aria-label="t('products.detail.increaseQuantity', 'Increase quantity')"
+              @click="increaseSelectedQuantity"
+            >
+              <Icon name="lucide:plus" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
         <div v-if="productPaymentOptions.length" class="product-payment-selector" aria-label="Payment method">
           <div class="product-payment-selector__header">
             <span>{{ t('checkout.steps.payment', 'Choose payment method') }}</span>
@@ -406,6 +439,8 @@ const config = useRuntimeConfig()
 const { locale, t } = useI18n()
 const selectedVariantId = ref<number | null>(null)
 const selectedProductPaymentMethod = ref<StorefrontPaymentMethod>('card')
+const maxProductQuantity = 99
+const selectedQuantity = ref(1)
 const { addToCart, openCart, openCheckout } = useCart()
 const { toCartItem } = useShopProducts()
 const { displayCurrency, countryCode } = useStorefrontContext()
@@ -971,6 +1006,29 @@ const canAddToCart = computed(() => {
   )
 })
 
+const normalizeSelectedQuantity = (value: unknown) => {
+  const numeric = Math.floor(Number(value))
+  if (!Number.isFinite(numeric)) return 1
+  return Math.min(maxProductQuantity, Math.max(1, numeric))
+}
+
+const setSelectedQuantity = (value: unknown) => {
+  selectedQuantity.value = normalizeSelectedQuantity(value)
+}
+
+const decreaseSelectedQuantity = () => {
+  setSelectedQuantity(selectedQuantity.value - 1)
+}
+
+const increaseSelectedQuantity = () => {
+  setSelectedQuantity(selectedQuantity.value + 1)
+}
+
+const onSelectedQuantityInput = (event: Event) => {
+  const target = event.target as HTMLInputElement | null
+  setSelectedQuantity(target?.value)
+}
+
 const fallbackProductPaymentOptions = computed<CheckoutPaymentOption[]>(() => [
   {
     id: 'card',
@@ -1222,7 +1280,7 @@ const addSelectedProductToCart = () => {
     title: selectedCartTitle.value,
     thumbnail: primaryMediaThumbnail.value || undefined,
     weightGrams: selectedVariantWeight.value,
-  }))
+  }), selectedQuantity.value)
 }
 
 const addSelectedToCart = () => {
@@ -1648,7 +1706,7 @@ useHead(() => {
 }
 
 .product-price {
-  color: #f8fafc;
+  color: #b5ff6d;
   font-weight: 600;
   font-size: 1.15rem;
 }
@@ -1796,9 +1854,10 @@ useHead(() => {
 }
 
 .variant-option-button--selected {
-  border-color: rgba(181, 255, 109, 0.9);
-  background: rgba(181, 255, 109, 0.18);
-  color: #f8fafc;
+  border-color: #fff;
+  background: #fff;
+  color: #06111f;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
 }
 
 .variant-option-button--out:not(.variant-option-button--selected) {
@@ -1865,6 +1924,81 @@ useHead(() => {
   font-weight: 700;
   line-height: 1;
   overflow-wrap: anywhere;
+}
+
+.product-quantity-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.product-quantity-control label {
+  color: var(--tz-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.product-quantity-stepper {
+  display: inline-grid;
+  grid-template-columns: var(--product-control-pill-height) 3.5rem var(--product-control-pill-height);
+  height: var(--product-control-pill-height);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--product-control-pill-radius);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.product-quantity-button,
+.product-quantity-input {
+  display: inline-flex;
+  height: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.product-quantity-button {
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.product-quantity-button:hover:not(:disabled) {
+  background: rgba(181, 255, 109, 0.14);
+  color: #b5ff6d;
+}
+
+.product-quantity-button:disabled {
+  cursor: not-allowed;
+  color: rgba(226, 232, 240, 0.34);
+}
+
+.product-quantity-button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.product-quantity-input {
+  width: 100%;
+  border-inline: 1px solid rgba(255, 255, 255, 0.12);
+  color-scheme: dark;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.product-quantity-input::-webkit-inner-spin-button,
+.product-quantity-input::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
 }
 
 .product-payment-selector {
@@ -2067,6 +2201,8 @@ useHead(() => {
 
 .variant-option-button:focus-visible,
 .product-variants select:focus-visible,
+.product-quantity-button:focus-visible,
+.product-quantity-input:focus-visible,
 .product-add-button:focus-visible,
 .product-buy-now-button:focus-visible,
 .product-payment-option:focus-visible {

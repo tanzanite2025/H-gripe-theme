@@ -5,6 +5,7 @@ The storefront must separate backend payment providers from customer-facing paym
 ## Product Detail Flow
 
 - Product detail pages may show a compact payment method selector.
+- Product detail pages must show a quantity selector; the selected quantity applies to both `Add to cart` and `Buy now`.
 - The only purchase actions beside product options are `Add to cart` and `Buy now`.
 - `Buy now` opens the shared checkout modal with the selected payment method preselected.
 - Product detail pages must not render one direct action button per provider, such as separate `Stripe`, `PayPal`, `Alipay`, and `WeChat Pay` buy buttons.
