@@ -56,6 +56,7 @@
 								:aria-label="searchHintTitle"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
+								<span class="site-header-search-trigger__label">{{ searchHintTitle }}</span>
 							</button>
 							<div class="site-header-search-hint" role="tooltip">
 								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
@@ -124,17 +125,6 @@
 							</teleport>
 						</div>
 
-						<!-- Share/Points -->
-						<div class="site-header-action-cell site-header-action-cell--membership">
-							<button
-								class="site-header-action-button site-header-membership-trigger tz-text-secondary hover:text-[#B5FF6D] transition-colors"
-								@click.stop="toggleShare()"
-								:aria-expanded="shareOpen"
-								aria-label="Open membership panel"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
-							</button>
-						</div>
 					</div>
 
 					<teleport to="body" :disabled="!isMobileViewport">
@@ -236,6 +226,7 @@
 								:aria-label="searchHintTitle"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
+								<span class="site-header-search-trigger__label">{{ searchHintTitle }}</span>
 							</button>
 							<div class="site-header-search-hint site-header-search-hint--mobile" role="tooltip">
 								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
@@ -262,17 +253,6 @@
 							</button>
 						</div>
 
-						<!-- Share/Points (Icon) -->
-						<div class="site-header-action-cell site-header-action-cell--membership">
-							<button
-								class="site-header-action-button site-header-membership-trigger tz-text-secondary hover:text-[#B5FF6D] transition-colors"
-								@click.stop="toggleShare()"
-								:aria-expanded="shareOpen"
-								aria-label="Open membership panel"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/></svg>
-							</button>
-						</div>
 					</div>
 				</div>
 
@@ -1266,6 +1246,27 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	overflow: visible;
 }
 
+@media (min-width: 768px) {
+	.site-header-action-cell--search {
+		flex-basis: 8.35rem;
+		width: 8.35rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.site-header-action-cell--search {
+		flex-basis: 9.6rem;
+		width: 9.6rem;
+	}
+}
+
+@media (min-width: 1280px) {
+	.site-header-action-cell--search {
+		flex-basis: 11rem;
+		width: 11rem;
+	}
+}
+
 .site-header-language-wrapper {
 	margin: 0;
 }
@@ -1357,20 +1358,21 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-search-trigger {
 	gap: 0.52rem !important;
-	border: 0 !important;
-	background: transparent !important;
+	justify-content: flex-start;
+	border: 1px solid rgba(181, 255, 109, 0.36) !important;
+	background: rgba(181, 255, 109, 0.08) !important;
 	background-image: none !important;
-	box-shadow: none !important;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 	color: #B5FF6D;
-	padding: 0 0.78rem !important;
+	padding: 0 0.92rem !important;
 	font-size: 0.82rem;
 	font-weight: 720;
 }
 
 .site-header-search-trigger:hover,
 .site-header-search-trigger:focus-visible {
-	border: 0 !important;
-	background: transparent !important;
+	border: 1px solid rgba(181, 255, 109, 0.58) !important;
+	background: rgba(181, 255, 109, 0.14) !important;
 	background-image: none !important;
 	box-shadow: none !important;
 	color: #ffffff;
@@ -1386,22 +1388,30 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-search-trigger__label {
 	display: inline-flex;
+	min-width: 0;
 	align-items: center;
+	overflow: hidden;
 	padding: 0;
+	text-overflow: ellipsis;
 	text-transform: none;
 	white-space: nowrap;
 }
 
 .site-header-search-trigger--mobile {
-	width: 2.5rem;
-	min-width: 2.5rem;
+	width: 7.05rem;
+	min-width: 7.05rem;
 	height: 2.5rem;
-	padding: 0;
-	gap: 0 !important;
+	justify-content: flex-start;
+	padding: 0 0.78rem !important;
+	gap: 0.42rem !important;
 }
 
 .site-header-search-trigger--mobile .site-header-search-trigger__label {
-	display: none;
+	display: inline-flex;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .site-header-search-hint {
@@ -1470,6 +1480,11 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	--site-header-action-width: 2.5rem;
 	--site-header-action-height: 2.5rem;
 	gap: 0.28rem !important;
+}
+
+.site-header-actions--mobile .site-header-action-cell--search {
+	flex-basis: 7.05rem;
+	width: 7.05rem;
 }
 
 .site-header-actions--mobile .site-header-language-wrapper {
@@ -1949,4 +1964,3 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 }
 </style>
-
