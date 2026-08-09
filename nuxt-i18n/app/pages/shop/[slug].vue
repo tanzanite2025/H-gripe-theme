@@ -1338,7 +1338,8 @@ useHead(() => {
 
 @media (min-width: 900px) {
   .product-hero {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(2rem, 4vw, 4rem);
   }
 }
 
@@ -1537,10 +1538,10 @@ useHead(() => {
 
 @media (min-width: 900px) {
   .product-media-layout {
-    grid-template-columns: minmax(0, 1fr) clamp(4.75rem, 8vw, 6rem);
+    grid-template-columns: minmax(0, 1fr) clamp(5rem, 7vw, 6.75rem);
     width: 100%;
-    max-width: min(100%, 42rem, calc(100svh - 11rem));
     align-items: stretch;
+    gap: 1rem;
   }
 
   .product-media-thumbnails {
