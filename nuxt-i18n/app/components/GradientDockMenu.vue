@@ -9,7 +9,7 @@
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
-        <Icon name="lucide:menu" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
+        <Icon name="lucide:circle-user-round" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
       </button>
 
       <!-- 2. Chat -->
@@ -31,18 +31,7 @@
         </span>
       </button>
 
-      <!-- 3. Checkout (Main Action) -->
-      <button 
-        class="h-11 px-2 mx-0.5 md:h-12 md:px-6 md:mx-2 rounded-full bg-white text-[#0b1020] font-bold text-xs md:text-sm flex items-center justify-center border border-white/80 shadow-[3px_3px_2px_rgba(0,0,0,0.85)] hover:bg-white/95 hover:shadow-[4px_4px_3px_rgba(0,0,0,0.95)] transition-all transform hover:-translate-y-0.5 min-w-[64px] md:min-w-[100px]"
-        type="button"
-        :disabled="cartCount <= 0"
-        :class="{ 'opacity-50 cursor-not-allowed hover:translate-y-0': cartCount <= 0 }"
-        @click="openCartDrawer"
-      >
-        <span>{{ priceDisplay }}</span>
-      </button>
-
-      <!-- 4. Quick Buy -->
+      <!-- 3. Quick Buy -->
       <button 
         class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#B5FF6D] transition-colors min-w-[40px]"
         @click="openQuick()" 
@@ -53,13 +42,19 @@
         <Icon name="lucide:zap" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
       </button>
 
-      <!-- 5. Cart -->
+      <!-- 4. Cart -->
       <button 
-        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
+        class="dock-cart-button"
+        type="button"
+        :class="{ 'dock-cart-button--active': itemsCount > 0 }"
         @click="openCartDrawer" 
-        :aria-label="$t('dockMenu.openCart')"
+        :aria-label="cartActionAriaLabel"
       >
-        <Icon name="lucide:shopping-cart" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
+        <span class="dock-cart-icon-wrap" aria-hidden="true">
+          <Icon name="lucide:shopping-cart" class="dock-cart-icon" />
+        </span>
+        <span class="dock-cart-total">{{ priceDisplay }}</span>
+        <span class="dock-cart-count" :class="{ 'dock-cart-count--empty': itemsCount <= 0 }">{{ itemsCount }}</span>
       </button>
 
     </div>
@@ -70,8 +65,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, onBeforeUnmount, watchEffect } from 'vue'
-import { useI18n, useRuntimeConfig } from '#imports'
+import { ref, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue'
+import { useI18n } from '#imports'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuySettings } from '~/composables/usePublicSettings'
@@ -100,7 +95,6 @@ const openQuick = () => {
 
 // removed old share popup and outside-click listeners; modal closes by overlay click
 
-// Types aligned with CartSummaryBar.vue
 interface QuickBuyConfig {
   steps?: unknown[]
   storeApiBase?: string
@@ -108,24 +102,13 @@ interface QuickBuyConfig {
   checkoutUrl?: string
 }
 
-interface CartTotals {
-  total_price?: string | number
-  currency_symbol?: string
-}
-
-interface CartResponse {
-  items_count?: number
-  items_weight?: number
-  totals?: CartTotals
-}
-
 // accept optional config; keep flexible to match QuickBuyModal expected shape
-const props = defineProps<{ config?: any }>()
+const props = defineProps<{ config?: QuickBuyConfig | null }>()
 const { quickBuySettings } = useQuickBuySettings()
-const quickBuyConfig = computed(() => props.config || quickBuySettings.value || null)
+const quickBuyConfig = computed<QuickBuyConfig | null>(() =>
+  props.config || (quickBuySettings.value as QuickBuyConfig | null) || null
+)
 
-// i18n and runtime config
-const runtimeConfig = useRuntimeConfig()
 const { t: $t } = useI18n()
 
 // 未读消息数（从 localStorage 跟踪）
@@ -184,27 +167,6 @@ onMounted(() => {
   unreadInterval = setInterval(calculateUnreadCount, 30000)
 })
 
-// cart summary data
-const summary = ref<CartResponse | null>(null)
-const loading = ref(false)
-
-const apiBase = computed(() => {
-  const fromProp = quickBuyConfig.value?.storeApiBase?.replace(/\/$/, '')
-  if (fromProp) return fromProp
-  const fallback = (runtimeConfig.public as { storeApiBase?: string }).storeApiBase
-  return fallback ? String(fallback).replace(/\/$/, '') : ''
-})
-
-const cartUrl = computed(() => {
-  if (quickBuyConfig.value?.cartUrl) return quickBuyConfig.value.cartUrl
-  const fallback = (runtimeConfig.public as { cartUrl?: string }).cartUrl
-  return fallback && fallback.trim().length ? fallback : '/cart'
-})
-
-const itemsLabel = computed(() => $t('cart.summary.items', 'Items'))
-const priceLabel = computed(() => $t('cart.summary.price', 'Price'))
-const ctaLabel = computed(() => $t('cart.summary.openCart', 'View cart summary'))
-
 // 集成购物车系统
 const { cartCount, total, openCart, formatPrice } = useCart()
 
@@ -214,18 +176,11 @@ const priceDisplay = computed(() => {
   return formatPrice(total.value)
 })
 
-const fetchSummary = async () => {
-  if (!apiBase.value || loading.value) return
-  loading.value = true
-  try {
-    const response = await $fetch<CartResponse>(`${apiBase.value}/cart`, { credentials: 'include' })
-    summary.value = response
-  } catch (e) {
-    console.warn('Dock summary fetch failed', e)
-  } finally {
-    loading.value = false
-  }
-}
+const cartActionAriaLabel = computed(() => {
+  const openCartLabel = String($t('dockMenu.openCart'))
+  if (itemsCount.value <= 0) return openCartLabel
+  return `${openCartLabel}: ${itemsCount.value} ${String($t('cart.summary.items', 'Items'))}, ${priceDisplay.value}`
+})
 
 const openCartDrawer = () => {
   openCart()
@@ -234,13 +189,7 @@ const openCartDrawer = () => {
   }
 }
 
-watch(apiBase, () => {
-  summary.value = null
-  if (apiBase.value) fetchSummary()
-}, { immediate: true })
-
 onMounted(() => {
-  if (summary.value === null) fetchSummary()
   // global popup listener: close this component's popups when others open
   const onGlobalPopup = (e: any) => {
     try {
@@ -294,15 +243,136 @@ watchEffect(() => {
 }
 
 .dock-surface {
+  max-width: min(100%, 500px);
   background: transparent;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+.dock-cart-button {
+  position: relative;
+  display: flex;
+  flex: 1.18 1 0;
+  min-width: 6.8rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--tz-text-secondary);
+  font-weight: 900;
+  line-height: 1;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.dock-cart-button:hover {
+  color: #fff;
+  transform: translateY(-0.125rem);
+}
+
+.dock-cart-button--active {
+  border-color: rgba(181, 255, 109, 0.64);
+  background: rgba(181, 255, 109, 0.12);
+  color: #b5ff6d;
+}
+
+.dock-cart-button--active:hover {
+  background: rgba(181, 255, 109, 0.17);
+  color: #d7ffad;
+}
+
+.dock-cart-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-cart-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.dock-cart-count {
+  position: absolute;
+  top: -0.38rem;
+  right: 0.34rem;
+  display: inline-flex;
+  min-width: 1.18rem;
+  height: 1.18rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(11, 16, 32, 0.85);
+  border-radius: 999px;
+  background: #fff;
+  color: #0b1020;
+  font-size: 0.66rem;
+  font-weight: 900;
+  padding: 0 0.2rem;
+}
+
+.dock-cart-count--empty {
+  background: rgba(255, 255, 255, 0.86);
+  color: rgba(11, 16, 32, 0.72);
+}
+
+.dock-cart-total {
+  min-width: 0;
+  max-width: 5.6rem;
+  overflow: hidden;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .dock-cart-button {
+    height: 3rem;
+    min-width: 7.4rem;
+    gap: 0.55rem;
+  }
+
+  .dock-cart-icon-wrap {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .dock-cart-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .dock-cart-total {
+    max-width: 6rem;
+    font-size: 0.96rem;
+  }
 }
 
 @media (max-width: 767px) {
   .dock-surface {
     background: transparent !important;
     padding-bottom: max(0.625rem, calc(0.625rem + var(--tz-safe-area-bottom, 0px)));
+  }
+
+  .dock-cart-button {
+    min-width: 6.35rem;
+    height: 2.75rem;
+    gap: 0.4rem;
+  }
+
+  .dock-cart-total {
+    max-width: 4.7rem;
+    font-size: 0.86rem;
   }
 }
 </style>
