@@ -150,6 +150,8 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
 
 <style scoped>
 .product-information {
+  --product-information-accent: #b5ff6d;
+  --product-information-accent-soft: rgba(181, 255, 109, 0.72);
   color: var(--tz-text-primary);
 }
 
@@ -182,17 +184,17 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
 }
 
 .product-information__tab--active {
-  border-bottom-color: #38bdf8;
-  color: #f8fafc;
+  border-bottom-color: var(--product-information-accent);
+  color: var(--product-information-accent);
 }
 
 .product-information__tab:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--product-information-accent);
   outline-offset: -3px;
 }
 
 .product-information__panel:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--product-information-accent);
   outline-offset: 3px;
 }
 
@@ -230,7 +232,7 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
 }
 
 .product-information__content :deep(a) {
-  color: #7dd3fc;
+  color: var(--product-information-accent);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
@@ -244,8 +246,8 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
 
 .product-information__content :deep(blockquote) {
   margin: 1.25rem 0;
-  border-left: 3px solid rgba(56, 189, 248, 0.75);
-  color: #dbeafe;
+  border-left: 3px solid var(--product-information-accent-soft);
+  color: var(--tz-text-primary);
   padding-left: 1rem;
 }
 
