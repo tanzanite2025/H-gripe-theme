@@ -56,7 +56,7 @@
 								:aria-label="searchHintTitle"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
-								<span class="site-header-search-trigger__label">{{ searchHintTitle }}</span>
+								<span class="site-header-search-trigger__label">SEARCH</span>
 							</button>
 							<div class="site-header-search-hint" role="tooltip">
 								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
@@ -226,7 +226,7 @@
 								:aria-label="searchHintTitle"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
-								<span class="site-header-search-trigger__label">{{ searchHintTitle }}</span>
+								<span class="site-header-search-trigger__label">SEARCH</span>
 							</button>
 							<div class="site-header-search-hint site-header-search-hint--mobile" role="tooltip">
 								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
@@ -1248,22 +1248,22 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 @media (min-width: 768px) {
 	.site-header-action-cell--search {
-		flex-basis: 8.35rem;
-		width: 8.35rem;
+		flex-basis: 6.65rem;
+		width: 6.65rem;
 	}
 }
 
 @media (min-width: 1024px) {
 	.site-header-action-cell--search {
-		flex-basis: 9.6rem;
-		width: 9.6rem;
+		flex-basis: 6.85rem;
+		width: 6.85rem;
 	}
 }
 
 @media (min-width: 1280px) {
 	.site-header-action-cell--search {
-		flex-basis: 11rem;
-		width: 11rem;
+		flex-basis: 7.05rem;
+		width: 7.05rem;
 	}
 }
 
@@ -1398,8 +1398,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-search-trigger--mobile {
-	width: 7.05rem;
-	min-width: 7.05rem;
+	width: 5.85rem;
+	min-width: 5.85rem;
 	height: 2.5rem;
 	justify-content: flex-start;
 	padding: 0 0.78rem !important;
@@ -1483,8 +1483,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-actions--mobile .site-header-action-cell--search {
-	flex-basis: 7.05rem;
-	width: 7.05rem;
+	flex-basis: 5.85rem;
+	width: 5.85rem;
 }
 
 .site-header-actions--mobile .site-header-language-wrapper {
