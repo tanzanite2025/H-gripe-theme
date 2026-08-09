@@ -1,6 +1,5 @@
 <template>
   <section
-    v-if="shouldRender"
     class="product-recommendations"
     :class="{ 'product-recommendations--compact': density === 'compact' }"
     :aria-label="sectionTitle"
@@ -27,7 +26,7 @@
       </article>
     </div>
 
-    <div v-else class="product-recommendations__grid">
+    <div v-else-if="displayedProductCards.length > 0" class="product-recommendations__grid">
       <NuxtLink
         v-for="(product, index) in displayedProductCards"
         :key="product.id"
@@ -52,6 +51,11 @@
         </span>
       </NuxtLink>
     </div>
+
+    <div v-else class="product-recommendations__empty" role="status">
+      <Icon name="lucide:sparkles" aria-hidden="true" />
+      <span>{{ emptyText }}</span>
+    </div>
   </section>
 </template>
 
@@ -72,6 +76,7 @@ const props = withDefaults(defineProps<{
   excludeProductIds?: Array<number | null | undefined>
   limit?: number
   density?: 'default' | 'compact'
+  emptyText?: string
 }>(), {
   title: '',
   productId: null,
@@ -80,6 +85,7 @@ const props = withDefaults(defineProps<{
   excludeProductIds: () => [],
   limit: 6,
   density: 'default',
+  emptyText: '',
 })
 
 const route = useRoute()
@@ -125,11 +131,11 @@ const sectionTitle = computed(() => {
   return props.title || (t('recommendations.title', 'Recommended products') as string)
 })
 
-const skeletonCount = computed(() => Math.min(normalizedLimit.value, 6))
-
-const shouldRender = computed(() => {
-  return recommendationsLoading.value || displayedProductCards.value.length > 0
+const emptyText = computed(() => {
+  return props.emptyText || (t('recommendations.empty', 'No recommendations yet') as string)
 })
+
+const skeletonCount = computed(() => Math.min(normalizedLimit.value, 6))
 
 const requestKey = computed(() => JSON.stringify({
   surface: props.surface,
@@ -338,6 +344,30 @@ watch(
   font-size: 0.82rem;
   font-weight: 800;
   line-height: 1;
+}
+
+.product-recommendations__empty {
+  display: flex;
+  min-height: 8.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #050506;
+  color: var(--tz-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 1rem;
+  text-align: center;
+}
+
+.product-recommendations__empty :deep(svg) {
+  width: 1rem;
+  height: 1rem;
+  color: var(--tz-brand-primary);
 }
 
 .product-recommendations__card--skeleton {
