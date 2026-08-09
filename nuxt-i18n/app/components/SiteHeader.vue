@@ -1398,8 +1398,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-search-trigger--mobile {
-	width: 6.35rem;
-	min-width: 6.35rem;
+	width: 6.95rem;
+	min-width: 6.95rem;
 	height: 2.5rem;
 	justify-content: flex-start;
 	padding: 0 0.78rem !important;
@@ -1483,8 +1483,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-actions--mobile .site-header-action-cell--search {
-	flex-basis: 6.35rem;
-	width: 6.35rem;
+	flex-basis: 6.95rem;
+	width: 6.95rem;
 }
 
 .site-header-actions--mobile .site-header-language-wrapper {
