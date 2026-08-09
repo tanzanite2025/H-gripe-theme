@@ -275,7 +275,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		PaymentRefundReview: service.NewPaymentRefundRecommendationService(repos.PaymentRefundReview, txManager),
 		Outbox:              service.NewOutboxService(repos.Outbox),
 	}
-	services.Recommendations = service.NewRecommendationService(services.Product)
+	services.Recommendations = service.NewRecommendationService(services.Product, repos.RecommendationEvent)
 	services.Marketing.ConfigureLoyaltyProgram(loyaltyProgramService)
 	services.Marketing.ConfigureGiftCardRedemptions(repos.GiftCardRedemption)
 	services.Marketing.ConfigureCurrencyPolicy(currencyPolicyService)

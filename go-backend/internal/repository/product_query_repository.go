@@ -21,6 +21,15 @@ type ProductSearchQuery struct {
 	Limit       int
 }
 
+type ProductRecommendationQuery struct {
+	Locale            string
+	ProductTypeID     *uint
+	Keyword           string
+	ExcludeProductIDs []uint
+	Offset            int
+	Limit             int
+}
+
 func activeVariantExistsSQL(alias string) string {
 	return fmt.Sprintf(`EXISTS (
 		SELECT 1 FROM product_variants %s
@@ -113,6 +122,69 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		Order("products.created_at DESC").
 		Offset(offset).
 		Limit(limit).
+		Find(&products).Error
+	return products, total, err
+}
+
+func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommendationQuery) ([]product.Product, int64, error) {
+	var products []product.Product
+	var total int64
+
+	query := r.db.Model(&product.Product{}).
+		Preload("Media", orderProductMedia).
+		Preload("ProductType.SpecDefinitions", orderSpecDefinitions).
+		Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		}).
+		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
+		Preload("Variants", orderProductVariants)
+	query = r.preloadProductVariantOptionValues(query).
+		Preload("AfterSalesTemplate").
+		Preload("PackagingTemplate").
+		Where("products.status = ?", "active").
+		Where(activeVariantExistsSQL("pv_recommendation_candidate")).
+		Where(`EXISTS (
+			SELECT 1
+			FROM product_variants pv_recommendation_candidate_stock
+			WHERE pv_recommendation_candidate_stock.product_id = products.id
+			  AND pv_recommendation_candidate_stock.deleted_at IS NULL
+			  AND pv_recommendation_candidate_stock.is_active = TRUE
+			  AND pv_recommendation_candidate_stock.stock > 0
+		)`)
+
+	if input.Locale != "" {
+		query = query.Where("products.locale = ?", input.Locale)
+	}
+	if input.ProductTypeID != nil && *input.ProductTypeID > 0 {
+		query = query.Where("products.product_type_id = ?", *input.ProductTypeID)
+	}
+	if len(input.ExcludeProductIDs) > 0 {
+		query = query.Where("products.id NOT IN ?", input.ExcludeProductIDs)
+	}
+	if input.Keyword != "" {
+		pattern := "%" + strings.ToLower(input.Keyword) + "%"
+		query = query.Joins("LEFT JOIN product_types recommendation_product_types ON recommendation_product_types.id = products.product_type_id").
+			Where(`
+				LOWER(products.name) LIKE ?
+				OR LOWER(products.sku) LIKE ?
+				OR LOWER(products.short_desc) LIKE ?
+				OR LOWER(products.description) LIKE ?
+				OR LOWER(recommendation_product_types.name) LIKE ?
+				OR LOWER(recommendation_product_types.slug) LIKE ?
+			`, pattern, pattern, pattern, pattern, pattern, pattern)
+	}
+
+	if err := query.Distinct("products.id").Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.
+		Distinct("products.*").
+		Order("products.featured DESC").
+		Order("products.view_count DESC").
+		Order("products.created_at DESC").
+		Offset(input.Offset).
+		Limit(input.Limit).
 		Find(&products).Error
 	return products, total, err
 }

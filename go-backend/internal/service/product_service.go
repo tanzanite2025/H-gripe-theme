@@ -72,6 +72,14 @@ type ProductSearchInput struct {
 	PageSize    int
 }
 
+type ProductRecommendationCandidateInput struct {
+	ProductTypeID     *uint
+	Keyword           string
+	ExcludeProductIDs []uint
+	Page              int
+	PageSize          int
+}
+
 func (s *ProductService) GetByID(id uint) (*product.Product, error) {
 	cacheKey := productIDCacheKey(id)
 
@@ -129,6 +137,20 @@ func (s *ProductService) GetPublicByID(id uint) (*product.Product, error) {
 	result = sanitizeProductHTML(result)
 	_ = s.productRepo.IncrementViewCount(id)
 	return result, nil
+}
+
+func (s *ProductService) GetRecommendationContextProduct(id uint) (*product.Product, error) {
+	result, err := s.productRepo.FindByID(id)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, ErrProductNotFound
+		}
+		return nil, err
+	}
+	if result.Status != "active" || result.TotalVariantStock() <= 0 {
+		return nil, ErrProductNotFound
+	}
+	return sanitizeProductHTML(result), nil
 }
 
 func (s *ProductService) GetPublicBySlug(slug, locale string) (*product.Product, error) {
@@ -193,6 +215,27 @@ func (s *ProductService) ListPublicAvailable(locale string, page, pageSize int) 
 
 	offset := (page - 1) * pageSize
 	products, total, err := s.productRepo.ListPublicAvailable("", offset, pageSize)
+	return sanitizeProductSliceHTML(products), total, err
+}
+
+func (s *ProductService) ListRecommendationCandidates(input ProductRecommendationCandidateInput) ([]product.Product, int64, error) {
+	page := input.Page
+	pageSize := input.PageSize
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+	products, total, err := s.productRepo.ListRecommendationCandidates(repository.ProductRecommendationQuery{
+		ProductTypeID:     input.ProductTypeID,
+		Keyword:           input.Keyword,
+		ExcludeProductIDs: input.ExcludeProductIDs,
+		Offset:            offset,
+		Limit:             pageSize,
+	})
 	return sanitizeProductSliceHTML(products), total, err
 }
 

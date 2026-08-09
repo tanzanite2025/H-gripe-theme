@@ -1,4 +1,4 @@
-# Storefront Recommendation UX
+# Storefront Recommendation UX And Algorithm Contract
 
 ## Source Of Truth
 
@@ -6,6 +6,7 @@
 - Storefront product recommendation UI must use `nuxt-i18n/app/components/shop/ProductRecommendations.vue`.
 - The shared loader is `nuxt-i18n/app/composables/useSmartRecommendations.ts`.
 - Page files should only pass placement context such as `surface`, `productId`, `categoryId`, `query`, `limit`, and `excludeProductIds`.
+- The backend algorithm version is declared in `go-backend/internal/service/recommendation_service.go`.
 
 ## Current Placements
 
@@ -13,10 +14,28 @@
 - The main shop page uses `surface: shop_index_bottom` after the catalog section and before the feedback thread. It passes the active category, active query context, and currently visible product IDs as exclusions.
 - `SmartRecommendationPanel.vue` is currently category navigation for the search drawer. It should not be treated as the reusable product recommendation component.
 
+## Algorithm Contract
+
+- Current backend version: `contextual-v1`.
+- Candidate products must be active, must have at least one active variant, and must have at least one active variant with stock above zero.
+- `product_detail_bottom` prioritizes products from the same product type and then boosts matching filterable or variant-option specifications.
+- `shop_index_bottom` prioritizes the active category and active search query, then fills with available trending products.
+- The backend may use catalog ordering as a fallback, but page templates must never hardcode fallback products.
+- Recommendation responses expose `slot` and `reason` for analytics only. Do not show those fields as storefront copy unless a dedicated UX decision is made.
+
+## Behavior Signals
+
+- Recommendation cards report `recommendation_impression` and `recommendation_click` through the shared behavior event pipeline.
+- Ranking uses recent product behavior from `recommendation_events`, including product views, dwell, recommendation clicks, add to cart, wishlist add, checkout start, and trusted purchase events when present.
+- Anonymous and session IDs may personalize ranking for the same visitor. This personalization must stay first-party and must not depend on customer-service transcripts, IP addresses, user agents, or payment data.
+- Client-side storefront code must not emit `purchase`; purchase is a trusted server-side commerce fact.
+
 ## Rules
 
 - Do not hardcode recommendation products directly inside page templates.
 - Do not create another recommendation card layout unless the shared component cannot support the placement.
 - Every new placement needs a stable `surface` value so impressions and clicks can be attributed.
 - Recommendation impressions and clicks should continue to use the existing behavior event pipeline.
+- Recommendation sections should remain visible even when no items are returned. The component should show its empty state instead of disappearing.
 - Empty production responses should not show placeholder marketing content. The component may use catalog fallback data only through the shared loader.
+- New recommendation placements must reuse the backend API and the shared component unless there is a written reason to add a new surface-specific component.

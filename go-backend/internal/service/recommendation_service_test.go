@@ -2,10 +2,14 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"tanzanite/internal/domain/product"
+	"tanzanite/internal/domain/recommendation"
+	"tanzanite/internal/repository"
 
 	"github.com/stretchr/testify/require"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -29,8 +33,8 @@ func TestRecommendationServiceReturnsAvailableProductsAndRespectsExclusions(t *t
 	require.Equal(t, RecommendationAlgorithmVersion, result.AlgorithmVersion)
 	require.Len(t, result.Items, 1)
 	require.Equal(t, featured.ID, result.Items[0].ProductID)
-	require.Equal(t, "rule_fallback", result.Items[0].Slot)
-	require.Equal(t, "available_global", result.Items[0].Reason)
+	require.Equal(t, "trending_available", result.Items[0].Slot)
+	require.Equal(t, "popular_available", result.Items[0].Reason)
 }
 
 func TestRecommendationServiceUsesEnglishFallbackWhenLocaleHasNoProducts(t *testing.T) {
@@ -60,6 +64,53 @@ func TestRecommendationServiceValidatesSurfaceAndLimit(t *testing.T) {
 		Limit:   MaxRecommendationLimit + 1,
 	})
 	require.ErrorIs(t, err, ErrRecommendationLimitInvalid)
+}
+
+func TestRecommendationServicePrioritizesMatchingSpecsOnProductDetail(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productTypeID, brakeTypeSpecID := seedRecommendationProductType(t, db)
+	context := seedRecommendationTypedProduct(t, db, "context-wheel", "Context Wheel", productTypeID, 1)
+	matching := seedRecommendationTypedProduct(t, db, "matching-wheel", "Matching Wheel", productTypeID, 2)
+	other := seedRecommendationTypedProduct(t, db, "other-wheel", "Other Wheel", productTypeID, 20)
+	seedRecommendationSpecValue(t, db, context.ID, brakeTypeSpecID, "disc")
+	seedRecommendationSpecValue(t, db, matching.ID, brakeTypeSpecID, "disc")
+	seedRecommendationSpecValue(t, db, other.ID, brakeTypeSpecID, "rim")
+
+	recommendationService := NewRecommendationService(productService)
+	result, err := recommendationService.Recommend(RecommendationRequest{
+		Surface:   "product_detail_bottom",
+		ProductID: &context.ID,
+		Limit:     2,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, result.Items, 2)
+	require.Equal(t, matching.ID, result.Items[0].ProductID)
+	require.Equal(t, "similar_products", result.Items[0].Slot)
+	require.Equal(t, "matching_specs", result.Items[0].Reason)
+}
+
+func TestRecommendationServiceUsesPersonalBehaviorSignals(t *testing.T) {
+	db, productService := newTestProductService(t)
+	require.NoError(t, db.AutoMigrate(&recommendation.Event{}))
+	passive := seedRecommendationProduct(t, db, "passive-wheel", "Passive Wheel", "en", true, 8, false, 100)
+	signaled := seedRecommendationProduct(t, db, "signaled-wheel", "Signaled Wheel", "en", true, 8, false, 1)
+	now := time.Now().UTC()
+	seedRecommendationEvent(t, db, "event_signaled_cart", "add_to_cart", "anon_behavior", signaled.ID, now)
+
+	recommendationService := NewRecommendationService(productService, repository.NewRecommendationEventRepository(db))
+	result, err := recommendationService.Recommend(RecommendationRequest{
+		Surface:     "shop_index_bottom",
+		AnonymousID: "anon_behavior",
+		Limit:       2,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, result.Items, 2)
+	require.Equal(t, signaled.ID, result.Items[0].ProductID)
+	require.Equal(t, "personalized", result.Items[0].Slot)
+	require.Equal(t, "your_recent_activity", result.Items[0].Reason)
+	require.Equal(t, passive.ID, result.Items[1].ProductID)
 }
 
 func seedRecommendationProduct(
@@ -103,4 +154,76 @@ func seedRecommendationProduct(
 	require.NoError(t, db.Create(&variant).Error)
 
 	return item
+}
+
+func seedRecommendationProductType(t *testing.T, db *gorm.DB) (uint, uint) {
+	t.Helper()
+
+	productType := product.ProductType{
+		Name:      "Wheelset",
+		Slug:      "wheelset_recommendation_test",
+		IsEnabled: true,
+	}
+	require.NoError(t, db.Create(&productType).Error)
+
+	brakeType := product.SpecDefinition{
+		ProductTypeID: productType.ID,
+		Group:         "Compatibility",
+		Name:          "Brake Type",
+		Slug:          "brake_type",
+		FieldType:     "select",
+		IsFilterable:  true,
+		IsVisible:     true,
+		SortOrder:     10,
+	}
+	require.NoError(t, db.Create(&brakeType).Error)
+	return productType.ID, brakeType.ID
+}
+
+func seedRecommendationTypedProduct(
+	t *testing.T,
+	db *gorm.DB,
+	slug string,
+	name string,
+	productTypeID uint,
+	viewCount int,
+) product.Product {
+	t.Helper()
+
+	item := seedRecommendationProduct(t, db, slug, name, "en", true, 8, false, viewCount)
+	item.ProductTypeID = &productTypeID
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", item.ID).Update("product_type_id", productTypeID).Error)
+	return item
+}
+
+func seedRecommendationSpecValue(t *testing.T, db *gorm.DB, productID uint, specDefinitionID uint, value string) {
+	t.Helper()
+
+	require.NoError(t, db.Create(&product.ProductSpecValue{
+		ProductID:        productID,
+		SpecDefinitionID: specDefinitionID,
+		Value:            value,
+	}).Error)
+}
+
+func seedRecommendationEvent(
+	t *testing.T,
+	db *gorm.DB,
+	eventID string,
+	eventType string,
+	anonymousID string,
+	productID uint,
+	occurredAt time.Time,
+) {
+	t.Helper()
+
+	require.NoError(t, db.Create(&recommendation.Event{
+		EventID:      eventID,
+		EventType:    eventType,
+		AnonymousID:  anonymousID,
+		ProductID:    &productID,
+		MetadataJSON: datatypes.JSON([]byte(`{}`)),
+		OccurredAt:   occurredAt,
+		ReceivedAt:   occurredAt,
+	}).Error)
 }
