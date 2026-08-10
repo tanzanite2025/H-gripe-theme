@@ -380,8 +380,8 @@ onMounted(() => {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 14px;
-  background: linear-gradient(180deg, #0b0b0b 0%, #050505 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: var(--tz-card-surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   color: rgba(248, 250, 252, 0.9);
   text-decoration: none;
   transition: border-color 0.18s ease;
@@ -404,9 +404,7 @@ onMounted(() => {
   min-height: 0;
   overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.08), transparent 34%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  background: var(--tz-form-panel-surface);
 }
 
 .product-category-navigation-cards__image {
@@ -448,7 +446,7 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 8px;
   padding: 12px;
-  background: #050505;
+  background: var(--tz-card-surface);
 }
 
 .product-category-navigation-cards--compact .product-category-navigation-cards__footer {
@@ -531,7 +529,7 @@ onMounted(() => {
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 8px;
-  background: #050505;
+  background: var(--tz-card-surface);
   padding: 0 12px;
   color: rgba(248, 250, 252, 0.62);
   font-size: 14px;

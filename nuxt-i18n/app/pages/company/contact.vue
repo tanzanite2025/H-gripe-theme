@@ -2,7 +2,7 @@
   <div class="w-full pb-6">
     <h1 class="sr-only">{{ t('company.nav.contact') }}</h1>
 
-    <div class="w-full max-w-none">
+    <div class="w-full max-w-none space-y-8">
       
       <!-- Hero / Introduction -->
       <div class="text-center mb-8 md:mb-10">
@@ -15,15 +15,15 @@
       </div>
 
       <!-- Address Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full">
+      <div class="grid w-full grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
         <!-- HK HQ -->
-        <div class="relative bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden group hover:border-teal-500/30 transition-all duration-300 flex flex-col">
+        <div class="premium-card group flex flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 md:p-8">
             <h3 class="text-lg font-bold text-white mb-1">Global Headquarters</h3>
             <div class="text-xs uppercase tracking-wider text-indigo-400 font-semibold mb-2">Hong Kong</div>
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
                 Strategic hub for international trade, logistics, and global customer support.
             </p>
-            <div class="text-sm tz-text-secondary font-mono bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 font-mono text-sm tz-text-secondary">
                 Flat 1602, 16/F, Lucky Centre,<br>
                 No.165-171 Wan Chai Road, Wan Chai,<br>
                 Hong Kong
@@ -31,13 +31,13 @@
         </div>
 
         <!-- China Factory -->
-         <div class="group bg-[var(--tz-card-surface)] rounded-2xl p-6 border border-slate-700/50 hover:border-teal-500/30 transition-all duration-300 flex flex-col">
+         <div class="premium-card group flex flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 md:p-8">
             <h3 class="text-lg font-bold text-white mb-1">Manufacturing & R&D Base</h3>
             <div class="text-xs uppercase tracking-wider text-teal-400 font-semibold mb-2">Xiamen, China</div>
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
                 State-of-the-art facility for carbon fiber layup, precision molding, and rigorous testing.
             </p>
-            <div class="text-sm tz-text-secondary font-mono bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 font-mono text-sm tz-text-secondary">
                 Building 6, No. 639 Tongji South Road,<br>
                 Industrial Concentration Zone, Tong'an Dist,<br>
                 Xiamen, Fujian, China
@@ -46,7 +46,7 @@
       </div>
 
       <!-- Bank Info (Folded/Compact) -->
-      <div class="bg-gradient-to-br from-slate-900 via-[var(--tz-card-surface)] to-slate-900 rounded-2xl border border-slate-700/50 overflow-hidden mb-12">
+      <section class="premium-card overflow-hidden rounded-2xl">
         <div class="p-4 md:p-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
@@ -62,10 +62,10 @@
                  </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm border-t border-slate-800 pt-6">
+            <div class="grid grid-cols-1 gap-x-8 gap-y-4 border-t border-white/10 pt-6 text-sm md:grid-cols-2">
                 <div>
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Beneficiary Name</span>
-        <span class="tz-text-primary font-mono bg-slate-800/30 px-2 py-1 rounded inline-block">Top Sports Co., Limited</span>
+        <span class="inline-block rounded border border-white/10 bg-[var(--tz-form-panel-surface)] px-2 py-1 font-mono tz-text-primary">Top Sports Co., Limited</span>
                 </div>
                 <div>
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Bank Name</span>
@@ -73,7 +73,7 @@
                 </div>
                  <div class="md:col-span-2">
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Account & SWIFT Details</span>
-                    <div class="flex items-center gap-2 tz-text-secondary italic bg-slate-950/30 p-3 rounded-lg border border-dashed border-slate-800">
+                    <div class="flex items-center gap-2 rounded-lg border border-dashed border-white/10 bg-[var(--tz-form-control-surface)] p-3 italic tz-text-secondary">
                         <svg class="w-5 h-5 tz-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         <span>For security reasons, full wire transfer details (Account No. & SWIFT) will be provided exclusively in your official <strong>Proforma Invoice (PI)</strong>.</span>
                     </div>
@@ -88,17 +88,17 @@
                  </p>
             </div>
         </div>
-      </div>
+      </section>
 
       <!-- Map Component -->
-      <div class="mt-12">
+      <section class="premium-card rounded-2xl p-4 md:p-6">
         <ContactLocationMap />
-      </div>
+      </section>
 
     </div>
 
     <!-- Feedback Section -->
-    <div class="w-full max-w-none px-0 mt-4">
+    <div class="w-full max-w-none px-0">
       <UserFeedbackThread
         threadKey="company-contact"
         title="Share your feedback about our Service"
