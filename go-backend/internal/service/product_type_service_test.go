@@ -129,6 +129,28 @@ func TestProductServiceUpdatesProductTypeAndReplacesSpecs(t *testing.T) {
 	assert.False(t, updated.SpecDefinitions[0].IsVisible)
 }
 
+func TestProductServiceUpdatesAndClearsProductTypeImage(t *testing.T) {
+	_, productService := newTestProductService(t)
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "首饰",
+		Slug:      "jewelry_image",
+		IsEnabled: true,
+	})
+	require.NoError(t, err)
+
+	assetID := uint(42)
+	updated, err := productService.UpdateProductTypeImage(created.ID, &assetID, "https://cdn.example.com/categories/jewelry.webp")
+	require.NoError(t, err)
+	require.NotNil(t, updated.ImageMediaAssetID)
+	assert.Equal(t, assetID, *updated.ImageMediaAssetID)
+	assert.Equal(t, "https://cdn.example.com/categories/jewelry.webp", updated.ImageURL)
+
+	cleared, err := productService.UpdateProductTypeImage(created.ID, nil, "")
+	require.NoError(t, err)
+	assert.Nil(t, cleared.ImageMediaAssetID)
+	assert.Empty(t, cleared.ImageURL)
+}
+
 func TestProductServiceRejectsDuplicateProductTypeSlug(t *testing.T) {
 	_, productService := newTestProductService(t)
 	_, err := productService.CreateProductType(ProductTypeInput{Name: "首饰", Slug: "jewelry", IsEnabled: true})

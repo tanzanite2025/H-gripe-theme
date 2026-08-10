@@ -6,6 +6,46 @@ import (
 	"tanzanite/internal/domain/media"
 )
 
+func (r *MediaRepository) productTypeImageReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
+	if !r.hasTable("product_types") {
+		return []media.AssetReference{}, nil
+	}
+
+	type row struct {
+		ID                uint
+		Name              string
+		ImageMediaAssetID *uint
+		ImageURL          string
+	}
+	var rows []row
+	if err := r.db.Table("product_types").
+		Select("id, name, image_media_asset_id, image_url").
+		Where("image_media_asset_id = ? OR image_url IN ?", query.AssetID, query.URLs).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	references := make([]media.AssetReference, 0, len(rows))
+	for _, item := range rows {
+		fields := make([]string, 0, 2)
+		if item.ImageMediaAssetID != nil && *item.ImageMediaAssetID == query.AssetID {
+			fields = append(fields, "image_media_asset_id")
+		}
+		if containsMediaReferenceURL(query.URLs, item.ImageURL) {
+			fields = append(fields, "image_url")
+		}
+		references = append(references, newMediaReference(
+			media.ReferenceCategoryCatalog,
+			"product_type",
+			item.ID,
+			0,
+			namedMediaReferenceLabel("商品分类", item.ID, item.Name),
+			strings.Join(fields, ", "),
+		))
+	}
+	return references, nil
+}
+
 func (r *MediaRepository) productMediaReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
 	if !r.hasTable("product_media") {
 		return []media.AssetReference{}, nil

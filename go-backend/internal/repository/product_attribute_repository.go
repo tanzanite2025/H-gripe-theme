@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"tanzanite/internal/domain/product"
 
 	"gorm.io/gorm"
@@ -247,6 +248,26 @@ func (r *ProductRepository) UpdateProductType(productType *product.ProductType, 
 		}
 		return nil
 	})
+}
+
+func (r *ProductRepository) UpdateProductTypeImage(id uint, mediaAssetID *uint, imageURL string) error {
+	updates := map[string]interface{}{
+		"image_url": strings.TrimSpace(imageURL),
+	}
+	if mediaAssetID == nil {
+		updates["image_media_asset_id"] = nil
+	} else {
+		updates["image_media_asset_id"] = *mediaAssetID
+	}
+
+	result := r.db.Model(&product.ProductType{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *ProductRepository) DeleteProductType(id uint) error {

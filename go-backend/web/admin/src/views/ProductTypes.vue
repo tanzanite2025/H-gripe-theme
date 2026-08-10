@@ -47,6 +47,9 @@
       @clear-error="clearFieldError"
       @add-spec="addSpecDefinition"
       @remove-spec="removeSpecDefinition"
+      @image-selected="handleImageSelected"
+      @image-cleared="handleImageCleared"
+      @image-error="handleImageError"
     />
 
     <AdminConfirmDialog
@@ -117,6 +120,10 @@ const typeForm = reactive<ProductTypeForm>({
   name: '',
   slug: '',
   description: '',
+  image_media_asset_id: null,
+  image_url: '',
+  pending_image_file: null,
+  remove_image: false,
   sort_order: 0,
   is_enabled: true,
   translations: [],
@@ -254,6 +261,10 @@ const resetForm = (): void => {
     name: '',
     slug: '',
     description: '',
+    image_media_asset_id: null,
+    image_url: '',
+    pending_image_file: null,
+    remove_image: false,
     sort_order: 0,
     is_enabled: true,
     translations: translationRowsFor(),
@@ -277,6 +288,10 @@ const showEditDialog = (type: ProductTypeRecord): void => {
     name: type.name || '',
     slug: type.slug || '',
     description: type.description || '',
+    image_media_asset_id: type.image_media_asset_id ?? null,
+    image_url: String(type.image_url || ''),
+    pending_image_file: null,
+    remove_image: false,
     sort_order: Number(type.sort_order || 0),
     is_enabled: type.is_enabled !== false,
     translations: translationRowsFor(type.translations || []),
@@ -299,6 +314,23 @@ const removeSpecDefinition = (index: number): void => {
 
 const clearFormErrors = (): void => Object.keys(formErrors).forEach((key) => delete formErrors[key])
 const clearFieldError = (key: string): void => { delete formErrors[key] }
+
+const handleImageSelected = (file: File): void => {
+  typeForm.pending_image_file = file
+  typeForm.remove_image = false
+}
+
+const handleImageCleared = (): void => {
+  const hadExistingImage = Boolean(typeForm.image_url || typeForm.image_media_asset_id)
+  typeForm.pending_image_file = null
+  typeForm.image_url = ''
+  typeForm.image_media_asset_id = null
+  typeForm.remove_image = hadExistingImage
+}
+
+const handleImageError = (message: string): void => {
+  toast.error(message)
+}
 
 const specOptionsFromText = (text?: string | null): string[] => String(text || '')
   .split(/\r?\n/)
@@ -391,14 +423,39 @@ const submitForm = async (): Promise<void> => {
   if (!validateForm()) return
   submitting.value = true
   try {
+    const wasCreating = dialogMode.value === 'create'
     const payload = buildPayload()
-    if (dialogMode.value === 'create') await productTypeApi.create(payload)
-    else if (typeForm.id !== null) await productTypeApi.update(typeForm.id, payload)
-    toast.success(dialogMode.value === 'create' ? '产品模板已创建' : '产品模板已更新')
+    let savedType: ProductTypeRecord | null = null
+    if (dialogMode.value === 'create') {
+      savedType = await productTypeApi.create(payload)
+    } else if (typeForm.id !== null) {
+      savedType = await productTypeApi.update(typeForm.id, payload)
+    }
+
+    if (savedType?.id) {
+      typeForm.id = savedType.id
+      dialogMode.value = 'edit'
+    }
+
+    if (savedType?.id && typeForm.pending_image_file) {
+      const withImage = await productTypeApi.uploadImage(savedType.id, typeForm.pending_image_file)
+      typeForm.image_media_asset_id = withImage.image_media_asset_id ?? null
+      typeForm.image_url = String(withImage.image_url || '')
+      typeForm.pending_image_file = null
+      typeForm.remove_image = false
+    } else if (savedType?.id && typeForm.remove_image) {
+      const withoutImage = await productTypeApi.deleteImage(savedType.id)
+      typeForm.image_media_asset_id = withoutImage.image_media_asset_id ?? null
+      typeForm.image_url = String(withoutImage.image_url || '')
+      typeForm.remove_image = false
+    }
+
+    toast.success(wasCreating ? '产品模板已创建' : '产品模板已更新')
     dialogVisible.value = false
     await fetchProductTypes()
   } catch (error) {
     console.error('Failed to save product type:', error)
+    toast.error('产品模板保存失败，请检查分类图片格式和尺寸')
   } finally {
     submitting.value = false
   }

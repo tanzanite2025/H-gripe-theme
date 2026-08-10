@@ -75,6 +75,7 @@ type PublicProductInformationTemplate struct {
 type PublicProductType struct {
 	Name            string                 `json:"name"`
 	Slug            string                 `json:"slug"`
+	ImageURL        string                 `json:"image_url,omitempty"`
 	SpecDefinitions []PublicSpecDefinition `json:"spec_definitions,omitempty"`
 }
 
@@ -141,6 +142,7 @@ type PublicProductTypeIndex struct {
 	ID              uint                    `json:"id"`
 	Name            string                  `json:"name"`
 	Slug            string                  `json:"slug"`
+	ImageURL        string                  `json:"image_url,omitempty"`
 	SpecDefinitions []PublicProductTypeSpec `json:"spec_definitions,omitempty"`
 }
 
@@ -385,6 +387,7 @@ func publicProductTypeFromDomainWithLocale(item *productdomain.ProductType, loca
 	result := &PublicProductType{
 		Name:            item.NameForLocale(locale),
 		Slug:            item.Slug,
+		ImageURL:        strings.TrimSpace(item.ImageURL),
 		SpecDefinitions: make([]PublicSpecDefinition, 0, len(item.SpecDefinitions)),
 	}
 	for _, definition := range item.SpecDefinitions {
@@ -423,6 +426,7 @@ func PublicProductTypesFromDomainWithLocale(items []productdomain.ProductType, l
 			ID:              item.ID,
 			Name:            item.NameForLocale(locale),
 			Slug:            item.Slug,
+			ImageURL:        strings.TrimSpace(item.ImageURL),
 			SpecDefinitions: make([]PublicProductTypeSpec, 0, len(item.SpecDefinitions)),
 		}
 		for _, definition := range item.SpecDefinitions {

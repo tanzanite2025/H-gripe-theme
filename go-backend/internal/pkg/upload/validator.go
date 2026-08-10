@@ -16,11 +16,13 @@ import (
 )
 
 const (
-	CodeEmptyFile         = "empty_file"
-	CodeFileTooLarge      = "file_too_large"
-	CodeInvalidType       = "invalid_type"
-	CodeInvalidDimensions = "invalid_dimensions"
-	CodeTooManyFiles      = "too_many_files"
+	CodeEmptyFile          = "empty_file"
+	CodeFileTooLarge       = "file_too_large"
+	CodeInvalidType        = "invalid_type"
+	CodeInvalidDimensions  = "invalid_dimensions"
+	CodeTooManyFiles       = "too_many_files"
+	ProductTypeImageWidth  = 800
+	ProductTypeImageHeight = 800
 
 	imageHeaderInspectionBytes = 1 << 20
 	webPHeaderInspectionBytes  = 64
@@ -39,6 +41,8 @@ type FileRule struct {
 	MaxSize             int64
 	AllowedExtensions   []string
 	AllowedContentTypes []string
+	ExactWidth          int
+	ExactHeight         int
 	MaxWidth            int
 	MaxHeight           int
 	MaxPixels           int64
@@ -75,6 +79,13 @@ var (
 		MaxSize:             3 << 20,
 		AllowedExtensions:   []string{".webp"},
 		AllowedContentTypes: []string{"image/webp"},
+	}
+	ProductTypeImageRule = FileRule{
+		MaxSize:             3 << 20,
+		AllowedExtensions:   []string{".webp"},
+		AllowedContentTypes: []string{"image/webp"},
+		ExactWidth:          ProductTypeImageWidth,
+		ExactHeight:         ProductTypeImageHeight,
 	}
 	WarrantyImageRule = FilesRule{
 		FileRule: FileRule{
@@ -144,7 +155,7 @@ func ValidateWebPDimensions(file *multipart.FileHeader, expectedWidth, expectedH
 }
 
 func validateImageDimensions(file *multipart.FileHeader, rule FileRule, contentType string) error {
-	if rule.MaxWidth <= 0 && rule.MaxHeight <= 0 && rule.MaxPixels <= 0 {
+	if rule.ExactWidth <= 0 && rule.ExactHeight <= 0 && rule.MaxWidth <= 0 && rule.MaxHeight <= 0 && rule.MaxPixels <= 0 {
 		return nil
 	}
 
@@ -154,6 +165,17 @@ func validateImageDimensions(file *multipart.FileHeader, rule FileRule, contentT
 	}
 	if width <= 0 || height <= 0 {
 		return validationError(CodeInvalidType, "invalid_type: image dimensions are invalid")
+	}
+	if rule.ExactWidth > 0 && rule.ExactHeight > 0 && (width != rule.ExactWidth || height != rule.ExactHeight) {
+		return validationError(
+			CodeInvalidDimensions,
+			"invalid_dimensions: %s must be exactly %dx%d pixels (received %dx%d)",
+			file.Filename,
+			rule.ExactWidth,
+			rule.ExactHeight,
+			width,
+			height,
+		)
 	}
 	if rule.MaxWidth > 0 && width > rule.MaxWidth {
 		return validationError(CodeInvalidDimensions, "invalid_dimensions: %s width exceeds %d pixels", file.Filename, rule.MaxWidth)

@@ -111,6 +111,32 @@ func (s *ProductService) GetProductType(id uint) (*product.ProductType, error) {
 	return productType, nil
 }
 
+func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, imageURL string) (*product.ProductType, error) {
+	if _, err := s.GetProductType(id); err != nil {
+		return nil, err
+	}
+
+	imageURL = strings.TrimSpace(imageURL)
+	if mediaAssetID != nil && *mediaAssetID == 0 {
+		mediaAssetID = nil
+	}
+	if mediaAssetID == nil && imageURL != "" {
+		return nil, fmt.Errorf("%w: image asset is required when an image URL is provided", ErrProductTypeInvalid)
+	}
+	if mediaAssetID != nil && imageURL == "" {
+		return nil, fmt.Errorf("%w: image URL is required when an image asset is selected", ErrProductTypeInvalid)
+	}
+
+	if err := s.productRepo.UpdateProductTypeImage(id, mediaAssetID, imageURL); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrProductTypeNotFound
+		}
+		return nil, err
+	}
+	s.invalidateStorefrontHTMLCache("admin product type image update")
+	return s.productRepo.FindProductTypeByID(id)
+}
+
 func (s *ProductService) CreateProductType(input ProductTypeInput) (*product.ProductType, error) {
 	productType, err := normalizeProductTypeInput(input)
 	if err != nil {

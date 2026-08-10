@@ -68,6 +68,29 @@ func TestValidateFileAcceptsWebPWithinProductLimits(t *testing.T) {
 	}
 }
 
+func TestValidateFileAcceptsFixedProductTypeWebP(t *testing.T) {
+	file := testFileHeader(t, "category.webp", testWebPVP8X(ProductTypeImageWidth, ProductTypeImageHeight))
+
+	if err := ValidateFile(file, ProductTypeImageRule); err != nil {
+		t.Fatalf("expected fixed-size product type WebP to be accepted, got %v", err)
+	}
+}
+
+func TestValidateFileRejectsProductTypeWebPWithWrongDimensions(t *testing.T) {
+	file := testFileHeader(t, "category.webp", testWebPVP8X(ProductTypeImageWidth, ProductTypeImageHeight-1))
+
+	err := ValidateFile(file, ProductTypeImageRule)
+	if err == nil {
+		t.Fatal("expected product type image with wrong dimensions to be rejected")
+	}
+	if ErrorCode(err) != CodeInvalidDimensions {
+		t.Fatalf("expected %q, got %q", CodeInvalidDimensions, ErrorCode(err))
+	}
+	if HTTPStatus(err) != http.StatusUnprocessableEntity {
+		t.Fatalf("unexpected HTTP status %d", HTTPStatus(err))
+	}
+}
+
 func testWebPVP8X(width, height int) []byte {
 	data := make([]byte, 30)
 	copy(data[0:4], []byte("RIFF"))
