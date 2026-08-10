@@ -112,45 +112,6 @@ func publicSettingFallbackLocales(locale string) []string {
 	return locales
 }
 
-// GetQuickBuySettings 获取快速购买设置
-func (s *SettingService) GetQuickBuySettings(locale string) (*setting.QuickBuySettings, error) {
-	cacheKey := settingsStructuredCacheKey("quick-buy", locale)
-
-	// 尝试从缓存获取
-	var quickBuySettings setting.QuickBuySettings
-	if s.cache != nil && s.cache.Get(cacheKey, &quickBuySettings) == nil {
-		return &quickBuySettings, nil
-	}
-
-	// 从数据库获取
-	settings, err := s.GetPublicByGroup("quick-buy", locale)
-	if err != nil {
-		return nil, err
-	}
-
-	// 转换为结构体
-	quickBuySettings = setting.QuickBuySettings{}
-	for _, st := range settings {
-		switch st.Key {
-		case "enabled":
-			quickBuySettings.Enabled = st.Value == "true"
-		case "button_text":
-			quickBuySettings.ButtonText = st.Value
-		case "success_message":
-			quickBuySettings.SuccessMessage = st.Value
-		case "require_login":
-			quickBuySettings.RequireLogin = st.Value == "true"
-		}
-	}
-
-	// 写入缓存
-	if s.cache != nil {
-		_ = s.cache.Set(cacheKey, &quickBuySettings, s.cacheTTL)
-	}
-
-	return &quickBuySettings, nil
-}
-
 // GetEmailSettings 获取邮件设置
 func (s *SettingService) GetEmailSettings(locale string) (*setting.EmailSettings, error) {
 	cacheKey := settingsStructuredCacheKey("email", locale)

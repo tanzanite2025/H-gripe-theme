@@ -17,15 +17,6 @@
           >
             Contact us about partnerships
           </NuxtLink>
-          <span class="flex items-center gap-2 text-xs tz-text-secondary">
-            <span>or email</span>
-            <a
-              href="mailto:support@tanzanite.site"
-              class="premium-button px-3 py-1.5 tz-caption font-medium"
-            >
-              support@tanzanite.site
-            </a>
-          </span>
         </div>
         <WorldMapXiamen />
 

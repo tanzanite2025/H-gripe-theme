@@ -76,6 +76,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '产品信息模板', permission: 'product:view' }
       },
       {
+        path: 'catalog/spoke-calculator',
+        name: 'CatalogSpokeCalculator',
+        component: () => import('@/views/SpokeCatalog.vue'),
+        meta: { title: '辐条计算器数据', permission: 'product:view' }
+      },
+      {
+        path: 'catalog/quick-buy',
+        name: 'CatalogQuickBuy',
+        component: () => import('@/views/QuickBuyFlows.vue'),
+        meta: { title: 'QUICK 选配流程', permission: 'product:view' }
+      },
+      {
         path: 'google-merchant',
         name: 'GoogleMerchant',
         component: () => import('@/views/GoogleMerchant.vue'),

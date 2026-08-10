@@ -21,6 +21,14 @@ type ProductSearchQuery struct {
 	Limit       int
 }
 
+type ProductQuickBuyCandidateQuery struct {
+	Locale         string
+	ProductTypeIDs []uint
+	Keyword        string
+	Offset         int
+	Limit          int
+}
+
 type ProductRecommendationQuery struct {
 	Locale            string
 	ProductTypeID     *uint
@@ -183,6 +191,68 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 		Order("products.featured DESC").
 		Order("products.view_count DESC").
 		Order("products.created_at DESC").
+		Offset(input.Offset).
+		Limit(input.Limit).
+		Find(&products).Error
+	return products, total, err
+}
+
+func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidateQuery) ([]product.Product, int64, error) {
+	products := []product.Product{}
+	var total int64
+	if len(input.ProductTypeIDs) == 0 {
+		return products, 0, nil
+	}
+
+	query := r.db.Model(&product.Product{}).
+		Preload("Media", orderProductMedia).
+		Preload("ProductType.SpecDefinitions", orderSpecDefinitions).
+		Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		}).
+		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
+		Preload("Variants", orderProductVariants)
+	query = r.preloadProductVariantOptionValues(query).
+		Preload("AfterSalesTemplate").
+		Preload("PackagingTemplate").
+		Where("products.status = ?", "active").
+		Where("products.product_type_id IN ?", input.ProductTypeIDs).
+		Where(activeVariantExistsSQL("pv_quick_buy_candidate")).
+		Where(`EXISTS (
+			SELECT 1
+			FROM product_variants pv_quick_buy_candidate_stock
+			WHERE pv_quick_buy_candidate_stock.product_id = products.id
+			  AND pv_quick_buy_candidate_stock.deleted_at IS NULL
+			  AND pv_quick_buy_candidate_stock.is_active = TRUE
+			  AND pv_quick_buy_candidate_stock.stock > 0
+		)`)
+
+	if input.Locale != "" {
+		query = query.Where("products.locale = ?", input.Locale)
+	}
+	if input.Keyword != "" {
+		pattern := "%" + strings.ToLower(input.Keyword) + "%"
+		query = query.Joins("LEFT JOIN product_types quick_buy_product_types ON quick_buy_product_types.id = products.product_type_id").
+			Where(`
+				LOWER(products.name) LIKE ?
+				OR LOWER(products.sku) LIKE ?
+				OR LOWER(products.short_desc) LIKE ?
+				OR LOWER(products.description) LIKE ?
+				OR LOWER(quick_buy_product_types.name) LIKE ?
+				OR LOWER(quick_buy_product_types.slug) LIKE ?
+			`, pattern, pattern, pattern, pattern, pattern, pattern)
+	}
+
+	if err := query.Distinct("products.id").Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.
+		Distinct("products.*").
+		Order("products.featured DESC").
+		Order("products.view_count DESC").
+		Order("products.updated_at DESC").
+		Order("products.id DESC").
 		Offset(input.Offset).
 		Limit(input.Limit).
 		Find(&products).Error

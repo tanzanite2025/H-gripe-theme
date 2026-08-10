@@ -80,12 +80,9 @@
           <p class="text-sm tz-text-secondary leading-relaxed mb-4">
                  Need just a front or rear replacement? We specialize in single-wheel builds tailored to your specific needs.
                  While our website showcases complete sets, we fully support individual custom orders.
-               </p>
+                </p>
 
-               <div class="flex flex-wrap gap-3">
-                  <a class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-sky-500/30 text-sky-400 text-xs font-bold uppercase tracking-wider hover:bg-sky-500/10 transition-colors" href="mailto:support@tanzanite.site">
-                    Email Support
-                  </a>
+                <div class="flex flex-wrap gap-3">
                    <button
                     type="button"
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-lg"

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -151,6 +152,86 @@ func TestProductServiceUpdatesAndClearsProductTypeImage(t *testing.T) {
 	assert.Empty(t, cleared.ImageURL)
 }
 
+func TestProductServiceCleansUpDetachedProductTypeImageAssets(t *testing.T) {
+	_, productService := newTestProductService(t)
+	deleter := &recordingMediaAssetDeleter{}
+	productService.ConfigureMediaService(deleter)
+
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "首饰",
+		Slug:      "jewelry_image_cleanup",
+		IsEnabled: true,
+	})
+	require.NoError(t, err)
+
+	firstAssetID := uint(101)
+	_, err = productService.UpdateProductTypeImage(created.ID, &firstAssetID, "https://cdn.example.com/categories/first.webp")
+	require.NoError(t, err)
+
+	secondAssetID := uint(102)
+	_, err = productService.UpdateProductTypeImage(created.ID, &secondAssetID, "https://cdn.example.com/categories/second.webp")
+	require.NoError(t, err)
+
+	_, err = productService.UpdateProductTypeImage(created.ID, nil, "")
+	require.NoError(t, err)
+
+	assert.Equal(t, []uint{firstAssetID, secondAssetID}, deleter.ids)
+	assert.Equal(t,
+		[]string{
+			MediaAssetDeleteConfirmation(firstAssetID),
+			MediaAssetDeleteConfirmation(secondAssetID),
+		},
+		deleter.confirmations,
+	)
+}
+
+func TestProductServiceCleansUpProductTypeImageOnDelete(t *testing.T) {
+	_, productService := newTestProductService(t)
+	deleter := &recordingMediaAssetDeleter{}
+	productService.ConfigureMediaService(deleter)
+
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "首饰",
+		Slug:      "jewelry_image_delete_cleanup",
+		IsEnabled: true,
+	})
+	require.NoError(t, err)
+
+	assetID := uint(103)
+	_, err = productService.UpdateProductTypeImage(created.ID, &assetID, "https://cdn.example.com/categories/delete.webp")
+	require.NoError(t, err)
+
+	require.NoError(t, productService.DeleteProductType(created.ID))
+	assert.Equal(t, []uint{assetID}, deleter.ids)
+}
+
+func TestProductServiceKeepsProductTypeWhenDetachedImageAssetIsStillReferenced(t *testing.T) {
+	_, productService := newTestProductService(t)
+	deleter := &recordingMediaAssetDeleter{err: ErrMediaAssetInUse}
+	productService.ConfigureMediaService(deleter)
+
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "首饰",
+		Slug:      "jewelry_image_shared",
+		IsEnabled: true,
+	})
+	require.NoError(t, err)
+
+	firstAssetID := uint(104)
+	_, err = productService.UpdateProductTypeImage(created.ID, &firstAssetID, "https://cdn.example.com/categories/shared-first.webp")
+	require.NoError(t, err)
+
+	secondAssetID := uint(105)
+	_, err = productService.UpdateProductTypeImage(created.ID, &secondAssetID, "https://cdn.example.com/categories/shared-second.webp")
+	require.NoError(t, err)
+
+	assert.Equal(t, []uint{firstAssetID}, deleter.ids)
+	updated, err := productService.GetProductType(created.ID)
+	require.NoError(t, err)
+	require.NotNil(t, updated.ImageMediaAssetID)
+	assert.Equal(t, secondAssetID, *updated.ImageMediaAssetID)
+}
+
 func TestProductServiceRejectsDuplicateProductTypeSlug(t *testing.T) {
 	_, productService := newTestProductService(t)
 	_, err := productService.CreateProductType(ProductTypeInput{Name: "首饰", Slug: "jewelry", IsEnabled: true})
@@ -175,4 +256,16 @@ func TestProductServiceDeletesProductType(t *testing.T) {
 	require.NoError(t, productService.DeleteProductType(created.ID))
 	_, err = productService.GetProductType(created.ID)
 	assert.ErrorIs(t, err, ErrProductTypeNotFound)
+}
+
+type recordingMediaAssetDeleter struct {
+	ids           []uint
+	confirmations []string
+	err           error
+}
+
+func (d *recordingMediaAssetDeleter) DeleteAsset(_ context.Context, id uint, confirmation string) error {
+	d.ids = append(d.ids, id)
+	d.confirmations = append(d.confirmations, confirmation)
+	return d.err
 }

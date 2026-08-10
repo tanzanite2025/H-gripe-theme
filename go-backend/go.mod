@@ -26,6 +26,7 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/wechatpay-apiv3/wechatpay-go v0.2.21
+	github.com/xuri/excelize/v2 v2.10.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.53.0
 	golang.org/x/time v0.14.0
@@ -34,6 +35,14 @@ require (
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.30.0
 	gorm.io/plugin/dbresolver v1.6.2
+)
+
+require (
+	github.com/richardlehane/mscfb v1.0.4 // indirect
+	github.com/richardlehane/msoleps v1.0.4 // indirect
+	github.com/tiendc/go-deepcopy v1.7.1 // indirect
+	github.com/xuri/efp v0.0.1 // indirect
+	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
 )
 
 require (

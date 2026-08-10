@@ -7,9 +7,9 @@
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorCore />
 
-          <div class="mt-16 pt-10 border-t border-slate-800/50">
+          <div class="spoke-smart-search-section mt-16 pt-10">
              <div class="text-center mb-8">
-               <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Smart Search</h3>
+               <h3 class="spoke-smart-search-section__title">Smart Search</h3>
                 <p class="text-sm tz-text-secondary mt-2">Instantly find spoke lengths for verified official builds</p>
              </div>
              <SpokeSmartSearch />
@@ -281,6 +281,18 @@ useHead({
 
 .spoke-parameter__image {
   margin: 0.75rem 0 1rem;
+}
+
+.spoke-smart-search-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.spoke-smart-search-section__title {
+  margin: 0;
+  color: var(--tz-text-primary);
+  font-size: var(--tz-type-section-title);
+  line-height: 1.35;
+  font-weight: 600;
 }
 
 /* On this page we do not want leading bullets before items; keep guides blue dots only in /guides */

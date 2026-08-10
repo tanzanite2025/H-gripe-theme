@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Truck,
   Users,
+  Zap,
 } from '@lucide/vue'
 
 export interface AdminNavigationItem {
@@ -48,6 +49,8 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'catalog-products', path: '/catalog/products', routeName: 'CatalogProducts', label: '商品管理' },
       { id: 'catalog-templates', path: '/catalog/templates', routeName: 'CatalogProductTemplates', label: '产品模板' },
       { id: 'catalog-information-templates', path: '/catalog/information-templates', routeName: 'CatalogProductInformationTemplates', label: '产品信息模板' },
+      { id: 'catalog-spoke-calculator', path: '/catalog/spoke-calculator', routeName: 'CatalogSpokeCalculator', label: '辐条计算器数据' },
+      { id: 'catalog-quick-buy', path: '/catalog/quick-buy', routeName: 'CatalogQuickBuy', label: 'QUICK 选配流程', icon: Zap },
     ],
   },
   {

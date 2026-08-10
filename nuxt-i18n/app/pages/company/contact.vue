@@ -126,7 +126,6 @@ useHead({
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: contactLocation.name,
-    email: 'support@tanzanite.site',
     address: {
       '@type': 'PostalAddress',
       streetAddress: contactLocation.addressText,

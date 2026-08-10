@@ -17,14 +17,6 @@ type SiteSettings struct {
 	AdminHTMLTitle    string `json:"admin_html_title"`
 }
 
-// QuickBuySettings 快速购买设置
-type QuickBuySettings struct {
-	Enabled        bool   `json:"enabled"`
-	ButtonText     string `json:"button_text"`
-	SuccessMessage string `json:"success_message"`
-	RequireLogin   bool   `json:"require_login"`
-}
-
 // RedeemSettings 积分兑换配置
 type RedeemSettings struct {
 	Enabled        bool      `json:"enabled"`

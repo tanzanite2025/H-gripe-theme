@@ -2,16 +2,22 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"math"
+	"regexp"
+	"strings"
 	domainspoke "tanzanite/internal/domain/spoke"
 	"tanzanite/internal/repository"
 )
 
 var (
 	ErrSpokeGeometryNotFound    = errors.New("unknown rim or hub geometry")
+	ErrSpokeRimGeometryMissing  = errors.New("rim geometry not available")
 	ErrSpokeHubGeometryMissing  = errors.New("hub geometry not available for requested position")
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
+	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
 	spokeCalculationFormulaName = "v1.0-go-backend"
+	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{1,139}$`)
 )
 
 type SpokeService struct {
@@ -42,8 +48,30 @@ func NewSpokeService(spokeRepo *repository.SpokeRepository) *SpokeService {
 	return &SpokeService{spokeRepo: spokeRepo}
 }
 
-func (s *SpokeService) GetExport() domainspoke.ExportResponse {
-	return domainspoke.DefaultExport()
+func (s *SpokeService) GetExport() (domainspoke.ExportResponse, error) {
+	export, found, err := s.spokeRepo.GetCatalogExport()
+	if err != nil {
+		return domainspoke.ExportResponse{}, err
+	}
+	if !found {
+		return domainspoke.DefaultExport(), nil
+	}
+	return export, nil
+}
+
+func (s *SpokeService) ReplaceCatalog(export domainspoke.ExportResponse) (domainspoke.ExportResponse, error) {
+	normalized, err := normalizeSpokeCatalog(export)
+	if err != nil {
+		return domainspoke.ExportResponse{}, err
+	}
+	if err := s.spokeRepo.ReplaceCatalog(normalized); err != nil {
+		return domainspoke.ExportResponse{}, err
+	}
+	nextExport, err := s.GetExport()
+	if err != nil {
+		return domainspoke.ExportResponse{}, err
+	}
+	return nextExport, nil
 }
 
 func (s *SpokeService) ListHistory(search string, page, pageSize int) ([]domainspoke.History, int64, error) {
@@ -55,32 +83,44 @@ func (s *SpokeService) ListUserHistory(userID uint, search string, page, pageSiz
 }
 
 func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculationResult, error) {
-	if input.SpokeCount <= 0 {
+	options := domainspoke.DefaultOptions()
+	if _, exists := intOptionSet(options.SpokeCounts)[input.SpokeCount]; !exists {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	if _, exists := intOptionSet(options.Crossings)[input.Crossing]; !exists {
 		return nil, ErrInvalidSpokeCalculation
 	}
 
-	export := s.GetExport()
+	export, err := s.GetExport()
+	if err != nil {
+		return nil, err
+	}
 	rim := findSpokeRim(export, input.RimID)
 	hub := findSpokeHub(export, input.HubID)
 	if rim == nil || hub == nil {
 		return nil, ErrSpokeGeometryNotFound
+	}
+	if rim.ERD == nil {
+		return nil, ErrSpokeRimGeometryMissing
 	}
 
 	hubGeo := hub.Rear
 	if input.WheelPosition == "front" {
 		hubGeo = hub.Front
 	}
-	if hubGeo == nil {
+	if !isCompleteHubGeometry(hubGeo) {
 		return nil, ErrSpokeHubGeometryMissing
 	}
 
-	radius := rim.ERD / 2.0
-	leftFlangeRadius := hubGeo.LeftFlangePCD / 2.0
-	rightFlangeRadius := hubGeo.RightFlangePCD / 2.0
+	leftFlange := *hubGeo.LeftFlange
+	rightFlange := *hubGeo.RightFlange
+	leftFlangeRadius := *hubGeo.LeftFlangePCD / 2.0
+	rightFlangeRadius := *hubGeo.RightFlangePCD / 2.0
+	radius := *rim.ERD / 2.0
 	angleRad := (720.0 * float64(input.Crossing) / float64(input.SpokeCount)) * math.Pi / 180.0
 
-	left := math.Sqrt(radius*radius + leftFlangeRadius*leftFlangeRadius + hubGeo.LeftFlange*hubGeo.LeftFlange - 2*radius*leftFlangeRadius*math.Cos(angleRad))
-	right := math.Sqrt(radius*radius + rightFlangeRadius*rightFlangeRadius + hubGeo.RightFlange*hubGeo.RightFlange - 2*radius*rightFlangeRadius*math.Cos(angleRad))
+	left := math.Sqrt(radius*radius + leftFlangeRadius*leftFlangeRadius + leftFlange*leftFlange - 2*radius*leftFlangeRadius*math.Cos(angleRad))
+	right := math.Sqrt(radius*radius + rightFlangeRadius*rightFlangeRadius + rightFlange*rightFlange - 2*radius*rightFlangeRadius*math.Cos(angleRad))
 
 	return &SpokeCalculationResult{
 		LeftLengthMM:  math.Round(left*10) / 10,
@@ -91,6 +131,296 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 			FormulaVersion: spokeCalculationFormulaName,
 		},
 	}, nil
+}
+
+func normalizeSpokeCatalog(export domainspoke.ExportResponse) (domainspoke.ExportResponse, error) {
+	normalized := domainspoke.ExportResponse{
+		Options: domainspoke.DefaultOptions(),
+		Rims:    make([]domainspoke.RimBrand, 0, len(export.Rims)),
+		Hubs:    make([]domainspoke.HubBrand, 0, len(export.Hubs)),
+		Presets: make([]domainspoke.WheelBuildPreset, 0, len(export.Presets)),
+	}
+
+	rimBrandIDs := make(map[string]struct{})
+	rimModelIDs := make(map[string]struct{})
+	rimModelBrandIDs := make(map[string]string)
+	hubBrandIDs := make(map[string]struct{})
+	hubModelIDs := make(map[string]struct{})
+	hubModelBrandIDs := make(map[string]string)
+	allowedSpokeCounts := intOptionSet(normalized.Options.SpokeCounts)
+	allowedCrossings := intOptionSet(normalized.Options.Crossings)
+	allowedNippleTypes := stringOptionSet(normalized.Options.NippleTypes)
+	allowedWheelPositions := stringOptionSet(normalized.Options.WheelPositions)
+
+	for _, brand := range export.Rims {
+		brand.ID = normalizeCatalogID(brand.ID)
+		brand.Name = strings.TrimSpace(brand.Name)
+		if err := validateCatalogID("rim brand id", brand.ID); err != nil {
+			return domainspoke.ExportResponse{}, err
+		}
+		if brand.Name == "" {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: rim brand %q is missing name", ErrInvalidSpokeCatalog, brand.ID)
+		}
+		if _, exists := rimBrandIDs[brand.ID]; exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: duplicate rim brand id %q", ErrInvalidSpokeCatalog, brand.ID)
+		}
+		rimBrandIDs[brand.ID] = struct{}{}
+
+		items := make([]domainspoke.RimModel, 0, len(brand.Items))
+		for _, model := range brand.Items {
+			model.ID = normalizeCatalogID(model.ID)
+			model.Name = strings.TrimSpace(model.Name)
+			if err := validateCatalogID("rim model id", model.ID); err != nil {
+				return domainspoke.ExportResponse{}, err
+			}
+			if model.Name == "" {
+				return domainspoke.ExportResponse{}, fmt.Errorf("%w: rim model %q is missing name", ErrInvalidSpokeCatalog, model.ID)
+			}
+			if _, exists := rimModelIDs[model.ID]; exists {
+				return domainspoke.ExportResponse{}, fmt.Errorf("%w: duplicate rim model id %q", ErrInvalidSpokeCatalog, model.ID)
+			}
+			if model.ERD != nil && (*model.ERD < 250 || *model.ERD > 800) {
+				return domainspoke.ExportResponse{}, fmt.Errorf("%w: rim model %q erd must be between 250 and 800mm", ErrInvalidSpokeCatalog, model.ID)
+			}
+			if model.Weight != nil && (*model.Weight < 0 || *model.Weight > 5000) {
+				return domainspoke.ExportResponse{}, fmt.Errorf("%w: rim model %q weight is out of range", ErrInvalidSpokeCatalog, model.ID)
+			}
+			rimModelIDs[model.ID] = struct{}{}
+			rimModelBrandIDs[model.ID] = brand.ID
+			items = append(items, model)
+		}
+		brand.Items = items
+		normalized.Rims = append(normalized.Rims, brand)
+	}
+
+	for _, brand := range export.Hubs {
+		brand.ID = normalizeCatalogID(brand.ID)
+		brand.Name = strings.TrimSpace(brand.Name)
+		if err := validateCatalogID("hub brand id", brand.ID); err != nil {
+			return domainspoke.ExportResponse{}, err
+		}
+		if brand.Name == "" {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: hub brand %q is missing name", ErrInvalidSpokeCatalog, brand.ID)
+		}
+		if _, exists := hubBrandIDs[brand.ID]; exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: duplicate hub brand id %q", ErrInvalidSpokeCatalog, brand.ID)
+		}
+		hubBrandIDs[brand.ID] = struct{}{}
+
+		items := make([]domainspoke.HubModel, 0, len(brand.Items))
+		for _, model := range brand.Items {
+			model.ID = normalizeCatalogID(model.ID)
+			model.Name = strings.TrimSpace(model.Name)
+			if err := validateCatalogID("hub model id", model.ID); err != nil {
+				return domainspoke.ExportResponse{}, err
+			}
+			if model.Name == "" {
+				return domainspoke.ExportResponse{}, fmt.Errorf("%w: hub model %q is missing name", ErrInvalidSpokeCatalog, model.ID)
+			}
+			if _, exists := hubModelIDs[model.ID]; exists {
+				return domainspoke.ExportResponse{}, fmt.Errorf("%w: duplicate hub model id %q", ErrInvalidSpokeCatalog, model.ID)
+			}
+			if err := validateHubGeometry(model.ID, "front", model.Front); err != nil {
+				return domainspoke.ExportResponse{}, err
+			}
+			if err := validateHubGeometry(model.ID, "rear", model.Rear); err != nil {
+				return domainspoke.ExportResponse{}, err
+			}
+			hubModelIDs[model.ID] = struct{}{}
+			hubModelBrandIDs[model.ID] = brand.ID
+			items = append(items, model)
+		}
+		brand.Items = items
+		normalized.Hubs = append(normalized.Hubs, brand)
+	}
+
+	for _, preset := range export.Presets {
+		preset.ID = normalizeCatalogID(preset.ID)
+		preset.Name = strings.TrimSpace(preset.Name)
+		preset.Description = strings.TrimSpace(preset.Description)
+		preset.RimBrandID = normalizeCatalogID(preset.RimBrandID)
+		preset.RimModelID = normalizeCatalogID(preset.RimModelID)
+		preset.HubBrandID = normalizeCatalogID(preset.HubBrandID)
+		preset.HubModelID = normalizeCatalogID(preset.HubModelID)
+		preset.WheelPosition = normalizeWheelPosition(preset.WheelPosition)
+		preset.NippleType = strings.ToLower(strings.TrimSpace(preset.NippleType))
+		preset.Keywords = normalizeKeywords(preset.Keywords)
+		preset.ActualLengths = normalizeActualLengths(preset.ActualLengths)
+
+		if err := validateCatalogID("preset id", preset.ID); err != nil {
+			return domainspoke.ExportResponse{}, err
+		}
+		if preset.Name == "" {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q is missing name", ErrInvalidSpokeCatalog, preset.ID)
+		}
+		if _, exists := rimBrandIDs[preset.RimBrandID]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q references unknown rim brand %q", ErrInvalidSpokeCatalog, preset.ID, preset.RimBrandID)
+		}
+		if _, exists := rimModelIDs[preset.RimModelID]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q references unknown rim model %q", ErrInvalidSpokeCatalog, preset.ID, preset.RimModelID)
+		}
+		if rimModelBrandIDs[preset.RimModelID] != preset.RimBrandID {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q rim model %q does not belong to rim brand %q", ErrInvalidSpokeCatalog, preset.ID, preset.RimModelID, preset.RimBrandID)
+		}
+		if _, exists := hubBrandIDs[preset.HubBrandID]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q references unknown hub brand %q", ErrInvalidSpokeCatalog, preset.ID, preset.HubBrandID)
+		}
+		if _, exists := hubModelIDs[preset.HubModelID]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q references unknown hub model %q", ErrInvalidSpokeCatalog, preset.ID, preset.HubModelID)
+		}
+		if hubModelBrandIDs[preset.HubModelID] != preset.HubBrandID {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q hub model %q does not belong to hub brand %q", ErrInvalidSpokeCatalog, preset.ID, preset.HubModelID, preset.HubBrandID)
+		}
+		if _, exists := allowedSpokeCounts[preset.SpokeCount]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q spoke count must match a calculator option", ErrInvalidSpokeCatalog, preset.ID)
+		}
+		if _, exists := allowedCrossings[preset.Crossing]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q crossing must match a calculator option", ErrInvalidSpokeCatalog, preset.ID)
+		}
+		if _, exists := allowedNippleTypes[preset.NippleType]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q nipple type must match a calculator option", ErrInvalidSpokeCatalog, preset.ID)
+		}
+		if _, exists := allowedWheelPositions[preset.WheelPosition]; !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q wheel position must match a calculator option", ErrInvalidSpokeCatalog, preset.ID)
+		}
+		if preset.NippleLength != nil && (*preset.NippleLength < 0 || *preset.NippleLength > 40) {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q nipple length is out of range", ErrInvalidSpokeCatalog, preset.ID)
+		}
+		if err := validateActualLengths(preset.ID, preset.ActualLengths); err != nil {
+			return domainspoke.ExportResponse{}, err
+		}
+		normalized.Presets = append(normalized.Presets, preset)
+	}
+
+	return normalized, nil
+}
+
+func validateCatalogID(label, value string) error {
+	if !spokeCatalogIDPattern.MatchString(value) {
+		return fmt.Errorf("%w: %s %q must use lowercase letters, numbers, underscores or hyphens", ErrInvalidSpokeCatalog, label, value)
+	}
+	return nil
+}
+
+func validateHubGeometry(modelID, position string, geometry *domainspoke.HubGeometry) error {
+	if geometry == nil {
+		return nil
+	}
+	if !floatInRange(geometry.LeftFlange, 0, 100) ||
+		!floatInRange(geometry.RightFlange, 0, 100) ||
+		!floatInRange(geometry.LeftFlangePCD, 10, 150) ||
+		!floatInRange(geometry.RightFlangePCD, 10, 150) {
+		return fmt.Errorf("%w: hub model %q %s geometry is out of range", ErrInvalidSpokeCatalog, modelID, position)
+	}
+	if geometry.SpokeHoleDiameter != nil && (*geometry.SpokeHoleDiameter < 0 || *geometry.SpokeHoleDiameter > 10) {
+		return fmt.Errorf("%w: hub model %q %s spoke hole diameter is out of range", ErrInvalidSpokeCatalog, modelID, position)
+	}
+	return nil
+}
+
+func isCompleteHubGeometry(geometry *domainspoke.HubGeometry) bool {
+	return geometry != nil &&
+		geometry.LeftFlange != nil &&
+		geometry.RightFlange != nil &&
+		geometry.LeftFlangePCD != nil &&
+		geometry.RightFlangePCD != nil
+}
+
+func floatInRange(value *float64, min, max float64) bool {
+	return value == nil || (*value >= min && *value <= max)
+}
+
+func normalizeCatalogID(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func normalizeWheelPosition(value string) string {
+	switch normalized := strings.ToLower(strings.TrimSpace(value)); normalized {
+	case "front", "rear", "auto":
+		return normalized
+	case "":
+		return "auto"
+	default:
+		return normalized
+	}
+}
+
+func normalizeKeywords(values []string) []string {
+	seen := make(map[string]struct{})
+	keywords := make([]string, 0, len(values))
+	for _, value := range values {
+		keyword := strings.TrimSpace(value)
+		if keyword == "" {
+			continue
+		}
+		key := strings.ToLower(keyword)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		keywords = append(keywords, keyword)
+	}
+	return keywords
+}
+
+func normalizeActualLengths(actual *domainspoke.WheelBuildActualLengths) *domainspoke.WheelBuildActualLengths {
+	if actual == nil {
+		return nil
+	}
+
+	normalized := &domainspoke.WheelBuildActualLengths{
+		FrontLeft:  actual.FrontLeft,
+		FrontRight: actual.FrontRight,
+		RearLeft:   actual.RearLeft,
+		RearRight:  actual.RearRight,
+		Notes:      strings.TrimSpace(actual.Notes),
+	}
+	if normalized.FrontLeft == nil &&
+		normalized.FrontRight == nil &&
+		normalized.RearLeft == nil &&
+		normalized.RearRight == nil &&
+		normalized.Notes == "" {
+		return nil
+	}
+	return normalized
+}
+
+func validateActualLengths(presetID string, actual *domainspoke.WheelBuildActualLengths) error {
+	if actual == nil {
+		return nil
+	}
+
+	fields := []struct {
+		label string
+		value *float64
+	}{
+		{label: "front left", value: actual.FrontLeft},
+		{label: "front right", value: actual.FrontRight},
+		{label: "rear left", value: actual.RearLeft},
+		{label: "rear right", value: actual.RearRight},
+	}
+	for _, field := range fields {
+		if field.value != nil && (*field.value <= 0 || *field.value > 500) {
+			return fmt.Errorf("%w: preset %q actual %s spoke length is out of range", ErrInvalidSpokeCatalog, presetID, field.label)
+		}
+	}
+	return nil
+}
+
+func intOptionSet(options []domainspoke.IntOption) map[int]struct{} {
+	result := make(map[int]struct{}, len(options))
+	for _, option := range options {
+		result[option.Value] = struct{}{}
+	}
+	return result
+}
+
+func stringOptionSet(options []domainspoke.StringOption) map[string]struct{} {
+	result := make(map[string]struct{}, len(options))
+	for _, option := range options {
+		result[strings.ToLower(strings.TrimSpace(option.Value))] = struct{}{}
+	}
+	return result
 }
 
 func findSpokeRim(export domainspoke.ExportResponse, rimID string) *domainspoke.RimModel {

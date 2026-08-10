@@ -72,7 +72,7 @@ func (h *ProductTypeImageHandler) UploadImage(c *gin.Context) {
 	assetID := asset.ID
 	productType, err := h.productService.UpdateProductTypeImage(id, &assetID, asset.URL)
 	if err != nil {
-		_ = h.mediaService.DeleteAsset(c.Request.Context(), asset.ID, service.MediaAssetDeleteConfirmation(asset.ID))
+		h.productService.CleanupDetachedProductTypeImageAsset(asset.ID, "product type image relation update failed")
 		respondProductTypeServiceError(c, err)
 		return
 	}

@@ -422,8 +422,8 @@ const fetchProductTypes = async (): Promise<void> => {
 const submitForm = async (): Promise<void> => {
   if (!validateForm()) return
   submitting.value = true
+  const wasCreating = dialogMode.value === 'create'
   try {
-    const wasCreating = dialogMode.value === 'create'
     const payload = buildPayload()
     let savedType: ProductTypeRecord | null = null
     if (dialogMode.value === 'create') {
@@ -432,22 +432,35 @@ const submitForm = async (): Promise<void> => {
       savedType = await productTypeApi.update(typeForm.id, payload)
     }
 
-    if (savedType?.id) {
-      typeForm.id = savedType.id
-      dialogMode.value = 'edit'
+    if (!savedType?.id) {
+      throw new Error('Product type save returned no record')
     }
 
-    if (savedType?.id && typeForm.pending_image_file) {
-      const withImage = await productTypeApi.uploadImage(savedType.id, typeForm.pending_image_file)
-      typeForm.image_media_asset_id = withImage.image_media_asset_id ?? null
-      typeForm.image_url = String(withImage.image_url || '')
-      typeForm.pending_image_file = null
-      typeForm.remove_image = false
-    } else if (savedType?.id && typeForm.remove_image) {
-      const withoutImage = await productTypeApi.deleteImage(savedType.id)
-      typeForm.image_media_asset_id = withoutImage.image_media_asset_id ?? null
-      typeForm.image_url = String(withoutImage.image_url || '')
-      typeForm.remove_image = false
+    typeForm.id = savedType.id
+    dialogMode.value = 'edit'
+
+    const pendingImageFile = typeForm.pending_image_file
+    const removingImage = typeForm.remove_image
+    if (pendingImageFile || removingImage) {
+      try {
+        if (pendingImageFile) {
+          const withImage = await productTypeApi.uploadImage(savedType.id, pendingImageFile)
+          typeForm.image_media_asset_id = withImage.image_media_asset_id ?? null
+          typeForm.image_url = String(withImage.image_url || '')
+          typeForm.pending_image_file = null
+          typeForm.remove_image = false
+        } else {
+          const withoutImage = await productTypeApi.deleteImage(savedType.id)
+          typeForm.image_media_asset_id = withoutImage.image_media_asset_id ?? null
+          typeForm.image_url = String(withoutImage.image_url || '')
+          typeForm.remove_image = false
+        }
+      } catch (imageError) {
+        console.error('Failed to sync product type image:', imageError)
+        await fetchProductTypes()
+        toast.warning(`产品模板已${wasCreating ? '创建' : '更新'}，但分类图片${pendingImageFile ? '上传' : '移除'}失败，请重试`)
+        return
+      }
     }
 
     toast.success(wasCreating ? '产品模板已创建' : '产品模板已更新')
@@ -455,7 +468,7 @@ const submitForm = async (): Promise<void> => {
     await fetchProductTypes()
   } catch (error) {
     console.error('Failed to save product type:', error)
-    toast.error('产品模板保存失败，请检查分类图片格式和尺寸')
+    toast.error('产品模板保存失败，请检查名称、标识和字段设置')
   } finally {
     submitting.value = false
   }

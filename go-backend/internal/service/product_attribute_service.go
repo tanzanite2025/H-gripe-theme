@@ -112,9 +112,11 @@ func (s *ProductService) GetProductType(id uint) (*product.ProductType, error) {
 }
 
 func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, imageURL string) (*product.ProductType, error) {
-	if _, err := s.GetProductType(id); err != nil {
+	existing, err := s.GetProductType(id)
+	if err != nil {
 		return nil, err
 	}
+	previousAssetID := existing.ImageMediaAssetID
 
 	imageURL = strings.TrimSpace(imageURL)
 	if mediaAssetID != nil && *mediaAssetID == 0 {
@@ -134,6 +136,9 @@ func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, ima
 		return nil, err
 	}
 	s.invalidateStorefrontHTMLCache("admin product type image update")
+	if previousAssetID != nil && (mediaAssetID == nil || *mediaAssetID != *previousAssetID) {
+		s.cleanupProductTypeImageAsset(*previousAssetID, "product type image replacement or removal")
+	}
 	return s.productRepo.FindProductTypeByID(id)
 }
 
@@ -212,7 +217,8 @@ func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*pr
 }
 
 func (s *ProductService) DeleteProductType(id uint) error {
-	if _, err := s.GetProductType(id); err != nil {
+	existing, err := s.GetProductType(id)
+	if err != nil {
 		return err
 	}
 	if err := s.productRepo.DeleteProductType(id); err != nil {
@@ -222,6 +228,9 @@ func (s *ProductService) DeleteProductType(id uint) error {
 		return err
 	}
 	s.invalidateStorefrontHTMLCache("admin product type delete")
+	if existing.ImageMediaAssetID != nil {
+		s.cleanupProductTypeImageAsset(*existing.ImageMediaAssetID, "product type deletion")
+	}
 	return nil
 }
 

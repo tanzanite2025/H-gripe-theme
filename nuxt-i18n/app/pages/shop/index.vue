@@ -177,7 +177,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRoute, useAsyncData } from '#imports'
+import { useRoute, useRouter, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
@@ -194,6 +194,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 const { fetchShopProducts } = useShopProducts()
 
@@ -228,6 +229,55 @@ const createDefaultSearchFilters = (): ProductSearchFiltersPayload => ({
 })
 
 const { pendingSearch, presetCategorySlug } = useShopSearchSheet()
+
+const routeProductTypeSlug = computed(() => {
+  const value = route.query.product_type
+  const raw = Array.isArray(value) ? value[0] : value
+  return String(raw || '').trim()
+})
+
+const syncSelectedCategoryFromRoute = () => {
+  const slug = routeProductTypeSlug.value
+  if (!slug) {
+    if (selectedCategory.value?.isProductType) {
+      selectedCategory.value = null
+    }
+    return
+  }
+
+  const match = categories.value.find(category => category.slug === slug)
+  if (match) {
+    selectedCategory.value = match
+    return
+  }
+
+  if (selectedCategory.value?.isProductType) {
+    selectedCategory.value = null
+  }
+}
+
+const replaceProductTypeRoute = async (category: ShopCategory | null) => {
+  const nextSlug = category?.isProductType ? category.slug : ''
+  if (routeProductTypeSlug.value === nextSlug) return false
+
+  const nextQuery: Record<string, any> = { ...route.query }
+  if (nextSlug) {
+    nextQuery.product_type = nextSlug
+  } else {
+    delete nextQuery.product_type
+  }
+
+  await router.replace({
+    path: route.path,
+    query: nextQuery,
+  })
+  return true
+}
+
+if (import.meta.server) {
+  await loadCategories().catch(() => [])
+  syncSelectedCategoryFromRoute()
+}
 
 const openFilters = () => {
   categoryFilterOpen.value = true
@@ -316,6 +366,7 @@ const { data: asyncData, pending, error: asyncError, refresh } = await useAsyncD
 )
 
 watch(() => route.query, () => {
+  syncSelectedCategoryFromRoute()
   refresh()
 }, { deep: true })
 
@@ -386,7 +437,7 @@ const handleSearch = (payload: ProductSearchPayload) => {
   loadProducts(next)
 }
 
-const onCategorySelect = (category: ShopCategory | null) => {
+const onCategorySelect = async (category: ShopCategory | null) => {
   selectedCategory.value = category
 
   const base: ProductSearchPayload =
@@ -401,7 +452,10 @@ const onCategorySelect = (category: ShopCategory | null) => {
 
   currentProductPage.value = 1
   currentSearch.value = next
-  loadProducts(next)
+  const routeChanged = await replaceProductTypeRoute(category)
+  if (!routeChanged) {
+    loadProducts(next)
+  }
 }
 
 const goToProductPage = (page: number) => {
@@ -412,8 +466,8 @@ const goToProductPage = (page: number) => {
   loadProducts(currentSearch.value || undefined)
 }
 
-const onMobileCategorySelect = (category: ShopCategory | null) => {
-  onCategorySelect(category)
+const onMobileCategorySelect = async (category: ShopCategory | null) => {
+  await onCategorySelect(category)
   closeCategoryFilter()
 }
 
@@ -432,6 +486,7 @@ const applyPresetCategoryFromSlug = () => {
 
 onMounted(async () => {
   await loadCategories()
+  syncSelectedCategoryFromRoute()
 
   // 页面首次挂载时，如果是从 Inner tube 等入口过来，先根据 slug 预设分类
   applyPresetCategoryFromSlug()
@@ -454,6 +509,7 @@ watch(pendingSearch, async (payload) => {
   if (!categories.value.length) {
     await loadCategories()
   }
+  syncSelectedCategoryFromRoute()
   applyPresetCategoryFromSlug()
 
   handleSearch(payload as unknown as ProductSearchPayload)
@@ -689,5 +745,3 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 }
 
 </style>
-
-

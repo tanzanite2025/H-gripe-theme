@@ -18,7 +18,12 @@ func NewHandler(spokeService *service.SpokeService) *Handler {
 }
 
 func (h *Handler) GetExport(c *gin.Context) {
-	c.JSON(http.StatusOK, h.spokeService.GetExport())
+	export, err := h.spokeService.GetExport()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "spoke_export_error", "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, export)
 }
 
 func (h *Handler) ListHistory(c *gin.Context) {
@@ -83,6 +88,8 @@ func (h *Handler) Calculate(c *gin.Context) {
 		switch {
 		case errors.Is(err, service.ErrSpokeGeometryNotFound):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "not_found", "message": "Unknown rim or hub geometry"})
+		case errors.Is(err, service.ErrSpokeRimGeometryMissing):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "not_found", "message": "Rim geometry not available for requested model"})
 		case errors.Is(err, service.ErrSpokeHubGeometryMissing):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "not_found", "message": "Hub geometry not available for requested position"})
 		default:

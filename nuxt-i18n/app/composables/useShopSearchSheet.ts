@@ -58,9 +58,11 @@ export const useShopSearchSheet = () => {
       window.dispatchEvent(new CustomEvent('ui:shop-search-submit', { detail: payload }))
     }
     const shopPath = localePath('/shop')
+    const chipCategorySlug = String(payload?.chipCategorySlug || '').trim()
+    const query = chipCategorySlug ? { product_type: chipCategorySlug } : undefined
 
-    if (route.path !== shopPath) {
-      await router.push(shopPath)
+    if (route.path !== shopPath || String(route.query.product_type || '') !== chipCategorySlug) {
+      await router.push(query ? { path: shopPath, query } : shopPath)
     }
   }
 

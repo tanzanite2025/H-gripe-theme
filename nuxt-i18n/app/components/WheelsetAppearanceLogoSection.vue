@@ -122,14 +122,14 @@
        <div class="grid gap-4 sm:grid-cols-2">
           <GuideImage
             src="/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp"
-            alt="Tanzanite carbon rim surface finish detail 1"
+            alt="Carbon rim surface finish detail 1"
             :zoomOnClick="true"
             caption="Matte Finish"
             class="rounded-xl overflow-hidden border border-slate-700/50"
           />
           <GuideImage
             src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
-            alt="Tanzanite carbon rim surface finish detail 2"
+            alt="Carbon rim surface finish detail 2"
             :zoomOnClick="true"
             caption="Glossy Finish"
             class="rounded-xl overflow-hidden border border-slate-700/50"

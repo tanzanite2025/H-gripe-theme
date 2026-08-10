@@ -69,8 +69,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n } from '#imports'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
-import { useQuickBuySettings } from '~/composables/usePublicSettings'
-import type { QuickBuyConfig } from '~/utils/quickBuy/types'
+import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
 
 // floating submenu state
 const isOpen = ref(false)
@@ -96,11 +95,8 @@ const openQuick = () => {
 
 // removed old share popup and outside-click listeners; modal closes by overlay click
 
-const props = defineProps<{ config?: QuickBuyConfig | null }>()
-const { quickBuySettings } = useQuickBuySettings()
-const quickBuyConfig = computed<QuickBuyConfig | null>(() =>
-  props.config || quickBuySettings.value || null
-)
+const { quickBuyFlowConfig } = useQuickBuyFlow('dock')
+const quickBuyConfig = computed(() => quickBuyFlowConfig.value)
 
 const { t: $t } = useI18n()
 
