@@ -36,13 +36,17 @@
               class="group block overflow-hidden rounded-2xl premium-card relative hover:shadow-2xl hover:shadow-black/40 transition-all duration-500"
             >
               <!-- Image Aspect -->
-              <div class="relative aspect-[4/3] bg-[var(--tz-card-surface)] overflow-hidden">
+              <div
+                class="relative bg-[var(--tz-card-surface)] overflow-hidden"
+                :class="card.kind === 'category' ? 'aspect-square' : 'aspect-[4/3]'"
+              >
                  <img
-                   v-if="card.thumbnail"
+                   v-if="card.thumbnail && !brokenCardImageKeys.includes(card.key)"
                    :src="card.thumbnail"
                    :alt="card.title"
                    class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                    loading="lazy"
+                   @error="handleCardImageError(card.key)"
                  />
                  <!-- Placeholder Gradient / Image Slot -->
                   <div
@@ -83,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAsyncData, useI18n, useLocalePath, useState } from '#imports'
 import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
@@ -95,6 +99,7 @@ const localePath = useLocalePath()
 const { fetchFeaturedShopProducts } = useShopProducts()
 const { fetchCategories } = useShopCategories()
 const productCategoriesState = useState<ShopCategory[]>('home-product-categories', () => [])
+const brokenCardImageKeys = ref<string[]>([])
 
 interface FeaturedProductCard {
   key: string
@@ -104,6 +109,7 @@ interface FeaturedProductCard {
   url: string
   thumbnail?: string
   category?: string
+  kind: 'product' | 'category'
 }
 
 const { data: featuredProductsData } = await useAsyncData(
@@ -156,6 +162,7 @@ const dynamicCards = computed<FeaturedProductCard[]>(() =>
       url: product.url,
       thumbnail: product.thumbnail,
       category: product.productType?.name,
+      kind: 'product',
     }))
 )
 
@@ -171,11 +178,18 @@ const categoryCards = computed<FeaturedProductCard[]>(() => {
         product_type: category.slug,
       },
     }),
+    thumbnail: category.image,
     category: category.name,
+    kind: 'category',
   }))
 })
 
 const cards = computed(() => {
-  return dynamicCards.value.length > 0 ? dynamicCards.value : categoryCards.value
+  return categoryCards.value.length > 0 ? categoryCards.value : dynamicCards.value
 })
+
+const handleCardImageError = (key: string): void => {
+  if (brokenCardImageKeys.value.includes(key)) return
+  brokenCardImageKeys.value = [...brokenCardImageKeys.value, key]
+}
 </script>

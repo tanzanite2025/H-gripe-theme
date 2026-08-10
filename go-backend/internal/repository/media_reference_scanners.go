@@ -9,6 +9,7 @@ type mediaAssetReferenceScanner func(mediaAssetReferenceQuery) ([]media.AssetRef
 // register it here without changing deletion orchestration.
 func (r *MediaRepository) assetReferenceScanners() []mediaAssetReferenceScanner {
 	return []mediaAssetReferenceScanner{
+		r.productTypeImageReferences,
 		r.productMediaReferences,
 		r.galleryReferences,
 		r.giftCardReferences,

@@ -6,6 +6,7 @@ export interface ShopCategory {
   id: number
   slug: string
   name: string
+  image?: string
   count?: number
   isProductType?: boolean
 }
@@ -31,9 +32,16 @@ const extractProductTypes = (payload: unknown): ShopCategory[] => {
         const id = Number(record.id)
         const slug = String(record.slug || '').trim()
         const name = String(record.name || '').trim()
+        const image = String(record.image_url || record.image || '').trim()
 
         if (!Number.isFinite(id) || !slug || !name || record.is_enabled === false) return []
-        return [{ id, slug, name, isProductType: true }]
+        return [{
+          id,
+          slug,
+          name,
+          ...(image ? { image } : {}),
+          isProductType: true,
+        }]
       })
     }
 

@@ -26,6 +26,16 @@ export const productTypeApi = {
     return unwrapPayload(await axios.put(`/api/admin/product-types/${id}`, payload))
   },
 
+  async uploadImage(id: number | string, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return unwrapPayload(await axios.post(`/api/admin/product-types/${id}/image`, formData))
+  },
+
+  async deleteImage(id: number | string) {
+    return unwrapPayload(await axios.delete(`/api/admin/product-types/${id}/image`))
+  },
+
   async deleteProductType(id: number | string) {
     return unwrapPayload(await axios.delete(`/api/admin/product-types/${id}`))
   }

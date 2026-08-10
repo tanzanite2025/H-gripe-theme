@@ -38,6 +38,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	userHandler := NewUserHandler(userService)
 	customerHandler := NewCustomerHandler(userService)
 	productHandler := NewProductHandler(productService)
+	productTypeImageHandler := NewProductTypeImageHandler(productService, services.Media)
 	productInformationTemplateHandler := NewProductInformationTemplateHandler(services.ProductInformationTemplate)
 	mediaHandler := NewMediaHandler(services.Media)
 	orderHandler := NewOrderHandler(orderService)
@@ -165,6 +166,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productTypesGroup.GET("/:id", productHandler.GetProductType)
 				productTypesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProductType)
 				productTypesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProductType)
+				productTypesGroup.POST("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productTypeImageHandler.UploadImage)
+				productTypesGroup.DELETE("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productTypeImageHandler.DeleteImage)
 				productTypesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProductType)
 			}
 

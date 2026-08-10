@@ -111,7 +111,8 @@ func TestPublicProductFromDomainStatusOverridesSkuAvailability(t *testing.T) {
 func TestPublicProductTypeUsesRequestedTranslationWithEnglishFallback(t *testing.T) {
 	item := productdomain.Product{
 		ProductType: &productdomain.ProductType{
-			Name: "Wheelset",
+			Name:     "Wheelset",
+			ImageURL: "https://cdn.example.com/categories/wheelset.webp",
 			Translations: []productdomain.ProductTypeTranslation{
 				{Locale: "en", Name: "Wheelset"},
 				{Locale: "zh_cn", Name: "轮组"},
@@ -127,6 +128,9 @@ func TestPublicProductTypeUsesRequestedTranslationWithEnglishFallback(t *testing
 	fallback := PublicProductFromDomainWithLocale(item, "", "fr")
 	if fallback.ProductType == nil || fallback.ProductType.Name != "Wheelset" {
 		t.Fatalf("expected English product type fallback, got %#v", fallback.ProductType)
+	}
+	if translated.ProductType.ImageURL != "https://cdn.example.com/categories/wheelset.webp" {
+		t.Fatalf("expected product type image URL to be exposed, got %#v", translated.ProductType)
 	}
 }
 
