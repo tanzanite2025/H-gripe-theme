@@ -22,7 +22,7 @@ func (s *SpokeService) BuildPresetTemplate() ([]byte, error) {
 	}
 
 	file := excelize.NewFile()
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	defaultSheet := file.GetSheetName(0)
 	if err := file.SetSheetName(defaultSheet, domainspoke.PresetTemplateSheet); err != nil {
@@ -200,7 +200,7 @@ func (s *SpokeService) ImportPresetTemplate(reader io.Reader) (domainspoke.Expor
 	if err != nil {
 		return domainspoke.ExportResponse{}, fmt.Errorf("%w: cannot open preset template: %v", ErrInvalidSpokeCatalog, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	rows, err := file.GetRows(domainspoke.PresetTemplateSheet)
 	if err != nil {

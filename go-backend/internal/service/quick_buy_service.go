@@ -818,41 +818,41 @@ func (s *QuickBuyService) validateQuickBuySession(version quickbuy.Version, item
 		itemsByStep[item.StepKey] = append(itemsByStep[item.StepKey], item)
 		step := quickBuyStepByKey(version, item.StepKey)
 		if step == nil {
-			result.addIssue("error", "step_missing", fmt.Sprintf("selection references missing step %q", item.StepKey), item.StepKey, item.ProductID, item.VariantID)
+			result.addIssue("step_missing", fmt.Sprintf("selection references missing step %q", item.StepKey), item.StepKey, item.ProductID, item.VariantID)
 			continue
 		}
 		if item.Quantity <= 0 {
-			result.addIssue("error", "invalid_quantity", fmt.Sprintf("step %q has a non-positive quantity", item.StepKey), item.StepKey, item.ProductID, item.VariantID)
+			result.addIssue("invalid_quantity", fmt.Sprintf("step %q has a non-positive quantity", item.StepKey), item.StepKey, item.ProductID, item.VariantID)
 		}
 		if s.productRepo == nil {
 			continue
 		}
 		productItem, variant, err := s.productRepo.FindPurchasableVariant(item.ProductID, item.VariantID)
 		if err != nil {
-			result.addIssue("error", "product_unavailable", fmt.Sprintf("product %d is no longer available", item.ProductID), item.StepKey, item.ProductID, item.VariantID)
+			result.addIssue("product_unavailable", fmt.Sprintf("product %d is no longer available", item.ProductID), item.StepKey, item.ProductID, item.VariantID)
 			continue
 		}
 		if err := validateQuickBuyProductAllowedForStep(*step, *productItem); err != nil {
-			result.addIssue("error", "product_type_not_allowed", err.Error(), item.StepKey, item.ProductID, item.VariantID)
+			result.addIssue("product_type_not_allowed", err.Error(), item.StepKey, item.ProductID, item.VariantID)
 		}
 		if variant.Stock < item.Quantity {
-			result.addIssue("error", "stock_unavailable", fmt.Sprintf("product %d no longer has enough stock", item.ProductID), item.StepKey, item.ProductID, item.VariantID)
+			result.addIssue("stock_unavailable", fmt.Sprintf("product %d no longer has enough stock", item.ProductID), item.StepKey, item.ProductID, item.VariantID)
 		}
 	}
 
 	for _, step := range version.Steps {
 		stepItems := itemsByStep[step.StepKey]
 		if step.IsRequired && step.SelectionMode != quickbuy.SelectionModeAuto && len(stepItems) == 0 {
-			result.addIssue("error", "required_step_missing", fmt.Sprintf("required step %q has no selection", step.StepKey), step.StepKey, 0, nil)
+			result.addIssue("required_step_missing", fmt.Sprintf("required step %q has no selection", step.StepKey), step.StepKey, 0, nil)
 		}
 		if step.SelectionMode == quickbuy.SelectionModeSingle && len(stepItems) > 1 {
-			result.addIssue("error", "single_step_multiple_items", fmt.Sprintf("single-select step %q has more than one selection", step.StepKey), step.StepKey, 0, nil)
+			result.addIssue("single_step_multiple_items", fmt.Sprintf("single-select step %q has more than one selection", step.StepKey), step.StepKey, 0, nil)
 		}
 		if step.MaxSelect > 0 && len(stepItems) > step.MaxSelect {
-			result.addIssue("error", "max_select_exceeded", fmt.Sprintf("step %q exceeds max_select", step.StepKey), step.StepKey, 0, nil)
+			result.addIssue("max_select_exceeded", fmt.Sprintf("step %q exceeds max_select", step.StepKey), step.StepKey, 0, nil)
 		}
 		if step.MinSelect > 0 && len(stepItems) < step.MinSelect {
-			result.addIssue("error", "min_select_missing", fmt.Sprintf("step %q has fewer selections than min_select", step.StepKey), step.StepKey, 0, nil)
+			result.addIssue("min_select_missing", fmt.Sprintf("step %q has fewer selections than min_select", step.StepKey), step.StepKey, 0, nil)
 		}
 	}
 	return result
@@ -1143,12 +1143,10 @@ func (result QuickBuyValidationResult) errorSummary() string {
 	return "validation failed"
 }
 
-func (result *QuickBuySessionValidationResult) addIssue(severity, code, message, stepKey string, productID uint, variantID *uint) {
-	if severity == "error" {
-		result.Valid = false
-	}
+func (result *QuickBuySessionValidationResult) addIssue(code, message, stepKey string, productID uint, variantID *uint) {
+	result.Valid = false
 	result.Issues = append(result.Issues, QuickBuySessionValidationIssue{
-		Severity:  severity,
+		Severity:  "error",
 		Code:      code,
 		Message:   message,
 		StepKey:   stepKey,

@@ -54,7 +54,7 @@ func (h *SpokeCatalogHandler) Import(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": err.Error()})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var payload spoke.ExportResponse
 	decoder := json.NewDecoder(file)
@@ -94,7 +94,7 @@ func (h *SpokeCatalogHandler) ImportPresetTemplate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": err.Error()})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	export, err := h.spokeService.ImportPresetTemplate(file)
 	if err != nil {

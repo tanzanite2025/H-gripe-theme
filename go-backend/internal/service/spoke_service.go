@@ -326,8 +326,8 @@ func isCompleteHubGeometry(geometry *domainspoke.HubGeometry) bool {
 		geometry.RightFlangePCD != nil
 }
 
-func floatInRange(value *float64, min, max float64) bool {
-	return value == nil || (*value >= min && *value <= max)
+func floatInRange(value *float64, minValue, maxValue float64) bool {
+	return value == nil || (*value >= minValue && *value <= maxValue)
 }
 
 func normalizeCatalogID(value string) string {
