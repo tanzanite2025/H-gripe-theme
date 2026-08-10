@@ -70,6 +70,13 @@ export const useShopCategories = () => {
     return true
   }
 
+  const fetchCategories = async (): Promise<ShopCategory[]> => {
+    const response = await $fetch<unknown>(`${baseURL}/products/types`, {
+      headers: categoryRequestHeaders(),
+    })
+    return extractProductTypes(response)
+  }
+
   const loadCategories = async () => {
     if (loading.value) return
 
@@ -77,10 +84,7 @@ export const useShopCategories = () => {
     error.value = null
 
     try {
-      const response = await $fetch<unknown>(`${baseURL}/products/types`, {
-        headers: categoryRequestHeaders(),
-      })
-      const productTypes = extractProductTypes(response)
+      const productTypes = await fetchCategories()
       if (productTypes.length) {
         categories.value = productTypes
         source.value = 'api'
@@ -111,6 +115,7 @@ export const useShopCategories = () => {
     loading,
     error,
     source,
+    fetchCategories,
     loadCategories,
   }
 }
