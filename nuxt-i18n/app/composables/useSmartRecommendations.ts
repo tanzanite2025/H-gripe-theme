@@ -41,14 +41,6 @@ const developmentProductFallbacks: RecommendationProductCard[] = [
   { id: 'fallback-hub', title: 'Hub Parts', url: '/shop?keyword=Hub', priceLabel: 'Search' },
 ]
 
-const developmentCategoryFallbacks: ShopCategory[] = [
-  { id: -1, slug: 'carbon-wheels', name: 'Carbon Wheels' },
-  { id: -2, slug: 'carbon-rim', name: 'Carbon Rim' },
-  { id: -3, slug: 'spoke', name: 'Spokes' },
-  { id: -4, slug: 'inner-tube', name: 'Inner Tube' },
-  { id: -5, slug: 'hub', name: 'Hubs' },
-]
-
 const toPositiveInteger = (value: unknown) => {
   const numberValue = Number(value)
   if (!Number.isInteger(numberValue) || numberValue <= 0) return null
@@ -104,12 +96,9 @@ export const useSmartRecommendations = () => {
   })
 
   const displayedCategoryCards = computed<ShopCategory[]>(() => {
-    const cards = categories.value
+    return categories.value
       .filter((category) => category && category.slug && category.name)
       .slice(0, 6)
-
-    if (cards.length || !import.meta.dev) return cards
-    return developmentCategoryFallbacks
   })
 
   const applyCatalogFallback = async (

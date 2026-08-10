@@ -40,6 +40,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	productHandler := NewProductHandler(productService)
 	productTypeImageHandler := NewProductTypeImageHandler(productService, services.Media)
 	productInformationTemplateHandler := NewProductInformationTemplateHandler(services.ProductInformationTemplate)
+	spokeCatalogHandler := NewSpokeCatalogHandler(services.Spoke)
+	quickBuyHandler := NewQuickBuyHandler(services.QuickBuy)
 	mediaHandler := NewMediaHandler(services.Media)
 	orderHandler := NewOrderHandler(orderService)
 	paymentHandler := NewPaymentHandler(paymentService, services.AdminSettings)
@@ -195,6 +197,30 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productInformationTemplatesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productInformationTemplateHandler.Create)
 				productInformationTemplatesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productInformationTemplateHandler.Update)
 				productInformationTemplatesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productInformationTemplateHandler.Delete)
+			}
+
+			spokeCatalogGroup := authenticated.Group("/spoke-catalog")
+			spokeCatalogGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				spokeCatalogGroup.GET("", spokeCatalogHandler.Get)
+				spokeCatalogGroup.PUT("", middleware.RequirePermission(auth.PermProductEdit), spokeCatalogHandler.Replace)
+				spokeCatalogGroup.POST("/import", middleware.RequirePermission(auth.PermProductEdit), spokeCatalogHandler.Import)
+				spokeCatalogGroup.GET("/preset-template", spokeCatalogHandler.DownloadPresetTemplate)
+				spokeCatalogGroup.POST("/preset-template/import", middleware.RequirePermission(auth.PermProductEdit), spokeCatalogHandler.ImportPresetTemplate)
+			}
+
+			quickBuyGroup := authenticated.Group("/quick-buy")
+			quickBuyGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				quickBuyGroup.GET("/flows", quickBuyHandler.ListFlows)
+				quickBuyGroup.GET("/flows/:id", quickBuyHandler.GetFlow)
+				quickBuyGroup.POST("/flows", middleware.RequirePermission(auth.PermProductEdit), quickBuyHandler.CreateFlow)
+				quickBuyGroup.PUT("/flows/:id", middleware.RequirePermission(auth.PermProductEdit), quickBuyHandler.UpdateFlow)
+				quickBuyGroup.POST("/flows/:id/draft", middleware.RequirePermission(auth.PermProductEdit), quickBuyHandler.CreateDraftVersion)
+				quickBuyGroup.PUT("/flow-versions/:version_id", middleware.RequirePermission(auth.PermProductEdit), quickBuyHandler.UpdateDraftVersion)
+				quickBuyGroup.POST("/flow-versions/:version_id/validate", quickBuyHandler.ValidateVersion)
+				quickBuyGroup.POST("/flow-versions/:version_id/preview", quickBuyHandler.PreviewVersionCandidates)
+				quickBuyGroup.POST("/flow-versions/:version_id/publish", middleware.RequirePermission(auth.PermProductEdit), quickBuyHandler.PublishVersion)
 			}
 
 			googleMerchantGroup := authenticated.Group("/google-merchant")

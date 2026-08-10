@@ -141,6 +141,11 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&wishlist.Item{},
 		&feedback.Feedback{},
 		&suggestionfeedback.SuggestionFeedback{},
+		&spoke.CatalogRimBrand{},
+		&spoke.CatalogRimModel{},
+		&spoke.CatalogHubBrand{},
+		&spoke.CatalogHubModel{},
+		&spoke.CatalogBuildPreset{},
 		&spoke.History{},
 		&recommendationdomain.Event{},
 	)

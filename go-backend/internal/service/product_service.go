@@ -15,6 +15,7 @@ import (
 type ProductService struct {
 	productRepo                    *repository.ProductRepository
 	informationTemplateRepo        *repository.ProductInformationTemplateRepository
+	mediaService                   mediaAssetDeleter
 	currencyPolicy                 *CurrencyPolicyService
 	cache                          *cache.RedisCache
 	cacheTTL                       time.Duration
@@ -42,6 +43,13 @@ func (s *ProductService) ConfigureInformationTemplateRepository(repo *repository
 		return
 	}
 	s.informationTemplateRepo = repo
+}
+
+func (s *ProductService) ConfigureMediaService(mediaService mediaAssetDeleter) {
+	if s == nil {
+		return
+	}
+	s.mediaService = mediaService
 }
 
 func (s *ProductService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {

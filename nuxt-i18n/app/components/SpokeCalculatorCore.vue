@@ -1,9 +1,7 @@
 <template>
   <div class="spoke-calculator">
     <div class="grid gap-6 items-start">
-      <section
-        class="rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
-      >
+      <section class="spoke-calculator__shell">
         <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-4">
           Wheel setup
         </h2>
@@ -11,61 +9,44 @@
         <!-- Two-column layout: Front Wheel | Rear Wheel -->
         <div class="grid gap-6 md:grid-cols-2">
           <!-- ========== FRONT WHEEL COLUMN ========== -->
-          <div class="space-y-4 p-4 rounded-xl bg-slate-950/70 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.95)]">
-            <h3 class="text-sm font-semibold text-sky-400 uppercase tracking-wide">Front Wheel</h3>
+          <div class="spoke-calculator__panel space-y-4">
+            <h3 class="text-sm font-semibold text-[var(--tz-brand-primary)] uppercase tracking-wide">Front Wheel</h3>
 
             <!-- Spoke count -->
-            <div class="space-y-1.5">
-              <label for="front-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
-              <select
-                id="front-spoke-count"
-                v-model.number="frontConfig.spokeCount"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-              >
-                <option :value="16" class="bg-slate-900 text-slate-50">16</option>
-                <option :value="18" class="bg-slate-900 text-slate-50">18</option>
-                <option :value="20" class="bg-slate-900 text-slate-50">20</option>
-                <option :value="24" class="bg-slate-900 text-slate-50">24</option>
-                <option :value="28" class="bg-slate-900 text-slate-50">28</option>
-                <option :value="32" class="bg-slate-900 text-slate-50">32</option>
-                <option :value="36" class="bg-slate-900 text-slate-50">36</option>
-              </select>
+              <div class="space-y-1.5">
+                <label for="front-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
+                <SpokeCalculatorSelect
+                  id="front-spoke-count"
+                  v-model="frontConfig.spokeCount"
+                  :options="spokeCountOptions"
+                />
             </div>
 
             <!-- Lacing pattern -->
-            <div class="space-y-1.5">
-              <label for="front-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
-              <select
-                id="front-lacing"
-                v-model.number="frontConfig.crossing"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-              >
-                <option :value="0" class="bg-slate-900 text-slate-50">0-cross (Radial)</option>
-                <option :value="1" class="bg-slate-900 text-slate-50">1-cross</option>
-                <option :value="2" class="bg-slate-900 text-slate-50">2-cross</option>
-                <option :value="3" class="bg-slate-900 text-slate-50">3-cross</option>
-                <option :value="4" class="bg-slate-900 text-slate-50">4-cross</option>
-              </select>
+              <div class="space-y-1.5">
+                <label for="front-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
+                <SpokeCalculatorSelect
+                  id="front-lacing"
+                  v-model="frontConfig.crossing"
+                  :options="lacingOptions"
+                />
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-3">
               <!-- Nipple type -->
               <div class="space-y-1.5">
                 <label for="front-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
-                <select
+                <SpokeCalculatorSelect
                   id="front-nipple"
                   v-model="frontConfig.nippleType"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                >
-                  <option value="standard" class="bg-slate-900 text-slate-50">Standard external</option>
-                  <option value="hidden" class="bg-slate-900 text-slate-50">Hidden / aero</option>
-                </select>
+                  :options="nippleTypeOptions"
+                />
               </div>
 
               <!-- Nipple length (hidden nipples only) -->
               <div v-if="frontConfig.nippleType === 'hidden'" class="space-y-1.5">
                 <label for="front-nipple-length" class="block text-xs font-medium text-slate-200">Nipple length</label>
-                <div class="flex items-center gap-2">
+                <div class="spoke-calculator__unit-field">
                   <input
                     id="front-nipple-length"
                     v-model.number="frontConfig.nippleLength"
@@ -73,9 +54,9 @@
                     min="0"
                     max="30"
                     placeholder="e.g. 12"
-                    class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
                   />
-                  <span class="tz-micro-label tz-text-muted">mm</span>
+                  <span class="spoke-calculator__unit">mm</span>
                 </div>
               </div>
             </div>
@@ -87,14 +68,12 @@
                 <label for="front-rim-brand" class="block text-xs font-medium text-slate-200">
                   Rim Brand
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="front-rim-brand"
                   v-model="frontConfig.rimBrandId"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                >
-                  <option value="" disabled>Select Brand</option>
-                  <option v-for="brand in RIM_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
-                </select>
+                  :options="rimBrandOptions"
+                  placeholder="Select Brand"
+                />
               </div>
 
                <!-- Model -->
@@ -102,15 +81,13 @@
                 <label for="front-rim-model" class="block text-xs font-medium text-slate-200">
                   Rim Model
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="front-rim-model"
                   v-model="frontConfig.rimModelId"
-                   :disabled="!frontRimModels.length"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="" disabled>Select Model</option>
-                  <option v-for="rim in frontRimModels" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.name }}</option>
-                </select>
+                  :disabled="!frontRimModels.length"
+                  :options="frontRimModelOptions"
+                  placeholder="Select Model"
+                />
                </div>
             </div>
 
@@ -121,14 +98,12 @@
                 <label for="front-hub-brand" class="block text-xs font-medium text-slate-200">
                   Hub Brand
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="front-hub-brand"
                   v-model="frontConfig.hubBrandId"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                >
-                  <option value="" disabled>Select Brand</option>
-                  <option v-for="brand in HUB_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
-                </select>
+                  :options="hubBrandOptions"
+                  placeholder="Select Brand"
+                />
               </div>
 
                <!-- Model -->
@@ -136,155 +111,136 @@
                 <label for="front-hub-model" class="block text-xs font-medium text-slate-200">
                   Hub Model
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="front-hub-model"
                   v-model="frontConfig.hubModelId"
-                   :disabled="!frontHubModels.length"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="" disabled>Select Model</option>
-                  <option v-for="hub in frontHubModels" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.name }}</option>
-                </select>
+                  :disabled="!frontHubModels.length"
+                  :options="frontHubModelOptions"
+                  placeholder="Select Model"
+                />
                </div>
             </div>
 
             <!-- ERD -->
-            <div class="space-y-1.5">
-              <label for="front-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="front-erd"
-                  v-model.number="frontConfig.erd"
-                  type="number"
-                  min="400"
-                  max="750"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="front-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="front-erd"
+                    v-model.number="frontConfig.erd"
+                    type="number"
+                    min="400"
+                    max="750"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Left flange distance -->
-            <div class="space-y-1.5">
-              <label for="front-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="front-left-flange"
-                  v-model.number="frontConfig.leftFlange"
-                  type="number"
-                  min="10"
-                  max="60"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="front-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="front-left-flange"
+                    v-model.number="frontConfig.leftFlange"
+                    type="number"
+                    min="10"
+                    max="60"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Right flange distance -->
-            <div class="space-y-1.5">
-              <label for="front-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="front-right-flange"
-                  v-model.number="frontConfig.rightFlange"
-                  type="number"
-                  min="10"
-                  max="60"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="front-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="front-right-flange"
+                    v-model.number="frontConfig.rightFlange"
+                    type="number"
+                    min="10"
+                    max="60"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Left flange PCD -->
-            <div class="space-y-1.5">
-              <label for="front-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="front-left-flange-pcd"
-                  v-model.number="frontConfig.leftFlangePcd"
-                  type="number"
-                  min="30"
-                  max="80"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="front-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="front-left-flange-pcd"
+                    v-model.number="frontConfig.leftFlangePcd"
+                    type="number"
+                    min="30"
+                    max="80"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Right flange PCD -->
-            <div class="space-y-1.5">
-              <label for="front-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="front-right-flange-pcd"
-                  v-model.number="frontConfig.rightFlangePcd"
-                  type="number"
-                  min="30"
-                  max="80"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="front-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="front-right-flange-pcd"
+                    v-model.number="frontConfig.rightFlangePcd"
+                    type="number"
+                    min="30"
+                    max="80"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
             </div>
-          </div>
 
           <!-- ========== REAR WHEEL COLUMN ========== -->
-          <div class="space-y-4 p-4 rounded-xl bg-slate-950/70 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.95)]">
-            <h3 class="text-sm font-semibold text-emerald-400 uppercase tracking-wide">Rear Wheel</h3>
+          <div class="spoke-calculator__panel space-y-4">
+            <h3 class="text-sm font-semibold text-[var(--tz-brand-primary)] uppercase tracking-wide">Rear Wheel</h3>
 
             <!-- Spoke count -->
-            <div class="space-y-1.5">
-              <label for="rear-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
-              <select
-                id="rear-spoke-count"
-                v-model.number="rearConfig.spokeCount"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-              >
-                <option :value="16" class="bg-slate-900 text-slate-50">16</option>
-                <option :value="18" class="bg-slate-900 text-slate-50">18</option>
-                <option :value="20" class="bg-slate-900 text-slate-50">20</option>
-                <option :value="24" class="bg-slate-900 text-slate-50">24</option>
-                <option :value="28" class="bg-slate-900 text-slate-50">28</option>
-                <option :value="32" class="bg-slate-900 text-slate-50">32</option>
-                <option :value="36" class="bg-slate-900 text-slate-50">36</option>
-              </select>
+              <div class="space-y-1.5">
+                <label for="rear-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
+                <SpokeCalculatorSelect
+                  id="rear-spoke-count"
+                  v-model="rearConfig.spokeCount"
+                  :options="spokeCountOptions"
+                />
             </div>
 
             <!-- Lacing pattern -->
-            <div class="space-y-1.5">
-              <label for="rear-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
-              <select
-                id="rear-lacing"
-                v-model.number="rearConfig.crossing"
-                class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-              >
-                <option :value="0" class="bg-slate-900 text-slate-50">0-cross (Radial)</option>
-                <option :value="1" class="bg-slate-900 text-slate-50">1-cross</option>
-                <option :value="2" class="bg-slate-900 text-slate-50">2-cross</option>
-                <option :value="3" class="bg-slate-900 text-slate-50">3-cross</option>
-                <option :value="4" class="bg-slate-900 text-slate-50">4-cross</option>
-              </select>
+              <div class="space-y-1.5">
+                <label for="rear-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
+                <SpokeCalculatorSelect
+                  id="rear-lacing"
+                  v-model="rearConfig.crossing"
+                  :options="lacingOptions"
+                />
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-3">
               <!-- Nipple type -->
               <div class="space-y-1.5">
                 <label for="rear-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
-                <select
+                <SpokeCalculatorSelect
                   id="rear-nipple"
                   v-model="rearConfig.nippleType"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                >
-                  <option value="standard" class="bg-slate-900 text-slate-50">Standard external</option>
-                  <option value="hidden" class="bg-slate-900 text-slate-50">Hidden / aero</option>
-                </select>
+                  :options="nippleTypeOptions"
+                />
               </div>
 
               <!-- Nipple length (hidden nipples only) -->
               <div v-if="rearConfig.nippleType === 'hidden'" class="space-y-1.5">
                 <label for="rear-nipple-length" class="block text-xs font-medium text-slate-200">Nipple length</label>
-                <div class="flex items-center gap-2">
+                <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-nipple-length"
                     v-model.number="rearConfig.nippleLength"
@@ -292,9 +248,9 @@
                     min="0"
                     max="30"
                     placeholder="e.g. 12"
-                    class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
                   />
-                  <span class="tz-micro-label tz-text-muted">mm</span>
+                  <span class="spoke-calculator__unit">mm</span>
                 </div>
               </div>
             </div>
@@ -306,14 +262,12 @@
                 <label for="rear-rim-brand" class="block text-xs font-medium text-slate-200">
                   Rim Brand
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="rear-rim-brand"
                   v-model="rearConfig.rimBrandId"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                >
-                  <option value="" disabled>Select Brand</option>
-                  <option v-for="brand in RIM_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
-                </select>
+                  :options="rimBrandOptions"
+                  placeholder="Select Brand"
+                />
               </div>
 
                <!-- Model -->
@@ -321,15 +275,13 @@
                 <label for="rear-rim-model" class="block text-xs font-medium text-slate-200">
                   Rim Model
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="rear-rim-model"
                   v-model="rearConfig.rimModelId"
-                   :disabled="!rearRimModels.length"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="" disabled>Select Model</option>
-                  <option v-for="rim in rearRimModels" :key="rim.id" :value="rim.id" class="bg-slate-900 text-slate-50">{{ rim.name }}</option>
-                </select>
+                  :disabled="!rearRimModels.length"
+                  :options="rearRimModelOptions"
+                  placeholder="Select Model"
+                />
                </div>
             </div>
 
@@ -340,14 +292,12 @@
                 <label for="rear-hub-brand" class="block text-xs font-medium text-slate-200">
                   Hub Brand
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="rear-hub-brand"
                   v-model="rearConfig.hubBrandId"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                >
-                  <option value="" disabled>Select Brand</option>
-                  <option v-for="brand in HUB_DATABASE" :key="brand.id" :value="brand.id" class="bg-slate-900 text-slate-50">{{ brand.name }}</option>
-                </select>
+                  :options="hubBrandOptions"
+                  placeholder="Select Brand"
+                />
               </div>
 
                <!-- Model -->
@@ -355,109 +305,107 @@
                 <label for="rear-hub-model" class="block text-xs font-medium text-slate-200">
                   Hub Model
                 </label>
-                <select
+                <SpokeCalculatorSelect
                   id="rear-hub-model"
                   v-model="rearConfig.hubModelId"
-                   :disabled="!rearHubModels.length"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="" disabled>Select Model</option>
-                  <option v-for="hub in rearHubModels" :key="hub.id" :value="hub.id" class="bg-slate-900 text-slate-50">{{ hub.name }}</option>
-                </select>
+                  :disabled="!rearHubModels.length"
+                  :options="rearHubModelOptions"
+                  placeholder="Select Model"
+                />
                </div>
             </div>
 
             <!-- ERD -->
-            <div class="space-y-1.5">
-              <label for="rear-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="rear-erd"
-                  v-model.number="rearConfig.erd"
-                  type="number"
-                  min="400"
-                  max="750"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="rear-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="rear-erd"
+                    v-model.number="rearConfig.erd"
+                    type="number"
+                    min="400"
+                    max="750"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Left flange distance -->
-            <div class="space-y-1.5">
-              <label for="rear-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="rear-left-flange"
-                  v-model.number="rearConfig.leftFlange"
-                  type="number"
-                  min="10"
-                  max="60"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="rear-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="rear-left-flange"
+                    v-model.number="rearConfig.leftFlange"
+                    type="number"
+                    min="10"
+                    max="60"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Right flange distance -->
-            <div class="space-y-1.5">
-              <label for="rear-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="rear-right-flange"
-                  v-model.number="rearConfig.rightFlange"
-                  type="number"
-                  min="10"
-                  max="60"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="rear-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="rear-right-flange"
+                    v-model.number="rearConfig.rightFlange"
+                    type="number"
+                    min="10"
+                    max="60"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Left flange PCD -->
-            <div class="space-y-1.5">
-              <label for="rear-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="rear-left-flange-pcd"
-                  v-model.number="rearConfig.leftFlangePcd"
-                  type="number"
-                  min="30"
-                  max="80"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="rear-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="rear-left-flange-pcd"
+                    v-model.number="rearConfig.leftFlangePcd"
+                    type="number"
+                    min="30"
+                    max="80"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
-            </div>
 
             <!-- Right flange PCD -->
-            <div class="space-y-1.5">
-              <label for="rear-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
-              <div class="flex items-center gap-2">
-                <input
-                  id="rear-right-flange-pcd"
-                  v-model.number="rearConfig.rightFlangePcd"
-                  type="number"
-                  min="30"
-                  max="80"
-                  class="block w-full rounded-lg border-none bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] px-3 py-2.5 text-sm text-slate-50 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] focus:outline-none focus:ring-0 focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.8),0_0_14px_rgba(56,189,248,0.35)]"
-                />
-                <span class="tz-micro-label tz-text-muted">mm</span>
+              <div class="space-y-1.5">
+                <label for="rear-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="rear-right-flange-pcd"
+                    v-model.number="rearConfig.rightFlangePcd"
+                    type="number"
+                    min="30"
+                    max="80"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
               </div>
             </div>
-          </div>
         </div>
 
         <!-- Action row -->
-        <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t border-slate-800 pt-4">
+        <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t border-slate-800/50 pt-4">
           <p class="tz-description tz-text-muted max-w-md">
             This is only a visual prototype. Replace the mock formula in the script section with your own calculation logic.
           </p>
           <div class="flex items-center gap-3">
             <button
               type="button"
-              class="inline-flex items-center rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="inline-flex items-center rounded-lg bg-[var(--tz-brand-primary)] px-4 py-2 text-sm font-medium text-slate-900 shadow-sm hover:bg-[var(--tz-brand-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[color:var(--tz-brand-primary)] focus:ring-offset-2 focus:ring-offset-[var(--tz-card-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
               :disabled="loading"
               @click="onCalculate"
             >
@@ -468,35 +416,39 @@
           </div>
         </div>
 
-        <!-- Estimated Lengths (4 result boxes aligned with columns) -->
-        <section
-          class="mt-6 rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
-        >
+        <!-- Spoke lengths (4 result boxes aligned with columns) -->
+        <section class="spoke-calculator__results-shell mt-6">
           <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-3">
-            Estimated lengths
+            Spoke lengths
           </h2>
 
           <p class="tz-description mb-4 tz-text-secondary">
-            These values are placeholders so that you can validate the layout and UX. Once the API is ready, you can return precise lengths from your backend or a Nuxt server route.
+            Verified catalog lengths are used first. If no verified result matches the current selection, the calculator uses the dimensions above.
           </p>
 
           <div class="grid gap-4 md:grid-cols-2">
             <!-- Front Wheel Results -->
             <div class="space-y-3">
-              <div class="text-xs font-semibold text-sky-400 uppercase tracking-wide mb-2">Front Wheel</div>
+              <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">Front Wheel</div>
               <div class="grid gap-3 grid-cols-2">
-                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="tz-compact-label tz-text-muted mb-1">Left side</div>
+                <div class="spoke-calculator__result-card px-4 py-3">
+                  <div class="mb-1 flex items-center justify-between gap-2">
+                    <span class="tz-compact-label tz-text-muted">Left side</span>
+                    <span v-if="frontLeftSourceLabel" class="spoke-calculator__source-badge">{{ frontLeftSourceLabel }}</span>
+                  </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-slate-50">{{ frontLeftDisplay }}</span>
-                    <span class="text-xs tz-text-muted">mm</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ frontLeftDisplay }}</span>
+                    <span v-if="frontLeftDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
-                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="tz-compact-label tz-text-muted mb-1">Right side</div>
+                <div class="spoke-calculator__result-card px-4 py-3">
+                  <div class="mb-1 flex items-center justify-between gap-2">
+                    <span class="tz-compact-label tz-text-muted">Right side</span>
+                    <span v-if="frontRightSourceLabel" class="spoke-calculator__source-badge">{{ frontRightSourceLabel }}</span>
+                  </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-slate-50">{{ frontRightDisplay }}</span>
-                    <span class="text-xs tz-text-muted">mm</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ frontRightDisplay }}</span>
+                    <span v-if="frontRightDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
               </div>
@@ -504,20 +456,26 @@
 
             <!-- Rear Wheel Results -->
             <div class="space-y-3">
-              <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-2">Rear Wheel</div>
+              <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">Rear Wheel</div>
               <div class="grid gap-3 grid-cols-2">
-                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="tz-compact-label tz-text-muted mb-1">Left side</div>
+                <div class="spoke-calculator__result-card px-4 py-3">
+                  <div class="mb-1 flex items-center justify-between gap-2">
+                    <span class="tz-compact-label tz-text-muted">Left side</span>
+                    <span v-if="rearLeftSourceLabel" class="spoke-calculator__source-badge">{{ rearLeftSourceLabel }}</span>
+                  </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-slate-50">{{ rearLeftDisplay }}</span>
-                    <span class="text-xs tz-text-muted">mm</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ rearLeftDisplay }}</span>
+                    <span v-if="rearLeftDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
-                <div class="rounded-xl bg-slate-950/80 px-4 py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]">
-                  <div class="tz-compact-label tz-text-muted mb-1">Right side</div>
+                <div class="spoke-calculator__result-card px-4 py-3">
+                  <div class="mb-1 flex items-center justify-between gap-2">
+                    <span class="tz-compact-label tz-text-muted">Right side</span>
+                    <span v-if="rearRightSourceLabel" class="spoke-calculator__source-badge">{{ rearRightSourceLabel }}</span>
+                  </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-slate-50">{{ rearRightDisplay }}</span>
-                    <span class="text-xs tz-text-muted">mm</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ rearRightDisplay }}</span>
+                    <span v-if="rearRightDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
               </div>
@@ -562,10 +520,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
-import { RIM_DATABASE, HUB_DATABASE, type RimModel, type HubModel } from '~/data/spoke-calculator/database'
+import { computed, reactive, ref, watch } from 'vue'
+import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
+import type { HubGeometry, HubModel, RimModel, WheelBuildPreset } from '~/data/spoke-calculator/database'
 import { computeSpokeLength } from '~/utils/spokeMath'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
+import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 
 interface WheelConfig {
   spokeCount: number
@@ -621,35 +581,78 @@ const rearConfig = reactive<WheelConfig>({
   rightFlangePcd: 55,
 })
 
+const { rims, hubs, presets, options: catalogOptions } = useSpokeCalculatorCatalog()
+
+const spokeCountOptions = computed(() => catalogOptions.value.spokeCounts)
+const lacingOptions = computed(() => catalogOptions.value.crossings)
+const nippleTypeOptions = computed(() => catalogOptions.value.nippleTypes)
+
+const rimBrandOptions = computed(() => rims.value.map(brand => ({
+  label: brand.name,
+  value: brand.id,
+})))
+
+const hubBrandOptions = computed(() => hubs.value.map(brand => ({
+  label: brand.name,
+  value: brand.id,
+})))
+
 // --- Computed Models based on Brand Selection ---
 
 // Front Rim Models
 const frontRimModels = computed<RimModel[]>(() => {
   if (!frontConfig.rimBrandId) return []
-  const brand = RIM_DATABASE.find(b => b.id === frontConfig.rimBrandId)
+  const brand = rims.value.find(b => b.id === frontConfig.rimBrandId)
   return brand ? brand.items : []
 })
+
+const frontRimModelOptions = computed(() => frontRimModels.value.map(rim => ({
+  label: rim.name,
+  value: rim.id,
+})))
 
 // Front Hub Models
 const frontHubModels = computed<HubModel[]>(() => {
   if (!frontConfig.hubBrandId) return []
-  const brand = HUB_DATABASE.find(b => b.id === frontConfig.hubBrandId)
+  const brand = hubs.value.find(b => b.id === frontConfig.hubBrandId)
   return brand ? brand.items : []
 })
+
+const frontHubModelOptions = computed(() => frontHubModels.value.map(hub => ({
+  label: hub.name,
+  value: hub.id,
+})))
 
 // Rear Rim Models
 const rearRimModels = computed<RimModel[]>(() => {
   if (!rearConfig.rimBrandId) return []
-  const brand = RIM_DATABASE.find(b => b.id === rearConfig.rimBrandId)
+  const brand = rims.value.find(b => b.id === rearConfig.rimBrandId)
   return brand ? brand.items : []
 })
+
+const rearRimModelOptions = computed(() => rearRimModels.value.map(rim => ({
+  label: rim.name,
+  value: rim.id,
+})))
 
 // Rear Hub Models
 const rearHubModels = computed<HubModel[]>(() => {
   if (!rearConfig.hubBrandId) return []
-  const brand = HUB_DATABASE.find(b => b.id === rearConfig.hubBrandId)
+  const brand = hubs.value.find(b => b.id === rearConfig.hubBrandId)
   return brand ? brand.items : []
 })
+
+const rearHubModelOptions = computed(() => rearHubModels.value.map(hub => ({
+  label: hub.name,
+  value: hub.id,
+})))
+
+const applyHubGeometry = (config: WheelConfig, geometry?: HubGeometry | null) => {
+  config.leftFlange = geometry?.leftFlange ?? null
+  config.rightFlange = geometry?.rightFlange ?? null
+  config.leftFlangePcd = geometry?.leftFlangePcd ?? null
+  config.rightFlangePcd = geometry?.rightFlangePcd ?? null
+}
 
 // --- Watchers for Auto-Population ---
 
@@ -657,10 +660,15 @@ const rearHubModels = computed<HubModel[]>(() => {
 watch(
   () => frontConfig.rimModelId,
   (newId) => {
-    if (!newId) return
+    if (!newId) {
+      frontConfig.erd = null
+      return
+    }
     const model = frontRimModels.value.find(m => m.id === newId)
-    if (model) {
+    if (model && model.erd != null) {
       frontConfig.erd = model.erd
+    } else {
+      frontConfig.erd = null
     }
   }
 )
@@ -669,17 +677,12 @@ watch(
 watch(
   () => frontConfig.hubModelId,
   (newId) => {
-    if (!newId) return
-    const model = frontHubModels.value.find(m => m.id === newId)
-    if (model && model.front) {
-      frontConfig.leftFlange = model.front.leftFlange
-      frontConfig.rightFlange = model.front.rightFlange
-      frontConfig.leftFlangePcd = model.front.leftFlangePcd
-      frontConfig.rightFlangePcd = model.front.rightFlangePcd
-    } else if (model && model.rear) {
-       // Fallback if user selects a rear hub for front (unlikely but possible logic)
-       // Or handle front/rear compatible logic here
+    if (!newId) {
+      applyHubGeometry(frontConfig, null)
+      return
     }
+    const model = frontHubModels.value.find(m => m.id === newId)
+    applyHubGeometry(frontConfig, model?.front ?? null)
   }
 )
 
@@ -687,10 +690,15 @@ watch(
 watch(
   () => rearConfig.rimModelId,
   (newId) => {
-    if (!newId) return
+    if (!newId) {
+      rearConfig.erd = null
+      return
+    }
     const model = rearRimModels.value.find(m => m.id === newId)
-    if (model) {
+    if (model && model.erd != null) {
       rearConfig.erd = model.erd
+    } else {
+      rearConfig.erd = null
     }
   }
 )
@@ -699,36 +707,31 @@ watch(
 watch(
   () => rearConfig.hubModelId,
   (newId) => {
-    if (!newId) return
-    const model = rearHubModels.value.find(m => m.id === newId)
-    if (model && model.rear) {
-      rearConfig.leftFlange = model.rear.leftFlange
-      rearConfig.rightFlange = model.rear.rightFlange
-      rearConfig.leftFlangePcd = model.rear.leftFlangePcd
-      rearConfig.rightFlangePcd = model.rear.rightFlangePcd
-    } else if (model && model.front) {
-        // Fallback
+    if (!newId) {
+      applyHubGeometry(rearConfig, null)
+      return
     }
+    const model = rearHubModels.value.find(m => m.id === newId)
+    applyHubGeometry(rearConfig, model?.rear ?? null)
   }
 )
 
-// --- Calculation Logic (Existing) ---
-// Frontend-only spoke length calculation
-// Formula: L = sqrt((ERD/2)^2 + (PCD/2)^2 + flange^2 - ERD * PCD/2 * cos(cross_angle))
-// where cross_angle = 4 * PI * crossing / spokeCount
-// --- Calculation Logic (Existing) ---
-// Frontend-only spoke length calculation
-// Formula: L = sqrt((ERD/2)^2 + (PCD/2)^2 + flange^2 - ERD * PCD/2 * cos(cross_angle))
-// where cross_angle = 4 * PI * crossing / spokeCount
-// NOTE: Now using utility function imported from ~/utils/spokeMath.ts
-
-// Local state for calculation results (no API)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+type WheelPosition = 'front' | 'rear'
+type ResultSource = 'verified' | 'calculated'
+
 interface SpokeResult {
-  leftLengthMm: number
-  rightLengthMm: number
+  leftLengthMm: number | null
+  rightLengthMm: number | null
+  leftSource: ResultSource | null
+  rightSource: ResultSource | null
+}
+
+interface CalculatedWheelResult {
+  leftLengthMm: number | null
+  rightLengthMm: number | null
 }
 
 const frontResult = ref<SpokeResult | null>(null)
@@ -736,72 +739,32 @@ const rearResult = ref<SpokeResult | null>(null)
 const lastTrackedCalculation = ref('')
 const { track: trackBehaviorEvent } = useBehaviorEvents()
 
-// Display values for front wheel
-const frontLeftDisplay = computed(() => (frontResult.value?.leftLengthMm ?? 0).toFixed(1))
-const frontRightDisplay = computed(() => (frontResult.value?.rightLengthMm ?? 0).toFixed(1))
+const formatResultLength = (value: number | null | undefined) => (
+  value == null ? '--' : value.toFixed(1)
+)
 
-// Display values for rear wheel
-const rearLeftDisplay = computed(() => (rearResult.value?.leftLengthMm ?? 0).toFixed(1))
-const rearRightDisplay = computed(() => (rearResult.value?.rightLengthMm ?? 0).toFixed(1))
+const resultSourceLabel = (source: ResultSource | null | undefined) => {
+  if (source === 'verified') return 'Verified'
+  if (source === 'calculated') return 'Calculated'
+  return ''
+}
+
+const frontLeftDisplay = computed(() => formatResultLength(frontResult.value?.leftLengthMm))
+const frontRightDisplay = computed(() => formatResultLength(frontResult.value?.rightLengthMm))
+const rearLeftDisplay = computed(() => formatResultLength(rearResult.value?.leftLengthMm))
+const rearRightDisplay = computed(() => formatResultLength(rearResult.value?.rightLengthMm))
+
+const frontLeftSourceLabel = computed(() => resultSourceLabel(frontResult.value?.leftSource))
+const frontRightSourceLabel = computed(() => resultSourceLabel(frontResult.value?.rightSource))
+const rearLeftSourceLabel = computed(() => resultSourceLabel(rearResult.value?.leftSource))
+const rearRightSourceLabel = computed(() => resultSourceLabel(rearResult.value?.rightSource))
 
 const onCalculate = () => {
   error.value = null
   loading.value = true
 
   try {
-    let completedWheelCount = 0
-
-    // Validate front wheel inputs
-    if (frontConfig.erd && frontConfig.leftFlangePcd && frontConfig.rightFlangePcd &&
-        frontConfig.leftFlange != null && frontConfig.rightFlange != null) {
-      frontResult.value = {
-        leftLengthMm: computeSpokeLength(
-          frontConfig.erd,
-          frontConfig.leftFlangePcd,
-          frontConfig.leftFlange,
-          frontConfig.spokeCount,
-          frontConfig.crossing,
-          frontConfig.nippleType,
-          frontConfig.nippleLength
-        ),
-        rightLengthMm: computeSpokeLength(
-          frontConfig.erd,
-          frontConfig.rightFlangePcd,
-          frontConfig.rightFlange,
-          frontConfig.spokeCount,
-          frontConfig.crossing,
-          frontConfig.nippleType,
-          frontConfig.nippleLength
-        ),
-      }
-      completedWheelCount += 1
-    }
-
-    // Validate rear wheel inputs
-    if (rearConfig.erd && rearConfig.leftFlangePcd && rearConfig.rightFlangePcd &&
-        rearConfig.leftFlange != null && rearConfig.rightFlange != null) {
-      rearResult.value = {
-        leftLengthMm: computeSpokeLength(
-          rearConfig.erd,
-          rearConfig.leftFlangePcd,
-          rearConfig.leftFlange,
-          rearConfig.spokeCount,
-          rearConfig.crossing,
-          rearConfig.nippleType,
-          rearConfig.nippleLength
-        ),
-        rightLengthMm: computeSpokeLength(
-          rearConfig.erd,
-          rearConfig.rightFlangePcd,
-          rearConfig.rightFlange,
-          rearConfig.spokeCount,
-          rearConfig.crossing,
-          rearConfig.nippleType,
-          rearConfig.nippleLength
-        ),
-      }
-      completedWheelCount += 1
-    }
+    const completedWheelCount = updateResults()
 
     if (completedWheelCount > 0) {
       const fingerprint = JSON.stringify({
@@ -834,10 +797,244 @@ const onCalculate = () => {
     loading.value = false
   }
 }
+
+const updateResults = () => {
+  frontResult.value = buildWheelResult(frontConfig, 'front')
+  rearResult.value = buildWheelResult(rearConfig, 'rear')
+
+  return [frontResult.value, rearResult.value].filter(result => (
+    result && (result.leftLengthMm != null || result.rightLengthMm != null)
+  )).length
+}
+
+const buildWheelResult = (config: WheelConfig, wheel: WheelPosition): SpokeResult | null => {
+  const verified = findVerifiedWheelLengths(config, wheel)
+  const calculated = calculateWheel(config)
+
+  const leftLengthMm = verified?.leftLengthMm ?? calculated?.leftLengthMm ?? null
+  const rightLengthMm = verified?.rightLengthMm ?? calculated?.rightLengthMm ?? null
+
+  if (leftLengthMm == null && rightLengthMm == null) return null
+
+  return {
+    leftLengthMm,
+    rightLengthMm,
+    leftSource: verified?.leftLengthMm != null ? 'verified' : calculated?.leftLengthMm != null ? 'calculated' : null,
+    rightSource: verified?.rightLengthMm != null ? 'verified' : calculated?.rightLengthMm != null ? 'calculated' : null,
+  }
+}
+
+const findVerifiedWheelLengths = (config: WheelConfig, wheel: WheelPosition): CalculatedWheelResult | null => {
+  const preset = presets.value.find(item => presetMatchesWheelConfig(item, config, wheel))
+  const actual = preset?.actualLengths
+  if (!actual) return null
+
+  const leftLengthMm = wheel === 'front' ? actual.frontLeft : actual.rearLeft
+  const rightLengthMm = wheel === 'front' ? actual.frontRight : actual.rearRight
+  if (leftLengthMm == null && rightLengthMm == null) return null
+
+  return {
+    leftLengthMm: leftLengthMm ?? null,
+    rightLengthMm: rightLengthMm ?? null,
+  }
+}
+
+const presetMatchesWheelConfig = (preset: WheelBuildPreset, config: WheelConfig, wheel: WheelPosition) => {
+  if (!config.rimBrandId || !config.rimModelId || !config.hubBrandId || !config.hubModelId) return false
+  if (preset.wheelPosition && preset.wheelPosition !== 'auto' && preset.wheelPosition !== wheel) return false
+  if (!preset.actualLengths) return false
+  if (wheel === 'front' && preset.actualLengths.frontLeft == null && preset.actualLengths.frontRight == null) return false
+  if (wheel === 'rear' && preset.actualLengths.rearLeft == null && preset.actualLengths.rearRight == null) return false
+
+  return preset.rimBrandId === config.rimBrandId &&
+    preset.rimModelId === config.rimModelId &&
+    preset.hubBrandId === config.hubBrandId &&
+    preset.hubModelId === config.hubModelId &&
+    preset.spokeCount === config.spokeCount &&
+    preset.crossing === config.crossing &&
+    preset.nippleType === config.nippleType &&
+    compatibleNippleLength(preset, config)
+}
+
+const compatibleNippleLength = (preset: WheelBuildPreset, config: WheelConfig) => {
+  if (config.nippleType !== 'hidden') return true
+  if (preset.nippleLength == null || config.nippleLength == null) return true
+  return Math.abs(preset.nippleLength - config.nippleLength) < 0.01
+}
+
+const calculateWheel = (config: WheelConfig): CalculatedWheelResult | null => {
+  if (!config.erd || !config.leftFlangePcd || !config.rightFlangePcd ||
+      config.leftFlange == null || config.rightFlange == null) {
+    return null
+  }
+
+  return {
+    leftLengthMm: computeSpokeLength(
+      config.erd,
+      config.leftFlangePcd,
+      config.leftFlange,
+      config.spokeCount,
+      config.crossing,
+      config.nippleType,
+      config.nippleLength
+    ),
+    rightLengthMm: computeSpokeLength(
+      config.erd,
+      config.rightFlangePcd,
+      config.rightFlange,
+      config.spokeCount,
+      config.crossing,
+      config.nippleType,
+      config.nippleLength
+    ),
+  }
+}
+
+watch(
+  () => ({
+    front: { ...frontConfig },
+    rear: { ...rearConfig },
+    presets: presets.value,
+  }),
+  () => {
+    try {
+      updateResults()
+    } catch (e: any) {
+      error.value = e?.message || 'Calculation failed'
+    }
+  },
+  { deep: true, immediate: true }
+)
 </script>
 
 <style scoped>
-.spoke-calculator label {
+.spoke-calculator {
+  --spoke-shell-surface: #050505;
+  --spoke-panel-surface: #090909;
+  --spoke-control-surface: #020202;
+  --spoke-result-surface: #0b0b0b;
+  --spoke-border: rgba(255, 255, 255, 0.12);
+  --spoke-border-strong: rgba(255, 255, 255, 0.28);
+  --spoke-focus-ring: rgba(255, 255, 255, 0.14);
   color: var(--tz-text-primary);
+}
+
+.spoke-calculator__shell,
+.spoke-calculator__results-shell {
+  border: 1px solid var(--spoke-border);
+  border-radius: 0.5rem;
+  background: var(--spoke-shell-surface);
+  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.7);
+}
+
+.spoke-calculator__shell {
+  padding: 1.25rem;
+}
+
+.spoke-calculator__panel {
+  border: 1px solid var(--spoke-border);
+  border-radius: 0.5rem;
+  background: var(--spoke-panel-surface);
+  padding: 1rem;
+}
+
+.spoke-calculator__control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--spoke-border) !important;
+  border-radius: 0.5rem;
+  background-color: var(--spoke-control-surface) !important;
+  background-image: none !important;
+  color: var(--tz-text-primary) !important;
+  padding: 0.75rem 0.875rem;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.spoke-calculator__control:focus,
+.spoke-calculator__control:focus-visible {
+  outline: none;
+  border-color: var(--spoke-border-strong) !important;
+  box-shadow: 0 0 0 1px var(--spoke-focus-ring) !important;
+}
+
+.spoke-calculator__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.spoke-calculator__control--with-unit {
+  flex: 1 1 auto;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-right: 0.75rem;
+}
+
+.spoke-calculator__unit-field {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--spoke-border);
+  border-radius: 0.5rem;
+  background-color: var(--spoke-control-surface);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.spoke-calculator__unit-field:focus-within {
+  border-color: var(--spoke-border-strong);
+  box-shadow: 0 0 0 1px var(--spoke-focus-ring);
+}
+
+.spoke-calculator__unit-field .spoke-calculator__control:focus,
+.spoke-calculator__unit-field .spoke-calculator__control:focus-visible {
+  box-shadow: none !important;
+}
+
+.spoke-calculator__unit {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--spoke-border);
+  padding: 0 0.75rem;
+  color: var(--tz-text-muted);
+  font-size: var(--tz-type-caption);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.spoke-calculator__results-shell {
+  padding: 1.25rem;
+}
+
+.spoke-calculator__result-card {
+  border: 1px solid var(--spoke-border);
+  border-radius: 0.5rem;
+  background: var(--spoke-result-surface);
+}
+
+.spoke-calculator__source-badge {
+  flex: 0 0 auto;
+  border: 1px solid var(--spoke-border);
+  border-radius: 999px;
+  padding: 0.125rem 0.375rem;
+  color: var(--tz-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.spoke-calculator label {
+  color: var(--tz-text-secondary) !important;
 }
 </style>

@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 import { useAsyncData } from '#imports'
 import { usePublicApiBase } from '~/composables/usePublicApiBase'
-import type { QuickBuyConfig } from '~/utils/quickBuy/types'
 
 export interface RuntimeSocialLink {
   network: string
@@ -23,20 +22,12 @@ export interface SiteSettingsResponse {
   socialLinks?: ApiSocialLink[]
 }
 
-export type QuickBuyConfigProp = QuickBuyConfig
-
 type RawSettings = Record<string, unknown>
 
 const asString = (value: unknown) => {
   if (typeof value === 'string') return value
   if (value === null || value === undefined) return ''
   return String(value)
-}
-
-const asBoolean = (value: unknown) => {
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'string') return value.toLowerCase() === 'true'
-  return Boolean(value)
 }
 
 const parseArray = (value: unknown) => {
@@ -87,20 +78,6 @@ const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => {
   }
 }
 
-const normalizeQuickBuySettings = (raw: RawSettings): QuickBuyConfigProp => ({
-  enabled: raw.enabled === undefined ? undefined : asBoolean(raw.enabled),
-  buttonText: asString(raw.buttonText || raw.button_text),
-  successMessage: asString(raw.successMessage || raw.success_message),
-  requireLogin: raw.requireLogin === undefined && raw.require_login === undefined
-    ? undefined
-    : asBoolean(raw.requireLogin ?? raw.require_login),
-  steps: parseArray(raw.steps),
-  storeApiBase: asString(raw.storeApiBase || raw.store_api_base),
-  cartUrl: asString(raw.cartUrl || raw.cart_url),
-  checkoutUrl: asString(raw.checkoutUrl || raw.checkout_url),
-  taxonomy: asString(raw.taxonomy)
-})
-
 export function useSiteSettings() {
   const apiBase = usePublicApiBase()
 
@@ -126,32 +103,4 @@ export function useSiteSettings() {
   const siteSettings = computed<SiteSettingsResponse>(() => data.value ?? {})
 
   return { siteSettings }
-}
-
-export function useQuickBuySettings() {
-  const apiBase = usePublicApiBase()
-
-  const { data } = useAsyncData<QuickBuyConfigProp | null>(
-    'mytheme-quick-buy',
-    async () => {
-      if (!apiBase.value) return null
-      try {
-        const result = await $fetch<RawSettings>(`${apiBase.value}/settings/quick-buy`, {
-          headers: { accept: 'application/json' }
-        })
-        return result ? normalizeQuickBuySettings(result) : null
-      } catch (error) {
-        console.warn('Failed to load quick buy config:', error)
-        return null
-      }
-    },
-    {
-      server: false,
-      default: () => null
-    }
-  )
-
-  const quickBuySettings = computed<QuickBuyConfigProp | null>(() => data.value)
-
-  return { quickBuySettings }
 }

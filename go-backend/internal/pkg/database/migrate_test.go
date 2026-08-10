@@ -195,6 +195,11 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		"transactions",
 		"product_attributes",
 		"product_variants",
+		"spoke_rim_brands",
+		"spoke_rim_models",
+		"spoke_hub_brands",
+		"spoke_hub_models",
+		"spoke_build_presets",
 	}
 	for _, table := range requiredTables {
 		var exists bool
@@ -209,6 +214,37 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		}
 		if !exists {
 			t.Fatalf("required table %s does not exist", table)
+		}
+	}
+
+	requiredConstraints := []struct {
+		tableName      string
+		constraintName string
+	}{
+		{
+			tableName:      "product_types",
+			constraintName: "fk_product_types_image_media_asset",
+		},
+		{
+			tableName:      "product_types",
+			constraintName: "ck_product_types_image_reference_pair",
+		},
+	}
+	for _, constraint := range requiredConstraints {
+		var exists bool
+		if err := testDB.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.table_constraints
+				WHERE constraint_schema = 'public'
+				  AND table_name = $1
+				  AND constraint_name = $2
+			)
+		`, constraint.tableName, constraint.constraintName).Scan(&exists); err != nil {
+			t.Fatalf("check constraint %s: %v", constraint.constraintName, err)
+		}
+		if !exists {
+			t.Fatalf("required constraint %s is missing from %s", constraint.constraintName, constraint.tableName)
 		}
 	}
 

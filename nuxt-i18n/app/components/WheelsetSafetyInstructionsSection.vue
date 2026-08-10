@@ -10,10 +10,10 @@
            <h3 class="text-lg font-bold text-rose-500 mb-2">Important Safety Notice</h3>
            <p class="text-sm text-rose-200/80 leading-relaxed mb-3">
             Improper installation, use, or maintenance may cause serious damage to the wheels and pose a danger to the rider.
-            To ensure a reliable riding experience with TANZANITE products, please read and follow the instructions below.
+             To ensure a reliable riding experience, please read and follow the instructions below.
           </p>
           <p class="text-xs text-rose-200/60 leading-relaxed italic">
-             Even if you have years of cycling or wheelset assembly experience, these instructions apply specifically to TANZANITE carbon fiber products.
+             Even if you have years of cycling or wheelset assembly experience, these instructions still apply to these carbon fiber products.
           </p>
          </div>
        </div>

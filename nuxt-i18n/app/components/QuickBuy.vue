@@ -18,7 +18,7 @@
           >
         <!-- 头部 -->
         <header class="flex items-center justify-between px-3.5 max-md:px-2 py-2.5 max-md:py-2 border-b border-white/10 rounded-t-2xl overflow-hidden max-md:gap-1.5">
-          <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" :aria-label="t('quickBuy.stepsAriaLabel')">
+          <nav v-if="hasConfiguredFlow" class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" :aria-label="t('quickBuy.stepsAriaLabel')">
             <ol class="flex items-center justify-center gap-3 max-md:gap-1.5 list-none m-0 p-0 max-md:flex-nowrap">
               <li
                 v-for="n in totalSteps"
@@ -48,13 +48,13 @@
         <!-- 主体内容 -->
         <section class="px-3.5 py-3 flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <div
-            v-if="isUsingFallbackConfig"
-            class="rounded-xl border border-white/15 bg-white/[0.055] px-3 py-2 text-xs leading-relaxed text-white/75"
+            v-if="!hasConfiguredFlow"
+            class="rounded-xl border border-white/15 bg-white/[0.055] px-3 py-3 text-sm leading-relaxed text-white/75"
           >
-            {{ t('quickBuy.fallbackNotice') }}
+            {{ t('quickBuy.noPublishedFlow', 'No published QUICK flow is available.') }}
           </div>
 
-          <div class="w-full min-w-0 overflow-hidden">
+          <div v-else class="w-full min-w-0 overflow-hidden">
             <div v-if="currentCategoryName" class="flex items-center gap-2 mb-1.5 tz-text-secondary text-[13px]">
               <span class="tz-text-muted">{{ t('quickBuy.search.categoryLabel') }}</span>
               <span>{{ currentCategoryName }}</span>
@@ -69,7 +69,7 @@
             />
           </div>
           
-          <div class="flex-1 min-h-0">
+          <div v-if="hasConfiguredFlow" class="flex-1 min-h-0">
             <div v-if="loading" class="p-2.5 tz-text-secondary">{{ t('common.loading', 'Loading...') }}</div>
             <div v-else-if="error" class="p-2.5 tz-text-secondary">{{ error }}</div>
             <ul v-else-if="products.length" class="list-none grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5 m-0 p-0">
@@ -93,14 +93,15 @@
             </ul>
             <div v-else class="p-2.5">
               <h2 class="my-2 text-lg text-white">{{ t('quickBuy.placeholder.stepTitle', { step }) }}</h2>
-              <p class="m-0 tz-text-secondary">{{ stepHint }}</p>
+              <p class="m-0 tz-text-secondary">
+                {{ currentStepConf.helpText || currentStepConf.description || t('quickBuy.emptyStep', 'No products are available for this step.') }}
+              </p>
             </div>
           </div>
         </section>
 
         <!-- 底部 -->
-        <footer class="quickbuy-modal-footer relative flex flex-col items-center justify-center gap-1.5 max-md:gap-1 px-3.5 py-2.5 max-md:pt-4 border-t border-white/[0.08] rounded-b-2xl overflow-hidden">
-          <div class="tz-text-secondary text-[13px] text-center max-md:order-1 max-md:-mb-1">{{ footerText }}</div>
+        <footer v-if="hasConfiguredFlow" class="quickbuy-modal-footer relative flex flex-col items-center justify-center gap-1.5 max-md:gap-1 px-3.5 py-2.5 max-md:pt-4 border-t border-white/[0.08] rounded-b-2xl overflow-hidden">
           <div class="inline-flex items-center gap-2 tz-text-primary font-semibold max-md:order-3 max-md:text-[13px] max-md:-mt-1">
             <span>{{ t('quickBuy.summary.items') }}: {{ totalQty }}</span>
             <span class="opacity-50">·</span>
@@ -138,13 +139,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useCart } from '~/composables/useCart'
-import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
 import type {
   QuickBuyConfig,
-  QuickBuyResolvedConfig,
   QuickBuyStep,
 } from '~/utils/quickBuy/types'
 import type { CartItem } from '~~/types/cart'
@@ -153,6 +152,7 @@ type Maybe<T> = T | null | undefined
 
 interface Selection {
   id: number
+  stepKey: string
   variant_id?: number | null
   title: string
   slug: string
@@ -166,31 +166,6 @@ const props = defineProps<{ config: QuickBuyConfig | null }>()
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 
-const defaultQuickBuySteps = computed<QuickBuyStep[]>(() => [
-  { id: 1, slug: 'product-search', name: t('quickBuy.defaultSteps.productSearch') },
-  { id: 2, slug: 'specifications', name: t('quickBuy.defaultSteps.specifications') },
-  { id: 3, slug: 'quantity', name: t('quickBuy.defaultSteps.quantity') },
-  { id: 4, slug: 'cart-review', name: t('quickBuy.defaultSteps.cartReview') },
-  { id: 5, slug: 'checkout', name: t('quickBuy.defaultSteps.checkout') },
-])
-
-const normalizeSteps = (value: unknown): QuickBuyStep[] => {
-  if (!Array.isArray(value)) return []
-
-  return value
-    .map((item, index): QuickBuyStep | null => {
-      if (!item || typeof item !== 'object') return null
-      const record = item as Record<string, unknown>
-      const id = Number(record.id ?? index + 1)
-      const slug = String(record.slug || record.key || `step-${index + 1}`).trim()
-      const name = String(record.name || record.label || record.title || t('quickBuy.placeholder.stepName', { step: index + 1 })).trim()
-
-      if (!Number.isFinite(id) || !slug || !name) return null
-      return { id, slug, name }
-    })
-    .filter((item): item is QuickBuyStep => Boolean(item))
-}
-
 const step = ref(1)
 const query = ref('')
 const products = ref<ShopProduct[]>([])
@@ -201,32 +176,19 @@ const selections = ref<Selection[]>([])
 let searchTimer: Maybe<number> = null
 
 const { addToCart } = useCart()
-const { fetchShopProducts } = useShopProducts()
+const {
+  fetchStepCandidates,
+  updateSelections: updateQuickBuySelections,
+  error: quickBuySessionError,
+} = useQuickBuySession('dock')
 
-const configuredSteps = computed(() => normalizeSteps(props.config?.steps))
-const isUsingFallbackConfig = computed(() => !props.config || configuredSteps.value.length === 0)
-const qbConfig = computed<QuickBuyResolvedConfig>(() => ({
-  ...(props.config || {}),
-  steps: configuredSteps.value.length ? configuredSteps.value : defaultQuickBuySteps.value,
-}))
-const steps = computed(() => qbConfig.value.steps || defaultQuickBuySteps.value)
-const totalSteps = computed(() => Math.max(steps.value.length, 1))
+const configuredSteps = computed<QuickBuyStep[]>(() => props.config?.steps ?? [])
+const hasConfiguredFlow = computed(() => configuredSteps.value.length > 0)
+const steps = computed(() => configuredSteps.value)
+const totalSteps = computed(() => steps.value.length)
 const currentStepConf = computed(() => steps.value[step.value - 1] || { id: 0, slug: '', name: '' })
-const currentCategorySlug = computed(() => currentStepConf.value.slug || '')
 const currentCategoryName = computed(() => currentStepConf.value.name || '')
-
-const stepKey = computed(() => {
-  if (step.value >= 1 && step.value <= 5) return `step${step.value}`
-  return 'default'
-})
-
-const stepHint = computed(() => {
-  return t(`quickBuy.hints.${stepKey.value}`)
-})
-
-const footerText = computed(() => {
-  return t(`quickBuy.footer.${stepKey.value}`)
-})
+const currentStepKey = computed(() => currentStepConf.value.stepKey || currentStepConf.value.slug || `step-${step.value}`)
 
 const totalQty = computed(() => selections.value.reduce((sum, item) => sum + (Number(item.qty) || 0), 0))
 
@@ -247,26 +209,38 @@ const formattedTotalPrice = computed(() => {
   }
 })
 
+let fetchSequence = 0
+
 const fetchProducts = async () => {
+  const sequence = fetchSequence + 1
+  fetchSequence = sequence
   loading.value = true
   error.value = ''
 
   try {
-    const params: Record<string, string | number> = {
-      per_page: 12,
-      status: 'active',
-    }
-    if (query.value) {
-      params.keyword = query.value
+    if (!hasConfiguredFlow.value) {
+      products.value = []
+      return
     }
 
-    const res = await fetchShopProducts(params)
+    const res = await fetchStepCandidates(currentStepKey.value, {
+      keyword: query.value,
+      page: 1,
+      pageSize: 12,
+    })
+    if (sequence !== fetchSequence) return
+    if (!res) {
+      throw new Error(quickBuySessionError.value || 'Unable to load QUICK candidates')
+    }
     products.value = res.items
   } catch (err) {
+    if (sequence !== fetchSequence) return
     error.value = (err as Error).message || String(err)
     products.value = []
   } finally {
-    loading.value = false
+    if (sequence === fetchSequence) {
+      loading.value = false
+    }
   }
 }
 
@@ -287,6 +261,13 @@ const triggerSearch = () => {
   }
   fetchProducts()
 }
+
+watch([currentStepKey, hasConfiguredFlow], () => {
+  query.value = ''
+  products.value = []
+  error.value = ''
+  fetchProducts()
+}, { immediate: true })
 
 const next = () => {
   if (step.value < totalSteps.value) {
@@ -315,7 +296,7 @@ const addSelectionsToCart = () => {
       thumbnail: item.thumbnail,
       price: item.price,
       weight: item.weight_g
-    } as Omit<CartItem, 'quantity'>)
+    } as Omit<CartItem, 'quantity'>, item.qty)
   }
 }
 
@@ -327,17 +308,53 @@ const goToCart = () => {
   emit('close')
 }
 
-const selectProduct = (product: ShopProduct) => {
-  selections.value.push({
+const selectProduct = async (product: ShopProduct) => {
+  const stepKeyForSelection = currentStepKey.value
+  const selectedVariant = product.defaultVariantId
+    ? product.variants.find(variant => Number(variant.id) === Number(product.defaultVariantId)) || null
+    : product.variants.find(variant => variant.isDefault) || product.variants[0] || null
+  const selectedVariantId = selectedVariant?.id ? Number(selectedVariant.id) : Number(product.defaultVariantId) || null
+  const selection = {
     id: product.id,
-    variant_id: product.defaultVariantId || null,
+    stepKey: stepKeyForSelection,
+    variant_id: selectedVariantId,
     title: product.title,
     slug: product.slug,
     thumbnail: product.thumbnail || '',
-    qty: 1,
-    weight_g: 0,
+    qty: currentStepConf.value.defaultQuantity || 1,
+    weight_g: selectedVariant?.weightGrams || 0,
     price: product.priceNumber
-  })
+  }
+
+  const selectionMode = currentStepConf.value.selectionMode || 'single'
+  const currentStepSelections = selections.value.filter(item => item.stepKey === stepKeyForSelection)
+  const nextStepSelections = selectionMode === 'multiple'
+    ? [...currentStepSelections.filter(item => item.id !== selection.id || item.variant_id !== selection.variant_id), selection]
+    : [selection]
+  const session = await updateQuickBuySelections(nextStepSelections.map(item => ({
+    stepKey: item.stepKey,
+    productId: item.id,
+    variantId: item.variant_id || null,
+    quantity: item.qty,
+  })))
+  if (!session) {
+    error.value = quickBuySessionError.value || 'Unable to save QUICK selection'
+    return
+  }
+
+  if (selectionMode === 'multiple') {
+    selections.value = [
+      ...selections.value.filter(item => item.stepKey !== stepKeyForSelection),
+      ...nextStepSelections,
+    ]
+  } else {
+    const existingIndex = selections.value.findIndex(item => item.stepKey === stepKeyForSelection)
+    if (existingIndex >= 0) {
+      selections.value.splice(existingIndex, 1, selection)
+    } else {
+      selections.value.push(selection)
+    }
+  }
   next()
 }
 

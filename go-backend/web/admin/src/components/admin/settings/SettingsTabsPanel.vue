@@ -29,7 +29,7 @@
             <Textarea v-model="siteSettings.site_description" class="min-h-24" />
           </AdminFormField>
           <div v-if="siteSettings.site_logo" class="flex h-28 items-center justify-center overflow-hidden rounded-lg border bg-muted md:col-span-2">
-            <img :src="siteSettings.site_logo" alt="站点 Logo 预览" class="max-h-20 max-w-[80%] object-contain" />
+            <img :src="siteSettings.site_logo" alt="站点 Logo 预览" class="max-h-full max-w-full object-contain" />
           </div>
         </div>
       </SettingsSection>

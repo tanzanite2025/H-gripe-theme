@@ -92,10 +92,10 @@
       <section>
         <h2 class="text-lg font-semibold text-white mb-3">12. Contact Us</h2>
         <p class="text-sm leading-relaxed">
-          Questions about these Terms? Email
-          <a href="mailto:support@tanzanite.site" class="text-cyan-400 hover:text-cyan-300 underline">
-            support@tanzanite.site
-          </a>.
+          Questions about these Terms? Contact our support team through the
+          <NuxtLink to="/company/contact" class="tz-text-accent underline">
+            contact page
+          </NuxtLink>.
         </p>
       </section>
 

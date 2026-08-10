@@ -50,14 +50,14 @@
               <div class="grid grid-cols-2 gap-3">
                 <GuideImage
                     src="/public/technical/hubs/hubs/tanzanite-dt240-6bolt-jbend-hub.webp"
-                    alt="Tanzanite DT240 6-bolt J-bend hub"
+                    alt="DT240 6-bolt J-bend hub"
                     :zoomOnClick="true"
                     caption="6-Bolt J-Bend"
                     class="rounded-lg"
                 />
                 <GuideImage
                     src="/public/technical/hubs/hubs/tanzanite-dt240-centerlock-jbend-hub.webp"
-                    alt="Tanzanite DT240 Center Lock J-bend hub"
+                    alt="DT240 Center Lock J-bend hub"
                     :zoomOnClick="true"
                     caption="Center Lock J-Bend"
                     class="rounded-lg"
@@ -78,14 +78,14 @@
               <div class="grid grid-cols-2 gap-3">
                 <GuideImage
                     src="/public/technical/hubs/hubs/tanzanite-dt240-6bolt-straightpull-hub.webp"
-                    alt="Tanzanite DT240 6-bolt straight-pull hub"
+                    alt="DT240 6-bolt straight-pull hub"
                     :zoomOnClick="true"
                     caption="6-Bolt SP"
                     class="rounded-lg"
                 />
                 <GuideImage
                     src="/public/technical/hubs/hubs/tanzanite-dt240-centerlock-straightpull-hub.webp"
-                    alt="Tanzanite DT240 Center Lock straight-pull hub"
+                    alt="DT240 Center Lock straight-pull hub"
                     :zoomOnClick="true"
                     caption="Center Lock SP"
                     class="rounded-lg"

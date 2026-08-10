@@ -1078,23 +1078,18 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-brand--image {
 	justify-content: center;
-	border: 1px solid rgba(255, 255, 255, 0.68);
-	border-radius: 0.75rem;
-	background: rgba(255, 255, 255, 0.96);
-	padding: 0.22rem 0.5rem;
-	box-shadow:
-		0 8px 24px rgba(0, 0, 0, 0.34),
-		inset 0 1px 0 rgba(255, 255, 255, 0.82);
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	padding: 0;
+	box-shadow: none;
 }
 
 .site-header-brand--image:hover,
 .site-header-brand--image:focus-visible {
-	border-color: #ffffff;
-	background: #ffffff;
-	box-shadow:
-		0 10px 28px rgba(0, 0, 0, 0.42),
-		0 0 0 1px rgba(181, 255, 109, 0.2),
-		inset 0 1px 0 rgba(255, 255, 255, 0.9);
+	border: 0;
+	background: transparent;
+	box-shadow: none;
 }
 
 .site-header-brand:focus-visible {
@@ -1313,10 +1308,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-language-trigger {
 	gap: 0.34rem !important;
-	border: 1px solid rgba(255, 255, 255, 0.36) !important;
+	border: 0 !important;
 	background: rgba(181, 255, 109, 0.08) !important;
 	background-image: none !important;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+	box-shadow: none !important;
 	color: rgba(255, 255, 255, 0.88);
 	padding-inline: 0.42rem !important;
 }
@@ -1324,7 +1319,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-language-trigger:hover,
 .site-header-language-trigger:focus-visible,
 .site-header-language-trigger[aria-expanded='true'] {
-	border: 1px solid rgba(255, 255, 255, 0.62) !important;
+	border: 0 !important;
 	background: rgba(181, 255, 109, 0.14) !important;
 	background-image: none !important;
 	box-shadow: none !important;
@@ -1374,10 +1369,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-search-trigger {
 	gap: 0 !important;
 	justify-content: center;
-	border: 1px solid rgba(255, 255, 255, 0.36) !important;
+	border: 0 !important;
 	background: rgba(181, 255, 109, 0.08) !important;
 	background-image: none !important;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+	box-shadow: none !important;
 	color: #B5FF6D;
 	padding: 0 !important;
 	font-size: 0.82rem;
@@ -1386,7 +1381,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-search-trigger:hover,
 .site-header-search-trigger:focus-visible {
-	border: 1px solid rgba(255, 255, 255, 0.62) !important;
+	border: 0 !important;
 	background: rgba(181, 255, 109, 0.14) !important;
 	background-image: none !important;
 	box-shadow: none !important;

@@ -65,6 +65,7 @@ type Repositories struct {
 	Feedback                   *repository.FeedbackRepository
 	SuggestionFeedback         *repository.SuggestionFeedbackRepository
 	Spoke                      *repository.SpokeRepository
+	QuickBuy                   *repository.QuickBuyRepository
 	Subscription               *repository.SubscriptionRepository
 	EmailChallenge             *repository.EmailChallengeRepository
 	VisitorProfile             *repository.VisitorProfileRepository
@@ -109,6 +110,7 @@ type Services struct {
 	Audit                      *service.AuditService
 	Shipping                   *service.ShippingService
 	Spoke                      *service.SpokeService
+	QuickBuy                   *service.QuickBuyService
 	VisitorProfile             *service.VisitorProfileService
 	BehaviorEvents             *service.BehaviorEventService
 	Recommendations            *service.RecommendationService
@@ -160,6 +162,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Feedback:                   repository.NewFeedbackRepository(db),
 		SuggestionFeedback:         repository.NewSuggestionFeedbackRepository(db),
 		Spoke:                      repository.NewSpokeRepository(db),
+		QuickBuy:                   repository.NewQuickBuyRepository(db),
 		Subscription:               repository.NewSubscriptionRepository(db),
 		EmailChallenge:             repository.NewEmailChallengeRepository(db),
 		VisitorProfile:             repository.NewVisitorProfileRepository(db),
@@ -209,6 +212,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if storefrontBaseURL == "" {
 		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")
 	}
+	mediaService := service.NewMediaService(repos.Media, storageSvc, settingService, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes)
+	productService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
 	googleMerchantService := service.NewGoogleMerchantService(
 		repos.GoogleMerchant,
@@ -244,7 +249,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		GoogleMerchant:             googleMerchantService,
 		FAQ:                        service.NewFAQService(repos.FAQ, storageSvc),
 		Gallery:                    service.NewGalleryService(repos.Gallery),
-		Media:                      service.NewMediaService(repos.Media, storageSvc, settingService, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes),
+		Media:                      mediaService,
 		Registration:               service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
 		Checkout:                   service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
 		Marketing:                  service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
@@ -265,6 +270,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Audit:     service.NewAuditService(repos.Audit),
 		Shipping:  shippingService,
 		Spoke:     service.NewSpokeService(repos.Spoke),
+		QuickBuy:  service.NewQuickBuyService(repos.QuickBuy, repos.Product),
 		VisitorProfile: service.NewVisitorProfileService(
 			repos.VisitorProfile,
 		),

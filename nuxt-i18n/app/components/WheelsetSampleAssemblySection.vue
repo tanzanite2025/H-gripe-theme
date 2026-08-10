@@ -92,7 +92,7 @@
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center">
        <h3 class="text-lg font-bold tz-text-primary mb-3">Building Your Own Wheels?</h3>
        <p class="text-sm tz-text-secondary mb-6 max-w-2xl mx-auto">
-          If you prefer to assemble yourself using TANZANITE parts, we support you! access our technical guides and customization options below.
+           If you prefer to assemble yourself using these parts, we support you. Access our technical guides and customization options below.
        </p>
        <div class="flex flex-wrap justify-center gap-3">
           <button

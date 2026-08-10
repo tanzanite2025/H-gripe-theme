@@ -4,6 +4,7 @@
       <ProductCategoryNavigationCards
         class="smart-recommendation-panel__category-navigation"
         density="compact"
+        :columns="6"
         :product-categories="displayedCategories"
         :product-categories-loading="categoriesLoading"
         :heading="categoryNavigationHeading"
@@ -76,19 +77,5 @@ const displayedCategories = computed(() => (
 .smart-recommendation-panel__category-navigation {
   width: 100%;
   min-height: 0;
-}
-
-.smart-recommendation-panel__category-navigation :deep(.product-category-navigation-cards__list) {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.smart-recommendation-panel__category-navigation :deep(.product-category-navigation-cards__all-link) {
-  padding-inline: 10px;
-}
-
-@media (max-width: 768px) {
-  .smart-recommendation-panel__category-navigation :deep(.product-category-navigation-cards__list) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 </style>

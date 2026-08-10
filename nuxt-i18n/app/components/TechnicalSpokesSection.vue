@@ -95,12 +95,12 @@
                   View YT Spokes Spoke
                 </button>
              </div>
-             <!-- New: Tanzanite Carbon -->
+              <!-- Carbon spoke option -->
              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center ring-1 ring-indigo-500/20">
-                <strong class="block text-indigo-400 text-sm mb-1">TANZANITE CARBON SPOKE</strong>
+                <strong class="block text-indigo-400 text-sm mb-1">CARBON SPOKE</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">The pinnacle of lightweight performance. Designed for ultimate responsiveness and rigidity, drastically reducing rotational weight.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-indigo-500/30 tz-caption font-bold uppercase tracking-wider text-indigo-400 hover:bg-indigo-500/10 transition-colors">
-                  View Tanzanite Carbon Spoke
+                  View Carbon Spoke
                 </button>
              </div>
          </div>
@@ -557,14 +557,14 @@
                      </td>
                   </tr>
 
-                  <!-- TANZANITE Carbon -->
+                  <!-- Carbon spoke -->
                   <tr class="bg-[#0b0e14] hover:bg-slate-900 transition-colors relative overflow-hidden group border-t border-indigo-900/50">
                      <td class="px-6 py-4 relative z-10">
                         <div class="flex items-center gap-3">
                            <div class="w-1 h-8 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
                            <div>
                               <strong class="flex items-center gap-2 text-indigo-400 text-base uppercase tracking-wide">
-                                 TANZANITE Carbon
+                                  Carbon Spoke
                               </strong>
                            </div>
                         </div>
@@ -612,7 +612,7 @@
                <div class="space-y-2">
                   <h4 class="text-lg font-bold text-slate-100">Need Spoke Length Help?</h4>
                   <p class="text-sm tz-text-secondary max-w-xl leading-relaxed">
-                     If you are looking to purchase individual replacement spokes or rebuild a previous TANZANITE wheelset, you may require assistance with spoke length calculations.
+                      If you are looking to purchase individual replacement spokes or rebuild a previous wheelset, you may require assistance with spoke length calculations.
                   </p>
                </div>
                <div class="flex flex-col sm:flex-row gap-3 shrink-0">
@@ -634,14 +634,7 @@
                      Live Chat
                   </button>
 
-                  <a
-                     href="mailto:support@tanzanite.site"
-                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold shadow-lg border border-slate-600 transition-all hover:border-slate-500"
-                  >
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                     Email Us
-                  </a>
-               </div>
+                </div>
             </div>
          </div>
        </div>

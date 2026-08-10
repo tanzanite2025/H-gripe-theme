@@ -54,10 +54,10 @@
       <section>
         <h2 class="text-lg font-semibold text-white mb-3">Contact</h2>
         <p class="text-sm leading-relaxed">
-          For refund or return questions, email
-          <a href="mailto:support@tanzanite.site" class="text-cyan-400 hover:text-cyan-300 underline">
-            support@tanzanite.site
-          </a>.
+          For refund or return questions, contact our support team through the
+          <NuxtLink to="/company/contact" class="tz-text-accent underline">
+            contact page
+          </NuxtLink>.
         </p>
       </section>
 

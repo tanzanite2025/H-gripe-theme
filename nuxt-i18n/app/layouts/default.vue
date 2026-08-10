@@ -5,7 +5,7 @@
     </main>
 
     <AppFooter />
-    <GradientDockMenu :config="quickBuyConfig" />
+    <GradientDockMenu />
     <BehaviorAttributionBootstrap />
   </div>
 </template>
@@ -24,9 +24,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import {
   type ApiSocialLink,
-  type QuickBuyConfigProp,
   type RuntimeSocialLink,
-  useQuickBuySettings,
   useSiteSettings
 } from '~/composables/usePublicSettings'
 import { useSeoSettings } from '~/composables/useSeoSettings'
@@ -171,9 +169,6 @@ const organizationSchema = computed(() => {
     sameAs
   }
 })
-
-const { quickBuySettings } = useQuickBuySettings()
-const quickBuyConfig = computed<QuickBuyConfigProp | null>(() => quickBuySettings.value)
 
 const { canonicalUrl, alternateLinks, xDefaultLink } = useStorefrontSeoLinks({
   siteOrigin: siteUrl,

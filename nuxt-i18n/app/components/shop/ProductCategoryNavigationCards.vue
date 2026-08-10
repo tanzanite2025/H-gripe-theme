@@ -2,9 +2,10 @@
   <section
     class="product-category-navigation-cards"
     :class="`product-category-navigation-cards--${density}`"
+    :style="productCategoryNavigationStyle"
     :aria-label="productCategoryNavigationHeadingText"
   >
-    <header class="product-category-navigation-cards__header">
+    <header v-if="showHeader" class="product-category-navigation-cards__header">
       <span class="product-category-navigation-cards__title">
         {{ productCategoryNavigationHeadingText }}
       </span>
@@ -108,6 +109,8 @@ const props = withDefaults(defineProps<{
   productCategoryBasePath?: string
   productCategoryQueryParameterName?: string
   density?: ProductCategoryNavigationCardsDensity
+  columns?: number
+  showHeader?: boolean
   heading?: string
   allProductCategoriesLabel?: string
   loadingLabel?: string
@@ -117,6 +120,8 @@ const props = withDefaults(defineProps<{
   productCategoryBasePath: '/shop',
   productCategoryQueryParameterName: 'product_type',
   density: 'comfortable',
+  columns: 0,
+  showHeader: true,
   heading: 'Product categories',
   loadingLabel: 'Loading categories...',
   emptyLabel: 'No categories available.',
@@ -164,6 +169,19 @@ const visibleProductCategories = computed(() => {
   const displayLimit = props.productCategoryDisplayLimit
   if (!displayLimit || displayLimit <= 0) return categories
   return categories.slice(0, displayLimit)
+})
+
+const normalizedProductCategoryColumns = computed(() => {
+  const columns = Number(props.columns)
+  if (!Number.isInteger(columns) || columns <= 0) return 0
+  return Math.min(columns, 8)
+})
+
+const productCategoryNavigationStyle = computed(() => {
+  if (!normalizedProductCategoryColumns.value) return undefined
+  return {
+    '--product-category-navigation-columns': String(normalizedProductCategoryColumns.value),
+  }
 })
 
 const productCategoryNavigationHeadingText = computed(() => {
@@ -318,12 +336,12 @@ onMounted(() => {
     color 0.18s ease;
 }
 
- .product-category-navigation-cards__all-link span {
+.product-category-navigation-cards__all-link span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
- }
+}
 
 .product-category-navigation-cards__all-link:hover,
 .product-category-navigation-cards__all-link:focus-visible {
@@ -334,7 +352,7 @@ onMounted(() => {
 
 .product-category-navigation-cards__list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  grid-template-columns: repeat(var(--product-category-navigation-columns, auto-fit), minmax(min(12rem, 100%), 1fr));
   gap: 12px;
   min-height: 0;
   margin: 0;
@@ -344,7 +362,7 @@ onMounted(() => {
 
 .product-category-navigation-cards--compact .product-category-navigation-cards__list {
   flex: 1 1 auto;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--product-category-navigation-columns, 4), minmax(0, 1fr));
   gap: 8px;
   overflow: hidden;
 }
@@ -538,12 +556,13 @@ onMounted(() => {
     gap: 10px;
   }
 
-  .product-category-navigation-cards--compact .product-category-navigation-cards__list {
+  .product-category-navigation-cards__list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
-  .product-category-navigation-cards__list {
-    gap: 10px;
+  .product-category-navigation-cards--compact .product-category-navigation-cards__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .product-category-navigation-cards__footer {

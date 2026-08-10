@@ -17,6 +17,7 @@ import (
 	"tanzanite/internal/api/v1/order"
 	"tanzanite/internal/api/v1/payment"
 	"tanzanite/internal/api/v1/product"
+	quickbuyapi "tanzanite/internal/api/v1/quickbuy"
 	"tanzanite/internal/api/v1/recommendation"
 	"tanzanite/internal/api/v1/registration"
 	"tanzanite/internal/api/v1/review"
@@ -79,6 +80,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
 	productHandler.ConfigureStorefrontContext(services.StorefrontContext)
+	quickBuyHandler := quickbuyapi.NewHandler(services.QuickBuy)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
 		VisitorProfileService: services.VisitorProfile,
 		VisitorSecret:         cfg.JWT.Secret,
@@ -215,6 +217,16 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			productGroup.GET("/types", productHandler.ListProductTypes)
 			productGroup.GET("/attributes/filterable", productHandler.GetFilterableAttributes)
 			productGroup.GET("/:id", productHandler.GetProduct)
+		}
+
+		quickBuyGroup := v1.Group("/quick-buy")
+		{
+			quickBuyGroup.GET("/flows/current", quickBuyHandler.GetCurrentFlow)
+			quickBuyGroup.POST("/sessions", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(10), quickBuyHandler.CreateSession)
+			quickBuyGroup.GET("/sessions/:token", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.GetSession)
+			quickBuyGroup.GET("/sessions/:token/steps/:step_key/candidates", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.ListStepCandidates)
+			quickBuyGroup.PATCH("/sessions/:token/selections", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.UpdateSelections)
+			quickBuyGroup.POST("/sessions/:token/validate", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.ValidateSession)
 		}
 
 		// 购物车路由（可选认证）
@@ -398,7 +410,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			settingsGroup.GET("/currency-policy", currencyHandler.GetPolicy)
 			// 公开设置
 			settingsGroup.GET("/site", settingsHandler.GetSiteSettings)
-			settingsGroup.GET("/quick-buy", settingsHandler.GetQuickBuySettings)
 			settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 			settingsGroup.GET("/public", settingsHandler.GetAllPublicSettings)
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)

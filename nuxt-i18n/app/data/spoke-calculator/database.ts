@@ -1,9 +1,9 @@
 export interface HubGeometry {
-    leftFlange: number
-    rightFlange: number
-    leftFlangePcd: number
-    rightFlangePcd: number
-    spokeHoleDiameter?: number
+    leftFlange: number | null
+    rightFlange: number | null
+    leftFlangePcd: number | null
+    rightFlangePcd: number | null
+    spokeHoleDiameter?: number | null
 }
 
 export interface HubModel {
@@ -19,7 +19,7 @@ export interface HubModel {
 export interface RimModel {
     id: string
     name: string
-    erd: number
+    erd: number | null
     weight?: number
 }
 
@@ -27,6 +27,58 @@ export interface Brand<T> {
     id: string
     name: string
     items: T[]
+}
+
+export interface IntOption {
+    value: number
+    label: string
+}
+
+export interface StringOption {
+    value: string
+    label: string
+}
+
+export interface SpokeCatalogOptions {
+    spokeCounts: IntOption[]
+    crossings: IntOption[]
+    nippleTypes: StringOption[]
+    wheelPositions: StringOption[]
+}
+
+export interface SpokeCatalog {
+    options: SpokeCatalogOptions
+    rims: Brand<RimModel>[]
+    hubs: Brand<HubModel>[]
+    presets: WheelBuildPreset[]
+}
+
+export interface WheelBuildActualLengths {
+    frontLeft: number | null
+    frontRight: number | null
+    rearLeft: number | null
+    rearRight: number | null
+    notes?: string
+}
+
+export const SPOKE_CALCULATOR_OPTIONS: SpokeCatalogOptions = {
+    spokeCounts: [16, 18, 20, 24, 28, 32, 36].map(value => ({ label: String(value), value })),
+    crossings: [
+        { label: '0-cross (Radial)', value: 0 },
+        { label: '1-cross', value: 1 },
+        { label: '2-cross', value: 2 },
+        { label: '3-cross', value: 3 },
+        { label: '4-cross', value: 4 },
+    ],
+    nippleTypes: [
+        { label: 'Standard external', value: 'standard' },
+        { label: 'Hidden / aero', value: 'hidden' },
+    ],
+    wheelPositions: [
+        { label: 'Auto', value: 'auto' },
+        { label: 'Front', value: 'front' },
+        { label: 'Rear', value: 'rear' },
+    ],
 }
 
 export const RIM_DATABASE: Brand<RimModel>[] = [
@@ -133,6 +185,8 @@ export interface WheelBuildPreset {
     crossing: number
     nippleType: 'standard' | 'hidden'
     nippleLength: number | null
+    wheelPosition?: 'auto' | 'front' | 'rear'
+    actualLengths?: WheelBuildActualLengths | null
 }
 
 export const PRESET_BUILDS: WheelBuildPreset[] = [
@@ -158,7 +212,7 @@ export const PRESET_BUILDS: WheelBuildPreset[] = [
         rimBrandId: 'dt_swiss',
         rimModelId: 'rr511_db', // Demo proxy
         hubBrandId: 'dt_swiss',
-        hubModelId: '240_exp_db_cl', // Existing hub in DB
+        hubModelId: '240_road_db_cl',
         spokeCount: 24,
         crossing: 2,
         nippleType: 'hidden',
@@ -179,3 +233,10 @@ export const PRESET_BUILDS: WheelBuildPreset[] = [
         nippleLength: 12,
     }
 ]
+
+export const DEFAULT_SPOKE_CATALOG: SpokeCatalog = {
+    options: SPOKE_CALCULATOR_OPTIONS,
+    rims: RIM_DATABASE,
+    hubs: HUB_DATABASE,
+    presets: PRESET_BUILDS,
+}

@@ -30,18 +30,6 @@ func (h *Handler) GetSiteSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, settings)
 }
 
-func (h *Handler) GetQuickBuySettings(c *gin.Context) {
-	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
-
-	settings, err := h.settingService.GetQuickBuySettings(locale)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, settings)
-}
-
 func (h *Handler) GetAllPublicSettings(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 

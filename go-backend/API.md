@@ -482,24 +482,6 @@ Accept-Language: en
 
 `site_name` is retained as a legacy alias. New admin and storefront branding should use `brand_title`.
 
-### Get Quick Buy Settings
-```http
-GET /api/v1/settings/quick-buy
-Accept-Language: en
-```
-
-**Response:**
-```json
-{
-  "enabled": true,
-  "button_text": "Quick Buy",
-  "success_message": "Added to cart!",
-  "require_login": false
-}
-```
-
----
-
 ## i18n Endpoints
 
 ### Get Supported Languages
