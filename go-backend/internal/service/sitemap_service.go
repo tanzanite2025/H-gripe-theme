@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"tanzanite/internal/domain/post"
+	seodomain "tanzanite/internal/domain/seo"
 	"tanzanite/internal/repository"
 	"time"
 )
@@ -154,13 +155,7 @@ func (s *SitemapService) createURL(p post.Post, group []post.Post) URL {
 
 // buildPostURL 构建文章 URL
 func (s *SitemapService) buildPostURL(p post.Post) string {
-	// 根据语言构建 URL 路径
-	// 英文: /blog/post-slug
-	// 其他语言: /fr/blog/post-slug
-	if p.Locale == "en" {
-		return fmt.Sprintf("%s/blog/%s", s.baseURL, p.Slug)
-	}
-	return fmt.Sprintf("%s/%s/blog/%s", s.baseURL, p.Locale, p.Slug)
+	return fmt.Sprintf("%s%s", s.baseURL, seodomain.BuildArticleRoute(p.Locale, p.Slug, p.Tags).Path)
 }
 
 // GenerateSimpleSitemap 生成简单的 Sitemap（不包含 Hreflang）

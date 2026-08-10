@@ -130,6 +130,35 @@ func TestPublicProductTypeUsesRequestedTranslationWithEnglishFallback(t *testing
 	}
 }
 
+func TestPublicProductIncludesLocalizedRoutesWithoutCatalogFields(t *testing.T) {
+	item := productdomain.Product{
+		ID:   11,
+		Name: "Localized Product",
+		Slug: "localized-product",
+	}
+	routes := []productdomain.ProductTranslationRoute{
+		{Locale: "en", Slug: "localized-product"},
+		{Locale: "zh_cn", Slug: "本地化商品"},
+	}
+
+	publicProduct := PublicProductFromDomainWithLocaleAndRoutes(item, "", "en", routes)
+
+	if len(publicProduct.LocalizedRoutes) != 2 {
+		t.Fatalf("expected two localized routes, got %#v", publicProduct.LocalizedRoutes)
+	}
+	if publicProduct.LocalizedRoutes[1].Locale != "zh_cn" || publicProduct.LocalizedRoutes[1].Slug != "本地化商品" {
+		t.Fatalf("unexpected localized route: %#v", publicProduct.LocalizedRoutes[1])
+	}
+
+	payload, err := json.Marshal(publicProduct)
+	if err != nil {
+		t.Fatalf("marshal public product: %v", err)
+	}
+	if strings.Contains(string(payload), `"parent_id"`) || strings.Contains(string(payload), `"translation_group_id"`) {
+		t.Fatalf("public product response exposes translation storage fields: %s", payload)
+	}
+}
+
 func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *testing.T) {
 	optionValueID := uint(81)
 	item := productdomain.Product{

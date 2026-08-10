@@ -3,7 +3,9 @@ package settings
 import (
 	"testing"
 
+	seodomain "tanzanite/internal/domain/seo"
 	"tanzanite/internal/domain/setting"
+	"tanzanite/internal/service"
 )
 
 func TestFilterPublicSettingsManagedByDomain(t *testing.T) {
@@ -12,9 +14,11 @@ func TestFilterPublicSettingsManagedByDomain(t *testing.T) {
 		{Key: "tz_loyalty_checkin_base_points", Group: "loyalty"},
 		{Key: "tz_redeem_exchange_rate", Group: "redeem"},
 		{Key: "social_instagram", Group: "social"},
+		{Key: seodomain.HomeKeys.MetaTitle, Group: "seo"},
+		{Key: "google_analytics", Group: "analytics"},
 	}
 
-	actual := filterPublicSettingsManagedByDomain(input)
+	actual := service.FilterDomainManagedSettings(input)
 
 	if len(actual) != 2 {
 		t.Fatalf("expected 2 public settings, got %d", len(actual))
@@ -25,12 +29,21 @@ func TestFilterPublicSettingsManagedByDomain(t *testing.T) {
 }
 
 func TestDomainManagedPublicSettingKeysAreBlocked(t *testing.T) {
-	for _, key := range []string{"tz_loyalty_checkin_base_points", "tz_redeem_exchange_rate"} {
-		if !isPublicSettingKeyManagedByDomain(key) {
+	for _, key := range []string{
+		"tz_loyalty_checkin_base_points",
+		"tz_redeem_exchange_rate",
+		seodomain.HomeKeys.MetaTitle,
+		seodomain.HomeKeys.MetaDescription,
+		"google_analytics",
+	} {
+		if !service.IsDomainManagedSettingKey(key) {
 			t.Fatalf("expected %s to be domain managed", key)
 		}
 	}
-	if isPublicSettingKeyManagedByDomain("site_name") {
+	if service.IsDomainManagedSettingKey("site_name") {
 		t.Fatal("site_name should not be domain managed")
+	}
+	if service.IsDomainManagedSettingKey("meta_title") {
+		t.Fatal("legacy meta_title should not be domain managed")
 	}
 }

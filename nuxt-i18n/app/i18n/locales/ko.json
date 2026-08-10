@@ -136,7 +136,7 @@
     "pages": {
       "all": {
         "title": "Blog",
-        "intro": "Updates, announcements, and wheelbuilding articles.",
+        "intro": "Updates, announcements, and useful articles.",
         "metaTitle": "Blog"
       },
       "news": {
@@ -848,7 +848,7 @@
       "shop": "Shop",
       "aboutTools": "About Tools",
       "tireSizeCharts": "Tire Guides",
-      "wheelsbuildBlog": "Wheelsbuild blog",
+      "blog": "Blog",
       "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Guide",
       "about": "About",
@@ -1440,7 +1440,7 @@
       "shop": "Shop",
       "aboutTools": "About Tools",
       "tireSizeCharts": "Tire Guides",
-      "wheelsbuildBlog": "Wheelsbuild blog",
+      "blog": "Blog",
       "technicalDocs": "Technical",
       "wheelsetBuyersGuide": "Wheelset Guide"
     },
@@ -1547,8 +1547,8 @@
     "searchProductPlaceholder": "제품명 입력...",
     "searchProducts": "제품 검색",
     "search": "Search",
-    "wheelsbuildBlog": {
-      "desc": "Wheelbuilding articles & updates"
+    "blog": {
+      "desc": "Articles & updates"
     },
     "tireGuides": {
       "desc": "Tire width to rim inner width helper"

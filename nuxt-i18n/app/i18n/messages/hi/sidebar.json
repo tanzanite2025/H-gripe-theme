@@ -9,8 +9,8 @@
   "searchProductPlaceholder": "उत्पाद का नाम दर्ज करें...",
   "searchProducts": "उत्पाद खोजें",
   "search": "Search",
-  "wheelsbuildBlog": {
-    "desc": "Wheelbuilding articles & updates"
+  "blog": {
+    "desc": "Articles & updates"
   },
   "tireGuides": {
     "desc": "Tire width to rim inner width helper"

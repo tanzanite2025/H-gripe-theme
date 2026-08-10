@@ -141,6 +141,34 @@ func TestPostServiceUpdateAdminPostAcceptsSameLocaleAlias(t *testing.T) {
 	assert.Equal(t, "en", updatedPost.Locale)
 }
 
+func TestPostServiceUpdatePostSEOUsesDedicatedBoundary(t *testing.T) {
+	db, postService := newTestPostService(t)
+
+	existingPost := post.Post{
+		Title:    "SEO Boundary",
+		Slug:     "seo-boundary",
+		Content:  "<p>Content</p>",
+		Status:   "published",
+		AuthorID: 1,
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&existingPost).Error)
+
+	title := "SEO Boundary | Tanzanite"
+	description := "A description maintained by the SEO control plane."
+	canonical := "https://store.example.test/blog/seo-boundary"
+	updatedPost, err := postService.UpdatePostSEO(existingPost.ID, PostSEOUpdateInput{
+		MetaTitle:       &title,
+		MetaDescription: &description,
+		CanonicalURL:    &canonical,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, updatedPost)
+	assert.Equal(t, title, updatedPost.MetaTitle)
+	assert.Equal(t, description, updatedPost.MetaDesc)
+	assert.Equal(t, canonical, updatedPost.CanonicalURL)
+}
+
 func newTestPostService(t *testing.T) (*gorm.DB, *PostService) {
 	t.Helper()
 

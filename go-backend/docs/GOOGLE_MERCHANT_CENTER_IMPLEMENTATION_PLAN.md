@@ -1,5 +1,9 @@
 # Google Merchant Center Integration Plan
 
+The cross-domain SEO and storefront rendering boundary is documented in
+[`../../docs/seo/SEO_SYSTEM_ARCHITECTURE.md`](../../docs/seo/SEO_SYSTEM_ARCHITECTURE.md).
+This document owns the Google Merchant channel implementation only.
+
 ## Purpose
 
 Integrate Tanzanite products with Google Merchant Center (GMC) Free Listings in
@@ -54,11 +58,16 @@ The channel workspace is now separated from the core Tanzanite catalog:
   builds landing/media URLs from the configured Storefront Base URL, and
   records `sync_status`, `last_sync_at`, and `last_error` on the channel offer
   only.
+- Product create/update/delete/status and variant/media source changes publish
+  typed Merchant outbox events after the catalog mutation. The outbox worker
+  dispatches upsert, withdrawal, and offer revalidation handlers with retry and
+  dead-letter behavior.
+- The dedicated Merchant page exposes a permission-protected full
+  reconciliation command at `POST /api/admin/google-merchant/reconcile`.
 
-This boundary deliberately does not yet run an automatic queue, delete or
-withdraw offers, or let product-editor saves publish to Google. Those remain
-later steps after manual writes are proven against a real Merchant Center
-account and the first target market is approved.
+This boundary does not claim external Google approval. The local queue and
+withdrawal behavior are implemented, while real Merchant Center processing,
+policy approval, and production monitoring remain external acceptance work.
 
 ## Non-Goals for the First Release
 
@@ -177,6 +186,8 @@ Minimum views:
 
 Owner: backend and administration panel.
 
+Status: complete in code.
+
 Tasks:
 
 - Do not add Google-specific fields to the product editor, product table, or
@@ -197,6 +208,8 @@ Exit criteria:
 ### Phase 1: Business and Google Account Readiness
 
 Owner: business administrator.
+
+Status: pending external business and Google environment work.
 
 Tasks:
 
@@ -224,6 +237,9 @@ Exit criteria:
 
 Owner: backend and administration panel.
 
+Status: complete in code; production account selection remains environment
+dependent.
+
 Tasks:
 
 - Add a Google OAuth connection area on the dedicated page.
@@ -246,6 +262,9 @@ Exit criteria:
 ### Phase 3: Merchant API Connection and Dry Run
 
 Owner: backend.
+
+Status: code-complete; live dry-run exit criteria remain pending a real Google
+Merchant account.
 
 Tasks:
 
@@ -270,6 +289,9 @@ Exit criteria:
 
 Owner: backend and operations.
 
+Status: local automation code-complete; production monitoring and live
+acceptance remain pending.
+
 Tasks:
 
 - Add idempotent queued upsert, withdraw, retry, and reconciliation jobs.
@@ -287,6 +309,22 @@ Exit criteria:
 - Failed products remain visible to administrators with a clear remediation
   path.
 - Production monitoring shows the health of the integration.
+
+Implemented local pieces:
+
+- `internal/domain/outbox/event.go` defines typed Merchant event payloads.
+- `internal/service/merchant_outbox_publisher.go` publishes source-change
+  events.
+- `internal/service/product_merchant_events.go` and
+  `internal/service/product_admin_service.go` bridge catalog mutations.
+- `internal/service/google_merchant_outbox.go` handles upsert, withdrawal,
+  revalidation, and full reconciliation.
+- `internal/api/admin/google_merchant_handler.go` exposes the protected
+  reconciliation command.
+
+The remaining exit criteria require a real account, approved market, live API
+responses, and operational monitoring. They cannot be honestly completed by
+local code alone.
 
 ### Phase 5: Optional File Data Source
 

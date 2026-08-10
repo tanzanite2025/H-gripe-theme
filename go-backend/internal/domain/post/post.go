@@ -29,7 +29,6 @@ type Post struct {
 	// SEO 元数据
 	MetaTitle    string `json:"meta_title"`
 	MetaDesc     string `gorm:"type:text" json:"meta_description"`
-	MetaKeywords string `json:"meta_keywords"`
 	CanonicalURL string `json:"canonical_url"`
 
 	// 标签和分类

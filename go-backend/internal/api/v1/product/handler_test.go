@@ -38,7 +38,7 @@ func TestGetProductAllowsNumericSlugWithoutIDLookup(t *testing.T) {
 		Name:   "Numeric Slug Product",
 		Slug:   "321313121",
 		Status: "active",
-		Locale: "zh_cn",
+		Locale: "en",
 		Price:  99,
 		Stock:  5,
 		Variants: []productdomain.ProductVariant{

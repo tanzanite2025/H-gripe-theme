@@ -18,6 +18,17 @@ export const productApi = {
     return payload.product ?? payload
   },
 
+  async translations(id: number | string) {
+    const payload = unwrapPayload(await axios.get(`/api/admin/products/${id}/translations`))
+    return payload.translation_group ?? payload
+  },
+
+  async copyTranslation(id: number | string, targetLocale: string) {
+    return unwrapPayload(await axios.post(`/api/admin/products/${id}/translations/copy`, {
+      target_locale: targetLocale
+    }))
+  },
+
   async create(payload: Record<string, any>) {
     return unwrapPayload(await axios.post('/api/admin/products', payload))
   },

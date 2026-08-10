@@ -4,10 +4,16 @@ import {
   getBlogPostBySlug,
   getBlogTranslationsByGroup,
   listBlogPosts,
-  type BlogCategory,
-  type BlogPostDetail,
-  type BlogPostSummary,
 } from '~/utils/blogMock'
+import {
+  normalizeBlogLocalizedRoutes,
+  resolveBlogCategory,
+} from '~/utils/seo/blog'
+import type {
+  BlogCategory,
+  BlogPostDetail,
+  BlogPostSummary,
+} from '~/utils/blog/types'
 
 type BlogPostsResponse = {
   page: number
@@ -23,11 +29,13 @@ type BlogTranslationsResponse = {
 
 const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
 
-const getGoOriginBase = (apiBase: string) => {
+const resolveApiV1Base = (apiBase: string, internalOrigin: string, isServer: boolean) => {
   const normalized = trimTrailingSlash(apiBase || '/api/v1')
-  return normalized.endsWith('/api/v1')
-    ? normalized.slice(0, -'/api/v1'.length)
-    : normalized
+  if (isServer && normalized.startsWith('/')) {
+    return `${trimTrailingSlash(internalOrigin || 'http://localhost:9200')}${normalized}`
+  }
+  if (normalized === '/') return '/api/v1'
+  return normalized.endsWith('/api/v1') ? normalized : `${normalized}/api/v1`
 }
 
 export const useBlogApi = () => {
@@ -42,9 +50,36 @@ export const useBlogApi = () => {
   })
 
   const useLocalBlog = computed(() => {
-    if (['local', 'mock', 'disabled'].includes(blogApiMode.value)) return true
-    return import.meta.server && apiBase.value.startsWith('/')
+    return ['local', 'mock', 'disabled'].includes(blogApiMode.value)
   })
+
+  const apiRoot = computed(() => resolveApiV1Base(
+    apiBase.value,
+    String((config as { apiInternalOrigin?: string }).apiInternalOrigin || ''),
+    import.meta.server,
+  ))
+
+  const mapPost = (item: any, fallbackLocale: string): BlogPostSummary => {
+    const categories = item.tags
+      ? String(item.tags).split(',').map((tag: string) => tag.trim()).filter(Boolean)
+      : []
+
+    return {
+      id: item.id,
+      lang: item.locale || fallbackLocale,
+      group: item.translation_group_id ? `grp-${item.translation_group_id}` : '',
+      slug: item.slug,
+      title: item.title,
+      excerpt: item.excerpt,
+      metaTitle: item.meta_title || '',
+      metaDescription: item.meta_description || '',
+      date: item.published_at || item.created_at,
+      featuredImage: item.featured_image ? { url: item.featured_image } : null,
+      categories: categories as BlogCategory[],
+      translations: {},
+      localizedRoutes: normalizeBlogLocalizedRoutes(item.localized_routes),
+    }
+  }
 
   const buildLocalPostsResponse = (params: {
     lang: string
@@ -72,37 +107,28 @@ export const useBlogApi = () => {
     const localResponse = () => buildLocalPostsResponse(params)
     if (useLocalBlog.value) return localResponse()
 
-    try {
-      const response = await $fetch<{ data: BlogPostSummary[], total: number }>(`${trimTrailingSlash(apiBase.value)}/content/posts`, {
+    const response = await $fetch<{ data: BlogPostSummary[], total: number }>(
+      `${apiRoot.value}/content/posts`,
+      {
         params: {
           locale: params.lang,
           category: params.category,
           page: params.page,
           page_size: params.perPage,
-          status: 'published'
-        }
-      })
-      
-      if (!response.data) throw new Error("[CRITICAL] response.data missing");
-      return {
-        page: params.page,
-        per_page: params.perPage,
-        total: response.total || 0,
-        items: response.data.map((item: any) => ({
-          id: item.id,
-          lang: item.locale || params.lang,
-          group: item.translation_group_id ? `grp-${item.translation_group_id}` : '',
-          slug: item.slug,
-          title: item.title,
-          excerpt: item.excerpt,
-          date: item.published_at || item.created_at,
-          featuredImage: item.featured_image ? { url: item.featured_image } : null,
-          categories: item.tags ? item.tags.split(',') : [],
-          translations: {}
-        } as BlogPostSummary))
-      }
-    } catch {
-      return localResponse()
+          status: 'published',
+        },
+      },
+    )
+
+    if (!Array.isArray(response.data)) {
+      throw new Error('Blog posts response data is invalid')
+    }
+
+    return {
+      page: params.page,
+      per_page: params.perPage,
+      total: response.total || 0,
+      items: response.data.map((item: any) => mapPost(item, params.lang)),
     }
   }
 
@@ -114,35 +140,24 @@ export const useBlogApi = () => {
       throw new Error('Blog post not found')
     }
 
-    try {
-      const response = await $fetch<{ data: BlogPostDetail } | BlogPostDetail>(`${trimTrailingSlash(apiBase.value)}/content/posts/${encodeURIComponent(params.slug)}`, {
+    const response = await $fetch<{ data: BlogPostDetail } | BlogPostDetail>(
+      `${apiRoot.value}/content/posts/${encodeURIComponent(params.slug)}`,
+      {
         params: {
           locale: params.lang,
-        }
-      })
-      // Backend might wrap in data or return directly
-      const post = (response as any).data || response
-      if (!post) throw new Error('Post not found in response')
-        
-      return {
-        id: post.id,
-        lang: post.locale || params.lang,
-        group: post.translation_group_id ? `grp-${post.translation_group_id}` : '',
-        slug: post.slug,
-        title: post.title,
-        excerpt: post.excerpt,
-        date: post.published_at || post.created_at,
-        featuredImage: post.featured_image ? { url: post.featured_image } : null,
-        categories: post.tags ? post.tags.split(',') : [],
-        translations: {},
-        contentHtml: post.content || '',
-        canonicalUrl: post.canonical_url || ''
-      } as BlogPostDetail
-    } catch {
-      const post = localPost()
-      if (post) return post
-      throw new Error('Blog post not found')
+        },
+      },
+    )
+    const post = (response as any).data || response
+    if (!post || typeof post !== 'object') {
+      throw new Error('Blog post response is invalid')
     }
+
+    return {
+      ...mapPost(post, params.lang),
+      contentHtml: post.content || '',
+      canonicalUrl: post.canonical_url || '',
+    } as BlogPostDetail
   }
 
   const getTranslations = async (params: {
@@ -156,19 +171,13 @@ export const useBlogApi = () => {
   }
 
   const getPostTranslations = async (postId: number): Promise<Record<string, any>> => {
-    const apiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-    try {
-      const response = await $fetch<{ translations: Record<string, any> }>(
-        `${trimTrailingSlash(apiBase)}/api/v1/i18n/translations/${postId}`
-      )
-      if (!response || !response.translations) {
-        throw new Error(`[CRITICAL] Post translations response invalid for postId ${postId}`)
-      }
-      return response.translations
-    } catch (error) {
-      console.error('Failed to fetch post translations from Go backend:', error)
-      throw error // FAIL LOUDLY: Never return {} on critical fetch error
+    const response = await $fetch<{ translations: Record<string, any> }>(
+      `${apiRoot.value}/i18n/translations/${postId}`,
+    )
+    if (!response || !response.translations) {
+      throw new Error(`Post translations response invalid for postId ${postId}`)
     }
+    return response.translations
   }
 
   return {

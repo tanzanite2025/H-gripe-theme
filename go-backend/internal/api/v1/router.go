@@ -2,6 +2,7 @@ package v1
 
 import (
 	"tanzanite/internal/api/middleware"
+	analyticsapi "tanzanite/internal/api/v1/analytics"
 	"tanzanite/internal/api/v1/auth"
 	"tanzanite/internal/api/v1/behavior"
 	"tanzanite/internal/api/v1/cart"
@@ -19,6 +20,7 @@ import (
 	"tanzanite/internal/api/v1/recommendation"
 	"tanzanite/internal/api/v1/registration"
 	"tanzanite/internal/api/v1/review"
+	seohomeapi "tanzanite/internal/api/v1/seo/home"
 	"tanzanite/internal/api/v1/settings"
 	"tanzanite/internal/api/v1/shipping"
 	"tanzanite/internal/api/v1/showcase"
@@ -82,6 +84,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		VisitorSecret:         cfg.JWT.Secret,
 	})
 	settingsHandler := settings.NewHandler(settingService)
+	seoHomeHandler := seohomeapi.NewHandler(services.SEO)
+	analyticsHandler := analyticsapi.NewHandler(services.Analytics)
 	storefrontContextHandler := storefront.NewContextHandler(services.StorefrontContext)
 	currencyHandler := currencyapi.NewHandler(services.CurrencyPolicy, services.ExchangeRate)
 	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
@@ -378,6 +382,16 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), showcaseHandler.AddComment)
 		}
 
+		seoGroup := v1.Group("/seo")
+		{
+			seoGroup.GET("/home", seoHomeHandler.Get)
+		}
+
+		analyticsGroup := v1.Group("/analytics")
+		{
+			analyticsGroup.GET("", analyticsHandler.Get)
+		}
+
 		// 设置路由
 		settingsGroup := v1.Group("/settings")
 		{
@@ -385,7 +399,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			// 公开设置
 			settingsGroup.GET("/site", settingsHandler.GetSiteSettings)
 			settingsGroup.GET("/quick-buy", settingsHandler.GetQuickBuySettings)
-			settingsGroup.GET("/seo", settingsHandler.GetSEOSettings)
 			settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 			settingsGroup.GET("/public", settingsHandler.GetAllPublicSettings)
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)

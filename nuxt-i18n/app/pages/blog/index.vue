@@ -125,8 +125,8 @@ const formatDate = (value: string) => {
   }
 }
 
-useHead({
+useHead(() => ({
   title: t('blog.pages.all.metaTitle'),
-})
+}))
 </script>
 

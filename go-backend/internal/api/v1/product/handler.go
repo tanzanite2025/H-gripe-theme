@@ -75,7 +75,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	publicContext := h.resolvePublicContext(c)
 	locale := publicContext.Locale
 
-	product, err := h.productService.GetPublicBySlug(slug, locale)
+	product, translationRoutes, err := h.productService.GetPublicBySlugWithRoutes(slug, locale)
 	if err != nil {
 		apierror.RespondNotFound(c, "Product")
 		return
@@ -83,7 +83,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"code":    0,
-		"data":    PublicProductFromDomainWithLocale(*product, publicContext.DisplayCurrency, publicContext.Locale),
+		"data":    PublicProductFromDomainWithLocaleAndRoutes(*product, publicContext.DisplayCurrency, publicContext.Locale, translationRoutes),
 		"context": publicContext.Response,
 	})
 }

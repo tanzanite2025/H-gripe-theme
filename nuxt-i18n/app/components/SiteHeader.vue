@@ -56,7 +56,6 @@
 								:aria-label="searchHintTitle"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
-								<span class="site-header-search-trigger__label">SEARCH</span>
 							</button>
 							<div class="site-header-search-hint" role="tooltip">
 								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
@@ -226,7 +225,6 @@
 								:aria-label="searchHintTitle"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
-								<span class="site-header-search-trigger__label">SEARCH</span>
 							</button>
 							<div class="site-header-search-hint site-header-search-hint--mobile" role="tooltip">
 								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
@@ -646,14 +644,14 @@ const baseBreadcrumbs = computed<BreadcrumbItem[]>(() => {
     return items
   }
 
-  // Blog hub: Home / Wheelsbuild blog
+  // Blog hub: Home / Blog
   const blogHub = localePath('/blog')
   if (currentPath === blogHub) {
     items.push({ label: t('breadcrumbs.blog', 'Blog') as string })
     return items
   }
 
-  // Blog 子页面：Home / Wheelsbuild blog / {具体页面}
+  // Blog 子页面：Home / Blog / {具体页面}
   if (currentPath.startsWith(blogHub + '/')) {
     items.push({
       label: t('breadcrumbs.blog', 'Blog') as string,
@@ -1222,12 +1220,12 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-actions {
-	--site-header-action-width: 4rem;
-	--site-header-action-height: 2.5rem;
+	--site-header-action-width: 4.5rem;
+	--site-header-action-height: 2.25rem;
 	--site-header-action-icon-size: 1.375rem;
 	display: flex;
 	align-items: center;
-	gap: 0.12rem !important;
+	gap: 0.38rem !important;
 }
 
 .site-header-action-cell {
@@ -1248,22 +1246,22 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 @media (min-width: 768px) {
 	.site-header-action-cell--search {
-		flex-basis: 6.65rem;
-		width: 6.65rem;
+		flex-basis: var(--site-header-action-width);
+		width: var(--site-header-action-width);
 	}
 }
 
 @media (min-width: 1024px) {
 	.site-header-action-cell--search {
-		flex-basis: 6.85rem;
-		width: 6.85rem;
+		flex-basis: var(--site-header-action-width);
+		width: var(--site-header-action-width);
 	}
 }
 
 @media (min-width: 1280px) {
 	.site-header-action-cell--search {
-		flex-basis: 7.05rem;
-		width: 7.05rem;
+		flex-basis: var(--site-header-action-width);
+		width: var(--site-header-action-width);
 	}
 }
 
@@ -1293,6 +1291,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	line-height: 1;
 	box-shadow: none !important;
 	transition:
+		background 0.18s ease,
+		border-color 0.18s ease,
 		color 0.18s ease,
 		transform 0.18s ease;
 }
@@ -1312,8 +1312,23 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-language-trigger {
-	gap: 0.48rem !important;
-	padding-inline: 0.5rem !important;
+	gap: 0.34rem !important;
+	border: 1px solid rgba(255, 255, 255, 0.36) !important;
+	background: rgba(181, 255, 109, 0.08) !important;
+	background-image: none !important;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+	color: rgba(255, 255, 255, 0.88);
+	padding-inline: 0.42rem !important;
+}
+
+.site-header-language-trigger:hover,
+.site-header-language-trigger:focus-visible,
+.site-header-language-trigger[aria-expanded='true'] {
+	border: 1px solid rgba(255, 255, 255, 0.62) !important;
+	background: rgba(181, 255, 109, 0.14) !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: #ffffff;
 }
 
 .site-header-language-trigger > span:first-child {
@@ -1357,21 +1372,21 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-search-trigger {
-	gap: 0.52rem !important;
-	justify-content: flex-start;
-	border: 1px solid rgba(181, 255, 109, 0.36) !important;
+	gap: 0 !important;
+	justify-content: center;
+	border: 1px solid rgba(255, 255, 255, 0.36) !important;
 	background: rgba(181, 255, 109, 0.08) !important;
 	background-image: none !important;
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 	color: #B5FF6D;
-	padding: 0 0.92rem !important;
+	padding: 0 !important;
 	font-size: 0.82rem;
 	font-weight: 720;
 }
 
 .site-header-search-trigger:hover,
 .site-header-search-trigger:focus-visible {
-	border: 1px solid rgba(181, 255, 109, 0.58) !important;
+	border: 1px solid rgba(255, 255, 255, 0.62) !important;
 	background: rgba(181, 255, 109, 0.14) !important;
 	background-image: none !important;
 	box-shadow: none !important;
@@ -1387,7 +1402,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-search-trigger__label {
-	display: inline-flex;
+	display: none;
 	min-width: 0;
 	align-items: center;
 	overflow: hidden;
@@ -1398,16 +1413,16 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-search-trigger--mobile {
-	width: 6.95rem;
-	min-width: 6.95rem;
-	height: 2.5rem;
-	justify-content: flex-start;
-	padding: 0 0.78rem !important;
-	gap: 0.42rem !important;
+	width: 100%;
+	min-width: 0;
+	height: var(--site-header-action-height);
+	justify-content: center;
+	padding: 0 !important;
+	gap: 0 !important;
 }
 
 .site-header-search-trigger--mobile .site-header-search-trigger__label {
-	display: inline-flex;
+	display: none;
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -1477,19 +1492,19 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-actions--mobile {
-	--site-header-action-width: 2.5rem;
-	--site-header-action-height: 2.5rem;
-	gap: 0.28rem !important;
+	--site-header-action-width: 4.5rem;
+	--site-header-action-height: 2.25rem;
+	gap: 0.38rem !important;
 }
 
 .site-header-actions--mobile .site-header-action-cell--search {
-	flex-basis: 6.95rem;
-	width: 6.95rem;
+	flex-basis: var(--site-header-action-width);
+	width: var(--site-header-action-width);
 }
 
 .site-header-actions--mobile .site-header-language-wrapper {
-	flex-basis: 3.55rem;
-	width: 3.55rem;
+	flex-basis: var(--site-header-action-width);
+	width: var(--site-header-action-width);
 }
 
 @keyframes site-header-search-nudge {
@@ -1846,8 +1861,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.site-header-language-trigger {
-		height: 2.5rem;
-		min-width: 3.55rem;
+		height: var(--site-header-action-height);
+		min-width: 0;
 		gap: 0.36rem !important;
 		padding-inline: 0.3rem !important;
 	}

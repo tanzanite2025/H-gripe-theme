@@ -31,11 +31,6 @@ export interface ContentPost {
   locale?: string | null
   featured_image?: string | null
   tags?: string | null
-  meta_title?: string | null
-  meta_description?: string | null
-  meta_desc?: string | null
-  meta_keywords?: string | null
-  canonical_url?: string | null
   translation_group_id?: number | string | null
   view_count?: number | string | null
   created_at?: string | null
@@ -51,10 +46,6 @@ export interface ContentPostForm {
   locale: string
   featured_image: string
   tags: string
-  meta_title: string
-  meta_description: string
-  meta_keywords: string
-  canonical_url: string
   translation_group_id: number | string | null
 }
 
@@ -67,10 +58,6 @@ export interface ContentPostPayload {
   locale: string
   featured_image: string
   tags: string
-  meta_title: string
-  meta_description: string
-  meta_keywords: string
-  canonical_url: string
   translation_group_id: number | string | null
 }
 

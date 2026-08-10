@@ -25,8 +25,6 @@ type productCreateRequest struct {
 	Locale               string                             `json:"locale"`
 	ParentID             *uint                              `json:"parent_id"`
 	Featured             bool                               `json:"featured"`
-	MetaTitle            string                             `json:"meta_title"`
-	MetaDesc             string                             `json:"meta_description"`
 	Specs                map[string]interface{}             `json:"specs"`
 	Variants             []productVariantRequest            `json:"variants"`
 	VariantOptionValues  []productVariantOptionValueRequest `json:"variant_option_values"`
@@ -47,8 +45,6 @@ type productUpdateRequest struct {
 	Locale               *string                            `json:"locale"`
 	ParentID             *uint                              `json:"parent_id"`
 	Featured             *bool                              `json:"featured"`
-	MetaTitle            *string                            `json:"meta_title"`
-	MetaDesc             *string                            `json:"meta_description"`
 	Specs                map[string]interface{}             `json:"specs"`
 	Variants             []productVariantRequest            `json:"variants"`
 	VariantOptionValues  []productVariantOptionValueRequest `json:"variant_option_values"`
@@ -108,6 +104,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 	case errors.Is(err, service.ErrProductSKUExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
+	case errors.Is(err, service.ErrProductTranslationExists):
+		c.JSON(http.StatusConflict, gin.H{"error": "Translation already exists for this locale"})
 	case errors.Is(err, service.ErrProductTypeNotFound):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Product type not found"})
 	case errors.Is(err, service.ErrProductLocaleImmutable):
@@ -117,6 +115,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 	case errors.Is(err, service.ErrProductVariantInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductMediaInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductTranslationInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductInformationTemplateInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

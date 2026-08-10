@@ -536,10 +536,7 @@ func recommendationCandidateLimit(limit int, exclusions int) int {
 
 func normalizeRecommendationQuery(query string) string {
 	query = strings.TrimSpace(query)
-	if len(query) > 160 {
-		query = query[:160]
-	}
-	return query
+	return truncateRecommendationRunes(query, 160)
 }
 
 func recommendationQueryTokens(query string) []string {
@@ -616,10 +613,18 @@ func normalizeRecommendationLabel(value string, fallback string) string {
 	if value == "" {
 		return fallback
 	}
-	if len(value) > 64 {
-		return value[:64]
+	return truncateRecommendationRunes(value, 64)
+}
+
+func truncateRecommendationRunes(value string, limit int) string {
+	if limit <= 0 {
+		return ""
 	}
-	return value
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+	return string(runes[:limit])
 }
 
 func minInt(left, right int) int {

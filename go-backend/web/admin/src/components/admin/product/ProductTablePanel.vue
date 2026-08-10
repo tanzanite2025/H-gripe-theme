@@ -20,7 +20,7 @@
       </div>
     </template>
 
-    <Table class="min-w-[1220px]">
+    <Table class="min-w-[1320px]">
       <TableHeader>
         <TableRow>
           <TableHead class="w-11">
@@ -39,12 +39,13 @@
           <TableHead class="w-24">状态</TableHead>
           <TableHead class="w-20 text-center">精选</TableHead>
           <TableHead class="w-20">语言</TableHead>
+          <TableHead class="w-28">翻译组</TableHead>
           <TableHead class="w-44">创建时间</TableHead>
           <TableHead class="w-16 text-right">操作</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableEmpty v-if="products.length === 0" :colspan="12">
+        <TableEmpty v-if="products.length === 0" :colspan="13">
           <div class="flex flex-col items-center text-muted-foreground">
             <PackageOpen class="mb-2 size-7 opacity-55" />
             <span class="text-xs">暂无商品</span>
@@ -106,6 +107,12 @@
             <span v-else class="text-muted-foreground/50">-</span>
           </TableCell>
           <TableCell class="font-bold text-xs">{{ localeName(product.locale) }}</TableCell>
+          <TableCell>
+            <ProductTranslationCoverage
+              :group="product.translation_group"
+              :locale-name="localeName"
+            />
+          </TableCell>
           <TableCell class="font-mono text-[10px] text-muted-foreground/80">{{ formatDate(product.created_at) }}</TableCell>
           <TableCell class="text-right">
             <DropdownMenu>
@@ -118,6 +125,10 @@
                 <DropdownMenuItem v-if="canEdit" @select="emit('edit', product)">
                   <Pencil class="size-4" />
                   编辑
+                </DropdownMenuItem>
+                <DropdownMenuItem v-if="canManageTranslations" @select="emit('translations', product)">
+                  <Languages class="size-4" />
+                  翻译组
                 </DropdownMenuItem>
                 <DropdownMenuItem v-if="canSyncGoogle" @select="emit('sync-google', product)">
                   <Globe2 class="size-4" />
@@ -157,11 +168,12 @@
 </template>
 
 <script setup lang="ts">
-import { CircleCheck, CircleOff, Globe2, MoreHorizontal, PackageOpen, Pencil, Star, Trash2 } from '@lucide/vue'
+import { CircleCheck, CircleOff, Globe2, Languages, MoreHorizontal, PackageOpen, Pencil, Star, Trash2 } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import ProductThumbnail from '@/components/admin/product/ProductThumbnail.vue'
+import ProductTranslationCoverage from '@/components/admin/product/ProductTranslationCoverage.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -190,8 +202,9 @@ const props = withDefaults(defineProps<{
   selectionState?: SelectionState
   canEdit?: boolean
   canDelete?: boolean
+  canManageTranslations?: boolean
   canSyncGoogle?: boolean
-  localeName: (locale?: string) => string
+  localeName: (locale?: string | null) => string
 }>(), {
   loading: false,
   products: () => [],
@@ -199,6 +212,7 @@ const props = withDefaults(defineProps<{
   selectionState: false,
   canEdit: false,
   canDelete: false,
+  canManageTranslations: false,
   canSyncGoogle: false,
 })
 
@@ -208,6 +222,7 @@ const emit = defineEmits<{
   (event: 'toggle-all-products', value: SelectionState): void
   (event: 'toggle-product', product: ProductRecord, value: SelectionState): void
   (event: 'edit', product: ProductRecord): void
+  (event: 'translations', product: ProductRecord): void
   (event: 'sync-google', product: ProductRecord): void
   (event: 'toggle-status', product: ProductRecord): void
   (event: 'delete', product: ProductRecord): void

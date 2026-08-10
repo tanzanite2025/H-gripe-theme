@@ -1,5 +1,7 @@
 import { computed } from 'vue'
-import { useAsyncData, useRuntimeConfig } from '#imports'
+import { useAsyncData } from '#imports'
+import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import type { QuickBuyConfig } from '~/utils/quickBuy/types'
 
 export interface RuntimeSocialLink {
   network: string
@@ -21,21 +23,9 @@ export interface SiteSettingsResponse {
   socialLinks?: ApiSocialLink[]
 }
 
-export interface QuickBuyConfigProp {
-  steps?: unknown[]
-  storeApiBase?: string
-  cartUrl?: string
-  checkoutUrl?: string
-  taxonomy?: string
-  buttonText?: string
-  enabled?: boolean
-  successMessage?: string
-  requireLogin?: boolean
-}
+export type QuickBuyConfigProp = QuickBuyConfig
 
 type RawSettings = Record<string, unknown>
-
-const normalizeBaseUrl = (value?: string) => (value ? value.replace(/\/$/, '') : '')
 
 const asString = (value: unknown) => {
   if (typeof value === 'string') return value
@@ -112,13 +102,7 @@ const normalizeQuickBuySettings = (raw: RawSettings): QuickBuyConfigProp => ({
 })
 
 export function useSiteSettings() {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => {
-    const publicBase = normalizeBaseUrl((config.public as { apiBase?: string }).apiBase || '')
-    if (publicBase) return publicBase
-    const internalOrigin = normalizeBaseUrl((config as { apiInternalOrigin?: string }).apiInternalOrigin || '')
-    return internalOrigin ? `${internalOrigin}/api/v1` : '/api/v1'
-  })
+  const apiBase = usePublicApiBase()
 
   const { data } = useAsyncData<SiteSettingsResponse | null>(
     'mytheme-site-settings',
@@ -145,8 +129,7 @@ export function useSiteSettings() {
 }
 
 export function useQuickBuySettings() {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => normalizeBaseUrl((config.public as { apiBase?: string }).apiBase || '/api/v1'))
+  const apiBase = usePublicApiBase()
 
   const { data } = useAsyncData<QuickBuyConfigProp | null>(
     'mytheme-quick-buy',

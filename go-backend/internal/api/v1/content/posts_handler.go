@@ -3,14 +3,22 @@ package content
 import (
 	"net/http"
 	"strconv"
+	"strings"
+
 	"tanzanite/internal/api/middleware"
+	"tanzanite/internal/pkg/locales"
 
 	"github.com/gin-gonic/gin"
 )
 
 // ListPosts 获取文章列表
 func (h *Handler) ListPosts(c *gin.Context) {
-	locale := middleware.GetLocale(c)
+	locale, ok := resolvePostLocale(c)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported locale"})
+		return
+	}
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
@@ -28,7 +36,7 @@ func (h *Handler) ListPosts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":        posts,
+		"data":        PublicPostsFromDomain(posts),
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,
@@ -39,23 +47,38 @@ func (h *Handler) ListPosts(c *gin.Context) {
 // GetPost 获取单篇文章
 func (h *Handler) GetPost(c *gin.Context) {
 	idOrSlug := c.Param("id")
-	locale := middleware.GetLocale(c)
 
 	if id, err := strconv.ParseUint(idOrSlug, 10, 32); err == nil {
-		post, err := h.postService.GetPublicByID(uint(id))
+		post, routes, err := h.postService.GetPublicByIDWithRoutes(uint(id))
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 			return
 		}
-		c.JSON(http.StatusOK, post)
+		c.JSON(http.StatusOK, PublicPostFromDomainWithRoutes(*post, routes))
 		return
 	}
 
-	post, err := h.postService.GetPublicBySlug(idOrSlug, locale)
+	locale, ok := resolvePostLocale(c)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported locale"})
+		return
+	}
+
+	post, routes, err := h.postService.GetPublicBySlugWithRoutes(idOrSlug, locale)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, post)
+	c.JSON(http.StatusOK, PublicPostFromDomainWithRoutes(*post, routes))
+}
+
+func resolvePostLocale(c *gin.Context) (string, bool) {
+	requested := strings.TrimSpace(c.Query("locale"))
+	if requested == "" {
+		return middleware.GetLocale(c), true
+	}
+
+	resolved := locales.ResolveSupported(requested)
+	return resolved, resolved != ""
 }

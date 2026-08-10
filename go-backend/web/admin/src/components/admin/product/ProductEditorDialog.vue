@@ -300,16 +300,6 @@
             </div>
           </AdminFormSection>
 
-          <AdminFormSection title="SEO" description="可选的搜索结果标题和描述。">
-            <div class="grid gap-4">
-              <AdminFormField label="SEO 标题">
-                <Input v-model="form.meta_title" placeholder="请输入 SEO 标题" />
-              </AdminFormField>
-              <AdminFormField label="SEO 描述">
-                <Textarea v-model="form.meta_description" class="min-h-20" placeholder="请输入 SEO 描述" />
-              </AdminFormField>
-            </div>
-          </AdminFormSection>
         </div>
 
         <DialogFooter class="mx-0 mb-0 shrink-0 rounded-b-[32px] border-t bg-background/95 px-5 py-4 backdrop-blur">

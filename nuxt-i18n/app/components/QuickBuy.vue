@@ -142,25 +142,14 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useCart } from '~/composables/useCart'
 import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
+import type {
+  QuickBuyConfig,
+  QuickBuyResolvedConfig,
+  QuickBuyStep,
+} from '~/utils/quickBuy/types'
 import type { CartItem } from '~~/types/cart'
 
 type Maybe<T> = T | null | undefined
-
-interface QuickBuyStep {
-  id: number
-  slug: string
-  name: string
-}
-
-interface QuickBuyConfig {
-  steps?: QuickBuyStep[]
-  storeApiBase?: string
-  cartUrl?: string
-  checkoutUrl?: string
-  taxonomy?: string
-  buttonText?: string
-  enabled?: boolean
-}
 
 interface Selection {
   id: number
@@ -216,7 +205,7 @@ const { fetchShopProducts } = useShopProducts()
 
 const configuredSteps = computed(() => normalizeSteps(props.config?.steps))
 const isUsingFallbackConfig = computed(() => !props.config || configuredSteps.value.length === 0)
-const qbConfig = computed<QuickBuyConfig>(() => ({
+const qbConfig = computed<QuickBuyResolvedConfig>(() => ({
   ...(props.config || {}),
   steps: configuredSteps.value.length ? configuredSteps.value : defaultQuickBuySteps.value,
 }))

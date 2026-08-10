@@ -25,7 +25,6 @@
         v-model:show-payment-secrets="showPaymentSecrets"
         :site-settings="siteSettings"
         :email-settings="emailSettings"
-        :seo-settings="seoSettings"
         :social-settings="socialSettings"
         :payment-settings="paymentSettings"
         :api-settings="apiSettings"
@@ -101,11 +100,10 @@ const DEFAULT_PRICING_CURRENCY = 'USD'
 const EXCHANGE_RATE_ENDPOINT = 'https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}'
 const activeTab = useRouteTab({
   defaultValue: 'site',
-  values: ['site', 'email', 'seo', 'social', 'currency', 'markets', 'payment', 'api', 'commercial_crawler', 'public_chat'],
+  values: ['site', 'email', 'social', 'currency', 'markets', 'payment', 'api', 'commercial_crawler', 'public_chat'],
   routes: {
     site: 'SettingsSite',
     email: 'SettingsEmail',
-    seo: 'SettingsSeo',
     social: 'SettingsSocial',
     currency: ['SettingsCurrency', 'PaymentCurrency'],
     markets: 'SettingsMarkets',
@@ -141,7 +139,7 @@ const pageDescription = computed(() => {
   if (activeTab.value === 'markets') return '管理国家、市场、语言与展示币种解析规则'
   if (activeTab.value === 'payment') return '管理支付网关、支付方式与运行状态'
   if (activeTab.value === 'public_chat') return '管理公开客服、客服组与前台聊天配置'
-  return '管理站点、邮件、搜索、社交、API、安全与客服配置'
+  return '管理站点、邮件、社交、API、安全与客服配置'
 })
 const saving = ref(false)
 const loadingSettings = ref(false)
@@ -169,7 +167,6 @@ const siteSettings = reactive({
   admin_html_title: ''
 })
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
-const seoSettings = reactive({ meta_title: '', meta_description: '', meta_keywords: '', google_analytics: '', google_tag_manager: '' })
 const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
 const paymentSettings = reactive({ gateway: '', test_mode: true })
 const apiSettings = reactive({
@@ -310,16 +307,6 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
       smtp_password: { type: 'string', public: false, description: 'SMTP password' },
       from_email: { type: 'string', public: false, description: 'Sender email' },
       from_name: { type: 'string', public: false, description: 'Sender name' }
-    }
-  },
-  seo: {
-    target: seoSettings,
-    fields: {
-      meta_title: { type: 'string', public: true, description: 'Default meta title' },
-      meta_description: { type: 'string', public: true, description: 'Default meta description' },
-      meta_keywords: { type: 'string', public: true, description: 'Default meta keywords' },
-      google_analytics: { type: 'string', public: true, description: 'Google Analytics ID' },
-      google_tag_manager: { type: 'string', public: true, description: 'Google Tag Manager ID' }
     }
   },
   social: {

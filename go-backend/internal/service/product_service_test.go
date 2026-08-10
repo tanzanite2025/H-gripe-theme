@@ -699,7 +699,7 @@ func TestProductRepositoryPurchasableVariantRejectsInactiveProduct(t *testing.T)
 	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
-func TestProductServicePublicCatalogIgnoresProductLocale(t *testing.T) {
+func TestProductServicePublicCatalogRespectsProductLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productType := seedCarbonRimType(t, db)
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
@@ -725,11 +725,19 @@ func TestProductServicePublicCatalogIgnoresProductLocale(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, createdProduct)
 
-	publicProduct, err := productService.GetPublicBySlug("global-rim", "en")
+	_, err = productService.GetPublicBySlug("global-rim", "en")
+	require.Error(t, err)
+
+	publicProduct, err := productService.GetPublicBySlug("global-rim", "zh_cn")
 	require.NoError(t, err)
 	assert.Equal(t, createdProduct.ID, publicProduct.ID)
 
 	listed, listTotal, err := productService.ListPublic("en", false, 1, 20)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), listTotal)
+	assert.Empty(t, listed)
+
+	listed, listTotal, err = productService.ListPublic("zh_cn", false, 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), listTotal)
 	require.Len(t, listed, 1)
@@ -742,15 +750,248 @@ func TestProductServicePublicCatalogIgnoresProductLocale(t *testing.T) {
 		PageSize: 20,
 	})
 	require.NoError(t, err)
+	assert.Equal(t, int64(0), searchTotal)
+	assert.Empty(t, searched)
+
+	searched, searchTotal, err = productService.SearchPublic(ProductSearchInput{
+		Locale:   "zh_cn",
+		Status:   "active",
+		Page:     1,
+		PageSize: 20,
+	})
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), searchTotal)
 	require.Len(t, searched, 1)
 	assert.Equal(t, createdProduct.ID, searched[0].ID)
 
 	available, availableTotal, err := productService.ListPublicAvailable("en", 1, 20)
 	require.NoError(t, err)
+	assert.Equal(t, int64(0), availableTotal)
+	assert.Empty(t, available)
+
+	available, availableTotal, err = productService.ListPublicAvailable("zh_cn", 1, 20)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), availableTotal)
 	require.Len(t, available, 1)
 	assert.Equal(t, createdProduct.ID, available[0].ID)
+}
+
+func TestProductServicePublicProductReturnsOnlyActiveTranslationRoutes(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+
+	root := createProductWithSpecs(t, productService, productType.ID, "RIM-TRANSLATION-EN", "translation-rim", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+	parentID := root.ID
+	translated := createProductWithSpecs(t, productService, productType.ID, "RIM-TRANSLATION-ZH", "translated-rim", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", translated.ID).Updates(map[string]interface{}{
+		"locale":    "zh_cn",
+		"parent_id": parentID,
+	}).Error)
+
+	inactive := createProductWithSpecs(t, productService, productType.ID, "RIM-TRANSLATION-FR", "inactive-rim", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", inactive.ID).Updates(map[string]interface{}{
+		"locale":    "fr",
+		"parent_id": parentID,
+		"status":    "inactive",
+	}).Error)
+
+	resolved, routes, err := productService.GetPublicBySlugWithRoutes("translated-rim", "zh_cn")
+	require.NoError(t, err)
+	require.Equal(t, translated.ID, resolved.ID)
+	require.Len(t, routes, 2)
+	assert.Equal(t, "en", routes[0].Locale)
+	assert.Equal(t, "translation-rim", routes[0].Slug)
+	assert.Equal(t, "zh_cn", routes[1].Locale)
+	assert.Equal(t, "translated-rim", routes[1].Slug)
+}
+
+func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+
+	root := createProductWithSpecs(t, productService, productType.ID, "RIM-RELATION-EN", "relation-rim", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+
+	createTranslation := func(locale, sku, slug string, parentID *uint) (*product.Product, error) {
+		return productService.CreateAdminProduct(ProductCreateInput{
+			ProductTypeID: &productType.ID,
+			Name:          sku,
+			Slug:          slug,
+			Status:        "active",
+			Locale:        locale,
+			ParentID:      parentID,
+			SpecValues: map[string]string{
+				"outer_width_mm": "30",
+			},
+			Variants: []ProductVariantInput{
+				{
+					SKU:          sku + "-VAR",
+					OptionValues: map[string]string{"brake_type": "disc"},
+					Price:        399,
+					Stock:        5,
+					IsDefault:    true,
+					IsActive:     boolPtr(true),
+				},
+			},
+		})
+	}
+
+	translated, err := createTranslation("zh_cn", "RIM-RELATION-ZH", "relation-rim-zh", &root.ID)
+	require.NoError(t, err)
+	require.NotNil(t, translated)
+
+	_, err = createTranslation("zh_cn", "RIM-RELATION-ZH-DUPLICATE", "relation-rim-zh-duplicate", &root.ID)
+	require.ErrorIs(t, err, ErrProductTranslationInvalid)
+
+	_, err = createTranslation("en", "RIM-RELATION-EN-DUPLICATE", "relation-rim-en-duplicate", &root.ID)
+	require.ErrorIs(t, err, ErrProductTranslationInvalid)
+
+	_, err = createTranslation("fr", "RIM-RELATION-FR-NESTED", "relation-rim-fr-nested", &translated.ID)
+	require.ErrorIs(t, err, ErrProductTranslationInvalid)
+}
+
+func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSlugAndSKU(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+	brakeSpec := findSpecDefinitionBySlug(t, db, productType.ID, "brake_type")
+
+	source, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductTypeID: &productType.ID,
+		Name:          "Translation Copy Rim",
+		Slug:          "translation-copy-rim",
+		Status:        "active",
+		Locale:        "en",
+		SpecValues: map[string]string{
+			"outer_width_mm": "30",
+			"tubeless_ready": "yes",
+		},
+		VariantOptionValues: []ProductVariantOptionValueInput{
+			{
+				SpecDefinitionID: brakeSpec.ID,
+				ValueKey:         "disc",
+				Label:            "Disc Brake",
+				ColorHex:         "#111111",
+				IsEnabled:        boolPtr(true),
+			},
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "RIM-COPY-DISC",
+				OptionValues: map[string]string{"brake_type": "disc"},
+				Price:        399,
+				Stock:        5,
+				IsDefault:    true,
+				IsActive:     boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, source.Variants, 1)
+	require.Len(t, source.VariantOptionValues, 1)
+
+	sourceVariantID := source.Variants[0].ID
+	sourceOptionValueID := source.VariantOptionValues[0].ID
+	require.NoError(t, db.Create(&product.ProductMedia{
+		ProductID:            source.ID,
+		VariantID:            &sourceVariantID,
+		VariantOptionValueID: &sourceOptionValueID,
+		MediaType:            "image",
+		Role:                 "primary",
+		URL:                  "/uploads/products/source-rim.webp",
+		IsPrimary:            true,
+		IsVisible:            true,
+	}).Error)
+
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		ProductTypeID: &productType.ID,
+		Name:          "French Occupant",
+		Slug:          "translation-copy-rim",
+		Status:        "active",
+		Locale:        "fr",
+		SpecValues: map[string]string{
+			"outer_width_mm": "30",
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "RIM-COPY-DISC-fr",
+				OptionValues: map[string]string{"brake_type": "disc"},
+				Price:        399,
+				Stock:        5,
+				IsDefault:    true,
+				IsActive:     boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	translated, group, err := productService.CopyAdminProductTranslation(source.ID, "fr")
+	require.NoError(t, err)
+	require.NotNil(t, translated)
+	require.NotNil(t, group)
+	require.NotNil(t, translated.ParentID)
+	assert.Equal(t, source.ID, *translated.ParentID)
+	assert.Equal(t, "fr", translated.Locale)
+	assert.Equal(t, "translation-copy-rim-fr", translated.Slug)
+	assert.Equal(t, "RIM-COPY-DISC-fr-2", translated.SKU)
+	require.Len(t, translated.SpecValues, 2)
+	require.Len(t, translated.Variants, 1)
+	require.Len(t, translated.VariantOptionValues, 1)
+	require.Len(t, translated.Media, 1)
+	assert.Equal(t, "RIM-COPY-DISC-fr-2", translated.Variants[0].SKU)
+	assert.NotEqual(t, sourceVariantID, translated.Variants[0].ID)
+	assert.NotEqual(t, sourceOptionValueID, translated.VariantOptionValues[0].ID)
+	require.NotNil(t, translated.Media[0].VariantID)
+	require.NotNil(t, translated.Media[0].VariantOptionValueID)
+	assert.Equal(t, translated.Variants[0].ID, *translated.Media[0].VariantID)
+	assert.Equal(t, translated.VariantOptionValues[0].ID, *translated.Media[0].VariantOptionValueID)
+	assert.NotContains(t, group.MissingLocales, "fr")
+}
+
+func TestProductServiceCopyAdminProductTranslationRejectsExistingGroupLocale(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productType := seedCarbonRimType(t, db)
+
+	root := createProductWithSpecs(t, productService, productType.ID, "RIM-COPY-EXISTS-EN", "copy-exists-rim", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+	parentID := root.ID
+	_, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductTypeID: &productType.ID,
+		Name:          "Existing French Rim",
+		Slug:          "copy-exists-rim-fr",
+		Status:        "active",
+		Locale:        "fr",
+		ParentID:      &parentID,
+		SpecValues: map[string]string{
+			"outer_width_mm": "30",
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "RIM-COPY-EXISTS-FR-VAR",
+				OptionValues: map[string]string{"brake_type": "disc"},
+				Price:        399,
+				Stock:        5,
+				IsDefault:    true,
+				IsActive:     boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	_, _, err = productService.CopyAdminProductTranslation(root.ID, "fr")
+	require.ErrorIs(t, err, ErrProductTranslationExists)
+
+	translated, err := productService.GetAdminProductTranslationGroup(root.ID)
+	require.NoError(t, err)
+	assert.NotContains(t, translated.MissingLocales, "fr")
+	assert.NotContains(t, translated.MissingLocales, "en")
 }
 
 func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {

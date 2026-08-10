@@ -22,10 +22,11 @@ var (
 )
 
 type GoogleMerchantService struct {
-	offers        *repository.GoogleMerchantRepository
-	products      *repository.ProductRepository
-	googleConfig  config.GoogleMerchantConfig
-	storefrontURL string
+	offers         *repository.GoogleMerchantRepository
+	products       *repository.ProductRepository
+	googleConfig   config.GoogleMerchantConfig
+	storefrontURL  string
+	merchantEvents MerchantOfferEventPublisher
 }
 
 type GoogleMerchantOfferInput struct {
@@ -61,6 +62,13 @@ func NewGoogleMerchantService(
 		googleConfig:  googleConfig,
 		storefrontURL: strings.TrimRight(strings.TrimSpace(storefrontURL), "/"),
 	}
+}
+
+func (s *GoogleMerchantService) ConfigureMerchantEventPublisher(publisher MerchantOfferEventPublisher) {
+	if s == nil {
+		return
+	}
+	s.merchantEvents = publisher
 }
 
 func (s *GoogleMerchantService) ListOffers() ([]merchant.GoogleMerchantOffer, error) {
@@ -106,12 +114,23 @@ func (s *GoogleMerchantService) UpdateOffer(id uint, input GoogleMerchantOfferIn
 	offer.LastValidatedAt = existing.LastValidatedAt
 	offer.LastSyncAt = existing.LastSyncAt
 	offer.LastError = existing.LastError
-	if existing.SyncStatus == "synced" && !googleMerchantOfferSyncPayloadEqual(existing, offer) {
-		offer.SyncStatus = "ready"
-		offer.LastError = "local Google Merchant fields changed after the last sync"
+	payloadChanged := !googleMerchantOfferSyncPayloadEqual(existing, offer)
+	if googleMerchantOfferHasRemoteSubmission(existing) && payloadChanged {
+		if offer.PublicationStatus == "ready" {
+			offer.SyncStatus = "ready"
+			offer.LastError = "local Google Merchant fields changed after the last sync"
+		} else {
+			offer.SyncStatus = "withdraw_pending"
+			offer.LastError = "local Google Merchant publication status changed after the last sync"
+		}
 	}
 	if err := s.offers.UpdateOffer(offer); err != nil {
 		return nil, err
+	}
+	if googleMerchantOfferUpdateNeedsRevalidation(existing, offer, payloadChanged) {
+		if err := s.enqueueMerchantOfferRevalidate(offer.ID, "merchant_fields_changed"); err != nil {
+			return nil, requireMerchantOfferEvent(err, offer.ID, "merchant_fields_changed")
+		}
 	}
 	return s.offers.FindOfferByID(id)
 }
@@ -163,6 +182,16 @@ func googleMerchantOfferSyncPayloadEqual(existing, next *merchant.GoogleMerchant
 		googleMerchantFloatPtrEqual(existing.PriceOverride, next.PriceOverride) &&
 		googleMerchantFloatPtrEqual(existing.SalePriceOverride, next.SalePriceOverride) &&
 		existing.PublicationStatus == next.PublicationStatus
+}
+
+func googleMerchantOfferUpdateNeedsRevalidation(existing, next *merchant.GoogleMerchantOffer, payloadChanged bool) bool {
+	if !payloadChanged || next == nil {
+		return false
+	}
+	if next.PublicationStatus == "ready" {
+		return true
+	}
+	return googleMerchantOfferHasRemoteSubmission(existing)
 }
 
 func googleMerchantBoolPtrEqual(left, right *bool) bool {

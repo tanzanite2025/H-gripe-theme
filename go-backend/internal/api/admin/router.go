@@ -1,6 +1,7 @@
 package admin
 
 import (
+	seoapi "tanzanite/internal/api/admin/seo"
 	"tanzanite/internal/api/middleware"
 	"tanzanite/internal/api/v1/showcase"
 	"tanzanite/internal/app"
@@ -62,6 +63,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	visitorRiskHandler.ConfigureAuditService(services.Audit)
 	marketingHandler := NewMarketingHandler(marketingService, services.LoyaltyProgram)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
+	seoHomeHandler := seoapi.NewHomeHandler(services.SEO)
+	seoArticlesHandler := seoapi.NewArticlesHandler(services.SEOResources)
+	seoProductsHandler := seoapi.NewProductsHandler(services.SEOResources)
+	seoHomeHandler.ConfigureAuditService(services.Audit)
+	seoArticlesHandler.ConfigureAuditService(services.Audit)
+	seoProductsHandler.ConfigureAuditService(services.Audit)
+	analyticsHandler := NewAnalyticsHandler(services.Analytics)
 	commercialCrawlerHandler := NewCommercialCrawlerProtectionHandler(orderService)
 	currencyPolicyHandler := NewCurrencyPolicyHandler(services.CurrencyPolicy)
 	currencyPolicyHandler.ConfigureAuditService(services.Audit)
@@ -166,8 +174,10 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productsGroup.GET("", productHandler.ListProducts)
 				productsGroup.GET("/stats", productHandler.GetProductStats)
 				productsGroup.GET("/:id", productHandler.GetProduct)
+				productsGroup.GET("/:id/translations", productHandler.GetProductTranslations)
 				productsGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProduct)
 				productsGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProduct)
+				productsGroup.POST("/:id/translations/copy", middleware.RequirePermission(auth.PermProductCreate), productHandler.CopyProductTranslation)
 				productsGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProductStatus)
 				productsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProduct)
 				productsGroup.POST("/batch-status", middleware.RequirePermission(auth.PermProductEdit), productHandler.BatchUpdateStatus)
@@ -193,6 +203,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				googleMerchantGroup.POST("/disconnect", middleware.RequirePermission(auth.PermMerchantEdit), googleMerchantHandler.Disconnect)
 				googleMerchantGroup.GET("/remote-products", googleMerchantHandler.ListRemoteProducts)
 				googleMerchantGroup.GET("/offers", googleMerchantHandler.ListOffers)
+				googleMerchantGroup.POST("/reconcile", middleware.RequirePermission(auth.PermMerchantSync), googleMerchantHandler.Reconcile)
 				googleMerchantGroup.POST("/offers", middleware.RequirePermission(auth.PermMerchantEdit), googleMerchantHandler.CreateOffer)
 				googleMerchantGroup.PUT("/offers/:id", middleware.RequirePermission(auth.PermMerchantEdit), googleMerchantHandler.UpdateOffer)
 				googleMerchantGroup.POST("/offers/:id/validate", middleware.RequirePermission(auth.PermMerchantEdit), googleMerchantHandler.ValidateOffer)
@@ -492,6 +503,24 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				pricingGroup.POST("/exchange-rates/convert", exchangeRateHandler.ConvertDisplayPrices)
 			}
 
+			seoGroup := authenticated.Group("/seo")
+			seoGroup.Use(middleware.RequirePermission(auth.PermSEOView))
+			{
+				seoGroup.GET("/home", seoHomeHandler.Get)
+				seoGroup.PUT("/home", middleware.RequirePermission(auth.PermSEOEdit), seoHomeHandler.Update)
+				seoGroup.GET("/articles", seoArticlesHandler.Get)
+				seoGroup.PUT("/articles/:id", middleware.RequirePermission(auth.PermSEOEdit), seoArticlesHandler.Update)
+				seoGroup.GET("/products", seoProductsHandler.Get)
+				seoGroup.PUT("/products/:id", middleware.RequirePermission(auth.PermSEOEdit), seoProductsHandler.Update)
+			}
+
+			analyticsGroup := authenticated.Group("/analytics")
+			analyticsGroup.Use(middleware.RequirePermission(auth.PermAnalyticsView))
+			{
+				analyticsGroup.GET("", analyticsHandler.Get)
+				analyticsGroup.PUT("", middleware.RequirePermission(auth.PermAnalyticsEdit), analyticsHandler.Update)
+			}
+
 			// 设置管理（需要设置管理权限）
 			settingsGroup := authenticated.Group("/settings")
 			settingsGroup.Use(middleware.RequirePermission(auth.PermSettingsView))
@@ -527,7 +556,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				// 分组设置
 				settingsGroup.GET("/site", settingsHandler.GetSiteSettings)
 				settingsGroup.GET("/email", settingsHandler.GetEmailSettings)
-				settingsGroup.GET("/seo", settingsHandler.GetSEOSettings)
 				settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 				settingsGroup.GET("/payment", settingsHandler.GetPaymentSettings)
 				settingsGroup.GET("/api", settingsHandler.GetAPISettings)

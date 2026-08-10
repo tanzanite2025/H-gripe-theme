@@ -86,6 +86,7 @@ export const useSmartRecommendations = () => {
   const { locale } = useI18n()
   const { anonymousId, sessionId, ensureIdentity } = useBehaviorEvents()
   const { fetchPublicShopProducts } = useShopProducts()
+  let activeRecommendationLoadId = 0
   const {
     categories,
     loading: categoriesLoading,
@@ -111,13 +112,19 @@ export const useSmartRecommendations = () => {
     return developmentCategoryFallbacks
   })
 
-  const applyCatalogFallback = async (limit = DEFAULT_RECOMMENDATION_LIMIT, excludeProductIds: number[] = []) => {
+  const applyCatalogFallback = async (
+    limit = DEFAULT_RECOMMENDATION_LIMIT,
+    excludeProductIds: number[] = [],
+    loadId = activeRecommendationLoadId
+  ) => {
     const excluded = new Set(excludeProductIds)
     const result = await fetchPublicShopProducts({
       featured: false,
       page_size: Math.min(MAX_RECOMMENDATION_LIMIT, limit + excluded.size),
       status: 'active',
     })
+    if (loadId !== activeRecommendationLoadId) return
+
     recommendedProducts.value = result.items
       .filter((product) => !excluded.has(Number(product.id)))
       .slice(0, limit)
@@ -138,8 +145,8 @@ export const useSmartRecommendations = () => {
   }
 
   const loadBaselineRecommendations = async (options: RecommendationLoadOptions = {}) => {
-    if (recommendationsLoading.value) return
-
+    const loadId = activeRecommendationLoadId + 1
+    activeRecommendationLoadId = loadId
     const limit = normalizeRecommendationLimit(options.limit)
     const productId = toPositiveInteger(options.productId)
     const categoryId = toPositiveInteger(options.categoryId)
@@ -185,6 +192,7 @@ export const useSmartRecommendations = () => {
       )
       const payload = (response as { data?: RecommendationAPIResult })?.data || response as RecommendationAPIResult
       const items = Array.isArray(payload?.items) ? payload.items : []
+      if (loadId !== activeRecommendationLoadId) return
 
       recommendedProducts.value = items
         .filter((item) => Number(item?.product_id) > 0 && item?.title && item?.url)
@@ -211,8 +219,10 @@ export const useSmartRecommendations = () => {
         recommendationSource.value = 'empty'
         return
       }
-      await applyCatalogFallback(limit, excludeProductIds)
+      await applyCatalogFallback(limit, excludeProductIds, loadId)
     } catch (error) {
+      if (loadId !== activeRecommendationLoadId) return
+
       // Keep the search drawer useful if the new recommendation endpoint is
       // unavailable during rollout.
       try {
@@ -221,16 +231,21 @@ export const useSmartRecommendations = () => {
           recommendationSource.value = 'empty'
           return
         }
-        await applyCatalogFallback(limit, excludeProductIds)
+        await applyCatalogFallback(limit, excludeProductIds, loadId)
+        if (loadId !== activeRecommendationLoadId) return
         recommendationAlgorithmVersion.value = 'public-catalog-fallback'
       } catch (fallbackError) {
+        if (loadId !== activeRecommendationLoadId) return
+
         // eslint-disable-next-line no-console
         console.error('Failed to load baseline recommendations:', error, fallbackError)
         recommendedProducts.value = []
         recommendationSource.value = import.meta.dev ? 'development-fallback' : 'empty'
       }
     } finally {
-      recommendationsLoading.value = false
+      if (loadId === activeRecommendationLoadId) {
+        recommendationsLoading.value = false
+      }
     }
   }
 

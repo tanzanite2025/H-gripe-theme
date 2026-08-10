@@ -1,8 +1,10 @@
 package service
 
 import (
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"tanzanite/internal/domain/product"
 	"tanzanite/internal/domain/recommendation"
@@ -64,6 +66,14 @@ func TestRecommendationServiceValidatesSurfaceAndLimit(t *testing.T) {
 		Limit:   MaxRecommendationLimit + 1,
 	})
 	require.ErrorIs(t, err, ErrRecommendationLimitInvalid)
+}
+
+func TestNormalizeRecommendationQueryKeepsUnicodeBoundary(t *testing.T) {
+	query := strings.Repeat("轮", 200)
+	normalized := normalizeRecommendationQuery(query)
+
+	require.True(t, utf8.ValidString(normalized))
+	require.Len(t, []rune(normalized), 160)
 }
 
 func TestRecommendationServicePrioritizesMatchingSpecsOnProductDetail(t *testing.T) {

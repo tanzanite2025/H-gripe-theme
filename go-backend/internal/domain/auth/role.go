@@ -107,8 +107,12 @@ const (
 	PermShippingDelete   Permission = "shipping:delete"
 	PermShippingTracking Permission = "shipping:tracking"
 
-	PermSettingsView Permission = "settings:view"
-	PermSettingsEdit Permission = "settings:edit"
+	PermSettingsView  Permission = "settings:view"
+	PermSettingsEdit  Permission = "settings:edit"
+	PermSEOView       Permission = "seo:view"
+	PermSEOEdit       Permission = "seo:edit"
+	PermAnalyticsView Permission = "analytics:view"
+	PermAnalyticsEdit Permission = "analytics:edit"
 
 	PermLogsView Permission = "logs:view"
 
@@ -131,6 +135,7 @@ var RolePermissions = map[Role][]Permission{
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingDelete, PermShippingTracking,
 		PermSettingsView, PermSettingsEdit,
+		PermSEOView, PermSEOEdit, PermAnalyticsView, PermAnalyticsEdit,
 		PermLogsView,
 		PermSystemManage,
 	},
@@ -148,6 +153,7 @@ var RolePermissions = map[Role][]Permission{
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingTracking,
 		PermSettingsView,
+		PermSEOView, PermAnalyticsView,
 		PermLogsView,
 	},
 	RoleEditor: {
@@ -178,6 +184,7 @@ var RolePermissions = map[Role][]Permission{
 		PermSubscriptionView,
 		PermTicketView,
 		PermMarketingView,
+		PermSEOView, PermAnalyticsView,
 		PermShippingView,
 		PermSettingsView,
 	},

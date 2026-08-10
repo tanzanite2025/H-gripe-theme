@@ -342,11 +342,39 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '邮件订阅', permission: 'subscription:view' }
       },
       {
+        path: 'seo',
+        redirect: { name: 'SEOHome' },
+        meta: { permission: 'seo:view' }
+      },
+      {
+        path: 'seo/home',
+        name: 'SEOHome',
+        component: () => import('@/views/seo/Home.vue'),
+        meta: { title: 'SEO / 首页', permission: 'seo:view' }
+      },
+      {
+        path: 'seo/articles',
+        name: 'SEOArticles',
+        component: () => import('@/views/seo/Articles.vue'),
+        meta: { title: 'SEO / 文章', permission: 'seo:view' }
+      },
+      {
+        path: 'seo/products',
+        name: 'SEOProducts',
+        component: () => import('@/views/seo/Products.vue'),
+        meta: { title: 'SEO / 产品', permission: 'seo:view' }
+      },
+      {
+        path: 'analytics',
+        name: 'Analytics',
+        component: () => import('@/views/Analytics.vue'),
+        meta: { title: 'Analytics', permission: 'analytics:view' }
+      },
+      {
         path: 'settings',
         redirect: domainRedirect('SettingsSite', {
           site: 'SettingsSite',
           email: 'SettingsEmail',
-          seo: 'SettingsSeo',
           social: 'SettingsSocial',
           currency: 'SettingsCurrency',
           markets: 'SettingsMarkets',
@@ -366,12 +394,6 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsEmail',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '邮件', permission: 'settings:view' }
-      },
-      {
-        path: 'settings/seo',
-        name: 'SettingsSeo',
-        component: () => import('@/views/Settings.vue'),
-        meta: { title: 'SEO', permission: 'settings:view' }
       },
       {
         path: 'settings/social',

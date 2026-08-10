@@ -119,28 +119,6 @@
       </SettingsSection>
     </TabsContent>
 
-    <TabsContent value="seo">
-      <SettingsSection title="默认搜索信息" description="未单独配置页面 SEO 时使用的默认值。">
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormField label="Meta 标题" class="md:col-span-2">
-            <Input v-model="seoSettings.meta_title" />
-          </AdminFormField>
-          <AdminFormField label="Meta 描述" class="md:col-span-2">
-            <Textarea v-model="seoSettings.meta_description" class="min-h-24" />
-          </AdminFormField>
-          <AdminFormField label="Meta 关键词" class="md:col-span-2">
-            <Input v-model="seoSettings.meta_keywords" placeholder="用逗号分隔" />
-          </AdminFormField>
-          <AdminFormField label="Google Analytics">
-            <Input v-model="seoSettings.google_analytics" placeholder="GA 跟踪 ID" />
-          </AdminFormField>
-          <AdminFormField label="Google Tag Manager">
-            <Input v-model="seoSettings.google_tag_manager" placeholder="GTM ID" />
-          </AdminFormField>
-        </div>
-      </SettingsSection>
-    </TabsContent>
-
     <TabsContent value="social">
       <SettingsSection title="社交媒体" description="前台展示的官方账号与页面链接。">
         <div class="grid gap-4 md:grid-cols-2">
@@ -285,7 +263,6 @@ const props = defineProps({
   activeTab: { type: String, default: 'site' },
   siteSettings: { type: Object, required: true },
   emailSettings: { type: Object, required: true },
-  seoSettings: { type: Object, required: true },
   socialSettings: { type: Object, required: true },
   paymentSettings: { type: Object, required: true },
   apiSettings: { type: Object as PropType<APISettings>, required: true },

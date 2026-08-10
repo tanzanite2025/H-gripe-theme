@@ -66,6 +66,17 @@ func (r *GoogleMerchantRepository) ListOffers() ([]merchant.GoogleMerchantOffer,
 	return offers, err
 }
 
+func (r *GoogleMerchantRepository) ListOffersByProductID(productID uint) ([]merchant.GoogleMerchantOffer, error) {
+	var offers []merchant.GoogleMerchantOffer
+	err := r.db.
+		Preload("Product").
+		Preload("Variant").
+		Where("product_id = ?", productID).
+		Order("id ASC").
+		Find(&offers).Error
+	return offers, err
+}
+
 func (r *GoogleMerchantRepository) FindOfferByID(id uint) (*merchant.GoogleMerchantOffer, error) {
 	var offer merchant.GoogleMerchantOffer
 	if err := r.db.Preload("Product").Preload("Variant").First(&offer, id).Error; err != nil {

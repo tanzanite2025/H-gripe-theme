@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	seodomain "tanzanite/internal/domain/seo"
 	settingdomain "tanzanite/internal/domain/setting"
 
 	"github.com/stretchr/testify/require"
@@ -38,6 +39,24 @@ func TestAdminSettingsRejectsDomainManagedGroupsAndKeys(t *testing.T) {
 		Key:    "anything",
 		Group:  "payment_secret",
 		Locale: "global",
+	})
+	require.True(t, errors.Is(err, ErrSettingManagedByDomainService))
+
+	_, err = adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
+		Key:   "anything",
+		Group: "seo",
+	})
+	require.True(t, errors.Is(err, ErrSettingManagedByDomainService))
+
+	_, err = adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
+		Key:   "anything",
+		Group: "analytics",
+	})
+	require.True(t, errors.Is(err, ErrSettingManagedByDomainService))
+
+	_, err = adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
+		Key:   seodomain.HomeKeys.MetaTitle,
+		Group: "site",
 	})
 	require.True(t, errors.Is(err, ErrSettingManagedByDomainService))
 

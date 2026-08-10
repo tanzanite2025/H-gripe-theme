@@ -12,8 +12,6 @@ export interface ProductFormRecord {
   short_description: string
   status: string
   featured: boolean
-  meta_title: string
-  meta_description: string
   specs: Record<string, any>
   variants: any[]
   media: any[]
@@ -117,7 +115,26 @@ export interface ProductRecord {
   locale?: string
   created_at?: string | number | Date | null
   variants?: ProductVariantRecord[]
+  translation_group?: ProductTranslationGroup | null
   [key: string]: any
+}
+
+export interface ProductTranslation {
+  id: number | string
+  parent_id?: number | string | null
+  locale?: string | null
+  name?: string | null
+  slug?: string | null
+  sku?: string | null
+  status?: string | null
+  is_root?: boolean
+}
+
+export interface ProductTranslationGroup {
+  root_id: number | string
+  source_id: number | string
+  translations: ProductTranslation[]
+  missing_locales: string[]
 }
 
 export interface ProductPagination {

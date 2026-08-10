@@ -4,7 +4,7 @@
       <form @submit.prevent="emit('submit')">
         <DialogHeader class="border-b px-5 py-4 pr-12">
           <DialogTitle>{{ mode === 'create' ? '添加文章' : '编辑文章' }}</DialogTitle>
-          <DialogDescription>正文支持 Markdown，发布状态和 SEO 信息可独立维护。</DialogDescription>
+          <DialogDescription>正文支持 Markdown；SEO 元数据请在 SEO / 文章中维护。</DialogDescription>
         </DialogHeader>
 
         <div class="space-y-7 px-5 py-5">
@@ -83,30 +83,6 @@
             </div>
           </section>
 
-          <section class="grid gap-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]">
-            <div>
-              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">SEO</h3>
-              <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                可选的搜索结果信息与规范链接。
-              </p>
-            </div>
-            <div class="min-w-0">
-              <div class="grid gap-4 md:grid-cols-2">
-                <AdminFormField label="SEO 标题">
-                  <Input v-model="form.meta_title" placeholder="SEO 标题" />
-                </AdminFormField>
-                <AdminFormField label="SEO 关键词">
-                  <Input v-model="form.meta_keywords" placeholder="多个关键词用逗号分隔" />
-                </AdminFormField>
-                <AdminFormField label="SEO 描述" class="md:col-span-2">
-                  <Textarea v-model="form.meta_description" class="min-h-20" placeholder="SEO 描述" />
-                </AdminFormField>
-                <AdminFormField label="规范 URL" class="md:col-span-2">
-                  <Input v-model="form.canonical_url" type="url" placeholder="https://example.com/article" />
-                </AdminFormField>
-              </div>
-            </div>
-          </section>
         </div>
 
         <DialogFooter class="sticky bottom-0 mx-0 mb-0 rounded-b-lg border-t bg-background px-5 py-4">

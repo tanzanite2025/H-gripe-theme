@@ -119,8 +119,8 @@ const formatDate = (value: string) => {
   }
 }
 
-useHead({
+useHead(() => ({
   title: t('blog.pages.wheelsbuild.metaTitle'),
-})
+}))
 </script>
 

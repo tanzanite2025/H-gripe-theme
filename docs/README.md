@@ -18,6 +18,8 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Storefront i18n current status: `../nuxt-i18n/docs/notes/I18N-CURRENT-STATUS.md`
 - Storefront payment UX rules: `design/storefront-payment-ux.md`
 - Storefront recommendation UX and algorithm contract: `design/storefront-recommendation-ux.md`
+- SEO architecture: `seo/SEO_SYSTEM_ARCHITECTURE.md`
+- SEO documentation index: `seo/README.md`
 
 ## Archive
 

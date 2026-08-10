@@ -34,7 +34,7 @@ export const footerMenus: FooterSection[] = [
       { labelKey: 'footer.links.shop', to: '/shop' },
 
       { labelKey: 'footer.links.tireSizeCharts', to: '/guides/tireguides' },
-      { labelKey: 'footer.links.wheelsbuildBlog', to: '/blog' },
+      { labelKey: 'footer.links.blog', to: '/blog' },
       { labelKey: 'products.nav.technicalDocs', to: '/guides/wheelset-buyers#wheel-components' }, { labelKey: 'footer.links.wheelsetBuyersGuide', to: '/guides/wheelset-buyers' },
       { labelKey: 'footer.links.membershipPoints', to: '/membershipandpoints' },
       { labelKey: 'footer.links.pictureWarehouse', to: '/picture-warehouse' },

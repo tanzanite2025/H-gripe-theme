@@ -98,6 +98,19 @@ func (h *GoogleMerchantHandler) ListOffers(c *gin.Context) {
 	response.Success(c, gin.H{"offers": offers})
 }
 
+func (h *GoogleMerchantHandler) Reconcile(c *gin.Context) {
+	result, err := h.service.ReconcileOffers(c.Request.Context())
+	if err != nil {
+		if len(result.Errors) > 0 {
+			apierror.RespondError(c, http.StatusBadGateway, "google_merchant_reconciliation_failed", err.Error())
+			return
+		}
+		respondGoogleMerchantError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"result": result})
+}
+
 func (h *GoogleMerchantHandler) CreateOffer(c *gin.Context) {
 	var input service.GoogleMerchantOfferInput
 	if err := c.ShouldBindJSON(&input); err != nil {

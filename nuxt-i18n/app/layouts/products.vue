@@ -19,10 +19,22 @@
 </template>
 
 <script setup lang="ts">
-import AppFooter from '~/components/AppFooter.vue'
-import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
-import GradientDockMenu from '~/components/GradientDockMenu.vue'
-import PageFaqSlot from '~/components/PageFaqSlot.vue'
+import { useHead } from '#imports'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+
+const { canonicalUrl, alternateLinks, xDefaultLink } = useStorefrontSeoLinks()
+
+useHead(() => ({
+  link: [
+    { rel: 'canonical', href: canonicalUrl.value },
+    ...alternateLinks.value.map((link) => ({
+      rel: 'alternate',
+      hreflang: link.hreflang,
+      href: link.href,
+    })),
+    { rel: 'alternate', hreflang: 'x-default', href: xDefaultLink.value },
+  ],
+}))
 </script>
 
 <style scoped>
