@@ -54,8 +54,6 @@ type ProductCreateInput struct {
 	Locale               string
 	ParentID             *uint
 	Featured             bool
-	MetaTitle            string
-	MetaDesc             string
 	SpecValues           map[string]string
 	Variants             []ProductVariantInput
 	VariantOptionValues  []ProductVariantOptionValueInput
@@ -82,8 +80,6 @@ type ProductUpdateInput struct {
 	ParentID                   *uint
 	UpdateParentID             bool
 	Featured                   *bool
-	MetaTitle                  *string
-	MetaDesc                   *string
 	SpecValues                 map[string]string
 	UpdateSpecValues           bool
 	Variants                   []ProductVariantInput
@@ -95,7 +91,14 @@ type ProductUpdateInput struct {
 }
 
 func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured string) ([]product.Product, int64, error) {
-	return s.productRepo.FindAllWithFilters(page, pageSize, status, locale, search, featured)
+	products, total, err := s.productRepo.FindAllWithFilters(page, pageSize, status, locale, search, featured)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := s.ListAdminTranslationGroups(products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (s *ProductService) GetAdminProduct(id uint) (*product.Product, error) {
@@ -149,6 +152,9 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err != nil {
 		return nil, err
 	}
+	if err := s.validateProductTranslationParent(input.ParentID, 0, locale); err != nil {
+		return nil, err
+	}
 	if err := s.validateInformationTemplate(input.AfterSalesTemplateID, product.ProductInformationTemplateKindAfterSales, locale, false); err != nil {
 		return nil, err
 	}
@@ -171,8 +177,6 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		Locale:               locale,
 		ParentID:             input.ParentID,
 		Featured:             input.Featured,
-		MetaTitle:            input.MetaTitle,
-		MetaDesc:             input.MetaDesc,
 	}
 
 	if err := s.productRepo.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
@@ -181,7 +185,14 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 
 	s.invalidateStorefrontHTMLCache("admin product create")
 
-	return s.findProduct(newProduct.ID)
+	createdProduct, err := s.findProduct(newProduct.ID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.enqueueMerchantProductChange(createdProduct, "product_created"); err != nil {
+		return nil, requireMerchantEvent(err, createdProduct, "product_created")
+	}
+	return createdProduct, nil
 }
 
 func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (*product.Product, error) {
@@ -268,16 +279,13 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		}
 	}
 	if input.UpdateParentID {
+		if err := s.validateProductTranslationParent(input.ParentID, existingProduct.ID, existingProduct.Locale); err != nil {
+			return nil, err
+		}
 		existingProduct.ParentID = input.ParentID
 	}
 	if input.Featured != nil {
 		existingProduct.Featured = *input.Featured
-	}
-	if input.MetaTitle != nil {
-		existingProduct.MetaTitle = *input.MetaTitle
-	}
-	if input.MetaDesc != nil {
-		existingProduct.MetaDesc = *input.MetaDesc
 	}
 	var specValues []product.ProductSpecValue
 	if input.UpdateSpecValues {
@@ -324,7 +332,17 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	s.clearProductCache(existingProduct)
 	s.invalidateStorefrontHTMLCache("admin product update")
 
-	return s.findProduct(existingProduct.ID)
+	updatedProduct, err := s.findProduct(existingProduct.ID)
+	if err != nil {
+		return nil, err
+	}
+	if merchantProductUpdateAffectsChannel(input) {
+		reason := merchantProductSourceChangeReason(input)
+		if err := s.enqueueMerchantProductChange(updatedProduct, reason); err != nil {
+			return nil, requireMerchantEvent(err, updatedProduct, reason)
+		}
+	}
+	return updatedProduct, nil
 }
 
 func mapProductRepositoryMutationError(err error) error {
@@ -597,6 +615,9 @@ func (s *ProductService) deleteProductByID(id uint, shouldInvalidateHTML bool) e
 		s.invalidateStorefrontHTMLCache("admin product delete")
 	}
 
+	if err := s.enqueueMerchantProductWithdraw(existingProduct, "product_deleted"); err != nil {
+		return requireMerchantEvent(err, existingProduct, "product_deleted")
+	}
 	return nil
 }
 
@@ -619,6 +640,10 @@ func (s *ProductService) updateProductStatusByID(id uint, status string, shouldI
 		s.invalidateStorefrontHTMLCache("admin product status update")
 	}
 
+	existingProduct.Status = status
+	if err := s.enqueueMerchantProductChange(existingProduct, "product_status_changed"); err != nil {
+		return requireMerchantEvent(err, existingProduct, "product_status_changed")
+	}
 	return nil
 }
 

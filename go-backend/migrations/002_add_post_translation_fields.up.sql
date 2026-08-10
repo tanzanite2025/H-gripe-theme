@@ -38,20 +38,6 @@ END $$;
 -- 2. 添加 SEO 元数据字段
 -- ============================================
 
--- meta_keywords 字段
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'posts' AND column_name = 'meta_keywords'
-    ) THEN
-        ALTER TABLE posts ADD COLUMN meta_keywords VARCHAR(255);
-        RAISE NOTICE '已添加 meta_keywords 字段';
-    ELSE
-        RAISE NOTICE 'meta_keywords 字段已存在';
-    END IF;
-END $$;
-
 -- canonical_url 字段
 DO $$ 
 BEGIN

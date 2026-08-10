@@ -23,6 +23,7 @@ type PublicProduct struct {
 	ID                  uint                              `json:"id"`
 	Name                string                            `json:"name"`
 	Slug                string                            `json:"slug"`
+	LocalizedRoutes     []PublicProductTranslationRoute   `json:"localized_routes,omitempty"`
 	SKU                 string                            `json:"sku,omitempty"`
 	Description         string                            `json:"description"`
 	ShortDesc           string                            `json:"short_description"`
@@ -56,6 +57,11 @@ type PublicProductMedia struct {
 	Title                string `json:"title,omitempty"`
 	SortOrder            int    `json:"sort_order"`
 	IsPrimary            bool   `json:"is_primary"`
+}
+
+type PublicProductTranslationRoute struct {
+	Locale string `json:"locale"`
+	Slug   string `json:"slug"`
 }
 
 type PublicProductInformationTemplate struct {
@@ -179,6 +185,10 @@ func PublicProductFromDomainWithDisplayCurrency(item productdomain.Product, disp
 }
 
 func PublicProductFromDomainWithLocale(item productdomain.Product, displayCurrency, locale string) PublicProduct {
+	return PublicProductFromDomainWithLocaleAndRoutes(item, displayCurrency, locale, nil)
+}
+
+func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, displayCurrency, locale string, translationRoutes []productdomain.ProductTranslationRoute) PublicProduct {
 	price, salePrice := item.DisplayPrices()
 	priceCurrency := item.DisplayPriceCurrency()
 	displayPrices := publicDisplayPricesFromSnapshots(item.DisplayPriceData)
@@ -251,6 +261,7 @@ func PublicProductFromDomainWithLocale(item productdomain.Product, displayCurren
 		ID:                  item.ID,
 		Name:                item.Name,
 		Slug:                item.Slug,
+		LocalizedRoutes:     publicProductTranslationRoutesFromDomain(translationRoutes),
 		SKU:                 item.DisplaySKU(),
 		Description:         item.Description,
 		ShortDesc:           item.ShortDesc,

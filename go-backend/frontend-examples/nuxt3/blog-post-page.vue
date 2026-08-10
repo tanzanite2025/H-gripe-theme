@@ -148,7 +148,7 @@ useHead({
     // JSON-LD 结构化数据
     {
       type: 'application/ld+json',
-      children: JSON.stringify({
+      textContent: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'BlogPosting',
         headline: post.value?.title,

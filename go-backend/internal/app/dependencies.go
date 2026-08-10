@@ -81,6 +81,9 @@ type Services struct {
 	Cart                       *service.CartService
 	Setting                    *service.SettingService
 	AdminSettings              *service.AdminSettingsService
+	SEO                        *service.SEOService
+	SEOResources               *service.SEOResourceService
+	Analytics                  *service.AnalyticsService
 	AdminPublicChat            *service.AdminPublicChatAgentService
 	FAQ                        *service.FAQService
 	Gallery                    *service.GalleryService
@@ -193,6 +196,12 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
 	storefrontContentReleaseNotifier := service.NewStorefrontContentReleaseNotifierFromEnv()
 	settingService := service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL)
+	seoService := service.NewSEOService(settingService)
+	postService := service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL)
+	productService := service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL)
+	merchantOutboxPublisher := service.NewMerchantOutboxPublisher(repos.Outbox)
+	seoResourceService := service.NewSEOResourceService(postService, productService, settingService)
+	analyticsService := service.NewAnalyticsService(settingService)
 	currencyPolicyService := service.NewCurrencyPolicyService(repos.Setting)
 	exchangeRateService := service.NewExchangeRateService(repos.ExchangeRate, repos.Setting)
 	storefrontMarketService := service.NewStorefrontMarketService(repos.StorefrontMarket)
@@ -200,6 +209,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if storefrontBaseURL == "" {
 		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")
 	}
+	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
 	googleMerchantService := service.NewGoogleMerchantService(
 		repos.GoogleMerchant,
 		repos.Product,
@@ -219,11 +229,14 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 
 	services := Services{
 		Auth:                       service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
-		Post:                       service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL),
-		Product:                    service.NewProductService(repos.Product, redisCache, cfg.Cache.ProductTTL),
+		Post:                       postService,
+		Product:                    productService,
 		ProductInformationTemplate: service.NewProductInformationTemplateService(repos.ProductInformationTemplate),
 		Cart:                       service.NewCartService(repos.Cart, repos.Product),
 		Setting:                    settingService,
+		SEO:                        seoService,
+		SEOResources:               seoResourceService,
+		Analytics:                  analyticsService,
 		CurrencyPolicy:             currencyPolicyService,
 		ExchangeRate:               exchangeRateService,
 		StorefrontMarket:           storefrontMarketService,
@@ -282,6 +295,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Checkout.ConfigureLoyaltyProgram(loyaltyProgramService)
 	services.Product.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Product.ConfigureInformationTemplateRepository(repos.ProductInformationTemplate)
+	services.Product.ConfigureMerchantEventPublisher(merchantOutboxPublisher)
+	services.GoogleMerchant.ConfigureMerchantEventPublisher(merchantOutboxPublisher)
 	services.ExchangeRate.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Registration.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
 	services.Registration.ConfigureEmailBaseURL(storefrontBaseURL)
@@ -291,6 +306,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Post.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontContentReleaseNotifier(storefrontContentReleaseNotifier)
+	services.SEO.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.AdminSettings = service.NewAdminSettingsService(services.Setting)
 	services.AdminPublicChat = service.NewAdminPublicChatAgentService(repos.User)
 	services.CustomerServiceContext = service.NewCustomerServiceContextService(
@@ -334,6 +350,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		services.PaymentRiskMonitoring.ConfigureAlerting(true)
 		services.Outbox.RegisterHandler(outbox.EventTypePaymentRiskLevelChanged, paymentRiskAlertWebhookHandler.Handle)
 	}
+	merchantOutboxHandler := service.NewGoogleMerchantOutboxHandler(services.GoogleMerchant)
+	services.Outbox.RegisterHandler(outbox.EventTypeMerchantProductUpsert, merchantOutboxHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeMerchantProductWithdraw, merchantOutboxHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeMerchantOfferRevalidate, merchantOutboxHandler.Handle)
 
 	return &Dependencies{
 		Repositories: repos,

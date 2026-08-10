@@ -72,6 +72,120 @@ func TestGoogleMerchantUpdateOfferMarksSyncedPayloadChangeReady(t *testing.T) {
 	}
 }
 
+func TestGoogleMerchantUpdateOfferQueuesReadyOfferRevalidationOnPayloadChange(t *testing.T) {
+	_, googleMerchantService, productRecord, variantRecord := newTestGoogleMerchantService(t)
+	offer := seedGoogleMerchantOffer(t, googleMerchantService, productRecord.ID, variantRecord.ID, "")
+	publisher := &recordingMerchantPublisher{}
+	googleMerchantService.ConfigureMerchantEventPublisher(publisher)
+
+	_, err := googleMerchantService.UpdateOffer(offer.ID, GoogleMerchantOfferInput{
+		ProductID:             productRecord.ID,
+		VariantID:             variantRecord.ID,
+		OfferID:               "tz-wheel",
+		Title:                 "Updated Google Title",
+		Brand:                 "Tanzanite",
+		Condition:             "new",
+		GoogleProductCategory: "Sporting Goods",
+		IdentifierExists:      boolPtrForGoogleMerchantTest(false),
+		TargetCountry:         "US",
+		ContentLanguage:       "en",
+		CurrencyCode:          "USD",
+		FeedLabel:             "US",
+		PublicationStatus:     "ready",
+	})
+	if err != nil {
+		t.Fatalf("UpdateOffer() error = %v", err)
+	}
+	if publisher.revalidate != 1 || publisher.revalidateOfferID != offer.ID || publisher.revalidateReason != "merchant_fields_changed" {
+		t.Fatalf("revalidate event = count %d offer %d reason %q, want one event for offer %d", publisher.revalidate, publisher.revalidateOfferID, publisher.revalidateReason, offer.ID)
+	}
+}
+
+func TestGoogleMerchantUpdateOfferQueuesRemoteWithdrawalWhenPaused(t *testing.T) {
+	_, googleMerchantService, productRecord, variantRecord := newTestGoogleMerchantService(t)
+	offer := seedGoogleMerchantOffer(t, googleMerchantService, productRecord.ID, variantRecord.ID, "synced")
+	publisher := &recordingMerchantPublisher{}
+	googleMerchantService.ConfigureMerchantEventPublisher(publisher)
+
+	updated, err := googleMerchantService.UpdateOffer(offer.ID, googleMerchantOfferInputForTest(productRecord.ID, variantRecord.ID, "paused"))
+	if err != nil {
+		t.Fatalf("UpdateOffer() error = %v", err)
+	}
+	if updated.SyncStatus != "withdraw_pending" {
+		t.Fatalf("SyncStatus = %q, want withdraw_pending", updated.SyncStatus)
+	}
+	if updated.LastSyncAt == nil {
+		t.Fatal("LastSyncAt was cleared, want preserved remote sync marker")
+	}
+	if !strings.Contains(updated.LastError, "publication status changed") {
+		t.Fatalf("LastError = %q, want publication status marker", updated.LastError)
+	}
+	if publisher.revalidate != 1 || publisher.revalidateOfferID != offer.ID || publisher.revalidateReason != "merchant_fields_changed" {
+		t.Fatalf("revalidate event = count %d offer %d reason %q, want one withdrawal event for offer %d", publisher.revalidate, publisher.revalidateOfferID, publisher.revalidateReason, offer.ID)
+	}
+}
+
+func TestGoogleMerchantUpdateOfferSkipsRevalidationWhenPayloadUnchanged(t *testing.T) {
+	_, googleMerchantService, productRecord, variantRecord := newTestGoogleMerchantService(t)
+	offer := seedGoogleMerchantOffer(t, googleMerchantService, productRecord.ID, variantRecord.ID, "")
+	publisher := &recordingMerchantPublisher{}
+	googleMerchantService.ConfigureMerchantEventPublisher(publisher)
+
+	_, err := googleMerchantService.UpdateOffer(offer.ID, googleMerchantOfferInputForTest(productRecord.ID, variantRecord.ID, "ready"))
+	if err != nil {
+		t.Fatalf("UpdateOffer() error = %v", err)
+	}
+	if publisher.revalidate != 0 {
+		t.Fatalf("revalidate events = %d, want 0 for unchanged payload", publisher.revalidate)
+	}
+}
+
+func TestGoogleMerchantUpdateOfferSkipsDraftRevalidation(t *testing.T) {
+	_, googleMerchantService, productRecord, variantRecord := newTestGoogleMerchantService(t)
+	identifierExists := false
+	offer, err := googleMerchantService.CreateOffer(GoogleMerchantOfferInput{
+		ProductID:             productRecord.ID,
+		VariantID:             variantRecord.ID,
+		OfferID:               "tz-wheel",
+		Brand:                 "Tanzanite",
+		Condition:             "new",
+		GoogleProductCategory: "Sporting Goods",
+		IdentifierExists:      &identifierExists,
+		TargetCountry:         "US",
+		ContentLanguage:       "en",
+		CurrencyCode:          "USD",
+		FeedLabel:             "US",
+		PublicationStatus:     "draft",
+	})
+	if err != nil {
+		t.Fatalf("CreateOffer() error = %v", err)
+	}
+	publisher := &recordingMerchantPublisher{}
+	googleMerchantService.ConfigureMerchantEventPublisher(publisher)
+
+	_, err = googleMerchantService.UpdateOffer(offer.ID, GoogleMerchantOfferInput{
+		ProductID:             productRecord.ID,
+		VariantID:             variantRecord.ID,
+		OfferID:               "tz-wheel",
+		Title:                 "Draft Google Title",
+		Brand:                 "Tanzanite",
+		Condition:             "new",
+		GoogleProductCategory: "Sporting Goods",
+		IdentifierExists:      boolPtrForGoogleMerchantTest(false),
+		TargetCountry:         "US",
+		ContentLanguage:       "en",
+		CurrencyCode:          "USD",
+		FeedLabel:             "US",
+		PublicationStatus:     "draft",
+	})
+	if err != nil {
+		t.Fatalf("UpdateOffer() error = %v", err)
+	}
+	if publisher.revalidate != 0 {
+		t.Fatalf("revalidate events = %d, want 0 for draft payload change", publisher.revalidate)
+	}
+}
+
 func TestGoogleMerchantDeleteOfferRequiresRemoteRemovalFirst(t *testing.T) {
 	_, googleMerchantService, productRecord, variantRecord := newTestGoogleMerchantService(t)
 	seedGoogleMerchantOffer(t, googleMerchantService, productRecord.ID, variantRecord.ID, "synced")
@@ -146,11 +260,29 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 	return db, service, productRecord, variantRecord
 }
 
-func seedGoogleMerchantOffer(t *testing.T, service *GoogleMerchantService, productID, variantID uint, syncStatus string) {
+func seedGoogleMerchantOffer(t *testing.T, service *GoogleMerchantService, productID, variantID uint, syncStatus string) *merchant.GoogleMerchantOffer {
 	t.Helper()
 
+	offer, err := service.CreateOffer(googleMerchantOfferInputForTest(productID, variantID, "ready"))
+	if err != nil {
+		t.Fatalf("create offer: %v", err)
+	}
+	if syncStatus == "" {
+		return offer
+	}
+	now := time.Now().UTC()
+	offer.SyncStatus = syncStatus
+	offer.LastSyncAt = &now
+	offer.LastError = ""
+	if err := service.offers.UpdateOffer(offer); err != nil {
+		t.Fatalf("mark synced offer: %v", err)
+	}
+	return offer
+}
+
+func googleMerchantOfferInputForTest(productID, variantID uint, status string) GoogleMerchantOfferInput {
 	identifierExists := false
-	offer, err := service.CreateOffer(GoogleMerchantOfferInput{
+	return GoogleMerchantOfferInput{
 		ProductID:             productID,
 		VariantID:             variantID,
 		OfferID:               "tz-wheel",
@@ -162,20 +294,7 @@ func seedGoogleMerchantOffer(t *testing.T, service *GoogleMerchantService, produ
 		ContentLanguage:       "en",
 		CurrencyCode:          "USD",
 		FeedLabel:             "US",
-		PublicationStatus:     "ready",
-	})
-	if err != nil {
-		t.Fatalf("create offer: %v", err)
-	}
-	if syncStatus == "" {
-		return
-	}
-	now := time.Now().UTC()
-	offer.SyncStatus = syncStatus
-	offer.LastSyncAt = &now
-	offer.LastError = ""
-	if err := service.offers.UpdateOffer(offer); err != nil {
-		t.Fatalf("mark synced offer: %v", err)
+		PublicationStatus:     status,
 	}
 }
 

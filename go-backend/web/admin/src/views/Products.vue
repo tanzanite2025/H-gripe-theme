@@ -34,6 +34,7 @@
       :selection-state="selectionState"
       :can-edit="hasPermission('product:edit')"
       :can-delete="hasPermission('product:delete')"
+      :can-manage-translations="hasPermission('product:edit') || hasPermission('product:create')"
       :can-sync-google="hasPermission('merchant:edit')"
       :locale-name="supportedLanguages.localeName"
       @batch-status="requestBatchStatus"
@@ -41,11 +42,26 @@
       @toggle-all-products="toggleAllProducts"
       @toggle-product="toggleProduct"
       @edit="showEditDialog"
+      @translations="showTranslationsDialog"
       @sync-google="openGoogleSync"
       @toggle-status="requestToggleStatus"
       @delete="requestDelete"
       @update-page="updatePage"
       @update-page-size="updatePageSize"
+    />
+
+    <ProductTranslationGroupDialog
+      v-model:open="translationDialogVisible"
+      :current-product="translationProduct"
+      :translation-group="translationGroup"
+      :translations-loading="translationLoading"
+      :copying-locale="copyingLocale"
+      :can-edit="hasPermission('product:edit')"
+      :can-create-translation="hasPermission('product:create')"
+      :locale-name="supportedLanguages.localeName"
+      :total-languages="supportedLanguages.enabledLanguages.value.length"
+      @copy="copyTranslation"
+      @edit="editTranslation"
     />
 
     <ProductEditorDialog
@@ -119,6 +135,7 @@ import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.vue'
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
+import ProductTranslationGroupDialog from '@/components/admin/product/ProductTranslationGroupDialog.vue'
 import productApi, { productInformationTemplateApi } from '@/api/products'
 import shippingApi from '@/api/shipping'
 import { useProductCatalog } from '@/composables/product/useProductCatalog'
@@ -126,6 +143,7 @@ import { useProductEditor } from '@/composables/product/useProductEditor'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
+import type { ProductTranslation, ProductTranslationGroup } from '@/components/admin/product/productEditorTypes'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -153,6 +171,11 @@ interface ConfirmationState {
 
 const shippingTemplates = ref<any[]>([])
 const informationTemplates = ref<ProductInformationTemplateRecord[]>([])
+const translationDialogVisible = ref(false)
+const translationLoading = ref(false)
+const copyingLocale = ref('')
+const translationProduct = ref<AdminProductRecord | null>(null)
+const translationGroup = ref<ProductTranslationGroup | null>(null)
 const supportedLanguages = useSupportedLanguages()
 const languageOptions = supportedLanguages.languageOptions
 const {
@@ -273,6 +296,43 @@ const hasPermission = (permission: string) => authStore.hasPermission(permission
 const openGoogleSync = (product: AdminProductRecord) => {
   if (!hasPermission('merchant:edit')) return
   router.push({ name: 'GoogleMerchant', query: { product_id: product.id } })
+}
+
+const showTranslationsDialog = async (product: AdminProductRecord) => {
+  translationProduct.value = product
+  translationGroup.value = null
+  translationDialogVisible.value = true
+  translationLoading.value = true
+  try {
+    translationGroup.value = await productApi.translations(product.id)
+  } catch (error) {
+    console.error('Failed to fetch product translations:', error)
+    toast.error('获取商品翻译组失败')
+    translationDialogVisible.value = false
+  } finally {
+    translationLoading.value = false
+  }
+}
+
+const copyTranslation = async (locale: string) => {
+  if (!translationProduct.value || copyingLocale.value) return
+  copyingLocale.value = locale
+  try {
+    const payload = await productApi.copyTranslation(translationProduct.value.id, locale)
+    translationGroup.value = payload.translation_group || await productApi.translations(translationProduct.value.id)
+    toast.success(`商品已复制到${supportedLanguages.localeName(locale)}`)
+    await refreshProducts()
+  } catch (error) {
+    console.error('Failed to copy product translation:', error)
+    toast.error('复制商品翻译失败')
+  } finally {
+    copyingLocale.value = ''
+  }
+}
+
+const editTranslation = (translation: ProductTranslation) => {
+  translationDialogVisible.value = false
+  void showEditDialog(translation)
 }
 
 const setConfirmation = (values: Partial<ConfirmationState>) => Object.assign(confirmation, {

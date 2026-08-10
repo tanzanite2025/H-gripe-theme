@@ -59,6 +59,19 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Globe2,
     permission: 'merchant:view',
   },
+  {
+    id: 'seo',
+    code: 'SEO',
+    label: 'SEO',
+    icon: FileText,
+    permission: 'seo:view',
+    children: [
+      { id: 'seo-home', path: '/seo/home', routeName: 'SEOHome', label: '首页' },
+      { id: 'seo-articles', path: '/seo/articles', routeName: 'SEOArticles', label: '文章' },
+      { id: 'seo-products', path: '/seo/products', routeName: 'SEOProducts', label: '产品' },
+    ],
+  },
+  { id: 'analytics', path: '/analytics', routeName: 'Analytics', code: 'ANALYTICS', label: 'Analytics', icon: Globe2, permission: 'analytics:view' },
   { id: 'orders', path: '/orders', routeName: 'Orders', code: 'ORDERS', label: '订单管理', icon: ShoppingCart, permission: 'order:view' },
   {
     id: 'payment',
@@ -172,7 +185,6 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'settings-site', path: '/settings/site', routeName: 'SettingsSite', label: '站点' },
       { id: 'settings-email', path: '/settings/email', routeName: 'SettingsEmail', label: '邮件' },
-      { id: 'settings-seo', path: '/settings/seo', routeName: 'SettingsSeo', label: 'SEO' },
       { id: 'settings-social', path: '/settings/social', routeName: 'SettingsSocial', label: '社交媒体' },
       { id: 'settings-currency', path: '/settings/currency', routeName: 'SettingsCurrency', label: '价格币种' },
       { id: 'settings-markets', path: '/settings/markets', routeName: 'SettingsMarkets', label: '市场与本地化语种' },

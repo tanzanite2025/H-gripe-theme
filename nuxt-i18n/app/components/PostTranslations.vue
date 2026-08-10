@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { useBlogApi } from '~/composables/useBlogApi'
 import { useI18n } from '#imports'
 import {
@@ -34,13 +35,14 @@ import {
   getStorefrontLocaleName,
   normalizeStorefrontLocaleCode,
 } from '~/utils/storefrontLocales'
+import type { BlogLocalizedRoute } from '~/utils/blog/types'
 
 interface PostTranslation {
-  id: number
-  title: string
+  id?: number
+  title?: string
   slug: string
   locale: string
-  published_at: string
+  published_at?: string
   url: string
 }
 
@@ -48,10 +50,12 @@ interface Props {
   postId: number
   title?: string
   showCurrentLocale?: boolean
+  localizedRoutes?: BlogLocalizedRoute[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showCurrentLocale: true
+  showCurrentLocale: true,
+  localizedRoutes: () => [],
 })
 
 const { locale: currentLocale } = useI18n()
@@ -59,11 +63,28 @@ const { getPostTranslations } = useBlogApi()
 
 const translations = ref<Record<string, PostTranslation>>({})
 const currentLocaleCode = computed(() => normalizeStorefrontLocaleCode(currentLocale.value) || 'en')
+const serverTranslations = computed<Record<string, PostTranslation>>(() => {
+  return props.localizedRoutes.reduce<Record<string, PostTranslation>>((result, route) => {
+    const locale = normalizeStorefrontLocaleCode(route.locale)
+    if (!locale || !route.slug || !route.path) return result
+
+    result[locale] = {
+      id: route.id,
+      slug: route.slug,
+      locale,
+      url: route.path,
+    }
+    return result
+  }, {})
+})
 
 const visibleTranslations = computed<PostTranslation[]>(() => {
   const byLocale = new Map<string, PostTranslation>()
+  const source = Object.keys(serverTranslations.value).length
+    ? serverTranslations.value
+    : translations.value
 
-  for (const [rawLocale, translation] of Object.entries(translations.value)) {
+  for (const [rawLocale, translation] of Object.entries(source)) {
     const canonicalLocale = normalizeStorefrontLocaleCode(translation.locale || rawLocale)
     if (!canonicalLocale) continue
     if (!props.showCurrentLocale && canonicalLocale === currentLocaleCode.value) continue
@@ -82,9 +103,14 @@ const hasTranslations = computed(() => {
   return props.showCurrentLocale ? visibleTranslations.value.length > 1 : visibleTranslations.value.length > 0
 })
 
-// 加载翻译数据
 onMounted(async () => {
-  translations.value = await getPostTranslations(props.postId)
+  if (Object.keys(serverTranslations.value).length) return
+
+  try {
+    translations.value = await getPostTranslations(props.postId)
+  } catch {
+    translations.value = {}
+  }
 })
 
 // 获取语言名称

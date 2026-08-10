@@ -3,7 +3,6 @@ package admin
 import (
 	"errors"
 	"net/http"
-	"strings"
 	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/service"
 
@@ -21,13 +20,13 @@ func NewSettingsHandler(settingsService *service.AdminSettingsService) *Settings
 func (h *SettingsHandler) GetAllSettings(c *gin.Context) {
 	locale := c.DefaultQuery("locale", "en")
 	group := c.Query("group")
-	if isDomainManagedAdminSettingGroup(group) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": service.ErrSettingManagedByDomainService.Error()})
-		return
-	}
 
 	settings, err := h.settingsService.ListSettings(locale, group)
 	if err != nil {
+		if errors.Is(err, service.ErrSettingManagedByDomainService) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch settings"})
 		return
 	}
@@ -41,6 +40,10 @@ func (h *SettingsHandler) GetSetting(c *gin.Context) {
 
 	s, err := h.settingsService.GetSetting(key, locale)
 	if err != nil {
+		if errors.Is(err, service.ErrSettingManagedByDomainService) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusNotFound, gin.H{"error": "setting not found"})
 		return
 	}
@@ -93,6 +96,10 @@ func (h *SettingsHandler) DeleteSetting(c *gin.Context) {
 	locale := c.DefaultQuery("locale", "en")
 
 	if err := h.settingsService.DeleteSetting(key, locale); err != nil {
+		if errors.Is(err, service.ErrSettingManagedByDomainService) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete setting"})
 		return
 	}
@@ -116,10 +123,6 @@ func (h *SettingsHandler) GetSiteSettings(c *gin.Context) {
 
 func (h *SettingsHandler) GetEmailSettings(c *gin.Context) {
 	h.writeSettingsGroup(c, "email", "failed to fetch email settings")
-}
-
-func (h *SettingsHandler) GetSEOSettings(c *gin.Context) {
-	h.writeSettingsGroup(c, "seo", "failed to fetch SEO settings")
 }
 
 func (h *SettingsHandler) GetSocialSettings(c *gin.Context) {
@@ -151,11 +154,6 @@ func (h *SettingsHandler) writeSettingsGroup(c *gin.Context, group, errorMessage
 	}
 
 	c.JSON(http.StatusOK, gin.H{"settings": settings})
-}
-
-func isDomainManagedAdminSettingGroup(group string) bool {
-	group = strings.ToLower(strings.TrimSpace(group))
-	return group == "loyalty" || group == "redeem" || group == "currency" || group == "payment_secret"
 }
 
 func (h *SettingsHandler) writeDomainManagedSettingsGroupError(c *gin.Context) {

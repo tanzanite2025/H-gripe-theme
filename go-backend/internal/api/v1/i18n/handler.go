@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	seodomain "tanzanite/internal/domain/seo"
 	"tanzanite/internal/pkg/locales"
 	"tanzanite/internal/service"
 
@@ -75,7 +76,7 @@ func (h *Handler) GetPostTranslations(c *gin.Context) {
 			"slug":         t.Slug,
 			"locale":       t.Locale,
 			"published_at": t.PublishedAt,
-			"url":          buildPostURL(t.Locale, t.Slug),
+			"url":          seodomain.BuildArticleRoute(t.Locale, t.Slug, t.Tags).Path,
 		}
 	}
 
@@ -224,14 +225,6 @@ func (h *Handler) SetLanguage(c *gin.Context) {
 }
 
 // 辅助函数
-
-// buildPostURL 构建文章 URL
-func buildPostURL(locale, slug string) string {
-	if locale == "en" {
-		return "/blog/" + slug
-	}
-	return "/" + locale + "/blog/" + slug
-}
 
 // isValidLocale 验证语言代码是否有效
 func isValidLocale(locale string) bool {

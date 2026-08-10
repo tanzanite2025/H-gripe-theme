@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="博客内容" description="管理前台 Blog 文章、发布状态、多语言版本和搜索信息">
+    <AdminPageHeader title="博客内容" description="管理前台 Blog 文章、发布状态和多语言版本">
       <template #actions>
         <Button v-if="hasPermission('content:create')" @click="showCreateDialog">
           <Plus class="size-4" />
@@ -138,10 +138,6 @@ const postForm = reactive<ContentPostForm>({
   locale: resolveDefaultLocale(),
   featured_image: '',
   tags: '',
-  meta_title: '',
-  meta_description: '',
-  meta_keywords: '',
-  canonical_url: '',
   translation_group_id: null
 })
 const confirmation = reactive<ContentConfirmation>({
@@ -202,10 +198,6 @@ const buildPostPayload = (): ContentPostPayload => ({
   locale: postForm.locale,
   featured_image: postForm.featured_image.trim(),
   tags: postForm.tags,
-  meta_title: postForm.meta_title,
-  meta_description: postForm.meta_description,
-  meta_keywords: postForm.meta_keywords,
-  canonical_url: postForm.canonical_url.trim(),
   translation_group_id: postForm.translation_group_id
 })
 const validateForm = (payload: ContentPostPayload): boolean => {
@@ -230,10 +222,6 @@ const resetForm = (): void => {
     locale: resolveDefaultLocale(),
     featured_image: '',
     tags: '',
-    meta_title: '',
-    meta_description: '',
-    meta_keywords: '',
-    canonical_url: '',
     translation_group_id: null
   })
   clearFormErrors()
@@ -306,10 +294,6 @@ const showEditDialog = (post: ContentPost): void => {
     locale: post.locale || resolveDefaultLocale(),
     featured_image: post.featured_image || '',
     tags: post.tags || '',
-    meta_title: post.meta_title || '',
-    meta_description: post.meta_description || post.meta_desc || '',
-    meta_keywords: post.meta_keywords || '',
-    canonical_url: post.canonical_url || '',
     translation_group_id: post.translation_group_id || null
   })
   clearFormErrors()

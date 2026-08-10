@@ -2,9 +2,7 @@ package settings
 
 import (
 	"net/http"
-	"strings"
 	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/domain/setting"
 	"tanzanite/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -18,12 +16,6 @@ func NewHandler(settingService *service.SettingService) *Handler {
 	return &Handler{
 		settingService: settingService,
 	}
-}
-
-var publicDomainManagedSettingGroups = map[string]struct{}{
-	"loyalty":  {},
-	"redeem":   {},
-	"currency": {},
 }
 
 func (h *Handler) GetSiteSettings(c *gin.Context) {
@@ -58,7 +50,7 @@ func (h *Handler) GetAllPublicSettings(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	settings = filterPublicSettingsManagedByDomain(settings)
+	settings = service.FilterDomainManagedSettings(settings)
 
 	c.JSON(http.StatusOK, gin.H{
 		"settings": settings,
@@ -69,7 +61,7 @@ func (h *Handler) GetAllPublicSettings(c *gin.Context) {
 func (h *Handler) GetSettingsByGroup(c *gin.Context) {
 	group := c.Param("group")
 	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
-	if isPublicSettingGroupManagedByDomain(group) {
+	if service.IsDomainManagedSettingGroup(group) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Setting group is managed by its domain API"})
 		return
 	}
@@ -90,7 +82,7 @@ func (h *Handler) GetSettingsByGroup(c *gin.Context) {
 func (h *Handler) GetSetting(c *gin.Context) {
 	key := c.Param("key")
 	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
-	if isPublicSettingKeyManagedByDomain(key) {
+	if service.IsDomainManagedSettingKey(key) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Setting is managed by its domain API"})
 		return
 	}
@@ -110,58 +102,12 @@ func (h *Handler) GetGroups(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	groups = filterPublicSettingGroupsManagedByDomain(groups)
+	groups = service.FilterDomainManagedSettingGroups(groups)
 
 	c.JSON(http.StatusOK, gin.H{
 		"groups": groups,
 		"total":  len(groups),
 	})
-}
-
-func (h *Handler) GetSEOSettings(c *gin.Context) {
-	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
-
-	settings, err := h.settingService.GetSEOSettings(locale)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, settings)
-}
-
-func isPublicSettingGroupManagedByDomain(group string) bool {
-	_, managed := publicDomainManagedSettingGroups[strings.ToLower(strings.TrimSpace(group))]
-	return managed
-}
-
-func isPublicSettingKeyManagedByDomain(key string) bool {
-	normalized := strings.ToLower(strings.TrimSpace(key))
-	return strings.HasPrefix(normalized, "tz_loyalty_") ||
-		strings.HasPrefix(normalized, "tz_redeem_") ||
-		strings.HasPrefix(normalized, "currency_")
-}
-
-func filterPublicSettingsManagedByDomain(settings []setting.Setting) []setting.Setting {
-	filtered := make([]setting.Setting, 0, len(settings))
-	for _, item := range settings {
-		if isPublicSettingGroupManagedByDomain(item.Group) || isPublicSettingKeyManagedByDomain(item.Key) {
-			continue
-		}
-		filtered = append(filtered, item)
-	}
-	return filtered
-}
-
-func filterPublicSettingGroupsManagedByDomain(groups []string) []string {
-	filtered := make([]string, 0, len(groups))
-	for _, group := range groups {
-		if isPublicSettingGroupManagedByDomain(group) {
-			continue
-		}
-		filtered = append(filtered, group)
-	}
-	return filtered
 }
 
 func (h *Handler) GetSocialSettings(c *gin.Context) {

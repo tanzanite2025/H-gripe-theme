@@ -93,16 +93,8 @@ func (s *PostService) GetPublicByID(id uint) (*post.Post, error) {
 }
 
 func (s *PostService) GetPublicBySlug(slug, locale string) (*post.Post, error) {
-	result, err := s.postRepo.FindBySlug(slug, locale)
-	if err != nil {
-		return nil, err
-	}
-	if result.Status != "published" {
-		return nil, ErrPostNotFound
-	}
-	result = sanitizePostHTML(result)
-	_ = s.postRepo.IncrementViewCount(result.ID)
-	return result, nil
+	result, _, err := s.GetPublicBySlugWithRoutes(slug, locale)
+	return result, err
 }
 
 func (s *PostService) List(locale, status string, page, pageSize int) ([]post.Post, int64, error) {

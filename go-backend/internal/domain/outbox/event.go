@@ -17,8 +17,13 @@ const (
 	EventTypeOrderPaid               = "order.paid"
 	EventTypeVerifiedConversion      = "conversion.verified"
 	EventTypePaymentRiskLevelChanged = "payment.risk_level_changed"
+	EventTypeMerchantProductUpsert   = "merchant.product_upsert"
+	EventTypeMerchantProductWithdraw = "merchant.product_withdraw"
+	EventTypeMerchantOfferRevalidate = "merchant.offer_revalidate"
 	AggregateTypeOrder               = "order"
 	AggregateTypePaymentRiskProvider = "payment_risk_provider"
+	AggregateTypeProduct             = "product"
+	AggregateTypeMerchantOffer       = "merchant_offer"
 	DefaultEventMaxAttempt           = 10
 )
 
@@ -94,4 +99,14 @@ type VerifiedConversionAttribution struct {
 	Content     string `json:"content,omitempty"`
 	ClickIDKind string `json:"click_id_kind,omitempty"`
 	ClickID     string `json:"click_id,omitempty"`
+}
+
+type MerchantProductSyncPayload struct {
+	ProductID uint   `json:"product_id"`
+	Reason    string `json:"reason,omitempty"`
+}
+
+type MerchantOfferRevalidatePayload struct {
+	OfferID uint   `json:"offer_id"`
+	Reason  string `json:"reason,omitempty"`
 }

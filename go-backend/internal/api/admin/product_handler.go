@@ -14,10 +14,24 @@ type ProductHandler struct {
 	productService *service.ProductService
 }
 
+var productSEORequestFields = []string{
+	"meta_title",
+	"meta_description",
+}
+
 func NewProductHandler(productService *service.ProductService) *ProductHandler {
 	return &ProductHandler{
 		productService: productService,
 	}
+}
+
+func rejectProductSEORequestFields(raw map[string]json.RawMessage) (string, bool) {
+	for _, field := range productSEORequestFields {
+		if _, exists := raw[field]; exists {
+			return field, true
+		}
+	}
+	return "", false
 }
 
 // ListProducts 获取商品列表
@@ -76,13 +90,73 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 	})
 }
 
+// GetProductTranslations 获取商品翻译组
+// GET /api/admin/products/:id/translations
+func (h *ProductHandler) GetProductTranslations(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		return
+	}
+
+	group, err := h.productService.GetAdminProductTranslationGroup(uint(id))
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to fetch product translations")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"translation_group": group,
+	})
+}
+
+// CopyProductTranslation 复制商品到目标语言
+// POST /api/admin/products/:id/translations/copy
+func (h *ProductHandler) CopyProductTranslation(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		return
+	}
+
+	var req struct {
+		TargetLocale string `json:"target_locale" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	createdProduct, group, err := h.productService.CopyAdminProductTranslation(uint(id), req.TargetLocale)
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to copy product translation")
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message":           "Product translation copied successfully",
+		"product":           createdProduct,
+		"translation_group": group,
+	})
+}
+
 // CreateProduct 创建商品
 // POST /api/admin/products
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	var req productCreateRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var raw map[string]json.RawMessage
+	if err := c.ShouldBindBodyWith(&raw, binding.JSON); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if field, blocked := rejectProductSEORequestFields(raw); blocked {
+		c.JSON(http.StatusBadRequest, gin.H{"error": field + " must be maintained from SEO / 产品"})
 		return
 	}
 
@@ -100,8 +174,6 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Locale:               req.Locale,
 		ParentID:             req.ParentID,
 		Featured:             req.Featured,
-		MetaTitle:            req.MetaTitle,
-		MetaDesc:             req.MetaDesc,
 		SpecValues:           normalizeRequestSpecs(req.Specs),
 		Variants:             normalizeVariantRequests(req.Variants),
 		VariantOptionValues:  normalizeVariantOptionValueRequests(req.VariantOptionValues),
@@ -136,6 +208,10 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	var raw map[string]json.RawMessage
 	if err := c.ShouldBindBodyWith(&raw, binding.JSON); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if field, blocked := rejectProductSEORequestFields(raw); blocked {
+		c.JSON(http.StatusBadRequest, gin.H{"error": field + " must be maintained from SEO / 产品"})
 		return
 	}
 
@@ -179,8 +255,6 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		ParentID:                   req.ParentID,
 		UpdateParentID:             updateParentID,
 		Featured:                   req.Featured,
-		MetaTitle:                  req.MetaTitle,
-		MetaDesc:                   req.MetaDesc,
 		SpecValues:                 normalizeRequestSpecs(req.Specs),
 		UpdateSpecValues:           updateSpecs,
 		Variants:                   normalizeVariantRequests(req.Variants),

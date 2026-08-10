@@ -14,10 +14,26 @@ type ContentHandler struct {
 	postService *service.PostService
 }
 
+var articleSEORequestFields = []string{
+	"meta_title",
+	"meta_description",
+	"meta_keywords",
+	"canonical_url",
+}
+
 func NewContentHandler(postService *service.PostService) *ContentHandler {
 	return &ContentHandler{
 		postService: postService,
 	}
+}
+
+func rejectArticleSEORequestFields(raw map[string]json.RawMessage) (string, bool) {
+	for _, field := range articleSEORequestFields {
+		if _, exists := raw[field]; exists {
+			return field, true
+		}
+	}
+	return "", false
 }
 
 // ListPosts 获取文章列表
@@ -80,8 +96,18 @@ func (h *ContentHandler) GetPost(c *gin.Context) {
 // POST /api/admin/content/posts
 func (h *ContentHandler) CreatePost(c *gin.Context) {
 	var req postCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var raw map[string]json.RawMessage
+	if err := c.ShouldBindBodyWith(&raw, binding.JSON); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if field, blocked := rejectArticleSEORequestFields(raw); blocked {
+		c.JSON(http.StatusBadRequest, gin.H{"error": field + " must be maintained from SEO / 文章"})
 		return
 	}
 
@@ -101,10 +127,6 @@ func (h *ContentHandler) CreatePost(c *gin.Context) {
 		Locale:             req.Locale,
 		FeaturedImg:        req.FeaturedImg,
 		Tags:               req.Tags,
-		MetaTitle:          req.MetaTitle,
-		MetaDesc:           req.MetaDesc,
-		MetaKeywords:       req.MetaKeywords,
-		CanonicalURL:       req.CanonicalURL,
 		TranslationGroupID: req.TranslationGroupID,
 	})
 	if err != nil {
@@ -138,6 +160,10 @@ func (h *ContentHandler) UpdatePost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if field, blocked := rejectArticleSEORequestFields(raw); blocked {
+		c.JSON(http.StatusBadRequest, gin.H{"error": field + " must be maintained from SEO / 文章"})
+		return
+	}
 
 	_, updateTranslationGroupID := raw["translation_group_id"]
 
@@ -150,10 +176,6 @@ func (h *ContentHandler) UpdatePost(c *gin.Context) {
 		Locale:                   req.Locale,
 		FeaturedImg:              req.FeaturedImg,
 		Tags:                     req.Tags,
-		MetaTitle:                req.MetaTitle,
-		MetaDesc:                 req.MetaDesc,
-		MetaKeywords:             req.MetaKeywords,
-		CanonicalURL:             req.CanonicalURL,
 		TranslationGroupID:       req.TranslationGroupID,
 		UpdateTranslationGroupID: updateTranslationGroupID,
 	})

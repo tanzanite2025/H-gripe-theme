@@ -41,6 +41,7 @@ type Product struct {
 	SpecValues           []ProductSpecValue          `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`
 	Variants             []ProductVariant            `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
 	VariantOptionValues  []ProductVariantOptionValue `gorm:"foreignKey:ProductID" json:"variant_option_values,omitempty"`
+	TranslationGroup     *ProductTranslationGroup    `gorm:"-" json:"translation_group,omitempty"`
 	CreatedAt            time.Time                   `json:"created_at"`
 	UpdatedAt            time.Time                   `json:"updated_at"`
 	DeletedAt            gorm.DeletedAt              `gorm:"index" json:"-"`

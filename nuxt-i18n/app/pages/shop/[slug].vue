@@ -18,8 +18,6 @@
             </figure>
             <div v-else class="product-media-placeholder">
               <Icon name="lucide:image-off" class="product-media-placeholder__icon" aria-hidden="true" />
-              <p class="product-media-placeholder__title">No media preview yet</p>
-              <p class="product-media-placeholder__text">Upload images or videos to reserve this space.</p>
             </div>
             <template v-if="productGalleryItems.length > 1">
               <button
@@ -40,34 +38,46 @@
               </button>
             </template>
           </div>
-          <div v-if="productGalleryItems.length > 1" class="product-media-thumbnails" aria-label="Media thumbnails">
-            <button
-              v-for="(media, index) in productGalleryItems"
-              :key="media.id"
-              type="button"
-              class="product-media-thumbnail"
-              :class="{ 'product-media-thumbnail--active': selectedMediaId === media.id }"
-              :aria-label="`${media.kind === 'video' ? 'View product video' : 'View product image'} ${index + 1}`"
-              :aria-pressed="selectedMediaId === media.id"
-              @click="selectMedia(media.id)"
-            >
-              <NuxtImg
-                v-if="media.thumbnailUrl"
-                :src="media.thumbnailUrl"
-                :alt="media.alt"
-                loading="lazy"
-                format="webp"
-              />
-              <span v-else class="product-media-thumbnail__placeholder">
-                <Icon
-                  :name="media.kind === 'video' ? 'lucide:video' : 'lucide:image-off'"
-                  aria-hidden="true"
+          <div
+            ref="productMediaThumbnailsRef"
+            class="product-media-thumbnails"
+            :class="{ 'product-media-thumbnails--centered': !productMediaSlotsOverflowing }"
+            aria-label="Media thumbnails"
+          >
+            <template v-for="(media, index) in productMediaSlots" :key="media?.id || `media-placeholder-${index}`">
+              <button
+                v-if="media"
+                type="button"
+                class="product-media-thumbnail"
+                :data-media-id="media.id"
+                :class="{ 'product-media-thumbnail--active': selectedMediaId === media.id }"
+                :aria-label="`${media.kind === 'video' ? 'View product video' : 'View product image'} ${index + 1}`"
+                :aria-pressed="selectedMediaId === media.id"
+                @click="selectMedia(media.id)"
+              >
+                <NuxtImg
+                  v-if="media.thumbnailUrl"
+                  :src="media.thumbnailUrl"
+                  :alt="media.alt"
+                  loading="lazy"
+                  format="webp"
                 />
-              </span>
-              <span v-if="media.kind === 'video'" class="product-media-thumbnail__badge" aria-hidden="true">
-                <Icon name="lucide:play" />
-              </span>
-            </button>
+                <span v-else class="product-media-thumbnail__placeholder">
+                  <Icon
+                    :name="media.kind === 'video' ? 'lucide:video' : 'lucide:image-off'"
+                    aria-hidden="true"
+                  />
+                </span>
+                <span v-if="media.kind === 'video'" class="product-media-thumbnail__badge" aria-hidden="true">
+                  <Icon name="lucide:play" />
+                </span>
+              </button>
+              <div v-else class="product-media-thumbnail product-media-thumbnail--placeholder" aria-hidden="true">
+                <span class="product-media-thumbnail__placeholder">
+                  <Icon name="lucide:image" aria-hidden="true" />
+                </span>
+              </div>
+            </template>
           </div>
         </div>
       </section>
@@ -284,11 +294,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRuntimeConfig, useAsyncData, useHead, useRequestURL } from '#imports'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import {
+  createError,
+  useAsyncData,
+  useHead,
+  useI18n,
+  useLocalePath,
+  useRequestURL,
+  useRoute,
+  useRuntimeConfig,
+} from '#imports'
 import { useCart } from '~/composables/useCart'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
+import { useSiteSettings } from '~/composables/usePublicSettings'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import type { CheckoutPaymentOption } from '~/types/payment'
 import {
@@ -299,6 +319,17 @@ import {
   type PaymentLogoAsset,
   type StorefrontPaymentMethod,
 } from '~/utils/paymentPresentation'
+import {
+  buildProductSeoDocument,
+  resolveProductMetaDescription,
+  resolveProductMetaTitle,
+} from '~/utils/seo/product'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import { buildProductPath, toAbsoluteSeoUrl } from '~/utils/seo/urls'
+import {
+  type StorefrontSeoAlternateLinkEntry,
+  useStorefrontSeoRouteOverride,
+} from '~/composables/seo/useStorefrontSeoLinks'
 
 definePageMeta({
   layout: 'products',
@@ -410,6 +441,11 @@ interface ProductInformationTemplate {
   locale?: string
 }
 
+interface ProductLocalizedRoute {
+  locale: string
+  slug: string
+}
+
 interface ProductDisplayPrice {
   amount: number
   currency: string
@@ -438,6 +474,7 @@ interface GoProduct {
   thumbnail?: string
   meta_title?: string
   meta_description?: string
+  localized_routes?: ProductLocalizedRoute[]
   after_sales_template?: ProductInformationTemplate | null
   packaging_template?: ProductInformationTemplate | null
   spec_values?: ProductSpecValue[]
@@ -448,7 +485,9 @@ interface GoProduct {
 const route = useRoute()
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
+const { siteSettings } = useSiteSettings()
 const { locale, t } = useI18n()
+const localePath = useLocalePath()
 const selectedVariantId = ref<number | null>(null)
 const selectedProductPaymentMethod = ref<StorefrontPaymentMethod>('card')
 const maxProductQuantity = 99
@@ -478,43 +517,60 @@ const siteOrigin = computed(() => {
   return requestUrl.origin.replace(/\/$/, '')
 })
 
-const { data: product, pending, error } = await useAsyncData<GoProduct | null>(
-  () => `go-product:${slug.value}`,
+const { data: product, pending } = await useAsyncData<GoProduct>(
+  () => [
+    'go-product',
+    locale.value || 'default',
+    slug.value,
+    displayCurrency.value || 'default',
+    countryCode.value || 'ZZ',
+  ].map((part) => encodeURIComponent(String(part))).join(':'),
   async () => {
     if (!slug.value) {
-      return null
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Product not found',
+      })
     }
 
-    try {
-      const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
-      const response = await $fetch<any>(
-        `${base}/products/${encodeURIComponent(slug.value)}`,
-        {
-          headers: {
-            accept: 'application/json',
-            ...(locale.value ? { 'Accept-Language': String(locale.value) } : {}),
-            ...(displayCurrency.value ? { 'X-Display-Currency': displayCurrency.value } : {}),
-            ...(countryCode.value && countryCode.value !== 'ZZ' ? { 'X-Market-Country': countryCode.value } : {}),
-          },
-          params: {
-            locale: locale.value || undefined,
-            currency: displayCurrency.value || undefined,
-            country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
-          },
-        }
-      )
-      return response?.data || response || null
-    } catch (err) {
-      console.warn('Failed to load product', err)
-      return null
+    const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+    const response = await $fetch<any>(
+      `${base}/products/${encodeURIComponent(slug.value)}`,
+      {
+        headers: {
+          accept: 'application/json',
+          ...(locale.value ? { 'Accept-Language': String(locale.value) } : {}),
+          ...(displayCurrency.value ? { 'X-Display-Currency': displayCurrency.value } : {}),
+          ...(countryCode.value && countryCode.value !== 'ZZ' ? { 'X-Market-Country': countryCode.value } : {}),
+        },
+        params: {
+          locale: locale.value || undefined,
+          currency: displayCurrency.value || undefined,
+          country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
+        },
+      }
+    )
+    const data = response?.data || response
+    if (!data || typeof data !== 'object') {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Product not found',
+      })
     }
+    return data as GoProduct
   },
   {
     server: true,
-    default: () => null,
     watch: [() => slug.value, () => locale.value, () => displayCurrency.value, () => countryCode.value]
   }
 )
+
+if (!pending.value && !product.value) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Product not found',
+  })
+}
 
 const stripHtml = (value: string | null | undefined): string => {
   if (!value) return ''
@@ -540,20 +596,16 @@ const displayPriceSnapshotForCurrency = (displayPrices?: ProductDisplayPrice[]) 
   return validDisplayPrice(snapshot)
 }
 
-const metaTitle = computed(() => product.value?.meta_title || product.value?.name || 'Product')
+const metaTitle = computed(() => resolveProductMetaTitle(
+  product.value?.meta_title,
+  product.value?.name,
+))
 
-const rawDescription = computed(() => {
-  if (product.value?.meta_description) {
-    return product.value.meta_description
-  }
-  return stripHtml(product.value?.short_description || product.value?.description || '')
-})
-
-const metaDescription = computed(() => {
-  const text = rawDescription.value
-  if (text.length <= 160) return text
-  return `${text.slice(0, 157)}...`
-})
+const metaDescription = computed(() => resolveProductMetaDescription({
+  metaDescription: product.value?.meta_description,
+  shortDescription: product.value?.short_description,
+  description: product.value?.description,
+}))
 
 const productSummaryDescription = computed(() => {
   const text = stripHtml(product.value?.description || '')
@@ -595,6 +647,8 @@ const parseVariantOptions = (variant: ProductVariant | null | undefined): Record
 }
 
 const selectedMediaId = ref<string | null>(null)
+const productMediaSlotCount = 5
+const productMediaThumbnailsRef = ref<HTMLElement | null>(null)
 
 const productGalleryItems = computed<ProductGalleryItem[]>(() => {
   const currentProduct = product.value
@@ -664,6 +718,48 @@ const productGalleryItems = computed<ProductGalleryItem[]>(() => {
   ]
 })
 
+const productMediaSlots = computed<Array<ProductGalleryItem | null>>(() => {
+  const slotCount = Math.max(productMediaSlotCount, productGalleryItems.value.length)
+  return Array.from({ length: slotCount }, (_, index) => productGalleryItems.value[index] || null)
+})
+
+const productMediaSlotsOverflowing = computed(() => productGalleryItems.value.length > productMediaSlotCount)
+
+const centerSelectedMediaThumbnail = async () => {
+  const mediaId = selectedMediaId.value
+  if (!mediaId) return
+
+  await nextTick()
+  const container = productMediaThumbnailsRef.value
+  if (!container) return
+
+  const selected = Array.from(container.querySelectorAll<HTMLElement>('[data-media-id]'))
+    .find((element) => element.dataset.mediaId === mediaId)
+  if (!selected) return
+
+  const containerRect = container.getBoundingClientRect()
+  const selectedRect = selected.getBoundingClientRect()
+  const scrollOptions: ScrollToOptions = {
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+  }
+
+  if (container.scrollHeight > container.clientHeight + 1) {
+    scrollOptions.top = container.scrollTop
+      + selectedRect.top
+      - containerRect.top
+      - ((container.clientHeight - selectedRect.height) / 2)
+  }
+
+  if (container.scrollWidth > container.clientWidth + 1) {
+    scrollOptions.left = container.scrollLeft
+      + selectedRect.left
+      - containerRect.left
+      - ((container.clientWidth - selectedRect.width) / 2)
+  }
+
+  container.scrollTo(scrollOptions)
+}
+
 const primaryGalleryItem = computed(() => {
   return productGalleryItems.value.find((item) => item.isPrimary) || productGalleryItems.value[0] || null
 })
@@ -714,6 +810,14 @@ watch(productGalleryItems, (items) => {
   if (nextItem) selectedMediaId.value = nextItem.id
 }, { immediate: true })
 
+watch(selectedMediaId, () => {
+  void centerSelectedMediaThumbnail()
+}, { flush: 'post' })
+
+onMounted(() => {
+  void centerSelectedMediaThumbnail()
+})
+
 const primaryImage = computed(() => {
   if (product.value?.thumbnail) {
     return product.value.thumbnail
@@ -756,7 +860,36 @@ const primaryMediaThumbnail = computed(() => {
   return media.thumbnailUrl || media.url
 })
 
-const canonicalUrl = computed(() => `${siteOrigin.value}/shop/${product.value?.slug || slug.value}`)
+const localizedProductPath = computed(() => localePath(
+  buildProductPath(product.value?.slug || slug.value),
+))
+
+const localizedProductSeoRoutes = computed<StorefrontSeoAlternateLinkEntry[] | null>(() => {
+  if (!product.value || !Array.isArray(product.value.localized_routes)) {
+    return null
+  }
+
+  const routes = product.value.localized_routes
+    .map((entry) => {
+      const code = String(entry?.locale || '').trim()
+      const translatedSlug = String(entry?.slug || '').trim()
+      if (!code || !translatedSlug) return null
+      return {
+        code,
+        path: localePath(buildProductPath(translatedSlug), code as any),
+      }
+    })
+    .filter((entry): entry is StorefrontSeoAlternateLinkEntry => Boolean(entry))
+
+  return routes.length ? routes : null
+})
+
+useStorefrontSeoRouteOverride(localizedProductSeoRoutes)
+
+const canonicalUrl = computed(() => toAbsoluteSeoUrl(
+  siteOrigin.value,
+  localizedProductPath.value,
+))
 
 const shopProduct = computed(() => {
   return product.value ? normalizeShopProduct(product.value) : null
@@ -1356,86 +1489,103 @@ const specGroups = computed(() => {
   return [...groups.entries()].map(([name, items]) => ({ name, items }))
 })
 
-const productSchema = computed(() => {
+const productSeoDocument = computed(() => {
   if (!product.value) return null
 
-  const images: string[] = []
-  if (product.value.thumbnail) {
-    images.push(product.value.thumbnail)
+  const variantSeoPath = (variantId: number) => (
+    `${localizedProductPath.value}?variant=${encodeURIComponent(String(variantId))}`
+  )
+  const variantSeoPrice = (variant: ProductVariant) => {
+    const displayPrice = validDisplayPrice(variant.display_price)
+      || displayPriceSnapshotForCurrency(variant.display_prices)
+    return {
+      amount: displayPrice?.amount ?? Number(variant.sale_price ?? variant.price ?? 0),
+      currency: displayPrice?.currency
+        || normalizeCurrencyCode(variant.currency || product.value?.currency)
+        || 'USD',
+    }
   }
-  productImages.value.forEach((img) => {
-    if (img.url) images.push(img.url)
+  const seoVariants = activeVariants.value.map((variant) => {
+    const price = variantSeoPrice(variant)
+    return {
+      id: variant.id,
+      name: variantLabel(variant),
+      sku: variant.sku,
+      price: price.amount,
+      currency: price.currency,
+      availability: variant.availability,
+      localizedPath: variantSeoPath(variant.id),
+      imageUrls: productImages.value.map((image) => image.url),
+    }
   })
 
-  const offers = (() => {
-    const raw = effectivePrice.value
-    if (raw == null) return null
-    const numeric = Number(raw)
-    if (!Number.isFinite(numeric)) return null
-    const currencyCode = currentCurrency.value
-    if (!currencyCode) return null
-    return {
-      '@type': 'Offer',
-      price: numeric,
-      priceCurrency: currencyCode,
-      availability: selectedAvailability.value === 'in_stock'
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      url: canonicalUrl.value
-    }
-  })()
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: metaTitle.value,
-    description: metaDescription.value,
-    image: images,
-    offers: offers || undefined
-  }
+  return buildProductSeoDocument(
+    {
+      name: product.value.name,
+      brand: siteSettings.value.brandTitle,
+      metaTitle: product.value.meta_title,
+      metaDescription: product.value.meta_description,
+      shortDescription: product.value.short_description,
+      description: product.value.description,
+      sku: product.value.sku,
+      imageUrls: [
+        product.value.thumbnail,
+        ...productImages.value.map((image) => image.url),
+      ],
+      offer: {
+        price: currentDisplayPrice.value.amount,
+        currency: currentDisplayPrice.value.currency,
+        availability: selectedAvailability.value,
+        sku: selectedVariant.value?.sku || product.value.sku,
+      },
+      productGroupId: `product-${product.value.id}`,
+      variesBy: variantOptionDefinitions.value.map((definition) => (
+        `https://schema.org/${String(definition.slug || '').trim()}`
+      )),
+      variants: seoVariants,
+    },
+    {
+      siteOrigin: siteOrigin.value,
+      localizedPath: localizedProductPath.value,
+    },
+  )
 })
 
 useHead(() => {
+  const seo = productSeoDocument.value
+  const seoTitle = seo?.title || metaTitle.value
+  const seoDescription = seo?.description || metaDescription.value
+  const seoCanonicalUrl = seo?.canonicalUrl || canonicalUrl.value
   const metaEntries = [
-    { name: 'description', content: metaDescription.value },
-    { property: 'og:title', content: metaTitle.value },
-    { property: 'og:description', content: metaDescription.value },
+    { name: 'description', content: seoDescription },
+    { property: 'og:title', content: seoTitle },
+    { property: 'og:description', content: seoDescription },
     { property: 'og:type', content: 'product' },
-    { property: 'og:url', content: canonicalUrl.value },
+    { property: 'og:url', content: seoCanonicalUrl },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: metaTitle.value },
-    { name: 'twitter:description', content: metaDescription.value }
+    { name: 'twitter:title', content: seoTitle },
+    { name: 'twitter:description', content: seoDescription }
   ]
 
-  if (primaryImage.value) {
-    metaEntries.push({ property: 'og:image', content: primaryImage.value })
-    metaEntries.push({ name: 'twitter:image', content: primaryImage.value })
+  const seoImage = seo?.images[0] || ''
+  if (seoImage) {
+    metaEntries.push({ property: 'og:image', content: seoImage })
+    metaEntries.push({ name: 'twitter:image', content: seoImage })
   }
 
-  if (formattedPrice.value) {
-    metaEntries.push({ property: 'product:price:amount', content: formattedPrice.value.replace(/[^0-9.]/g, '') })
+  const seoOffer = seo?.schema?.['@type'] === 'Product' ? seo.schema.offers : null
+  if (seoOffer) {
+    metaEntries.push({ property: 'product:price:amount', content: seoOffer.price.toFixed(2) })
+    metaEntries.push({ property: 'product:price:currency', content: seoOffer.priceCurrency })
   }
 
   return {
-    title: metaTitle.value,
+    title: seoTitle,
     meta: metaEntries.filter((entry) => Object.values(entry).every((value) => {
       if (typeof value !== 'string') return true
       return value.trim().length > 0
     })),
-    link: [
-      {
-        rel: 'canonical',
-        href: canonicalUrl.value
-      }
-    ],
-    script: productSchema.value
-      ? [
-          {
-            type: 'application/ld+json',
-            children: JSON.stringify(productSchema.value)
-          }
-        ]
-      : []
+    script: seo?.schema ? [createSeoJsonLdScript(seo.schema)] : []
   }
 })
 </script>
@@ -1483,9 +1633,10 @@ useHead(() => {
 }
 
 .product-media-layout {
+  --product-media-thumb-gap: 0.65rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.85rem;
+  gap: var(--product-media-thumb-gap);
   min-width: 0;
 }
 
@@ -1564,10 +1715,14 @@ useHead(() => {
 .product-media-thumbnails {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.65rem;
+  gap: var(--product-media-thumb-gap);
   min-width: 0;
+  min-height: 0;
   overflow-x: auto;
   padding: 0.1rem 0.1rem 0.35rem;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scroll-padding-inline: 50%;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
@@ -1588,9 +1743,20 @@ useHead(() => {
   transition: border-color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
 }
 
+.product-media-thumbnail--placeholder {
+  cursor: default;
+  border-style: dashed;
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .product-media-thumbnail:hover {
   border-color: rgba(255, 255, 255, 0.46);
   transform: translateY(-1px);
+}
+
+.product-media-thumbnail--placeholder:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: none;
 }
 
 .product-media-thumbnail--active {
@@ -1671,25 +1837,41 @@ useHead(() => {
 
 @media (min-width: 900px) {
   .product-media-layout {
-    grid-template-columns: minmax(0, 1fr) clamp(5rem, 7vw, 6.75rem);
+    grid-template-columns: clamp(3.5rem, 5vw, 5.25rem) minmax(0, 1fr);
     width: 100%;
     align-items: stretch;
     gap: 1rem;
   }
 
+  .product-media-stage {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   .product-media-thumbnails {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: stretch;
     flex-direction: column;
+    justify-content: flex-start;
     height: 100%;
     max-height: 100%;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: 0.1rem 0.25rem 0.1rem 0.1rem;
+    padding: 0.1rem;
+    scroll-padding-block: 50%;
+  }
+
+  .product-media-thumbnails--centered {
+    justify-content: center;
   }
 
   .product-media-thumbnail {
     flex: 0 0 auto;
     width: 100%;
     height: auto;
+    aspect-ratio: 1 / 1;
   }
 }
 

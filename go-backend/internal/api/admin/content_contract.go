@@ -17,10 +17,6 @@ type postCreateRequest struct {
 	Locale             string `json:"locale" binding:"required"`
 	FeaturedImg        string `json:"featured_image"`
 	Tags               string `json:"tags"`
-	MetaTitle          string `json:"meta_title"`
-	MetaDesc           string `json:"meta_description"`
-	MetaKeywords       string `json:"meta_keywords"`
-	CanonicalURL       string `json:"canonical_url"`
 	TranslationGroupID *uint  `json:"translation_group_id"`
 }
 
@@ -33,10 +29,6 @@ type postUpdateRequest struct {
 	Locale             *string `json:"locale" binding:"omitempty,min=1"`
 	FeaturedImg        *string `json:"featured_image"`
 	Tags               *string `json:"tags"`
-	MetaTitle          *string `json:"meta_title"`
-	MetaDesc           *string `json:"meta_description"`
-	MetaKeywords       *string `json:"meta_keywords"`
-	CanonicalURL       *string `json:"canonical_url"`
 	TranslationGroupID *uint   `json:"translation_group_id"`
 }
 

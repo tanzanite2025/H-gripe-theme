@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"strings"
 	"tanzanite/internal/domain/setting"
 )
 
@@ -29,7 +28,7 @@ func (s *AdminSettingsService) ListSettings(locale, group string) ([]setting.Set
 	if err != nil {
 		return nil, err
 	}
-	return filterDomainManagedSettings(settings), nil
+	return FilterDomainManagedSettings(settings), nil
 }
 
 func (s *AdminSettingsService) GetSetting(key, locale string) (*setting.Setting, error) {
@@ -79,8 +78,7 @@ func (s *AdminSettingsService) BatchUpdateSettings(req setting.BatchUpdateSettin
 }
 
 func rejectDomainManagedSettingGroup(group string) error {
-	normalized := strings.ToLower(strings.TrimSpace(group))
-	if normalized == "loyalty" || normalized == "redeem" || normalized == "currency" || normalized == "payment_secret" {
+	if IsDomainManagedSettingGroup(group) {
 		return ErrSettingManagedByDomainService
 	}
 	return nil
@@ -102,7 +100,7 @@ func (s *AdminSettingsService) GetGroups() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return filterDomainManagedSettingGroups(groups), nil
+	return FilterDomainManagedSettingGroups(groups), nil
 }
 
 func (s *AdminSettingsService) GetByGroup(group, locale string) ([]setting.Setting, error) {
@@ -120,34 +118,10 @@ func rejectDomainManagedSetting(req setting.UpdateSettingRequest) error {
 }
 
 func rejectDomainManagedSettingKey(key string) error {
-	normalized := strings.ToLower(strings.TrimSpace(key))
-	if strings.HasPrefix(normalized, "tz_loyalty_") ||
-		strings.HasPrefix(normalized, "tz_redeem_") ||
-		strings.HasPrefix(normalized, "currency_") ||
-		strings.HasPrefix(normalized, "payment_gateway_") {
+	if IsDomainManagedSettingKey(key) {
 		return ErrSettingManagedByDomainService
 	}
 	return nil
-}
-
-func filterDomainManagedSettings(settings []setting.Setting) []setting.Setting {
-	filtered := make([]setting.Setting, 0, len(settings))
-	for _, item := range settings {
-		if rejectDomainManagedSettingGroup(item.Group) == nil && rejectDomainManagedSettingKey(item.Key) == nil {
-			filtered = append(filtered, item)
-		}
-	}
-	return filtered
-}
-
-func filterDomainManagedSettingGroups(groups []string) []string {
-	filtered := make([]string, 0, len(groups))
-	for _, group := range groups {
-		if rejectDomainManagedSettingGroup(group) == nil {
-			filtered = append(filtered, group)
-		}
-	}
-	return filtered
 }
 
 func normalizeSettingRequest(req setting.UpdateSettingRequest) setting.Setting {

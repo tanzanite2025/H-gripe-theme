@@ -9,8 +9,8 @@
   "searchProductPlaceholder": "أدخل اسم المنتج...",
   "searchProducts": "البحث عن المنتجات",
   "search": "Search",
-  "wheelsbuildBlog": {
-    "desc": "Wheelbuilding articles & updates"
+  "blog": {
+    "desc": "Articles & updates"
   },
   "tireGuides": {
     "desc": "Tire width to rim inner width helper"

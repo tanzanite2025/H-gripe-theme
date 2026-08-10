@@ -11,14 +11,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 import {
   useRuntimeConfig,
-  useRoute,
   useHead,
-  useSwitchLocalePath,
-  useI18n,
-  useState,
   useRequestURL
 } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
@@ -33,6 +29,9 @@ import {
   useQuickBuySettings,
   useSiteSettings
 } from '~/composables/usePublicSettings'
+import { useSeoSettings } from '~/composables/useSeoSettings'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
 const auth = useAuth()
@@ -42,6 +41,11 @@ const { siteSettings: resolvedSettings } = useSiteSettings()
 
 // Use a single source of truth for site title (Customizer preview -> API)
 const { siteTitle } = useSiteTitle()
+const { seoSettings } = useSeoSettings()
+
+const defaultMetaTitle = computed(() => {
+  return seoSettings.value.metaTitle || siteTitle.value
+})
 
 const siteUrl = computed(() => {
   const value = (config.public as { siteUrl?: string }).siteUrl
@@ -50,6 +54,11 @@ const siteUrl = computed(() => {
 })
 
 const defaultDescription = computed(() => {
+  const fromSeo = seoSettings.value.metaDescription
+  if (fromSeo.length) {
+    return fromSeo
+  }
+
   const fromSettings = (resolvedSettings.value.siteDescription || '').toString().trim()
   if (fromSettings.length) {
     return fromSettings
@@ -166,117 +175,16 @@ const organizationSchema = computed(() => {
 const { quickBuySettings } = useQuickBuySettings()
 const quickBuyConfig = computed<QuickBuyConfigProp | null>(() => quickBuySettings.value)
 
-const route = useRoute()
-const { locales, defaultLocale, locale } = useI18n()
-const switchLocalePath = useSwitchLocalePath()
-
-type AlternateLinkOverrideEntry = {
-  code: string
-  path: string
-}
-
-const alternateLinksOverride = useState<AlternateLinkOverrideEntry[] | null>(
-  'alternateLinksOverride',
-  () => null
-)
-
-watch(
-  () => route.fullPath,
-  () => {
-    alternateLinksOverride.value = null
-  },
-  { immediate: true }
-)
-
-type RawLocale = string | { code: string; iso?: string }
-
-interface LocaleEntry {
-  code: string
-  iso?: string
-}
-
-const localeSource = computed<RawLocale[]>(() => {
-  const source = locales as unknown
-  if (Array.isArray(source)) {
-    return source as RawLocale[]
-  }
-  if (typeof source === 'object' && source !== null && 'value' in source) {
-    const value = (source as { value?: RawLocale[] }).value
-    if (Array.isArray(value)) {
-      return value
-    }
-  }
-  return []
-})
-
-const resolvedLocales = computed<LocaleEntry[]>(() =>
-  localeSource.value.map((entry) =>
-    typeof entry === 'string' ? { code: entry } : { code: entry.code, iso: entry.iso }
-  )
-)
-
-const makeAbsoluteUrl = (path: string) => {
-  if (!siteUrl.value) return path
-  try {
-    return new URL(path, siteUrl.value + '/').toString()
-  } catch (error) {
-    return path
-  }
-}
-
-const canonicalUrl = computed(() => makeAbsoluteUrl(route.fullPath || '/'))
-
-const alternateLinks = computed(() => {
-  if (Array.isArray(alternateLinksOverride.value) && alternateLinksOverride.value.length) {
-    return alternateLinksOverride.value.map((override) => {
-      const localeEntry = resolvedLocales.value.find((entry) => entry.code === override.code)
-      return {
-        hreflang: localeEntry?.iso || override.code,
-        href: makeAbsoluteUrl(override.path)
-      }
-    })
-  }
-
-  return resolvedLocales.value.map((entry) => {
-    const targetPath = switchLocalePath(entry.code as any) || '/'
-    return {
-      hreflang: entry.iso || entry.code,
-      href: makeAbsoluteUrl(targetPath)
-    }
-  })
-})
-
-const defaultLocaleCode = computed(() => {
-  const raw = defaultLocale as unknown
-  if (typeof raw === 'string') {
-    return raw
-  }
-  if (typeof raw === 'object' && raw !== null && 'value' in raw) {
-    const value = (raw as { value?: string }).value
-    if (typeof value === 'string') {
-      return value
-    }
-  }
-  return 'en'
-})
-
-const xDefaultLink = computed(() => {
-  if (Array.isArray(alternateLinksOverride.value) && alternateLinksOverride.value.length) {
-    const override = alternateLinksOverride.value.find((entry) => entry.code === defaultLocaleCode.value)
-    if (override?.path) {
-      return makeAbsoluteUrl(override.path)
-    }
-  }
-
-  const targetPath = switchLocalePath(defaultLocaleCode.value as any) || '/'
-  return makeAbsoluteUrl(targetPath)
+const { canonicalUrl, alternateLinks, xDefaultLink } = useStorefrontSeoLinks({
+  siteOrigin: siteUrl,
 })
 
 useHead(() => ({
+  title: defaultMetaTitle.value,
   titleTemplate: (chunk?: string) => {
     const title = siteTitle.value
     if (chunk && title) return `${chunk} · ${title}`
-    return chunk || title
+    return chunk || defaultMetaTitle.value
   },
   link: [
     { rel: 'canonical', href: canonicalUrl.value },
@@ -291,19 +199,14 @@ useHead(() => ({
     { name: 'description', content: defaultDescription.value },
     { property: 'og:site_name', content: siteTitle.value },
     { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: siteTitle.value },
+    { property: 'og:title', content: defaultMetaTitle.value },
     { property: 'og:description', content: defaultDescription.value },
     { property: 'og:url', content: canonicalUrl.value },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: siteTitle.value },
+    { name: 'twitter:title', content: defaultMetaTitle.value },
     { name: 'twitter:description', content: defaultDescription.value }
   ],
-  script: [
-    {
-      type: 'application/ld+json',
-      children: JSON.stringify(organizationSchema.value)
-    }
-  ]
+  script: [createSeoJsonLdScript(organizationSchema.value)]
 }))
 </script>
 

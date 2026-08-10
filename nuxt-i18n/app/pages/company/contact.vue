@@ -112,6 +112,7 @@ import { definePageMeta, useHead, useI18n } from '#imports'
 import ContactLocationMap from '~/components/ContactLocationMap.vue'
 import { contactLocation } from '~/utils/contactLocation'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 
 const { t } = useI18n()
 
@@ -121,32 +122,27 @@ definePageMeta({
 
 useHead({
   title: 'Contact Us',
-  script: [
-    {
-      type: 'application/ld+json',
-      children: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'LocalBusiness',
-        name: contactLocation.name,
-        email: 'support@tanzanite.site',
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: contactLocation.addressText,
-          addressLocality: 'Xiamen',
-          addressRegion: 'Fujian',
-          addressCountry: 'CN',
-        },
-        ...(contactLocation.lat && contactLocation.lng
-          ? {
-              geo: {
-                '@type': 'GeoCoordinates',
-                latitude: contactLocation.lat,
-                longitude: contactLocation.lng,
-              },
-            }
-          : {}),
-      }),
-    } as any,
-  ],
+  script: [createSeoJsonLdScript({
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: contactLocation.name,
+    email: 'support@tanzanite.site',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: contactLocation.addressText,
+      addressLocality: 'Xiamen',
+      addressRegion: 'Fujian',
+      addressCountry: 'CN',
+    },
+    ...(contactLocation.lat && contactLocation.lng
+      ? {
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: contactLocation.lat,
+            longitude: contactLocation.lng,
+          },
+        }
+      : {}),
+  })],
 })
 </script>

@@ -17,10 +17,6 @@ type PostCreateInput struct {
 	Locale             string
 	FeaturedImg        string
 	Tags               string
-	MetaTitle          string
-	MetaDesc           string
-	MetaKeywords       string
-	CanonicalURL       string
 	TranslationGroupID *uint
 }
 
@@ -33,10 +29,6 @@ type PostUpdateInput struct {
 	Locale                   *string
 	FeaturedImg              *string
 	Tags                     *string
-	MetaTitle                *string
-	MetaDesc                 *string
-	MetaKeywords             *string
-	CanonicalURL             *string
 	TranslationGroupID       *uint
 	UpdateTranslationGroupID bool
 }
@@ -90,10 +82,6 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 		Locale:             locale,
 		FeaturedImg:        input.FeaturedImg,
 		Tags:               input.Tags,
-		MetaTitle:          input.MetaTitle,
-		MetaDesc:           input.MetaDesc,
-		MetaKeywords:       input.MetaKeywords,
-		CanonicalURL:       input.CanonicalURL,
 		TranslationGroupID: input.TranslationGroupID,
 	}
 
@@ -173,18 +161,6 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 	}
 	if input.Tags != nil {
 		existingPost.Tags = *input.Tags
-	}
-	if input.MetaTitle != nil {
-		existingPost.MetaTitle = *input.MetaTitle
-	}
-	if input.MetaDesc != nil {
-		existingPost.MetaDesc = *input.MetaDesc
-	}
-	if input.MetaKeywords != nil {
-		existingPost.MetaKeywords = *input.MetaKeywords
-	}
-	if input.CanonicalURL != nil {
-		existingPost.CanonicalURL = *input.CanonicalURL
 	}
 	if input.UpdateTranslationGroupID {
 		existingPost.TranslationGroupID = input.TranslationGroupID

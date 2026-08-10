@@ -70,6 +70,7 @@ import { useI18n } from '#imports'
 import QuickBuyModal from '@/components/QuickBuy.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuySettings } from '~/composables/usePublicSettings'
+import type { QuickBuyConfig } from '~/utils/quickBuy/types'
 
 // floating submenu state
 const isOpen = ref(false)
@@ -95,18 +96,10 @@ const openQuick = () => {
 
 // removed old share popup and outside-click listeners; modal closes by overlay click
 
-interface QuickBuyConfig {
-  steps?: unknown[]
-  storeApiBase?: string
-  cartUrl?: string
-  checkoutUrl?: string
-}
-
-// accept optional config; keep flexible to match QuickBuyModal expected shape
 const props = defineProps<{ config?: QuickBuyConfig | null }>()
 const { quickBuySettings } = useQuickBuySettings()
 const quickBuyConfig = computed<QuickBuyConfig | null>(() =>
-  props.config || (quickBuySettings.value as QuickBuyConfig | null) || null
+  props.config || quickBuySettings.value || null
 )
 
 const { t: $t } = useI18n()

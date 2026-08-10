@@ -165,17 +165,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from '#imports'
-
-const COOKIE_CONSENT_KEY = 'tanzanite_cookie_consent'
+import {
+  COOKIE_CONSENT_KEY,
+  COOKIE_CONSENT_UPDATED_EVENT,
+  readCookieConsent,
+  type CookieConsentPreferences,
+} from '~/utils/cookieConsent'
 const { t } = useI18n()
-
-interface CookiePreferences {
-  essential: boolean
-  performance: boolean
-  preference: boolean
-  advertising: boolean
-  timestamp: number
-}
 
 const showBanner = ref(false)
 const showModal = ref(false)
@@ -198,22 +194,9 @@ const hideAll = () => {
 }
 
 // 检查是否已有保存的偏好
-const checkExistingConsent = (): CookiePreferences | null => {
-  if (typeof window === 'undefined') return null
-  
-  const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
-  if (!stored) return null
-  
-  try {
-    return JSON.parse(stored) as CookiePreferences
-  } catch {
-    return null
-  }
-}
-
 // 保存偏好到 localStorage
-const saveConsent = (prefs: Omit<CookiePreferences, 'essential' | 'timestamp'>) => {
-  const consent: CookiePreferences = {
+const saveConsent = (prefs: Omit<CookieConsentPreferences, 'essential' | 'timestamp'>) => {
+  const consent: CookieConsentPreferences = {
     essential: true, // 始终为 true
     ...prefs,
     timestamp: Date.now()
@@ -223,7 +206,7 @@ const saveConsent = (prefs: Omit<CookiePreferences, 'essential' | 'timestamp'>) 
   showModal.value = false
   
   // 触发自定义事件，供其他组件监听
-  window.dispatchEvent(new CustomEvent('cookie-consent-updated', { detail: consent }))
+  window.dispatchEvent(new CustomEvent(COOKIE_CONSENT_UPDATED_EVENT, { detail: consent }))
 }
 
 // 接受全部
@@ -254,7 +237,7 @@ const handleSavePreferences = () => {
 }
 
 onMounted(() => {
-  const existing = checkExistingConsent()
+  const existing = readCookieConsent()
   if (!existing) {
     // 没有保存的偏好，显示弹窗
     showBanner.value = true

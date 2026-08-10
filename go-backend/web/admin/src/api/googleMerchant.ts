@@ -21,6 +21,9 @@ export default {
   async listOffers() {
     return unwrap(await axios.get('/api/admin/google-merchant/offers'))
   },
+  async reconcile() {
+    return unwrap(await axios.post('/api/admin/google-merchant/reconcile'))
+  },
   async createOffer(payload: Record<string, any>) {
     return unwrap(await axios.post('/api/admin/google-merchant/offers', payload))
   },

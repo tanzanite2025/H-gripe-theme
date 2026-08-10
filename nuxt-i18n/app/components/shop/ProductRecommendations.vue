@@ -183,6 +183,7 @@ const trackRecommendationImpression = () => {
   if (!hasRequested.value || recommendationsLoading.value || cards.length === 0) return
 
   const signature = [
+    requestKey.value,
     recommendationRequestId.value || recommendationSource.value,
     cards.map((product) => String(product.id)).join(','),
   ].join(':')

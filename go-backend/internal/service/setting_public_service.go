@@ -198,47 +198,6 @@ func (s *SettingService) GetEmailSettings(locale string) (*setting.EmailSettings
 	return &emailSettings, nil
 }
 
-// GetSEOSettings 获取SEO设置
-func (s *SettingService) GetSEOSettings(locale string) (*setting.SEOSettings, error) {
-	cacheKey := settingsStructuredCacheKey("seo", locale)
-
-	// 尝试从缓存获取
-	var seoSettings setting.SEOSettings
-	if s.cache != nil && s.cache.Get(cacheKey, &seoSettings) == nil {
-		return &seoSettings, nil
-	}
-
-	// 从数据库获取
-	settings, err := s.GetPublicByGroup("seo", locale)
-	if err != nil {
-		return nil, err
-	}
-
-	// 转换为结构体
-	seoSettings = setting.SEOSettings{}
-	for _, st := range settings {
-		switch st.Key {
-		case "meta_title":
-			seoSettings.MetaTitle = st.Value
-		case "meta_description":
-			seoSettings.MetaDescription = st.Value
-		case "meta_keywords":
-			seoSettings.MetaKeywords = st.Value
-		case "google_analytics":
-			seoSettings.GoogleAnalytics = st.Value
-		case "google_tag_manager":
-			seoSettings.GoogleTagManager = st.Value
-		}
-	}
-
-	// 写入缓存
-	if s.cache != nil {
-		_ = s.cache.Set(cacheKey, &seoSettings, s.cacheTTL)
-	}
-
-	return &seoSettings, nil
-}
-
 // GetSocialSettings 获取社交媒体设置
 func (s *SettingService) GetSocialSettings(locale string) (*setting.SocialSettings, error) {
 	cacheKey := settingsStructuredCacheKey("social", locale)

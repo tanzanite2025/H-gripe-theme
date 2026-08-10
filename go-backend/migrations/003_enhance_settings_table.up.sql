@@ -50,12 +50,16 @@ ON CONFLICT (key, locale) DO NOTHING;
 
 -- SEO 设置
 INSERT INTO settings (key, value, type, locale, "group", is_public, description, created_at, updated_at)
-VALUES 
-    ('meta_title', 'Tanzanite - Premium E-commerce', 'string', 'en', 'seo', true, 'Default meta title', NOW(), NOW()),
-    ('meta_description', 'Shop premium products at Tanzanite', 'string', 'en', 'seo', true, 'Default meta description', NOW(), NOW()),
-    ('meta_keywords', 'ecommerce, shop, products', 'string', 'en', 'seo', true, 'Default meta keywords', NOW(), NOW()),
-    ('google_analytics', '', 'string', 'en', 'seo', true, 'Google Analytics ID', NOW(), NOW()),
-    ('google_tag_manager', '', 'string', 'en', 'seo', true, 'Google Tag Manager ID', NOW(), NOW())
+VALUES
+    ('home_meta_title', 'Tanzanite - Premium E-commerce', 'string', 'en', 'seo', true, 'Default home meta title', NOW(), NOW()),
+    ('home_meta_description', 'Shop premium products at Tanzanite', 'string', 'en', 'seo', true, 'Default home meta description', NOW(), NOW())
+ON CONFLICT (key, locale) DO NOTHING;
+
+-- Analytics 设置
+INSERT INTO settings (key, value, type, locale, "group", is_public, description, created_at, updated_at)
+VALUES
+    ('google_analytics', '', 'string', 'en', 'analytics', true, 'Google Analytics measurement ID', NOW(), NOW()),
+    ('google_tag_manager', '', 'string', 'en', 'analytics', true, 'Google Tag Manager container ID', NOW(), NOW())
 ON CONFLICT (key, locale) DO NOTHING;
 
 -- 社交媒体设置

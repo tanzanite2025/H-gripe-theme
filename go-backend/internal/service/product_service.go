@@ -19,6 +19,7 @@ type ProductService struct {
 	cache                          *cache.RedisCache
 	cacheTTL                       time.Duration
 	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
+	merchantEvents                 MerchantProductEventPublisher
 }
 
 func NewProductService(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL int) *ProductService {
@@ -47,6 +48,13 @@ func (s *ProductService) SetStorefrontHTMLCacheInvalidator(invalidator *Storefro
 	s.storefrontHTMLCacheInvalidator = invalidator
 }
 
+func (s *ProductService) ConfigureMerchantEventPublisher(publisher MerchantProductEventPublisher) {
+	if s == nil {
+		return
+	}
+	s.merchantEvents = publisher
+}
+
 var (
 	ErrProductNotFound               = errors.New("product not found")
 	ErrProductSKUExists              = errors.New("product sku already exists")
@@ -58,6 +66,7 @@ var (
 	ErrProductSpecInvalid            = errors.New("product spec invalid")
 	ErrProductVariantInvalid         = errors.New("product variant invalid")
 	ErrProductMediaInvalid           = errors.New("product media invalid")
+	ErrProductTranslationInvalid     = errors.New("product translation relationship invalid")
 )
 
 type ProductSearchInput struct {
@@ -154,16 +163,8 @@ func (s *ProductService) GetRecommendationContextProduct(id uint) (*product.Prod
 }
 
 func (s *ProductService) GetPublicBySlug(slug, locale string) (*product.Product, error) {
-	result, err := s.productRepo.FindBySlug(slug, "")
-	if err != nil {
-		return nil, err
-	}
-	if result.Status != "active" {
-		return nil, ErrProductNotFound
-	}
-	result = sanitizeProductHTML(result)
-	_ = s.productRepo.IncrementViewCount(result.ID)
-	return result, nil
+	result, _, err := s.GetPublicBySlugWithRoutes(slug, locale)
+	return result, err
 }
 
 func (s *ProductService) validateInformationTemplate(id *uint, expectedKind, locale string, allowDisabled bool) error {
@@ -195,14 +196,11 @@ func (s *ProductService) validateInformationTemplate(id *uint, expectedKind, loc
 func (s *ProductService) List(locale, status string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
 	offset := (page - 1) * pageSize
 	products, total, err := s.productRepo.List(locale, status, featured, offset, pageSize)
-	if err == nil && total == 0 && locale != "" && locale != "en" {
-		products, total, err = s.productRepo.List("en", status, featured, offset, pageSize)
-	}
 	return sanitizeProductSliceHTML(products), total, err
 }
 
 func (s *ProductService) ListPublic(locale string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
-	return s.List("", "active", featured, page, pageSize)
+	return s.List(locale, "active", featured, page, pageSize)
 }
 
 func (s *ProductService) ListPublicAvailable(locale string, page, pageSize int) ([]product.Product, int64, error) {
@@ -214,7 +212,7 @@ func (s *ProductService) ListPublicAvailable(locale string, page, pageSize int) 
 	}
 
 	offset := (page - 1) * pageSize
-	products, total, err := s.productRepo.ListPublicAvailable("", offset, pageSize)
+	products, total, err := s.productRepo.ListPublicAvailable(locale, offset, pageSize)
 	return sanitizeProductSliceHTML(products), total, err
 }
 
@@ -250,7 +248,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 	}
 	offset := (page - 1) * pageSize
 	query := repository.ProductSearchQuery{
-		Locale:      "",
+		Locale:      input.Locale,
 		Status:      "active",
 		Keyword:     input.Keyword,
 		TypeSlug:    input.TypeSlug,
@@ -269,6 +267,9 @@ func (s *ProductService) Create(p *product.Product) error {
 		return err
 	}
 	s.invalidateStorefrontHTMLCache("product create")
+	if err := s.enqueueMerchantProductChange(p, "product_created"); err != nil {
+		return requireMerchantEvent(err, p, "product_created")
+	}
 	return nil
 }
 
@@ -286,6 +287,12 @@ func (s *ProductService) Update(p *product.Product) error {
 	s.clearProductCache(p)
 	s.invalidateStorefrontHTMLCache("product update")
 
+	if merchantProductCoreChanged(previousProduct, p) {
+		reason := "product_source_changed"
+		if err := s.enqueueMerchantProductChange(p, reason); err != nil {
+			return requireMerchantEvent(err, p, reason)
+		}
+	}
 	return nil
 }
 

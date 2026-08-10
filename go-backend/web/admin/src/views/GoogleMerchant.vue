@@ -2,6 +2,10 @@
   <div class="space-y-4">
     <AdminPageHeader title="Google Merchant" description="独立维护 Google 分发资料；不会修改站内商品录入内容。">
       <template #actions>
+        <Button v-if="canSubmitToGoogle" variant="outline" :disabled="reconcileLoading || loading" @click="reconcile">
+          <RefreshCw :class="['size-4', reconcileLoading ? 'animate-spin' : '']" />
+          {{ reconcileLoading ? '校准中' : '全量校准' }}
+        </Button>
         <Button variant="outline" :disabled="loading" @click="refresh">
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
           刷新
@@ -411,6 +415,7 @@ const saving = ref(false)
 const connectionSaving = ref(false)
 const oauthStarting = ref(false)
 const disconnecting = ref(false)
+const reconcileLoading = ref(false)
 const remoteLoading = ref(false)
 const products = ref<GoogleMerchantProduct[]>([])
 const offers = ref<GoogleMerchantOffer[]>([])
@@ -506,6 +511,20 @@ const refresh = async () => {
     toast.error(error?.response?.data?.message || 'Google 同步资料读取失败')
   } finally {
     loading.value = false
+  }
+}
+const reconcile = async () => {
+  reconcileLoading.value = true
+  try {
+    const result = await googleMerchantApi.reconcile()
+    const summary = result.result || {}
+    toast.success(`全量校准完成：同步 ${summary.synced || 0}，撤回 ${summary.withdrawn || 0}，跳过 ${summary.skipped || 0}`)
+    await refresh()
+  } catch (error) {
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || 'Google Merchant 全量校准失败')
+    await refresh()
+  } finally {
+    reconcileLoading.value = false
   }
 }
 const refreshRemoteProducts = async ({ append = false, pageToken = '' } = {}) => {
@@ -697,12 +716,13 @@ const statusLabel = (status?: string) => ({
   syncing: '同步中',
   synced: '已提交',
   sync_failed: '同步失败',
+  withdraw_pending: '待撤回',
   removed: '已撤回'
 })[status || ''] || status || '-'
 const statusTone = (status?: string) => {
   if (status === 'ready' || status === 'synced') return 'green'
   if (status === 'validation_failed' || status === 'sync_failed') return 'coral'
-  if (status === 'syncing') return 'amber'
+  if (status === 'syncing' || status === 'withdraw_pending') return 'amber'
   return 'gray'
 }
 const connectionLabel = computed(() => {

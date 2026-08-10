@@ -67,15 +67,6 @@ type EmailSettings struct {
 	FromName     string `json:"from_name"`
 }
 
-// SEOSettings SEO 设置
-type SEOSettings struct {
-	MetaTitle        string `json:"meta_title"`
-	MetaDescription  string `json:"meta_description"`
-	MetaKeywords     string `json:"meta_keywords"`
-	GoogleAnalytics  string `json:"google_analytics"`
-	GoogleTagManager string `json:"google_tag_manager"`
-}
-
 // SocialSettings 社交媒体设置
 type SocialSettings struct {
 	Facebook  string `json:"facebook"`
