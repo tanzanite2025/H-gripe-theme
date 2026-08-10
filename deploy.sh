@@ -200,4 +200,25 @@ if [[ "${pull_succeeded}" != "true" ]]; then
 fi
 
 "${compose[@]}" up -d --remove-orphans
+
+purge_storefront_html_cache() {
+  local attempt
+  for attempt in {1..15}; do
+    if "${compose[@]}" exec -T storefront sh -lc \
+      'wget -qO- --header="x-html-cache-purge-token: $NUXT_HTML_CACHE_PURGE_TOKEN" --header="content-type: application/json" --post-data="{}" http://127.0.0.1:3000/_internal/html-cache/purge' \
+      >/dev/null 2>&1; then
+      echo "Storefront HTML cache purged."
+      return 0
+    fi
+
+    if (( attempt < 15 )); then
+      sleep 2
+    fi
+  done
+
+  echo "ERR: failed to purge storefront HTML cache after deployment." >&2
+  return 1
+}
+
+purge_storefront_html_cache
 "${compose[@]}" ps
