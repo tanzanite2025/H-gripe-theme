@@ -27,13 +27,14 @@
         </div>
 
         <!-- Right Column: Product Grid -->
-        <div class="lg:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-           <NuxtLink 
-              v-for="card in cards" 
-              :key="card.key" 
-              :to="card.url" 
+        <div class="lg:col-span-9">
+          <div v-if="cards.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <NuxtLink
+              v-for="card in cards"
+              :key="card.key"
+              :to="card.url"
               class="group block overflow-hidden rounded-2xl premium-card relative hover:shadow-2xl hover:shadow-black/40 transition-all duration-500"
-           >
+            >
               <!-- Image Aspect -->
               <div class="relative aspect-[4/3] bg-[var(--tz-card-surface)] overflow-hidden">
                  <img
@@ -53,6 +54,12 @@
                  <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                  
                  <div class="absolute bottom-0 inset-x-0 p-5">
+                    <span
+                      v-if="card.category"
+                      class="inline-flex items-center mb-2 px-2.5 py-1 rounded-md bg-black/35 border border-white/15 text-[11px] font-medium uppercase tracking-wide text-white/80"
+                    >
+                      {{ card.category }}
+                    </span>
                     <h3 class="text-lg font-bold text-white mb-1 group-hover:text-[#B5FF6D] transition-colors">{{ card.title }}</h3>
                     <p class="tz-text-secondary text-sm line-clamp-2 mb-3">{{ card.description }}</p>
                     <div
@@ -63,7 +70,11 @@
                     </div>
                  </div>
               </div>
-           </NuxtLink>
+            </NuxtLink>
+          </div>
+          <p v-else class="rounded-xl border border-white/10 bg-white/5 p-6 text-sm tz-text-secondary">
+            {{ t('home.featuredProducts.subtitle') }}
+          </p>
         </div>
 
       </div>
@@ -73,12 +84,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAsyncData, useI18n } from '#imports'
+import { useAsyncData, useI18n, useLocalePath } from '#imports'
 import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
+import { useShopCategories } from '~/composables/useShopCategories'
 
 const { t } = useI18n()
+const localePath = useLocalePath()
 const { fetchFeaturedShopProducts } = useShopProducts()
+const { fetchCategories } = useShopCategories()
 
 interface FeaturedProductCard {
   key: string
@@ -87,6 +101,7 @@ interface FeaturedProductCard {
   price: string
   url: string
   thumbnail?: string
+  category?: string
 }
 
 const { data: featuredProductsData } = await useAsyncData(
@@ -103,33 +118,55 @@ const { data: featuredProductsData } = await useAsyncData(
   }
 )
 
+const { data: productCategoriesData } = await useAsyncData(
+  'home-product-categories',
+  () => fetchCategories().catch(() => []),
+  {
+    default: () => [],
+  }
+)
+
 const featuredProducts = computed<ShopProduct[]>(() => {
   const items = featuredProductsData.value?.items
   return Array.isArray(items) ? items : []
 })
 
+const productCategories = computed(() => {
+  return Array.isArray(productCategoriesData.value) ? productCategoriesData.value : []
+})
+
 const dynamicCards = computed<FeaturedProductCard[]>(() =>
-  featuredProducts.value.slice(0, 4).map((product) => ({
-    key: `product-${product.id}`,
-    title: product.title,
-    description: product.description || t('home.featuredProducts.subtitle'),
-    price: product.priceLabel,
-    url: product.url,
-    thumbnail: product.thumbnail,
-  }))
+  featuredProducts.value
+    .filter((product) => Boolean(product.productType?.slug && product.productType.name))
+    .slice(0, 4)
+    .map((product) => ({
+      key: `product-${product.id}`,
+      title: product.title,
+      description: product.description || t('home.featuredProducts.subtitle'),
+      price: product.priceLabel,
+      url: product.url,
+      thumbnail: product.thumbnail,
+      category: product.productType?.name,
+    }))
 )
 
-const fallbackCards = computed<FeaturedProductCard[]>(() => {
-  return [0, 1, 2, 3].map((index) => ({
-    key: `fallback-${index}`,
-    title: t(`home.featuredProducts.items.${index}.title`),
-    description: t(`home.featuredProducts.items.${index}.description`),
-    price: t(`home.featuredProducts.items.${index}.price`),
-    url: '/shop',
+const categoryCards = computed<FeaturedProductCard[]>(() => {
+  return productCategories.value.slice(0, 4).map((category) => ({
+    key: `category-${category.id}`,
+    title: category.name,
+    description: t('home.featuredProducts.subtitle'),
+    price: '',
+    url: localePath({
+      path: '/shop',
+      query: {
+        product_type: category.slug,
+      },
+    }),
+    category: category.name,
   }))
 })
 
 const cards = computed(() => {
-  return dynamicCards.value.length > 0 ? dynamicCards.value : fallbackCards.value
+  return dynamicCards.value.length > 0 ? dynamicCards.value : categoryCards.value
 })
 </script>
