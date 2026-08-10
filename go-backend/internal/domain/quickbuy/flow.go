@@ -20,16 +20,16 @@ const (
 )
 
 type Flow struct {
-	ID            uint      `gorm:"primarykey" json:"id"`
-	Slug          string    `gorm:"size:120;uniqueIndex;not null" json:"slug"`
-	Name          string    `gorm:"size:160;not null" json:"name"`
-	Description   string    `gorm:"type:text;not null;default:''" json:"description"`
-	EntrySurface  string    `gorm:"size:80;not null;default:'dock';index" json:"entry_surface"`
-	IsEnabled     bool      `gorm:"not null;default:true;index" json:"is_enabled"`
-	SortOrder     int       `gorm:"not null;default:100" json:"sort_order"`
-	Versions      []Version `gorm:"foreignKey:FlowID" json:"versions,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID           uint      `gorm:"primarykey" json:"id"`
+	Slug         string    `gorm:"size:120;uniqueIndex;not null" json:"slug"`
+	Name         string    `gorm:"size:160;not null" json:"name"`
+	Description  string    `gorm:"type:text;not null;default:''" json:"description"`
+	EntrySurface string    `gorm:"size:80;not null;default:'dock';index" json:"entry_surface"`
+	IsEnabled    bool      `gorm:"not null;default:true;index" json:"is_enabled"`
+	SortOrder    int       `gorm:"not null;default:100" json:"sort_order"`
+	Versions     []Version `gorm:"foreignKey:FlowID" json:"versions,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 func (Flow) TableName() string {
@@ -37,19 +37,19 @@ func (Flow) TableName() string {
 }
 
 type Version struct {
-	ID            uint           `gorm:"primarykey" json:"id"`
-	FlowID        uint           `gorm:"not null;index" json:"flow_id"`
-	VersionNumber int            `gorm:"not null;default:1" json:"version_number"`
-	Status        string         `gorm:"size:24;not null;default:'draft';index" json:"status"`
-	PublishedAt   *time.Time     `json:"published_at,omitempty"`
-	PublishedBy   *uint          `gorm:"index" json:"published_by,omitempty"`
-	StartsAt      *time.Time     `json:"starts_at,omitempty"`
-	EndsAt        *time.Time     `json:"ends_at,omitempty"`
-	Flow          *Flow          `gorm:"foreignKey:FlowID" json:"flow,omitempty"`
-	Steps         []Step         `gorm:"foreignKey:FlowVersionID" json:"steps,omitempty"`
-	Rules         []Rule         `gorm:"foreignKey:FlowVersionID" json:"rules,omitempty"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
+	ID            uint       `gorm:"primarykey" json:"id"`
+	FlowID        uint       `gorm:"not null;index" json:"flow_id"`
+	VersionNumber int        `gorm:"not null;default:1" json:"version_number"`
+	Status        string     `gorm:"size:24;not null;default:'draft';index" json:"status"`
+	PublishedAt   *time.Time `json:"published_at,omitempty"`
+	PublishedBy   *uint      `gorm:"index" json:"published_by,omitempty"`
+	StartsAt      *time.Time `json:"starts_at,omitempty"`
+	EndsAt        *time.Time `json:"ends_at,omitempty"`
+	Flow          *Flow      `gorm:"foreignKey:FlowID" json:"flow,omitempty"`
+	Steps         []Step     `gorm:"foreignKey:FlowVersionID" json:"steps,omitempty"`
+	Rules         []Rule     `gorm:"foreignKey:FlowVersionID" json:"rules,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 func (Version) TableName() string {

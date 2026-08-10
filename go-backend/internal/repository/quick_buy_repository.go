@@ -250,9 +250,7 @@ func preloadQuickBuyVersion(db *gorm.DB) *gorm.DB {
 func preloadQuickBuySession(db *gorm.DB) *gorm.DB {
 	return db.
 		Preload("Flow").
-		Preload("Version", func(db *gorm.DB) *gorm.DB {
-			return preloadQuickBuyVersion(db)
-		}).
+		Preload("Version", preloadQuickBuyVersion).
 		Preload("Items", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		})
