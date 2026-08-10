@@ -83,16 +83,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAsyncData, useI18n, useLocalePath } from '#imports'
+import { computed, onMounted } from 'vue'
+import { useAsyncData, useI18n, useLocalePath, useState } from '#imports'
 import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
 import { useShopCategories } from '~/composables/useShopCategories'
+import type { ShopCategory } from '~/composables/useShopCategories'
 
 const { t } = useI18n()
 const localePath = useLocalePath()
 const { fetchFeaturedShopProducts } = useShopProducts()
 const { fetchCategories } = useShopCategories()
+const productCategoriesState = useState<ShopCategory[]>('home-product-categories', () => [])
 
 interface FeaturedProductCard {
   key: string
@@ -118,13 +120,20 @@ const { data: featuredProductsData } = await useAsyncData(
   }
 )
 
-const { data: productCategoriesData } = await useAsyncData(
-  'home-product-categories',
-  () => fetchCategories().catch(() => []),
-  {
-    default: () => [],
-  }
-)
+if (import.meta.server) {
+  productCategoriesState.value = await fetchCategories().catch(() => [])
+}
+
+if (import.meta.client) {
+  onMounted(async () => {
+    if (productCategoriesState.value.length > 0) return
+
+    const categories = await fetchCategories().catch(() => [])
+    if (categories.length > 0) {
+      productCategoriesState.value = categories
+    }
+  })
+}
 
 const featuredProducts = computed<ShopProduct[]>(() => {
   const items = featuredProductsData.value?.items
@@ -132,7 +141,7 @@ const featuredProducts = computed<ShopProduct[]>(() => {
 })
 
 const productCategories = computed(() => {
-  return Array.isArray(productCategoriesData.value) ? productCategoriesData.value : []
+  return Array.isArray(productCategoriesState.value) ? productCategoriesState.value : []
 })
 
 const dynamicCards = computed<FeaturedProductCard[]>(() =>
